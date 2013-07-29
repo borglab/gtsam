@@ -24,8 +24,8 @@ using namespace boost::assign;
 
 #include <gtsam/base/debug.h>
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/VariableIndex.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/VariableIndexOrdered.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 
 using namespace std;
@@ -36,8 +36,8 @@ static SharedDiagonal
   sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
   constraintModel = noiseModel::Constrained::All(2);
 
-static GaussianFactorGraph createSimpleGaussianFactorGraph() {
-  GaussianFactorGraph fg;
+static GaussianFactorGraphOrdered createSimpleGaussianFactorGraph() {
+  GaussianFactorGraphOrdered fg;
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
   fg.add(2, 10*eye(2), -1.0*ones(2), unit2);
@@ -52,9 +52,9 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
 
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, initialization) {
+TEST(GaussianFactorGraphOrdered, initialization) {
   // Create empty graph
-  GaussianFactorGraph fg;
+  GaussianFactorGraphOrdered fg;
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
   fg.add(0, 10*eye(2), -1.0*ones(2), unit2);
@@ -63,7 +63,7 @@ TEST(GaussianFactorGraph, initialization) {
   fg.add(1, -5*eye(2), 2, 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
   EXPECT_LONGS_EQUAL(4, fg.size());
-  JacobianFactor factor = *boost::dynamic_pointer_cast<JacobianFactor>(fg[0]);
+  JacobianFactorOrdered factor = *boost::dynamic_pointer_cast<JacobianFactorOrdered>(fg[0]);
 
   // Test sparse, which takes a vector and returns a matrix, used in MATLAB
   // Note that this the augmented vector and the RHS is in column 7
@@ -77,7 +77,7 @@ TEST(GaussianFactorGraph, initialization) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, CombineJacobians)
+TEST(GaussianFactorGraphOrdered, CombineJacobians)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -104,19 +104,19 @@ TEST(GaussianFactorGraph, CombineJacobians)
   Vector b2 = Vector_(3, 3.5, 3.5, 3.5);
   Vector s2 = Vector_(3, 3.6, 3.6, 3.6);
 
-  GaussianFactorGraph gfg;
+  GaussianFactorGraphOrdered gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
   // Convert to Jacobians (inefficient copy of all factors instead of selectively converting only Hessians)
-  FactorGraph<JacobianFactor> jacobians;
-  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
-    jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+  FactorGraphOrdered<JacobianFactorOrdered> jacobians;
+  BOOST_FOREACH(const GaussianFactorGraphOrdered::sharedFactor& factor, gfg) {
+    jacobians.push_back(boost::make_shared<JacobianFactorOrdered>(*factor));
   }
 
   // Combine Jacobians into a single dense factor
-  JacobianFactor actual = *CombineJacobians(jacobians, VariableSlots(gfg));
+  JacobianFactorOrdered actual = *CombineJacobians(jacobians, VariableSlots(gfg));
 
   Matrix zero3x3 = zeros(3,3);
   Matrix A0 = gtsam::stack(3, &zero3x3, &A10, &zero3x3);
@@ -124,13 +124,13 @@ TEST(GaussianFactorGraph, CombineJacobians)
   Vector b = gtsam::concatVectors(3, &b0, &b1, &b2);
   Vector sigmas = gtsam::concatVectors(3, &s0, &s1, &s2);
 
-  JacobianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  JacobianFactorOrdered expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
 
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, CombineAndEliminate)
+TEST(GaussianFactorOrdered, CombineAndEliminate)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -157,7 +157,7 @@ TEST(GaussianFactor, CombineAndEliminate)
   Vector b2 = Vector_(3, 3.5, 3.5, 3.5);
   Vector s2 = Vector_(3, 3.6, 3.6, 3.6);
 
-  GaussianFactorGraph gfg;
+  GaussianFactorGraphOrdered gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
@@ -168,21 +168,21 @@ TEST(GaussianFactor, CombineAndEliminate)
   Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
   Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
 
-  JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
-  GaussianConditional::shared_ptr expectedBN = expectedFactor.eliminate(1);
+  JacobianFactorOrdered expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  GaussianConditionalOrdered::shared_ptr expectedBN = expectedFactor.eliminate(1);
 
-  GaussianConditional::shared_ptr actualBN;
-  GaussianFactor::shared_ptr actualFactor;
-  boost::tie(actualBN, actualFactor) = EliminateQR(gfg, 1);
-  JacobianFactor::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
-      JacobianFactor>(actualFactor);
+  GaussianConditionalOrdered::shared_ptr actualBN;
+  GaussianFactorOrdered::shared_ptr actualFactor;
+  boost::tie(actualBN, actualFactor) = EliminateQROrdered(gfg, 1);
+  JacobianFactorOrdered::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
+      JacobianFactorOrdered>(actualFactor);
 
   EXPECT(assert_equal(*expectedBN, *actualBN));
   EXPECT(assert_equal(expectedFactor, *actualJacobian));
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, eliminateFrontals)
+TEST(GaussianFactorOrdered, eliminateFrontals)
 {
   // Augmented Ab test case for whole factor graph
   Matrix Ab = Matrix_(14,11,
@@ -211,7 +211,7 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair( 9, Matrix(Ab.block(0, 6, 4, 2))),
       make_pair(11, Matrix(Ab.block(0, 8, 4, 2)));
   Vector b1 = Ab.col(10).segment(0, 4);
-  JacobianFactor::shared_ptr factor1(new JacobianFactor(terms1, b1, noiseModel::Isotropic::Sigma(4, 0.5)));
+  JacobianFactorOrdered::shared_ptr factor1(new JacobianFactorOrdered(terms1, b1, noiseModel::Isotropic::Sigma(4, 0.5)));
 
   // Create second factor
   list<pair<Index, Matrix> > terms2;
@@ -221,7 +221,7 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair(9, Matrix(Ab.block(4, 6, 4, 2))),
       make_pair(11,Matrix(Ab.block(4, 8, 4, 2)));
   Vector b2 = Ab.col(10).segment(4, 4);
-  JacobianFactor::shared_ptr factor2(new JacobianFactor(terms2, b2, noiseModel::Isotropic::Sigma(4, 0.5)));
+  JacobianFactorOrdered::shared_ptr factor2(new JacobianFactorOrdered(terms2, b2, noiseModel::Isotropic::Sigma(4, 0.5)));
 
   // Create third factor
   list<pair<Index, Matrix> > terms3;
@@ -230,17 +230,17 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair(9, Matrix(Ab.block(8, 6, 4, 2))),
       make_pair(11,Matrix(Ab.block(8, 8, 4, 2)));
   Vector b3 = Ab.col(10).segment(8, 4);
-  JacobianFactor::shared_ptr factor3(new JacobianFactor(terms3, b3, noiseModel::Isotropic::Sigma(4, 0.5)));
+  JacobianFactorOrdered::shared_ptr factor3(new JacobianFactorOrdered(terms3, b3, noiseModel::Isotropic::Sigma(4, 0.5)));
 
   // Create fourth factor
   list<pair<Index, Matrix> > terms4;
   terms4 +=
       make_pair(11, Matrix(Ab.block(12, 8, 2, 2)));
   Vector b4 = Ab.col(10).segment(12, 2);
-  JacobianFactor::shared_ptr factor4(new JacobianFactor(terms4, b4, noiseModel::Isotropic::Sigma(2, 0.5)));
+  JacobianFactorOrdered::shared_ptr factor4(new JacobianFactorOrdered(terms4, b4, noiseModel::Isotropic::Sigma(2, 0.5)));
 
   // Create factor graph
-  GaussianFactorGraph factors;
+  GaussianFactorGraphOrdered factors;
   factors.push_back(factor1);
   factors.push_back(factor2);
   factors.push_back(factor3);
@@ -251,17 +251,17 @@ TEST(GaussianFactor, eliminateFrontals)
   EXPECT(assert_equal(2.0 * Ab, actualDense));
 
   // Convert to Jacobians, inefficient copy of all factors instead of selectively converting only Hessians
-  FactorGraph<JacobianFactor> jacobians;
-  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, factors) {
-    jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+  FactorGraphOrdered<JacobianFactorOrdered> jacobians;
+  BOOST_FOREACH(const GaussianFactorGraphOrdered::sharedFactor& factor, factors) {
+    jacobians.push_back(boost::make_shared<JacobianFactorOrdered>(*factor));
   }
 
   // Create combined factor
-  JacobianFactor combined(*CombineJacobians(jacobians, VariableSlots(factors)));
+  JacobianFactorOrdered combined(*CombineJacobians(jacobians, VariableSlots(factors)));
 
   // Copies factors as they will be eliminated in place
-  JacobianFactor actualFactor_QR = combined;
-  JacobianFactor actualFactor_Chol = combined;
+  JacobianFactorOrdered actualFactor_QR = combined;
+  JacobianFactorOrdered actualFactor_Chol = combined;
 
   // Expected augmented matrix, both GaussianConditional (first 6 rows) and remaining factor (next 4 rows)
   Matrix R = 2.0*Matrix_(11,11,
@@ -286,7 +286,7 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair(9, sub(R, 0,2, 6,8 )),
       make_pair(11,sub(R, 0,2, 8,10));
   Vector d1 = R.col(10).segment(0,2);
-  GaussianConditional::shared_ptr cond1(new GaussianConditional(3, d1, R1, cterms1, ones(2)));
+  GaussianConditionalOrdered::shared_ptr cond1(new GaussianConditionalOrdered(3, d1, R1, cterms1, ones(2)));
 
   // Expected conditional on second variable from next 2 rows of R
   Matrix R2 = sub(R, 2,4, 2,4);
@@ -296,7 +296,7 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair(9, sub(R, 2,4, 6,8)),
       make_pair(11,sub(R, 2,4, 8,10));
   Vector d2 = R.col(10).segment(2,2);
-  GaussianConditional::shared_ptr cond2(new GaussianConditional(5, d2, R2, cterms2, ones(2)));
+  GaussianConditionalOrdered::shared_ptr cond2(new GaussianConditionalOrdered(5, d2, R2, cterms2, ones(2)));
 
   // Expected conditional on third variable from next 2 rows of R
   Matrix R3 = sub(R, 4,6, 4,6);
@@ -305,10 +305,10 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair(9,  sub(R, 4,6, 6,8)),
       make_pair(11, sub(R, 4,6, 8,10));
   Vector d3 = R.col(10).segment(4,2);
-  GaussianConditional::shared_ptr cond3(new GaussianConditional(7, d3, R3, cterms3, ones(2)));
+  GaussianConditionalOrdered::shared_ptr cond3(new GaussianConditionalOrdered(7, d3, R3, cterms3, ones(2)));
 
   // Create expected Bayes net fragment from three conditionals above
-//  GaussianBayesNet expectedFragment;
+//  GaussianBayesNetOrdered expectedFragment;
 //  expectedFragment.push_back(cond1);
 //  expectedFragment.push_back(cond2);
 //  expectedFragment.push_back(cond3);
@@ -317,7 +317,7 @@ TEST(GaussianFactor, eliminateFrontals)
   size_t dims[] = { 2,2,2,2,2,1 };
   size_t height = 11;
   VerticalBlockView<Matrix> Rblock(R, dims, dims+6, height);
-  GaussianConditional::shared_ptr expectedFragment( new GaussianConditional(keys.begin(), keys.end(), 3,
+  GaussianConditionalOrdered::shared_ptr expectedFragment( new GaussianConditionalOrdered(keys.begin(), keys.end(), 3,
       Rblock, ones(6)) );
 
   // Get expected matrices for remaining factor
@@ -326,7 +326,7 @@ TEST(GaussianFactor, eliminateFrontals)
   Vector be = R.col(10).segment(6, 4);
 
   // Eliminate (3 frontal variables, 6 scalar columns) using QR !!!!
-  GaussianConditional::shared_ptr actualFragment_QR = actualFactor_QR.eliminate(3);
+  GaussianConditionalOrdered::shared_ptr actualFragment_QR = actualFactor_QR.eliminate(3);
 
   EXPECT(assert_equal(*expectedFragment, *actualFragment_QR, 0.001));
   EXPECT(assert_equal(size_t(2), actualFactor_QR.keys().size()));
@@ -339,7 +339,7 @@ TEST(GaussianFactor, eliminateFrontals)
 
   // Eliminate (3 frontal variables, 6 scalar columns) using Cholesky !!!!
 #ifdef BROKEN
-  GaussianBayesNet actualFragment_Chol = *actualFactor_Chol.eliminate(3, JacobianFactor::SOLVE_CHOLESKY);
+  GaussianBayesNetOrdered actualFragment_Chol = *actualFactor_Chol.eliminate(3, JacobianFactorOrdered::SOLVE_CHOLESKY);
   EXPECT(assert_equal(expectedFragment, actualFragment_Chol, 0.001));
   EXPECT(assert_equal(size_t(2), actualFactor_Chol.keys().size()));
   EXPECT(assert_equal(Index(9), actualFactor_Chol.keys()[0]));
@@ -352,7 +352,7 @@ TEST(GaussianFactor, eliminateFrontals)
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, permuteWithInverse)
+TEST(GaussianFactorOrdered, permuteWithInverse)
 {
   Matrix A1 = Matrix_(2,2,
       1.0, 2.0,
@@ -373,21 +373,21 @@ TEST(GaussianFactor, permuteWithInverse)
   inversePermutation[4] = 1;
   inversePermutation[5] = 0;
 
-  JacobianFactor actual(1, A1, 3, A2, 5, A3, b, noiseModel::Isotropic::Sigma(2, 1.0));
-  GaussianFactorGraph actualFG; actualFG.push_back(JacobianFactor::shared_ptr(new JacobianFactor(actual)));
-  VariableIndex actualIndex(actualFG);
+  JacobianFactorOrdered actual(1, A1, 3, A2, 5, A3, b, noiseModel::Isotropic::Sigma(2, 1.0));
+  GaussianFactorGraphOrdered actualFG; actualFG.push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(actual)));
+  VariableIndexOrdered actualIndex(actualFG);
   actual.permuteWithInverse(inversePermutation);
 //  actualIndex.permute(*inversePermutation.inverse());
 
-  JacobianFactor expected(4, A1, 2, A2, 0, A3, b, noiseModel::Isotropic::Sigma(2, 1.0));
-  GaussianFactorGraph expectedFG; expectedFG.push_back(JacobianFactor::shared_ptr(new JacobianFactor(expected)));
+  JacobianFactorOrdered expected(4, A1, 2, A2, 0, A3, b, noiseModel::Isotropic::Sigma(2, 1.0));
+  GaussianFactorGraphOrdered expectedFG; expectedFG.push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(expected)));
 //  GaussianVariableIndex expectedIndex(expectedFG);
 
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, sparseJacobian) {
+TEST(GaussianFactorGraphOrdered, sparseJacobian) {
   // Create factor graph:
   // x1 x2 x3 x4 x5  b
   //  1  2  3  0  0  4
@@ -414,7 +414,7 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       3., 6.,26.,
       4., 6.,32.).transpose();
 
-  GaussianFactorGraph gfg;
+  GaussianFactorGraphOrdered gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
   gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), Vector_(2, 4., 8.), model);
   gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
@@ -425,7 +425,7 @@ TEST(GaussianFactorGraph, sparseJacobian) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, matrices) {
+TEST(GaussianFactorGraphOrdered, matrices) {
   // Create factor graph:
   // x1 x2 x3 x4 x5  b
   //  1  2  3  0  0  4
@@ -433,7 +433,7 @@ TEST(GaussianFactorGraph, matrices) {
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
 
-  GaussianFactorGraph gfg;
+  GaussianFactorGraphOrdered gfg;
   SharedDiagonal model = noiseModel::Unit::Create(2);
   gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), Vector_(2, 4., 8.), model);
   gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
@@ -466,12 +466,12 @@ TEST(GaussianFactorGraph, matrices) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, gradient )
+TEST( GaussianFactorGraphOrdered, gradient )
 {
-  GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
+  GaussianFactorGraphOrdered fg = createSimpleGaussianFactorGraph();
 
   // Construct expected gradient
-  VectorValues expected;
+  VectorValuesOrdered expected;
 
   // 2*f(x) = 100*(x1+c[X(1)])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
   // worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
@@ -480,52 +480,52 @@ TEST( GaussianFactorGraph, gradient )
   expected.insert(0,Vector_(2,-25.0, 17.5));
 
   // Check the gradient at delta=0
-  VectorValues zero = VectorValues::Zero(expected);
-  VectorValues actual = gradient(fg, zero);
+  VectorValuesOrdered zero = VectorValuesOrdered::Zero(expected);
+  VectorValuesOrdered actual = gradient(fg, zero);
   EXPECT(assert_equal(expected,actual));
 
   // Check the gradient at the solution (should be zero)
-  VectorValues solution = *GaussianSequentialSolver(fg).optimize();
-  VectorValues actual2 = gradient(fg, solution);
-  EXPECT(assert_equal(VectorValues::Zero(solution), actual2));
+  VectorValuesOrdered solution = *GaussianSequentialSolver(fg).optimize();
+  VectorValuesOrdered actual2 = gradient(fg, solution);
+  EXPECT(assert_equal(VectorValuesOrdered::Zero(solution), actual2));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, transposeMultiplication )
+TEST( GaussianFactorGraphOrdered, transposeMultiplication )
 {
-  GaussianFactorGraph A = createSimpleGaussianFactorGraph();
+  GaussianFactorGraphOrdered A = createSimpleGaussianFactorGraph();
 
-  VectorValues e;
+  VectorValuesOrdered e;
   e.insert(0, Vector_(2, 0.0, 0.0));
   e.insert(1, Vector_(2,15.0, 0.0));
   e.insert(2, Vector_(2, 0.0,-5.0));
   e.insert(3, Vector_(2,-7.5,-5.0));
 
-  VectorValues expected;
+  VectorValuesOrdered expected;
   expected.insert(1, Vector_(2, -37.5,-50.0));
   expected.insert(2, Vector_(2,-150.0, 25.0));
   expected.insert(0, Vector_(2, 187.5, 25.0));
 
-  VectorValues actual = VectorValues::SameStructure(expected);
+  VectorValuesOrdered actual = VectorValuesOrdered::SameStructure(expected);
   transposeMultiply(A, e, actual);
   EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, eliminate_empty )
+TEST(GaussianFactorGraphOrdered, eliminate_empty )
 {
   // eliminate an empty factor
-  GaussianFactorGraph gfg;
-  gfg.push_back(boost::make_shared<JacobianFactor>());
-  GaussianConditional::shared_ptr actualCG;
-  GaussianFactorGraph remainingGFG;
+  GaussianFactorGraphOrdered gfg;
+  gfg.push_back(boost::make_shared<JacobianFactorOrdered>());
+  GaussianConditionalOrdered::shared_ptr actualCG;
+  GaussianFactorGraphOrdered remainingGFG;
   boost::tie(actualCG, remainingGFG) = gfg.eliminateOne(0);
 
   // expected Conditional Gaussian is just a parent-less node with P(x)=1
-  GaussianConditional expectedCG(0, Vector(), Matrix(), Vector());
+  GaussianConditionalOrdered expectedCG(0, Vector(), Matrix(), Vector());
 
   // expected remaining graph should be the same as the original, still empty :-)
-  GaussianFactorGraph expectedLF = gfg;
+  GaussianFactorGraphOrdered expectedLF = gfg;
 
   // check if the result matches
   EXPECT(actualCG->equals(expectedCG));

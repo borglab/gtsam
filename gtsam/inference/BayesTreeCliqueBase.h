@@ -17,49 +17,46 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/weak_ptr.hpp>
-
-#include <gtsam/global_includes.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/BayesNet.h>
+#include <gtsam/base/types.h>
 
 namespace gtsam {
-  template<class CONDITIONAL, class CLIQUE> class BayesTree;
-}
 
-namespace gtsam {
+  // Forward declarations
+  template<class CLIQUE> class BayesTree;
+  template<class GRAPH> struct EliminationTraits;
 
   /**
-   * This is the base class for BayesTree cliques.  The default and standard
-   * derived type is BayesTreeClique, but some algorithms, like iSAM2, use a
-   * different clique type in order to store extra data along with the clique.
+   * This is the base class for BayesTree cliques.  The default and standard derived type is
+   * BayesTreeClique, but some algorithms, like iSAM2, use a different clique type in order to store
+   * extra data along with the clique.
    *
-   * This class is templated on the derived class (i.e. the curiously recursive
-   * template pattern).  The advantage of this over using virtual classes is
-   * that it avoids the need for casting to get the derived type.  This is
-   * possible because all cliques in a BayesTree are the same type - if they
-   * were not then we'd need a virtual class.
+   * This class is templated on the derived class (i.e. the curiously recursive template pattern).
+   * The advantage of this over using virtual classes is that it avoids the need for casting to get
+   * the derived type.  This is possible because all cliques in a BayesTree are the same type - if
+   * they were not then we'd need a virtual class.
    *
    * @tparam DERIVED The derived clique type.
    * @tparam CONDITIONAL The conditional type.
-   * \nosubgrouping
-   */
-  template<class DERIVED, class CONDITIONAL>
-  struct BayesTreeCliqueBase {
-
-  public:
-    typedef BayesTreeCliqueBase<DERIVED, CONDITIONAL> This;
+   * \nosubgrouping */
+  template<class DERIVED, class FACTORGRAPH>
+  class BayesTreeCliqueBase
+  {
+  private:
+    typedef BayesTreeCliqueBase<DERIVED, FACTORGRAPH> This;
     typedef DERIVED DerivedType;
-    typedef CONDITIONAL ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef EliminationTraits<FACTORGRAPH> EliminationTraits;
     typedef boost::shared_ptr<This> shared_ptr;
     typedef boost::weak_ptr<This> weak_ptr;
     typedef boost::shared_ptr<DerivedType> derived_ptr;
     typedef boost::weak_ptr<DerivedType> derived_weak_ptr;
-    typedef typename ConditionalType::FactorType FactorType;
-    typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
+
+  public:
+    typedef FACTORGRAPH FactorGraphType;
+    typedef typename EliminationTraits::BayesNetType BayesNetType;
+    typedef typename BayesNetType::ConditionalType ConditionalType;
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef typename FactorGraphType::FactorType FactorType;
+    typedef typename FactorGraphType::Eliminate Eliminate;
 
   protected:
 
@@ -70,53 +67,36 @@ namespace gtsam {
     BayesTreeCliqueBase() {}
 
     /** Construct from a conditional, leaving parent and child pointers uninitialized */
-    BayesTreeCliqueBase(const sharedConditional& conditional);
-
-    /** Construct from an elimination result, which is a pair<CONDITIONAL,FACTOR> */
-    BayesTreeCliqueBase(
-        const std::pair<sharedConditional,
-            boost::shared_ptr<typename ConditionalType::FactorType> >& result);
+    BayesTreeCliqueBase(const sharedConditional& conditional) : conditional_(conditional) {}
 
     /// @}
 
     /// This stores the Cached separator margnal P(S)
-    mutable boost::optional<FactorGraph<FactorType> > cachedSeparatorMarginal_;
+    mutable boost::optional<FactorGraphType> cachedSeparatorMarginal_;
 
   public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
-    FastList<derived_ptr> children_;
+    std::vector<derived_ptr> children;
 
     /// @name Testable
     /// @{
 
     /** check equality */
-    bool equals(const This& other, double tol = 1e-9) const {
-      return (!conditional_ && !other.conditional())
-          || conditional_->equals(*other.conditional(), tol);
-    }
+    bool equals(const DERIVED& other, double tol = 1e-9) const;
 
     /** print this node */
-    void print(const std::string& s = "", const IndexFormatter& indexFormatter =
-        DefaultIndexFormatter) const;
-
-    /** print this node and entire subtree below it */
-    void printTree(const std::string& indent = "",
-        const IndexFormatter& indexFormatter = DefaultIndexFormatter) const;
+    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
     /// @name Standard Interface
     /// @{
 
     /** Access the conditional */
-    const sharedConditional& conditional() const {
-      return conditional_;
-    }
+    const sharedConditional& conditional() const { return conditional_; }
 
     /** is this the root of a Bayes tree ? */
-    inline bool isRoot() const {
-      return parent_.expired();
-    }
+    inline bool isRoot() const { return parent_.expired(); }
 
     /** The size of subtree rooted at this clique, i.e., nr of Cliques */
     size_t treeSize() const;
@@ -124,75 +104,21 @@ namespace gtsam {
     /** Collect number of cliques with cached separator marginals */
     size_t numCachedSeparatorMarginals() const;
 
-    /** The arrow operator accesses the conditional */
-    const ConditionalType* operator->() const {
-      return conditional_.get();
-    }
-
-    /** return the const reference of children */
-    const std::list<derived_ptr>& children() const {
-      return children_;
-    }
-
     /** return a shared_ptr to the parent clique */
-    derived_ptr parent() const {
-      return parent_.lock();
-    }
+    derived_ptr parent() const { return parent_.lock(); }
 
     /// @}
     /// @name Advanced Interface
     /// @{
 
-    /** The arrow operator accesses the conditional */
-    ConditionalType* operator->() {
-      return conditional_.get();
-    }
-
-    /** return the reference of children non-const version*/
-    FastList<derived_ptr>& children() {
-      return children_;
-    }
-
-    /** Construct shared_ptr from a conditional, leaving parent and child pointers uninitialized */
-    static derived_ptr Create(const sharedConditional& conditional) {
-      return boost::make_shared<DerivedType>(conditional);
-    }
-
-    /** Construct shared_ptr from a FactorGraph<FACTOR>::EliminationResult.  In this class
-     * the conditional part is kept and the factor part is ignored, but in derived clique
-     * types, such as ISAM2Clique, the factor part is kept as a cached factor.
-     * @param result An elimination result, which is a pair<CONDITIONAL,FACTOR>
-     */
-    static derived_ptr Create(const std::pair<sharedConditional,
-            boost::shared_ptr<typename ConditionalType::FactorType> >& result) {
-      return boost::make_shared<DerivedType>(result);
-    }
-
-    /** Returns a new clique containing a copy of the conditional but without
-     * the parent and child clique pointers.
-     */
-    derived_ptr clone() const {
-      return Create(sharedConditional(new ConditionalType(*conditional_)));
-    }
-
-    /** Permute the variables in the whole subtree rooted at this clique */
-    void permuteWithInverse(const Permutation& inversePermutation);
-
-    /** Permute variables when they only appear in the separators.  In this
-     * case the running intersection property will be used to prevent always
-     * traversing the whole tree.  Returns whether any separator variables in
-     * this subtree were reordered.
-     */
-    bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction);
-
     /** return the conditional P(S|Root) on the separator given the root */
-    BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
+    BayesNetType shortcut(const derived_ptr& root, Eliminate function = EliminationTraits::DefaultEliminate) const;
 
     /** return the marginal P(S) on the separator */
-    FactorGraph<FactorType> separatorMarginal(derived_ptr root, Eliminate function) const;
+    FactorGraphType separatorMarginal(Eliminate function = EliminationTraits::DefaultEliminate) const;
 
     /** return the marginal P(C) of the clique, using marginal caching */
-    FactorGraph<FactorType> marginal2(derived_ptr root, Eliminate function) const;
+    FactorGraphType marginal2(Eliminate function = EliminationTraits::DefaultEliminate) const;
 
     /**
      * This deletes the cached shortcuts of all cliques (subtree) below this clique.
@@ -200,50 +126,25 @@ namespace gtsam {
      */
     void deleteCachedShortcuts();
 
-    const boost::optional<FactorGraph<FactorType> >& cachedSeparatorMarginal() const {
+    const boost::optional<FactorGraphType>& cachedSeparatorMarginal() const {
       return cachedSeparatorMarginal_; }
 
-    friend class BayesTree<ConditionalType, DerivedType> ;
+    friend class BayesTree<DerivedType>;
 
   protected:
 
-    /// assert invariants that have to hold in a clique
-    void assertInvariants() const;
-
     /// Calculate set \f$ S \setminus B \f$ for shortcut calculations
-    std::vector<Index> separator_setminus_B(derived_ptr B) const;
+    std::vector<Key> separator_setminus_B(const derived_ptr& B) const;
 
-    /// Calculate set \f$ S_p \cap B \f$ for shortcut calculations
-    std::vector<Index> parent_separator_intersection_B(derived_ptr B) const;
-
-    /**
-     * Determine variable indices to keep in recursive separator shortcut calculation
-     * The factor graph p_Cp_B has keys from the parent clique Cp and from B.
-     * But we only keep the variables not in S union B.
-     */
-    std::vector<Index> shortcut_indices(derived_ptr B,
-        const FactorGraph<FactorType>& p_Cp_B) const;
+    /** Determine variable indices to keep in recursive separator shortcut calculation The factor
+     *  graph p_Cp_B has keys from the parent clique Cp and from B. But we only keep the variables
+     *  not in S union B. */
+    std::vector<Key> shortcut_indices(const derived_ptr& B, const FactorGraphType& p_Cp_B) const;
 
     /** Non-recursive delete cached shortcuts and marginals - internal only. */
     void deleteCachedShortcutsNonRecursive() { cachedSeparatorMarginal_ = boost::none; }
 
   private:
-
-    /**
-     * Cliques cannot be copied except by the clone() method, which does not
-     * copy the parent and child pointers.
-     */
-    BayesTreeCliqueBase(const This& other) {
-      assert(false);
-    }
-
-    /** Cliques cannot be copied except by the clone() method, which does not
-     * copy the parent and child pointers.
-     */
-    This& operator=(const This& other) {
-      assert(false);
-      return *this;
-    }
 
     /** Serialization function */
     friend class boost::serialization::access;
@@ -257,17 +158,5 @@ namespace gtsam {
     /// @}
 
   };
-  // \struct Clique
-
-  template<class DERIVED, class CONDITIONAL>
-  const DERIVED* asDerived(
-      const BayesTreeCliqueBase<DERIVED, CONDITIONAL>* base) {
-    return static_cast<const DERIVED*>(base);
-  }
-
-  template<class DERIVED, class CONDITIONAL>
-  DERIVED* asDerived(BayesTreeCliqueBase<DERIVED, CONDITIONAL>* base) {
-    return static_cast<DERIVED*>(base);
-  }
 
 }

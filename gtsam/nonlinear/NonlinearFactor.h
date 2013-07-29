@@ -26,13 +26,13 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/function.hpp>
 
-#include <gtsam/inference/Factor-inl.h>
-#include <gtsam/inference/IndexFactor.h>
+#include <gtsam/inference/FactorOrdered-inl.h>
+#include <gtsam/inference/IndexFactorOrdered.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/JacobianFactorOrdered.h>
 
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 
 /**
  * Macro to add a standard clone function to a derived factor
@@ -54,12 +54,12 @@ namespace gtsam {
  * which are objects in non-linear manifolds (Lie groups).
  * \nosubgrouping
  */
-class NonlinearFactor: public Factor<Key> {
+class NonlinearFactor: public FactorOrdered<Key> {
 
 protected:
 
   // Some handy typedefs
-  typedef Factor<Key> Base;
+  typedef FactorOrdered<Key> Base;
   typedef NonlinearFactor This;
 
 public:
@@ -140,18 +140,18 @@ public:
   virtual bool active(const Values& c) const { return true; }
 
   /** linearize to a GaussianFactor */
-  virtual boost::shared_ptr<GaussianFactor>
-  linearize(const Values& c, const Ordering& ordering) const = 0;
+  virtual boost::shared_ptr<GaussianFactorOrdered>
+  linearize(const Values& c, const OrderingOrdered& ordering) const = 0;
 
   /**
    * Create a symbolic factor using the given ordering to determine the
    * variable indices.
    */
-  virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
+  virtual IndexFactorOrdered::shared_ptr symbolic(const OrderingOrdered& ordering) const {
     std::vector<Index> indices(this->size());
     for(size_t j=0; j<this->size(); ++j)
       indices[j] = ordering[this->keys()[j]];
-    return IndexFactor::shared_ptr(new IndexFactor(indices));
+    return IndexFactorOrdered::shared_ptr(new IndexFactorOrdered(indices));
   }
 
   /**
@@ -314,10 +314,10 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactorOrdered> linearize(const Values& x, const OrderingOrdered& ordering) const {
     // Only linearize if the factor is active
     if (!this->active(x))
-      return boost::shared_ptr<JacobianFactor>();
+      return boost::shared_ptr<JacobianFactorOrdered>();
 
     // Create the set of terms - Jacobians for each index
     Vector b;
@@ -340,11 +340,11 @@ public:
     noiseModel::Constrained::shared_ptr constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if(constrained)
-      return GaussianFactor::shared_ptr(
-          new JacobianFactor(terms, b, constrained->unit()));
+      return GaussianFactorOrdered::shared_ptr(
+          new JacobianFactorOrdered(terms, b, constrained->unit()));
     else
-      return GaussianFactor::shared_ptr(
-          new JacobianFactor(terms, b, noiseModel::Unit::Create(b.size())));
+      return GaussianFactorOrdered::shared_ptr(
+          new JacobianFactorOrdered(terms, b, noiseModel::Unit::Create(b.size())));
   }
 
 private:

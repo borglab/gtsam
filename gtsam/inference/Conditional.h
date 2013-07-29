@@ -18,12 +18,9 @@
 // \callgraph
 #pragma once
 
-#include <gtsam/inference/Factor.h>
-
 #include <boost/range.hpp>
 
-#include <iostream>
-#include <list>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 
@@ -37,230 +34,114 @@ namespace gtsam {
    * IndexConditional and GaussianConditional for examples.
    * \nosubgrouping
    */
-  template<typename KEY>
-  class Conditional: public gtsam::Factor<KEY> {
-
-  private:
-
-    /** Create keys by adding key in front */
-    template<typename ITERATOR>
-    static std::vector<KEY> MakeKeys(KEY key, ITERATOR firstParent,
-        ITERATOR lastParent) {
-      std::vector<KeyType> keys((lastParent - firstParent) + 1);
-      std::copy(firstParent, lastParent, keys.begin() + 1);
-      keys[0] = key;
-      return keys;
-    }
-
+  template<class FACTOR, class DERIVEDCONDITIONAL>
+  class Conditional
+  {
   protected:
-
-    /** The first nFrontal variables are frontal and the rest are parents. */
+    /** The first nrFrontal variables are frontal and the rest are parents. */
     size_t nrFrontals_;
 
-    // Calls the base class assertInvariants, which checks for unique keys
-    void assertInvariants() const {
-      Factor<KEY>::assertInvariants();
-    }
+  private:
+    /// Typedef to this class
+    typedef Conditional<FACTOR,DERIVEDCONDITIONAL> This;
 
   public:
-
-    typedef KEY KeyType;
-    typedef Conditional<KeyType> This;
-    typedef Factor<KeyType> Base;
-
-    /**
-     * Typedef to the factor type that produces this conditional and that this
-     * conditional can be converted to using a factor constructor. Derived
-     * classes must redefine this.
-     */
-    typedef gtsam::Factor<KeyType> FactorType;
-
-    /** A shared_ptr to this class.  Derived classes must redefine this. */
-    typedef boost::shared_ptr<This> shared_ptr;
-
-    /** Iterator over keys */
-    typedef typename FactorType::iterator iterator;
-
-    /** Const iterator over keys */
-    typedef typename FactorType::const_iterator const_iterator;
-
     /** View of the frontal keys (call frontals()) */
-    typedef boost::iterator_range<const_iterator> Frontals;
+    typedef boost::iterator_range<typename FACTOR::const_iterator> Frontals;
 
     /** View of the separator keys (call parents()) */
-    typedef boost::iterator_range<const_iterator> Parents;
+    typedef boost::iterator_range<typename FACTOR::const_iterator> Parents;
 
+  protected:
     /// @name Standard Constructors
     /// @{
 
     /** Empty Constructor to make serialization possible */
-    Conditional() :
-        nrFrontals_(0) {
-      assertInvariants();
-    }
+    Conditional() : nrFrontals_(0) {}
 
-    /** No parents */
-    Conditional(KeyType key) :
-        FactorType(key), nrFrontals_(1) {
-      assertInvariants();
-    }
-
-    /** Single parent */
-    Conditional(KeyType key, KeyType parent) :
-        FactorType(key, parent), nrFrontals_(1) {
-      assertInvariants();
-    }
-
-    /** Two parents */
-    Conditional(KeyType key, KeyType parent1, KeyType parent2) :
-        FactorType(key, parent1, parent2), nrFrontals_(1) {
-      assertInvariants();
-    }
-
-    /** Three parents */
-    Conditional(KeyType key, KeyType parent1, KeyType parent2, KeyType parent3) :
-        FactorType(key, parent1, parent2, parent3), nrFrontals_(1) {
-      assertInvariants();
-    }
-
-    /// @}
-    /// @name Advanced Constructors
-    /// @{
-
-    /** Constructor from a frontal variable and a vector of parents */
-    Conditional(KeyType key, const std::vector<KeyType>& parents) :
-        FactorType(MakeKeys(key, parents.begin(), parents.end())), nrFrontals_(
-            1) {
-      assertInvariants();
-    }
-
-    /** Constructor from keys and nr of frontal variables */
-    Conditional(const std::vector<Index>& keys, size_t nrFrontals) :
-        FactorType(keys), nrFrontals_(nrFrontals) {
-      assertInvariants();
-    }
-
-    /** Constructor from keys and nr of frontal variables */
-    Conditional(const std::list<Index>& keys, size_t nrFrontals) :
-        FactorType(keys.begin(),keys.end()), nrFrontals_(nrFrontals) {
-      assertInvariants();
-    }
+    /** Constructor */
+    Conditional(size_t nrFrontals) : nrFrontals_(nrFrontals) {}
 
     /// @}
     /// @name Testable
     /// @{
 
     /** print with optional formatter */
-    void print(const std::string& s = "Conditional",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const;
+    void print(const std::string& s = "Conditional", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /** check equality */
-    template<class DERIVED>
-    bool equals(const DERIVED& c, double tol = 1e-9) const {
-      return nrFrontals_ == c.nrFrontals_ && FactorType::equals(c, tol);
-    }
+    bool equals(const This& c, double tol = 1e-9) const;
 
     /// @}
+    
+  public:
     /// @name Standard Interface
     /// @{
 
     /** return the number of frontals */
-    size_t nrFrontals() const {
-      return nrFrontals_;
-    }
+    size_t nrFrontals() const { return nrFrontals_; }
 
     /** return the number of parents */
-    size_t nrParents() const {
-      return FactorType::size() - nrFrontals_;
-    }
+    size_t nrParents() const { return asFactor().size() - nrFrontals_; }
 
-    /** Special accessor when there is only one frontal variable. */
-    KeyType firstFrontalKey() const {
-      assert(nrFrontals_>0);
-      return FactorType::front();
-    }
-    KeyType lastFrontalKey() const {
-      assert(nrFrontals_>0);
-      return *(endFrontals() - 1);
+    /** Convenience function to get the first frontal key */
+    Key firstFrontalKey() const {
+      if(nrFrontals_ > 0)
+        return asFactor().front();
+      else
+        throw std::invalid_argument("Requested Conditional::firstFrontalKey from a conditional with zero frontal keys");
     }
 
     /** return a view of the frontal keys */
-    Frontals frontals() const {
-      return boost::make_iterator_range(beginFrontals(), endFrontals());
-    }
+    Frontals frontals() const { return boost::make_iterator_range(beginFrontals(), endFrontals()); }
 
     /** return a view of the parent keys */
-    Parents parents() const {
-      return boost::make_iterator_range(beginParents(), endParents());
-    }
+    Parents parents() const { return boost::make_iterator_range(beginParents(), endParents()); }
 
-    /** Iterators over frontal and parent variables. */
-    const_iterator beginFrontals() const {
-      return FactorType::begin();
-    } ///<TODO: comment
-    const_iterator endFrontals() const {
-      return FactorType::begin() + nrFrontals_;
-    } ///<TODO: comment
-    const_iterator beginParents() const {
-      return FactorType::begin() + nrFrontals_;
-    } ///<TODO: comment
-    const_iterator endParents() const {
-      return FactorType::end();
-    } ///<TODO: comment
+    /** Iterator pointing to first frontal key. */
+    typename FACTOR::const_iterator beginFrontals() const { return asFactor().begin(); }
+    
+    /** Iterator pointing past the last frontal key. */
+    typename FACTOR::const_iterator endFrontals() const { return asFactor().begin() + nrFrontals_; }
+    
+    /** Iterator pointing to the first parent key. */
+    typename FACTOR::const_iterator beginParents() const { return endFrontals(); }
+
+    /** Iterator pointing past the last parent key. */
+    typename FACTOR::const_iterator endParents() const { return asFactor().end(); }
 
     /// @}
     /// @name Advanced Interface
     /// @{
 
-    /** Mutable iterators and accessors */
-    iterator beginFrontals() {
-      return FactorType::begin();
-    } ///<TODO: comment
-    iterator endFrontals() {
-      return FactorType::begin() + nrFrontals_;
-    } ///<TODO: comment
-    iterator beginParents() {
-      return FactorType::begin() + nrFrontals_;
-    } ///<TODO: comment
-    iterator endParents() {
-      return FactorType::end();
-    } ///<TODO: comment
+    /** Mutable iterator pointing to first frontal key. */
+    typename FACTOR::iterator beginFrontals() { return asFactor().begin(); }
 
-    ///TODO: comment
-    boost::iterator_range<iterator> frontals() {
-      return boost::make_iterator_range(beginFrontals(), endFrontals());
-    }
+    /** Mutable iterator pointing past the last frontal key. */
+    typename FACTOR::iterator endFrontals() { return asFactor().begin() + nrFrontals_; }
 
-    ///TODO: comment
-    boost::iterator_range<iterator> parents() {
-      return boost::make_iterator_range(beginParents(), endParents());
-    }
+    /** Mutable iterator pointing to the first parent key. */
+    typename FACTOR::iterator beginParents() { return asFactor().begin() + nrFrontals_; }
+
+    /** Mutable iterator pointing past the last parent key. */
+    typename FACTOR::iterator endParents() { return asFactor().end(); }
 
   private:
+    // Cast to factor type (non-const) (casts down to derived conditional type, then up to factor type)
+    FACTOR& asFactor() { return static_cast<FACTOR&>(static_cast<DERIVEDCONDITIONAL&>(*this)); }
+
+    // Cast to derived type (const) (casts down to derived conditional type, then up to factor type)
+    const FACTOR& asFactor() const { return static_cast<const FACTOR&>(static_cast<const DERIVEDCONDITIONAL&>(*this)); }
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(nrFrontals_);
     }
 
     /// @}
 
   };
-
-  /* ************************************************************************* */
-  template<typename KEY>
-  void Conditional<KEY>::print(const std::string& s,
-      const IndexFormatter& formatter) const {
-    std::cout << s << " P(";
-    BOOST_FOREACH(KeyType key, frontals())
-      std::cout << " " << formatter(key);
-    if (nrParents() > 0)
-      std::cout << " |";
-    BOOST_FOREACH(KeyType parent, parents())
-      std::cout << " " << formatter(parent);
-    std::cout << ")" << std::endl;
-  }
 
 } // gtsam

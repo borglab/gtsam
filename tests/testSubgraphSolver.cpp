@@ -16,13 +16,13 @@
  **/
 
 #include <tests/smallExample.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesNetOrdered.h>
 #include <gtsam/linear/iterative.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 #include <gtsam/linear/SubgraphSolver.h>
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/inference/EliminationTreeOrdered-inl.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -38,9 +38,9 @@ using namespace example;
 
 /* ************************************************************************* */
 /** unnormalized error */
-static double error(const GaussianFactorGraph& fg, const VectorValues& x) {
+static double error(const GaussianFactorGraphOrdered& fg, const VectorValuesOrdered& x) {
   double total_error = 0.;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, fg)
+  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, fg)
     total_error += factor->error(x);
   return total_error;
 }
@@ -50,8 +50,8 @@ static double error(const GaussianFactorGraph& fg, const VectorValues& x) {
 TEST( SubgraphSolver, constructor1 )
 {
   // Build a planar graph
-  GaussianFactorGraph Ab;
-  VectorValues xtrue;
+  GaussianFactorGraphOrdered Ab;
+  VectorValuesOrdered xtrue;
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
@@ -59,7 +59,7 @@ TEST( SubgraphSolver, constructor1 )
   // and it will split the graph into A1 and A2, where A1 is a spanning tree
   SubgraphSolverParameters parameters;
   SubgraphSolver solver(Ab, parameters);
-  VectorValues optimized = solver.optimize(); // does PCG optimization
+  VectorValuesOrdered optimized = solver.optimize(); // does PCG optimization
   DOUBLES_EQUAL(0.0, error(Ab, optimized), 1e-5);
 }
 
@@ -67,20 +67,20 @@ TEST( SubgraphSolver, constructor1 )
 TEST( SubgraphSolver, constructor2 )
 {
   // Build a planar graph
-  GaussianFactorGraph Ab;
-  VectorValues xtrue;
+  GaussianFactorGraphOrdered Ab;
+  VectorValuesOrdered xtrue;
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
   // Get the spanning tree and corresponding ordering
-  GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+  GaussianFactorGraphOrdered Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
   boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
 
   // The second constructor takes two factor graphs,
   // so the caller can specify the preconditioner (Ab1) and the constraints that are left out (Ab2)
   SubgraphSolverParameters parameters;
   SubgraphSolver solver(Ab1_, Ab2_, parameters);
-  VectorValues optimized = solver.optimize();
+  VectorValuesOrdered optimized = solver.optimize();
   DOUBLES_EQUAL(0.0, error(Ab, optimized), 1e-5);
 }
 
@@ -88,24 +88,24 @@ TEST( SubgraphSolver, constructor2 )
 TEST( SubgraphSolver, constructor3 )
 {
   // Build a planar graph
-  GaussianFactorGraph Ab;
-  VectorValues xtrue;
+  GaussianFactorGraphOrdered Ab;
+  VectorValuesOrdered xtrue;
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
   // Get the spanning tree and corresponding ordering
-  GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+  GaussianFactorGraphOrdered Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
   boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
 
   // The caller solves |A1*x-b1|^2 == |R1*x-c1|^2 via QR factorization, where R1 is square UT
-  GaussianBayesNet::shared_ptr Rc1 = //
-      EliminationTree<GaussianFactor>::Create(Ab1_)->eliminate(&EliminateQR);
+  GaussianBayesNetOrdered::shared_ptr Rc1 = //
+      EliminationTreeOrdered<GaussianFactorOrdered>::Create(Ab1_)->eliminate(&EliminateQROrdered);
 
   // The third constructor allows the caller to pass an already solved preconditioner Rc1_
   // as a Bayes net, in addition to the "loop closing constraints" Ab2, as before
   SubgraphSolverParameters parameters;
   SubgraphSolver solver(Rc1, Ab2_, parameters);
-  VectorValues optimized = solver.optimize();
+  VectorValuesOrdered optimized = solver.optimize();
   DOUBLES_EQUAL(0.0, error(Ab, optimized), 1e-5);
 }
 

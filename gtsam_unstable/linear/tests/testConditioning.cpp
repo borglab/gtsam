@@ -65,10 +65,10 @@ TEST( testConditioning, directed_elimination_singlefrontal ) {
   Index root_key = 0, removed_key = 1, remaining_parent = 2;
   Matrix R11 = Matrix_(1,1, 1.0), R22 = Matrix_(1,1, 3.0), S = Matrix_(1,1,-2.0), T = Matrix_(1,1,-3.0);
   Vector d0 = d.segment(0,1), d1 = d.segment(1,1), sigmas = Vector_(1, 1.0);
-  GaussianConditional::shared_ptr initConditional(new
-      GaussianConditional(root_key, d0, R11, removed_key, S, remaining_parent, T, sigmas));
+  GaussianConditionalOrdered::shared_ptr initConditional(new
+      GaussianConditionalOrdered(root_key, d0, R11, removed_key, S, remaining_parent, T, sigmas));
 
-  VectorValues solution;
+  VectorValuesOrdered solution;
   solution.insert(0, x.segment(0,1));
   solution.insert(1, x.segment(1,1));
   solution.insert(2, x.segment(2,1));
@@ -76,22 +76,22 @@ TEST( testConditioning, directed_elimination_singlefrontal ) {
   std::set<Index> saved_indices;
   saved_indices += root_key, remaining_parent;
 
-  GaussianConditional::shared_ptr actSummarized = conditionDensity(initConditional, saved_indices, solution);
-  GaussianConditional::shared_ptr expSummarized(new
-      GaussianConditional(root_key, d0 - S*x(1), R11, remaining_parent, T, sigmas));
+  GaussianConditionalOrdered::shared_ptr actSummarized = conditionDensity(initConditional, saved_indices, solution);
+  GaussianConditionalOrdered::shared_ptr expSummarized(new
+      GaussianConditionalOrdered(root_key, d0 - S*x(1), R11, remaining_parent, T, sigmas));
 
   CHECK(actSummarized);
   EXPECT(assert_equal(*expSummarized, *actSummarized, tol));
 
   // Simple test of base case: if target index isn't present, return clone
-  GaussianConditional::shared_ptr actSummarizedSimple = conditionDensity(expSummarized, saved_indices, solution);
+  GaussianConditionalOrdered::shared_ptr actSummarizedSimple = conditionDensity(expSummarized, saved_indices, solution);
   CHECK(actSummarizedSimple);
   EXPECT(assert_equal(*expSummarized, *actSummarizedSimple, tol));
 
   // case where frontal variable is to be eliminated - return null
-  GaussianConditional::shared_ptr removeFrontalInit(new
-        GaussianConditional(removed_key, d1, R22, remaining_parent, T, sigmas));
-  GaussianConditional::shared_ptr actRemoveFrontal = conditionDensity(removeFrontalInit, saved_indices, solution);
+  GaussianConditionalOrdered::shared_ptr removeFrontalInit(new
+        GaussianConditionalOrdered(removed_key, d1, R22, remaining_parent, T, sigmas));
+  GaussianConditionalOrdered::shared_ptr actRemoveFrontal = conditionDensity(removeFrontalInit, saved_indices, solution);
   EXPECT(!actRemoveFrontal);
 }
 
@@ -108,9 +108,9 @@ TEST( testConditioning, directed_elimination_multifrontal ) {
   terms += make_pair(root_key, Matrix(R11.col(0)));
   terms += make_pair(removed_key, Matrix(R11.col(1)));
   terms += make_pair(remaining_parent, S);
-  GaussianConditional::shared_ptr initConditional(new GaussianConditional(terms, 2, d1, sigmas2));
+  GaussianConditionalOrdered::shared_ptr initConditional(new GaussianConditionalOrdered(terms, 2, d1, sigmas2));
 
-  VectorValues solution;
+  VectorValuesOrdered solution;
   solution.insert(0, x.segment(0,1));
   solution.insert(1, x.segment(1,1));
   solution.insert(2, x.segment(2,1));
@@ -118,9 +118,9 @@ TEST( testConditioning, directed_elimination_multifrontal ) {
   std::set<Index> saved_indices;
   saved_indices += root_key, remaining_parent;
 
-  GaussianConditional::shared_ptr actSummarized = conditionDensity(initConditional, saved_indices, solution);
-  GaussianConditional::shared_ptr expSummarized(new
-      GaussianConditional(root_key, d.segment(0,1) - Sprime*x(1), R11prime, remaining_parent, R.block(0,2,1,1), sigmas1));
+  GaussianConditionalOrdered::shared_ptr actSummarized = conditionDensity(initConditional, saved_indices, solution);
+  GaussianConditionalOrdered::shared_ptr expSummarized(new
+      GaussianConditionalOrdered(root_key, d.segment(0,1) - Sprime*x(1), R11prime, remaining_parent, R.block(0,2,1,1), sigmas1));
 
   CHECK(actSummarized);
   EXPECT(assert_equal(*expSummarized, *actSummarized, tol));
@@ -140,14 +140,14 @@ TEST( testConditioning, directed_elimination_multifrontal_multidim ) {
       0.0, 0.0,  0.0, 0.0,  0.0, 4.0,  0.0, 8.0,  0.0, 6.0,  0.6);
 
   vector<size_t> init_dims; init_dims += 2, 2, 2, 2, 2, 1;
-  GaussianConditional::rsd_type init_matrices(Rinit, init_dims.begin(), init_dims.end());
+  GaussianConditionalOrdered::rsd_type init_matrices(Rinit, init_dims.begin(), init_dims.end());
   Vector sigmas = ones(6);
   vector<size_t> init_keys; init_keys += 0, 1, 2, 3, 4;
-  GaussianConditional::shared_ptr initConditional(new
-      GaussianConditional(init_keys.begin(), init_keys.end(), 3, init_matrices, sigmas));
+  GaussianConditionalOrdered::shared_ptr initConditional(new
+      GaussianConditionalOrdered(init_keys.begin(), init_keys.end(), 3, init_matrices, sigmas));
 
   // Construct a solution vector
-  VectorValues solution;
+  VectorValuesOrdered solution;
   solution.insert(0, zero(2));
   solution.insert(1, zero(2));
   solution.insert(2, zero(2));
@@ -159,7 +159,7 @@ TEST( testConditioning, directed_elimination_multifrontal_multidim ) {
   std::set<Index> saved_indices;
   saved_indices += 0, 2, 4;
 
-  GaussianConditional::shared_ptr actSummarized = conditionDensity(initConditional, saved_indices, solution);
+  GaussianConditionalOrdered::shared_ptr actSummarized = conditionDensity(initConditional, saved_indices, solution);
   CHECK(actSummarized);
 
   Matrix Rexp = Matrix_(4, 7,
@@ -173,10 +173,10 @@ TEST( testConditioning, directed_elimination_multifrontal_multidim ) {
   Rexp.block(2, 6, 2, 1) -= Rinit.block(4, 6, 2, 2) * solution.at(3);
 
   vector<size_t> exp_dims; exp_dims += 2, 2, 2, 1;
-  GaussianConditional::rsd_type exp_matrices(Rexp, exp_dims.begin(), exp_dims.end());
+  GaussianConditionalOrdered::rsd_type exp_matrices(Rexp, exp_dims.begin(), exp_dims.end());
   Vector exp_sigmas = ones(4);
   vector<size_t> exp_keys; exp_keys += 0, 2, 4;
-  GaussianConditional expSummarized(exp_keys.begin(), exp_keys.end(), 2, exp_matrices, exp_sigmas);
+  GaussianConditionalOrdered expSummarized(exp_keys.begin(), exp_keys.end(), 2, exp_matrices, exp_sigmas);
 
   EXPECT(assert_equal(expSummarized, *actSummarized, tol));
 }
@@ -205,13 +205,13 @@ TEST( testConditioning, directed_elimination_multifrontal_multidim2 ) {
   Rinit.rightCols(1) = dinit;
   Vector sigmas = ones(10);
 
-  GaussianConditional::rsd_type init_matrices(Rinit, init_dims.begin(), init_dims.end());
+  GaussianConditionalOrdered::rsd_type init_matrices(Rinit, init_dims.begin(), init_dims.end());
   vector<size_t> init_keys; init_keys += 3, 4, 5, 6;
-  GaussianConditional::shared_ptr initConditional(new
-      GaussianConditional(init_keys.begin(), init_keys.end(), 4, init_matrices, sigmas));
+  GaussianConditionalOrdered::shared_ptr initConditional(new
+      GaussianConditionalOrdered(init_keys.begin(), init_keys.end(), 4, init_matrices, sigmas));
 
   // Calculate a solution
-  VectorValues solution;
+  VectorValuesOrdered solution;
   solution.insert(0, zero(3));
   solution.insert(1, zero(3));
   solution.insert(2, zero(3));
@@ -226,7 +226,7 @@ TEST( testConditioning, directed_elimination_multifrontal_multidim2 ) {
   std::set<Index> saved_indices;
   saved_indices += 5, 6;
 
-  GaussianConditional::shared_ptr actSummarized = conditionDensity(initConditional, saved_indices, solution);
+  GaussianConditionalOrdered::shared_ptr actSummarized = conditionDensity(initConditional, saved_indices, solution);
   CHECK(actSummarized);
 
   // Create expected value on [5], [6]
@@ -238,9 +238,9 @@ TEST( testConditioning, directed_elimination_multifrontal_multidim2 ) {
   Vector expsigmas = ones(4);
 
   vector<size_t> exp_dims; exp_dims += 2, 2, 1;
-  GaussianConditional::rsd_type exp_matrices(Rexp, exp_dims.begin(), exp_dims.end());
+  GaussianConditionalOrdered::rsd_type exp_matrices(Rexp, exp_dims.begin(), exp_dims.end());
   vector<size_t> exp_keys; exp_keys += 5, 6;
-  GaussianConditional expConditional(exp_keys.begin(), exp_keys.end(), 2, exp_matrices, expsigmas);
+  GaussianConditionalOrdered expConditional(exp_keys.begin(), exp_keys.end(), 2, exp_matrices, expsigmas);
 
   EXPECT(assert_equal(expConditional, *actSummarized, tol));
 }

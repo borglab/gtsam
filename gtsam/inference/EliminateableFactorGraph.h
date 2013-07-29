@@ -22,8 +22,8 @@
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
 
-#include <gtsam/inference/OrderingUnordered.h>
-#include <gtsam/inference/VariableIndexUnordered.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/VariableIndex.h>
 
 namespace gtsam {
 
@@ -43,7 +43,7 @@ namespace gtsam {
     // typedef MyJunctionTree JunctionTreeType;       ///< Type of Junction tree (e.g. GaussianJunctionTree)
     // static pair<shared_ptr<ConditionalType>, shared_ptr<FactorType>
     //   DefaultEliminate(
-    //   const MyFactorGraph& factors, const OrderingUnordered& keys); ///< The default dense elimination function
+    //   const MyFactorGraph& factors, const Ordering& keys); ///< The default dense elimination function
   };
 
 
@@ -85,13 +85,13 @@ namespace gtsam {
     typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<_FactorType> > EliminationResult;
 
     /// The function type that does a single dense elimination step on a subgraph.
-    typedef boost::function<EliminationResult(const FactorGraphType&, const OrderingUnordered&)> Eliminate;
+    typedef boost::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;
 
     /// Typedef for an optional ordering as an argument to elimination functions
-    typedef boost::optional<const OrderingUnordered&> OptionalOrdering;
+    typedef boost::optional<const Ordering&> OptionalOrdering;
 
     /// Typedef for an optional variable index as an argument to elimination functions
-    typedef boost::optional<const VariableIndexUnordered&> OptionalVariableIndex;
+    typedef boost::optional<const VariableIndex&> OptionalVariableIndex;
 
     /** Do sequential elimination of all variables to produce a Bayes net.  If an ordering is not
      *  provided, the ordering provided by COLAMD will be used.
@@ -149,7 +149,7 @@ namespace gtsam {
      *  B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialSequential(
-      const OrderingUnordered& ordering,
+      const Ordering& ordering,
       const Eliminate& function = EliminationTraits::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
@@ -169,7 +169,7 @@ namespace gtsam {
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialMultifrontal(
-      const OrderingUnordered& ordering,
+      const Ordering& ordering,
       const Eliminate& function = EliminationTraits::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
     
@@ -195,7 +195,7 @@ namespace gtsam {
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     boost::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
-      boost::variant<const OrderingUnordered&, const std::vector<Key>&> variables,
+      boost::variant<const Ordering&, const std::vector<Key>&> variables,
       OptionalOrdering marginalizedVariableOrdering = boost::none,
       const Eliminate& function = EliminationTraits::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;

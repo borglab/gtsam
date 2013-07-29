@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/discrete/Assignment.h>
-#include <gtsam/inference/IndexFactor.h>
+#include <gtsam/inference/IndexFactorOrdered.h>
 
 namespace gtsam {
 
@@ -30,7 +30,7 @@ namespace gtsam {
    * Base class for discrete probabilistic factors
    * The most general one is the derived DecisionTreeFactor
    */
-  class GTSAM_EXPORT DiscreteFactor: public IndexFactor {
+  class GTSAM_EXPORT DiscreteFactor: public IndexFactorOrdered {
 
   public:
 
@@ -47,23 +47,23 @@ namespace gtsam {
 
     /// Construct n-way factor
     DiscreteFactor(const std::vector<Index>& js) :
-        IndexFactor(js) {
+        IndexFactorOrdered(js) {
     }
 
     /// Construct unary factor
     DiscreteFactor(Index j) :
-        IndexFactor(j) {
+        IndexFactorOrdered(j) {
     }
 
     /// Construct binary factor
     DiscreteFactor(Index j1, Index j2) :
-        IndexFactor(j1, j2) {
+        IndexFactorOrdered(j1, j2) {
     }
 
     /// construct from container
     template<class KeyIterator>
     DiscreteFactor(KeyIterator beginKey, KeyIterator endKey) :
-        IndexFactor(beginKey, endKey) {
+        IndexFactorOrdered(beginKey, endKey) {
     }
 
   public:
@@ -85,7 +85,7 @@ namespace gtsam {
     virtual void print(const std::string& s = "DiscreteFactor\n",
         const IndexFormatter& formatter
         =DefaultIndexFormatter) const {
-      IndexFactor::print(s,formatter);
+      IndexFactorOrdered::print(s,formatter);
     }
 
     /// @}
@@ -105,14 +105,14 @@ namespace gtsam {
      * to already be inverted.
      */
     virtual void permuteWithInverse(const Permutation& inversePermutation){
-      IndexFactor::permuteWithInverse(inversePermutation);
+      IndexFactorOrdered::permuteWithInverse(inversePermutation);
     }
 
     /**
      * Apply a reduction, which is a remapping of variable indices.
      */
     virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
-      IndexFactor::reduceWithInverse(inverseReduction);
+      IndexFactorOrdered::reduceWithInverse(inverseReduction);
     }
 
     /// @}

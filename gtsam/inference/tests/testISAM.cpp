@@ -21,15 +21,15 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/IndexConditional.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/ISAM.h>
+#include <gtsam/inference/BayesNetOrdered.h>
+#include <gtsam/inference/IndexConditionalOrdered.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
+#include <gtsam/inference/ISAMOrdered.h>
 
 using namespace std;
 using namespace gtsam;
 
-typedef ISAM<IndexConditional> SymbolicISAM;
+typedef ISAMOrdered<IndexConditionalOrdered> SymbolicISAM;
 
 /* ************************************************************************* */
 // Some numbers that should be consistent among all smoother tests

@@ -36,7 +36,7 @@ using namespace gtsam;
 // x1 -> x2
 //    -> x3 -> x4
 //    -> x5
-TEST ( Ordering, predecessorMap2Keys ) {
+TEST ( OrderingOrdered, predecessorMap2Keys ) {
   PredecessorMap<Key> p_map;
   p_map.insert(1,1);
   p_map.insert(2,1);

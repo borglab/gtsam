@@ -22,41 +22,41 @@ namespace gtsam {
 
 /* ************************************************************************* */
 GaussianSequentialSolver::GaussianSequentialSolver(
-    const FactorGraph<GaussianFactor>& factorGraph, bool useQR) :
+    const FactorGraphOrdered<GaussianFactorOrdered>& factorGraph, bool useQR) :
     Base(factorGraph), useQR_(useQR) {
 }
 
 /* ************************************************************************* */
 GaussianSequentialSolver::GaussianSequentialSolver(
-    const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-    const VariableIndex::shared_ptr& variableIndex, bool useQR) :
+    const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph,
+    const VariableIndexOrdered::shared_ptr& variableIndex, bool useQR) :
     Base(factorGraph, variableIndex), useQR_(useQR) {
 }
 
 /* ************************************************************************* */
 GaussianSequentialSolver::shared_ptr GaussianSequentialSolver::Create(
-    const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-    const VariableIndex::shared_ptr& variableIndex, bool useQR) {
+    const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph,
+    const VariableIndexOrdered::shared_ptr& variableIndex, bool useQR) {
   return shared_ptr(
       new GaussianSequentialSolver(factorGraph, variableIndex, useQR));
 }
 
 /* ************************************************************************* */
 void GaussianSequentialSolver::replaceFactors(
-    const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) {
+    const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph) {
   Base::replaceFactors(factorGraph);
 }
 
 /* ************************************************************************* */
-GaussianBayesNet::shared_ptr GaussianSequentialSolver::eliminate() const {
+GaussianBayesNetOrdered::shared_ptr GaussianSequentialSolver::eliminate() const {
   if (useQR_)
-    return Base::eliminate(&EliminateQR);
+    return Base::eliminate(&EliminateQROrdered);
   else
-    return Base::eliminate(&EliminatePreferCholesky);
+    return Base::eliminate(&EliminatePreferCholeskyOrdered);
 }
 
 /* ************************************************************************* */
-VectorValues::shared_ptr GaussianSequentialSolver::optimize() const {
+VectorValuesOrdered::shared_ptr GaussianSequentialSolver::optimize() const {
 
   static const bool debug = false;
 
@@ -65,18 +65,18 @@ VectorValues::shared_ptr GaussianSequentialSolver::optimize() const {
 
   gttic(eliminate);
   // Eliminate using the elimination tree
-  GaussianBayesNet::shared_ptr bayesNet(this->eliminate());
+  GaussianBayesNetOrdered::shared_ptr bayesNet(this->eliminate());
   gttoc(eliminate);
 
   if(debug) bayesNet->print("GaussianSequentialSolver, Bayes net ");
 
   // Allocate the solution vector if it is not already allocated
-//  VectorValues::shared_ptr solution = allocateVectorValues(*bayesNet);
+//  VectorValuesOrdered::shared_ptr solution = allocateVectorValues(*bayesNet);
 
   gttic(optimize);
   // Back-substitute
-  VectorValues::shared_ptr solution(
-      new VectorValues(gtsam::optimize(*bayesNet)));
+  VectorValuesOrdered::shared_ptr solution(
+      new VectorValuesOrdered(gtsam::optimize(*bayesNet)));
   gttoc(optimize);
 
   if(debug) solution->print("GaussianSequentialSolver, solution ");
@@ -85,36 +85,36 @@ VectorValues::shared_ptr GaussianSequentialSolver::optimize() const {
 }
 
 /* ************************************************************************* */
-GaussianFactor::shared_ptr GaussianSequentialSolver::marginalFactor(Index j) const {
+GaussianFactorOrdered::shared_ptr GaussianSequentialSolver::marginalFactor(Index j) const {
   if (useQR_)
-    return Base::marginalFactor(j,&EliminateQR);
+    return Base::marginalFactor(j,&EliminateQROrdered);
   else
-    return Base::marginalFactor(j,&EliminatePreferCholesky);
+    return Base::marginalFactor(j,&EliminatePreferCholeskyOrdered);
 }
 
 /* ************************************************************************* */
 Matrix GaussianSequentialSolver::marginalCovariance(Index j) const {
-  FactorGraph<GaussianFactor> fg;
-  GaussianConditional::shared_ptr conditional;
+  FactorGraphOrdered<GaussianFactorOrdered> fg;
+  GaussianConditionalOrdered::shared_ptr conditional;
   if (useQR_) {
-    fg.push_back(Base::marginalFactor(j, &EliminateQR));
-    conditional = EliminateQR(fg, 1).first;
+    fg.push_back(Base::marginalFactor(j, &EliminateQROrdered));
+    conditional = EliminateQROrdered(fg, 1).first;
   } else {
-    fg.push_back(Base::marginalFactor(j, &EliminatePreferCholesky));
-    conditional = EliminatePreferCholesky(fg, 1).first;
+    fg.push_back(Base::marginalFactor(j, &EliminatePreferCholeskyOrdered));
+    conditional = EliminatePreferCholeskyOrdered(fg, 1).first;
   }
   return conditional->information().inverse();
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph::shared_ptr 
+GaussianFactorGraphOrdered::shared_ptr 
 GaussianSequentialSolver::jointFactorGraph(const std::vector<Index>& js) const {
   if (useQR_)
-    return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(
-        *Base::jointFactorGraph(js, &EliminateQR)));
+    return GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered(
+        *Base::jointFactorGraph(js, &EliminateQROrdered)));
   else
-    return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(
-        *Base::jointFactorGraph(js, &EliminatePreferCholesky)));
+    return GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered(
+        *Base::jointFactorGraph(js, &EliminatePreferCholeskyOrdered)));
 }
 
 } /// namespace gtsam

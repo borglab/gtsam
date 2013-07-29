@@ -18,8 +18,8 @@
 #include <boost/assign/std/vector.hpp>
 
 #include <gtsam/base/Testable.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/Permutation.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
+#include <gtsam/inference/PermutationOrdered.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -28,10 +28,10 @@ using namespace boost::assign;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(VectorValues, insert) {
+TEST(VectorValuesOrdered, insert) {
 
   // insert, with out-of-order indices
-  VectorValues actual;
+  VectorValuesOrdered actual;
   actual.insert(0, Vector_(1, 1.0));
   actual.insert(1, Vector_(2, 2.0, 3.0));
   actual.insert(5, Vector_(2, 6.0, 7.0));
@@ -66,13 +66,13 @@ TEST(VectorValues, insert) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, dimsConstructor) {
+TEST(VectorValuesOrdered, dimsConstructor) {
   vector<size_t> dims;
   dims.push_back(1);
   dims.push_back(2);
   dims.push_back(2);
 
-  VectorValues actual(dims);
+  VectorValuesOrdered actual(dims);
   actual[0] = Vector_(1, 1.0);
   actual[1] = Vector_(2, 2.0, 3.0);
   actual[2] = Vector_(2, 4.0, 5.0);
@@ -91,16 +91,16 @@ TEST(VectorValues, dimsConstructor) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, copyConstructor) {
+TEST(VectorValuesOrdered, copyConstructor) {
 
   // insert, with out-of-order indices
-  VectorValues original;
+  VectorValuesOrdered original;
   original.insert(0, Vector_(1, 1.0));
   original.insert(1, Vector_(2, 2.0, 3.0));
   original.insert(5, Vector_(2, 6.0, 7.0));
   original.insert(2, Vector_(2, 4.0, 5.0));
 
-  VectorValues actual(original);
+  VectorValuesOrdered actual(original);
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
@@ -130,13 +130,13 @@ TEST(VectorValues, copyConstructor) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, assignment) {
+TEST(VectorValuesOrdered, assignment) {
 
-  VectorValues actual;
+  VectorValuesOrdered actual;
 
   {
     // insert, with out-of-order indices
-    VectorValues original;
+    VectorValuesOrdered original;
     original.insert(0, Vector_(1, 1.0));
     original.insert(1, Vector_(2, 2.0, 3.0));
     original.insert(5, Vector_(2, 6.0, 7.0));
@@ -172,15 +172,15 @@ TEST(VectorValues, assignment) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, SameStructure) {
+TEST(VectorValuesOrdered, SameStructure) {
   // insert, with out-of-order indices
-  VectorValues original;
+  VectorValuesOrdered original;
   original.insert(0, Vector_(1, 1.0));
   original.insert(1, Vector_(2, 2.0, 3.0));
   original.insert(5, Vector_(2, 6.0, 7.0));
   original.insert(2, Vector_(2, 4.0, 5.0));
 
-  VectorValues actual(VectorValues::SameStructure(original));
+  VectorValuesOrdered actual(VectorValuesOrdered::SameStructure(original));
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
@@ -203,15 +203,15 @@ TEST(VectorValues, SameStructure) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, Zero_fromModel) {
+TEST(VectorValuesOrdered, Zero_fromModel) {
   // insert, with out-of-order indices
-  VectorValues original;
+  VectorValuesOrdered original;
   original.insert(0, Vector_(1, 1.0));
   original.insert(1, Vector_(2, 2.0, 3.0));
   original.insert(5, Vector_(2, 6.0, 7.0));
   original.insert(2, Vector_(2, 4.0, 5.0));
 
-  VectorValues actual(VectorValues::Zero(original));
+  VectorValuesOrdered actual(VectorValuesOrdered::Zero(original));
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
@@ -240,13 +240,13 @@ TEST(VectorValues, Zero_fromModel) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, Zero_fromDims) {
+TEST(VectorValuesOrdered, Zero_fromDims) {
   vector<size_t> dims;
   dims.push_back(1);
   dims.push_back(2);
   dims.push_back(2);
 
-  VectorValues actual(VectorValues::Zero(dims));
+  VectorValuesOrdered actual(VectorValuesOrdered::Zero(dims));
 
   // Check dimensions
   LONGS_EQUAL(3, actual.size());
@@ -261,8 +261,8 @@ TEST(VectorValues, Zero_fromDims) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, Zero_fromUniform) {
-  VectorValues actual(VectorValues::Zero(3, 2));
+TEST(VectorValuesOrdered, Zero_fromUniform) {
+  VectorValuesOrdered actual(VectorValuesOrdered::Zero(3, 2));
 
   // Check dimensions
   LONGS_EQUAL(3, actual.size());
@@ -277,15 +277,15 @@ TEST(VectorValues, Zero_fromUniform) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, resizeLike) {
+TEST(VectorValuesOrdered, resizeLike) {
   // insert, with out-of-order indices
-  VectorValues original;
+  VectorValuesOrdered original;
   original.insert(0, Vector_(1, 1.0));
   original.insert(1, Vector_(2, 2.0, 3.0));
   original.insert(5, Vector_(2, 6.0, 7.0));
   original.insert(2, Vector_(2, 4.0, 5.0));
 
-  VectorValues actual(10, 3);
+  VectorValuesOrdered actual(10, 3);
   actual.resizeLike(original);
 
   // Check dimensions
@@ -309,8 +309,8 @@ TEST(VectorValues, resizeLike) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, resize_fromUniform) {
-  VectorValues actual(4, 10);
+TEST(VectorValuesOrdered, resize_fromUniform) {
+  VectorValuesOrdered actual(4, 10);
   actual.resize(3, 2);
 
   actual[0] = Vector_(2, 1.0, 2.0);
@@ -331,13 +331,13 @@ TEST(VectorValues, resize_fromUniform) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, resize_fromDims) {
+TEST(VectorValuesOrdered, resize_fromDims) {
   vector<size_t> dims;
   dims.push_back(1);
   dims.push_back(2);
   dims.push_back(2);
 
-  VectorValues actual(4, 10);
+  VectorValuesOrdered actual(4, 10);
   actual.resize(dims);
   actual[0] = Vector_(1, 1.0);
   actual[1] = Vector_(2, 2.0, 3.0);
@@ -357,9 +357,9 @@ TEST(VectorValues, resize_fromDims) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, append) {
+TEST(VectorValuesOrdered, append) {
   // insert
-  VectorValues actual;
+  VectorValuesOrdered actual;
   actual.insert(0, Vector_(1, 1.0));
   actual.insert(1, Vector_(2, 2.0, 3.0));
   actual.insert(2, Vector_(2, 4.0, 5.0));
@@ -396,30 +396,30 @@ TEST(VectorValues, append) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, hasSameStructure) {
-  VectorValues v1(2, 3);
-  VectorValues v2(3, 2);
-  VectorValues v3(4, 2);
-  VectorValues v4(4, 2);
+TEST(VectorValuesOrdered, hasSameStructure) {
+  VectorValuesOrdered v1(2, 3);
+  VectorValuesOrdered v2(3, 2);
+  VectorValuesOrdered v3(4, 2);
+  VectorValuesOrdered v4(4, 2);
 
   EXPECT(!v1.hasSameStructure(v2));
   EXPECT(!v2.hasSameStructure(v3));
   EXPECT(v3.hasSameStructure(v4));
-  EXPECT(VectorValues().hasSameStructure(VectorValues()));
-  EXPECT(!v1.hasSameStructure(VectorValues()));
+  EXPECT(VectorValuesOrdered().hasSameStructure(VectorValuesOrdered()));
+  EXPECT(!v1.hasSameStructure(VectorValuesOrdered()));
 }
 
 
 /* ************************************************************************* */
-TEST(VectorValues, permute) {
+TEST(VectorValuesOrdered, permute) {
 
-  VectorValues original;
+  VectorValuesOrdered original;
   original.insert(0, Vector_(1, 1.0));
   original.insert(1, Vector_(2, 2.0, 3.0));
   original.insert(2, Vector_(2, 4.0, 5.0));
   original.insert(3, Vector_(2, 6.0, 7.0));
 
-  VectorValues expected;
+  VectorValuesOrdered expected;
   expected.insert(0, Vector_(2, 4.0, 5.0)); // from 2
   expected.insert(1, Vector_(1, 1.0)); // from 0
   expected.insert(2, Vector_(2, 6.0, 7.0)); // from 3
@@ -431,15 +431,15 @@ TEST(VectorValues, permute) {
   permutation[2] = 3;
   permutation[3] = 1;
 
-  VectorValues actual = original;
+  VectorValuesOrdered actual = original;
   actual.permuteInPlace(permutation);
 
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, subvector) {
-  VectorValues init;
+TEST(VectorValuesOrdered, subvector) {
+  VectorValuesOrdered init;
   init.insert(0, Vector_(1, 1.0));
   init.insert(1, Vector_(2, 2.0, 3.0));
   init.insert(2, Vector_(2, 4.0, 5.0));

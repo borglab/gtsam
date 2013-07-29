@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
 #include <gtsam/linear/ConjugateGradientSolver.h>
 
 namespace gtsam {
@@ -129,17 +129,17 @@ namespace gtsam {
   /**
    * Method of steepest gradients, Gaussian Factor Graph version
    */
-  GTSAM_EXPORT VectorValues steepestDescent(
-      const GaussianFactorGraph& fg,
-      const VectorValues& x,
+  GTSAM_EXPORT VectorValuesOrdered steepestDescent(
+      const GaussianFactorGraphOrdered& fg,
+      const VectorValuesOrdered& x,
       const ConjugateGradientParameters & parameters);
 
   /**
    * Method of conjugate gradients (CG), Gaussian Factor Graph version
    */
-  GTSAM_EXPORT VectorValues conjugateGradientDescent(
-      const GaussianFactorGraph& fg,
-      const VectorValues& x,
+  GTSAM_EXPORT VectorValuesOrdered conjugateGradientDescent(
+      const GaussianFactorGraphOrdered& fg,
+      const VectorValuesOrdered& x,
       const ConjugateGradientParameters & parameters);
 
 

@@ -17,9 +17,9 @@
 
 #include <gtsam/nonlinear/NonlinearISAM.h>
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/ISAM-inl.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/inference/ISAMOrdered-inl.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 
 #include <boost/foreach.hpp>
 
@@ -58,7 +58,7 @@ void NonlinearISAM::update(const NonlinearFactorGraph& newFactors,
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, initialValues)
       ordering_.insert(key_value.key, ordering_.size());
 
-    boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors = newFactors.linearize(linPoint_, ordering_);
+    boost::shared_ptr<GaussianFactorGraphOrdered> linearizedNewFactors = newFactors.linearize(linPoint_, ordering_);
 
     // Update ISAM
     isam_.update(*linearizedNewFactors);
@@ -82,7 +82,7 @@ void NonlinearISAM::reorder_relinearize() {
 
     // Create a linear factor graph at the new linearization point
     // TODO: decouple relinearization and reordering to avoid
-    boost::shared_ptr<GaussianFactorGraph> gfg = factors_.linearize(newLinPoint, ordering_);
+    boost::shared_ptr<GaussianFactorGraphOrdered> gfg = factors_.linearize(newLinPoint, ordering_);
 
     // Just recreate the whole BayesTree
     isam_.update(*gfg);

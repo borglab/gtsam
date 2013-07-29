@@ -28,10 +28,10 @@ void GaussNewtonOptimizer::iterate() {
   const NonlinearOptimizerState& current = state_;
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_.linearize(current.values, *params_.ordering);
+  GaussianFactorGraphOrdered::shared_ptr linear = graph_.linearize(current.values, *params_.ordering);
 
   // Solve Factor Graph
-  const VectorValues delta = solveGaussianFactorGraph(*linear, params_);
+  const VectorValuesOrdered delta = solveGaussianFactorGraph(*linear, params_);
 
   // Maybe show output
   if(params_.verbosity >= NonlinearOptimizerParams::DELTA) delta.print("delta");

@@ -28,7 +28,7 @@ namespace gtsam {
 Errors::Errors(){}
 
 /* ************************************************************************* */
-Errors::Errors(const VectorValues &V) {
+Errors::Errors(const VectorValuesOrdered &V) {
   this->resize(V.size()) ;
   int i = 0 ;
   BOOST_FOREACH( Vector &e, *this) {

@@ -12,8 +12,8 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 
 namespace gtsam {
 
@@ -38,7 +38,7 @@ typedef enum {
  * @param mode controls what elimination technique and requirements to use
  * @return a pair of the remaining graph and the ordering used for linearization
  */
-std::pair<GaussianFactorGraph,Ordering> GTSAM_EXPORT
+std::pair<GaussianFactorGraphOrdered,OrderingOrdered> GTSAM_EXPORT
 summarize(const NonlinearFactorGraph& graph, const Values& values,
     const KeySet& saved_keys, SummarizationMode mode = PARTIAL_QR);
 

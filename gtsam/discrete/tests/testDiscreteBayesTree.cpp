@@ -17,7 +17,7 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/BayesTreeOrdered.h>
 
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
@@ -32,13 +32,13 @@ static bool debug = false;
 /**
  * Custom clique class to debug shortcuts
  */
-class Clique: public BayesTreeCliqueBase<Clique, DiscreteConditional> {
+class Clique: public BayesTreeCliqueBaseOrdered<Clique, DiscreteConditional> {
 
 protected:
 
 public:
 
-  typedef BayesTreeCliqueBase<Clique, DiscreteConditional> Base;
+  typedef BayesTreeCliqueBaseOrdered<Clique, DiscreteConditional> Base;
   typedef boost::shared_ptr<Clique> shared_ptr;
 
   // Constructors
@@ -56,7 +56,7 @@ public:
   /// print index signature only
   void printSignature(const std::string& s = "Clique: ",
       const IndexFormatter& indexFormatter = DefaultIndexFormatter) const {
-    ((IndexConditional::shared_ptr) conditional_)->print(s, indexFormatter);
+    ((IndexConditionalOrdered::shared_ptr) conditional_)->print(s, indexFormatter);
   }
 
   /// evaluate value of sub-tree
@@ -70,7 +70,7 @@ public:
 
 };
 
-typedef BayesTree<DiscreteConditional, Clique> DiscreteBayesTree;
+typedef BayesTreeOrdered<DiscreteConditional, Clique> DiscreteBayesTree;
 
 /* ************************************************************************* */
 double evaluate(const DiscreteBayesTree& tree,

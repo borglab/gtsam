@@ -6,10 +6,10 @@
  */
 
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
-#include <gtsam/inference/EliminationTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/inference/EliminationTreeOrdered.h>
+#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
 #include <gtsam/linear/SubgraphSolver.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
 #include <boost/shared_ptr.hpp>
 #include <stdexcept>
 
@@ -53,14 +53,14 @@ void SuccessiveLinearizationParams::print(const std::string& str) const {
   std::cout.flush();
 }
 
-VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) {
+VectorValuesOrdered solveGaussianFactorGraph(const GaussianFactorGraphOrdered &gfg, const SuccessiveLinearizationParams &params) {
   gttic(solveGaussianFactorGraph);
-  VectorValues delta;
+  VectorValuesOrdered delta;
   if (params.isMultifrontal()) {
-    delta = GaussianJunctionTree(gfg).optimize(params.getEliminationFunction());
+    delta = GaussianJunctionTreeOrdered(gfg).optimize(params.getEliminationFunction());
   } else if(params.isSequential()) {
-    const boost::shared_ptr<GaussianBayesNet> gbn =
-      EliminationTree<GaussianFactor>::Create(gfg)->eliminate(params.getEliminationFunction());
+    const boost::shared_ptr<GaussianBayesNetOrdered> gbn =
+      EliminationTreeOrdered<GaussianFactorOrdered>::Create(gfg)->eliminate(params.getEliminationFunction());
     delta = gtsam::optimize(*gbn);
   }
   else if ( params.isCG() ) {

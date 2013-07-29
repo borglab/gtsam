@@ -28,17 +28,17 @@
 #include <vector>
 
 namespace gtsam {
-  class VariableIndex;
+  class VariableIndexOrdered;
   class Permutation;
 }
 namespace gtsam {
-  template<class FACTOR> class EliminationTree;
+  template<class FACTOR> class EliminationTreeOrdered;
 }
 namespace gtsam {
-  template<class FACTOR> class FactorGraph;
+  template<class FACTOR> class FactorGraphOrdered;
 }
 namespace gtsam {
-  template<class CONDITIONAL> class BayesNet;
+  template<class CONDITIONAL> class BayesNetOrdered;
 }
 
 namespace gtsam {
@@ -62,13 +62,13 @@ namespace gtsam {
 
   protected:
 
-    typedef boost::shared_ptr<FactorGraph<FACTOR> > sharedFactorGraph;
+    typedef boost::shared_ptr<FactorGraphOrdered<FACTOR> > sharedFactorGraph;
     typedef typename FACTOR::ConditionalType Conditional;
     typedef typename boost::shared_ptr<Conditional> sharedConditional;
-    typedef typename boost::shared_ptr<BayesNet<Conditional> > sharedBayesNet;
+    typedef typename boost::shared_ptr<BayesNetOrdered<Conditional> > sharedBayesNet;
     typedef std::pair<boost::shared_ptr<Conditional>, boost::shared_ptr<FACTOR> > EliminationResult;
     typedef boost::function<
-        EliminationResult(const FactorGraph<FACTOR>&, size_t)> Eliminate;
+        EliminationResult(const FactorGraphOrdered<FACTOR>&, size_t)> Eliminate;
 
     /** Store the original factors for computing marginals
      * TODO Frank says: really? Marginals should be computed from result.
@@ -76,14 +76,14 @@ namespace gtsam {
     sharedFactorGraph factors_;
 
     /** Store column structure of the factor graph. Why? */
-    boost::shared_ptr<VariableIndex> structure_;
+    boost::shared_ptr<VariableIndexOrdered> structure_;
 
     /** Elimination tree that performs elimination */
-    boost::shared_ptr<EliminationTree<FACTOR> > eliminationTree_;
+    boost::shared_ptr<EliminationTreeOrdered<FACTOR> > eliminationTree_;
 
     /** concept checks */
     GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
-    // GTSAM_CONCEPT_TESTABLE_TYPE(EliminationTree)
+    // GTSAM_CONCEPT_TESTABLE_TYPE(EliminationTreeOrdered)
 
     /**
      * Eliminate in a different order, given a permutation
@@ -101,7 +101,7 @@ namespace gtsam {
      * Construct the solver for a factor graph.  This builds the elimination
      * tree, which already does some of the work of elimination.
      */
-    GenericSequentialSolver(const FactorGraph<FACTOR>& factorGraph);
+    GenericSequentialSolver(const FactorGraphOrdered<FACTOR>& factorGraph);
 
     /**
      * Construct the solver with a shared pointer to a factor graph and to a
@@ -109,7 +109,7 @@ namespace gtsam {
      * is the fastest.
      */
     GenericSequentialSolver(const sharedFactorGraph& factorGraph,
-        const boost::shared_ptr<VariableIndex>& variableIndex);
+        const boost::shared_ptr<VariableIndexOrdered>& variableIndex);
 
     /// @}
     /// @name Testable
@@ -158,7 +158,7 @@ namespace gtsam {
      * Compute the marginal joint over a set of variables, by integrating out
      * all of the other variables.  Returns the result as a factor graph.
      */
-    typename FactorGraph<FACTOR>::shared_ptr
+    typename FactorGraphOrdered<FACTOR>::shared_ptr
     jointFactorGraph(const std::vector<Index>& js, Eliminate function) const;
 
     /**

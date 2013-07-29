@@ -19,10 +19,10 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/linear/JacobianFactorUnordered.h>
-#include <gtsam/linear/GaussianFactorGraphUnordered.h>
-#include <gtsam/linear/GaussianConditionalUnordered.h>
-#include <gtsam/linear/VectorValuesUnordered.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/VectorValues.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/range/iterator_range.hpp>
@@ -47,16 +47,16 @@ namespace {
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactorUnordered, constructors_and_accessors)
+TEST(JacobianFactor, constructors_and_accessors)
 {
   using namespace simple;
 
   // Test for using different numbers of terms
   {
     // b vector only constructor
-    JacobianFactorUnordered expected(
+    JacobianFactor expected(
       boost::make_iterator_range(terms.begin(), terms.begin()), b);
-    JacobianFactorUnordered actual(b);
+    JacobianFactor actual(b);
     EXPECT(assert_equal(expected, actual));
     EXPECT(assert_equal(b, expected.getb()));
     EXPECT(assert_equal(b, actual.getb()));
@@ -65,9 +65,9 @@ TEST(JacobianFactorUnordered, constructors_and_accessors)
   }
   {
     // One term constructor
-    JacobianFactorUnordered expected(
+    JacobianFactor expected(
       boost::make_iterator_range(terms.begin(), terms.begin() + 1), b, noise);
-    JacobianFactorUnordered actual(terms[0].first, terms[0].second, b, noise);
+    JacobianFactor actual(terms[0].first, terms[0].second, b, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[0].first, (long)actual.keys().back());
     EXPECT(assert_equal(terms[0].second, actual.getA(actual.end() - 1)));
@@ -78,9 +78,9 @@ TEST(JacobianFactorUnordered, constructors_and_accessors)
   }
   {
     // Two term constructor
-    JacobianFactorUnordered expected(
+    JacobianFactor expected(
       boost::make_iterator_range(terms.begin(), terms.begin() + 2), b, noise);
-    JacobianFactorUnordered actual(terms[0].first, terms[0].second,
+    JacobianFactor actual(terms[0].first, terms[0].second,
       terms[1].first, terms[1].second, b, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[1].first, (long)actual.keys().back());
@@ -92,9 +92,9 @@ TEST(JacobianFactorUnordered, constructors_and_accessors)
   }
   {
     // Three term constructor
-    JacobianFactorUnordered expected(
+    JacobianFactor expected(
       boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, noise);
-    JacobianFactorUnordered actual(terms[0].first, terms[0].second,
+    JacobianFactor actual(terms[0].first, terms[0].second,
       terms[1].first, terms[1].second, terms[2].first, terms[2].second, b, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[2].first, (long)actual.keys().back());
@@ -106,14 +106,14 @@ TEST(JacobianFactorUnordered, constructors_and_accessors)
   }
   {
     // VerticalBlockMatrix constructor
-    JacobianFactorUnordered expected(
+    JacobianFactor expected(
       boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, noise);
     VerticalBlockMatrix blockMatrix(list_of(3)(3)(3)(1), 3);
     blockMatrix(0) = terms[0].second;
     blockMatrix(1) = terms[1].second;
     blockMatrix(2) = terms[2].second;
     blockMatrix(3) = b;
-    JacobianFactorUnordered actual(terms | boost::adaptors::map_keys, blockMatrix, noise);
+    JacobianFactor actual(terms | boost::adaptors::map_keys, blockMatrix, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[2].first, (long)actual.keys().back());
     EXPECT(assert_equal(terms[2].second, actual.getA(actual.end() - 1)));
@@ -146,46 +146,46 @@ TEST(JacobianFactorUnordered, constructors_and_accessors)
 //}
 
 /* ************************************************************************* */
-TEST( JacobianFactorUnordered, construct_from_graph)
+TEST( JacobianFactor, construct_from_graph)
 {
-  GaussianFactorGraphUnordered factors;
+  GaussianFactorGraph factors;
 
   double sigma1 = 0.1;
   Matrix A11 = Matrix::Identity(2,2);
   Vector b1(2); b1 << 2, -1;
-  factors.add(JacobianFactorUnordered(10, A11, b1, noiseModel::Isotropic::Sigma(2, sigma1)));
+  factors.add(JacobianFactor(10, A11, b1, noiseModel::Isotropic::Sigma(2, sigma1)));
 
   double sigma2 = 0.5;
   Matrix A21 = -2 * Matrix::Identity(2,2);
   Matrix A22 = 3 * Matrix::Identity(2,2);
   Vector b2(2); b2 << 4, -5;
-  factors.add(JacobianFactorUnordered(10, A21, 8, A22, b2, noiseModel::Isotropic::Sigma(2, sigma2)));
+  factors.add(JacobianFactor(10, A21, 8, A22, b2, noiseModel::Isotropic::Sigma(2, sigma2)));
 
   double sigma3 = 1.0;
   Matrix A32 = -4 * Matrix::Identity(2,2);
   Matrix A33 = 5 * Matrix::Identity(2,2);
   Vector b3(2); b3 << 3, -6;
-  factors.add(JacobianFactorUnordered(8, A32, 12, A33, b3, noiseModel::Isotropic::Sigma(2, sigma3)));
+  factors.add(JacobianFactor(8, A32, 12, A33, b3, noiseModel::Isotropic::Sigma(2, sigma3)));
 
   Matrix A1(6,2); A1 << A11, A21, Matrix::Zero(2,2);
   Matrix A2(6,2); A2 << Matrix::Zero(2,2), A22, A32;
   Matrix A3(6,2); A3 << Matrix::Zero(4,2), A33;
   Vector b(6); b << b1, b2, b3;
   Vector sigmas(6); sigmas << sigma1, sigma1, sigma2, sigma2, sigma3, sigma3;
-  JacobianFactorUnordered expected(10, A1, 8, A2, 12, A3, b, noiseModel::Diagonal::Sigmas(sigmas));
+  JacobianFactor expected(10, A1, 8, A2, 12, A3, b, noiseModel::Diagonal::Sigmas(sigmas));
 
   // The ordering here specifies the order in which the variables will appear in the combined factor
-  JacobianFactorUnordered actual(factors, OrderingUnordered(list_of(10)(8)(12)));
+  JacobianFactor actual(factors, Ordering(list_of(10)(8)(12)));
 
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactorUnordered, error)
+TEST(JacobianFactor, error)
 {
-  JacobianFactorUnordered factor(simple::terms, simple::b, simple::noise);
+  JacobianFactor factor(simple::terms, simple::b, simple::noise);
 
-  VectorValuesUnordered values;
+  VectorValues values;
   values.insert(5, Vector::Constant(3, 1.0));
   values.insert(10, Vector::Constant(3, 0.5));
   values.insert(15, Vector::Constant(3, 1.0/3.0));
@@ -204,9 +204,9 @@ TEST(JacobianFactorUnordered, error)
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactorUnordered, matrices)
+TEST(JacobianFactor, matrices)
 {
-  JacobianFactorUnordered factor(simple::terms, simple::b, simple::noise);
+  JacobianFactor factor(simple::terms, simple::b, simple::noise);
 
   Matrix jacobianExpected(3, 9);
   jacobianExpected << simple::terms[0].second, simple::terms[1].second, simple::terms[2].second;
@@ -234,15 +234,15 @@ TEST(JacobianFactorUnordered, matrices)
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactorUnordered, operators )
+TEST(JacobianFactor, operators )
 {
   SharedDiagonal  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
 
   Matrix I = eye(2);
   Vector b = Vector_(2,0.2,-0.1);
-  JacobianFactorUnordered lf(1, -I, 2, I, b, sigma0_1);
+  JacobianFactor lf(1, -I, 2, I, b, sigma0_1);
 
-  VectorValuesUnordered c;
+  VectorValues c;
   c.insert(1, Vector_(2,10.,20.));
   c.insert(2, Vector_(2,30.,60.));
 
@@ -252,32 +252,32 @@ TEST(JacobianFactorUnordered, operators )
   EXPECT(assert_equal(expectedE, actualE));
 
   // test A^e
-  VectorValuesUnordered expectedX;
+  VectorValues expectedX;
   expectedX.insert(1, Vector_(2,-2000.,-4000.));
   expectedX.insert(2, Vector_(2, 2000., 4000.));
-  VectorValuesUnordered actualX = VectorValuesUnordered::Zero(expectedX);
+  VectorValues actualX = VectorValues::Zero(expectedX);
   lf.transposeMultiplyAdd(1.0, actualE, actualX);
   EXPECT(assert_equal(expectedX, actualX));
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactorUnordered, default_error )
+TEST(JacobianFactor, default_error )
 {
-  JacobianFactorUnordered f;
-  double actual = f.error(VectorValuesUnordered());
+  JacobianFactor f;
+  double actual = f.error(VectorValues());
   DOUBLES_EQUAL(0.0, actual, 1e-15);
 }
 
 //* ************************************************************************* */
-TEST(JacobianFactorUnordered, empty )
+TEST(JacobianFactor, empty )
 {
   // create an empty factor
-  JacobianFactorUnordered f;
+  JacobianFactor f;
   EXPECT(f.empty());
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactorUnordered, eliminate)
+TEST(JacobianFactor, eliminate)
 {
   Matrix A01 = Matrix_(3,3,
     1.0, 0.0, 0.0,
@@ -304,7 +304,7 @@ TEST(JacobianFactorUnordered, eliminate)
   Vector b2 = Vector_(3, 3.5, 3.5, 3.5);
   Vector s2 = Vector_(3, 3.6, 3.6, 3.6);
 
-  GaussianFactorGraphUnordered gfg;
+  GaussianFactorGraph gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
@@ -315,21 +315,21 @@ TEST(JacobianFactorUnordered, eliminate)
   Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
   Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
 
-  JacobianFactorUnordered combinedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
-  GaussianFactorGraphUnordered::EliminationResult expected = combinedFactor.eliminate(list_of(0));
-  JacobianFactorUnordered::shared_ptr expectedJacobian = boost::dynamic_pointer_cast<
-    JacobianFactorUnordered>(expected.second);
+  JacobianFactor combinedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  GaussianFactorGraph::EliminationResult expected = combinedFactor.eliminate(list_of(0));
+  JacobianFactor::shared_ptr expectedJacobian = boost::dynamic_pointer_cast<
+    JacobianFactor>(expected.second);
 
-  GaussianFactorGraphUnordered::EliminationResult actual = EliminateQRUnordered(gfg, list_of(0));
-  JacobianFactorUnordered::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
-    JacobianFactorUnordered>(actual.second);
+  GaussianFactorGraph::EliminationResult actual = EliminateQR(gfg, list_of(0));
+  JacobianFactor::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
+    JacobianFactor>(actual.second);
 
   EXPECT(assert_equal(*expected.first, *actual.first));
   EXPECT(assert_equal(*expectedJacobian, *actualJacobian));
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactorUnordered, eliminate2 )
+TEST(JacobianFactor, eliminate2 )
 {
   // sigmas
   double sigma1 = 0.2;
@@ -363,11 +363,11 @@ TEST(JacobianFactorUnordered, eliminate2 )
   vector<pair<Index, Matrix> > meas;
   meas.push_back(make_pair(2, Ax2));
   meas.push_back(make_pair(11, Al1x1));
-  JacobianFactorUnordered combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
+  JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
 
   // eliminate the combined factor
-  pair<GaussianConditionalUnordered::shared_ptr, JacobianFactorUnordered::shared_ptr>
-    actual = combined.eliminate(OrderingUnordered(list_of(2)));
+  pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr>
+    actual = combined.eliminate(Ordering(list_of(2)));
 
   // create expected Conditional Gaussian
   double oldSigma = 0.0894427; // from when R was made unit
@@ -380,7 +380,7 @@ TEST(JacobianFactorUnordered, eliminate2 )
     +0.00,-0.20,+0.00,-0.80
     )/oldSigma;
   Vector d = Vector_(2,0.2,-0.14)/oldSigma;
-  GaussianConditionalUnordered expectedCG(2, d, R11, 11, S12);
+  GaussianConditional expectedCG(2, d, R11, 11, S12);
 
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
 
@@ -392,12 +392,12 @@ TEST(JacobianFactorUnordered, eliminate2 )
     0.00, 1.00, +0.00, -1.00
     )/sigma;
   Vector b1 = Vector_(2, 0.0, 0.894427);
-  JacobianFactorUnordered expectedLF(11, Bl1x1, b1);
+  JacobianFactor expectedLF(11, Bl1x1, b1);
   EXPECT(assert_equal(expectedLF, *actual.second,1e-3));
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactorUnordered, EliminateQR)
+TEST(JacobianFactor, EliminateQROrdered)
 {
   // Augmented Ab test case for whole factor graph
   Matrix Ab = Matrix_(14,11,
@@ -419,11 +419,11 @@ TEST(JacobianFactorUnordered, EliminateQR)
   // Create factor graph
   const SharedDiagonal sig_4D = noiseModel::Isotropic::Sigma(4, 0.5);
   const SharedDiagonal sig_2D = noiseModel::Isotropic::Sigma(2, 0.5);
-  GaussianFactorGraphUnordered factors = list_of
-    (JacobianFactorUnordered(list_of(3)(5)(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(2)(2)(1), Ab.block(0, 0, 4, 11)), sig_4D))
-    (JacobianFactorUnordered(list_of(5)(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(2)(1), Ab.block(4, 2, 4, 9)), sig_4D))
-    (JacobianFactorUnordered(list_of(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(1), Ab.block(8, 4, 4, 7)), sig_4D))
-    (JacobianFactorUnordered(list_of(11), VerticalBlockMatrix(list_of(2)(1), Ab.block(12, 8, 2, 3)), sig_2D));
+  GaussianFactorGraph factors = list_of
+    (JacobianFactor(list_of(3)(5)(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(2)(2)(1), Ab.block(0, 0, 4, 11)), sig_4D))
+    (JacobianFactor(list_of(5)(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(2)(1), Ab.block(4, 2, 4, 9)), sig_4D))
+    (JacobianFactor(list_of(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(1), Ab.block(8, 4, 4, 7)), sig_4D))
+    (JacobianFactor(list_of(11), VerticalBlockMatrix(list_of(2)(1), Ab.block(12, 8, 2, 3)), sig_2D));
 
   // extract the dense matrix for the graph
   Matrix actualDense = factors.augmentedJacobian();
@@ -443,12 +443,12 @@ TEST(JacobianFactorUnordered, EliminateQR)
     0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -5.7095,  -0.0090,
     0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -7.1635);
 
-  GaussianConditionalUnordered expectedFragment(
+  GaussianConditional expectedFragment(
     list_of(3)(5)(7)(9)(11), 3, VerticalBlockMatrix(list_of(2)(2)(2)(2)(2)(1), R));
 
   // Eliminate (3 frontal variables, 6 scalar columns) using QR !!!!
-  GaussianFactorGraphUnordered::EliminationResult actual = EliminateQRUnordered(factors, list_of(3)(5)(7));
-  const JacobianFactorUnordered &actualJF = dynamic_cast<const JacobianFactorUnordered&>(*actual.second);
+  GaussianFactorGraph::EliminationResult actual = EliminateQR(factors, list_of(3)(5)(7));
+  const JacobianFactor &actualJF = dynamic_cast<const JacobianFactor&>(*actual.second);
 
   EXPECT(assert_equal(expectedFragment, *actual.first, 0.001));
   EXPECT(assert_equal(size_t(2), actualJF.keys().size()));
@@ -473,14 +473,14 @@ TEST(JacobianFactorUnordered, EliminateQR)
 }
 
 /* ************************************************************************* */
-TEST ( JacobianFactorUnordered, constraint_eliminate1 )
+TEST ( JacobianFactor, constraint_eliminate1 )
 {
   // construct a linear constraint
   Vector v(2); v(0)=1.2; v(1)=3.4;
-  JacobianFactorUnordered lc(1, eye(2), v, noiseModel::Constrained::All(2));
+  JacobianFactor lc(1, eye(2), v, noiseModel::Constrained::All(2));
 
   // eliminate it
-  pair<GaussianConditionalUnordered::shared_ptr, JacobianFactorUnordered::shared_ptr>
+  pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr>
     actual = lc.eliminate(list_of(1));
 
   // verify linear factor
@@ -488,12 +488,12 @@ TEST ( JacobianFactorUnordered, constraint_eliminate1 )
 
   // verify conditional Gaussian
   Vector sigmas = Vector_(2, 0.0, 0.0);
-  GaussianConditionalUnordered expCG(1, v, eye(2), noiseModel::Diagonal::Sigmas(sigmas));
+  GaussianConditional expCG(1, v, eye(2), noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expCG, *actual.first));
 }
 
 /* ************************************************************************* */
-TEST ( JacobianFactorUnordered, constraint_eliminate2 )
+TEST ( JacobianFactor, constraint_eliminate2 )
 {
   // Construct a linear constraint
   // RHS
@@ -509,10 +509,10 @@ TEST ( JacobianFactorUnordered, constraint_eliminate2 )
   A2(0,0) = 1.0 ; A2(0,1) = 2.0;
   A2(1,0) = 2.0 ; A2(1,1) = 4.0;
 
-  JacobianFactorUnordered lc(1, A1, 2, A2, b, noiseModel::Constrained::All(2));
+  JacobianFactor lc(1, A1, 2, A2, b, noiseModel::Constrained::All(2));
 
   // eliminate x and verify results
-  pair<GaussianConditionalUnordered::shared_ptr, JacobianFactorUnordered::shared_ptr>
+  pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr>
     actual = lc.eliminate(list_of(1));
 
   // LF should be empty
@@ -520,7 +520,7 @@ TEST ( JacobianFactorUnordered, constraint_eliminate2 )
   Matrix m(1,2);
   Matrix Aempty = m.topRows(0);
   Vector bempty = m.block(0,0,0,1);
-  JacobianFactorUnordered expectedLF(2, Aempty, bempty, noiseModel::Constrained::All(0));
+  JacobianFactor expectedLF(2, Aempty, bempty, noiseModel::Constrained::All(0));
   EXPECT(assert_equal(expectedLF, *actual.second));
 
   // verify CG
@@ -532,7 +532,7 @@ TEST ( JacobianFactorUnordered, constraint_eliminate2 )
       0.0,    0.0);
   Vector d = Vector_(2, 3.0, 0.6666);
   Vector sigmas = Vector_(2, 0.0, 0.0);
-  GaussianConditionalUnordered expectedCG(1, d, R, 2, S, noiseModel::Diagonal::Sigmas(sigmas));
+  GaussianConditional expectedCG(1, d, R, 2, S, noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
 }
 

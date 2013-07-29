@@ -18,9 +18,9 @@
 #pragma once
 
 #include <gtsam/inference/GenericMultifrontalSolver.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianBayesTreeOrdered.h>
+#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
 
 #include <utility>
 
@@ -41,11 +41,11 @@ namespace gtsam {
  * The JunctionTree recursively produces a BayesTree<GaussianConditional>,
  * on which this class calls optimize(...) to perform back-substitution.
  */
-class GaussianMultifrontalSolver : GenericMultifrontalSolver<GaussianFactor, GaussianJunctionTree> {
+class GaussianMultifrontalSolver : GenericMultifrontalSolver<GaussianFactorOrdered, GaussianJunctionTreeOrdered> {
 
 protected:
 
-  typedef GenericMultifrontalSolver<GaussianFactor, GaussianJunctionTree> Base;
+  typedef GenericMultifrontalSolver<GaussianFactorOrdered, GaussianJunctionTreeOrdered> Base;
   typedef boost::shared_ptr<const GaussianMultifrontalSolver> shared_ptr;
 
   /** flag to determine whether to use Cholesky or QR */
@@ -57,22 +57,22 @@ public:
    * Construct the solver for a factor graph.  This builds the junction
    * tree, which already does some of the work of elimination.
    */
-  GTSAM_EXPORT GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR = false);
+  GTSAM_EXPORT GaussianMultifrontalSolver(const FactorGraphOrdered<GaussianFactorOrdered>& factorGraph, bool useQR = false);
 
   /**
    * Construct the solver with a shared pointer to a factor graph and to a
    * VariableIndex.  The solver will store these pointers, so this constructor
    * is the fastest.
    */
-  GTSAM_EXPORT GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-      const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
+  GTSAM_EXPORT GaussianMultifrontalSolver(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph,
+      const VariableIndexOrdered::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Named constructor to return a shared_ptr.  This builds the elimination
    * tree, which already does some of the symbolic work of elimination.
    */
-  GTSAM_EXPORT static shared_ptr Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-      const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
+  GTSAM_EXPORT static shared_ptr Create(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph,
+      const VariableIndexOrdered::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Return a new solver that solves the given factor graph, which must have
@@ -81,20 +81,20 @@ public:
    * used in cases where the numerical values of the linear problem change,
    * e.g. during iterative nonlinear optimization.
    */
-  GTSAM_EXPORT void replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph);
+  GTSAM_EXPORT void replaceFactors(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph);
 
   /**
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  GTSAM_EXPORT GaussianBayesTree::shared_ptr eliminate() const;
+  GTSAM_EXPORT GaussianBayesTreeOrdered::shared_ptr eliminate() const;
 
   /**
    * Compute the least-squares solution of the GaussianFactorGraph.  This
    * eliminates to create a BayesNet and then back-substitutes this BayesNet to
    * obtain the solution.
    */
-  GTSAM_EXPORT VectorValues::shared_ptr optimize() const;
+  GTSAM_EXPORT VectorValuesOrdered::shared_ptr optimize() const;
 
   /**
    * Compute the marginal joint over a set of variables, by integrating out
@@ -103,7 +103,7 @@ public:
    *
    * NOTE: This function is limited to computing a joint on 2 variables
    */
-  GTSAM_EXPORT GaussianFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
+  GTSAM_EXPORT GaussianFactorGraphOrdered::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out
@@ -111,7 +111,7 @@ public:
    * triangular R factor and right-hand-side, i.e. a GaussianConditional with
    * R*x = d.  To get a mean and covariance matrix, use marginalStandard(...)
    */
-  GTSAM_EXPORT GaussianFactor::shared_ptr marginalFactor(Index j) const;
+  GTSAM_EXPORT GaussianFactorOrdered::shared_ptr marginalFactor(Index j) const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out

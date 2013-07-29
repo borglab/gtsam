@@ -19,9 +19,9 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/JacobianFactorOrdered.h>
+#include <gtsam/linear/GaussianConditionalOrdered.h>
+#include <gtsam/linear/GaussianBayesNetOrdered.h>
 
 #include <iostream>
 #include <sstream>
@@ -41,7 +41,7 @@ Matrix R = Matrix_(2,2,
           0.,   4.6904);
 
 /* ************************************************************************* */
-TEST(GaussianConditional, constructor)
+TEST(GaussianConditionalOrdered, constructor)
 {
   Matrix S1 = Matrix_(2,2,
       -5.2786,  -8.6603,
@@ -62,9 +62,9 @@ TEST(GaussianConditional, constructor)
       make_pair(5, S2),
       make_pair(7, S3);
 
-  GaussianConditional actual(1, d, R, terms, s);
+  GaussianConditionalOrdered actual(1, d, R, terms, s);
 
-  GaussianConditional::const_iterator it = actual.beginFrontals();
+  GaussianConditionalOrdered::const_iterator it = actual.beginFrontals();
   EXPECT(assert_equal(Index(1), *it));
   EXPECT(assert_equal(R, actual.get_R()));
   ++ it;
@@ -89,7 +89,7 @@ TEST(GaussianConditional, constructor)
   EXPECT(assert_equal(s, actual.get_sigmas()));
 
   // test copy constructor
-  GaussianConditional copied(actual);
+  GaussianConditionalOrdered copied(actual);
   EXPECT(assert_equal(d, copied.get_d()));
   EXPECT(assert_equal(s, copied.get_sigmas()));
   EXPECT(assert_equal(R, copied.get_R()));
@@ -97,25 +97,25 @@ TEST(GaussianConditional, constructor)
 
 /* ************************************************************************* */
 
-GaussianConditional construct() {
+GaussianConditionalOrdered construct() {
   Vector d = Vector_(2, 1.0, 2.0);
   Vector s = Vector_(2, 3.0, 4.0);
-  GaussianConditional::shared_ptr shared(new GaussianConditional(1, d, R, s));
+  GaussianConditionalOrdered::shared_ptr shared(new GaussianConditionalOrdered(1, d, R, s));
   return *shared;
 }
 
-TEST(GaussianConditional, return_value)
+TEST(GaussianConditionalOrdered, return_value)
 {
   Vector d = Vector_(2, 1.0, 2.0);
   Vector s = Vector_(2, 3.0, 4.0);
-  GaussianConditional copied = construct();
+  GaussianConditionalOrdered copied = construct();
   EXPECT(assert_equal(d, copied.get_d()));
   EXPECT(assert_equal(s, copied.get_sigmas()));
   EXPECT(assert_equal(R, copied.get_R()));
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, equals )
+TEST( GaussianConditionalOrdered, equals )
 {
   // create a conditional gaussian node
   Matrix A1(2,2);
@@ -137,7 +137,7 @@ TEST( GaussianConditional, equals )
   Vector d(2);
   d(0) = 0.2; d(1) = 0.5;
 
-  GaussianConditional
+  GaussianConditionalOrdered
     expected(_x_,d, R, _x1_, A1, _l1_, A2, tau),
     actual(_x_,d, R, _x1_, A1, _l1_, A2, tau);
 
@@ -145,7 +145,7 @@ TEST( GaussianConditional, equals )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solve )
+TEST( GaussianConditionalOrdered, solve )
 {
   //expected solution
   Vector expectedX(2);
@@ -166,7 +166,7 @@ TEST( GaussianConditional, solve )
 
   Vector tau = ones(2);
 
-  GaussianConditional cg(_x_, d, R, _x1_, A1, _l1_, A2, tau);
+  GaussianConditionalOrdered cg(_x_, d, R, _x1_, A1, _l1_, A2, tau);
 
   Vector sx1(2);
   sx1(0) = 1.0; sx1(1) = 1.0;
@@ -174,12 +174,12 @@ TEST( GaussianConditional, solve )
   Vector sl1(2);
   sl1(0) = 1.0; sl1(1) = 1.0;
 
-  VectorValues solution(vector<size_t>(3, 2));
+  VectorValuesOrdered solution(vector<size_t>(3, 2));
   solution[_x_]  = d;
   solution[_x1_] = sx1; // parents
   solution[_l1_] = sl1;
 
-  VectorValues expected(vector<size_t>(3, 2));
+  VectorValuesOrdered expected(vector<size_t>(3, 2));
   expected[_x_] = expectedX;
   expected[_x1_] = sx1;
   expected[_l1_] = sl1;
@@ -189,7 +189,7 @@ TEST( GaussianConditional, solve )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solve_simple )
+TEST( GaussianConditionalOrdered, solve_simple )
 {
   Matrix full_matrix = Matrix_(4, 7,
       1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
@@ -200,20 +200,20 @@ TEST( GaussianConditional, solve_simple )
   // solve system as a non-multifrontal version first
   // 2 variables, frontal has dim=4
   vector<size_t> dims; dims += 4, 2, 1;
-  GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
+  GaussianConditionalOrdered::rsd_type matrices(full_matrix, dims.begin(), dims.end());
   Vector sigmas = ones(4);
   vector<size_t> cgdims; cgdims += _x_, _x1_;
-  GaussianConditional cg(cgdims.begin(), cgdims.end(), 1, matrices, sigmas);
+  GaussianConditionalOrdered cg(cgdims.begin(), cgdims.end(), 1, matrices, sigmas);
 
   // partial solution
   Vector sx1 = Vector_(2, 9.0, 10.0);
 
   // elimination order; _x_, _x1_
   vector<size_t> vdim; vdim += 4, 2;
-  VectorValues actual(vdim);
+  VectorValuesOrdered actual(vdim);
   actual[_x1_] = sx1; // parent
 
-  VectorValues expected(vdim);
+  VectorValuesOrdered expected(vdim);
   expected[_x1_] = sx1;
   expected[_x_] = Vector_(4, -3.1,-3.4,-11.9,-13.2);
 
@@ -227,7 +227,7 @@ TEST( GaussianConditional, solve_simple )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solve_multifrontal )
+TEST( GaussianConditionalOrdered, solve_multifrontal )
 {
   // create full system, 3 variables, 2 frontals, all 2 dim
   Matrix full_matrix = Matrix_(4, 7,
@@ -238,10 +238,10 @@ TEST( GaussianConditional, solve_multifrontal )
 
   // 3 variables, all dim=2
   vector<size_t> dims; dims += 2, 2, 2, 1;
-  GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
+  GaussianConditionalOrdered::rsd_type matrices(full_matrix, dims.begin(), dims.end());
   Vector sigmas = ones(4);
   vector<size_t> cgdims; cgdims += _x_, _x1_, _l1_;
-  GaussianConditional cg(cgdims.begin(), cgdims.end(), 2, matrices, sigmas);
+  GaussianConditionalOrdered cg(cgdims.begin(), cgdims.end(), 2, matrices, sigmas);
 
   EXPECT(assert_equal(Vector_(4, 0.1, 0.2, 0.3, 0.4), cg.get_d()));
 
@@ -249,10 +249,10 @@ TEST( GaussianConditional, solve_multifrontal )
   Vector sl1 = Vector_(2, 9.0, 10.0);
 
   // elimination order; _x_, _x1_, _l1_
-  VectorValues actual(vector<size_t>(3, 2));
+  VectorValuesOrdered actual(vector<size_t>(3, 2));
   actual[_l1_] = sl1; // parent
 
-  VectorValues expected(vector<size_t>(3, 2));
+  VectorValuesOrdered expected(vector<size_t>(3, 2));
   expected[_x_] = Vector_(2, -3.1,-3.4);
   expected[_x1_] = Vector_(2, -11.9,-13.2);
   expected[_l1_] = sl1;
@@ -268,7 +268,7 @@ TEST( GaussianConditional, solve_multifrontal )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solveTranspose ) {
+TEST( GaussianConditionalOrdered, solveTranspose ) {
   static const Index _y_=1;
   /** create small Chordal Bayes Net x <- y
    * x y d
@@ -284,9 +284,9 @@ TEST( GaussianConditional, solveTranspose ) {
   tau(0) = 1.0;
 
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11, _y_, S12, tau));
-  GaussianConditional::shared_ptr Py(new GaussianConditional(_y_, d2, R22, tau));
-  GaussianBayesNet cbn;
+  GaussianConditionalOrdered::shared_ptr Px_y(new GaussianConditionalOrdered(_x_, d1, R11, _y_, S12, tau));
+  GaussianConditionalOrdered::shared_ptr Py(new GaussianConditionalOrdered(_y_, d2, R22, tau));
+  GaussianBayesNetOrdered cbn;
   cbn.push_back(Px_y);
   cbn.push_back(Py);
 
@@ -294,19 +294,19 @@ TEST( GaussianConditional, solveTranspose ) {
   // 2 = 1    2
   // 5   1 1  3
 
-  VectorValues y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
+  VectorValuesOrdered y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
   x[_x_] = Vector_(1,2.);
   x[_y_] = Vector_(1,5.);
   y[_x_] = Vector_(1,2.);
   y[_y_] = Vector_(1,3.);
 
   // test functional version
-  VectorValues actual = backSubstituteTranspose(cbn,x);
+  VectorValuesOrdered actual = backSubstituteTranspose(cbn,x);
   CHECK(assert_equal(y,actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, information ) {
+TEST( GaussianConditionalOrdered, information ) {
 
   // Create R matrix
   Matrix R = (Matrix(4,4) <<
@@ -316,7 +316,7 @@ TEST( GaussianConditional, information ) {
       0, 0, 0, 10).finished();
 
   // Create conditional
-  GaussianConditional conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
+  GaussianConditionalOrdered conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
 
   // Expected information matrix (using permuted R)
   Matrix IExpected = R.transpose() * R;
@@ -327,7 +327,7 @@ TEST( GaussianConditional, information ) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, isGaussianFactor ) {
+TEST( GaussianConditionalOrdered, isGaussianFactor ) {
 
   // Create R matrix
   Matrix R = (Matrix(4,4) <<
@@ -337,13 +337,13 @@ TEST( GaussianConditional, isGaussianFactor ) {
       0, 0, 0, 10).finished();
 
   // Create a conditional
-  GaussianConditional conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
+  GaussianConditionalOrdered conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
 
   // Expected information matrix computed by conditional
   Matrix IExpected = conditional.information();
 
   // Expected information matrix computed by a factor
-  JacobianFactor jf = *conditional.toFactor();
+  JacobianFactorOrdered jf = *conditional.toFactor();
   Matrix IActual = jf.getA(jf.begin()).transpose() * jf.getA(jf.begin());
 
   EXPECT(assert_equal(IExpected, IActual));

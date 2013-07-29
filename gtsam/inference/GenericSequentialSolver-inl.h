@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include <gtsam/inference/Factor.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/EliminationTree.h>
-#include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/inference.h>
+#include <gtsam/inference/FactorOrdered.h>
+#include <gtsam/inference/FactorGraphOrdered.h>
+#include <gtsam/inference/EliminationTreeOrdered.h>
+#include <gtsam/inference/BayesNetOrdered.h>
+#include <gtsam/inference/inferenceOrdered.h>
 
 #include <boost/foreach.hpp>
 
@@ -30,24 +30,24 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTOR>
-  GenericSequentialSolver<FACTOR>::GenericSequentialSolver(const FactorGraph<FACTOR>& factorGraph) {
+  GenericSequentialSolver<FACTOR>::GenericSequentialSolver(const FactorGraphOrdered<FACTOR>& factorGraph) {
     gttic(GenericSequentialSolver_constructor1);
     assert(factorGraph.size());
-    factors_.reset(new FactorGraph<FACTOR>(factorGraph));
-    structure_.reset(new VariableIndex(factorGraph));
-    eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
+    factors_.reset(new FactorGraphOrdered<FACTOR>(factorGraph));
+    structure_.reset(new VariableIndexOrdered(factorGraph));
+    eliminationTree_ = EliminationTreeOrdered<FACTOR>::Create(*factors_, *structure_);
   }
 
   /* ************************************************************************* */
   template<class FACTOR>
   GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
       const sharedFactorGraph& factorGraph,
-      const boost::shared_ptr<VariableIndex>& variableIndex)
+      const boost::shared_ptr<VariableIndexOrdered>& variableIndex)
   {
     gttic(GenericSequentialSolver_constructor2);
     factors_ = factorGraph;
     structure_ = variableIndex;
-    eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
+    eliminationTree_ = EliminationTreeOrdered<FACTOR>::Create(*factors_, *structure_);
   }
 
   /* ************************************************************************* */
@@ -79,7 +79,7 @@ namespace gtsam {
     // problems there may not be enough memory to store two copies.
     eliminationTree_.reset();
     factors_ = factorGraph;
-    eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
+    eliminationTree_ = EliminationTreeOrdered<FACTOR>::Create(*factors_, *structure_);
   }
 
   /* ************************************************************************* */
@@ -107,7 +107,7 @@ namespace gtsam {
         factor->permuteWithInverse(*permutationInverse);
 
     // Eliminate using elimination tree provided
-    typename EliminationTree<FACTOR>::shared_ptr etree = EliminationTree<FACTOR>::Create(*factors_);
+    typename EliminationTreeOrdered<FACTOR>::shared_ptr etree = EliminationTreeOrdered<FACTOR>::Create(*factors_);
     sharedBayesNet bayesNet;
     if(nrToEliminate)
       bayesNet = etree->eliminatePartial(function, *nrToEliminate);
@@ -175,15 +175,15 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTOR>
-  typename FactorGraph<FACTOR>::shared_ptr //
+  typename FactorGraphOrdered<FACTOR>::shared_ptr //
   GenericSequentialSolver<FACTOR>::jointFactorGraph(
       const std::vector<Index>& js, Eliminate function) const
   {
     gttic(GenericSequentialSolver_jointFactorGraph);
     // Eliminate all variables
-    typename BayesNet<Conditional>::shared_ptr bayesNet = jointBayesNet(js, function);
+    typename BayesNetOrdered<Conditional>::shared_ptr bayesNet = jointBayesNet(js, function);
 
-    return boost::make_shared<FactorGraph<FACTOR> >(*bayesNet);
+    return boost::make_shared<FactorGraphOrdered<FACTOR> >(*bayesNet);
   }
 
   /* ************************************************************************* */

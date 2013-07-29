@@ -45,9 +45,9 @@
 
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 
 namespace gtsam {
 
@@ -207,7 +207,7 @@ namespace gtsam {
     bool empty() const { return values_.empty(); }
 
     /** Get a zero VectorValues of the correct structure */
-    VectorValues zeroVectors(const Ordering& ordering) const;
+    VectorValuesOrdered zeroVectors(const OrderingOrdered& ordering) const;
 
     const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
     const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
@@ -222,13 +222,13 @@ namespace gtsam {
     /// @{
 
     /** Add a delta config to current config and returns a new config */
-    Values retract(const VectorValues& delta, const Ordering& ordering) const;
+    Values retract(const VectorValuesOrdered& delta, const OrderingOrdered& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorValues localCoordinates(const Values& cp, const Ordering& ordering) const;
+    VectorValuesOrdered localCoordinates(const Values& cp, const OrderingOrdered& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) - assumes uninitialized delta */
-    void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
+    void localCoordinates(const Values& cp, const OrderingOrdered& ordering, VectorValuesOrdered& delta) const;
 
     ///@}
 
@@ -263,7 +263,7 @@ namespace gtsam {
     void clear() { values_.clear(); }
 
     /** Create an array of variable dimensions using the given ordering (\f$ O(n) \f$) */
-    std::vector<size_t> dims(const Ordering& ordering) const;
+    std::vector<size_t> dims(const OrderingOrdered& ordering) const;
 
     /** Compute the total dimensionality of all values (\f$ O(n) \f$) */
     size_t dim() const;
@@ -274,7 +274,7 @@ namespace gtsam {
      * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
      * this ordering yourself (as orderingCOLAMD() does internally).
      */
-    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const;
+    OrderingOrdered::shared_ptr orderingArbitrary(Index firstVar = 0) const;
 
     /**
      * Return a filtered view of this Values class, without copying any data.

@@ -21,7 +21,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianBayesTreeOrdered.h>
 
 #include <boost/variant.hpp>
 
@@ -342,13 +342,13 @@ struct GTSAM_EXPORT ISAM2Result {
  * Specialized Clique structure for ISAM2, incorporating caching and gradient contribution
  * TODO: more documentation
  */
-class GTSAM_EXPORT ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
+class GTSAM_EXPORT ISAM2Clique : public BayesTreeCliqueBaseOrdered<ISAM2Clique, GaussianConditionalOrdered> {
 public:
   typedef ISAM2Clique This;
-  typedef BayesTreeCliqueBase<This,GaussianConditional> Base;
+  typedef BayesTreeCliqueBaseOrdered<This,GaussianConditionalOrdered> Base;
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
-  typedef GaussianConditional ConditionalType;
+  typedef GaussianConditionalOrdered ConditionalType;
   typedef ConditionalType::shared_ptr sharedConditional;
 
   Base::FactorType::shared_ptr cachedFactor_;
@@ -436,7 +436,7 @@ private:
  * estimate of all variables.
  *
  */
-class ISAM2: public BayesTree<GaussianConditional, ISAM2Clique> {
+class ISAM2: public BayesTreeOrdered<GaussianConditionalOrdered, ISAM2Clique> {
 
 protected:
 
@@ -444,7 +444,7 @@ protected:
   Values theta_;
 
   /** VariableIndex lets us look up factors by involved variable and keeps track of dimensions */
-  VariableIndex variableIndex_;
+  VariableIndexOrdered variableIndex_;
 
   /** The linear delta from the last linear solution, an update to the estimate in theta
    *
@@ -452,10 +452,10 @@ protected:
    * until either requested with getDelta() or calculateEstimate(), or needed
    * during update() to evaluate whether to relinearize variables.
    */
-  mutable VectorValues delta_;
+  mutable VectorValuesOrdered delta_;
 
-  mutable VectorValues deltaNewton_;
-  mutable VectorValues RgProd_;
+  mutable VectorValuesOrdered deltaNewton_;
+  mutable VectorValuesOrdered RgProd_;
   mutable bool deltaDoglegUptodate_;
 
   /** Indicates whether the current delta is up-to-date, only used
@@ -485,11 +485,11 @@ protected:
   NonlinearFactorGraph nonlinearFactors_;
 
   /** The current linear factors, which are only updated as needed */
-  mutable GaussianFactorGraph linearFactors_;
+  mutable GaussianFactorGraphOrdered linearFactors_;
 
   /** The current elimination ordering Symbols to Index (integer) keys.
    * We keep it up to date as we add and reorder variables. */
-  Ordering ordering_;
+  OrderingOrdered ordering_;
 
   /** The current parameters */
   ISAM2Params params_;
@@ -504,7 +504,7 @@ protected:
 public:
 
   typedef ISAM2 This; ///< This class
-  typedef BayesTree<GaussianConditional,ISAM2Clique> Base; ///< The BayesTree base class
+  typedef BayesTreeOrdered<GaussianConditionalOrdered,ISAM2Clique> Base; ///< The BayesTree base class
 
   /** Create an empty ISAM2 instance */
   GTSAM_EXPORT ISAM2(const ISAM2Params& params);
@@ -599,16 +599,16 @@ public:
   GTSAM_EXPORT Values calculateBestEstimate() const;
 
   /** Access the current delta, computed during the last call to update */
-  GTSAM_EXPORT const VectorValues& getDelta() const;
+  GTSAM_EXPORT const VectorValuesOrdered& getDelta() const;
 
   /** Access the set of nonlinear factors */
   GTSAM_EXPORT const NonlinearFactorGraph& getFactorsUnsafe() const { return nonlinearFactors_; }
 
   /** Access the current ordering */
-  GTSAM_EXPORT const Ordering& getOrdering() const { return ordering_; }
+  GTSAM_EXPORT const OrderingOrdered& getOrdering() const { return ordering_; }
 
   /** Access the nonlinear variable index */
-  GTSAM_EXPORT const VariableIndex& getVariableIndex() const { return variableIndex_; }
+  GTSAM_EXPORT const VariableIndexOrdered& getVariableIndex() const { return variableIndex_; }
 
   size_t lastAffectedVariableCount;
   size_t lastAffectedFactorCount;
@@ -627,24 +627,24 @@ public:
 private:
 
   GTSAM_EXPORT FastList<size_t> getAffectedFactors(const FastList<Index>& keys) const;
-  GTSAM_EXPORT FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const FastSet<Index>& relinKeys) const;
-  GTSAM_EXPORT GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
+  GTSAM_EXPORT FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const FastSet<Index>& relinKeys) const;
+  GTSAM_EXPORT GaussianFactorGraphOrdered getCachedBoundaryFactors(Cliques& orphans);
 
   GTSAM_EXPORT boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys,
       const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices, const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
   //  void linear_update(const GaussianFactorGraph& newFactors);
   GTSAM_EXPORT void updateDelta(bool forceFullSolve = false) const;
 
-  GTSAM_EXPORT friend void optimizeInPlace(const ISAM2&, VectorValues&);
-  GTSAM_EXPORT friend void optimizeGradientSearchInPlace(const ISAM2&, VectorValues&);
+  GTSAM_EXPORT friend void optimizeInPlace(const ISAM2&, VectorValuesOrdered&);
+  GTSAM_EXPORT friend void optimizeGradientSearchInPlace(const ISAM2&, VectorValuesOrdered&);
 
 }; // ISAM2
 
 /** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
-GTSAM_EXPORT VectorValues optimize(const ISAM2& isam);
+GTSAM_EXPORT VectorValuesOrdered optimize(const ISAM2& isam);
 
 /** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
-GTSAM_EXPORT void optimizeInPlace(const ISAM2& isam, VectorValues& delta);
+GTSAM_EXPORT void optimizeInPlace(const ISAM2& isam, VectorValuesOrdered& delta);
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain
@@ -659,11 +659,11 @@ GTSAM_EXPORT void optimizeInPlace(const ISAM2& isam, VectorValues& delta);
 /// @return The number of variables that were solved for
 template<class CLIQUE>
 int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const std::vector<bool>& replaced, VectorValues& delta);
+    double threshold, const std::vector<bool>& replaced, VectorValuesOrdered& delta);
 
 template<class CLIQUE>
 int optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const std::vector<bool>& replaced, VectorValues& delta);
+    double threshold, const std::vector<bool>& replaced, VectorValuesOrdered& delta);
 
 /**
  * Optimize along the gradient direction, with a closed-form computation to
@@ -690,10 +690,10 @@ int optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
  *
  * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f]
  */
-GTSAM_EXPORT VectorValues optimizeGradientSearch(const ISAM2& isam);
+GTSAM_EXPORT VectorValuesOrdered optimizeGradientSearch(const ISAM2& isam);
 
 /** In-place version of optimizeGradientSearch requiring pre-allocated VectorValues \c x */
-GTSAM_EXPORT void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad);
+GTSAM_EXPORT void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValuesOrdered& grad);
 
 /// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
 template<class CLIQUE>
@@ -710,7 +710,7 @@ int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique);
  * @param x0 The center about which to compute the gradient
  * @return The gradient as a VectorValues
  */
-GTSAM_EXPORT VectorValues gradient(const ISAM2& bayesTree, const VectorValues& x0);
+GTSAM_EXPORT VectorValuesOrdered gradient(const ISAM2& bayesTree, const VectorValuesOrdered& x0);
 
 /**
  * Compute the gradient of the energy function,
@@ -723,7 +723,7 @@ GTSAM_EXPORT VectorValues gradient(const ISAM2& bayesTree, const VectorValues& x
  * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
  * @return The gradient as a VectorValues
  */
-GTSAM_EXPORT void gradientAtZero(const ISAM2& bayesTree, VectorValues& g);
+GTSAM_EXPORT void gradientAtZero(const ISAM2& bayesTree, VectorValuesOrdered& g);
 
 } /// namespace gtsam
 

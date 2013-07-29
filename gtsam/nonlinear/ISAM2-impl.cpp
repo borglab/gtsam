@@ -29,9 +29,9 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void ISAM2::Impl::AddVariables(
-    const Values& newTheta, Values& theta, VectorValues& delta,
-    VectorValues& deltaNewton, VectorValues& RgProd, vector<bool>& replacedKeys,
-    Ordering& ordering, const KeyFormatter& keyFormatter) {
+    const Values& newTheta, Values& theta, VectorValuesOrdered& delta,
+    VectorValuesOrdered& deltaNewton, VectorValuesOrdered& RgProd, vector<bool>& replacedKeys,
+    OrderingOrdered& ordering, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta.insert(newTheta);
@@ -62,10 +62,10 @@ void ISAM2::Impl::AddVariables(
 
 /* ************************************************************************* */
 void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
-                                  Values& theta, VariableIndex& variableIndex,
-                                  VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,
-                                  std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
-                                  GaussianFactorGraph& linearFactors, FastSet<Key>& fixedVariables) {
+                                  Values& theta, VariableIndexOrdered& variableIndex,
+                                  VectorValuesOrdered& delta, VectorValuesOrdered& deltaNewton, VectorValuesOrdered& RgProd,
+                                  std::vector<bool>& replacedKeys, OrderingOrdered& ordering, Base::Nodes& nodes,
+                                  GaussianFactorGraphOrdered& linearFactors, FastSet<Key>& fixedVariables) {
 
      // Get indices of unused keys
      vector<Index> unusedIndices;  unusedIndices.reserve(unusedKeys.size());
@@ -91,9 +91,9 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
        // Copy from the old data structures to new ones, only iterating up to
        // the number of used variables, and applying the unusedToEnd permutation
        // in order to remove the unused variables.
-       VectorValues newDelta(dims);
-       VectorValues newDeltaNewton(dims);
-       VectorValues newDeltaGradSearch(dims);
+       VectorValuesOrdered newDelta(dims);
+       VectorValuesOrdered newDeltaNewton(dims);
+       VectorValuesOrdered newDeltaGradSearch(dims);
        std::vector<bool> newReplacedKeys(replacedKeys.size() - unusedIndices.size());
        Base::Nodes newNodes(replacedKeys.size() - unusedIndices.size());
 
@@ -116,7 +116,7 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
      // Reorder and remove from ordering, solution, and fixed keys
      ordering.permuteInPlace(unusedToEnd);
      BOOST_REVERSE_FOREACH(Key key, unusedKeys) {
-       Ordering::value_type removed = ordering.pop_back();
+       OrderingOrdered::value_type removed = ordering.pop_back();
        assert(removed.first == key);
        theta.erase(key);
        fixedVariables.erase(key);
@@ -129,7 +129,7 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph& factors) {
+FastSet<Index> ISAM2::Impl::IndicesFromFactors(const OrderingOrdered& ordering, const NonlinearFactorGraph& factors) {
   FastSet<Index> indices;
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors) {
     BOOST_FOREACH(Key key, factor->keys()) {
@@ -140,7 +140,7 @@ FastSet<Index> ISAM2::Impl::IndicesFromFactors(const Ordering& ordering, const N
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta, const Ordering& ordering,
+FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValuesOrdered& delta, const OrderingOrdered& ordering,
     const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter) {
   FastSet<Index> relinKeys;
 
@@ -154,7 +154,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta, 
     }
   } else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>)) {
     const FastMap<char,Vector>& thresholds = boost::get<FastMap<char,Vector> >(relinearizeThreshold);
-    BOOST_FOREACH(const Ordering::value_type& key_index, ordering) {
+    BOOST_FOREACH(const OrderingOrdered::value_type& key_index, ordering) {
       const Vector& threshold = thresholds.find(Symbol(key_index.first).chr())->second;
       Index j = key_index.second;
       if(threshold.rows() != delta[j].rows())
@@ -168,7 +168,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta, 
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double threshold, const VectorValues& delta, const ISAM2Clique::shared_ptr& clique) {
+void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double threshold, const VectorValuesOrdered& delta, const ISAM2Clique::shared_ptr& clique) {
 
   // Check the current clique for relinearization
   bool relinearize = false;
@@ -189,7 +189,7 @@ void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double thres
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<char,Vector>& thresholds, const VectorValues& delta, const Ordering& ordering, const ISAM2Clique::shared_ptr& clique) {
+void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<char,Vector>& thresholds, const VectorValuesOrdered& delta, const OrderingOrdered& ordering, const ISAM2Clique::shared_ptr& clique) {
 
   // Check the current clique for relinearization
   bool relinearize = false;
@@ -221,7 +221,7 @@ void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<c
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const VectorValues& delta, const Ordering& ordering,
+FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const VectorValuesOrdered& delta, const OrderingOrdered& ordering,
     const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter) {
 
   FastSet<Index> relinKeys;
@@ -258,8 +258,8 @@ void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, 
 }
 
 /* ************************************************************************* */
-void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta, const Ordering& ordering,
-    const vector<bool>& mask, boost::optional<VectorValues&> invalidateIfDebug, const KeyFormatter& keyFormatter) {
+void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValuesOrdered& delta, const OrderingOrdered& ordering,
+    const vector<bool>& mask, boost::optional<VectorValuesOrdered&> invalidateIfDebug, const KeyFormatter& keyFormatter) {
   // If debugging, invalidate if requested, otherwise do not invalidate.
   // Invalidating means setting expmapped entries to Inf, to trigger assertions
   // if we try to re-use them.
@@ -270,7 +270,7 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta, const 
   assert(values.size() == ordering.size());
   assert(delta.size() == ordering.size());
   Values::iterator key_value;
-  Ordering::const_iterator key_index;
+  OrderingOrdered::const_iterator key_index;
   for(key_value = values.begin(), key_index = ordering.begin();
       key_value != values.end() && key_index != ordering.end(); ++key_value, ++key_index) {
     assert(key_value->key == key_index->first);
@@ -295,7 +295,7 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta, const 
 
 /* ************************************************************************* */
 ISAM2::Impl::PartialSolveResult
-ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
+ISAM2::Impl::PartialSolve(GaussianFactorGraphOrdered& factors,
     const FastSet<Index>& keys, const ReorderingMode& reorderingMode, bool useQR) {
 
   const bool debug = ISDEBUG("ISAM2 recalculate");
@@ -306,7 +306,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
   // Debug check that all variables involved in the factors to be re-eliminated
   // are in affectedKeys, since we will use it to select a subset of variables.
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, factors) {
     BOOST_FOREACH(Index key, factor->keys()) {
       assert(find(keys.begin(), keys.end(), key) != keys.end());
     }
@@ -328,7 +328,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   if(debug) factors.print("Factors to reorder/re-eliminate: ");
   gttoc(select_affected_variables);
   gttic(variable_index);
-  VariableIndex affectedFactorsIndex(factors); // Create a variable index for the factors to be re-eliminated
+  VariableIndexOrdered affectedFactorsIndex(factors); // Create a variable index for the factors to be re-eliminated
   if(debug) affectedFactorsIndex.print("affectedFactorsIndex: ");
   gttoc(variable_index);
   gttic(ccolamd);
@@ -369,17 +369,17 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   if(debug) factors.print("Colamd-ordered affected factors: ");
 
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-    VariableIndex fromScratchIndex(factors);
+    VariableIndexOrdered fromScratchIndex(factors);
     assert(assert_equal(fromScratchIndex, affectedFactorsIndex));
 #endif
 
   // eliminate into a Bayes net
   gttic(eliminate);
-  JunctionTree<GaussianFactorGraph, ISAM2::Clique> jt(factors, affectedFactorsIndex);
+  JunctionTreeOrdered<GaussianFactorGraphOrdered, ISAM2::Clique> jt(factors, affectedFactorsIndex);
   if(!useQR)
-    result.bayesTree = jt.eliminate(EliminatePreferCholesky);
+    result.bayesTree = jt.eliminate(EliminatePreferCholeskyOrdered);
   else
-    result.bayesTree = jt.eliminate(EliminateQR);
+    result.bayesTree = jt.eliminate(EliminateQROrdered);
   gttoc(eliminate);
 
   gttic(permute_eliminated);
@@ -398,7 +398,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
 
 /* ************************************************************************* */
 namespace internal {
-inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique, VectorValues& result) {
+inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique, VectorValuesOrdered& result) {
   // parents are assumed to already be solved and available in result
   clique->conditional()->solveInPlace(result);
 
@@ -409,7 +409,7 @@ inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique,
 }
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, VectorValues& delta, double wildfireThreshold) {
+size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, VectorValuesOrdered& delta, double wildfireThreshold) {
 
   size_t lastBacksubVariableCount;
 
@@ -437,7 +437,7 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
 /* ************************************************************************* */
 namespace internal {
 void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, const std::vector<bool>& replacedKeys,
-    const VectorValues& grad, VectorValues& deltaNewton, VectorValues& RgProd, size_t& varsUpdated) {
+    const VectorValuesOrdered& grad, VectorValuesOrdered& deltaNewton, VectorValuesOrdered& RgProd, size_t& varsUpdated) {
 
   // Check if any frontal or separator keys were recalculated, if so, we need
   // update deltas and recurse to children, but if not, we do not need to
@@ -476,10 +476,10 @@ void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, const std:
 
 /* ************************************************************************* */
 size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, std::vector<bool>& replacedKeys,
-    VectorValues& deltaNewton, VectorValues& RgProd) {
+    VectorValuesOrdered& deltaNewton, VectorValuesOrdered& RgProd) {
 
   // Get gradient
-  VectorValues grad = *allocateVectorValues(isam);
+  VectorValuesOrdered grad = *allocateVectorValues(isam);
   gradientAtZero(isam, grad);
 
   // Update variables

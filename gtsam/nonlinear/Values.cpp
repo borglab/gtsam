@@ -76,12 +76,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues Values::zeroVectors(const Ordering& ordering) const {
-    return VectorValues::Zero(this->dims(ordering));
+  VectorValuesOrdered Values::zeroVectors(const OrderingOrdered& ordering) const {
+    return VectorValuesOrdered::Zero(this->dims(ordering));
   }
 
   /* ************************************************************************* */
-  Values Values::retract(const VectorValues& delta, const Ordering& ordering) const {
+  Values Values::retract(const VectorValuesOrdered& delta, const OrderingOrdered& ordering) const {
     Values result;
 
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
@@ -95,8 +95,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues Values::localCoordinates(const Values& cp, const Ordering& ordering) const {
-    VectorValues result(this->dims(ordering));
+  VectorValuesOrdered Values::localCoordinates(const Values& cp, const OrderingOrdered& ordering) const {
+    VectorValuesOrdered result(this->dims(ordering));
     if(this->size() != cp.size())
       throw DynamicValuesMismatched();
     for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
@@ -110,7 +110,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void Values::localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& result) const {
+  void Values::localCoordinates(const Values& cp, const OrderingOrdered& ordering, VectorValuesOrdered& result) const {
     if(this->size() != cp.size())
       throw DynamicValuesMismatched();
     for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
@@ -193,7 +193,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  vector<size_t> Values::dims(const Ordering& ordering) const {
+  vector<size_t> Values::dims(const OrderingOrdered& ordering) const {
     assert(ordering.size() == this->size()); // reads off of end of array if difference in size
     vector<size_t> result(values_.size());
     BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
@@ -212,8 +212,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Ordering::shared_ptr Values::orderingArbitrary(Index firstVar) const {
-    Ordering::shared_ptr ordering(new Ordering);
+  OrderingOrdered::shared_ptr Values::orderingArbitrary(Index firstVar) const {
+    OrderingOrdered::shared_ptr ordering(new OrderingOrdered);
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       ordering->insert(key_value->key, firstVar++);
     }

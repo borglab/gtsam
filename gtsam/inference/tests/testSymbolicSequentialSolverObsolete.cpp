@@ -16,7 +16,7 @@
  * @date    Sept 16, 2012
  */
 
-#include <gtsam/inference/SymbolicSequentialSolver.h>
+#include <gtsam/inference/SymbolicSequentialSolverOrdered.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -30,7 +30,7 @@ using namespace gtsam;
 
 TEST( SymbolicSequentialSolver, SymbolicSequentialSolver ) {
   // create factor graph
-  SymbolicFactorGraph g;
+  SymbolicFactorGraphOrdered g;
   g.push_factor(2, 1, 0);
   g.push_factor(2, 0);
   g.push_factor(2);
@@ -44,7 +44,7 @@ TEST( SymbolicSequentialSolver, SymbolicSequentialSolver ) {
 
 TEST( SymbolicSequentialSolver, inference ) {
   // Create factor graph
-  SymbolicFactorGraph fg;
+  SymbolicFactorGraphOrdered fg;
   fg.push_factor(0, 1);
   fg.push_factor(0, 2);
   fg.push_factor(1, 4);
@@ -53,13 +53,13 @@ TEST( SymbolicSequentialSolver, inference ) {
 
   // eliminate
   SymbolicSequentialSolver solver(fg);
-  SymbolicBayesNet::shared_ptr actual = solver.eliminate();
-  SymbolicBayesNet expected;
-  expected.push_front(boost::make_shared<IndexConditional>(4));
-  expected.push_front(boost::make_shared<IndexConditional>(3, 4));
-  expected.push_front(boost::make_shared<IndexConditional>(2, 4));
-  expected.push_front(boost::make_shared<IndexConditional>(1, 2, 4));
-  expected.push_front(boost::make_shared<IndexConditional>(0, 1, 2));
+  SymbolicBayesNetOrdered::shared_ptr actual = solver.eliminate();
+  SymbolicBayesNetOrdered expected;
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(4));
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(3, 4));
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(2, 4));
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(1, 2, 4));
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(0, 1, 2));
   EXPECT(assert_equal(expected,*actual));
 
   {
@@ -68,20 +68,20 @@ TEST( SymbolicSequentialSolver, inference ) {
     js.push_back(0);
     js.push_back(4);
     js.push_back(3);
-    SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
-    SymbolicBayesNet expectedBN;
-    expectedBN.push_front(boost::make_shared<IndexConditional>(3));
-    expectedBN.push_front(boost::make_shared<IndexConditional>(4, 3));
-    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 4));
+    SymbolicBayesNetOrdered::shared_ptr actualBN = solver.jointBayesNet(js);
+    SymbolicBayesNetOrdered expectedBN;
+    expectedBN.push_front(boost::make_shared<IndexConditionalOrdered>(3));
+    expectedBN.push_front(boost::make_shared<IndexConditionalOrdered>(4, 3));
+    expectedBN.push_front(boost::make_shared<IndexConditionalOrdered>(0, 4));
     EXPECT( assert_equal(expectedBN,*actualBN));
 
     // jointFactorGraph
-    SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
-    SymbolicFactorGraph expectedFG;
+    SymbolicFactorGraphOrdered::shared_ptr actualFG = solver.jointFactorGraph(js);
+    SymbolicFactorGraphOrdered expectedFG;
     expectedFG.push_factor(0, 4);
     expectedFG.push_factor(4, 3);
     expectedFG.push_factor(3);
-    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraphOrdered)(*actualFG)));
   }
 
   {
@@ -90,20 +90,20 @@ TEST( SymbolicSequentialSolver, inference ) {
     js.push_back(0);
     js.push_back(2);
     js.push_back(3);
-    SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
-    SymbolicBayesNet expectedBN;
-    expectedBN.push_front(boost::make_shared<IndexConditional>(2));
-    expectedBN.push_front(boost::make_shared<IndexConditional>(3, 2));
-    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 3, 2));
+    SymbolicBayesNetOrdered::shared_ptr actualBN = solver.jointBayesNet(js);
+    SymbolicBayesNetOrdered expectedBN;
+    expectedBN.push_front(boost::make_shared<IndexConditionalOrdered>(2));
+    expectedBN.push_front(boost::make_shared<IndexConditionalOrdered>(3, 2));
+    expectedBN.push_front(boost::make_shared<IndexConditionalOrdered>(0, 3, 2));
     EXPECT( assert_equal(expectedBN,*actualBN));
 
     // jointFactorGraph
-    SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
-    SymbolicFactorGraph expectedFG;
+    SymbolicFactorGraphOrdered::shared_ptr actualFG = solver.jointFactorGraph(js);
+    SymbolicFactorGraphOrdered expectedFG;
     expectedFG.push_factor(0, 3, 2);
     expectedFG.push_factor(3, 2);
     expectedFG.push_factor(2);
-    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraphOrdered)(*actualFG)));
   }
 
   {
@@ -113,11 +113,11 @@ TEST( SymbolicSequentialSolver, inference ) {
     js.push_back(2);
     js.push_back(3);
     size_t nrFrontals = 2;
-    SymbolicBayesNet::shared_ptr actualBN = //
+    SymbolicBayesNetOrdered::shared_ptr actualBN = //
         solver.conditionalBayesNet(js, nrFrontals);
-    SymbolicBayesNet expectedBN;
-    expectedBN.push_front(boost::make_shared<IndexConditional>(2, 3));
-    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 2, 3));
+    SymbolicBayesNetOrdered expectedBN;
+    expectedBN.push_front(boost::make_shared<IndexConditionalOrdered>(2, 3));
+    expectedBN.push_front(boost::make_shared<IndexConditionalOrdered>(0, 2, 3));
     EXPECT( assert_equal(expectedBN,*actualBN));
   }
 }

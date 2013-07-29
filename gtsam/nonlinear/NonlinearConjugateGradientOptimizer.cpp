@@ -6,10 +6,10 @@
  */
 
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
 
 #include <cmath>
 
@@ -19,15 +19,15 @@ namespace gtsam {
 
 /* Return the gradient vector of a nonlinear factor given a linearization point and a variable ordering
  * Can be moved to NonlinearFactorGraph.h if desired */
-void gradientInPlace(const NonlinearFactorGraph &nfg, const Values &values, const Ordering &ordering, VectorValues &g) {
+void gradientInPlace(const NonlinearFactorGraph &nfg, const Values &values, const OrderingOrdered &ordering, VectorValuesOrdered &g) {
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = nfg.linearize(values, ordering);
-  FactorGraph<JacobianFactor> jfg;  jfg.reserve(linear->size());
-  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, *linear) {
-    if(boost::shared_ptr<JacobianFactor> jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
+  GaussianFactorGraphOrdered::shared_ptr linear = nfg.linearize(values, ordering);
+  FactorGraphOrdered<JacobianFactorOrdered> jfg;  jfg.reserve(linear->size());
+  BOOST_FOREACH(const GaussianFactorGraphOrdered::sharedFactor& factor, *linear) {
+    if(boost::shared_ptr<JacobianFactorOrdered> jf = boost::dynamic_pointer_cast<JacobianFactorOrdered>(factor))
       jfg.push_back((jf));
     else
-      jfg.push_back(boost::make_shared<JacobianFactor>(*factor));
+      jfg.push_back(boost::make_shared<JacobianFactorOrdered>(*factor));
   }
   // compute the gradient direction
   gradientAtZero(jfg, g);

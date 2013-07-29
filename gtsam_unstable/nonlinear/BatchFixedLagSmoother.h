@@ -92,12 +92,12 @@ public:
   }
 
   /** Access the current ordering */
-  const Ordering& getOrdering() const {
+  const OrderingOrdered& getOrdering() const {
     return ordering_;
   }
 
   /** Access the current set of deltas to the linearization point */
-  const VectorValues& getDelta() const {
+  const VectorValuesOrdered& getDelta() const {
     return delta_;
   }
 
@@ -124,10 +124,10 @@ protected:
   Values linearKeys_;
 
   /** The current ordering */
-  Ordering ordering_;
+  OrderingOrdered ordering_;
 
   /** The current set of linear deltas */
-  VectorValues delta_;
+  VectorValuesOrdered delta_;
 
   /** The set of available factor graph slots. These occur because we are constantly deleting factors, leaving holes. **/
   std::queue<size_t> availableSlots_;
@@ -162,9 +162,9 @@ protected:
     typedef boost::shared_ptr<EliminationForest> shared_ptr; ///< Shared pointer to this class
 
   private:
-    typedef FastList<GaussianFactor::shared_ptr> Factors;
+    typedef FastList<GaussianFactorOrdered::shared_ptr> Factors;
     typedef FastList<shared_ptr> SubTrees;
-    typedef std::vector<GaussianConditional::shared_ptr> Conditionals;
+    typedef std::vector<GaussianConditionalOrdered::shared_ptr> Conditionals;
 
     Index key_; ///< index associated with root
     Factors factors_; ///< factors associated with root
@@ -177,10 +177,10 @@ protected:
      * Static internal function to build a vector of parent pointers using the
      * algorithm of Gilbert et al., 2001, BIT.
      */
-    static std::vector<Index> ComputeParents(const VariableIndex& structure);
+    static std::vector<Index> ComputeParents(const VariableIndexOrdered& structure);
 
     /** add a factor, for Create use only */
-    void add(const GaussianFactor::shared_ptr& factor) { factors_.push_back(factor); }
+    void add(const GaussianFactorOrdered::shared_ptr& factor) { factors_.push_back(factor); }
 
     /** add a subtree, for Create use only */
     void add(const shared_ptr& child) { subTrees_.push_back(child); }
@@ -197,10 +197,10 @@ protected:
     const Factors& factors() const { return factors_; }
 
     /** Create an elimination tree from a factor graph */
-    static std::vector<shared_ptr> Create(const GaussianFactorGraph& factorGraph, const VariableIndex& structure);
+    static std::vector<shared_ptr> Create(const GaussianFactorGraphOrdered& factorGraph, const VariableIndexOrdered& structure);
 
     /** Recursive routine that eliminates the factors arranged in an elimination tree */
-    GaussianFactor::shared_ptr eliminateRecursive(GaussianFactorGraph::Eliminate function);
+    GaussianFactorOrdered::shared_ptr eliminateRecursive(GaussianFactorGraphOrdered::Eliminate function);
 
     /** Recursive function that helps find the top of each tree */
     static void removeChildrenIndices(std::set<Index>& indices, const EliminationForest::shared_ptr& tree);
@@ -210,9 +210,9 @@ private:
   /** Private methods for printing debug information */
   static void PrintKeySet(const std::set<Key>& keys, const std::string& label);
   static void PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor);
-  static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering);
+  static void PrintSymbolicFactor(const GaussianFactorOrdered::shared_ptr& factor, const OrderingOrdered& ordering);
   static void PrintSymbolicGraph(const NonlinearFactorGraph& graph, const std::string& label);
-  static void PrintSymbolicGraph(const GaussianFactorGraph& graph, const Ordering& ordering, const std::string& label);
+  static void PrintSymbolicGraph(const GaussianFactorGraphOrdered& graph, const OrderingOrdered& ordering, const std::string& label);
 }; // BatchFixedLagSmoother
 
 } /// namespace gtsam

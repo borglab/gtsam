@@ -20,76 +20,76 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/inference/IndexConditional.h>
-#include <gtsam/inference/IndexFactor.h>
+#include <gtsam/inference/IndexConditionalOrdered.h>
+#include <gtsam/inference/IndexFactorOrdered.h>
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( IndexConditional, empty )
+TEST( IndexConditionalOrdered, empty )
 {
-  IndexConditional c0;
+  IndexConditionalOrdered c0;
   LONGS_EQUAL(0,c0.nrFrontals())
   LONGS_EQUAL(0,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, noParents )
+TEST( IndexConditionalOrdered, noParents )
 {
-  IndexConditional c0(0);
+  IndexConditionalOrdered c0(0);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(0,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, oneParents )
+TEST( IndexConditionalOrdered, oneParents )
 {
-  IndexConditional c0(0,1);
+  IndexConditionalOrdered c0(0,1);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(1,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, twoParents )
+TEST( IndexConditionalOrdered, twoParents )
 {
-  IndexConditional c0(0,1,2);
+  IndexConditionalOrdered c0(0,1,2);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(2,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, threeParents )
+TEST( IndexConditionalOrdered, threeParents )
 {
-  IndexConditional c0(0,1,2,3);
+  IndexConditionalOrdered c0(0,1,2,3);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(3,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, fourParents )
+TEST( IndexConditionalOrdered, fourParents )
 {
   vector<Index> parents;
   parents += 1,2,3,4;
-  IndexConditional c0(0,parents);
+  IndexConditionalOrdered c0(0,parents);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(4,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, FromRange )
+TEST( IndexConditionalOrdered, FromRange )
 {
   vector<Index> keys;
   keys += 1,2,3,4,5;
-  IndexConditional::shared_ptr c0(new IndexConditional(keys,2));
+  IndexConditionalOrdered::shared_ptr c0(new IndexConditionalOrdered(keys,2));
   LONGS_EQUAL(2,c0->nrFrontals())
   LONGS_EQUAL(3,c0->nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, equals )
+TEST( IndexConditionalOrdered, equals )
 {
-  IndexConditional c0(0, 1, 2), c1(0, 1, 2), c2(1, 2, 3), c3(3,4);
+  IndexConditionalOrdered c0(0, 1, 2), c1(0, 1, 2), c2(1, 2, 3), c3(3,4);
   CHECK(c0.equals(c1));
   CHECK(c1.equals(c0));
   CHECK(!c0.equals(c2));

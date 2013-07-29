@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/base/blockMatrices.h>
-#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianBayesTreeOrdered.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 
@@ -42,11 +42,11 @@ public:
 
 protected:
 
-  GaussianFactorGraph graph_;
-  Ordering ordering_;
+  GaussianFactorGraphOrdered graph_;
+  OrderingOrdered ordering_;
   Values values_;
   Factorization factorization_;
-  GaussianBayesTree bayesTree_;
+  GaussianBayesTreeOrdered bayesTree_;
 
 public:
 
@@ -86,7 +86,7 @@ protected:
 
   Matrix fullMatrix_;
   BlockView blockView_;
-  Ordering indices_;
+  OrderingOrdered indices_;
 
 public:
   /** A block view of the joint marginal - this stores a reference to the
@@ -133,7 +133,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
 protected:
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const OrderingOrdered& indices) :
     fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
 
   friend class Marginals;

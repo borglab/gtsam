@@ -16,9 +16,9 @@
  * @date Feb 7, 2012
  */
 
-#include <gtsam/inference/IndexConditional.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/IndexConditionalOrdered.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
+#include <gtsam/inference/BayesTreeOrdered.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
@@ -30,7 +30,7 @@ using namespace gtsam::serializationTestHelpers;
 /* ************************************************************************* */
 TEST (Serialization, symbolic_graph) {
   // construct expected symbolic graph
-  SymbolicFactorGraph sfg;
+  SymbolicFactorGraphOrdered sfg;
   sfg.push_factor(0);
   sfg.push_factor(0,1);
   sfg.push_factor(0,2);
@@ -43,11 +43,11 @@ TEST (Serialization, symbolic_graph) {
 
 /* ************************************************************************* */
 TEST (Serialization, symbolic_bn) {
-  IndexConditional::shared_ptr x2(new IndexConditional(1, 2, 0));
-  IndexConditional::shared_ptr l1(new IndexConditional(2, 0));
-  IndexConditional::shared_ptr x1(new IndexConditional(0));
+  IndexConditionalOrdered::shared_ptr x2(new IndexConditionalOrdered(1, 2, 0));
+  IndexConditionalOrdered::shared_ptr l1(new IndexConditionalOrdered(2, 0));
+  IndexConditionalOrdered::shared_ptr x1(new IndexConditionalOrdered(0));
 
-  SymbolicBayesNet sbn;
+  SymbolicBayesNetOrdered sbn;
   sbn.push_back(x2);
   sbn.push_back(l1);
   sbn.push_back(x1);
@@ -59,15 +59,15 @@ TEST (Serialization, symbolic_bn) {
 
 /* ************************************************************************* */
 TEST (Serialization, symbolic_bayes_tree ) {
-  typedef BayesTree<IndexConditional> SymbolicBayesTree;
+  typedef BayesTreeOrdered<IndexConditionalOrdered> SymbolicBayesTree;
   static const Index _X_=0, _T_=1, _S_=2, _E_=3, _L_=4, _B_=5;
-  IndexConditional::shared_ptr
-  B(new IndexConditional(_B_)),
-  L(new IndexConditional(_L_, _B_)),
-  E(new IndexConditional(_E_, _L_, _B_)),
-  S(new IndexConditional(_S_, _L_, _B_)),
-  T(new IndexConditional(_T_, _E_, _L_)),
-  X(new IndexConditional(_X_, _E_));
+  IndexConditionalOrdered::shared_ptr
+  B(new IndexConditionalOrdered(_B_)),
+  L(new IndexConditionalOrdered(_L_, _B_)),
+  E(new IndexConditionalOrdered(_E_, _L_, _B_)),
+  S(new IndexConditionalOrdered(_S_, _L_, _B_)),
+  T(new IndexConditionalOrdered(_T_, _E_, _L_)),
+  X(new IndexConditionalOrdered(_X_, _E_));
 
   // Bayes Tree for Asia example
   SymbolicBayesTree bayesTree;

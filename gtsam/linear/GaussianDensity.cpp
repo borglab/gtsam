@@ -37,7 +37,7 @@ namespace gtsam {
   /* ************************************************************************* */
   Vector GaussianDensity::mean() const {
     // Solve for mean
-    VectorValues x;
+    VectorValuesOrdered x;
     Index k = firstFrontalKey();
     // a VectorValues that only has a value for k: cannot be printed if k<>0
     x.insert(k, Vector(sigmas_.size()));

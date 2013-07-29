@@ -14,7 +14,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
@@ -23,8 +23,8 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( Ordering, simple_modifications ) {
-  Ordering ordering;
+TEST( OrderingOrdered, simple_modifications ) {
+  OrderingOrdered ordering;
 
   // create an ordering
   Symbol x1('x', 1), x2('x', 2), x3('x', 3), x4('x', 4);
@@ -40,7 +40,7 @@ TEST( Ordering, simple_modifications ) {
   EXPECT_LONGS_EQUAL(Key(x4), ordering.key(3));
 
   // pop the last two elements
-  Ordering::value_type x4p = ordering.pop_back();
+  OrderingOrdered::value_type x4p = ordering.pop_back();
   EXPECT_LONGS_EQUAL(3, ordering.size());
   EXPECT(assert_equal(x4, x4p.first));
 
@@ -59,17 +59,17 @@ TEST( Ordering, simple_modifications ) {
   EXPECT_LONGS_EQUAL(Key(x3), ordering.key(3));
 
   // verify
-  Ordering expectedFinal;
+  OrderingOrdered expectedFinal;
   expectedFinal += x1, x2, x4, x3;
   EXPECT(assert_equal(expectedFinal, ordering));
 }
 
 /* ************************************************************************* */
-TEST(Ordering, permute) {
-  Ordering ordering;
+TEST(OrderingOrdered, permute) {
+  OrderingOrdered ordering;
   ordering += 2, 4, 6, 8;
 
-  Ordering expected;
+  OrderingOrdered expected;
   expected += 2, 8, 6, 4;
 
   Permutation permutation(4);
@@ -78,7 +78,7 @@ TEST(Ordering, permute) {
   permutation[2] = 2;
   permutation[3] = 1;
 
-  Ordering actual = ordering;
+  OrderingOrdered actual = ordering;
   actual.permuteInPlace(permutation);
 
   EXPECT(assert_equal(expected, actual));
@@ -94,9 +94,9 @@ TEST(Ordering, permute) {
 }
 
 /* ************************************************************************* */
-TEST( Ordering, invert ) {
+TEST( OrderingOrdered, invert ) {
   // creates a map with the opposite mapping: Index->Key
-  Ordering ordering;
+  OrderingOrdered ordering;
 
   // create an ordering
   Symbol x1('x', 1), x2('x', 2), x3('x', 3), x4('x', 4);

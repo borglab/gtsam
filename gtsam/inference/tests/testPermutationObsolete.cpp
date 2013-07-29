@@ -18,7 +18,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/Permutation.h>
+#include <gtsam/inference/PermutationOrdered.h>
 
 #include <vector>
 

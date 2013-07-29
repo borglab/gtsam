@@ -37,11 +37,11 @@ bool DummyFactor::equals(const NonlinearFactor& f, double tol) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor>
-DummyFactor::linearize(const Values& c, const Ordering& ordering) const {
+boost::shared_ptr<GaussianFactorOrdered>
+DummyFactor::linearize(const Values& c, const OrderingOrdered& ordering) const {
   // Only linearize if the factor is active
   if (!this->active(c))
-    return boost::shared_ptr<JacobianFactor>();
+    return boost::shared_ptr<JacobianFactorOrdered>();
 
    // Fill in terms with zero matrices
   std::vector<std::pair<Index, Matrix> > terms(this->size());
@@ -51,8 +51,8 @@ DummyFactor::linearize(const Values& c, const Ordering& ordering) const {
   }
 
   noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(rowDim_);
-  return GaussianFactor::shared_ptr(
-      new JacobianFactor(terms, zero(rowDim_), model));
+  return GaussianFactorOrdered::shared_ptr(
+      new JacobianFactorOrdered(terms, zero(rowDim_), model));
 }
 
 /* ************************************************************************* */

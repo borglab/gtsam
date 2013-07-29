@@ -19,10 +19,10 @@
 
 #include <vector>
 #include <gtsam_unstable/base/dllexport.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactorOrdered.h>
+#include <gtsam/linear/HessianFactorOrdered.h>
 #include <gtsam/base/blockMatrices.h>
 
 namespace gtsam {
@@ -54,7 +54,7 @@ public:
    * @param ordering:   The full ordering used to linearize this factor
    * @param lin_points: The linearization points for, at least, the variables used by this factor
    */
-  LinearizedGaussianFactor(const GaussianFactor::shared_ptr& gaussian, const Ordering& ordering, const Values& lin_points);
+  LinearizedGaussianFactor(const GaussianFactorOrdered::shared_ptr& gaussian, const OrderingOrdered& ordering, const Values& lin_points);
 
   virtual ~LinearizedGaussianFactor() {};
 
@@ -114,8 +114,8 @@ public:
    * @param ordering:   The ordering used to linearize this factor
    * @param lin_points: The linearization points for, at least, the variables used by this factor
    */
-  LinearizedJacobianFactor(const JacobianFactor::shared_ptr& jacobian,
-      const Ordering& ordering, const Values& lin_points);
+  LinearizedJacobianFactor(const JacobianFactorOrdered::shared_ptr& jacobian,
+      const OrderingOrdered& ordering, const Values& lin_points);
 
   virtual ~LinearizedJacobianFactor() {}
 
@@ -148,8 +148,8 @@ public:
    * Reimplemented from NoiseModelFactor to directly copy out the
    * matrices and only update the RHS b with an updated residual
    */
-  boost::shared_ptr<GaussianFactor> linearize(
-      const Values& c, const Ordering& ordering) const;
+  boost::shared_ptr<GaussianFactorOrdered> linearize(
+      const Values& c, const OrderingOrdered& ordering) const;
 
   /** (A*x-b) */
   Vector error_vector(const Values& c) const;
@@ -207,8 +207,8 @@ public:
    * @param ordering:   The ordering used to linearize this factor
    * @param lin_points: The linearization points for, at least, the variables used by this factor
    */
-  LinearizedHessianFactor(const HessianFactor::shared_ptr& hessian,
-      const Ordering& ordering, const Values& lin_points);
+  LinearizedHessianFactor(const HessianFactorOrdered::shared_ptr& hessian,
+      const OrderingOrdered& ordering, const Values& lin_points);
 
   virtual ~LinearizedHessianFactor() {}
 
@@ -270,8 +270,8 @@ public:
    * Reimplemented from NoiseModelFactor to directly copy out the
    * matrices and only update the RHS b with an updated residual
    */
-  boost::shared_ptr<GaussianFactor> linearize(
-      const Values& c, const Ordering& ordering) const;
+  boost::shared_ptr<GaussianFactorOrdered> linearize(
+      const Values& c, const OrderingOrdered& ordering) const;
 
 private:
   /** Serialization function */

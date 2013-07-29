@@ -18,7 +18,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/linear/GaussianISAM.h>
+#include <gtsam/linear/GaussianISAMOrdered.h>
 
 namespace gtsam {
 /**
@@ -28,13 +28,13 @@ class GTSAM_EXPORT NonlinearISAM {
 protected:
 
   /** The internal iSAM object */
-  gtsam::GaussianISAM isam_;
+  gtsam::GaussianISAMOrdered isam_;
 
   /** The current linearization point */
   Values linPoint_;
 
   /** The ordering */
-  gtsam::Ordering ordering_;
+  gtsam::OrderingOrdered ordering_;
 
   /** The original factors, used when relinearizing */
   NonlinearFactorGraph factors_;
@@ -70,13 +70,13 @@ public:
   // access
 
   /** access the underlying bayes tree */
-  const GaussianISAM& bayesTree() const { return isam_; }
+  const GaussianISAMOrdered& bayesTree() const { return isam_; }
 
   /** Return the current linearization point */
   const Values& getLinearizationPoint() const { return linPoint_; }
 
   /** Get the ordering */
-  const gtsam::Ordering& getOrdering() const { return ordering_; }
+  const gtsam::OrderingOrdered& getOrdering() const { return ordering_; }
 
   /** get underlying nonlinear graph */
   const NonlinearFactorGraph& getFactorsUnsafe() const { return factors_; }
@@ -108,7 +108,7 @@ public:
   void addKey(Key key) { ordering_.push_back(key); }
 
   /** replace the current ordering */
-  void setOrdering(const Ordering& new_ordering) { ordering_ = new_ordering; }
+  void setOrdering(const OrderingOrdered& new_ordering) { ordering_ = new_ordering; }
 
   /// @}
 

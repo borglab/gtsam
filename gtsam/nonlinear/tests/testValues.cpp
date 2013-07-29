@@ -155,7 +155,7 @@ TEST( Values, update_element )
 //  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 //  LONGS_EQUAL(5, config0.dim());
 //
-//  VectorValues expected;
+//  VectorValuesOrdered expected;
 //  expected.insert(key1, zero(2));
 //  expected.insert(key2, zero(3));
 //  CHECK(assert_equal(expected, config0.zero()));
@@ -168,8 +168,8 @@ TEST(Values, expmap_a)
   config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  Ordering ordering(*config0.orderingArbitrary());
-  VectorValues increment(config0.dims(ordering));
+  OrderingOrdered ordering(*config0.orderingArbitrary());
+  VectorValuesOrdered increment(config0.dims(ordering));
   increment[ordering[key1]] = Vector_(3, 1.0, 1.1, 1.2);
   increment[ordering[key2]] = Vector_(3, 1.3, 1.4, 1.5);
 
@@ -187,8 +187,8 @@ TEST(Values, expmap_b)
   config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  Ordering ordering(*config0.orderingArbitrary());
-  VectorValues increment(VectorValues::Zero(config0.dims(ordering)));
+  OrderingOrdered ordering(*config0.orderingArbitrary());
+  VectorValuesOrdered increment(VectorValuesOrdered::Zero(config0.dims(ordering)));
   increment[ordering[key2]] = LieVector(3, 1.3, 1.4, 1.5);
 
   Values expected;
@@ -241,9 +241,9 @@ TEST(Values, localCoordinates)
   valuesA.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  Ordering ordering = *valuesA.orderingArbitrary();
+  OrderingOrdered ordering = *valuesA.orderingArbitrary();
 
-  VectorValues expDelta = valuesA.zeroVectors(ordering);
+  VectorValuesOrdered expDelta = valuesA.zeroVectors(ordering);
 //  expDelta.at(ordering[key1]) = Vector_(3, 0.1, 0.2, 0.3);
 //  expDelta.at(ordering[key2]) = Vector_(3, 0.4, 0.5, 0.6);
 

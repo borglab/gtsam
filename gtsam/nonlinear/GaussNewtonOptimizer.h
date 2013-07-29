@@ -70,7 +70,7 @@ public:
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
    */
-  GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
+  GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const OrderingOrdered& ordering) :
         NonlinearOptimizer(graph), state_(graph, initialValues) {
     params_.ordering = ordering; }
 

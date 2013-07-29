@@ -119,9 +119,9 @@ TEST_UNSAFE( DiscreteMarginals, truss ) {
   graph.add(key[0] & key[2] & key[4],"2 2 2 2 1 1 1 1");
   graph.add(key[1] & key[3] & key[4],"1 1 1 1 2 2 2 2");
   graph.add(key[2] & key[3] & key[4],"1 1 1 1 1 1 1 1");
-  typedef JunctionTree<DiscreteFactorGraph> JT;
+  typedef JunctionTreeOrdered<DiscreteFactorGraph> JT;
   GenericMultifrontalSolver<DiscreteFactor, JT> solver(graph);
-  BayesTree<DiscreteConditional>::shared_ptr bayesTree = solver.eliminate(&EliminateDiscrete);
+  BayesTreeOrdered<DiscreteConditional>::shared_ptr bayesTree = solver.eliminate(&EliminateDiscrete);
 //  bayesTree->print("Bayes Tree");
   typedef BayesTreeClique<DiscreteConditional> Clique;
 

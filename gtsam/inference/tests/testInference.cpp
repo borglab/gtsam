@@ -18,22 +18,22 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/inference.h>
-#include <gtsam/inference/VariableIndex.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/inferenceOrdered.h>
+#include <gtsam/inference/VariableIndexOrdered.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
 
 using namespace gtsam;
 
 /* ************************************************************************* */
 TEST(inference, UnobservedVariables) {
-  SymbolicFactorGraph sfg;
+  SymbolicFactorGraphOrdered sfg;
 
   // Create a factor graph that skips some variables
   sfg.push_factor(0,1);
   sfg.push_factor(1,3);
   sfg.push_factor(3,5);
 
-  VariableIndex variableIndex(sfg);
+  VariableIndexOrdered variableIndex(sfg);
 
   // Computes a permutation with known variables first, skipped variables last
   // Actual 0 1 3 5 2 4
@@ -50,7 +50,7 @@ TEST(inference, UnobservedVariables) {
 
 /* ************************************************************************* */
 TEST(inference, constrained_ordering) {
-  SymbolicFactorGraph sfg;
+  SymbolicFactorGraphOrdered sfg;
 
   // create graph with wanted variable set = 2, 4
   sfg.push_factor(0,1);
@@ -59,7 +59,7 @@ TEST(inference, constrained_ordering) {
   sfg.push_factor(3,4);
   sfg.push_factor(4,5);
 
-  VariableIndex variableIndex(sfg);
+  VariableIndexOrdered variableIndex(sfg);
 
   // unconstrained version
   Permutation::shared_ptr actUnconstrained(inference::PermutationCOLAMD(variableIndex));
@@ -83,7 +83,7 @@ TEST(inference, constrained_ordering) {
 
 /* ************************************************************************* */
 TEST(inference, grouped_constrained_ordering) {
-  SymbolicFactorGraph sfg;
+  SymbolicFactorGraphOrdered sfg;
 
   // create graph with constrained groups:
   // 1: 2, 4
@@ -94,7 +94,7 @@ TEST(inference, grouped_constrained_ordering) {
   sfg.push_factor(3,4);
   sfg.push_factor(4,5);
 
-  VariableIndex variableIndex(sfg);
+  VariableIndexOrdered variableIndex(sfg);
 
   // constrained version - push one set to the end
   FastMap<size_t, int> constraints;

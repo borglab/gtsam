@@ -20,71 +20,71 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR) :
+GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraphOrdered<GaussianFactorOrdered>& factorGraph, bool useQR) :
     Base(factorGraph), useQR_(useQR) {}
 
 /* ************************************************************************* */
-GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-    const VariableIndex::shared_ptr& variableIndex, bool useQR) :
+GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph,
+    const VariableIndexOrdered::shared_ptr& variableIndex, bool useQR) :
     Base(factorGraph, variableIndex), useQR_(useQR) {}
 
 /* ************************************************************************* */
 GaussianMultifrontalSolver::shared_ptr
-GaussianMultifrontalSolver::Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-    const VariableIndex::shared_ptr& variableIndex, bool useQR) {
+GaussianMultifrontalSolver::Create(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph,
+    const VariableIndexOrdered::shared_ptr& variableIndex, bool useQR) {
   return shared_ptr(new GaussianMultifrontalSolver(factorGraph, variableIndex, useQR));
 }
 
 /* ************************************************************************* */
-void GaussianMultifrontalSolver::replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) {
+void GaussianMultifrontalSolver::replaceFactors(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph) {
   Base::replaceFactors(factorGraph);
 }
 
 /* ************************************************************************* */
-GaussianBayesTree::shared_ptr GaussianMultifrontalSolver::eliminate() const {
+GaussianBayesTreeOrdered::shared_ptr GaussianMultifrontalSolver::eliminate() const {
   if (useQR_)
-    return Base::eliminate(&EliminateQR);
+    return Base::eliminate(&EliminateQROrdered);
   else
-    return Base::eliminate(&EliminatePreferCholesky);
+    return Base::eliminate(&EliminatePreferCholeskyOrdered);
 }
 
 /* ************************************************************************* */
-VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
+VectorValuesOrdered::shared_ptr GaussianMultifrontalSolver::optimize() const {
   gttic(GaussianMultifrontalSolver_optimize);
-  VectorValues::shared_ptr values;
+  VectorValuesOrdered::shared_ptr values;
   if (useQR_)
-    values = VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminateQR)));
+    values = VectorValuesOrdered::shared_ptr(new VectorValuesOrdered(junctionTree_->optimize(&EliminateQROrdered)));
   else
-    values= VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminatePreferCholesky)));
+    values= VectorValuesOrdered::shared_ptr(new VectorValuesOrdered(junctionTree_->optimize(&EliminatePreferCholeskyOrdered)));
   return values;
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph::shared_ptr GaussianMultifrontalSolver::jointFactorGraph(const std::vector<Index>& js) const {
+GaussianFactorGraphOrdered::shared_ptr GaussianMultifrontalSolver::jointFactorGraph(const std::vector<Index>& js) const {
   if (useQR_)
-    return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminateQR)));
+    return GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered(*Base::jointFactorGraph(js,&EliminateQROrdered)));
   else
-    return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminatePreferCholesky)));
+    return GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered(*Base::jointFactorGraph(js,&EliminatePreferCholeskyOrdered)));
 }
 
 /* ************************************************************************* */
-GaussianFactor::shared_ptr GaussianMultifrontalSolver::marginalFactor(Index j) const {
+GaussianFactorOrdered::shared_ptr GaussianMultifrontalSolver::marginalFactor(Index j) const {
   if (useQR_)
-    return Base::marginalFactor(j,&EliminateQR);
+    return Base::marginalFactor(j,&EliminateQROrdered);
   else
-    return Base::marginalFactor(j,&EliminatePreferCholesky);
+    return Base::marginalFactor(j,&EliminatePreferCholeskyOrdered);
 }
 
 /* ************************************************************************* */
 Matrix GaussianMultifrontalSolver::marginalCovariance(Index j) const {
-  FactorGraph<GaussianFactor> fg;
-  GaussianConditional::shared_ptr conditional;
+  FactorGraphOrdered<GaussianFactorOrdered> fg;
+  GaussianConditionalOrdered::shared_ptr conditional;
   if (useQR_) {
-    fg.push_back(Base::marginalFactor(j,&EliminateQR));
-    conditional = EliminateQR(fg,1).first;
+    fg.push_back(Base::marginalFactor(j,&EliminateQROrdered));
+    conditional = EliminateQROrdered(fg,1).first;
   } else {
-    fg.push_back(Base::marginalFactor(j,&EliminatePreferCholesky));
-    conditional = EliminatePreferCholesky(fg,1).first;
+    fg.push_back(Base::marginalFactor(j,&EliminatePreferCholeskyOrdered));
+    conditional = EliminatePreferCholeskyOrdered(fg,1).first;
   }
   return conditional->information().inverse();
 }

@@ -19,7 +19,7 @@
 // \callgraph
 #pragma once
 
-#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianConditionalOrdered.h>
 
 namespace gtsam {
 
@@ -30,7 +30,7 @@ namespace gtsam {
    * The negative log-probability is given by \f$ |Rx - d|^2 \f$
    * with \f$ \Lambda = \Sigma^{-1} = R^T R \f$ and \f$ \mu = R^{-1} d \f$
    */
-  class GTSAM_EXPORT GaussianDensity: public GaussianConditional {
+  class GTSAM_EXPORT GaussianDensity: public GaussianConditionalOrdered {
 
   public:
 
@@ -38,19 +38,19 @@ namespace gtsam {
 
     /// default constructor needed for serialization
     GaussianDensity() :
-        GaussianConditional() {
+        GaussianConditionalOrdered() {
     }
 
     /// Copy constructor from GaussianConditional
-    GaussianDensity(const GaussianConditional& conditional) :
-        GaussianConditional(conditional) {
+    GaussianDensity(const GaussianConditionalOrdered& conditional) :
+        GaussianConditionalOrdered(conditional) {
       assert(conditional.nrParents() == 0);
     }
 
     /// constructor using d, R
     GaussianDensity(Index key, const Vector& d, const Matrix& R,
         const Vector& sigmas) :
-        GaussianConditional(key, d, R, sigmas) {
+        GaussianConditionalOrdered(key, d, R, sigmas) {
     }
 
     /// print

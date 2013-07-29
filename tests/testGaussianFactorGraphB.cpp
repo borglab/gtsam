@@ -17,10 +17,10 @@
 
 #include <tests/smallExample.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesNetOrdered.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
@@ -47,19 +47,19 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, equals ) {
+TEST( GaussianFactorGraphOrdered, equals ) {
 
-  Ordering ordering; ordering += X(1),X(2),L(1);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianFactorGraph fg2 = createGaussianFactorGraph(ordering);
+  OrderingOrdered ordering; ordering += X(1),X(2),L(1);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraphOrdered fg2 = createGaussianFactorGraph(ordering);
   EXPECT(fg.equals(fg2));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, error ) {
-  Ordering ordering; ordering += X(1),X(2),L(1);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  VectorValues cfg = createZeroDelta(ordering);
+TEST( GaussianFactorGraphOrdered, error ) {
+  OrderingOrdered ordering; ordering += X(1),X(2),L(1);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
+  VectorValuesOrdered cfg = createZeroDelta(ordering);
 
   // note the error is the same as in testNonlinearFactorGraph as a
   // zero delta config in the linear graph is equivalent to noisy in
@@ -69,71 +69,71 @@ TEST( GaussianFactorGraph, error ) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, eliminateOne_x1 )
+TEST( GaussianFactorGraphOrdered, eliminateOne_x1 )
 {
-  Ordering ordering; ordering += X(1),L(1),X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  OrderingOrdered ordering; ordering += X(1),L(1),X(2);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
 
-  GaussianConditional::shared_ptr conditional;
-  GaussianFactorGraph remaining;
-  boost::tie(conditional,remaining) = fg.eliminateOne(0, EliminateQR);
+  GaussianConditionalOrdered::shared_ptr conditional;
+  GaussianFactorGraphOrdered remaining;
+  boost::tie(conditional,remaining) = fg.eliminateOne(0, EliminateQROrdered);
 
   // create expected Conditional Gaussian
   Matrix I = 15*eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
   Vector d = Vector_(2, -0.133333, -0.0222222), sigma = ones(2);
-  GaussianConditional expected(ordering[X(1)],15*d,R11,ordering[L(1)],S12,ordering[X(2)],S13,sigma);
+  GaussianConditionalOrdered expected(ordering[X(1)],15*d,R11,ordering[L(1)],S12,ordering[X(2)],S13,sigma);
 
   EXPECT(assert_equal(expected,*conditional,tol));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, eliminateOne_x2 )
+TEST( GaussianFactorGraphOrdered, eliminateOne_x2 )
 {
-  Ordering ordering; ordering += X(2),L(1),X(1);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr actual = fg.eliminateOne(0, EliminateQR).first;
+  OrderingOrdered ordering; ordering += X(2),L(1),X(1);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
+  GaussianConditionalOrdered::shared_ptr actual = fg.eliminateOne(0, EliminateQROrdered).first;
 
   // create expected Conditional Gaussian
   double sig = 0.0894427;
   Matrix I = eye(2)/sig, R11 = I, S12 = -0.2*I, S13 = -0.8*I;
   Vector d = Vector_(2, 0.2, -0.14)/sig, sigma = ones(2);
-  GaussianConditional expected(ordering[X(2)],d,R11,ordering[L(1)],S12,ordering[X(1)],S13,sigma);
+  GaussianConditionalOrdered expected(ordering[X(2)],d,R11,ordering[L(1)],S12,ordering[X(1)],S13,sigma);
 
   EXPECT(assert_equal(expected,*actual,tol));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, eliminateOne_l1 )
+TEST( GaussianFactorGraphOrdered, eliminateOne_l1 )
 {
-  Ordering ordering; ordering += L(1),X(1),X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr actual = fg.eliminateOne(0, EliminateQR).first;
+  OrderingOrdered ordering; ordering += L(1),X(1),X(2);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
+  GaussianConditionalOrdered::shared_ptr actual = fg.eliminateOne(0, EliminateQROrdered).first;
 
   // create expected Conditional Gaussian
   double sig = sqrt(2.0)/10.;
   Matrix I = eye(2)/sig, R11 = I, S12 = -0.5*I, S13 = -0.5*I;
   Vector d = Vector_(2, -0.1, 0.25)/sig, sigma = ones(2);
-  GaussianConditional expected(ordering[L(1)],d,R11,ordering[X(1)],S12,ordering[X(2)],S13,sigma);
+  GaussianConditionalOrdered expected(ordering[L(1)],d,R11,ordering[X(1)],S12,ordering[X(2)],S13,sigma);
 
   EXPECT(assert_equal(expected,*actual,tol));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, eliminateOne_x1_fast )
+TEST( GaussianFactorGraphOrdered, eliminateOne_x1_fast )
 {
-  Ordering ordering; ordering += X(1),L(1),X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr conditional;
-  GaussianFactorGraph remaining;
-  boost::tie(conditional,remaining) = fg.eliminateOne(ordering[X(1)], EliminateQR);
+  OrderingOrdered ordering; ordering += X(1),L(1),X(2);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
+  GaussianConditionalOrdered::shared_ptr conditional;
+  GaussianFactorGraphOrdered remaining;
+  boost::tie(conditional,remaining) = fg.eliminateOne(ordering[X(1)], EliminateQROrdered);
 
   // create expected Conditional Gaussian
   Matrix I = 15*eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
   Vector d = Vector_(2, -0.133333, -0.0222222), sigma = ones(2);
-  GaussianConditional expected(ordering[X(1)],15*d,R11,ordering[L(1)],S12,ordering[X(2)],S13,sigma);
+  GaussianConditionalOrdered expected(ordering[X(1)],15*d,R11,ordering[L(1)],S12,ordering[X(2)],S13,sigma);
 
   // Create expected remaining new factor
-  JacobianFactor expectedFactor(1, Matrix_(4,2,
+  JacobianFactorOrdered expectedFactor(1, Matrix_(4,2,
              4.714045207910318,                   0.,
                              0.,   4.714045207910318,
                              0.,                   0.,
@@ -146,52 +146,52 @@ TEST( GaussianFactorGraph, eliminateOne_x1_fast )
      Vector_(4, -0.707106781186547, 0.942809041582063, 0.707106781186547, -1.414213562373094), noiseModel::Unit::Create(4));
 
   EXPECT(assert_equal(expected,*conditional,tol));
-  EXPECT(assert_equal((const GaussianFactor&)expectedFactor,*remaining.back(),tol));
+  EXPECT(assert_equal((const GaussianFactorOrdered&)expectedFactor,*remaining.back(),tol));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, eliminateOne_x2_fast )
+TEST( GaussianFactorGraphOrdered, eliminateOne_x2_fast )
 {
-  Ordering ordering; ordering += X(1),L(1),X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr actual = fg.eliminateOne(ordering[X(2)], EliminateQR).first;
+  OrderingOrdered ordering; ordering += X(1),L(1),X(2);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
+  GaussianConditionalOrdered::shared_ptr actual = fg.eliminateOne(ordering[X(2)], EliminateQROrdered).first;
 
   // create expected Conditional Gaussian
   double sig = 0.0894427;
   Matrix I = eye(2)/sig, R11 = I, S12 = -0.2*I, S13 = -0.8*I;
   Vector d = Vector_(2, 0.2, -0.14)/sig, sigma = ones(2);
-  GaussianConditional expected(ordering[X(2)],d,R11,ordering[X(1)],S13,ordering[L(1)],S12,sigma);
+  GaussianConditionalOrdered expected(ordering[X(2)],d,R11,ordering[X(1)],S13,ordering[L(1)],S12,sigma);
 
   EXPECT(assert_equal(expected,*actual,tol));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, eliminateOne_l1_fast )
+TEST( GaussianFactorGraphOrdered, eliminateOne_l1_fast )
 {
-  Ordering ordering; ordering += X(1),L(1),X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr actual = fg.eliminateOne(ordering[L(1)], EliminateQR).first;
+  OrderingOrdered ordering; ordering += X(1),L(1),X(2);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
+  GaussianConditionalOrdered::shared_ptr actual = fg.eliminateOne(ordering[L(1)], EliminateQROrdered).first;
 
   // create expected Conditional Gaussian
   double sig = sqrt(2.0)/10.;
   Matrix I = eye(2)/sig, R11 = I, S12 = -0.5*I, S13 = -0.5*I;
   Vector d = Vector_(2, -0.1, 0.25)/sig, sigma = ones(2);
-  GaussianConditional expected(ordering[L(1)],d,R11,ordering[X(1)],S12,ordering[X(2)],S13,sigma);
+  GaussianConditionalOrdered expected(ordering[L(1)],d,R11,ordering[X(1)],S12,ordering[X(2)],S13,sigma);
 
   EXPECT(assert_equal(expected,*actual,tol));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, eliminateAll )
+TEST( GaussianFactorGraphOrdered, eliminateAll )
 {
   // create expected Chordal bayes Net
   Matrix I = eye(2);
 
-  Ordering ordering;
+  OrderingOrdered ordering;
   ordering += X(2),L(1),X(1);
 
   Vector d1 = Vector_(2, -0.1,-0.1);
-  GaussianBayesNet expected = simpleGaussian(ordering[X(1)],d1,0.1);
+  GaussianBayesNetOrdered expected = simpleGaussian(ordering[X(1)],d1,0.1);
 
   double sig1 = 0.149071;
   Vector d2 = Vector_(2, 0.0, 0.2)/sig1, sigma2 = ones(2);
@@ -202,108 +202,108 @@ TEST( GaussianFactorGraph, eliminateAll )
   push_front(expected,ordering[X(2)],d3, I/sig2,ordering[L(1)], (-0.2)*I/sig2, ordering[X(1)], (-0.8)*I/sig2, sigma3);
 
   // Check one ordering
-  GaussianFactorGraph fg1 = createGaussianFactorGraph(ordering);
-  GaussianBayesNet actual = *GaussianSequentialSolver(fg1).eliminate();
+  GaussianFactorGraphOrdered fg1 = createGaussianFactorGraph(ordering);
+  GaussianBayesNetOrdered actual = *GaussianSequentialSolver(fg1).eliminate();
   EXPECT(assert_equal(expected,actual,tol));
 
-  GaussianBayesNet actualQR = *GaussianSequentialSolver(fg1, true).eliminate();
+  GaussianBayesNetOrdered actualQR = *GaussianSequentialSolver(fg1, true).eliminate();
   EXPECT(assert_equal(expected,actualQR,tol));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, copying )
+TEST( GaussianFactorGraphOrdered, copying )
 {
   // Create a graph
-  Ordering ordering; ordering += X(2),L(1),X(1);
-  GaussianFactorGraph actual = createGaussianFactorGraph(ordering);
+  OrderingOrdered ordering; ordering += X(2),L(1),X(1);
+  GaussianFactorGraphOrdered actual = createGaussianFactorGraph(ordering);
 
   // Copy the graph !
-  GaussianFactorGraph copy = actual;
+  GaussianFactorGraphOrdered copy = actual;
 
   // now eliminate the copy
-  GaussianBayesNet actual1 = *GaussianSequentialSolver(copy).eliminate();
+  GaussianBayesNetOrdered actual1 = *GaussianSequentialSolver(copy).eliminate();
 
   // Create the same graph, but not by copying
-  GaussianFactorGraph expected = createGaussianFactorGraph(ordering);
+  GaussianFactorGraphOrdered expected = createGaussianFactorGraph(ordering);
 
   // and check that original is still the same graph
   EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, CONSTRUCTOR_GaussianBayesNet )
+TEST( GaussianFactorGraphOrdered, CONSTRUCTOR_GaussianBayesNet )
 {
-  Ordering ord;
+  OrderingOrdered ord;
   ord += X(2),L(1),X(1);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ord);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ord);
 
   // render with a given ordering
-  GaussianBayesNet CBN = *GaussianSequentialSolver(fg).eliminate();
+  GaussianBayesNetOrdered CBN = *GaussianSequentialSolver(fg).eliminate();
 
   // True GaussianFactorGraph
-  GaussianFactorGraph fg2(CBN);
-  GaussianBayesNet CBN2 = *GaussianSequentialSolver(fg2).eliminate();
+  GaussianFactorGraphOrdered fg2(CBN);
+  GaussianBayesNetOrdered CBN2 = *GaussianSequentialSolver(fg2).eliminate();
   EXPECT(assert_equal(CBN,CBN2));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, getOrdering)
+TEST( GaussianFactorGraphOrdered, getOrdering)
 {
-  Ordering original; original += L(1),X(1),X(2);
-  FactorGraph<IndexFactor> symbolic(createGaussianFactorGraph(original));
-  Permutation perm(*inference::PermutationCOLAMD(VariableIndex(symbolic)));
-  Ordering actual = original; actual.permuteInPlace(perm);
-  Ordering expected; expected += L(1),X(2),X(1);
+  OrderingOrdered original; original += L(1),X(1),X(2);
+  FactorGraphOrdered<IndexFactorOrdered> symbolic(createGaussianFactorGraph(original));
+  Permutation perm(*inference::PermutationCOLAMD(VariableIndexOrdered(symbolic)));
+  OrderingOrdered actual = original; actual.permuteInPlace(perm);
+  OrderingOrdered expected; expected += L(1),X(2),X(1);
   EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, optimize_Cholesky )
+TEST( GaussianFactorGraphOrdered, optimize_Cholesky )
 {
   // create an ordering
-  Ordering ord; ord += X(2),L(1),X(1);
+  OrderingOrdered ord; ord += X(2),L(1),X(1);
 
   // create a graph
-  GaussianFactorGraph fg = createGaussianFactorGraph(ord);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ord);
 
   // optimize the graph
-  VectorValues actual = *GaussianSequentialSolver(fg, false).optimize();
+  VectorValuesOrdered actual = *GaussianSequentialSolver(fg, false).optimize();
 
   // verify
-  VectorValues expected = createCorrectDelta(ord);
+  VectorValuesOrdered expected = createCorrectDelta(ord);
 
   EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, optimize_QR )
+TEST( GaussianFactorGraphOrdered, optimize_QR )
 {
   // create an ordering
-  Ordering ord; ord += X(2),L(1),X(1);
+  OrderingOrdered ord; ord += X(2),L(1),X(1);
 
   // create a graph
-  GaussianFactorGraph fg = createGaussianFactorGraph(ord);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ord);
 
   // optimize the graph
-  VectorValues actual = *GaussianSequentialSolver(fg, true).optimize();
+  VectorValuesOrdered actual = *GaussianSequentialSolver(fg, true).optimize();
 
   // verify
-  VectorValues expected = createCorrectDelta(ord);
+  VectorValuesOrdered expected = createCorrectDelta(ord);
 
   EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, combine)
+TEST( GaussianFactorGraphOrdered, combine)
 {
   // create an ordering
-  Ordering ord; ord += X(2),L(1),X(1);
+  OrderingOrdered ord; ord += X(2),L(1),X(1);
 
   // create a test graph
-  GaussianFactorGraph fg1 = createGaussianFactorGraph(ord);
+  GaussianFactorGraphOrdered fg1 = createGaussianFactorGraph(ord);
 
   // create another factor graph
-  GaussianFactorGraph fg2 = createGaussianFactorGraph(ord);
+  GaussianFactorGraphOrdered fg2 = createGaussianFactorGraph(ord);
 
   // get sizes
   size_t size1 = fg1.size();
@@ -316,23 +316,23 @@ TEST( GaussianFactorGraph, combine)
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, combine2)
+TEST( GaussianFactorGraphOrdered, combine2)
 {
   // create an ordering
-  Ordering ord; ord += X(2),L(1),X(1);
+  OrderingOrdered ord; ord += X(2),L(1),X(1);
 
   // create a test graph
-  GaussianFactorGraph fg1 = createGaussianFactorGraph(ord);
+  GaussianFactorGraphOrdered fg1 = createGaussianFactorGraph(ord);
 
   // create another factor graph
-  GaussianFactorGraph fg2 = createGaussianFactorGraph(ord);
+  GaussianFactorGraphOrdered fg2 = createGaussianFactorGraph(ord);
 
   // get sizes
   size_t size1 = fg1.size();
   size_t size2 = fg2.size();
 
   // combine them
-  GaussianFactorGraph fg3 = GaussianFactorGraph::combine2(fg1, fg2);
+  GaussianFactorGraphOrdered fg3 = GaussianFactorGraphOrdered::combine2(fg1, fg2);
 
   EXPECT(size1+size2 == fg3.size());
 }
@@ -346,31 +346,31 @@ void print(vector<int> v) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, createSmoother)
+TEST(GaussianFactorGraphOrdered, createSmoother)
 {
-  GaussianFactorGraph fg1 = createSmoother(2).first;
+  GaussianFactorGraphOrdered fg1 = createSmoother(2).first;
   LONGS_EQUAL(3,fg1.size());
-  GaussianFactorGraph fg2 = createSmoother(3).first;
+  GaussianFactorGraphOrdered fg2 = createSmoother(3).first;
   LONGS_EQUAL(5,fg2.size());
 }
 
 /* ************************************************************************* */
-double error(const VectorValues& x) {
+double error(const VectorValuesOrdered& x) {
   // create an ordering
-  Ordering ord; ord += X(2),L(1),X(1);
+  OrderingOrdered ord; ord += X(2),L(1),X(1);
 
-  GaussianFactorGraph fg = createGaussianFactorGraph(ord);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ord);
   return fg.error(x);
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, multiplication )
+TEST( GaussianFactorGraphOrdered, multiplication )
 {
   // create an ordering
-  Ordering ord; ord += X(2),L(1),X(1);
+  OrderingOrdered ord; ord += X(2),L(1),X(1);
 
-  GaussianFactorGraph A = createGaussianFactorGraph(ord);
-  VectorValues x = createCorrectDelta(ord);
+  GaussianFactorGraphOrdered A = createGaussianFactorGraph(ord);
+  VectorValuesOrdered x = createCorrectDelta(ord);
   Errors actual = A * x;
   Errors expected;
   expected += Vector_(2,-1.0,-1.0);
@@ -382,12 +382,12 @@ TEST( GaussianFactorGraph, multiplication )
 
 /* ************************************************************************* */
 // Extra test on elimination prompted by Michael's email to Frank 1/4/2010
-TEST( GaussianFactorGraph, elimination )
+TEST( GaussianFactorGraphOrdered, elimination )
 {
-  Ordering ord;
+  OrderingOrdered ord;
   ord += X(1), X(2);
   // Create Gaussian Factor Graph
-  GaussianFactorGraph fg;
+  GaussianFactorGraphOrdered fg;
   Matrix Ap = eye(1), An = eye(1) * -1;
   Vector b = Vector_(1, 0.0);
   SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1,2.0);
@@ -396,7 +396,7 @@ TEST( GaussianFactorGraph, elimination )
   fg.add(ord[X(2)], Ap, b, sigma);
 
   // Eliminate
-  GaussianBayesNet bayesNet = *GaussianSequentialSolver(fg).eliminate();
+  GaussianBayesNetOrdered bayesNet = *GaussianSequentialSolver(fg).eliminate();
 
   // Check sigma
   EXPECT_DOUBLES_EQUAL(1.0,bayesNet[ord[X(2)]]->get_sigmas()(0),1e-5);
@@ -416,48 +416,48 @@ TEST( GaussianFactorGraph, elimination )
  /* ************************************************************************* */
 // Tests ported from ConstrainedGaussianFactorGraph
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, constrained_simple )
+TEST( GaussianFactorGraphOrdered, constrained_simple )
 {
   // get a graph with a constraint in it
-  GaussianFactorGraph fg = createSimpleConstraintGraph();
+  GaussianFactorGraphOrdered fg = createSimpleConstraintGraph();
   EXPECT(hasConstraints(fg));
 
 
   // eliminate and solve
-  VectorValues actual = *GaussianSequentialSolver(fg).optimize();
+  VectorValuesOrdered actual = *GaussianSequentialSolver(fg).optimize();
 
   // verify
-  VectorValues expected = createSimpleConstraintValues();
+  VectorValuesOrdered expected = createSimpleConstraintValues();
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, constrained_single )
+TEST( GaussianFactorGraphOrdered, constrained_single )
 {
   // get a graph with a constraint in it
-  GaussianFactorGraph fg = createSingleConstraintGraph();
+  GaussianFactorGraphOrdered fg = createSingleConstraintGraph();
   EXPECT(hasConstraints(fg));
 
   // eliminate and solve
-  VectorValues actual = *GaussianSequentialSolver(fg).optimize();
+  VectorValuesOrdered actual = *GaussianSequentialSolver(fg).optimize();
 
   // verify
-  VectorValues expected = createSingleConstraintValues();
+  VectorValuesOrdered expected = createSingleConstraintValues();
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, constrained_multi1 )
+TEST( GaussianFactorGraphOrdered, constrained_multi1 )
 {
   // get a graph with a constraint in it
-  GaussianFactorGraph fg = createMultiConstraintGraph();
+  GaussianFactorGraphOrdered fg = createMultiConstraintGraph();
   EXPECT(hasConstraints(fg));
 
   // eliminate and solve
-  VectorValues actual = *GaussianSequentialSolver(fg).optimize();
+  VectorValuesOrdered actual = *GaussianSequentialSolver(fg).optimize();
 
   // verify
-  VectorValues expected = createMultiConstraintValues();
+  VectorValuesOrdered expected = createMultiConstraintValues();
   EXPECT(assert_equal(expected, actual));
 }
 
@@ -466,27 +466,27 @@ TEST( GaussianFactorGraph, constrained_multi1 )
 static SharedDiagonal model = noiseModel::Isotropic::Sigma(2,1);
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, replace)
+TEST(GaussianFactorGraphOrdered, replace)
 {
-  Ordering ord; ord += X(1),X(2),X(3),X(4),X(5),X(6);
+  OrderingOrdered ord; ord += X(1),X(2),X(3),X(4),X(5),X(6);
   SharedDiagonal noise(noiseModel::Isotropic::Sigma(3, 1.0));
 
-  GaussianFactorGraph::sharedFactor f1(new JacobianFactor(
+  GaussianFactorGraphOrdered::sharedFactor f1(new JacobianFactorOrdered(
       ord[X(1)], eye(3,3), ord[X(2)], eye(3,3), zero(3), noise));
-  GaussianFactorGraph::sharedFactor f2(new JacobianFactor(
+  GaussianFactorGraphOrdered::sharedFactor f2(new JacobianFactorOrdered(
       ord[X(2)], eye(3,3), ord[X(3)], eye(3,3), zero(3), noise));
-  GaussianFactorGraph::sharedFactor f3(new JacobianFactor(
+  GaussianFactorGraphOrdered::sharedFactor f3(new JacobianFactorOrdered(
       ord[X(3)], eye(3,3), ord[X(4)], eye(3,3), zero(3), noise));
-  GaussianFactorGraph::sharedFactor f4(new JacobianFactor(
+  GaussianFactorGraphOrdered::sharedFactor f4(new JacobianFactorOrdered(
       ord[X(5)], eye(3,3), ord[X(6)], eye(3,3), zero(3), noise));
 
-  GaussianFactorGraph actual;
+  GaussianFactorGraphOrdered actual;
   actual.push_back(f1);
   actual.push_back(f2);
   actual.push_back(f3);
   actual.replace(0, f4);
 
-  GaussianFactorGraph expected;
+  GaussianFactorGraphOrdered expected;
   expected.push_back(f4);
   expected.push_back(f2);
   expected.push_back(f3);
@@ -495,35 +495,35 @@ TEST(GaussianFactorGraph, replace)
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, createSmoother2)
+TEST(GaussianFactorGraphOrdered, createSmoother2)
 {
   using namespace example;
-  GaussianFactorGraph fg2;
-  Ordering ordering;
+  GaussianFactorGraphOrdered fg2;
+  OrderingOrdered ordering;
   boost::tie(fg2,ordering) = createSmoother(3);
   LONGS_EQUAL(5,fg2.size());
 
   // eliminate
   vector<Index> x3var; x3var.push_back(ordering[X(3)]);
   vector<Index> x1var; x1var.push_back(ordering[X(1)]);
-  GaussianBayesNet p_x3 = *GaussianSequentialSolver(
+  GaussianBayesNetOrdered p_x3 = *GaussianSequentialSolver(
       *GaussianSequentialSolver(fg2).jointFactorGraph(x3var)).eliminate();
-  GaussianBayesNet p_x1 = *GaussianSequentialSolver(
+  GaussianBayesNetOrdered p_x1 = *GaussianSequentialSolver(
       *GaussianSequentialSolver(fg2).jointFactorGraph(x1var)).eliminate();
   CHECK(assert_equal(*p_x1.back(),*p_x3.front())); // should be the same because of symmetry
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, hasConstraints)
+TEST(GaussianFactorGraphOrdered, hasConstraints)
 {
-  FactorGraph<GaussianFactor> fgc1 = createMultiConstraintGraph();
+  FactorGraphOrdered<GaussianFactorOrdered> fgc1 = createMultiConstraintGraph();
   EXPECT(hasConstraints(fgc1));
 
-  FactorGraph<GaussianFactor> fgc2 = createSimpleConstraintGraph() ;
+  FactorGraphOrdered<GaussianFactorOrdered> fgc2 = createSimpleConstraintGraph() ;
   EXPECT(hasConstraints(fgc2));
 
-  Ordering ordering; ordering += X(1), X(2), L(1);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  OrderingOrdered ordering; ordering += X(1), X(2), L(1);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
   EXPECT(!hasConstraints(fg));
 }
 
@@ -534,7 +534,7 @@ TEST(GaussianFactorGraph, hasConstraints)
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, conditional_sigma_failure) {
+TEST( GaussianFactorGraphOrdered, conditional_sigma_failure) {
   // This system derives from a failure case in DDF in which a Bayes Tree
   // has non-unit sigmas for conditionals in the Bayes Tree, which
   // should never happen by construction
@@ -578,17 +578,17 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   factors.add(RangeFactor<Pose3,Point3>(xC1, l32, relElevation, elevationModel));
   factors.add(RangeFactor<Pose3,Point3>(xC1, l41, relElevation, elevationModel));
 
-  Ordering orderingC; orderingC += xC1, l32, l41;
+  OrderingOrdered orderingC; orderingC += xC1, l32, l41;
 
   // Check that sigmas are correct (i.e., unit)
-  GaussianFactorGraph lfg = *factors.linearize(initValues, orderingC);
+  GaussianFactorGraphOrdered lfg = *factors.linearize(initValues, orderingC);
 
   GaussianMultifrontalSolver solver(lfg, false);
-  GaussianBayesTree actBT = *solver.eliminate();
+  GaussianBayesTreeOrdered actBT = *solver.eliminate();
 
   // Check that all sigmas in an unconstrained bayes tree are set to one
-  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, actBT.nodes()) {
-    GaussianConditional::shared_ptr conditional = clique->conditional();
+  BOOST_FOREACH(const GaussianBayesTreeOrdered::sharedClique& clique, actBT.nodes()) {
+    GaussianConditionalOrdered::shared_ptr conditional = clique->conditional();
     size_t dim = conditional->dim();
     EXPECT(assert_equal(gtsam::ones(dim), conditional->get_sigmas(), tol));
   }

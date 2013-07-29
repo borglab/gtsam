@@ -26,16 +26,16 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/IndexConditional.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/IndexConditionalOrdered.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(FactorGraph, eliminateFrontals) {
+TEST(FactorGraphOrdered, eliminateFrontals) {
 
-  SymbolicFactorGraph sfgOrig;
+  SymbolicFactorGraphOrdered sfgOrig;
   sfgOrig.push_factor(0,1);
   sfgOrig.push_factor(0,2);
   sfgOrig.push_factor(1,3);
@@ -43,15 +43,15 @@ TEST(FactorGraph, eliminateFrontals) {
   sfgOrig.push_factor(2,3);
   sfgOrig.push_factor(4,5);
 
-  IndexConditional::shared_ptr actualCond;
-  SymbolicFactorGraph actualSfg;
+  IndexConditionalOrdered::shared_ptr actualCond;
+  SymbolicFactorGraphOrdered actualSfg;
   boost::tie(actualCond, actualSfg) = sfgOrig.eliminateFrontals(2);
 
   vector<Index> condIndices;
   condIndices += 0,1,2,3,4;
-  IndexConditional expectedCond(condIndices, 2);
+  IndexConditionalOrdered expectedCond(condIndices, 2);
 
-  SymbolicFactorGraph expectedSfg;
+  SymbolicFactorGraphOrdered expectedSfg;
   expectedSfg.push_factor(2,3);
   expectedSfg.push_factor(4,5);
   expectedSfg.push_factor(2,3,4);

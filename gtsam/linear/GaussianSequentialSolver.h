@@ -19,8 +19,8 @@
 #pragma once
 
 #include <gtsam/inference/GenericSequentialSolver.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
 
 #include <utility>
 
@@ -47,11 +47,11 @@ namespace gtsam {
  * typedef'ed in linear/GaussianBayesNet, on which this class calls
  * optimize(...) to perform back-substitution.
  */
-class GaussianSequentialSolver : GenericSequentialSolver<GaussianFactor> {
+class GaussianSequentialSolver : GenericSequentialSolver<GaussianFactorOrdered> {
 
 protected:
 
-  typedef GenericSequentialSolver<GaussianFactor> Base;
+  typedef GenericSequentialSolver<GaussianFactorOrdered> Base;
   typedef boost::shared_ptr<const GaussianSequentialSolver> shared_ptr;
 
   /** flag to determine whether to use Cholesky or QR */
@@ -63,22 +63,22 @@ public:
    * Construct the solver for a factor graph.  This builds the elimination
    * tree, which already does some of the work of elimination.
    */
-  GTSAM_EXPORT GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR = false);
+  GTSAM_EXPORT GaussianSequentialSolver(const FactorGraphOrdered<GaussianFactorOrdered>& factorGraph, bool useQR = false);
 
   /**
    * Construct the solver with a shared pointer to a factor graph and to a
    * VariableIndex.  The solver will store these pointers, so this constructor
    * is the fastest.
    */
-  GTSAM_EXPORT GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-      const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
+  GTSAM_EXPORT GaussianSequentialSolver(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph,
+      const VariableIndexOrdered::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Named constructor to return a shared_ptr.  This builds the elimination
    * tree, which already does some of the symbolic work of elimination.
    */
-  GTSAM_EXPORT static shared_ptr Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-      const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
+  GTSAM_EXPORT static shared_ptr Create(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph,
+      const VariableIndexOrdered::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Return a new solver that solves the given factor graph, which must have
@@ -87,20 +87,20 @@ public:
    * used in cases where the numerical values of the linear problem change,
    * e.g. during iterative nonlinear optimization.
    */
-  GTSAM_EXPORT void replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph);
+  GTSAM_EXPORT void replaceFactors(const FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr& factorGraph);
 
   /**
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  GTSAM_EXPORT GaussianBayesNet::shared_ptr eliminate() const;
+  GTSAM_EXPORT GaussianBayesNetOrdered::shared_ptr eliminate() const;
 
   /**
    * Compute the least-squares solution of the GaussianFactorGraph.  This
    * eliminates to create a BayesNet and then back-substitutes this BayesNet to
    * obtain the solution.
    */
-  GTSAM_EXPORT VectorValues::shared_ptr optimize() const;
+  GTSAM_EXPORT VectorValuesOrdered::shared_ptr optimize() const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out
@@ -108,7 +108,7 @@ public:
    * triangular R factor and right-hand-side, i.e. a GaussianConditional with
    * R*x = d.  To get a mean and covariance matrix, use marginalStandard(...)
    */
-  GTSAM_EXPORT GaussianFactor::shared_ptr marginalFactor(Index j) const;
+  GTSAM_EXPORT GaussianFactorOrdered::shared_ptr marginalFactor(Index j) const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out
@@ -125,7 +125,7 @@ public:
    * triangular R factor and right-hand-side, i.e. a GaussianBayesNet with
    * R*x = d.  To get a mean and covariance matrix, use jointStandard(...)
    */
-  GTSAM_EXPORT GaussianFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
+  GTSAM_EXPORT GaussianFactorGraphOrdered::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
 
 };
 

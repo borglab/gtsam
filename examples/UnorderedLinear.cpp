@@ -1,13 +1,13 @@
 
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/VariableIndex.h>
-#include <gtsam/linear/GaussianFactorGraphUnordered.h>
-#include <gtsam/linear/VectorValuesUnordered.h>
+#include <gtsam/inference/VariableIndexOrdered.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/linear/GaussianBayesTreeUnordered.h>
-#include <gtsam/linear/GaussianJunctionTreeUnordered.h>
-#include <gtsam/linear/GaussianEliminationTreeUnordered.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -129,28 +129,28 @@ ISAM2 solveWithOldISAM2(const NonlinearFactorGraph& measurements)
 }
 
 /* ************************************************************************* */
-GaussianFactorGraphUnordered convertToUnordered(const GaussianFactorGraph& gfg, const Ordering& ordering)
+GaussianFactorGraph convertToUnordered(const GaussianFactorGraphOrdered& gfg, const OrderingOrdered& ordering)
 {
-  GaussianFactorGraphUnordered gfgu;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg)
+  GaussianFactorGraph gfgu;
+  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, gfg)
   {
     vector<std::pair<Key, Matrix> > terms;
     
-    const JacobianFactor& jacobian = dynamic_cast<const JacobianFactor&>(*factor);
-    for(GaussianFactor::const_iterator term = jacobian.begin(); term != jacobian.end(); ++term)
+    const JacobianFactorOrdered& jacobian = dynamic_cast<const JacobianFactorOrdered&>(*factor);
+    for(GaussianFactorOrdered::const_iterator term = jacobian.begin(); term != jacobian.end(); ++term)
     {
       terms.push_back(make_pair(
         ordering.key(*term),
         jacobian.getA(term)));
     }
 
-    gfgu.add(JacobianFactorUnordered(terms, jacobian.getb(), jacobian.get_model()));
+    gfgu.add(JacobianFactor(terms, jacobian.getb(), jacobian.get_model()));
   }
   return gfgu;
 }
 
 /* ************************************************************************* */
-void compareSolutions(const VectorValues& orderedSoln, const Ordering& ordering, const VectorValuesUnordered& unorderedSoln)
+void compareSolutions(const VectorValuesOrdered& orderedSoln, const OrderingOrdered& ordering, const VectorValues& unorderedSoln)
 {
   if(orderedSoln.size() != unorderedSoln.size())
   {
@@ -159,7 +159,7 @@ void compareSolutions(const VectorValues& orderedSoln, const Ordering& ordering,
   else
   {
     double maxErr = 0.0;
-    BOOST_FOREACH(const VectorValuesUnordered::KeyValuePair& v, unorderedSoln)
+    BOOST_FOREACH(const VectorValues::KeyValuePair& v, unorderedSoln)
     {
       Vector orderedV = orderedSoln[ordering[v.first]];
       maxErr = std::max(maxErr, (orderedV - v.second).cwiseAbs().maxCoeff());
@@ -217,30 +217,30 @@ int main(int argc, char *argv[])
 
   // Get linear graph
   cout << "Converting to unordered linear graph" << endl;
-  Ordering ordering = *isamsoln.orderingArbitrary();
-  Ordering orderingCOLAMD = *nlfg.orderingCOLAMD(isamsoln);
-  GaussianFactorGraph gfg = *nlfg.linearize(isamsoln, ordering);
-  GaussianFactorGraphUnordered gfgu = convertToUnordered(gfg, ordering);
+  OrderingOrdered ordering = *isamsoln.orderingArbitrary();
+  OrderingOrdered orderingCOLAMD = *nlfg.orderingCOLAMD(isamsoln);
+  GaussianFactorGraphOrdered gfg = *nlfg.linearize(isamsoln, ordering);
+  GaussianFactorGraph gfgu = convertToUnordered(gfg, ordering);
 
-  //OrderingUnordered orderingUnordered;
+  //Ordering orderingUnordered;
   //for(Index j = 0; j < ordering.size(); ++j)
   //  orderingUnordered.push_back(ordering.key(j));
 
   // Solve linear graph
   cout << "Optimizing unordered graph" << endl;
-  VectorValuesUnordered unorderedSolnFinal;
+  VectorValues unorderedSolnFinal;
   {
     gttic_(Solve_unordered);
-    VectorValuesUnordered unorderedSoln;
+    VectorValues unorderedSoln;
     for(size_t i = 0; i < 1; ++i) {
-      gttic_(VariableIndex);
-      VariableIndexUnordered vi(gfgu);
-      gttoc_(VariableIndex);
+      gttic_(VariableIndexOrdered);
+      VariableIndex vi(gfgu);
+      gttoc_(VariableIndexOrdered);
       gttic_(COLAMD);
-      OrderingUnordered orderingUnordered = OrderingUnordered::COLAMD(vi);
+      Ordering orderingUnordered = Ordering::COLAMD(vi);
       gttoc_(COLAMD);
       gttic_(eliminate);
-      GaussianBayesTreeUnordered::shared_ptr bt = gfgu.eliminateMultifrontal(orderingUnordered);
+      GaussianBayesTree::shared_ptr bt = gfgu.eliminateMultifrontal(orderingUnordered);
       gttoc_(eliminate);
       gttic_(optimize);
       unorderedSoln = bt->optimize();
@@ -252,22 +252,22 @@ int main(int argc, char *argv[])
 
   // Solve linear graph with old code
   cout << "Optimizing using old ordered code" << endl;
-  VectorValues orderedSolnFinal;
+  VectorValuesOrdered orderedSolnFinal;
   {
-    Ordering orderingToUse = ordering;
-    GaussianFactorGraph::shared_ptr orderedGraph = nlfg.linearize(isamsoln, *nlfg.orderingCOLAMD(isamsoln));
+    OrderingOrdered orderingToUse = ordering;
+    GaussianFactorGraphOrdered::shared_ptr orderedGraph = nlfg.linearize(isamsoln, *nlfg.orderingCOLAMD(isamsoln));
     gttic_(Solve_ordered);
-    VectorValues orderedSoln;
+    VectorValuesOrdered orderedSoln;
     for(size_t i = 0; i < 1; ++i) {
-      gttic_(VariableIndex);
-      boost::shared_ptr<VariableIndex> vi = boost::make_shared<VariableIndex>(gfg);
-      gttoc_(VariableIndex);
+      gttic_(VariableIndexOrdered);
+      boost::shared_ptr<VariableIndexOrdered> vi = boost::make_shared<VariableIndexOrdered>(gfg);
+      gttoc_(VariableIndexOrdered);
       gttic_(COLAMD);
       boost::shared_ptr<Permutation> permutation = inference::PermutationCOLAMD(*vi);
       orderingToUse.permuteInPlace(*permutation);
       gttoc_(COLAMD);
       gttic_(eliminate);
-      boost::shared_ptr<GaussianBayesTree> bt = GaussianMultifrontalSolver(*orderedGraph, true).eliminate();
+      boost::shared_ptr<GaussianBayesTreeOrdered> bt = GaussianMultifrontalSolver(*orderedGraph, true).eliminate();
       gttoc_(eliminate);
       gttic_(optimize);
       orderedSoln = optimize(*bt);
@@ -280,8 +280,8 @@ int main(int argc, char *argv[])
   // Compare results
   compareSolutions(orderedSolnFinal, orderingCOLAMD, unorderedSolnFinal);
 
-  //GaussianEliminationTreeUnordered(gfgu, orderingUnordered).print("ETree: ");
-  //GaussianJunctionTreeUnordered(GaussianEliminationTreeUnordered(gfgu, OrderingUnordered::COLAMD(gfgu))).print("JTree: ");
+  //GaussianEliminationTree(gfgu, orderingUnordered).print("ETree: ");
+  //GaussianJunctionTree(GaussianEliminationTree(gfgu, Ordering::COLAMD(gfgu))).print("JTree: ");
   //gfgu.eliminateMultifrontal(orderingUnordered)->print("BayesTree: ");
 
   tictoc_print_();

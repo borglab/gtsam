@@ -19,8 +19,8 @@
 
 #include <utility>
 
-#include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/JunctionTreeOrdered.h>
+#include <gtsam/inference/FactorGraphOrdered.h>
 
 namespace gtsam {
 
@@ -44,15 +44,15 @@ namespace gtsam {
   protected:
 
     /// Column structure of the factor graph
-    VariableIndex::shared_ptr structure_;
+    VariableIndexOrdered::shared_ptr structure_;
 
     /// Junction tree that performs elimination.
     typename JUNCTIONTREE::shared_ptr junctionTree_;
 
   public:
 
-    typedef typename FactorGraph<FACTOR>::shared_ptr sharedGraph;
-    typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
+    typedef typename FactorGraphOrdered<FACTOR>::shared_ptr sharedGraph;
+    typedef typename FactorGraphOrdered<FACTOR>::Eliminate Eliminate;
 
     /// @name Standard Constructors
     /// @{
@@ -62,7 +62,7 @@ namespace gtsam {
      * tree, which does the symbolic elimination, identifies the cliques,
      * and distributes all the factors to the right cliques.
      */
-    GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph);
+    GenericMultifrontalSolver(const FactorGraphOrdered<FACTOR>& factorGraph);
 
     /**
      * Construct the solver with a shared pointer to a factor graph and to a
@@ -70,7 +70,7 @@ namespace gtsam {
      * is the fastest.
      */
     GenericMultifrontalSolver(const sharedGraph& factorGraph,
-        const VariableIndex::shared_ptr& variableIndex);
+        const VariableIndexOrdered::shared_ptr& variableIndex);
 
     /// @}
     /// @name Testable
@@ -97,7 +97,7 @@ namespace gtsam {
      * Eliminate the factor graph sequentially.  Uses a column elimination tree
      * to recursively eliminate.
      */
-    typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr
+    typename BayesTreeOrdered<typename FACTOR::ConditionalType>::shared_ptr
     eliminate(Eliminate function) const;
 
     /**
@@ -105,7 +105,7 @@ namespace gtsam {
      * all of the other variables.  This function returns the result as a factor
      * graph.
      */
-    typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
+    typename FactorGraphOrdered<FACTOR>::shared_ptr jointFactorGraph(
         const std::vector<Index>& js, Eliminate function) const;
 
     /**

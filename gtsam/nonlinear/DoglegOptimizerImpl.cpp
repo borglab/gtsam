@@ -22,8 +22,8 @@ using namespace std;
 
 namespace gtsam {
 /* ************************************************************************* */
-VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
-    double Delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose) {
+VectorValuesOrdered DoglegOptimizerImpl::ComputeDoglegPoint(
+    double Delta, const VectorValuesOrdered& dx_u, const VectorValuesOrdered& dx_n, const bool verbose) {
 
   // Get magnitude of each update and find out which segment Delta falls in
   assert(Delta >= 0.0);
@@ -33,7 +33,7 @@ VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
   if(verbose) cout << "Steepest descent magnitude " << std::sqrt(x_u_norm_sq) << ", Newton's method magnitude " << std::sqrt(x_n_norm_sq) << endl;
   if(DeltaSq < x_u_norm_sq) {
     // Trust region is smaller than steepest descent update
-    VectorValues x_d = std::sqrt(DeltaSq / x_u_norm_sq) * dx_u;
+    VectorValuesOrdered x_d = std::sqrt(DeltaSq / x_u_norm_sq) * dx_u;
     if(verbose) cout << "In steepest descent region with fraction " << std::sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
     return x_d;
   } else if(DeltaSq < x_n_norm_sq) {
@@ -48,7 +48,7 @@ VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
 }
 
 /* ************************************************************************* */
-VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose) {
+VectorValuesOrdered DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValuesOrdered& x_u, const VectorValuesOrdered& x_n, const bool verbose) {
 
   // See doc/trustregion.lyx or doc/trustregion.pdf
 
@@ -78,7 +78,7 @@ VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues&
 
   // Compute blended point
   if(verbose) cout << "In blend region with fraction " << tau << " of Newton's method point" << endl;
-  VectorValues blend = (1. - tau) * x_u;  axpy(tau, x_n, blend);
+  VectorValuesOrdered blend = (1. - tau) * x_u;  axpy(tau, x_n, blend);
   return blend;
 }
 

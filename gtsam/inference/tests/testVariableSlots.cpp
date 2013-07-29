@@ -20,7 +20,7 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
 
 #include <boost/assign/std/vector.hpp>
 
@@ -31,7 +31,7 @@ using namespace boost::assign;
 /* ************************************************************************* */
 TEST(VariableSlots, constructor) {
 
-  SymbolicFactorGraph fg;
+  SymbolicFactorGraphOrdered fg;
   fg.push_factor(2, 3);
   fg.push_factor(0, 1);
   fg.push_factor(0, 2);
@@ -40,7 +40,7 @@ TEST(VariableSlots, constructor) {
   VariableSlots actual(fg);
 
   static const size_t none = numeric_limits<size_t>::max();
-  VariableSlots expected((SymbolicFactorGraph()));
+  VariableSlots expected((SymbolicFactorGraphOrdered()));
   expected[0] += none, 0, 0, none;
   expected[1] += none, 1, none, none;
   expected[2] += 0, none, 1, none;

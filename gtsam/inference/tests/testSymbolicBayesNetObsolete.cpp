@@ -22,8 +22,8 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/IndexConditional.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/IndexConditionalOrdered.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
 
 using namespace std;
 using namespace gtsam;
@@ -35,17 +35,17 @@ static const Index _C_ = 3;
 static const Index _D_ = 4;
 static const Index _E_ = 5;
 
-static IndexConditional::shared_ptr
-  B(new IndexConditional(_B_)),
-  L(new IndexConditional(_L_, _B_));
+static IndexConditionalOrdered::shared_ptr
+  B(new IndexConditionalOrdered(_B_)),
+  L(new IndexConditionalOrdered(_L_, _B_));
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNet, equals )
+TEST( SymbolicBayesNetOrdered, equals )
 {
-  BayesNet<IndexConditional> f1;
+  BayesNetOrdered<IndexConditionalOrdered> f1;
   f1.push_back(B);
   f1.push_back(L);
-  BayesNet<IndexConditional> f2;
+  BayesNetOrdered<IndexConditionalOrdered> f2;
   f2.push_back(L);
   f2.push_back(B);
   CHECK(f1.equals(f1));
@@ -53,20 +53,20 @@ TEST( SymbolicBayesNet, equals )
 }
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNet, pop_front )
+TEST( SymbolicBayesNetOrdered, pop_front )
 {
-  IndexConditional::shared_ptr
-    A(new IndexConditional(_A_,_B_,_C_)),
-    B(new IndexConditional(_B_,_C_)),
-    C(new IndexConditional(_C_));
+  IndexConditionalOrdered::shared_ptr
+    A(new IndexConditionalOrdered(_A_,_B_,_C_)),
+    B(new IndexConditionalOrdered(_B_,_C_)),
+    C(new IndexConditionalOrdered(_C_));
 
   // Expected after pop_front
-  BayesNet<IndexConditional> expected;
+  BayesNetOrdered<IndexConditionalOrdered> expected;
   expected.push_back(B);
   expected.push_back(C);
 
   // Actual
-  BayesNet<IndexConditional> actual;
+  BayesNetOrdered<IndexConditionalOrdered> actual;
   actual.push_back(A);
   actual.push_back(B);
   actual.push_back(C);
@@ -76,26 +76,26 @@ TEST( SymbolicBayesNet, pop_front )
 }
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNet, combine )
+TEST( SymbolicBayesNetOrdered, combine )
 {
-  IndexConditional::shared_ptr
-    A(new IndexConditional(_A_,_B_,_C_)),
-    B(new IndexConditional(_B_,_C_)),
-    C(new IndexConditional(_C_));
+  IndexConditionalOrdered::shared_ptr
+    A(new IndexConditionalOrdered(_A_,_B_,_C_)),
+    B(new IndexConditionalOrdered(_B_,_C_)),
+    C(new IndexConditionalOrdered(_C_));
 
   // p(A|BC)
-  BayesNet<IndexConditional> p_ABC;
+  BayesNetOrdered<IndexConditionalOrdered> p_ABC;
   p_ABC.push_back(A);
 
   // P(BC)=P(B|C)P(C)
-  BayesNet<IndexConditional> p_BC;
+  BayesNetOrdered<IndexConditionalOrdered> p_BC;
   p_BC.push_back(B);
   p_BC.push_back(C);
 
   // P(ABC) = P(A|BC) P(BC)
   p_ABC.push_back(p_BC);
 
-  BayesNet<IndexConditional> expected;
+  BayesNetOrdered<IndexConditionalOrdered> expected;
   expected.push_back(A);
   expected.push_back(B);
   expected.push_back(C);
@@ -104,65 +104,65 @@ TEST( SymbolicBayesNet, combine )
 }
 
 /* ************************************************************************* */
-TEST(SymbolicBayesNet, find) {
-  SymbolicBayesNet bn;
-  bn += IndexConditional::shared_ptr(new IndexConditional(_A_, _B_));
+TEST(SymbolicBayesNetOrdered, find) {
+  SymbolicBayesNetOrdered bn;
+  bn += IndexConditionalOrdered::shared_ptr(new IndexConditionalOrdered(_A_, _B_));
   std::vector<Index> keys;
   keys.push_back(_B_);
   keys.push_back(_C_);
   keys.push_back(_D_);
-  bn += IndexConditional::shared_ptr(new IndexConditional(keys,2));
-  bn += IndexConditional::shared_ptr(new IndexConditional(_D_));
+  bn += IndexConditionalOrdered::shared_ptr(new IndexConditionalOrdered(keys,2));
+  bn += IndexConditionalOrdered::shared_ptr(new IndexConditionalOrdered(_D_));
 
-  SymbolicBayesNet::iterator expected = bn.begin();  ++ expected;
-  SymbolicBayesNet::iterator actual = bn.find(_C_);
+  SymbolicBayesNetOrdered::iterator expected = bn.begin();  ++ expected;
+  SymbolicBayesNetOrdered::iterator actual = bn.find(_C_);
   EXPECT(assert_equal(**expected, **actual));
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(SymbolicBayesNet, popLeaf) {
-  IndexConditional::shared_ptr
-    A(new IndexConditional(_A_,_E_)),
-    B(new IndexConditional(_B_,_E_)),
-    C(new IndexConditional(_C_,_D_)),
-    D(new IndexConditional(_D_,_E_)),
-    E(new IndexConditional(_E_));
+TEST_UNSAFE(SymbolicBayesNetOrdered, popLeaf) {
+  IndexConditionalOrdered::shared_ptr
+    A(new IndexConditionalOrdered(_A_,_E_)),
+    B(new IndexConditionalOrdered(_B_,_E_)),
+    C(new IndexConditionalOrdered(_C_,_D_)),
+    D(new IndexConditionalOrdered(_D_,_E_)),
+    E(new IndexConditionalOrdered(_E_));
 
   // BayesNet after popping A
-  SymbolicBayesNet expected1;
+  SymbolicBayesNetOrdered expected1;
   expected1 += B, C, D, E;
 
   // BayesNet after popping C
-  SymbolicBayesNet expected2;
+  SymbolicBayesNetOrdered expected2;
   expected2 += A, B, D, E;
 
   // BayesNet after popping C and D
-  SymbolicBayesNet expected3;
+  SymbolicBayesNetOrdered expected3;
   expected3 += A, B, E;
 
   // BayesNet after popping C and A
-  SymbolicBayesNet expected4;
+  SymbolicBayesNetOrdered expected4;
   expected4 += B, D, E;
 
 
   // BayesNet after popping A
-  SymbolicBayesNet actual1;
+  SymbolicBayesNetOrdered actual1;
   actual1 += A, B, C, D, E;
   actual1.popLeaf(actual1.find(_A_));
 
   // BayesNet after popping C
-  SymbolicBayesNet actual2;
+  SymbolicBayesNetOrdered actual2;
   actual2 += A, B, C, D, E;
   actual2.popLeaf(actual2.find(_C_));
 
   // BayesNet after popping C and D
-  SymbolicBayesNet actual3;
+  SymbolicBayesNetOrdered actual3;
   actual3 += A, B, C, D, E;
   actual3.popLeaf(actual3.find(_C_));
   actual3.popLeaf(actual3.find(_D_));
 
   // BayesNet after popping C and A
-  SymbolicBayesNet actual4;
+  SymbolicBayesNetOrdered actual4;
   actual4 += A, B, C, D, E;
   actual4.popLeaf(actual4.find(_C_));
   actual4.popLeaf(actual4.find(_A_));
@@ -179,7 +179,7 @@ TEST_UNSAFE(SymbolicBayesNet, popLeaf) {
 //#endif
 //
 //#undef NDEBUG
-//  SymbolicBayesNet actual5;
+//  SymbolicBayesNetOrdered actual5;
 //  actual5 += A, B, C, D, E;
 //  CHECK_EXCEPTION(actual5.popLeaf(actual5.find(_D_)), std::invalid_argument);
 //
@@ -189,15 +189,15 @@ TEST_UNSAFE(SymbolicBayesNet, popLeaf) {
 }
 
 /* ************************************************************************* */
-TEST(SymbolicBayesNet, saveGraph) {
-  SymbolicBayesNet bn;
-  bn += IndexConditional::shared_ptr(new IndexConditional(_A_, _B_));
+TEST(SymbolicBayesNetOrdered, saveGraph) {
+  SymbolicBayesNetOrdered bn;
+  bn += IndexConditionalOrdered::shared_ptr(new IndexConditionalOrdered(_A_, _B_));
   std::vector<Index> keys;
   keys.push_back(_B_);
   keys.push_back(_C_);
   keys.push_back(_D_);
-  bn += IndexConditional::shared_ptr(new IndexConditional(keys,2));
-  bn += IndexConditional::shared_ptr(new IndexConditional(_D_));
+  bn += IndexConditionalOrdered::shared_ptr(new IndexConditionalOrdered(keys,2));
+  bn += IndexConditionalOrdered::shared_ptr(new IndexConditionalOrdered(_D_));
 
   bn.saveGraph("SymbolicBayesNet.dot");
 }

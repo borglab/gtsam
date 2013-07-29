@@ -14,15 +14,15 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-std::pair<GaussianFactorGraph,Ordering>
+std::pair<GaussianFactorGraphOrdered,OrderingOrdered>
 summarize(const NonlinearFactorGraph& graph, const Values& values,
     const KeySet& saved_keys, SummarizationMode mode) {
   const size_t nrEliminatedKeys = values.size() - saved_keys.size();
 
   // If we aren't eliminating anything, linearize and return
   if (!nrEliminatedKeys || saved_keys.empty()) {
-    Ordering ordering = *values.orderingArbitrary();
-    GaussianFactorGraph linear_graph = *graph.linearize(values, ordering);
+    OrderingOrdered ordering = *values.orderingArbitrary();
+    GaussianFactorGraphOrdered linear_graph = *graph.linearize(values, ordering);
     return make_pair(linear_graph, ordering);
   }
 
@@ -33,11 +33,11 @@ summarize(const NonlinearFactorGraph& graph, const Values& values,
   BOOST_FOREACH(const gtsam::Key& key, saved_keys)
     ordering_constraints.insert(make_pair(key, 1));
 
-  Ordering ordering = *graph.orderingCOLAMDConstrained(values, ordering_constraints);
+  OrderingOrdered ordering = *graph.orderingCOLAMDConstrained(values, ordering_constraints);
 
   // Linearize the system
-  GaussianFactorGraph full_graph = *graph.linearize(values, ordering);
-  GaussianFactorGraph summarized_system;
+  GaussianFactorGraphOrdered full_graph = *graph.linearize(values, ordering);
+  GaussianFactorGraphOrdered summarized_system;
 
   std::vector<Index> indices;
   BOOST_FOREACH(const Key& k, saved_keys)
@@ -50,11 +50,11 @@ summarize(const NonlinearFactorGraph& graph, const Values& values,
 
   switch (mode) {
   case PARTIAL_QR: {
-    summarized_system.push_back(EliminateQR(full_graph, nrEliminatedKeys).second);
+    summarized_system.push_back(EliminateQROrdered(full_graph, nrEliminatedKeys).second);
     break;
   }
   case PARTIAL_CHOLESKY: {
-    summarized_system.push_back(EliminateCholesky(full_graph, nrEliminatedKeys).second);
+    summarized_system.push_back(EliminateCholeskyOrdered(full_graph, nrEliminatedKeys).second);
     break;
   }
   case SEQUENTIAL_QR: {
@@ -75,8 +75,8 @@ summarize(const NonlinearFactorGraph& graph, const Values& values,
 NonlinearFactorGraph summarizeAsNonlinearContainer(
     const NonlinearFactorGraph& graph, const Values& values,
     const KeySet& saved_keys, SummarizationMode mode) {
-  GaussianFactorGraph summarized_graph;
-  Ordering ordering;
+  GaussianFactorGraphOrdered summarized_graph;
+  OrderingOrdered ordering;
   boost::tie(summarized_graph, ordering) = summarize(graph, values, saved_keys, mode);
   return LinearContainerFactor::convertLinearGraph(summarized_graph, ordering);
 }

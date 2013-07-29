@@ -46,7 +46,7 @@ TEST( AntiFactor, NegativeHessian)
   values->insert(2, pose2);
 
   // Define an elimination ordering
-  Ordering::shared_ptr ordering(new Ordering());
+  OrderingOrdered::shared_ptr ordering(new OrderingOrdered());
   ordering->insert(1, 0);
   ordering->insert(2, 1);
 
@@ -55,17 +55,17 @@ TEST( AntiFactor, NegativeHessian)
   BetweenFactor<Pose3>::shared_ptr originalFactor(new BetweenFactor<Pose3>(1, 2, z, sigma));
 
   // Linearize it into a Jacobian Factor
-  GaussianFactor::shared_ptr originalJacobian = originalFactor->linearize(*values, *ordering);
+  GaussianFactorOrdered::shared_ptr originalJacobian = originalFactor->linearize(*values, *ordering);
 
   // Convert it to a Hessian Factor
-  HessianFactor::shared_ptr originalHessian = HessianFactor::shared_ptr(new HessianFactor(*originalJacobian));
+  HessianFactorOrdered::shared_ptr originalHessian = HessianFactorOrdered::shared_ptr(new HessianFactorOrdered(*originalJacobian));
 
   // Create the AntiFactor version of the original nonlinear factor
   AntiFactor::shared_ptr antiFactor(new AntiFactor(originalFactor));
 
   // Linearize the AntiFactor into a Hessian Factor
-  GaussianFactor::shared_ptr antiGaussian = antiFactor->linearize(*values, *ordering);
-  HessianFactor::shared_ptr antiHessian = boost::dynamic_pointer_cast<HessianFactor>(antiGaussian);
+  GaussianFactorOrdered::shared_ptr antiGaussian = antiFactor->linearize(*values, *ordering);
+  HessianFactorOrdered::shared_ptr antiHessian = boost::dynamic_pointer_cast<HessianFactorOrdered>(antiGaussian);
 
 
   // Compare Hessian blocks
@@ -107,14 +107,14 @@ TEST( AntiFactor, EquivalentBayesNet)
   values->insert(2, pose2);
 
   // Define an elimination ordering
-  Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
+  OrderingOrdered::shared_ptr ordering = graph->orderingCOLAMD(*values);
 
   // Eliminate into a BayesNet
   GaussianSequentialSolver solver1(*graph->linearize(*values, *ordering));
-  GaussianBayesNet::shared_ptr expectedBayesNet = solver1.eliminate();
+  GaussianBayesNetOrdered::shared_ptr expectedBayesNet = solver1.eliminate();
 
   // Back-substitute to find the optimal deltas
-  VectorValues expectedDeltas = optimize(*expectedBayesNet);
+  VectorValuesOrdered expectedDeltas = optimize(*expectedBayesNet);
 
   // Add an additional factor between Pose1 and Pose2
   BetweenFactor<Pose3>::shared_ptr f1(new BetweenFactor<Pose3>(1, 2, z, sigma));
@@ -126,10 +126,10 @@ TEST( AntiFactor, EquivalentBayesNet)
 
   // Again, Eliminate into a BayesNet
   GaussianSequentialSolver solver2(*graph->linearize(*values, *ordering));
-  GaussianBayesNet::shared_ptr actualBayesNet = solver2.eliminate();
+  GaussianBayesNetOrdered::shared_ptr actualBayesNet = solver2.eliminate();
 
   // Back-substitute to find the optimal deltas
-  VectorValues actualDeltas = optimize(*actualBayesNet);
+  VectorValuesOrdered actualDeltas = optimize(*actualBayesNet);
 
   // Verify the BayesNets are identical
   CHECK(assert_equal(*expectedBayesNet, *actualBayesNet, 1e-5));

@@ -24,27 +24,27 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/ClusterTree.h>
-#include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/IndexFactor.h>
-#include <gtsam/inference/SymbolicSequentialSolver.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
+#include <gtsam/inference/JunctionTreeOrdered.h>
+#include <gtsam/inference/ClusterTreeOrdered.h>
+#include <gtsam/inference/JunctionTreeOrdered.h>
+#include <gtsam/inference/IndexFactorOrdered.h>
+#include <gtsam/inference/SymbolicSequentialSolverOrdered.h>
 
 using namespace gtsam;
 using namespace std;
 
-typedef JunctionTree<SymbolicFactorGraph> SymbolicJunctionTree;
+typedef JunctionTreeOrdered<SymbolicFactorGraphOrdered> SymbolicJunctionTree;
 
 /* ************************************************************************* *
  * x1 - x2 - x3 - x4
  * x3 x4
  *    x2 x1 : x3
  ****************************************************************************/
-TEST( JunctionTree, constructor )
+TEST( JunctionTreeOrdered, constructor )
 {
   const Index x2=0, x1=1, x3=2, x4=3;
-  SymbolicFactorGraph fg;
+  SymbolicFactorGraphOrdered fg;
   fg.push_factor(x2,x1);
   fg.push_factor(x2,x3);
   fg.push_factor(x3,x4);
@@ -71,19 +71,19 @@ TEST( JunctionTree, constructor )
  * x3 x4
  *    x2 x1 : x3
  ****************************************************************************/
-TEST( JunctionTree, eliminate)
+TEST( JunctionTreeOrdered, eliminate)
 {
   const Index x2=0, x1=1, x3=2, x4=3;
-  SymbolicFactorGraph fg;
+  SymbolicFactorGraphOrdered fg;
   fg.push_factor(x2,x1);
   fg.push_factor(x2,x3);
   fg.push_factor(x3,x4);
 
   SymbolicJunctionTree jt(fg);
-  SymbolicBayesTree::sharedClique actual = jt.eliminate(&EliminateSymbolic);
+  SymbolicBayesTreeOrdered::sharedClique actual = jt.eliminate(&EliminateSymbolic);
 
-  BayesNet<IndexConditional> bn(*SymbolicSequentialSolver(fg).eliminate());
-  SymbolicBayesTree expected(bn);
+  BayesNetOrdered<IndexConditionalOrdered> bn(*SymbolicSequentialSolver(fg).eliminate());
+  SymbolicBayesTreeOrdered expected(bn);
 
 //  cout << "BT from JT:\n";
 //  actual->printTree("");

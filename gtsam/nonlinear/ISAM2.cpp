@@ -24,11 +24,11 @@ using namespace boost::assign;
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
-#include <gtsam/inference/BayesTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/inference/BayesTreeOrdered.h>
+#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/HessianFactorOrdered.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
@@ -122,10 +122,10 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
   deltaReplacedMask_ = rhs.deltaReplacedMask_;
   nonlinearFactors_ = rhs.nonlinearFactors_;
 
-  linearFactors_ = GaussianFactorGraph();
+  linearFactors_ = GaussianFactorGraphOrdered();
   linearFactors_.reserve(rhs.linearFactors_.size());
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& linearFactor, rhs.linearFactors_) {
-    linearFactors_.push_back(linearFactor ? linearFactor->clone() : GaussianFactor::shared_ptr()); }
+  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& linearFactor, rhs.linearFactors_) {
+    linearFactors_.push_back(linearFactor ? linearFactor->clone() : GaussianFactorOrdered::shared_ptr()); }
 
   ordering_ = rhs.ordering_;
   params_ = rhs.params_;
@@ -148,12 +148,12 @@ FastList<size_t> ISAM2::getAffectedFactors(const FastList<Index>& keys) const {
   if(debug) { BOOST_FOREACH(const Index key, keys) { cout << key << " "; } }
   if(debug) cout << endl;
 
-  FactorGraph<NonlinearFactor > allAffected;
+  FactorGraphOrdered<NonlinearFactor > allAffected;
   FastList<size_t> indices;
   BOOST_FOREACH(const Index key, keys) {
 //    const list<size_t> l = nonlinearFactors_.factors(key);
 //    indices.insert(indices.begin(), l.begin(), l.end());
-    const VariableIndex::Factors& factors(variableIndex_[key]);
+    const VariableIndexOrdered::Factors& factors(variableIndex_[key]);
     BOOST_FOREACH(size_t factor, factors) {
       if(debug) cout << "Variable " << key << " affects factor " << factor << endl;
       indices.push_back(factor);
@@ -170,7 +170,7 @@ FastList<size_t> ISAM2::getAffectedFactors(const FastList<Index>& keys) const {
 /* ************************************************************************* */
 // retrieve all factors that ONLY contain the affected variables
 // (note that the remaining stuff is summarized in the cached factors)
-FactorGraph<GaussianFactor>::shared_ptr
+FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr
 ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const FastSet<Index>& relinKeys) const {
 
   gttic(getAffectedFactors);
@@ -186,7 +186,7 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const Fas
   gttoc(affectedKeysSet);
 
   gttic(check_candidates_and_linearize);
-  FactorGraph<GaussianFactor>::shared_ptr linearized = boost::make_shared<FactorGraph<GaussianFactor> >();
+  FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr linearized = boost::make_shared<FactorGraphOrdered<GaussianFactorOrdered> >();
   BOOST_FOREACH(size_t idx, candidates) {
     bool inside = true;
     bool useCachedLinear = params_.cacheLinearizedFactors;
@@ -207,7 +207,7 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const Fas
 #endif
         linearized->push_back(linearFactors_[idx]);
       } else {
-        GaussianFactor::shared_ptr linearFactor = nonlinearFactors_[idx]->linearize(theta_, ordering_);
+        GaussianFactorOrdered::shared_ptr linearFactor = nonlinearFactors_[idx]->linearize(theta_, ordering_);
         linearized->push_back(linearFactor);
         if(params_.cacheLinearizedFactors) {
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
@@ -225,11 +225,11 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const Fas
 
 /* ************************************************************************* */
 // find intermediate (linearized) factors from cache that are passed into the affected area
-GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
+GaussianFactorGraphOrdered ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 
   static const bool debug = false;
 
-  GaussianFactorGraph cachedBoundary;
+  GaussianFactorGraphOrdered cachedBoundary;
 
   BOOST_FOREACH(sharedClique orphan, orphans) {
     // find the last variable that was eliminated
@@ -284,14 +284,14 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
   // (b) Store orphaned sub-trees \BayesTree_{O} of removed cliques.
   gttic(removetop);
   Cliques orphans;
-  BayesNet<GaussianConditional> affectedBayesNet;
+  BayesNetOrdered<GaussianConditionalOrdered> affectedBayesNet;
   this->removeTop(markedKeys, affectedBayesNet, orphans);
   gttoc(removetop);
 
   if(debug) affectedBayesNet.print("Removed top: ");
   if(debug) orphans.print("Orphans: ");
 
-  //    FactorGraph<GaussianFactor> factors(affectedBayesNet);
+  //    FactorGraph<GaussianFactorOrdered> factors(affectedBayesNet);
   // bug was here: we cannot reuse the original factors, because then the cached factors get messed up
   // [all the necessary data is actually contained in the affectedBayesNet, including what was passed in from the boundaries,
   //  so this would be correct; however, in the process we also generate new cached_ entries that will be wrong (ie. they don't
@@ -314,7 +314,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     gttic(batch);
 
     gttic(add_keys);
-    BOOST_FOREACH(const Ordering::value_type& key_index, ordering_) { affectedKeysSet->insert(key_index.second); }
+    BOOST_FOREACH(const OrderingOrdered::value_type& key_index, ordering_) { affectedKeysSet->insert(key_index.second); }
     gttoc(add_keys);
 
     gttic(reorder);
@@ -357,18 +357,18 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     gttoc(reorder);
 
     gttic(linearize);
-    GaussianFactorGraph linearized = *nonlinearFactors_.linearize(theta_, ordering_);
+    GaussianFactorGraphOrdered linearized = *nonlinearFactors_.linearize(theta_, ordering_);
     if(params_.cacheLinearizedFactors)
       linearFactors_ = linearized;
     gttoc(linearize);
 
     gttic(eliminate);
-    JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearized, variableIndex_);
+    JunctionTreeOrdered<GaussianFactorGraphOrdered, Base::Clique> jt(linearized, variableIndex_);
     sharedClique newRoot;
     if(params_.factorization == ISAM2Params::CHOLESKY)
-      newRoot = jt.eliminate(EliminatePreferCholesky);
+      newRoot = jt.eliminate(EliminatePreferCholeskyOrdered);
     else if(params_.factorization == ISAM2Params::QR)
-      newRoot = jt.eliminate(EliminateQR);
+      newRoot = jt.eliminate(EliminateQROrdered);
     else assert(false);
     if(debug) newRoot->print("Eliminated: ");
     gttoc(eliminate);
@@ -403,7 +403,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(), affectedKeys.end());
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), observedKeys.begin(), observedKeys.end());
     gttic(relinearizeAffected);
-    GaussianFactorGraph factors(*relinearizeAffectedFactors(affectedAndNewKeys, relinKeys));
+    GaussianFactorGraphOrdered factors(*relinearizeAffectedFactors(affectedAndNewKeys, relinKeys));
     if(debug) factors.print("Relinearized factors: ");
     gttoc(relinearizeAffected);
 
@@ -431,7 +431,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
 
     gttic(cached);
     // add the cached intermediate results from the boundary of the orphans ...
-    GaussianFactorGraph cachedBoundary = getCachedBoundaryFactors(orphans);
+    GaussianFactorGraphOrdered cachedBoundary = getCachedBoundaryFactors(orphans);
     if(debug) cachedBoundary.print("Boundary factors: ");
     factors.push_back(cachedBoundary);
     gttoc(cached);
@@ -735,7 +735,7 @@ ISAM2Result ISAM2::update(
   // 7. Linearize new factors
   if(params_.cacheLinearizedFactors) {
     gttic(linearize);
-    FactorGraph<GaussianFactor>::shared_ptr linearFactors = newFactors.linearize(theta_, ordering_);
+    FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr linearFactors = newFactors.linearize(theta_, ordering_);
     linearFactors_.push_back(*linearFactors);
     assert(nonlinearFactors_.size() == linearFactors_.size());
     gttoc(linearize);
@@ -802,7 +802,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
 
   // Keep track of marginal factors - map from clique to the marginal factors
   // that should be incorporated into it, passed up from it's children.
-  multimap<sharedClique, GaussianFactor::shared_ptr> marginalFactors;
+  multimap<sharedClique, GaussianFactorOrdered::shared_ptr> marginalFactors;
 
   // Remove each variable and its subtrees
   BOOST_REVERSE_FOREACH(Index j, indices) {
@@ -819,7 +819,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
       // Remove either the whole clique or part of it
       if(marginalizeEntireClique) {
         // Remove the whole clique and its subtree, and keep the marginal factor.
-        GaussianFactor::shared_ptr marginalFactor = clique->cachedFactor();
+        GaussianFactorOrdered::shared_ptr marginalFactor = clique->cachedFactor();
         // We do not need the marginal factors associated with this clique
         // because their information is already incorporated in the new
         // marginal factor.  So, now associate this marginal factor with the
@@ -843,7 +843,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
         // subtrees already marginalized out.
         
         // Add child marginals and remove marginalized subtrees
-        GaussianFactorGraph graph;
+        GaussianFactorGraphOrdered graph;
         FastSet<size_t> factorsInSubtreeRoot;
         Cliques subtreesToRemove;
         BOOST_FOREACH(const sharedClique& child, clique->children()) {
@@ -895,30 +895,30 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
         std::set_intersection(cliqueFrontals.begin(), cliqueFrontals.end(), indices.begin(), indices.end(),
           std::inserter(cliqueFrontalsToEliminate, cliqueFrontalsToEliminate.end()));
         vector<Index> cliqueFrontalsToEliminateV(cliqueFrontalsToEliminate.begin(), cliqueFrontalsToEliminate.end());
-        pair<GaussianConditional::shared_ptr, GaussianFactorGraph> eliminationResult1 =
+        pair<GaussianConditionalOrdered::shared_ptr, GaussianFactorGraphOrdered> eliminationResult1 =
           graph.eliminate(cliqueFrontalsToEliminateV,
-          params_.factorization==ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky);
+          params_.factorization==ISAM2Params::QR ? EliminateQROrdered : EliminatePreferCholeskyOrdered);
 
         // Add the resulting marginal
-        BOOST_FOREACH(const GaussianFactor::shared_ptr& marginal, eliminationResult1.second) {
+        BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& marginal, eliminationResult1.second) {
           if(marginal)
             marginalFactors.insert(make_pair(clique, marginal)); }
 
         // Recover the conditional on the remaining subset of frontal variables
         // of this clique being martially marginalized.
         size_t nToEliminate = std::find(clique->conditional()->beginFrontals(), clique->conditional()->endFrontals(), j) - clique->conditional()->begin() + 1;
-        GaussianFactorGraph graph2;
+        GaussianFactorGraphOrdered graph2;
         graph2.push_back(clique->conditional()->toFactor());
-        GaussianFactorGraph::EliminationResult eliminationResult2 = 
+        GaussianFactorGraphOrdered::EliminationResult eliminationResult2 = 
           params_.factorization == ISAM2Params::QR ?
-          EliminateQR(graph2, nToEliminate) :
-          EliminatePreferCholesky(graph2, nToEliminate);
-        GaussianFactorGraph graph3;
+          EliminateQROrdered(graph2, nToEliminate) :
+          EliminatePreferCholeskyOrdered(graph2, nToEliminate);
+        GaussianFactorGraphOrdered graph3;
         graph3.push_back(eliminationResult2.second);
-        GaussianFactorGraph::EliminationResult eliminationResult3 = 
+        GaussianFactorGraphOrdered::EliminationResult eliminationResult3 = 
           params_.factorization == ISAM2Params::QR ?
-          EliminateQR(graph3, clique->conditional()->nrFrontals() - nToEliminate) :
-          EliminatePreferCholesky(graph3, clique->conditional()->nrFrontals() - nToEliminate);
+          EliminateQROrdered(graph3, clique->conditional()->nrFrontals() - nToEliminate) :
+          EliminatePreferCholeskyOrdered(graph3, clique->conditional()->nrFrontals() - nToEliminate);
         sharedClique newClique = boost::make_shared<Clique>(make_pair(eliminationResult3.first, clique->cachedFactor()));
 
         // Add the marginalized clique to the BayesTree
@@ -934,8 +934,8 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
   // At this point we have updated the BayesTree, now update the remaining iSAM2 data structures
 
   // Gather factors to add - the new marginal factors
-  GaussianFactorGraph factorsToAdd;
-  typedef pair<sharedClique, GaussianFactor::shared_ptr> Clique_Factor;
+  GaussianFactorGraphOrdered factorsToAdd;
+  typedef pair<sharedClique, GaussianFactorOrdered::shared_ptr> Clique_Factor;
   BOOST_FOREACH(const Clique_Factor& clique_factor, marginalFactors) {
     if(clique_factor.second)
       factorsToAdd.push_back(clique_factor.second);
@@ -953,7 +953,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
   BOOST_FOREACH(Index j, indices) {
     factorIndicesToRemove.insert(variableIndex_[j].begin(), variableIndex_[j].end()); }
   vector<size_t> removedFactorIndices;
-  SymbolicFactorGraph removedFactors;
+  SymbolicFactorGraphOrdered removedFactors;
   BOOST_FOREACH(size_t i, factorIndicesToRemove) {
     removedFactorIndices.push_back(i);
     removedFactors.push_back(nonlinearFactors_[i]->symbolic(ordering_));
@@ -1009,7 +1009,7 @@ Values ISAM2::calculateEstimate() const {
   Values ret(theta_);
   gttoc(Copy_Values);
   gttic(getDelta);
-  const VectorValues& delta(getDelta());
+  const VectorValuesOrdered& delta(getDelta());
   gttoc(getDelta);
   gttic(Expmap);
   vector<bool> mask(ordering_.size(), true);
@@ -1021,35 +1021,35 @@ Values ISAM2::calculateEstimate() const {
 /* ************************************************************************* */
 Matrix ISAM2::marginalCovariance(Index key) const {
   return marginalFactor(ordering_[key],
-    params_.factorization == ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky)
+    params_.factorization == ISAM2Params::QR ? EliminateQROrdered : EliminatePreferCholeskyOrdered)
     ->information().inverse();
 }
 
 /* ************************************************************************* */
 Values ISAM2::calculateBestEstimate() const {
-  VectorValues delta(theta_.dims(ordering_));
+  VectorValuesOrdered delta(theta_.dims(ordering_));
   internal::optimizeInPlace<Base>(this->root(), delta);
   return theta_.retract(delta, ordering_);
 }
 
 /* ************************************************************************* */
-const VectorValues& ISAM2::getDelta() const {
+const VectorValuesOrdered& ISAM2::getDelta() const {
   if(!deltaUptodate_)
     updateDelta();
   return delta_;
 }
 
 /* ************************************************************************* */
-VectorValues optimize(const ISAM2& isam) {
+VectorValuesOrdered optimize(const ISAM2& isam) {
   gttic(allocateVectorValues);
-  VectorValues delta = *allocateVectorValues(isam);
+  VectorValuesOrdered delta = *allocateVectorValues(isam);
   gttoc(allocateVectorValues);
   optimizeInPlace(isam, delta);
   return delta;
 }
 
 /* ************************************************************************* */
-void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
+void optimizeInPlace(const ISAM2& isam, VectorValuesOrdered& delta) {
   // We may need to update the solution calculations
   if(!isam.deltaDoglegUptodate_) {
     gttic(UpdateDoglegDeltas);
@@ -1071,9 +1071,9 @@ void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
 }
 
 /* ************************************************************************* */
-VectorValues optimizeGradientSearch(const ISAM2& isam) {
+VectorValuesOrdered optimizeGradientSearch(const ISAM2& isam) {
   gttic(Allocate_VectorValues);
-  VectorValues grad = *allocateVectorValues(isam);
+  VectorValuesOrdered grad = *allocateVectorValues(isam);
   gttoc(Allocate_VectorValues);
 
   optimizeGradientSearchInPlace(isam, grad);
@@ -1082,7 +1082,7 @@ VectorValues optimizeGradientSearch(const ISAM2& isam) {
 }
 
 /* ************************************************************************* */
-void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
+void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValuesOrdered& grad) {
   // We may need to update the solution calcaulations
   if(!isam.deltaDoglegUptodate_) {
     gttic(UpdateDoglegDeltas);
@@ -1117,15 +1117,15 @@ void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
 }
 
 /* ************************************************************************* */
-VectorValues gradient(const ISAM2& bayesTree, const VectorValues& x0) {
-  return gradient(FactorGraph<JacobianFactor>(bayesTree), x0);
+VectorValuesOrdered gradient(const ISAM2& bayesTree, const VectorValuesOrdered& x0) {
+  return gradient(FactorGraphOrdered<JacobianFactorOrdered>(bayesTree), x0);
 }
 
 /* ************************************************************************* */
-static void gradientAtZeroTreeAdder(const boost::shared_ptr<ISAM2Clique>& root, VectorValues& g) {
+static void gradientAtZeroTreeAdder(const boost::shared_ptr<ISAM2Clique>& root, VectorValuesOrdered& g) {
   // Loop through variables in each clique, adding contributions
   int variablePosition = 0;
-  for(GaussianConditional::const_iterator jit = root->conditional()->begin(); jit != root->conditional()->end(); ++jit) {
+  for(GaussianConditionalOrdered::const_iterator jit = root->conditional()->begin(); jit != root->conditional()->end(); ++jit) {
     const int dim = root->conditional()->dim(jit);
     g[*jit] += root->gradientContribution().segment(variablePosition, dim);
     variablePosition += dim;
@@ -1139,7 +1139,7 @@ static void gradientAtZeroTreeAdder(const boost::shared_ptr<ISAM2Clique>& root, 
 }
 
 /* ************************************************************************* */
-void gradientAtZero(const ISAM2& bayesTree, VectorValues& g) {
+void gradientAtZero(const ISAM2& bayesTree, VectorValuesOrdered& g) {
   // Zero-out gradient
   g.setZero();
 

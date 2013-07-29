@@ -22,9 +22,9 @@
 #include <boost/assign/std/map.hpp>
 
 #include <gtsam/base/debug.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/HessianFactorOrdered.h>
+#include <gtsam/linear/JacobianFactorOrdered.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
@@ -36,18 +36,18 @@ using namespace gtsam;
 const double tol = 1e-5;
 
 /* ************************************************************************* */
-TEST(HessianFactor, emptyConstructor) {
-  HessianFactor f;
+TEST(HessianFactorOrdered, emptyConstructor) {
+  HessianFactorOrdered f;
   DOUBLES_EQUAL(0.0, f.constantTerm(), 1e-9);        // Constant term should be zero
   EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
   EXPECT(assert_equal(zeros(1,1), f.info()));        // Full matrix should be 1-by-1 zero matrix
-  DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
+  DOUBLES_EQUAL(0.0, f.error(VectorValuesOrdered()), 1e-9); // Should have zero error
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, ConversionConstructor) {
+TEST(HessianFactorOrdered, ConversionConstructor) {
 
-  HessianFactor expected;
+  HessianFactorOrdered expected;
   expected.keys_.push_back(0);
   expected.keys_.push_back(1);
   size_t dims[] = { 2, 4, 1 };
@@ -93,11 +93,11 @@ TEST(HessianFactor, ConversionConstructor) {
   vector<pair<Index, Matrix> > meas;
   meas.push_back(make_pair(0, Ax2));
   meas.push_back(make_pair(1, Al1x1));
-  JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
+  JacobianFactorOrdered combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
 
-  HessianFactor actual(combined);
+  HessianFactorOrdered actual(combined);
 
-  VectorValues values(std::vector<size_t>(dims, dims+2));
+  VectorValuesOrdered values(std::vector<size_t>(dims, dims+2));
   values[0] = Vector_(2, 1.0, 2.0);
   values[1] = Vector_(4, 3.0, 4.0, 5.0, 6.0);
 
@@ -110,7 +110,7 @@ TEST(HessianFactor, ConversionConstructor) {
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, Constructor1)
+TEST(HessianFactorOrdered, Constructor1)
 {
   Matrix G = Matrix_(2,2, 3.0, 5.0, 0.0, 6.0);
   Vector g = Vector_(2, -8.0, -9.0);
@@ -120,11 +120,11 @@ TEST(HessianFactor, Constructor1)
 
   vector<size_t> dims;
   dims.push_back(2);
-  VectorValues dx(dims);
+  VectorValuesOrdered dx(dims);
 
   dx[0] = dxv;
 
-  HessianFactor factor(0, G, g, f);
+  HessianFactorOrdered factor(0, G, g, f);
 
   // extract underlying parts
   Matrix info_matrix = factor.info_.range(0, 1, 0, 1);
@@ -142,12 +142,12 @@ TEST(HessianFactor, Constructor1)
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, Constructor1b)
+TEST(HessianFactorOrdered, Constructor1b)
 {
   Vector mu = Vector_(2,1.0,2.0);
   Matrix Sigma = eye(2,2);
 
-  HessianFactor factor(0, mu, Sigma);
+  HessianFactorOrdered factor(0, mu, Sigma);
 
   Matrix G = eye(2,2);
   Vector g = G*mu;
@@ -162,7 +162,7 @@ TEST(HessianFactor, Constructor1b)
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, Constructor2)
+TEST(HessianFactorOrdered, Constructor2)
 {
   Matrix G11 = Matrix_(1,1, 1.0);
   Matrix G12 = Matrix_(1,2, 2.0, 4.0);
@@ -177,12 +177,12 @@ TEST(HessianFactor, Constructor2)
   vector<size_t> dims;
   dims.push_back(1);
   dims.push_back(2);
-  VectorValues dx(dims);
+  VectorValuesOrdered dx(dims);
 
   dx[0] = dx0;
   dx[1] = dx1;
 
-  HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
+  HessianFactorOrdered factor(0, 1, G11, G12, g1, G22, g2, f);
 
   double expected = 90.5;
   double actual = factor.error(dx);
@@ -200,7 +200,7 @@ TEST(HessianFactor, Constructor2)
 
   // Check case when vector values is larger than factor
   dims.push_back(2);
-  VectorValues dxLarge(dims);
+  VectorValuesOrdered dxLarge(dims);
   dxLarge[0] = dx0;
   dxLarge[1] = dx1;
   dxLarge[2] = Vector_(2, 0.1, 0.2);
@@ -208,7 +208,7 @@ TEST(HessianFactor, Constructor2)
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, Constructor3)
+TEST(HessianFactorOrdered, Constructor3)
 {
   Matrix G11 = Matrix_(1,1, 1.0);
   Matrix G12 = Matrix_(1,2, 2.0, 4.0);
@@ -233,13 +233,13 @@ TEST(HessianFactor, Constructor3)
   dims.push_back(1);
   dims.push_back(2);
   dims.push_back(3);
-  VectorValues dx(dims);
+  VectorValuesOrdered dx(dims);
 
   dx[0] = dx0;
   dx[1] = dx1;
   dx[2] = dx2;
 
-  HessianFactor factor(0, 1, 2, G11, G12, G13, g1, G22, G23, g2, G33, g3, f);
+  HessianFactorOrdered factor(0, 1, 2, G11, G12, G13, g1, G22, G23, g2, G33, g3, f);
 
   double expected = 371.3750;
   double actual = factor.error(dx);
@@ -260,7 +260,7 @@ TEST(HessianFactor, Constructor3)
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, ConstructorNWay)
+TEST(HessianFactorOrdered, ConstructorNWay)
 {
   Matrix G11 = Matrix_(1,1, 1.0);
   Matrix G12 = Matrix_(1,2, 2.0, 4.0);
@@ -285,7 +285,7 @@ TEST(HessianFactor, ConstructorNWay)
   dims.push_back(1);
   dims.push_back(2);
   dims.push_back(3);
-  VectorValues dx(dims);
+  VectorValuesOrdered dx(dims);
 
   dx[0] = dx0;
   dx[1] = dx1;
@@ -298,7 +298,7 @@ TEST(HessianFactor, ConstructorNWay)
   Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G13); Gs.push_back(G22); Gs.push_back(G23); Gs.push_back(G33);
   std::vector<Vector> gs;
   gs.push_back(g1); gs.push_back(g2); gs.push_back(g3);
-  HessianFactor factor(js, Gs, gs, f);
+  HessianFactorOrdered factor(js, Gs, gs, f);
 
   double expected = 371.3750;
   double actual = factor.error(dx);
@@ -319,7 +319,7 @@ TEST(HessianFactor, ConstructorNWay)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(HessianFactor, CopyConstructor_and_assignment)
+TEST_UNSAFE(HessianFactorOrdered, CopyConstructor_and_assignment)
 {
   Matrix G11 = Matrix_(1,1, 1.0);
   Matrix G12 = Matrix_(1,2, 2.0, 4.0);
@@ -334,15 +334,15 @@ TEST_UNSAFE(HessianFactor, CopyConstructor_and_assignment)
   vector<size_t> dims;
   dims.push_back(1);
   dims.push_back(2);
-  VectorValues dx(dims);
+  VectorValuesOrdered dx(dims);
 
   dx[0] = dx0;
   dx[1] = dx1;
 
-  HessianFactor originalFactor(0, 1, G11, G12, g1, G22, g2, f);
+  HessianFactorOrdered originalFactor(0, 1, G11, G12, g1, G22, g2, f);
 
   // Make a copy
-  HessianFactor copy1(originalFactor);
+  HessianFactorOrdered copy1(originalFactor);
 
   double expected = 90.5;
   double actual = copy1.error(dx);
@@ -359,8 +359,8 @@ TEST_UNSAFE(HessianFactor, CopyConstructor_and_assignment)
   EXPECT(assert_equal(G22, copy1.info(copy1.begin()+1, copy1.begin()+1)));
 
   // Make a copy using the assignment operator
-  HessianFactor copy2;
-  copy2 = HessianFactor(originalFactor); // Make a temporary to make sure copying does not shared references
+  HessianFactorOrdered copy2;
+  copy2 = HessianFactorOrdered(originalFactor); // Make a temporary to make sure copying does not shared references
 
   actual = copy2.error(dx);
   DOUBLES_EQUAL(expected, actual, 1e-10);
@@ -375,7 +375,7 @@ TEST_UNSAFE(HessianFactor, CopyConstructor_and_assignment)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(HessianFactor, CombineAndEliminate)
+TEST_UNSAFE(HessianFactorOrdered, CombineAndEliminate)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -402,7 +402,7 @@ TEST_UNSAFE(HessianFactor, CombineAndEliminate)
   Vector b2 = Vector_(3, 3.5, 3.5, 3.5);
   Vector s2 = Vector_(3, 3.6, 3.6, 3.6);
 
-  GaussianFactorGraph gfg;
+  GaussianFactorGraphOrdered gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
@@ -414,35 +414,35 @@ TEST_UNSAFE(HessianFactor, CombineAndEliminate)
   Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
 
   // create a full, uneliminated version of the factor
-  JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  JacobianFactorOrdered expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
 
   // perform elimination
-  GaussianConditional::shared_ptr expectedBN = expectedFactor.eliminate(1);
+  GaussianConditionalOrdered::shared_ptr expectedBN = expectedFactor.eliminate(1);
 
   // create expected Hessian after elimination
-  HessianFactor expectedCholeskyFactor(expectedFactor);
+  HessianFactorOrdered expectedCholeskyFactor(expectedFactor);
 
   // Convert all factors to hessians
-  FactorGraph<HessianFactor> hessians;
-  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
-    if(boost::shared_ptr<HessianFactor> hf = boost::dynamic_pointer_cast<HessianFactor>(factor))
+  FactorGraphOrdered<HessianFactorOrdered> hessians;
+  BOOST_FOREACH(const GaussianFactorGraphOrdered::sharedFactor& factor, gfg) {
+    if(boost::shared_ptr<HessianFactorOrdered> hf = boost::dynamic_pointer_cast<HessianFactorOrdered>(factor))
       hessians.push_back(hf);
-    else if(boost::shared_ptr<JacobianFactor> jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
-      hessians.push_back(boost::make_shared<HessianFactor>(*jf));
+    else if(boost::shared_ptr<JacobianFactorOrdered> jf = boost::dynamic_pointer_cast<JacobianFactorOrdered>(factor))
+      hessians.push_back(boost::make_shared<HessianFactorOrdered>(*jf));
     else
       CHECK(false);
   }
 
   // Eliminate
-  GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(gfg, 1);
-  HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<HessianFactor>(actualCholesky.second);
+  GaussianFactorGraphOrdered::EliminationResult actualCholesky = EliminateCholeskyOrdered(gfg, 1);
+  HessianFactorOrdered::shared_ptr actualFactor = boost::dynamic_pointer_cast<HessianFactorOrdered>(actualCholesky.second);
 
   EXPECT(assert_equal(*expectedBN, *actualCholesky.first, 1e-6));
   EXPECT(assert_equal(expectedCholeskyFactor, *actualFactor, 1e-6));
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, eliminate2 )
+TEST(HessianFactorOrdered, eliminate2 )
 {
   // sigmas
   double sigma1 = 0.2;
@@ -476,17 +476,17 @@ TEST(HessianFactor, eliminate2 )
   vector<pair<Index, Matrix> > meas;
   meas.push_back(make_pair(0, Ax2));
   meas.push_back(make_pair(1, Al1x1));
-  JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
+  JacobianFactorOrdered combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
 
   // eliminate the combined factor
-  HessianFactor::shared_ptr combinedLF_Chol(new HessianFactor(combined));
-  FactorGraph<HessianFactor> combinedLFG_Chol;
+  HessianFactorOrdered::shared_ptr combinedLF_Chol(new HessianFactorOrdered(combined));
+  FactorGraphOrdered<HessianFactorOrdered> combinedLFG_Chol;
   combinedLFG_Chol.push_back(combinedLF_Chol);
 
-  GaussianFactorGraph::EliminationResult actual_Chol = EliminateCholesky(
+  GaussianFactorGraphOrdered::EliminationResult actual_Chol = EliminateCholeskyOrdered(
       combinedLFG_Chol, 1);
-  HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
-      HessianFactor>(actual_Chol.second);
+  HessianFactorOrdered::shared_ptr actualFactor = boost::dynamic_pointer_cast<
+      HessianFactorOrdered>(actual_Chol.second);
 
   // create expected Conditional Gaussian
   double oldSigma = 0.0894427; // from when R was made unit
@@ -499,7 +499,7 @@ TEST(HessianFactor, eliminate2 )
       +0.00,-0.20,+0.00,-0.80
   )/oldSigma;
   Vector d = Vector_(2,0.2,-0.14)/oldSigma;
-  GaussianConditional expectedCG(0,d,R11,1,S12,ones(2));
+  GaussianConditionalOrdered expectedCG(0,d,R11,1,S12,ones(2));
   EXPECT(assert_equal(expectedCG,*actual_Chol.first,1e-4));
 
   // the expected linear factor
@@ -510,15 +510,15 @@ TEST(HessianFactor, eliminate2 )
       0.00, 1.00, +0.00, -1.00
   )/sigma;
   Vector b1 = Vector_(2,0.0,0.894427);
-  JacobianFactor expectedLF(1, Bl1x1, b1, noiseModel::Isotropic::Sigma(2,1.0));
-  EXPECT(assert_equal(HessianFactor(expectedLF), *actualFactor, 1.5e-3));
+  JacobianFactorOrdered expectedLF(1, Bl1x1, b1, noiseModel::Isotropic::Sigma(2,1.0));
+  EXPECT(assert_equal(HessianFactorOrdered(expectedLF), *actualFactor, 1.5e-3));
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, eliminateUnsorted) {
+TEST(HessianFactorOrdered, eliminateUnsorted) {
 
-  JacobianFactor::shared_ptr factor1(
-      new JacobianFactor(0,
+  JacobianFactorOrdered::shared_ptr factor1(
+      new JacobianFactorOrdered(0,
                          Matrix_(3,3,
                                  44.7214,     0.0,       0.0,
                                  0.0,     44.7214,       0.0,
@@ -530,8 +530,8 @@ TEST(HessianFactor, eliminateUnsorted) {
                                  0.0,         0.0,  -44.7214),
                          Vector_(3, 1.98916e-17, -4.96503e-15, -7.75792e-17),
                          noiseModel::Unit::Create(3)));
-  HessianFactor::shared_ptr unsorted_factor2(
-      new HessianFactor(JacobianFactor(0,
+  HessianFactorOrdered::shared_ptr unsorted_factor2(
+      new HessianFactorOrdered(JacobianFactorOrdered(0,
                         Matrix_(6,3,
                                 25.8367,    0.1211,    0.0593,
                                     0.0,   23.4099,   30.8733,
@@ -554,8 +554,8 @@ TEST(HessianFactor, eliminateUnsorted) {
   permutation[1] = 0;
   unsorted_factor2->permuteWithInverse(permutation);
 
-  HessianFactor::shared_ptr sorted_factor2(
-      new HessianFactor(JacobianFactor(0,
+  HessianFactorOrdered::shared_ptr sorted_factor2(
+      new HessianFactorOrdered(JacobianFactorOrdered(0,
                         Matrix_(6,3,
                                 25.7429,   -1.6897,    0.4587,
                                  1.6400,   23.3095,   -8.4816,
@@ -574,30 +574,30 @@ TEST(HessianFactor, eliminateUnsorted) {
                         Vector_(6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
                         noiseModel::Unit::Create(6))));
 
-  GaussianFactorGraph sortedGraph;
+  GaussianFactorGraphOrdered sortedGraph;
 //  sortedGraph.push_back(factor1);
   sortedGraph.push_back(sorted_factor2);
 
-  GaussianFactorGraph unsortedGraph;
+  GaussianFactorGraphOrdered unsortedGraph;
 //  unsortedGraph.push_back(factor1);
   unsortedGraph.push_back(unsorted_factor2);
 
-  GaussianConditional::shared_ptr expected_bn;
-  GaussianFactor::shared_ptr expected_factor;
+  GaussianConditionalOrdered::shared_ptr expected_bn;
+  GaussianFactorOrdered::shared_ptr expected_factor;
   boost::tie(expected_bn, expected_factor) =
-      EliminatePreferCholesky(sortedGraph, 1);
+      EliminatePreferCholeskyOrdered(sortedGraph, 1);
 
-  GaussianConditional::shared_ptr actual_bn;
-  GaussianFactor::shared_ptr actual_factor;
+  GaussianConditionalOrdered::shared_ptr actual_bn;
+  GaussianFactorOrdered::shared_ptr actual_factor;
   boost::tie(actual_bn, actual_factor) =
-      EliminatePreferCholesky(unsortedGraph, 1);
+      EliminatePreferCholeskyOrdered(unsortedGraph, 1);
 
   EXPECT(assert_equal(*expected_bn, *actual_bn, 1e-10));
   EXPECT(assert_equal(*expected_factor, *actual_factor, 1e-10));
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, combine) {
+TEST(HessianFactorOrdered, combine) {
 
   // update the information matrix with a single jacobian factor
   Matrix A0 = Matrix_(2, 2,
@@ -611,12 +611,12 @@ TEST(HessianFactor, combine) {
          0.0, -8.94427191);
   Vector b = Vector_(2, 2.23606798,-1.56524758);
   SharedDiagonal model = noiseModel::Diagonal::Sigmas(ones(2));
-  GaussianFactor::shared_ptr f(new JacobianFactor(0, A0, 1, A1, 2, A2, b, model));
-  FactorGraph<GaussianFactor> factors;
+  GaussianFactorOrdered::shared_ptr f(new JacobianFactorOrdered(0, A0, 1, A1, 2, A2, b, model));
+  FactorGraphOrdered<GaussianFactorOrdered> factors;
   factors.push_back(f);
 
   // Form Ab' * Ab
-  HessianFactor actual(factors);
+  HessianFactorOrdered actual(factors);
 
   Matrix expected = Matrix_(7, 7,
   125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,

@@ -26,15 +26,15 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer : public NonlinearOptimiz
   class System {
   public:
     typedef Values State;
-    typedef VectorValues Gradient;
+    typedef VectorValuesOrdered Gradient;
     typedef NonlinearOptimizerParams Parameters;
 
   protected:
     const NonlinearFactorGraph &graph_;
-    const Ordering &ordering_;
+    const OrderingOrdered &ordering_;
 
   public:
-    System(const NonlinearFactorGraph &graph, const Ordering &ordering): graph_(graph), ordering_(ordering) {}
+    System(const NonlinearFactorGraph &graph, const OrderingOrdered &ordering): graph_(graph), ordering_(ordering) {}
     double error(const State &state) const ;
     Gradient gradient(const State &state) const ;
     State advance(const State &current, const double alpha, const Gradient &g) const ;
@@ -49,15 +49,15 @@ public:
 protected:
   States state_;
   Parameters params_;
-  Ordering::shared_ptr ordering_;
-  VectorValues::shared_ptr gradient_;
+  OrderingOrdered::shared_ptr ordering_;
+  VectorValuesOrdered::shared_ptr gradient_;
 
 public:
 
   NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
                                       const Parameters& params = Parameters())
     : Base(graph), state_(graph, initialValues), params_(params), ordering_(initialValues.orderingArbitrary()),
-      gradient_(new VectorValues(initialValues.zeroVectors(*ordering_))){}
+      gradient_(new VectorValuesOrdered(initialValues.zeroVectors(*ordering_))){}
 
   virtual ~NonlinearConjugateGradientOptimizer() {}
   virtual void iterate();

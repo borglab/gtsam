@@ -74,7 +74,7 @@ void LevenbergMarquardtOptimizer::iterate() {
   gttic(LM_iterate);
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, *params_.ordering);
+  GaussianFactorGraphOrdered::shared_ptr linear = graph_.linearize(state_.values, *params_.ordering);
 
   // Pull out parameters we'll use
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_.verbosity;
@@ -88,7 +88,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
     gttic(damp);
-    GaussianFactorGraph dampedSystem(*linear);
+    GaussianFactorGraphOrdered dampedSystem(*linear);
     {
       double sigma = 1.0 / std::sqrt(state_.lambda);
       dampedSystem.reserve(dampedSystem.size() + dimensions_.size());
@@ -98,7 +98,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         Matrix A = eye(dim);
         Vector b = zero(dim);
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
-        GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
+        GaussianFactorOrdered::shared_ptr prior(new JacobianFactorOrdered(j, A, b, model));
         dampedSystem.push_back(prior);
       }
     }
@@ -108,7 +108,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     // Try solving
     try {
       // Solve Damped Gaussian Factor Graph
-      const VectorValues delta = solveGaussianFactorGraph(dampedSystem, params_);
+      const VectorValuesOrdered delta = solveGaussianFactorGraph(dampedSystem, params_);
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.norm() << endl;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");

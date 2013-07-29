@@ -20,8 +20,8 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/Testable.h>
-#include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
-#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
+#include <gtsam/symbolic/SymbolicBayesNet.h>
+#include <gtsam/symbolic/SymbolicConditional.h>
 
 using namespace std;
 using namespace gtsam;
@@ -33,17 +33,17 @@ static const Key _C_ = 3;
 static const Key _D_ = 4;
 static const Key _E_ = 5;
 
-static SymbolicConditionalUnordered::shared_ptr
-  B(new SymbolicConditionalUnordered(_B_)),
-  L(new SymbolicConditionalUnordered(_L_, _B_));
+static SymbolicConditional::shared_ptr
+  B(new SymbolicConditional(_B_)),
+  L(new SymbolicConditional(_L_, _B_));
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNet, equals )
+TEST( SymbolicBayesNetOrdered, equals )
 {
-  SymbolicBayesNetUnordered f1;
+  SymbolicBayesNet f1;
   f1.push_back(B);
   f1.push_back(L);
-  SymbolicBayesNetUnordered f2;
+  SymbolicBayesNet f2;
   f2.push_back(L);
   f2.push_back(B);
   CHECK(f1.equals(f1));
@@ -51,26 +51,26 @@ TEST( SymbolicBayesNet, equals )
 }
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNet, combine )
+TEST( SymbolicBayesNetOrdered, combine )
 {
-  SymbolicConditionalUnordered::shared_ptr
-    A(new SymbolicConditionalUnordered(_A_,_B_,_C_)),
-    B(new SymbolicConditionalUnordered(_B_,_C_)),
-    C(new SymbolicConditionalUnordered(_C_));
+  SymbolicConditional::shared_ptr
+    A(new SymbolicConditional(_A_,_B_,_C_)),
+    B(new SymbolicConditional(_B_,_C_)),
+    C(new SymbolicConditional(_C_));
 
   // p(A|BC)
-  SymbolicBayesNetUnordered p_ABC;
+  SymbolicBayesNet p_ABC;
   p_ABC.push_back(A);
 
   // P(BC)=P(B|C)P(C)
-  SymbolicBayesNetUnordered p_BC;
+  SymbolicBayesNet p_BC;
   p_BC.push_back(B);
   p_BC.push_back(C);
 
   // P(ABC) = P(A|BC) P(BC)
   p_ABC.push_back(p_BC);
 
-  SymbolicBayesNetUnordered expected;
+  SymbolicBayesNet expected;
   expected.push_back(A);
   expected.push_back(B);
   expected.push_back(C);
@@ -79,15 +79,15 @@ TEST( SymbolicBayesNet, combine )
 }
 
 /* ************************************************************************* */
-TEST(SymbolicBayesNet, saveGraph) {
-  SymbolicBayesNetUnordered bn;
-  bn += SymbolicConditionalUnordered(_A_, _B_);
+TEST(SymbolicBayesNetOrdered, saveGraph) {
+  SymbolicBayesNet bn;
+  bn += SymbolicConditional(_A_, _B_);
   std::vector<Index> keys;
   keys.push_back(_B_);
   keys.push_back(_C_);
   keys.push_back(_D_);
-  bn += SymbolicConditionalUnordered::FromKeys(keys,2);
-  bn += SymbolicConditionalUnordered(_D_);
+  bn += SymbolicConditional::FromKeys(keys,2);
+  bn += SymbolicConditional(_D_);
 
   bn.saveGraph("SymbolicBayesNet.dot");
 }

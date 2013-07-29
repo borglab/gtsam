@@ -20,11 +20,11 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/BayesNet-inl.h>
-#include <gtsam/inference/IndexFactor.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/SymbolicSequentialSolver.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
+#include <gtsam/inference/BayesNetOrdered-inl.h>
+#include <gtsam/inference/IndexFactorOrdered.h>
+#include <gtsam/inference/FactorGraphOrdered.h>
+#include <gtsam/inference/SymbolicSequentialSolverOrdered.h>
 
 using namespace std;
 using namespace gtsam;
@@ -34,14 +34,14 @@ static const Index vx1 = 1;
 static const Index vl1 = 2;
 
 ///* ************************************************************************* */
-//TEST( SymbolicFactorGraph, EliminateOne )
+//TEST( SymbolicFactorGraphOrdered, EliminateOne )
 //{
 //  // create a test graph
-//  SymbolicFactorGraph fg;
+//  SymbolicFactorGraphOrdered fg;
 //  fg.push_factor(vx2, vx1);
 //
 //  SymbolicSequentialSolver::EliminateUntil(fg, vx2+1);
-//  SymbolicFactorGraph expected;
+//  SymbolicFactorGraphOrdered expected;
 //  expected.push_back(boost::shared_ptr<IndexFactor>());
 //  expected.push_factor(vx1);
 //
@@ -49,35 +49,35 @@ static const Index vl1 = 2;
 //}
 
 /* ************************************************************************* */
-TEST( SymbolicFactorGraph, constructFromBayesNet )
+TEST( SymbolicFactorGraphOrdered, constructFromBayesNet )
 {
   // create expected factor graph
-  SymbolicFactorGraph expected;
+  SymbolicFactorGraphOrdered expected;
   expected.push_factor(vx2, vx1, vl1);
   expected.push_factor(vx1, vl1);
   expected.push_factor(vx1);
 
   // create Bayes Net
-  IndexConditional::shared_ptr x2(new IndexConditional(vx2, vx1, vl1));
-  IndexConditional::shared_ptr l1(new IndexConditional(vx1, vl1));
-  IndexConditional::shared_ptr x1(new IndexConditional(vx1));
+  IndexConditionalOrdered::shared_ptr x2(new IndexConditionalOrdered(vx2, vx1, vl1));
+  IndexConditionalOrdered::shared_ptr l1(new IndexConditionalOrdered(vx1, vl1));
+  IndexConditionalOrdered::shared_ptr x1(new IndexConditionalOrdered(vx1));
 
-  BayesNet<IndexConditional> bayesNet;
+  BayesNetOrdered<IndexConditionalOrdered> bayesNet;
   bayesNet.push_back(x2);
   bayesNet.push_back(l1);
   bayesNet.push_back(x1);
 
   // create actual factor graph from a Bayes Net
-  SymbolicFactorGraph actual(bayesNet);
+  SymbolicFactorGraphOrdered actual(bayesNet);
 
-  CHECK(assert_equal((SymbolicFactorGraph)expected,actual));
+  CHECK(assert_equal((SymbolicFactorGraphOrdered)expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( SymbolicFactorGraph, push_back )
+TEST( SymbolicFactorGraphOrdered, push_back )
 {
   // Create two factor graphs and expected combined graph
-  SymbolicFactorGraph fg1, fg2, expected;
+  SymbolicFactorGraphOrdered fg1, fg2, expected;
 
   fg1.push_factor(vx1);
   fg1.push_factor(vx2, vx1);
@@ -91,7 +91,7 @@ TEST( SymbolicFactorGraph, push_back )
   expected.push_factor(vx2, vl1);
 
   // combine
-  SymbolicFactorGraph actual = combine(fg1, fg2);
+  SymbolicFactorGraphOrdered actual = combine(fg1, fg2);
   CHECK(assert_equal(expected, actual));
 
   // combine using push_back

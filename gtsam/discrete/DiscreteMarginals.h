@@ -32,7 +32,7 @@ namespace gtsam {
 
   protected:
 
-    BayesTree<DiscreteConditional> bayesTree_;
+    BayesTreeOrdered<DiscreteConditional> bayesTree_;
 
   public:
 
@@ -40,7 +40,7 @@ namespace gtsam {
    * @param graph The factor graph defining the full joint density on all variables.
    */
   DiscreteMarginals(const DiscreteFactorGraph& graph) {
-    typedef JunctionTree<DiscreteFactorGraph> DiscreteJT;
+    typedef JunctionTreeOrdered<DiscreteFactorGraph> DiscreteJT;
     GenericMultifrontalSolver<DiscreteFactor, DiscreteJT> solver(graph);
     bayesTree_ = *solver.eliminate(&EliminateDiscrete);
   }

@@ -41,14 +41,14 @@ TEST( testDummyFactor, basics ) {
   // errors - all zeros
   DOUBLES_EQUAL(0.0, dummyfactor.error(c), tol);
 
-  Ordering ordering;
+  OrderingOrdered ordering;
   ordering += key1, key2;
 
   // linearization: all zeros
-  GaussianFactor::shared_ptr actLinearization = dummyfactor.linearize(c, ordering);
+  GaussianFactorOrdered::shared_ptr actLinearization = dummyfactor.linearize(c, ordering);
   CHECK(actLinearization);
   noiseModel::Diagonal::shared_ptr model3 = noiseModel::Unit::Create(3);
-  GaussianFactor::shared_ptr expLinearization(new JacobianFactor(
+  GaussianFactorOrdered::shared_ptr expLinearization(new JacobianFactorOrdered(
       ordering[key1], zeros(3,3), ordering[key2], zeros(3,3), zero(3), model3));
   EXPECT(assert_equal(*expLinearization, *actLinearization, tol));
 }

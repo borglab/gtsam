@@ -66,11 +66,11 @@ Matrix Marginals::marginalInformation(Key variable) const {
   Index index = ordering_[variable];
 
   // Compute marginal
-  GaussianFactor::shared_ptr marginalFactor;
+  GaussianFactorOrdered::shared_ptr marginalFactor;
   if(factorization_ == CHOLESKY)
-    marginalFactor = bayesTree_.marginalFactor(index, EliminatePreferCholesky);
+    marginalFactor = bayesTree_.marginalFactor(index, EliminatePreferCholeskyOrdered);
   else if(factorization_ == QR)
-    marginalFactor = bayesTree_.marginalFactor(index, EliminateQR);
+    marginalFactor = bayesTree_.marginalFactor(index, EliminateQROrdered);
 
   // Get information matrix (only store upper-right triangle)
   gttic(AsMatrix);
@@ -106,7 +106,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     Matrix info = marginalInformation(variables.front());
     std::vector<size_t> dims;
     dims.push_back(info.rows());
-    Ordering indices;
+    OrderingOrdered indices;
     indices.insert(variables.front(), 0);
     return JointMarginal(info, dims, indices);
 
@@ -116,12 +116,12 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     for(size_t i=0; i<variables.size(); ++i) { indices[i] = ordering_[variables[i]]; }
 
     // Compute joint marginal factor graph.
-    GaussianFactorGraph jointFG;
+    GaussianFactorGraphOrdered jointFG;
     if(variables.size() == 2) {
       if(factorization_ == CHOLESKY)
-        jointFG = *bayesTree_.joint(indices[0], indices[1], EliminatePreferCholesky);
+        jointFG = *bayesTree_.joint(indices[0], indices[1], EliminatePreferCholeskyOrdered);
       else if(factorization_ == QR)
-        jointFG = *bayesTree_.joint(indices[0], indices[1], EliminateQR);
+        jointFG = *bayesTree_.joint(indices[0], indices[1], EliminateQROrdered);
     } else {
       if(factorization_ == CHOLESKY)
         jointFG = *GaussianSequentialSolver(graph_, false).jointFactorGraph(indices);
@@ -131,7 +131,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
 
     // Build map from variable keys to position in factor graph variables,
     // which are sorted in index order.
-    Ordering variableConversion;
+    OrderingOrdered variableConversion;
     {
       // First build map from index to key
       FastMap<Index,Key> usedIndices;
@@ -164,7 +164,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
 void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
   cout << s << "Joint marginal on keys ";
   bool first = true;
-  BOOST_FOREACH(const Ordering::value_type& key_index, indices_) {
+  BOOST_FOREACH(const OrderingOrdered::value_type& key_index, indices_) {
     if(!first)
       cout << ", ";
     else

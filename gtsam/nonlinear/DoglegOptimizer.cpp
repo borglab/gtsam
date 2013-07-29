@@ -18,8 +18,8 @@
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 
-#include <gtsam/inference/EliminationTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/inference/EliminationTreeOrdered.h>
+#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 #include <boost/algorithm/string.hpp>
@@ -53,8 +53,8 @@ std::string DoglegParams::verbosityDLTranslator(VerbosityDL verbosityDL) const {
 void DoglegOptimizer::iterate(void) {
 
   // Linearize graph
-  const Ordering& ordering = *params_.ordering;
-  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, ordering);
+  const OrderingOrdered& ordering = *params_.ordering;
+  GaussianFactorGraphOrdered::shared_ptr linear = graph_.linearize(state_.values, ordering);
 
   // Pull out parameters we'll use
   const bool dlVerbose = (params_.verbosityDL > DoglegParams::SILENT);
@@ -63,12 +63,12 @@ void DoglegOptimizer::iterate(void) {
   DoglegOptimizerImpl::IterationResult result;
 
   if ( params_.isMultifrontal() ) {
-    GaussianBayesTree bt;
-    bt.insert(GaussianJunctionTree(*linear).eliminate(params_.getEliminationFunction()));
+    GaussianBayesTreeOrdered bt;
+    bt.insert(GaussianJunctionTreeOrdered(*linear).eliminate(params_.getEliminationFunction()));
     result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, bt, graph_, state_.values, ordering, state_.error, dlVerbose);
   }
   else if ( params_.isSequential() ) {
-    GaussianBayesNet::shared_ptr bn = EliminationTree<GaussianFactor>::Create(*linear)->eliminate(params_.getEliminationFunction());
+    GaussianBayesNetOrdered::shared_ptr bn = EliminationTreeOrdered<GaussianFactorOrdered>::Create(*linear)->eliminate(params_.getEliminationFunction());
     result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, graph_, state_.values, ordering, state_.error, dlVerbose);
   }
   else if ( params_.isCG() ) {

@@ -22,8 +22,8 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -58,11 +58,11 @@ namespace gtsam {
    * tangent vector space at the linearization point. Because the tangent space is a true
    * vector space, the config type will be an VectorValues in that linearized factor graph.
    */
-  class NonlinearFactorGraph: public FactorGraph<NonlinearFactor> {
+  class NonlinearFactorGraph: public FactorGraphOrdered<NonlinearFactor> {
 
   public:
 
-    typedef FactorGraph<NonlinearFactor> Base;
+    typedef FactorGraphOrdered<NonlinearFactor> Base;
     typedef boost::shared_ptr<NonlinearFactorGraph> shared_ptr;
     typedef boost::shared_ptr<NonlinearFactor> sharedFactor;
 
@@ -96,7 +96,7 @@ namespace gtsam {
     /**
      * Create a symbolic factor graph using an existing ordering
      */
-    GTSAM_EXPORT SymbolicFactorGraph::shared_ptr symbolic(const Ordering& ordering) const;
+    GTSAM_EXPORT SymbolicFactorGraphOrdered::shared_ptr symbolic(const OrderingOrdered& ordering) const;
 
     /**
      * Create a symbolic factor graph and initial variable ordering that can
@@ -104,13 +104,13 @@ namespace gtsam {
      * The graph and ordering should be permuted after such a fill-reducing
      * ordering is found.
      */
-    GTSAM_EXPORT std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
+    GTSAM_EXPORT std::pair<SymbolicFactorGraphOrdered::shared_ptr, OrderingOrdered::shared_ptr>
     symbolic(const Values& config) const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.
      */
-    GTSAM_EXPORT Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
+    GTSAM_EXPORT OrderingOrdered::shared_ptr orderingCOLAMD(const Values& config) const;
 
     /**
      * Compute a fill-reducing ordering with constraints using CCOLAMD
@@ -120,14 +120,14 @@ namespace gtsam {
      * indices need to appear in the constraints, unconstrained is assumed for all
      * other variables
      */
-    GTSAM_EXPORT Ordering::shared_ptr orderingCOLAMDConstrained(const Values& config,
+    GTSAM_EXPORT OrderingOrdered::shared_ptr orderingCOLAMDConstrained(const Values& config,
         const std::map<Key, int>& constraints) const;
 
     /**
      * linearize a nonlinear factor graph
      */
-    GTSAM_EXPORT boost::shared_ptr<GaussianFactorGraph >
-        linearize(const Values& config, const Ordering& ordering) const;
+    GTSAM_EXPORT boost::shared_ptr<GaussianFactorGraphOrdered >
+        linearize(const Values& config, const OrderingOrdered& ordering) const;
 
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors

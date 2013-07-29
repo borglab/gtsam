@@ -16,7 +16,7 @@
  * @date    Aug 30, 2010
  */
 
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
@@ -31,7 +31,7 @@ using namespace gtsam;
 using namespace std;
 using namespace boost::lambda;
 
-typedef EliminationTree<JacobianFactor> GaussianEliminationTree;
+typedef EliminationTreeOrdered<JacobianFactorOrdered> GaussianEliminationTree;
 
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost::mt19937(), boost::uniform_real<>(0.0, 1.0));
 
@@ -65,10 +65,10 @@ int main(int argc, char *argv[]) {
     cout.flush();
     boost::timer timer;
     timer.restart();
-    vector<GaussianFactorGraph> blockGfgs;
+    vector<GaussianFactorGraphOrdered> blockGfgs;
     blockGfgs.reserve(nTrials);
     for(size_t trial=0; trial<nTrials; ++trial) {
-      blockGfgs.push_back(GaussianFactorGraph());
+      blockGfgs.push_back(GaussianFactorGraphOrdered());
       SharedDiagonal noise = noiseModel::Isotropic::Sigma(blockdim, 1.0);
       for(int c=0; c<nVars; ++c) {
         for(size_t d=0; d<blocksPerVar; ++d) {
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
           for(size_t j=0; j<blockdim; ++j)
             b(j) = rg();
           if(!terms.empty())
-            blockGfgs[trial].push_back(JacobianFactor::shared_ptr(new JacobianFactor(terms, b, noise)));
+            blockGfgs[trial].push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(terms, b, noise)));
         }
       }
 
@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
-      VectorValues soln(*GaussianMultifrontalSolver(blockGfgs[trial]).optimize());
+      VectorValuesOrdered soln(*GaussianMultifrontalSolver(blockGfgs[trial]).optimize());
     }
     blocksolve = timer.elapsed();
     cout << blocksolve << " s" << endl;

@@ -30,7 +30,7 @@ TEST(GaussianDensity, constructor)
             0.,   4.6904);
 
   Vector d = Vector_(2, 1.0, 2.0), s = Vector_(2, 3.0, 4.0);
-  GaussianConditional conditional(1, d, R, s);
+  GaussianConditionalOrdered conditional(1, d, R, s);
 
   GaussianDensity copied(conditional);
   EXPECT(assert_equal(d, copied.get_d()));

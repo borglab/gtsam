@@ -25,9 +25,9 @@ using namespace std;
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/JacobianFactorOrdered.h>
+#include <gtsam/linear/JacobianFactorOrdered.h>
+#include <gtsam/linear/GaussianConditionalOrdered.h>
 #include <gtsam/linear/NoiseModel.h>
 
 using namespace gtsam;
@@ -101,14 +101,14 @@ int main()
   b2(7) = -1;
   
   // time eliminate
-  JacobianFactor combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, noiseModel::Isotropic::Sigma(8,1));
+  JacobianFactorOrdered combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, noiseModel::Isotropic::Sigma(8,1));
   long timeLog = clock();
   int n = 1000000;
-  GaussianConditional::shared_ptr conditional;
-  JacobianFactor::shared_ptr factor;
+  GaussianConditionalOrdered::shared_ptr conditional;
+  JacobianFactorOrdered::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
-    conditional = JacobianFactor(combined).eliminateFirst();
+    conditional = JacobianFactorOrdered(combined).eliminateFirst();
 
   long timeLog2 = clock();
   double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;

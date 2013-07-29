@@ -54,8 +54,8 @@ public:
   virtual size_t dim() const { return rowDim_; }
 
   /** linearize to a GaussianFactor */
-  virtual boost::shared_ptr<GaussianFactor>
-  linearize(const Values& c, const Ordering& ordering) const;
+  virtual boost::shared_ptr<GaussianFactorOrdered>
+  linearize(const Values& c, const OrderingOrdered& ordering) const;
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow

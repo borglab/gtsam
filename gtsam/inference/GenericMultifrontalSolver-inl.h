@@ -17,17 +17,17 @@
 
 #pragma once
 
-#include <gtsam/inference/Factor-inl.h>
-#include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/BayesNet-inl.h>
+#include <gtsam/inference/FactorOrdered-inl.h>
+#include <gtsam/inference/JunctionTreeOrdered.h>
+#include <gtsam/inference/BayesNetOrdered-inl.h>
 
 namespace gtsam {
 
   /* ************************************************************************* */
   template<class F, class JT>
   GenericMultifrontalSolver<F, JT>::GenericMultifrontalSolver(
-      const FactorGraph<F>& graph) :
-      structure_(new VariableIndex(graph)), junctionTree_(
+      const FactorGraphOrdered<F>& graph) :
+      structure_(new VariableIndexOrdered(graph)), junctionTree_(
           new JT(graph, *structure_)) {
   }
 
@@ -35,7 +35,7 @@ namespace gtsam {
   template<class F, class JT>
   GenericMultifrontalSolver<F, JT>::GenericMultifrontalSolver(
       const sharedGraph& graph,
-      const VariableIndex::shared_ptr& variableIndex) :
+      const VariableIndexOrdered::shared_ptr& variableIndex) :
       structure_(variableIndex), junctionTree_(new JT(*graph, *structure_)) {
   }
 
@@ -63,16 +63,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTOR, class JUNCTIONTREE>
-  typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr
+  typename BayesTreeOrdered<typename FACTOR::ConditionalType>::shared_ptr
   GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate(Eliminate function) const {
 
     // eliminate junction tree, returns pointer to root
-    typename BayesTree<typename FACTOR::ConditionalType>::sharedClique
+    typename BayesTreeOrdered<typename FACTOR::ConditionalType>::sharedClique
       root = junctionTree_->eliminate(function);
 
     // create an empty Bayes tree and insert root clique
-    typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr
-      bayesTree(new BayesTree<typename FACTOR::ConditionalType>);
+    typename BayesTreeOrdered<typename FACTOR::ConditionalType>::shared_ptr
+      bayesTree(new BayesTreeOrdered<typename FACTOR::ConditionalType>);
     bayesTree->insert(root);
 
     // return the Bayes tree
@@ -81,7 +81,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class F, class JT>
-  typename FactorGraph<F>::shared_ptr GenericMultifrontalSolver<F, JT>::jointFactorGraph(
+  typename FactorGraphOrdered<F>::shared_ptr GenericMultifrontalSolver<F, JT>::jointFactorGraph(
       const std::vector<Index>& js, Eliminate function) const {
 
     // FIXME: joint for arbitrary sets of variables not present

@@ -21,17 +21,17 @@
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNetOrdered.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 
 namespace gtsam {
 
   /* ************************************************************************* */
   template<class VALUE>
   typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::solve_(
-      const GaussianFactorGraph& linearFactorGraph, const Ordering& ordering,
+      const GaussianFactorGraphOrdered& linearFactorGraph, const OrderingOrdered& ordering,
       const Values& linearizationPoints, Key lastKey,
-      JacobianFactor::shared_ptr& newPrior) const {
+      JacobianFactorOrdered::shared_ptr& newPrior) const {
 
     // Extract the Index of the provided last key
     gtsam::Index lastIndex = ordering.at(lastKey);
@@ -39,23 +39,23 @@ namespace gtsam {
     // Solve the linear factor graph, converting it into a linear Bayes Network
     // P(x0,x1) = P(x0|x1)*P(x1)
     GaussianSequentialSolver solver(linearFactorGraph);
-    GaussianBayesNet::shared_ptr linearBayesNet = solver.eliminate();
+    GaussianBayesNetOrdered::shared_ptr linearBayesNet = solver.eliminate();
 
     // Extract the current estimate of x1,P1 from the Bayes Network
-    VectorValues result = optimize(*linearBayesNet);
+    VectorValuesOrdered result = optimize(*linearBayesNet);
     T x = linearizationPoints.at<T>(lastKey).retract(result[lastIndex]);
 
     // Create a Jacobian Factor from the root node of the produced Bayes Net.
     // This will act as a prior for the next iteration.
     // The linearization point of this prior must be moved to the new estimate of x,
     // and the key/index needs to be reset to 0, the first key in the next iteration.
-    const GaussianConditional::shared_ptr& cg = linearBayesNet->back();
+    const GaussianConditionalOrdered::shared_ptr& cg = linearBayesNet->back();
     assert(cg->nrFrontals() == 1);
     assert(cg->nrParents() == 0);
     // TODO: Find a way to create the correct Jacobian Factor in a single pass
-    JacobianFactor tmpPrior = JacobianFactor(*cg);
-    newPrior = JacobianFactor::shared_ptr(
-        new JacobianFactor(
+    JacobianFactorOrdered tmpPrior = JacobianFactorOrdered(*cg);
+    newPrior = JacobianFactorOrdered::shared_ptr(
+        new JacobianFactorOrdered(
             0,
             tmpPrior.getA(tmpPrior.begin()),
             tmpPrior.getb()
@@ -76,8 +76,8 @@ namespace gtsam {
     // Create a Jacobian Prior Factor directly P_initial.
     // Since x0 is set to the provided mean, the b vector in the prior will be zero
     // TODO Frank asks: is there a reason why noiseModel is not simply P_initial ?
-    priorFactor_ = JacobianFactor::shared_ptr(
-        new JacobianFactor(0, P_initial->R(), Vector::Zero(x_initial.dim()),
+    priorFactor_ = JacobianFactorOrdered::shared_ptr(
+        new JacobianFactorOrdered(0, P_initial->R(), Vector::Zero(x_initial.dim()),
             noiseModel::Unit::Create(P_initial->dim())));
   }
 
@@ -95,7 +95,7 @@ namespace gtsam {
     Key x1 = motionFactor.key2();
 
     // Create an elimination ordering
-    Ordering ordering;
+    OrderingOrdered ordering;
     ordering.insert(x0, 0);
     ordering.insert(x1, 1);
 
@@ -105,7 +105,7 @@ namespace gtsam {
     linearizationPoints.insert(x1, x_); // TODO should this really be x_ ?
 
     // Create a Gaussian Factor Graph
-    GaussianFactorGraph linearFactorGraph;
+    GaussianFactorGraphOrdered linearFactorGraph;
 
     // Add in previous posterior as prior on the first state
     linearFactorGraph.push_back(priorFactor_);
@@ -134,7 +134,7 @@ namespace gtsam {
     Key x0 = measurementFactor.key();
 
     // Create an elimination ordering
-    Ordering ordering;
+    OrderingOrdered ordering;
     ordering.insert(x0, 0);
 
     // Create a set of linearization points
@@ -142,7 +142,7 @@ namespace gtsam {
     linearizationPoints.insert(x0, x_);
 
     // Create a Gaussian Factor Graph
-    GaussianFactorGraph linearFactorGraph;
+    GaussianFactorGraphOrdered linearFactorGraph;
 
     // Add in the prior on the first state
     linearFactorGraph.push_back(priorFactor_);

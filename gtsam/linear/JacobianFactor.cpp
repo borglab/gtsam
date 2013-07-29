@@ -12,24 +12,30 @@
 /**
  * @file    JacobianFactor.cpp
  * @author  Richard Roberts
+ * @author  Christian Potthast
+ * @author  Frank Dellaert
  * @date    Dec 8, 2010
  */
 
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
+//#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/VariableSlots.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
 
+#include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/array.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -38,243 +44,320 @@
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
+#include <boost/range/algorithm/copy.hpp>
+#include <boost/range/adaptor/indirected.hpp>
+#include <boost/range/adaptor/map.hpp>
 
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 using namespace std;
+using namespace boost::assign;
 
 namespace gtsam {
 
   /* ************************************************************************* */
-  void JacobianFactor::assertInvariants() const {
-#ifndef NDEBUG
-    GaussianFactor::assertInvariants(); // The base class checks for unique keys
-    assert((size() == 0 && Ab_.rows() == 0 && Ab_.nBlocks() == 0) || size()+1 == Ab_.nBlocks());
-#endif
-  }
+  JacobianFactor::JacobianFactor() :
+    Ab_(cref_list_of<1>(1), 0)
+  {}
 
   /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const JacobianFactor& gf) :
-      GaussianFactor(gf), model_(gf.model_), Ab_(matrix_) {
-    Ab_.assignNoalias(gf.Ab_);
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const GaussianFactor& gf) : Ab_(matrix_) {
+  JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
     // Copy the matrix data depending on what type of factor we're copying from
     if(const JacobianFactor* rhs = dynamic_cast<const JacobianFactor*>(&gf))
       *this = JacobianFactor(*rhs);
-    else if(const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&gf))
-      *this = JacobianFactor(*rhs);
+    //else if(const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&gf))
+    //  *this = JacobianFactor(*rhs);
     else
       throw std::invalid_argument("In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
-    assertInvariants();
   }
 
   /* ************************************************************************* */
-  JacobianFactor::JacobianFactor() : Ab_(matrix_) { assertInvariants(); }
-
-  /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const Vector& b_in) : Ab_(matrix_) {
-    size_t dims[] = { 1 };
-    Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+1, b_in.size()));
+  JacobianFactor::JacobianFactor(const Vector& b_in) :
+    Ab_(cref_list_of<1>(1), b_in.size())
+  {
     getb() = b_in;
-    model_ = noiseModel::Unit::Create(this->rows());
-    assertInvariants();
   }
 
   /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(Index i1, const Matrix& A1,
-      const Vector& b, const SharedDiagonal& model) :
-      GaussianFactor(i1), model_(model), Ab_(matrix_) {
-
-    if(model->dim() != (size_t) b.size())
-      throw InvalidNoiseModel(b.size(), model->dim());
-
-    size_t dims[] = { A1.cols(), 1};
-    Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+2, b.size()));
-    Ab_(0) = A1;
-    getb() = b;
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
-      const Vector& b, const SharedDiagonal& model) :
-      GaussianFactor(i1,i2), model_(model), Ab_(matrix_) {
-
-    if(model->dim() != (size_t) b.size())
-      throw InvalidNoiseModel(b.size(), model->dim());
-
-    size_t dims[] = { A1.cols(), A2.cols(), 1};
-    Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+3, b.size()));
-    Ab_(0) = A1;
-    Ab_(1) = A2;
-    getb() = b;
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
-      Index i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model) :
-      GaussianFactor(i1,i2,i3), model_(model), Ab_(matrix_) {
-
-    if(model->dim() != (size_t) b.size())
-      throw InvalidNoiseModel(b.size(), model->dim());
-
-    size_t dims[] = { A1.cols(), A2.cols(), A3.cols(), 1};
-    Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+4, b.size()));
-    Ab_(0) = A1;
-    Ab_(1) = A2;
-    Ab_(2) = A3;
-    getb() = b;
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
-      const Vector &b, const SharedDiagonal& model) :
-    GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
-    model_(model), Ab_(matrix_)
+  JacobianFactor::JacobianFactor(Key i1, const Matrix& A1,
+    const Vector& b, const SharedDiagonal& model)
   {
-    // get number of measurements and variables involved in this factor
-    size_t m = b.size(), n = terms.size();
-
-    if(model->dim() != (size_t) m)
-      throw InvalidNoiseModel(b.size(), model->dim());
-
-    // Get the dimensions of each variable and copy to "dims" array, add 1 for RHS
-    size_t* dims = (size_t*)alloca(sizeof(size_t)*(n+1)); // FIXME: alloca is bad, just ask Google.
-    for(size_t j=0; j<n; ++j)
-      dims[j] = terms[j].second.cols();
-    dims[n] = 1;
-
-    // Frank is mystified why this is done this way, rather than just creating Ab_
-    Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
-
-    // Now copy the Jacobian matrices from the terms matrix
-    for(size_t j=0; j<n; ++j) {
-      assert(terms[j].second.rows()==m);
-      Ab_(j) = terms[j].second;
-    }
-    getb() = b;
-    assertInvariants();
+    fillTerms(cref_list_of<1>(make_pair(i1, A1)), b, model);
   }
 
   /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const std::list<std::pair<Index, Matrix> > &terms,
-      const Vector &b, const SharedDiagonal& model) :
-      GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
-    model_(model), Ab_(matrix_)
+  JacobianFactor::JacobianFactor(
+    const Key i1, const Matrix& A1, Key i2, const Matrix& A2,
+    const Vector& b, const SharedDiagonal& model)
   {
-
-    if(model->dim() != (size_t) b.size())
-      throw InvalidNoiseModel(b.size(), model->dim());
-
-    size_t* dims=(size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
-    size_t j=0;
-    std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin();
-    for(; term!=terms.end(); ++term,++j)
-      dims[j] = term->second.cols();
-    dims[j] = 1;
-    Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
-    j = 0;
-    for(term=terms.begin(); term!=terms.end(); ++term,++j)
-      Ab_(j) = term->second;
-    getb() = b;
-    assertInvariants();
+    fillTerms(cref_list_of<2>
+      (make_pair(i1,A1))
+      (make_pair(i2,A2)), b, model);
   }
 
   /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const GaussianConditional& cg) :
-    GaussianFactor(cg),
-    model_(noiseModel::Diagonal::Sigmas(cg.get_sigmas(), true)),
-    Ab_(matrix_) {
-    Ab_.assignNoalias(cg.rsd_);
-    assertInvariants();
+  JacobianFactor::JacobianFactor(
+    const Key i1, const Matrix& A1, Key i2, const Matrix& A2,
+      Key i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model)
+  {
+    fillTerms(cref_list_of<3>
+      (make_pair(i1,A1))
+      (make_pair(i2,A2))
+      (make_pair(i3,A3)), b, model);
   }
 
   /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const HessianFactor& factor) : Ab_(matrix_) {
-    keys_ = factor.keys_;
-    Ab_.assignNoalias(factor.info_);
+  //JacobianFactor::JacobianFactor(const HessianFactor& factor) {
+  //  keys_ = factor.keys_;
+  //  Ab_.assignNoalias(factor.info_);
 
-    // Do Cholesky to get a Jacobian
-    size_t maxrank;
-    bool success;
-    boost::tie(maxrank, success) = choleskyCareful(matrix_);
+  //  // Do Cholesky to get a Jacobian
+  //  size_t maxrank;
+  //  bool success;
+  //  boost::tie(maxrank, success) = choleskyCareful(matrix_);
 
-    // Check for indefinite system
-    if(!success)
-      throw IndeterminantLinearSystemException(factor.keys().front());
+  //  // Check for indefinite system
+  //  if(!success)
+  //    throw IndeterminantLinearSystemException(factor.keys().front());
 
-    // Zero out lower triangle
-    matrix_.topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
-        Matrix::Zero(maxrank, matrix_.cols());
-    // FIXME: replace with triangular system
-    Ab_.rowEnd() = maxrank;
-    model_ = noiseModel::Unit::Create(maxrank);
+  //  // Zero out lower triangle
+  //  matrix_.topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
+  //      Matrix::Zero(maxrank, matrix_.cols());
+  //  // FIXME: replace with triangular system
+  //  Ab_.rowEnd() = maxrank;
+  //  model_ = noiseModel::Unit::Create(maxrank);
 
-    assertInvariants();
-  }
+  //  assertInvariants();
+  //}
 
   /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const GaussianFactorGraph& gfg) : Ab_(matrix_) {
-    // Cast or convert to Jacobians
-    FactorGraph<JacobianFactor> jacobians;
-    BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
-      if(factor) {
-        if(JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
-          jacobians.push_back(jf);
-        else
-          jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+  // Helper functions for combine constructor
+  namespace {
+    boost::tuple<vector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
+      const std::vector<JacobianFactor::shared_ptr>& factors, const vector<VariableSlots::const_iterator>& variableSlots)
+    {
+      gttic(countDims);
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+      vector<DenseIndex> varDims(variableSlots.size(), numeric_limits<DenseIndex>::max());
+#else
+      vector<DenseIndex> varDims(variableSlots.size());
+#endif
+      DenseIndex m = 0;
+      DenseIndex n = 0;
+      {
+        size_t jointVarpos = 0;
+        BOOST_FOREACH(VariableSlots::const_iterator slots, variableSlots)
+        {
+          assert(slots->second.size() == factors.size());
+
+          size_t sourceFactorI = 0;
+          BOOST_FOREACH(const size_t sourceVarpos, slots->second) {
+            if(sourceVarpos < numeric_limits<size_t>::max()) {
+              const JacobianFactor& sourceFactor = *factors[sourceFactorI];
+              DenseIndex vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+              if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
+                varDims[jointVarpos] = vardim;
+                n += vardim;
+              } else
+                assert(varDims[jointVarpos] == vardim);
+#else
+              varDims[jointVarpos] = vardim;
+              n += vardim;
+              break;
+#endif
+            }
+            ++ sourceFactorI;
+          }
+          ++ jointVarpos;
+        }
+        BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
+          m += factor->rows();
+        }
       }
+      return boost::make_tuple(varDims, m, n);
     }
 
-    *this = *CombineJacobians(jacobians, VariableSlots(jacobians));
+    /* ************************************************************************* */
+    std::vector<JacobianFactor::shared_ptr>
+      _convertOrCastToJacobians(const GaussianFactorGraph& factors)
+    {
+      gttic(Convert_to_Jacobians);
+      std::vector<JacobianFactor::shared_ptr> jacobians;
+      jacobians.reserve(factors.size());
+      BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+        if(factor) {
+          if(JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
+            jacobians.push_back(jf);
+          else
+            jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+        }
+      }
+      return jacobians;
+    }
   }
 
   /* ************************************************************************* */
-  JacobianFactor& JacobianFactor::operator=(const JacobianFactor& rhs) {
-    this->Base::operator=(rhs); // Copy keys
-    model_ = rhs.model_;        // Copy noise model
-    Ab_.assignNoalias(rhs.Ab_); // Copy matrix and block structure
-    assertInvariants();
-    return *this;
-  }
+  JacobianFactor::JacobianFactor(
+    const GaussianFactorGraph& graph,
+    boost::optional<const Ordering&> ordering,
+    boost::optional<const VariableSlots&> variableSlots)
+  {
+    gttic(JacobianFactor_combine_constructor);
 
-  /* ************************************************************************* */
-  void JacobianFactor::print(const string& s, const IndexFormatter& formatter) const {
-    cout << s << "\n";
-    if (empty()) {
-      cout << " empty, keys: ";
-      BOOST_FOREACH(const Index& key, keys()) { cout << formatter(key) << " "; }
-      cout << endl;
+    // Compute VariableSlots if one was not provided
+    gttic(Compute_VariableSlots);
+    boost::optional<VariableSlots> computedVariableSlots;
+    if(!variableSlots) {
+      computedVariableSlots = VariableSlots(graph);
+      variableSlots = computedVariableSlots; // Binds reference, does not copy VariableSlots
+    }
+    gttoc(Compute_VariableSlots);
+
+    // Cast or convert to Jacobians
+    std::vector<JacobianFactor::shared_ptr> jacobians = _convertOrCastToJacobians(graph);
+
+    gttic(Order_slots);
+    // Order variable slots - we maintain the vector of ordered slots, as well as keep a list
+    // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
+    // be added after all of the ordered variables.
+    vector<VariableSlots::const_iterator> orderedSlots;
+    orderedSlots.reserve(variableSlots->size());
+    if(ordering) {
+      // If an ordering is provided, arrange the slots first that ordering
+      FastList<VariableSlots::const_iterator> unorderedSlots;
+      size_t nOrderingSlotsUsed = 0;
+      orderedSlots.resize(ordering->size());
+      FastMap<Key, size_t> inverseOrdering = ordering->invert();
+      for(VariableSlots::const_iterator item = variableSlots->begin(); item != variableSlots->end(); ++item) {
+        FastMap<Key, size_t>::const_iterator orderingPosition = inverseOrdering.find(item->first);
+        if(orderingPosition == inverseOrdering.end()) {
+          unorderedSlots.push_back(item);
+        } else {
+          orderedSlots[orderingPosition->second] = item;
+          ++ nOrderingSlotsUsed;
+        }
+      }
+      if(nOrderingSlotsUsed != ordering->size())
+        throw std::invalid_argument(
+        "The ordering provided to the JacobianFactor combine constructor\n"
+        "contained extra variables that did not appear in the factors to combine.");
+      // Add the remaining slots
+      BOOST_FOREACH(VariableSlots::const_iterator item, unorderedSlots) {
+        orderedSlots.push_back(item);
+      }
     } else {
-      for(const_iterator key=begin(); key!=end(); ++key)
-        cout << boost::format("A[%1%]=\n")%formatter(*key) << getA(key) << endl;
-      cout << "b=" << getb() << endl;
-      model_->print("model");
+      // If no ordering is provided, arrange the slots as they were, which will be sorted
+      // numerically since VariableSlots uses a map sorting on Key.
+      for(VariableSlots::const_iterator item = variableSlots->begin(); item != variableSlots->end(); ++item)
+        orderedSlots.push_back(item);
     }
+    gttoc(Order_slots);
+
+    // Count dimensions
+    vector<DenseIndex> varDims;
+    DenseIndex m, n;
+    boost::tie(varDims, m, n) = _countDims(jacobians, orderedSlots);
+
+    // Allocate matrix and copy keys in order
+    gttic(allocate);
+    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1,DenseIndex>(1)), m); // Allocate augmented matrix
+    Base::keys_.resize(orderedSlots.size());
+    boost::range::copy(    // Get variable keys
+      orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys, Base::keys_.begin());
+    gttoc(allocate);
+
+    // Loop over slots in combined factor and copy blocks from source factors
+    gttic(copy_blocks);
+    size_t combinedSlot = 0;
+    BOOST_FOREACH(VariableSlots::const_iterator varslot, orderedSlots) {
+      JacobianFactor::ABlock destSlot(this->getA(this->begin()+combinedSlot));
+      // Loop over source jacobians
+      DenseIndex nextRow = 0;
+      for(size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
+        // Slot in source factor
+        const size_t sourceSlot = varslot->second[factorI];
+        const DenseIndex sourceRows = jacobians[factorI]->rows();
+        JacobianFactor::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
+        // Copy if exists in source factor, otherwise set zero
+        if(sourceSlot != numeric_limits<size_t>::max())
+          destBlock = jacobians[factorI]->getA(jacobians[factorI]->begin()+sourceSlot);
+        else
+          destBlock.setZero();
+        nextRow += sourceRows;
+      }
+      ++combinedSlot;
+    }
+    gttoc(copy_blocks);
+
+    // Copy the RHS vectors and sigmas
+    gttic(copy_vectors);
+    bool anyConstrained = false;
+    boost::optional<Vector> sigmas;
+    // Loop over source jacobians
+    DenseIndex nextRow = 0;
+    for(size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
+      const DenseIndex sourceRows = jacobians[factorI]->rows();
+      this->getb().segment(nextRow, sourceRows) = jacobians[factorI]->getb();
+      if(jacobians[factorI]->get_model()) {
+        // If the factor has a noise model and we haven't yet allocated sigmas, allocate it.
+        if(!sigmas)
+          sigmas = Vector::Constant(m, 1.0);
+        sigmas->segment(nextRow, sourceRows) = jacobians[factorI]->get_model()->sigmas();
+        if (jacobians[factorI]->isConstrained())
+          anyConstrained = true;
+      }
+      nextRow += sourceRows;
+    }
+    gttoc(copy_vectors);
+
+    if(sigmas)
+      this->setModel(anyConstrained, *sigmas);
+  }
+
+  /* ************************************************************************* */
+  void JacobianFactor::print(const string& s, const KeyFormatter& formatter) const
+  {
+    if(!s.empty())
+      cout << s << "\n";
+    for(const_iterator key = begin(); key != end(); ++key) {
+      cout <<
+        formatMatrixIndented((boost::format("  A[%1%] = ") % formatter(*key)).str(), getA(key))
+        << endl;
+    }
+    cout << formatMatrixIndented("  b = ", getb(), true) << "\n";
+    if(model_)
+      model_->print("  Noise model: ");
+    else
+      cout << "  No noise model" << endl;
   }
 
   /* ************************************************************************* */
   // Check if two linear factors are equal
-  bool JacobianFactor::equals(const GaussianFactor& f_, double tol) const {
+  bool JacobianFactor::equals(const GaussianFactor& f_, double tol) const
+  {
     if(!dynamic_cast<const JacobianFactor*>(&f_))
       return false;
     else {
       const JacobianFactor& f(static_cast<const JacobianFactor&>(f_));
-      if (empty()) return (f.empty());
-      if(keys()!=f.keys() /*|| !model_->equals(lf->model_, tol)*/)
+
+      // Check keys
+      if(keys() != f.keys())
         return false;
 
+      // Check noise model
+      if(model_ && !f.model_ || !model_ && f.model_)
+        return false;
+      if(model_ && f.model_ && !model_->equals(*f.model_, tol))
+        return false;
+
+      // Check matrix sizes
       if (!(Ab_.rows() == f.Ab_.rows() && Ab_.cols() == f.Ab_.cols()))
         return false;
 
+      // Check matrix contents
       constABlock Ab1(Ab_.range(0, Ab_.nBlocks()));
       constABlock Ab2(f.Ab_.range(0, f.Ab_.nBlocks()));
       for(size_t row=0; row< (size_t) Ab1.rows(); ++row)
@@ -289,7 +372,6 @@ namespace gtsam {
   /* ************************************************************************* */
   Vector JacobianFactor::unweighted_error(const VectorValues& c) const {
     Vector e = -getb();
-    if (empty()) return e;
     for(size_t pos=0; pos<size(); ++pos)
       e += Ab_(pos) * c[keys_[pos]];
     return e;
@@ -310,16 +392,24 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix JacobianFactor::augmentedInformation() const {
-    Matrix AbWhitened = Ab_.full();
-    model_->WhitenInPlace(AbWhitened);
-    return AbWhitened.transpose() * AbWhitened;
+    if(model_) {
+      Matrix AbWhitened = Ab_.full();
+      model_->WhitenInPlace(AbWhitened);
+      return AbWhitened.transpose() * AbWhitened;
+    } else {
+      return Ab_.full().transpose() * Ab_.full();
+    }
   }
 
   /* ************************************************************************* */
   Matrix JacobianFactor::information() const {
-    Matrix AWhitened = this->getA();
-    model_->WhitenInPlace(AWhitened);
-    return AWhitened.transpose() * AWhitened;
+    if(model_) {
+      Matrix AWhitened = this->getA();
+      model_->WhitenInPlace(AWhitened);
+      return AWhitened.transpose() * AWhitened;
+    } else {
+      return this->getA().transpose() * this->getA();
+    }
   }
 
   /* ************************************************************************* */
@@ -336,177 +426,64 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void JacobianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
-      VectorValues& x) const {
+      VectorValues& x) const
+  {
     Vector E = alpha * model_->whiten(e);
     // Just iterate over all A matrices and insert Ai^e into VectorValues
     for(size_t pos=0; pos<size(); ++pos)
-      gtsam::transposeMultiplyAdd(1.0, Ab_(pos), E, x[keys_[pos]]);
+    {
+      // Create the value as a zero vector if it does not exist.
+      pair<VectorValues::iterator, bool> xi = x.tryInsert(keys_[pos], Vector());
+      if(xi.second)
+        xi.first->second = Vector::Zero(getDim(begin() + pos));
+      gtsam::transposeMultiplyAdd(1.0, Ab_(pos), E, xi.first->second);
+    }
   }
 
   /* ************************************************************************* */
-  pair<Matrix,Vector> JacobianFactor::matrix(bool weight) const {
+  pair<Matrix,Vector> JacobianFactor::jacobian(bool weight) const {
     Matrix A(Ab_.range(0, size()));
     Vector b(getb());
     // divide in sigma so error is indeed 0.5*|Ax-b|
-    if (weight) model_->WhitenSystem(A,b);
+    if (weight && model_)
+      model_->WhitenSystem(A,b);
     return make_pair(A, b);
   }
 
   /* ************************************************************************* */
-  Matrix JacobianFactor::matrix_augmented(bool weight) const {
-    if (weight) { Matrix Ab(Ab_.range(0,Ab_.nBlocks())); model_->WhitenInPlace(Ab); return Ab; }
-    else return Ab_.range(0, Ab_.nBlocks());
-  }
-
-  /* ************************************************************************* */
-  std::vector<boost::tuple<size_t, size_t, double> >
-  JacobianFactor::sparse(const std::vector<size_t>& columnIndices) const {
-
-    std::vector<boost::tuple<size_t, size_t, double> > entries;
-
-    // iterate over all variables in the factor
-    for(const_iterator var=begin(); var<end(); ++var) {
-      Matrix whitenedA(model_->Whiten(getA(var)));
-      // find first column index for this key
-      size_t column_start = columnIndices[*var];
-      for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
-        for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
-          double s = whitenedA(i,j);
-          if (std::abs(s) > 1e-12) entries.push_back(
-              boost::make_tuple(i, column_start + j, s));
-        }
+  Matrix JacobianFactor::augmentedJacobian(bool weight) const {
+    if (weight && model_) {
+      Matrix Ab(Ab_.range(0,Ab_.nBlocks()));
+      model_->WhitenInPlace(Ab);
+      return Ab;
+    } else {
+      return Ab_.range(0, Ab_.nBlocks());
     }
-
-    Vector whitenedb(model_->whiten(getb()));
-    size_t bcolumn = columnIndices.back();
-    for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
-      entries.push_back(boost::make_tuple(i, bcolumn, whitenedb(i)));
-
-    // return the result
-    return entries;
   }
 
   /* ************************************************************************* */
   JacobianFactor JacobianFactor::whiten() const {
     JacobianFactor result(*this);
-    result.model_->WhitenInPlace(result.matrix_);
-    result.model_ = noiseModel::Unit::Create(result.model_->dim());
+    if(model_) {
+      result.model_->WhitenInPlace(result.Ab_.matrix());
+      result.model_ = noiseModel::Unit::Create(result.model_->dim());
+    }
     return result;
   }
 
   /* ************************************************************************* */
-  GaussianFactor::shared_ptr JacobianFactor::negate() const {
-    HessianFactor hessian(*this);
-    return hessian.negate();
-  }
+  //GaussianFactor::shared_ptr JacobianFactor::negate() const {
+  //  HessianFactor hessian(*this);
+  //  return hessian.negate();
+  //}
 
   /* ************************************************************************* */
-  GaussianConditional::shared_ptr JacobianFactor::eliminateFirst() {
-    return this->eliminate(1);
-  }
-
-  /* ************************************************************************* */
-  GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFrontals) {
-    assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == (size_t) matrix_.rows() && Ab_.firstBlock() == 0);
-    assert(size() >= nrFrontals);
-    assertInvariants();
-
-    const bool debug = ISDEBUG("JacobianFactor::splitConditional");
-
-    if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
-    if(debug) this->print("Splitting JacobianFactor: ");
-
-    size_t frontalDim = Ab_.range(0,nrFrontals).cols();
-
-    // Check for singular factor
-    if(model_->dim() < frontalDim)
-      throw IndeterminantLinearSystemException(this->keys().front());
-
-    // Extract conditional
-    gttic(cond_Rd);
-
-    // Restrict the matrix to be in the first nrFrontals variables
-    Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
-    const Eigen::VectorBlock<const Vector> sigmas = model_->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
-    GaussianConditional::shared_ptr conditional(new GaussianConditional(begin(), end(), nrFrontals, Ab_, sigmas));
-    if(debug) conditional->print("Extracted conditional: ");
-    Ab_.rowStart() += frontalDim;
-    Ab_.firstBlock() += nrFrontals;
-    gttoc(cond_Rd);
-
-    if(debug) conditional->print("Extracted conditional: ");
-
-    gttic(remaining_factor);
-    // Take lower-right block of Ab to get the new factor
-    Ab_.rowEnd() = model_->dim();
-    keys_.erase(begin(), begin() + nrFrontals);
-    // Set sigmas with the right model
-    if (model_->isConstrained())
-      model_ = noiseModel::Constrained::MixedSigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
-    else
-      model_ = noiseModel::Diagonal::Sigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
-    if(debug) this->print("Eliminated factor: ");
-    assert(Ab_.rows() <= Ab_.cols()-1);
-    gttoc(remaining_factor);
-
-    if(debug) print("Eliminated factor: ");
-
-    assertInvariants();
-
-    return conditional;
-  }
-
-  /* ************************************************************************* */
-  GaussianConditional::shared_ptr JacobianFactor::eliminate(size_t nrFrontals) {
-
-    assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == (size_t) matrix_.rows() && Ab_.firstBlock() == 0);
-    assert(size() >= nrFrontals);
-    assertInvariants();
-
-    const bool debug = ISDEBUG("JacobianFactor::eliminate");
-
-    if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
-    if(debug) this->print("Eliminating JacobianFactor: ");
-    if(debug) gtsam::print(matrix_, "Augmented Ab: ");
-
-    size_t frontalDim = Ab_.range(0,nrFrontals).cols();
-
-    if(debug) cout << "frontalDim = " << frontalDim << endl;
-
-    // Use in-place QR dense Ab appropriate to NoiseModel
-    gttic(QR);
-    SharedDiagonal noiseModel = model_->QR(matrix_);
-    // In the new unordered code, empty noise model indicates unit noise model, and I already
-    // modified QR to return an empty noise model.  This just creates a unit noise model in that
-    // case because this old code does not handle empty noise models.
-    if(!noiseModel)
-      noiseModel = noiseModel::Unit::Create(std::min(matrix_.rows(), matrix_.cols() - 1));
-    gttoc(QR);
-
-    // Zero the lower-left triangle.  todo: not all of these entries actually
-    // need to be zeroed if we are careful to start copying rows after the last
-    // structural zero.
-    if(matrix_.rows() > 0)
-      for(size_t j=0; j<(size_t) matrix_.cols(); ++j)
-        for(size_t i=j+1; i<noiseModel->dim(); ++i)
-          matrix_(i,j) = 0.0;
-
-    if(debug) gtsam::print(matrix_, "QR result: ");
-    if(debug) noiseModel->print("QR result noise model: ");
-
-    // Start of next part
-    model_ = noiseModel;
-    return splitConditional(nrFrontals);
-  }
-
-  /* ************************************************************************* */
-  void JacobianFactor::allocate(const VariableSlots& variableSlots, vector<
-      size_t>& varDims, size_t m) {
-    keys_.resize(variableSlots.size());
-    std::transform(variableSlots.begin(), variableSlots.end(), begin(),
-        boost::bind(&VariableSlots::const_iterator::value_type::first, _1));
-    varDims.push_back(1);
-    Ab_.copyStructureFrom(BlockAb(matrix_, varDims.begin(), varDims.end(), m));
+  std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+    JacobianFactor::eliminate(const Ordering& keys)
+  {
+    GaussianFactorGraph graph;
+    graph.add(*this);
+    return EliminateQR(graph, keys);
   }
 
   /* ************************************************************************* */
@@ -520,14 +497,78 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* JacobianFactor::InvalidNoiseModel::what() const throw() {
-    if(description_.empty())
-      description_ = (boost::format(
-        "A JacobianFactor was attempted to be constructed or modified to use a\n"
-        "noise model of incompatible dimension.  The JacobianFactor has\n"
-        "dimensionality (i.e. length of error vector) %d but the provided noise\n"
-        "model has dimensionality %d.") % factorDims % noiseModelDims).str();
-    return description_.c_str();
+  std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+    EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys)
+  {
+    gttic(EliminateQR);
+    // Combine and sort variable blocks in elimination order
+    JacobianFactor::shared_ptr jointFactor;
+    try {
+      jointFactor = boost::make_shared<JacobianFactor>(factors, keys);
+    } catch(std::invalid_argument& e) {
+      (void) e; // Avoid unused variable warning
+      throw InvalidDenseElimination(
+        "EliminateQR was called with a request to eliminate variables that are not\n"
+        "involved in the provided factors.");
+    }
+
+    // Do dense elimination
+    SharedDiagonal noiseModel;
+    if(jointFactor->model_)
+      jointFactor->model_ = jointFactor->model_->QR(jointFactor->Ab_.matrix());
+    else
+      inplace_QR(jointFactor->Ab_.matrix());
+
+    // Zero below the diagonal
+    jointFactor->Ab_.matrix().triangularView<Eigen::StrictlyLower>().setZero();
+
+    // Split elimination result into conditional and remaining factor
+    GaussianConditional::shared_ptr conditional = jointFactor->splitConditional(keys.size());
+
+    return make_pair(conditional, jointFactor);
+  }
+
+  /* ************************************************************************* */
+  GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFrontals)
+  {
+    if(nrFrontals > size())
+      throw std::invalid_argument("Requesting to split more variables than exist using JacobianFactor::splitConditional");
+
+    size_t frontalDim = Ab_.range(0, nrFrontals).cols();
+
+    // Check for singular factor
+    // TODO: fix this check
+    //if(model_->dim() < frontalDim)
+    //  throw IndeterminantLinearSystemException(this->keys().front());
+
+    // Restrict the matrix to be in the first nrFrontals variables and create the conditional
+    gttic(cond_Rd);
+    const DenseIndex originalRowEnd = Ab_.rowEnd();
+    Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
+    SharedDiagonal conditionalNoiseModel;
+    if(model_)
+      conditionalNoiseModel =
+      noiseModel::Diagonal::Sigmas(model_->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart()));
+    GaussianConditional::shared_ptr conditional = boost::make_shared<GaussianConditional>(
+      Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
+    Ab_.rowStart() += frontalDim;
+    Ab_.rowEnd() = std::min(Ab_.cols() - 1, originalRowEnd);
+    Ab_.firstBlock() += nrFrontals;
+    gttoc(cond_Rd);
+
+    // Take lower-right block of Ab to get the new factor
+    gttic(remaining_factor);
+    keys_.erase(begin(), begin() + nrFrontals);
+    // Set sigmas with the right model
+    if(model_) {
+      if (model_->isConstrained())
+        model_ = noiseModel::Constrained::MixedSigmas(model_->sigmas().tail(model_->sigmas().size() - frontalDim));
+      else
+        model_ = noiseModel::Diagonal::Sigmas(model_->sigmas().tail(model_->sigmas().size() - frontalDim));
+    }
+    gttoc(remaining_factor);
+
+    return conditional;
   }
 
 }

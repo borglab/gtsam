@@ -18,10 +18,10 @@
 
 #include <iomanip>
 
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianISAM.h> // To get optimize(BayesTree<GaussianConditional>)
+#include <gtsam/linear/GaussianBayesNetOrdered.h>
+#include <gtsam/linear/GaussianISAMOrdered.h> // To get optimize(BayesTree<GaussianConditional>)
 //#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 
 namespace gtsam {
 
@@ -42,7 +42,7 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
 
   struct GTSAM_EXPORT IterationResult {
     double Delta;
-    VectorValues dx_d;
+    VectorValuesOrdered dx_d;
     double f_error;
   };
 
@@ -103,7 +103,7 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
   template<class M, class F, class VALUES>
   static IterationResult Iterate(
       double Delta, TrustRegionAdaptationMode mode, const M& Rd,
-      const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose=false);
+      const F& f, const VALUES& x0, const OrderingOrdered& ordering, const double f_error, const bool verbose=false);
 
   /**
    * Compute the dogleg point given a trust region radius \f$ \Delta \f$.  The
@@ -127,7 +127,7 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
    * @param dx_n The Gauss-Newton point
    * @return The dogleg point \f$ \delta x_d \f$
    */
-  static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose=false);
+  static VectorValuesOrdered ComputeDoglegPoint(double Delta, const VectorValuesOrdered& dx_u, const VectorValuesOrdered& dx_n, const bool verbose=false);
 
   /** Compute the point on the line between the steepest descent point and the
    * Newton's method point intersecting the trust region boundary.
@@ -138,7 +138,7 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
    * @param x_u Steepest descent minimizer
    * @param x_n Newton's method minimizer
    */
-  static VectorValues ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose=false);
+  static VectorValuesOrdered ComputeBlend(double Delta, const VectorValuesOrdered& x_u, const VectorValuesOrdered& x_n, const bool verbose=false);
 };
 
 
@@ -146,24 +146,24 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
 template<class M, class F, class VALUES>
 typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     double Delta, TrustRegionAdaptationMode mode, const M& Rd,
-    const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose) {
+    const F& f, const VALUES& x0, const OrderingOrdered& ordering, const double f_error, const bool verbose) {
 
   // Compute steepest descent and Newton's method points
   gttic(optimizeGradientSearch);
   gttic(allocateVectorValues);
-  VectorValues dx_u = *allocateVectorValues(Rd);
+  VectorValuesOrdered dx_u = *allocateVectorValues(Rd);
   gttoc(allocateVectorValues);
   gttic(optimizeGradientSearchInPlace);
   optimizeGradientSearchInPlace(Rd, dx_u);
   gttoc(optimizeGradientSearchInPlace);
   gttoc(optimizeGradientSearch);
   gttic(optimizeInPlace);
-  VectorValues dx_n(VectorValues::SameStructure(dx_u));
+  VectorValuesOrdered dx_n(VectorValuesOrdered::SameStructure(dx_u));
   optimizeInPlace(Rd, dx_n);
   gttoc(optimizeInPlace);
   gttic(jfg_error);
-  const GaussianFactorGraph jfg(Rd);
-  const double M_error = jfg.error(VectorValues::Zero(dx_u));
+  const GaussianFactorGraphOrdered jfg(Rd);
+  const double M_error = jfg.error(VectorValuesOrdered::Zero(dx_u));
   gttoc(jfg_error);
 
   // Result to return

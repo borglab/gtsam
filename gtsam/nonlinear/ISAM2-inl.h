@@ -20,8 +20,8 @@
 #pragma once
 
 #include <stack>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/inference/FactorGraphOrdered.h>
+#include <gtsam/linear/JacobianFactorOrdered.h>
 
 namespace gtsam {
 
@@ -37,7 +37,7 @@ VALUE ISAM2::calculateEstimate(Key key) const {
 namespace internal {
 template<class CLIQUE>
 void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
-    std::vector<bool>& changed, const std::vector<bool>& replaced, VectorValues& delta, int& count) {
+    std::vector<bool>& changed, const std::vector<bool>& replaced, VectorValuesOrdered& delta, int& count) {
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
   // cliques in the children need to be processed
@@ -67,7 +67,7 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
 
     // Temporary copy of the original values, to check how much they change
     std::vector<Vector> originalValues((*clique)->nrFrontals());
-    GaussianConditional::const_iterator it;
+    GaussianConditionalOrdered::const_iterator it;
     for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
       originalValues[it - (*clique)->beginFrontals()] = delta[*it];
     }
@@ -113,7 +113,7 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
 
 template<class CLIQUE>
 bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double threshold,
-    std::vector<bool>& changed, const std::vector<bool>& replaced, VectorValues& delta, int& count) {
+    std::vector<bool>& changed, const std::vector<bool>& replaced, VectorValuesOrdered& delta, int& count) {
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
   // cliques in the children need to be processed
@@ -143,7 +143,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
 
     // Temporary copy of the original values, to check how much they change
     std::vector<Vector> originalValues((*clique)->nrFrontals());
-    GaussianConditional::const_iterator it;
+    GaussianConditionalOrdered::const_iterator it;
     for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
       originalValues[it - (*clique)->beginFrontals()] = delta[*it];
     }
@@ -189,7 +189,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
 
 /* ************************************************************************* */
 template<class CLIQUE>
-int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, VectorValues& delta) {
+int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, VectorValuesOrdered& delta) {
   std::vector<bool> changed(keys.size(), false);
   int count = 0;
   // starting from the root, call optimize on each conditional
@@ -200,7 +200,7 @@ int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, co
 
 /* ************************************************************************* */
 template<class CLIQUE>
-int optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, VectorValues& delta) {
+int optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, VectorValuesOrdered& delta) {
   std::vector<bool> changed(keys.size(), false);
   int count = 0;
 

@@ -25,7 +25,7 @@ namespace gtsam {
 
   void CSP::runArcConsistency(size_t cardinality, size_t nrIterations, bool print) const {
     // Create VariableIndex
-    VariableIndex index(*this);
+    VariableIndexOrdered index(*this);
     // index.print();
 
     size_t n = index.size();
@@ -46,7 +46,7 @@ namespace gtsam {
         // keep track of which domains changed
         changed[v] = false;
         // loop over all factors/constraints for variable v
-        const VariableIndex::Factors& factors = index[v];
+        const VariableIndexOrdered::Factors& factors = index[v];
         BOOST_FOREACH(size_t f,factors) {
           // if not already a singleton
           if (!domains[v].isSingleton()) {

@@ -36,7 +36,7 @@ public:
   };
 
   LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
-  boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<OrderingOrdered> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
@@ -54,19 +54,19 @@ public:
 
   virtual void print(const std::string& str) const;
 
-  GaussianFactorGraph::Eliminate getEliminationFunction() const {
+  GaussianFactorGraphOrdered::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
     case MULTIFRONTAL_CHOLESKY:
     case SEQUENTIAL_CHOLESKY:
-      return EliminatePreferCholesky;
+      return EliminatePreferCholeskyOrdered;
 
     case MULTIFRONTAL_QR:
     case SEQUENTIAL_QR:
-      return EliminateQR;
+      return EliminateQROrdered;
 
     default:
       throw std::runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
-      return EliminateQR;
+      return EliminateQROrdered;
       break;
     }
   }
@@ -75,7 +75,7 @@ public:
 
   void setLinearSolverType(const std::string& solver) { linearSolverType = linearSolverTranslator(solver); }
   void setIterativeParams(const SubgraphSolverParameters &params);
-  void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
+  void setOrdering(const OrderingOrdered& ordering) { this->ordering = ordering; }
 
 private:
   std::string linearSolverTranslator(LinearSolverType linearSolverType) const {
@@ -101,6 +101,6 @@ private:
 };
 
 /* a wrapper for solving a GaussianFactorGraph according to the parameters */
-GTSAM_EXPORT VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) ;
+GTSAM_EXPORT VectorValuesOrdered solveGaussianFactorGraph(const GaussianFactorGraphOrdered &gfg, const SuccessiveLinearizationParams &params) ;
 
 } /* namespace gtsam */

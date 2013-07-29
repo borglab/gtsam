@@ -25,7 +25,7 @@
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Matrix.h>
@@ -89,7 +89,7 @@ TEST( NonlinearOptimizer, optimize )
   DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
   // optimize parameters
-  Ordering ord;
+  OrderingOrdered ord;
   ord.push_back(X(1));
 
   // Gauss-Newton
@@ -182,7 +182,7 @@ TEST( NonlinearOptimizer, Factorization )
   graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
   graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
 
-  Ordering ordering;
+  OrderingOrdered ordering;
   ordering.push_back(X(1));
   ordering.push_back(X(2));
 
@@ -216,7 +216,7 @@ TEST(NonlinearOptimizer, NullFactor) {
   DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
   // optimize parameters
-  Ordering ord;
+  OrderingOrdered ord;
   ord.push_back(X(1));
 
   // Gauss-Newton

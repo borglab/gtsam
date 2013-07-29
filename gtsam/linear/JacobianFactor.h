@@ -12,32 +12,28 @@
 /**
  * @file    JacobianFactor.h
  * @author  Richard Roberts
+ * @author  Christian Potthast
+ * @author  Frank Dellaert
  * @date    Dec 8, 2010
  */
 #pragma once
 
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/Errors.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/base/blockMatrices.h>
+#include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/global_includes.h>
 
-#include <boost/tuple/tuple.hpp>
-
-// Forward declarations of friend unit tests
-class JacobianFactorCombine2Test;
-class JacobianFactoreliminateFrontalsTest;
-class JacobianFactorconstructor2Test;
+#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
   // Forward declarations
-  class HessianFactor;
+  //class HessianFactor;
   class VariableSlots;
-  template<class C> class BayesNet;
   class GaussianFactorGraph;
+  class GaussianConditional;
+  class VectorValues;
+  class Ordering;
 
   /**
    * A Gaussian factor in the squared-error form.
@@ -78,80 +74,84 @@ namespace gtsam {
    * and the negative log-likelihood represented by this factor would be
    * \f[ E(x) = \frac{1}{2} (A_1 x_{j1} + A_2 x_{j2} - b)^T \Sigma^{-1} (A_1 x_{j1} + A_2 x_{j2} - b) . \f]
    */
-  class GTSAM_EXPORT JacobianFactor : public GaussianFactor {
-  protected:
-    typedef Matrix AbMatrix;
-    typedef VerticalBlockView<AbMatrix> BlockAb;
+  class GTSAM_EXPORT JacobianFactor : public GaussianFactor
+  {
+  public:
+    typedef JacobianFactor This; ///< Typedef to this class
+    typedef GaussianFactor Base; ///< Typedef to base class
+    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+  protected:
+    VerticalBlockMatrix Ab_;      // the block view of the full matrix
     noiseModel::Diagonal::shared_ptr model_; // Gaussian noise model with diagonal covariance matrix
-    AbMatrix matrix_; // the full matrix corresponding to the factor
-    BlockAb Ab_;      // the block view of the full matrix
-    typedef GaussianFactor Base; // typedef to base
 
   public:
-    typedef boost::shared_ptr<JacobianFactor> shared_ptr;
-    typedef BlockAb::Block ABlock;
-    typedef BlockAb::constBlock constABlock;
-    typedef BlockAb::Column BVector;
-    typedef BlockAb::constColumn constBVector;
-
-    /** Copy constructor */
-    JacobianFactor(const JacobianFactor& gf);
+    typedef VerticalBlockMatrix::Block ABlock;
+    typedef VerticalBlockMatrix::constBlock constABlock;
+    typedef VerticalBlockMatrix::Column BVector;
+    typedef VerticalBlockMatrix::constColumn constBVector;
 
     /** Convert from other GaussianFactor */
-    JacobianFactor(const GaussianFactor& gf);
+    explicit JacobianFactor(const GaussianFactor& gf);
 
     /** default constructor for I/O */
     JacobianFactor();
 
     /** Construct Null factor */
-    JacobianFactor(const Vector& b_in);
+    explicit JacobianFactor(const Vector& b_in);
 
     /** Construct unary factor */
-    JacobianFactor(Index i1, const Matrix& A1,
-        const Vector& b, const SharedDiagonal& model);
+    JacobianFactor(Key i1, const Matrix& A1,
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
     /** Construct binary factor */
-    JacobianFactor(Index i1, const Matrix& A1,
-        Index i2, const Matrix& A2,
-        const Vector& b, const SharedDiagonal& model);
+    JacobianFactor(Key i1, const Matrix& A1,
+        Key i2, const Matrix& A2,
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
     /** Construct ternary factor */
-    JacobianFactor(Index i1, const Matrix& A1, Index i2,
-        const Matrix& A2, Index i3, const Matrix& A3,
-        const Vector& b, const SharedDiagonal& model);
+    JacobianFactor(Key i1, const Matrix& A1, Key i2,
+        const Matrix& A2, Key i3, const Matrix& A3,
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
-    /** Construct an n-ary factor */
-    JacobianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
-        const Vector &b, const SharedDiagonal& model);
+    /** Construct an n-ary factor
+     * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
+     *         collection of keys and matrices making up the factor. */
+    template<typename TERMS>
+    JacobianFactor(const TERMS& terms, const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
-    JacobianFactor(const std::list<std::pair<Index, Matrix> > &terms,
-        const Vector &b, const SharedDiagonal& model);
-
-    /** Construct from Conditional Gaussian */
-    JacobianFactor(const GaussianConditional& cg);
-
+    /** Constructor with arbitrary number keys, and where the augmented matrix is given all together
+     *  instead of in block terms.  Note that only the active view of the provided augmented matrix
+     *  is used, and that the matrix data is copied into a newly-allocated matrix in the constructed
+     *  factor. */
+    template<typename KEYS>
+    JacobianFactor(
+      const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas = SharedDiagonal());
+    
     /** Convert from a HessianFactor (does Cholesky) */
-    JacobianFactor(const HessianFactor& factor);
+    //JacobianFactor(const HessianFactor& factor);
 
-    /** Build a dense joint factor from all the factors in a factor graph. */
-    JacobianFactor(const GaussianFactorGraph& gfg);
+    /**
+     * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
+     * structure computed for \c graph is already available, providing it will reduce the amount of
+     * computation performed. */
+    explicit JacobianFactor(
+      const GaussianFactorGraph& graph,
+      boost::optional<const Ordering&> ordering = boost::none,
+      boost::optional<const VariableSlots&> variableSlots = boost::none);
 
     /** Virtual destructor */
     virtual ~JacobianFactor() {}
 
-    /** Aassignment operator */
-    JacobianFactor& operator=(const JacobianFactor& rhs);
-
     /** Clone this JacobianFactor */
     virtual GaussianFactor::shared_ptr clone() const {
       return boost::static_pointer_cast<GaussianFactor>(
-          shared_ptr(new JacobianFactor(*this)));
+          boost::make_shared<JacobianFactor>(*this));
     }
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const;
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
     Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
@@ -172,22 +172,36 @@ namespace gtsam {
      * GaussianFactor.
      */
     virtual Matrix information() const;
+    
+    /**
+     * Return (dense) matrix associated with factor
+     * @param ordering of variables needed for matrix column order
+     * @param set weight to true to bake in the weights
+     */
+    virtual std::pair<Matrix, Vector> jacobian(bool weight = true) const;
+
+    /**
+     * Return (dense) matrix associated with factor
+     * The returned system is an augmented matrix: [A b]
+     * @param set weight to use whitening to bake in weights
+     */
+    virtual Matrix augmentedJacobian(bool weight = true) const;
 
     /**
      * Construct the corresponding anti-factor to negate information
      * stored stored in this factor.
      * @return a HessianFactor with negated Hessian matrices
      */
-    virtual GaussianFactor::shared_ptr negate() const;
+    //virtual GaussianFactor::shared_ptr negate() const;
 
     /** Check if the factor contains no information, i.e. zero rows.  This does
      * not necessarily mean that the factor involves no variables (to check for
      * involving no variables use keys().empty()).
      */
-    bool empty() const { return Ab_.rows() == 0;}
+    virtual bool empty() const { return size() == 0 /*|| rows() == 0*/; }
 
     /** is noise model constrained ? */
-    bool isConstrained() const { return model_->isConstrained();}
+    bool isConstrained() const { return model_->isConstrained(); }
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
@@ -198,11 +212,6 @@ namespace gtsam {
      * return the number of rows in the corresponding linear system
      */
     size_t rows() const { return Ab_.rows(); }
-
-    /**
-     * return the number of rows in the corresponding linear system
-     */
-    size_t numberOfRows() const { return rows(); }
 
     /**
      * return the number of columns in the corresponding linear system
@@ -216,7 +225,7 @@ namespace gtsam {
     SharedDiagonal& get_model() { return model_;  }
 
     /** Get a view of the r.h.s. vector b */
-    const constBVector getb() const { return Ab_.column(size(), 0); }
+    const constBVector getb() const { return Ab_(size()).col(0); }
 
     /** Get a view of the A matrix for the variable pointed to by the given key iterator */
     constABlock getA(const_iterator variable) const { return Ab_(variable - begin()); }
@@ -225,7 +234,7 @@ namespace gtsam {
     constABlock getA() const { return Ab_.range(0, size()); }
 
     /** Get a view of the r.h.s. vector b (non-const version) */
-    BVector getb() { return Ab_.column(size(), 0); }
+    BVector getb() { return Ab_(size()).col(0); }
 
     /** Get a view of the A matrix for the variable pointed to by the given key iterator (non-const version) */
     ABlock getA(iterator variable) { return Ab_(variable - begin()); }
@@ -236,43 +245,40 @@ namespace gtsam {
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
 
-    /** x += A'*e */
+    /** x += A'*e.  If x is initially missing any values, they are created and assumed to start as
+     *  zero vectors. */
     void transposeMultiplyAdd(double alpha, const Vector& e, VectorValues& x) const;
 
-    /**
-     * Return (dense) matrix associated with factor
-     * @param ordering of variables needed for matrix column order
-     * @param set weight to true to bake in the weights
-     */
-    std::pair<Matrix, Vector> matrix(bool weight = true) const;
-
-    /**
-     * Return (dense) matrix associated with factor
-     * The returned system is an augmented matrix: [A b]
-     * @param set weight to use whitening to bake in weights
-     */
-    Matrix matrix_augmented(bool weight = true) const;
-
-    /**
-     * Return vector of i, j, and s to generate an m-by-n sparse matrix
-     * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
-     * As above, the standard deviations are baked into A and b
-     * @param columnIndices First column index for each variable.
-     */
-    std::vector<boost::tuple<size_t, size_t, double> >
-    sparse(const std::vector<size_t>& columnIndices) const;
-
-    /**
-     * Return a whitened version of the factor, i.e. with unit diagonal noise
-     * model. */
+    /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactor whiten() const;
 
-    /** Eliminate the first variable, modifying the factor in place to contain the remaining marginal. */
-    boost::shared_ptr<GaussianConditional> eliminateFirst();
+    /** Eliminate the requested variables. */
+    std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+      eliminate(const Ordering& keys);
 
-    /** Eliminate the requested number of frontal variables, modifying the factor in place to contain the remaining marginal. */
-    boost::shared_ptr<GaussianConditional> eliminate(size_t nrFrontals = 1);
+    /** set noiseModel correctly */
+    void setModel(bool anyConstrained, const Vector& sigmas);
+    
+    /**
+     * Densely partially eliminate with QR factorization, this is usually provided as an argument to
+     * one of the factor graph elimination functions (see EliminateableFactorGraph).  HessianFactors
+     * are first factored with Cholesky decomposition to produce JacobianFactors, by calling the
+     * conversion constructor JacobianFactor(const HessianFactor&). Variables are eliminated in the
+     * order specified in \c keys.
+     * @param factors Factors to combine and eliminate
+     * @param keys The variables to eliminate in the order as specified here in \c keys
+     * @return The conditional and remaining factor
+     *
+     * \addtogroup LinearSolving */
+    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+      EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
+  private:
+
+    /// Internal function to fill blocks and set dimensions
+    template<typename TERMS>
+    void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
+    
     /**
      * splits a pre-factorized factor into a conditional, and changes the current
      * factor to be the remaining component. Performs same operation as eliminate(),
@@ -280,56 +286,18 @@ namespace gtsam {
      */
     boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals = 1);
 
-    // following methods all used in CombineJacobians:
-    // Many imperative, perhaps all need to be combined in constructor
-
-    /** allocate space */
-    void allocate(const VariableSlots& variableSlots,
-        std::vector<size_t>& varDims, size_t m);
-
-    /** set noiseModel correctly */
-    void setModel(bool anyConstrained, const Vector& sigmas);
-
-    /** Assert invariants after elimination */
-    void assertInvariants() const;
-
-    /** An exception indicating that the noise model dimension passed into the
-     * JacobianFactor has a different dimensionality than the factor. */
-    class InvalidNoiseModel : public std::exception {
-    public:
-      const size_t factorDims; ///< The dimensionality of the factor
-      const size_t noiseModelDims; ///< The dimensionality of the noise model
-
-      InvalidNoiseModel(size_t factorDims, size_t noiseModelDims) :
-          factorDims(factorDims), noiseModelDims(noiseModelDims) {}
-      virtual ~InvalidNoiseModel() throw() {}
-
-      virtual const char* what() const throw();
-
-    private:
-      mutable std::string description_;
-    };
-
-  private:
-
-    // Friend HessianFactor to facilitate conversion constructors
-    friend class HessianFactor;
-
-    // Friend unit tests (see also forward declarations above)
-    friend class ::JacobianFactorCombine2Test;
-    friend class ::JacobianFactoreliminateFrontalsTest;
-    friend class ::JacobianFactorconstructor2Test;
-
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(Ab_);
       ar & BOOST_SERIALIZATION_NVP(model_);
-      ar & BOOST_SERIALIZATION_NVP(matrix_);
     }
   }; // JacobianFactor
 
 } // gtsam
+
+#include <gtsam/linear/JacobianFactor-inl.h>
+
 

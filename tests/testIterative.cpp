@@ -19,7 +19,7 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/iterative.h>
@@ -41,16 +41,16 @@ static ConjugateGradientParameters parameters;
 TEST( Iterative, steepestDescent )
 {
   // Create factor graph
-  Ordering ordering;
+  OrderingOrdered ordering;
   ordering += L(1), X(1), X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
 
   // eliminate and solve
-  VectorValues expected = *GaussianSequentialSolver(fg).optimize();
+  VectorValuesOrdered expected = *GaussianSequentialSolver(fg).optimize();
 
   // Do gradient descent
-  VectorValues zero = VectorValues::Zero(expected); // TODO, how do we do this normally?
-  VectorValues actual = steepestDescent(fg, zero, parameters);
+  VectorValuesOrdered zero = VectorValuesOrdered::Zero(expected); // TODO, how do we do this normally?
+  VectorValuesOrdered actual = steepestDescent(fg, zero, parameters);
   CHECK(assert_equal(expected,actual,1e-2));
 }
 
@@ -58,12 +58,12 @@ TEST( Iterative, steepestDescent )
 TEST( Iterative, conjugateGradientDescent )
 {
   // Create factor graph
-  Ordering ordering;
+  OrderingOrdered ordering;
   ordering += L(1), X(1), X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
 
   // eliminate and solve
-  VectorValues expected = *GaussianSequentialSolver(fg).optimize();
+  VectorValuesOrdered expected = *GaussianSequentialSolver(fg).optimize();
 
   // get matrices
   Matrix A;
@@ -82,8 +82,8 @@ TEST( Iterative, conjugateGradientDescent )
   CHECK(assert_equal(expectedX,actualX2,1e-9));
 
   // Do conjugate gradient descent on factor graph
-  VectorValues zero = VectorValues::Zero(expected);
-  VectorValues actual = conjugateGradientDescent(fg, zero, parameters);
+  VectorValuesOrdered zero = VectorValuesOrdered::Zero(expected);
+  VectorValuesOrdered actual = conjugateGradientDescent(fg, zero, parameters);
   CHECK(assert_equal(expected,actual,1e-2));
 }
 
@@ -99,19 +99,19 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
   graph.add(NonlinearEquality<Pose2>(X(1), pose1));
   graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
 
-  Ordering ordering;
+  OrderingOrdered ordering;
   ordering += X(1), X(2);
-  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config,ordering);
+  boost::shared_ptr<GaussianFactorGraphOrdered> fg = graph.linearize(config,ordering);
 
-  VectorValues zeros = VectorValues::Zero(2, 3);
+  VectorValuesOrdered zeros = VectorValuesOrdered::Zero(2, 3);
 
   ConjugateGradientParameters parameters;
   parameters.setEpsilon_abs(1e-3);
   parameters.setEpsilon_rel(1e-5);
   parameters.setMaxIterations(100);
-  VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
+  VectorValuesOrdered actual = conjugateGradientDescent(*fg, zeros, parameters);
 
-  VectorValues expected;
+  VectorValuesOrdered expected;
   expected.insert(0, zero(3));
   expected.insert(1, Vector_(3,-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
@@ -128,19 +128,19 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
   graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
   graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
 
-  Ordering ordering;
+  OrderingOrdered ordering;
   ordering += X(1), X(2);
-  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config,ordering);
+  boost::shared_ptr<GaussianFactorGraphOrdered> fg = graph.linearize(config,ordering);
 
-  VectorValues zeros = VectorValues::Zero(2, 3);
+  VectorValuesOrdered zeros = VectorValuesOrdered::Zero(2, 3);
 
   ConjugateGradientParameters parameters;
   parameters.setEpsilon_abs(1e-3);
   parameters.setEpsilon_rel(1e-5);
   parameters.setMaxIterations(100);
-  VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
+  VectorValuesOrdered actual = conjugateGradientDescent(*fg, zeros, parameters);
 
-  VectorValues expected;
+  VectorValuesOrdered expected;
   expected.insert(0, zero(3));
   expected.insert(1, Vector_(3,-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));

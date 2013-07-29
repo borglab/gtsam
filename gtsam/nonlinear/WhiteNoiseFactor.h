@@ -18,7 +18,7 @@
  */
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/HessianFactorOrdered.h>
 #include <gtsam/base/LieScalar.h>
 #include <cmath>
 
@@ -71,7 +71,7 @@ namespace gtsam {
      * @f]
      * So f = 2 f(x),  g = -df(x), G = ddf(x)
      */
-    static HessianFactor::shared_ptr linearize(double z, double u, double p,
+    static HessianFactorOrdered::shared_ptr linearize(double z, double u, double p,
         Index j1, Index j2) {
       double e = u - z, e2 = e * e;
       double c = 2 * logSqrt2PI - log(p) + e2 * p;
@@ -80,8 +80,8 @@ namespace gtsam {
       Matrix G11 = Matrix_(1, 1, p);
       Matrix G12 = Matrix_(1, 1, e);
       Matrix G22 = Matrix_(1, 1, 0.5 / (p * p));
-      return HessianFactor::shared_ptr(
-          new HessianFactor(j1, j2, G11, G12, g1, G22, g2, c));
+      return HessianFactorOrdered::shared_ptr(
+          new HessianFactorOrdered(j1, j2, G11, G12, g1, G22, g2, c));
     }
 
     /// @name Standard Constructors
@@ -144,9 +144,9 @@ namespace gtsam {
      * Create a symbolic factor using the given ordering to determine the
      * variable indices.
      */
-    virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
+    virtual IndexFactorOrdered::shared_ptr symbolic(const OrderingOrdered& ordering) const {
       const Index j1 = ordering[meanKey_], j2 = ordering[precisionKey_];
-      return IndexFactor::shared_ptr(new IndexFactor(j1, j2));
+      return IndexFactorOrdered::shared_ptr(new IndexFactorOrdered(j1, j2));
     }
 
     /// @}
@@ -154,8 +154,8 @@ namespace gtsam {
     /// @{
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x,
-        const Ordering& ordering) const {
+    virtual boost::shared_ptr<GaussianFactorOrdered> linearize(const Values& x,
+        const OrderingOrdered& ordering) const {
       double u = x.at<LieScalar>(meanKey_);
       double p = x.at<LieScalar>(precisionKey_);
       Index j1 = ordering[meanKey_];

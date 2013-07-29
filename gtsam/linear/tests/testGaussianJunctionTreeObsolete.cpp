@@ -25,26 +25,26 @@ using namespace boost::assign;
 
 #include <gtsam/base/debug.h>
 #include <gtsam/geometry/Rot2.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/BayesTreeOrdered.h>
 
 using namespace std;
 using namespace gtsam;
 
 static const Index x2=0, x1=1, x3=2, x4=3;
 
-static GaussianFactorGraph createChain() {
+static GaussianFactorGraphOrdered createChain() {
 
-  typedef GaussianFactorGraph::sharedFactor Factor;
+  typedef GaussianFactorGraphOrdered::sharedFactor Factor;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(1, 0.5);
-  Factor factor1(new JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  model));
-  Factor factor2(new JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  model));
-  Factor factor3(new JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
-  Factor factor4(new JacobianFactor(x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
+  Factor factor1(new JacobianFactorOrdered(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  model));
+  Factor factor2(new JacobianFactorOrdered(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  model));
+  Factor factor3(new JacobianFactorOrdered(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
+  Factor factor4(new JacobianFactorOrdered(x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
 
-  GaussianFactorGraph fg;
+  GaussianFactorGraphOrdered fg;
   fg.push_back(factor1);
   fg.push_back(factor2);
   fg.push_back(factor3);
@@ -67,65 +67,65 @@ static GaussianFactorGraph createChain() {
  *
  *  1  0  0  1
  */
-TEST( GaussianJunctionTree, eliminate )
+TEST( GaussianJunctionTreeOrdered, eliminate )
 {
-  GaussianFactorGraph fg = createChain();
-  GaussianJunctionTree junctionTree(fg);
-  BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate(&EliminateQR);
+  GaussianFactorGraphOrdered fg = createChain();
+  GaussianJunctionTreeOrdered junctionTree(fg);
+  BayesTreeOrdered<GaussianConditionalOrdered>::sharedClique rootClique = junctionTree.eliminate(&EliminateQROrdered);
 
-  typedef BayesTree<GaussianConditional>::sharedConditional sharedConditional;
+  typedef BayesTreeOrdered<GaussianConditionalOrdered>::sharedConditional sharedConditional;
   Matrix two = Matrix_(1,1,2.);
   Matrix one = Matrix_(1,1,1.);
 
-  BayesTree<GaussianConditional> bayesTree_expected;
+  BayesTreeOrdered<GaussianConditionalOrdered> bayesTree_expected;
   Index keys_root[] = {x3,x4};
   Matrix rsd_root = Matrix_(2,3, 2., 2., 2., 0., 2., 2.);
   size_t dim_root[] = {1, 1, 1};
-  sharedConditional root_expected(new GaussianConditional(keys_root, keys_root+2, 2,
+  sharedConditional root_expected(new GaussianConditionalOrdered(keys_root, keys_root+2, 2,
       VerticalBlockView<Matrix>(rsd_root, dim_root, dim_root+3, 2), ones(2)));
-  BayesTree<GaussianConditional>::sharedClique rootClique_expected(new BayesTree<GaussianConditional>::Clique(root_expected));
+  BayesTreeOrdered<GaussianConditionalOrdered>::sharedClique rootClique_expected(new BayesTreeOrdered<GaussianConditionalOrdered>::Clique(root_expected));
 
   Index keys_child[] = {x2,x1,x3};
   Matrix rsd_child = Matrix_(2,4, 2., 1., 1., 2., 0., -1., 1., 0.);
   size_t dim_child[] = {1, 1, 1, 1};
-  sharedConditional child_expected(new GaussianConditional(keys_child, keys_child+3, 2,
+  sharedConditional child_expected(new GaussianConditionalOrdered(keys_child, keys_child+3, 2,
       VerticalBlockView<Matrix>(rsd_child, dim_child, dim_child+4, 2), ones(2)));
-  BayesTree<GaussianConditional>::sharedClique childClique_expected(new BayesTree<GaussianConditional>::Clique(child_expected));
+  BayesTreeOrdered<GaussianConditionalOrdered>::sharedClique childClique_expected(new BayesTreeOrdered<GaussianConditionalOrdered>::Clique(child_expected));
 
   bayesTree_expected.insert(rootClique_expected);
   bayesTree_expected.insert(childClique_expected);
 
-//  bayesTree_expected.insert(sharedConditional(new GaussianConditional(x4, Vector_(1,2.), two, Vector_(1,1.))));
-//  bayesTree_expected.insert(sharedConditional(new GaussianConditional(x3, Vector_(1,2.), two, x4, two, Vector_(1,1.))));
-//  bayesTree_expected.insert(sharedConditional(new GaussianConditional(x1, Vector_(1,0.), one*(-1), x3, one, Vector_(1,1.))));
-//  bayesTree_expected.insert(sharedConditional(new GaussianConditional(x2, Vector_(1,2.), two, x1, one, x3, one, Vector_(1,1.))));
+//  bayesTree_expected.insert(sharedConditional(new GaussianConditionalOrdered(x4, Vector_(1,2.), two, Vector_(1,1.))));
+//  bayesTree_expected.insert(sharedConditional(new GaussianConditionalOrdered(x3, Vector_(1,2.), two, x4, two, Vector_(1,1.))));
+//  bayesTree_expected.insert(sharedConditional(new GaussianConditionalOrdered(x1, Vector_(1,0.), one*(-1), x3, one, Vector_(1,1.))));
+//  bayesTree_expected.insert(sharedConditional(new GaussianConditionalOrdered(x2, Vector_(1,2.), two, x1, one, x3, one, Vector_(1,1.))));
   CHECK(assert_equal(*bayesTree_expected.root(), *rootClique));
   EXPECT(assert_equal(*(bayesTree_expected.root()->children().front()), *(rootClique->children().front())));
 }
 
 /* ************************************************************************* */
-TEST( GaussianJunctionTree, GBNConstructor )
+TEST( GaussianJunctionTreeOrdered, GBNConstructor )
 {
-  GaussianFactorGraph fg = createChain();
-  GaussianJunctionTree jt(fg);
-  BayesTree<GaussianConditional>::sharedClique root = jt.eliminate(&EliminateQR);
-  BayesTree<GaussianConditional> expected;
+  GaussianFactorGraphOrdered fg = createChain();
+  GaussianJunctionTreeOrdered jt(fg);
+  BayesTreeOrdered<GaussianConditionalOrdered>::sharedClique root = jt.eliminate(&EliminateQROrdered);
+  BayesTreeOrdered<GaussianConditionalOrdered> expected;
   expected.insert(root);
 
-  GaussianBayesNet bn(*GaussianSequentialSolver(fg).eliminate());
-  BayesTree<GaussianConditional> actual(bn);
+  GaussianBayesNetOrdered bn(*GaussianSequentialSolver(fg).eliminate());
+  BayesTreeOrdered<GaussianConditionalOrdered> actual(bn);
 
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianJunctionTree, optimizeMultiFrontal )
+TEST( GaussianJunctionTreeOrdered, optimizeMultiFrontal )
 {
-  GaussianFactorGraph fg = createChain();
-  GaussianJunctionTree tree(fg);
+  GaussianFactorGraphOrdered fg = createChain();
+  GaussianJunctionTreeOrdered tree(fg);
 
-  VectorValues actual = tree.optimize(&EliminateQR);
-  VectorValues expected(vector<size_t>(4,1));
+  VectorValuesOrdered actual = tree.optimize(&EliminateQROrdered);
+  VectorValuesOrdered expected(vector<size_t>(4,1));
   expected[x1] = Vector_(1, 0.);
   expected[x2] = Vector_(1, 1.);
   expected[x3] = Vector_(1, 0.);
@@ -134,10 +134,10 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 }
 
 /* ************************************************************************* */
-TEST(GaussianJunctionTree, complicatedMarginal) {
+TEST(GaussianJunctionTreeOrdered, complicatedMarginal) {
 
   // Create the conditionals to go in the BayesTree
-  GaussianConditional::shared_ptr R_1_2(new GaussianConditional(
+  GaussianConditionalOrdered::shared_ptr R_1_2(new GaussianConditionalOrdered(
       pair_list_of
           (1, (Matrix(3,1) <<
               0.2630,
@@ -152,7 +152,7 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
               0.5383,
               0.9961).finished()),
       2, (Vector(3) << 0.0782, 0.4427, 0.1067).finished(), ones(3)));
-  GaussianConditional::shared_ptr R_3_4(new GaussianConditional(
+  GaussianConditionalOrdered::shared_ptr R_3_4(new GaussianConditionalOrdered(
       pair_list_of
           (3, (Matrix(3,1) <<
               0.0540,
@@ -167,7 +167,7 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
               0.7943,    0.1656,
               0.3112,    0.6020).finished()),
       2, (Vector(3) << 0.9619, 0.0046, 0.7749).finished(), ones(3)));
-//  GaussianConditional::shared_ptr R_5_6(new GaussianConditional(
+//  GaussianConditionalOrdered::shared_ptr R_5_6(new GaussianConditionalOrdered(
 //      pair_list_of
 //          (5, (Matrix(3,1) <<
 //              0.2435,
@@ -186,7 +186,7 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
 //              0.9893,    0.2912,
 //              0.4035,    0.4933).finished()),
 //      2, (Vector(3) << 0.8173, 0.4164, 0.7671).finished(), ones(3)));
-  GaussianConditional::shared_ptr R_5_6(new GaussianConditional(
+  GaussianConditionalOrdered::shared_ptr R_5_6(new GaussianConditionalOrdered(
       pair_list_of
           (5, (Matrix(3,1) <<
               0.2435,
@@ -209,7 +209,7 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
               0.7572,    0.5678,
               0.7537,    0.0759).finished()),
       2, (Vector(3) << 0.8173, 0.8687, 0.0844).finished(), ones(3)));
-  GaussianConditional::shared_ptr R_7_8(new GaussianConditional(
+  GaussianConditionalOrdered::shared_ptr R_7_8(new GaussianConditionalOrdered(
       pair_list_of
           (7, (Matrix(3,1) <<
               0.2551,
@@ -224,7 +224,7 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
               0.2543,
               0.8143).finished()),
       2, (Vector(3) << 0.3998, 0.2599, 0.8001).finished(), ones(3)));
-  GaussianConditional::shared_ptr R_9_10(new GaussianConditional(
+  GaussianConditionalOrdered::shared_ptr R_9_10(new GaussianConditionalOrdered(
       pair_list_of
           (9, (Matrix(3,1) <<
               0.7952,
@@ -243,7 +243,7 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
               0.9597,    0.2238,
               0.3404,    0.7513).finished()),
       2, (Vector(3) << 0.4314, 0.9106, 0.1818).finished(), ones(3)));
-  GaussianConditional::shared_ptr R_11_12(new GaussianConditional(
+  GaussianConditionalOrdered::shared_ptr R_11_12(new GaussianConditionalOrdered(
       pair_list_of
           (11, (Matrix(3,1) <<
               0.0971,
@@ -256,7 +256,7 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
       2, (Vector(3) << 0.2638, 0.1455, 0.1361).finished(), ones(3)));
 
   // Gaussian Bayes Tree
-  typedef BayesTree<GaussianConditional> GaussianBayesTree;
+  typedef BayesTreeOrdered<GaussianConditionalOrdered> GaussianBayesTree;
   typedef GaussianBayesTree::Clique Clique;
   typedef GaussianBayesTree::sharedClique sharedClique;
 
@@ -271,10 +271,10 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
 
   // Marginal on 5
   Matrix expectedCov = (Matrix(1,1) << 236.5166).finished();
-  JacobianFactor::shared_ptr actualJacobianChol= boost::dynamic_pointer_cast<JacobianFactor>(
-      bt.marginalFactor(5, EliminateCholesky));
-  JacobianFactor::shared_ptr actualJacobianQR = boost::dynamic_pointer_cast<JacobianFactor>(
-      bt.marginalFactor(5, EliminateQR));
+  JacobianFactorOrdered::shared_ptr actualJacobianChol= boost::dynamic_pointer_cast<JacobianFactorOrdered>(
+      bt.marginalFactor(5, EliminateCholeskyOrdered));
+  JacobianFactorOrdered::shared_ptr actualJacobianQR = boost::dynamic_pointer_cast<JacobianFactorOrdered>(
+      bt.marginalFactor(5, EliminateQROrdered));
   CHECK(assert_equal(*actualJacobianChol, *actualJacobianQR)); // Check that Chol and QR obtained marginals are the same
   LONGS_EQUAL(1, actualJacobianChol->rows());
   LONGS_EQUAL(1, actualJacobianChol->size());
@@ -290,10 +290,10 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
   expectedCov = (Matrix(2,2) <<
       1015.8,    2886.2,
       2886.2,    8471.2).finished();
-  actualJacobianChol = boost::dynamic_pointer_cast<JacobianFactor>(
-      bt.marginalFactor(6, EliminateCholesky));
-  actualJacobianQR = boost::dynamic_pointer_cast<JacobianFactor>(
-      bt.marginalFactor(6, EliminateQR));
+  actualJacobianChol = boost::dynamic_pointer_cast<JacobianFactorOrdered>(
+      bt.marginalFactor(6, EliminateCholeskyOrdered));
+  actualJacobianQR = boost::dynamic_pointer_cast<JacobianFactorOrdered>(
+      bt.marginalFactor(6, EliminateQROrdered));
   CHECK(assert_equal(*actualJacobianChol, *actualJacobianQR)); // Check that Chol and QR obtained marginals are the same
   LONGS_EQUAL(2, actualJacobianChol->rows());
   LONGS_EQUAL(1, actualJacobianChol->size());

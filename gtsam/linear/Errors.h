@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
 
 namespace gtsam {
   
@@ -31,7 +31,7 @@ namespace gtsam {
     GTSAM_EXPORT Errors() ;
 
   /** break V into pieces according to its start indices */
-  GTSAM_EXPORT Errors(const VectorValues &V) ;
+  GTSAM_EXPORT Errors(const VectorValuesOrdered &V) ;
 
     /** print */
     GTSAM_EXPORT void print(const std::string& s = "Errors") const;

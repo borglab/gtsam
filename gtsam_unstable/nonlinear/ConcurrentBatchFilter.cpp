@@ -18,7 +18,7 @@
 
 #include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
 
@@ -128,8 +128,8 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& summarizedFa
     // Perform an optional optimization on the to-be-sent-to-the-smoother factors
     if(relin_) {
       // Create ordering and delta
-      Ordering ordering = *graph.orderingCOLAMD(values);
-      VectorValues delta = values.zeroVectors(ordering);
+      OrderingOrdered ordering = *graph.orderingCOLAMD(values);
+      VectorValuesOrdered delta = values.zeroVectors(ordering);
       // Optimize this graph using a modified version of L-M
       optimize(graph, values, ordering, delta, separatorValues, parameters_);
       // Update filter theta and delta
@@ -162,8 +162,8 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& summarizedFa
 
     // Generate separate orderings that place the filter keys or the smoother keys first
     // TODO: This is convenient, but it recalculates the variable index each time
-    Ordering filterOrdering = *graph.orderingCOLAMDConstrained(values, filterConstraints);
-    Ordering smootherOrdering = *graph.orderingCOLAMDConstrained(values, smootherConstraints);
+    OrderingOrdered filterOrdering = *graph.orderingCOLAMDConstrained(values, filterConstraints);
+    OrderingOrdered smootherOrdering = *graph.orderingCOLAMDConstrained(values, smootherConstraints);
 
     // Extract the set of filter keys and smoother keys
     std::set<Key> filterKeys;
@@ -276,7 +276,7 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
   gttic(remove_factors);
 
   // For each factor slot to delete...
-  SymbolicFactorGraph factors;
+  SymbolicFactorGraphOrdered factors;
   BOOST_FOREACH(size_t slot, slots) {
     // Create a symbolic version for the variable index
     factors.push_back(factors_.at(slot)->symbolic(ordering_));
@@ -295,7 +295,7 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
 void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysToMove) {
 
   // Calculate the variable index
-  VariableIndex variableIndex(*factors_.symbolic(ordering_), ordering_.size());
+  VariableIndexOrdered variableIndex(*factors_.symbolic(ordering_), ordering_.size());
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
   int group0 = 0;
@@ -320,8 +320,8 @@ void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysT
 }
 
 /* ************************************************************************* */
-ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values& theta, const Ordering& ordering,
-     VectorValues& delta, const Values& linearValues, const LevenbergMarquardtParams& parameters) {
+ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values& theta, const OrderingOrdered& ordering,
+     VectorValuesOrdered& delta, const Values& linearValues, const LevenbergMarquardtParams& parameters) {
 
   // Create output result structure
   Result result;
@@ -344,7 +344,7 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFac
 
   // Use a custom optimization loop so the linearization points can be controlled
   double previousError;
-  VectorValues newDelta;
+  VectorValuesOrdered newDelta;
   do {
     previousError = result.error;
 
@@ -352,13 +352,13 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFac
     gttic(optimizer_iteration);
     {
       // Linearize graph around the linearization point
-      GaussianFactorGraph linearFactorGraph = *factors.linearize(theta, ordering);
+      GaussianFactorGraphOrdered linearFactorGraph = *factors.linearize(theta, ordering);
 
       // Keep increasing lambda until we make make progress
       while(true) {
         // Add prior factors at the current solution
         gttic(damp);
-        GaussianFactorGraph dampedFactorGraph(linearFactorGraph);
+        GaussianFactorGraphOrdered dampedFactorGraph(linearFactorGraph);
         dampedFactorGraph.reserve(linearFactorGraph.size() + delta.size());
         {
           // for each of the variables, add a prior at the current solution
@@ -366,7 +366,7 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFac
             Matrix A = lambda * eye(delta[j].size());
             Vector b = lambda * delta[j];
             SharedDiagonal model = noiseModel::Unit::Create(delta[j].size());
-            GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
+            GaussianFactorOrdered::shared_ptr prior(new JacobianFactorOrdered(j, A, b, model));
             dampedFactorGraph.push_back(prior);
           }
         }
@@ -375,7 +375,7 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFac
 
         gttic(solve);
         // Solve Damped Gaussian Factor Graph
-        newDelta = GaussianJunctionTree(dampedFactorGraph).optimize(parameters.getEliminationFunction());
+        newDelta = GaussianJunctionTreeOrdered(dampedFactorGraph).optimize(parameters.getEliminationFunction());
         // update the evalpoint with the new delta
         evalpoint = theta.retract(newDelta, ordering);
         gttoc(solve);
@@ -442,10 +442,10 @@ void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
   // Note: It is assumed the ordering already has these keys first
 
   // Create the linear factor graph
-  GaussianFactorGraph linearFactorGraph = *factors_.linearize(theta_, ordering_);
+  GaussianFactorGraphOrdered linearFactorGraph = *factors_.linearize(theta_, ordering_);
 
   // Calculate the variable index
-  VariableIndex variableIndex(linearFactorGraph, ordering_.size());
+  VariableIndexOrdered variableIndex(linearFactorGraph, ordering_.size());
 
   // Use the variable Index to mark the factors that will be marginalized
   std::set<size_t> removedFactorSlots;
@@ -472,7 +472,7 @@ void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
   // Add the marginal factor variables to the separator
   NonlinearFactorGraph marginalFactors;
   BOOST_FOREACH(Index index, indicesToEliminate) {
-    GaussianFactor::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(parameters_.getEliminationFunction());
+    GaussianFactorOrdered::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(parameters_.getEliminationFunction());
     if(gaussianFactor->size() > 0) {
       LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering_, theta_));
       marginalFactors.push_back(marginalFactor);
@@ -545,16 +545,16 @@ void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
 
 /* ************************************************************************* */
 NonlinearFactorGraph ConcurrentBatchFilter::marginalize(const NonlinearFactorGraph& graph, const Values& values,
-    const Ordering& ordering, const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& function) {
+    const OrderingOrdered& ordering, const std::set<Key>& marginalizeKeys, const GaussianFactorGraphOrdered::Eliminate& function) {
 
   // Calculate marginal factors on the remaining variables (after marginalizing 'marginalizeKeys')
   // Note: It is assumed the ordering already has these keys first
 
   // Create the linear factor graph
-  GaussianFactorGraph linearFactorGraph = *graph.linearize(values, ordering);
+  GaussianFactorGraphOrdered linearFactorGraph = *graph.linearize(values, ordering);
 
   // Construct a variable index
-  VariableIndex variableIndex(linearFactorGraph, ordering.size());
+  VariableIndexOrdered variableIndex(linearFactorGraph, ordering.size());
 
   // Construct an elimination tree to perform sparse elimination
   std::vector<EliminationForest::shared_ptr> forest( EliminationForest::Create(linearFactorGraph, variableIndex) );
@@ -574,7 +574,7 @@ NonlinearFactorGraph ConcurrentBatchFilter::marginalize(const NonlinearFactorGra
   // Add the marginal factor variables to the separator
   NonlinearFactorGraph marginalFactors;
   BOOST_FOREACH(Index index, indicesToEliminate) {
-    GaussianFactor::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(function);
+    GaussianFactorOrdered::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(function);
     if(gaussianFactor->size() > 0) {
       LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering, values));
       marginalFactors.push_back(marginalFactor);
@@ -604,7 +604,7 @@ void ConcurrentBatchFilter::PrintNonlinearFactor(const NonlinearFactor::shared_p
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
+void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactorOrdered::shared_ptr& factor, const OrderingOrdered& ordering,
     const std::string& indent, const KeyFormatter& keyFormatter) {
   std::cout << indent;
   if(factor) {
@@ -619,7 +619,7 @@ void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& 
 }
 
 /* ************************************************************************* */
-std::vector<Index> ConcurrentBatchFilter::EliminationForest::ComputeParents(const VariableIndex& structure) {
+std::vector<Index> ConcurrentBatchFilter::EliminationForest::ComputeParents(const VariableIndexOrdered& structure) {
   // Number of factors and variables
   const size_t m = structure.nFactors();
   const size_t n = structure.size();
@@ -650,7 +650,7 @@ std::vector<Index> ConcurrentBatchFilter::EliminationForest::ComputeParents(cons
 }
 
 /* ************************************************************************* */
-std::vector<ConcurrentBatchFilter::EliminationForest::shared_ptr> ConcurrentBatchFilter::EliminationForest::Create(const GaussianFactorGraph& factorGraph, const VariableIndex& structure) {
+std::vector<ConcurrentBatchFilter::EliminationForest::shared_ptr> ConcurrentBatchFilter::EliminationForest::Create(const GaussianFactorGraphOrdered& factorGraph, const VariableIndexOrdered& structure) {
   // Compute the tree structure
   std::vector<Index> parents(ComputeParents(structure));
 
@@ -669,7 +669,7 @@ std::vector<ConcurrentBatchFilter::EliminationForest::shared_ptr> ConcurrentBatc
   }
 
   // Hang factors in right places
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factorGraph) {
+  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, factorGraph) {
     if(factor && factor->size() > 0) {
       Index j = *std::min_element(factor->begin(), factor->end());
       if(j < structure.size())
@@ -681,10 +681,10 @@ std::vector<ConcurrentBatchFilter::EliminationForest::shared_ptr> ConcurrentBatc
 }
 
 /* ************************************************************************* */
-GaussianFactor::shared_ptr ConcurrentBatchFilter::EliminationForest::eliminateRecursive(GaussianFactorGraph::Eliminate function) {
+GaussianFactorOrdered::shared_ptr ConcurrentBatchFilter::EliminationForest::eliminateRecursive(GaussianFactorGraphOrdered::Eliminate function) {
 
   // Create the list of factors to be eliminated, initially empty, and reserve space
-  GaussianFactorGraph factors;
+  GaussianFactorGraphOrdered factors;
   factors.reserve(this->factors_.size() + this->subTrees_.size());
 
   // Add all factors associated with the current node
@@ -695,7 +695,7 @@ GaussianFactor::shared_ptr ConcurrentBatchFilter::EliminationForest::eliminateRe
     factors.push_back(child->eliminateRecursive(function));
 
   // Combine all factors (from this node and from subtrees) into a joint factor
-  GaussianFactorGraph::EliminationResult eliminated(function(factors, 1));
+  GaussianFactorGraphOrdered::EliminationResult eliminated(function(factors, 1));
 
   return eliminated.second;
 }

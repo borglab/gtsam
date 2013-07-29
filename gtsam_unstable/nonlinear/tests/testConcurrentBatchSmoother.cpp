@@ -23,11 +23,11 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/inference/JunctionTree.h>
+#include <gtsam/inference/JunctionTreeOrdered.h>
 #include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -78,18 +78,18 @@ bool hessian_equal(const NonlinearFactorGraph& expected, const NonlinearFactorGr
     return false;
 
   // Create an ordering
-  Ordering ordering;
+  OrderingOrdered ordering;
   BOOST_FOREACH(Key key, expectedKeys) {
     ordering.push_back(key);
   }
 
   // Linearize each factor graph
-  GaussianFactorGraph expectedGaussian;
+  GaussianFactorGraphOrdered expectedGaussian;
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, expected) {
     if(factor)
       expectedGaussian.push_back( factor->linearize(theta, ordering) );
   }
-  GaussianFactorGraph actualGaussian;
+  GaussianFactorGraphOrdered actualGaussian;
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, actual) {
     if(factor)
       actualGaussian.push_back( factor->linearize(theta, ordering) );
@@ -511,7 +511,7 @@ TEST_UNSAFE( ConcurrentBatchSmoother, synchronize )
   Values optimalTheta = BatchOptimize(fullGraph, fullTheta);
 
   // Re-eliminate to create the Bayes Tree
-  Ordering ordering;
+  OrderingOrdered ordering;
   ordering.push_back(Symbol('X',  2));
   ordering.push_back(Symbol('X',  0));
   ordering.push_back(Symbol('X',  1));
@@ -527,10 +527,10 @@ TEST_UNSAFE( ConcurrentBatchSmoother, synchronize )
   ordering.push_back(Symbol('X', 12));
   Values linpoint;
   linpoint.insert(optimalTheta);
-  GaussianFactorGraph linearGraph = *fullGraph.linearize(linpoint, ordering);
-  JunctionTree<GaussianFactorGraph, ISAM2Clique> jt(linearGraph);
-  ISAM2Clique::shared_ptr root = jt.eliminate(EliminateQR);
-  BayesTree<GaussianConditional, ISAM2Clique> bayesTree;
+  GaussianFactorGraphOrdered linearGraph = *fullGraph.linearize(linpoint, ordering);
+  JunctionTreeOrdered<GaussianFactorGraphOrdered, ISAM2Clique> jt(linearGraph);
+  ISAM2Clique::shared_ptr root = jt.eliminate(EliminateQROrdered);
+  BayesTreeOrdered<GaussianConditionalOrdered, ISAM2Clique> bayesTree;
   bayesTree.insert(root);
 
   // Extract the values for the smoother keys. This consists of the branches: X4 and X6
@@ -637,9 +637,9 @@ TEST_UNSAFE( ConcurrentBatchSmoother, synchronize )
   linpoint.insert(optimalTheta);
   linpoint.update(rootValues);
   linearGraph = *fullGraph.linearize(linpoint, ordering);
-  jt = JunctionTree<GaussianFactorGraph, ISAM2Clique>(linearGraph);
-  root = jt.eliminate(EliminateQR);
-  bayesTree = BayesTree<GaussianConditional, ISAM2Clique>();
+  jt = JunctionTreeOrdered<GaussianFactorGraphOrdered, ISAM2Clique>(linearGraph);
+  root = jt.eliminate(EliminateQROrdered);
+  bayesTree = BayesTreeOrdered<GaussianConditionalOrdered, ISAM2Clique>();
   bayesTree.insert(root);
 
   // Add the loop closure to the smoother

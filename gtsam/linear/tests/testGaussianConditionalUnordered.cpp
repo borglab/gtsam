@@ -21,9 +21,9 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/linear/JacobianFactorUnordered.h>
-#include <gtsam/linear/GaussianConditionalUnordered.h>
-#include <gtsam/linear/GaussianBayesNetUnordered.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 
 #include <iostream>
 #include <sstream>
@@ -44,7 +44,7 @@ static Matrix R = Matrix_(2,2,
           0.,   4.6904);
 
 /* ************************************************************************* */
-TEST(GaussianConditionalUnordered, constructor)
+TEST(GaussianConditional, constructor)
 {
   Matrix S1 = Matrix_(2,2,
       -5.2786,  -8.6603,
@@ -64,9 +64,9 @@ TEST(GaussianConditionalUnordered, constructor)
       (5, S2)
       (7, S3);
 
-  GaussianConditionalUnordered actual(1, d, R, terms, s);
+  GaussianConditional actual(1, d, R, terms, s);
 
-  GaussianConditionalUnordered::const_iterator it = actual.beginFrontals();
+  GaussianConditional::const_iterator it = actual.beginFrontals();
   EXPECT(assert_equal(Key(1), *it));
   EXPECT(assert_equal(R, actual.get_R()));
   ++ it;
@@ -91,14 +91,14 @@ TEST(GaussianConditionalUnordered, constructor)
   EXPECT(assert_equal(*s, *actual.get_model()));
 
   // test copy constructor
-  GaussianConditionalUnordered copied(actual);
+  GaussianConditional copied(actual);
   EXPECT(assert_equal(d, copied.get_d()));
   EXPECT(assert_equal(*s, *copied.get_model()));
   EXPECT(assert_equal(R, copied.get_R()));
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditionalUnordered, equals )
+TEST( GaussianConditional, equals )
 {
   // create a conditional gaussian node
   Matrix A1(2,2);
@@ -117,7 +117,7 @@ TEST( GaussianConditionalUnordered, equals )
 
   Vector d = Vector_(2, 0.2, 0.5);
 
-  GaussianConditionalUnordered
+  GaussianConditional
     expected(1, d, R, 2, A1, 10, A2, model),
     actual(1, d, R, 2, A1, 10, A2, model);
 
@@ -125,7 +125,7 @@ TEST( GaussianConditionalUnordered, equals )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditionalUnordered, solve )
+TEST( GaussianConditional, solve )
 {
   //expected solution
   Vector expectedX(2);
@@ -143,17 +143,17 @@ TEST( GaussianConditionalUnordered, solve )
 
   Vector d(2); d << 20.0, 40.0;
 
-  GaussianConditionalUnordered cg(1, d, R, 2, A1, 10, A2);
+  GaussianConditional cg(1, d, R, 2, A1, 10, A2);
 
   Vector sx1(2); sx1 << 1.0, 1.0;
   Vector sl1(2); sl1 << 1.0, 1.0;
 
-  VectorValuesUnordered expected = map_list_of
+  VectorValues expected = map_list_of
     (1, expectedX)
     (2, sx1)
     (10, sl1);
 
-  VectorValuesUnordered solution = map_list_of
+  VectorValues solution = map_list_of
     (2, sx1) // parents
     (10, sl1);
   solution.insert(cg.solve(solution));
@@ -162,7 +162,7 @@ TEST( GaussianConditionalUnordered, solve )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditionalUnordered, solve_simple )
+TEST( GaussianConditional, solve_simple )
 {
   // 2 variables, frontal has dim=4
   VerticalBlockMatrix blockMatrix(list_of(4)(2)(1), 4);
@@ -173,16 +173,16 @@ TEST( GaussianConditionalUnordered, solve_simple )
       0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
 
   // solve system as a non-multifrontal version first
-  GaussianConditionalUnordered cg(list_of(1)(2), 1, blockMatrix);
+  GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
 
   // partial solution
   Vector sx1 = Vector_(2, 9.0, 10.0);
 
   // elimination order: 1, 2
-  VectorValuesUnordered actual = map_list_of
+  VectorValues actual = map_list_of
     (2, sx1); // parent
 
-  VectorValuesUnordered expected = map_list_of
+  VectorValues expected = map_list_of
     (2, sx1)
     (1, Vector_(4, -3.1,-3.4,-11.9,-13.2));
 
@@ -196,7 +196,7 @@ TEST( GaussianConditionalUnordered, solve_simple )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditionalUnordered, solve_multifrontal )
+TEST( GaussianConditional, solve_multifrontal )
 {
   // create full system, 3 variables, 2 frontals, all 2 dim
   VerticalBlockMatrix blockMatrix(list_of(2)(2)(2)(1), 4);
@@ -207,7 +207,7 @@ TEST( GaussianConditionalUnordered, solve_multifrontal )
       0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
 
   // 3 variables, all dim=2
-  GaussianConditionalUnordered cg(list_of(1)(2)(10), 2, blockMatrix);
+  GaussianConditional cg(list_of(1)(2)(10), 2, blockMatrix);
 
   EXPECT(assert_equal(Vector(blockMatrix.full().rightCols(1)), cg.get_d()));
 
@@ -215,10 +215,10 @@ TEST( GaussianConditionalUnordered, solve_multifrontal )
   Vector sl1 = Vector_(2, 9.0, 10.0);
 
   // elimination order; _x_, _x1_, _l1_
-  VectorValuesUnordered actual = map_list_of
+  VectorValues actual = map_list_of
     (10, sl1); // parent
 
-  VectorValuesUnordered expected = map_list_of
+  VectorValues expected = map_list_of
     (1, Vector_(2, -3.1,-3.4))
     (2, Vector_(2, -11.9,-13.2))
     (10, sl1);
@@ -234,7 +234,7 @@ TEST( GaussianConditionalUnordered, solve_multifrontal )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditionalUnordered, solveTranspose ) {
+TEST( GaussianConditional, solveTranspose ) {
   /** create small Chordal Bayes Net x <- y
    * x y d
    * 1 1 9
@@ -247,15 +247,15 @@ TEST( GaussianConditionalUnordered, solveTranspose ) {
   d2(0) = 5;
 
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  GaussianBayesNetUnordered cbn = list_of
-    (GaussianConditionalUnordered(1, d1, R11, 2, S12))
-    (GaussianConditionalUnordered(1, d2, R22));
+  GaussianBayesNet cbn = list_of
+    (GaussianConditional(1, d1, R11, 2, S12))
+    (GaussianConditional(1, d2, R22));
 
   // x=R'*y, y=inv(R')*x
   // 2 = 1    2
   // 5   1 1  3
 
-  VectorValuesUnordered
+  VectorValues
     x = map_list_of
       (1, Vector_(1,2.))
       (2, Vector_(1,5.)),
@@ -264,12 +264,12 @@ TEST( GaussianConditionalUnordered, solveTranspose ) {
       (2, Vector_(1,3.));
 
   // test functional version
-  VectorValuesUnordered actual = cbn.backSubstituteTranspose(x);
+  VectorValues actual = cbn.backSubstituteTranspose(x);
   CHECK(assert_equal(y, actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditionalUnordered, information ) {
+TEST( GaussianConditional, information ) {
 
   // Create R matrix
   Matrix R(4,4); R <<
@@ -279,7 +279,7 @@ TEST( GaussianConditionalUnordered, information ) {
       0, 0, 0, 10;
 
   // Create conditional
-  GaussianConditionalUnordered conditional(0, Vector::Zero(4), R);
+  GaussianConditional conditional(0, Vector::Zero(4), R);
 
   // Expected information matrix (using permuted R)
   Matrix IExpected = R.transpose() * R;
@@ -290,7 +290,7 @@ TEST( GaussianConditionalUnordered, information ) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditionalUnordered, isGaussianFactor ) {
+TEST( GaussianConditional, isGaussianFactor ) {
 
   // Create R matrix
   Matrix R(4,4); R <<
@@ -300,13 +300,13 @@ TEST( GaussianConditionalUnordered, isGaussianFactor ) {
       0, 0, 0, 10;
 
   // Create a conditional
-  GaussianConditionalUnordered conditional(0, Vector::Zero(4), R);
+  GaussianConditional conditional(0, Vector::Zero(4), R);
 
   // Expected information matrix computed by conditional
   Matrix IExpected = conditional.information();
 
   // Expected information matrix computed by a factor
-  JacobianFactorUnordered jf = conditional;
+  JacobianFactor jf = conditional;
   Matrix IActual = jf.information();
 
   EXPECT(assert_equal(IExpected, IActual));

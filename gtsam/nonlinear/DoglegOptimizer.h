@@ -114,7 +114,7 @@ public:
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
    */
-  DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
+  DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const OrderingOrdered& ordering) :
         NonlinearOptimizer(graph) {
     params_.ordering = ordering;
     state_ = DoglegState(graph, initialValues, params_); }

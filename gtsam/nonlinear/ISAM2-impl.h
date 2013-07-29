@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianBayesTreeOrdered.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
 namespace gtsam {
@@ -47,17 +47,17 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void AddVariables(const Values& newTheta, Values& theta, VectorValues& delta,
-      VectorValues& deltaNewton, VectorValues& RgProd, std::vector<bool>& replacedKeys,
-      Ordering& ordering, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+  static void AddVariables(const Values& newTheta, Values& theta, VectorValuesOrdered& delta,
+      VectorValuesOrdered& deltaNewton, VectorValuesOrdered& RgProd, std::vector<bool>& replacedKeys,
+      OrderingOrdered& ordering, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
     
   /**
    * Remove variables from the ISAM2 system.
    */
   static void RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
-    Values& theta, VariableIndex& variableIndex, VectorValues& delta, VectorValues& deltaNewton,
-    VectorValues& RgProd, std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
-    GaussianFactorGraph& linearFactors, FastSet<Key>& fixedVariables);
+    Values& theta, VariableIndexOrdered& variableIndex, VectorValuesOrdered& delta, VectorValuesOrdered& deltaNewton,
+    VectorValuesOrdered& RgProd, std::vector<bool>& replacedKeys, OrderingOrdered& ordering, Base::Nodes& nodes,
+    GaussianFactorGraphOrdered& linearFactors, FastSet<Key>& fixedVariables);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
@@ -66,7 +66,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @param factors The factors from which to extract the variables
    * @return The set of variables indices from the factors
    */
-  static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph& factors);
+  static FastSet<Index> IndicesFromFactors(const OrderingOrdered& ordering, const NonlinearFactorGraph& factors);
 
   /**
    * Find the set of variables to be relinearized according to relinearizeThreshold.
@@ -77,7 +77,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearizationFull(const VectorValues& delta, const Ordering& ordering,
+  static FastSet<Index> CheckRelinearizationFull(const VectorValuesOrdered& delta, const OrderingOrdered& ordering,
       const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
@@ -91,7 +91,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const VectorValues& delta, const Ordering& ordering,
+  static FastSet<Index> CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const VectorValuesOrdered& delta, const OrderingOrdered& ordering,
       const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
@@ -124,9 +124,9 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * recalculate its delta.
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void ExpmapMasked(Values& values, const VectorValues& delta,
-      const Ordering& ordering, const std::vector<bool>& mask,
-      boost::optional<VectorValues&> invalidateIfDebug = boost::none,
+  static void ExpmapMasked(Values& values, const VectorValuesOrdered& delta,
+      const OrderingOrdered& ordering, const std::vector<bool>& mask,
+      boost::optional<VectorValuesOrdered&> invalidateIfDebug = boost::none,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
@@ -143,13 +143,13 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * \return The eliminated BayesTree and the permutation to be applied to the
    * rest of the ISAM2 data.
    */
-  static PartialSolveResult PartialSolve(GaussianFactorGraph& factors, const FastSet<Index>& keys,
+  static PartialSolveResult PartialSolve(GaussianFactorGraphOrdered& factors, const FastSet<Index>& keys,
       const ReorderingMode& reorderingMode, bool useQR);
 
-  static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, VectorValues& delta, double wildfireThreshold);
+  static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, VectorValuesOrdered& delta, double wildfireThreshold);
 
   static size_t UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, std::vector<bool>& replacedKeys,
-      VectorValues& deltaNewton, VectorValues& RgProd);
+      VectorValuesOrdered& deltaNewton, VectorValuesOrdered& RgProd);
 
 };
 

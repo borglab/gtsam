@@ -18,8 +18,8 @@
 
 #include <tests/smallExample.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
+#include <gtsam/linear/GaussianConditionalOrdered.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 
@@ -47,34 +47,34 @@ static SharedDiagonal
 //const Key kx1 = X(1), kx2 = X(2), kl1 = L(1); // FIXME: throws exception
 
 /* ************************************************************************* */
-TEST( GaussianFactor, linearFactor )
+TEST( GaussianFactorOrdered, linearFactor )
 {
   const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
-  Ordering ordering; ordering += kx1,kx2,kl1;
+  OrderingOrdered ordering; ordering += kx1,kx2,kl1;
 
   Matrix I = eye(2);
   Vector b = Vector_(2, 2.0, -1.0);
-  JacobianFactor expected(ordering[kx1], -10*I,ordering[kx2], 10*I, b, noiseModel::Unit::Create(2));
+  JacobianFactorOrdered expected(ordering[kx1], -10*I,ordering[kx2], 10*I, b, noiseModel::Unit::Create(2));
 
   // create a small linear factor graph
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
+  GaussianFactorGraphOrdered fg = example::createGaussianFactorGraph(ordering);
 
   // get the factor kf2 from the factor graph
-  JacobianFactor::shared_ptr lf =
-      boost::dynamic_pointer_cast<JacobianFactor>(fg[1]);
+  JacobianFactorOrdered::shared_ptr lf =
+      boost::dynamic_pointer_cast<JacobianFactorOrdered>(fg[1]);
 
   // check if the two factors are the same
   EXPECT(assert_equal(expected,*lf));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, getDim )
+TEST( GaussianFactorOrdered, getDim )
 {
   const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
   // get a factor
-  Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
-  GaussianFactor::shared_ptr factor = fg[0];
+  OrderingOrdered ordering; ordering += kx1,kx2,kl1;
+  GaussianFactorGraphOrdered fg = example::createGaussianFactorGraph(ordering);
+  GaussianFactorOrdered::shared_ptr factor = fg[0];
 
   // get the size of a variable
   size_t actual = factor->getDim(factor->find(ordering[kx1]));
@@ -85,18 +85,18 @@ TEST( GaussianFactor, getDim )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, error )
+TEST( GaussianFactorOrdered, error )
 {
   const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
   // create a small linear factor graph
-  Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
+  OrderingOrdered ordering; ordering += kx1,kx2,kl1;
+  GaussianFactorGraphOrdered fg = example::createGaussianFactorGraph(ordering);
 
   // get the first factor from the factor graph
-  GaussianFactor::shared_ptr lf = fg[0];
+  GaussianFactorOrdered::shared_ptr lf = fg[0];
 
   // check the error of the first factor with noisy config
-  VectorValues cfg = example::createZeroDelta(ordering);
+  VectorValuesOrdered cfg = example::createZeroDelta(ordering);
 
   // calculate the error from the factor kf1
   // note the error is the same as in testNonlinearFactor
@@ -105,21 +105,21 @@ TEST( GaussianFactor, error )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, matrix )
+TEST( GaussianFactorOrdered, matrix )
 {
   const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
   // create a small linear factor graph
-  Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
+  OrderingOrdered ordering; ordering += kx1,kx2,kl1;
+  GaussianFactorGraphOrdered fg = example::createGaussianFactorGraph(ordering);
 
   // get the factor kf2 from the factor graph
-  //GaussianFactor::shared_ptr lf = fg[1]; // NOTE: using the older version
+  //GaussianFactorOrdered::shared_ptr lf = fg[1]; // NOTE: using the older version
   Vector b2 = Vector_(2, 0.2, -0.1);
   Matrix I = eye(2);
   // render with a given ordering
-  Ordering ord;
+  OrderingOrdered ord;
   ord += kx1,kx2;
-  JacobianFactor::shared_ptr lf(new JacobianFactor(ord[kx1], -I, ord[kx2], I, b2, sigma0_1));
+  JacobianFactorOrdered::shared_ptr lf(new JacobianFactorOrdered(ord[kx1], -I, ord[kx2], I, b2, sigma0_1));
 
   // Test whitened version
   Matrix A_act1; Vector b_act1;
@@ -154,21 +154,21 @@ TEST( GaussianFactor, matrix )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, matrix_aug )
+TEST( GaussianFactorOrdered, matrix_aug )
 {
   const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
   // create a small linear factor graph
-  Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
+  OrderingOrdered ordering; ordering += kx1,kx2,kl1;
+  GaussianFactorGraphOrdered fg = example::createGaussianFactorGraph(ordering);
 
   // get the factor kf2 from the factor graph
-  //GaussianFactor::shared_ptr lf = fg[1];
+  //GaussianFactorOrdered::shared_ptr lf = fg[1];
   Vector b2 = Vector_(2, 0.2, -0.1);
   Matrix I = eye(2);
   // render with a given ordering
-  Ordering ord;
+  OrderingOrdered ord;
   ord += kx1,kx2;
-  JacobianFactor::shared_ptr lf(new JacobianFactor(ord[kx1], -I, ord[kx2], I, b2, sigma0_1));
+  JacobianFactorOrdered::shared_ptr lf(new JacobianFactorOrdered(ord[kx1], -I, ord[kx2], I, b2, sigma0_1));
 
 
   // Test unwhitened version
@@ -206,17 +206,17 @@ void print(const list<T>& i) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, size )
+TEST( GaussianFactorOrdered, size )
 {
   // create a linear factor graph
   const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
-  Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
+  OrderingOrdered ordering; ordering += kx1,kx2,kl1;
+  GaussianFactorGraphOrdered fg = example::createGaussianFactorGraph(ordering);
 
   // get some factors from the graph
-  boost::shared_ptr<GaussianFactor> factor1 = fg[0];
-  boost::shared_ptr<GaussianFactor> factor2 = fg[1];
-  boost::shared_ptr<GaussianFactor> factor3 = fg[2];
+  boost::shared_ptr<GaussianFactorOrdered> factor1 = fg[0];
+  boost::shared_ptr<GaussianFactorOrdered> factor2 = fg[1];
+  boost::shared_ptr<GaussianFactorOrdered> factor3 = fg[2];
 
   EXPECT_LONGS_EQUAL(1, factor1->size());
   EXPECT_LONGS_EQUAL(2, factor2->size());

@@ -30,7 +30,7 @@ using namespace boost::assign;
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
 #include <tests/smallExample.h>
-#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/FactorGraphOrdered.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Symbol.h>
 
@@ -76,20 +76,20 @@ TEST( Graph, keys )
 /* ************************************************************************* */
 TEST( Graph, GET_ORDERING)
 {
-//  Ordering expected; expected += "x1","l1","x2"; // For starting with x1,x2,l1
-  Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
+//  OrderingOrdered expected; expected += "x1","l1","x2"; // For starting with x1,x2,l1
+  OrderingOrdered expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
   Graph nlfg = createNonlinearFactorGraph();
-  SymbolicFactorGraph::shared_ptr symbolic;
-  Ordering::shared_ptr ordering;
+  SymbolicFactorGraphOrdered::shared_ptr symbolic;
+  OrderingOrdered::shared_ptr ordering;
   boost::tie(symbolic, ordering) = nlfg.symbolic(createNoisyValues());
-  Ordering actual = *nlfg.orderingCOLAMD(createNoisyValues());
+  OrderingOrdered actual = *nlfg.orderingCOLAMD(createNoisyValues());
   EXPECT(assert_equal(expected,actual));
 
   // Constrained ordering - put x2 at the end
   std::map<Key, int> constraints;
   constraints[X(2)] = 1;
-  Ordering actualConstrained = *nlfg.orderingCOLAMDConstrained(createNoisyValues(), constraints);
-  Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
+  OrderingOrdered actualConstrained = *nlfg.orderingCOLAMDConstrained(createNoisyValues(), constraints);
+  OrderingOrdered expectedConstrained; expectedConstrained += L(1), X(1), X(2);
   EXPECT(assert_equal(expectedConstrained, actualConstrained));
 }
 
@@ -110,8 +110,8 @@ TEST( Graph, linearize )
 {
   Graph fg = createNonlinearFactorGraph();
   Values initial = createNoisyValues();
-  boost::shared_ptr<FactorGraph<GaussianFactor> > linearized = fg.linearize(initial, *initial.orderingArbitrary());
-  FactorGraph<GaussianFactor> expected = createGaussianFactorGraph(*initial.orderingArbitrary());
+  boost::shared_ptr<FactorGraphOrdered<GaussianFactorOrdered> > linearized = fg.linearize(initial, *initial.orderingArbitrary());
+  FactorGraphOrdered<GaussianFactorOrdered> expected = createGaussianFactorGraph(*initial.orderingArbitrary());
   CHECK(assert_equal(expected,*linearized)); // Needs correct linearizations
 }
 

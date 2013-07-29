@@ -48,13 +48,13 @@ TEST( inference, marginals )
 {
   using namespace example;
   // create and marginalize a small Bayes net on "x"
-  GaussianBayesNet cbn = createSmallGaussianBayesNet();
+  GaussianBayesNetOrdered cbn = createSmallGaussianBayesNet();
   vector<Index> xvar; xvar.push_back(0);
-  GaussianBayesNet actual = *GaussianSequentialSolver(
-      *GaussianSequentialSolver(GaussianFactorGraph(cbn)).jointFactorGraph(xvar)).eliminate();
+  GaussianBayesNetOrdered actual = *GaussianSequentialSolver(
+      *GaussianSequentialSolver(GaussianFactorGraphOrdered(cbn)).jointFactorGraph(xvar)).eliminate();
 
   // expected is just scalar Gaussian on x
-  GaussianBayesNet expected = scalarGaussian(0, 4, sqrt(2.0));
+  GaussianBayesNetOrdered expected = scalarGaussian(0, 4, sqrt(2.0));
   CHECK(assert_equal(expected,actual));
 }
 
@@ -78,8 +78,8 @@ TEST( inference, marginals2)
   init.insert(X(2), Pose2(2.0,0.0,0.0));
   init.insert(L(0), Point2(1.0,1.0));
 
-  Ordering ordering(*fg.orderingCOLAMD(init));
-  FactorGraph<GaussianFactor>::shared_ptr gfg(fg.linearize(init, ordering));
+  OrderingOrdered ordering(*fg.orderingCOLAMD(init));
+  FactorGraphOrdered<GaussianFactorOrdered>::shared_ptr gfg(fg.linearize(init, ordering));
   GaussianMultifrontalSolver solver(*gfg);
   solver.marginalFactor(ordering[L(0)]);
 }

@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/linear/VectorValuesOrdered.h>
 #include <string>
 
 namespace gtsam {
@@ -67,13 +67,13 @@ namespace gtsam {
     virtual ~IterativeSolver() {}
 
     /* interface to the nonlinear optimizer  */
-    virtual VectorValues optimize () = 0;
+    virtual VectorValuesOrdered optimize () = 0;
 
     /* interface to the nonlinear optimizer  */
-    virtual VectorValues optimize (const VectorValues &initial) = 0;
+    virtual VectorValuesOrdered optimize (const VectorValuesOrdered &initial) = 0;
 
     /* update interface to the nonlinear optimizer  */
-    virtual void replaceFactors(const GaussianFactorGraph::shared_ptr &factorGraph, const double lambda) {}
+    virtual void replaceFactors(const GaussianFactorGraphOrdered::shared_ptr &factorGraph, const double lambda) {}
   };
 
 }

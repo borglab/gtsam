@@ -23,9 +23,9 @@ using namespace boost::assign;
 
 #include <gtsam/base/Testable.h>
 #include <tests/smallExample.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/SymbolicSequentialSolver.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
+#include <gtsam/inference/SymbolicSequentialSolverOrdered.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Symbol.h>
 
 using namespace std;
@@ -36,37 +36,37 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNet, constructor )
+TEST( SymbolicBayesNetOrdered, constructor )
 {
-  Ordering o; o += X(2),L(1),X(1);
+  OrderingOrdered o; o += X(2),L(1),X(1);
   // Create manually
-  IndexConditional::shared_ptr
-    x2(new IndexConditional(o[X(2)],o[L(1)], o[X(1)])),
-    l1(new IndexConditional(o[L(1)],o[X(1)])),
-    x1(new IndexConditional(o[X(1)]));
-  BayesNet<IndexConditional> expected;
+  IndexConditionalOrdered::shared_ptr
+    x2(new IndexConditionalOrdered(o[X(2)],o[L(1)], o[X(1)])),
+    l1(new IndexConditionalOrdered(o[L(1)],o[X(1)])),
+    x1(new IndexConditionalOrdered(o[X(1)]));
+  BayesNetOrdered<IndexConditionalOrdered> expected;
   expected.push_back(x2);
   expected.push_back(l1);
   expected.push_back(x1);
 
   // Create from a factor graph
-  GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
-  SymbolicFactorGraph fg(factorGraph);
+  GaussianFactorGraphOrdered factorGraph = createGaussianFactorGraph(o);
+  SymbolicFactorGraphOrdered fg(factorGraph);
 
   // eliminate it
-  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
+  SymbolicBayesNetOrdered actual = *SymbolicSequentialSolver(fg).eliminate();
 
   CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNet, FromGaussian) {
-  SymbolicBayesNet expected;
-  expected.push_back(IndexConditional::shared_ptr(new IndexConditional(0, 1)));
-  expected.push_back(IndexConditional::shared_ptr(new IndexConditional(1)));
+TEST( SymbolicBayesNetOrdered, FromGaussian) {
+  SymbolicBayesNetOrdered expected;
+  expected.push_back(IndexConditionalOrdered::shared_ptr(new IndexConditionalOrdered(0, 1)));
+  expected.push_back(IndexConditionalOrdered::shared_ptr(new IndexConditionalOrdered(1)));
 
-  GaussianBayesNet gbn = createSmallGaussianBayesNet();
-  SymbolicBayesNet actual(gbn);
+  GaussianBayesNetOrdered gbn = createSmallGaussianBayesNet();
+  SymbolicBayesNetOrdered actual(gbn);
 
   EXPECT(assert_equal(expected, actual));
 }

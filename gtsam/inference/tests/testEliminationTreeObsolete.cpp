@@ -19,33 +19,33 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 
-#include <gtsam/inference/EliminationTree-inl.h>
-#include <gtsam/inference/SymbolicSequentialSolver.h>
+#include <gtsam/inference/EliminationTreeOrdered-inl.h>
+#include <gtsam/inference/SymbolicSequentialSolverOrdered.h>
 
 using namespace gtsam;
 using namespace std;
 
-class EliminationTreeTester {
+class EliminationTreeOrderedTester {
 public:
   // build hardcoded tree
-  static SymbolicEliminationTree::shared_ptr buildHardcodedTree(const SymbolicFactorGraph& fg) {
+  static SymbolicEliminationTreeOrdered::shared_ptr buildHardcodedTree(const SymbolicFactorGraphOrdered& fg) {
 
-    SymbolicEliminationTree::shared_ptr leaf0(new SymbolicEliminationTree);
+    SymbolicEliminationTreeOrdered::shared_ptr leaf0(new SymbolicEliminationTreeOrdered);
     leaf0->add(fg[0]);
     leaf0->add(fg[1]);
 
-    SymbolicEliminationTree::shared_ptr node1(new SymbolicEliminationTree(1));
+    SymbolicEliminationTreeOrdered::shared_ptr node1(new SymbolicEliminationTreeOrdered(1));
     node1->add(fg[2]);
     node1->add(leaf0);
 
-    SymbolicEliminationTree::shared_ptr node2(new SymbolicEliminationTree(2));
+    SymbolicEliminationTreeOrdered::shared_ptr node2(new SymbolicEliminationTreeOrdered(2));
     node2->add(fg[3]);
     node2->add(node1);
 
-    SymbolicEliminationTree::shared_ptr leaf3(new SymbolicEliminationTree(3));
+    SymbolicEliminationTreeOrdered::shared_ptr leaf3(new SymbolicEliminationTreeOrdered(3));
     leaf3->add(fg[4]);
 
-    SymbolicEliminationTree::shared_ptr etree(new SymbolicEliminationTree(4));
+    SymbolicEliminationTreeOrdered::shared_ptr etree(new SymbolicEliminationTreeOrdered(4));
     etree->add(leaf3);
     etree->add(node2);
 
@@ -53,20 +53,20 @@ public:
   }
 };
 
-TEST(EliminationTree, Create)
+TEST(EliminationTreeOrdered, Create)
 {
   // create example factor graph
-  SymbolicFactorGraph fg;
+  SymbolicFactorGraphOrdered fg;
   fg.push_factor(0, 1);
   fg.push_factor(0, 2);
   fg.push_factor(1, 4);
   fg.push_factor(2, 4);
   fg.push_factor(3, 4);
 
-  SymbolicEliminationTree::shared_ptr expected = EliminationTreeTester::buildHardcodedTree(fg);
+  SymbolicEliminationTreeOrdered::shared_ptr expected = EliminationTreeOrderedTester::buildHardcodedTree(fg);
 
   // Build from factor graph
-  SymbolicEliminationTree::shared_ptr actual = SymbolicEliminationTree::Create(fg);
+  SymbolicEliminationTreeOrdered::shared_ptr actual = SymbolicEliminationTreeOrdered::Create(fg);
 
   CHECK(assert_equal(*expected,*actual));
 }
@@ -76,18 +76,18 @@ TEST(EliminationTree, Create)
 // graph: f(0,1) f(0,2) f(1,4) f(2,4) f(3,4)
 /* ************************************************************************* */
 
-TEST(EliminationTree, eliminate )
+TEST(EliminationTreeOrdered, eliminate )
 {
   // create expected Chordal bayes Net
-  SymbolicBayesNet expected;
-  expected.push_front(boost::make_shared<IndexConditional>(4));
-  expected.push_front(boost::make_shared<IndexConditional>(3,4));
-  expected.push_front(boost::make_shared<IndexConditional>(2,4));
-  expected.push_front(boost::make_shared<IndexConditional>(1,2,4));
-  expected.push_front(boost::make_shared<IndexConditional>(0,1,2));
+  SymbolicBayesNetOrdered expected;
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(4));
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(3,4));
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(2,4));
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(1,2,4));
+  expected.push_front(boost::make_shared<IndexConditionalOrdered>(0,1,2));
 
   // Create factor graph
-  SymbolicFactorGraph fg;
+  SymbolicFactorGraphOrdered fg;
   fg.push_factor(0, 1);
   fg.push_factor(0, 2);
   fg.push_factor(1, 4);
@@ -95,20 +95,20 @@ TEST(EliminationTree, eliminate )
   fg.push_factor(3, 4);
 
   // eliminate
-  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
+  SymbolicBayesNetOrdered actual = *SymbolicSequentialSolver(fg).eliminate();
 
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST(EliminationTree, disconnected_graph) {
-  SymbolicFactorGraph fg;
+TEST(EliminationTreeOrdered, disconnected_graph) {
+  SymbolicFactorGraphOrdered fg;
   fg.push_factor(0, 1);
   fg.push_factor(0, 2);
   fg.push_factor(1, 2);
   fg.push_factor(3, 4);
 
-  CHECK_EXCEPTION(SymbolicEliminationTree::Create(fg), DisconnectedGraphException);
+  CHECK_EXCEPTION(SymbolicEliminationTreeOrdered::Create(fg), DisconnectedGraphException);
 }
 
 /* ************************************************************************* */

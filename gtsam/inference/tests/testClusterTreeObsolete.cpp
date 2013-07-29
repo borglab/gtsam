@@ -21,17 +21,17 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/ClusterTree.h>
+#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
+#include <gtsam/inference/ClusterTreeOrdered.h>
 
 using namespace gtsam;
 
 // explicit instantiation and typedef
-namespace gtsam { template class ClusterTree<SymbolicFactorGraph>; }
-typedef ClusterTree<SymbolicFactorGraph> SymbolicClusterTree;
+namespace gtsam { template class ClusterTreeOrdered<SymbolicFactorGraphOrdered>; }
+typedef ClusterTreeOrdered<SymbolicFactorGraphOrdered> SymbolicClusterTree;
 
 /* ************************************************************************* */
-TEST(ClusterTree, constructor) {
+TEST(ClusterTreeOrdered, constructor) {
   SymbolicClusterTree tree;
 }
 

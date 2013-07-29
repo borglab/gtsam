@@ -18,7 +18,7 @@
 #include <ostream>
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorOrdered.h>
 
 namespace gtsam {
 
@@ -94,11 +94,11 @@ namespace gtsam {
      * returns a Jacobian instead of a full Hessian), but with the opposite sign. This
      * effectively cancels the effect of the original factor on the factor graph.
      */
-    boost::shared_ptr<GaussianFactor>
-    linearize(const Values& c, const Ordering& ordering) const {
+    boost::shared_ptr<GaussianFactorOrdered>
+    linearize(const Values& c, const OrderingOrdered& ordering) const {
 
       // Generate the linearized factor from the contained nonlinear factor
-      GaussianFactor::shared_ptr gaussianFactor = factor_->linearize(c, ordering);
+      GaussianFactorOrdered::shared_ptr gaussianFactor = factor_->linearize(c, ordering);
 
       // return the negated version of the factor
       return gaussianFactor->negate();

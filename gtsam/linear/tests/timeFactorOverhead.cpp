@@ -16,9 +16,9 @@
  * @date    Aug 20, 2010
  */
 
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/inference/EliminationTreeOrdered-inl.h>
 
 #include <boost/random.hpp>
 #include <boost/timer.hpp>
@@ -27,7 +27,7 @@
 using namespace gtsam;
 using namespace std;
 
-typedef EliminationTree<GaussianFactor> GaussianEliminationTree;
+typedef EliminationTreeOrdered<GaussianFactorOrdered> GaussianEliminationTree;
 
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost::mt19937(), boost::uniform_real<>(0.0, 1.0));
 
@@ -56,10 +56,10 @@ int main(int argc, char *argv[]) {
     cout.flush();
     boost::timer timer;
     timer.restart();
-    vector<GaussianFactorGraph> blockGfgs;
+    vector<GaussianFactorGraphOrdered> blockGfgs;
     blockGfgs.reserve(nTrials);
     for(size_t trial=0; trial<nTrials; ++trial) {
-      blockGfgs.push_back(GaussianFactorGraph());
+      blockGfgs.push_back(GaussianFactorGraphOrdered());
       SharedDiagonal noise = noiseModel::Isotropic::Sigma(blockdim, 1.0);
       for(size_t i=0; i<nBlocks; ++i) {
         // Generate a random Gaussian factor
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
         Vector b(blockdim);
         for(size_t j=0; j<blockdim; ++j)
           b(j) = rg();
-        blockGfgs[trial].push_back(JacobianFactor::shared_ptr(new JacobianFactor(key, A, b, noise)));
+        blockGfgs[trial].push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(key, A, b, noise)));
       }
     }
     blockbuild = timer.elapsed();
@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
-      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(blockGfgs[trial])->eliminate(&EliminateQR));
-      VectorValues soln(optimize(*gbn));
+      GaussianBayesNetOrdered::shared_ptr gbn(GaussianEliminationTree::Create(blockGfgs[trial])->eliminate(&EliminateQROrdered));
+      VectorValuesOrdered soln(optimize(*gbn));
     }
     blocksolve = timer.elapsed();
     cout << blocksolve << " s" << endl;
@@ -99,9 +99,9 @@ int main(int argc, char *argv[]) {
     cout.flush();
     boost::timer timer;
     timer.restart();
-    vector<GaussianFactorGraph> combGfgs;
+    vector<GaussianFactorGraphOrdered> combGfgs;
     for(size_t trial=0; trial<nTrials; ++trial) {
-      combGfgs.push_back(GaussianFactorGraph());
+      combGfgs.push_back(GaussianFactorGraphOrdered());
       SharedDiagonal noise = noiseModel::Isotropic::Sigma(blockdim, 1.0);
 
       Matrix Acomb(blockdim*nBlocks, vardim);
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
         for(size_t j=0; j<blockdim; ++j)
           bcomb(blockdim*i+j) = rg();
       }
-      combGfgs[trial].push_back(JacobianFactor::shared_ptr(new JacobianFactor(key, Acomb, bcomb,
+      combGfgs[trial].push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(key, Acomb, bcomb,
           noiseModel::Isotropic::Sigma(blockdim*nBlocks, 1.0))));
     }
     combbuild = timer.elapsed();
@@ -126,8 +126,8 @@ int main(int argc, char *argv[]) {
     cout.flush();
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
-      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(combGfgs[trial])->eliminate(&EliminateQR));
-      VectorValues soln(optimize(*gbn));
+      GaussianBayesNetOrdered::shared_ptr gbn(GaussianEliminationTree::Create(combGfgs[trial])->eliminate(&EliminateQROrdered));
+      VectorValuesOrdered soln(optimize(*gbn));
     }
     combsolve = timer.elapsed();
     cout << combsolve << " s" << endl;

@@ -24,9 +24,9 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 
-#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
-#include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
-#include <gtsam/symbolic/SymbolicJunctionTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/symbolic/SymbolicEliminationTree.h>
+#include <gtsam/symbolic/SymbolicJunctionTree.h>
 
 #include "symbolicExampleGraphs.h"
 
@@ -38,11 +38,11 @@ using namespace std;
  * 2 3
  *   0 1 : 2
  ****************************************************************************/
-TEST( JunctionTree, constructor )
+TEST( JunctionTreeOrdered, constructor )
 {
-  OrderingUnordered order; order += 0, 1, 2, 3;
+  Ordering order; order += 0, 1, 2, 3;
 
-  SymbolicJunctionTreeUnordered actual(SymbolicEliminationTreeUnordered(simpleChain, order));
+  SymbolicJunctionTree actual(SymbolicEliminationTree(simpleChain, order));
 
   vector<Index> frontal1; frontal1 += 3, 2;
   vector<Index> frontal2; frontal2 += 1, 0;
