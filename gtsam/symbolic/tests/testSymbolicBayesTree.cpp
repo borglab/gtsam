@@ -342,6 +342,28 @@ TEST( BayesTreeOrdered, removeTop4 )
 }
 
 /* ************************************************************************* */
+TEST( BayesTreeOrdered, removeTop5 )
+{
+  // Remove top called with variables that are not in the Bayes tree
+  SymbolicFactorGraph graph = list_of
+    (SymbolicFactor(L(5)))
+    (SymbolicFactor(X(4), L(5)))
+    (SymbolicFactor(X(2), X(4)))
+    (SymbolicFactor(X(3), X(2)));
+  SymbolicBayesTree bayesTree = *graph.eliminateMultifrontal(
+    Ordering(list_of (X(3)) (X(2)) (X(4)) (L(5)) ));
+
+  // Remove nonexistant
+  SymbolicBayesNet bn;
+  SymbolicBayesTree::Cliques orphans;
+  bayesTree.removeTop(list_of(X(10)), bn, orphans);
+
+  SymbolicBayesNet expectedBn;
+  EXPECT(assert_equal(expectedBn, bn));
+  EXPECT(orphans.empty());
+}
+
+/* ************************************************************************* */
 TEST( SymbolicBayesTree, thinTree ) {
 
   // create a thin-tree Bayesnet, a la Jean-Guillaume

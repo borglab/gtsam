@@ -31,6 +31,7 @@ namespace gtsam {
   // Forward declarations
   template<class FACTOR> class FactorGraph;
 
+  /* ************************************************************************* */
   /**
    * Bayes tree
    * @tparam CONDITIONAL The type of the conditional densities, i.e. the type of node in the underlying Bayes chain,
@@ -255,5 +256,24 @@ namespace gtsam {
     /// @}
 
   }; // BayesTree
+
+  /* ************************************************************************* */
+  template<class CLIQUE>
+  class BayesTreeOrphanWrapper : public CLIQUE::FactorType
+  {
+  public:
+    typedef CLIQUE CliqueType;
+    typedef typename CLIQUE::FactorType Base;
+
+    boost::shared_ptr<CliqueType> clique;
+
+    BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique) :
+      clique(clique)
+    {
+      // Store parent keys in our base type factor so that eliminating those parent keys will pull
+      // this subtree into the elimination.
+      keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
+    }
+  };
 
 } /// namespace gtsam

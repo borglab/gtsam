@@ -177,8 +177,18 @@ namespace gtsam {
       // Gather factors
       FactorGraphType gatheredFactors;
       gatheredFactors.reserve(node->factors.size() + node->children.size());
-      gatheredFactors.push_back(node->factors.begin(), node->factors.end());
-      gatheredFactors.push_back(myData.childFactors.begin(), myData.childFactors.end());
+      gatheredFactors += node->factors;
+      gatheredFactors += myData.childFactors;
+
+      // Check for Bayes tree orphan subtrees, and add them to our children
+      BOOST_FOREACH(const sharedFactor& f, node->factors)
+      {
+        if(const BayesTreeOrphanWrapper<BTNode>* asSubtree = dynamic_cast<const BayesTreeOrphanWrapper<BTNode>*>(f.get()))
+        {
+          myData.bayesTreeNode->children.push_back(asSubtree->clique);
+          asSubtree->clique->parent_ = myData.bayesTreeNode;
+        }
+      }
 
       // Do dense elimination step
       std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
