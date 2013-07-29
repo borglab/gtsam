@@ -84,7 +84,7 @@ TEST(SymbolicFactorGraphOrdered, eliminatePartialMultifrontal)
 {
   SymbolicBayesTree expectedBayesTree;
   SymbolicConditional::shared_ptr root = boost::make_shared<SymbolicConditional>(
-    SymbolicConditional::FromKeys(list_of(5)(4)(1), 2));
+    SymbolicConditional::FromKeys(list_of(4)(5)(1), 2));
   expectedBayesTree.insertRoot(boost::make_shared<SymbolicBayesTreeClique>(root));
 
   SymbolicFactorGraph expectedFactorGraph = list_of
@@ -248,7 +248,7 @@ TEST( SymbolicFactorGraphOrdered, constructFromBayesTree )
 {
   // create expected factor graph
   SymbolicFactorGraph expected;
-  expected.push_factor(_B_, _L_, _E_, _S_);
+  expected.push_factor(_S_, _E_, _L_, _B_);
   expected.push_factor(_T_, _E_, _L_);
   expected.push_factor(_X_, _E_);
 

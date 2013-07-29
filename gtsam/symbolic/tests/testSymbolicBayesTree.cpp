@@ -145,7 +145,7 @@ TEST( BayesTreeOrdered, removePath2 )
 
   // Check expected outcome
   SymbolicFactorGraph expected;
-  expected += SymbolicFactor(_B_,_L_,_E_,_S_);
+  expected += SymbolicFactor(_S_,_E_,_L_,_B_);
   CHECK(assert_equal(expected, factors));
   SymbolicBayesTree::Cliques expectedOrphans;
   expectedOrphans += bayesTree[_T_], bayesTree[_X_];
@@ -165,7 +165,7 @@ TEST( BayesTreeOrdered, removePath3 )
 
   // Check expected outcome
   SymbolicFactorGraph expected;
-  expected += SymbolicFactor(_B_,_L_,_E_,_S_);
+  expected += SymbolicFactor(_S_,_E_,_L_,_B_);
   expected += SymbolicFactor(_T_,_E_,_L_);
   CHECK(assert_equal(expected, factors));
   SymbolicBayesTree::Cliques expectedOrphans;
@@ -248,7 +248,7 @@ TEST( BayesTreeOrdered, removeTop )
 
   // Check expected outcome
   SymbolicBayesNet expected;
-  expected += SymbolicConditional::FromKeys(list_of(_B_)(_L_)(_E_)(_S_), 4);
+  expected += SymbolicConditional::FromKeys(list_of(_S_)(_E_)(_L_)(_B_), 4);
   CHECK(assert_equal(expected, bn));
 
   SymbolicBayesTree::Cliques expectedOrphans;
@@ -284,7 +284,7 @@ TEST( BayesTreeOrdered, removeTop2 )
 
   // Check expected outcome
   SymbolicBayesNet expected = list_of
-    (SymbolicConditional::FromKeys(list_of(_B_)(_L_)(_E_)(_S_), 4))
+    (SymbolicConditional::FromKeys(list_of(_S_)(_E_)(_L_)(_B_), 4))
     (SymbolicConditional::FromKeys(list_of(_T_)(_E_)(_L_), 1));
   CHECK(assert_equal(expected, bn));
 
@@ -310,7 +310,7 @@ TEST( BayesTreeOrdered, removeTop3 )
   bayesTree.removeTop(list_of(L(5))(X(4))(X(2))(X(3)), bn, orphans);
 
   SymbolicBayesNet expectedBn = list_of
-    (SymbolicConditional::FromKeys(list_of(L(5))(X(4)), 2))
+    (SymbolicConditional::FromKeys(list_of(X(4))(L(5)), 2))
     (SymbolicConditional(X(2), X(4)))
     (SymbolicConditional(X(3), X(2)));
   EXPECT(assert_equal(expectedBn, bn));
@@ -334,7 +334,7 @@ TEST( BayesTreeOrdered, removeTop4 )
   bayesTree.removeTop(list_of(X(2))(L(5))(X(4))(X(3)), bn, orphans);
 
   SymbolicBayesNet expectedBn = list_of
-    (SymbolicConditional::FromKeys(list_of(L(5))(X(4)), 2))
+    (SymbolicConditional::FromKeys(list_of(X(4))(L(5)), 2))
     (SymbolicConditional(X(2), X(4)))
     (SymbolicConditional(X(3), X(2)));
   EXPECT(assert_equal(expectedBn, bn));
@@ -372,8 +372,7 @@ TEST( SymbolicBayesTree, thinTree ) {
   }
 
   // create a BayesTree out of a Bayes net
-  Ordering ordering(bayesNet.keys());
-  SymbolicBayesTree bayesTree = *SymbolicFactorGraph(bayesNet).eliminateMultifrontal(ordering);
+  SymbolicBayesTree bayesTree = *SymbolicFactorGraph(bayesNet).eliminateMultifrontal();
   if (debug) {
     GTSAM_PRINT(bayesTree);
     bayesTree.saveGraph("/tmp/SymbolicBayesTree.dot");
@@ -385,7 +384,7 @@ TEST( SymbolicBayesTree, thinTree ) {
     // check shortcut P(S9||R) to root
     SymbolicBayesTree::Clique::shared_ptr c = bayesTree[9];
     SymbolicBayesNet shortcut = c->shortcut(R);
-    SymbolicBayesNet expected;
+    SymbolicBayesNet expected = list_of(SymbolicConditional(14, 11, 13));
     EXPECT(assert_equal(expected, shortcut));
   }
 
@@ -393,7 +392,7 @@ TEST( SymbolicBayesTree, thinTree ) {
     // check shortcut P(S8||R) to root
     SymbolicBayesTree::Clique::shared_ptr c = bayesTree[8];
     SymbolicBayesNet shortcut = c->shortcut(R);
-    SymbolicBayesNet expected = list_of(SymbolicConditional(12, 14));
+    SymbolicBayesNet expected = list_of(SymbolicConditional(14, 11, 13));
     EXPECT(assert_equal(expected, shortcut));
   }
 
@@ -401,8 +400,7 @@ TEST( SymbolicBayesTree, thinTree ) {
     // check shortcut P(S4||R) to root
     SymbolicBayesTree::Clique::shared_ptr c = bayesTree[4];
     SymbolicBayesNet shortcut = c->shortcut(R);
-    SymbolicBayesNet expected;
-    expected.push_back(boost::make_shared<SymbolicConditional>(10, 13, 14));
+    SymbolicBayesNet expected = list_of(SymbolicConditional(10, 11, 13));
     EXPECT(assert_equal(expected, shortcut));
   }
 
@@ -410,9 +408,8 @@ TEST( SymbolicBayesTree, thinTree ) {
     // check shortcut P(S2||R) to root
     SymbolicBayesTree::Clique::shared_ptr c = bayesTree[2];
     SymbolicBayesNet shortcut = c->shortcut(R);
-    SymbolicBayesNet expected;
-    expected.push_back(boost::make_shared<SymbolicConditional>(12, 14));
-    expected.push_back(boost::make_shared<SymbolicConditional>(9, 12, 14));
+    SymbolicBayesNet expected = list_of(SymbolicConditional(9, 11, 12, 13))
+                                       (SymbolicConditional(12, 11, 13));
     EXPECT(assert_equal(expected, shortcut));
   }
 
@@ -420,9 +417,8 @@ TEST( SymbolicBayesTree, thinTree ) {
     // check shortcut P(S0||R) to root
     SymbolicBayesTree::Clique::shared_ptr c = bayesTree[0];
     SymbolicBayesNet shortcut = c->shortcut(R);
-    SymbolicBayesNet expected;
-    expected.push_back(boost::make_shared<SymbolicConditional>(12, 14));
-    expected.push_back(boost::make_shared<SymbolicConditional>(8, 12, 14));
+    SymbolicBayesNet expected = list_of(SymbolicConditional(8, 11, 12, 13))
+                                       (SymbolicConditional(12, 11, 13));
     EXPECT(assert_equal(expected, shortcut));
   }
 

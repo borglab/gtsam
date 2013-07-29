@@ -44,8 +44,8 @@ TEST( JunctionTreeOrdered, constructor )
 
   SymbolicJunctionTree actual(SymbolicEliminationTree(simpleChain, order));
 
-  vector<Index> frontal1; frontal1 += 3, 2;
-  vector<Index> frontal2; frontal2 += 1, 0;
+  vector<Index> frontal1; frontal1 += 2, 3;
+  vector<Index> frontal2; frontal2 += 0, 1;
   vector<Index> sep1;
   vector<Index> sep2; sep2 += 2;
   EXPECT(assert_equal(frontal1, actual.roots().front()->keys));
