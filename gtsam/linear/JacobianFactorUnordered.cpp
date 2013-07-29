@@ -46,6 +46,7 @@
 #endif
 #include <boost/range/algorithm/copy.hpp>
 #include <boost/range/adaptor/indirected.hpp>
+#include <boost/range/adaptor/map.hpp>
 
 #include <cmath>
 #include <sstream>

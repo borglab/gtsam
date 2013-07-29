@@ -104,7 +104,7 @@ namespace gtsam {
             }
 
             // If we have child tasks, start subtasks and wait for them to complete
-            set_ref_count(1 + node->children.size());
+            set_ref_count(1 + (int)node->children.size());
             spawn(childTasks);
             wait_for_all();
           }

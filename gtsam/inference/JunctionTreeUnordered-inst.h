@@ -96,7 +96,7 @@ namespace gtsam {
       size_t nrMergedChildren = 0;
       assert(myData.myJTNode->children.size() == myData.childSymbolicConditionals.size());
       // Loop over children
-      int combinedProblemSize = symbolicElimResult.first->size();
+      int combinedProblemSize = (int)symbolicElimResult.first->size();
       for(size_t child = 0; child < myData.childSymbolicConditionals.size(); ++child) {
         // Check if we should merge the child
         if(myNrParents + 1 == myData.childSymbolicConditionals[child]->nrParents()) {
@@ -105,7 +105,7 @@ namespace gtsam {
           const typename JunctionTreeUnordered<BAYESTREE,GRAPH>::Node& childToMerge =
             *myData.myJTNode->children[child - nrMergedChildren];
           // Merge keys, factors, and children.
-          myData.myJTNode->keys.insert(myData.myJTNode->keys.end(), childToMerge.keys.begin(), childToMerge.keys.end());
+          myData.myJTNode->keys.insert(myData.myJTNode->keys.begin(), childToMerge.keys.begin(), childToMerge.keys.end());
           myData.myJTNode->factors.insert(myData.myJTNode->factors.end(), childToMerge.factors.begin(), childToMerge.factors.end());
           myData.myJTNode->children.insert(myData.myJTNode->children.end(), childToMerge.children.begin(), childToMerge.children.end());
           // Remove child from list.

@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam/linear/linearExceptions.h>
-#include <boost/range/adaptor/map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/join.hpp>
 #include <boost/assign/list_of.hpp>
@@ -66,8 +65,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   namespace {
-    const Matrix& _getPairSecond(const std::pair<Key,Matrix>& p) {
-      return p.second;
+    DenseIndex _getCols(const std::pair<Key,Matrix>& p) {
+      return p.second.cols();
     }
   }
 
@@ -85,14 +84,12 @@ namespace gtsam {
     // Gather dimensions - uses boost range adaptors to take terms, extract .second which are the
     // matrices, then extract the number of columns e.g. dimensions in each matrix.  Then joins with
     // a single '1' to add a dimension for the b vector.
-    using boost::adaptors::map_values;
-    using boost::adaptors::transformed;
-    using boost::join;
-    Ab_ = VerticalBlockMatrix(join(
-      terms
-      | transformed(&_getPairSecond)
-      | transformed(boost::mem_fn(&Matrix::cols)),
-      boost::assign::cref_list_of<1,DenseIndex>(1)), b.size());
+    {
+      using boost::adaptors::transformed;
+      using boost::join;
+      using boost::assign::cref_list_of;
+      Ab_ = VerticalBlockMatrix(join(terms | transformed(_getCols), cref_list_of<1,DenseIndex>(1)), b.size());
+    }
 
     // Check and add terms
     typedef std::pair<Key, Matrix> Term;
