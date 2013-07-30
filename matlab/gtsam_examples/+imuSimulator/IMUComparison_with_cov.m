@@ -11,6 +11,9 @@ times = 0:deltaT:timeElapsed;
 omega = [0;0;2*pi];
 velocity = [1;0;0];
 
+g = [0;0;0];
+cor_v = [0;0;0];
+
 summaryTemplate = gtsam.ImuFactorPreintegratedMeasurements( ...
     gtsam.imuBias.ConstantBias([0;0;0], [0;0;0]), ...
     1e-3 * eye(3), 1e-3 * eye(3), 1e-3 * eye(3));
@@ -34,17 +37,24 @@ isamParams = ISAM2Params;
 isamParams.setRelinearizeSkip(1);
 isam = gtsam.ISAM2(isamParams);
 
+sigma_init_x = 1.0;
+sigma_init_v = 1.0;
+sigma_init_b = 1.0;
+
 initialValues = Values;
 initialValues.insert(symbol('x',0), currentPoseGlobal);
 initialValues.insert(symbol('v',0), LieVector(currentVelocityGlobal));
 initialValues.insert(symbol('b',0), imuBias.ConstantBias([0;0;0],[0;0;0]));
 initialFactors = NonlinearFactorGraph;
+% Prior on initial pose
 initialFactors.add(PriorFactorPose3(symbol('x',0), ...
-    currentPoseGlobal, noiseModel.Isotropic.Sigma(6, 1.0)));
+    currentPoseGlobal, noiseModel.Isotropic.Sigma(6, sigma_init_x)));
+% Prior on initial velocity 
 initialFactors.add(PriorFactorLieVector(symbol('v',0), ...
-    LieVector(currentVelocityGlobal), noiseModel.Isotropic.Sigma(3, 1.0)));
+    LieVector(currentVelocityGlobal), noiseModel.Isotropic.Sigma(3, sigma_init_v)));
+% Prior on initial bias
 initialFactors.add(PriorFactorConstantBias(symbol('b',0), ...
-    imuBias.ConstantBias([0;0;0],[0;0;0]), noiseModel.Isotropic.Sigma(6, 1.0)));
+    imuBias.ConstantBias([0;0;0],[0;0;0]), noiseModel.Isotropic.Sigma(6, sigma_init_b)));
 
 %% Main loop
 i = 2;
@@ -52,8 +62,7 @@ lastSummaryTime = 0;
 lastSummaryIndex = 0;
 currentSummarizedMeasurement = ImuFactorPreintegratedMeasurements(summaryTemplate);
 for t = times
-  %% Create the actual trajectory, using the velocities and
-  % accelerations in the inertial frame to compute the positions
+  %% Create the ground truth trajectory, using the velocities and accelerations in the inertial frame to compute the positions
   [ currentPoseGlobal, currentVelocityGlobal ] = imuSimulator.integrateTrajectory( ...
     currentPoseGlobal, omega, velocity, velocity, deltaT);
   
@@ -72,7 +81,7 @@ for t = times
       initialFactors.add(ImuFactor( ...
           symbol('x',lastSummaryIndex), symbol('v',lastSummaryIndex), ...
           symbol('x',lastSummaryIndex+1), symbol('v',lastSummaryIndex+1), ...
-          symbol('b',0), currentSummarizedMeasurement, [0;0;1], [0;0;0], ...
+          symbol('b',0), currentSummarizedMeasurement, g, cor_v, ...
           noiseModel.Isotropic.Sigma(9, 1e-6)));
       
       % Predict movement in a straight line (bad initialization)
@@ -87,15 +96,15 @@ for t = times
       initialValues.insert(symbol('x',lastSummaryIndex+1), initialPose);
       initialValues.insert(symbol('v',lastSummaryIndex+1), initialVel); 
       
-      key_pose = symbol('x',lastSummaryIndex+1)
+      key_pose = symbol('x',lastSummaryIndex+1);
       
       % Update solver
       isam.update(initialFactors, initialValues);
       initialFactors = NonlinearFactorGraph;
       initialValues = Values;
       
-       isam.calculateEstimate(key_pose)
-       M = isam.marginalCovariance(key_pose)
+       isam.calculateEstimate(key_pose);
+       M = isam.marginalCovariance(key_pose);
       
       lastSummaryIndex = lastSummaryIndex + 1;
       lastSummaryTime = t;
