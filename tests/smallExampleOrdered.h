@@ -30,13 +30,13 @@ namespace gtsam {
 namespace example {
   namespace {
 
-typedef NonlinearFactorGraph NonlinearFactorGraph;
+typedef NonlinearFactorGraph Graph;
 
 /**
  * Create small example for non-linear factor graph
  */
-boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph();
-NonlinearFactorGraph createNonlinearFactorGraph();
+boost::shared_ptr<const Graph> sharedNonlinearFactorGraph();
+Graph createNonlinearFactorGraph();
 
 /**
  * Create values structure to go with it
@@ -45,7 +45,7 @@ NonlinearFactorGraph createNonlinearFactorGraph();
 Values createValues();
 
 /** Vector Values equivalent */
-VectorValues createVectorValues();
+VectorValuesOrdered createVectorValues();
 
 /**
  * create a noisy values structure for a nonlinear factor graph
@@ -56,42 +56,42 @@ Values createNoisyValues();
 /**
  * Zero delta config
  */
-VectorValues createZeroDelta(const Ordering& ordering);
+VectorValuesOrdered createZeroDelta(const OrderingOrdered& ordering);
 
 /**
  * Delta config that, when added to noisyValues, returns the ground truth
  */
-VectorValues createCorrectDelta(const Ordering& ordering);
+VectorValuesOrdered createCorrectDelta(const OrderingOrdered& ordering);
 
 /**
  * create a linear factor graph
  * The non-linear graph above evaluated at NoisyValues
  */
-GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
+GaussianFactorGraphOrdered createGaussianFactorGraph(const OrderingOrdered& ordering);
 
 /**
  * create small Chordal Bayes Net x <- y
  */
-GaussianBayesNet createSmallGaussianBayesNet();
+GaussianBayesNetOrdered createSmallGaussianBayesNet();
 
 /**
  * Create really non-linear factor graph (cos/sin)
  */
-boost::shared_ptr<const NonlinearFactorGraph>
+boost::shared_ptr<const Graph>
 sharedReallyNonlinearFactorGraph();
-NonlinearFactorGraph createReallyNonlinearFactorGraph();
+Graph createReallyNonlinearFactorGraph();
 
 /**
  * Create a full nonlinear smoother
  * @param T number of time-steps
  */
-std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T);
+std::pair<Graph, Values> createNonlinearSmoother(int T);
 
 /**
  * Create a Kalman smoother by linearizing a non-linear factor graph
  * @param T number of time-steps
  */
-std::pair<GaussianFactorGraph, Ordering> createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
+std::pair<FactorGraphOrdered<GaussianFactorOrdered>, OrderingOrdered> createSmoother(int T, boost::optional<OrderingOrdered> ordering = boost::none);
 
 /* ******************************************************* */
 // Linear Constrained Examples
@@ -101,22 +101,22 @@ std::pair<GaussianFactorGraph, Ordering> createSmoother(int T, boost::optional<O
  * Creates a simple constrained graph with one linear factor and
  * one binary equality constraint that sets x = y
  */
-GaussianFactorGraph createSimpleConstraintGraph();
-VectorValues createSimpleConstraintValues();
+GaussianFactorGraphOrdered createSimpleConstraintGraph();
+VectorValuesOrdered createSimpleConstraintValues();
 
 /**
  * Creates a simple constrained graph with one linear factor and
  * one binary constraint.
  */
-GaussianFactorGraph createSingleConstraintGraph();
-VectorValues createSingleConstraintValues();
+GaussianFactorGraphOrdered createSingleConstraintGraph();
+VectorValuesOrdered createSingleConstraintValues();
 
 /**
  * Creates a constrained graph with a linear factor and two
  * binary constraints that share a node
  */
-GaussianFactorGraph createMultiConstraintGraph();
-VectorValues createMultiConstraintValues();
+GaussianFactorGraphOrdered createMultiConstraintGraph();
+VectorValuesOrdered createMultiConstraintValues();
 
 /* ******************************************************* */
 // Planar graph with easy subtree for SubgraphPreconditioner
@@ -131,14 +131,14 @@ VectorValues createMultiConstraintValues();
  * -x11-x21-x31
  * with x11 clamped at (1,1), and others related by 2D odometry.
  */
-boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N);
+boost::tuple<GaussianFactorGraphOrdered, VectorValuesOrdered> planarGraph(size_t N);
 
 /*
  * Create canonical ordering for planar graph that also works for tree
  * With x11 the root, e.g. for N=3
  * x33 x23 x13 x32 x22 x12 x31 x21 x11
  */
-Ordering planarOrdering(size_t N);
+OrderingOrdered planarOrdering(size_t N);
 
 /*
  * Split graph into tree and loop closing constraints, e.g., with N=3
@@ -148,8 +148,8 @@ Ordering planarOrdering(size_t N);
  *   |
  * -x11-x21-x31
  */
-std::pair<GaussianFactorGraph, GaussianFactorGraph > splitOffPlanarTree(
-    size_t N, const GaussianFactorGraph& original);
+std::pair<GaussianFactorGraphOrdered, GaussianFactorGraphOrdered > splitOffPlanarTree(
+    size_t N, const GaussianFactorGraphOrdered& original);
 
 
 
@@ -165,19 +165,19 @@ static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
 static SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
 static SharedDiagonal constraintModel = noiseModel::Constrained::All(2);
 
-static const Key _l1_=0, _x1_=1, _x2_=2;
-static const Key _x_=0, _y_=1, _z_=2;
+static const Index _l1_=0, _x1_=1, _x2_=2;
+static const Index _x_=0, _y_=1, _z_=2;
 } // \namespace impl
 
 
 /* ************************************************************************* */
-boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
+boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
   using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   // Create
-  boost::shared_ptr<NonlinearFactorGraph> nlfg(
-      new NonlinearFactorGraph);
+  boost::shared_ptr<Graph> nlfg(
+      new Graph);
 
   // prior on x1
   Point2 mu;
@@ -203,7 +203,7 @@ boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph createNonlinearFactorGraph() {
+Graph createNonlinearFactorGraph() {
   return *sharedNonlinearFactorGraph();
 }
 
@@ -219,9 +219,9 @@ Values createValues() {
 }
 
 /* ************************************************************************* */
-VectorValues createVectorValues() {
+VectorValuesOrdered createVectorValues() {
   using namespace impl;
-  VectorValues c(std::vector<size_t>(3, 2));
+  VectorValuesOrdered c(std::vector<size_t>(3, 2));
   c[_l1_] = Vector_(2, 0.0, -1.0);
   c[_x1_] = Vector_(2, 0.0, 0.0);
   c[_x2_] = Vector_(2, 1.5, 0.0);
@@ -245,47 +245,47 @@ Values createNoisyValues() {
 }
 
 /* ************************************************************************* */
-VectorValues createCorrectDelta() {
+VectorValuesOrdered createCorrectDelta(const OrderingOrdered& ordering) {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  VectorValues c;
-  c.insert(L(1), Vector_(2, -0.1, 0.1));
-  c.insert(X(1), Vector_(2, -0.1, -0.1));
-  c.insert(X(2), Vector_(2, 0.1, -0.2));
+  VectorValuesOrdered c(std::vector<size_t>(3,2));
+  c[ordering[L(1)]] = Vector_(2, -0.1, 0.1);
+  c[ordering[X(1)]] = Vector_(2, -0.1, -0.1);
+  c[ordering[X(2)]] = Vector_(2, 0.1, -0.2);
   return c;
 }
 
 /* ************************************************************************* */
-VectorValues createZeroDelta() {
+VectorValuesOrdered createZeroDelta(const OrderingOrdered& ordering) {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  VectorValues c(std::vector<size_t>(3,2));
-  c.insert(L(1), zero(2));
-  c.insert(X(1), zero(2));
-  c.insert(X(2), zero(2));
+  VectorValuesOrdered c(std::vector<size_t>(3,2));
+  c[ordering[L(1)]] = zero(2);
+  c[ordering[X(1)]] = zero(2);
+  c[ordering[X(2)]] = zero(2);
   return c;
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph createGaussianFactorGraph() {
+GaussianFactorGraphOrdered createGaussianFactorGraph(const OrderingOrdered& ordering) {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   // Create empty graph
-  GaussianFactorGraph fg;
+  GaussianFactorGraphOrdered fg;
 
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(X(1), 10*eye(2), -1.0*ones(2), unit2);
+  fg.push_back(boost::make_shared<JacobianFactorOrdered>(ordering[X(1)], 10*eye(2), -1.0*ones(2), unit2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(X(1), -10*eye(2), X(2), 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+  fg.push_back(boost::make_shared<JacobianFactorOrdered>(ordering[X(1)], -10*eye(2),ordering[X(2)], 10*eye(2), Vector_(2, 2.0, -1.0), unit2));
 
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(X(1), -5*eye(2), L(1), 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+  fg.push_back(boost::make_shared<JacobianFactorOrdered>(ordering[X(1)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, 0.0, 1.0), unit2));
 
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(X(2), -5*eye(2), L(1), 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+  fg.push_back(boost::make_shared<JacobianFactorOrdered>(ordering[X(2)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, -1.0, 1.5), unit2));
 
   return fg;
 }
@@ -296,18 +296,20 @@ GaussianFactorGraph createGaussianFactorGraph() {
  * 1 1 9
  *   1 5
  */
-GaussianBayesNet createSmallGaussianBayesNet() {
+GaussianBayesNetOrdered createSmallGaussianBayesNet() {
   using namespace impl;
   Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
   Matrix R22 = Matrix_(1, 1, 1.0);
   Vector d1(1), d2(1);
   d1(0) = 9;
   d2(0) = 5;
+  Vector tau(1);
+  tau(0) = 1.0;
 
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11, _y_, S12));
-  GaussianConditional::shared_ptr Py(new GaussianConditional(_y_, d2, R22));
-  GaussianBayesNet cbn;
+  GaussianConditionalOrdered::shared_ptr Px_y(new GaussianConditionalOrdered(_x_, d1, R11, _y_, S12, tau));
+  GaussianConditionalOrdered::shared_ptr Py(new GaussianConditionalOrdered(_y_, d2, R22, tau));
+  GaussianBayesNetOrdered cbn;
   cbn.push_back(Px_y);
   cbn.push_back(Py);
 
@@ -347,10 +349,10 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph() {
+boost::shared_ptr<const Graph> sharedReallyNonlinearFactorGraph() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+  boost::shared_ptr<Graph> fg(new Graph);
   Vector z = Vector_(2, 1.0, 0.0);
   double sigma = 0.1;
   boost::shared_ptr<smallOptimize::UnaryFactor> factor(
@@ -359,18 +361,18 @@ boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph()
   return fg;
 }
 
-NonlinearFactorGraph createReallyNonlinearFactorGraph() {
+Graph createReallyNonlinearFactorGraph() {
   return *sharedReallyNonlinearFactorGraph();
 }
 
 /* ************************************************************************* */
-std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
+std::pair<Graph, Values> createNonlinearSmoother(int T) {
   using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
 
   // Create
-  NonlinearFactorGraph nlfg;
+  Graph nlfg;
   Values poses;
 
   // prior on x1
@@ -398,8 +400,8 @@ std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
 }
 
 /* ************************************************************************* */
-std::pair<GaussianFactorGraph, Ordering> createSmoother(int T) {
-  NonlinearFactorGraph nlfg;
+std::pair<FactorGraphOrdered<GaussianFactorOrdered>, OrderingOrdered> createSmoother(int T, boost::optional<OrderingOrdered> ordering) {
+  Graph nlfg;
   Values poses;
   boost::tie(nlfg, poses) = createNonlinearSmoother(T);
 
@@ -408,7 +410,7 @@ std::pair<GaussianFactorGraph, Ordering> createSmoother(int T) {
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph createSimpleConstraintGraph() {
+GaussianFactorGraphOrdered createSimpleConstraintGraph() {
   using namespace impl;
   // create unary factor
   // prior on _x_, mean = [1,-1], sigma=0.1
@@ -416,7 +418,7 @@ GaussianFactorGraph createSimpleConstraintGraph() {
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = -1.0;
-  JacobianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
+  JacobianFactorOrdered::shared_ptr f1(new JacobianFactorOrdered(_x_, Ax, b1, sigma0_1));
 
   // create binary constraint factor
   // between _x_ and _y_, that is going to be the only factor on _y_
@@ -425,11 +427,11 @@ GaussianFactorGraph createSimpleConstraintGraph() {
   Matrix Ax1 = eye(2);
   Matrix Ay1 = eye(2) * -1;
   Vector b2 = Vector_(2, 0.0, 0.0);
-  JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
+  JacobianFactorOrdered::shared_ptr f2(new JacobianFactorOrdered(_x_, Ax1, _y_, Ay1, b2,
       constraintModel));
 
   // construct the graph
-  GaussianFactorGraph fg;
+  GaussianFactorGraphOrdered fg;
   fg.push_back(f1);
   fg.push_back(f2);
 
@@ -437,11 +439,11 @@ GaussianFactorGraph createSimpleConstraintGraph() {
 }
 
 /* ************************************************************************* */
-VectorValues createSimpleConstraintValues() {
+VectorValuesOrdered createSimpleConstraintValues() {
   using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  VectorValues config(std::vector<size_t>(2,2));
+  VectorValuesOrdered config(std::vector<size_t>(2,2));
   Vector v = Vector_(2, 1.0, -1.0);
   config[_x_] = v;
   config[_y_] = v;
@@ -449,7 +451,7 @@ VectorValues createSimpleConstraintValues() {
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph createSingleConstraintGraph() {
+GaussianFactorGraphOrdered createSingleConstraintGraph() {
   using namespace impl;
   // create unary factor
   // prior on _x_, mean = [1,-1], sigma=0.1
@@ -457,8 +459,8 @@ GaussianFactorGraph createSingleConstraintGraph() {
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = -1.0;
-  //GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, sigma0_1->Whiten(Ax), sigma0_1->whiten(b1), sigma0_1));
-  JacobianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
+  //GaussianFactorOrdered::shared_ptr f1(new JacobianFactor(_x_, sigma0_1->Whiten(Ax), sigma0_1->whiten(b1), sigma0_1));
+  JacobianFactorOrdered::shared_ptr f1(new JacobianFactorOrdered(_x_, Ax, b1, sigma0_1));
 
   // create binary constraint factor
   // between _x_ and _y_, that is going to be the only factor on _y_
@@ -471,11 +473,11 @@ GaussianFactorGraph createSingleConstraintGraph() {
   Ax1(1, 1) = 1.0;
   Matrix Ay1 = eye(2) * 10;
   Vector b2 = Vector_(2, 1.0, 2.0);
-  JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
+  JacobianFactorOrdered::shared_ptr f2(new JacobianFactorOrdered(_x_, Ax1, _y_, Ay1, b2,
       constraintModel));
 
   // construct the graph
-  GaussianFactorGraph fg;
+  GaussianFactorGraphOrdered fg;
   fg.push_back(f1);
   fg.push_back(f2);
 
@@ -483,21 +485,21 @@ GaussianFactorGraph createSingleConstraintGraph() {
 }
 
 /* ************************************************************************* */
-VectorValues createSingleConstraintValues() {
+VectorValuesOrdered createSingleConstraintValues() {
   using namespace impl;
-  VectorValues config(std::vector<size_t>(2,2));
+  VectorValuesOrdered config(std::vector<size_t>(2,2));
   config[_x_] = Vector_(2, 1.0, -1.0);
   config[_y_] = Vector_(2, 0.2, 0.1);
   return config;
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph createMultiConstraintGraph() {
+GaussianFactorGraphOrdered createMultiConstraintGraph() {
   using namespace impl;
   // unary factor 1
   Matrix A = eye(2);
   Vector b = Vector_(2, -2.0, 2.0);
-  JacobianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, sigma0_1));
+  JacobianFactorOrdered::shared_ptr lf1(new JacobianFactorOrdered(_x_, A, b, sigma0_1));
 
   // constraint 1
   Matrix A11(2, 2);
@@ -515,7 +517,7 @@ GaussianFactorGraph createMultiConstraintGraph() {
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = 2.0;
-  JacobianFactor::shared_ptr lc1(new JacobianFactor(_x_, A11, _y_, A12, b1,
+  JacobianFactorOrdered::shared_ptr lc1(new JacobianFactorOrdered(_x_, A11, _y_, A12, b1,
       constraintModel));
 
   // constraint 2
@@ -534,11 +536,11 @@ GaussianFactorGraph createMultiConstraintGraph() {
   Vector b2(2);
   b2(0) = 3.0;
   b2(1) = 4.0;
-  JacobianFactor::shared_ptr lc2(new JacobianFactor(_x_, A21, _z_, A22, b2,
+  JacobianFactorOrdered::shared_ptr lc2(new JacobianFactorOrdered(_x_, A21, _z_, A22, b2,
       constraintModel));
 
   // construct the graph
-  GaussianFactorGraph fg;
+  GaussianFactorGraphOrdered fg;
   fg.push_back(lf1);
   fg.push_back(lc1);
   fg.push_back(lc2);
@@ -547,9 +549,9 @@ GaussianFactorGraph createMultiConstraintGraph() {
 }
 
 /* ************************************************************************* */
-VectorValues createMultiConstraintValues() {
+VectorValuesOrdered createMultiConstraintValues() {
   using namespace impl;
-  VectorValues config(std::vector<size_t>(3,2));
+  VectorValuesOrdered config(std::vector<size_t>(3,2));
   config[_x_] = Vector_(2, -2.0, 2.0);
   config[_y_] = Vector_(2, -0.1, 0.4);
   config[_z_] = Vector_(2, -4.0, 5.0);
@@ -566,7 +568,7 @@ Symbol key(int x, int y) {
 } // \namespace impl
 
 /* ************************************************************************* */
-boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
+boost::tuple<GaussianFactorGraphOrdered, VectorValuesOrdered> planarGraph(size_t N) {
   using namespace impl;
 
   // create empty graph
@@ -597,20 +599,20 @@ boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
       zeros.insert(key(x, y), Point2());
-  Ordering ordering(planarOrdering(N));
-  VectorValues xtrue(zeros.dims(ordering));
+  OrderingOrdered ordering(planarOrdering(N));
+  VectorValuesOrdered xtrue(zeros.dims(ordering));
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
       xtrue[ordering[key(x, y)]] = Point2(x,y).vector();
 
   // linearize around zero
-  boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros, ordering);
+  boost::shared_ptr<GaussianFactorGraphOrdered> gfg = nlfg.linearize(zeros, ordering);
   return boost::make_tuple(*gfg, xtrue);
 }
 
 /* ************************************************************************* */
-Ordering planarOrdering(size_t N) {
-  Ordering ordering;
+OrderingOrdered planarOrdering(size_t N) {
+  OrderingOrdered ordering;
   for (size_t y = N; y >= 1; y--)
     for (size_t x = N; x >= 1; x--)
       ordering.push_back(impl::key(x, y));
@@ -618,9 +620,9 @@ Ordering planarOrdering(size_t N) {
 }
 
 /* ************************************************************************* */
-std::pair<GaussianFactorGraph, GaussianFactorGraph > splitOffPlanarTree(size_t N,
-    const GaussianFactorGraph& original) {
-  GaussianFactorGraph T, C;
+std::pair<GaussianFactorGraphOrdered, GaussianFactorGraphOrdered > splitOffPlanarTree(size_t N,
+    const GaussianFactorGraphOrdered& original) {
+  GaussianFactorGraphOrdered T, C;
 
   // Add the x11 constraint to the tree
   T.push_back(original[0]);

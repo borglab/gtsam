@@ -15,10 +15,15 @@
  * @author  Michael Kaess
  */
 
-#include <tests/smallExample.h>
+#include <tests/smallExampleOrdered.h>
+#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/GaussianISAM.h>
-#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/GaussianBayesNetOrdered.h>
+#include <gtsam/linear/GaussianISAMOrdered.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
+#include <gtsam/inference/ISAMOrdered.h>
+#include <gtsam/geometry/Rot2.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -39,29 +44,29 @@ using symbol_shorthand::L;
 static const double tol = 1e-4;
 
 /* ************************************************************************* */
-TEST( ISAM, iSAM_smoother )
+TEST( ISAMOrdered, iSAM_smoother )
 {
-  Ordering ordering;
+  OrderingOrdered ordering;
   for (int t = 1; t <= 7; t++) ordering += X(t);
 
   // Create smoother with 7 nodes
-  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+  GaussianFactorGraphOrdered smoother = createSmoother(7, ordering).first;
 
   // run iSAM for every factor
-  GaussianISAM actual;
-  BOOST_FOREACH(boost::shared_ptr<GaussianFactor> factor, smoother) {
-    GaussianFactorGraph factorGraph;
+  GaussianISAMOrdered actual;
+  BOOST_FOREACH(boost::shared_ptr<GaussianFactorOrdered> factor, smoother) {
+    GaussianFactorGraphOrdered factorGraph;
     factorGraph.push_back(factor);
     actual.update(factorGraph);
   }
 
   // Create expected Bayes Tree by solving smoother with "natural" ordering
-  BayesTree<GaussianConditional>::shared_ptr bayesTree = GaussianMultifrontalSolver(smoother).eliminate();
-  GaussianISAM expected(*bayesTree);
+  BayesTreeOrdered<GaussianConditionalOrdered>::shared_ptr bayesTree = GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianISAMOrdered expected(*bayesTree);
 
   // Verify sigmas in the bayes tree
-  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, bayesTree->nodes()) {
-    GaussianConditional::shared_ptr conditional = clique->conditional();
+  BOOST_FOREACH(const GaussianBayesTreeOrdered::sharedClique& clique, bayesTree->nodes()) {
+    GaussianConditionalOrdered::shared_ptr conditional = clique->conditional();
     size_t dim = conditional->dim();
     EXPECT(assert_equal(gtsam::ones(dim), conditional->get_sigmas(), tol));
   }
@@ -70,8 +75,8 @@ TEST( ISAM, iSAM_smoother )
   EXPECT(assert_equal(expected, actual));
 
   // obtain solution
-  VectorValues e(VectorValues::Zero(7,2)); // expected solution
-  VectorValues optimized = optimize(actual); // actual solution
+  VectorValuesOrdered e(VectorValuesOrdered::Zero(7,2)); // expected solution
+  VectorValuesOrdered optimized = optimize(actual); // actual solution
   EXPECT(assert_equal(e, optimized));
 }
 
