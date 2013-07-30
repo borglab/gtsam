@@ -24,12 +24,14 @@
 
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/Sampler.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
 
 using namespace std;
 namespace fs = boost::filesystem;
+using namespace gtsam::symbol_shorthand;
 
 #define LINESIZE 81920
 
@@ -109,19 +111,34 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   Sampler sampler(42u);
 
   // load the factors
+  bool haveLandmark = false;
   while (is) {
     is >> tag;
 
     if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
       int id1, id2;
       double x, y, yaw;
+      double v1, v2, v3, v4, v5, v6;
 
       is >> id1 >> id2 >> x >> y >> yaw;
-      Matrix m = eye(3);
-      is >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
-      m(2, 0) = m(0, 2);
-      m(2, 1) = m(1, 2);
-      m(1, 0) = m(0, 1);
+      is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
+
+      // Try to guess covariance matrix layout
+      Matrix m(3,3);
+      if(v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0 && v6 == 0.0)
+      {
+        // Looks like [ v1 v2 v5; v2' v3 v6; v5' v6' v4 ]
+        m <<  v1, v2, v5,  v2, v3, v6,  v5, v6, v4;
+      }
+      else if(v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0 && v6 != 0.0)
+      {
+        // Looks like [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
+        m << v1, v2, v3,  v2, v4, v5,  v3, v5, v6;
+      }
+      else
+      {
+        throw std::invalid_argument("load2D: unrecognized covariance matrix format in dataset file");
+      }
 
       // optional filter
       if (maxID && (id1 >= maxID || id2 >= maxID))
@@ -171,6 +188,39 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
         Point2 global = pose.transform_from(local);
         initial->insert(id2, global);
       }
+    }
+    if (tag == "LANDMARK") {
+      int id1, id2;
+      double lmx, lmy;
+      double v1, v2, v3;
+
+      is >> id1 >> id2 >> lmx >> lmy >> v1 >> v2 >> v3;
+
+      // Convert x,y to bearing,range
+      double bearing = std::atan2(lmy, lmx);
+      double range = std::sqrt(lmx*lmx + lmy*lmy);
+
+      // In our experience, the x-y covariance on landmark sightings is not very good, so assume
+      // that it describes the uncertainty at a range of 10m, and convert that to bearing/range
+      // uncertainty.
+      SharedDiagonal measurementNoise;
+      if(std::abs(v1 - v3) < 1e-4)
+      {
+        double rangeVar = v1;
+        double bearingVar = v1 / 10.0;
+        measurementNoise = noiseModel::Diagonal::Sigmas(Vector_(2, bearingVar, rangeVar));
+      }
+      else
+      {
+        if(!haveLandmark) {
+          cout << "Warning: load2D is a very simple dataset loader and is ignoring the\n"
+            "non-uniform covariance on LANDMARK measurements in this file." << endl;
+          haveLandmark = true;
+        }
+      }
+
+      // Add to graph
+      graph->add(BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range, measurementNoise));
     }
     is.ignore(LINESIZE, '\n');
   }
