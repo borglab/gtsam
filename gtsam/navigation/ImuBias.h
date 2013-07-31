@@ -70,21 +70,21 @@ namespace imuBias {
     const Vector3& gyroscope() const { return biasGyro_; }
 
     /** Correct an accelerometer measurement using this bias model, and optionally compute Jacobians */
-    Vector correctAccelerometer(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
+    Vector correctAccelerometer(const Vector3& measurment, boost::optional<Matrix&> H=boost::none) const {
       if (H){
         H->resize(3,6);
         (*H) << -Matrix3::Identity(), Matrix3::Zero();
       }
-      return measurement - biasAcc_;
+      return measurment - biasAcc_;
     }
 
     /** Correct a gyroscope measurement using this bias model, and optionally compute Jacobians */
-    Vector correctGyroscope(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
+    Vector correctGyroscope(const Vector3& measurment, boost::optional<Matrix&> H=boost::none) const {
       if (H){
         H->resize(3,6);
         (*H) << Matrix3::Zero(), -Matrix3::Identity();
       }
-      return measurement - biasGyro_;
+      return measurment - biasGyro_;
     }
 
 //    // H1: Jacobian w.r.t. IMUBias
@@ -148,39 +148,36 @@ namespace imuBias {
 		inline ConstantBias retract(const Vector& v) const { return ConstantBias(biasAcc_ + v.head(3), biasGyro_ + v.tail(3)); }
 
 		/** @return the local coordinates of another object */
-		inline Vector localCoordinates(const ConstantBias& b) const { return b.vector() - vector(); }
+		inline Vector localCoordinates(const ConstantBias& t2) const { return t2.vector() - vector(); }
 
     /// @}
     /// @name Group
     /// @{
 
-		/** identity for group operation */
-    static ConstantBias identity() { return ConstantBias(); }
+    ConstantBias compose(const ConstantBias& b2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = gtsam::Matrix::Identity(6,6);
+      if(H2) *H2 = gtsam::Matrix::Identity(6,6);
+
+      return ConstantBias(biasAcc_ + b2.biasAcc_, biasGyro_ + b2.biasGyro_);
+    }
+
+    /** between operation */
+    ConstantBias between(const ConstantBias& b2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = -gtsam::Matrix::Identity(6,6);
+      if(H2) *H2 = gtsam::Matrix::Identity(6,6);
+
+      return ConstantBias(b2.biasAcc_ - biasAcc_, b2.biasGyro_ - biasGyro_);
+    }
 
     /** invert the object and yield a new one */
     inline ConstantBias inverse(boost::optional<Matrix&> H=boost::none) const {
       if(H) *H = -gtsam::Matrix::Identity(6,6);
 
       return ConstantBias(-biasAcc_, -biasGyro_);
-    }
-
-    ConstantBias compose(const ConstantBias& b,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if(H1) *H1 = gtsam::Matrix::Identity(6,6);
-      if(H2) *H2 = gtsam::Matrix::Identity(6,6);
-
-      return ConstantBias(biasAcc_ + b.biasAcc_, biasGyro_ + b.biasGyro_);
-    }
-
-    /** between operation */
-    ConstantBias between(const ConstantBias& b,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if(H1) *H1 = -gtsam::Matrix::Identity(6,6);
-      if(H2) *H2 = gtsam::Matrix::Identity(6,6);
-
-      return ConstantBias(b.biasAcc_ - biasAcc_, b.biasGyro_ - biasGyro_);
     }
 
     /// @}
@@ -191,7 +188,7 @@ namespace imuBias {
     static inline ConstantBias Expmap(const Vector& v) { return ConstantBias(v.head(3), v.tail(3)); }
 
     /** Logmap around identity - just returns with default cast back */
-    static inline Vector Logmap(const ConstantBias& b) { return b.vector(); }
+    static inline Vector Logmap(const ConstantBias& p) { return p.vector(); }
 
     /// @}
 

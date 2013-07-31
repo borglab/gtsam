@@ -2080,7 +2080,6 @@ virtual class ISAM2  : gtsam::ISAM2BayesTree {
   gtsam::Values getLinearizationPoint() const;
   gtsam::Values calculateEstimate() const;
   Matrix marginalCovariance(size_t key) const;
-  gtsam::Value calculateEstimate(size_t key) const;
   gtsam::Values calculateBestEstimate() const;
   gtsam::VectorValues getDelta() const;
   gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
@@ -2123,8 +2122,8 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/slam/PriorFactor.h>
-template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
-virtual class PriorFactor : gtsam::NonlinearFactor {
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
 
@@ -2134,8 +2133,8 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 
 
 #include <gtsam/slam/BetweenFactor.h>
-template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
-virtual class BetweenFactor : gtsam::NonlinearFactor {
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
   T measured() const;
 
@@ -2145,8 +2144,8 @@ virtual class BetweenFactor : gtsam::NonlinearFactor {
 
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
-template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
-virtual class NonlinearEquality : gtsam::NonlinearFactor {
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
   NonlinearEquality(size_t j, const T& feasible);
   // Constructor - allows inexact evaluation
@@ -2284,47 +2283,6 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename,
     gtsam::noiseModel::Base* model);
-
-//*************************************************************************
-// Navigation
-//*************************************************************************
-namespace imuBias {
-#include <gtsam/navigation/ImuBias.h>
-
-virtual class ConstantBias : gtsam::Value {
-  // Standard Constructor
-  ConstantBias();
-  ConstantBias(Vector biasAcc, Vector biasGyro);
-
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::imuBias::ConstantBias& expected, double tol) const;
-
-  // Group
-  static gtsam::imuBias::ConstantBias identity();
-  gtsam::imuBias::ConstantBias inverse() const;
-  gtsam::imuBias::ConstantBias compose(const gtsam::imuBias::ConstantBias& b) const;
-  gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
-
-  // Manifold
-  static size_t Dim();
-  size_t dim() const;
-  gtsam::imuBias::ConstantBias retract(Vector v) const;
-  Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
-
-  // Lie Group
-  static gtsam::imuBias::ConstantBias Expmap(Vector v);
-  static Vector Logmap(const gtsam::imuBias::ConstantBias& b);
-
-  // Standard Interface
-  Vector vector() const;
-  Vector accelerometer() const;
-  Vector gyroscope() const;
-  Vector correctAccelerometer(Vector measurement) const;
-  Vector correctGyroscope(Vector measurement) const;
-};
-
-}///\namespace imuBias
 
 //*************************************************************************
 // Utilities
