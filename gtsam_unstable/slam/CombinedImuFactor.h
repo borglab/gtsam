@@ -341,7 +341,7 @@ namespace gtsam {
   public:
 
     /** Shorthand for a smart pointer to a factor */
-    typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
+    typedef typename boost::shared_ptr<CombinedImuFactor> shared_ptr;
 
     /** Default constructor - only use for serialization */
     CombinedImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix::Zero(6,6)) {}
