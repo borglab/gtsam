@@ -91,7 +91,8 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
 
   // load the poses
   while (is) {
-    is >> tag;
+    if(! (is >> tag))
+      break;
 
     if ((tag == "VERTEX2") || (tag == "VERTEX")) {
       int id;
@@ -113,7 +114,8 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   // load the factors
   bool haveLandmark = false;
   while (is) {
-    is >> tag;
+    if(! (is >> tag))
+      break;
 
     if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
       int id1, id2;
