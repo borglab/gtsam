@@ -1,12 +1,53 @@
-close all
-clc
+%close all
+%clc
 
 import gtsam.*;
 
-IMU_data = dmlread('IMU.txt');
-VO_data = dmlread('VO.txt');
-GPS_data = dmlread('GPS.txt');
+%% Read metadata and compute relative sensor pose transforms
+IMU_metadata = importdata('KittiEquivBiasedImu_metadata.txt');
+IMU_metadata = cell2struct(num2cell(IMU_metadata.data), IMU_metadata.colheaders, 2);
+IMUinBody = Pose3.Expmap([
+    IMU_metadata.BodyPtx; IMU_metadata.BodyPty; IMU_metadata.BodyPtz;
+    IMU_metadata.BodyPrx; IMU_metadata.BodyPry; IMU_metadata.BodyPrz; ]);
 
+VO_metadata = importdata('KittiRelativePose_metadata.txt');
+VO_metadata = cell2struct(num2cell(VO_metadata.data), VO_metadata.colheaders, 2);
+VOinBody = Pose3.Expmap([
+    VO_metadata.BodyPtx; VO_metadata.BodyPty; VO_metadata.BodyPtz;
+    VO_metadata.BodyPrx; VO_metadata.BodyPry; VO_metadata.BodyPrz; ]);
+
+GPS_metadata = importdata('KittiGps_metadata.txt');
+GPS_metadata = cell2struct(num2cell(GPS_metadata.data), GPS_metadata.colheaders, 2);
+GPSinBody = Pose3.Expmap([
+    GPS_metadata.BodyPtx; GPS_metadata.BodyPty; GPS_metadata.BodyPtz;
+    GPS_metadata.BodyPrx; GPS_metadata.BodyPry; GPS_metadata.BodyPrz; ]);
+
+VOinIMU = IMUinBody.inverse().compose(VOinBody);
+GPSinIMU = IMUinBody.inverse().compose(GPSinBody);
+
+%% Read data and change coordinate frame of GPS and VO measurements to IMU frame
+IMU_data = importdata('KittiEquivBiasedImu.txt');
+IMU_data = cell2struct(num2cell(IMU_data.data), IMU_data.colheaders, 2);
+imum = cellfun(@(x) x', num2cell([ [IMU_data.accelX]' [IMU_data.accelY]' [IMU_data.accelZ]' [IMU_data.omegaX]' [IMU_data.omegaY]' [IMU_data.omegaZ]' ], 2), 'UniformOutput', false);
+[IMU_data.acc_omega] = deal(imum{:});
+IMU_data = rmfield(IMU_data, { 'accelX' 'accelY' 'accelZ' 'omegaX' 'omegaY' 'omegaZ' });
+clear imum
+
+VO_data = importdata('KittiRelativePose.txt');
+VO_data = cell2struct(num2cell(VO_data.data), VO_data.colheaders, 2);
+% Merge relative pose fields and convert to Pose3
+logposes = [ [VO_data.dtx]' [VO_data.dty]' [VO_data.dtz]' [VO_data.drx]' [VO_data.dry]' [VO_data.drz]' ];
+logposes = num2cell(logposes, 2);
+relposes = arrayfun(@(x) {gtsam.Pose3.Expmap(x{1}')}, logposes);
+% TODO: convert to IMU frame %relposes = arrayfun(
+[VO_data.RelativePose] = deal(relposes{:});
+VO_data = rmfield(VO_data, { 'dtx' 'dty' 'dtz' 'drx' 'dry' 'drz' });
+clear logposes relposes
+
+GPS_data = importdata('KittiGps.txt');
+GPS_data = cell2struct(num2cell(GPS_data.data), GPS_data.colheaders, 2);
+
+%%
 SummaryTemplate = gtsam.ImuFactorPreintegratedMeasurements( ...
     gtsam.imuBias.ConstantBias([0;0;0], [0;0;0]), ...
     1e-3 * eye(3), 1e-3 * eye(3), 1e-3 * eye(3));
