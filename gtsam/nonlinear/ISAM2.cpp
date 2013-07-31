@@ -1002,6 +1002,13 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
 }
 
 /* ************************************************************************* */
+Matrix ISAM2::marginalCovariance(Index key) const {
+  return marginalFactor(ordering_[key],
+    params_.factorization == ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky)
+    ->information().inverse();
+}
+
+/* ************************************************************************* */
 Values ISAM2::calculateEstimate() const {
   // We use ExpmapMasked here instead of regular expmap because the former
   // handles Permuted<VectorValues>
@@ -1019,10 +1026,10 @@ Values ISAM2::calculateEstimate() const {
 }
 
 /* ************************************************************************* */
-Matrix ISAM2::marginalCovariance(Index key) const {
-  return marginalFactor(ordering_[key],
-    params_.factorization == ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky)
-    ->information().inverse();
+const Value& ISAM2::calculateEstimate(Key key) const {
+  const Index index = getOrdering()[key];
+  const Vector& delta = getDelta()[index];
+  return *theta_.at(key).retract_(delta);
 }
 
 /* ************************************************************************* */
