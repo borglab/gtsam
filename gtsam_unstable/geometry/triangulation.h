@@ -22,6 +22,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam_unstable/base/dllexport.h>
 
 namespace gtsam {
 
@@ -35,7 +36,7 @@ namespace gtsam {
  * @param K The camera calibration
  * @return Returns a Point3 on success, boost::none otherwise.
  */
-boost::optional<Point3> triangulatePoint3(const std::vector<Pose3>& poses,
+GTSAM_UNSTABLE_EXPORT boost::optional<Point3> triangulatePoint3(const std::vector<Pose3>& poses,
     const std::vector<Point2>& measurements, const Cal3_S2& K);
 
 
