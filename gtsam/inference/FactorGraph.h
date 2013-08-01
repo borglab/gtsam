@@ -195,6 +195,12 @@ namespace gtsam {
         return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(factor);
     }
 
+    /** Add a factor directly using a shared_ptr */
+    boost::assign::list_inserter<CRefCallPushBack<This> >
+      operator+=(const sharedFactor& factor) {
+        return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(factor);
+    }
+
     template<class FACTOR_OR_CONTAINER>
     boost::assign::list_inserter<CRefCallPushBack<This> >
       operator+=(const FACTOR_OR_CONTAINER& factorOrContainer) {
