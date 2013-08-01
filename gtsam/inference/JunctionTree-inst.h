@@ -277,7 +277,7 @@ namespace gtsam {
     // that contains all of the roots as its children.  rootsContainer also stores the remaining
     // uneliminated factors passed up from the roots.
     EliminationData<This> rootsContainer(0, roots_.size());
-    //tbb::task_scheduler_init init(1);
+    tbb::task_scheduler_init init(1);
     treeTraversal::DepthFirstForestParallel(*this, rootsContainer, eliminationPreOrderVisitor<This>,
       boost::bind(eliminationPostOrderVisitor<This>, _1, _2, function), 10);
 
