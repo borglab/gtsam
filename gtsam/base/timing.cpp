@@ -41,8 +41,9 @@ GTSAM_EXPORT boost::weak_ptr<TimingOutline> timingCurrent(timingRoot);
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-void TimingOutline::add(size_t usecs) {
+void TimingOutline::add(size_t usecs, size_t usecsWall) {
   t_ += usecs;
+  tWall_ += usecsWall;
   tIt_ += usecs;
   t2_ += (double(usecs)/1000000.0)*(double(usecs)/1000000.0);
   ++ n_;
@@ -50,7 +51,7 @@ void TimingOutline::add(size_t usecs) {
 
 /* ************************************************************************* */
 TimingOutline::TimingOutline(const std::string& label, size_t myId) :
-   myId_(myId), t_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), myOrder_(0), lastChildOrder_(0), label_(label)
+   myId_(myId), t_(0), tWall_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), myOrder_(0), lastChildOrder_(0), label_(label)
 {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   timer_.stop();
@@ -75,9 +76,9 @@ size_t TimingOutline::time() const {
 void TimingOutline::print(const std::string& outline) const {
   std::string formattedLabel = label_;
   boost::replace_all(formattedLabel, "_", " ");
-  std::cout << outline << "-" << formattedLabel << ": " << double(t_)/1000000.0 << " (" <<
-      n_ << " times, " << double(time())/1000000.0 << " children, min: " << double(tMin_)/1000000.0 <<
-      " max: " << double(tMax_)/1000000.0 << ")\n";
+  std::cout << outline << "-" << formattedLabel << ": " << double(t_)/1000000.0 << " CPU (" <<
+      n_ << " times, " << double(tWall_)/1000000.0 << " wall, " << double(time())/1000000.0 << " children, min: "
+      << double(tMin_)/1000000.0 << " max: " << double(tMax_)/1000000.0 << ")\n";
   // Order children
   typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildOrder;
   ChildOrder childOrder;
@@ -163,11 +164,11 @@ void TimingOutline::tocInternal() {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   assert(!timer_.is_stopped());
   timer_.stop();
-  add((timer_.elapsed().user + timer_.elapsed().system) / 1000);
+  add((timer_.elapsed().user + timer_.elapsed().system) / 1000, timer_.elapsed().wall / 1000);
 #else
   assert(timerActive_);
   double elapsed = timer_.elapsed();
-  add(size_t(elapsed * 1000000.0));
+  add(size_t(elapsed * 1000000.0), 0);
   *timerActive_ = false;
 #endif
 }
