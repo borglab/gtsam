@@ -247,6 +247,21 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues operator*(const double a, const VectorValues &v)
+  {
+    VectorValues result;
+    BOOST_FOREACH(const VectorValues::KeyValuePair& v, v)
+      result.values_.insert(result.values_.end(), make_pair(v.first, a * v.second));
+    return result;
+  }
+
+  /* ************************************************************************* */
+  VectorValues VectorValues::scale(const double a) const
+  {
+    return a * *this;
+  }
+
+  /* ************************************************************************* */
   VectorValues& VectorValues::operator*=(double alpha)
   {
     BOOST_FOREACH(Vector& v, *this | map_values)

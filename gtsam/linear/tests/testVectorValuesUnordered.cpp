@@ -154,6 +154,8 @@ TEST(VectorValues, LinearAlgebra)
   VectorValues scalActual = test1;
   scalActual *= 5.0;
   EXPECT(assert_equal(scalExpected, scalActual.vector()));
+  VectorValues scal2Actual = 5.0 * test1;
+  EXPECT(assert_equal(scalExpected, scal2Actual.vector()));
 }
 
 /* ************************************************************************* */

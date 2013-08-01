@@ -272,6 +272,12 @@ namespace gtsam {
      *  structure (checked when NDEBUG is not defined). */
     VectorValues subtract(const VectorValues& c) const;
 
+    /** Element-wise scaling by a constant. */
+    friend VectorValues operator*(const double a, const VectorValues &v);
+
+    /** Element-wise scaling by a constant. */
+    VectorValues scale(const double a) const;
+
     /** Element-wise scaling by a constant in-place. */
     VectorValues& operator*=(double alpha);
 
