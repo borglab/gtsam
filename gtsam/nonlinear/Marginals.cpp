@@ -16,6 +16,8 @@
  * @date May 14, 2012
  */
 
+#if 0
+
 #include <gtsam/base/timing.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
@@ -175,3 +177,5 @@ void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) c
 }
 
 } /* namespace gtsam */
+
+#endif

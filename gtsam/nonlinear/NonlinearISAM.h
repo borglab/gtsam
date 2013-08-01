@@ -15,6 +15,8 @@
  * @author Viorela Ila and Richard Roberts
  */
 
+#if 0
+
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -116,3 +118,4 @@ public:
 
 } // \namespace gtsam
 
+#endif

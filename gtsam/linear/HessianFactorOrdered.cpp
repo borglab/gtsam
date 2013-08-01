@@ -47,19 +47,19 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-string SlotEntry::toString() const {
+string SlotEntryOrdered::toString() const {
   ostringstream oss;
-  oss << "SlotEntry: slot=" << slot << ", dim=" << dimension;
+  oss << "SlotEntryOrdered: slot=" << slot << ", dim=" << dimension;
   return oss.str();
 }
 
 /* ************************************************************************* */
-Scatter::Scatter(const FactorGraphOrdered<GaussianFactorOrdered>& gfg) {
+ScatterOrdered::ScatterOrdered(const FactorGraphOrdered<GaussianFactorOrdered>& gfg) {
   // First do the set union.
   BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, gfg) {
     if(factor) {
       for(GaussianFactorOrdered::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
-        this->insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
+        this->insert(make_pair(*variable, SlotEntryOrdered(0, factor->getDim(variable))));
       }
     }
   }
@@ -270,12 +270,12 @@ HessianFactorOrdered::HessianFactorOrdered(const GaussianFactorOrdered& gf) : in
 /* ************************************************************************* */
 HessianFactorOrdered::HessianFactorOrdered(const FactorGraphOrdered<GaussianFactorOrdered>& factors) : info_(matrix_)
 {
-  Scatter scatter(factors);
+  ScatterOrdered scatter(factors);
 
   // Pull out keys and dimensions
   gttic(keys);
   vector<size_t> dimensions(scatter.size() + 1);
-  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
+  BOOST_FOREACH(const ScatterOrdered::value_type& var_slot, scatter) {
     dimensions[var_slot.second.slot] = var_slot.second.dimension;
   }
   // This is for the r.h.s. vector
@@ -288,7 +288,7 @@ HessianFactorOrdered::HessianFactorOrdered(const FactorGraphOrdered<GaussianFact
   info_.resize(dimensions.begin(), dimensions.end(), false);
   // Fill in keys
   keys_.resize(scatter.size());
-  std::transform(scatter.begin(), scatter.end(), keys_.begin(), boost::bind(&Scatter::value_type::first, ::_1));
+  std::transform(scatter.begin(), scatter.end(), keys_.begin(), boost::bind(&ScatterOrdered::value_type::first, ::_1));
   gttoc(allocate);
   gttic(zero);
   matrix_.noalias() = Matrix::Zero(matrix_.rows(),matrix_.cols());
@@ -367,7 +367,7 @@ double HessianFactorOrdered::error(const VectorValuesOrdered& c) const {
 }
 
 /* ************************************************************************* */
-void HessianFactorOrdered::updateATA(const HessianFactorOrdered& update, const Scatter& scatter) {
+void HessianFactorOrdered::updateATA(const HessianFactorOrdered& update, const ScatterOrdered& scatter) {
 
   // This function updates 'combined' with the information in 'update'.
   // 'scatter' maps variables in the update factor to slots in the combined
@@ -420,7 +420,7 @@ void HessianFactorOrdered::updateATA(const HessianFactorOrdered& update, const S
 }
 
 /* ************************************************************************* */
-void HessianFactorOrdered::updateATA(const JacobianFactorOrdered& update, const Scatter& scatter) {
+void HessianFactorOrdered::updateATA(const JacobianFactorOrdered& update, const ScatterOrdered& scatter) {
 
   // This function updates 'combined' with the information in 'update'.
   // 'scatter' maps variables in the update factor to slots in the combined

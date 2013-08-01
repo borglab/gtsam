@@ -61,7 +61,7 @@ public:
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const GaussNewtonParams& params = GaussNewtonParams()) :
-        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph, initialValues)), state_(graph, initialValues) {}
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph)), state_(graph, initialValues) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this

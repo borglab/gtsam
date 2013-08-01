@@ -16,6 +16,8 @@
  * @date  Feb 26, 2012
  */
 
+#if 0
+
 #include <cmath>
 
 #include <gtsam/linear/linearExceptions.h>
@@ -179,3 +181,6 @@ LevenbergMarquardtParams LevenbergMarquardtOptimizer::ensureHasOrdering(
 }
 
 } /* namespace gtsam */
+
+
+#endif

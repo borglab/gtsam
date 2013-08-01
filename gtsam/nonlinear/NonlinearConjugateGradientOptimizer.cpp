@@ -5,6 +5,8 @@
  * @date   Jun 11, 2012
  */
 
+#if 0
+
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Values.h>
@@ -62,3 +64,5 @@ const Values& NonlinearConjugateGradientOptimizer::optimize() {
 }
 
 } /* namespace gtsam */
+
+#endif

@@ -250,8 +250,8 @@ namespace gtsam {
   VectorValues operator*(const double a, const VectorValues &v)
   {
     VectorValues result;
-    BOOST_FOREACH(const VectorValues::KeyValuePair& v, v)
-      result.values_.insert(result.values_.end(), make_pair(v.first, a * v.second));
+    BOOST_FOREACH(const VectorValues::KeyValuePair& key_v, v)
+      result.values_.insert(result.values_.end(), make_pair(key_v.first, a * key_v.second));
     return result;
   }
 

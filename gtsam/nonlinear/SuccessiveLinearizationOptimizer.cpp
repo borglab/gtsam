@@ -63,14 +63,16 @@ VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const Succ
     delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction())->optimize();
   }
   else if ( params.isCG() ) {
-    if ( !params.iterativeParams ) throw std::runtime_error("solveGaussianFactorGraph: cg parameter has to be assigned ...");
-    if ( boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams) ) {
-      SubgraphSolver solver (gfg, *boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams));
-      delta = solver.optimize();
-    }
-    else {
-      throw std::runtime_error("solveGaussianFactorGraph: special cg parameter type is not handled in LM solver ...");
-    }
+    throw std::runtime_error("Not implemented");
+
+    //if ( !params.iterativeParams ) throw std::runtime_error("solveGaussianFactorGraph: cg parameter has to be assigned ...");
+    //if ( boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams) ) {
+    //  SubgraphSolver solver (gfg, *boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams));
+    //  delta = solver.optimize();
+    //}
+    //else {
+    //  throw std::runtime_error("solveGaussianFactorGraph: special cg parameter type is not handled in LM solver ...");
+    //}
   }
   else {
     throw std::runtime_error("solveGaussianFactorGraph: Optimization parameter is invalid");

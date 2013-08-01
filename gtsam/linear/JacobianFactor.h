@@ -88,8 +88,8 @@ namespace gtsam {
   public:
     typedef VerticalBlockMatrix::Block ABlock;
     typedef VerticalBlockMatrix::constBlock constABlock;
-    typedef VerticalBlockMatrix::Column BVector;
-    typedef VerticalBlockMatrix::constColumn constBVector;
+    typedef ABlock::ColXpr BVector;
+    typedef constABlock::ConstColXpr constBVector;
 
     /** Convert from other GaussianFactor */
     explicit JacobianFactor(const GaussianFactor& gf);
@@ -178,26 +178,37 @@ namespace gtsam {
      * @param ordering of variables needed for matrix column order
      * @param set weight to true to bake in the weights
      */
-    virtual std::pair<Matrix, Vector> jacobian(bool weight = true) const;
+    virtual std::pair<Matrix, Vector> jacobian() const;
+    
+    /**
+     * Return (dense) matrix associated with factor
+     * @param ordering of variables needed for matrix column order
+     * @param set weight to true to bake in the weights
+     */
+    std::pair<Matrix, Vector> jacobianUnweighted() const;
 
     /**
      * Return (dense) matrix associated with factor
      * The returned system is an augmented matrix: [A b]
      * @param set weight to use whitening to bake in weights
      */
-    virtual Matrix augmentedJacobian(bool weight = true) const;
+    virtual Matrix augmentedJacobian() const;
+
+    /**
+     * Return (dense) matrix associated with factor
+     * The returned system is an augmented matrix: [A b]
+     * @param set weight to use whitening to bake in weights
+     */
+    Matrix augmentedJacobianUnweighted() const;
 
     /**
      * Construct the corresponding anti-factor to negate information
      * stored stored in this factor.
      * @return a HessianFactor with negated Hessian matrices
      */
-    //virtual GaussianFactor::shared_ptr negate() const;
+    virtual GaussianFactor::shared_ptr negate() const;
 
-    /** Check if the factor contains no information, i.e. zero rows.  This does
-     * not necessarily mean that the factor involves no variables (to check for
-     * involving no variables use keys().empty()).
-     */
+    /** Check if the factor is empty.  TODO: How should this be defined? */
     virtual bool empty() const { return size() == 0 /*|| rows() == 0*/; }
 
     /** is noise model constrained ? */
@@ -284,7 +295,7 @@ namespace gtsam {
      * factor to be the remaining component. Performs same operation as eliminate(),
      * but without running QR.
      */
-    boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals = 1);
+    boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals);
 
     /** Serialization function */
     friend class boost::serialization::access;

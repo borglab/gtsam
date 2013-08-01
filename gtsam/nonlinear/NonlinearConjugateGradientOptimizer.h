@@ -7,6 +7,8 @@
 
 #pragma once
 
+#if 0
+
 #include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <boost/tuple/tuple.hpp>
@@ -185,9 +187,6 @@ boost::tuple<V, size_t> nonlinearConjugateGradient(const S &system, const V &ini
   return boost::tie(currentValues, iteration);
 }
 
-
-
-
-
-
 }
+
+#endif

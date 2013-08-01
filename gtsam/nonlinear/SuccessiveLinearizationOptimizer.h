@@ -20,9 +20,14 @@
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/inference/Ordering.h>
 
 namespace gtsam {
+
+  // Forward declarations
 
 class GTSAM_EXPORT SuccessiveLinearizationParams : public NonlinearOptimizerParams {
 public:
@@ -55,19 +60,20 @@ public:
 
   virtual void print(const std::string& str) const;
 
-  GaussianFactorGraphOrdered::Eliminate getEliminationFunction() const {
+  GaussianFactorGraph::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
     case MULTIFRONTAL_CHOLESKY:
     case SEQUENTIAL_CHOLESKY:
-      return EliminatePreferCholeskyOrdered;
+      throw std::runtime_error("Not implemented");
+      //return EliminatePreferCholeskyOrdered;
 
     case MULTIFRONTAL_QR:
     case SEQUENTIAL_QR:
-      return EliminateQROrdered;
+      return EliminateQR;
 
     default:
       throw std::runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
-      return EliminateQROrdered;
+      return EliminateQR;
       break;
     }
   }

@@ -305,7 +305,7 @@ public:
 
     this->noiseModel_->WhitenSystem(A,b);
 
-    std::vector<std::pair<Index, Matrix> > terms(this->size());
+    std::vector<std::pair<Key, Matrix> > terms(this->size());
     // Fill in terms
     for(size_t j=0; j<this->size(); ++j) {
       terms[j].first = this->keys()[j];

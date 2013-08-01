@@ -20,7 +20,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
-//#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/VariableSlots.h>
@@ -60,15 +60,17 @@ namespace gtsam {
   /* ************************************************************************* */
   JacobianFactor::JacobianFactor() :
     Ab_(cref_list_of<1>(1), 0)
-  {}
+  {
+    getb().setZero();
+  }
 
   /* ************************************************************************* */
   JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
     // Copy the matrix data depending on what type of factor we're copying from
     if(const JacobianFactor* rhs = dynamic_cast<const JacobianFactor*>(&gf))
       *this = JacobianFactor(*rhs);
-    //else if(const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&gf))
-    //  *this = JacobianFactor(*rhs);
+    else if(const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&gf))
+      *this = JacobianFactor(*rhs);
     else
       throw std::invalid_argument("In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
   }
@@ -441,24 +443,33 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  pair<Matrix,Vector> JacobianFactor::jacobian(bool weight) const {
+  pair<Matrix,Vector> JacobianFactor::jacobian() const {
+    pair<Matrix,Vector> result = jacobianUnweighted();
+    // divide in sigma so error is indeed 0.5*|Ax-b|
+    if (model_)
+      model_->WhitenSystem(result.first, result.second);
+    return result;
+  }
+
+  /* ************************************************************************* */
+  pair<Matrix,Vector> JacobianFactor::jacobianUnweighted() const {
     Matrix A(Ab_.range(0, size()));
     Vector b(getb());
-    // divide in sigma so error is indeed 0.5*|Ax-b|
-    if (weight && model_)
-      model_->WhitenSystem(A,b);
     return make_pair(A, b);
   }
 
   /* ************************************************************************* */
-  Matrix JacobianFactor::augmentedJacobian(bool weight) const {
-    if (weight && model_) {
-      Matrix Ab(Ab_.range(0,Ab_.nBlocks()));
+  Matrix JacobianFactor::augmentedJacobian() const {
+    Matrix Ab = augmentedJacobianUnweighted();
+    if (model_) {
       model_->WhitenInPlace(Ab);
-      return Ab;
-    } else {
-      return Ab_.range(0, Ab_.nBlocks());
     }
+    return Ab;
+  }
+
+  /* ************************************************************************* */
+  Matrix JacobianFactor::augmentedJacobianUnweighted() const {
+    return Ab_.range(0, Ab_.nBlocks());
   }
 
   /* ************************************************************************* */
@@ -472,10 +483,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  //GaussianFactor::shared_ptr JacobianFactor::negate() const {
-  //  HessianFactor hessian(*this);
-  //  return hessian.negate();
-  //}
+  GaussianFactor::shared_ptr JacobianFactor::negate() const {
+    HessianFactor hessian(*this);
+    return hessian.negate();
+  }
 
   /* ************************************************************************* */
   std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >

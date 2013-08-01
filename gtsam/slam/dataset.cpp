@@ -179,7 +179,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
            noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
-      graph->add(BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise));
+      *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
 
       // Insert poses or points if they do not exist yet
       if (!initial->exists(id1))
@@ -222,7 +222,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       }
 
       // Add to graph
-      graph->add(BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range, measurementNoise));
+      *graph += BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range, measurementNoise);
     }
     is.ignore(LINESIZE, '\n');
   }
@@ -386,7 +386,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
            noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
-      graph->add(BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise));
+      *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
 
       // Insert poses or points if they do not exist yet
       if (!initial->exists(id1))

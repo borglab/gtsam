@@ -15,6 +15,8 @@
  * @author Viorela Ila and Richard Roberts
  */
 
+#if 0
+
 #include <gtsam/nonlinear/NonlinearISAM.h>
 
 #include <gtsam/linear/GaussianFactorGraphOrdered.h>
@@ -122,3 +124,5 @@ void NonlinearISAM::printStats() const {
 /* ************************************************************************* */
 
 }///\ namespace gtsam
+
+#endif

@@ -5,6 +5,8 @@
  * @author Alex Cunningham
  */
 
+#if 0
+
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/nonlinear/summarization.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
@@ -84,3 +86,4 @@ NonlinearFactorGraph summarizeAsNonlinearContainer(
 /* ************************************************************************* */
 } // \namespace gtsam
 
+#endif

@@ -18,6 +18,8 @@
 
 #pragma once
 
+#if 0
+
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
 namespace gtsam {
@@ -162,3 +164,5 @@ protected:
 };
 
 }
+
+#endif

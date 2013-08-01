@@ -21,11 +21,12 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(const VerticalBlockMatrix& rhs) {
+  VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(const VerticalBlockMatrix& rhs)
+  {
     VerticalBlockMatrix result;
     result.variableColOffsets_.resize(rhs.nBlocks() + 1);
-    for(Index i = 0; i < rhs.nBlocks() + 1; ++i)
-      result.variableColOffsets_[i] = rhs.variableColOffsets_[i + rhs.blockStart_];
+    std::copy(rhs.variableColOffsets_.begin() + rhs.blockStart_, rhs.variableColOffsets_.end(),
+      result.variableColOffsets_.begin());
     result.matrix_.resize(rhs.rows(), result.variableColOffsets_.back());
     result.rowEnd_ = rhs.rows();
     result.assertInvariants();

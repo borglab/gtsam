@@ -11,9 +11,12 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
+#if 0
+
 namespace gtsam {
 
   // Forward declarations
+  class JacobianFactor;
   class HessianFactor;
 
 /**
@@ -43,9 +46,6 @@ public:
   LinearContainerFactor(const HessianFactor& factor, const Values& linearizationPoint = Values());
 
   /** Constructor from shared_ptr */
-  LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint = Values());
-
-  /** Constructor from re-keyed factor: all indices assumed replaced with Key */
   LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint = Values());
 
   // Access
@@ -129,10 +129,10 @@ public:
   bool isHessian() const;
 
   /** Casts to JacobianFactor */
-  JacobianFactor::shared_ptr toJacobian() const;
+  boost::shared_ptr<JacobianFactor> toJacobian() const;
 
   /** Casts to HessianFactor */
-  HessianFactor::shared_ptr toHessian() const;
+  boost::shared_ptr<HessianFactor> toHessian() const;
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs
@@ -160,4 +160,4 @@ private:
 
 } // \namespace gtsam
 
-
+#endif

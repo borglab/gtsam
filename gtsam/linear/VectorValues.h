@@ -197,11 +197,11 @@ namespace gtsam {
 
     iterator begin()                      { return values_.begin(); }  ///< Iterator over variables
     const_iterator begin() const          { return values_.begin(); }  ///< Iterator over variables
-    iterator end()                         { return values_.end(); }    ///< Iterator over variables
+    iterator end()                        { return values_.end(); }    ///< Iterator over variables
     const_iterator end() const            { return values_.end(); }    ///< Iterator over variables
-    reverse_iterator rbegin()              { return values_.rbegin(); } ///< Reverse iterator over variables
+    reverse_iterator rbegin()             { return values_.rbegin(); } ///< Reverse iterator over variables
     const_reverse_iterator rbegin() const { return values_.rbegin(); } ///< Reverse iterator over variables
-    reverse_iterator rend()                { return values_.rend(); }   ///< Reverse iterator over variables
+    reverse_iterator rend()               { return values_.rend(); }   ///< Reverse iterator over variables
     const_reverse_iterator rend() const   { return values_.rend(); }   ///< Reverse iterator over variables
 
     /** Return the iterator corresponding to the requested key, or end() if no variable is present with this key. */

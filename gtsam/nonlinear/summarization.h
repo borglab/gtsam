@@ -9,6 +9,8 @@
 
 #pragma once
 
+#if 0
+
 #include <gtsam/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -58,4 +60,4 @@ NonlinearFactorGraph GTSAM_EXPORT summarizeAsNonlinearContainer(
 
 } // \namespace gtsam
 
-
+#endif

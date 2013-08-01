@@ -18,6 +18,8 @@
 
 #pragma once
 
+#if 0
+
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/linear/GaussianBayesTreeOrdered.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -141,3 +143,5 @@ protected:
 };
 
 } /* namespace gtsam */
+
+#endif

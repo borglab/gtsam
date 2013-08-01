@@ -65,7 +65,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   namespace {
-    DenseIndex _getCols(const std::pair<Key,Matrix>& p) {
+    DenseIndex _getColsJF(const std::pair<Key,Matrix>& p) {
       return p.second.cols();
     }
   }
@@ -86,9 +86,9 @@ namespace gtsam {
     // a single '1' to add a dimension for the b vector.
     {
       using boost::adaptors::transformed;
-      using boost::join;
       using boost::assign::cref_list_of;
-      Ab_ = VerticalBlockMatrix(join(terms | transformed(_getCols), cref_list_of<1,DenseIndex>(1)), b.size());
+      namespace br = boost::range;
+      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&_getColsJF), cref_list_of<1,DenseIndex>(1)), b.size());
     }
 
     // Check and add terms

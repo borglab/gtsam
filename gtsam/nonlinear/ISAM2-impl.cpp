@@ -16,6 +16,8 @@
  * @author  Richard Roberts
  */
 
+#if 0
+
 #include <gtsam/nonlinear/ISAM2-impl.h>
 #include <gtsam/nonlinear/Symbol.h> // for selective linearization thresholds
 #include <gtsam/base/debug.h>
@@ -493,3 +495,5 @@ size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, double wildfireThresho
 }
 
 }
+
+#endif

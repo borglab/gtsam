@@ -19,6 +19,8 @@
 
 #pragma once
 
+#if 0
+
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/linear/GaussianBayesTreeOrdered.h>
@@ -729,3 +731,5 @@ GTSAM_EXPORT void gradientAtZero(const ISAM2& bayesTree, VectorValuesOrdered& g)
 
 #include <gtsam/nonlinear/ISAM2-inl.h>
 #include <gtsam/nonlinear/ISAM2-impl.h>
+
+#endif

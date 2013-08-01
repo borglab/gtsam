@@ -17,6 +17,8 @@
 
 #pragma once
 
+#if 0
+
 #include <gtsam/linear/GaussianBayesTreeOrdered.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
@@ -154,3 +156,5 @@ struct GTSAM_EXPORT ISAM2::Impl {
 };
 
 }
+
+#endif

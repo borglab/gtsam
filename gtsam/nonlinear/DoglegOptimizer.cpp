@@ -16,6 +16,8 @@
  * @date   Feb 26, 2012
  */
 
+#if 0
+
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -95,3 +97,5 @@ DoglegParams DoglegOptimizer::ensureHasOrdering(DoglegParams params, const Nonli
 }
 
 } /* namespace gtsam */
+
+#endif

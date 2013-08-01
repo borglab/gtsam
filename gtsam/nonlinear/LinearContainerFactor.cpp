@@ -7,9 +7,12 @@
 
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <boost/foreach.hpp>
+
+#if 0
 
 namespace gtsam {
 
@@ -52,18 +55,6 @@ LinearContainerFactor::LinearContainerFactor(
 LinearContainerFactor::LinearContainerFactor(
     const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint)
 : factor_(factor->clone()) {
-  initializeLinearizationPoint(linearizationPoint);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(
-    const GaussianFactorOrdered::shared_ptr& factor,
-    const Values& linearizationPoint)
-: factor_(factor->clone())
-{
-  // Extract keys stashed in linear factor
-  BOOST_FOREACH(const Index& idx, factor_->keys())
-    keys_.push_back(idx);
   initializeLinearizationPoint(linearizationPoint);
 }
 
@@ -137,7 +128,7 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
     HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
     size_t dim = hesFactor->linearTerm().size();
     Eigen::Block<HessianFactor::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
-    Vector deltaVector = delta.asVector();
+    Vector deltaVector = delta.vector();
     Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * deltaVector;
     hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm());
     hesFactor->linearTerm() -= G_delta;
@@ -192,3 +183,4 @@ NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
 /* ************************************************************************* */
 } // \namespace gtsam
 
+#endif
