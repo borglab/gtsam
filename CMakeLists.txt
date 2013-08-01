@@ -125,7 +125,7 @@ else()
     if(Boost_TIMER_LIBRARY)
       list(APPEND GTSAM_BOOST_LIBRARIES ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
     else()
-      message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
+      message("WARNING:  GTSAM timing instrumentation will use the older, less accurate, Boost timer library because boost older than 1.48 was found.")
     endif()
 endif()
 
