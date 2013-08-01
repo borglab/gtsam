@@ -26,6 +26,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 
 #include <fstream>
+#include <iostream>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/export.hpp>
@@ -188,6 +189,7 @@ int main(int argc, char *argv[]) {
 /* ************************************************************************* */
 void runIncremental()
 {
+#if 0
   ISAM2 isam2;
 
   // Look for the first measurement to use
@@ -383,6 +385,7 @@ void runIncremental()
   //  cout << e.what() << endl;
   //}
   //tictoc_print_();
+#endif
 }
 
 /* ************************************************************************* */
@@ -394,7 +397,9 @@ void runBatch()
   measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(Pose::Dim())));
 
   gttic_(Create_optimizer);
-  GaussNewtonOptimizer optimizer(measurements, initial);
+  GaussNewtonParams params;
+  params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_QR;
+  GaussNewtonOptimizer optimizer(measurements, initial, params);
   gttoc_(Create_optimizer);
   double lastError;
   do {
@@ -477,15 +482,14 @@ void runPerturb()
 
   // Perturb values
   VectorValues noise;
-  Ordering ordering = *initial.orderingArbitrary();
   BOOST_FOREACH(const Values::KeyValuePair& key_val, initial)
   {
     Vector noisev(key_val.value.dim());
     for(Vector::Index i = 0; i < noisev.size(); ++i)
       noisev(i) = normal(rng);
-    noise.insert(ordering[key_val.key], noisev);
+    noise.insert(key_val.key, noisev);
   }
-  Values perturbed = initial.retract(noise, ordering);
+  Values perturbed = initial.retract(noise);
 
   // Write results
   try {
