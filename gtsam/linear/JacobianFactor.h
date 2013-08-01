@@ -187,19 +187,18 @@ namespace gtsam {
      */
     std::pair<Matrix, Vector> jacobianUnweighted() const;
 
-    /**
-     * Return (dense) matrix associated with factor
-     * The returned system is an augmented matrix: [A b]
-     * @param set weight to use whitening to bake in weights
-     */
+    /** Return (dense) matrix associated with factor.  The returned system is an augmented matrix:
+    *   [A b]
+    *   @param set weight to use whitening to bake in weights*/
     virtual Matrix augmentedJacobian() const;
 
-    /**
-     * Return (dense) matrix associated with factor
-     * The returned system is an augmented matrix: [A b]
-     * @param set weight to use whitening to bake in weights
-     */
+    /** Return (dense) matrix associated with factor.  The returned system is an augmented matrix:
+    *   [A b]
+    *   @param set weight to use whitening to bake in weights */
     Matrix augmentedJacobianUnweighted() const;
+
+    /** Return the full augmented Jacobian matrix of this factor as a VerticalBlockMatrix object. */
+    const VerticalBlockMatrix& matrixObject() const { return Ab_; }
 
     /**
      * Construct the corresponding anti-factor to negate information
