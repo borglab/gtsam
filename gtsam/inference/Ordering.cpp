@@ -137,4 +137,28 @@ namespace gtsam {
     return Ordering::COLAMDConstrained(variableIndex, cmember);
   }
 
+  /* ************************************************************************* */
+  Ordering Ordering::COLAMDConstrained(const VariableIndex& variableIndex,
+    const FastMap<Key, int>& groups)
+  {
+    gttic(Ordering_COLAMDConstrained);
+    size_t n = variableIndex.size();
+    std::vector<int> cmember(n, 0);
+
+    // Build a mapping to look up sorted Key indices by Key
+    FastMap<Key, size_t> keyIndices;
+    size_t j = 0;
+    BOOST_FOREACH(const VariableIndex::value_type key_factors, variableIndex)
+      keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
+
+    // Assign groups
+    typedef FastMap<Key, int>::value_type key_group;
+    BOOST_FOREACH(const key_group& p, groups) {
+      // FIXME: check that no groups are skipped
+      cmember[keyIndices.at(p.first)] = p.second;
+    }
+
+    return Ordering::COLAMDConstrained(variableIndex, cmember);
+  }
+
 }
