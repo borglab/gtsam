@@ -22,7 +22,7 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 
 #include <fstream>
@@ -88,8 +88,8 @@ bool perturb;
 double perturbationNoise;
 string compareFile1, compareFile2;
 
-NonlinearFactorGraph inputFileMeasurements;
 Values initial;
+NonlinearFactorGraph datasetMeasurements;
 
 // Run functions for each mode
 void runIncremental();
@@ -135,12 +135,12 @@ int main(int argc, char *argv[]) {
     cout << "Only one of --incremental, --batch, and --compare may be specified\n" << desc << endl;
     exit(1);
   }
-  if(incremental && datasetName.empty()) {
-    cout << "In incremental mode, a dataset must be specified\n" << desc << endl;
+  if((incremental || batch) && datasetName.empty()) {
+    cout << "In incremental and batch modes, a dataset must be specified\n" << desc << endl;
     exit(1);
   }
-  if(!incremental && !datasetName.empty()) {
-    cout << "A dataset may only be specified in incremental mode\n" << desc << endl;
+  if(!(incremental || batch) && !datasetName.empty()) {
+    cout << "A dataset may only be specified in incremental or batch modes\n" << desc << endl;
     exit(1);
   }
   if(batch && inputFile.empty()) {
@@ -158,8 +158,19 @@ int main(int argc, char *argv[]) {
     cout << "Reading input file " << inputFile << endl;
     std::ifstream readerStream(inputFile, ios::binary);
     boost::archive::binary_iarchive reader(readerStream);
-    reader >> inputFileMeasurements >> initial;
+    reader >> initial;
   }
+
+  // Read dataset
+  if(!datasetName.empty())
+  {
+    cout << "Loading dataset " << datasetName << endl;
+    string datasetFile = findExampleDataFile(datasetName);
+    std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
+      load2D(datasetFile);
+    datasetMeasurements = *data.first;
+  }
+
 
   // Run mode
   if(incremental)
@@ -177,20 +188,7 @@ int main(int argc, char *argv[]) {
 /* ************************************************************************* */
 void runIncremental()
 {
-  NonlinearFactorGraph datasetMeasurements;
-  cout << "Loading dataset " << datasetName << endl;
-  string datasetFile = findExampleDataFile(datasetName);
-  std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
-    load2D(datasetFile);
-  datasetMeasurements = *data.first;
-
   ISAM2 isam2;
-
-  if(!inputFile.empty())
-  {
-    cout << "Adding initial measurements and values" << endl;
-    isam2.update(inputFileMeasurements, initial);
-  }
 
   // Look for the first measurement to use
   cout << "Looking for first measurement from step " << firstStep << endl;
@@ -342,7 +340,7 @@ void runIncremental()
       cout << "Writing output file " << outputFile << endl;
       std::ofstream writerStream(outputFile, ios::binary);
       boost::archive::binary_oarchive writer(writerStream);
-      writer << isam2.getFactorsUnsafe() << isam2.calculateEstimate();
+      writer << isam2.calculateEstimate();
     } catch(std::exception& e) {
       cout << e.what() << endl;
       exit(1);
@@ -392,8 +390,11 @@ void runBatch()
 {
   cout << "Creating batch optimizer..." << endl;
 
+  NonlinearFactorGraph measurements = datasetMeasurements;
+  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(Pose::Dim())));
+
   gttic_(Create_optimizer);
-  LevenbergMarquardtOptimizer optimizer(inputFileMeasurements, initial);
+  GaussNewtonOptimizer optimizer(measurements, initial);
   gttoc_(Create_optimizer);
   double lastError;
   do {
@@ -401,9 +402,9 @@ void runBatch()
     gttic_(Iterate_optimizer);
     optimizer.iterate();
     gttoc_(Iterate_optimizer);
-    cout << "Error: " << lastError << " -> " << optimizer.error() << ", lambda: " << optimizer.lambda() << endl;
+    cout << "Error: " << lastError << " -> " << optimizer.error() /*<< ", lambda: " << optimizer.lambda()*/ << endl;
     gttic_(chi2);
-    double chi2 = chi2_red(inputFileMeasurements, optimizer.values());
+    double chi2 = chi2_red(measurements, optimizer.values());
     cout << "chi2 = " << chi2 << endl;
     gttoc_(chi2);
   } while(!checkConvergence(optimizer.params().relativeErrorTol,
@@ -419,7 +420,7 @@ void runBatch()
       cout << "Writing output file " << outputFile << endl;
       std::ofstream writerStream(outputFile, ios::binary);
       boost::archive::binary_oarchive writer(writerStream);
-      writer << inputFileMeasurements << optimizer.values();
+      writer << optimizer.values();
     } catch(std::exception& e) {
       cout << e.what() << endl;
       exit(1);
@@ -430,35 +431,20 @@ void runBatch()
 /* ************************************************************************* */
 void runCompare()
 {
-  NonlinearFactorGraph graph1, graph2;
   Values soln1, soln2;
 
   cout << "Reading solution file " << compareFile1 << endl;
   {
     std::ifstream readerStream(compareFile1, ios::binary);
     boost::archive::binary_iarchive reader(readerStream);
-    reader >> graph1 >> soln1;
+    reader >> soln1;
   }
 
   cout << "Reading solution file " << compareFile2 << endl;
   {
     std::ifstream readerStream(compareFile2, ios::binary);
     boost::archive::binary_iarchive reader(readerStream);
-    reader >> graph2 >> soln2;
-  }
-
-  // Check factors for equality
-  cout << "Comparing factor graphs..." << endl;
-  if(graph1.size() != graph2.size())
-    cout << "  Graph sizes not equal, " << graph1.size() << " vs. " << graph2.size() << endl;
-  for(NonlinearFactorGraph::const_iterator f1 = graph1.begin(), f2 = graph2.begin();
-    f1 != graph1.end() && f2 != graph2.end(); ++f1, ++f2)
-  {
-    if((*f1 || *f2) && ((*f1 && !*f2) || (!*f1 && *f2) || !(**f1).equals(**f2, 1e-9))) {
-      cout << "  Factor " << f1 - graph1.begin() << " not equal.\n";
-      (**f1).print("    From graph 1: ");
-      (**f2).print("    From graph 2: ");
-    }
+    reader >> soln2;
   }
 
   // Check solution for equality
@@ -506,7 +492,7 @@ void runPerturb()
     cout << "Writing output file " << outputFile << endl;
     std::ofstream writerStream(outputFile, ios::binary);
     boost::archive::binary_oarchive writer(writerStream);
-    writer << inputFileMeasurements << perturbed;
+    writer << perturbed;
   } catch(std::exception& e) {
     cout << e.what() << endl;
     exit(1);
