@@ -394,7 +394,9 @@ void runBatch()
   measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(Pose::Dim())));
 
   gttic_(Create_optimizer);
-  GaussNewtonOptimizer optimizer(measurements, initial);
+  GaussNewtonParams params;
+  params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_QR;
+  GaussNewtonOptimizer optimizer(measurements, initial, params);
   gttoc_(Create_optimizer);
   double lastError;
   do {
