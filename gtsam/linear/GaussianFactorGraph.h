@@ -207,7 +207,8 @@ namespace gtsam {
      *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
      *  followed by back-substitution in the Bayes tree resulting from elimination.  Is equivalent
      *  to calling graph.eliminateMultifrontal()->optimize(). */
-    VectorValues optimize(const Eliminate& function = EliminationTraits::DefaultEliminate) const;
+    VectorValues optimize(OptionalOrdering ordering = boost::none,
+      const Eliminate& function = EliminationTraits::DefaultEliminate) const;
 
     /**
      * Compute the gradient of the energy function,

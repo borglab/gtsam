@@ -196,10 +196,10 @@ namespace gtsam {
   //}
   
   /* ************************************************************************* */
-  VectorValues GaussianFactorGraph::optimize(const Eliminate& function) const
+  VectorValues GaussianFactorGraph::optimize(OptionalOrdering ordering, const Eliminate& function) const
   {
     gttic(GaussianFactorGraph_optimize);
-    return BaseEliminateable::eliminateMultifrontal(boost::none, function)->optimize();
+    return BaseEliminateable::eliminateMultifrontal(ordering, function)->optimize();
   }
 
   /* ************************************************************************* */
