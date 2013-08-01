@@ -451,7 +451,7 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NonlinearFactor {
 //*************************************************************************
 // nonlinear
 //*************************************************************************
-#include <gtsam_unstable/nonlinear/summarization.h>
+#include <gtsam_unstable/nonlinear/sequentialSummarization.h>
 gtsam::GaussianFactorGraph* summarizeGraphSequential(
     const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
 gtsam::GaussianFactorGraph* summarizeGraphSequential(

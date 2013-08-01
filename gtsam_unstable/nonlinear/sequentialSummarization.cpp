@@ -6,7 +6,7 @@
  */
 
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam_unstable/nonlinear/summarization.h>
+#include <gtsam_unstable/nonlinear/sequentialSummarization.h>
 
 #include <boost/foreach.hpp>
 
