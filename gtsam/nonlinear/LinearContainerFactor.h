@@ -9,10 +9,12 @@
 
 #pragma once
 
-#include <gtsam/linear/HessianFactorOrdered.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
+
+  // Forward declarations
+  class HessianFactor;
 
 /**
  * Dummy version of a generic linear factor to be injected into a nonlinear factor graph
@@ -23,37 +25,32 @@ namespace gtsam {
 class GTSAM_EXPORT LinearContainerFactor : public NonlinearFactor {
 protected:
 
-  GaussianFactorOrdered::shared_ptr factor_;
+  GaussianFactor::shared_ptr factor_;
   boost::optional<Values> linearizationPoint_;
 
   /** Default constructor - necessary for serialization */
   LinearContainerFactor() {}
 
   /** direct copy constructor */
-  LinearContainerFactor(const GaussianFactorOrdered::shared_ptr& factor,
-      const boost::optional<Values>& linearizationPoint);
+  LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const boost::optional<Values>& linearizationPoint);
 
 public:
 
   /** Primary constructor: store a linear factor and decode the ordering */
-  LinearContainerFactor(const JacobianFactorOrdered& factor, const OrderingOrdered& ordering,
-      const Values& linearizationPoint = Values());
+  LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());
 
   /** Primary constructor: store a linear factor and decode the ordering */
-  LinearContainerFactor(const HessianFactorOrdered& factor, const OrderingOrdered& ordering,
-      const Values& linearizationPoint = Values());
+  LinearContainerFactor(const HessianFactor& factor, const Values& linearizationPoint = Values());
 
   /** Constructor from shared_ptr */
-  LinearContainerFactor(const GaussianFactorOrdered::shared_ptr& factor, const OrderingOrdered& ordering,
-      const Values& linearizationPoint = Values());
+  LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint = Values());
 
   /** Constructor from re-keyed factor: all indices assumed replaced with Key */
-  LinearContainerFactor(const GaussianFactorOrdered::shared_ptr& factor,
-      const Values& linearizationPoint = Values());
+  LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint = Values());
 
   // Access
 
-  const GaussianFactorOrdered::shared_ptr& factor() const { return factor_; }
+  const GaussianFactor::shared_ptr& factor() const { return factor_; }
 
   // Testable
 
@@ -81,9 +78,6 @@ public:
   /** Extract the linearization point used in recalculating error */
   const boost::optional<Values>& linearizationPoint() const { return linearizationPoint_; }
 
-  /** Apply the ordering to a graph - same as linearize(), but without needing a linearization point */
-  GaussianFactorOrdered::shared_ptr order(const OrderingOrdered& ordering) const;
-
   /**
    * Linearize to a GaussianFactor, with method depending on the presence of a linearizationPoint
    *  - With no linearization point, returns a reordered, but numerically identical,
@@ -101,18 +95,18 @@ public:
    * TODO: better approximation of relinearization
    * TODO: switchable modes for approximation technique
    */
-  GaussianFactorOrdered::shared_ptr linearize(const Values& c, const OrderingOrdered& ordering) const;
+  GaussianFactor::shared_ptr linearize(const Values& c) const;
 
   /**
    * Creates an anti-factor directly and performs rekeying due to ordering
    */
-  GaussianFactorOrdered::shared_ptr negate(const OrderingOrdered& ordering) const;
+  GaussianFactor::shared_ptr negateToGaussian() const;
 
   /**
    * Creates the equivalent anti-factor as another LinearContainerFactor,
    * so it remains independent of ordering.
    */
-  NonlinearFactor::shared_ptr negate() const;
+  NonlinearFactor::shared_ptr negateToNonlinear() const;
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
@@ -135,20 +129,19 @@ public:
   bool isHessian() const;
 
   /** Casts to JacobianFactor */
-  JacobianFactorOrdered::shared_ptr toJacobian() const;
+  JacobianFactor::shared_ptr toJacobian() const;
 
   /** Casts to HessianFactor */
-  HessianFactorOrdered::shared_ptr toHessian() const;
+  HessianFactor::shared_ptr toHessian() const;
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs
    * consisting of LinearContainerFactors.
    */
-  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraphOrdered& linear_graph,
-      const OrderingOrdered& ordering, const Values& linearizationPoint = Values());
+  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
+      const Values& linearizationPoint = Values());
 
 protected:
-  void rekeyFactor(const OrderingOrdered& ordering);
   void initializeLinearizationPoint(const Values& linearizationPoint);
 
 private:

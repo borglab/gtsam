@@ -45,13 +45,12 @@
 
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
-#include <gtsam/linear/VectorValuesOrdered.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
 
 namespace gtsam {
 
   // Forward declarations / utilities
+  class VectorValues;
   class ValueCloneAllocator;
   class ValueAutomaticCasting;
   template<typename T> static bool _truePredicate(const T&) { return true; }
@@ -206,9 +205,6 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
-    /** Get a zero VectorValues of the correct structure */
-    VectorValuesOrdered zeroVectors(const OrderingOrdered& ordering) const;
-
     const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
     const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
     iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
@@ -222,13 +218,10 @@ namespace gtsam {
     /// @{
 
     /** Add a delta config to current config and returns a new config */
-    Values retract(const VectorValuesOrdered& delta, const OrderingOrdered& ordering) const;
+    Values retract(const VectorValues& delta) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorValuesOrdered localCoordinates(const Values& cp, const OrderingOrdered& ordering) const;
-
-    /** Get a delta config about a linearization point c0 (*this) - assumes uninitialized delta */
-    void localCoordinates(const Values& cp, const OrderingOrdered& ordering, VectorValuesOrdered& delta) const;
+    VectorValues localCoordinates(const Values& cp) const;
 
     ///@}
 
@@ -262,19 +255,8 @@ namespace gtsam {
     /** Remove all variables from the config */
     void clear() { values_.clear(); }
 
-    /** Create an array of variable dimensions using the given ordering (\f$ O(n) \f$) */
-    std::vector<size_t> dims(const OrderingOrdered& ordering) const;
-
     /** Compute the total dimensionality of all values (\f$ O(n) \f$) */
     size_t dim() const;
-
-    /**
-     * Generate a default ordering, simply in key sort order.  To instead
-     * create a fill-reducing ordering, use
-     * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
-     * this ordering yourself (as orderingCOLAMD() does internally).
-     */
-    OrderingOrdered::shared_ptr orderingArbitrary(Index firstVar = 0) const;
 
     /**
      * Return a filtered view of this Values class, without copying any data.

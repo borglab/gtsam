@@ -17,6 +17,8 @@
  */
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
 
 using namespace std;
 
@@ -28,18 +30,27 @@ void GaussNewtonOptimizer::iterate() {
   const NonlinearOptimizerState& current = state_;
 
   // Linearize graph
-  GaussianFactorGraphOrdered::shared_ptr linear = graph_.linearize(current.values, *params_.ordering);
+  GaussianFactorGraph::shared_ptr linear = graph_.linearize(current.values);
 
   // Solve Factor Graph
-  const VectorValuesOrdered delta = solveGaussianFactorGraph(*linear, params_);
+  const VectorValues delta = solveGaussianFactorGraph(*linear, params_);
 
   // Maybe show output
   if(params_.verbosity >= NonlinearOptimizerParams::DELTA) delta.print("delta");
 
   // Create new state with new values and new error
-  state_.values = current.values.retract(delta, *params_.ordering);
+  state_.values = current.values.retract(delta);
   state_.error = graph_.error(state_.values);
   ++ state_.iterations;
+}
+
+/* ************************************************************************* */
+GaussNewtonParams GaussNewtonOptimizer::ensureHasOrdering(
+  GaussNewtonParams params, const NonlinearFactorGraph& graph) const
+{
+  if(!params.ordering)
+    params.ordering = Ordering::COLAMD(graph);
+  return params;
 }
 
 } /* namespace gtsam */

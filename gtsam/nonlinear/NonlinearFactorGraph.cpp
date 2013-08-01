@@ -20,10 +20,12 @@
 #include <cmath>
 #include <limits>
 #include <boost/foreach.hpp>
-#include <gtsam/inference/FactorGraphOrdered.h>
-#include <gtsam/inference/inferenceOrdered.h>
+#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace std;
@@ -207,107 +209,61 @@ FastSet<Key> NonlinearFactorGraph::keys() const {
 }
 
 /* ************************************************************************* */
-OrderingOrdered::shared_ptr NonlinearFactorGraph::orderingCOLAMD(
-    const Values& config) const
+Ordering NonlinearFactorGraph::orderingCOLAMD() const
 {
-  gttic(NonlinearFactorGraph_orderingCOLAMD);
-
-  // Create symbolic graph and initial (iterator) ordering
-  SymbolicFactorGraphOrdered::shared_ptr symbolic;
-  OrderingOrdered::shared_ptr ordering;
-  boost::tie(symbolic, ordering) = this->symbolic(config);
-
-  // Compute the VariableIndex (column-wise index)
-  VariableIndexOrdered variableIndex(*symbolic, ordering->size());
-  if (config.size() != variableIndex.size()) throw std::runtime_error(
-      "orderingCOLAMD: some variables in the graph are not constrained!");
-
-  // Compute a fill-reducing ordering with COLAMD
-  Permutation::shared_ptr colamdPerm(inference::PermutationCOLAMD(
-      variableIndex));
-
-  // Permute the Ordering with the COLAMD ordering
-  ordering->permuteInPlace(*colamdPerm);
-  return ordering;
+  return Ordering::COLAMD(*this);
 }
 
 /* ************************************************************************* */
-OrderingOrdered::shared_ptr NonlinearFactorGraph::orderingCOLAMDConstrained(const Values& config,
-    const std::map<Key, int>& constraints) const
+Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const
 {
-  gttic(NonlinearFactorGraph_orderingCOLAMDConstrained);
-
-  // Create symbolic graph and initial (iterator) ordering
-  SymbolicFactorGraphOrdered::shared_ptr symbolic;
-  OrderingOrdered::shared_ptr ordering;
-  boost::tie(symbolic, ordering) = this->symbolic(config);
-
-  // Compute the VariableIndex (column-wise index)
-  VariableIndexOrdered variableIndex(*symbolic, ordering->size());
-  if (config.size() != variableIndex.size()) throw std::runtime_error(
-      "orderingCOLAMD: some variables in the graph are not constrained!");
-
-  // Create a constraint list with correct indices
-  typedef std::map<Key, int>::value_type constraint_type;
-  std::map<Index, int> index_constraints;
-  BOOST_FOREACH(const constraint_type& p, constraints)
-    index_constraints[ordering->at(p.first)] = p.second;
-
-  // Compute a constrained fill-reducing ordering with COLAMD
-  Permutation::shared_ptr colamdPerm(inference::PermutationCOLAMDGrouped(
-      variableIndex, index_constraints));
-
-  // Permute the Ordering with the COLAMD ordering
-  ordering->permuteInPlace(*colamdPerm);
-  return ordering;
+  return Ordering::COLAMDConstrained(*this, constraints);
 }
 
 /* ************************************************************************* */
-SymbolicFactorGraphOrdered::shared_ptr NonlinearFactorGraph::symbolic(const OrderingOrdered& ordering) const {
-  gttic(NonlinearFactorGraph_symbolic_from_Ordering);
-
-  // Generate the symbolic factor graph
-  SymbolicFactorGraphOrdered::shared_ptr symbolicfg(new SymbolicFactorGraphOrdered);
-  symbolicfg->reserve(this->size());
-
-  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
-    if(factor)
-      symbolicfg->push_back(factor->symbolic(ordering));
-    else
-      symbolicfg->push_back(SymbolicFactorGraphOrdered::sharedFactor());
-  }
-
-  return symbolicfg;
-}
-
-/* ************************************************************************* */
-pair<SymbolicFactorGraphOrdered::shared_ptr, OrderingOrdered::shared_ptr> NonlinearFactorGraph::symbolic(
-    const Values& config) const
-{
-  gttic(NonlinearFactorGraph_symbolic_from_Values);
-
-  // Generate an initial key ordering in iterator order
-  OrderingOrdered::shared_ptr ordering(config.orderingArbitrary());
-  return make_pair(symbolic(*ordering), ordering);
-}
+//SymbolicFactorGraphOrdered::shared_ptr NonlinearFactorGraph::symbolic(const OrderingOrdered& ordering) const {
+//  gttic(NonlinearFactorGraph_symbolic_from_Ordering);
+//
+//  // Generate the symbolic factor graph
+//  SymbolicFactorGraphOrdered::shared_ptr symbolicfg(new SymbolicFactorGraphOrdered);
+//  symbolicfg->reserve(this->size());
+//
+//  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+//    if(factor)
+//      symbolicfg->push_back(factor->symbolic(ordering));
+//    else
+//      symbolicfg->push_back(SymbolicFactorGraphOrdered::sharedFactor());
+//  }
+//
+//  return symbolicfg;
+//}
 
 /* ************************************************************************* */
-GaussianFactorGraphOrdered::shared_ptr NonlinearFactorGraph::linearize(
-    const Values& config, const OrderingOrdered& ordering) const
+//pair<SymbolicFactorGraphOrdered::shared_ptr, OrderingOrdered::shared_ptr> NonlinearFactorGraph::symbolic(
+//    const Values& config) const
+//{
+//  gttic(NonlinearFactorGraph_symbolic_from_Values);
+//
+//  // Generate an initial key ordering in iterator order
+//  OrderingOrdered::shared_ptr ordering(config.orderingArbitrary());
+//  return make_pair(symbolic(*ordering), ordering);
+//}
+
+/* ************************************************************************* */
+GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& linearizationPoint) const
 {
   gttic(NonlinearFactorGraph_linearize);
 
   // create an empty linear FG
-  GaussianFactorGraphOrdered::shared_ptr linearFG(new GaussianFactorGraphOrdered);
+  GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
   linearFG->reserve(this->size());
 
   // linearize all factors
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
     if(factor) {
-      GaussianFactorOrdered::shared_ptr lf = factor->linearize(config, ordering);
-      if (lf) linearFG->push_back(lf);
+      (*linearFG) += factor->linearize(linearizationPoint);
     } else
-      linearFG->push_back(GaussianFactorOrdered::shared_ptr());
+      (*linearFG) += GaussianFactor::shared_ptr();
   }
 
   return linearFG;

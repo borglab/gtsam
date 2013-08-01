@@ -23,6 +23,7 @@
  */
 
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/linear/VectorValues.h>
 
 #include <list>
 
@@ -76,12 +77,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValuesOrdered Values::zeroVectors(const OrderingOrdered& ordering) const {
-    return VectorValuesOrdered::Zero(this->dims(ordering));
-  }
-
-  /* ************************************************************************* */
-  Values Values::retract(const VectorValuesOrdered& delta, const OrderingOrdered& ordering) const {
+  Values Values::retract(const VectorValues& delta) const
+  {
     Values result;
 
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
@@ -95,30 +92,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValuesOrdered Values::localCoordinates(const Values& cp, const OrderingOrdered& ordering) const {
-    VectorValuesOrdered result(this->dims(ordering));
+  VectorValues Values::localCoordinates(const Values& cp) const {
     if(this->size() != cp.size())
       throw DynamicValuesMismatched();
+    VectorValues result;
     for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
       if(it1->key != it2->key)
         throw DynamicValuesMismatched(); // If keys do not match
       // Will throw a dynamic_cast exception if types do not match
       // NOTE: this is separate from localCoordinates(cp, ordering, result) due to at() vs. insert
-      result.at(ordering[it1->key]) = it1->value.localCoordinates_(it2->value);
+      result.insert(it1->key, it1->value.localCoordinates_(it2->value));
     }
     return result;
-  }
-
-  /* ************************************************************************* */
-  void Values::localCoordinates(const Values& cp, const OrderingOrdered& ordering, VectorValuesOrdered& result) const {
-    if(this->size() != cp.size())
-      throw DynamicValuesMismatched();
-    for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
-      if(it1->key != it2->key)
-        throw DynamicValuesMismatched(); // If keys do not match
-      // Will throw a dynamic_cast exception if types do not match
-      result.insert(ordering[it1->key], it1->value.localCoordinates_(it2->value));
-    }
   }
 
   /* ************************************************************************* */
@@ -193,31 +178,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  vector<size_t> Values::dims(const OrderingOrdered& ordering) const {
-    assert(ordering.size() == this->size()); // reads off of end of array if difference in size
-    vector<size_t> result(values_.size());
-    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
-      result[ordering[key_value.key]] = key_value.value.dim();
-    }
-    return result;
-  }
-
-  /* ************************************************************************* */
   size_t Values::dim() const {
     size_t result = 0;
     BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
       result += key_value.value.dim();
     }
     return result;
-  }
-
-  /* ************************************************************************* */
-  OrderingOrdered::shared_ptr Values::orderingArbitrary(Index firstVar) const {
-    OrderingOrdered::shared_ptr ordering(new OrderingOrdered);
-    for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
-      ordering->insert(key_value->key, firstVar++);
-    }
-    return ordering;
   }
 
   /* ************************************************************************* */

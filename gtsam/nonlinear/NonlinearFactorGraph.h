@@ -22,11 +22,15 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/inference/FactorGraph.h>
 
 namespace gtsam {
+
+  // Forward declarations
+  class Values;
+  class Ordering;
+  class GaussianFactorGraph;
 
   /**
    * Formatting options when saving in GraphViz format using
@@ -58,13 +62,28 @@ namespace gtsam {
    * tangent vector space at the linearization point. Because the tangent space is a true
    * vector space, the config type will be an VectorValues in that linearized factor graph.
    */
-  class NonlinearFactorGraph: public FactorGraphOrdered<NonlinearFactor> {
+  class NonlinearFactorGraph: public FactorGraph<NonlinearFactor> {
 
   public:
 
-    typedef FactorGraphOrdered<NonlinearFactor> Base;
-    typedef boost::shared_ptr<NonlinearFactorGraph> shared_ptr;
-    typedef boost::shared_ptr<NonlinearFactor> sharedFactor;
+    typedef FactorGraph<NonlinearFactor> Base;
+    typedef NonlinearFactorGraph This;
+    typedef boost::shared_ptr<This> shared_ptr;
+
+    /** Default constructor */
+    NonlinearFactorGraph() {}
+
+    /** Construct from iterator over factors */
+    template<typename ITERATOR>
+    NonlinearFactorGraph(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
+
+    /** Construct from container of factors (shared_ptr or plain objects) */
+    template<class CONTAINER>
+    explicit NonlinearFactorGraph(const CONTAINER& factors) : Base(factors) {}
+
+    /** Implicit copy/downcast constructor to override explicit template container constructor */
+    template<class DERIVEDFACTOR>
+    NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
     /** print just calls base class */
     GTSAM_EXPORT void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -83,20 +102,10 @@ namespace gtsam {
     /** Unnormalized probability. O(n) */
     GTSAM_EXPORT double probPrime(const Values& c) const;
 
-    /// Add a factor by value - copies the factor object
-    void add(const NonlinearFactor& factor) {
-      this->push_back(factor.clone());
-    }
-
-    /// Add a factor by pointer - stores pointer without copying factor object
-    void add(const sharedFactor& factor) {
-      this->push_back(factor);
-    }
-
     /**
      * Create a symbolic factor graph using an existing ordering
      */
-    GTSAM_EXPORT SymbolicFactorGraphOrdered::shared_ptr symbolic(const OrderingOrdered& ordering) const;
+    //GTSAM_EXPORT SymbolicFactorGraph::shared_ptr symbolic() const;
 
     /**
      * Create a symbolic factor graph and initial variable ordering that can
@@ -104,13 +113,13 @@ namespace gtsam {
      * The graph and ordering should be permuted after such a fill-reducing
      * ordering is found.
      */
-    GTSAM_EXPORT std::pair<SymbolicFactorGraphOrdered::shared_ptr, OrderingOrdered::shared_ptr>
-    symbolic(const Values& config) const;
+    //GTSAM_EXPORT std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
+    //  symbolic(const Values& config) const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.
      */
-    GTSAM_EXPORT OrderingOrdered::shared_ptr orderingCOLAMD(const Values& config) const;
+    GTSAM_EXPORT Ordering orderingCOLAMD() const;
 
     /**
      * Compute a fill-reducing ordering with constraints using CCOLAMD
@@ -120,14 +129,12 @@ namespace gtsam {
      * indices need to appear in the constraints, unconstrained is assumed for all
      * other variables
      */
-    GTSAM_EXPORT OrderingOrdered::shared_ptr orderingCOLAMDConstrained(const Values& config,
-        const std::map<Key, int>& constraints) const;
+    GTSAM_EXPORT Ordering orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const;
 
     /**
      * linearize a nonlinear factor graph
      */
-    GTSAM_EXPORT boost::shared_ptr<GaussianFactorGraphOrdered >
-        linearize(const Values& config, const OrderingOrdered& ordering) const;
+    GTSAM_EXPORT boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors

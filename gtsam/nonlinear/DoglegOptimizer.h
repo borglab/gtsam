@@ -158,11 +158,7 @@ protected:
   virtual const NonlinearOptimizerState& _state() const { return state_; }
 
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
-  DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph, const Values& values) const {
-    if(!params.ordering)
-      params.ordering = *graph.orderingCOLAMD(values);
-    return params;
-  }
+  DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph) const;
 };
 
 }

@@ -6,19 +6,12 @@
  */
 
 #include <gtsam/nonlinear/LinearContainerFactor.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 #include <boost/foreach.hpp>
 
 namespace gtsam {
-
-/* ************************************************************************* */
-void LinearContainerFactor::rekeyFactor(const OrderingOrdered& ordering) {
-  BOOST_FOREACH(Index& idx, factor_->keys()) {
-    Key fullKey = ordering.key(idx);
-    idx = fullKey;
-    keys_.push_back(fullKey);
-  }
-}
 
 /* ************************************************************************* */
 void LinearContainerFactor::initializeLinearizationPoint(const Values& linearizationPoint) {
@@ -33,7 +26,7 @@ void LinearContainerFactor::initializeLinearizationPoint(const Values& lineariza
 }
 
 /* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(const GaussianFactorOrdered::shared_ptr& factor,
+LinearContainerFactor::LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
     const boost::optional<Values>& linearizationPoint)
 : factor_(factor), linearizationPoint_(linearizationPoint) {
   // Extract keys stashed in linear factor
@@ -43,28 +36,22 @@ LinearContainerFactor::LinearContainerFactor(const GaussianFactorOrdered::shared
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
-    const JacobianFactorOrdered& factor, const OrderingOrdered& ordering,
-    const Values& linearizationPoint)
+    const JacobianFactor& factor, const Values& linearizationPoint)
 : factor_(factor.clone()) {
-  rekeyFactor(ordering);
   initializeLinearizationPoint(linearizationPoint);
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
-    const HessianFactorOrdered& factor, const OrderingOrdered& ordering,
-    const Values& linearizationPoint)
+    const HessianFactor& factor, const Values& linearizationPoint)
 : factor_(factor.clone()) {
-  rekeyFactor(ordering);
   initializeLinearizationPoint(linearizationPoint);
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
-    const GaussianFactorOrdered::shared_ptr& factor, const OrderingOrdered& ordering,
-    const Values& linearizationPoint)
+    const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint)
 : factor_(factor->clone()) {
-  rekeyFactor(ordering);
   initializeLinearizationPoint(linearizationPoint);
 }
 
@@ -112,18 +99,10 @@ double LinearContainerFactor::error(const Values& c) const {
     csub.insert(key, c.at(key));
 
   // create dummy ordering for evaluation
-  OrderingOrdered ordering = *csub.orderingArbitrary();
-  VectorValuesOrdered delta = linearizationPoint_->localCoordinates(csub, ordering);
-
-  // Change keys on stored factor
-  BOOST_FOREACH(gtsam::Index& index, factor_->keys())
-    index = ordering[index];
+  VectorValues delta = linearizationPoint_->localCoordinates(csub);
 
   // compute error
   double error = factor_->error(delta);
-
-  // change keys back
-  factor_->keys() = keys();
 
   return error;
 }
@@ -137,103 +116,79 @@ size_t LinearContainerFactor::dim() const {
 }
 
 /* ************************************************************************* */
-GaussianFactorOrdered::shared_ptr LinearContainerFactor::order(const OrderingOrdered& ordering) const {
-  // clone factor
-  boost::shared_ptr<GaussianFactorOrdered> result = factor_->clone();
-
-  // rekey
-  BOOST_FOREACH(Index& key, result->keys())
-    key = ordering[key];
-
-  return result;
-}
-
-/* ************************************************************************* */
-GaussianFactorOrdered::shared_ptr LinearContainerFactor::linearize(
-    const Values& c, const OrderingOrdered& ordering) const {
+GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) const {
   if (!hasLinearizationPoint())
-    return order(ordering);
+    return factor_;
 
   // Extract subset of values
   Values subsetC;
   BOOST_FOREACH(const gtsam::Key& key, this->keys())
     subsetC.insert(key, c.at(key));
 
-  // Create a temp ordering for this factor
-  OrderingOrdered localOrdering = *subsetC.orderingArbitrary();
-
   // Determine delta between linearization points using new ordering
-  VectorValuesOrdered delta = linearizationPoint_->localCoordinates(subsetC, localOrdering);
+  VectorValues delta = linearizationPoint_->localCoordinates(subsetC);
 
   // clone and reorder linear factor to final ordering
-  GaussianFactorOrdered::shared_ptr linFactor = order(localOrdering);
+  GaussianFactor::shared_ptr linFactor = factor_->clone();
   if (isJacobian()) {
-    JacobianFactorOrdered::shared_ptr jacFactor = boost::dynamic_pointer_cast<JacobianFactorOrdered>(linFactor);
+    JacobianFactor::shared_ptr jacFactor = boost::dynamic_pointer_cast<JacobianFactor>(linFactor);
     jacFactor->getb() = -jacFactor->unweighted_error(delta);
   } else {
-    HessianFactorOrdered::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactorOrdered>(linFactor);
+    HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
     size_t dim = hesFactor->linearTerm().size();
-    Eigen::Block<HessianFactorOrdered::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
+    Eigen::Block<HessianFactor::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
     Vector deltaVector = delta.asVector();
     Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * deltaVector;
     hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm());
     hesFactor->linearTerm() -= G_delta;
   }
 
-  // reset ordering
-  BOOST_FOREACH(Index& idx, linFactor->keys())
-    idx = ordering[localOrdering.key(idx)];
   return linFactor;
 }
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isJacobian() const {
-  return boost::dynamic_pointer_cast<JacobianFactorOrdered>(factor_);
+  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isHessian() const {
-  return boost::dynamic_pointer_cast<HessianFactorOrdered>(factor_);
+  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */
-JacobianFactorOrdered::shared_ptr LinearContainerFactor::toJacobian() const {
-  return boost::dynamic_pointer_cast<JacobianFactorOrdered>(factor_);
+JacobianFactor::shared_ptr LinearContainerFactor::toJacobian() const {
+  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
 }
 
 /* ************************************************************************* */
-HessianFactorOrdered::shared_ptr LinearContainerFactor::toHessian() const {
-  return boost::dynamic_pointer_cast<HessianFactorOrdered>(factor_);
+HessianFactor::shared_ptr LinearContainerFactor::toHessian() const {
+  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */
-GaussianFactorOrdered::shared_ptr LinearContainerFactor::negate(const OrderingOrdered& ordering) const {
-  GaussianFactorOrdered::shared_ptr result = factor_->negate();
-  BOOST_FOREACH(Key& key, result->keys())
-    key = ordering[key];
-  return result;
+GaussianFactor::shared_ptr LinearContainerFactor::negateToGaussian() const {
+  GaussianFactor::shared_ptr result = factor_->negate();
 }
 
 /* ************************************************************************* */
-NonlinearFactor::shared_ptr LinearContainerFactor::negate() const {
-  GaussianFactorOrdered::shared_ptr antifactor = factor_->negate(); // already has keys in place
-  return NonlinearFactor::shared_ptr(new LinearContainerFactor(antifactor,linearizationPoint_));
+NonlinearFactor::shared_ptr LinearContainerFactor::negateToNonlinear() const {
+  GaussianFactor::shared_ptr antifactor = factor_->negate(); // already has keys in place
+  return boost::make_shared<LinearContainerFactor>(antifactor, linearizationPoint_);
 }
 
 /* ************************************************************************* */
 NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
-    const GaussianFactorGraphOrdered& linear_graph,  const OrderingOrdered& ordering,
-    const Values& linearizationPoint) {
+    const GaussianFactorGraph& linear_graph, const Values& linearizationPoint)
+{
   NonlinearFactorGraph result;
-  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& f, linear_graph)
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& f, linear_graph)
     if (f)
       result.push_back(NonlinearFactorGraph::sharedFactor(
-          new LinearContainerFactor(f, ordering, linearizationPoint)));
+          new LinearContainerFactor(f, linearizationPoint)));
   return result;
 }
 
 /* ************************************************************************* */
 } // \namespace gtsam
-
-
 

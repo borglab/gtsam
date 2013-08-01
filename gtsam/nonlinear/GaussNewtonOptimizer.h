@@ -70,7 +70,7 @@ public:
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
    */
-  GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const OrderingOrdered& ordering) :
+  GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph), state_(graph, initialValues) {
     params_.ordering = ordering; }
 
@@ -110,11 +110,7 @@ protected:
   virtual const NonlinearOptimizerState& _state() const { return state_; }
 
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
-  GaussNewtonParams ensureHasOrdering(GaussNewtonParams params, const NonlinearFactorGraph& graph, const Values& values) const {
-    if(!params.ordering)
-      params.ordering = *graph.orderingCOLAMD(values);
-    return params;
-  }
+  GaussNewtonParams ensureHasOrdering(GaussNewtonParams params, const NonlinearFactorGraph& graph) const;
 
 };
 

@@ -17,10 +17,11 @@
  */
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
-
-#include <gtsam/inference/EliminationTreeOrdered.h>
-#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -53,8 +54,7 @@ std::string DoglegParams::verbosityDLTranslator(VerbosityDL verbosityDL) const {
 void DoglegOptimizer::iterate(void) {
 
   // Linearize graph
-  const OrderingOrdered& ordering = *params_.ordering;
-  GaussianFactorGraphOrdered::shared_ptr linear = graph_.linearize(state_.values, ordering);
+  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values);
 
   // Pull out parameters we'll use
   const bool dlVerbose = (params_.verbosityDL > DoglegParams::SILENT);
@@ -63,13 +63,12 @@ void DoglegOptimizer::iterate(void) {
   DoglegOptimizerImpl::IterationResult result;
 
   if ( params_.isMultifrontal() ) {
-    GaussianBayesTreeOrdered bt;
-    bt.insert(GaussianJunctionTreeOrdered(*linear).eliminate(params_.getEliminationFunction()));
-    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, bt, graph_, state_.values, ordering, state_.error, dlVerbose);
+    GaussianBayesTree bt = *linear->eliminateMultifrontal(*params_.ordering, params_.getEliminationFunction());
+    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, bt, graph_, state_.values, state_.error, dlVerbose);
   }
   else if ( params_.isSequential() ) {
-    GaussianBayesNetOrdered::shared_ptr bn = EliminationTreeOrdered<GaussianFactorOrdered>::Create(*linear)->eliminate(params_.getEliminationFunction());
-    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, graph_, state_.values, ordering, state_.error, dlVerbose);
+    GaussianBayesNet bn = *linear->eliminateSequential(*params_.ordering, params_.getEliminationFunction());
+    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, bn, graph_, state_.values, state_.error, dlVerbose);
   }
   else if ( params_.isCG() ) {
     throw runtime_error("todo: ");
@@ -82,10 +81,17 @@ void DoglegOptimizer::iterate(void) {
   if(params_.verbosity >= NonlinearOptimizerParams::DELTA) result.dx_d.print("delta");
 
   // Create new state with new values and new error
-  state_.values = state_.values.retract(result.dx_d, ordering);
+  state_.values = state_.values.retract(result.dx_d);
   state_.error = result.f_error;
   state_.Delta = result.Delta;
   ++state_.iterations;
+}
+
+/* ************************************************************************* */
+DoglegParams DoglegOptimizer::ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph) const {
+  if(!params.ordering)
+    params.ordering = Ordering::COLAMD(graph);
+  return params;
 }
 
 } /* namespace gtsam */
