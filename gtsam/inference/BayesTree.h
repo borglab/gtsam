@@ -259,11 +259,11 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  class BayesTreeOrphanWrapper : public CLIQUE::FactorType
+  class BayesTreeOrphanWrapper : public CLIQUE::ConditionalType
   {
   public:
     typedef CLIQUE CliqueType;
-    typedef typename CLIQUE::FactorType Base;
+    typedef typename CLIQUE::ConditionalType Base;
 
     boost::shared_ptr<CliqueType> clique;
 
