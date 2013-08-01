@@ -32,7 +32,7 @@ namespace gtsam {
     /* ************************************************************************* */
     struct OptimizeData {
       boost::optional<OptimizeData&> parentData;
-      VectorValues ancestorResults;
+      //VectorValues ancestorResults;
       //VectorValues results;
     };
 
