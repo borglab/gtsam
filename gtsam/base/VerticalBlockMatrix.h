@@ -93,6 +93,18 @@ namespace gtsam {
       matrix_.resize(height, variableColOffsets_.back());
       assertInvariants();
     }
+    
+    /** Copy the block structure and resize the underlying matrix, but do not copy the matrix data.
+    *  If blockStart(), rowStart(), and/or rowEnd() have been modified, this copies the structure of
+    *  the corresponding matrix view. In the destination VerticalBlockView, blockStart() and
+    *  rowStart() will thus be 0, rowEnd() will be cols() of the source VerticalBlockView, and the
+    *  underlying matrix will be the size of the view of the source matrix.  */
+    static VerticalBlockMatrix LikeActiveViewOf(const VerticalBlockMatrix& rhs);
+
+    /** Copy the block structure, but do not copy the matrix data. If blockStart() has been
+    *   modified, this copies the structure of the corresponding matrix view. In the destination
+    *   VerticalBlockMatrix, blockStart() will be 0. */
+    static VerticalBlockMatrix LikeActiveViewOf(const SymmetricBlockMatrix& rhs, DenseIndex height);
 
     /// Row size
     DenseIndex rows() const { assertInvariants(); return rowEnd_ - rowStart_; }
@@ -172,13 +184,6 @@ namespace gtsam {
 
     /** Non-const access to full matrix (*including* any portions excluded by rowStart(), rowEnd(), and firstBlock()) */
     Matrix& matrix() { return matrix_; }
-
-    /** Copy the block structure and resize the underlying matrix, but do not copy the matrix data.
-    *  If blockStart(), rowStart(), and/or rowEnd() have been modified, this copies the structure of
-    *  the corresponding matrix view. In the destination VerticalBlockView, blockStart() and
-    *  rowStart() will thus be 0, rowEnd() will be cols() of the source VerticalBlockView, and the
-    *  underlying matrix will be the size of the view of the source matrix.  */
-    static VerticalBlockMatrix LikeActiveViewOf(const VerticalBlockMatrix& rhs);
 
   protected:
     void assertInvariants() const {

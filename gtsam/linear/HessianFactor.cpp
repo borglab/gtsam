@@ -393,32 +393,20 @@ GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFr
 {
   static const bool debug = false;
 
-  // Extract conditionals
-  gttic(extract_conditionals);
-  typedef VerticalBlockView<Matrix> BlockAb;
-  BlockAb Ab(matrix_, info_);
-
-  size_t varDim = info_.offset(nrFrontals);
-  Ab.rowEnd() = Ab.rowStart() + varDim;
-
   // Create one big conditionals with many frontal variables.
-  gttic(construct_cond);
-
-  VerticalBlockMatrix Ab()
+  gttic(Construct_conditional);
+  size_t varDim = info_.offset(nrFrontals);
+  VerticalBlockMatrix Ab = VerticalBlockMatrix::LikeActiveViewOf(info_, varDim);
   GaussianConditional::shared_ptr conditional = boost::make_shared<GaussianConditional>(
     keys_, nrFrontals, Ab);
-  gttoc(construct_cond);
+  gttoc(Construct_conditional);
 
-  gttoc(extract_conditionals);
-
+  gttic(Remaining_factor);
   // Take lower-right block of Ab_ to get the new factor
-  gttic(remaining_factor);
   info_.blockStart() = nrFrontals;
   // Assign the keys
-  vector<Index> remainingKeys(keys_.size() - nrFrontals);
-  remainingKeys.assign(keys_.begin() + nrFrontals, keys_.end());
-  keys_.swap(remainingKeys);
-  gttoc(remaining_factor);
+  keys_.erase(begin(), begin() + nrFrontals);
+  gttoc(Remaining_factor);
 
   return conditional;
 }

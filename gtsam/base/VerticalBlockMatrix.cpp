@@ -17,6 +17,7 @@
  * @date    Sep 18, 2010 */
 
 #include <gtsam/base/VerticalBlockMatrix.h>
+#include <gtsam/base/SymmetricBlockMatrix.h>
 
 namespace gtsam {
 
@@ -29,6 +30,19 @@ namespace gtsam {
       result.variableColOffsets_.begin());
     result.matrix_.resize(rhs.rows(), result.variableColOffsets_.back());
     result.rowEnd_ = rhs.rows();
+    result.assertInvariants();
+    return result;
+  }
+
+  /* ************************************************************************* */
+  VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(const SymmetricBlockMatrix& rhs, DenseIndex height)
+  {
+    VerticalBlockMatrix result;
+    result.variableColOffsets_.resize(rhs.nBlocks() + 1);
+    std::copy(rhs.variableColOffsets_.begin() + rhs.blockStart_, rhs.variableColOffsets_.end(),
+      result.variableColOffsets_.begin());
+    result.matrix_.resize(height, result.variableColOffsets_.back());
+    result.rowEnd_ = height;
     result.assertInvariants();
     return result;
   }

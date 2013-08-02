@@ -214,6 +214,8 @@ namespace gtsam {
       }
     }
 
+    friend class VerticalBlockMatrix;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
