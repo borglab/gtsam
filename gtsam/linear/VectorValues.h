@@ -273,7 +273,7 @@ namespace gtsam {
     VectorValues subtract(const VectorValues& c) const;
 
     /** Element-wise scaling by a constant. */
-    friend VectorValues operator*(const double a, const VectorValues &v);
+    friend GTSAM_EXPORT VectorValues operator*(const double a, const VectorValues &v);
 
     /** Element-wise scaling by a constant. */
     VectorValues scale(const double a) const;
