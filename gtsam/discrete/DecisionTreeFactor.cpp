@@ -45,14 +45,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   bool DecisionTreeFactor::equals(const This& other, double tol) const {
-    return IndexFactorOrdered::equals(other, tol) && Potentials::equals(other, tol);
+    return Factor::equals(other, tol) && Potentials::equals(other, tol);
   }
 
   /* ************************************************************************* */
   void DecisionTreeFactor::print(const string& s,
       const IndexFormatter& formatter) const {
     cout << s;
-    IndexFactorOrdered::print("IndexFactor:",formatter);
+    Base::print("Factor:",formatter);
     Potentials::print("Potentials:",formatter);
   }
 

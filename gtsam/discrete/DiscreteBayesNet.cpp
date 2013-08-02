@@ -18,47 +18,41 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/inference/BayesNetOrdered-inl.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+
 #include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 
 namespace gtsam {
 
-  // Explicitly instantiate so we don't have to include everywhere
-  template class BayesNetOrdered<DiscreteConditional> ;
-
   /* ************************************************************************* */
-  void add_front(DiscreteBayesNet& bayesNet, const Signature& s) {
-    bayesNet.push_front(boost::make_shared<DiscreteConditional>(s));
+  void DiscreteBayesNet::add(const Signature& s) {
+    push_back(boost::make_shared<DiscreteConditional>(s));
   }
 
   /* ************************************************************************* */
-  void add(DiscreteBayesNet& bayesNet, const Signature& s) {
-    bayesNet.push_back(boost::make_shared<DiscreteConditional>(s));
-  }
-
-  /* ************************************************************************* */
-  double evaluate(const DiscreteBayesNet& bn, const DiscreteConditional::Values & values) {
+  double DiscreteBayesNet::evaluate(const DiscreteConditional::Values & values) {
     // evaluate all conditionals and multiply
     double result = 1.0;
-    BOOST_FOREACH(DiscreteConditional::shared_ptr conditional, bn)
+    BOOST_FOREACH(DiscreteConditional::shared_ptr conditional, *this)
       result *= (*conditional)(values);
     return result;
   }
 
   /* ************************************************************************* */
-  DiscreteFactor::sharedValues optimize(const DiscreteBayesNet& bn) {
+  DiscreteFactor::sharedValues DiscreteBayesNet::optimize() {
     // solve each node in turn in topological sort order (parents first)
     DiscreteFactor::sharedValues result(new DiscreteFactor::Values());
-    BOOST_REVERSE_FOREACH (DiscreteConditional::shared_ptr conditional, bn)
+    BOOST_REVERSE_FOREACH (DiscreteConditional::shared_ptr conditional, *this)
       conditional->solveInPlace(*result);
     return result;
   }
 
   /* ************************************************************************* */
-  DiscreteFactor::sharedValues sample(const DiscreteBayesNet& bn) {
+  DiscreteFactor::sharedValues DiscreteBayesNet::sample() {
     // sample each node in turn in topological sort order (parents first)
     DiscreteFactor::sharedValues result(new DiscreteFactor::Values());
-    BOOST_REVERSE_FOREACH(DiscreteConditional::shared_ptr conditional, bn)
+    BOOST_REVERSE_FOREACH(DiscreteConditional::shared_ptr conditional, *this)
       conditional->sampleInPlace(*result);
     return result;
   }

@@ -20,13 +20,16 @@
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
-#include <gtsam/inference/FactorGraphOrdered.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/FastSet.h>
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
 
-class DiscreteFactorGraph: public FactorGraphOrdered<DiscreteFactor> {
+  // Forward declarations
+  class Ordering;
+
+class GTSAM_EXPORT DiscreteFactorGraph: public FactorGraph<DiscreteFactor> {
 public:
 
   /** A map from keys to values */
@@ -34,17 +37,20 @@ public:
   typedef Assignment<Index> Values;
   typedef boost::shared_ptr<Values> sharedValues;
 
-  /** Construct empty factor graph */
-  GTSAM_EXPORT DiscreteFactorGraph();
+  /** Default constructor */
+  DiscreteFactorGraph() {}
 
-  /** Constructor from a factor graph of GaussianFactor or a derived type */
+  /** Construct from iterator over factors */
+  template<typename ITERATOR>
+  DiscreteFactorGraph(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
+
+  /** Construct from container of factors (shared_ptr or plain objects) */
+  template<class CONTAINER>
+  explicit DiscreteFactorGraph(const CONTAINER& factors) : Base(factors) {}
+
+  /** Implicit copy/downcast constructor to override explicit template container constructor */
   template<class DERIVEDFACTOR>
-  DiscreteFactorGraph(const FactorGraphOrdered<DERIVEDFACTOR>& fg) {
-    push_back(fg);
-  }
-
-  /** construct from a BayesNet */
-  GTSAM_EXPORT DiscreteFactorGraph(const BayesNetOrdered<DiscreteConditional>& bayesNet);
+  DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
   template<class SOURCE>
   void add(const DiscreteKey& j, SOURCE table) {
@@ -68,29 +74,22 @@ public:
   }
 
   /** Return the set of variables involved in the factors (set union) */
-  GTSAM_EXPORT FastSet<Index> keys() const;
+  FastSet<Index> keys() const;
 
   /** return product of all factors as a single factor */
-  GTSAM_EXPORT DecisionTreeFactor product() const;
+  DecisionTreeFactor product() const;
 
   /** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
-  GTSAM_EXPORT double operator()(const DiscreteFactor::Values & values) const;
+  double operator()(const DiscreteFactor::Values & values) const;
 
   /// print
-  GTSAM_EXPORT void print(const std::string& s = "DiscreteFactorGraph",
-      const IndexFormatter& formatter =DefaultIndexFormatter) const;
-
-  /** Permute the variables in the factors */
-  GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
-
-  /** Apply a reduction, which is a remapping of variable indices. */
-  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
+  void print(const std::string& s = "DiscreteFactorGraph",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const;
 };
 // DiscreteFactorGraph
 
 /** Main elimination function for DiscreteFactorGraph */
 GTSAM_EXPORT std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
-EliminateDiscrete(const FactorGraphOrdered<DiscreteFactor>& factors,
-    size_t nrFrontals = 1);
+EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& keys);
 
 } // namespace gtsam
