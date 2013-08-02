@@ -228,9 +228,9 @@ TEST(JacobianFactor, matrices)
   EXPECT(assert_equal(simple::noise->R() * augmentedJacobianExpected, factor.augmentedJacobian()));
 
   // Unwhitened Jacobian
-  EXPECT(assert_equal(jacobianExpected, factor.jacobian(false).first));
-  EXPECT(assert_equal(rhsExpected, factor.jacobian(false).second));
-  EXPECT(assert_equal(augmentedJacobianExpected, factor.augmentedJacobian(false)));
+  EXPECT(assert_equal(jacobianExpected, factor.jacobianUnweighted().first));
+  EXPECT(assert_equal(rhsExpected, factor.jacobianUnweighted().second));
+  EXPECT(assert_equal(augmentedJacobianExpected, factor.augmentedJacobianUnweighted()));
 }
 
 /* ************************************************************************* */

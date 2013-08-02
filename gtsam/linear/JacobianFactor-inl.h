@@ -37,7 +37,7 @@ namespace gtsam {
   template<typename KEYS>
   JacobianFactor::JacobianFactor(
     const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& model) :
-  Base(keys)
+  Base(keys), Ab_(augmentedMatrix)
   {
     // Check noise model dimension
     if(model && model->dim() != augmentedMatrix.rows())
@@ -54,10 +54,6 @@ namespace gtsam {
       throw std::invalid_argument(
       "Error in JacobianFactor constructor input.  The last provided matrix block\n"
       "must be the RHS vector, but the last provided block had more than one column.");
-
-    // Allocate and copy matrix - only takes the active view of the provided augmented matrix
-    Ab_ = VerticalBlockMatrix::LikeActiveViewOf(augmentedMatrix);
-    Ab_.full() = augmentedMatrix.full();
 
     // Take noise model
     model_ = model;

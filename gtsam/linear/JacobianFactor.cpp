@@ -210,13 +210,11 @@ namespace gtsam {
     gttic(JacobianFactor_combine_constructor);
 
     // Compute VariableSlots if one was not provided
-    gttic(Compute_VariableSlots);
     boost::optional<VariableSlots> computedVariableSlots;
     if(!variableSlots) {
       computedVariableSlots = VariableSlots(graph);
       variableSlots = computedVariableSlots; // Binds reference, does not copy VariableSlots
     }
-    gttoc(Compute_VariableSlots);
 
     // Cast or convert to Jacobians
     std::vector<JacobianFactor::shared_ptr> jacobians = _convertOrCastToJacobians(graph);
@@ -516,8 +514,7 @@ namespace gtsam {
     JacobianFactor::shared_ptr jointFactor;
     try {
       jointFactor = boost::make_shared<JacobianFactor>(factors, keys);
-    } catch(std::invalid_argument& e) {
-      (void) e; // Avoid unused variable warning
+    } catch(std::invalid_argument&) {
       throw InvalidDenseElimination(
         "EliminateQR was called with a request to eliminate variables that are not\n"
         "involved in the provided factors.");
@@ -542,6 +539,8 @@ namespace gtsam {
   /* ************************************************************************* */
   GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFrontals)
   {
+    gttic(JacobianFactor_splitConditional);
+
     if(nrFrontals > size())
       throw std::invalid_argument("Requesting to split more variables than exist using JacobianFactor::splitConditional");
 

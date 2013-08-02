@@ -40,7 +40,7 @@ static GaussianBayesNet smallBayesNet = list_of
   (GaussianConditional(_y_, Vector_(1, 5.0), Matrix_(1, 1, 1.0)));
 
 /* ************************************************************************* */
-TEST( GaussianBayesNetOrdered, matrix )
+TEST( GaussianBayesNet, matrix )
 {
   Matrix R; Vector d;
   boost::tie(R,d) = smallBayesNet.matrix(); // find matrix and RHS
@@ -56,7 +56,7 @@ TEST( GaussianBayesNetOrdered, matrix )
 }
 
 /* ************************************************************************* */
-TEST( GaussianBayesNetOrdered, optimize )
+TEST( GaussianBayesNet, optimize )
 {
   VectorValues actual = smallBayesNet.optimize();
 
@@ -68,7 +68,7 @@ TEST( GaussianBayesNetOrdered, optimize )
 }
 
 /* ************************************************************************* */
-TEST( GaussianBayesNetOrdered, optimize3 )
+TEST( GaussianBayesNet, optimize3 )
 {
   // y = R*x, x=inv(R)*y
   // 4 = 1 1   -1 
@@ -88,7 +88,7 @@ TEST( GaussianBayesNetOrdered, optimize3 )
 }
 
 /* ************************************************************************* */
-TEST( GaussianBayesNetOrdered, backSubstituteTranspose )
+TEST( GaussianBayesNet, backSubstituteTranspose )
 {
   // x=R'*y, expected=inv(R')*x
   // 2 = 1    2
@@ -107,7 +107,7 @@ TEST( GaussianBayesNetOrdered, backSubstituteTranspose )
 
 /* ************************************************************************* */
 // Tests computing Determinant
-TEST( GaussianBayesNetOrdered, DeterminantTest )
+TEST( GaussianBayesNet, DeterminantTest )
 {
   GaussianBayesNet cbn;
   cbn += GaussianConditional(

@@ -32,25 +32,23 @@
 
 namespace gtsam {
 
-/**
- * A combined factor is assembled as one block of rows for each component
- * factor.  In each row-block (factor), some of the column-blocks (variables)
- * may be empty since factors involving different sets of variables are
- * interleaved.
- *
- * VariableSlots describes the 2D block structure of the combined factor.  It
- * is essentially a map<Index, vector<size_t> >.  The Index is the real
- * variable index of the combined factor slot.  The vector<size_t> tells, for
- * each row-block (factor), which column-block (variable slot) from the
- * component factor appears in this block of the combined factor.
- *
- * As an example, if the combined factor contains variables 1, 3, and 5, then
- * "variableSlots[3][2] == 0" indicates that column-block 1 (corresponding to
- * variable index 3), row-block 2 (also meaning component factor 2), comes from
- * column-block 0 of component factor 2.
- *
- * \nosubgrouping
- */
+/** A combined factor is assembled as one block of rows for each component
+*   factor.  In each row-block (factor), some of the column-blocks (variables)
+*   may be empty since factors involving different sets of variables are
+*   interleaved.
+*  
+*   VariableSlots describes the 2D block structure of the combined factor.  It
+*   is a map<Index, vector<size_t> >.  The Index is the real
+*   variable index of the combined factor slot.  The vector<size_t> tells, for
+*   each row-block (factor), which column-block (variable slot) from the
+*   component factor appears in this block of the combined factor.
+*  
+*   As an example, if the combined factor contains variables 1, 3, and 5, then
+*   "variableSlots[3][2] == 0" indicates that column-block 1 (corresponding to
+*   variable index 3), row-block 2 (also meaning component factor 2), comes from
+*   column-block 0 of component factor 2.
+*  
+*   \nosubgrouping */
 
 class VariableSlots : public FastMap<Index, std::vector<size_t> > {
 
