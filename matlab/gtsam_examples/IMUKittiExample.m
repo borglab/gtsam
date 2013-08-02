@@ -9,6 +9,9 @@ IMU_metadata = cell2struct(num2cell(IMU_metadata.data), IMU_metadata.colheaders,
 IMUinBody = Pose3.Expmap([
     IMU_metadata.BodyPtx; IMU_metadata.BodyPty; IMU_metadata.BodyPtz;
     IMU_metadata.BodyPrx; IMU_metadata.BodyPry; IMU_metadata.BodyPrz; ]);
+if ~IMUinBody.equals(Pose3, 1e-5)
+  error 'Currently only support IMUinBody is identity, i.e. IMU and body frame are the same';
+end
 
 VO_metadata = importdata('KittiRelativePose_metadata.txt');
 VO_metadata = cell2struct(num2cell(VO_metadata.data), VO_metadata.colheaders, 2);
@@ -38,19 +41,14 @@ VO_data = cell2struct(num2cell(VO_data.data), VO_data.colheaders, 2);
 % Merge relative pose fields and convert to Pose3
 logposes = [ [VO_data.dtx]' [VO_data.dty]' [VO_data.dtz]' [VO_data.drx]' [VO_data.dry]' [VO_data.drz]' ];
 logposes = num2cell(logposes, 2);
-relposes = arrayfun(@(x) {gtsam.Pose3.Expmap(x{1}')}, logposes);
-% TODO: convert to IMU frame %relposes = arrayfun(
+relposes = arrayfun(@(x) {gtsam.Pose3.Expmap(x{:}')}, logposes);
+relposes = arrayfun(@(x) {VOinIMU.compose(x{:}).compose(VOinIMU.inverse())}, relposes);
 [VO_data.RelativePose] = deal(relposes{:});
 VO_data = rmfield(VO_data, { 'dtx' 'dty' 'dtz' 'drx' 'dry' 'drz' });
 clear logposes relposes
 
 GPS_data = importdata('KittiGps.txt');
 GPS_data = cell2struct(num2cell(GPS_data.data), GPS_data.colheaders, 2);
-
-%%
-SummaryTemplate = gtsam.ImuFactorPreintegratedMeasurements( ...
-    gtsam.imuBias.ConstantBias([0;0;0], [0;0;0]), ...
-    1e-3 * eye(3), 1e-3 * eye(3), 1e-3 * eye(3));
   
 %% Set initial conditions for the estimated trajectory
 disp('TODO: we have GPS so this initialization is not right')
@@ -69,14 +67,15 @@ factors = NonlinearFactorGraph;
 values = Values;
 
 %% Create prior on initial pose, velocity, and biases
-sigma_init_x = 1.0
-sigma_init_v = 1.0
-sigma_init_b = 1.0
+sigma_init_x = 1.0;
+sigma_init_v = 1.0;
+sigma_init_b = 1.0;
 
 values.insert(symbol('x',0), currentPoseGlobal);
 values.insert(symbol('v',0), LieVector(currentVelocityGlobal) );
 values.insert(symbol('b',0), imuBias.ConstantBias(bias_acc,bias_omega) );
 
+disp('TODO: we have GPS so this initialization is not right')
 % Prior on initial pose
 factors.add(PriorFactorPose3(symbol('x',0), ...
   currentPoseGlobal, noiseModel.Isotropic.Sigma(6, sigma_init_x)));
@@ -92,83 +91,104 @@ factors.add(PriorFactorConstantBias(symbol('b',0), ...
 % (2) we create the corresponding factors in the graph
 % (3) we solve the graph to obtain and optimal estimate of robot trajectory
 
-i = 2;
-lastTime = 0;
-lastIndex = 0;
-currentSummarizedMeasurement = ImuFactorPreintegratedMeasurements(summaryTemplate);
+% lastTime = 0; TODO: delete?
+% lastIndex = 0; TODO: delete?
+currentSummarizedMeasurement = [];
 
-times = sort([VO_data(:,1); GPS_data(:,1)]); % this are the time-stamps at which we want to initialize a new node in the graph
-IMU_times = IMU_data(:,1);
+% Measurement types:
+%   1: VO
+%   2: GPS
+%   3: IMU
+times = sortrows( [ ...
+  [VO_data.Time]' 1*ones(length([VO_data.Time]), 1); ...
+  %[GPS_data.Time]' 2*ones(length([GPS_data.Time]), 1); ...
+  [IMU_data.Time]' 3*ones(length([IMU_data.Time]), 1); ...
+  ], 1); % this are the time-stamps at which we want to initialize a new node in the graph
 
-disp('TODO: still needed to take care of the initial time')
-
-for t = times
+t_previous = 0;
+poseIndex = 0;
+for measurementIndex = 1:size(times,1)
   % At each non=IMU measurement we initialize a new node in the graph
-  currentIndex = find( times == t );
-  currentPoseKey = symbol('x',currentIndex);
-  currentVelKey = symbol('v',currentIndex);
-  currentBiasKey = symbol('b',currentIndex);
+  currentPoseKey = symbol('x',poseIndex);
+  currentVelKey = symbol('v',poseIndex);
+  currentBiasKey = symbol('b',poseIndex);
   
-  %% add preintegrated IMU factor between previous state and current state
-  % =======================================================================
-  IMUbetweenTimesIndices = find( IMU_times>+t_previous & IMU_times<= t);
-  % all imu measurements occurred between t_previous and t
+  t = times(measurementIndex, 1);
+  type = times(measurementIndex, 2);
   
-  % we assume that each row of the IMU.txt file has the following structure:
-  % timestamp delta_t acc_x acc_y acc_z omega_x omega_y omega_z
-  disp('TODO: We want don t want to preintegrate with zero bias, but to use the most recent estimate')
-  currentSummarizedMeasurement = ImuFactorPreintegratedMeasurements(summaryTemplate);
-  for i=1:length(IMUbetweenTimesIndices)
-    index = IMUbetweenTimesIndices(i); % the row of the IMU_data matrix that we have to integrate
-    deltaT = IMU_data(index,2);
-    accMeas = IMU_data(index,3:5);
-    omegaMeas = IMU_data(index,6:8);
+  if type == 3
+    % Integrate IMU
+    
+    if isempty(currentSummarizedMeasurement)
+      % Create initial empty summarized measurement
+      % we assume that each row of the IMU.txt file has the following structure:
+      % timestamp delta_t acc_x acc_y acc_z omega_x omega_y omega_z
+      currentBias = isam.calculateEstimate(currentBiasKey - 1);
+      currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
+        currentBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
+        IMU_metadata.GyroscopeSigma.^2 * eye(3), IMU_metadata.IntegrationSigma.^2 * eye(3));
+    end
+    
     % Accumulate preintegrated measurement
+    deltaT = IMU_data(index).dt;
+    accMeas = IMU_data(index).acc_omega(1:3);
+    omegaMeas = IMU_data(index).acc_omega(4:6);
     currentSummarizedMeasurement.integrateMeasurement(accMeas, omegaMeas, deltaT);
+    
+  else
+    % Create IMU factor
+    factors.add(ImuFactor( ...
+      currentPoseKey-1, currentVelKey-1, ...
+      currentPoseKey, currentVelKey, ...
+      currentBiasKey-1, currentSummarizedMeasurement, g, cor_v, ...
+      currentSummarizedMeasurement.PreintMeasCov));
+
+    % Reset summarized measurement
+    currentSummarizedMeasurement = [];
+    
+    if type == 1
+      % Create VO factor
+    elseif type == 2
+      % Create GPS factor
+    end
+    
+    poseIndex = poseIndex + 1;
   end
   
-  disp('TODO: is the imu noise right?')
-  % Create IMU factor
-  factors.add(ImuFactor( ...
-    previousPoseKey, previousVelKey, ...
-    currentPoseKey, currentVelKey, ...
-    currentBiasKey, currentSummarizedMeasurement, g, cor_v, ...
-    noiseModel.Isotropic.Sigma(9, 1e-6)));
+ 
   % =======================================================================
   
   
   %% add factor corresponding to GPS measurements (if available at the current time)
-  % =======================================================================
-  if isempty(  find(GPS_data(:,1) == t  ) ) == 0 % it is a GPS measurement
-    if length( find(GPS_data(:,1)) ) > 1
-      error('more GPS measurements at the same time stamp: it should be an error')
-    end
-    
-    index = find(GPS_data(:,1) == t ); % the row of the IMU_data matrix that we have to integrate
-    GPSmeas = GPS_data(index,2:4);
-    
-    noiseModelGPS = ???; % noiseModelGPS.Isotropic.Sigma(6, sigma_init_x))
-    
-    % add factor
-    disp('TODO: is the GPS noise right?')
-    factors.add(PriorFactor???(currentPoseKey, GPSmeas, noiseModelGPS) );
-  end
+%   % =======================================================================
+%   if isempty(  find(GPS_data(:,1) == t  ) ) == 0 % it is a GPS measurement
+%     if length( find(GPS_data(:,1)) ) > 1
+%       error('more GPS measurements at the same time stamp: it should be an error')
+%     end
+%     
+%     index = find(GPS_data(:,1) == t ); % the row of the IMU_data matrix that we have to integrate
+%     GPSmeas = GPS_data(index,2:4);
+%     
+%     noiseModelGPS = ???; % noiseModelGPS.Isotropic.Sigma(6, sigma_init_x))
+%     
+%     % add factor
+%     disp('TODO: is the GPS noise right?')
+%     factors.add(PriorFactor???(currentPoseKey, GPSmeas, noiseModelGPS) );
+%   end
   % =======================================================================
   
   
   %% add factor corresponding to VO measurements (if available at the current time)
   % =======================================================================
-  if isempty(  find(VO_data(:,1) == t  )  )== 0 % it is a GPS measurement
-    if length( find(VO_data(:,1)) ) > 1
+  if isempty(  find([VO_data.Time] == t, 1)  )== 0 % it is a GPS measurement
+    if length( find([VO_data.Time] == t) ) > 1
       error('more VO measurements at the same time stamp: it should be an error')
     end
     
-    index = find( VO_data(:,1) == t ); % the row of the IMU_data matrix that we have to integrate
-    VOmeas_pos = VO_data(index,2:4)';
-    VOmeas_ang = VO_data(index,5:7)';
+    index = find([VO_data.Time] == t, 1); % the row of the IMU_data matrix that we have to integrate
     
-    VOpose = Pose3( Rot3(VOmeas_ang) , Point3(VOmeas_pos) );
-    noiseModelVO = ???; % noiseModelGPS.Isotropic.Sigma(6, sigma_init_x))
+    VOpose = VO_data(index).RelativePose;
+    noiseModelVO = noiseModel.Diagonal.Sigmas([ IMU_metadata.RotationSigma * [1;1;1]; IMU_metadata.TranslationSigma * [1;1;1] ]);
     
     % add factor
     disp('TODO: is the VO noise right?')
