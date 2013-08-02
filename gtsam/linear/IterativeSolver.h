@@ -11,11 +11,15 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
-#include <gtsam/linear/VectorValuesOrdered.h>
+#include <gtsam/global_includes.h>
+
 #include <string>
 
 namespace gtsam {
+
+  // Forward declarations
+  class VectorValues;
+  class GaussianFactorGraph;
 
   /**
    * parameters for iterative linear solvers
@@ -67,13 +71,13 @@ namespace gtsam {
     virtual ~IterativeSolver() {}
 
     /* interface to the nonlinear optimizer  */
-    virtual VectorValuesOrdered optimize () = 0;
+    virtual VectorValues optimize () = 0;
 
     /* interface to the nonlinear optimizer  */
-    virtual VectorValuesOrdered optimize (const VectorValuesOrdered &initial) = 0;
+    virtual VectorValues optimize (const VectorValues &initial) = 0;
 
     /* update interface to the nonlinear optimizer  */
-    virtual void replaceFactors(const GaussianFactorGraphOrdered::shared_ptr &factorGraph, const double lambda) {}
+    virtual void replaceFactors(const boost::shared_ptr<GaussianFactorGraph> &factorGraph, const double lambda) {}
   };
 
 }

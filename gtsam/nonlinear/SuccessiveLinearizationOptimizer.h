@@ -22,6 +22,7 @@
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/inference/Ordering.h>
 
@@ -64,8 +65,7 @@ public:
     switch (linearSolverType) {
     case MULTIFRONTAL_CHOLESKY:
     case SEQUENTIAL_CHOLESKY:
-      throw std::runtime_error("Not implemented");
-      //return EliminatePreferCholeskyOrdered;
+      return EliminatePreferCholesky;
 
     case MULTIFRONTAL_QR:
     case SEQUENTIAL_QR:
@@ -73,15 +73,13 @@ public:
 
     default:
       throw std::runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
-      return EliminateQR;
-      break;
     }
   }
 
   std::string getLinearSolverType() const { return linearSolverTranslator(linearSolverType); }
 
   void setLinearSolverType(const std::string& solver) { linearSolverType = linearSolverTranslator(solver); }
-  void setIterativeParams(const SubgraphSolverParameters &params);
+  void setIterativeParams(const SubgraphSolverParameters& params);
   void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
 
 private:

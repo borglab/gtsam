@@ -21,11 +21,7 @@
 
 #pragma once
 
-#include <gtsam/base/FastSet.h>
-#include <gtsam/base/treeTraversal-inst.h>
-#include <gtsam/inference/VariableIndexOrdered.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/BayesTree.h>
 
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>

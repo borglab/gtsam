@@ -23,31 +23,27 @@ using namespace std;
 namespace gtsam {
 
   /* ************************************************************************* */
-  void GaussianDensity::print(const string &s, const IndexFormatter& formatter) const
+  void GaussianDensity::print(const string &s, const KeyFormatter& formatter) const
   {
     cout << s << ": density on ";
     for(const_iterator it = beginFrontals(); it != endFrontals(); ++it)
       cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
     cout << endl;
-    gtsam::print(Matrix(get_R()),"R");
-    gtsam::print(Vector(get_d()),"d");
-    gtsam::print(sigmas_,"sigmas");
+    gtsam::print(Matrix(get_R()), "R: ");
+    gtsam::print(Vector(get_d()), "d: ");
+    if(model_)
+      model_->print("Noise model: ");
   }
 
   /* ************************************************************************* */
   Vector GaussianDensity::mean() const {
-    // Solve for mean
-    VectorValuesOrdered x;
-    Index k = firstFrontalKey();
-    // a VectorValues that only has a value for k: cannot be printed if k<>0
-    x.insert(k, Vector(sigmas_.size()));
-    solveInPlace(x);
-    return x[k];
+    VectorValues soln = this->solve(VectorValues());
+    return soln[firstFrontalKey()];
   }
 
   /* ************************************************************************* */
   Matrix GaussianDensity::covariance() const {
-    return inverse(information());
+    return information().inverse();
   }
 
 } // gtsam

@@ -19,7 +19,7 @@
 // \callgraph
 #pragma once
 
-#include <gtsam/linear/GaussianConditionalOrdered.h>
+#include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
 
@@ -30,7 +30,7 @@ namespace gtsam {
    * The negative log-probability is given by \f$ |Rx - d|^2 \f$
    * with \f$ \Lambda = \Sigma^{-1} = R^T R \f$ and \f$ \mu = R^{-1} d \f$
    */
-  class GTSAM_EXPORT GaussianDensity: public GaussianConditionalOrdered {
+  class GTSAM_EXPORT GaussianDensity : public GaussianConditional {
 
   public:
 
@@ -38,24 +38,25 @@ namespace gtsam {
 
     /// default constructor needed for serialization
     GaussianDensity() :
-        GaussianConditionalOrdered() {
+        GaussianConditional() {
     }
 
     /// Copy constructor from GaussianConditional
-    GaussianDensity(const GaussianConditionalOrdered& conditional) :
-        GaussianConditionalOrdered(conditional) {
-      assert(conditional.nrParents() == 0);
+    GaussianDensity(const GaussianConditional& conditional) :
+        GaussianConditional(conditional) {
+      if(conditional.nrParents() != 0)
+        throw std::invalid_argument("GaussianDensity can only be created from a conditional with no parents");
     }
 
     /// constructor using d, R
     GaussianDensity(Index key, const Vector& d, const Matrix& R,
-        const Vector& sigmas) :
-        GaussianConditionalOrdered(key, d, R, sigmas) {
+        const SharedDiagonal& noiseModel) :
+        GaussianConditional(key, d, R, noiseModel) {
     }
 
     /// print
     void print(const std::string& = "GaussianDensity",
-        const IndexFormatter& formatter =DefaultIndexFormatter) const;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /// Mean \f$ \mu = R^{-1} d \f$
     Vector mean() const;

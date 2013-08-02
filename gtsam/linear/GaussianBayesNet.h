@@ -55,8 +55,6 @@ namespace gtsam {
     template<class DERIVEDCONDITIONAL>
     GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
 
-    /** 
-
     /// @}
 
     /// @name Testable

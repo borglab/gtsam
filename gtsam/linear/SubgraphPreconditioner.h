@@ -17,11 +17,20 @@
 
 #pragma once
 
-#include <gtsam/linear/JacobianFactorOrdered.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
-#include <gtsam/linear/GaussianBayesNetOrdered.h>
+#include <gtsam/global_includes.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/Errors.h>
+
+#include <boost/shared_ptr.hpp>
+
+#if 0
 
 namespace gtsam {
+
+  // Forward declarations
+  class GaussianBayesNet;
+  class GaussianFactorGraph;
+  class VectorValues;
 
   /**
    * Subgraph conditioner class, as explained in the RSS 2010 submission.
@@ -34,9 +43,9 @@ namespace gtsam {
 
   public:
     typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
-    typedef boost::shared_ptr<const GaussianBayesNetOrdered> sharedBayesNet;
-    typedef boost::shared_ptr<const GaussianFactorGraphOrdered> sharedFG;
-    typedef boost::shared_ptr<const VectorValuesOrdered> sharedValues;
+    typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
+    typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
+    typedef boost::shared_ptr<const VectorValues> sharedValues;
     typedef boost::shared_ptr<const Errors> sharedErrors;
 
   private:
@@ -73,11 +82,11 @@ namespace gtsam {
 //  SubgraphPreconditioner add_priors(double sigma) const;
 
     /* x = xbar + inv(R1)*y */
-    VectorValuesOrdered x(const VectorValuesOrdered& y) const;
+    VectorValues x(const VectorValues& y) const;
 
     /* A zero VectorValues with the structure of xbar */
-    VectorValuesOrdered zero() const {
-      VectorValuesOrdered V(VectorValuesOrdered::Zero(*xbar_));
+    VectorValues zero() const {
+      VectorValues V(VectorValues::Zero(*xbar_));
       return V ;
     }
 
@@ -87,31 +96,33 @@ namespace gtsam {
      * Takes a range indicating e2 !!!!
      */
     void transposeMultiplyAdd2(double alpha, Errors::const_iterator begin,
-        Errors::const_iterator end, VectorValuesOrdered& y) const;
+        Errors::const_iterator end, VectorValues& y) const;
 
       /** print the object */
     void print(const std::string& s = "SubgraphPreconditioner") const;
   };
 
   /* error, given y */
-  GTSAM_EXPORT double error(const SubgraphPreconditioner& sp, const VectorValuesOrdered& y);
+  GTSAM_EXPORT double error(const SubgraphPreconditioner& sp, const VectorValues& y);
 
   /** gradient = y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar) */
-  GTSAM_EXPORT VectorValuesOrdered gradient(const SubgraphPreconditioner& sp, const VectorValuesOrdered& y);
+  GTSAM_EXPORT VectorValues gradient(const SubgraphPreconditioner& sp, const VectorValues& y);
 
   /** Apply operator A */
-  GTSAM_EXPORT Errors operator*(const SubgraphPreconditioner& sp, const VectorValuesOrdered& y);
+  GTSAM_EXPORT Errors operator*(const SubgraphPreconditioner& sp, const VectorValues& y);
 
   /** Apply operator A in place: needs e allocated already */
-  GTSAM_EXPORT void multiplyInPlace(const SubgraphPreconditioner& sp, const VectorValuesOrdered& y, Errors& e);
+  GTSAM_EXPORT void multiplyInPlace(const SubgraphPreconditioner& sp, const VectorValues& y, Errors& e);
 
     /** Apply operator A' */
-  GTSAM_EXPORT VectorValuesOrdered operator^(const SubgraphPreconditioner& sp, const Errors& e);
+  GTSAM_EXPORT VectorValues operator^(const SubgraphPreconditioner& sp, const Errors& e);
 
   /**
    * Add A'*e to y
    *  y += alpha*A'*[e1;e2] = [alpha*e1; alpha*inv(R1')*A2'*e2]
    */
-  GTSAM_EXPORT void transposeMultiplyAdd(const SubgraphPreconditioner& sp, double alpha, const Errors& e, VectorValuesOrdered& y);
+  GTSAM_EXPORT void transposeMultiplyAdd(const SubgraphPreconditioner& sp, double alpha, const Errors& e, VectorValues& y);
 
 } // namespace gtsam
+
+#endif
