@@ -253,6 +253,9 @@ void Constrained::print(const std::string& name) const {
 
 /* ************************************************************************* */
 Vector Constrained::whiten(const Vector& v) const {
+  // If sigmas[i] is not 0 then divide v[i] by sigmas[i], as usually done in
+  // other normal Gaussian noise model. Otherwise, sigmas[i] = 0 indicating
+  // a hard constraint, we don't do anything.
   const Vector& a = v;
   const Vector& b = sigmas_;
   size_t n = a.size();
@@ -287,6 +290,9 @@ Matrix Constrained::Whiten(const Matrix& H) const {
 /* ************************************************************************* */
 void Constrained::WhitenInPlace(Matrix& H) const {
   // selective scaling
+  // Scale row i of H by sigmas[i], basically multiplying H with diag(sigmas)
+  // Set inf_mask flag is true so that if invsigmas[i] is inf, i.e. sigmas[i] = 0,
+  // indicating a hard constraint, we leave H's row i in place.
   vector_scale_inplace(invsigmas(), H, true);
 }
 
