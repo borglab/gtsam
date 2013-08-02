@@ -22,27 +22,21 @@
 #include <gtsam/linear/GaussianFactor.h>
 
 #include <vector>
-
-// Forward declarations for friend unit tests
-class HessianFactorConversionConstructorTest;
-class HessianFactorConstructor1Test;
-class HessianFactorConstructor1bTest;
-class HessianFactorcombineTest;
-
+#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
   // Forward declarations
+  class Ordering;
   class JacobianFactor;
   class GaussianConditional;
   class GaussianBayesNet;
+  class GaussianFactorGraph;
 
-  // Definition of Scatter, which is an intermediate data structure used when
-  // building a HessianFactor incrementally, to get the keys in the right
-  // order.
-  // The "scatter" is a map from global variable indices to slot indices in the
-  // union of involved variables.  We also include the dimensionality of the
-  // variable.
+  // Definition of Scatter, which is an intermediate data structure used when building a
+  // HessianFactor incrementally, to get the keys in the right order. The "scatter" is a map from
+  // global variable indices to slot indices in the union of involved variables.  We also include
+  // the dimensionality of the variable.
   struct GTSAM_EXPORT SlotEntry {
     size_t slot;
     size_t dimension;
@@ -50,7 +44,7 @@ namespace gtsam {
     : slot(_slot), dimension(_dimension) {}
     std::string toString() const;
   };
-  class Scatter : public FastMap<Index, SlotEntry> {
+  class Scatter : public FastMap<Key, SlotEntry> {
   public:
     Scatter() {}
     Scatter(const GaussianFactorGraph& gfg);
@@ -182,6 +176,11 @@ namespace gtsam {
     HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
         const std::vector<Vector>& gs, double f);
 
+    /** Constructor with an arbitrary number of keys and with the augmented information matrix
+    *   specified as a block matrix. */
+    template<typename KEYS>
+    HessianFactor(const KEYS& keys, const SymmetricBlockMatrix& augmentedInformation);
+
     /** Construct from a JacobianFactor (or from a GaussianConditional since it derives from it) */
     explicit HessianFactor(const JacobianFactor& cg);
 
@@ -190,7 +189,9 @@ namespace gtsam {
     explicit HessianFactor(const GaussianFactor& factor);
 
     /** Combine a set of factors into a single dense HessianFactor */
-    HessianFactor(const GaussianFactorGraph& factors);
+    explicit HessianFactor(const GaussianFactorGraph& factors,
+      boost::optional<const Ordering&> ordering = boost::none,
+      boost::optional<const Scatter&> scatter = boost::none);
 
     /** Destructor */
     virtual ~HessianFactor() {}
@@ -331,20 +332,8 @@ namespace gtsam {
      */
     virtual Matrix augmentedJacobian() const;
 
-    // Friend unit test classes
-    friend class ::HessianFactorConversionConstructorTest;
-    friend class ::HessianFactorConstructor1Test;
-    friend class ::HessianFactorConstructor1bTest;
-    friend class ::HessianFactorcombineTest;
-
-    // used in eliminateCholesky:
-
-    /**
-     * Do Cholesky. Note that after this, the lower triangle still contains
-     * some untouched non-zeros that should be zero.  We zero them while
-     * extracting submatrices in splitEliminatedFactor. Frank says :-(
-     */
-    void partialCholesky(size_t nrFrontals);
+    /** Return the full augmented Hessian matrix of this factor as a SymmetricBlockMatrix object. */
+    const SymmetricBlockMatrix& matrixObject() const { return info_; }
 
     /** Update the factor by adding the information from the JacobianFactor
      * (used internally during elimination).
@@ -360,29 +349,42 @@ namespace gtsam {
      */
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
-    /** assert invariants */
-    void assertInvariants() const;
+    /**
+    *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
+    *   left-multiplied with their transpose to form the Hessian using the conversion constructor
+    *   HessianFactor(const JacobianFactor&).
+    *   
+    *   If any factors contain constrained noise models, this function will fail because our current
+    *   implementation cannot handle constrained noise models in Cholesky factorization.  The
+    *   function EliminatePreferCholesky() automatically does QR instead when this is the case.
+    *   
+    *   Variables are eliminated in the order specified in \c keys.
+    *   
+    *   @param factors Factors to combine and eliminate
+    *   @param keys The variables to eliminate and their elimination ordering
+    *   @return The conditional and remaining factor
+    *   
+    *   \addtogroup LinearSolving */
+    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
+      EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
     /**
-     * Densely partially eliminate with Cholesky factorization.  JacobianFactors
-     * are left-multiplied with their transpose to form the Hessian using the
-     * conversion constructor HessianFactor(const JacobianFactor&).
-     *
-     * If any factors contain constrained noise models, this function will fail
-     * because our current implementation cannot handle constrained noise models
-     * in Cholesky factorization.  The function EliminatePreferCholesky()
-     * automatically does QR instead when this is the case.
-     *
-     * Variables are eliminated in the natural order of the variable indices of in
-     * the factors.
-     * @param factors Factors to combine and eliminate
-     * @param nrFrontals Number of frontal variables to eliminate.
-     * @return The conditional and remaining factor
-
-     * \addtogroup LinearSolving
-     */
+    *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
+    *   left-multiplied with their transpose to form the Hessian using the conversion constructor
+    *   HessianFactor(const JacobianFactor&).
+    *   
+    *   This function will fall back on QR factorization for any cliques containing JacobianFactor's
+    *   with constrained noise models.
+    *   
+    *   Variables are eliminated in the order specified in \c keys.
+    *   
+    *   @param factors Factors to combine and eliminate
+    *   @param keys The variables to eliminate and their elimination ordering
+    *   @return The conditional and remaining factor
+    *   
+    *   \addtogroup LinearSolving */
     friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> >
-      EliminateCholeskyOrdered(const GaussianFactorGraph& factors, const Ordering& keys);
+      EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
   private:
 
@@ -400,3 +402,4 @@ namespace gtsam {
 
 }
 
+#include <gtsam/linear/HessianFactor-inl.h>

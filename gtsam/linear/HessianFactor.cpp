@@ -150,12 +150,12 @@ GaussianFactor(cref_list_of<3>(j1)(j2)(j3)),
 }
 
 /* ************************************************************************* */
-namespace { DenseIndex _getColsHF(const Matrix& m) { return m.cols(); } }
+namespace { DenseIndex _getSizeHF(const Vector& m) { return m.size(); } }
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
         const std::vector<Vector>& gs, double f) :
-GaussianFactor(js), info_(br::join(Gs | br::transformed(&_getColsHF), cref_list_of<1,DenseIndex>(1)))
+GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), cref_list_of<1,DenseIndex>(1)))
 {
   // Get the number of variables
   size_t variable_count = js.size();
@@ -205,10 +205,10 @@ namespace {
     {
       if(jf.get_model()->isConstrained())
         throw invalid_argument("Cannot construct HessianFactor from JacobianFactor with constrained noise model");
-      info.full() = jf.matrixObject().full().transpose() * jfModel->invsigmas().asDiagonal() *
+      info.full().noalias() = jf.matrixObject().full().transpose() * jfModel->invsigmas().asDiagonal() *
         jfModel->invsigmas().asDiagonal() * jf.matrixObject().full();
     } else {
-      info.full() = jf.matrixObject().full().transpose() * jf.matrixObject().full();
+      info.full().noalias() = jf.matrixObject().full().transpose() * jf.matrixObject().full();
     }
   }
 }
@@ -241,26 +241,31 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) :
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(const GaussianFactorGraph& factors)
-{
-  Scatter scatter(factors);
+namespace {
+  DenseIndex _dimFromScatterEntry(const Scatter::value_type& key_slotentry) {
+    return key_slotentry.second.dimension; } }
 
-  // Pull out keys and dimensions
-  gttic(keys);
-  vector<size_t> dimensions(scatter.size() + 1);
-  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
-    dimensions[var_slot.second.slot] = var_slot.second.dimension;
+/* ************************************************************************* */
+HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
+                             boost::optional<const Ordering&> ordering,
+                             boost::optional<const Scatter&> scatter)
+{
+  boost::optional<Scatter> computedScatter;
+  if(!scatter) {
+    computedScatter = Scatter(factors);
+    scatter = computedScatter;
   }
-  // This is for the r.h.s. vector
-  dimensions.back() = 1;
-  gttoc(keys);
 
   // Allocate and copy keys
   gttic(allocate);
-  info_ = SymmetricBlockMatrix(dimensions);
+  // Allocate with dimensions for each variable plus 1 at the end for the information vector
+  vector<DenseIndex> dims(scatter->size() + 1);
+  br::copy(*scatter | br::transformed(&_dimFromScatterEntry), dims.begin());
+  dims.back() = 1;
+  info_ = SymmetricBlockMatrix(dims);
   info_.full().setZero();
-  keys_.resize(scatter.size());
-  br::copy(scatter | br::map_keys, keys_.begin());
+  keys_.resize(scatter->size());
+  br::copy(*scatter | br::map_keys, keys_.begin());
   gttoc(allocate);
 
   // Form A' * A
@@ -269,9 +274,9 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors)
   {
     if(factor) {
       if(const HessianFactor* hessian = dynamic_cast<const HessianFactor*>(factor.get()))
-        updateATA(*hessian, scatter);
+        updateATA(*hessian, *scatter);
       else if(const JacobianFactor* jacobian = dynamic_cast<const JacobianFactor*>(factor.get()))
-        updateATA(*jacobian, scatter);
+        updateATA(*jacobian, *scatter);
       else
         throw invalid_argument("GaussianFactor is neither Hessian nor Jacobian");
     }
@@ -286,7 +291,7 @@ void HessianFactor::print(const std::string& s, const KeyFormatter& formatter) c
   for(const_iterator key=this->begin(); key!=this->end(); ++key)
     cout << formatter(*key) << "(" << this->getDim(key) << ") ";
   cout << "\n";
-  gtsam::print(Matrix(info_.range(0,info_.nBlocks(), 0,info_.nBlocks()).selfadjointView<Eigen::Upper>()), "Ab^T * Ab: ");
+  gtsam::print(Matrix(info_.range(0,info_.nBlocks(), 0,info_.nBlocks()).selfadjointView<Eigen::Upper>()), "Augmented information matrix: ");
 }
 
 /* ************************************************************************* */
@@ -294,6 +299,8 @@ bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
   if(!dynamic_cast<const HessianFactor*>(&lf))
     return false;
   else {
+    if(!Factor::equals(lf, tol))
+      return false;
     Matrix thisMatrix = this->info_.full().selfadjointView<Eigen::Upper>();
     thisMatrix(thisMatrix.rows()-1, thisMatrix.cols()-1) = 0.0;
     Matrix rhsMatrix = static_cast<const HessianFactor&>(lf).info_.full().selfadjointView<Eigen::Upper>();
@@ -348,9 +355,9 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   // First build an array of slots
   gttic(slots);
   //size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
-  vector<size_t> slots(update.size());
-  size_t slot = 0;
-  BOOST_FOREACH(Index j, update) {
+  vector<DenseIndex> slots(update.size());
+  DenseIndex slot = 0;
+  BOOST_FOREACH(Key j, update) {
     slots[slot] = scatter.find(j)->second.slot;
     ++ slot;
   }
@@ -358,10 +365,10 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 
   // Apply updates to the upper triangle
   gttic(update);
-  for(size_t j2=0; j2<update.info_.nBlocks(); ++j2) {
-    size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
-    for(size_t j1=0; j1<=j2; ++j1) {
-      size_t slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
+  for(DenseIndex j2=0; j2<update.info_.nBlocks(); ++j2) {
+    DenseIndex slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
+    for(DenseIndex j1=0; j1<=j2; ++j1) {
+      DenseIndex slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
       if(slot2 > slot1)
         info_(slot1, slot2).noalias() += update.info_(j1, j2);
       else if(slot1 > slot2)
@@ -380,23 +387,15 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 }
 
 /* ************************************************************************* */
-void HessianFactor::partialCholesky(size_t nrFrontals)
-{
-  throw std::runtime_error("Not implemented");
-
-  //if(!choleskyPartial(matrix_, info_.offset(nrFrontals)))
-  //  throw IndeterminantLinearSystemException(this->keys().front());
-}
-
-/* ************************************************************************* */
 GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFrontals)
 {
-  static const bool debug = false;
+  gttic(HessianFactor_splitEliminatedFactor);
 
   // Create one big conditionals with many frontal variables.
   gttic(Construct_conditional);
-  size_t varDim = info_.offset(nrFrontals);
+  const size_t varDim = info_.offset(nrFrontals);
   VerticalBlockMatrix Ab = VerticalBlockMatrix::LikeActiveViewOf(info_, varDim);
+  Ab.full() = info_.range(0, nrFrontals, 0, info_.nBlocks());
   GaussianConditional::shared_ptr conditional = boost::make_shared<GaussianConditional>(
     keys_, nrFrontals, Ab);
   gttoc(Construct_conditional);
@@ -414,24 +413,51 @@ GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFr
 /* ************************************************************************* */
 GaussianFactor::shared_ptr HessianFactor::negate() const
 {
-  throw std::runtime_error("Not implemented");
+  shared_ptr result = boost::make_shared<This>(*this);
+  result->info_.full() = -result->info_.full(); // Negate the information matrix of the result
+  return result;
+}
 
-  //// Copy Hessian Blocks from Hessian factor and invert
-  //std::vector<Index> js;
-  //std::vector<Matrix> Gs;
-  //std::vector<Vector> gs;
-  //double f;
-  //js.insert(js.end(), begin(), end());
-  //for(size_t i = 0; i < js.size(); ++i){
-  //  for(size_t j = i; j < js.size(); ++j){
-  //    Gs.push_back( -info(begin()+i, begin()+j) );
-  //  }
-  //  gs.push_back( -linearTerm(begin()+i) );
-  //}
-  //f = -constantTerm();
+/* ************************************************************************* */
+std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
+  EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
+{
+  gttic(EliminateCholesky);
 
-  //// Create the Anti-Hessian Factor from the negated blocks
-  //return HessianFactorOrdered::shared_ptr(new HessianFactorOrdered(js, Gs, gs, f));
+  // Build joint factor
+  HessianFactor::shared_ptr jointFactor;
+  try {
+    jointFactor = boost::make_shared<HessianFactor>(factors, keys);
+  } catch(std::invalid_argument&) {
+    throw InvalidDenseElimination(
+      "EliminateCholesky was called with a request to eliminate variables that are not\n"
+      "involved in the provided factors.");
+  }
+
+  // Do dense elimination
+  if(!choleskyPartial(jointFactor->info_.matrix(), jointFactor->info_.offset(keys.size())))
+    throw IndeterminantLinearSystemException(keys.front());
+
+  // Split conditional
+  GaussianConditional::shared_ptr conditional = jointFactor->splitEliminatedFactor(keys.size());
+
+  return make_pair(conditional, jointFactor);
+}
+
+/* ************************************************************************* */
+std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> >
+  EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
+{
+  gttic(EliminatePreferCholesky);
+
+  // If any JacobianFactors have constrained noise models, we have to convert
+  // all factors to JacobianFactors.  Otherwise, we can convert all factors
+  // to HessianFactors.  This is because QR can handle constrained noise
+  // models but Cholesky cannot.
+  if (hasConstraints(factors))
+    return EliminateQR(factors, keys);
+  else
+    return EliminateCholesky(factors, keys);
 }
 
 } // gtsam
