@@ -53,11 +53,12 @@ if(GTSAM_UNSTABLE_AVAILABLE)
 endif()
 option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
 option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" OFF)
-option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
+option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 if(NOT MSVC)
   option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" OFF)
 endif()
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
+option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
 option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF) 
 
 # Options relating to MATLAB wrapper
@@ -180,10 +181,6 @@ endif()
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()   
-
-if(GTSAM_POSE3_EXPMAP)
-  add_definitions(-DGTSAM_POSE3_EXPMAP)
-endif()
 
 ###############################################################################
 # Add components

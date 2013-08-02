@@ -25,13 +25,18 @@
 
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
-#ifdef GTSAM_USE_QUATERNIONS
-// Exponential map is very cheap for quaternions
-#define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
-#else
-// For rotation matrices, the Cayley transform is a fast retract alternative
-#define ROT3_DEFAULT_COORDINATES_MODE Rot3::CAYLEY
-#endif
+  #ifdef GTSAM_USE_QUATERNIONS
+    // Exponential map is very cheap for quaternions
+    #define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
+  #else
+    // If user doesn't require GTSAM_ROT3_EXPMAP in cmake when building
+    #ifndef GTSAM_ROT3_EXPMAP
+      // For rotation matrices, the Cayley transform is a fast retract alternative
+      #define ROT3_DEFAULT_COORDINATES_MODE Rot3::CAYLEY
+    #else
+      #define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
+    #endif
+  #endif
 #endif
 
 #include <gtsam/base/DerivedValue.h>
