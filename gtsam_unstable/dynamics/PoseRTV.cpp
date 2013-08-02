@@ -93,7 +93,7 @@ Vector PoseRTV::localCoordinates(const PoseRTV& p1) const {
 /* ************************************************************************* */
 PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
 PoseRTV PoseRTV::inverse(boost::optional<Matrix&> H1) const {
-  if (H1) *H1 = numericalDerivative11(inverse_, *this, 1e-5);
+  if (H1) *H1 = numericalDerivative11<PoseRTV,PoseRTV>(inverse_, *this, 1e-5);
   return PoseRTV(Rt_.inverse(), v_.inverse());
 }
 
