@@ -82,10 +82,15 @@ void gradientAtZero(const GaussianBayesTree& bayesTree, VectorValues& g) {
 
 /* ************************************************************************* */
 double determinant(const GaussianBayesTree& bayesTree) {
+  return exp(logDeterminant(bayesTree));
+}
+
+/* ************************************************************************* */
+double logDeterminant(const GaussianBayesTree& bayesTree) {
   if (!bayesTree.root())
     return 0.0;
 
-  return exp(internal::logDeterminant<GaussianBayesTree>(bayesTree.root()));
+  return internal::logDeterminant<GaussianBayesTree>(bayesTree.root());
 }
 /* ************************************************************************* */
 
