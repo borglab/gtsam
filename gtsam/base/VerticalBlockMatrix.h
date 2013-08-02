@@ -64,7 +64,7 @@ namespace gtsam {
 
     /** Construct from a container of the sizes of each vertical block. */
     template<typename CONTAINER>
-    VerticalBlockMatrix(const CONTAINER dimensions, DenseIndex height) :
+    VerticalBlockMatrix(const CONTAINER& dimensions, DenseIndex height) :
       rowStart_(0), rowEnd_(height), blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end());
@@ -74,7 +74,7 @@ namespace gtsam {
 
     /** Construct from a container of the sizes of each vertical block and a pre-prepared matrix. */
     template<typename CONTAINER>
-    VerticalBlockMatrix(const CONTAINER dimensions, const Matrix& matrix) :
+    VerticalBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix) :
       matrix_(matrix), rowStart_(0), rowEnd_(matrix.rows()), blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end());

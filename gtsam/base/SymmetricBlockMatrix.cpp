@@ -26,8 +26,9 @@ namespace gtsam {
   {
     SymmetricBlockMatrix result;
     result.variableColOffsets_.resize(other.nBlocks() + 1);
-    std::copy(other.variableColOffsets_.begin() + other.blockStart_, other.variableColOffsets_.end(),
-      result.variableColOffsets_.begin());
+    for(size_t i = 0; i < result.variableColOffsets_.size(); ++i)
+      result.variableColOffsets_[i] =
+      other.variableColOffsets_[other.blockStart_ + i] - other.variableColOffsets_[other.blockStart_];
     result.matrix_.resize(other.cols(), other.cols());
     result.assertInvariants();
     return result;
@@ -38,8 +39,9 @@ namespace gtsam {
   {
     SymmetricBlockMatrix result;
     result.variableColOffsets_.resize(other.nBlocks() + 1);
-    std::copy(other.variableColOffsets_.begin() + other.blockStart_, other.variableColOffsets_.end(),
-      result.variableColOffsets_.begin());
+    for(size_t i = 0; i < result.variableColOffsets_.size(); ++i)
+      result.variableColOffsets_[i] =
+      other.variableColOffsets_[other.blockStart_ + i] - other.variableColOffsets_[other.blockStart_];
     result.matrix_.resize(other.cols(), other.cols());
     result.assertInvariants();
     return result;

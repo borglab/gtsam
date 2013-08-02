@@ -59,7 +59,7 @@ namespace gtsam {
 
     /** Construct from a container of the sizes of each block. */
     template<typename CONTAINER>
-    SymmetricBlockMatrix(const CONTAINER dimensions) :
+    SymmetricBlockMatrix(const CONTAINER& dimensions) :
       blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end());
@@ -80,7 +80,7 @@ namespace gtsam {
 
     /** Construct from a container of the sizes of each vertical block and a pre-prepared matrix. */
     template<typename CONTAINER>
-    SymmetricBlockMatrix(const CONTAINER dimensions, const Matrix& matrix) :
+    SymmetricBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix) :
       matrix_(matrix), blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end());
@@ -147,8 +147,6 @@ namespace gtsam {
       DenseIndex i_actualEndBlock = i_endBlock + blockStart_;
       DenseIndex j_actualStartBlock = j_startBlock + blockStart_;
       DenseIndex j_actualEndBlock = j_endBlock + blockStart_;
-      checkBlock(i_actualStartBlock);
-      checkBlock(j_actualStartBlock);
       if(i_startBlock != 0 || i_endBlock != 0) {
         checkBlock(i_actualStartBlock);
         assert(i_actualEndBlock < (DenseIndex)variableColOffsets_.size());
