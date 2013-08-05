@@ -32,6 +32,7 @@ namespace gtsam {
   class VariableSlots;
   class GaussianFactorGraph;
   class GaussianConditional;
+  class HessianFactor;
   class VectorValues;
   class Ordering;
 
@@ -93,6 +94,12 @@ namespace gtsam {
 
     /** Convert from other GaussianFactor */
     explicit JacobianFactor(const GaussianFactor& gf);
+
+    /** Copy constructor */
+    JacobianFactor(const JacobianFactor& jf) : Base(jf), Ab_(jf.Ab_), model_(jf.model_) {}
+
+    /** Conversion from HessianFactor (does Cholesky to obtain Jacobian matrix) */
+    explicit JacobianFactor(const HessianFactor& hf);
 
     /** default constructor for I/O */
     JacobianFactor();

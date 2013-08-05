@@ -16,11 +16,10 @@
  * @date Feb 7, 2012
  */
 
-#include <gtsam/linear/VectorValuesOrdered.h>
-#include <gtsam/linear/JacobianFactorOrdered.h>
-#include <gtsam/linear/HessianFactorOrdered.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianISAMOrdered.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/NoiseModel.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
@@ -130,29 +129,29 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactorOrdered, "gtsam::JacobianFactor");
-BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactorOrdered , "gtsam::HessianFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
 
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
-  VectorValuesOrdered values;
+  VectorValues values;
   values.insert(0, Vector_(1, 1.0));
   values.insert(1, Vector_(2, 2.0,3.0));
   values.insert(2, Vector_(2, 4.0,5.0));
-  EXPECT(equalsObj<VectorValuesOrdered>(values));
-  EXPECT(equalsXML<VectorValuesOrdered>(values));
-  EXPECT(equalsBinary<VectorValuesOrdered>(values));
+  EXPECT(equalsObj<VectorValues>(values));
+  EXPECT(equalsXML<VectorValues>(values));
+  EXPECT(equalsBinary<VectorValues>(values));
 
   Index i1 = 4, i2 = 7;
   Matrix A1 = eye(3), A2 = -1.0 * eye(3);
   Vector b = ones(3);
   SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 1.0, 2.0, 3.0));
-  JacobianFactorOrdered jacobianfactor(i1, A1, i2, A2, b, model);
+  JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
   EXPECT(equalsObj(jacobianfactor));
   EXPECT(equalsXML(jacobianfactor));
   EXPECT(equalsBinary(jacobianfactor));
 
-  HessianFactorOrdered hessianfactor(jacobianfactor);
+  HessianFactor hessianfactor(jacobianfactor);
   EXPECT(equalsObj(hessianfactor));
   EXPECT(equalsXML(hessianfactor));
   EXPECT(equalsBinary(hessianfactor));
@@ -164,7 +163,7 @@ TEST (Serialization, gaussian_conditional) {
   Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
   Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
   Vector d(2); d << 0.2, 0.5;
-  GaussianConditionalOrdered cg(0, d, R, 1, A1, 2, A2, ones(2));
+  GaussianConditional cg(0, d, R, 1, A1, 2, A2);
 
   EXPECT(equalsObj(cg));
   EXPECT(equalsXML(cg));

@@ -111,28 +111,28 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  //JacobianFactor::JacobianFactor(const HessianFactor& factor) {
-  //  keys_ = factor.keys_;
-  //  Ab_.assignNoalias(factor.info_);
+  JacobianFactor::JacobianFactor(const HessianFactor& factor) :
+    Base(factor), Ab_(VerticalBlockMatrix::LikeActiveViewOf(factor.matrixObject(), factor.rows()))
+  {
+    // Copy Hessian into our matrix and then do in-place Cholesky
+    Ab_.full() = factor.matrixObject().full();
+    
+    // Do Cholesky to get a Jacobian
+    size_t maxrank;
+    bool success;
+    boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
-  //  // Do Cholesky to get a Jacobian
-  //  size_t maxrank;
-  //  bool success;
-  //  boost::tie(maxrank, success) = choleskyCareful(matrix_);
+    // Check for indefinite system
+    if(!success)
+      throw IndeterminantLinearSystemException(factor.keys().front());
 
-  //  // Check for indefinite system
-  //  if(!success)
-  //    throw IndeterminantLinearSystemException(factor.keys().front());
-
-  //  // Zero out lower triangle
-  //  matrix_.topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
-  //      Matrix::Zero(maxrank, matrix_.cols());
-  //  // FIXME: replace with triangular system
-  //  Ab_.rowEnd() = maxrank;
-  //  model_ = noiseModel::Unit::Create(maxrank);
-
-  //  assertInvariants();
-  //}
+    // Zero out lower triangle
+    Ab_.matrix().topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
+        Matrix::Zero(maxrank, Ab_.matrix().cols());
+    // FIXME: replace with triangular system
+    Ab_.rowEnd() = maxrank;
+    model_ = noiseModel::Unit::Create(maxrank);
+  }
 
   /* ************************************************************************* */
   // Helper functions for combine constructor

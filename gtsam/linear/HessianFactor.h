@@ -217,7 +217,7 @@ namespace gtsam {
      */
     virtual size_t getDim(const_iterator variable) const { return info_(variable-this->begin(), 0).rows(); }
 
-    /** Return the number of columns and rows of the Hessian matrix */
+    /** Return the number of columns and rows of the Hessian matrix, including the information vector. */
     size_t rows() const { return info_.rows(); }
 
     /**

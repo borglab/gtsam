@@ -161,4 +161,35 @@ namespace gtsam {
     return Ordering::COLAMDConstrained(variableIndex, cmember);
   }
 
+  /* ************************************************************************* */
+  void Ordering::print(const std::string& str, const KeyFormatter& keyFormatter) const
+  {
+    cout << str;
+    // Print ordering in index order
+    // Print the ordering with varsPerLine ordering entries printed on each line,
+    // for compactness.
+    static const size_t varsPerLine = 10;
+    bool endedOnNewline = false;
+    for(size_t i = 0; i < size(); ++i) {
+      if(i % varsPerLine != 0)
+        cout << ", ";
+      cout << i << ":" << keyFormatter(at(i));
+      if(i % varsPerLine == varsPerLine - 1) {
+        cout << "\n";
+        endedOnNewline = true;
+      } else {
+        endedOnNewline = false;
+      }
+    }
+    if(!endedOnNewline)
+      cout << "\n";
+    cout.flush();
+  }
+
+  /* ************************************************************************* */
+  bool Ordering::equals(const Ordering& other, double tol) const
+  {
+    return (*this) == other;
+  }
+
 }

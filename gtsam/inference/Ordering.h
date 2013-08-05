@@ -43,6 +43,8 @@ namespace gtsam {
     /// Invert (not reverse) the ordering - returns a map from key to order position
     FastMap<Key, size_t> invert() const;
 
+    /// @name Fill-reducing Orderings @{
+
     /// Compute a fill-reducing ordering using COLAMD from a factor graph (see details for note on
     /// performance). This internally builds a VariableIndex so if you already have a VariableIndex,
     /// it is faster to use COLAMD(const VariableIndex&)
@@ -98,6 +100,14 @@ namespace gtsam {
     /// supplied indices, see the CCOLAMD documentation for more information.
     static GTSAM_EXPORT Ordering COLAMDConstrained(const VariableIndex& variableIndex,
       const FastMap<Key, int>& groups);
+
+    /// @}
+
+    /// @name Testable @{
+
+    GTSAM_EXPORT void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    GTSAM_EXPORT bool equals(const Ordering& other, double tol = 1e-9) const;
 
   private:
     static GTSAM_EXPORT Ordering COLAMDConstrained(

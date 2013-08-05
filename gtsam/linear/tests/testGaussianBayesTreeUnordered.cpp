@@ -32,8 +32,6 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-#define TEST TEST_UNSAFE
-
 namespace {
   const Key x1=1, x2=2, x3=3, x4=4;
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);

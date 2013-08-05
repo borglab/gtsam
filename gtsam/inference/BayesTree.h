@@ -250,7 +250,7 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_NVP(nodes_);
-      ar & BOOST_SERIALIZATION_NVP(root_);
+      ar & BOOST_SERIALIZATION_NVP(roots_);
     }
 
     /// @}
