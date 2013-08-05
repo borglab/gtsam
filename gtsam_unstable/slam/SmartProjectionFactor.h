@@ -181,7 +181,46 @@ namespace gtsam {
     }
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x,  const Ordering& ordering) const {
+    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values,  const Ordering& ordering) const {
+
+      std::vector<Matrix> Hx(keys_.size());
+      std::vector<Matrix> Hl(keys_.size());
+      std::vector<Vector> b(keys_.size());
+
+      // Collect all poses (Cameras)
+      std::vector<Pose3> cameraPoses;
+
+      BOOST_FOREACH(const Key& k, keys_) {
+        if(body_P_sensor_)
+          cameraPoses.push_back(values.at<Pose3>(k).compose(*body_P_sensor_));
+        else
+          cameraPoses.push_back(values.at<Pose3>(k));
+      }
+
+      // We triangulate the 3D position of the landmark
+      boost::optional<Point3> point = triangulatePoint3(cameraPoses, measured_, *K_);
+
+      if(point){
+        for(size_t i = 0; i < measured_.size(); i++) {
+          Pose3 pose = cameraPoses.at(i);
+          PinholeCamera<CALIBRATION> camera(pose, *K_);
+          b.at(i) = ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
+        }
+      }
+      else{
+        return HessianFactor::shared_ptr(new HessianFactor());
+      }
+
+      // Allocate m^2 matrix blocks
+      std::vector< std::vector<Matrix> > Hxl(keys_.size(), std::vector<Matrix>( keys_.size()));
+
+      // Allocate inv(Hl'Hl)
+      Matrix3 C;
+      for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+         C += Hl.at(i1).transpose() * Hl.at(i1);
+      }
+      C = C.inverse();
+
 
       // fill in the keys
       std::vector<Index> js;
@@ -189,25 +228,32 @@ namespace gtsam {
         js += ordering[k];
       }
 
+      // Calculate sub blocks
+      for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+        for(size_t i2 = 0; i2 < keys_.size(); i2++) {
+          Hxl[i1][i2] = Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose();
+        }
+      }
 
-      std::vector<Matrix> Gs;
-
-      std::vector<Vector> gs;
       // Shur complement trick
 
-//      double e = u + b - z , e2 = e * e;
-//      double c = 2 * logSqrt2PI - log(p) + e2 * p;
-//      Vector g1 = Vector_(1, -e * p);
-//      Vector g2 = Vector_(1, 0.5 / p - 0.5 * e2);
-//      Vector g3 = Vector_(1, -e * p);
-//      Matrix G11 = Matrix_(1, 1, p);
-//      Matrix G12 = Matrix_(1, 1, e);
-//      Matrix G13 = Matrix_(1, 1, p);
-//      Matrix G22 = Matrix_(1, 1, 0.5 / (p * p));
-//      Matrix G23 = Matrix_(1, 1, e);
-//      Matrix G33 = Matrix_(1, 1, p);
-
+      // Populate Gs and gs
+      std::vector<Matrix> Gs(keys_.size()*(keys_.size()+1)/2);
+      std::vector<Vector> gs(keys_.size());
       double f = 0;
+      int GsCount = 0;
+      for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+        gs.at(i1) = Hx.at(i1).transpose() * b.at(i1);
+
+        for(size_t i2 = 0; i2 < keys_.size(); i2++) {
+          gs.at(i1) += Hxl[i1][i2] * b.at(i2);
+
+          if (i2 >= i1) {
+            Gs.at(GsCount) = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
+            GsCount++;
+          }
+        }
+      }
 
       return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
     }
