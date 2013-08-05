@@ -19,9 +19,7 @@
 #pragma once
 
 #include <gtsam/discrete/Assignment.h>
-#include <gtsam/inference/Factor.h>
-
-#include <boost/assign/list_of.hpp>
+#include <gtsam/inference/IndexFactorOrdered.h>
 
 namespace gtsam {
 
@@ -32,13 +30,12 @@ namespace gtsam {
    * Base class for discrete probabilistic factors
    * The most general one is the derived DecisionTreeFactor
    */
-  class GTSAM_EXPORT DiscreteFactor : public Factor {
+  class GTSAM_EXPORT DiscreteFactor: public IndexFactorOrdered {
 
   public:
 
     // typedefs needed to play nice with gtsam
     typedef DiscreteFactor This;
-    typedef Factor Base;
     typedef DiscreteConditional ConditionalType;
     typedef boost::shared_ptr<DiscreteFactor> shared_ptr;
 
@@ -50,23 +47,23 @@ namespace gtsam {
 
     /// Construct n-way factor
     DiscreteFactor(const std::vector<Index>& js) :
-        Base(js) {
+        IndexFactorOrdered(js) {
     }
 
     /// Construct unary factor
     DiscreteFactor(Index j) :
-        Base(boost::assign::cref_list_of<1>(j)) {
+        IndexFactorOrdered(j) {
     }
 
     /// Construct binary factor
     DiscreteFactor(Index j1, Index j2) :
-        Base(boost::assign::cref_list_of<2>(j1)(j2)) {
+        IndexFactorOrdered(j1, j2) {
     }
 
     /// construct from container
     template<class KeyIterator>
     DiscreteFactor(KeyIterator beginKey, KeyIterator endKey) :
-        Base(beginKey, endKey) {
+        IndexFactorOrdered(beginKey, endKey) {
     }
 
   public:
@@ -86,8 +83,9 @@ namespace gtsam {
 
     // print
     virtual void print(const std::string& s = "DiscreteFactor\n",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const {
-      Base::print(s,formatter);
+        const IndexFormatter& formatter
+        =DefaultIndexFormatter) const {
+      IndexFactorOrdered::print(s,formatter);
     }
 
     /// @}
@@ -101,6 +99,21 @@ namespace gtsam {
     virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
 
     virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
+
+    /**
+     * Permutes the factor, but for efficiency requires the permutation
+     * to already be inverted.
+     */
+    virtual void permuteWithInverse(const Permutation& inversePermutation){
+      IndexFactorOrdered::permuteWithInverse(inversePermutation);
+    }
+
+    /**
+     * Apply a reduction, which is a remapping of variable indices.
+     */
+    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
+      IndexFactorOrdered::reduceWithInverse(inverseReduction);
+    }
 
     /// @}
   };

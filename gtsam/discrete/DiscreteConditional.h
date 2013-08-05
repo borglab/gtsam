@@ -20,7 +20,7 @@
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/Signature.h>
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/IndexConditionalOrdered.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
@@ -30,16 +30,13 @@ namespace gtsam {
    * Discrete Conditional Density
    * Derives from DecisionTreeFactor
    */
-  class GTSAM_EXPORT DiscreteConditional :
-    public DecisionTreeFactor,
-    public Conditional<DecisionTreeFactor, DiscreteConditional>
-  {
+  class GTSAM_EXPORT DiscreteConditional: public IndexConditionalOrdered, public Potentials {
+
   public:
     // typedefs needed to play nice with gtsam
-    typedef DiscreteConditional This;
-    typedef DecisionTreeFactor BaseFactor;
-    typedef Conditional<DecisionTreeFactor, DiscreteConditional> BaseConditional;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef DiscreteFactor FactorType;
+    typedef boost::shared_ptr<DiscreteConditional> shared_ptr;
+    typedef IndexConditionalOrdered Base;
 
     /** A map from keys to values */
     typedef Assignment<Index> Values;
@@ -59,7 +56,8 @@ namespace gtsam {
     DiscreteConditional(const Signature& signature);
 
     /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
-    DiscreteConditional(const DecisionTreeFactor& joint, const DecisionTreeFactor& marginal);
+    DiscreteConditional(const DecisionTreeFactor& joint,
+        const DecisionTreeFactor& marginal);
 
     /**
      * Combine several conditional into a single one.
@@ -77,7 +75,7 @@ namespace gtsam {
 
     /// GTSAM-style print
     void print(const std::string& s = "Discrete Conditional: ",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const;
+        const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
     /// GTSAM-style equals
     bool equals(const DiscreteConditional& other, double tol = 1e-9) const;
@@ -89,6 +87,11 @@ namespace gtsam {
     /// Evaluate, just look up in AlgebraicDecisonTree
     virtual double operator()(const Values& values) const {
       return Potentials::operator()(values);
+    }
+
+    /** Convert to a factor */
+    DecisionTreeFactor::shared_ptr toFactor() const {
+      return DecisionTreeFactor::shared_ptr(new DecisionTreeFactor(*this));
     }
 
     /** Restrict to given parent values, returns AlgebraicDecisionDiagram */
@@ -117,6 +120,11 @@ namespace gtsam {
 
     /// sample in place, stores result in partial solution
     void sampleInPlace(Values& parentsValues) const;
+
+    /**
+     * Permutes both IndexConditional and Potentials.
+     */
+    void permuteWithInverse(const Permutation& inversePermutation);
 
     /// @}
 

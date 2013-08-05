@@ -128,6 +128,26 @@ namespace gtsam {
      */
     shared_ptr combine(size_t nrFrontals, ADT::Binary op) const;
 
+    /**
+     * @brief Permutes the keys in Potentials and DiscreteFactor
+     *
+     * This re-implements the permuteWithInverse() in both Potentials
+     * and DiscreteFactor by doing both of them together.
+     */
+
+    void permuteWithInverse(const Permutation& inversePermutation){
+      DiscreteFactor::permuteWithInverse(inversePermutation);
+      Potentials::permuteWithInverse(inversePermutation);
+    }
+    
+    /**
+     * Apply a reduction, which is a remapping of variable indices.
+     */
+    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
+      DiscreteFactor::reduceWithInverse(inverseReduction);
+      Potentials::reduceWithInverse(inverseReduction);
+    }
+
     /// @}
   };
 // DecisionTreeFactor

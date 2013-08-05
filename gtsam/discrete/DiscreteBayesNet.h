@@ -17,50 +17,30 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/inference/FactorGraph.h>
-
 #include <vector>
 #include <map>
 #include <boost/shared_ptr.hpp>
+#include <gtsam/inference/BayesNetOrdered.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 
 namespace gtsam {
 
-  class GTSAM_EXPORT DiscreteBayesNet : public FactorGraph<DiscreteConditional>
-  {
-  public:
-    /// @name Standard Constructors
-    /// @{
+  typedef BayesNetOrdered<DiscreteConditional> DiscreteBayesNet;
 
-    /** Construct empty factor graph */
-    DiscreteBayesNet() {}
+  /** Add a DiscreteCondtional */
+  GTSAM_EXPORT void add(DiscreteBayesNet&, const Signature& s);
 
-    /** Construct from iterator over conditionals */
-    template<typename ITERATOR>
-    DiscreteBayesNet(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+  /** Add a DiscreteCondtional in front, when listing parents first*/
+  GTSAM_EXPORT void add_front(DiscreteBayesNet&, const Signature& s);
 
-    /** Construct from container of factors (shared_ptr or plain objects) */
-    template<class CONTAINER>
-    explicit DiscreteBayesNet(const CONTAINER& conditionals) : Base(conditionals) {}
+  //** evaluate for given Values */
+  GTSAM_EXPORT double evaluate(const DiscreteBayesNet& bn, const DiscreteConditional::Values & values);
 
-    /** Implicit copy/downcast constructor to override explicit template container constructor */
-    template<class DERIVEDCONDITIONAL>
-    DiscreteBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
+  /** Optimize function for back-substitution. */
+  GTSAM_EXPORT DiscreteFactor::sharedValues optimize(const DiscreteBayesNet& bn);
 
-    /// @}
-
-    /** Add a DiscreteCondtional */
-    void add(const Signature& s);
-
-    //** evaluate for given Values */
-    double evaluate(const DiscreteConditional::Values& values);
-
-    /** Optimize function for back-substitution. */
-    DiscreteFactor::sharedValues optimize();
-
-    /** Do ancestral sampling */
-    DiscreteFactor::sharedValues sample();
-  };
+  /** Do ancestral sampling */
+  GTSAM_EXPORT DiscreteFactor::sharedValues sample(const DiscreteBayesNet& bn);
 
 } // namespace
 
