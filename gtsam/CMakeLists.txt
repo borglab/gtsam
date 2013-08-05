@@ -6,7 +6,7 @@ set (gtsam_subdirs
     geometry 
     inference 
 	symbolic 
-    discrete 
+    #discrete 
     linear 
     nonlinear 
     slam
@@ -79,7 +79,7 @@ set(gtsam_srcs
     ${geometry_srcs}
     ${inference_srcs}
 	${symbolic_srcs}
-    ${discrete_srcs}
+    #${discrete_srcs}
     ${linear_srcs}
     ${nonlinear_srcs}
     ${slam_srcs}
