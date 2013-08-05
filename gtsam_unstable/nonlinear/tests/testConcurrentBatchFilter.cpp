@@ -23,12 +23,12 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/inference/JunctionTreeOrdered.h>
+#include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -86,22 +86,16 @@ bool hessian_equal(const NonlinearFactorGraph& expected, const NonlinearFactorGr
     return false;
   }
 
-  // Create an ordering
-  OrderingOrdered ordering;
-  BOOST_FOREACH(Key key, expectedKeys) {
-    ordering.push_back(key);
-  }
-
   // Linearize each factor graph
-  GaussianFactorGraphOrdered expectedGaussian;
+  GaussianFactorGraph expectedGaussian;
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, expected) {
     if(factor)
-      expectedGaussian.push_back( factor->linearize(theta, ordering) );
+      expectedGaussian.push_back( factor->linearize(theta) );
   }
-  GaussianFactorGraphOrdered actualGaussian;
+  GaussianFactorGraph actualGaussian;
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, actual) {
     if(factor)
-      actualGaussian.push_back( factor->linearize(theta, ordering) );
+      actualGaussian.push_back( factor->linearize(theta) );
   }
 
   // Convert linear factor graph into a dense Hessian
@@ -384,7 +378,7 @@ NonlinearFactorGraph MarginalFactors(const NonlinearFactorGraph& factors, const 
   BOOST_FOREACH(Key key, remainingKeys) {
     constraints[key] = 1;
   }
-  OrderingOrdered ordering = *factors.orderingCOLAMDConstrained(values, constraints);
+  Ordering ordering = *factors.orderingCOLAMDConstrained(values, constraints);
 
   // Convert the remaining keys into indices
   std::vector<Index> remainingIndices;
@@ -394,7 +388,7 @@ NonlinearFactorGraph MarginalFactors(const NonlinearFactorGraph& factors, const 
 
   // Solve for the Gaussian marginal factors
   GaussianSequentialSolver gss(*factors.linearize(values, ordering), true);
-  GaussianFactorGraphOrdered linearMarginals = *gss.jointFactorGraph(remainingIndices);
+  GaussianFactorGraph linearMarginals = *gss.jointFactorGraph(remainingIndices);
 
   // Convert to LinearContainFactors
   return LinearContainerFactor::convertLinearGraph(linearMarginals, ordering, values);

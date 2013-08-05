@@ -78,7 +78,7 @@ namespace {
  *
  *  1  0  0  1
  */
-TEST( GaussianBayesTreeOrdered, eliminate )
+TEST( GaussianBayesTree, eliminate )
 {
   GaussianBayesTree bt = *chain.eliminateMultifrontal(chainOrdering);
 
@@ -94,7 +94,7 @@ TEST( GaussianBayesTreeOrdered, eliminate )
 }
 
 /* ************************************************************************* */
-TEST( GaussianBayesTreeOrdered, optimizeMultiFrontal )
+TEST( GaussianBayesTree, optimizeMultiFrontal )
 {
   VectorValues expected = pair_list_of
     (x1, Vector_(1, 0.))
@@ -107,7 +107,7 @@ TEST( GaussianBayesTreeOrdered, optimizeMultiFrontal )
 }
 
 /* ************************************************************************* */
-TEST(GaussianBayesTreeOrdered, complicatedMarginal) {
+TEST(GaussianBayesTree, complicatedMarginal) {
 
   // Create the conditionals to go in the BayesTree
   GaussianBayesTree bt;

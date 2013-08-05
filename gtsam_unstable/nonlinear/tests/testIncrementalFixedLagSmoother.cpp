@@ -22,11 +22,11 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/linear/GaussianBayesNetOrdered.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -39,11 +39,9 @@ Key MakeKey(size_t index) { return Symbol('x', index); }
 /* ************************************************************************* */
 bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullinit, const IncrementalFixedLagSmoother& smoother, const Key& key) {
 
-  OrderingOrdered ordering = *fullgraph.orderingCOLAMD(fullinit);
-  GaussianFactorGraphOrdered linearized = *fullgraph.linearize(fullinit, ordering);
-  GaussianBayesNetOrdered gbn = *GaussianSequentialSolver(linearized).eliminate();
-  VectorValuesOrdered delta = optimize(gbn);
-  Values fullfinal = fullinit.retract(delta, ordering);
+  GaussianFactorGraph linearized = *fullgraph.linearize(fullinit);
+  VectorValues delta = linearized.optimize();
+  Values fullfinal = fullinit.retract(delta);
 
   Point2 expected = fullfinal.at<Point2>(key);
   Point2 actual = smoother.calculateEstimate<Point2>(key);

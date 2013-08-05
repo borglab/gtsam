@@ -397,7 +397,7 @@ TEST(JacobianFactor, eliminate2 )
 }
 
 /* ************************************************************************* */
-TEST(JacobianFactor, EliminateQROrdered)
+TEST(JacobianFactor, EliminateQR)
 {
   // Augmented Ab test case for whole factor graph
   Matrix Ab = Matrix_(14,11,

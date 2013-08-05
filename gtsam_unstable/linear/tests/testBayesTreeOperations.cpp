@@ -10,7 +10,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam_unstable/linear/bayesTreeOperations.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 #include <tests/smallExample.h>
 
@@ -31,7 +30,7 @@ static const double tol = 1e-4;
 TEST( testBayesTreeOperations, splitFactor1 ) {
 
   // Build upper-triangular system
-  JacobianFactorOrdered initFactor(
+  JacobianFactor initFactor(
        0,Matrix_(4, 2,
            1.0, 2.0,
            0.0, 3.0,
@@ -45,8 +44,8 @@ TEST( testBayesTreeOperations, splitFactor1 ) {
        Vector_(4, 0.1, 0.2, 0.3, 0.4),
        model4);
 
-  GaussianFactorGraphOrdered actSplit = splitFactor(initFactor.clone());
-  GaussianFactorGraphOrdered expSplit;
+  GaussianFactorGraph actSplit = splitFactor(initFactor.clone());
+  GaussianFactorGraph expSplit;
 
   expSplit.add(
        0,Matrix_(2, 2,
@@ -71,7 +70,7 @@ TEST( testBayesTreeOperations, splitFactor1 ) {
 TEST( testBayesTreeOperations, splitFactor2 ) {
 
   // Build upper-triangular system
-  JacobianFactorOrdered initFactor(
+  JacobianFactor initFactor(
        0,Matrix_(6, 2,
            1.0, 2.0,
            0.0, 3.0,
@@ -96,8 +95,8 @@ TEST( testBayesTreeOperations, splitFactor2 ) {
        Vector_(6, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6),
        model6);
 
-  GaussianFactorGraphOrdered actSplit = splitFactor(initFactor.clone());
-  GaussianFactorGraphOrdered expSplit;
+  GaussianFactorGraph actSplit = splitFactor(initFactor.clone());
+  GaussianFactorGraph expSplit;
 
   expSplit.add(
        0,Matrix_(2, 2,
@@ -134,7 +133,7 @@ TEST( testBayesTreeOperations, splitFactor2 ) {
 TEST( testBayesTreeOperations, splitFactor3 ) {
 
   // Build upper-triangular system
-  JacobianFactorOrdered initFactor(
+  JacobianFactor initFactor(
        0,Matrix_(4, 2,
            1.0, 2.0,
            0.0, 3.0,
@@ -153,8 +152,8 @@ TEST( testBayesTreeOperations, splitFactor3 ) {
        Vector_(4, 0.1, 0.2, 0.3, 0.4),
        model4);
 
-  GaussianFactorGraphOrdered actSplit = splitFactor(initFactor.clone());
-  GaussianFactorGraphOrdered expSplit;
+  GaussianFactorGraph actSplit = splitFactor(initFactor.clone());
+  GaussianFactorGraph expSplit;
 
   expSplit.add(
        0,Matrix_(2, 2,
@@ -192,12 +191,12 @@ TEST( testBayesTreeOperations, liquefy ) {
   using namespace example;
 
   // Create smoother with 7 nodes
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
-  GaussianFactorGraphOrdered smoother = createSmoother(7, ordering).first;
+  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
 
   // Create the Bayes tree
-  GaussianBayesTreeOrdered bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianBayesTree bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
 //  bayesTree.print("Full tree");
 
   SharedDiagonal unit6 = noiseModel::Diagonal::Sigmas(Vector_(ones(6)));
@@ -206,8 +205,8 @@ TEST( testBayesTreeOperations, liquefy ) {
 
   // Liquefy the tree back into a graph
   {
-    GaussianFactorGraphOrdered actGraph = liquefy(bayesTree, false); // Doesn't split conditionals
-    GaussianFactorGraphOrdered expGraph;
+    GaussianFactorGraph actGraph = liquefy(bayesTree, false); // Doesn't split conditionals
+    GaussianFactorGraph expGraph;
 
     Matrix A12 = Matrix_(6, 2,
         1.73205081,          0.0,
@@ -278,8 +277,8 @@ TEST( testBayesTreeOperations, liquefy ) {
 
   // Liquefy the tree back into a graph, splitting factors
   {
-    GaussianFactorGraphOrdered actGraph = liquefy(bayesTree, true);
-    GaussianFactorGraphOrdered expGraph;
+    GaussianFactorGraph actGraph = liquefy(bayesTree, true);
+    GaussianFactorGraph expGraph;
 
     // Conditional 1
     {
