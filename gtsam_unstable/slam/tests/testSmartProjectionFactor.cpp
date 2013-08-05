@@ -226,12 +226,14 @@ TEST( MultiProjectionFactor, 3poses ){
   graph.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
+//  smartFactor1->print("smartFactor1");
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
+
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1));
   Values values;
   values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  values.insert(x3, pose3* noise_pose);
+  values.insert(x2, pose2*noise_pose);
+  values.insert(x3, pose3);
 
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
@@ -244,7 +246,7 @@ TEST( MultiProjectionFactor, 3poses ){
 }
 
 
-///* ************************************************************************* */
+/* *************************************************************************
 TEST( MultiProjectionFactor, 3poses_projection_factor ){
   cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 

@@ -13,9 +13,8 @@
  * @file ProjectionFactor.h
  * @brief Basic bearing factor from 2D measurement
  * @author Chris Beall
- * @author Richard Roberts
- * @author Frank Dellaert
- * @author Alex Cunningham
+ * @author Luca Carlone
+ * @author Zsolt Kira
  */
 
 #pragma once
@@ -23,6 +22,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
+#include <vector>
 #include <gtsam_unstable/geometry/triangulation.h>
 #include <boost/optional.hpp>
 #include <boost/assign.hpp>
@@ -30,8 +30,7 @@
 namespace gtsam {
 
   /**
-   * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
-   * i.e. the main building block for visual SLAM.
+   * The calibration is known here.
    * @addtogroup SLAM
    */
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
@@ -39,7 +38,7 @@ namespace gtsam {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
-    std::vector<Point2> measured_;                    ///< 2D measurement for each of the n views
+    std::vector<Point2> measured_;                    ///< 2D measurement for each of the m views
     ///< (important that the order is the same as the keys that we use to create the factor)
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     const SharedNoiseModel noise_;   ///< noise model used
@@ -68,7 +67,7 @@ namespace gtsam {
     /**
      * Constructor
      * TODO: Mark argument order standard (keys, measurement, parameters)
-     * @param measured is the 2n dimensional location of the n points in the n views (the measurements)
+     * @param measured is the 2m dimensional location of the projection of a single landmark in the m views (the measurements)
      * @param model is the standard deviation (current version assumes that the uncertainty is the same for all views)
      * @param poseKeys is the set of indices corresponding to the cameras observing the same landmark
      * @param K shared pointer to the constant calibration
@@ -85,9 +84,9 @@ namespace gtsam {
     /**
      * Constructor with exception-handling flags
      * TODO: Mark argument order standard (keys, measurement, parameters)
-     * @param measured is the 2 dimensional location of point in image (the measurement)
-     * @param model is the standard deviation
-     * @param poseKey is the index of the camera
+     * @param measured is the 2m dimensional location of the projection of a single landmark in the m views (the measurements)
+     * @param model is the standard deviation (current version assumes that the uncertainty is the same for all views)
+     * @param poseKeys is the set of indices corresponding to the cameras observing the same landmark
      * @param K shared pointer to the constant calibration
      * @param throwCheirality determines whether Cheirality exceptions are rethrown
      * @param verboseCheirality determines whether exceptions are printed for Cheirality
@@ -141,39 +140,6 @@ namespace gtsam {
           && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
     }
 
-//    /// Evaluate error h(x)-z and optionally derivatives
-//    Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const{
-//
-//      Vector a;
-//      return a;
-//
-////      Point3 point = x.at<Point3>(*keys_.end());
-////
-////      std::vector<KeyType>::iterator vit;
-////      for (vit = keys_.begin(); vit != keys_.end()-1; vit++) {
-////        Key key = (*vit);
-////        Pose3 pose = x.at<Pose3>(key);
-////
-////        if(body_P_sensor_) {
-////          if(H1) {
-////            gtsam::Matrix H0;
-////            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_, H0), *K_);
-////            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-////            *H1 = *H1 * H0;
-////            return reprojectionError.vector();
-////          } else {
-////            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_), *K_);
-////            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-////            return reprojectionError.vector();
-////          }
-////        } else {
-////          PinholeCamera<CALIBRATION> camera(pose, *K_);
-////          Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-////          return reprojectionError.vector();
-////        }
-////      }
-//
-//    }
 
     /// get the dimension of the factor (number of rows on linearization)
     virtual size_t dim() const {
@@ -183,24 +149,25 @@ namespace gtsam {
     /// linearize returns a Hessianfactor that is an approximation of error(p)
     virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values,  const Ordering& ordering) const {
 
+//      std::cout.precision(20);
+
+
       // Collect all poses (Cameras)
       std::vector<Pose3> cameraPoses;
-
       BOOST_FOREACH(const Key& k, keys_) {
         if(body_P_sensor_)
           cameraPoses.push_back(values.at<Pose3>(k).compose(*body_P_sensor_));
         else
           cameraPoses.push_back(values.at<Pose3>(k));
       }
-            // We triangulate the 3D position of the landmark
+
+      // We triangulate the 3D position of the landmark
       boost::optional<Point3> point = triangulatePoint3(cameraPoses, measured_, *K_);
 
       if (!point)
         return HessianFactor::shared_ptr(new HessianFactor());
 
       std::cout << "point " << *point << std::endl;
-
-
       std::vector<Matrix> Gs(keys_.size()*(keys_.size()+1)/2);
       std::vector<Vector> gs(keys_.size());
       double f = 0;
@@ -220,11 +187,10 @@ namespace gtsam {
 
         for(size_t i = 0; i < measured_.size(); i++) {
           Pose3 pose = cameraPoses.at(i);
-
           std::cout << "pose " << pose << std::endl;
-
           PinholeCamera<CALIBRATION> camera(pose, *K_);
           b.at(i) = ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
+//          std::cout << "b.at(i)  " << b.at(i)  << std::endl;
         }
 
         // Shur complement trick
@@ -233,16 +199,27 @@ namespace gtsam {
         std::vector< std::vector<Matrix> > Hxl(keys_.size(), std::vector<Matrix>( keys_.size()));
 
         // Allocate inv(Hl'Hl)
-        Matrix3 C;
+        Matrix3 C = zeros(3,3);
         for(size_t i1 = 0; i1 < keys_.size(); i1++) {
           C += Hl.at(i1).transpose() * Hl.at(i1);
         }
-        C = C.inverse();
+//        std::cout << "Cnoinv"<< "=[" << Ctemp << "];" << std::endl;
+
+        C = C.inverse().eval(); //  this is very important: without eval, because of eigen aliasing the results will be incorrect
+
 
         // Calculate sub blocks
         for(size_t i1 = 0; i1 < keys_.size(); i1++) {
           for(size_t i2 = 0; i2 < keys_.size(); i2++) {
+            // we only need the upper triangular entries
             Hxl[i1][i2] = Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose();
+            if (i1==0 & i2==0){
+            std::cout << "Hoff"<< i1 << i2 << "=[" << Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose() << "];" << std::endl;
+            std::cout << "Hxoff"<< "=[" << Hx.at(i1) << "];" << std::endl;
+            std::cout << "Hloff"<< "=[" << Hl.at(i1) << "];" << std::endl;
+            std::cout << "Hloff2"<< "=[" << Hl.at(i2) << "];" << std::endl;
+            std::cout << "C"<< "=[" << C << "];" << std::endl;
+            }
           }
         }
         // Populate Gs and gs
@@ -251,14 +228,26 @@ namespace gtsam {
           gs.at(i1) = Hx.at(i1).transpose() * b.at(i1);
 
           for(size_t i2 = 0; i2 < keys_.size(); i2++) {
-            gs.at(i1) += Hxl[i1][i2] * b.at(i2);
+            gs.at(i1) -= Hxl[i1][i2] * b.at(i2);
 
-            if (i2 >= i1) {
+            if (i2 == i1){
               Gs.at(GsCount) = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
+              std::cout << "HxlH"<< GsCount << "=[" << Hxl[i1][i2] * Hx.at(i2) << "];" << std::endl;
+              std::cout << "Hx2_"<< GsCount << "=[" << Hx.at(i2) << "];" << std::endl;
+              std::cout << "H"<< GsCount << "=[" << Gs.at(GsCount) << "];" << std::endl;
+              GsCount++;
+            }
+            if (i2 > i1) {
+              Gs.at(GsCount) = - Hxl[i1][i2] * Hx.at(i2);
+              std::cout << "HxlH"<< GsCount << "=[" << Hxl[i1][i2] * Hx.at(i2) << "];" << std::endl;
+              std::cout << "Hx2_"<< GsCount << "=[" << Hx.at(i2) << "];" << std::endl;
+              std::cout << "H"<< GsCount << "=[" << Gs.at(GsCount) << "];" << std::endl;
               GsCount++;
             }
           }
         }
+
+//        std::cout << "GsCount  " << GsCount << std::endl;
 //      }
 
       // debug only
@@ -278,22 +267,39 @@ namespace gtsam {
            Vector bi = ( camera.project(*point,Hxi,Hli) - measured_.at(i) ).vector();
            Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
            Hl2.block( 2*i, 0, 2, 3  ) = Hli;
+//           std::cout << "Hxi= \n" << Hxi << std::endl;
+//           std::cout << "Hxi.transpose() * Hxi= \n" << Hxi.transpose() * Hxi << std::endl;
+//           std::cout << "Hxl.transpose() * Hxl= \n" << Hli.transpose() * Hli << std::endl;
            subInsert(b2,bi,2*i);
 
-           std::cout << "Hx " << Hx2 << std::endl;
-           std::cout << "Hl " << Hl2 << std::endl;
-           std::cout << "b " << b2.transpose() << std::endl;
-           std::cout << "Hxi - Hx.at(i) " << Hxi - Hx.at(i) << std::endl;
-           std::cout << "Hli - Hl.at(i) " << Hli - Hl.at(i) << std::endl;
+//           std::cout << "================= measurement " << i << std::endl;
+//           std::cout << "Hx " << Hx2 << std::endl;
+//           std::cout << "Hl " << Hl2 << std::endl;
+//           std::cout << "b " << b2.transpose() << std::endl;
+//           std::cout << "b.at(i)  " << b.at(i)  << std::endl;
+//           std::cout << "Hxi - Hx.at(i) " << Hxi - Hx.at(i) << std::endl;
+//           std::cout << "Hli - Hl.at(i) " << Hli - Hl.at(i) << std::endl;
         }
 
         // Shur complement trick
         Matrix H(6*keys_.size(), 6*keys_.size());
         Matrix3 C2 = (Hl2.transpose() * Hl2).inverse();
         H = Hx2.transpose() * Hx2 - Hx2.transpose() * Hl2 * C2 * Hl2.transpose() * Hx2;
+
+        std::cout << "Hx2" << "=[" << Hx2 << "];" << std::endl;
+        std::cout << "Hl2" << "=[" << Hl2 << "];" << std::endl;
+        std::cout << "H" << "=[" << H << "];" << std::endl;
+
+
+        std::cout << "Cnoinv2"<< "=[" << Hl2.transpose() * Hl2 << "];" << std::endl;
+        std::cout << "C2"<< "=[" << C2 << "];" << std::endl;
+
+//        std::cout << "Hx2= \n" << Hx2 << std::endl;
+//        std::cout << "Hx2.transpose() * Hx2= \n" << Hx2.transpose() * Hx2 << std::endl;
+
         Vector gs2_vector =  Hx2.transpose() * b2 -  Hx2.transpose() * Hl2 * C2 * Hl2.transpose() * b2;
 
-        std::cout << "C - C2 " << C - C2 << std::endl;
+        std::cout << "================================================================================"  << std::endl;
 
         // Populate Gs and gs
         int GsCount2 = 0;
@@ -308,7 +314,7 @@ namespace gtsam {
           }
         }
 //      }
-
+//
       // Compare blockwise and full version
       bool gs2_equal_gs = true;
       for(size_t i = 0; i < measured_.size(); i++) {
@@ -319,12 +325,18 @@ namespace gtsam {
           gs2_equal_gs = false;
         }
       }
-
       std::cout << "gs2_equal_gs " << gs2_equal_gs << std::endl;
+
+      for(size_t i = 0; i < keys_.size()*(keys_.size()+1)/2; i++) {
+        std::cout << "Gs.at(i) " << Gs.at(i).transpose() << std::endl;
+        std::cout << "Gs2.at(i) " << Gs2.at(i).transpose() << std::endl;
+        std::cout << "Gs.error  " << (Gs.at(i)- Gs2.at(i)).transpose() << std::endl;
+      }
+      std::cout << "Gs2_equal_Gs " << gs2_equal_gs << std::endl;
 
 
       // ==========================================================================================================
-      return HessianFactor::shared_ptr(new HessianFactor(js, Gs2, gs2, f));
+      return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
     }
 
     /**
