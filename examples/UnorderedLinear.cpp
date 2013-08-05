@@ -1,7 +1,7 @@
 
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/VariableIndexOrdered.h>
+#include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>

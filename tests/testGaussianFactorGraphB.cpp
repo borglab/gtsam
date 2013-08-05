@@ -17,10 +17,10 @@
 
 #include <tests/smallExample.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/GaussianBayesNetOrdered.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
-#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>

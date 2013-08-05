@@ -21,8 +21,8 @@
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianBayesNetOrdered.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 

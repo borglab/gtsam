@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/linear/GaussianISAMOrdered.h>
+#include <gtsam/linear/GaussianISAM.h>
 
 namespace gtsam {
 /**

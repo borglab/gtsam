@@ -21,12 +21,12 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/inference/BayesTreeOrdered.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/debug.h>

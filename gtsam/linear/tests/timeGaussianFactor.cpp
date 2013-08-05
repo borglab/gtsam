@@ -25,9 +25,9 @@ using namespace std;
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/JacobianFactorOrdered.h>
-#include <gtsam/linear/JacobianFactorOrdered.h>
-#include <gtsam/linear/GaussianConditionalOrdered.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/NoiseModel.h>
 
 using namespace gtsam;

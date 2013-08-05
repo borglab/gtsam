@@ -18,7 +18,7 @@
 #include <ostream>
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianFactorOrdered.h>
+#include <gtsam/linear/GaussianFactor.h>
 
 namespace gtsam {
 

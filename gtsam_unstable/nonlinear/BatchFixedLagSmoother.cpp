@@ -19,10 +19,10 @@
 
 #include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
-#include <gtsam/linear/GaussianFactorOrdered.h>
-#include <gtsam/inference/inferenceOrdered.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/inference/inference.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {

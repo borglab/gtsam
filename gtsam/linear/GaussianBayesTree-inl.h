@@ -21,7 +21,7 @@
 
 #include <boost/foreach.hpp>
 
-#include <gtsam/linear/GaussianBayesTreeOrdered.h> // Only to help Eclipse
+#include <gtsam/linear/GaussianBayesTree.h> // Only to help Eclipse
 
 #include <stdarg.h>
 

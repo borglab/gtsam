@@ -22,11 +22,11 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianBayesNetOrdered.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Point2.h>
 

@@ -10,9 +10,9 @@
 #pragma once
 
 #include <gtsam_unstable/base/dllexport.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
-#include <gtsam/linear/GaussianBayesTreeOrdered.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
 

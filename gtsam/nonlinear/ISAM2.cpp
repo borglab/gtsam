@@ -26,11 +26,11 @@ using namespace boost::assign;
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
-#include <gtsam/inference/BayesTreeOrdered.h>
-#include <gtsam/linear/GaussianJunctionTreeOrdered.h>
+#include <gtsam/inference/BayesTree.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/HessianFactorOrdered.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>

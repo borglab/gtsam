@@ -30,7 +30,7 @@
 #include <gtsam/base/LieVector.h>
 #include <tests/smallExample.h>
 #include <tests/simulated2D.h>
-#include <gtsam/linear/GaussianFactorOrdered.h>
+#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Symbol.h>
 

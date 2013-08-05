@@ -18,10 +18,10 @@
 #include <tests/smallExample.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/JacobianFactorOrdered.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianBayesTreeOrdered.h>
-#include <gtsam/inference/BayesTreeOrdered.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>

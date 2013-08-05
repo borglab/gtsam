@@ -21,7 +21,7 @@
 #if 0
 
 #include <gtsam/base/blockMatrices.h>
-#include <gtsam/linear/GaussianBayesTreeOrdered.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 

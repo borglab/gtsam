@@ -12,8 +12,8 @@
 #include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
 

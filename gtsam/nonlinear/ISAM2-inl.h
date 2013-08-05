@@ -20,8 +20,8 @@
 #pragma once
 
 #include <stack>
-#include <gtsam/inference/FactorGraphOrdered.h>
-#include <gtsam/linear/JacobianFactorOrdered.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
 
 namespace gtsam {
 

@@ -19,10 +19,10 @@
 
 #include <vector>
 #include <gtsam_unstable/base/dllexport.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/JacobianFactorOrdered.h>
-#include <gtsam/linear/HessianFactorOrdered.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/base/blockMatrices.h>
 
 namespace gtsam {

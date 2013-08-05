@@ -21,7 +21,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/linear/VectorValuesOrdered.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 // \namespace

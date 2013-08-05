@@ -16,10 +16,10 @@
  **/
 
 #include <tests/smallExample.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/iterative.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/base/numericalDerivative.h>

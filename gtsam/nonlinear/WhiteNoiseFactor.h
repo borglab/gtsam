@@ -18,7 +18,7 @@
  */
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/HessianFactorOrdered.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/base/LieScalar.h>
 #include <cmath>
 

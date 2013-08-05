@@ -16,7 +16,7 @@
  * @date    Aug 20, 2010
  */
 
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/EliminationTreeOrdered-inl.h>
 

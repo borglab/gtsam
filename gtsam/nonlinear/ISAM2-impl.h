@@ -19,7 +19,7 @@
 
 #if 0
 
-#include <gtsam/linear/GaussianBayesTreeOrdered.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
 namespace gtsam {

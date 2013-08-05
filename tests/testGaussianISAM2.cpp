@@ -9,12 +9,12 @@
 #include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/SymbolicFactorGraphOrdered.h>
-#include <gtsam/linear/GaussianBayesNetOrdered.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianBayesTreeOrdered.h>
-#include <gtsam/linear/GaussianFactorGraphOrdered.h>
-#include <gtsam/nonlinear/OrderingOrdered.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2.h>

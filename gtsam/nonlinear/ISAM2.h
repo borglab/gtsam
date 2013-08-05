@@ -23,7 +23,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/linear/GaussianBayesTreeOrdered.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 
 #include <boost/variant.hpp>
 
