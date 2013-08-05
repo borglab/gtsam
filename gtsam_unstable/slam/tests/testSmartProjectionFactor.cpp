@@ -53,13 +53,13 @@ static Cal3_S2::shared_ptr K(new Cal3_S2(fov,w,h));
 static SharedNoiseModel model(noiseModel::Unit::Create(2));
 
 // Convenience for named keys
-//using symbol_shorthand::X;
-//using symbol_shorthand::L;
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 //typedef GenericProjectionFactor<Pose3, Point3> TestProjectionFactor;
 
 
-///* ************************************************************************* */
+/* ************************************************************************* *
 TEST( MultiProjectionFactor, noiseless ){
   cout << " ************************ MultiProjectionFactor: noiseless ****************************" << endl;
   Values theta;
@@ -106,7 +106,7 @@ TEST( MultiProjectionFactor, noiseless ){
   DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 }
 
-///* ************************************************************************* */
+/* ************************************************************************* *
 TEST( MultiProjectionFactor, noisy ){
   cout << " ************************ MultiProjectionFactor: noisy ****************************" << endl;
 
@@ -157,7 +157,7 @@ TEST( MultiProjectionFactor, noisy ){
 }
 
 
-///* ************************************************************************* */
+/* ************************************************************************* */
 TEST( MultiProjectionFactor, 3poses ){
   cout << " ************************ MultiProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
@@ -181,12 +181,12 @@ TEST( MultiProjectionFactor, 3poses ){
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
-  SimpleCamera cam3(pose2, *K);
+  SimpleCamera cam3(pose3, *K);
 
   // three landmarks ~5 meters infront of camera
   Point3 landmark1(5, 0.5, 1.2);
   Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(5, 0, 3.0);
+  Point3 landmark3(3, 0, 3.0);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -224,12 +224,13 @@ TEST( MultiProjectionFactor, 3poses ){
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   graph.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
   Values values;
   values.insert(x1, pose1);
-  values.insert(x2, pose1);
+  values.insert(x2, pose2);
   values.insert(x3, pose3* noise_pose);
 
   LevenbergMarquardtParams params;
@@ -244,149 +245,77 @@ TEST( MultiProjectionFactor, 3poses ){
 
 
 ///* ************************************************************************* */
-//TEST( ProjectionFactor, nonStandard ) {
-//  GenericProjectionFactor<Pose3, Point3, Cal3DS2> f;
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactor, Constructor) {
-//  Key poseKey(X(1));
-//  Key pointKey(L(1));
-//
-//  Point2 measurement(323.0, 240.0);
-//
-//  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K);
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactor, ConstructorWithTransform) {
-//  Key poseKey(X(1));
-//  Key pointKey(L(1));
-//
-//  Point2 measurement(323.0, 240.0);
-//  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//
-//  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K, body_P_sensor);
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactor, Equals ) {
-//  // Create two identical factors and make sure they're equal
-//  Point2 measurement(323.0, 240.0);
-//
-//  TestProjectionFactor factor1(measurement, model, X(1), L(1), K);
-//  TestProjectionFactor factor2(measurement, model, X(1), L(1), K);
-//
-//  CHECK(assert_equal(factor1, factor2));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactor, EqualsWithTransform ) {
-//  // Create two identical factors and make sure they're equal
-//  Point2 measurement(323.0, 240.0);
-//  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//
-//  TestProjectionFactor factor1(measurement, model, X(1), L(1), K, body_P_sensor);
-//  TestProjectionFactor factor2(measurement, model, X(1), L(1), K, body_P_sensor);
-//
-//  CHECK(assert_equal(factor1, factor2));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactor, Error ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  Key poseKey(X(1));
-//  Key pointKey(L(1));
-//  Point2 measurement(323.0, 240.0);
-//  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K);
-//
-//  // Set the linearization point
-//  Pose3 pose(Rot3(), Point3(0,0,-6));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the error
-//  Vector actualError(factor.evaluateError(pose, point));
-//
-//  // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-//  Vector expectedError = Vector_(2, -3.0, 0.0);
-//
-//  // Verify we get the expected error
-//  CHECK(assert_equal(expectedError, actualError, 1e-9));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactor, ErrorWithTransform ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  Key poseKey(X(1));
-//  Key pointKey(L(1));
-//  Point2 measurement(323.0, 240.0);
-//  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K, body_P_sensor);
-//
-//  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
-//  Pose3 pose(Rot3(), Point3(-6.25, 0.10 , -1.0));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the error
-//  Vector actualError(factor.evaluateError(pose, point));
-//
-//  // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-//  Vector expectedError = Vector_(2, -3.0, 0.0);
-//
-//  // Verify we get the expected error
-//  CHECK(assert_equal(expectedError, actualError, 1e-9));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactor, Jacobian ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  Key poseKey(X(1));
-//  Key pointKey(L(1));
-//  Point2 measurement(323.0, 240.0);
-//  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K);
-//
-//  // Set the linearization point
-//  Pose3 pose(Rot3(), Point3(0,0,-6));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the Jacobians
-//  Matrix H1Actual, H2Actual;
-//  factor.evaluateError(pose, point, H1Actual, H2Actual);
-//
-//  // The expected Jacobians
-//  Matrix H1Expected = Matrix_(2, 6, 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.);
-//  Matrix H2Expected = Matrix_(2, 3, 92.376, 0., 0., 0., 92.376, 0.);
-//
-//  // Verify the Jacobians are correct
-//  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
-//  CHECK(assert_equal(H2Expected, H2Actual, 1e-3));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactor, JacobianWithTransform ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  Key poseKey(X(1));
-//  Key pointKey(L(1));
-//  Point2 measurement(323.0, 240.0);
-//  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K, body_P_sensor);
-//
-//  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
-//  Pose3 pose(Rot3(), Point3(-6.25, 0.10 , -1.0));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the Jacobians
-//  Matrix H1Actual, H2Actual;
-//  factor.evaluateError(pose, point, H1Actual, H2Actual);
-//
-//  // The expected Jacobians
-//  Matrix H1Expected = Matrix_(2, 6, -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376);
-//  Matrix H2Expected = Matrix_(2, 3, 0., -92.376, 0., 0., 0., -92.376);
-//
-//  // Verify the Jacobians are correct
-//  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
-//  CHECK(assert_equal(H2Expected, H2Actual, 1e-3));
-//}
+TEST( MultiProjectionFactor, 3poses_projection_factor ){
+  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
+
+  Symbol x1('X',  1);
+  Symbol x2('X',  2);
+  Symbol x3('X',  3);
+
+  const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
+
+  std::vector<Key> views;
+  views += x1, x2, x3;
+
+  Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  SimpleCamera cam1(pose1, *K);
+
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
+  SimpleCamera cam2(pose2, *K);
+
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
+  pose3.print("Pose3: ");
+  SimpleCamera cam3(pose3, *K);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(3, 0, 3.0);
+
+  typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
+  NonlinearFactorGraph graph;
+
+  // 1. Project three landmarks into three cameras and triangulate
+  graph.add(ProjectionFactor(cam1.project(landmark1), noiseProjection, x1, L(1), K));
+  graph.add(ProjectionFactor(cam2.project(landmark1), noiseProjection, x2, L(1), K));
+  graph.add(ProjectionFactor(cam3.project(landmark1), noiseProjection, x3, L(1), K));
+
+  //
+  graph.add(ProjectionFactor(cam1.project(landmark2), noiseProjection, x1, L(2), K));
+  graph.add(ProjectionFactor(cam2.project(landmark2), noiseProjection, x2, L(2), K));
+  graph.add(ProjectionFactor(cam3.project(landmark2), noiseProjection, x3, L(2), K));
+
+  graph.add(ProjectionFactor(cam1.project(landmark3), noiseProjection, x1, L(3), K));
+  graph.add(ProjectionFactor(cam2.project(landmark3), noiseProjection, x2, L(3), K));
+  graph.add(ProjectionFactor(cam3.project(landmark3), noiseProjection, x3, L(3), K));
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+  graph.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
+
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  values.insert(x3, pose3* noise_pose);
+  values.insert(L(1), landmark1);
+  values.insert(L(2), landmark2);
+  values.insert(L(3), landmark3);
+
+  LevenbergMarquardtParams params;
+//  params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+//  params.verbosity = NonlinearOptimizerParams::ERROR;
+  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  Values result = optimizer.optimize();
+
+  result.print("Regular Projection Factor: results of 3 camera, 3 landmark optimization \n");
+
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
