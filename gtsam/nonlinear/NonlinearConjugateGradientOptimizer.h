@@ -7,8 +7,6 @@
 
 #pragma once
 
-#if 0
-
 #include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <boost/tuple/tuple.hpp>
@@ -28,15 +26,14 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer : public NonlinearOptimiz
   class System {
   public:
     typedef Values State;
-    typedef VectorValuesOrdered Gradient;
+    typedef VectorValues Gradient;
     typedef NonlinearOptimizerParams Parameters;
 
   protected:
     const NonlinearFactorGraph &graph_;
-    const OrderingOrdered &ordering_;
 
   public:
-    System(const NonlinearFactorGraph &graph, const OrderingOrdered &ordering): graph_(graph), ordering_(ordering) {}
+    System(const NonlinearFactorGraph &graph): graph_(graph) {}
     double error(const State &state) const ;
     Gradient gradient(const State &state) const ;
     State advance(const State &current, const double alpha, const Gradient &g) const ;
@@ -51,15 +48,12 @@ public:
 protected:
   States state_;
   Parameters params_;
-  OrderingOrdered::shared_ptr ordering_;
-  VectorValuesOrdered::shared_ptr gradient_;
 
 public:
 
   NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
                                       const Parameters& params = Parameters())
-    : Base(graph), state_(graph, initialValues), params_(params), ordering_(initialValues.orderingArbitrary()),
-      gradient_(new VectorValuesOrdered(initialValues.zeroVectors(*ordering_))){}
+    : Base(graph), state_(graph, initialValues), params_(params) {}
 
   virtual ~NonlinearConjugateGradientOptimizer() {}
   virtual void iterate();
@@ -189,4 +183,3 @@ boost::tuple<V, size_t> nonlinearConjugateGradient(const S &system, const V &ini
 
 }
 
-#endif
