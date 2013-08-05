@@ -23,6 +23,7 @@
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/base/debug.h>
@@ -145,55 +146,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  //Matrix GaussianFactorGraph::augmentedHessian() const {
-  //  // combine all factors and get upper-triangular part of Hessian
-  //  HessianFactor combined(*this);
-  //  Matrix result = combined.info();
-  //  // Fill in lower-triangular part of Hessian
-  //  result.triangularView<Eigen::StrictlyLower>() = result.transpose();
-  //  return result;
-  //}
+  Matrix GaussianFactorGraph::augmentedHessian() const {
+    // combine all factors and get upper-triangular part of Hessian
+    HessianFactor combined(*this);
+    Matrix result = combined.info();
+    // Fill in lower-triangular part of Hessian
+    result.triangularView<Eigen::StrictlyLower>() = result.transpose();
+    return result;
+  }
 
   /* ************************************************************************* */
-  //std::pair<Matrix,Vector> GaussianFactorGraph::hessian() const {
-  //  Matrix augmented = augmentedHessian();
-  //  return make_pair(
-  //    augmented.topLeftCorner(augmented.rows()-1, augmented.rows()-1),
-  //    augmented.col(augmented.rows()-1).head(augmented.rows()-1));
-  //}
-
-  /* ************************************************************************* */
-  //GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
-  //    GaussianFactor>& factors, size_t nrFrontals) {
-
-  //  const bool debug = ISDEBUG("EliminateCholesky");
-
-  //  // Form Ab' * Ab
-  //  gttic(combine);
-  //  HessianFactor::shared_ptr combinedFactor(new HessianFactor(factors));
-  //  gttoc(combine);
-
-  //  // Do Cholesky, note that after this, the lower triangle still contains
-  //  // some untouched non-zeros that should be zero.  We zero them while
-  //  // extracting submatrices next.
-  //  gttic(partial_Cholesky);
-  //  combinedFactor->partialCholesky(nrFrontals);
-
-  //  gttoc(partial_Cholesky);
-
-  //  // Extract conditional and fill in details of the remaining factor
-  //  gttic(split);
-  //  GaussianConditional::shared_ptr conditional =
-  //      combinedFactor->splitEliminatedFactor(nrFrontals);
-  //  if (debug) {
-  //    conditional->print("Extracted conditional: ");
-  //    combinedFactor->print("Eliminated factor (L piece): ");
-  //  }
-  //  gttoc(split);
-
-  //  combinedFactor->assertInvariants();
-  //  return make_pair(conditional, combinedFactor);
-  //}
+  std::pair<Matrix,Vector> GaussianFactorGraph::hessian() const {
+    Matrix augmented = augmentedHessian();
+    return make_pair(
+      augmented.topLeftCorner(augmented.rows()-1, augmented.rows()-1),
+      augmented.col(augmented.rows()-1).head(augmented.rows()-1));
+  }
   
   /* ************************************************************************* */
   VectorValues GaussianFactorGraph::optimize(OptionalOrdering ordering, const Eliminate& function) const
@@ -237,6 +205,31 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Errors GaussianFactorGraph::operator*(const VectorValues& x) const {
+    Errors e;
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, *this) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      e.push_back((*Ai) * x);
+    }
+    return e;
+  }
+
+  /* ************************************************************************* */
+  void GaussianFactorGraph::multiplyInPlace(const VectorValues& x, Errors& e) const {
+    multiplyInPlace(x, e.begin());
+  }
+
+  /* ************************************************************************* */
+  void GaussianFactorGraph::multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const {
+    Errors::iterator ei = e;
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, *this) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      *ei = (*Ai)*x;
+      ei++;
+    }
+  }
+
+  /* ************************************************************************* */
   bool hasConstraints(const GaussianFactorGraph& factors) {
     typedef JacobianFactor J;
     BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
@@ -247,53 +240,6 @@ namespace gtsam {
     }
     return false;
   }
-
-  /* ************************************************************************* */
-  //GaussianFactorGraph::EliminationResult EliminatePreferCholesky(
-  //    const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
-
-  //  // If any JacobianFactors have constrained noise models, we have to convert
-  //  // all factors to JacobianFactors.  Otherwise, we can convert all factors
-  //  // to HessianFactors.  This is because QR can handle constrained noise
-  //  // models but Cholesky cannot.
-  //  if (hasConstraints(factors))
-  //    return EliminateQR(factors, nrFrontals);
-  //  else {
-  //    GaussianFactorGraph::EliminationResult ret;
-  //    gttic(EliminateCholesky);
-  //    ret = EliminateCholesky(factors, nrFrontals);
-  //    gttoc(EliminateCholesky);
-  //    return ret;
-  //  }
-
-  //} // \EliminatePreferCholesky
-
-
-
-  ///* ************************************************************************* */
-  //Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x) {
-  //  Errors e;
-  //  BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
-  //    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-  //    e.push_back((*Ai)*x);
-  //  }
-  //  return e;
-  //}
-
-  ///* ************************************************************************* */
-  //void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e) {
-  //  multiplyInPlace(fg,x,e.begin());
-  //}
-
-  ///* ************************************************************************* */
-  //void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e) {
-  //  Errors::iterator ei = e;
-  //  BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
-  //    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-  //    *ei = (*Ai)*x;
-  //    ei++;
-  //  }
-  //}
 
   /* ************************************************************************* */
   // x += alpha*A'*e

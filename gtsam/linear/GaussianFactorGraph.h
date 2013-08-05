@@ -193,7 +193,7 @@ namespace gtsam {
      and the negative log-likelihood is
      \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
      */
-    //Matrix augmentedHessian() const;
+    Matrix augmentedHessian() const;
 
     /**
      * Return the dense Hessian \f$ \Lambda \f$ and information vector
@@ -201,7 +201,7 @@ namespace gtsam {
      * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
      * GaussianFactorGraph::augmentedHessian.
      */
-    //std::pair<Matrix,Vector> hessian() const;
+    std::pair<Matrix,Vector> hessian() const;
 
     /** Solve the factor graph by performing multifrontal variable elimination in COLAMD order using
      *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
@@ -254,7 +254,7 @@ namespace gtsam {
      *  \f$ G \f$, returning
      *
      *  \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f] */
-    //VectorValues optimizeGradientSearch() const;
+    VectorValues optimizeGradientSearch() const;
 
     /** x = A'*e */
     VectorValues transposeMultiply(const Errors& e) const;
@@ -264,6 +264,15 @@ namespace gtsam {
 
     /** return A*x-b */
     Errors gaussianErrors(const VectorValues& x) const;
+
+    ///** return A*x */
+    Errors operator*(const VectorValues& x) const;
+
+    ///** In-place version e <- A*x that overwrites e. */
+    void multiplyInPlace(const VectorValues& x, Errors& e) const;
+
+    /** In-place version e <- A*x that takes an iterator. */
+    void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
     /// @}
 
@@ -283,59 +292,7 @@ namespace gtsam {
    */
   GTSAM_EXPORT bool hasConstraints(const GaussianFactorGraph& factors);
 
-  /**
-   * Densely partially eliminate with Cholesky factorization.  JacobianFactors
-   * are left-multiplied with their transpose to form the Hessian using the
-   * conversion constructor HessianFactor(const JacobianFactor&).
-   *
-   * If any factors contain constrained noise models (any sigmas equal to
-   * zero), QR factorization will be performed instead, because our current
-   * implementation cannot handle constrained noise models in Cholesky
-   * factorization.  EliminateCholesky(), on the other hand, will fail if any
-   * factors contain constrained noise models.
-   *
-   * Variables are eliminated in the natural order of the variable indices of in
-   * the factors.
-   * @param factors Factors to combine and eliminate
-   * @param nrFrontals Number of frontal variables to eliminate.
-   * @return The conditional and remaining factor
-
-   * \addtogroup LinearSolving
-   */
-  //GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
-  //    GaussianFactor>& factors, size_t nrFrontals = 1);
-
-  /**
-   * Densely partially eliminate with Cholesky factorization.  JacobianFactors
-   * are left-multiplied with their transpose to form the Hessian using the
-   * conversion constructor HessianFactor(const JacobianFactor&).
-   *
-   * If any factors contain constrained noise models, this function will fail
-   * because our current implementation cannot handle constrained noise models
-   * in Cholesky factorization.  The function EliminatePreferCholesky()
-   * automatically does QR instead when this is the case.
-   *
-   * Variables are eliminated in the natural order of the variable indices of in
-   * the factors.
-   * @param factors Factors to combine and eliminate
-   * @param nrFrontals Number of frontal variables to eliminate.
-   * @return The conditional and remaining factor
-
-   * \addtogroup LinearSolving
-   */
-  //GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
-  //    GaussianFactor>& factors, size_t nrFrontals = 1);
-
   /****** Linear Algebra Opeations ******/
-
-  ///** return A*x */
-  //GTSAM_EXPORT Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x);
-
-  ///** In-place version e <- A*x that overwrites e. */
-  //GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e);
-
-  ///** In-place version e <- A*x that takes an iterator. */
-  //GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e);
 
   ///* matrix-vector operations */
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
