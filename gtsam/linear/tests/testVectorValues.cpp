@@ -396,6 +396,36 @@ TEST(VectorValues, append) {
 }
 
 /* ************************************************************************* */
+TEST(VectorValues, append_withValuesFromVector) {
+  // Constructor with initial values
+  vector<size_t> dims(3);
+  dims[0] = 1;
+  dims[1] = 2;
+  dims[2] = 2;
+  Vector d = Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0);
+  VectorValues actual(d, dims);
+
+  VectorValues expected;
+  expected.insert(0, Vector_(1, 1.0));
+  expected.insert(1, Vector_(2, 2.0, 3.0));
+  expected.insert(2, Vector_(2, 4.0, 5.0));
+
+  EXPECT(assert_equal(expected, actual));
+
+  // Append with initial values
+  expected.insert(3, Vector_(1, 6.0));
+  expected.insert(4, Vector_(3, 7.0, 8.0, 9.0));
+
+  vector<size_t> dims2(2);
+  dims2[0] = 1;
+  dims2[1] = 3;
+  Vector d2 = Vector_(4, 6.0, 7.0, 8.0, 9.0);
+  actual.append(d2, dims2);
+
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 TEST(VectorValues, hasSameStructure) {
   VectorValues v1(2, 3);
   VectorValues v2(3, 2);

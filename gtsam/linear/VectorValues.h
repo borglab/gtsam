@@ -179,6 +179,12 @@ namespace gtsam {
     template<class CONTAINER>
     explicit VectorValues(const CONTAINER& dimensions) { this->append(dimensions); }
 
+    /** Construct from a container of variable dimensions (in variable order), with initial values. */
+    template<class CONTAINER>
+    explicit VectorValues(const Vector& d, const CONTAINER& dimensions) {
+      this->append(d, dimensions);
+    }
+
     /** Construct to hold nVars vectors of varDim dimension each. */
     VectorValues(Index nVars, size_t varDim) { this->resize(nVars, varDim); }
 
@@ -236,6 +242,19 @@ namespace gtsam {
      */
     template<class CONTAINER>
     void append(const CONTAINER& dimensions);
+
+    /** Append to the VectorValues to additionally contain variables of the
+     * dimensions stored in \c dimensions.  Initial values for the new variables
+     * are extracted from the input vector, holding values for all components
+     * in the same order specified in the dimensions container.
+     * This function preserves the original data, so all previously-existing
+     * variables are left unchanged.
+     * @param d          A vector holding values for all variables, which order
+     *                   specified in the below container
+     * @param dimensions A container of the dimension of each variable to create.
+     */
+    template<class CONTAINER>
+    void append(const Vector& d, const CONTAINER& dimensions);
 
     /** Removes the last subvector from the VectorValues */
     void pop_back() { values_.pop_back(); };
@@ -406,6 +425,19 @@ namespace gtsam {
     BOOST_FOREACH(size_t dim, dimensions) {
       values_[i] = Vector(dim);
       ++ i;
+    }
+  }
+
+  /* ************************************************************************* */
+  template<class CONTAINER>
+  void VectorValues::append(const Vector& d, const CONTAINER& dimensions) {
+    size_t i = size();
+    size_t idx = 0;
+    values_.resize(size() + dimensions.size());
+    BOOST_FOREACH(size_t dim, dimensions) {
+      values_[i] = sub(d, idx, idx+dim);
+      ++ i;
+      idx += dim;
     }
   }
 
