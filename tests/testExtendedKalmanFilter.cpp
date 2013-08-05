@@ -192,7 +192,7 @@ public:
    * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
    * Hence b = z - h(x1,x2) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactorOrdered> linearize(const Values& c, const OrderingOrdered& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
     const X1& x1 = c.at<X1>(key1());
     const X2& x2 = c.at<X2>(key2());
     Matrix A1, A2;
@@ -201,7 +201,7 @@ public:
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
-      return JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(var1, A1, var2,
+      return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
           A2, b, constrained));
     }
     // "Whiten" the system before converting to a Gaussian Factor
@@ -209,7 +209,7 @@ public:
     A1 = Qinvsqrt*A1;
     A2 = Qinvsqrt*A2;
     b = Qinvsqrt*b;
-    return GaussianFactorOrdered::shared_ptr(new JacobianFactorOrdered(var1, A1, var2,
+    return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
         A2, b, noiseModel::Unit::Create(b.size())));
   }
 
@@ -329,7 +329,7 @@ public:
    * Ax-b \approx h(x1+dx1)-z = h(x1) + A1*dx1 - z
    * Hence b = z - h(x1) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactorOrdered> linearize(const Values& c, const OrderingOrdered& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
     const X& x1 = c.at<X>(key());
     Matrix A1;
     Vector b = -evaluateError(x1, A1);
@@ -337,13 +337,13 @@ public:
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
-      return JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(var1, A1, b, constrained));
+      return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, b, constrained));
     }
     // "Whiten" the system before converting to a Gaussian Factor
     Matrix Rinvsqrt = RInvSqrt(x1);
     A1 = Rinvsqrt*A1;
     b = Rinvsqrt*b;
-    return GaussianFactorOrdered::shared_ptr(new JacobianFactorOrdered(var1, A1, b, noiseModel::Unit::Create(b.size())));
+    return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, b, noiseModel::Unit::Create(b.size())));
   }
 
   /** vector of errors */

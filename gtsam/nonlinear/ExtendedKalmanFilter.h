@@ -51,11 +51,11 @@ namespace gtsam {
 
   protected:
     T x_; // linearization point
-    JacobianFactorOrdered::shared_ptr priorFactor_; // density
+    JacobianFactor::shared_ptr priorFactor_; // density
 
-    T solve_(const GaussianFactorGraphOrdered& linearFactorGraph,
-        const OrderingOrdered& ordering, const Values& linearizationPoints,
-        Key x, JacobianFactorOrdered::shared_ptr& newPrior) const;
+    T solve_(const GaussianFactorGraph& linearFactorGraph,
+        const Ordering& ordering, const Values& linearizationPoints,
+        Key x, JacobianFactor::shared_ptr& newPrior) const;
 
   public:
 

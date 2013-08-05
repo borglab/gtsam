@@ -149,8 +149,8 @@ static vector<GeneralCamera> genCameraVariableCalibration() {
   return X ;
 }
 
-static boost::shared_ptr<OrderingOrdered> getOrdering(const vector<GeneralCamera>& cameras, const vector<Point3>& landmarks) {
-  boost::shared_ptr<OrderingOrdered> ordering(new OrderingOrdered);
+static boost::shared_ptr<Ordering> getOrdering(const vector<GeneralCamera>& cameras, const vector<Point3>& landmarks) {
+  boost::shared_ptr<Ordering> ordering(new Ordering);
   for ( size_t i = 0 ; i < landmarks.size() ; ++i ) ordering->push_back(L(i)) ;
   for ( size_t i = 0 ; i < cameras.size() ; ++i ) ordering->push_back(X(i)) ;
   return ordering ;
@@ -190,7 +190,7 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
   graph.addCameraConstraint(0, cameras[0]);
 
   // Create an ordering of the variables
-  OrderingOrdered ordering = *getOrdering(cameras,landmarks);
+  Ordering ordering = *getOrdering(cameras,landmarks);
   LevenbergMarquardtOptimizer optimizer(graph, values, ordering);
   Values final = optimizer.optimize();
   EXPECT(optimizer.error() < 0.5 * 1e-5 * nMeasurements);
@@ -233,7 +233,7 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   graph.addCameraConstraint(0, cameras[0]);
   const double reproj_error = 1e-5;
 
-  OrderingOrdered ordering = *getOrdering(cameras,landmarks);
+  Ordering ordering = *getOrdering(cameras,landmarks);
   LevenbergMarquardtOptimizer optimizer(graph, values, ordering);
   Values final = optimizer.optimize();
   EXPECT(optimizer.error() < 0.5 * reproj_error * nMeasurements);
@@ -274,7 +274,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 
   const double reproj_error = 1e-5 ;
 
-  OrderingOrdered ordering = *getOrdering(cameras,landmarks);
+  Ordering ordering = *getOrdering(cameras,landmarks);
   LevenbergMarquardtOptimizer optimizer(graph, values, ordering);
   Values final = optimizer.optimize();
   EXPECT(optimizer.error() < 0.5 * reproj_error * nMeasurements);
@@ -331,7 +331,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
 
   const double reproj_error = 1e-5 ;
 
-  OrderingOrdered ordering = *getOrdering(cameras,landmarks);
+  Ordering ordering = *getOrdering(cameras,landmarks);
   LevenbergMarquardtOptimizer optimizer(graph, values, ordering);
   Values final = optimizer.optimize();
   EXPECT(optimizer.error() < 0.5 * reproj_error * nMeasurements);
@@ -375,7 +375,7 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
 
   const double reproj_error = 1e-5 ;
 
-  OrderingOrdered ordering = *getOrdering(cameras,landmarks);
+  Ordering ordering = *getOrdering(cameras,landmarks);
   LevenbergMarquardtOptimizer optimizer(graph, values, ordering);
   Values final = optimizer.optimize();
   EXPECT(optimizer.error() < 0.5 * reproj_error * nMeasurements);

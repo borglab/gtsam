@@ -152,21 +152,21 @@ TEST_UNSAFE(ISAM2, ImplAddVariables) {
   Values newTheta;
   newTheta.insert(1, Pose2(.6, .7, .8));
 
-  VectorValuesOrdered delta;
+  VectorValues delta;
   delta.insert(0, Vector_(3, .1, .2, .3));
   delta.insert(1, Vector_(2, .4, .5));
 
-  VectorValuesOrdered deltaNewton;
+  VectorValues deltaNewton;
   deltaNewton.insert(0, Vector_(3, .1, .2, .3));
   deltaNewton.insert(1, Vector_(2, .4, .5));
 
-  VectorValuesOrdered deltaRg;
+  VectorValues deltaRg;
   deltaRg.insert(0, Vector_(3, .1, .2, .3));
   deltaRg.insert(1, Vector_(2, .4, .5));
 
   vector<bool> replacedKeys(2, false);
 
-  OrderingOrdered ordering; ordering += 100, 0;
+  Ordering ordering; ordering += 100, 0;
 
   // Verify initial state
   LONGS_EQUAL(0, ordering[100]);
@@ -180,24 +180,24 @@ TEST_UNSAFE(ISAM2, ImplAddVariables) {
   thetaExpected.insert(100, Point2(.4, .5));
   thetaExpected.insert(1, Pose2(.6, .7, .8));
 
-  VectorValuesOrdered deltaExpected;
+  VectorValues deltaExpected;
   deltaExpected.insert(0, Vector_(3, .1, .2, .3));
   deltaExpected.insert(1, Vector_(2, .4, .5));
   deltaExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
 
-  VectorValuesOrdered deltaNewtonExpected;
+  VectorValues deltaNewtonExpected;
   deltaNewtonExpected.insert(0, Vector_(3, .1, .2, .3));
   deltaNewtonExpected.insert(1, Vector_(2, .4, .5));
   deltaNewtonExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
 
-  VectorValuesOrdered deltaRgExpected;
+  VectorValues deltaRgExpected;
   deltaRgExpected.insert(0, Vector_(3, .1, .2, .3));
   deltaRgExpected.insert(1, Vector_(2, .4, .5));
   deltaRgExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
 
   vector<bool> replacedKeysExpected(3, false);
 
-  OrderingOrdered orderingExpected; orderingExpected += 100, 0, 1;
+  Ordering orderingExpected; orderingExpected += 100, 0, 1;
 
   // Expand initial state
   ISAM2::Impl::AddVariables(newTheta, theta, delta, deltaNewton, deltaRg, replacedKeys, ordering);
@@ -219,22 +219,22 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
   theta.insert(1, Pose2(.6, .7, .8));
   theta.insert(100, Point2(.4, .5));
 
-  SymbolicFactorGraphOrdered sfg;
-  sfg.push_back(boost::make_shared<IndexFactorOrdered>(Index(0), Index(2)));
-  sfg.push_back(boost::make_shared<IndexFactorOrdered>(Index(0), Index(1)));
-  VariableIndexOrdered variableIndex(sfg);
+  SymbolicFactorGraph sfg;
+  sfg.push_back(boost::make_shared<IndexFactor>(Index(0), Index(2)));
+  sfg.push_back(boost::make_shared<IndexFactor>(Index(0), Index(1)));
+  VariableIndex variableIndex(sfg);
 
-  VectorValuesOrdered delta;
+  VectorValues delta;
   delta.insert(0, Vector_(3, .1, .2, .3));
   delta.insert(1, Vector_(3, .4, .5, .6));
   delta.insert(2, Vector_(2, .7, .8));
 
-  VectorValuesOrdered deltaNewton;
+  VectorValues deltaNewton;
   deltaNewton.insert(0, Vector_(3, .1, .2, .3));
   deltaNewton.insert(1, Vector_(3, .4, .5, .6));
   deltaNewton.insert(2, Vector_(2, .7, .8));
 
-  VectorValuesOrdered deltaRg;
+  VectorValues deltaRg;
   deltaRg.insert(0, Vector_(3, .1, .2, .3));
   deltaRg.insert(1, Vector_(3, .4, .5, .6));
   deltaRg.insert(2, Vector_(2, .7, .8));
@@ -244,7 +244,7 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
   replacedKeys[1] = false;
   replacedKeys[2] = true;
 
-  OrderingOrdered ordering; ordering += 100, 1, 0;
+  Ordering ordering; ordering += 100, 1, 0;
 
   ISAM2::Nodes nodes(3);
 
@@ -258,26 +258,26 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
   thetaExpected.insert(0, Pose2(.1, .2, .3));
   thetaExpected.insert(100, Point2(.4, .5));
 
-  SymbolicFactorGraphOrdered sfgRemoved;
-  sfgRemoved.push_back(boost::make_shared<IndexFactorOrdered>(Index(0), Index(1)));
-  sfgRemoved.push_back(SymbolicFactorGraphOrdered::sharedFactor()); // Add empty factor to keep factor indices consistent
-  VariableIndexOrdered variableIndexExpected(sfgRemoved);
+  SymbolicFactorGraph sfgRemoved;
+  sfgRemoved.push_back(boost::make_shared<IndexFactor>(Index(0), Index(1)));
+  sfgRemoved.push_back(SymbolicFactorGraph::sharedFactor()); // Add empty factor to keep factor indices consistent
+  VariableIndex variableIndexExpected(sfgRemoved);
 
-  VectorValuesOrdered deltaExpected;
+  VectorValues deltaExpected;
   deltaExpected.insert(0, Vector_(3, .1, .2, .3));
   deltaExpected.insert(1, Vector_(2, .7, .8));
 
-  VectorValuesOrdered deltaNewtonExpected;
+  VectorValues deltaNewtonExpected;
   deltaNewtonExpected.insert(0, Vector_(3, .1, .2, .3));
   deltaNewtonExpected.insert(1, Vector_(2, .7, .8));
 
-  VectorValuesOrdered deltaRgExpected;
+  VectorValues deltaRgExpected;
   deltaRgExpected.insert(0, Vector_(3, .1, .2, .3));
   deltaRgExpected.insert(1, Vector_(2, .7, .8));
 
   vector<bool> replacedKeysExpected(2, true);
 
-  OrderingOrdered orderingExpected; orderingExpected += 100, 0;
+  Ordering orderingExpected; orderingExpected += 100, 0;
 
   ISAM2::Nodes nodesExpected(2);
 
@@ -285,9 +285,9 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
   FastSet<Key> unusedKeys;
   unusedKeys.insert(1);
   vector<size_t> removedFactorsI; removedFactorsI.push_back(1);
-  SymbolicFactorGraphOrdered removedFactors; removedFactors.push_back(sfg[1]);
+  SymbolicFactorGraph removedFactors; removedFactors.push_back(sfg[1]);
   variableIndex.remove(removedFactorsI, removedFactors);
-  GaussianFactorGraphOrdered linearFactors;
+  GaussianFactorGraph linearFactors;
   FastSet<Key> fixedVariables;
   ISAM2::Impl::RemoveVariables(unusedKeys, ISAM2::sharedClique(), theta, variableIndex, delta, deltaNewton, deltaRg,
     replacedKeys, ordering, nodes, linearFactors, fixedVariables);
@@ -307,7 +307,7 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
 //  using namespace gtsam::planarSLAM;
 //  typedef GaussianISAM2<Values>::Impl Impl;
 //
-//  OrderingOrdered ordering; ordering += (0), (0), (1);
+//  Ordering ordering; ordering += (0), (0), (1);
 //  NonlinearFactorGraph graph;
 //  graph.add(PriorFactor<Pose2>((0), Pose2(), noiseModel::Unit::Create(Pose2::dimension));
 //  graph.addRange((0), (0), 1.0, noiseModel::Unit::Create(1));
@@ -327,7 +327,7 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
 //  typedef GaussianISAM2<Values>::Impl Impl;
 //
 //  // Create values where indices 1 and 3 are above the threshold of 0.1
-//  VectorValuesOrdered values;
+//  VectorValues values;
 //  values.reserve(4, 10);
 //  values.push_back_preallocated(Vector_(2, 0.09, 0.09));
 //  values.push_back_preallocated(Vector_(3, 0.11, 0.11, 0.09));
@@ -341,7 +341,7 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
 //  permutation[2] = 1;
 //  permutation[3] = 3;
 //
-//  Permuted<VectorValuesOrdered> permuted(permutation, values);
+//  Permuted<VectorValues> permuted(permutation, values);
 //
 //  // After permutation, the indices above the threshold are 2 and 2
 //  FastSet<Index> expected;
@@ -367,19 +367,19 @@ TEST(ISAM2, optimize2) {
       10,          0.0,          0.0,
       0.0,           10,          0.0,
       0.0,          0.0,   31.8309886;
-  GaussianConditionalOrdered::shared_ptr conditional(new GaussianConditionalOrdered(0, d, R, Vector::Ones(3)));
+  GaussianConditional::shared_ptr conditional(new GaussianConditional(0, d, R, Vector::Ones(3)));
 
   // Create ordering
-  OrderingOrdered ordering; ordering += (0);
+  Ordering ordering; ordering += (0);
 
   // Expected vector
-  VectorValuesOrdered expected(1, 3);
+  VectorValues expected(1, 3);
   conditional->solveInPlace(expected);
 
   // Clique
   ISAM2::sharedClique clique(
-      ISAM2::Clique::Create(make_pair(conditional,GaussianFactorOrdered::shared_ptr())));
-  VectorValuesOrdered actual(theta.dims(ordering));
+      ISAM2::Clique::Create(make_pair(conditional,GaussianFactor::shared_ptr())));
+  VectorValues actual(theta.dims(ordering));
   internal::optimizeInPlace<ISAM2::Base>(clique, actual);
 
 //  expected.print("expected: ");
@@ -394,12 +394,12 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   const std::string name_ = test.getName();
 
   Values actual = isam.calculateEstimate();
-  OrderingOrdered ordering = isam.getOrdering(); // *fullgraph.orderingCOLAMD(fullinit).first;
-  GaussianFactorGraphOrdered linearized = *fullgraph.linearize(fullinit, ordering);
+  Ordering ordering = isam.getOrdering(); // *fullgraph.orderingCOLAMD(fullinit).first;
+  GaussianFactorGraph linearized = *fullgraph.linearize(fullinit, ordering);
 //  linearized.print("Expected linearized: ");
-  GaussianBayesNetOrdered gbn = *GaussianSequentialSolver(linearized).eliminate();
+  GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
 //  gbn.print("Expected bayesnet: ");
-  VectorValuesOrdered delta = optimize(gbn);
+  VectorValues delta = optimize(gbn);
   Values expected = fullinit.retract(delta, ordering);
 
   bool isamEqual = assert_equal(expected, actual);
@@ -411,13 +411,13 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   typedef ISAM2::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
-    FactorGraphOrdered<JacobianFactorOrdered> jfg;
-    jfg.push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(*clique->conditional())));
-    VectorValuesOrdered expectedGradient(*allocateVectorValues(isam));
+    FactorGraph<JacobianFactor> jfg;
+    jfg.push_back(JacobianFactor::shared_ptr(new JacobianFactor(*clique->conditional())));
+    VectorValues expectedGradient(*allocateVectorValues(isam));
     gradientAtZero(jfg, expectedGradient);
     // Compare with actual gradients
     int variablePosition = 0;
-    for(GaussianConditionalOrdered::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
+    for(GaussianConditional::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
       const int dim = clique->conditional()->dim(jit);
       Vector actual = clique->gradientContribution().segment(variablePosition, dim);
       bool gradOk = assert_equal(expectedGradient[*jit], actual);
@@ -431,10 +431,10 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   }
 
   // Check gradient
-  VectorValuesOrdered expectedGradient(*allocateVectorValues(isam));
-  gradientAtZero(FactorGraphOrdered<JacobianFactorOrdered>(isam), expectedGradient);
-  VectorValuesOrdered expectedGradient2(gradient(FactorGraphOrdered<JacobianFactorOrdered>(isam), VectorValuesOrdered::Zero(expectedGradient)));
-  VectorValuesOrdered actualGradient(*allocateVectorValues(isam));
+  VectorValues expectedGradient(*allocateVectorValues(isam));
+  gradientAtZero(FactorGraph<JacobianFactor>(isam), expectedGradient);
+  VectorValues expectedGradient2(gradient(FactorGraph<JacobianFactor>(isam), VectorValues::Zero(expectedGradient)));
+  VectorValues actualGradient(*allocateVectorValues(isam));
   gradientAtZero(isam, actualGradient);
   bool expectedGradOk = assert_equal(expectedGradient2, expectedGradient);
   EXPECT(expectedGradOk);
@@ -531,49 +531,49 @@ TEST(ISAM2, permute_cached) {
   typedef boost::shared_ptr<ISAM2Clique> sharedISAM2Clique;
 
   // Construct expected permuted BayesTree (variable 2 has been changed to 1)
-  BayesTreeOrdered<GaussianConditionalOrdered, ISAM2Clique> expected;
+  BayesTree<GaussianConditional, ISAM2Clique> expected;
   expected.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
-      boost::make_shared<GaussianConditionalOrdered>(pair_list_of
+      boost::make_shared<GaussianConditional>(pair_list_of
           (3, Matrix_(1,1,1.0))
           (4, Matrix_(1,1,2.0)),
           2, Vector_(1,1.0), Vector_(1,1.0)),   // p(3,4)
-      HessianFactorOrdered::shared_ptr()))));          // Cached: empty
+      HessianFactor::shared_ptr()))));          // Cached: empty
   expected.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
-      boost::make_shared<GaussianConditionalOrdered>(pair_list_of
+      boost::make_shared<GaussianConditional>(pair_list_of
           (2, Matrix_(1,1,1.0))
           (3, Matrix_(1,1,2.0)),
           1, Vector_(1,1.0), Vector_(1,1.0)),     // p(2|3)
-      boost::make_shared<HessianFactorOrdered>(3, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(3)
+      boost::make_shared<HessianFactor>(3, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(3)
   expected.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
-      boost::make_shared<GaussianConditionalOrdered>(pair_list_of
+      boost::make_shared<GaussianConditional>(pair_list_of
           (0, Matrix_(1,1,1.0))
           (2, Matrix_(1,1,2.0)),
           1, Vector_(1,1.0), Vector_(1,1.0)),     // p(0|2)
-      boost::make_shared<HessianFactorOrdered>(1, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(1)
+      boost::make_shared<HessianFactor>(1, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(1)
   // Change variable 2 to 1
   expected.root()->children().front()->conditional()->keys()[0] = 1;
   expected.root()->children().front()->children().front()->conditional()->keys()[1] = 1;
 
   // Construct unpermuted BayesTree
-  BayesTreeOrdered<GaussianConditionalOrdered, ISAM2Clique> actual;
+  BayesTree<GaussianConditional, ISAM2Clique> actual;
   actual.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
-      boost::make_shared<GaussianConditionalOrdered>(pair_list_of
+      boost::make_shared<GaussianConditional>(pair_list_of
           (3, Matrix_(1,1,1.0))
           (4, Matrix_(1,1,2.0)),
           2, Vector_(1,1.0), Vector_(1,1.0)),   // p(3,4)
-      HessianFactorOrdered::shared_ptr()))));          // Cached: empty
+      HessianFactor::shared_ptr()))));          // Cached: empty
   actual.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
-      boost::make_shared<GaussianConditionalOrdered>(pair_list_of
+      boost::make_shared<GaussianConditional>(pair_list_of
           (2, Matrix_(1,1,1.0))
           (3, Matrix_(1,1,2.0)),
           1, Vector_(1,1.0), Vector_(1,1.0)),     // p(2|3)
-      boost::make_shared<HessianFactorOrdered>(3, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(3)
+      boost::make_shared<HessianFactor>(3, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(3)
   actual.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
-      boost::make_shared<GaussianConditionalOrdered>(pair_list_of
+      boost::make_shared<GaussianConditional>(pair_list_of
           (0, Matrix_(1,1,1.0))
           (2, Matrix_(1,1,2.0)),
           1, Vector_(1,1.0), Vector_(1,1.0)),     // p(0|2)
-      boost::make_shared<HessianFactorOrdered>(2, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(2)
+      boost::make_shared<HessianFactor>(2, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(2)
 
   // Create permutation that changes variable 2 -> 0
   Permutation permutation = Permutation::Identity(5);
@@ -664,13 +664,13 @@ TEST_UNSAFE(ISAM2, swapFactors)
   typedef ISAM2::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
-    FactorGraphOrdered<JacobianFactorOrdered> jfg;
-    jfg.push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(*clique->conditional())));
-    VectorValuesOrdered expectedGradient(*allocateVectorValues(isam));
+    FactorGraph<JacobianFactor> jfg;
+    jfg.push_back(JacobianFactor::shared_ptr(new JacobianFactor(*clique->conditional())));
+    VectorValues expectedGradient(*allocateVectorValues(isam));
     gradientAtZero(jfg, expectedGradient);
     // Compare with actual gradients
     int variablePosition = 0;
-    for(GaussianConditionalOrdered::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
+    for(GaussianConditional::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
       const int dim = clique->conditional()->dim(jit);
       Vector actual = clique->gradientContribution().segment(variablePosition, dim);
       EXPECT(assert_equal(expectedGradient[*jit], actual));
@@ -680,10 +680,10 @@ TEST_UNSAFE(ISAM2, swapFactors)
   }
 
   // Check gradient
-  VectorValuesOrdered expectedGradient(*allocateVectorValues(isam));
-  gradientAtZero(FactorGraphOrdered<JacobianFactorOrdered>(isam), expectedGradient);
-  VectorValuesOrdered expectedGradient2(gradient(FactorGraphOrdered<JacobianFactorOrdered>(isam), VectorValuesOrdered::Zero(expectedGradient)));
-  VectorValuesOrdered actualGradient(*allocateVectorValues(isam));
+  VectorValues expectedGradient(*allocateVectorValues(isam));
+  gradientAtZero(FactorGraph<JacobianFactor>(isam), expectedGradient);
+  VectorValues expectedGradient2(gradient(FactorGraph<JacobianFactor>(isam), VectorValues::Zero(expectedGradient)));
+  VectorValues actualGradient(*allocateVectorValues(isam));
   gradientAtZero(isam, actualGradient);
   EXPECT(assert_equal(expectedGradient2, expectedGradient));
   EXPECT(assert_equal(expectedGradient, actualGradient));
@@ -795,13 +795,13 @@ TEST(ISAM2, constrained_ordering)
   typedef ISAM2::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
-    FactorGraphOrdered<JacobianFactorOrdered> jfg;
-    jfg.push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(*clique->conditional())));
-    VectorValuesOrdered expectedGradient(*allocateVectorValues(isam));
+    FactorGraph<JacobianFactor> jfg;
+    jfg.push_back(JacobianFactor::shared_ptr(new JacobianFactor(*clique->conditional())));
+    VectorValues expectedGradient(*allocateVectorValues(isam));
     gradientAtZero(jfg, expectedGradient);
     // Compare with actual gradients
     int variablePosition = 0;
-    for(GaussianConditionalOrdered::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
+    for(GaussianConditional::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
       const int dim = clique->conditional()->dim(jit);
       Vector actual = clique->gradientContribution().segment(variablePosition, dim);
       EXPECT(assert_equal(expectedGradient[*jit], actual));
@@ -811,10 +811,10 @@ TEST(ISAM2, constrained_ordering)
   }
 
   // Check gradient
-  VectorValuesOrdered expectedGradient(*allocateVectorValues(isam));
-  gradientAtZero(FactorGraphOrdered<JacobianFactorOrdered>(isam), expectedGradient);
-  VectorValuesOrdered expectedGradient2(gradient(FactorGraphOrdered<JacobianFactorOrdered>(isam), VectorValuesOrdered::Zero(expectedGradient)));
-  VectorValuesOrdered actualGradient(*allocateVectorValues(isam));
+  VectorValues expectedGradient(*allocateVectorValues(isam));
+  gradientAtZero(FactorGraph<JacobianFactor>(isam), expectedGradient);
+  VectorValues expectedGradient2(gradient(FactorGraph<JacobianFactor>(isam), VectorValues::Zero(expectedGradient)));
+  VectorValues actualGradient(*allocateVectorValues(isam));
   gradientAtZero(isam, actualGradient);
   EXPECT(assert_equal(expectedGradient2, expectedGradient));
   EXPECT(assert_equal(expectedGradient, actualGradient));
@@ -844,9 +844,9 @@ namespace {
         toKeep.push_back(i);
 
     // Calculate expected marginal from iSAM2 tree
-    GaussianFactorGraphOrdered isamAsGraph(isam);
+    GaussianFactorGraph isamAsGraph(isam);
     GaussianSequentialSolver solver(isamAsGraph);
-    GaussianFactorGraphOrdered marginalgfg = *solver.jointFactorGraph(toKeep);
+    GaussianFactorGraph marginalgfg = *solver.jointFactorGraph(toKeep);
     expectedAugmentedHessian = marginalgfg.augmentedHessian();
 
     //// Calculate expected marginal from cached linear factors
@@ -864,7 +864,7 @@ namespace {
     isam.marginalizeLeaves(leafKeys);
 
     // Check
-    GaussianFactorGraphOrdered actualMarginalGraph(isam);
+    GaussianFactorGraph actualMarginalGraph(isam);
     Matrix actualAugmentedHessian = actualMarginalGraph.augmentedHessian();
     //Matrix actual2AugmentedHessian = linearFactors_.augmentedHessian();
     Matrix actual3AugmentedHessian = isam.getFactorsUnsafe().linearize(

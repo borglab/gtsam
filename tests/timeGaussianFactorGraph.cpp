@@ -30,8 +30,8 @@ using namespace boost::assign;
 /* ************************************************************************* */
 // Create a Kalman smoother for t=1:T and optimize
 double timeKalmanSmoother(int T) {
-  pair<GaussianFactorGraphOrdered,OrderingOrdered> smoother_ordering = createSmoother(T);
-  GaussianFactorGraphOrdered& smoother(smoother_ordering.first);
+  pair<GaussianFactorGraph,Ordering> smoother_ordering = createSmoother(T);
+  GaussianFactorGraph& smoother(smoother_ordering.first);
   clock_t start = clock();
   GaussianSequentialSolver(smoother).optimize();
   clock_t end = clock ();
@@ -43,8 +43,8 @@ double timeKalmanSmoother(int T) {
 // Create a planar factor graph and optimize
 // todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmoother(int N, bool old = true) {
-  boost::tuple<GaussianFactorGraphOrdered, VectorValuesOrdered> pg = planarGraph(N);
-  GaussianFactorGraphOrdered& fg(pg.get<0>());
+  boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
+  GaussianFactorGraph& fg(pg.get<0>());
   clock_t start = clock();
   GaussianSequentialSolver(fg).optimize();
   clock_t end = clock ();
@@ -56,8 +56,8 @@ double timePlanarSmoother(int N, bool old = true) {
 // Create a planar factor graph and eliminate
 // todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmootherEliminate(int N, bool old = true) {
-  boost::tuple<GaussianFactorGraphOrdered, VectorValuesOrdered> pg = planarGraph(N);
-  GaussianFactorGraphOrdered& fg(pg.get<0>());
+  boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
+  GaussianFactorGraph& fg(pg.get<0>());
   clock_t start = clock();
   GaussianSequentialSolver(fg).eliminate();
   clock_t end = clock ();
@@ -69,23 +69,23 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //// Create a planar factor graph and join factors until matrix formation
 //// This variation uses the original join factors approach
 //double timePlanarSmootherJoinAug(int N, size_t reps) {
-//  GaussianFactorGraphOrdered fgBase;
-//  VectorValuesOrdered config;
+//  GaussianFactorGraph fgBase;
+//  VectorValues config;
 //  boost::tie(fgBase,config) = planarGraph(N);
-//  OrderingOrdered ordering = fgBase.getOrdering();
+//  Ordering ordering = fgBase.getOrdering();
 //  Symbol key = ordering.front();
 //
 //  clock_t start = clock();
 //
 //  for (size_t i = 0; i<reps; ++i) {
 //    // setup
-//    GaussianFactorGraphOrdered fg(fgBase);
+//    GaussianFactorGraph fg(fgBase);
 //
 //    // combine some factors
 //    GaussianFactor::shared_ptr joint_factor = removeAndCombineFactors(fg,key);
 //
 //    // create an internal ordering to render Ab
-//    OrderingOrdered render;
+//    Ordering render;
 //    render += key;
 //    BOOST_FOREACH(const Symbol& k, joint_factor->keys())
 //    if (k != key) render += k;
@@ -102,16 +102,16 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //// Create a planar factor graph and join factors until matrix formation
 //// This variation uses the single-allocate version to create the matrix
 //double timePlanarSmootherCombined(int N, size_t reps) {
-//  GaussianFactorGraphOrdered fgBase;
-//  VectorValuesOrdered config;
+//  GaussianFactorGraph fgBase;
+//  VectorValues config;
 //  boost::tie(fgBase,config) = planarGraph(N);
-//  OrderingOrdered ordering = fgBase.getOrdering();
+//  Ordering ordering = fgBase.getOrdering();
 //  Symbol key = ordering.front();
 //
 //  clock_t start = clock();
 //
 //  for (size_t i = 0; i<reps; ++i) {
-//    GaussianFactorGraphOrdered fg(fgBase);
+//    GaussianFactorGraph fg(fgBase);
 //    fg.eliminateOneMatrixJoin(key);
 //  }
 //

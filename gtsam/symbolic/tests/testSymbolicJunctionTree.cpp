@@ -38,7 +38,7 @@ using namespace std;
  * 2 3
  *   0 1 : 2
  ****************************************************************************/
-TEST( JunctionTreeOrdered, constructor )
+TEST( JunctionTree, constructor )
 {
   Ordering order; order += 0, 1, 2, 3;
 

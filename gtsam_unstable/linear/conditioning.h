@@ -27,15 +27,15 @@ namespace gtsam {
  *  @param saved_indices is the set of indices that should appear in the result
  *  @param solution is a full solution for the system
  */
-GTSAM_UNSTABLE_EXPORT gtsam::GaussianConditionalOrdered::shared_ptr conditionDensity(const gtsam::GaussianConditionalOrdered::shared_ptr& initConditional,
-    const std::set<gtsam::Index>& saved_indices, const gtsam::VectorValuesOrdered& solution);
+GTSAM_UNSTABLE_EXPORT gtsam::GaussianConditional::shared_ptr conditionDensity(const gtsam::GaussianConditional::shared_ptr& initConditional,
+    const std::set<gtsam::Index>& saved_indices, const gtsam::VectorValues& solution);
 
 /**
  * Backsubstitution-based conditioning for a complete Bayes Tree - reduces
  * conditionals by solving out variables to eliminate. Traverses the tree to
  * add the correct dummy factors whenever a separator is eliminated.
  */
-GTSAM_UNSTABLE_EXPORT gtsam::GaussianFactorGraphOrdered conditionDensity(const gtsam::GaussianBayesTreeOrdered& bayesTree,
+GTSAM_UNSTABLE_EXPORT gtsam::GaussianFactorGraph conditionDensity(const gtsam::GaussianBayesTree& bayesTree,
     const std::set<gtsam::Index>& saved_indices);
 
 

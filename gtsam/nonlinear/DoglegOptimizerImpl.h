@@ -148,13 +148,13 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
 {
   // Compute steepest descent and Newton's method points
   gttic(optimizeGradientSearch);
-  VectorValuesOrdered dx_u = Rd.optimizeGradientSearch();
+  VectorValues dx_u = Rd.optimizeGradientSearch();
   gttoc(optimizeGradientSearch);
   gttic(optimize);
-  VectorValuesOrdered dx_n = Rd.optimize();
+  VectorValues dx_n = Rd.optimize();
   gttoc(optimize);
   gttic(M_error);
-  const double M_error = Rd.error(VectorValuesOrdered::Zero(dx_u));
+  const double M_error = Rd.error(VectorValues::Zero(dx_u));
   gttoc(M_error);
 
   // Result to return

@@ -38,7 +38,7 @@ static SymbolicConditional::shared_ptr
   L(new SymbolicConditional(_L_, _B_));
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNetOrdered, equals )
+TEST( SymbolicBayesNet, equals )
 {
   SymbolicBayesNet f1;
   f1.push_back(B);
@@ -51,7 +51,7 @@ TEST( SymbolicBayesNetOrdered, equals )
 }
 
 /* ************************************************************************* */
-TEST( SymbolicBayesNetOrdered, combine )
+TEST( SymbolicBayesNet, combine )
 {
   SymbolicConditional::shared_ptr
     A(new SymbolicConditional(_A_,_B_,_C_)),
@@ -79,7 +79,7 @@ TEST( SymbolicBayesNetOrdered, combine )
 }
 
 /* ************************************************************************* */
-TEST(SymbolicBayesNetOrdered, saveGraph) {
+TEST(SymbolicBayesNet, saveGraph) {
   SymbolicBayesNet bn;
   bn += SymbolicConditional(_A_, _B_);
   std::vector<Index> keys;

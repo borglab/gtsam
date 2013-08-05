@@ -67,7 +67,7 @@ namespace {
 }
 
 /* ************************************************************************* */
-TEST(SymbolicBayesTreeOrdered, clear)
+TEST(SymbolicBayesTree, clear)
 {
   SymbolicBayesTree bayesTree = asiaBayesTree;
   bayesTree.clear();
@@ -85,7 +85,7 @@ Bayes Tree for testing conversion to a forest of orphans needed for incremental.
    D|C    F|E
    */
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, removePath )
+TEST( BayesTree, removePath )
 {
   const Key _A_=A(0), _B_=B(0), _C_=C(0), _D_=D(0), _E_=E(0), _F_=F(0);
 
@@ -133,7 +133,7 @@ TEST( BayesTreeOrdered, removePath )
 }
 
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, removePath2 )
+TEST( BayesTree, removePath2 )
 {
   SymbolicBayesTree bayesTree = asiaBayesTree;
 
@@ -153,7 +153,7 @@ TEST( BayesTreeOrdered, removePath2 )
 }
 
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, removePath3 )
+TEST( BayesTree, removePath3 )
 {
   SymbolicBayesTree bayesTree = asiaBayesTree;
 
@@ -185,7 +185,7 @@ void getAllCliques(const SymbolicBayesTree::sharedClique& subtree, SymbolicBayes
 }
 
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, shortcutCheck )
+TEST( BayesTree, shortcutCheck )
 {
   const Key _A_=6, _B_=5, _C_=4, _D_=3, _E_=2, _F_=1, _G_=0;
   SymbolicFactorGraph chain = list_of
@@ -234,7 +234,7 @@ TEST( BayesTreeOrdered, shortcutCheck )
 }
 
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, removeTop )
+TEST( BayesTree, removeTop )
 {
   SymbolicBayesTree bayesTree = asiaBayesTree;
 
@@ -268,7 +268,7 @@ TEST( BayesTreeOrdered, removeTop )
 }
 
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, removeTop2 )
+TEST( BayesTree, removeTop2 )
 {
   SymbolicBayesTree bayesTree = asiaBayesTree;
 
@@ -294,7 +294,7 @@ TEST( BayesTreeOrdered, removeTop2 )
 }
 
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, removeTop3 )
+TEST( BayesTree, removeTop3 )
 {
   SymbolicFactorGraph graph = list_of
     (SymbolicFactor(L(5)))
@@ -318,7 +318,7 @@ TEST( BayesTreeOrdered, removeTop3 )
 }
 
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, removeTop4 )
+TEST( BayesTree, removeTop4 )
 {
   SymbolicFactorGraph graph = list_of
     (SymbolicFactor(L(5)))
@@ -342,7 +342,7 @@ TEST( BayesTreeOrdered, removeTop4 )
 }
 
 /* ************************************************************************* */
-TEST( BayesTreeOrdered, removeTop5 )
+TEST( BayesTree, removeTop5 )
 {
   // Remove top called with variables that are not in the Bayes tree
   SymbolicFactorGraph graph = list_of

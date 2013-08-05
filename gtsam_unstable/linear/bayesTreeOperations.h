@@ -19,7 +19,7 @@ namespace gtsam {
 // Managing orderings
 
 /** Converts sets of keys to indices by way of orderings */
-GTSAM_UNSTABLE_EXPORT std::set<Index> keysToIndices(const KeySet& keys, const OrderingOrdered& ordering);
+GTSAM_UNSTABLE_EXPORT std::set<Index> keysToIndices(const KeySet& keys, const Ordering& ordering);
 
 // Linear Graph Operations
 
@@ -27,16 +27,16 @@ GTSAM_UNSTABLE_EXPORT std::set<Index> keysToIndices(const KeySet& keys, const Or
  * Given a graph, splits each factor into factors where the dimension is
  * that of the first variable.
  */
-GTSAM_UNSTABLE_EXPORT GaussianFactorGraphOrdered splitFactors(const GaussianFactorGraphOrdered& fullgraph);
+GTSAM_UNSTABLE_EXPORT GaussianFactorGraph splitFactors(const GaussianFactorGraph& fullgraph);
 
 /**
  * Splits a factor into factors where the dimension is
  * that of the first variable.
  */
-GTSAM_UNSTABLE_EXPORT GaussianFactorGraphOrdered splitFactor(const GaussianFactorOrdered::shared_ptr& factor);
+GTSAM_UNSTABLE_EXPORT GaussianFactorGraph splitFactor(const GaussianFactor::shared_ptr& factor);
 
 /** Removes prior jacobian factors from the graph */
-GTSAM_UNSTABLE_EXPORT GaussianFactorGraphOrdered removePriors(const GaussianFactorGraphOrdered& fullgraph);
+GTSAM_UNSTABLE_EXPORT GaussianFactorGraph removePriors(const GaussianFactorGraph& fullgraph);
 
 // Bayes Tree / Conditional operations
 
@@ -46,8 +46,8 @@ GTSAM_UNSTABLE_EXPORT GaussianFactorGraphOrdered removePriors(const GaussianFact
  *
  * @return the set of conditionals extracted from cliques.
  */
-GTSAM_UNSTABLE_EXPORT std::set<GaussianConditionalOrdered::shared_ptr> findAffectedCliqueConditionals(
-    const GaussianBayesTreeOrdered& bayesTree, const std::set<Index>& savedIndices);
+GTSAM_UNSTABLE_EXPORT std::set<GaussianConditional::shared_ptr> findAffectedCliqueConditionals(
+    const GaussianBayesTree& bayesTree, const std::set<Index>& savedIndices);
 
 /**
  * Recursively traverses from a given clique in a Bayes Tree and collects all of the conditionals
@@ -56,15 +56,15 @@ GTSAM_UNSTABLE_EXPORT std::set<GaussianConditionalOrdered::shared_ptr> findAffec
  * Note the use of a set of shared_ptr: this will sort/filter on unique *pointer* locations,
  * which ensures unique cliques, but the order of the cliques is meaningless
  */
-GTSAM_UNSTABLE_EXPORT void findCliqueConditionals(const GaussianBayesTreeOrdered::sharedClique& current_clique,
-    std::set<GaussianConditionalOrdered::shared_ptr>& result);
+GTSAM_UNSTABLE_EXPORT void findCliqueConditionals(const GaussianBayesTree::sharedClique& current_clique,
+    std::set<GaussianConditional::shared_ptr>& result);
 
 /**
  * Given a clique, returns a sequence of clique parents to the root, not including the
  * given clique.
  */
-GTSAM_UNSTABLE_EXPORT std::deque<GaussianBayesTreeOrdered::sharedClique>
-findPathCliques(const GaussianBayesTreeOrdered::sharedClique& initial);
+GTSAM_UNSTABLE_EXPORT std::deque<GaussianBayesTree::sharedClique>
+findPathCliques(const GaussianBayesTree::sharedClique& initial);
 
 /**
  * Liquefies a BayesTree into a GaussianFactorGraph recursively, given a
@@ -73,10 +73,10 @@ findPathCliques(const GaussianBayesTreeOrdered::sharedClique& initial);
  * @param splitConditionals flag enables spliting multi-frontal conditionals into separate factors
  */
 template <class BAYESTREE>
-GaussianFactorGraphOrdered liquefy(const typename BAYESTREE::sharedClique& root, bool splitConditionals = false) {
-  GaussianFactorGraphOrdered result;
+GaussianFactorGraph liquefy(const typename BAYESTREE::sharedClique& root, bool splitConditionals = false) {
+  GaussianFactorGraph result;
   if (root && root->conditional()) {
-    GaussianConditionalOrdered::shared_ptr conditional = root->conditional();
+    GaussianConditional::shared_ptr conditional = root->conditional();
     if (!splitConditionals)
       result.push_back(conditional->toFactor());
     else
@@ -93,7 +93,7 @@ GaussianFactorGraphOrdered liquefy(const typename BAYESTREE::sharedClique& root,
  * @param splitConditionals flag enables spliting multi-frontal conditionals into separate factors
  */
 template <class BAYESTREE>
-GaussianFactorGraphOrdered liquefy(const BAYESTREE& bayesTree, bool splitConditionals = false) {
+GaussianFactorGraph liquefy(const BAYESTREE& bayesTree, bool splitConditionals = false) {
   return liquefy<BAYESTREE>(bayesTree.root(), splitConditionals);
 }
 

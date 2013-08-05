@@ -38,10 +38,10 @@ int main() {
   // [code below basically does SRIF with Cholesky]
 
   // Create a factor graph to perform the inference
-  GaussianFactorGraphOrdered::shared_ptr linearFactorGraph(new GaussianFactorGraphOrdered);
+  GaussianFactorGraph::shared_ptr linearFactorGraph(new GaussianFactorGraph);
 
   // Create the desired ordering
-  OrderingOrdered::shared_ptr ordering(new OrderingOrdered);
+  Ordering::shared_ptr ordering(new Ordering);
 
   // Create a structure to hold the linearization points
   Values linearizationPoints;
@@ -110,10 +110,10 @@ int main() {
 
   // Solve the linear factor graph, converting it into a linear Bayes Network ( P(x0,x1) = P(x0|x1)*P(x1) )
   GaussianSequentialSolver solver0(*linearFactorGraph);
-  GaussianBayesNetOrdered::shared_ptr linearBayesNet = solver0.eliminate();
+  GaussianBayesNet::shared_ptr linearBayesNet = solver0.eliminate();
 
   // Extract the current estimate of x1,P1 from the Bayes Network
-  VectorValuesOrdered result = optimize(*linearBayesNet);
+  VectorValues result = optimize(*linearBayesNet);
   Point2 x1_predict = linearizationPoints.at<Point2>(x1).retract(result[ordering->at(x1)]);
   x1_predict.print("X1 Predict");
 
@@ -123,7 +123,7 @@ int main() {
 
 
   // Create a new, empty graph and add the prior from the previous step
-  linearFactorGraph = GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
 
   // Convert the root conditional, P(x1) in this case, into a Prior for the next step
   // Some care must be done here, as the linearization point in future steps will be different
@@ -138,13 +138,13 @@ int main() {
   //                              -> b'' = b' - F(dx1' - dx1'')
   //                              = || F*dx1'' - (b'  - F(dx1' - dx1'')) ||^2
   //                              = || F*dx1'' - (b'  - F(x_predict - x_inital)) ||^2
-  const GaussianConditionalOrdered::shared_ptr& cg0 = linearBayesNet->back();
+  const GaussianConditional::shared_ptr& cg0 = linearBayesNet->back();
   assert(cg0->nrFrontals() == 1);
   assert(cg0->nrParents() == 0);
   linearFactorGraph->add(0, cg0->get_R(), cg0->get_d() - cg0->get_R()*result[ordering->at(x1)], noiseModel::Diagonal::Sigmas(cg0->get_sigmas(), true));
 
   // Create the desired ordering
-  ordering = OrderingOrdered::shared_ptr(new OrderingOrdered);
+  ordering = Ordering::shared_ptr(new Ordering);
   ordering->insert(x1, 0);
 
   // Now, a measurement, z1, has been received, and the Kalman Filter should be "Updated"/"Corrected"
@@ -199,22 +199,22 @@ int main() {
 
   // Wash, rinse, repeat for another time step
   // Create a new, empty graph and add the prior from the previous step
-  linearFactorGraph = GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
 
   // Convert the root conditional, P(x1) in this case, into a Prior for the next step
   // The linearization point of this prior must be moved to the new estimate of x, and the key/index needs to be reset to 0,
   // the first key in the next iteration
-  const GaussianConditionalOrdered::shared_ptr& cg1 = linearBayesNet->back();
+  const GaussianConditional::shared_ptr& cg1 = linearBayesNet->back();
   assert(cg1->nrFrontals() == 1);
   assert(cg1->nrParents() == 0);
-  JacobianFactorOrdered tmpPrior1 = JacobianFactorOrdered(*cg1);
+  JacobianFactor tmpPrior1 = JacobianFactor(*cg1);
   linearFactorGraph->add(0, tmpPrior1.getA(tmpPrior1.begin()), tmpPrior1.getb() - tmpPrior1.getA(tmpPrior1.begin()) * result[ordering->at(x1)], tmpPrior1.get_model());
 
   // Create a key for the new state
   Symbol x2('x',2);
 
   // Create the desired ordering
-  ordering = OrderingOrdered::shared_ptr(new OrderingOrdered);
+  ordering = Ordering::shared_ptr(new Ordering);
   ordering->insert(x1, 0);
   ordering->insert(x2, 1);
 
@@ -243,17 +243,17 @@ int main() {
 
   // Now add the next measurement
   // Create a new, empty graph and add the prior from the previous step
-  linearFactorGraph = GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
 
   // Convert the root conditional, P(x1) in this case, into a Prior for the next step
-  const GaussianConditionalOrdered::shared_ptr& cg2 = linearBayesNet->back();
+  const GaussianConditional::shared_ptr& cg2 = linearBayesNet->back();
   assert(cg2->nrFrontals() == 1);
   assert(cg2->nrParents() == 0);
-  JacobianFactorOrdered tmpPrior2 = JacobianFactorOrdered(*cg2);
+  JacobianFactor tmpPrior2 = JacobianFactor(*cg2);
   linearFactorGraph->add(0, tmpPrior2.getA(tmpPrior2.begin()), tmpPrior2.getb() - tmpPrior2.getA(tmpPrior2.begin()) * result[ordering->at(x2)], tmpPrior2.get_model());
 
   // Create the desired ordering
-  ordering = OrderingOrdered::shared_ptr(new OrderingOrdered);
+  ordering = Ordering::shared_ptr(new Ordering);
   ordering->insert(x2, 0);
 
   // And update using z2 ...
@@ -290,20 +290,20 @@ int main() {
 
   // Wash, rinse, repeat for a third time step
   // Create a new, empty graph and add the prior from the previous step
-  linearFactorGraph = GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
 
   // Convert the root conditional, P(x1) in this case, into a Prior for the next step
-  const GaussianConditionalOrdered::shared_ptr& cg3 = linearBayesNet->back();
+  const GaussianConditional::shared_ptr& cg3 = linearBayesNet->back();
   assert(cg3->nrFrontals() == 1);
   assert(cg3->nrParents() == 0);
-  JacobianFactorOrdered tmpPrior3 = JacobianFactorOrdered(*cg3);
+  JacobianFactor tmpPrior3 = JacobianFactor(*cg3);
   linearFactorGraph->add(0, tmpPrior3.getA(tmpPrior3.begin()), tmpPrior3.getb() - tmpPrior3.getA(tmpPrior3.begin()) * result[ordering->at(x2)], tmpPrior3.get_model());
 
   // Create a key for the new state
   Symbol x3('x',3);
 
   // Create the desired ordering
-  ordering = OrderingOrdered::shared_ptr(new OrderingOrdered);
+  ordering = Ordering::shared_ptr(new Ordering);
   ordering->insert(x2, 0);
   ordering->insert(x3, 1);
 
@@ -332,17 +332,17 @@ int main() {
 
   // Now add the next measurement
   // Create a new, empty graph and add the prior from the previous step
-  linearFactorGraph = GaussianFactorGraphOrdered::shared_ptr(new GaussianFactorGraphOrdered);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
 
   // Convert the root conditional, P(x1) in this case, into a Prior for the next step
-  const GaussianConditionalOrdered::shared_ptr& cg4 = linearBayesNet->back();
+  const GaussianConditional::shared_ptr& cg4 = linearBayesNet->back();
   assert(cg4->nrFrontals() == 1);
   assert(cg4->nrParents() == 0);
-  JacobianFactorOrdered tmpPrior4 = JacobianFactorOrdered(*cg4);
+  JacobianFactor tmpPrior4 = JacobianFactor(*cg4);
   linearFactorGraph->add(0, tmpPrior4.getA(tmpPrior4.begin()), tmpPrior4.getb() - tmpPrior4.getA(tmpPrior4.begin()) * result[ordering->at(x3)], tmpPrior4.get_model());
 
   // Create the desired ordering
-  ordering = OrderingOrdered::shared_ptr(new OrderingOrdered);
+  ordering = Ordering::shared_ptr(new Ordering);
   ordering->insert(x3, 0);
 
   // And update using z3 ...

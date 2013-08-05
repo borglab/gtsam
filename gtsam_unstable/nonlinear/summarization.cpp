@@ -15,15 +15,15 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-GaussianFactorGraphOrdered::shared_ptr summarizeGraphSequential(
-    const GaussianFactorGraphOrdered& full_graph, const std::vector<Index>& indices, bool useQR) {
+GaussianFactorGraph::shared_ptr summarizeGraphSequential(
+    const GaussianFactorGraph& full_graph, const std::vector<Index>& indices, bool useQR) {
   GaussianSequentialSolver solver(full_graph, useQR);
   return solver.jointFactorGraph(indices);
 }
 
 /* ************************************************************************* */
-GaussianFactorGraphOrdered::shared_ptr summarizeGraphSequential(
-    const GaussianFactorGraphOrdered& full_graph, const OrderingOrdered& ordering, const KeySet& saved_keys, bool useQR) {
+GaussianFactorGraph::shared_ptr summarizeGraphSequential(
+    const GaussianFactorGraph& full_graph, const Ordering& ordering, const KeySet& saved_keys, bool useQR) {
   std::vector<Index> indices;
   BOOST_FOREACH(const Key& k, saved_keys)
     indices.push_back(ordering[k]);

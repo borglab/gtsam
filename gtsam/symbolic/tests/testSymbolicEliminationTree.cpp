@@ -71,7 +71,7 @@ public:
 
 
 /* ************************************************************************* */
-TEST(EliminationTreeOrdered, Create)
+TEST(EliminationTree, Create)
 {
   SymbolicEliminationTree expected =
     EliminationTreeTester::buildHardcodedTree(simpleTestGraph1);

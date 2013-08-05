@@ -76,12 +76,12 @@ public:
   }
 
   /** Access the current ordering */
-  const OrderingOrdered& getOrdering() const {
+  const Ordering& getOrdering() const {
     return ordering_;
   }
 
   /** Access the current set of deltas to the linearization point */
-  const VectorValuesOrdered& getDelta() const {
+  const VectorValues& getDelta() const {
     return delta_;
   }
 
@@ -125,8 +125,8 @@ protected:
   bool relin_;
   NonlinearFactorGraph factors_;  ///< The set of all factors currently in the filter
   Values theta_;  ///< Current linearization point of all variables in the filter
-  OrderingOrdered ordering_; ///< The current ordering used to calculate the linear deltas
-  VectorValuesOrdered delta_; ///< The current set of linear deltas from the linearization point
+  Ordering ordering_; ///< The current ordering used to calculate the linear deltas
+  VectorValues delta_; ///< The current set of linear deltas from the linearization point
   std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
   Values separatorValues_; ///< The linearization points of the separator variables. These should not be updated during optimization.
   std::vector<size_t> smootherSummarizationSlots_;  ///< The slots in factor graph that correspond to the current smoother summarization factors
@@ -194,8 +194,8 @@ private:
   void reorder(const boost::optional<FastList<Key> >& keysToMove = boost::none);
 
   /** Use a modified version of L-M to update the linearization point and delta */
-  static Result optimize(const NonlinearFactorGraph& factors, Values& theta, const OrderingOrdered& ordering,
-       VectorValuesOrdered& delta, const Values& linearValues, const LevenbergMarquardtParams& parameters);
+  static Result optimize(const NonlinearFactorGraph& factors, Values& theta, const Ordering& ordering,
+       VectorValues& delta, const Values& linearValues, const LevenbergMarquardtParams& parameters);
 
   /** Marginalize out the set of requested variables from the filter, caching them for the smoother
    *  This effectively moves the separator.
@@ -206,14 +206,14 @@ private:
    *  This effectively moves the separator.
    */
   static NonlinearFactorGraph marginalize(const NonlinearFactorGraph& graph, const Values& values,
-      const OrderingOrdered& ordering, const std::set<Key>& marginalizeKeys, const GaussianFactorGraphOrdered::Eliminate& function = EliminateQROrdered);
+      const Ordering& ordering, const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& function = EliminateQR);
 
   /** Print just the nonlinear keys in a nonlinear factor */
   static void PrintNonlinearFactor(const NonlinearFactor::shared_ptr& factor,
       const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /** Print just the nonlinear keys in a linear factor */
-  static void PrintLinearFactor(const GaussianFactorOrdered::shared_ptr& factor, const OrderingOrdered& ordering,
+  static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
       const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   // A custom elimination tree that supports forests and partial elimination
@@ -222,9 +222,9 @@ private:
     typedef boost::shared_ptr<EliminationForest> shared_ptr; ///< Shared pointer to this class
 
   private:
-    typedef FastList<GaussianFactorOrdered::shared_ptr> Factors;
+    typedef FastList<GaussianFactor::shared_ptr> Factors;
     typedef FastList<shared_ptr> SubTrees;
-    typedef std::vector<GaussianConditionalOrdered::shared_ptr> Conditionals;
+    typedef std::vector<GaussianConditional::shared_ptr> Conditionals;
 
     Index key_; ///< index associated with root
     Factors factors_; ///< factors associated with root
@@ -237,10 +237,10 @@ private:
      * Static internal function to build a vector of parent pointers using the
      * algorithm of Gilbert et al., 2001, BIT.
      */
-    static std::vector<Index> ComputeParents(const VariableIndexOrdered& structure);
+    static std::vector<Index> ComputeParents(const VariableIndex& structure);
 
     /** add a factor, for Create use only */
-    void add(const GaussianFactorOrdered::shared_ptr& factor) { factors_.push_back(factor); }
+    void add(const GaussianFactor::shared_ptr& factor) { factors_.push_back(factor); }
 
     /** add a subtree, for Create use only */
     void add(const shared_ptr& child) { subTrees_.push_back(child); }
@@ -257,10 +257,10 @@ private:
     const Factors& factors() const { return factors_; }
 
     /** Create an elimination tree from a factor graph */
-    static std::vector<shared_ptr> Create(const GaussianFactorGraphOrdered& factorGraph, const VariableIndexOrdered& structure);
+    static std::vector<shared_ptr> Create(const GaussianFactorGraph& factorGraph, const VariableIndex& structure);
 
     /** Recursive routine that eliminates the factors arranged in an elimination tree */
-    GaussianFactorOrdered::shared_ptr eliminateRecursive(GaussianFactorGraphOrdered::Eliminate function);
+    GaussianFactor::shared_ptr eliminateRecursive(GaussianFactorGraph::Eliminate function);
 
     /** Recursive function that helps find the top of each tree */
     static void removeChildrenIndices(std::set<Index>& indices, const EliminationForest::shared_ptr& tree);

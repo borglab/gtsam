@@ -34,17 +34,17 @@ using namespace boost::assign;
 #ifdef TRACK_ELIMINATE
 TEST(SymbolicFactor, eliminate) {
   vector<Index> keys; keys += 2, 3, 4, 6, 7, 9, 10, 11;
-  IndexFactorOrdered actual(keys.begin(), keys.end());
-  BayesNetOrdered<IndexConditionalOrdered> fragment = *actual.eliminate(3);
+  IndexFactor actual(keys.begin(), keys.end());
+  BayesNet<IndexConditional> fragment = *actual.eliminate(3);
 
-  IndexFactorOrdered expected(keys.begin()+3, keys.end());
-  IndexConditionalOrdered::shared_ptr expected0 = IndexConditionalOrdered::FromRange(keys.begin(), keys.end(), 1);
-  IndexConditionalOrdered::shared_ptr expected1 = IndexConditionalOrdered::FromRange(keys.begin()+1, keys.end(), 1);
-  IndexConditionalOrdered::shared_ptr expected2 = IndexConditionalOrdered::FromRange(keys.begin()+2, keys.end(), 1);
+  IndexFactor expected(keys.begin()+3, keys.end());
+  IndexConditional::shared_ptr expected0 = IndexConditional::FromRange(keys.begin(), keys.end(), 1);
+  IndexConditional::shared_ptr expected1 = IndexConditional::FromRange(keys.begin()+1, keys.end(), 1);
+  IndexConditional::shared_ptr expected2 = IndexConditional::FromRange(keys.begin()+2, keys.end(), 1);
 
   CHECK(assert_equal(fragment.size(), size_t(3)));
   CHECK(assert_equal(expected, actual));
-  BayesNetOrdered<IndexConditionalOrdered>::const_iterator fragmentCond = fragment.begin();
+  BayesNet<IndexConditional>::const_iterator fragmentCond = fragment.begin();
   CHECK(assert_equal(**fragmentCond++, *expected0));
   CHECK(assert_equal(**fragmentCond++, *expected1));
   CHECK(assert_equal(**fragmentCond++, *expected2));

@@ -40,7 +40,7 @@ typedef enum {
  * @param mode controls what elimination technique and requirements to use
  * @return a pair of the remaining graph and the ordering used for linearization
  */
-std::pair<GaussianFactorGraphOrdered,OrderingOrdered> GTSAM_EXPORT
+std::pair<GaussianFactorGraph,Ordering> GTSAM_EXPORT
 summarize(const NonlinearFactorGraph& graph, const Values& values,
     const KeySet& saved_keys, SummarizationMode mode = PARTIAL_QR);
 

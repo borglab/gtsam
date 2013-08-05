@@ -44,11 +44,11 @@ public:
 
 protected:
 
-  GaussianFactorGraphOrdered graph_;
-  OrderingOrdered ordering_;
+  GaussianFactorGraph graph_;
+  Ordering ordering_;
   Values values_;
   Factorization factorization_;
-  GaussianBayesTreeOrdered bayesTree_;
+  GaussianBayesTree bayesTree_;
 
 public:
 
@@ -88,7 +88,7 @@ protected:
 
   Matrix fullMatrix_;
   BlockView blockView_;
-  OrderingOrdered indices_;
+  Ordering indices_;
 
 public:
   /** A block view of the joint marginal - this stores a reference to the
@@ -135,7 +135,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
 protected:
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const OrderingOrdered& indices) :
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
     fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
 
   friend class Marginals;

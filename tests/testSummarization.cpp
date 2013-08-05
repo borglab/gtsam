@@ -74,15 +74,15 @@ TEST( testSummarization, example_from_ddf1 ) {
 
   {
     // Summarize to a linear system
-    GaussianFactorGraphOrdered actLinGraph; OrderingOrdered actOrdering;
+    GaussianFactorGraph actLinGraph; Ordering actOrdering;
     SummarizationMode mode = PARTIAL_QR;
     boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
 
-    OrderingOrdered expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
+    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
     EXPECT(assert_equal(expSumOrdering, actOrdering));
 
     // Does not split out subfactors where possible
-    GaussianFactorGraphOrdered expLinGraph;
+    GaussianFactorGraph expLinGraph;
     expLinGraph.add(
       expSumOrdering[lA3],
       Matrix_(4,2,
@@ -108,16 +108,16 @@ TEST( testSummarization, example_from_ddf1 ) {
 
   {
     // Summarize to a linear system using cholesky - compare to previous version
-    GaussianFactorGraphOrdered actLinGraph; OrderingOrdered actOrdering;
+    GaussianFactorGraph actLinGraph; Ordering actOrdering;
     SummarizationMode mode = PARTIAL_CHOLESKY;
     boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
 
-    OrderingOrdered expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
+    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
     EXPECT(assert_equal(expSumOrdering, actOrdering));
 
     // Does not split out subfactors where possible
-    GaussianFactorGraphOrdered expLinGraph;
-    expLinGraph.add(HessianFactorOrdered(JacobianFactorOrdered(
+    GaussianFactorGraph expLinGraph;
+    expLinGraph.add(HessianFactor(JacobianFactor(
         expSumOrdering[lA3],
         Matrix_(4,2,
           0.595867,  0.605092,
@@ -142,15 +142,15 @@ TEST( testSummarization, example_from_ddf1 ) {
 
   {
     // Summarize to a linear system with joint factor graph version
-    GaussianFactorGraphOrdered actLinGraph; OrderingOrdered actOrdering;
+    GaussianFactorGraph actLinGraph; Ordering actOrdering;
     SummarizationMode mode = SEQUENTIAL_QR;
     boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
 
-    OrderingOrdered expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
+    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
     EXPECT(assert_equal(expSumOrdering, actOrdering));
 
     // Does not split out subfactors where possible
-    GaussianFactorGraphOrdered expLinGraph;
+    GaussianFactorGraph expLinGraph;
     expLinGraph.add(
         expSumOrdering[lA3],
         Matrix_(2,2,
@@ -180,15 +180,15 @@ TEST( testSummarization, example_from_ddf1 ) {
 
   {
     // Summarize to a linear system with joint factor graph version
-    GaussianFactorGraphOrdered actLinGraph; OrderingOrdered actOrdering;
+    GaussianFactorGraph actLinGraph; Ordering actOrdering;
     SummarizationMode mode = SEQUENTIAL_CHOLESKY;
     boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
 
-    OrderingOrdered expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
+    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
     EXPECT(assert_equal(expSumOrdering, actOrdering));
 
     // Does not split out subfactors where possible
-    GaussianFactorGraphOrdered expLinGraph;
+    GaussianFactorGraph expLinGraph;
     expLinGraph.add(
         expSumOrdering[lA3],
         Matrix_(2,2,
@@ -229,10 +229,10 @@ TEST( testSummarization, no_summarize_case ) {
   values.insert(key, Pose2(0.0, 0.0, 0.1));
 
   SummarizationMode mode = SEQUENTIAL_CHOLESKY;
-  GaussianFactorGraphOrdered actLinGraph; OrderingOrdered actOrdering;
+  GaussianFactorGraph actLinGraph; Ordering actOrdering;
   boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
-  OrderingOrdered expOrdering; expOrdering += key;
-  GaussianFactorGraphOrdered expLinGraph = *graph.linearize(values, expOrdering);
+  Ordering expOrdering; expOrdering += key;
+  GaussianFactorGraph expLinGraph = *graph.linearize(values, expOrdering);
   EXPECT(assert_equal(expOrdering, actOrdering));
   EXPECT(assert_equal(expLinGraph, actLinGraph));
 }

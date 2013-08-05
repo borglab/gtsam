@@ -55,9 +55,9 @@ TEST ( NonlinearEquality, linearization ) {
 
   // check linearize
   SharedDiagonal constraintModel = noiseModel::Constrained::All(3);
-  JacobianFactorOrdered expLF(0, eye(3), zero(3), constraintModel);
-  GaussianFactorOrdered::shared_ptr actualLF = nle->linearize(linearize, *linearize.orderingArbitrary());
-  EXPECT(assert_equal(*actualLF, (const GaussianFactorOrdered&)expLF));
+  JacobianFactor expLF(0, eye(3), zero(3), constraintModel);
+  GaussianFactor::shared_ptr actualLF = nle->linearize(linearize, *linearize.orderingArbitrary());
+  EXPECT(assert_equal(*actualLF, (const GaussianFactor&)expLF));
 }
 
 /* ********************************************************************** */
@@ -71,7 +71,7 @@ TEST ( NonlinearEquality, linearization_pose ) {
   // create a nonlinear equality constraint
   shared_poseNLE nle(new PoseNLE(key, value));
 
-  GaussianFactorOrdered::shared_ptr actualLF = nle->linearize(config, *config.orderingArbitrary());
+  GaussianFactor::shared_ptr actualLF = nle->linearize(config, *config.orderingArbitrary());
   EXPECT(true);
 }
 
@@ -176,11 +176,11 @@ TEST ( NonlinearEquality, allow_error_pose ) {
   DOUBLES_EQUAL(500.0, actError, 1e-9);
 
   // check linearization
-  GaussianFactorOrdered::shared_ptr actLinFactor = nle.linearize(config, *config.orderingArbitrary());
+  GaussianFactor::shared_ptr actLinFactor = nle.linearize(config, *config.orderingArbitrary());
   Matrix A1 = eye(3,3);
   Vector b = expVec;
   SharedDiagonal model = noiseModel::Constrained::All(3);
-  GaussianFactorOrdered::shared_ptr expLinFactor(new JacobianFactorOrdered(0, A1, b, model));
+  GaussianFactor::shared_ptr expLinFactor(new JacobianFactor(0, A1, b, model));
   EXPECT(assert_equal(*expLinFactor, *actLinFactor, 1e-5));
 }
 
@@ -201,7 +201,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
   init.insert(key1, initPose);
 
   // optimize
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering.push_back(key1);
   Values result = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
 
@@ -235,7 +235,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
   graph.add(prior);
 
   // optimize
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering.push_back(key1);
   Values actual = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
 
@@ -277,21 +277,21 @@ TEST( testNonlinearEqualityConstraint, unary_linearization ) {
   Point2 pt(1.0, 2.0);
   Symbol key1('x',1);
   double mu = 1000.0;
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering += key;
   eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
 
   Values config1;
   config1.insert(key, pt);
-  GaussianFactorOrdered::shared_ptr actual1 = constraint.linearize(config1, ordering);
-  GaussianFactorOrdered::shared_ptr expected1(new JacobianFactorOrdered(ordering[key], eye(2,2), zero(2), hard_model));
+  GaussianFactor::shared_ptr actual1 = constraint.linearize(config1, ordering);
+  GaussianFactor::shared_ptr expected1(new JacobianFactor(ordering[key], eye(2,2), zero(2), hard_model));
   EXPECT(assert_equal(*expected1, *actual1, tol));
 
   Values config2;
   Point2 ptBad(2.0, 2.0);
   config2.insert(key, ptBad);
-  GaussianFactorOrdered::shared_ptr actual2 = constraint.linearize(config2, ordering);
-  GaussianFactorOrdered::shared_ptr expected2(new JacobianFactorOrdered(ordering[key], eye(2,2), Vector_(2,-1.0,0.0), hard_model));
+  GaussianFactor::shared_ptr actual2 = constraint.linearize(config2, ordering);
+  GaussianFactor::shared_ptr expected2(new JacobianFactor(ordering[key], eye(2,2), Vector_(2,-1.0,0.0), hard_model));
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
 
@@ -359,16 +359,16 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   Point2 x1(1.0, 2.0), x2(2.0, 3.0), odom(1.0, 1.0);
   Symbol key1('x',1), key2('x',2);
   double mu = 1000.0;
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering += key1, key2;
   eq2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
 
   Values config1;
   config1.insert(key1, x1);
   config1.insert(key2, x2);
-  GaussianFactorOrdered::shared_ptr actual1 = constraint.linearize(config1, ordering);
-  GaussianFactorOrdered::shared_ptr expected1(
-      new JacobianFactorOrdered(ordering[key1], -eye(2,2), ordering[key2],
+  GaussianFactor::shared_ptr actual1 = constraint.linearize(config1, ordering);
+  GaussianFactor::shared_ptr expected1(
+      new JacobianFactor(ordering[key1], -eye(2,2), ordering[key2],
           eye(2,2), zero(2), hard_model));
   EXPECT(assert_equal(*expected1, *actual1, tol));
 
@@ -377,9 +377,9 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   Point2 x2bad(2.0, 2.0);
   config2.insert(key1, x1bad);
   config2.insert(key2, x2bad);
-  GaussianFactorOrdered::shared_ptr actual2 = constraint.linearize(config2, ordering);
-  GaussianFactorOrdered::shared_ptr expected2(
-      new JacobianFactorOrdered(ordering[key1], -eye(2,2), ordering[key2],
+  GaussianFactor::shared_ptr actual2 = constraint.linearize(config2, ordering);
+  GaussianFactor::shared_ptr expected2(
+      new JacobianFactor(ordering[key1], -eye(2,2), ordering[key2],
           eye(2,2), Vector_(2, 1.0, 1.0), hard_model));
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }

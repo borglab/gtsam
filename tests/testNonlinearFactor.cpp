@@ -112,10 +112,10 @@ TEST( NonlinearFactor, linearize_f1 )
   Graph::sharedFactor nlf = nfg[0];
 
   // We linearize at noisy config from SmallExample
-  GaussianFactorOrdered::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
+  GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
-  GaussianFactorGraphOrdered lfg = createGaussianFactorGraph(*c.orderingArbitrary());
-  GaussianFactorOrdered::shared_ptr expected = lfg[0];
+  GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
+  GaussianFactor::shared_ptr expected = lfg[0];
 
   CHECK(assert_equal(*expected,*actual));
 
@@ -134,10 +134,10 @@ TEST( NonlinearFactor, linearize_f2 )
   Graph::sharedFactor nlf = nfg[1];
 
   // We linearize at noisy config from SmallExample
-  GaussianFactorOrdered::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
+  GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
-  GaussianFactorGraphOrdered lfg = createGaussianFactorGraph(*c.orderingArbitrary());
-  GaussianFactorOrdered::shared_ptr expected = lfg[1];
+  GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
+  GaussianFactor::shared_ptr expected = lfg[1];
 
   CHECK(assert_equal(*expected,*actual));
 }
@@ -151,10 +151,10 @@ TEST( NonlinearFactor, linearize_f3 )
 
   // We linearize at noisy config from SmallExample
   Values c = createNoisyValues();
-  GaussianFactorOrdered::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
+  GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
-  GaussianFactorGraphOrdered lfg = createGaussianFactorGraph(*c.orderingArbitrary());
-  GaussianFactorOrdered::shared_ptr expected = lfg[2];
+  GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
+  GaussianFactor::shared_ptr expected = lfg[2];
 
   CHECK(assert_equal(*expected,*actual));
 }
@@ -168,10 +168,10 @@ TEST( NonlinearFactor, linearize_f4 )
 
   // We linearize at noisy config from SmallExample
   Values c = createNoisyValues();
-  GaussianFactorOrdered::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
+  GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
-  GaussianFactorGraphOrdered lfg = createGaussianFactorGraph(*c.orderingArbitrary());
-  GaussianFactorOrdered::shared_ptr expected = lfg[3];
+  GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
+  GaussianFactor::shared_ptr expected = lfg[3];
 
   CHECK(assert_equal(*expected,*actual));
 }
@@ -205,13 +205,13 @@ TEST( NonlinearFactor, linearize_constraint1 )
 
   Values config;
   config.insert(X(1), Point2(1.0, 2.0));
-  GaussianFactorOrdered::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
+  GaussianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
 
   // create expected
-  OrderingOrdered ord(*config.orderingArbitrary());
+  Ordering ord(*config.orderingArbitrary());
   Vector b = Vector_(2, 0., -3.);
-  JacobianFactorOrdered expected(ord[X(1)], Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b, constraint);
-  CHECK(assert_equal((const GaussianFactorOrdered&)expected, *actual));
+  JacobianFactor expected(ord[X(1)], Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b, constraint);
+  CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */
@@ -226,14 +226,14 @@ TEST( NonlinearFactor, linearize_constraint2 )
   Values config;
   config.insert(X(1), Point2(1.0, 2.0));
   config.insert(L(1), Point2(5.0, 4.0));
-  GaussianFactorOrdered::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
+  GaussianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
 
   // create expected
-  OrderingOrdered ord(*config.orderingArbitrary());
+  Ordering ord(*config.orderingArbitrary());
   Matrix A = Matrix_(2,2, 5.0, 0.0, 0.0, 1.0);
   Vector b = Vector_(2, -15., -3.);
-  JacobianFactorOrdered expected(ord[X(1)], -1*A, ord[L(1)], A, b, constraint);
-  CHECK(assert_equal((const GaussianFactorOrdered&)expected, *actual));
+  JacobianFactor expected(ord[X(1)], -1*A, ord[L(1)], A, b, constraint);
+  CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */
@@ -272,8 +272,8 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   tv.insert(X(4), LieVector(1, 4.0));
   EXPECT(assert_equal(Vector_(1, 10.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(25.0/2.0, tf.error(tv), 1e-9);
-  OrderingOrdered ordering; ordering += X(1), X(2), X(3), X(4);
-  JacobianFactorOrdered jf(*boost::dynamic_pointer_cast<JacobianFactorOrdered>(tf.linearize(tv, ordering)));
+  Ordering ordering; ordering += X(1), X(2), X(3), X(4);
+  JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);
   LONGS_EQUAL(jf.keys()[2], 2);
@@ -320,8 +320,8 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
   tv.insert(X(5), LieVector(1, 5.0));
   EXPECT(assert_equal(Vector_(1, 15.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(56.25/2.0, tf.error(tv), 1e-9);
-  OrderingOrdered ordering; ordering += X(1), X(2), X(3), X(4), X(5);
-  JacobianFactorOrdered jf(*boost::dynamic_pointer_cast<JacobianFactorOrdered>(tf.linearize(tv, ordering)));
+  Ordering ordering; ordering += X(1), X(2), X(3), X(4), X(5);
+  JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);
   LONGS_EQUAL(jf.keys()[2], 2);
@@ -374,8 +374,8 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
   tv.insert(X(6), LieVector(1, 6.0));
   EXPECT(assert_equal(Vector_(1, 21.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(110.25/2.0, tf.error(tv), 1e-9);
-  OrderingOrdered ordering; ordering += X(1), X(2), X(3), X(4), X(5), X(6);
-  JacobianFactorOrdered jf(*boost::dynamic_pointer_cast<JacobianFactorOrdered>(tf.linearize(tv, ordering)));
+  Ordering ordering; ordering += X(1), X(2), X(3), X(4), X(5), X(6);
+  JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);
   LONGS_EQUAL(jf.keys()[2], 2);

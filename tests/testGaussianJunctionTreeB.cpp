@@ -59,11 +59,11 @@ using symbol_shorthand::L;
 TEST( GaussianJunctionTreeB, constructor2 )
 {
   // create a graph
-  OrderingOrdered ordering; ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
-  GaussianFactorGraphOrdered fg = createSmoother(7, ordering).first;
+  Ordering ordering; ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
+  GaussianFactorGraph fg = createSmoother(7, ordering).first;
 
   // create an ordering
-  GaussianJunctionTreeOrdered actual(fg);
+  GaussianJunctionTree actual(fg);
 
   vector<Index> frontal1; frontal1 += ordering[X(5)], ordering[X(6)], ordering[X(4)];
   vector<Index> frontal2; frontal2 += ordering[X(3)], ordering[X(2)];
@@ -76,10 +76,10 @@ TEST( GaussianJunctionTreeB, constructor2 )
   EXPECT(assert_equal(frontal1, actual.root()->frontal));
   EXPECT(assert_equal(sep1,     actual.root()->separator));
   LONGS_EQUAL(5,               actual.root()->size());
-  list<GaussianJunctionTreeOrdered::sharedClique>::const_iterator child0it = actual.root()->children().begin();
-  list<GaussianJunctionTreeOrdered::sharedClique>::const_iterator child1it = child0it; ++child1it;
-  GaussianJunctionTreeOrdered::sharedClique child0 = *child0it;
-  GaussianJunctionTreeOrdered::sharedClique child1 = *child1it;
+  list<GaussianJunctionTree::sharedClique>::const_iterator child0it = actual.root()->children().begin();
+  list<GaussianJunctionTree::sharedClique>::const_iterator child1it = child0it; ++child1it;
+  GaussianJunctionTree::sharedClique child0 = *child0it;
+  GaussianJunctionTree::sharedClique child1 = *child1it;
   EXPECT(assert_equal(frontal2, child0->frontal));
   EXPECT(assert_equal(sep2,     child0->separator));
   LONGS_EQUAL(4,               child0->size());
@@ -95,16 +95,16 @@ TEST( GaussianJunctionTreeB, constructor2 )
 TEST( GaussianJunctionTreeB, optimizeMultiFrontal )
 {
   // create a graph
-  GaussianFactorGraphOrdered fg;
-  OrderingOrdered ordering;
+  GaussianFactorGraph fg;
+  Ordering ordering;
   boost::tie(fg,ordering) = createSmoother(7);
 
   // optimize the graph
-  GaussianJunctionTreeOrdered tree(fg);
-  VectorValuesOrdered actual = tree.optimize(&EliminateQROrdered);
+  GaussianJunctionTree tree(fg);
+  VectorValues actual = tree.optimize(&EliminateQR);
 
   // verify
-  VectorValuesOrdered expected(vector<size_t>(7,2)); // expected solution
+  VectorValues expected(vector<size_t>(7,2)); // expected solution
   Vector v = Vector_(2, 0., 0.);
   for (int i=1; i<=7; i++)
     expected[ordering[X(i)]] = v;
@@ -117,15 +117,15 @@ TEST( GaussianJunctionTreeB, optimizeMultiFrontal2)
   // create a graph
   example::Graph nlfg = createNonlinearFactorGraph();
   Values noisy = createNoisyValues();
-  OrderingOrdered ordering; ordering += X(1),X(2),L(1);
-  GaussianFactorGraphOrdered fg = *nlfg.linearize(noisy, ordering);
+  Ordering ordering; ordering += X(1),X(2),L(1);
+  GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
 
   // optimize the graph
-  GaussianJunctionTreeOrdered tree(fg);
-  VectorValuesOrdered actual = tree.optimize(&EliminateQROrdered);
+  GaussianJunctionTree tree(fg);
+  VectorValues actual = tree.optimize(&EliminateQR);
 
   // verify
-  VectorValuesOrdered expected = createCorrectDelta(ordering); // expected solution
+  VectorValues expected = createCorrectDelta(ordering); // expected solution
   EXPECT(assert_equal(expected,actual));
 }
 
@@ -177,15 +177,15 @@ TEST(GaussianJunctionTreeB, slamlike) {
   ++ i;
 
   // Compare solutions
-  OrderingOrdered ordering = *fullgraph.orderingCOLAMD(init);
-  GaussianFactorGraphOrdered linearized = *fullgraph.linearize(init, ordering);
+  Ordering ordering = *fullgraph.orderingCOLAMD(init);
+  GaussianFactorGraph linearized = *fullgraph.linearize(init, ordering);
 
-  GaussianJunctionTreeOrdered gjt(linearized);
-  VectorValuesOrdered deltaactual = gjt.optimize(&EliminateQROrdered);
+  GaussianJunctionTree gjt(linearized);
+  VectorValues deltaactual = gjt.optimize(&EliminateQR);
   Values actual = init.retract(deltaactual, ordering);
 
-  GaussianBayesNetOrdered gbn = *GaussianSequentialSolver(linearized).eliminate();
-  VectorValuesOrdered delta = optimize(gbn);
+  GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
+  VectorValues delta = optimize(gbn);
   Values expected = init.retract(delta, ordering);
 
   EXPECT(assert_equal(expected, actual));
@@ -194,7 +194,7 @@ TEST(GaussianJunctionTreeB, slamlike) {
 /* ************************************************************************* */
 TEST(GaussianJunctionTreeB, simpleMarginal) {
 
-  typedef BayesTreeOrdered<GaussianConditionalOrdered> GaussianBayesTree;
+  typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
   // Create a simple graph
   NonlinearFactorGraph fg;
@@ -205,10 +205,10 @@ TEST(GaussianJunctionTreeB, simpleMarginal) {
   init.insert(X(0), Pose2());
   init.insert(X(1), Pose2(1.0, 0.0, 0.0));
 
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering += X(1), X(0);
 
-  GaussianFactorGraphOrdered gfg = *fg.linearize(init, ordering);
+  GaussianFactorGraph gfg = *fg.linearize(init, ordering);
 
   // Compute marginals with both sequential and multifrontal
   Matrix expected = GaussianSequentialSolver(gfg).marginalCovariance(1);
@@ -216,15 +216,15 @@ TEST(GaussianJunctionTreeB, simpleMarginal) {
   Matrix actual1 = GaussianMultifrontalSolver(gfg).marginalCovariance(1);
   
   // Compute marginal directly from marginal factor
-  GaussianFactorOrdered::shared_ptr marginalFactor = GaussianMultifrontalSolver(gfg).marginalFactor(1);
-  JacobianFactorOrdered::shared_ptr marginalJacobian = boost::dynamic_pointer_cast<JacobianFactorOrdered>(marginalFactor);
+  GaussianFactor::shared_ptr marginalFactor = GaussianMultifrontalSolver(gfg).marginalFactor(1);
+  JacobianFactor::shared_ptr marginalJacobian = boost::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
   Matrix actual2 = inverse(marginalJacobian->getA(marginalJacobian->begin()).transpose() * marginalJacobian->getA(marginalJacobian->begin()));
 
   // Compute marginal directly from BayesTree
   GaussianBayesTree gbt;
-  gbt.insert(GaussianJunctionTreeOrdered(gfg).eliminate(EliminateCholeskyOrdered));
-  marginalFactor = gbt.marginalFactor(1, EliminateCholeskyOrdered);
-  marginalJacobian = boost::dynamic_pointer_cast<JacobianFactorOrdered>(marginalFactor);
+  gbt.insert(GaussianJunctionTree(gfg).eliminate(EliminateCholesky));
+  marginalFactor = gbt.marginalFactor(1, EliminateCholesky);
+  marginalJacobian = boost::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
   Matrix actual3 = inverse(marginalJacobian->getA(marginalJacobian->begin()).transpose() * marginalJacobian->getA(marginalJacobian->begin()));
 
   EXPECT(assert_equal(expected, actual1));

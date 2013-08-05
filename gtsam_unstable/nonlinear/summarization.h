@@ -21,12 +21,12 @@ namespace gtsam {
  * Summarization function that eliminates a set of variables (does not convert to Jacobians)
  * NOTE: uses sequential solver - requires fully constrained system
  */
-GaussianFactorGraphOrdered::shared_ptr GTSAM_UNSTABLE_EXPORT summarizeGraphSequential(
-    const GaussianFactorGraphOrdered& full_graph, const std::vector<Index>& indices, bool useQR = false);
+GaussianFactorGraph::shared_ptr GTSAM_UNSTABLE_EXPORT summarizeGraphSequential(
+    const GaussianFactorGraph& full_graph, const std::vector<Index>& indices, bool useQR = false);
 
 /** Summarization that also converts keys to indices */
-GaussianFactorGraphOrdered::shared_ptr GTSAM_UNSTABLE_EXPORT summarizeGraphSequential(
-    const GaussianFactorGraphOrdered& full_graph, const OrderingOrdered& ordering,
+GaussianFactorGraph::shared_ptr GTSAM_UNSTABLE_EXPORT summarizeGraphSequential(
+    const GaussianFactorGraph& full_graph, const Ordering& ordering,
     const KeySet& saved_keys, bool useQR = false);
 
 } // \namespace gtsam

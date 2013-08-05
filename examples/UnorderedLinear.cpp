@@ -129,15 +129,15 @@ ISAM2 solveWithOldISAM2(const NonlinearFactorGraph& measurements)
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph convertToUnordered(const GaussianFactorGraphOrdered& gfg, const OrderingOrdered& ordering)
+GaussianFactorGraph convertToUnordered(const GaussianFactorGraph& gfg, const Ordering& ordering)
 {
   GaussianFactorGraph gfgu;
-  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, gfg)
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg)
   {
     vector<std::pair<Key, Matrix> > terms;
     
-    const JacobianFactorOrdered& jacobian = dynamic_cast<const JacobianFactorOrdered&>(*factor);
-    for(GaussianFactorOrdered::const_iterator term = jacobian.begin(); term != jacobian.end(); ++term)
+    const JacobianFactor& jacobian = dynamic_cast<const JacobianFactor&>(*factor);
+    for(GaussianFactor::const_iterator term = jacobian.begin(); term != jacobian.end(); ++term)
     {
       terms.push_back(make_pair(
         ordering.key(*term),
@@ -150,7 +150,7 @@ GaussianFactorGraph convertToUnordered(const GaussianFactorGraphOrdered& gfg, co
 }
 
 /* ************************************************************************* */
-void compareSolutions(const VectorValuesOrdered& orderedSoln, const OrderingOrdered& ordering, const VectorValues& unorderedSoln)
+void compareSolutions(const VectorValues& orderedSoln, const Ordering& ordering, const VectorValues& unorderedSoln)
 {
   if(orderedSoln.size() != unorderedSoln.size())
   {
@@ -217,9 +217,9 @@ int main(int argc, char *argv[])
 
   // Get linear graph
   cout << "Converting to unordered linear graph" << endl;
-  OrderingOrdered ordering = *isamsoln.orderingArbitrary();
-  OrderingOrdered orderingCOLAMD = *nlfg.orderingCOLAMD(isamsoln);
-  GaussianFactorGraphOrdered gfg = *nlfg.linearize(isamsoln, ordering);
+  Ordering ordering = *isamsoln.orderingArbitrary();
+  Ordering orderingCOLAMD = *nlfg.orderingCOLAMD(isamsoln);
+  GaussianFactorGraph gfg = *nlfg.linearize(isamsoln, ordering);
   GaussianFactorGraph gfgu = convertToUnordered(gfg, ordering);
 
   //Ordering orderingUnordered;
@@ -233,9 +233,9 @@ int main(int argc, char *argv[])
     gttic_(Solve_unordered);
     VectorValues unorderedSoln;
     for(size_t i = 0; i < 1; ++i) {
-      gttic_(VariableIndexOrdered);
+      gttic_(VariableIndex);
       VariableIndex vi(gfgu);
-      gttoc_(VariableIndexOrdered);
+      gttoc_(VariableIndex);
       gttic_(COLAMD);
       Ordering orderingUnordered = Ordering::COLAMD(vi);
       gttoc_(COLAMD);
@@ -252,22 +252,22 @@ int main(int argc, char *argv[])
 
   // Solve linear graph with old code
   cout << "Optimizing using old ordered code" << endl;
-  VectorValuesOrdered orderedSolnFinal;
+  VectorValues orderedSolnFinal;
   {
-    OrderingOrdered orderingToUse = ordering;
-    GaussianFactorGraphOrdered::shared_ptr orderedGraph = nlfg.linearize(isamsoln, *nlfg.orderingCOLAMD(isamsoln));
+    Ordering orderingToUse = ordering;
+    GaussianFactorGraph::shared_ptr orderedGraph = nlfg.linearize(isamsoln, *nlfg.orderingCOLAMD(isamsoln));
     gttic_(Solve_ordered);
-    VectorValuesOrdered orderedSoln;
+    VectorValues orderedSoln;
     for(size_t i = 0; i < 1; ++i) {
-      gttic_(VariableIndexOrdered);
-      boost::shared_ptr<VariableIndexOrdered> vi = boost::make_shared<VariableIndexOrdered>(gfg);
-      gttoc_(VariableIndexOrdered);
+      gttic_(VariableIndex);
+      boost::shared_ptr<VariableIndex> vi = boost::make_shared<VariableIndex>(gfg);
+      gttoc_(VariableIndex);
       gttic_(COLAMD);
       boost::shared_ptr<Permutation> permutation = inference::PermutationCOLAMD(*vi);
       orderingToUse.permuteInPlace(*permutation);
       gttoc_(COLAMD);
       gttic_(eliminate);
-      boost::shared_ptr<GaussianBayesTreeOrdered> bt = GaussianMultifrontalSolver(*orderedGraph, true).eliminate();
+      boost::shared_ptr<GaussianBayesTree> bt = GaussianMultifrontalSolver(*orderedGraph, true).eliminate();
       gttoc_(eliminate);
       gttic_(optimize);
       orderedSoln = optimize(*bt);

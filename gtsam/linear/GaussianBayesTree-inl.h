@@ -30,7 +30,7 @@ namespace gtsam {
 /* ************************************************************************* */
 namespace internal {
 template<class BAYESTREE>
-void optimizeInPlace(const typename BAYESTREE::sharedClique& clique, VectorValuesOrdered& result) {
+void optimizeInPlace(const typename BAYESTREE::sharedClique& clique, VectorValues& result) {
   // parents are assumed to already be solved and available in result
   clique->conditional()->solveInPlace(result);
 

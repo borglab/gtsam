@@ -31,7 +31,7 @@ using namespace gtsam;
 using namespace std;
 using namespace boost::lambda;
 
-typedef EliminationTreeOrdered<JacobianFactorOrdered> GaussianEliminationTree;
+typedef EliminationTree<JacobianFactor> GaussianEliminationTree;
 
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost::mt19937(), boost::uniform_real<>(0.0, 1.0));
 
@@ -65,10 +65,10 @@ int main(int argc, char *argv[]) {
     cout.flush();
     boost::timer timer;
     timer.restart();
-    vector<GaussianFactorGraphOrdered> blockGfgs;
+    vector<GaussianFactorGraph> blockGfgs;
     blockGfgs.reserve(nTrials);
     for(size_t trial=0; trial<nTrials; ++trial) {
-      blockGfgs.push_back(GaussianFactorGraphOrdered());
+      blockGfgs.push_back(GaussianFactorGraph());
       SharedDiagonal noise = noiseModel::Isotropic::Sigma(blockdim, 1.0);
       for(int c=0; c<nVars; ++c) {
         for(size_t d=0; d<blocksPerVar; ++d) {
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
           for(size_t j=0; j<blockdim; ++j)
             b(j) = rg();
           if(!terms.empty())
-            blockGfgs[trial].push_back(JacobianFactorOrdered::shared_ptr(new JacobianFactorOrdered(terms, b, noise)));
+            blockGfgs[trial].push_back(JacobianFactor::shared_ptr(new JacobianFactor(terms, b, noise)));
         }
       }
 
@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
-      VectorValuesOrdered soln(*GaussianMultifrontalSolver(blockGfgs[trial]).optimize());
+      VectorValues soln(*GaussianMultifrontalSolver(blockGfgs[trial]).optimize());
     }
     blocksolve = timer.elapsed();
     cout << blocksolve << " s" << endl;

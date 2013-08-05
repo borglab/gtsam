@@ -13,8 +13,8 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-GaussianConditionalOrdered::shared_ptr conditionDensity(const GaussianConditionalOrdered::shared_ptr& initConditional,
-    const std::set<Index>& saved_indices, const VectorValuesOrdered& solution) {
+GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shared_ptr& initConditional,
+    const std::set<Index>& saved_indices, const VectorValues& solution) {
   const bool verbose = false;
 
   if (!initConditional)
@@ -41,7 +41,7 @@ GaussianConditionalOrdered::shared_ptr conditionDensity(const GaussianConditiona
 
   // If none of the frontal variables are to be saved, return empty pointer
   if (frontalsToRemove.size() == initConditional->nrFrontals())
-    return GaussianConditionalOrdered::shared_ptr();
+    return GaussianConditional::shared_ptr();
 
   // Collect dimensions of the new conditional
   if (verbose) cout << "  Collecting dimensions" << endl;
@@ -54,7 +54,7 @@ GaussianConditionalOrdered::shared_ptr conditionDensity(const GaussianConditiona
   vector<size_t> newIdxToOldIdx; // Access to arrays, maps from new var to old var
   const vector<Index>& oldIndices = initConditional->keys();
   const size_t oldNrFrontals = initConditional->nrFrontals();
-  GaussianConditionalOrdered::const_iterator varIt = initConditional->beginFrontals();
+  GaussianConditional::const_iterator varIt = initConditional->beginFrontals();
   size_t oldIdx = 0;
   for (; varIt != initConditional->endFrontals(); ++varIt) {
     size_t varDim = initConditional->dim(varIt);
@@ -99,7 +99,7 @@ GaussianConditionalOrdered::shared_ptr conditionDensity(const GaussianConditiona
     size_t oldColOffset = oldColOffsets.at(newfrontalIdx);
 
     // get R block, sliced by row
-    Eigen::Block<GaussianConditionalOrdered::rsd_type::constBlock> rblock =
+    Eigen::Block<GaussianConditional::rsd_type::constBlock> rblock =
         initConditional->get_R().block(oldColOffset, oldColOffset, dim, oldRNrCols-oldColOffset);
     if (verbose) cout << "   rblock\n" << rblock << endl;
 
@@ -142,7 +142,7 @@ GaussianConditionalOrdered::shared_ptr conditionDensity(const GaussianConditiona
     }
 
     // add parents (looping over original block structure), while updating rhs
-    GaussianConditionalOrdered::const_iterator oldParent = initConditional->beginParents();
+    GaussianConditional::const_iterator oldParent = initConditional->beginParents();
     for (; oldParent != initConditional->endParents(); ++oldParent) {
       Index parentKey = *oldParent;
       size_t parentDim = initConditional->dim(oldParent);
@@ -169,26 +169,26 @@ GaussianConditionalOrdered::shared_ptr conditionDensity(const GaussianConditiona
 
   // Construct a new conditional
   if (verbose) cout << "backsubSummarize() Complete!" << endl;
-  GaussianConditionalOrdered::rsd_type matrices(full_matrix, newDims.begin(), newDims.end());
-  return GaussianConditionalOrdered::shared_ptr(new
-      GaussianConditionalOrdered(newIndices.begin(), newIndices.end(), newNrFrontals, matrices, sigmas));
+  GaussianConditional::rsd_type matrices(full_matrix, newDims.begin(), newDims.end());
+  return GaussianConditional::shared_ptr(new
+      GaussianConditional(newIndices.begin(), newIndices.end(), newNrFrontals, matrices, sigmas));
 }
 
 /* ************************************************************************* */
-GaussianFactorGraphOrdered conditionDensity(const GaussianBayesTreeOrdered& bayesTree,
+GaussianFactorGraph conditionDensity(const GaussianBayesTree& bayesTree,
     const std::set<Index>& saved_indices) {
   const bool verbose = false;
 
-  VectorValuesOrdered solution = optimize(bayesTree);
+  VectorValues solution = optimize(bayesTree);
 
   // FIXME: set of conditionals does not manage possibility of solving out whole separators
-  std::set<GaussianConditionalOrdered::shared_ptr> affected_cliques = findAffectedCliqueConditionals(bayesTree, saved_indices);
+  std::set<GaussianConditional::shared_ptr> affected_cliques = findAffectedCliqueConditionals(bayesTree, saved_indices);
 
   // Summarize conditionals separately
-  GaussianFactorGraphOrdered summarized_graph;
-  BOOST_FOREACH(const GaussianConditionalOrdered::shared_ptr& conditional, affected_cliques) {
+  GaussianFactorGraph summarized_graph;
+  BOOST_FOREACH(const GaussianConditional::shared_ptr& conditional, affected_cliques) {
     if (verbose) conditional->print("Initial conditional");
-    GaussianConditionalOrdered::shared_ptr reducedConditional = conditionDensity(conditional, saved_indices, solution);
+    GaussianConditional::shared_ptr reducedConditional = conditionDensity(conditional, saved_indices, solution);
     if (reducedConditional) {
       if (verbose) reducedConditional->print("Final conditional");
       summarized_graph.push_back(reducedConditional->toFactor());

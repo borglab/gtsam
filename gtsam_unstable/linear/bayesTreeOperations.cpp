@@ -14,7 +14,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-std::set<Index> keysToIndices(const KeySet& keys, const OrderingOrdered& ordering) {
+std::set<Index> keysToIndices(const KeySet& keys, const Ordering& ordering) {
   std::set<Index> result;
   BOOST_FOREACH(const Key& key, keys)
     result.insert(ordering[key]);
@@ -22,22 +22,22 @@ std::set<Index> keysToIndices(const KeySet& keys, const OrderingOrdered& orderin
 }
 
 /* ************************************************************************* */
-GaussianFactorGraphOrdered splitFactors(const GaussianFactorGraphOrdered& fullgraph) {
-  GaussianFactorGraphOrdered result;
-  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, fullgraph) {
-      GaussianFactorGraphOrdered split = splitFactor(factor);
+GaussianFactorGraph splitFactors(const GaussianFactorGraph& fullgraph) {
+  GaussianFactorGraph result;
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, fullgraph) {
+      GaussianFactorGraph split = splitFactor(factor);
       result.push_back(split);
   }
   return result;
 }
 
 /* ************************************************************************* */
-GaussianFactorGraphOrdered splitFactor(const GaussianFactorOrdered::shared_ptr& factor) {
-  GaussianFactorGraphOrdered result;
+GaussianFactorGraph splitFactor(const GaussianFactor::shared_ptr& factor) {
+  GaussianFactorGraph result;
   if (!factor) return result;
 
   // Needs to be a jacobian factor - just pass along hessians
-  JacobianFactorOrdered::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactorOrdered>(factor);
+  JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
   if (!jf) {
     result.push_back(factor);
     return result;
@@ -45,7 +45,7 @@ GaussianFactorGraphOrdered splitFactor(const GaussianFactorOrdered::shared_ptr& 
 
   // Loop over variables and strip off factors using split conditionals
   // Assumes upper triangular structure
-  JacobianFactorOrdered::const_iterator rowIt, colIt;
+  JacobianFactor::const_iterator rowIt, colIt;
   const size_t totalRows = jf->rows();
   size_t rowsRemaining = totalRows;
   for (rowIt = jf->begin(); rowIt != jf->end() && rowsRemaining > 0; ++rowIt) {
@@ -80,10 +80,10 @@ GaussianFactorGraphOrdered splitFactor(const GaussianFactorOrdered::shared_ptr& 
 }
 
 /* ************************************************************************* */
-GaussianFactorGraphOrdered removePriors(const GaussianFactorGraphOrdered& fullgraph) {
-  GaussianFactorGraphOrdered result;
-  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, fullgraph) {
-    JacobianFactorOrdered::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactorOrdered>(factor);
+GaussianFactorGraph removePriors(const GaussianFactorGraph& fullgraph) {
+  GaussianFactorGraph result;
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, fullgraph) {
+    JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
     if (factor && (!jf || jf->size() > 1))
       result.push_back(factor);
   }
@@ -91,8 +91,8 @@ GaussianFactorGraphOrdered removePriors(const GaussianFactorGraphOrdered& fullgr
 }
 
 /* ************************************************************************* */
-void findCliques(const GaussianBayesTreeOrdered::sharedClique& current_clique,
-    std::set<GaussianConditionalOrdered::shared_ptr>& result) {
+void findCliques(const GaussianBayesTree::sharedClique& current_clique,
+    std::set<GaussianConditional::shared_ptr>& result) {
   // Add the current clique
   result.insert(current_clique->conditional());
 
@@ -102,12 +102,12 @@ void findCliques(const GaussianBayesTreeOrdered::sharedClique& current_clique,
 }
 
 /* ************************************************************************* */
-std::set<GaussianConditionalOrdered::shared_ptr> findAffectedCliqueConditionals(
-    const GaussianBayesTreeOrdered& bayesTree, const std::set<Index>& savedIndices) {
-  std::set<GaussianConditionalOrdered::shared_ptr> affected_cliques;
+std::set<GaussianConditional::shared_ptr> findAffectedCliqueConditionals(
+    const GaussianBayesTree& bayesTree, const std::set<Index>& savedIndices) {
+  std::set<GaussianConditional::shared_ptr> affected_cliques;
   // FIXME: track previously found keys more efficiently
   BOOST_FOREACH(const Index& index, savedIndices) {
-    GaussianBayesTreeOrdered::sharedClique clique = bayesTree.nodes()[index];
+    GaussianBayesTree::sharedClique clique = bayesTree.nodes()[index];
 
     // add path back to root to affected set
     findCliques(clique, affected_cliques);
@@ -116,9 +116,9 @@ std::set<GaussianConditionalOrdered::shared_ptr> findAffectedCliqueConditionals(
 }
 
 /* ************************************************************************* */
-std::deque<GaussianBayesTreeOrdered::sharedClique>
-findPathCliques(const GaussianBayesTreeOrdered::sharedClique& initial) {
-  std::deque<GaussianBayesTreeOrdered::sharedClique> result, parents;
+std::deque<GaussianBayesTree::sharedClique>
+findPathCliques(const GaussianBayesTree::sharedClique& initial) {
+  std::deque<GaussianBayesTree::sharedClique> result, parents;
   if (initial->isRoot())
     return result;
   result.push_back(initial->parent());

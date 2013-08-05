@@ -50,7 +50,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 
     // perform a check on changing orderings
     if (i == 5) {
-      OrderingOrdered ordering = isam.getOrdering();
+      Ordering ordering = isam.getOrdering();
 
       // swap last two elements
       Key last = ordering.pop_back().first;
@@ -59,7 +59,7 @@ TEST(testNonlinearISAM, markov_chain ) {
       ordering.push_back(secondLast);
       isam.setOrdering(ordering);
 
-      OrderingOrdered expected; expected += (0), (1), (2), (4), (3);
+      Ordering expected; expected += (0), (1), (2), (4), (3);
       EXPECT(assert_equal(expected, isam.getOrdering()));
     }
 

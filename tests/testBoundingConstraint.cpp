@@ -116,10 +116,10 @@ TEST( testBoundingConstraint, unary_linearization_inactive) {
   Point2 pt1(2.0, 3.0);
   Values config1;
   config1.insert(key, pt1);
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering += key;
-  GaussianFactorOrdered::shared_ptr actual1 = constraint1.linearize(config1, ordering);
-  GaussianFactorOrdered::shared_ptr actual2 = constraint2.linearize(config1, ordering);
+  GaussianFactor::shared_ptr actual1 = constraint1.linearize(config1, ordering);
+  GaussianFactor::shared_ptr actual2 = constraint2.linearize(config1, ordering);
   EXPECT(!actual1);
   EXPECT(!actual2);
 }
@@ -129,14 +129,14 @@ TEST( testBoundingConstraint, unary_linearization_active) {
   Point2 pt2(-2.0, -3.0);
   Values config2;
   config2.insert(key, pt2);
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering += key;
-  GaussianFactorOrdered::shared_ptr actual1 = constraint1.linearize(config2, ordering);
-  GaussianFactorOrdered::shared_ptr actual2 = constraint2.linearize(config2, ordering);
-  JacobianFactorOrdered expected1(ordering[key], Matrix_(1, 2, 1.0, 0.0), repeat(1, 3.0), hard_model1);
-  JacobianFactorOrdered expected2(ordering[key], Matrix_(1, 2, 0.0, 1.0), repeat(1, 5.0), hard_model1);
-  EXPECT(assert_equal((const GaussianFactorOrdered&)expected1, *actual1, tol));
-  EXPECT(assert_equal((const GaussianFactorOrdered&)expected2, *actual2, tol));
+  GaussianFactor::shared_ptr actual1 = constraint1.linearize(config2, ordering);
+  GaussianFactor::shared_ptr actual2 = constraint2.linearize(config2, ordering);
+  JacobianFactor expected1(ordering[key], Matrix_(1, 2, 1.0, 0.0), repeat(1, 3.0), hard_model1);
+  JacobianFactor expected2(ordering[key], Matrix_(1, 2, 0.0, 1.0), repeat(1, 5.0), hard_model1);
+  EXPECT(assert_equal((const GaussianFactor&)expected1, *actual1, tol));
+  EXPECT(assert_equal((const GaussianFactor&)expected2, *actual2, tol));
 }
 
 /* ************************************************************************* */
@@ -199,7 +199,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
   Values config1;
   config1.insert(key1, pt1);
   config1.insert(key2, pt1);
-  OrderingOrdered ordering; ordering += key1, key2;
+  Ordering ordering; ordering += key1, key2;
   EXPECT(!rangeBound.active(config1));
   EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
   EXPECT(!rangeBound.linearize(config1, ordering));

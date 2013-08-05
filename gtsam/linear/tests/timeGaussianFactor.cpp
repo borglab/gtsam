@@ -101,14 +101,14 @@ int main()
   b2(7) = -1;
   
   // time eliminate
-  JacobianFactorOrdered combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, noiseModel::Isotropic::Sigma(8,1));
+  JacobianFactor combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, noiseModel::Isotropic::Sigma(8,1));
   long timeLog = clock();
   int n = 1000000;
-  GaussianConditionalOrdered::shared_ptr conditional;
-  JacobianFactorOrdered::shared_ptr factor;
+  GaussianConditional::shared_ptr conditional;
+  JacobianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
-    conditional = JacobianFactorOrdered(combined).eliminateFirst();
+    conditional = JacobianFactor(combined).eliminateFirst();
 
   long timeLog2 = clock();
   double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;

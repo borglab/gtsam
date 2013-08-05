@@ -25,7 +25,7 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-void recursiveMarkAffectedKeys(const Index& index, const ISAM2Clique::shared_ptr& clique, const OrderingOrdered& ordering, std::set<Key>& additionalKeys) {
+void recursiveMarkAffectedKeys(const Index& index, const ISAM2Clique::shared_ptr& clique, const Ordering& ordering, std::set<Key>& additionalKeys) {
 
   // Check if the separator keys of the current clique contain the specified key
   if(std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), index) != clique->conditional()->endParents()) {
@@ -184,7 +184,7 @@ void IncrementalFixedLagSmoother::PrintKeySet(const std::set<Key>& keys, const s
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintSymbolicFactor(const GaussianFactorOrdered::shared_ptr& factor, const gtsam::OrderingOrdered& ordering) {
+void IncrementalFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor, const gtsam::Ordering& ordering) {
   std::cout << "f(";
   BOOST_FOREACH(Index index, factor->keys()) {
     std::cout << " " << index << "[" << gtsam::DefaultKeyFormatter(ordering.key(index)) << "]";
@@ -193,9 +193,9 @@ void IncrementalFixedLagSmoother::PrintSymbolicFactor(const GaussianFactorOrdere
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraphOrdered& graph, const gtsam::OrderingOrdered& ordering, const std::string& label) {
+void IncrementalFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph, const gtsam::Ordering& ordering, const std::string& label) {
   std::cout << label << std::endl;
-  BOOST_FOREACH(const GaussianFactorOrdered::shared_ptr& factor, graph) {
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, graph) {
     PrintSymbolicFactor(factor, ordering);
   }
 }
@@ -210,7 +210,7 @@ void IncrementalFixedLagSmoother::PrintSymbolicTree(const gtsam::ISAM2& isam, co
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintSymbolicTreeHelper(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::OrderingOrdered& ordering, const std::string indent) {
+void IncrementalFixedLagSmoother::PrintSymbolicTreeHelper(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering, const std::string indent) {
 
   // Print the current clique
   std::cout << indent << "P( ";

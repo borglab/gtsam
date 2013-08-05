@@ -29,7 +29,7 @@ using namespace gtsam;
 using namespace boost::assign;
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraphOrdered, eliminateFullSequential)
+TEST(SymbolicFactorGraph, eliminateFullSequential)
 {
   // Test with simpleTestGraph1
   Ordering order;
@@ -43,7 +43,7 @@ TEST(SymbolicFactorGraphOrdered, eliminateFullSequential)
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraphOrdered, eliminatePartialSequential)
+TEST(SymbolicFactorGraph, eliminatePartialSequential)
 {
   // Eliminate 0 and 1
   const Ordering order = list_of(0)(1);
@@ -67,7 +67,7 @@ TEST(SymbolicFactorGraphOrdered, eliminatePartialSequential)
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraphOrdered, eliminateFullMultifrontal)
+TEST(SymbolicFactorGraph, eliminateFullMultifrontal)
 {
   Ordering ordering; ordering += 0,1,2,3;
   SymbolicBayesTree actual1 =
@@ -80,7 +80,7 @@ TEST(SymbolicFactorGraphOrdered, eliminateFullMultifrontal)
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraphOrdered, eliminatePartialMultifrontal)
+TEST(SymbolicFactorGraph, eliminatePartialMultifrontal)
 {
   SymbolicBayesTree expectedBayesTree;
   SymbolicConditional::shared_ptr root = boost::make_shared<SymbolicConditional>(
@@ -104,7 +104,7 @@ TEST(SymbolicFactorGraphOrdered, eliminatePartialMultifrontal)
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraphOrdered, marginalMultifrontalBayesNet)
+TEST(SymbolicFactorGraph, marginalMultifrontalBayesNet)
 {
   SymbolicBayesNet expectedBayesNet = list_of
     (SymbolicConditional(0, 1, 2))
@@ -118,7 +118,7 @@ TEST(SymbolicFactorGraphOrdered, marginalMultifrontalBayesNet)
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraphOrdered, eliminate_disconnected_graph) {
+TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
   SymbolicFactorGraph fg;
   fg.push_factor(0, 1);
   fg.push_factor(0, 2);
@@ -141,10 +141,10 @@ TEST(SymbolicFactorGraphOrdered, eliminate_disconnected_graph) {
 }
 
 /* ************************************************************************* */
-//TEST(SymbolicFactorGraphOrdered, marginals)
+//TEST(SymbolicFactorGraph, marginals)
 //{
 //  // Create factor graph
-//  SymbolicFactorGraphOrdered fg;
+//  SymbolicFactorGraph fg;
 //  fg.push_factor(0, 1);
 //  fg.push_factor(0, 2);
 //  fg.push_factor(1, 4);
@@ -176,12 +176,12 @@ TEST(SymbolicFactorGraphOrdered, eliminate_disconnected_graph) {
 //    EXPECT( assert_equal(expectedBN,*actualBN));
 //
 //    // jointFactorGraph
-//    SymbolicFactorGraphOrdered::shared_ptr actualFG = solver.jointFactorGraph(js);
-//    SymbolicFactorGraphOrdered expectedFG;
+//    SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
+//    SymbolicFactorGraph expectedFG;
 //    expectedFG.push_factor(0, 4);
 //    expectedFG.push_factor(4, 3);
 //    expectedFG.push_factor(3);
-//    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraphOrdered)(*actualFG)));
+//    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
 //  }
 //
 //  {
@@ -198,12 +198,12 @@ TEST(SymbolicFactorGraphOrdered, eliminate_disconnected_graph) {
 //    EXPECT( assert_equal(expectedBN,*actualBN));
 //
 //    // jointFactorGraph
-//    SymbolicFactorGraphOrdered::shared_ptr actualFG = solver.jointFactorGraph(js);
-//    SymbolicFactorGraphOrdered expectedFG;
+//    SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
+//    SymbolicFactorGraph expectedFG;
 //    expectedFG.push_factor(0, 3, 2);
 //    expectedFG.push_factor(3, 2);
 //    expectedFG.push_factor(2);
-//    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraphOrdered)(*actualFG)));
+//    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
 //  }
 //
 //  {
@@ -223,7 +223,7 @@ TEST(SymbolicFactorGraphOrdered, eliminate_disconnected_graph) {
 //}
 
 /* ************************************************************************* */
-TEST( SymbolicFactorGraphOrdered, constructFromBayesNet )
+TEST( SymbolicFactorGraph, constructFromBayesNet )
 {
   // create expected factor graph
   SymbolicFactorGraph expected;
@@ -244,7 +244,7 @@ TEST( SymbolicFactorGraphOrdered, constructFromBayesNet )
 }
 
 /* ************************************************************************* */
-TEST( SymbolicFactorGraphOrdered, constructFromBayesTree )
+TEST( SymbolicFactorGraph, constructFromBayesTree )
 {
   // create expected factor graph
   SymbolicFactorGraph expected;
@@ -259,7 +259,7 @@ TEST( SymbolicFactorGraphOrdered, constructFromBayesTree )
 }
 
 /* ************************************************************************* */
-TEST( SymbolicFactorGraphOrdered, push_back )
+TEST( SymbolicFactorGraph, push_back )
 {
   // Create two factor graphs and expected combined graph
   SymbolicFactorGraph fg1, fg2, expected;

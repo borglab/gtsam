@@ -89,7 +89,7 @@ TEST( NonlinearOptimizer, optimize )
   DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
   // optimize parameters
-  OrderingOrdered ord;
+  Ordering ord;
   ord.push_back(X(1));
 
   // Gauss-Newton
@@ -182,7 +182,7 @@ TEST( NonlinearOptimizer, Factorization )
   graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
   graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
 
-  OrderingOrdered ordering;
+  Ordering ordering;
   ordering.push_back(X(1));
   ordering.push_back(X(2));
 
@@ -216,7 +216,7 @@ TEST(NonlinearOptimizer, NullFactor) {
   DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
   // optimize parameters
-  OrderingOrdered ord;
+  Ordering ord;
   ord.push_back(X(1));
 
   // Gauss-Newton

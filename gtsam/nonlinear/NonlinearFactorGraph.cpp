@@ -221,31 +221,31 @@ Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>
 }
 
 /* ************************************************************************* */
-//SymbolicFactorGraphOrdered::shared_ptr NonlinearFactorGraph::symbolic(const OrderingOrdered& ordering) const {
+//SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic(const Ordering& ordering) const {
 //  gttic(NonlinearFactorGraph_symbolic_from_Ordering);
 //
 //  // Generate the symbolic factor graph
-//  SymbolicFactorGraphOrdered::shared_ptr symbolicfg(new SymbolicFactorGraphOrdered);
+//  SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
 //  symbolicfg->reserve(this->size());
 //
 //  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
 //    if(factor)
 //      symbolicfg->push_back(factor->symbolic(ordering));
 //    else
-//      symbolicfg->push_back(SymbolicFactorGraphOrdered::sharedFactor());
+//      symbolicfg->push_back(SymbolicFactorGraph::sharedFactor());
 //  }
 //
 //  return symbolicfg;
 //}
 
 /* ************************************************************************* */
-//pair<SymbolicFactorGraphOrdered::shared_ptr, OrderingOrdered::shared_ptr> NonlinearFactorGraph::symbolic(
+//pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph::symbolic(
 //    const Values& config) const
 //{
 //  gttic(NonlinearFactorGraph_symbolic_from_Values);
 //
 //  // Generate an initial key ordering in iterator order
-//  OrderingOrdered::shared_ptr ordering(config.orderingArbitrary());
+//  Ordering::shared_ptr ordering(config.orderingArbitrary());
 //  return make_pair(symbolic(*ordering), ordering);
 //}
 

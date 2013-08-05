@@ -130,11 +130,11 @@ public:
    * Create a symbolic factor using the given ordering to determine the
    * variable indices.
    */
-  //virtual IndexFactorOrdered::shared_ptr symbolic(const OrderingOrdered& ordering) const {
+  //virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
   //  std::vector<Index> indices(this->size());
   //  for(size_t j=0; j<this->size(); ++j)
   //    indices[j] = ordering[this->keys()[j]];
-  //  return IndexFactorOrdered::shared_ptr(new IndexFactorOrdered(indices));
+  //  return IndexFactor::shared_ptr(new IndexFactor(indices));
   //}
 
   /**

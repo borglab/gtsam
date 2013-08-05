@@ -46,28 +46,28 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-double computeError(const GaussianBayesNetOrdered& gbn, const LieVector& values) {
+double computeError(const GaussianBayesNet& gbn, const LieVector& values) {
 
   // Convert Vector to VectorValues
-  VectorValuesOrdered vv = *allocateVectorValues(gbn);
+  VectorValues vv = *allocateVectorValues(gbn);
   internal::writeVectorValuesSlices(values, vv,
     boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(vv.size()));
 
   // Convert to factor graph
-  GaussianFactorGraphOrdered gfg(gbn);
+  GaussianFactorGraph gfg(gbn);
   return gfg.error(vv);
 }
 
 /* ************************************************************************* */
-double computeErrorBt(const BayesTreeOrdered<GaussianConditionalOrdered>& gbt, const LieVector& values) {
+double computeErrorBt(const BayesTree<GaussianConditional>& gbt, const LieVector& values) {
 
   // Convert Vector to VectorValues
-  VectorValuesOrdered vv = *allocateVectorValues(gbt);
+  VectorValues vv = *allocateVectorValues(gbt);
   internal::writeVectorValuesSlices(values, vv,
     boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(vv.size()));
 
   // Convert to factor graph
-  GaussianFactorGraphOrdered gfg(gbt);
+  GaussianFactorGraph gfg(gbt);
   return gfg.error(vv);
 }
 
@@ -75,58 +75,58 @@ double computeErrorBt(const BayesTreeOrdered<GaussianConditionalOrdered>& gbt, c
 TEST(DoglegOptimizer, ComputeSteepestDescentPoint) {
 
   // Create an arbitrary Bayes Net
-  GaussianBayesNetOrdered gbn;
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  GaussianBayesNet gbn;
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       0, Vector_(2, 1.0,2.0), Matrix_(2,2, 3.0,4.0,0.0,6.0),
       3, Matrix_(2,2, 7.0,8.0,9.0,10.0),
       4, Matrix_(2,2, 11.0,12.0,13.0,14.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       1, Vector_(2, 15.0,16.0), Matrix_(2,2, 17.0,18.0,0.0,20.0),
       2, Matrix_(2,2, 21.0,22.0,23.0,24.0),
       4, Matrix_(2,2, 25.0,26.0,27.0,28.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       2, Vector_(2, 29.0,30.0), Matrix_(2,2, 31.0,32.0,0.0,34.0),
       3, Matrix_(2,2, 35.0,36.0,37.0,38.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       3, Vector_(2, 39.0,40.0), Matrix_(2,2, 41.0,42.0,0.0,44.0),
       4, Matrix_(2,2, 45.0,46.0,47.0,48.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       4, Vector_(2, 49.0,50.0), Matrix_(2,2, 51.0,52.0,0.0,54.0), ones(2)));
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian(
       boost::function<double(const LieVector&)>(boost::bind(&computeError, gbn, _1)),
-      LieVector(VectorValuesOrdered::Zero(*allocateVectorValues(gbn)).asVector()));
+      LieVector(VectorValues::Zero(*allocateVectorValues(gbn)).asVector()));
 
   // Compute the gradient numerically
-  VectorValuesOrdered gradientValues = *allocateVectorValues(gbn);
+  VectorValues gradientValues = *allocateVectorValues(gbn);
   Vector gradient = numericalGradient(
       boost::function<double(const LieVector&)>(boost::bind(&computeError, gbn, _1)),
-      LieVector(VectorValuesOrdered::Zero(gradientValues).asVector()));
+      LieVector(VectorValues::Zero(gradientValues).asVector()));
   internal::writeVectorValuesSlices(gradient, gradientValues,
     boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(gradientValues.size()));
 
   // Compute the gradient using dense matrices
-  Matrix augmentedHessian = GaussianFactorGraphOrdered(gbn).augmentedHessian();
+  Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
-  VectorValuesOrdered denseMatrixGradient = *allocateVectorValues(gbn);
+  VectorValues denseMatrixGradient = *allocateVectorValues(gbn);
   internal::writeVectorValuesSlices(-augmentedHessian.col(10).segment(0,10), denseMatrixGradient,
     boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(gradientValues.size()));
   EXPECT(assert_equal(gradientValues, denseMatrixGradient, 1e-5));
 
   // Compute the steepest descent point
   double step = -gradient.squaredNorm() / (gradient.transpose() * hessian * gradient)(0);
-  VectorValuesOrdered expected = gradientValues;  scal(step, expected);
+  VectorValues expected = gradientValues;  scal(step, expected);
 
   // Compute the steepest descent point with the dogleg function
-  VectorValuesOrdered actual = optimizeGradientSearch(gbn);
+  VectorValues actual = optimizeGradientSearch(gbn);
 
   // Check that points agree
   EXPECT(assert_equal(expected, actual, 1e-5));
 
   // Check that point causes a decrease in error
-  double origError = GaussianFactorGraphOrdered(gbn).error(VectorValuesOrdered::Zero(*allocateVectorValues(gbn)));
-  double newError = GaussianFactorGraphOrdered(gbn).error(actual);
+  double origError = GaussianFactorGraph(gbn).error(VectorValues::Zero(*allocateVectorValues(gbn)));
+  double newError = GaussianFactorGraph(gbn).error(actual);
   EXPECT(newError < origError);
 }
 
@@ -134,9 +134,9 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPoint) {
 TEST(DoglegOptimizer, BT_BN_equivalency) {
 
   // Create an arbitrary Bayes Tree
-  BayesTreeOrdered<GaussianConditionalOrdered> bt;
-  bt.insert(BayesTreeOrdered<GaussianConditionalOrdered>::sharedClique(new BayesTreeOrdered<GaussianConditionalOrdered>::Clique(
-      GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  BayesTree<GaussianConditional> bt;
+  bt.insert(BayesTree<GaussianConditional>::sharedClique(new BayesTree<GaussianConditional>::Clique(
+      GaussianConditional::shared_ptr(new GaussianConditional(
           boost::assign::pair_list_of
           (2, Matrix_(6,2,
               31.0,32.0,
@@ -160,8 +160,8 @@ TEST(DoglegOptimizer, BT_BN_equivalency) {
               51.0,52.0,
               0.0,54.0)),
           3, Vector_(6, 29.0,30.0,39.0,40.0,49.0,50.0), ones(6))))));
-  bt.insert(BayesTreeOrdered<GaussianConditionalOrdered>::sharedClique(new BayesTreeOrdered<GaussianConditionalOrdered>::Clique(
-      GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  bt.insert(BayesTree<GaussianConditional>::sharedClique(new BayesTree<GaussianConditional>::Clique(
+      GaussianConditional::shared_ptr(new GaussianConditional(
           boost::assign::pair_list_of
           (0, Matrix_(4,2,
               3.0,4.0,
@@ -191,26 +191,26 @@ TEST(DoglegOptimizer, BT_BN_equivalency) {
           2, Vector_(4, 1.0,2.0,15.0,16.0), ones(4))))));
 
   // Create an arbitrary Bayes Net
-  GaussianBayesNetOrdered gbn;
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  GaussianBayesNet gbn;
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       0, Vector_(2, 1.0,2.0), Matrix_(2,2, 3.0,4.0,0.0,6.0),
       3, Matrix_(2,2, 7.0,8.0,9.0,10.0),
       4, Matrix_(2,2, 11.0,12.0,13.0,14.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       1, Vector_(2, 15.0,16.0), Matrix_(2,2, 17.0,18.0,0.0,20.0),
       2, Matrix_(2,2, 21.0,22.0,23.0,24.0),
       4, Matrix_(2,2, 25.0,26.0,27.0,28.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       2, Vector_(2, 29.0,30.0), Matrix_(2,2, 31.0,32.0,0.0,34.0),
       3, Matrix_(2,2, 35.0,36.0,37.0,38.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       3, Vector_(2, 39.0,40.0), Matrix_(2,2, 41.0,42.0,0.0,44.0),
       4, Matrix_(2,2, 45.0,46.0,47.0,48.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       4, Vector_(2, 49.0,50.0), Matrix_(2,2, 51.0,52.0,0.0,54.0), ones(2)));
 
-  GaussianFactorGraphOrdered expected(gbn);
-  GaussianFactorGraphOrdered actual(bt);
+  GaussianFactorGraph expected(gbn);
+  GaussianFactorGraph actual(bt);
 
   EXPECT(assert_equal(expected.augmentedHessian(), actual.augmentedHessian()));
 }
@@ -219,9 +219,9 @@ TEST(DoglegOptimizer, BT_BN_equivalency) {
 TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
 
   // Create an arbitrary Bayes Tree
-  BayesTreeOrdered<GaussianConditionalOrdered> bt;
-  bt.insert(BayesTreeOrdered<GaussianConditionalOrdered>::sharedClique(new BayesTreeOrdered<GaussianConditionalOrdered>::Clique(
-      GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  BayesTree<GaussianConditional> bt;
+  bt.insert(BayesTree<GaussianConditional>::sharedClique(new BayesTree<GaussianConditional>::Clique(
+      GaussianConditional::shared_ptr(new GaussianConditional(
           boost::assign::pair_list_of
           (2, Matrix_(6,2,
               31.0,32.0,
@@ -245,8 +245,8 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
               51.0,52.0,
               0.0,54.0)),
           3, Vector_(6, 29.0,30.0,39.0,40.0,49.0,50.0), ones(6))))));
-  bt.insert(BayesTreeOrdered<GaussianConditionalOrdered>::sharedClique(new BayesTreeOrdered<GaussianConditionalOrdered>::Clique(
-      GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  bt.insert(BayesTree<GaussianConditional>::sharedClique(new BayesTree<GaussianConditional>::Clique(
+      GaussianConditional::shared_ptr(new GaussianConditional(
           boost::assign::pair_list_of
           (0, Matrix_(4,2,
               3.0,4.0,
@@ -278,30 +278,30 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian(
       boost::function<double(const LieVector&)>(boost::bind(&computeErrorBt, bt, _1)),
-      LieVector(VectorValuesOrdered::Zero(*allocateVectorValues(bt)).asVector()));
+      LieVector(VectorValues::Zero(*allocateVectorValues(bt)).asVector()));
 
   // Compute the gradient numerically
-  VectorValuesOrdered gradientValues = *allocateVectorValues(bt);
+  VectorValues gradientValues = *allocateVectorValues(bt);
   Vector gradient = numericalGradient(
       boost::function<double(const LieVector&)>(boost::bind(&computeErrorBt, bt, _1)),
-      LieVector(VectorValuesOrdered::Zero(gradientValues).asVector()));
+      LieVector(VectorValues::Zero(gradientValues).asVector()));
   internal::writeVectorValuesSlices(gradient, gradientValues,
     boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(gradientValues.size()));
 
   // Compute the gradient using dense matrices
-  Matrix augmentedHessian = GaussianFactorGraphOrdered(bt).augmentedHessian();
+  Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
-  VectorValuesOrdered denseMatrixGradient = *allocateVectorValues(bt);
+  VectorValues denseMatrixGradient = *allocateVectorValues(bt);
   internal::writeVectorValuesSlices(-augmentedHessian.col(10).segment(0,10), denseMatrixGradient,
     boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(gradientValues.size()));
   EXPECT(assert_equal(gradientValues, denseMatrixGradient, 1e-5));
 
   // Compute the steepest descent point
   double step = -gradient.squaredNorm() / (gradient.transpose() * hessian * gradient)(0);
-  VectorValuesOrdered expected = gradientValues;  scal(step, expected);
+  VectorValues expected = gradientValues;  scal(step, expected);
 
   // Known steepest descent point from Bayes' net version
-  VectorValuesOrdered expectedFromBN(5,2);
+  VectorValues expectedFromBN(5,2);
   expectedFromBN[0] = Vector_(2, 0.000129034, 0.000688183);
   expectedFromBN[1] = Vector_(2, 0.0109679, 0.0253767);
   expectedFromBN[2] = Vector_(2, 0.0680441, 0.114496);
@@ -309,90 +309,90 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
   expectedFromBN[4] = Vector_(2, 0.300134, 0.423233);
 
   // Compute the steepest descent point with the dogleg function
-  VectorValuesOrdered actual = optimizeGradientSearch(bt);
+  VectorValues actual = optimizeGradientSearch(bt);
 
   // Check that points agree
   EXPECT(assert_equal(expected, actual, 1e-5));
   EXPECT(assert_equal(expectedFromBN, actual, 1e-5));
 
   // Check that point causes a decrease in error
-  double origError = GaussianFactorGraphOrdered(bt).error(VectorValuesOrdered::Zero(*allocateVectorValues(bt)));
-  double newError = GaussianFactorGraphOrdered(bt).error(actual);
+  double origError = GaussianFactorGraph(bt).error(VectorValues::Zero(*allocateVectorValues(bt)));
+  double newError = GaussianFactorGraph(bt).error(actual);
   EXPECT(newError < origError);
 }
 
 /* ************************************************************************* */
 TEST(DoglegOptimizer, ComputeBlend) {
   // Create an arbitrary Bayes Net
-  GaussianBayesNetOrdered gbn;
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  GaussianBayesNet gbn;
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       0, Vector_(2, 1.0,2.0), Matrix_(2,2, 3.0,4.0,0.0,6.0),
       3, Matrix_(2,2, 7.0,8.0,9.0,10.0),
       4, Matrix_(2,2, 11.0,12.0,13.0,14.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       1, Vector_(2, 15.0,16.0), Matrix_(2,2, 17.0,18.0,0.0,20.0),
       2, Matrix_(2,2, 21.0,22.0,23.0,24.0),
       4, Matrix_(2,2, 25.0,26.0,27.0,28.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       2, Vector_(2, 29.0,30.0), Matrix_(2,2, 31.0,32.0,0.0,34.0),
       3, Matrix_(2,2, 35.0,36.0,37.0,38.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       3, Vector_(2, 39.0,40.0), Matrix_(2,2, 41.0,42.0,0.0,44.0),
       4, Matrix_(2,2, 45.0,46.0,47.0,48.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       4, Vector_(2, 49.0,50.0), Matrix_(2,2, 51.0,52.0,0.0,54.0), ones(2)));
 
   // Compute steepest descent point
-  VectorValuesOrdered xu = optimizeGradientSearch(gbn);
+  VectorValues xu = optimizeGradientSearch(gbn);
 
   // Compute Newton's method point
-  VectorValuesOrdered xn = optimize(gbn);
+  VectorValues xn = optimize(gbn);
 
   // The Newton's method point should be more "adventurous", i.e. larger, than the steepest descent point
   EXPECT(xu.asVector().norm() < xn.asVector().norm());
 
   // Compute blend
   double Delta = 1.5;
-  VectorValuesOrdered xb = DoglegOptimizerImpl::ComputeBlend(Delta, xu, xn);
+  VectorValues xb = DoglegOptimizerImpl::ComputeBlend(Delta, xu, xn);
   DOUBLES_EQUAL(Delta, xb.asVector().norm(), 1e-10);
 }
 
 /* ************************************************************************* */
 TEST(DoglegOptimizer, ComputeDoglegPoint) {
   // Create an arbitrary Bayes Net
-  GaussianBayesNetOrdered gbn;
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  GaussianBayesNet gbn;
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       0, Vector_(2, 1.0,2.0), Matrix_(2,2, 3.0,4.0,0.0,6.0),
       3, Matrix_(2,2, 7.0,8.0,9.0,10.0),
       4, Matrix_(2,2, 11.0,12.0,13.0,14.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       1, Vector_(2, 15.0,16.0), Matrix_(2,2, 17.0,18.0,0.0,20.0),
       2, Matrix_(2,2, 21.0,22.0,23.0,24.0),
       4, Matrix_(2,2, 25.0,26.0,27.0,28.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       2, Vector_(2, 29.0,30.0), Matrix_(2,2, 31.0,32.0,0.0,34.0),
       3, Matrix_(2,2, 35.0,36.0,37.0,38.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       3, Vector_(2, 39.0,40.0), Matrix_(2,2, 41.0,42.0,0.0,44.0),
       4, Matrix_(2,2, 45.0,46.0,47.0,48.0), ones(2)));
-  gbn += GaussianConditionalOrdered::shared_ptr(new GaussianConditionalOrdered(
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
       4, Vector_(2, 49.0,50.0), Matrix_(2,2, 51.0,52.0,0.0,54.0), ones(2)));
 
   // Compute dogleg point for different deltas
 
   double Delta1 = 0.5;  // Less than steepest descent
-  VectorValuesOrdered actual1 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta1, optimizeGradientSearch(gbn), optimize(gbn));
+  VectorValues actual1 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta1, optimizeGradientSearch(gbn), optimize(gbn));
   DOUBLES_EQUAL(Delta1, actual1.asVector().norm(), 1e-5);
 
   double Delta2 = 1.5;  // Between steepest descent and Newton's method
-  VectorValuesOrdered expected2 = DoglegOptimizerImpl::ComputeBlend(Delta2, optimizeGradientSearch(gbn), optimize(gbn));
-  VectorValuesOrdered actual2 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta2, optimizeGradientSearch(gbn), optimize(gbn));
+  VectorValues expected2 = DoglegOptimizerImpl::ComputeBlend(Delta2, optimizeGradientSearch(gbn), optimize(gbn));
+  VectorValues actual2 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta2, optimizeGradientSearch(gbn), optimize(gbn));
   DOUBLES_EQUAL(Delta2, actual2.asVector().norm(), 1e-5);
   EXPECT(assert_equal(expected2, actual2));
 
   double Delta3 = 5.0;  // Larger than Newton's method point
-  VectorValuesOrdered expected3 = optimize(gbn);
-  VectorValuesOrdered actual3 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta3, optimizeGradientSearch(gbn), optimize(gbn));
+  VectorValues expected3 = optimize(gbn);
+  VectorValues actual3 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta3, optimizeGradientSearch(gbn), optimize(gbn));
   EXPECT(assert_equal(expected3, actual3));
 }
 
@@ -408,16 +408,16 @@ TEST(DoglegOptimizer, Iterate) {
   config->insert(X(1), x0);
 
   // ordering
-  boost::shared_ptr<OrderingOrdered> ord(new OrderingOrdered());
+  boost::shared_ptr<Ordering> ord(new Ordering());
   ord->push_back(X(1));
 
   double Delta = 1.0;
   for(size_t it=0; it<10; ++it) {
     GaussianSequentialSolver solver(*fg->linearize(*config, *ord));
-    GaussianBayesNetOrdered gbn = *solver.eliminate();
+    GaussianBayesNet gbn = *solver.eliminate();
     // Iterate assumes that linear error = nonlinear error at the linearization point, and this should be true
     double nonlinearError = fg->error(*config);
-    double linearError = GaussianFactorGraphOrdered(gbn).error(VectorValuesOrdered::Zero(*allocateVectorValues(gbn)));
+    double linearError = GaussianFactorGraph(gbn).error(VectorValues::Zero(*allocateVectorValues(gbn)));
     DOUBLES_EQUAL(nonlinearError, linearError, 1e-5);
 //    cout << "it " << it << ", Delta = " << Delta << ", error = " << fg->error(*config) << endl;
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(Delta, DoglegOptimizerImpl::SEARCH_EACH_ITERATION, gbn, *fg, *config, *ord, fg->error(*config));

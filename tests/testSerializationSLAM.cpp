@@ -164,8 +164,8 @@ BOOST_CLASS_EXPORT(gtsam::StereoCamera);
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactorOrdered, "gtsam::JacobianFactorOrdered");
-BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactorOrdered , "gtsam::HessianFactorOrdered");
+BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
 
 BOOST_CLASS_EXPORT_GUID(PriorFactorLieVector, "gtsam::PriorFactorLieVector");
 BOOST_CLASS_EXPORT_GUID(PriorFactorLieMatrix, "gtsam::PriorFactorLieMatrix");
@@ -234,8 +234,8 @@ BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
 TEST (testSerializationSLAM, smallExample_linear) {
   using namespace example;
 
-  OrderingOrdered ordering; ordering += X(1),X(2),L(1);
-  GaussianFactorGraphOrdered fg = createGaussianFactorGraph(ordering);
+  Ordering ordering; ordering += X(1),X(2),L(1);
+  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   EXPECT(equalsObj(ordering));
   EXPECT(equalsXML(ordering));
   EXPECT(equalsBinary(ordering));
@@ -244,7 +244,7 @@ TEST (testSerializationSLAM, smallExample_linear) {
   EXPECT(equalsXML(fg));
   EXPECT(equalsBinary(fg));
 
-  GaussianBayesNetOrdered cbn = createSmallGaussianBayesNet();
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
   EXPECT(equalsObj(cbn));
   EXPECT(equalsXML(cbn));
   EXPECT(equalsBinary(cbn));
@@ -253,11 +253,11 @@ TEST (testSerializationSLAM, smallExample_linear) {
 /* ************************************************************************* */
 TEST (testSerializationSLAM, gaussianISAM) {
   using namespace example;
-  OrderingOrdered ordering;
-  GaussianFactorGraphOrdered smoother;
+  Ordering ordering;
+  GaussianFactorGraph smoother;
   boost::tie(smoother, ordering) = createSmoother(7);
-  BayesTreeOrdered<GaussianConditionalOrdered> bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
-  GaussianISAMOrdered isam(bayesTree);
+  BayesTree<GaussianConditional> bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianISAM isam(bayesTree);
 
   EXPECT(equalsObj(isam));
   EXPECT(equalsXML(isam));
