@@ -24,6 +24,8 @@
 #include <tests/simulated2D.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <boost/tuple/tuple.hpp>
 
 namespace gtsam {
@@ -56,18 +58,18 @@ Values createNoisyValues();
 /**
  * Zero delta config
  */
-VectorValues createZeroDelta(const Ordering& ordering);
+VectorValues createZeroDelta();
 
 /**
  * Delta config that, when added to noisyValues, returns the ground truth
  */
-VectorValues createCorrectDelta(const Ordering& ordering);
+VectorValues createCorrectDelta();
 
 /**
  * create a linear factor graph
  * The non-linear graph above evaluated at NoisyValues
  */
-GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
+GaussianFactorGraph createGaussianFactorGraph();
 
 /**
  * create small Chordal Bayes Net x <- y
@@ -91,7 +93,7 @@ std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T);
  * Create a Kalman smoother by linearizing a non-linear factor graph
  * @param T number of time-steps
  */
-std::pair<GaussianFactorGraph, Ordering> createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
+GaussianFactorGraph createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
 
 /* ******************************************************* */
 // Linear Constrained Examples
@@ -398,13 +400,12 @@ std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
 }
 
 /* ************************************************************************* */
-std::pair<GaussianFactorGraph, Ordering> createSmoother(int T) {
+GaussianFactorGraph createSmoother(int T) {
   NonlinearFactorGraph nlfg;
   Values poses;
   boost::tie(nlfg, poses) = createNonlinearSmoother(T);
 
-  if(!ordering) ordering = *poses.orderingArbitrary();
-  return std::make_pair(*nlfg.linearize(poses, *ordering), *ordering);
+  return *nlfg.linearize(poses);
 }
 
 /* ************************************************************************* */
@@ -597,14 +598,13 @@ boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
       zeros.insert(key(x, y), Point2());
-  Ordering ordering(planarOrdering(N));
-  VectorValues xtrue(zeros.dims(ordering));
+  VectorValues xtrue;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      xtrue[ordering[key(x, y)]] = Point2(x,y).vector();
+      xtrue.insert(key(x, y), Point2(x,y).vector());
 
   // linearize around zero
-  boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros, ordering);
+  boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);
   return boost::make_tuple(*gfg, xtrue);
 }
 
