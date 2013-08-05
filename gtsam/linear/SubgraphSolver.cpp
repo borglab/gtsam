@@ -9,8 +9,6 @@
 
  * -------------------------------------------------------------------------- */
 
-#if 0
-
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
@@ -29,60 +27,64 @@ using namespace std;
 namespace gtsam {
 
 /**************************************************************************************************/
-SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &gfg, const Parameters &parameters)
-  : parameters_(parameters)
+SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &gfg, const Parameters &parameters, const Ordering& ordering)
+  : parameters_(parameters), ordering_(ordering)
 {
   initialize(gfg);
 }
 
 /**************************************************************************************************/
-SubgraphSolver::SubgraphSolver(const GaussianFactorGraph::shared_ptr &jfg, const Parameters &parameters)
-  : parameters_(parameters)
+SubgraphSolver::SubgraphSolver(const GaussianFactorGraph::shared_ptr &jfg, const Parameters &parameters, const Ordering& ordering)
+  : parameters_(parameters), ordering_(ordering)
 {
   initialize(*jfg);
 }
 
 /**************************************************************************************************/
-SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2, const Parameters &parameters)
-  : parameters_(parameters) {
+SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2, const Parameters &parameters, const Ordering& ordering)
+  : parameters_(parameters), ordering_(ordering) {
 
-  GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(Ab1)->eliminate(&EliminateQR);
+  GaussianBayesNet::shared_ptr Rc1 = Ab1.eliminateSequential(ordering_, EliminateQR);
   initialize(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2));
 }
 
 /**************************************************************************************************/
 SubgraphSolver::SubgraphSolver(const GaussianFactorGraph::shared_ptr &Ab1,
-    const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters)
-  : parameters_(parameters) {
+    const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters, const Ordering& ordering)
+  : parameters_(parameters), ordering_(ordering) {
 
-  GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(*Ab1)->eliminate(&EliminateQR);
+  GaussianBayesNet::shared_ptr Rc1 = Ab1->eliminateSequential(ordering_, EliminateQR);
   initialize(Rc1, Ab2);
 }
 
 /**************************************************************************************************/
 SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph &Ab2,
-    const Parameters &parameters) : parameters_(parameters)
+    const Parameters &parameters, const Ordering& ordering) : parameters_(parameters), ordering_(ordering)
 {
   initialize(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2));
 }
 
 /**************************************************************************************************/
 SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
-    const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters) : parameters_(parameters)
+    const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters, const Ordering& ordering) :
+parameters_(parameters), ordering_(ordering)
 {
   initialize(Rc1, Ab2);
 }
 
+/**************************************************************************************************/
 VectorValues SubgraphSolver::optimize() {
   VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues, Errors>(*pc_, pc_->zero(), parameters_);
   return pc_->x(ybar);
 }
 
+/**************************************************************************************************/
 VectorValues SubgraphSolver::optimize(const VectorValues &initial) {
   // the initial is ignored in this case ...
   return optimize();
 }
 
+/**************************************************************************************************/
 void SubgraphSolver::initialize(const GaussianFactorGraph &jfg)
 {
   GaussianFactorGraph::shared_ptr Ab1 = boost::make_shared<GaussianFactorGraph>(),
@@ -92,17 +94,19 @@ void SubgraphSolver::initialize(const GaussianFactorGraph &jfg)
   if (parameters_.verbosity())
     cout << "Split A into (A1) " << Ab1->size() << " and (A2) " << Ab2->size() << " factors" << endl;
 
-  GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(*Ab1)->eliminate(&EliminateQR);
-  VectorValues::shared_ptr xbar(new VectorValues(gtsam::optimize(*Rc1)));
+  GaussianBayesNet::shared_ptr Rc1 = Ab1->eliminateSequential(ordering_, EliminateQR);
+  VectorValues::shared_ptr xbar = boost::make_shared<VectorValues>(Rc1->optimize());
   pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
+/**************************************************************************************************/
 void SubgraphSolver::initialize(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph::shared_ptr &Ab2)
 {
-  VectorValues::shared_ptr xbar(new VectorValues(gtsam::optimize(*Rc1)));
+  VectorValues::shared_ptr xbar = boost::make_shared<VectorValues>(Rc1->optimize());
   pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
+/**************************************************************************************************/
 boost::tuple<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr>
 SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
 
@@ -140,5 +144,3 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
 }
 
 } // \namespace gtsam
-
-#endif

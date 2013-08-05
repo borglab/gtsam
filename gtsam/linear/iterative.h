@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/VectorValuesOrdered.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/ConjugateGradientSolver.h>
 
 namespace gtsam {
@@ -68,27 +68,27 @@ namespace gtsam {
      * Print with optional string
      */
     void print (const std::string& s = "System") const;
+
+    /** gradient of objective function 0.5*|Ax-b_|^2 at x = A_'*(Ax-b_) */
+    Vector gradient(const Vector& x) const {
+      return A() ^ (A() * x - b());
+    }
+
+    /** Apply operator A */
+    Vector operator*(const Vector& x) const {
+      return A() * x;
+    }
+
+    /** Apply operator A in place */
+    void multiplyInPlace(const Vector& x, Vector& e) const {
+      e = A() * x;
+    }
+
+    /** x += alpha* A'*e */
+    void transposeMultiplyAdd(double alpha, const Vector& e, Vector& x) const {
+      gtsam::transposeMultiplyAdd(alpha, A(), e, x);
+    }
   };
-
-  /** gradient of objective function 0.5*|Ax-b_|^2 at x = A_'*(Ax-b_) */
-  inline Vector gradient(const System& system, const Vector& x) {
-    return system.A() ^ (system.A() * x - system.b());
-  }
-
-  /** Apply operator A */
-  inline Vector operator*(const System& system, const Vector& x) {
-    return system.A() * x;
-  }
-
-  /** Apply operator A in place */
-  inline void multiplyInPlace(const System& system, const Vector& x, Vector& e) {
-    e = system.A() * x;
-  }
-
-  /** x += alpha* A'*e */
-  inline void transposeMultiplyAdd(const System& system, double alpha, const Vector& e, Vector& x) {
-    transposeMultiplyAdd(alpha,system.A(),e,x);
-  }
 
   /**
    * Method of steepest gradients, System version
@@ -129,17 +129,17 @@ namespace gtsam {
   /**
    * Method of steepest gradients, Gaussian Factor Graph version
    */
-  GTSAM_EXPORT VectorValuesOrdered steepestDescent(
-      const GaussianFactorGraphOrdered& fg,
-      const VectorValuesOrdered& x,
+  GTSAM_EXPORT VectorValues steepestDescent(
+      const GaussianFactorGraph& fg,
+      const VectorValues& x,
       const ConjugateGradientParameters & parameters);
 
   /**
    * Method of conjugate gradients (CG), Gaussian Factor Graph version
    */
-  GTSAM_EXPORT VectorValuesOrdered conjugateGradientDescent(
-      const GaussianFactorGraphOrdered& fg,
-      const VectorValuesOrdered& x,
+  GTSAM_EXPORT VectorValues conjugateGradientDescent(
+      const GaussianFactorGraph& fg,
+      const VectorValues& x,
       const ConjugateGradientParameters & parameters);
 
 
