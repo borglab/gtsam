@@ -20,83 +20,77 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/JacobianFactorOrdered.h>
 #include <gtsam/linear/KalmanFilter.h>
-#include <gtsam/linear/HessianFactorOrdered.h>
-#include <gtsam/inference/PermutationOrdered.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/base/Testable.h>
 
 #include <boost/make_shared.hpp>
+#include <boost/assign/list_of.hpp>
+
+using namespace boost::assign;
+using namespace std;
 
 namespace gtsam {
 
-  using namespace std;
-
   /// Auxiliary function to solve factor graph and return pointer to root conditional
-  KalmanFilter::State solve(const GaussianFactorGraphOrdered& factorGraph, bool useQR)
+  KalmanFilter::State solve(const GaussianFactorGraph& factorGraph, const GaussianFactorGraph::Eliminate& function)
   {
-    // Start indices at zero
-    Index nVars = 0;
-    internal::Reduction remapping;
-    BOOST_FOREACH(const GaussianFactorGraphOrdered::sharedFactor& factor, factorGraph)
-      BOOST_FOREACH(Index j, *factor)
-        if(remapping.insert(make_pair(j, nVars)).second)
-          ++ nVars;
-    Permutation inverseRemapping = remapping.inverse();
-    GaussianFactorGraphOrdered factorGraphOrdered(factorGraph); // NOTE this shares the factors with the original!!
-    factorGraphOrdered.reduceWithInverse(remapping);
+    // Do a dense solve, e.g. don't use the multifrontal framework
+    // Eliminate the keys in increasing order so that the last key is the one we want to keep.
+    FastSet<Key> keysToEliminate = factorGraph.keys();
+    FastSet<Key>::const_iterator lastKeyPos = keysToEliminate.end();
+    -- lastKeyPos;
+    Key remainingKey = *lastKeyPos;
+    keysToEliminate.erase(lastKeyPos);
+    GaussianFactorGraph::EliminationResult result = function(factorGraph, Ordering(keysToEliminate));
 
-    // Solve the factor graph
-    GaussianSequentialSolver solver(factorGraphOrdered, useQR);
-    GaussianBayesNetOrdered::shared_ptr bayesNet = solver.eliminate();
+    // As this is a filter, all we need is the posterior P(x_t).  Eliminate it to be
+    // upper-triangular.
+    GaussianFactorGraph graphOfRemainingFactor;
+    graphOfRemainingFactor += result.second;
+    GaussianDensity::shared_ptr state = boost::make_shared<GaussianDensity>(
+      *function(graphOfRemainingFactor, Ordering(cref_list_of<1>(remainingKey))).first);
 
-    // As this is a filter, all we need is the posterior P(x_t),
-    // so we just keep the root of the Bayes net
-    GaussianConditionalOrdered::shared_ptr conditional = bayesNet->back();
-
-    // Undo the remapping
-    factorGraphOrdered.permuteWithInverse(inverseRemapping);
-    conditional->permuteWithInverse(inverseRemapping);
-
-    // TODO: awful ! A copy constructor followed by ANOTHER copy constructor in make_shared?
-    return boost::make_shared<GaussianDensity>(*conditional);
+    return state;
   }
 
   /* ************************************************************************* */
-  KalmanFilter::State fuse(const KalmanFilter::State& p,
-      GaussianFactorOrdered* newFactor, bool useQR) {
-
+  KalmanFilter::State fuse(const KalmanFilter::State& p, GaussianFactor::shared_ptr newFactor,
+    const GaussianFactorGraph::Eliminate& function)
+  {
     // Create a factor graph
-    GaussianFactorGraphOrdered factorGraph;
-
-    // push back previous solution and new factor
-    factorGraph.push_back(p->toFactor());
-    factorGraph.push_back(GaussianFactorOrdered::shared_ptr(newFactor));
+    GaussianFactorGraph factorGraph;
+    factorGraph += p, newFactor;
 
     // Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
-    return solve(factorGraph, useQR);
+    return solve(factorGraph, function);
   }
 
   /* ************************************************************************* */
-  KalmanFilter::State KalmanFilter::init(const Vector& x0,
-      const SharedDiagonal& P0) {
+  GaussianFactorGraph::Eliminate KalmanFilter::factorization() const {
+    return method_ == QR ?
+      GaussianFactorGraph::Eliminate(EliminateQR) :
+      GaussianFactorGraph::Eliminate(EliminateCholesky);
+  }
+
+  /* ************************************************************************* */
+  KalmanFilter::State KalmanFilter::init(const Vector& x0, const SharedDiagonal& P0) {
 
     // Create a factor graph f(x0), eliminate it into P(x0)
-    GaussianFactorGraphOrdered factorGraph;
-    factorGraph.add(0, I_, x0, P0); // |x-x0|^2_diagSigma
-    return solve(factorGraph, useQR());
+    GaussianFactorGraph factorGraph;
+    factorGraph += JacobianFactor(0, I_, x0, P0); // |x-x0|^2_diagSigma
+    return solve(factorGraph, factorization());
   }
 
   /* ************************************************************************* */
   KalmanFilter::State KalmanFilter::init(const Vector& x, const Matrix& P0) {
 
     // Create a factor graph f(x0), eliminate it into P(x0)
-    GaussianFactorGraphOrdered factorGraph;
-    // 0.5*(x-x0)'*inv(Sigma)*(x-x0)
-    HessianFactorOrdered::shared_ptr factor(new HessianFactorOrdered(0, x, P0));
-    factorGraph.push_back(factor);
-    return solve(factorGraph, useQR());
+    GaussianFactorGraph factorGraph;
+    factorGraph += HessianFactor(0, x, P0); // 0.5*(x-x0)'*inv(Sigma)*(x-x0)
+    return solve(factorGraph, factorization());
   }
 
   /* ************************************************************************* */
@@ -111,7 +105,7 @@ namespace gtsam {
     // The factor related to the motion model is defined as
     // f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
     Index k = step(p);
-    return fuse(p, new JacobianFactorOrdered(k, -F, k + 1, I_, B * u, model), useQR());
+    return fuse(p, boost::make_shared<JacobianFactor>(k, -F, k + 1, I_, B * u, model), factorization());
   }
 
   /* ************************************************************************* */
@@ -119,7 +113,7 @@ namespace gtsam {
       const Matrix& B, const Vector& u, const Matrix& Q) {
 
 #ifndef NDEBUG
-    int n = F.cols();
+    DenseIndex n = F.cols();
     assert(F.rows() == n);
     assert(B.rows() == n);
     assert(B.cols() == u.size());
@@ -136,8 +130,7 @@ namespace gtsam {
     Vector b = B * u, g2 = M * b, g1 = -Ft * g2;
     double f = dot(b, g2);
     Index k = step(p);
-    return fuse(p, new HessianFactorOrdered(k, k + 1, G11, G12, g1, G22, g2, f),
-        useQR());
+    return fuse(p, boost::make_shared<HessianFactor>(k, k + 1, G11, G12, g1, G22, g2, f), factorization());
   }
 
   /* ************************************************************************* */
@@ -146,7 +139,7 @@ namespace gtsam {
     // Nhe factor related to the motion model is defined as
     // f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
     Index k = step(p);
-    return fuse(p, new JacobianFactorOrdered(k, A0, k + 1, A1, b, model), useQR());
+    return fuse(p, boost::make_shared<JacobianFactor>(k, A0, k + 1, A1, b, model), factorization());
   }
 
   /* ************************************************************************* */
@@ -156,7 +149,7 @@ namespace gtsam {
     // f2 = (h(x_{t}) - z_{t}) * R^-1 * (h(x_{t}) - z_{t})^T
     //    = (x_{t} - z_{t}) * R^-1 * (x_{t} - z_{t})^T
     Index k = step(p);
-    return fuse(p, new JacobianFactorOrdered(k, H, z, model), useQR());
+    return fuse(p, boost::make_shared<JacobianFactor>(k, H, z, model), factorization());
   }
 
   /* ************************************************************************* */
@@ -167,7 +160,7 @@ namespace gtsam {
     Matrix G = Ht * M * H;
     Vector g = Ht * M * z;
     double f = dot(z, M * z);
-    return fuse(p, new HessianFactorOrdered(k, G, g, f), useQR());
+    return fuse(p, boost::make_shared<HessianFactor>(k, G, g, f), factorization());
   }
 
 /* ************************************************************************* */

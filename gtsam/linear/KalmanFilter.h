@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/linear/GaussianDensity.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
 
 #ifndef KALMANFILTER_DEFAULT_FACTORIZATION
@@ -60,9 +61,7 @@ namespace gtsam {
     const Matrix I_; /** identity matrix of size n*n */
     const Factorization method_; /** algorithm */
 
-    bool useQR() const {
-      return method_ == QR;
-    }
+    GaussianFactorGraph::Eliminate factorization() const;
 
   public:
 
