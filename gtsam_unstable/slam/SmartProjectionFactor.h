@@ -141,39 +141,39 @@ namespace gtsam {
           && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
     }
 
-    /// Evaluate error h(x)-z and optionally derivatives
-    Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const{
-
-      Vector a;
-      return a;
-
-//      Point3 point = x.at<Point3>(*keys_.end());
+//    /// Evaluate error h(x)-z and optionally derivatives
+//    Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const{
 //
-//      std::vector<KeyType>::iterator vit;
-//      for (vit = keys_.begin(); vit != keys_.end()-1; vit++) {
-//        Key key = (*vit);
-//        Pose3 pose = x.at<Pose3>(key);
+//      Vector a;
+//      return a;
 //
-//        if(body_P_sensor_) {
-//          if(H1) {
-//            gtsam::Matrix H0;
-//            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_, H0), *K_);
-//            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-//            *H1 = *H1 * H0;
-//            return reprojectionError.vector();
-//          } else {
-//            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_), *K_);
-//            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-//            return reprojectionError.vector();
-//          }
-//        } else {
-//          PinholeCamera<CALIBRATION> camera(pose, *K_);
-//          Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-//          return reprojectionError.vector();
-//        }
-//      }
-
-    }
+////      Point3 point = x.at<Point3>(*keys_.end());
+////
+////      std::vector<KeyType>::iterator vit;
+////      for (vit = keys_.begin(); vit != keys_.end()-1; vit++) {
+////        Key key = (*vit);
+////        Pose3 pose = x.at<Pose3>(key);
+////
+////        if(body_P_sensor_) {
+////          if(H1) {
+////            gtsam::Matrix H0;
+////            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_, H0), *K_);
+////            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
+////            *H1 = *H1 * H0;
+////            return reprojectionError.vector();
+////          } else {
+////            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_), *K_);
+////            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
+////            return reprojectionError.vector();
+////          }
+////        } else {
+////          PinholeCamera<CALIBRATION> camera(pose, *K_);
+////          Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
+////          return reprojectionError.vector();
+////        }
+////      }
+//
+//    }
 
     /// get the dimension of the factor (number of rows on linearization)
     virtual size_t dim() const {
@@ -182,10 +182,6 @@ namespace gtsam {
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
     virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values,  const Ordering& ordering) const {
-
-      std::vector<Matrix> Hx(keys_.size());
-      std::vector<Matrix> Hl(keys_.size());
-      std::vector<Vector> b(keys_.size());
 
       // Collect all poses (Cameras)
       std::vector<Pose3> cameraPoses;
@@ -196,66 +192,139 @@ namespace gtsam {
         else
           cameraPoses.push_back(values.at<Pose3>(k));
       }
-
-      // We triangulate the 3D position of the landmark
+            // We triangulate the 3D position of the landmark
       boost::optional<Point3> point = triangulatePoint3(cameraPoses, measured_, *K_);
 
-      if(point){
-        for(size_t i = 0; i < measured_.size(); i++) {
-          Pose3 pose = cameraPoses.at(i);
-          PinholeCamera<CALIBRATION> camera(pose, *K_);
-          b.at(i) = ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
-        }
-      }
-      else{
+      if (!point)
         return HessianFactor::shared_ptr(new HessianFactor());
-      }
 
-      // Allocate m^2 matrix blocks
-      std::vector< std::vector<Matrix> > Hxl(keys_.size(), std::vector<Matrix>( keys_.size()));
-
-      // Allocate inv(Hl'Hl)
-      Matrix3 C;
-      for(size_t i1 = 0; i1 < keys_.size(); i1++) {
-         C += Hl.at(i1).transpose() * Hl.at(i1);
-      }
-      C = C.inverse();
+      std::cout << "point " << *point << std::endl;
 
 
+      std::vector<Matrix> Gs(keys_.size()*(keys_.size()+1)/2);
+      std::vector<Vector> gs(keys_.size());
+      double f = 0;
       // fill in the keys
       std::vector<Index> js;
       BOOST_FOREACH(const Key& k, keys_) {
         js += ordering[k];
       }
 
-      // Calculate sub blocks
-      for(size_t i1 = 0; i1 < keys_.size(); i1++) {
-        for(size_t i2 = 0; i2 < keys_.size(); i2++) {
-          Hxl[i1][i2] = Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose();
+      bool blockwise = false;
+
+//      {
+        // ==========================================================================================================
+        std::vector<Matrix> Hx(keys_.size());
+        std::vector<Matrix> Hl(keys_.size());
+        std::vector<Vector> b(keys_.size());
+
+        for(size_t i = 0; i < measured_.size(); i++) {
+          Pose3 pose = cameraPoses.at(i);
+
+          std::cout << "pose " << pose << std::endl;
+
+          PinholeCamera<CALIBRATION> camera(pose, *K_);
+          b.at(i) = ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
         }
-      }
 
-      // Shur complement trick
+        // Shur complement trick
 
-      // Populate Gs and gs
-      std::vector<Matrix> Gs(keys_.size()*(keys_.size()+1)/2);
-      std::vector<Vector> gs(keys_.size());
-      double f = 0;
-      int GsCount = 0;
-      for(size_t i1 = 0; i1 < keys_.size(); i1++) {
-        gs.at(i1) = Hx.at(i1).transpose() * b.at(i1);
+        // Allocate m^2 matrix blocks
+        std::vector< std::vector<Matrix> > Hxl(keys_.size(), std::vector<Matrix>( keys_.size()));
 
-        for(size_t i2 = 0; i2 < keys_.size(); i2++) {
-          gs.at(i1) += Hxl[i1][i2] * b.at(i2);
+        // Allocate inv(Hl'Hl)
+        Matrix3 C;
+        for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+          C += Hl.at(i1).transpose() * Hl.at(i1);
+        }
+        C = C.inverse();
 
-          if (i2 >= i1) {
-            Gs.at(GsCount) = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
-            GsCount++;
+        // Calculate sub blocks
+        for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+          for(size_t i2 = 0; i2 < keys_.size(); i2++) {
+            Hxl[i1][i2] = Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose();
           }
         }
+        // Populate Gs and gs
+        int GsCount = 0;
+        for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+          gs.at(i1) = Hx.at(i1).transpose() * b.at(i1);
+
+          for(size_t i2 = 0; i2 < keys_.size(); i2++) {
+            gs.at(i1) += Hxl[i1][i2] * b.at(i2);
+
+            if (i2 >= i1) {
+              Gs.at(GsCount) = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
+              GsCount++;
+            }
+          }
+        }
+//      }
+
+      // debug only
+      std::vector<Matrix> Gs2(keys_.size()*(keys_.size()+1)/2);
+      std::vector<Vector> gs2(keys_.size());
+
+//      { // version with full matrix multiplication
+        // ==========================================================================================================
+        Matrix Hx2 = zeros(2*keys_.size(), 6*keys_.size());
+        Matrix Hl2 = zeros(2*keys_.size(), 3);
+        Vector b2 = zero(2*keys_.size());
+
+        for(size_t i = 0; i < measured_.size(); i++) {
+          Pose3 pose = cameraPoses.at(i);
+          PinholeCamera<CALIBRATION> camera(pose, *K_);
+          Matrix Hxi, Hli;
+           Vector bi = ( camera.project(*point,Hxi,Hli) - measured_.at(i) ).vector();
+           Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
+           Hl2.block( 2*i, 0, 2, 3  ) = Hli;
+           subInsert(b2,bi,2*i);
+
+           std::cout << "Hx " << Hx2 << std::endl;
+           std::cout << "Hl " << Hl2 << std::endl;
+           std::cout << "b " << b2.transpose() << std::endl;
+           std::cout << "Hxi - Hx.at(i) " << Hxi - Hx.at(i) << std::endl;
+           std::cout << "Hli - Hl.at(i) " << Hli - Hl.at(i) << std::endl;
+        }
+
+        // Shur complement trick
+        Matrix H(6*keys_.size(), 6*keys_.size());
+        Matrix3 C2 = (Hl2.transpose() * Hl2).inverse();
+        H = Hx2.transpose() * Hx2 - Hx2.transpose() * Hl2 * C2 * Hl2.transpose() * Hx2;
+        Vector gs2_vector =  Hx2.transpose() * b2 -  Hx2.transpose() * Hl2 * C2 * Hl2.transpose() * b2;
+
+        std::cout << "C - C2 " << C - C2 << std::endl;
+
+        // Populate Gs and gs
+        int GsCount2 = 0;
+        for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+          gs2.at(i1) = sub(gs2_vector, 6*i1, 6*i1 + 6);
+
+          for(size_t i2 = 0; i2 < keys_.size(); i2++) {
+            if (i2 >= i1) {
+              Gs2.at(GsCount2) = H.block(6*i1, 6*i2, 6, 6);
+              GsCount2++;
+            }
+          }
+        }
+//      }
+
+      // Compare blockwise and full version
+      bool gs2_equal_gs = true;
+      for(size_t i = 0; i < measured_.size(); i++) {
+        std::cout << "gs.at(i) " << gs.at(i).transpose() << std::endl;
+        std::cout << "gs2.at(i) " << gs2.at(i).transpose() << std::endl;
+        std::cout << "gs.error  " << (gs.at(i)- gs2.at(i)).transpose() << std::endl;
+        if( !equal(gs.at(i), gs2.at(i)), 1e-7) {
+          gs2_equal_gs = false;
+        }
       }
 
-      return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
+      std::cout << "gs2_equal_gs " << gs2_equal_gs << std::endl;
+
+
+      // ==========================================================================================================
+      return HessianFactor::shared_ptr(new HessianFactor(js, Gs2, gs2, f));
     }
 
     /**
@@ -284,17 +353,17 @@ namespace gtsam {
         if(point)
         { // triangulation produced a good estimate of landmark position
 
-          std::cout << "point " << *point << std::endl;
+//          std::cout << "point " << *point << std::endl;
 
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
-            std::cout << "pose.compose(*body_P_sensor_) " << pose << std::endl;
+//            std::cout << "pose.compose(*body_P_sensor_) " << pose << std::endl;
 
             Point2 reprojectionError(camera.project(*point) - measured_.at(i));
-            std::cout << "reprojectionError " << reprojectionError << std::endl;
+//            std::cout << "reprojectionError " << reprojectionError << std::endl;
             overallError += noise_->distance( reprojectionError.vector() );
-            std::cout << "noise_->distance( reprojectionError.vector() ) " << noise_->distance( reprojectionError.vector() ) << std::endl;
+//            std::cout << "noise_->distance( reprojectionError.vector() ) " << noise_->distance( reprojectionError.vector() ) << std::endl;
           }
           return sqrt(overallError);
         }else{ // triangulation failed: we deactivate the factor, then the error should not contribute to the overall error
