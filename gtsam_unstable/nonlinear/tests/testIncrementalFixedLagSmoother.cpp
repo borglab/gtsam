@@ -50,7 +50,7 @@ bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullini
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( IncrementalFixedLagSmoother, Example )
+TEST( IncrementalFixedLagSmoother, Example )
 {
   // Test the IncrementalFixedLagSmoother in a pure linear environment. Thus, full optimization and
   // the IncrementalFixedLagSmoother should be identical (even with the linearized approximations at

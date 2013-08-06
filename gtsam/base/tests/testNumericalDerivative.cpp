@@ -28,7 +28,7 @@ double f(const LieVector& x) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(testNumericalDerivative, numericalHessian) {
+TEST(testNumericalDerivative, numericalHessian) {
   LieVector center = ones(2);
 
   Matrix expected = Matrix_(2,2,
@@ -47,7 +47,7 @@ double f2(const LieVector& x) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(testNumericalDerivative, numericalHessian2) {
+TEST(testNumericalDerivative, numericalHessian2) {
   LieVector center(2, 0.5, 1.0);
 
   Matrix expected = Matrix_(2,2,
@@ -66,7 +66,7 @@ double f3(const LieVector& x1, const LieVector& x2) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(testNumericalDerivative, numericalHessian211) {
+TEST(testNumericalDerivative, numericalHessian211) {
   LieVector center1(1, 1.0), center2(1, 5.0);
 
   Matrix expected11 = Matrix_(1,1,-sin(center1(0))*cos(center2(0)));
@@ -89,7 +89,7 @@ double f4(const LieVector& x, const LieVector& y, const LieVector& z) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(testNumericalDerivative, numericalHessian311) {
+TEST(testNumericalDerivative, numericalHessian311) {
   LieVector center1(1, 1.0), center2(1, 2.0), center3(1, 3.0);
   double x = center1(0), y = center2(0), z = center3(0);
   Matrix expected11 = Matrix_(1,1,-sin(x)*cos(y)*z*z);

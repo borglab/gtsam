@@ -46,7 +46,7 @@ bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullini
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( BatchFixedLagSmoother, Example )
+TEST( BatchFixedLagSmoother, Example )
 {
   // Test the BatchFixedLagSmoother in a pure linear environment. Thus, full optimization and
   // the BatchFixedLagSmoother should be identical (even with the linearized approximations at

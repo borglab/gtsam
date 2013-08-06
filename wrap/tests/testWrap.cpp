@@ -58,7 +58,7 @@ TEST( wrap, ArgumentList ) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( wrap, check_exception ) {
+TEST( wrap, check_exception ) {
   THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
   CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 

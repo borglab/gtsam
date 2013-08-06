@@ -30,7 +30,7 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-TEST_UNSAFE( ExtendedKalmanFilter, linear ) {
+TEST( ExtendedKalmanFilter, linear ) {
 
   // Create the TestKeys for our example
   Symbol x0('x',0), x1('x',1), x2('x',2), x3('x',3);
@@ -364,7 +364,7 @@ public:
 
 
 /* ************************************************************************* */
-TEST_UNSAFE( ExtendedKalmanFilter, nonlinear ) {
+TEST( ExtendedKalmanFilter, nonlinear ) {
 
   // Create the set of expected output TestValues (generated using Matlab Kalman Filter)
   Point2 expected_predict[10];

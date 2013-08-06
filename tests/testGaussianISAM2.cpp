@@ -143,7 +143,7 @@ ISAM2 createSlamlikeISAM2(
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, ImplAddVariables) {
+TEST(ISAM2, ImplAddVariables) {
 
   // Create initial state
   Values theta;
@@ -211,7 +211,7 @@ TEST_UNSAFE(ISAM2, ImplAddVariables) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
+TEST(ISAM2, ImplRemoveVariables) {
 
   // Create initial state
   Values theta;
@@ -610,7 +610,7 @@ TEST(ISAM2, removeFactors)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, removeVariables)
+TEST(ISAM2, removeVariables)
 {
   // These variables will be reused and accumulate factors and values
   Values fullinit;
@@ -633,7 +633,7 @@ TEST_UNSAFE(ISAM2, removeVariables)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, swapFactors)
+TEST(ISAM2, swapFactors)
 {
   // This test builds a graph in the same way as the "slamlike" test above, but
   // then swaps the 2nd-to-last landmark measurement with a different one
@@ -888,7 +888,7 @@ namespace {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, marginalizeLeaves1)
+TEST(ISAM2, marginalizeLeaves1)
 {
   ISAM2 isam;
 
@@ -917,7 +917,7 @@ TEST_UNSAFE(ISAM2, marginalizeLeaves1)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, marginalizeLeaves2)
+TEST(ISAM2, marginalizeLeaves2)
 {
   ISAM2 isam;
 
@@ -949,7 +949,7 @@ TEST_UNSAFE(ISAM2, marginalizeLeaves2)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, marginalizeLeaves3)
+TEST(ISAM2, marginalizeLeaves3)
 {
   ISAM2 isam;
 
@@ -990,7 +990,7 @@ TEST_UNSAFE(ISAM2, marginalizeLeaves3)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, marginalizeLeaves4)
+TEST(ISAM2, marginalizeLeaves4)
 {
   ISAM2 isam;
 
@@ -1017,7 +1017,7 @@ TEST_UNSAFE(ISAM2, marginalizeLeaves4)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, marginalizeLeaves5)
+TEST(ISAM2, marginalizeLeaves5)
 {
   // Create isam2
   ISAM2 isam = createSlamlikeISAM2();

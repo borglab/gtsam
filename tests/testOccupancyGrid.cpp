@@ -284,7 +284,7 @@ public:
 };
 
 /* ************************************************************************* */
-TEST_UNSAFE( OccupancyGrid, Test1) {
+TEST( OccupancyGrid, Test1) {
   //Build a small grid and test optimization
 
   //Build small grid

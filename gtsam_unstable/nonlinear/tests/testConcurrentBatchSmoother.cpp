@@ -473,7 +473,7 @@ TEST( ConcurrentBatchSmoother, update_incremental )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchSmoother, synchronize )
+TEST( ConcurrentBatchSmoother, synchronize )
 {
   // Test the 'synchronize' function of the ConcurrentBatchSmoother in a nonlinear environment.
   // The smoother is operating on a known tree structure, so the factors and summarization can

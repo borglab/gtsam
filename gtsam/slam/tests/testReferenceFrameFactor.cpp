@@ -116,7 +116,7 @@ TEST( ReferenceFrameFactor, jacobians_zero ) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( ReferenceFrameFactor, converge_trans ) {
+TEST( ReferenceFrameFactor, converge_trans ) {
 
   // initial points
   Point2 local1(2.0, 2.0), local2(4.0, 5.0),

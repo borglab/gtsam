@@ -598,7 +598,7 @@ TEST( ConcurrentBatchFilter, update_incremental_with_marginalization )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchFilter, synchronize )
+TEST( ConcurrentBatchFilter, synchronize )
 {
   // Test the 'synchronize' function of the ConcurrentBatchFilter in a nonlinear environment.
   // The filter is operating on a known tree structure, so the factors and summarization can

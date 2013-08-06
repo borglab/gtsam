@@ -37,8 +37,6 @@ using namespace example;
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
-#define TEST TEST_UNSAFE
-
 /* ************************************************************************* */
 // Some numbers that should be consistent among all smoother tests
 
