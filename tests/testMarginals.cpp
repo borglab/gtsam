@@ -229,12 +229,12 @@ TEST(Marginals, order) {
   FastVector<Key> keys(fg.keys());
   JointMarginal joint = marginals.jointMarginalCovariance(keys);
 
-  LONGS_EQUAL(3, joint(0,0).rows());
-  LONGS_EQUAL(3, joint(1,1).rows());
-  LONGS_EQUAL(3, joint(2,2).rows());
-  LONGS_EQUAL(3, joint(3,3).rows());
-  LONGS_EQUAL(2, joint(100,100).rows());
-  LONGS_EQUAL(2, joint(101,101).rows());
+  LONGS_EQUAL(3, (long)joint(0,0).rows());
+  LONGS_EQUAL(3, (long)joint(1,1).rows());
+  LONGS_EQUAL(3, (long)joint(2,2).rows());
+  LONGS_EQUAL(3, (long)joint(3,3).rows());
+  LONGS_EQUAL(2, (long)joint(100,100).rows());
+  LONGS_EQUAL(2, (long)joint(101,101).rows());
 }
 
 /* ************************************************************************* */

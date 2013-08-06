@@ -48,7 +48,7 @@ TEST ( Ordering, predecessorMap2Keys ) {
   expected += 4,5,3,2,1;
 
   list<Key> actual = predecessorMap2Keys<Key>(p_map);
-  LONGS_EQUAL(expected.size(), actual.size());
+  LONGS_EQUAL((long)expected.size(), (long)actual.size());
 
   list<Key>::const_iterator it1 = expected.begin();
   list<Key>::const_iterator it2 = actual.begin();
