@@ -292,7 +292,7 @@ Matrix diag(const std::vector<Matrix>& Hs) {
     rows+= Hs[i].rows();
     cols+= Hs[i].cols();
   }
-  Matrix results(rows,cols);
+  Matrix results = zeros(rows,cols);
   size_t r = 0, c = 0;
   for (size_t i = 0; i<Hs.size(); ++i) {
     insertSub(results, Hs[i], r, c);
