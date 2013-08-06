@@ -143,7 +143,7 @@ namespace gtsam {
 
     /** alternate syntax for matlab: find the clique that contains the variable with Index j */
     const sharedClique& clique(Key j) const {
-      Nodes::const_iterator c = nodes_.find(j);
+      typename Nodes::const_iterator c = nodes_.find(j);
       if(c == nodes_.end())
         throw std::out_of_range("Requested the BayesTree clique for a key that is not in the BayesTree");
       else
@@ -272,7 +272,7 @@ namespace gtsam {
     {
       // Store parent keys in our base type factor so that eliminating those parent keys will pull
       // this subtree into the elimination.
-      keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
+      this->keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
     }
   };
 

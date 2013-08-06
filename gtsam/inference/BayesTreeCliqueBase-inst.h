@@ -25,7 +25,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class FACTORGRAPH>
   bool BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::equals(
-    const DERIVED& other, double tol = 1e-9) const
+    const DERIVED& other, double tol) const
   {
     return (!conditional_ && !other.conditional())
       || conditional_->equals(*other.conditional(), tol);

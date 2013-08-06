@@ -229,7 +229,7 @@ namespace gtsam {
     boost::shared_ptr<Clique> rootContainer = boost::make_shared<Clique>();
     treeTraversal::DepthFirstForest(other, rootContainer, BayesTreeCloneForestVisitorPre<Clique>);
     BOOST_FOREACH(const sharedClique& root, rootContainer->children) {
-      root->parent_ = Clique::weak_ptr(); // Reset the parent since it's set to the dummy clique
+      root->parent_ = typename Clique::weak_ptr(); // Reset the parent since it's set to the dummy clique
       insertRoot(root);
     }
     return *this;
@@ -437,7 +437,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::removeClique(sharedClique clique)
   {
     if (clique->isRoot()) {
-      std::vector<sharedClique>::iterator root = std::find(roots_.begin(), roots_.end(), clique);
+      typename std::vector<sharedClique>::iterator root = std::find(roots_.begin(), roots_.end(), clique);
       if(root != roots_.end())
         roots_.erase(root);
     } else { // detach clique from parent
@@ -490,7 +490,7 @@ namespace gtsam {
     {
       // get the clique
       // TODO: Nodes will be searched again in removeClique
-      Nodes::const_iterator node = nodes_.find(j);
+      typename Nodes::const_iterator node = nodes_.find(j);
       if(node != nodes_.end()) {
         // remove path from clique to root
         this->removePath(node->second, bn, orphans);

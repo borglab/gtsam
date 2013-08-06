@@ -221,13 +221,13 @@ namespace gtsam {
     {
       FastMap<Key,sharedNode> keys;
       BOOST_FOREACH(const sharedNode& root, this->roots_) { keys.insert(std::make_pair(root->key, root)); }
-      typedef FastMap<Key,sharedNode>::value_type Key_Node;
+      typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
       BOOST_FOREACH(const Key_Node& key_node, keys) { stack1.push(key_node.second); }
     }
     {
       FastMap<Key,sharedNode> keys;
       BOOST_FOREACH(const sharedNode& root, expected.roots_) { keys.insert(std::make_pair(root->key, root)); }
-      typedef FastMap<Key,sharedNode>::value_type Key_Node;
+      typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
       BOOST_FOREACH(const Key_Node& key_node, keys) { stack2.push(key_node.second); }
     }
 
@@ -245,7 +245,7 @@ namespace gtsam {
       if(node1->factors.size() != node2->factors.size()) {
         return false;
       } else {
-        for(Node::Factors::const_iterator it1 = node1->factors.begin(), it2 = node2->factors.begin();
+        for(typename Node::Factors::const_iterator it1 = node1->factors.begin(), it2 = node2->factors.begin();
           it1 != node1->factors.end(); ++it1, ++it2) // Only check it1 == end because we already returned false for different counts
         {
           if(*it1 && *it2) {
@@ -261,13 +261,13 @@ namespace gtsam {
       {
         FastMap<Key,sharedNode> keys;
         BOOST_FOREACH(const sharedNode& node, node1->children) { keys.insert(std::make_pair(node->key, node)); }
-        typedef FastMap<Key,sharedNode>::value_type Key_Node;
+        typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
         BOOST_FOREACH(const Key_Node& key_node, keys) { stack1.push(key_node.second); }
       }
       {
         FastMap<Key,sharedNode> keys;
         BOOST_FOREACH(const sharedNode& node, node2->children) { keys.insert(std::make_pair(node->key, node)); }
-        typedef FastMap<Key,sharedNode>::value_type Key_Node;
+        typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
         BOOST_FOREACH(const Key_Node& key_node, keys) { stack2.push(key_node.second); }
       }
     }

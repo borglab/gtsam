@@ -204,7 +204,7 @@ namespace gtsam {
 
       // Add roots to stack (insert such that they are visited and processed in order
       {
-        Stack::iterator insertLocation = stack.begin();
+        typename Stack::iterator insertLocation = stack.begin();
         BOOST_FOREACH(const sharedNode& root, forest.roots())
           stack.insert(insertLocation, TraversalNode(root, rootData));
       }
@@ -225,7 +225,7 @@ namespace gtsam {
           // If not already visited, visit the node and add its children (use reverse iterators so
           // children are processed in the order they appear)
           node.dataPointer = dataList.insert(dataList.end(), visitorPre(node.treeNode, node.parentData));
-          Stack::iterator insertLocation = stack.begin();
+          typename Stack::iterator insertLocation = stack.begin();
           BOOST_FOREACH(const sharedNode& child, node.treeNode->children)
             stack.insert(insertLocation, TraversalNode(child, *node.dataPointer));
           node.expanded = true;

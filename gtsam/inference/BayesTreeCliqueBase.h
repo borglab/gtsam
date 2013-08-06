@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
 #include <gtsam/base/types.h>
 
 namespace gtsam {

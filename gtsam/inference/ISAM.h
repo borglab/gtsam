@@ -31,7 +31,10 @@ namespace gtsam {
   private:
 
     typedef BAYESTREE Base;
+    typedef typename Base::BayesNetType BayesNetType;
     typedef typename Base::FactorGraphType FactorGraphType;
+    typedef typename Base::Clique Clique;
+    typedef typename Base::sharedClique sharedClique;
     typedef typename Base::Cliques Cliques;
     typedef typename Base::Eliminate Eliminate;
     typedef typename Base::EliminationTraitsType EliminationTraitsType;

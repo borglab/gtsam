@@ -40,7 +40,8 @@ namespace gtsam {
   Ordering Ordering::COLAMD(const VariableIndex& variableIndex)
   {
     // Call constrained version with all groups set to zero
-    return Ordering::COLAMDConstrained(variableIndex, vector<int>(variableIndex.size(), 0));
+    vector<int> dummy_groups(variableIndex.size(), 0);
+    return Ordering::COLAMDConstrained(variableIndex, dummy_groups);
   }
 
   /* ************************************************************************* */
