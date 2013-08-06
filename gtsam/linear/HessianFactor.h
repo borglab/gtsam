@@ -29,9 +29,16 @@ namespace gtsam {
   // Forward declarations
   class Ordering;
   class JacobianFactor;
+  class HessianFactor;
   class GaussianConditional;
   class GaussianBayesNet;
   class GaussianFactorGraph;
+
+  GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> >
+    EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
+
+  GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
+    EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
   // Definition of Scatter, which is an intermediate data structure used when building a
   // HessianFactor incrementally, to get the keys in the right order. The "scatter" is a map from

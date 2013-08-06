@@ -152,6 +152,16 @@ namespace gtsam {
       fg.push_back(clique->conditional_);
       return 0;
     }
+
+    template<class FACTOR, class CLIQUE>
+    struct _pushCliqueFunctor {
+      _pushCliqueFunctor(FactorGraph<FACTOR>& graph_) : graph(graph_) {}
+      FactorGraph<FACTOR>& graph;
+      int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
+        graph.push_back(clique->conditional_);
+        return 0;
+      }
+    };
   }
 
   /* ************************************************************************* */
@@ -160,7 +170,9 @@ namespace gtsam {
   {
     // Traverse the BayesTree and add all conditionals to this graph
     int data = 0; // Unused
-    treeTraversal::DepthFirstForest(*this, data, boost::bind(&_pushClique<FactorType,CLIQUE>, boost::ref(graph), _1));
+    _pushCliqueFunctor<FactorType,CLIQUE> functor(graph);
+    treeTraversal::DepthFirstForest(*this, data, functor); // FIXME: sort of works?
+//    treeTraversal::DepthFirstForest(*this, data, boost::bind(&_pushClique<FactorType,CLIQUE>, boost::ref(graph), _1));
   }
 
   /* ************************************************************************* */

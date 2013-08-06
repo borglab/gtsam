@@ -118,9 +118,7 @@ namespace gtsam {
     Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
 
     // Check for indeterminant solution
-    // FIXME: can't use std::isfinite() as a templated function with gcc
-    if(soln.unaryExpr(!boost::lambda::bind(ptr_fun(isfinite<double>), boost::lambda::_1)).any())
-      throw IndeterminantLinearSystemException(keys().front());
+    if(soln.hasNaN()) throw IndeterminantLinearSystemException(keys().front());
 
     // Insert solution into a VectorValues
     VectorValues result;
@@ -164,9 +162,7 @@ namespace gtsam {
     frontalVec = gtsam::backSubstituteUpper(frontalVec, Matrix(get_R()));
 
     // Check for indeterminant solution
-    // FIXME: can't use isfinite() as a templated function with gcc
-//    if(frontalVec.unaryExpr(!boost::lambda::bind(std::ptr_fun(isfinite<double>), boost::lambda::_1)).any())
-//      throw IndeterminantLinearSystemException(this->keys().front());
+    if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
       gtsam::transposeMultiplyAdd(-1.0, Matrix(getA(it)), frontalVec, gy[*it]);

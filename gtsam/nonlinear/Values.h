@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>

@@ -35,6 +35,10 @@ namespace gtsam {
   class HessianFactor;
   class VectorValues;
   class Ordering;
+  class JacobianFactor;
+
+  GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+    EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
   /**
    * A Gaussian factor in the squared-error form.

@@ -15,9 +15,10 @@
  * @author  Richard Roberts
  * @date    Aug 17, 2012
  */
-#pragma once
 
 #include <gtsam/linear/linearExceptions.h>
+
+#include <boost/format.hpp>
 
 namespace gtsam {
 
