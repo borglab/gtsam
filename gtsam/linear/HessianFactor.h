@@ -47,7 +47,7 @@ namespace gtsam {
   class Scatter : public FastMap<Key, SlotEntry> {
   public:
     Scatter() {}
-    Scatter(const GaussianFactorGraph& gfg);
+    Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering = boost::none);
   };
 
   /**
@@ -190,7 +190,6 @@ namespace gtsam {
 
     /** Combine a set of factors into a single dense HessianFactor */
     explicit HessianFactor(const GaussianFactorGraph& factors,
-      boost::optional<const Ordering&> ordering = boost::none,
       boost::optional<const Scatter&> scatter = boost::none);
 
     /** Destructor */

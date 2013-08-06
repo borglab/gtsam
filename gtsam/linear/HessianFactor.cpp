@@ -45,6 +45,7 @@
 #include <boost/range/algorithm/copy.hpp>
 
 #include <sstream>
+#include <limits>
 
 using namespace std;
 using namespace boost::assign;
@@ -60,21 +61,37 @@ string SlotEntry::toString() const {
 }
 
 /* ************************************************************************* */
-Scatter::Scatter(const GaussianFactorGraph& gfg) {
+Scatter::Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering)
+{
+  static const size_t none = std::numeric_limits<size_t>::max();
+
   // First do the set union.
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg) {
     if(factor) {
       for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
-        this->insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
+        this->insert(make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
       }
+    }
+  }
+
+  // If we have an ordering, pre-fill the ordered variables first
+  size_t slot = 0;
+  if(ordering) {
+    BOOST_FOREACH(Key key, *ordering) {
+      const_iterator entry = find(key);
+      if(entry == end())
+        throw std::invalid_argument(
+        "The ordering provided to the HessianFactor Scatter constructor\n"
+        "contained extra variables that did not appear in the factors to combine.");
+      at(key).slot = (slot ++);
     }
   }
 
   // Next fill in the slot indices (we can only get these after doing the set
   // union.
-  size_t slot = 0;
   BOOST_FOREACH(value_type& var_slot, *this) {
-    var_slot.second.slot = (slot ++);
+    if(var_slot.second.slot == none)
+      var_slot.second.slot = (slot ++);
   }
 }
 
@@ -247,7 +264,6 @@ namespace {
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
-                             boost::optional<const Ordering&> ordering,
                              boost::optional<const Scatter&> scatter)
 {
   boost::optional<Scatter> computedScatter;
@@ -427,7 +443,7 @@ std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFacto
   // Build joint factor
   HessianFactor::shared_ptr jointFactor;
   try {
-    jointFactor = boost::make_shared<HessianFactor>(factors, keys);
+    jointFactor = boost::make_shared<HessianFactor>(factors, Scatter(factors, keys));
   } catch(std::invalid_argument&) {
     throw InvalidDenseElimination(
       "EliminateCholesky was called with a request to eliminate variables that are not\n"
