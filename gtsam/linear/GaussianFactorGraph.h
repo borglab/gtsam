@@ -209,7 +209,7 @@ namespace gtsam {
      *  followed by back-substitution in the Bayes tree resulting from elimination.  Is equivalent
      *  to calling graph.eliminateMultifrontal()->optimize(). */
     VectorValues optimize(OptionalOrdering ordering = boost::none,
-      const Eliminate& function = EliminationTraits::DefaultEliminate) const;
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
      * Compute the gradient of the energy function,

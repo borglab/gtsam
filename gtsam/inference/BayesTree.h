@@ -63,7 +63,7 @@ namespace gtsam {
     typedef typename CLIQUE::FactorGraphType FactorGraphType;
     typedef boost::shared_ptr<FactorGraphType> sharedFactorGraph;
     typedef typename FactorGraphType::Eliminate Eliminate;
-    typedef typename CLIQUE::EliminationTraits EliminationTraits;
+    typedef typename CLIQUE::EliminationTraitsType EliminationTraitsType;
 
     /** A convenience class for a list of shared cliques */
     typedef FastList<sharedClique> Cliques;
@@ -161,19 +161,19 @@ namespace gtsam {
      *  Alternatively, it may be directly used as its factor base class.  For example, for Gaussian
      *  systems, this returns a GaussianConditional, which inherits from JacobianFactor and
      *  GaussianFactor. */
-    sharedConditional marginalFactor(Key j, const Eliminate& function = EliminationTraits::DefaultEliminate) const;
+    sharedConditional marginalFactor(Key j, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
      * return joint on two variables
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
-    sharedFactorGraph joint(Index j1, Index j2, const Eliminate& function = EliminationTraits::DefaultEliminate) const;
+    sharedFactorGraph joint(Index j1, Index j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
      * return joint on two variables as a BayesNet
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
-    sharedBayesNet jointBayesNet(Index j1, Index j2, const Eliminate& function = EliminationTraits::DefaultEliminate) const;
+    sharedBayesNet jointBayesNet(Index j1, Index j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
      * Read only with side effects

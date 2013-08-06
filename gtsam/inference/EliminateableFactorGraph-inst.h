@@ -143,7 +143,7 @@ namespace gtsam {
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesNet(
     boost::variant<const Ordering&, const std::vector<Key>&> variables,
     OptionalOrdering marginalizedVariableOrdering,
-    const Eliminate& function = EliminationTraits::DefaultEliminate,
+    const Eliminate& function = EliminationTraitsType::DefaultEliminate,
     OptionalVariableIndex variableIndex = boost::none) const
   {
     if(variableIndex)
@@ -200,7 +200,7 @@ namespace gtsam {
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesTree(
     boost::variant<const Ordering&, const std::vector<Key>&> variables,
     OptionalOrdering marginalizedVariableOrdering,
-    const Eliminate& function = EliminationTraits::DefaultEliminate,
+    const Eliminate& function = EliminationTraitsType::DefaultEliminate,
     OptionalVariableIndex variableIndex = boost::none) const
   {
     if(variableIndex)
@@ -256,7 +256,7 @@ namespace gtsam {
   boost::shared_ptr<FACTORGRAPH>
     EliminateableFactorGraph<FACTORGRAPH>::marginal(
     const std::vector<Key>& variables,
-    const Eliminate& function = EliminationTraits::DefaultEliminate,
+    const Eliminate& function = EliminationTraitsType::DefaultEliminate,
     OptionalVariableIndex variableIndex = boost::none) const
   {
     if(variableIndex)

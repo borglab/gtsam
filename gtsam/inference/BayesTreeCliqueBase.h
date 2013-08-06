@@ -44,7 +44,7 @@ namespace gtsam {
   private:
     typedef BayesTreeCliqueBase<DERIVED, FACTORGRAPH> This;
     typedef DERIVED DerivedType;
-    typedef EliminationTraits<FACTORGRAPH> EliminationTraits;
+    typedef EliminationTraits<FACTORGRAPH> EliminationTraitsType;
     typedef boost::shared_ptr<This> shared_ptr;
     typedef boost::weak_ptr<This> weak_ptr;
     typedef boost::shared_ptr<DerivedType> derived_ptr;
@@ -52,7 +52,7 @@ namespace gtsam {
 
   public:
     typedef FACTORGRAPH FactorGraphType;
-    typedef typename EliminationTraits::BayesNetType BayesNetType;
+    typedef typename EliminationTraitsType::BayesNetType BayesNetType;
     typedef typename BayesNetType::ConditionalType ConditionalType;
     typedef boost::shared_ptr<ConditionalType> sharedConditional;
     typedef typename FactorGraphType::FactorType FactorType;
@@ -112,13 +112,13 @@ namespace gtsam {
     /// @{
 
     /** return the conditional P(S|Root) on the separator given the root */
-    BayesNetType shortcut(const derived_ptr& root, Eliminate function = EliminationTraits::DefaultEliminate) const;
+    BayesNetType shortcut(const derived_ptr& root, Eliminate function = EliminationTraitsType::DefaultEliminate) const;
 
     /** return the marginal P(S) on the separator */
-    FactorGraphType separatorMarginal(Eliminate function = EliminationTraits::DefaultEliminate) const;
+    FactorGraphType separatorMarginal(Eliminate function = EliminationTraitsType::DefaultEliminate) const;
 
     /** return the marginal P(C) of the clique, using marginal caching */
-    FactorGraphType marginal2(Eliminate function = EliminationTraits::DefaultEliminate) const;
+    FactorGraphType marginal2(Eliminate function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
      * This deletes the cached shortcuts of all cliques (subtree) below this clique.

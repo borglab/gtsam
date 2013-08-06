@@ -34,7 +34,7 @@ namespace gtsam {
     typedef typename Base::FactorGraphType FactorGraphType;
     typedef typename Base::Cliques Cliques;
     typedef typename Base::Eliminate Eliminate;
-    typedef typename Base::EliminationTraits EliminationTraits;
+    typedef typename Base::EliminationTraitsType EliminationTraitsType;
 
   public:
 
@@ -56,11 +56,11 @@ namespace gtsam {
      * @param newFactors is a factor graph that contains the new factors
      * @param function an elimination routine
      */
-    void update(const FactorGraphType& newFactors, const Eliminate& function = EliminationTraits::DefaultEliminate);
+    void update(const FactorGraphType& newFactors, const Eliminate& function = EliminationTraitsType::DefaultEliminate);
 
     /** update_internal provides access to list of orphans for drawing purposes */
     void update_internal(const FactorGraphType& newFactors, Cliques& orphans,
-      const Eliminate& function = EliminationTraits::DefaultEliminate);
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate);
 
     /// @}
 
