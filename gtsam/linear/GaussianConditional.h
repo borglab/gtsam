@@ -152,3 +152,5 @@ namespace gtsam {
 
 } // gtsam
 
+#include <gtsam/linear/GaussianConditional-inl.h>
+
