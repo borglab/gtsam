@@ -274,19 +274,17 @@ GaussianFactorGraph createGaussianFactorGraph() {
   // Create empty graph
   GaussianFactorGraph fg;
 
-  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
-
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(X(1), 10*eye(2), -1.0*ones(2), unit2);
+  fg += JacobianFactor(X(1), 10*eye(2), -1.0*ones(2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(X(1), -10*eye(2), X(2), 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+  fg += JacobianFactor(X(1), -10*eye(2), X(2), 10*eye(2), Vector_(2, 2.0, -1.0));
 
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(X(1), -5*eye(2), L(1), 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+  fg += JacobianFactor(X(1), -5*eye(2), L(1), 5*eye(2), Vector_(2, 0.0, 1.0));
 
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(X(2), -5*eye(2), L(1), 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+  fg += JacobianFactor(X(2), -5*eye(2), L(1), 5*eye(2), Vector_(2, -1.0, 1.5));
 
   return fg;
 }
