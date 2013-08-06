@@ -271,6 +271,9 @@ namespace gtsam {
     /// Left-trivialized derivative of the exponential map
     static Matrix3 dexpL(const Vector3& v);
 
+    /// Left-trivialized derivative inverse of the exponential map
+    static Matrix3 dexpInvL(const Vector3& v);
+
     /// @}
     /// @name Group Action on Point3
     /// @{

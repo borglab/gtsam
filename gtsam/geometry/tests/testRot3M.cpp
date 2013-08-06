@@ -419,6 +419,9 @@ TEST( Rot3, dexpL) {
       boost::function<Vector(const LieVector&)>(
           boost::bind(testDexpL, _1)), LieVector(zero(3)), 1e-2);
   EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
+
+  Matrix actualDexpInvL = Rot3::dexpInvL(w);
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
 }
 
 /* ************************************************************************* */

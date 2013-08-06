@@ -148,6 +148,11 @@ namespace gtsam {
       return eye(3);
     }
 
+    /// Left-trivialized derivative inverse of the exponential map
+    static Matrix dexpInvL(const Vector& v) {
+      return eye(3);
+    }
+
     /// @}
     /// @name Vector Space
     /// @{

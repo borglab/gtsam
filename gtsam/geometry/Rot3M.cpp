@@ -317,6 +317,19 @@ Matrix3 Rot3::dexpL(const Vector3& v) {
 }
 
 /* ************************************************************************* */
+/// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
+Matrix3 Rot3::dexpInvL(const Vector3& v) {
+  if(zero(v)) return eye(3);
+  Matrix x = skewSymmetric(v);
+  Matrix x2 = x*x;
+  double theta = v.norm(), vi = theta/2.0;
+  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
+  Matrix res = eye(3) + 0.5*x - s2*x2;
+  return res;
+}
+
+
+/* ************************************************************************* */
 Matrix3 Rot3::matrix() const {
   return rot_;
 }
