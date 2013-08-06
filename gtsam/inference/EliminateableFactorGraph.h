@@ -21,6 +21,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
+#include <boost/optional.hpp>
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>

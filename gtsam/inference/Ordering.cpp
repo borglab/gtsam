@@ -15,10 +15,10 @@
  * @date    Sep 2, 2010
  */
 
-#pragma once
-
 #include <vector>
 #include <limits>
+
+#include <boost/format.hpp>
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>

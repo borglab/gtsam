@@ -547,7 +547,7 @@ void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask) {
   if (inf_mask) {
     for (size_t i=0; i<m; ++i) {
       const double& vi = v(i);
-      if (!isnan(vi) && !isinf(vi))
+      if (std::isfinite(vi))
         A.row(i) *= vi;
     }
   } else {
@@ -572,7 +572,7 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
   if (inf_mask) {
     for (size_t j=0; j<n; ++j) {
       const double& vj = v(j);
-      if (!isnan(vj) && !isinf(vj))
+      if (std::isfinite(vj))
         M.col(j) *= vj;
     }
   } else {
