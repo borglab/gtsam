@@ -23,6 +23,7 @@
 #include <vector>
 #include <string>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
@@ -77,7 +78,7 @@ namespace gtsam {
           treeNode(treeNode), myData(myData), visitorPre(visitorPre), visitorPost(visitorPost),
           problemSizeThreshold(problemSizeThreshold), makeNewTasks(makeNewTasks) {}
 
-        typedef ParallelTraversalNode<NODE, DATA> ParallelTraversalNode;
+        typedef ParallelTraversalNode<NODE, DATA> ParallelTraversalNodeType;
 
         tbb::task* execute()
         {

@@ -136,7 +136,8 @@ namespace gtsam {
 
     /** Scale the values in \c gy according to the sigmas for the frontal variables in this
      *  conditional. */
-    __declspec(deprecated) void scaleFrontalsBySigma(VectorValues& gy) const;
+    void scaleFrontalsBySigma(VectorValues& gy) const;
+//    __declspec(deprecated) void scaleFrontalsBySigma(VectorValues& gy) const; // FIXME: depreciated flag doesn't appear to exist?
 
   private:
 
@@ -150,6 +151,4 @@ namespace gtsam {
   }; // GaussianConditional
 
 } // gtsam
-
-#include <gtsam/linear/GaussianConditional-inl.h>
 

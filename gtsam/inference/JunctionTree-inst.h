@@ -22,6 +22,7 @@
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
@@ -217,7 +218,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class BAYESTREE, class GRAPH>
   void JunctionTree<BAYESTREE,GRAPH>::print(
-    const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
+    const std::string& s, const KeyFormatter& keyFormatter) const
   {
     treeTraversal::PrintForest(*this, s, keyFormatter);
   }

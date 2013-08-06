@@ -24,6 +24,7 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <boost/foreach.hpp>
