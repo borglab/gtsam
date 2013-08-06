@@ -198,6 +198,8 @@ include_directories(BEFORE
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661) # Disable non-DLL-exported base class and other warnings
+else()
+#    list(APPEND CMAKE_CXX_FLAGS "-std=c++11") 
 endif()
 
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
