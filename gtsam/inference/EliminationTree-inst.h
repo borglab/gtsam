@@ -149,9 +149,9 @@ namespace gtsam {
       if(parents[j] == none)
         roots_.push_back(nodes[j]);
 
-    // Gather remaining factors
+    // Gather remaining factors (exclude null factors)
     for(size_t i = 0; i < m; ++i)
-      if(!factorUsed[i])
+      if(!factorUsed[i] && graph[i])
         remainingFactors_.push_back(graph[i]);
   }
 
