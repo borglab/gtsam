@@ -120,14 +120,8 @@ namespace gtsam {
       std::vector<Key> keep = shortcut_indices(B, p_Cp_B);
 
       // Marginalize out everything except S union B
-      BayesNetType result = *p_Cp_B.marginalMultifrontalBayesNet(
-        Ordering(keep), boost::none, function);
-
-      // Finally, we only want to have S\B variables in the Bayes net, so
-      size_t nrFrontals = S_setminus_B.size();
-      result.erase(result.begin() + nrFrontals, result.end());
-
-      return result;
+      boost::shared_ptr<FactorGraphType> p_S_B = p_Cp_B.marginal(keep, function);
+      return *p_S_B->eliminatePartialSequential(S_setminus_B, function).first;
     }
     else
     {
