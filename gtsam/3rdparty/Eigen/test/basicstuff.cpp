@@ -52,8 +52,7 @@ template<typename MatrixType> void basicStuff(const MatrixType& m)
   VERIFY_IS_APPROX(               v1,    v1);
   VERIFY_IS_NOT_APPROX(           v1,    2*v1);
   VERIFY_IS_MUCH_SMALLER_THAN(    vzero, v1);
-  if(!NumTraits<Scalar>::IsInteger)
-    VERIFY_IS_MUCH_SMALLER_THAN(  vzero, v1.norm());
+  VERIFY_IS_MUCH_SMALLER_THAN(  vzero, v1.squaredNorm());
   VERIFY_IS_NOT_MUCH_SMALLER_THAN(v1,    v1);
   VERIFY_IS_APPROX(               vzero, v1-v1);
   VERIFY_IS_APPROX(               m1,    m1);
@@ -142,10 +141,10 @@ template<typename MatrixType> void basicStuffComplex(const MatrixType& m)
   Scalar s1 = internal::random<Scalar>(),
          s2 = internal::random<Scalar>();
 
-  VERIFY(internal::real(s1)==internal::real_ref(s1));
-  VERIFY(internal::imag(s1)==internal::imag_ref(s1));
-  internal::real_ref(s1) = internal::real(s2);
-  internal::imag_ref(s1) = internal::imag(s2);
+  VERIFY(numext::real(s1)==numext::real_ref(s1));
+  VERIFY(numext::imag(s1)==numext::imag_ref(s1));
+  numext::real_ref(s1) = numext::real(s2);
+  numext::imag_ref(s1) = numext::imag(s2);
   VERIFY(internal::isApprox(s1, s2, NumTraits<RealScalar>::epsilon()));
   // extended precision in Intel FPUs means that s1 == s2 in the line above is not guaranteed.
 

@@ -12,6 +12,12 @@
 #ifdef __GNUC__
 #define throw(X)
 #endif
+
+#ifdef __INTEL_COMPILER
+  // disable "warning #76: argument to macro is empty" produced by the above hack
+  #pragma warning disable 76
+#endif
+
 // discard stack allocation as that too bypasses malloc
 #define EIGEN_STACK_ALLOCATION_LIMIT 0
 // any heap allocation will raise an assert
@@ -30,7 +36,6 @@ template<typename MatrixType> void nomalloc(const MatrixType& m)
   */
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
-  typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
 
   Index rows = m.rows();
   Index cols = m.cols();

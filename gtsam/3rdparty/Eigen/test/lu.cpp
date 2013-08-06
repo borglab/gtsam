@@ -14,7 +14,6 @@ using namespace std;
 template<typename MatrixType> void lu_non_invertible()
 {
   typedef typename MatrixType::Index Index;
-  typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
   /* this test covers the following files:
      LU.h
@@ -100,7 +99,6 @@ template<typename MatrixType> void lu_invertible()
   /* this test covers the following files:
      LU.h
   */
-  typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
   int size = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
 
@@ -132,8 +130,6 @@ template<typename MatrixType> void lu_partial_piv()
      PartialPivLU.h
   */
   typedef typename MatrixType::Index Index;
-  typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
   Index rows = internal::random<Index>(1,4);
   Index cols = rows;
 

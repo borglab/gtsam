@@ -403,6 +403,28 @@ TEST( Rot3, between )
 }
 
 /* ************************************************************************* */
+Vector w = Vector_(3, 0.1, 0.27, -0.2);
+
+// Left trivialization Derivative of exp(w) over w: How exp(w) changes when w changes?
+// We find y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
+// => y = log (exp(-w) * exp(w+dw))
+Vector testDexpL(const LieVector& dw) {
+  Vector y = Rot3::Logmap(Rot3::Expmap(-w) * Rot3::Expmap(w + dw));
+  return y;
+}
+
+TEST( Rot3, dexpL) {
+  Matrix actualDexpL = Rot3::dexpL(w);
+  Matrix expectedDexpL = numericalDerivative11(
+      boost::function<Vector(const LieVector&)>(
+          boost::bind(testDexpL, _1)), LieVector(zero(3)), 1e-2);
+  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
+
+  Matrix actualDexpInvL = Rot3::dexpInvL(w);
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST( Rot3, xyz )
 {
   double t = 0.1, st = sin(t), ct = cos(t);

@@ -77,6 +77,11 @@ GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, ...);
 GTSAM_EXPORT Matrix zeros(size_t m, size_t n);
 
 /**
+ * Creates an ones matrix, with matlab-like syntax
+ */
+GTSAM_EXPORT Matrix ones(size_t m, size_t n);
+
+/**
  * Creates an identity matrix, with matlab-like syntax
  *
  * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
@@ -237,6 +242,11 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
  * @param j is the column of the upper left corner insert location
  */
 GTSAM_EXPORT void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
+
+/**
+ * Create a matrix with submatrices along its diagonal
+ */
+GTSAM_EXPORT Matrix diag(const std::vector<Matrix>& Hs);
 
 /**
  * Extracts a column view from a matrix that avoids a copy

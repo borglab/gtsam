@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
   if(!inputFile.empty())
   {
     cout << "Reading input file " << inputFile << endl;
-    std::ifstream readerStream(inputFile, ios::binary);
+    std::ifstream readerStream(inputFile.c_str(), ios::binary);
     boost::archive::binary_iarchive reader(readerStream);
     reader >> initial;
   }
@@ -340,9 +340,10 @@ void runIncremental()
   {
     try {
       cout << "Writing output file " << outputFile << endl;
-      std::ofstream writerStream(outputFile, ios::binary);
+      std::ofstream writerStream(outputFile.c_str(), ios::binary);
       boost::archive::binary_oarchive writer(writerStream);
-      writer << isam2.calculateEstimate();
+      Values estimates = isam2.calculateEstimate();
+      writer << estimates;
     } catch(std::exception& e) {
       cout << e.what() << endl;
       exit(1);
@@ -423,7 +424,7 @@ void runBatch()
   {
     try {
       cout << "Writing output file " << outputFile << endl;
-      std::ofstream writerStream(outputFile, ios::binary);
+      std::ofstream writerStream(outputFile.c_str(), ios::binary);
       boost::archive::binary_oarchive writer(writerStream);
       writer << optimizer.values();
     } catch(std::exception& e) {
@@ -440,14 +441,14 @@ void runCompare()
 
   cout << "Reading solution file " << compareFile1 << endl;
   {
-    std::ifstream readerStream(compareFile1, ios::binary);
+    std::ifstream readerStream(compareFile1.c_str(), ios::binary);
     boost::archive::binary_iarchive reader(readerStream);
     reader >> soln1;
   }
 
   cout << "Reading solution file " << compareFile2 << endl;
   {
-    std::ifstream readerStream(compareFile2, ios::binary);
+    std::ifstream readerStream(compareFile2.c_str(), ios::binary);
     boost::archive::binary_iarchive reader(readerStream);
     reader >> soln2;
   }
@@ -494,7 +495,7 @@ void runPerturb()
   // Write results
   try {
     cout << "Writing output file " << outputFile << endl;
-    std::ofstream writerStream(outputFile, ios::binary);
+    std::ofstream writerStream(outputFile.c_str(), ios::binary);
     boost::archive::binary_oarchive writer(writerStream);
     writer << perturbed;
   } catch(std::exception& e) {

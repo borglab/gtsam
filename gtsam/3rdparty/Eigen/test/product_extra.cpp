@@ -13,7 +13,6 @@ template<typename MatrixType> void product_extra(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::NonInteger NonInteger;
   typedef Matrix<Scalar, 1, Dynamic> RowVectorType;
   typedef Matrix<Scalar, Dynamic, 1> ColVectorType;
   typedef Matrix<Scalar, Dynamic, Dynamic,
@@ -43,7 +42,7 @@ template<typename MatrixType> void product_extra(const MatrixType& m)
   VERIFY_IS_APPROX(m3.noalias() = m1.adjoint() * square.adjoint(),   m1.adjoint().eval() * square.adjoint().eval());
   VERIFY_IS_APPROX(m3.noalias() = m1.adjoint() * m2,                 m1.adjoint().eval() * m2);
   VERIFY_IS_APPROX(m3.noalias() = (s1 * m1.adjoint()) * m2,          (s1 * m1.adjoint()).eval() * m2);
-  VERIFY_IS_APPROX(m3.noalias() = ((s1 * m1).adjoint()) * m2,        (internal::conj(s1) * m1.adjoint()).eval() * m2);
+  VERIFY_IS_APPROX(m3.noalias() = ((s1 * m1).adjoint()) * m2,        (numext::conj(s1) * m1.adjoint()).eval() * m2);
   VERIFY_IS_APPROX(m3.noalias() = (- m1.adjoint() * s1) * (s3 * m2), (- m1.adjoint()  * s1).eval() * (s3 * m2).eval());
   VERIFY_IS_APPROX(m3.noalias() = (s2 * m1.adjoint() * s1) * m2,     (s2 * m1.adjoint()  * s1).eval() * m2);
   VERIFY_IS_APPROX(m3.noalias() = (-m1*s2) * s1*m2.adjoint(),        (-m1*s2).eval() * (s1*m2.adjoint()).eval());

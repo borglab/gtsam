@@ -28,17 +28,52 @@ template<typename Scalar> struct AddIfNull {
     enum { Cost = NumTraits<Scalar>::AddCost };
 };
 
+template<typename MatrixType>
+typename Eigen::internal::enable_if<!NumTraits<typename MatrixType::Scalar>::IsInteger,typename MatrixType::Scalar>::type
+cwiseops_real_only(MatrixType& m1, MatrixType& m2, MatrixType& m3, MatrixType& mones)
+{
+  typedef typename MatrixType::Scalar Scalar;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
+  
+  VERIFY_IS_APPROX(m1.cwise() / m2,    m1.cwise() * (m2.cwise().inverse()));
+  m3 = m1.cwise().abs().cwise().sqrt();
+  VERIFY_IS_APPROX(m3.cwise().square(), m1.cwise().abs());
+  VERIFY_IS_APPROX(m1.cwise().square().cwise().sqrt(), m1.cwise().abs());
+  VERIFY_IS_APPROX(m1.cwise().abs().cwise().log().cwise().exp() , m1.cwise().abs());
+
+  VERIFY_IS_APPROX(m1.cwise().pow(2), m1.cwise().square());
+  m3 = (m1.cwise().abs().cwise()<=RealScalar(0.01)).select(mones,m1);
+  VERIFY_IS_APPROX(m3.cwise().pow(-1), m3.cwise().inverse());
+  m3 = m1.cwise().abs();
+  VERIFY_IS_APPROX(m3.cwise().pow(RealScalar(0.5)), m3.cwise().sqrt());
+
+//   VERIFY_IS_APPROX(m1.cwise().tan(), m1.cwise().sin().cwise() / m1.cwise().cos());
+  VERIFY_IS_APPROX(mones, m1.cwise().sin().cwise().square() + m1.cwise().cos().cwise().square());
+  m3 = m1;
+  m3.cwise() /= m2;
+  VERIFY_IS_APPROX(m3, m1.cwise() / m2);
+  
+  return Scalar(0);
+}
+
+template<typename MatrixType>
+typename Eigen::internal::enable_if<NumTraits<typename MatrixType::Scalar>::IsInteger,typename MatrixType::Scalar>::type
+cwiseops_real_only(MatrixType& , MatrixType& , MatrixType& , MatrixType& )
+{
+  return 0;
+}
+
 template<typename MatrixType> void cwiseops(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
 
   Index rows = m.rows();
   Index cols = m.cols();
 
   MatrixType m1 = MatrixType::Random(rows, cols),
+             m1bis = m1,
              m2 = MatrixType::Random(rows, cols),
              m3(rows, cols),
              m4(rows, cols),
@@ -101,26 +136,6 @@ template<typename MatrixType> void cwiseops(const MatrixType& m)
   VERIFY_IS_APPROX(m3, m1.cwise() * m2);
 
   VERIFY_IS_APPROX(mones,    m2.cwise()/m2);
-  if(!NumTraits<Scalar>::IsInteger)
-  {
-    VERIFY_IS_APPROX(m1.cwise() / m2,    m1.cwise() * (m2.cwise().inverse()));
-    m3 = m1.cwise().abs().cwise().sqrt();
-    VERIFY_IS_APPROX(m3.cwise().square(), m1.cwise().abs());
-    VERIFY_IS_APPROX(m1.cwise().square().cwise().sqrt(), m1.cwise().abs());
-    VERIFY_IS_APPROX(m1.cwise().abs().cwise().log().cwise().exp() , m1.cwise().abs());
-
-    VERIFY_IS_APPROX(m1.cwise().pow(2), m1.cwise().square());
-    m3 = (m1.cwise().abs().cwise()<=RealScalar(0.01)).select(mones,m1);
-    VERIFY_IS_APPROX(m3.cwise().pow(-1), m3.cwise().inverse());
-    m3 = m1.cwise().abs();
-    VERIFY_IS_APPROX(m3.cwise().pow(RealScalar(0.5)), m3.cwise().sqrt());
-
-//     VERIFY_IS_APPROX(m1.cwise().tan(), m1.cwise().sin().cwise() / m1.cwise().cos());
-    VERIFY_IS_APPROX(mones, m1.cwise().sin().cwise().square() + m1.cwise().cos().cwise().square());
-    m3 = m1;
-    m3.cwise() /= m2;
-    VERIFY_IS_APPROX(m3, m1.cwise() / m2);
-  }
 
   // check min
   VERIFY_IS_APPROX( m1.cwise().min(m2), m2.cwise().min(m1) );
@@ -148,8 +163,10 @@ template<typename MatrixType> void cwiseops(const MatrixType& m)
   VERIFY( (m1.cwise().max(m2).cwise() > (m1-mones)).all() );
 
   VERIFY( (m1.cwise()<m1.unaryExpr(bind2nd(plus<Scalar>(), Scalar(1)))).all() );
-  VERIFY( !(m1.cwise()<m1.unaryExpr(bind2nd(minus<Scalar>(), Scalar(1)))).all() );
-  VERIFY( !(m1.cwise()>m1.unaryExpr(bind2nd(plus<Scalar>(), Scalar(1)))).any() );
+  VERIFY( !(m1.cwise()<m1bis.unaryExpr(bind2nd(minus<Scalar>(), Scalar(1)))).all() );
+  VERIFY( !(m1.cwise()>m1bis.unaryExpr(bind2nd(plus<Scalar>(), Scalar(1)))).any() );
+  
+  cwiseops_real_only(m1, m2, m3, mones);
 }
 
 void test_cwiseop()

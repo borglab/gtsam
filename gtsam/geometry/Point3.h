@@ -143,6 +143,16 @@ namespace gtsam {
     /** Log map at identity - return the x,y,z of this point */
     static inline Vector3 Logmap(const Point3& dp) { return Vector3(dp.x(), dp.y(), dp.z()); }
 
+    /// Left-trivialized derivative of the exponential map
+    static Matrix dexpL(const Vector& v) {
+      return eye(3);
+    }
+
+    /// Left-trivialized derivative inverse of the exponential map
+    static Matrix dexpInvL(const Vector& v) {
+      return eye(3);
+    }
+
     /// @}
     /// @name Vector Space
     /// @{

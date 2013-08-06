@@ -15,8 +15,8 @@ template<typename MatrixType> void upperbidiag(const MatrixType& m)
   const typename MatrixType::Index rows = m.rows();
   const typename MatrixType::Index cols = m.cols();
 
-  typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<typename MatrixType::RealScalar, MatrixType::RowsAtCompileTime,  MatrixType::ColsAtCompileTime> RealMatrixType;
+  typedef Matrix<typename MatrixType::Scalar, MatrixType::ColsAtCompileTime,  MatrixType::RowsAtCompileTime> TransposeMatrixType;
 
   MatrixType a = MatrixType::Random(rows,cols);
   internal::UpperBidiagonalization<MatrixType> ubd(a);
@@ -25,6 +25,8 @@ template<typename MatrixType> void upperbidiag(const MatrixType& m)
   b.block(0,0,cols,cols) = ubd.bidiagonal();
   MatrixType c = ubd.householderU() * b * ubd.householderV().adjoint();
   VERIFY_IS_APPROX(a,c);
+  TransposeMatrixType d = ubd.householderV() * b.adjoint() * ubd.householderU().adjoint();
+  VERIFY_IS_APPROX(a.adjoint(),d);
 }
 
 void test_upperbidiagonalization()

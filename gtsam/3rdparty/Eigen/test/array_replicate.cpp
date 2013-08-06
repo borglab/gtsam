@@ -16,7 +16,6 @@ template<typename MatrixType> void replicate(const MatrixType& m)
   */
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
   typedef Matrix<Scalar, Dynamic, Dynamic> MatrixX;
   typedef Matrix<Scalar, Dynamic, 1> VectorX;

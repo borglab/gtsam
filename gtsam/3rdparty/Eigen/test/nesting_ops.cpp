@@ -12,17 +12,9 @@
 template <typename MatrixType> void run_nesting_ops(const MatrixType& _m)
 {
   typename MatrixType::Nested m(_m);
-  typedef typename MatrixType::Scalar Scalar;
 
-#ifdef NDEBUG
-  const bool is_debug = false;
-#else
-  const bool is_debug = true;
-#endif
-
-  // Make really sure that we are in debug mode! We don't want any type of
-  // inlining for these tests to pass.
-  VERIFY(is_debug);
+  // Make really sure that we are in debug mode!
+  VERIFY_RAISES_ASSERT(eigen_assert(false));
 
   // The only intention of these tests is to ensure that this code does
   // not trigger any asserts or segmentation faults... more to come.

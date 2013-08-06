@@ -1022,10 +1022,10 @@ Values ISAM2::calculateEstimate() const {
 }
 
 /* ************************************************************************* */
-Matrix ISAM2::marginalCovariance(Index key) const {
-  return marginalFactor(ordering_[key],
-    params_.factorization == ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky)
-    ->information().inverse();
+const Value& ISAM2::calculateEstimate(Key key) const {
+  const Index index = getOrdering()[key];
+  const Vector& delta = getDelta()[index];
+  return *theta_.at(key).retract_(delta);
 }
 
 /* ************************************************************************* */
@@ -1033,6 +1033,13 @@ Values ISAM2::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
   internal::optimizeInPlace<Base>(this->root(), delta);
   return theta_.retract(delta, ordering_);
+}
+
+/* ************************************************************************* */
+Matrix ISAM2::marginalCovariance(Index key) const {
+  return marginalFactor(ordering_[key],
+    params_.factorization == ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky)
+    ->information().inverse();
 }
 
 /* ************************************************************************* */

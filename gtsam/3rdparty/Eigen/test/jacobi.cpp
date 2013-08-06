@@ -14,7 +14,6 @@
 template<typename MatrixType, typename JacobiScalar>
 void jacobi(const MatrixType& m = MatrixType())
 {
-  typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
@@ -41,8 +40,8 @@ void jacobi(const MatrixType& m = MatrixType())
 
     MatrixType b = a;
     b.applyOnTheLeft(p, q, rot);
-    VERIFY_IS_APPROX(b.row(p), c * a.row(p) + internal::conj(s) * a.row(q));
-    VERIFY_IS_APPROX(b.row(q), -s * a.row(p) + internal::conj(c) * a.row(q));
+    VERIFY_IS_APPROX(b.row(p), c * a.row(p) + numext::conj(s) * a.row(q));
+    VERIFY_IS_APPROX(b.row(q), -s * a.row(p) + numext::conj(c) * a.row(q));
   }
 
   {
@@ -55,7 +54,7 @@ void jacobi(const MatrixType& m = MatrixType())
     MatrixType b = a;
     b.applyOnTheRight(p, q, rot);
     VERIFY_IS_APPROX(b.col(p), c * a.col(p) - s * a.col(q));
-    VERIFY_IS_APPROX(b.col(q), internal::conj(s) * a.col(p) + internal::conj(c) * a.col(q));
+    VERIFY_IS_APPROX(b.col(q), numext::conj(s) * a.col(p) + numext::conj(c) * a.col(q));
   }
 }
 
@@ -75,7 +74,8 @@ void test_jacobi()
     // complex<float> is really important to test as it is the only way to cover conjugation issues in certain unaligned paths
     CALL_SUBTEST_6(( jacobi<MatrixXcf, float>(MatrixXcf(r,c)) ));
     CALL_SUBTEST_6(( jacobi<MatrixXcf, std::complex<float> >(MatrixXcf(r,c)) ));
-    (void) r;
-    (void) c;
+    
+    TEST_SET_BUT_UNUSED_VARIABLE(r);
+    TEST_SET_BUT_UNUSED_VARIABLE(c);
   }
 }

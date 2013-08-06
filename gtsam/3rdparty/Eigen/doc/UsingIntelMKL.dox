@@ -40,7 +40,7 @@ Since Eigen version 3.1 and later, users can benefit from built-in Intel MKL opt
 <a href="http://eigen.tuxfamily.org/Counter/redirect_to_mkl.php"> Intel MKL </a> provides highly optimized multi-threaded mathematical routines for x86-compatible architectures.
 Intel MKL is available on Linux, Mac and Windows for both Intel64 and IA32 architectures.
 
-\warning Be aware that Intel® MKL is a proprietary software. It is the responsibility of the users to buy MKL licenses for their products. Moreover, the license of the user product has to allow linking to proprietary software that excludes any unmodified versions of the GPL. As a consequence, this also means that Eigen has to be used through the LGPL3+ license.
+\warning Be aware that Intel® MKL is a proprietary software. It is the responsibility of the users to buy MKL licenses for their products. Moreover, the license of the user product has to allow linking to proprietary software that excludes any unmodified versions of the GPL.
 
 Using Intel MKL through Eigen is easy:
 -# define the \c EIGEN_USE_MKL_ALL macro before including any Eigen's header
@@ -61,7 +61,7 @@ In addition you can coarsely select choose which parts will be substituted by de
 <tr><td>\c EIGEN_USE_MKL_ALL </td><td>Defines \c EIGEN_USE_BLAS, \c EIGEN_USE_LAPACKE, and \c EIGEN_USE_MKL_VML </td></tr>
 </table>
 
-Finally, the PARDISO sparse solver shipped with Intel MKL can be used through the \ref PardisoLU, \ref PardisoLLT and \ref PardisoLDLT classes of the \ref PARDISOSupport_Module.
+Finally, the PARDISO sparse solver shipped with Intel MKL can be used through the \ref PardisoLU, \ref PardisoLLT and \ref PardisoLDLT classes of the \ref PardisoSupport_Module.
 
 
 \section TopicUsingIntelMKL_SupportedFeatures List of supported features

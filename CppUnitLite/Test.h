@@ -130,7 +130,7 @@ boost::lexical_cast<std::string>(actualTemp))); return; } }
 #define DOUBLES_EQUAL(expected,actual,threshold)\
 { double actualTemp = actual; \
   double expectedTemp = expected; \
-  if (fabs ((expectedTemp)-(actualTemp)) > threshold) \
+  if (!std::isfinite(actualTemp) || !std::isfinite(expectedTemp) || fabs ((expectedTemp)-(actualTemp)) > threshold) \
 { result_.addFailure (Failure (name_, __FILE__, __LINE__, \
 boost::lexical_cast<std::string>((double)expectedTemp), boost::lexical_cast<std::string>((double)actualTemp))); return; } }
 
@@ -150,7 +150,7 @@ boost::lexical_cast<std::string>(actualTemp))); } }
 #define EXPECT_DOUBLES_EQUAL(expected,actual,threshold)\
 { double actualTemp = actual; \
   double expectedTemp = expected; \
-  if (fabs ((expectedTemp)-(actualTemp)) > threshold) \
+  if (!std::isfinite(actualTemp) || !std::isfinite(expectedTemp) || fabs ((expectedTemp)-(actualTemp)) > threshold) \
 { result_.addFailure (Failure (name_, __FILE__, __LINE__, \
 boost::lexical_cast<std::string>((double)expectedTemp), boost::lexical_cast<std::string>((double)actualTemp))); } }
 
