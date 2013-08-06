@@ -169,12 +169,10 @@ TEST( GaussianBayesTree, balanced_smoother_marginals )
 TEST( GaussianBayesTree, balanced_smoother_shortcuts )
 {
   // Create smoother with 7 nodes
-  Ordering ordering;
-  ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
   GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
-  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal();
 
   // Check the conditional P(Root|Root)
   GaussianBayesNet empty;
@@ -183,7 +181,7 @@ TEST( GaussianBayesTree, balanced_smoother_shortcuts )
   EXPECT(assert_equal(empty,actual1,tol));
 
   // Check the conditional P(C2|Root)
-  GaussianBayesTree::sharedClique C2 = bayesTree[ordering[X(3)]];
+  GaussianBayesTree::sharedClique C2 = bayesTree[X(3)];
   GaussianBayesNet actual2 = C2->shortcut(R);
   EXPECT(assert_equal(empty,actual2,tol));
 
