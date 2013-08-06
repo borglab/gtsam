@@ -217,6 +217,12 @@ namespace gtsam {
       const Eliminate& function = EliminationTraits::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
+    /** Compute the marginal factor graph of the requested variables. */
+    boost::shared_ptr<FactorGraphType> marginal(
+      const std::vector<Key>& variables,
+      const Eliminate& function = EliminationTraits::DefaultEliminate,
+      OptionalVariableIndex variableIndex = boost::none) const;
+
   private:
 
     // Access the derived factor graph class

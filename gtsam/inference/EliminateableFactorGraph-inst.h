@@ -103,6 +103,26 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
+  std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>, boost::shared_ptr<FACTORGRAPH> >
+    EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialSequential(
+    const std::vector<Key>& variables, const Eliminate& function, OptionalVariableIndex variableIndex) const
+  {
+    if(variableIndex) {
+      gttic(eliminatePartialSequential);
+      // Compute full ordering
+      Ordering fullOrdering = Ordering::COLAMDConstrainedFirst(*variableIndex, variables);
+
+      // Split off the part of the ordering for the variables being eliminated
+      Ordering ordering(fullOrdering.begin(), fullOrdering.begin() + variables.size());
+      return eliminatePartialSequential(ordering, function, variableIndex);
+    } else {
+      // If no variable index is provided, compute one and call this function again
+      return eliminatePartialSequential(variables, function, VariableIndex(asDerived()));
+    }
+  }
+
+  /* ************************************************************************* */
+  template<class FACTORGRAPH>
   std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, boost::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialMultifrontal(
     const Ordering& ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
@@ -230,5 +250,32 @@ namespace gtsam {
       return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, VariableIndex(asDerived()));
     }
   }
+
+  /* ************************************************************************* */
+  template<class FACTORGRAPH>
+  boost::shared_ptr<FACTORGRAPH>
+    EliminateableFactorGraph<FACTORGRAPH>::marginal(
+    const std::vector<Key>& variables,
+    const Eliminate& function = EliminationTraits::DefaultEliminate,
+    OptionalVariableIndex variableIndex = boost::none) const
+  {
+    if(variableIndex)
+    {
+      // Compute a total ordering for all variables
+      Ordering totalOrdering = Ordering::COLAMDConstrainedLast(*variableIndex, variables);
+
+      // Split out the part for the marginalized variables
+      Ordering marginalizationOrdering(totalOrdering.begin(), totalOrdering.end() - variables.size());
+
+      // Eliminate and return the remaining factor graph
+      return eliminatePartialMultifrontal(marginalizationOrdering, function, *variableIndex).second;
+    }
+    else
+    {
+      // If no variable index is provided, compute one and call this function again
+      return marginal(variables, function, VariableIndex(asDerived()));
+    }
+  }
+
 
 }
