@@ -16,6 +16,10 @@
  * @date Feb 7, 2012
  */
 
+#include <CppUnitLite/TestHarness.h>
+
+#if 0
+
 #include <tests/smallExample.h>
 //#include <gtsam/slam/AntiFactor.h>
 #include <gtsam/slam/BearingFactor.h>
@@ -48,7 +52,6 @@
 #include <gtsam/geometry/StereoCamera.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
-#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -670,6 +673,8 @@ TEST (testSerializationSLAM, factors) {
 
   EXPECT(equalsBinary<GenericStereoFactor3D>(genericStereoFactor3D));
 }
+
+#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
