@@ -116,10 +116,8 @@ TEST( testBoundingConstraint, unary_linearization_inactive) {
   Point2 pt1(2.0, 3.0);
   Values config1;
   config1.insert(key, pt1);
-  Ordering ordering;
-  ordering += key;
-  GaussianFactor::shared_ptr actual1 = constraint1.linearize(config1, ordering);
-  GaussianFactor::shared_ptr actual2 = constraint2.linearize(config1, ordering);
+  GaussianFactor::shared_ptr actual1 = constraint1.linearize(config1);
+  GaussianFactor::shared_ptr actual2 = constraint2.linearize(config1);
   EXPECT(!actual1);
   EXPECT(!actual2);
 }
@@ -129,12 +127,10 @@ TEST( testBoundingConstraint, unary_linearization_active) {
   Point2 pt2(-2.0, -3.0);
   Values config2;
   config2.insert(key, pt2);
-  Ordering ordering;
-  ordering += key;
-  GaussianFactor::shared_ptr actual1 = constraint1.linearize(config2, ordering);
-  GaussianFactor::shared_ptr actual2 = constraint2.linearize(config2, ordering);
-  JacobianFactor expected1(ordering[key], Matrix_(1, 2, 1.0, 0.0), repeat(1, 3.0), hard_model1);
-  JacobianFactor expected2(ordering[key], Matrix_(1, 2, 0.0, 1.0), repeat(1, 5.0), hard_model1);
+  GaussianFactor::shared_ptr actual1 = constraint1.linearize(config2);
+  GaussianFactor::shared_ptr actual2 = constraint2.linearize(config2);
+  JacobianFactor expected1(key, Matrix_(1, 2, 1.0, 0.0), repeat(1, 3.0), hard_model1);
+  JacobianFactor expected2(key, Matrix_(1, 2, 0.0, 1.0), repeat(1, 5.0), hard_model1);
   EXPECT(assert_equal((const GaussianFactor&)expected1, *actual1, tol));
   EXPECT(assert_equal((const GaussianFactor&)expected2, *actual2, tol));
 }
@@ -148,9 +144,9 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
 
   NonlinearFactorGraph graph;
   Symbol x1('x',1);
-  graph.add(iq2D::PoseXInequality(x1, 1.0, true));
-  graph.add(iq2D::PoseYInequality(x1, 2.0, true));
-  graph.add(simulated2D::Prior(start_pt, soft_model2, x1));
+  graph += iq2D::PoseXInequality(x1, 1.0, true);
+  graph += iq2D::PoseYInequality(x1, 2.0, true);
+  graph += simulated2D::Prior(start_pt, soft_model2, x1);
 
   Values initValues;
   initValues.insert(x1, start_pt);
@@ -169,9 +165,9 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
   Point2 start_pt(2.0, 3.0);
 
   NonlinearFactorGraph graph;
-  graph.add(iq2D::PoseXInequality(key, 1.0, false));
-  graph.add(iq2D::PoseYInequality(key, 2.0, false));
-  graph.add(simulated2D::Prior(start_pt, soft_model2, key));
+  graph += iq2D::PoseXInequality(key, 1.0, false);
+  graph += iq2D::PoseYInequality(key, 2.0, false);
+  graph += simulated2D::Prior(start_pt, soft_model2, key);
 
   Values initValues;
   initValues.insert(key, start_pt);
@@ -199,16 +195,15 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
   Values config1;
   config1.insert(key1, pt1);
   config1.insert(key2, pt1);
-  Ordering ordering; ordering += key1, key2;
   EXPECT(!rangeBound.active(config1));
   EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
-  EXPECT(!rangeBound.linearize(config1, ordering));
+  EXPECT(!rangeBound.linearize(config1));
   EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
   config1.update(key2, pt2);
   EXPECT(!rangeBound.active(config1));
   EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
-  EXPECT(!rangeBound.linearize(config1, ordering));
+  EXPECT(!rangeBound.linearize(config1));
   EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
   config1.update(key2, pt3);
@@ -229,9 +224,9 @@ TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
   Symbol x1('x',1), x2('x',2);
 
   NonlinearFactorGraph graph;
-  graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(pt1, x1));
-  graph.add(simulated2D::Prior(pt2_init, soft_model2_alt, x2));
-  graph.add(iq2D::PoseMaxDistConstraint(x1, x2, 2.0));
+  graph += simulated2D::equality_constraints::UnaryEqualityConstraint(pt1, x1);
+  graph += simulated2D::Prior(pt2_init, soft_model2_alt, x2);
+  graph += iq2D::PoseMaxDistConstraint(x1, x2, 2.0);
 
   Values initial_state;
   initial_state.insert(x1, pt1);
@@ -255,12 +250,12 @@ TEST( testBoundingConstraint, avoid_demo) {
   Point2 odo(2.0, 0.0);
 
   NonlinearFactorGraph graph;
-  graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(x1_pt, x1));
-  graph.add(simulated2D::Odometry(odo, soft_model2_alt, x1, x2));
-  graph.add(iq2D::LandmarkAvoid(x2, l1, radius));
-  graph.add(simulated2D::equality_constraints::UnaryEqualityPointConstraint(l1_pt, l1));
-  graph.add(simulated2D::Odometry(odo, soft_model2_alt, x2, x3));
-  graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(x3_pt, x3));
+  graph += simulated2D::equality_constraints::UnaryEqualityConstraint(x1_pt, x1);
+  graph += simulated2D::Odometry(odo, soft_model2_alt, x1, x2);
+  graph += iq2D::LandmarkAvoid(x2, l1, radius);
+  graph += simulated2D::equality_constraints::UnaryEqualityPointConstraint(l1_pt, l1);
+  graph += simulated2D::Odometry(odo, soft_model2_alt, x2, x3);
+  graph += simulated2D::equality_constraints::UnaryEqualityConstraint(x3_pt, x3);
 
   Values init, expected;
   init.insert(x1, x1_pt);

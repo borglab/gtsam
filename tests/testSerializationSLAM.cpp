@@ -31,7 +31,6 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/LieMatrix.h>
 #include <gtsam/geometry/Point2.h>
@@ -235,11 +234,11 @@ TEST (testSerializationSLAM, smallExample_linear) {
   using namespace example;
 
   Ordering ordering; ordering += X(1),X(2),L(1);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   EXPECT(equalsObj(ordering));
   EXPECT(equalsXML(ordering));
   EXPECT(equalsBinary(ordering));
 
+  GaussianFactorGraph fg = createGaussianFactorGraph();
   EXPECT(equalsObj(fg));
   EXPECT(equalsXML(fg));
   EXPECT(equalsBinary(fg));
@@ -253,10 +252,8 @@ TEST (testSerializationSLAM, smallExample_linear) {
 /* ************************************************************************* */
 TEST (testSerializationSLAM, gaussianISAM) {
   using namespace example;
-  Ordering ordering;
-  GaussianFactorGraph smoother;
-  boost::tie(smoother, ordering) = createSmoother(7);
-  BayesTree<GaussianConditional> bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianFactorGraph smoother = createSmoother(7);
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal();
   GaussianISAM isam(bayesTree);
 
   EXPECT(equalsObj(isam));
@@ -408,66 +405,66 @@ TEST (testSerializationSLAM, factors) {
 
 
   NonlinearFactorGraph graph;
-  graph.add(priorFactorLieVector);
-  graph.add(priorFactorLieMatrix);
-  graph.add(priorFactorPoint2);
-  graph.add(priorFactorStereoPoint2);
-  graph.add(priorFactorPoint3);
-  graph.add(priorFactorRot2);
-  graph.add(priorFactorRot3);
-  graph.add(priorFactorPose2);
-  graph.add(priorFactorPose3);
-  graph.add(priorFactorCal3_S2);
-  graph.add(priorFactorCal3DS2);
-  graph.add(priorFactorCalibratedCamera);
-  graph.add(priorFactorSimpleCamera);
-  graph.add(priorFactorStereoCamera);
+  graph += priorFactorLieVector;
+  graph += priorFactorLieMatrix;
+  graph += priorFactorPoint2;
+  graph += priorFactorStereoPoint2;
+  graph += priorFactorPoint3;
+  graph += priorFactorRot2;
+  graph += priorFactorRot3;
+  graph += priorFactorPose2;
+  graph += priorFactorPose3;
+  graph += priorFactorCal3_S2;
+  graph += priorFactorCal3DS2;
+  graph += priorFactorCalibratedCamera;
+  graph += priorFactorSimpleCamera;
+  graph += priorFactorStereoCamera;
 
-  graph.add(betweenFactorLieVector);
-  graph.add(betweenFactorLieMatrix);
-  graph.add(betweenFactorPoint2);
-  graph.add(betweenFactorPoint3);
-  graph.add(betweenFactorRot2);
-  graph.add(betweenFactorRot3);
-  graph.add(betweenFactorPose2);
-  graph.add(betweenFactorPose3);
+  graph += betweenFactorLieVector;
+  graph += betweenFactorLieMatrix;
+  graph += betweenFactorPoint2;
+  graph += betweenFactorPoint3;
+  graph += betweenFactorRot2;
+  graph += betweenFactorRot3;
+  graph += betweenFactorPose2;
+  graph += betweenFactorPose3;
 
-  graph.add(nonlinearEqualityLieVector);
-  graph.add(nonlinearEqualityLieMatrix);
-  graph.add(nonlinearEqualityPoint2);
-  graph.add(nonlinearEqualityStereoPoint2);
-  graph.add(nonlinearEqualityPoint3);
-  graph.add(nonlinearEqualityRot2);
-  graph.add(nonlinearEqualityRot3);
-  graph.add(nonlinearEqualityPose2);
-  graph.add(nonlinearEqualityPose3);
-  graph.add(nonlinearEqualityCal3_S2);
-  graph.add(nonlinearEqualityCal3DS2);
-  graph.add(nonlinearEqualityCalibratedCamera);
-  graph.add(nonlinearEqualitySimpleCamera);
-  graph.add(nonlinearEqualityStereoCamera);
+  graph += nonlinearEqualityLieVector;
+  graph += nonlinearEqualityLieMatrix;
+  graph += nonlinearEqualityPoint2;
+  graph += nonlinearEqualityStereoPoint2;
+  graph += nonlinearEqualityPoint3;
+  graph += nonlinearEqualityRot2;
+  graph += nonlinearEqualityRot3;
+  graph += nonlinearEqualityPose2;
+  graph += nonlinearEqualityPose3;
+  graph += nonlinearEqualityCal3_S2;
+  graph += nonlinearEqualityCal3DS2;
+  graph += nonlinearEqualityCalibratedCamera;
+  graph += nonlinearEqualitySimpleCamera;
+  graph += nonlinearEqualityStereoCamera;
 
-  graph.add(rangeFactorPosePoint2);
-  graph.add(rangeFactorPosePoint3);
-  graph.add(rangeFactorPose2);
-  graph.add(rangeFactorPose3);
-  graph.add(rangeFactorCalibratedCameraPoint);
-  graph.add(rangeFactorSimpleCameraPoint);
-  graph.add(rangeFactorCalibratedCamera);
-  graph.add(rangeFactorSimpleCamera);
+  graph += rangeFactorPosePoint2;
+  graph += rangeFactorPosePoint3;
+  graph += rangeFactorPose2;
+  graph += rangeFactorPose3;
+  graph += rangeFactorCalibratedCameraPoint;
+  graph += rangeFactorSimpleCameraPoint;
+  graph += rangeFactorCalibratedCamera;
+  graph += rangeFactorSimpleCamera;
 
-  graph.add(bearingFactor2D);
+  graph += bearingFactor2D;
 
-  graph.add(bearingRangeFactor2D);
+  graph += bearingRangeFactor2D;
 
-  graph.add(genericProjectionFactorCal3_S2);
-  graph.add(genericProjectionFactorCal3DS2);
+  graph += genericProjectionFactorCal3_S2;
+  graph += genericProjectionFactorCal3DS2;
 
-  graph.add(generalSFMFactorCal3_S2);
+  graph += generalSFMFactorCal3_S2;
 
-  graph.add(generalSFMFactor2Cal3_S2);
+  graph += generalSFMFactor2Cal3_S2;
 
-  graph.add(genericStereoFactor3D);
+  graph += genericStereoFactor3D;
 
 
   // text

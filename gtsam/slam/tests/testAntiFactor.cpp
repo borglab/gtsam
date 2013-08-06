@@ -23,7 +23,6 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/geometry/Pose3.h>
 
 using namespace std;

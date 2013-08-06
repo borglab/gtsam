@@ -205,6 +205,35 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::optimizeGradientSearch() const
+  {
+    gttic(GaussianFactorGraph_optimizeGradientSearch);
+
+    gttic(Compute_Gradient);
+    // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+    VectorValues grad = gradientAtZero();
+    double gradientSqNorm = grad.dot(grad);
+    gttoc(Compute_Gradient);
+
+    gttic(Compute_Rg);
+    // Compute R * g
+    Errors Rg = *this * grad;
+    gttoc(Compute_Rg);
+
+    gttic(Compute_minimizing_step_size);
+    // Compute minimizing step size
+    double step = -gradientSqNorm / dot(Rg, Rg);
+    gttoc(Compute_minimizing_step_size);
+
+    gttic(Compute_point);
+    // Compute steepest descent point
+    grad *= step;
+    gttoc(Compute_point);
+
+    return grad;
+  }
+
+  /* ************************************************************************* */
   Errors GaussianFactorGraph::operator*(const VectorValues& x) const {
     Errors e;
     BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, *this) {
@@ -234,7 +263,7 @@ namespace gtsam {
     typedef JacobianFactor J;
     BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
       J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
-      if (jacobian && jacobian->get_model()->isConstrained()) {
+      if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
         return true;
       }
     }

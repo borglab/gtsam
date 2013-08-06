@@ -18,8 +18,6 @@
 
 #pragma once
 
-#if 0
-
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
 namespace gtsam {
@@ -96,7 +94,6 @@ class GTSAM_EXPORT LevenbergMarquardtOptimizer : public NonlinearOptimizer {
 protected:
   LevenbergMarquardtParams params_; ///< LM parameters
   LevenbergMarquardtState state_;   ///< optimization state
-  std::vector<size_t> dimensions_;  ///< undocumented
 
 public:
   typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
@@ -115,7 +112,7 @@ public:
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
         NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph)),
-        state_(graph, initialValues, params_), dimensions_(initialValues.dims(*params_.ordering)) {}
+        state_(graph, initialValues, params_) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -125,7 +122,7 @@ public:
    * @param initialValues The initial variable assignments
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
-        NonlinearOptimizer(graph), dimensions_(initialValues.dims(ordering)) {
+        NonlinearOptimizer(graph) {
     params_.ordering = ordering;
     state_ = LevenbergMarquardtState(graph, initialValues, params_); }
 
@@ -178,5 +175,3 @@ protected:
 };
 
 }
-
-#endif

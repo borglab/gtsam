@@ -48,6 +48,11 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
 }
 
 /* ************************************************************************* */
+bool NonlinearFactorGraph::equals(const NonlinearFactorGraph& other, double tol) const {
+  return Base::equals(other, tol);
+}
+
+/* ************************************************************************* */
 void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     const GraphvizFormatting& graphvizFormatting,
     const KeyFormatter& keyFormatter) const

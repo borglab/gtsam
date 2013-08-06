@@ -195,6 +195,9 @@ namespace gtsam {
     std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
       return values_.insert(std::make_pair(j, value)); }
 
+    /** Set all values to zero vectors. */
+    void setZero();
+
     iterator begin()                      { return values_.begin(); }  ///< Iterator over variables
     const_iterator begin() const          { return values_.begin(); }  ///< Iterator over variables
     iterator end()                        { return values_.end(); }    ///< Iterator over variables

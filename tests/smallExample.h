@@ -27,12 +27,11 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <boost/tuple/tuple.hpp>
+#include <boost/assign/list_of.hpp>
 
 namespace gtsam {
 namespace example {
   namespace {
-
-typedef NonlinearFactorGraph NonlinearFactorGraph;
 
 /**
  * Create small example for non-linear factor graph
@@ -93,7 +92,7 @@ std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T);
  * Create a Kalman smoother by linearizing a non-linear factor graph
  * @param T number of time-steps
  */
-GaussianFactorGraph createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
+GaussianFactorGraph createSmoother(int T);
 
 /* ******************************************************* */
 // Linear Constrained Examples
@@ -223,10 +222,10 @@ Values createValues() {
 /* ************************************************************************* */
 VectorValues createVectorValues() {
   using namespace impl;
-  VectorValues c(std::vector<size_t>(3, 2));
-  c[_l1_] = Vector_(2, 0.0, -1.0);
-  c[_x1_] = Vector_(2, 0.0, 0.0);
-  c[_x2_] = Vector_(2, 1.5, 0.0);
+  VectorValues c = boost::assign::pair_list_of
+    (_l1_, Vector_(2, 0.0, -1.0))
+    (_x1_, Vector_(2, 0.0, 0.0))
+    (_x2_, Vector_(2, 1.5, 0.0));
   return c;
 }
 
@@ -261,7 +260,7 @@ VectorValues createCorrectDelta() {
 VectorValues createZeroDelta() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  VectorValues c(std::vector<size_t>(3,2));
+  VectorValues c;
   c.insert(L(1), zero(2));
   c.insert(X(1), zero(2));
   c.insert(X(2), zero(2));
@@ -442,10 +441,10 @@ VectorValues createSimpleConstraintValues() {
   using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  VectorValues config(std::vector<size_t>(2,2));
+  VectorValues config;
   Vector v = Vector_(2, 1.0, -1.0);
-  config[_x_] = v;
-  config[_y_] = v;
+  config.insert(_x_, v);
+  config.insert(_y_, v);
   return config;
 }
 
@@ -486,9 +485,9 @@ GaussianFactorGraph createSingleConstraintGraph() {
 /* ************************************************************************* */
 VectorValues createSingleConstraintValues() {
   using namespace impl;
-  VectorValues config(std::vector<size_t>(2,2));
-  config[_x_] = Vector_(2, 1.0, -1.0);
-  config[_y_] = Vector_(2, 0.2, 0.1);
+  VectorValues config = boost::assign::pair_list_of
+    (_x_, Vector_(2, 1.0, -1.0))
+    (_y_, Vector_(2, 0.2, 0.1));
   return config;
 }
 
@@ -550,17 +549,17 @@ GaussianFactorGraph createMultiConstraintGraph() {
 /* ************************************************************************* */
 VectorValues createMultiConstraintValues() {
   using namespace impl;
-  VectorValues config(std::vector<size_t>(3,2));
-  config[_x_] = Vector_(2, -2.0, 2.0);
-  config[_y_] = Vector_(2, -0.1, 0.4);
-  config[_z_] = Vector_(2, -4.0, 5.0);
+  VectorValues config = boost::assign::pair_list_of
+    (_x_, Vector_(2, -2.0, 2.0))
+    (_y_, Vector_(2, -0.1, 0.4))
+    (_z_, Vector_(2, -4.0, 5.0));
   return config;
 }
 
 /* ************************************************************************* */
 // Create key for simulated planar graph
 namespace impl {
-Symbol key(int x, int y) {
+Symbol key(size_t x, size_t y) {
   using symbol_shorthand::X;
   return X(1000*x+y);
 }
@@ -601,7 +600,7 @@ boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   VectorValues xtrue;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      xtrue.insert(key(x, y), Point2(x,y).vector());
+      xtrue.insert(key(x, y), Point2((double)x, (double)y).vector());
 
   // linearize around zero
   boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);

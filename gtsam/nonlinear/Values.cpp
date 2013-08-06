@@ -187,6 +187,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues Values::zeroVectors() const {
+    VectorValues result;
+    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this)
+      result.insert(key_value.key, Vector::Zero(key_value.value.dim()));
+    return result;
+  }
+
+  /* ************************************************************************* */
   const char* ValuesKeyAlreadyExists::what() const throw() {
     if(message_.empty())
       message_ =

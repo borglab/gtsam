@@ -74,36 +74,6 @@ namespace gtsam {
     */
     VectorValues optimize() const;
 
-    /**
-     * Optimize along the gradient direction, with a closed-form computation to
-     * perform the line search.  The gradient is computed about \f$ \delta x=0 \f$.
-     *
-     * This function returns \f$ \delta x \f$ that minimizes a reparametrized
-     * problem.  The error function of a GaussianBayesNet is
-     *
-     * \f[ f(\delta x) = \frac{1}{2} |R \delta x - d|^2 = \frac{1}{2}d^T d - d^T R \delta x + \frac{1}{2} \delta x^T R^T R \delta x \f]
-     *
-     * with gradient and Hessian
-     *
-     * \f[ g(\delta x) = R^T(R\delta x - d), \qquad G(\delta x) = R^T R. \f]
-     *
-     * This function performs the line search in the direction of the
-     * gradient evaluated at \f$ g = g(\delta x = 0) \f$ with step size
-     * \f$ \alpha \f$ that minimizes \f$ f(\delta x = \alpha g) \f$:
-     *
-     * \f[ f(\alpha) = \frac{1}{2} d^T d + g^T \delta x + \frac{1}{2} \alpha^2 g^T G g \f]
-     *
-     * Optimizing by setting the derivative to zero yields
-     * \f$ \hat \alpha = (-g^T g) / (g^T G g) \f$.  For efficiency, this function
-     * evaluates the denominator without computing the Hessian \f$ G \f$, returning
-     *
-     * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f]
-     *
-     * @param bn The GaussianBayesNet on which to perform this computation
-     * @return The resulting \f$ \delta x \f$ as described above
-     */
-    //VectorValues optimizeGradientSearch() const;
-
     ///@}
 
     ///@name Linear Algebra
@@ -115,26 +85,49 @@ namespace gtsam {
     std::pair<Matrix, Vector> matrix() const;
 
     /**
-     * Compute the gradient of the energy function,
-     * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
-     * centered around \f$ x = x_0 \f$.
-     * The gradient is \f$ R^T(Rx-d) \f$.
-     * @param bayesNet The Gaussian Bayes net $(R,d)$
-     * @param x0 The center about which to compute the gradient
-     * @return The gradient as a VectorValues
-     */
-    //VectorValues gradient(const VectorValues& x0) const;
+     * Optimize along the gradient direction, with a closed-form computation to perform the line
+     * search.  The gradient is computed about \f$ \delta x=0 \f$.
+     *
+     * This function returns \f$ \delta x \f$ that minimizes a reparametrized problem.  The error
+     * function of a GaussianBayesNet is
+     *
+     * \f[ f(\delta x) = \frac{1}{2} |R \delta x - d|^2 = \frac{1}{2}d^T d - d^T R \delta x +
+     * \frac{1}{2} \delta x^T R^T R \delta x \f]
+     *
+     * with gradient and Hessian
+     *
+     * \f[ g(\delta x) = R^T(R\delta x - d), \qquad G(\delta x) = R^T R. \f]
+     *
+     * This function performs the line search in the direction of the gradient evaluated at \f$ g =
+     * g(\delta x = 0) \f$ with step size \f$ \alpha \f$ that minimizes \f$ f(\delta x = \alpha g)
+     * \f$:
+     *
+     * \f[ f(\alpha) = \frac{1}{2} d^T d + g^T \delta x + \frac{1}{2} \alpha^2 g^T G g \f]
+     *
+     * Optimizing by setting the derivative to zero yields \f$ \hat \alpha = (-g^T g) / (g^T G g)
+     * \f$.  For efficiency, this function evaluates the denominator without computing the Hessian
+     * \f$ G \f$, returning
+     *
+     * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f] */
+    VectorValues optimizeGradientSearch() const;
 
-    /**
-     * Compute the gradient of the energy function,
-     * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
-     * centered around zero.
-     * The gradient about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&, const VectorValues&).
-     * @param bayesNet The Gaussian Bayes net $(R,d)$
-     * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
-     * @return The gradient as a VectorValues
-     */
-    //VectorValues gradientAtZero() const;
+    /** Compute the gradient of the energy function, \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x -
+     * d \right\Vert^2 \f$, centered around \f$ x = x_0 \f$. The gradient is \f$ R^T(Rx-d) \f$.
+     * 
+     * @param x0 The center about which to compute the gradient
+     * @return The gradient as a VectorValues */
+    VectorValues gradient(const VectorValues& x0) const;
+
+    /** Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d
+     * \right\Vert^2 \f$, centered around zero. The gradient about zero is \f$ -R^T d \f$.  See also
+     * gradient(const GaussianBayesNet&, const VectorValues&).
+     * 
+     * @param [output] g A VectorValues to store the gradient, which must be preallocated, see
+     *        allocateVectorValues */
+    VectorValues gradientAtZero() const;
+
+    /** Mahalanobis norm error. */
+    double error(const VectorValues& x) const;
 
     /**
      * Computes the determinant of a GassianBayesNet. A GaussianBayesNet is an upper triangular

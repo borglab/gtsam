@@ -11,7 +11,7 @@
 
 /** 
  * @file    testNonlinearFactorGraph.cpp
- * @brief   Unit tests for Non-Linear Factor Graph
+ * @brief   Unit tests for Non-Linear Factor NonlinearFactorGraph
  * @brief   testNonlinearFactorGraph
  * @author  Carlos Nieto
  * @author  Christian Potthast
@@ -41,17 +41,17 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-TEST( Graph, equals )
+TEST( NonlinearFactorGraph, equals )
 {
-  Graph fg = createNonlinearFactorGraph();
-  Graph fg2 = createNonlinearFactorGraph();
+  NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  NonlinearFactorGraph fg2 = createNonlinearFactorGraph();
   CHECK( fg.equals(fg2) );
 }
 
 /* ************************************************************************* */
-TEST( Graph, error )
+TEST( NonlinearFactorGraph, error )
 {
-  Graph fg = createNonlinearFactorGraph();
+  NonlinearFactorGraph fg = createNonlinearFactorGraph();
   Values c1 = createValues();
   double actual1 = fg.error(c1);
   DOUBLES_EQUAL( 0.0, actual1, 1e-9 );
@@ -62,41 +62,37 @@ TEST( Graph, error )
 }
 
 /* ************************************************************************* */
-TEST( Graph, keys )
+TEST( NonlinearFactorGraph, keys )
 {
-  Graph fg = createNonlinearFactorGraph();
+  NonlinearFactorGraph fg = createNonlinearFactorGraph();
   FastSet<Key> actual = fg.keys();
-  LONGS_EQUAL(3, actual.size());
+  LONGS_EQUAL(3, (long)actual.size());
   FastSet<Key>::const_iterator it = actual.begin();
-  LONGS_EQUAL(L(1), *(it++));
-  LONGS_EQUAL(X(1), *(it++));
-  LONGS_EQUAL(X(2), *(it++));
+  LONGS_EQUAL((long)L(1), (long)*(it++));
+  LONGS_EQUAL((long)X(1), (long)*(it++));
+  LONGS_EQUAL((long)X(2), (long)*(it++));
 }
 
 /* ************************************************************************* */
-TEST( Graph, GET_ORDERING)
+TEST( NonlinearFactorGraph, GET_ORDERING)
 {
-//  Ordering expected; expected += "x1","l1","x2"; // For starting with x1,x2,l1
   Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
-  Graph nlfg = createNonlinearFactorGraph();
-  SymbolicFactorGraph::shared_ptr symbolic;
-  Ordering::shared_ptr ordering;
-  boost::tie(symbolic, ordering) = nlfg.symbolic(createNoisyValues());
-  Ordering actual = *nlfg.orderingCOLAMD(createNoisyValues());
+  NonlinearFactorGraph nlfg = createNonlinearFactorGraph();
+  Ordering actual = Ordering::COLAMD(nlfg);
   EXPECT(assert_equal(expected,actual));
 
   // Constrained ordering - put x2 at the end
-  std::map<Key, int> constraints;
-  constraints[X(2)] = 1;
-  Ordering actualConstrained = *nlfg.orderingCOLAMDConstrained(createNoisyValues(), constraints);
   Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
+  FastMap<Key, int> constraints;
+  constraints[X(2)] = 1;
+  Ordering actualConstrained = Ordering::COLAMDConstrained(nlfg, constraints);
   EXPECT(assert_equal(expectedConstrained, actualConstrained));
 }
 
 /* ************************************************************************* */
-TEST( Graph, probPrime )
+TEST( NonlinearFactorGraph, probPrime )
 {
-  Graph fg = createNonlinearFactorGraph();
+  NonlinearFactorGraph fg = createNonlinearFactorGraph();
   Values cfg = createValues();
 
   // evaluate the probability of the factor graph
@@ -106,39 +102,39 @@ TEST( Graph, probPrime )
 }
 
 /* ************************************************************************* */
-TEST( Graph, linearize )
+TEST( NonlinearFactorGraph, linearize )
 {
-  Graph fg = createNonlinearFactorGraph();
+  NonlinearFactorGraph fg = createNonlinearFactorGraph();
   Values initial = createNoisyValues();
-  boost::shared_ptr<FactorGraph<GaussianFactor> > linearized = fg.linearize(initial, *initial.orderingArbitrary());
-  FactorGraph<GaussianFactor> expected = createGaussianFactorGraph(*initial.orderingArbitrary());
-  CHECK(assert_equal(expected,*linearized)); // Needs correct linearizations
+  GaussianFactorGraph linearized = *fg.linearize(initial);
+  GaussianFactorGraph expected = createGaussianFactorGraph();
+  CHECK(assert_equal(expected,linearized)); // Needs correct linearizations
 }
 
 /* ************************************************************************* */
-TEST( Graph, clone )
+TEST( NonlinearFactorGraph, clone )
 {
-  Graph fg = createNonlinearFactorGraph();
-  Graph actClone = fg.clone();
+  NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  NonlinearFactorGraph actClone = fg.clone();
   EXPECT(assert_equal(fg, actClone));
   for (size_t i=0; i<fg.size(); ++i)
     EXPECT(fg[i] != actClone[i]);
 }
 
 /* ************************************************************************* */
-TEST( Graph, rekey )
+TEST( NonlinearFactorGraph, rekey )
 {
-  Graph init = createNonlinearFactorGraph();
+  NonlinearFactorGraph init = createNonlinearFactorGraph();
   map<Key,Key> rekey_mapping;
   rekey_mapping.insert(make_pair(L(1), L(4)));
-  Graph actRekey = init.rekey(rekey_mapping);
+  NonlinearFactorGraph actRekey = init.rekey(rekey_mapping);
 
   // ensure deep clone
-  LONGS_EQUAL(init.size(), actRekey.size());
+  LONGS_EQUAL((long)init.size(), (long)actRekey.size());
   for (size_t i=0; i<init.size(); ++i)
       EXPECT(init[i] != actRekey[i]);
 
-  Graph expRekey;
+  NonlinearFactorGraph expRekey;
   // original measurements
   expRekey.push_back(init[0]);
   expRekey.push_back(init[1]);
@@ -146,8 +142,8 @@ TEST( Graph, rekey )
   // updated measurements
   Point2 z3(0, -1),  z4(-1.5, -1.);
   SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
-  expRekey.add(simulated2D::Measurement(z3, sigma0_2, X(1), L(4)));
-  expRekey.add(simulated2D::Measurement(z4, sigma0_2, X(2), L(4)));
+  expRekey += simulated2D::Measurement(z3, sigma0_2, X(1), L(4));
+  expRekey += simulated2D::Measurement(z4, sigma0_2, X(2), L(4));
 
   EXPECT(assert_equal(expRekey, actRekey));
 }

@@ -51,6 +51,28 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues GaussianBayesNet::optimizeGradientSearch() const
+  {
+    gttic(GaussianBayesTree_optimizeGradientSearch);
+    return GaussianFactorGraph(*this).optimizeGradientSearch();
+  }
+
+  /* ************************************************************************* */
+  VectorValues GaussianBayesNet::gradient(const VectorValues& x0) const {
+    return GaussianFactorGraph(*this).gradient(x0);
+  }
+
+  /* ************************************************************************* */
+  VectorValues GaussianBayesNet::gradientAtZero() const {
+    return GaussianFactorGraph(*this).gradientAtZero();
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::error(const VectorValues& x) const {
+    return GaussianFactorGraph(*this).error(x);
+  }
+
+  /* ************************************************************************* */
   VectorValues GaussianBayesNet::backSubstitute(const VectorValues& rhs) const
   {
     VectorValues result;

@@ -125,42 +125,27 @@ namespace gtsam {
     return preVisitor.collectedResult;
   }
 
-  ///* ************************************************************************* */
-  //VectorValues GaussianBayesTree::optimizeGradientSearch() const
-  //{
-  //  gttic(Compute_Gradient);
-  //  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-  //  VectorValues grad = gradientAtZero();
-  //  double gradientSqNorm = grad.dot(grad);
-  //  gttoc(Compute_Gradient);
+  /* ************************************************************************* */
+  VectorValues GaussianBayesTree::optimizeGradientSearch() const
+  {
+    gttic(GaussianBayesTree_optimizeGradientSearch);
+    return GaussianFactorGraph(*this).optimizeGradientSearch();
+  }
 
-  //  gttic(Compute_Rg);
-  //  // Compute R * g
-  //  Errors Rg = GaussianFactorGraph(*this) * grad;
-  //  gttoc(Compute_Rg);
+  /* ************************************************************************* */
+  VectorValues GaussianBayesTree::gradient(const VectorValues& x0) const {
+    return GaussianFactorGraph(*this).gradient(x0);
+  }
 
-  //  gttic(Compute_minimizing_step_size);
-  //  // Compute minimizing step size
-  //  double step = -gradientSqNorm / dot(Rg, Rg);
-  //  gttoc(Compute_minimizing_step_size);
+  /* ************************************************************************* */
+  VectorValues GaussianBayesTree::gradientAtZero() const {
+    return GaussianFactorGraph(*this).gradientAtZero();
+  }
 
-  //  gttic(Compute_point);
-  //  // Compute steepest descent point
-  //  scal(step, grad);
-  //  gttoc(Compute_point);
-
-  //  return grad;
-  //}
-
-  ///* ************************************************************************* */
-  //VectorValues GaussianBayesTree::gradient(const VectorValues& x0) const {
-  //  return GaussianFactorGraph(*this).gradient(x0);
-  //}
-
-  ///* ************************************************************************* */
-  //VectorValues GaussianBayesTree::gradientAtZero() const {
-  //  return GaussianFactorGraph(*this).gradientAtZero();
-  //}
+  /* ************************************************************************* */
+  double GaussianBayesTree::error(const VectorValues& x) const {
+    return GaussianFactorGraph(*this).error(x);
+  }
 
   /* ************************************************************************* */
   double GaussianBayesTree::logDeterminant() const

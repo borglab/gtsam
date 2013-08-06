@@ -258,6 +258,9 @@ namespace gtsam {
     /** Compute the total dimensionality of all values (\f$ O(n) \f$) */
     size_t dim() const;
 
+    /** Return a VectorValues of zero vectors for each variable in this Values */
+    VectorValues zeroVectors() const;
+
     /**
      * Return a filtered view of this Values class, without copying any data.
      * When iterating over the filtered view, only the key-value pairs

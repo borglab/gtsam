@@ -50,10 +50,10 @@ TEST( JunctionTree, constructor )
   vector<Index> sep2; sep2 += 2;
   EXPECT(assert_equal(frontal1, actual.roots().front()->keys));
   //EXPECT(assert_equal(sep1,     actual.roots().front()->separator));
-  LONGS_EQUAL(1,                actual.roots().front()->factors.size());
+  LONGS_EQUAL(1,                (long)actual.roots().front()->factors.size());
   EXPECT(assert_equal(frontal2, actual.roots().front()->children.front()->keys));
   //EXPECT(assert_equal(sep2,     actual.roots().front()->children.front()->separator));
-  LONGS_EQUAL(2,                actual.roots().front()->children.front()->factors.size());
+  LONGS_EQUAL(2,                (long)actual.roots().front()->children.front()->factors.size());
   EXPECT(assert_equal(*simpleChain[2],   *actual.roots().front()->factors[0]));
   EXPECT(assert_equal(*simpleChain[0],   *actual.roots().front()->children.front()->factors[0]));
   EXPECT(assert_equal(*simpleChain[1],   *actual.roots().front()->children.front()->factors[1]));

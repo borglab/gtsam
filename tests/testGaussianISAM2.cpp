@@ -4,17 +4,19 @@
  * @author  Michael Kaess
  */
 
+#include <CppUnitLite/TestHarness.h>
+
+#if 0
+
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2.h>
@@ -23,8 +25,6 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <tests/smallExample.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
@@ -1039,6 +1039,8 @@ TEST(ISAM2, marginalCovariance)
   Matrix actual = isam.marginalCovariance(5);
   EXPECT(assert_equal(expected, actual));
 }
+
+#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

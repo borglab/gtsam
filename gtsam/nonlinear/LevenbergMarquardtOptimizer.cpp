@@ -16,8 +16,6 @@
  * @date  Feb 26, 2012
  */
 
-#if 0
-
 #include <cmath>
 
 #include <gtsam/linear/linearExceptions.h>
@@ -95,14 +93,14 @@ void LevenbergMarquardtOptimizer::iterate() {
     GaussianFactorGraph dampedSystem = *linear;
     {
       double sigma = 1.0 / std::sqrt(state_.lambda);
-      dampedSystem.reserve(dampedSystem.size() + dimensions_.size());
+      dampedSystem.reserve(dampedSystem.size() + state_.values.size());
       // for each of the variables, add a prior
-      for(Index j=0; j<dimensions_.size(); ++j) {
-        size_t dim = (dimensions_)[j];
+      BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
+        size_t dim = key_value.value.dim();
         Matrix A = eye(dim);
         Vector b = zero(dim);
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
-        dampedSystem += boost::make_shared<JacobianFactor>(j, A, b, model);
+        dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
       }
     }
     gttoc(damp);
@@ -182,5 +180,3 @@ LevenbergMarquardtParams LevenbergMarquardtOptimizer::ensureHasOrdering(
 
 } /* namespace gtsam */
 
-
-#endif

@@ -98,14 +98,14 @@ namespace gtsam {
      * \f$ G \f$, returning
      *
      * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f] */
-    //VectorValues optimizeGradientSearch() const;
+    VectorValues optimizeGradientSearch() const;
 
     /** Compute the gradient of the energy function, \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x -
      * d \right\Vert^2 \f$, centered around \f$ x = x_0 \f$. The gradient is \f$ R^T(Rx-d) \f$.
      * 
      * @param x0 The center about which to compute the gradient
      * @return The gradient as a VectorValues */
-    //VectorValues gradient(const VectorValues& x0) const;
+    VectorValues gradient(const VectorValues& x0) const;
 
     /** Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d
      * \right\Vert^2 \f$, centered around zero. The gradient about zero is \f$ -R^T d \f$.  See also
@@ -113,7 +113,10 @@ namespace gtsam {
      * 
      * @param [output] g A VectorValues to store the gradient, which must be preallocated, see
      *        allocateVectorValues */
-    //VectorValues gradientAtZero() const;
+    VectorValues gradientAtZero() const;
+
+    /** Mahalanobis norm error. */
+    double error(const VectorValues& x) const;
 
     /** Computes the determinant of a GassianBayesTree, as if the Bayes tree is reorganized into a
      * matrix. A GassianBayesTree is equivalent to an upper triangular matrix, and for an upper
@@ -128,7 +131,6 @@ namespace gtsam {
      * multiplying we add the logarithms of the diagonal elements and take the exponent at the end
      * because this is more numerically stable. */
     double logDeterminant() const;
-
   };
 
 }

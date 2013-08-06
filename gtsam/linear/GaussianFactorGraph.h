@@ -25,6 +25,7 @@
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/Errors.h> // Included here instead of fw-declared so we can use Errors::iterator
 
 namespace gtsam {
@@ -51,7 +52,7 @@ namespace gtsam {
     /// The default dense elimination function
     static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
-        return EliminateQR(factors, keys); }
+        return EliminatePreferCholesky(factors, keys); }
   };
 
   /* ************************************************************************* */

@@ -5,10 +5,12 @@
  *      @author Frank Dellaert
  */
 
+#include <CppUnitLite/TestHarness.h>
+
+#if 0
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/geometry/Pose2.h>
-#include <CppUnitLite/TestHarness.h>
 #include <boost/random/mersenne_twister.hpp>
 //#include <boost/random/uniform_int_distribution.hpp>  // FIXME: does not exist in boost 1.46
 #include <boost/random/uniform_int.hpp> // Old header - should still exist
@@ -322,6 +324,8 @@ TEST_UNSAFE( OccupancyGrid, Test1) {
 
 
 }
+
+#endif
 
 /* ************************************************************************* */
 int main() {

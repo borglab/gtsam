@@ -379,8 +379,10 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Vector JacobianFactor::error_vector(const VectorValues& c) const {
-    if (empty()) return model_->whiten(-getb());
-    return model_->whiten(unweighted_error(c));
+    if(model_)
+      return model_->whiten(unweighted_error(c));
+    else
+      return unweighted_error(c);
   }
 
   /* ************************************************************************* */
@@ -421,14 +423,14 @@ namespace gtsam {
     for(size_t pos=0; pos<size(); ++pos)
       Ax += Ab_(pos) * x[keys_[pos]];
 
-    return model_->whiten(Ax);
+    return model_ ? model_->whiten(Ax) : Ax;
   }
 
   /* ************************************************************************* */
   void JacobianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
       VectorValues& x) const
   {
-    Vector E = alpha * model_->whiten(e);
+    Vector E = alpha * (model_ ? model_->whiten(e) : e);
     // Just iterate over all A matrices and insert Ai^e into VectorValues
     for(size_t pos=0; pos<size(); ++pos)
     {
@@ -459,9 +461,8 @@ namespace gtsam {
   /* ************************************************************************* */
   Matrix JacobianFactor::augmentedJacobian() const {
     Matrix Ab = augmentedJacobianUnweighted();
-    if (model_) {
+    if (model_)
       model_->WhitenInPlace(Ab);
-    }
     return Ab;
   }
 

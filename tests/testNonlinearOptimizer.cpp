@@ -50,7 +50,7 @@ using symbol_shorthand::L;
 TEST( NonlinearOptimizer, iterateLM )
 {
   // really non-linear factor graph
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   // config far from minimum
   Point2 x0(3,0);
@@ -74,7 +74,7 @@ TEST( NonlinearOptimizer, iterateLM )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, optimize )
 {
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   // test error at minimum
   Point2 xstar(0,0);
@@ -114,7 +114,7 @@ TEST( NonlinearOptimizer, optimize )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleLMOptimizer )
 {
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   Point2 x0(3,3);
   Values c0;
@@ -127,7 +127,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleGNOptimizer )
 {
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   Point2 x0(3,3);
   Values c0;
@@ -140,7 +140,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleDLOptimizer )
 {
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   Point2 x0(3,3);
   Values c0;
@@ -158,7 +158,7 @@ TEST( NonlinearOptimizer, optimization_method )
   LevenbergMarquardtParams paramsChol;
   paramsChol.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
 
-  example::Graph fg = example::createReallyNonlinearFactorGraph();
+  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
 
   Point2 x0(3,3);
   Values c0;
@@ -179,8 +179,8 @@ TEST( NonlinearOptimizer, Factorization )
   config.insert(X(2), Pose2(1.5,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
-  graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
+  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
   Ordering ordering;
   ordering.push_back(X(1));
@@ -198,10 +198,10 @@ TEST( NonlinearOptimizer, Factorization )
 /* ************************************************************************* */
 TEST(NonlinearOptimizer, NullFactor) {
 
-  example::Graph fg = example::createReallyNonlinearFactorGraph();
+  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
 
   // Add null factor
-  fg.push_back(example::Graph::sharedFactor());
+  fg.push_back(NonlinearFactorGraph::sharedFactor());
 
   // test error at minimum
   Point2 xstar(0,0);
@@ -236,9 +236,9 @@ TEST(NonlinearOptimizer, NullFactor) {
 TEST(NonlinearOptimizer, MoreOptimization) {
 
   NonlinearFactorGraph fg;
-  fg.add(PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1)));
-  fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1)));
-  fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1)));
+  fg += PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1));
+  fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1));
 
   Values init;
   init.insert(0, Pose2(3,4,-M_PI));
@@ -259,13 +259,13 @@ TEST(NonlinearOptimizer, MoreOptimization) {
 TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
 
   NonlinearFactorGraph fg;
-  fg.add(PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1)));
-  fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2),
+  fg += PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0),
-                                                         noiseModel::Isotropic::Sigma(3,1))));
-  fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2),
+                                                         noiseModel::Isotropic::Sigma(3,1)));
+  fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(3.0),
-                                                         noiseModel::Isotropic::Sigma(3,1))));
+                                                         noiseModel::Isotropic::Sigma(3,1)));
 
   Values init;
   init.insert(0, Pose2(10,10,0));

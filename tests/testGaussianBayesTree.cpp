@@ -16,10 +16,12 @@
  */
 
 #include <tests/smallExample.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianDensity.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/geometry/Rot2.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -55,42 +57,40 @@ C6           x1 : x2
 TEST( GaussianBayesTree, linear_smoother_shortcuts )
 {
   // Create smoother with 7 nodes
-  Ordering ordering;
-  GaussianFactorGraph smoother;
-  boost::tie(smoother, ordering) = createSmoother(7);
+  GaussianFactorGraph smoother = createSmoother(7);
 
-  GaussianBayesTree bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal();
 
   // Create the Bayes tree
-  LONGS_EQUAL(6, bayesTree.size());
+  LONGS_EQUAL(6, (long)bayesTree.size());
 
   // Check the conditional P(Root|Root)
   GaussianBayesNet empty;
-  GaussianBayesTree::sharedClique R = bayesTree.root();
-  GaussianBayesNet actual1 = R->shortcut(R, EliminateCholesky);
+  GaussianBayesTree::sharedClique R = bayesTree.roots().front();
+  GaussianBayesNet actual1 = R->shortcut(R);
   EXPECT(assert_equal(empty,actual1,tol));
 
   // Check the conditional P(C2|Root)
-  GaussianBayesTree::sharedClique C2 = bayesTree[ordering[X(5)]];
-  GaussianBayesNet actual2 = C2->shortcut(R, EliminateCholesky);
+  GaussianBayesTree::sharedClique C2 = bayesTree[X(5)];
+  GaussianBayesNet actual2 = C2->shortcut(R);
   EXPECT(assert_equal(empty,actual2,tol));
 
   // Check the conditional P(C3|Root)
   double sigma3 = 0.61808;
   Matrix A56 = Matrix_(2,2,-0.382022,0.,0.,-0.382022);
   GaussianBayesNet expected3;
-  push_front(expected3,ordering[X(5)], zero(2), eye(2)/sigma3, ordering[X(6)], A56/sigma3, ones(2));
-  GaussianBayesTree::sharedClique C3 = bayesTree[ordering[X(4)]];
-  GaussianBayesNet actual3 = C3->shortcut(R, EliminateCholesky);
+  expected3 += GaussianConditional(X(5), zero(2), eye(2)/sigma3, X(6), A56/sigma3);
+  GaussianBayesTree::sharedClique C3 = bayesTree[X(4)];
+  GaussianBayesNet actual3 = C3->shortcut(R);
   EXPECT(assert_equal(expected3,actual3,tol));
 
   // Check the conditional P(C4|Root)
   double sigma4 = 0.661968;
   Matrix A46 = Matrix_(2,2,-0.146067,0.,0.,-0.146067);
   GaussianBayesNet expected4;
-  push_front(expected4, ordering[X(4)], zero(2), eye(2)/sigma4, ordering[X(6)], A46/sigma4, ones(2));
-  GaussianBayesTree::sharedClique C4 = bayesTree[ordering[X(3)]];
-  GaussianBayesNet actual4 = C4->shortcut(R, EliminateCholesky);
+  expected4 += GaussianConditional(X(4), zero(2), eye(2)/sigma4, X(6), A46/sigma4);
+  GaussianBayesTree::sharedClique C4 = bayesTree[X(3)];
+  GaussianBayesNet actual4 = C4->shortcut(R);
   EXPECT(assert_equal(expected4,actual4,tol));
 }
 
@@ -118,22 +118,22 @@ TEST( GaussianBayesTree, balanced_smoother_marginals )
   // Create smoother with 7 nodes
   Ordering ordering;
   ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
-  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+  GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
-  GaussianBayesTree bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
-  VectorValues expectedSolution(VectorValues::Zero(7,2));
-  VectorValues actualSolution = optimize(bayesTree);
+  VectorValues actualSolution = bayesTree.optimize();
+  VectorValues expectedSolution = VectorValues::Zero(actualSolution);
   EXPECT(assert_equal(expectedSolution,actualSolution,tol));
 
-  LONGS_EQUAL(4,bayesTree.size());
+  LONGS_EQUAL(4, (long)bayesTree.size());
 
   double tol=1e-5;
 
   // Check marginal on x1
-  GaussianBayesNet expected1 = simpleGaussian(ordering[X(1)], zero(2), sigmax1);
-  GaussianBayesNet actual1 = *bayesTree.marginalBayesNet(ordering[X(1)], EliminateCholesky);
+  JacobianFactor expected1 = GaussianDensity::FromMeanAndStddev(X(1), zero(2), sigmax1);
+  JacobianFactor actual1 = *bayesTree.marginalFactor(X(1));
   Matrix expectedCovarianceX1 = eye(2,2) * (sigmax1 * sigmax1);
   Matrix actualCovarianceX1;
   GaussianFactor::shared_ptr m = bayesTree.marginalFactor(ordering[X(1)], EliminateCholesky);
@@ -143,39 +143,23 @@ TEST( GaussianBayesTree, balanced_smoother_marginals )
 
   // Check marginal on x2
   double sigx2 = 0.68712938; // FIXME: this should be corrected analytically
-  GaussianBayesNet expected2 = simpleGaussian(ordering[X(2)], zero(2), sigx2);
-  GaussianBayesNet actual2 = *bayesTree.marginalBayesNet(ordering[X(2)], EliminateCholesky);
-  Matrix expectedCovarianceX2 = eye(2,2) * (sigx2 * sigx2);
-  Matrix actualCovarianceX2;
-  actualCovarianceX2 = bayesTree.marginalFactor(ordering[X(2)], EliminateCholesky)->information().inverse();
-  EXPECT(assert_equal(expectedCovarianceX2, actualCovarianceX2, tol));
+  JacobianFactor expected2 = GaussianDensity::FromMeanAndStddev(X(2), zero(2), sigx2);
+  JacobianFactor actual2 = *bayesTree.marginalFactor(X(2));
   EXPECT(assert_equal(expected2,actual2,tol));
 
   // Check marginal on x3
-  GaussianBayesNet expected3 = simpleGaussian(ordering[X(3)], zero(2), sigmax3);
-  GaussianBayesNet actual3 = *bayesTree.marginalBayesNet(ordering[X(3)], EliminateCholesky);
-  Matrix expectedCovarianceX3 = eye(2,2) * (sigmax3 * sigmax3);
-  Matrix actualCovarianceX3;
-  actualCovarianceX3 = bayesTree.marginalFactor(ordering[X(3)], EliminateCholesky)->information().inverse();
-  EXPECT(assert_equal(expectedCovarianceX3, actualCovarianceX3, tol));
+  JacobianFactor expected3 = GaussianDensity::FromMeanAndStddev(X(3), zero(2), sigmax3);
+  JacobianFactor actual3 = *bayesTree.marginalFactor(X(3));
   EXPECT(assert_equal(expected3,actual3,tol));
 
   // Check marginal on x4
-  GaussianBayesNet expected4 = simpleGaussian(ordering[X(4)], zero(2), sigmax4);
-  GaussianBayesNet actual4 = *bayesTree.marginalBayesNet(ordering[X(4)], EliminateCholesky);
-  Matrix expectedCovarianceX4 = eye(2,2) * (sigmax4 * sigmax4);
-  Matrix actualCovarianceX4;
-  actualCovarianceX4 = bayesTree.marginalFactor(ordering[X(4)], EliminateCholesky)->information().inverse();
-  EXPECT(assert_equal(expectedCovarianceX4, actualCovarianceX4, tol));
+  JacobianFactor expected4 = GaussianDensity::FromMeanAndStddev(X(4), zero(2), sigmax4);
+  JacobianFactor actual4 = *bayesTree.marginalFactor(X(4));
   EXPECT(assert_equal(expected4,actual4,tol));
 
   // Check marginal on x7 (should be equal to x1)
-  GaussianBayesNet expected7 = simpleGaussian(ordering[X(7)], zero(2), sigmax7);
-  GaussianBayesNet actual7 = *bayesTree.marginalBayesNet(ordering[X(7)], EliminateCholesky);
-  Matrix expectedCovarianceX7 = eye(2,2) * (sigmax7 * sigmax7);
-  Matrix actualCovarianceX7;
-  actualCovarianceX7 = bayesTree.marginalFactor(ordering[X(7)], EliminateCholesky)->information().inverse();
-  EXPECT(assert_equal(expectedCovarianceX7, actualCovarianceX7, tol));
+  JacobianFactor expected7 = GaussianDensity::FromMeanAndStddev(X(7), zero(2), sigmax7);
+  JacobianFactor actual7 = *bayesTree.marginalFactor(X(7));
   EXPECT(assert_equal(expected7,actual7,tol));
 }
 
@@ -185,20 +169,20 @@ TEST( GaussianBayesTree, balanced_smoother_shortcuts )
   // Create smoother with 7 nodes
   Ordering ordering;
   ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
-  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+  GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
-  GaussianBayesTree bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
   // Check the conditional P(Root|Root)
   GaussianBayesNet empty;
-  GaussianBayesTree::sharedClique R = bayesTree.root();
-  GaussianBayesNet actual1 = R->shortcut(R, EliminateCholesky);
+  GaussianBayesTree::sharedClique R = bayesTree.roots().front();
+  GaussianBayesNet actual1 = R->shortcut(R);
   EXPECT(assert_equal(empty,actual1,tol));
 
   // Check the conditional P(C2|Root)
   GaussianBayesTree::sharedClique C2 = bayesTree[ordering[X(3)]];
-  GaussianBayesNet actual2 = C2->shortcut(R, EliminateCholesky);
+  GaussianBayesNet actual2 = C2->shortcut(R);
   EXPECT(assert_equal(empty,actual2,tol));
 
   // Check the conditional P(C3|Root), which should be equal to P(x2|x4)
@@ -249,76 +233,54 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   // Create smoother with 7 nodes
   Ordering ordering;
   ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
-  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+  GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree, expected to look like:
   //   x5 x6 x4
   //     x3 x2 : x4
   //       x1 : x2
   //     x7 : x6
-  GaussianBayesTree bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
   // Conditional density elements reused by both tests
-  const Vector sigma = ones(2);
   const Matrix I = eye(2), A = -0.00429185*I;
 
   // Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
-  GaussianBayesNet expected1;
-  // Why does the sign get flipped on the prior?
-  GaussianConditional::shared_ptr
-    parent1(new GaussianConditional(ordering[X(7)], zero(2), -1*I/sigmax7, ones(2)));
-  expected1.push_front(parent1);
-  push_front(expected1,ordering[X(1)], zero(2), I/sigmax7, ordering[X(7)], A/sigmax7, sigma);
-  GaussianBayesNet actual1 = *bayesTree.jointBayesNet(ordering[X(1)],ordering[X(7)], EliminateCholesky);
-  EXPECT(assert_equal(expected1,actual1,tol));
+  GaussianBayesNet expected1 = list_of
+    // Why does the sign get flipped on the prior?
+    (GaussianConditional(X(1), zero(2), I/sigmax7, X(7), A/sigmax7))
+    (GaussianConditional(X(7), zero(2), -1*I/sigmax7));
+  GaussianBayesNet actual1 = *bayesTree.jointBayesNet(X(1),X(7));
+  EXPECT(assert_equal(expected1, actual1, tol));
 
   //  // Check the joint density P(x7,x1) factored as P(x7|x1)P(x1)
   //  GaussianBayesNet expected2;
   //  GaussianConditional::shared_ptr
-  //      parent2(new GaussianConditional(ordering[X(1)], zero(2), -1*I/sigmax1, ones(2)));
+  //      parent2(new GaussianConditional(X(1), zero(2), -1*I/sigmax1, ones(2)));
   //    expected2.push_front(parent2);
-  //  push_front(expected2,ordering[X(7)], zero(2), I/sigmax1, ordering[X(1)], A/sigmax1, sigma);
-  //  GaussianBayesNet actual2 = *bayesTree.jointBayesNet(ordering[X(7)],ordering[X(1)]);
+  //  push_front(expected2,X(7), zero(2), I/sigmax1, X(1), A/sigmax1, sigma);
+  //  GaussianBayesNet actual2 = *bayesTree.jointBayesNet(X(7),X(1));
   //  EXPECT(assert_equal(expected2,actual2,tol));
 
   // Check the joint density P(x1,x4), i.e. with a root variable
-  GaussianBayesNet expected3;
-  GaussianConditional::shared_ptr
-    parent3(new GaussianConditional(ordering[X(4)], zero(2), I/sigmax4, ones(2)));
-  expected3.push_front(parent3);
   double sig14 = 0.784465;
   Matrix A14 = -0.0769231*I;
-  push_front(expected3,ordering[X(1)], zero(2), I/sig14, ordering[X(4)], A14/sig14, sigma);
-  GaussianBayesNet actual3 = *bayesTree.jointBayesNet(ordering[X(1)],ordering[X(4)], EliminateCholesky);
+  GaussianBayesNet expected3 = list_of
+    (GaussianConditional(X(4), zero(2), I/sigmax4))
+    (GaussianConditional(X(1), zero(2), I/sig14, X(4), A14/sig14));
+  GaussianBayesNet actual3 = *bayesTree.jointBayesNet(X(1),X(4));
   EXPECT(assert_equal(expected3,actual3,tol));
 
   //  // Check the joint density P(x4,x1), i.e. with a root variable, factored the other way
   //  GaussianBayesNet expected4;
   //  GaussianConditional::shared_ptr
-  //      parent4(new GaussianConditional(ordering[X(1)], zero(2), -1.0*I/sigmax1, ones(2)));
+  //      parent4(new GaussianConditional(X(1), zero(2), -1.0*I/sigmax1, ones(2)));
   //    expected4.push_front(parent4);
   //  double sig41 = 0.668096;
   //  Matrix A41 = -0.055794*I;
-  //  push_front(expected4,ordering[X(4)], zero(2), I/sig41, ordering[X(1)], A41/sig41, sigma);
-  //  GaussianBayesNet actual4 = *bayesTree.jointBayesNet(ordering[X(4)],ordering[X(1)]);
+  //  push_front(expected4,X(4), zero(2), I/sig41, X(1), A41/sig41, sigma);
+  //  GaussianBayesNet actual4 = *bayesTree.jointBayesNet(X(4),X(1));
   //  EXPECT(assert_equal(expected4,actual4,tol));
-}
-
-/* ************************************************************************* */
-TEST(GaussianBayesTree, simpleMarginal)
-{
-  GaussianFactorGraph gfg;
-
-  Matrix A12 = Rot2::fromDegrees(45.0).matrix();
-
-  gfg.add(0, eye(2), zero(2), noiseModel::Isotropic::Sigma(2, 1.0));
-  gfg.add(0, -eye(2), 1, eye(2), ones(2), noiseModel::Isotropic::Sigma(2, 1.0));
-  gfg.add(1, -eye(2), 2, A12, ones(2), noiseModel::Isotropic::Sigma(2, 1.0));
-
-  Matrix expected(GaussianSequentialSolver(gfg).marginalCovariance(2));
-  Matrix actual(GaussianMultifrontalSolver(gfg).marginalCovariance(2));
-
-  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -347,7 +309,7 @@ TEST(GaussianBayesTree, shortcut_overlapping_separator)
   // c(5|6)
   //   c(1,2|5)
   //   c(3,4|5)
-  GaussianBayesTree bt = *GaussianMultifrontalSolver(fg).eliminate();
+  GaussianBayesTree bt = *fg.eliminateMultifrontal(Ordering(fg.keys())); // eliminate in increasing key order, fg.keys() is sorted.
 
   GaussianFactorGraph joint = *bt.joint(1,2, EliminateQR);
 

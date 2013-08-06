@@ -23,6 +23,12 @@ using namespace std;
 namespace gtsam {
 
   /* ************************************************************************* */
+  GaussianDensity GaussianDensity::FromMeanAndStddev(Key key, const Vector& mean, const double& sigma)
+  {
+    return GaussianDensity(key, mean / sigma, Matrix::Identity(mean.size(), mean.size()) / sigma);
+  }
+
+  /* ************************************************************************* */
   void GaussianDensity::print(const string &s, const KeyFormatter& formatter) const
   {
     cout << s << ": density on ";

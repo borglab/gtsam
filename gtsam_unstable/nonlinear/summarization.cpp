@@ -5,7 +5,6 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam_unstable/nonlinear/summarization.h>
 
 #include <boost/foreach.hpp>

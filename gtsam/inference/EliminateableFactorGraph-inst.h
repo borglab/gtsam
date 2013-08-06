@@ -174,4 +174,61 @@ namespace gtsam {
     }
   }
 
+  /* ************************************************************************* */
+  template<class FACTORGRAPH>
+  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
+    EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesTree(
+    boost::variant<const Ordering&, const std::vector<Key>&> variables,
+    OptionalOrdering marginalizedVariableOrdering,
+    const Eliminate& function = EliminationTraits::DefaultEliminate,
+    OptionalVariableIndex variableIndex = boost::none) const
+  {
+    if(variableIndex)
+    {
+      if(marginalizedVariableOrdering)
+      {
+        gttic(marginalMultifrontalBayesTree);
+        // An ordering was provided for the marginalized variables, so we can first eliminate them
+        // in the order requested.
+        std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > eliminated =
+          eliminatePartialMultifrontal(*marginalizedVariableOrdering, function, *variableIndex);
+
+        if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))
+        {
+          // An ordering was also provided for the unmarginalized variables, so we can also
+          // eliminate them in the order requested.
+          return eliminated.second->eliminateMultifrontal(*varsAsOrdering, function);
+        }
+        else
+        {
+          // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
+          return eliminated.second->eliminateMultifrontal(boost::none, function);
+        }
+      }
+      else
+      {
+        // No ordering was provided for the marginalized variables, so order them using constrained
+        // COLAMD.
+        bool unmarginalizedAreOrdered = (boost::get<const Ordering&>(&variables) != 0);
+        const std::vector<Key>* variablesOrOrdering =
+          unmarginalizedAreOrdered ?
+          boost::get<const Ordering&>(&variables) : boost::get<const std::vector<Key>&>(&variables);
+
+        Ordering totalOrdering =
+          Ordering::COLAMDConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
+
+        // Split up ordering
+        const size_t nVars = variablesOrOrdering->size();
+        Ordering marginalizationOrdering(totalOrdering.begin(), totalOrdering.end() - nVars);
+        Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
+
+        // Call this function again with the computed orderings
+        return marginalMultifrontalBayesTree(marginalVarsOrdering, marginalizationOrdering, function, *variableIndex);
+      }
+    } else {
+      // If no variable index is provided, compute one and call this function again
+      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, VariableIndex(asDerived()));
+    }
+  }
+
 }

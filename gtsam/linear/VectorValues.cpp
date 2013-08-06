@@ -63,6 +63,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void VectorValues::setZero()
+  {
+    BOOST_FOREACH(Vector& v, values_ | map_values)
+      v.setZero();
+  }
+
+  /* ************************************************************************* */
   void VectorValues::print(const std::string& str, const KeyFormatter& formatter) const {
     std::cout << str << ": " << size() << " elements\n";
     BOOST_FOREACH(const value_type& key_value, *this)

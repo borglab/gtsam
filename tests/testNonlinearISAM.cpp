@@ -5,6 +5,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#if 0
+
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
@@ -75,6 +77,8 @@ TEST(testNonlinearISAM, markov_chain ) {
     EXPECT(assert_equal(expected.at<Pose2>(i), actual.at<Pose2>(i), tol));
   }
 }
+
+#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

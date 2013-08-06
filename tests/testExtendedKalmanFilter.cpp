@@ -30,17 +30,17 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-TEST( ExtendedKalmanFilter, linear ) {
+TEST_UNSAFE( ExtendedKalmanFilter, linear ) {
+
+  // Create the TestKeys for our example
+  Symbol x0('x',0), x1('x',1), x2('x',2), x3('x',3);
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.0, 0.0);
   SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
-  ExtendedKalmanFilter<Point2> ekf(x_initial, P_initial);
-
-  // Create the TestKeys for our example
-  Symbol x0('x',0), x1('x',1), x2('x',2), x3('x',3);
+  ExtendedKalmanFilter<Point2> ekf(x0, x_initial, P_initial);
 
   // Create the controls and measurement properties for our example
   double dt = 1.0;
@@ -256,7 +256,7 @@ public:
   NonlinearMeasurementModel(){}
 
   NonlinearMeasurementModel(const Symbol& TestKey, Vector z) :
-    Base(noiseModel::Diagonal::Sigmas(Vector_(2, 1.0, 1.0)), TestKey), z_(z), R_(1,1) {
+    Base(noiseModel::Unit::Create(z.size()), TestKey), z_(z), R_(1,1) {
 
     // Initialize nonlinear measurement model parameters:
     // z(t) = H*x(t) + v
@@ -364,7 +364,7 @@ public:
 
 
 /* ************************************************************************* */
-TEST( ExtendedKalmanFilter, nonlinear ) {
+TEST_UNSAFE( ExtendedKalmanFilter, nonlinear ) {
 
   // Create the set of expected output TestValues (generated using Matlab Kalman Filter)
   Point2 expected_predict[10];
@@ -408,7 +408,7 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
   SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
-  ExtendedKalmanFilter<Point2> ekf(x_initial, P_initial);
+  ExtendedKalmanFilter<Point2> ekf(X(0), x_initial, P_initial);
 
   // Enter Predict-Update Loop
   Point2 x_predict, x_update;

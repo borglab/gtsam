@@ -18,6 +18,7 @@
 #pragma once
 
 #include <vector>
+#include <boost/assign/list_inserter.hpp>
 
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/VariableIndex.h>
@@ -29,6 +30,9 @@ namespace gtsam {
     typedef std::vector<Key> Base;
 
   public:
+    typedef Ordering This; ///< Typedef to this class
+    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+
     /// Create an empty ordering
     GTSAM_EXPORT Ordering() {}
 
@@ -39,6 +43,13 @@ namespace gtsam {
     /// Create an ordering using iterators over keys
     template<typename ITERATOR>
     Ordering(ITERATOR firstKey, ITERATOR lastKey) : Base(firstKey, lastKey) {}
+
+    /// Add new variables to the ordering as ordering += key1, key2, ...  Equivalent to calling
+    /// push_back.
+    boost::assign::list_inserter<boost::assign_detail::call_push_back<This> >
+      operator+=(Key key) {
+        return boost::assign::make_list_inserter(boost::assign_detail::call_push_back<This>(*this))(key);
+    }
 
     /// Invert (not reverse) the ordering - returns a map from key to order position
     FastMap<Key, size_t> invert() const;
@@ -109,9 +120,19 @@ namespace gtsam {
 
     GTSAM_EXPORT bool equals(const Ordering& other, double tol = 1e-9) const;
 
+    /// @}
+
   private:
+    /// Internal COLAMD function
     static GTSAM_EXPORT Ordering COLAMDConstrained(
       const VariableIndex& variableIndex, std::vector<int>& cmember);
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    }
   };
 }
 

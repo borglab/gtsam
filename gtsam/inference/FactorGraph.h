@@ -178,12 +178,6 @@ namespace gtsam {
       bayesTree.addFactorsToGraph(*this);
     }
 
-    /** Add a factor or a shared_ptr to a factor, synonym for push_back() */
-    template<class FACTOR>
-    void add(const FACTOR& factor) {
-      push_back(factor);
-    }
-
     /** += syntax for push_back, e.g. graph += f1, f2, f3 */
     //template<class T>
     //boost::assign::list_inserter<boost::function<void(const T&)> >

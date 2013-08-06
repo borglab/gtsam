@@ -18,8 +18,6 @@
 
 #pragma once
 
-#if 0
-
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -45,7 +43,6 @@ public:
 protected:
 
   GaussianFactorGraph graph_;
-  Ordering ordering_;
   Values values_;
   Factorization factorization_;
   GaussianBayesTree bayesTree_;
@@ -83,12 +80,9 @@ public:
 class GTSAM_EXPORT JointMarginal {
 
 protected:
-
-  typedef SymmetricBlockView<Matrix> BlockView;
-
-  Matrix fullMatrix_;
-  BlockView blockView_;
-  Ordering indices_;
+  SymmetricBlockMatrix blockMatrix_;
+  std::vector<size_t> keys_;
+  FastMap<Key, size_t> indices_;
 
 public:
   /** A block view of the joint marginal - this stores a reference to the
@@ -96,7 +90,7 @@ public:
    * while this block view is needed, otherwise assign this block object to a
    * Matrix to store it.
    */
-  typedef BlockView::constBlock Block;
+  typedef SymmetricBlockMatrix::constBlock Block;
 
   /** Access a block, corresponding to a pair of variables, of the joint
    * marginal.  Each block is accessed by its "vertical position",
@@ -112,7 +106,7 @@ public:
    * @param jVariable The nonlinear Key specifying the "horizontal position" of the requested block
    */
   Block operator()(Key iVariable, Key jVariable) const {
-    return blockView_(indices_[iVariable], indices_[jVariable]); }
+    return blockMatrix_(indices_.at(iVariable), indices_.at(jVariable)); }
 
   /** Synonym for operator() */
   Block at(Key iVariable, Key jVariable) const {
@@ -123,25 +117,17 @@ public:
    * in scope while this view is needed. Otherwise assign this block object to a Matrix
    * to store it.
    */
-  const Matrix& fullMatrix() const { return fullMatrix_; }
-
-  /** Copy constructor */
-  JointMarginal(const JointMarginal& other);
-
-  /** Assignment operator */
-  JointMarginal& operator=(const JointMarginal& rhs);
+  const Matrix& fullMatrix() const { return blockMatrix_.matrix(); }
 
   /** Print */
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
 protected:
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
-    fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const std::vector<Key>& keys) :
+    blockMatrix_(dims, fullMatrix), keys_(keys), indices_(Ordering(keys).invert()) {}
 
   friend class Marginals;
 
 };
 
 } /* namespace gtsam */
-
-#endif

@@ -18,8 +18,6 @@
 
 #pragma once
 
-#if 0
-
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
 namespace gtsam {
@@ -107,7 +105,7 @@ public:
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const DoglegParams& params = DoglegParams()) :
-        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph, initialValues)), state_(graph, initialValues, params_) {}
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph)), state_(graph, initialValues, params_) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -164,5 +162,3 @@ protected:
 };
 
 }
-
-#endif
