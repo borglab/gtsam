@@ -46,6 +46,11 @@ TEST(Ordering, constrained_ordering) {
   Ordering actConstrained = Ordering::COLAMDConstrainedLast(sfg, list_of(2)(4));
   Ordering expConstrained = Ordering(list_of(0)(1)(5)(3)(4)(2));
   EXPECT(assert_equal(expConstrained, actConstrained));
+
+  // constrained version - push one set to the start
+  Ordering actConstrained2 = Ordering::COLAMDConstrainedFirst(sfg, list_of(2)(4));
+  Ordering expConstrained2 = Ordering(list_of(2)(4)(0)(1)(3)(5));
+  EXPECT(assert_equal(expConstrained2, actConstrained2));
 }
 
 /* ************************************************************************* */

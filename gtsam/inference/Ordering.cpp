@@ -138,6 +138,40 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Ordering Ordering::COLAMDConstrainedFirst(
+    const VariableIndex& variableIndex, const std::vector<Key>& constrainFirst, bool forceOrder)
+  {
+    gttic(Ordering_COLAMDConstrainedFirst);
+
+    const int none = -1;
+    size_t n = variableIndex.size();
+    std::vector<int> cmember(n, none);
+
+    // Build a mapping to look up sorted Key indices by Key
+    FastMap<Key, size_t> keyIndices;
+    size_t j = 0;
+    BOOST_FOREACH(const VariableIndex::value_type key_factors, variableIndex)
+      keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
+
+    // If at least some variables are not constrained to be last, constrain the
+    // ones that should be constrained.
+    int group = 0;
+    BOOST_FOREACH(Key key, constrainFirst) {
+      cmember[keyIndices.at(key)] = group;
+      if(forceOrder)
+        ++ group;
+    }
+
+    if(!forceOrder)
+      ++ group;
+    BOOST_FOREACH(int& c, cmember)
+      if(c == none)
+        c = group;
+
+    return Ordering::COLAMDConstrained(variableIndex, cmember);
+  }
+
+  /* ************************************************************************* */
   Ordering Ordering::COLAMDConstrained(const VariableIndex& variableIndex,
     const FastMap<Key, int>& groups)
   {
@@ -171,9 +205,11 @@ namespace gtsam {
     static const size_t varsPerLine = 10;
     bool endedOnNewline = false;
     for(size_t i = 0; i < size(); ++i) {
+      if(i % varsPerLine == 0)
+        cout << "Position " << i << ": ";
       if(i % varsPerLine != 0)
         cout << ", ";
-      cout << i << ":" << keyFormatter(at(i));
+      cout << keyFormatter(at(i));
       if(i % varsPerLine == varsPerLine - 1) {
         cout << "\n";
         endedOnNewline = true;
