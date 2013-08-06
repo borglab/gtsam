@@ -49,7 +49,7 @@ namespace gtsam {
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const = 0;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const = 0;
 
     /** Equals for testable */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
