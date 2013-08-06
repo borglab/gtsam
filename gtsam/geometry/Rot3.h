@@ -268,6 +268,9 @@ namespace gtsam {
      */
     static Vector3 Logmap(const Rot3& R);
 
+    /// Left-trivialized derivative of the exponential map
+    static Matrix3 dexpL(const Vector3& v);
+
     /// @}
     /// @name Group Action on Point3
     /// @{

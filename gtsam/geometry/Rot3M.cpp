@@ -304,6 +304,19 @@ Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const 
 }
 
 /* ************************************************************************* */
+/// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
+Matrix3 Rot3::dexpL(const Vector3& v) {
+  if(zero(v)) return eye(3);
+  Matrix x = skewSymmetric(v);
+  Matrix x2 = x*x;
+  double theta = v.norm(), vi = theta/2.0;
+  double s1 = sin(vi)/vi;
+  double s2 = (theta - sin(theta))/(theta*theta*theta);
+  Matrix res = eye(3) - 0.5*s1*s1*x + s2*x2;
+  return res;
+}
+
+/* ************************************************************************* */
 Matrix3 Rot3::matrix() const {
   return rot_;
 }
