@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/inference/ISAM.h>
+#include <gtsam/inference/VariableIndex.h>
 
 namespace gtsam {
 
@@ -31,9 +32,6 @@ namespace gtsam {
     if (!this->empty()) {
       const FastSet<Key> newFactorKeys = newFactors.keys();
       this->removeTop(std::vector<Key>(newFactorKeys.begin(), newFactorKeys.end()), bn, orphans);
-      if (bn.empty())
-        throw std::runtime_error(
-            "ISAM::update_internal(): no variables in common between existing Bayes tree and incoming factors!");
     }
 
     // Add the removed top and the new factors
@@ -46,7 +44,11 @@ namespace gtsam {
       factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
 
     // eliminate into a Bayes net
-    Base bayesTree = *factors.eliminateMultifrontal(boost::none, function);
+    const VariableIndex varIndex(factors);
+    const FastSet<Key> newFactorKeys = newFactors.keys();
+    const Ordering constrainedOrdering =
+      Ordering::COLAMDConstrainedLast(varIndex, std::vector<Key>(newFactorKeys.begin(), newFactorKeys.end()));
+    Base bayesTree = *factors.eliminateMultifrontal(constrainedOrdering, function, varIndex);
     this->roots_.insert(this->roots_.end(), bayesTree.roots().begin(), bayesTree.roots().end());
     this->nodes_.insert(bayesTree.nodes().begin(), bayesTree.nodes().end());
   }

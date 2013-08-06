@@ -32,6 +32,23 @@ namespace gtsam {
   template<class FACTOR> class FactorGraph;
 
   /* ************************************************************************* */
+  /** clique statistics */
+  struct GTSAM_EXPORT BayesTreeCliqueStats {
+    double avgConditionalSize;
+    std::size_t maxConditionalSize;
+    double avgSeparatorSize;
+    std::size_t maxSeparatorSize;
+    void print(const std::string& s = "") const ;
+  };
+
+  /** store all the sizes  */
+  struct GTSAM_EXPORT BayesTreeCliqueData {
+    std::vector<std::size_t> conditionalSizes;
+    std::vector<std::size_t> separatorSizes;
+    BayesTreeCliqueStats getStats() const;
+  };
+
+  /* ************************************************************************* */
   /**
    * Bayes tree
    * @tparam CONDITIONAL The type of the conditional densities, i.e. the type of node in the underlying Bayes chain,
@@ -67,22 +84,6 @@ namespace gtsam {
 
     /** A convenience class for a list of shared cliques */
     typedef FastList<sharedClique> Cliques;
-
-    /** clique statistics */
-    struct CliqueStats {
-      double avgConditionalSize;
-      std::size_t maxConditionalSize;
-      double avgSeparatorSize;
-      std::size_t maxSeparatorSize;
-      void print(const std::string& s = "") const ;
-    };
-
-    /** store all the sizes  */
-    struct CliqueData {
-      std::vector<std::size_t> conditionalSizes;
-      std::vector<std::size_t> separatorSizes;
-      CliqueStats getStats() const;
-    };
 
     /** Map from keys to Clique */
     typedef FastMap<Key, sharedClique> Nodes;
@@ -151,7 +152,7 @@ namespace gtsam {
     }
 
     /** Gather data on all cliques */
-    CliqueData getCliqueData() const;
+    BayesTreeCliqueData getCliqueData() const;
 
     /** Collect number of cliques with cached separator marginals */
     size_t numCachedSeparatorMarginals() const;
@@ -233,7 +234,7 @@ namespace gtsam {
         int parentnum = 0) const;
 
     /** Gather data on a single clique */
-    void getCliqueData(CliqueData& stats, sharedClique clique) const;
+    void getCliqueData(BayesTreeCliqueData& stats, sharedClique clique) const;
 
     /** remove a clique: warning, can result in a forest */
     void removeClique(sharedClique clique);

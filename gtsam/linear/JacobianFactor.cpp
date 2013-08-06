@@ -158,18 +158,20 @@ namespace gtsam {
           BOOST_FOREACH(const size_t sourceVarpos, slots->second) {
             if(sourceVarpos < numeric_limits<size_t>::max()) {
               const JacobianFactor& sourceFactor = *factors[sourceFactorI];
-              DenseIndex vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
+              if(sourceFactor.rows() > 0) {
+                DenseIndex vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-              if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
+                if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
+                  varDims[jointVarpos] = vardim;
+                  n += vardim;
+                } else
+                  assert(varDims[jointVarpos] == vardim);
+#else
                 varDims[jointVarpos] = vardim;
                 n += vardim;
-              } else
-                assert(varDims[jointVarpos] == vardim);
-#else
-              varDims[jointVarpos] = vardim;
-              n += vardim;
-              break;
+                break;
 #endif
+              }
             }
             ++ sourceFactorI;
           }
@@ -280,13 +282,15 @@ namespace gtsam {
         // Slot in source factor
         const size_t sourceSlot = varslot->second[factorI];
         const DenseIndex sourceRows = jacobians[factorI]->rows();
-        JacobianFactor::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
-        // Copy if exists in source factor, otherwise set zero
-        if(sourceSlot != numeric_limits<size_t>::max())
-          destBlock = jacobians[factorI]->getA(jacobians[factorI]->begin()+sourceSlot);
-        else
-          destBlock.setZero();
-        nextRow += sourceRows;
+        if(sourceRows > 0) {
+          JacobianFactor::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
+          // Copy if exists in source factor, otherwise set zero
+          if(sourceSlot != numeric_limits<size_t>::max())
+            destBlock = jacobians[factorI]->getA(jacobians[factorI]->begin()+sourceSlot);
+          else
+            destBlock.setZero();
+          nextRow += sourceRows;
+        }
       }
       ++combinedSlot;
     }

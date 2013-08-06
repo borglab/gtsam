@@ -17,8 +17,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#if 0
-
 #include <tests/smallExample.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
@@ -27,6 +25,8 @@
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
+#include <boost/range/adaptor/map.hpp>
+namespace br { using namespace boost::adaptors; using namespace boost::range; }
 
 using namespace std;
 using namespace gtsam;
@@ -36,18 +36,13 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-// Some numbers that should be consistent among all smoother tests
-
-static const double tol = 1e-4;
-
-/* ************************************************************************* */
 TEST( ISAM, iSAM_smoother )
 {
   Ordering ordering;
   for (int t = 1; t <= 7; t++) ordering += X(t);
 
   // Create smoother with 7 nodes
-  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+  GaussianFactorGraph smoother = createSmoother(7);
 
   // run iSAM for every factor
   GaussianISAM actual;
@@ -58,26 +53,25 @@ TEST( ISAM, iSAM_smoother )
   }
 
   // Create expected Bayes Tree by solving smoother with "natural" ordering
-  BayesTree<GaussianConditional>::shared_ptr bayesTree = GaussianMultifrontalSolver(smoother).eliminate();
-  GaussianISAM expected(*bayesTree);
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
+  GaussianISAM expected;
+  expected.insertRoot(bayesTree.roots().front());
 
   // Verify sigmas in the bayes tree
-  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, bayesTree->nodes()) {
+  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, bayesTree.nodes() | br::map_values) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
-    size_t dim = conditional->dim();
-    EXPECT(assert_equal(gtsam::ones(dim), conditional->get_sigmas(), tol));
+    EXPECT(!conditional->get_model());
   }
 
   // Check whether BayesTree is correct
   EXPECT(assert_equal(expected, actual));
 
   // obtain solution
-  VectorValues e(VectorValues::Zero(7,2)); // expected solution
-  VectorValues optimized = optimize(actual); // actual solution
+  VectorValues e; // expected solution
+  for (int t = 1; t <= 7; t++) e.insert(X(t), Vector::Zero(2));
+  VectorValues optimized = actual.optimize(); // actual solution
   EXPECT(assert_equal(e, optimized));
 }
-
-#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

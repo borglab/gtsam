@@ -402,7 +402,8 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 /* ************************************************************************* */
 void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatter)
 {
-  updateATA(HessianFactor(update), scatter);
+  if(update.rows() > 0) // Zero-row Jacobians are treated specially
+    updateATA(HessianFactor(update), scatter);
 }
 
 /* ************************************************************************* */

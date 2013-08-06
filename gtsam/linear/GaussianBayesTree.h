@@ -131,6 +131,10 @@ namespace gtsam {
      * multiplying we add the logarithms of the diagonal elements and take the exponent at the end
      * because this is more numerically stable. */
     double logDeterminant() const;
+
+    /** Return the marginal on the requested variable as a covariance matrix.  See also
+    *   marginalFactor(). */
+    Matrix marginalCovariance(Key key) const;
   };
 
 }

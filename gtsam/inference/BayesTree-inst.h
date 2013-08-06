@@ -36,9 +36,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  typename BayesTree<CLIQUE>::CliqueData
-  BayesTree<CLIQUE>::getCliqueData() const {
-    CliqueData data;
+  BayesTreeCliqueData BayesTree<CLIQUE>::getCliqueData() const {
+    BayesTreeCliqueData data;
     BOOST_FOREACH(const sharedClique& root, roots_)
       getCliqueData(data, root);
     return data;
@@ -46,7 +45,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  void BayesTree<CLIQUE>::getCliqueData(CliqueData& data, sharedClique clique) const {
+  void BayesTree<CLIQUE>::getCliqueData(BayesTreeCliqueData& data, sharedClique clique) const {
     data.conditionalSizes.push_back(clique->conditional()->nrFrontals());
     data.separatorSizes.push_back(clique->conditional()->nrParents());
     BOOST_FOREACH(sharedClique c, clique->children) {
@@ -108,45 +107,6 @@ namespace gtsam {
       num++;
       saveGraph(s, c, indexFormatter, parentnum);
     }
-  }
-
-
-  /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::CliqueStats::print(const std::string& s) const {
-    std::cout << s
-              << "avg Conditional Size: " << avgConditionalSize << std::endl
-              << "max Conditional Size: " << maxConditionalSize << std::endl
-              << "avg Separator Size: "   << avgSeparatorSize   << std::endl
-              << "max Separator Size: "   << maxSeparatorSize   << std::endl;
-  }
-
-  /* ************************************************************************* */
-  template<class CLIQUE>
-  typename BayesTree<CLIQUE>::CliqueStats
-  BayesTree<CLIQUE>::CliqueData::getStats() const
-  {
-    CliqueStats stats;
-
-    double sum = 0.0;
-    size_t max = 0;
-    BOOST_FOREACH(size_t s, conditionalSizes) {
-      sum += (double)s;
-      if(s > max) max = s;
-    }
-    stats.avgConditionalSize = sum / (double)conditionalSizes.size();
-    stats.maxConditionalSize = max;
-
-    sum = 0.0;
-    max = 1;
-    BOOST_FOREACH(size_t s, separatorSizes) {
-      sum += (double)s;
-      if(s > max) max = s;
-    }
-    stats.avgSeparatorSize = sum / (double)separatorSizes.size();
-    stats.maxSeparatorSize = max;
-
-    return stats;
   }
 
   /* ************************************************************************* */

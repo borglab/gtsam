@@ -165,6 +165,13 @@ namespace gtsam {
     return exp(logDeterminant());
   }
 
+  /* ************************************************************************* */
+  Matrix GaussianBayesTree::marginalCovariance(Key key) const
+  {
+    return marginalFactor(key)->information().inverse();
+  }
+
+
 } // \namespace gtsam
 
 
