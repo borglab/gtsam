@@ -545,25 +545,27 @@ namespace gtsam {
     if(nrFrontals > size())
       throw std::invalid_argument("Requesting to split more variables than exist using JacobianFactor::splitConditional");
 
-    size_t frontalDim = Ab_.range(0, nrFrontals).cols();
-
-    // Check for singular factor
-    // TODO: fix this check
-    //if(model_->dim() < frontalDim)
-    //  throw IndeterminantLinearSystemException(this->keys().front());
+    DenseIndex frontalDim = Ab_.range(0, nrFrontals).cols();
 
     // Restrict the matrix to be in the first nrFrontals variables and create the conditional
     gttic(cond_Rd);
     const DenseIndex originalRowEnd = Ab_.rowEnd();
     Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
     SharedDiagonal conditionalNoiseModel;
-    if(model_)
+    if(model_) {
+      if((DenseIndex)model_->dim() < frontalDim)
+        throw IndeterminantLinearSystemException(this->keys().front());
       conditionalNoiseModel =
-      noiseModel::Diagonal::Sigmas(model_->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart()));
+        noiseModel::Diagonal::Sigmas(model_->sigmas().segment(Ab_.rowStart(), Ab_.rows()));
+    }
     GaussianConditional::shared_ptr conditional = boost::make_shared<GaussianConditional>(
       Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
+    const DenseIndex maxRemainingRows = std::min(Ab_.cols() - 1, originalRowEnd) - Ab_.rowStart() - frontalDim;
+    const DenseIndex remainingRows =
+      model_ ? std::min(model_->sigmas().size() - frontalDim, maxRemainingRows)
+      : maxRemainingRows;
     Ab_.rowStart() += frontalDim;
-    Ab_.rowEnd() = std::min(Ab_.cols() - 1, originalRowEnd);
+    Ab_.rowEnd() = Ab_.rowStart() + remainingRows;
     Ab_.firstBlock() += nrFrontals;
     gttoc(cond_Rd);
 
@@ -573,9 +575,10 @@ namespace gtsam {
     // Set sigmas with the right model
     if(model_) {
       if (model_->isConstrained())
-        model_ = noiseModel::Constrained::MixedSigmas(model_->sigmas().tail(model_->sigmas().size() - frontalDim));
+        model_ = noiseModel::Constrained::MixedSigmas(model_->sigmas().tail(remainingRows));
       else
-        model_ = noiseModel::Diagonal::Sigmas(model_->sigmas().tail(model_->sigmas().size() - frontalDim));
+        model_ = noiseModel::Diagonal::Sigmas(model_->sigmas().tail(remainingRows));
+      assert(model_->dim() == Ab_.rows());
     }
     gttoc(remaining_factor);
 
