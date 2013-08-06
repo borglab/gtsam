@@ -104,8 +104,8 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;
-  expected.insert(0, zero(3));
-  expected.insert(1, Vector_(3,-0.5,0.,0.));
+  expected.insert(X(1), zero(3));
+  expected.insert(X(2), Vector_(3,-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
 
@@ -131,8 +131,8 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;
-  expected.insert(0, zero(3));
-  expected.insert(1, Vector_(3,-0.5,0.,0.));
+  expected.insert(X(1), zero(3));
+  expected.insert(X(2), Vector_(3,-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
 

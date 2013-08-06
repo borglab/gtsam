@@ -209,7 +209,8 @@ TEST( NonlinearFactor, linearize_constraint1 )
 
   // create expected
   Vector b = Vector_(2, 0., -3.);
-  JacobianFactor expected(X(1), Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b, constraint);
+  JacobianFactor expected(X(1), Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b,
+    noiseModel::Constrained::MixedSigmas(Vector_(2, 1.0, 0.0)));
   CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
@@ -230,7 +231,8 @@ TEST( NonlinearFactor, linearize_constraint2 )
   // create expected
   Matrix A = Matrix_(2,2, 5.0, 0.0, 0.0, 1.0);
   Vector b = Vector_(2, -15., -3.);
-  JacobianFactor expected(X(1), -1*A, L(1), A, b, constraint);
+  JacobianFactor expected(X(1), -1*A, L(1), A, b,
+    noiseModel::Constrained::MixedSigmas(Vector_(2, 1.0, 0.0)));
   CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 

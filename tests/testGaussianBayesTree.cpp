@@ -118,18 +118,18 @@ TEST( GaussianBayesTree, linear_smoother_shortcuts )
 TEST( GaussianBayesTree, balanced_smoother_marginals )
 {
   // Create smoother with 7 nodes
-  Ordering ordering;
-  ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
   GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
+  Ordering ordering;
+  ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
   GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
   VectorValues actualSolution = bayesTree.optimize();
   VectorValues expectedSolution = VectorValues::Zero(actualSolution);
   EXPECT(assert_equal(expectedSolution,actualSolution,tol));
 
-  LONGS_EQUAL(4, (long)bayesTree.size());
+  LONGS_EQUAL(3, (long)bayesTree.size());
 
   double tol=1e-5;
 
@@ -138,8 +138,8 @@ TEST( GaussianBayesTree, balanced_smoother_marginals )
   JacobianFactor actual1 = *bayesTree.marginalFactor(X(1));
   Matrix expectedCovarianceX1 = eye(2,2) * (sigmax1 * sigmax1);
   Matrix actualCovarianceX1;
-  GaussianFactor::shared_ptr m = bayesTree.marginalFactor(ordering[X(1)], EliminateCholesky);
-  actualCovarianceX1 = bayesTree.marginalFactor(ordering[X(1)], EliminateCholesky)->information().inverse();
+  GaussianFactor::shared_ptr m = bayesTree.marginalFactor(X(1), EliminateCholesky);
+  actualCovarianceX1 = bayesTree.marginalFactor(X(1), EliminateCholesky)->information().inverse();
   EXPECT(assert_equal(expectedCovarianceX1, actualCovarianceX1, tol));
   EXPECT(assert_equal(expected1,actual1,tol));
 
@@ -172,7 +172,9 @@ TEST( GaussianBayesTree, balanced_smoother_shortcuts )
   GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
-  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal();
+  Ordering ordering;
+  ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
   // Check the conditional P(Root|Root)
   GaussianBayesNet empty;
@@ -266,8 +268,8 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   double sig14 = 0.784465;
   Matrix A14 = -0.0769231*I;
   GaussianBayesNet expected3 = list_of
-    (GaussianConditional(X(4), zero(2), I/sigmax4))
-    (GaussianConditional(X(1), zero(2), I/sig14, X(4), A14/sig14));
+    (GaussianConditional(X(1), zero(2), I/sig14, X(4), A14/sig14))
+    (GaussianConditional(X(4), zero(2), I/sigmax4));
   GaussianBayesNet actual3 = *bayesTree.jointBayesNet(X(1),X(4));
   EXPECT(assert_equal(expected3,actual3,tol));
 
@@ -314,8 +316,8 @@ TEST(GaussianBayesTree, shortcut_overlapping_separator)
   GaussianFactorGraph joint = *bt.joint(1,2, EliminateQR);
 
   Matrix expectedJointJ = (Matrix(2,3) <<
-    0, 11, 12,
-    -5, 0, -6
+    5, 0, 6,
+    0, -11, -12
     ).finished();
   Matrix actualJointJ = joint.augmentedJacobian();
 
