@@ -281,7 +281,8 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
   info_ = SymmetricBlockMatrix(dims);
   info_.full().setZero();
   keys_.resize(scatter->size());
-  br::copy(*scatter | br::map_keys, keys_.begin());
+  BOOST_FOREACH(const Scatter::value_type& key_slotentry, *scatter)
+    keys_[key_slotentry.second.slot] = key_slotentry.first;
   gttoc(allocate);
 
   // Form A' * A
@@ -374,7 +375,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   vector<DenseIndex> slots(update.size());
   DenseIndex slot = 0;
   BOOST_FOREACH(Key j, update) {
-    slots[slot] = scatter.find(j)->second.slot;
+    slots[slot] = scatter.at(j).slot;
     ++ slot;
   }
   gttoc(slots);
