@@ -304,16 +304,18 @@ namespace gtsam {
     DenseIndex nextRow = 0;
     for(size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
       const DenseIndex sourceRows = jacobians[factorI]->rows();
-      this->getb().segment(nextRow, sourceRows) = jacobians[factorI]->getb();
-      if(jacobians[factorI]->get_model()) {
-        // If the factor has a noise model and we haven't yet allocated sigmas, allocate it.
-        if(!sigmas)
-          sigmas = Vector::Constant(m, 1.0);
-        sigmas->segment(nextRow, sourceRows) = jacobians[factorI]->get_model()->sigmas();
-        if (jacobians[factorI]->isConstrained())
-          anyConstrained = true;
+      if(sourceRows > 0) {
+        this->getb().segment(nextRow, sourceRows) = jacobians[factorI]->getb();
+        if(jacobians[factorI]->get_model()) {
+          // If the factor has a noise model and we haven't yet allocated sigmas, allocate it.
+          if(!sigmas)
+            sigmas = Vector::Constant(m, 1.0);
+          sigmas->segment(nextRow, sourceRows) = jacobians[factorI]->get_model()->sigmas();
+          if (jacobians[factorI]->isConstrained())
+            anyConstrained = true;
+        }
+        nextRow += sourceRows;
       }
-      nextRow += sourceRows;
     }
     gttoc(copy_vectors);
 
