@@ -512,7 +512,7 @@ public:
    * @param j3 key of the third variable
    */
   NoiseModelFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3) :
-    Base(noiseModel, boost::assign::cref_list_of<1>(j1)(j2)(j3)) {}
+    Base(noiseModel, boost::assign::cref_list_of<3>(j1)(j2)(j3)) {}
 
   virtual ~NoiseModelFactor3() {}
 
@@ -591,7 +591,7 @@ public:
    * @param j4 key of the fourth variable
    */
   NoiseModelFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4) :
-    Base(noiseModel, boost::assign::cref_list_of<1>(j1)(j2)(j3)(j4)) {}
+    Base(noiseModel, boost::assign::cref_list_of<4>(j1)(j2)(j3)(j4)) {}
 
   virtual ~NoiseModelFactor4() {}
 
@@ -674,7 +674,7 @@ public:
    * @param j5 key of the fifth variable
    */
   NoiseModelFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5) :
-    Base(noiseModel, boost::assign::cref_list_of<1>(j1)(j2)(j3)(j4)(j5)) {}
+    Base(noiseModel, boost::assign::cref_list_of<5>(j1)(j2)(j3)(j4)(j5)) {}
 
   virtual ~NoiseModelFactor5() {}
 
@@ -761,7 +761,7 @@ public:
    * @param j6 key of the fifth variable
    */
   NoiseModelFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
-    Base(noiseModel, boost::assign::cref_list_of<1>(j1)(j2)(j3)(j4)(j5)(j6)) {}
+    Base(noiseModel, boost::assign::cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
 
   virtual ~NoiseModelFactor6() {}
 
