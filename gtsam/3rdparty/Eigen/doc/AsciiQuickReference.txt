@@ -1,8 +1,7 @@
 // A simple quickref for Eigen. Add anything that's missing.
 // Main author: Keir Mierle
 
-#include <Eigen/Core>
-#include <Eigen/Array>
+#include <Eigen/Dense>
 
 Matrix<double, 3, 3> A;               // Fixed rows and cols. Same as Matrix3d.
 Matrix<double, 3, Dynamic> B;         // Fixed rows, dynamic cols.
@@ -11,6 +10,7 @@ Matrix<double, 3, 3, RowMajor> E;     // Row major; default is column-major.
 Matrix3f P, Q, R;                     // 3x3 float matrix.
 Vector3f x, y, z;                     // 3x1 float matrix.
 RowVector3f a, b, c;                  // 1x3 float matrix.
+VectorXd v;                           // Dynamic column vector of doubles
 double s;                            
 
 // Basic usage
@@ -31,9 +31,19 @@ A << 1, 2, 3,     // Initialize A. The elements can also be
      7, 8, 9;     // and then the rows are stacked.
 B << A, A, A;     // B is three horizontally stacked A's.
 A.fill(10);       // Fill A with all 10's.
-A.setRandom();    // Fill A with uniform random numbers in (-1, 1).
-                  // Requires #include <Eigen/Array>.
-A.setIdentity();  // Fill A with the identity.
+
+// Eigen                            // Matlab
+MatrixXd::Identity(rows,cols)       // eye(rows,cols)
+C.setIdentity(rows,cols)            // C = eye(rows,cols)
+MatrixXd::Zero(rows,cols)           // zeros(rows,cols)
+C.setZero(rows,cols)                // C = ones(rows,cols)
+MatrixXd::Ones(rows,cols)           // ones(rows,cols)
+C.setOnes(rows,cols)                // C = ones(rows,cols)
+MatrixXd::Random(rows,cols)         // rand(rows,cols)*2-1        // MatrixXd::Random returns uniform random numbers in (-1, 1).
+C.setRandom(rows,cols)              // C = rand(rows,cols)*2-1
+VectorXd::LinSpace(size,low,high)   // linspace(low,high,size)'
+v.setLinSpace(size,low,high)        // v = linspace(low,high,size)'
+
 
 // Matrix slicing and blocks. All expressions listed here are read/write.
 // Templated size versions are faster. Note that Matlab is 1-based (a size N
@@ -77,8 +87,7 @@ a *= M;            R  = P + Q;      R  = P/s;
                    R += Q;          R *= s;
                    R -= Q;          R /= s;
 
- // Vectorized operations on each element independently
- // (most require #include <Eigen/Array>)
+// Vectorized operations on each element independently
 // Eigen                  // Matlab
 R = P.cwiseProduct(Q);    // R = P .* Q
 R = P.array() * s.array();// R = P .* s
@@ -121,11 +130,11 @@ s = R.minCoeff(&r, &c)    // [aa, bb] = min(R); [cc, dd] = min(aa);
 s = R.maxCoeff(&r, &c)    // [aa, bb] = max(R); [cc, dd] = max(aa);
                           // row = bb(dd); col = dd; s = cc
 R.sum()                   // sum(R(:))
-R.colwise.sum()           // sum(R)
-R.rowwise.sum()           // sum(R, 2) or sum(R')'
+R.colwise().sum()         // sum(R)
+R.rowwise().sum()         // sum(R, 2) or sum(R')'
 R.prod()                  // prod(R(:))
-R.colwise.prod()          // prod(R)
-R.rowwise.prod()          // prod(R, 2) or prod(R')'
+R.colwise().prod()        // prod(R)
+R.rowwise().prod()        // prod(R, 2) or prod(R')'
 R.trace()                 // trace(R)
 R.all()                   // all(R(:))
 R.colwise().all()         // all(R)
@@ -150,12 +159,11 @@ MatrixXi mat2x2 = Map<Matrix2i>(data);
 MatrixXi mat2x2 = Map<MatrixXi>(data, 2, 2);
 
 // Solve Ax = b. Result stored in x. Matlab: x = A \ b.
-bool solved;
-solved = A.ldlt().solve(b, &x));  // A sym. p.s.d.    #include <Eigen/Cholesky>
-solved = A.llt() .solve(b, &x));  // A sym. p.d.      #include <Eigen/Cholesky>
-solved = A.lu()  .solve(b, &x));  // Stable and fast. #include <Eigen/LU>
-solved = A.qr()  .solve(b, &x));  // No pivoting.     #include <Eigen/QR>
-solved = A.svd() .solve(b, &x));  // Stable, slowest. #include <Eigen/SVD>
+x = A.ldlt().solve(b));  // A sym. p.s.d.    #include <Eigen/Cholesky>
+x = A.llt() .solve(b));  // A sym. p.d.      #include <Eigen/Cholesky>
+x = A.lu()  .solve(b));  // Stable and fast. #include <Eigen/LU>
+x = A.qr()  .solve(b));  // No pivoting.     #include <Eigen/QR>
+x = A.svd() .solve(b));  // Stable, slowest. #include <Eigen/SVD>
 // .ldlt() -> .matrixL() and .matrixD()
 // .llt()  -> .matrixL()
 // .lu()   -> .matrixL() and .matrixU()
@@ -168,3 +176,4 @@ A.eigenvalues();                  // eig(A);
 EigenSolver<Matrix3d> eig(A);     // [vec val] = eig(A)
 eig.eigenvalues();                // diag(val)
 eig.eigenvectors();               // vec
+// For self-adjoint matrices use SelfAdjointEigenSolver<>

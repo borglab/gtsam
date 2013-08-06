@@ -11,9 +11,6 @@
 
 void test_meta()
 {
-  typedef float & FloatRef;
-  typedef const float & ConstFloatRef;
-  
   VERIFY((internal::conditional<(3<4),internal::true_type, internal::false_type>::type::value));
   VERIFY(( internal::is_same<float,float>::value));
   VERIFY((!internal::is_same<float,double>::value));
@@ -56,7 +53,7 @@ void test_meta()
   VERIFY(( internal::is_same<float,internal::remove_pointer<float* const >::type >::value));
   
   VERIFY(internal::meta_sqrt<1>::ret == 1);
-  #define VERIFY_META_SQRT(X) VERIFY(internal::meta_sqrt<X>::ret == int(internal::sqrt(double(X))))
+  #define VERIFY_META_SQRT(X) VERIFY(internal::meta_sqrt<X>::ret == int(std::sqrt(double(X))))
   VERIFY_META_SQRT(2);
   VERIFY_META_SQRT(3);
   VERIFY_META_SQRT(4);

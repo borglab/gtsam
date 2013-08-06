@@ -14,9 +14,10 @@ find_path(SUPERLU_INCLUDES
   ${INCLUDE_INSTALL_DIR}
   PATH_SUFFIXES
   superlu
+  SRC
 )
 
-find_library(SUPERLU_LIBRARIES superlu PATHS $ENV{SUPERLUDIR} ${LIB_INSTALL_DIR})
+find_library(SUPERLU_LIBRARIES superlu PATHS $ENV{SUPERLUDIR} ${LIB_INSTALL_DIR} PATH_SUFFIXES lib)
   
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SUPERLU DEFAULT_MSG

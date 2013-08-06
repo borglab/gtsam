@@ -11,6 +11,7 @@
 
 template<typename MatrixType> void linearStructure(const MatrixType& m)
 {
+  using std::abs;
   /* this test covers the following files:
      CwiseUnaryOp.h, CwiseBinaryOp.h, SelfCwiseBinaryOp.h 
   */
@@ -27,7 +28,7 @@ template<typename MatrixType> void linearStructure(const MatrixType& m)
              m3(rows, cols);
 
   Scalar s1 = internal::random<Scalar>();
-  while (internal::abs(s1)<1e-3) s1 = internal::random<Scalar>();
+  while (abs(s1)<1e-3) s1 = internal::random<Scalar>();
 
   Index r = internal::random<Index>(0, rows-1),
         c = internal::random<Index>(0, cols-1);

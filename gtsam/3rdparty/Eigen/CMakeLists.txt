@@ -1,6 +1,6 @@
 project(Eigen)
 
-cmake_minimum_required(VERSION 2.6.2)
+cmake_minimum_required(VERSION 2.8.2)
 
 # guard against in-source builds
 
@@ -105,26 +105,66 @@ if(EIGEN_DEFAULT_TO_ROW_MAJOR)
   add_definitions("-DEIGEN_DEFAULT_TO_ROW_MAJOR")
 endif()
 
-add_definitions("-DEIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS")
-
 set(EIGEN_TEST_MAX_SIZE "320" CACHE STRING "Maximal matrix/vector size, default is 320")
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -Wno-long-long -ansi -Wundef -Wcast-align -Wchar-subscripts -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security -fexceptions -fno-check-new -fno-common -fstrict-aliasing")
+macro(ei_add_cxx_compiler_flag FLAG)
+  string(REGEX REPLACE "-" "" SFLAG ${FLAG})
+  check_cxx_compiler_flag(${FLAG} COMPILER_SUPPORT_${SFLAG})
+  if(COMPILER_SUPPORT_${SFLAG})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAG}")
+  endif()
+endmacro(ei_add_cxx_compiler_flag)
+
+if(NOT MSVC)
+  # We assume that other compilers are partly compatible with GNUCC
+  
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
   set(CMAKE_CXX_FLAGS_DEBUG "-g3")
   set(CMAKE_CXX_FLAGS_RELEASE "-g0 -O2")
-
-  check_cxx_compiler_flag("-Wno-variadic-macros" COMPILER_SUPPORT_WNOVARIADICMACRO)
-  if(COMPILER_SUPPORT_WNOVARIADICMACRO)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-variadic-macros")
+  
+  # clang outputs some warnings for unknwon flags that are not caught by check_cxx_compiler_flag
+  # adding -Werror turns such warnings into errors
+  check_cxx_compiler_flag("-Werror" COMPILER_SUPPORT_WERROR)
+  if(COMPILER_SUPPORT_WERROR)
+    set(CMAKE_REQUIRED_FLAGS "-Werror")
   endif()
-
-  check_cxx_compiler_flag("-Wextra" COMPILER_SUPPORT_WEXTRA)
-  if(COMPILER_SUPPORT_WEXTRA)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
+  
+  ei_add_cxx_compiler_flag("-pedantic")
+  ei_add_cxx_compiler_flag("-Wall")
+  ei_add_cxx_compiler_flag("-Wextra")
+  #ei_add_cxx_compiler_flag("-Weverything")              # clang
+  
+  ei_add_cxx_compiler_flag("-Wundef")
+  ei_add_cxx_compiler_flag("-Wcast-align")
+  ei_add_cxx_compiler_flag("-Wchar-subscripts")
+  ei_add_cxx_compiler_flag("-Wnon-virtual-dtor")
+  ei_add_cxx_compiler_flag("-Wunused-local-typedefs")
+  ei_add_cxx_compiler_flag("-Wpointer-arith")
+  ei_add_cxx_compiler_flag("-Wwrite-strings")
+  ei_add_cxx_compiler_flag("-Wformat-security")
+  
+  ei_add_cxx_compiler_flag("-Wno-psabi")
+  ei_add_cxx_compiler_flag("-Wno-variadic-macros")
+  ei_add_cxx_compiler_flag("-Wno-long-long")
+  
+  ei_add_cxx_compiler_flag("-fno-check-new")
+  ei_add_cxx_compiler_flag("-fno-common")
+  ei_add_cxx_compiler_flag("-fstrict-aliasing")
+  ei_add_cxx_compiler_flag("-wd981")                    # disable ICC's "operands are evaluated in unspecified order" remark
+  ei_add_cxx_compiler_flag("-wd2304")                   # disbale ICC's "warning #2304: non-explicit constructor with single argument may cause implicit type conversion" produced by -Wnon-virtual-dtor
+  
+  # The -ansi flag must be added last, otherwise it is also used as a linker flag by check_cxx_compiler_flag making it fails
+  # Moreover we should not set both -strict-ansi and -ansi
+  check_cxx_compiler_flag("-strict-ansi" COMPILER_SUPPORT_STRICTANSI)
+  ei_add_cxx_compiler_flag("-Qunused-arguments")        # disable clang warning: argument unused during compilation: '-ansi'
+  
+  if(COMPILER_SUPPORT_STRICTANSI)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -strict-ansi")
+  else()
+    ei_add_cxx_compiler_flag("-ansi")
   endif()
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic")
+  
+  set(CMAKE_REQUIRED_FLAGS "")
 
   option(EIGEN_TEST_SSE2 "Enable/Disable SSE2 in tests/examples" OFF)
   if(EIGEN_TEST_SSE2)
@@ -164,7 +204,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
   option(EIGEN_TEST_NEON "Enable/Disable Neon in tests/examples" OFF)
   if(EIGEN_TEST_NEON)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mcpu=cortex-a8")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mcpu=cortex-a"8)
     message(STATUS "Enabling NEON in tests/examples")
   endif()
 
@@ -177,9 +217,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif()
   endif()
 
-endif(CMAKE_COMPILER_IS_GNUCXX)
+else(NOT MSVC)
 
-if(MSVC)
   # C4127 - conditional expression is constant
   # C4714 - marked as __forceinline not inlined (I failed to deactivate it selectively)
   #         We can disable this warning in the unit tests since it is clear that it occurs
@@ -209,7 +248,7 @@ if(MSVC)
     endif(NOT CMAKE_CL_64)
     message(STATUS "Enabling SSE2 in tests/examples")
   endif(EIGEN_TEST_SSE2)
-endif(MSVC)
+endif(NOT MSVC)
 
 option(EIGEN_TEST_NO_EXPLICIT_VECTORIZATION "Disable explicit vectorization in tests/examples" OFF)
 option(EIGEN_TEST_X87 "Force using X87 instructions. Implies no vectorization." OFF)
@@ -308,6 +347,7 @@ add_subdirectory(Eigen)
 add_subdirectory(doc EXCLUDE_FROM_ALL)
 
 include(EigenConfigureTesting)
+
 # fixme, not sure this line is still needed:
 enable_testing() # must be called from the root CMakeLists, see man page
 
@@ -341,6 +381,8 @@ endif(EIGEN_BUILD_BTL)
 if(NOT WIN32)
   add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
 endif(NOT WIN32)
+
+configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
 
 ei_testing_print_summary()
 

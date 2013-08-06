@@ -77,6 +77,12 @@ template<typename MatrixType> void block(const MatrixType& m)
     // check that fixed block() and block() agree
     Matrix<Scalar,Dynamic,Dynamic> b = m1.template block<BlockRows,BlockCols>(3,3);
     VERIFY_IS_EQUAL(b, m1.block(3,3,BlockRows,BlockCols));
+
+    // same tests with mixed fixed/dynamic size
+    m1.template block<BlockRows,Dynamic>(1,1,BlockRows,BlockCols) *= s1;
+    m1.template block<BlockRows,Dynamic>(1,1,BlockRows,BlockCols)(0,3) = m1.template block<2,5>(1,1)(1,2);
+    Matrix<Scalar,Dynamic,Dynamic> b2 = m1.template block<Dynamic,BlockCols>(3,3,2,5);
+    VERIFY_IS_EQUAL(b2, m1.block(3,3,BlockRows,BlockCols));
   }
 
   if (rows>2)
@@ -96,11 +102,11 @@ template<typename MatrixType> void block(const MatrixType& m)
   }
 
   // stress some basic stuffs with block matrices
-  VERIFY(internal::real(ones.col(c1).sum()) == RealScalar(rows));
-  VERIFY(internal::real(ones.row(r1).sum()) == RealScalar(cols));
+  VERIFY(numext::real(ones.col(c1).sum()) == RealScalar(rows));
+  VERIFY(numext::real(ones.row(r1).sum()) == RealScalar(cols));
 
-  VERIFY(internal::real(ones.col(c1).dot(ones.col(c2))) == RealScalar(rows));
-  VERIFY(internal::real(ones.row(r1).dot(ones.row(r2))) == RealScalar(cols));
+  VERIFY(numext::real(ones.col(c1).dot(ones.col(c2))) == RealScalar(rows));
+  VERIFY(numext::real(ones.row(r1).dot(ones.row(r2))) == RealScalar(cols));
 
   // now test some block-inside-of-block.
   

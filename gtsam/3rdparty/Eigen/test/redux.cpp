@@ -22,26 +22,26 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
 
   // The entries of m1 are uniformly distributed in [0,1], so m1.prod() is very small. This may lead to test
   // failures if we underflow into denormals. Thus, we scale so that entires are close to 1.
-  MatrixType m1_for_prod = MatrixType::Ones(rows, cols) + Scalar(0.2) * m1;
+  MatrixType m1_for_prod = MatrixType::Ones(rows, cols) + RealScalar(0.2) * m1;
 
   VERIFY_IS_MUCH_SMALLER_THAN(MatrixType::Zero(rows, cols).sum(), Scalar(1));
   VERIFY_IS_APPROX(MatrixType::Ones(rows, cols).sum(), Scalar(float(rows*cols))); // the float() here to shut up excessive MSVC warning about int->complex conversion being lossy
-  Scalar s(0), p(1), minc(internal::real(m1.coeff(0))), maxc(internal::real(m1.coeff(0)));
+  Scalar s(0), p(1), minc(numext::real(m1.coeff(0))), maxc(numext::real(m1.coeff(0)));
   for(int j = 0; j < cols; j++)
   for(int i = 0; i < rows; i++)
   {
     s += m1(i,j);
     p *= m1_for_prod(i,j);
-    minc = (std::min)(internal::real(minc), internal::real(m1(i,j)));
-    maxc = (std::max)(internal::real(maxc), internal::real(m1(i,j)));
+    minc = (std::min)(numext::real(minc), numext::real(m1(i,j)));
+    maxc = (std::max)(numext::real(maxc), numext::real(m1(i,j)));
   }
   const Scalar mean = s/Scalar(RealScalar(rows*cols));
 
   VERIFY_IS_APPROX(m1.sum(), s);
   VERIFY_IS_APPROX(m1.mean(), mean);
   VERIFY_IS_APPROX(m1_for_prod.prod(), p);
-  VERIFY_IS_APPROX(m1.real().minCoeff(), internal::real(minc));
-  VERIFY_IS_APPROX(m1.real().maxCoeff(), internal::real(maxc));
+  VERIFY_IS_APPROX(m1.real().minCoeff(), numext::real(minc));
+  VERIFY_IS_APPROX(m1.real().maxCoeff(), numext::real(maxc));
 
   // test slice vectorization assuming assign is ok
   Index r0 = internal::random<Index>(0,rows-1);
@@ -61,6 +61,7 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
 
 template<typename VectorType> void vectorRedux(const VectorType& w)
 {
+  using std::abs;
   typedef typename VectorType::Index Index;
   typedef typename VectorType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
@@ -72,15 +73,15 @@ template<typename VectorType> void vectorRedux(const VectorType& w)
   for(int i = 1; i < size; i++)
   {
     Scalar s(0), p(1);
-    RealScalar minc(internal::real(v.coeff(0))), maxc(internal::real(v.coeff(0)));
+    RealScalar minc(numext::real(v.coeff(0))), maxc(numext::real(v.coeff(0)));
     for(int j = 0; j < i; j++)
     {
       s += v[j];
       p *= v_for_prod[j];
-      minc = (std::min)(minc, internal::real(v[j]));
-      maxc = (std::max)(maxc, internal::real(v[j]));
+      minc = (std::min)(minc, numext::real(v[j]));
+      maxc = (std::max)(maxc, numext::real(v[j]));
     }
-    VERIFY_IS_MUCH_SMALLER_THAN(internal::abs(s - v.head(i).sum()), Scalar(1));
+    VERIFY_IS_MUCH_SMALLER_THAN(abs(s - v.head(i).sum()), Scalar(1));
     VERIFY_IS_APPROX(p, v_for_prod.head(i).prod());
     VERIFY_IS_APPROX(minc, v.real().head(i).minCoeff());
     VERIFY_IS_APPROX(maxc, v.real().head(i).maxCoeff());
@@ -89,15 +90,15 @@ template<typename VectorType> void vectorRedux(const VectorType& w)
   for(int i = 0; i < size-1; i++)
   {
     Scalar s(0), p(1);
-    RealScalar minc(internal::real(v.coeff(i))), maxc(internal::real(v.coeff(i)));
+    RealScalar minc(numext::real(v.coeff(i))), maxc(numext::real(v.coeff(i)));
     for(int j = i; j < size; j++)
     {
       s += v[j];
       p *= v_for_prod[j];
-      minc = (std::min)(minc, internal::real(v[j]));
-      maxc = (std::max)(maxc, internal::real(v[j]));
+      minc = (std::min)(minc, numext::real(v[j]));
+      maxc = (std::max)(maxc, numext::real(v[j]));
     }
-    VERIFY_IS_MUCH_SMALLER_THAN(internal::abs(s - v.tail(size-i).sum()), Scalar(1));
+    VERIFY_IS_MUCH_SMALLER_THAN(abs(s - v.tail(size-i).sum()), Scalar(1));
     VERIFY_IS_APPROX(p, v_for_prod.tail(size-i).prod());
     VERIFY_IS_APPROX(minc, v.real().tail(size-i).minCoeff());
     VERIFY_IS_APPROX(maxc, v.real().tail(size-i).maxCoeff());
@@ -106,15 +107,15 @@ template<typename VectorType> void vectorRedux(const VectorType& w)
   for(int i = 0; i < size/2; i++)
   {
     Scalar s(0), p(1);
-    RealScalar minc(internal::real(v.coeff(i))), maxc(internal::real(v.coeff(i)));
+    RealScalar minc(numext::real(v.coeff(i))), maxc(numext::real(v.coeff(i)));
     for(int j = i; j < size-i; j++)
     {
       s += v[j];
       p *= v_for_prod[j];
-      minc = (std::min)(minc, internal::real(v[j]));
-      maxc = (std::max)(maxc, internal::real(v[j]));
+      minc = (std::min)(minc, numext::real(v[j]));
+      maxc = (std::max)(maxc, numext::real(v[j]));
     }
-    VERIFY_IS_MUCH_SMALLER_THAN(internal::abs(s - v.segment(i, size-2*i).sum()), Scalar(1));
+    VERIFY_IS_MUCH_SMALLER_THAN(abs(s - v.segment(i, size-2*i).sum()), Scalar(1));
     VERIFY_IS_APPROX(p, v_for_prod.segment(i, size-2*i).prod());
     VERIFY_IS_APPROX(minc, v.real().segment(i, size-2*i).minCoeff());
     VERIFY_IS_APPROX(maxc, v.real().segment(i, size-2*i).maxCoeff());
@@ -132,7 +133,7 @@ void test_redux()
 {
   // the max size cannot be too large, otherwise reduxion operations obviously generate large errors.
   int maxsize = (std::min)(100,EIGEN_TEST_MAX_SIZE);
-  EIGEN_UNUSED_VARIABLE(maxsize);
+  TEST_SET_BUT_UNUSED_VARIABLE(maxsize);
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( matrixRedux(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_1( matrixRedux(Array<float, 1, 1>()) );

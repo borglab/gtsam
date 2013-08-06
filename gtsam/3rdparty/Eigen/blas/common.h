@@ -10,6 +10,9 @@
 #ifndef EIGEN_BLAS_COMMON_H
 #define EIGEN_BLAS_COMMON_H
 
+#include <Eigen/Core>
+#include <Eigen/Jacobi>
+
 #include <iostream>
 #include <complex>
 
@@ -48,7 +51,7 @@
                   : ((X)=='L' || (X)=='l') ? LO     \
                   : INVALID)
 
-#define DIAG(X) (   ((X)=='N' || (X)=='N') ? NUNIT  \
+#define DIAG(X) (   ((X)=='N' || (X)=='n') ? NUNIT  \
                   : ((X)=='U' || (X)=='u') ? UNIT   \
                   : INVALID)
 
@@ -68,12 +71,14 @@ inline bool check_uplo(const char* uplo)
   return UPLO(*uplo)!=0xff;
 }
 
-#include <Eigen/Core>
-#include <Eigen/Jacobi>
-
 
 namespace Eigen {
 #include "BandTriangularSolver.h"
+#include "GeneralRank1Update.h"
+#include "PackedSelfadjointProduct.h"
+#include "PackedTriangularMatrixVector.h"
+#include "PackedTriangularSolverVector.h"
+#include "Rank2Update.h"
 }
 
 using namespace Eigen;

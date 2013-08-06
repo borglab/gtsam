@@ -95,20 +95,23 @@ void run_vector_tests()
 
 void test_conservative_resize()
 {
-  CALL_SUBTEST_1((run_matrix_tests<int, Eigen::RowMajor>()));
-  CALL_SUBTEST_1((run_matrix_tests<int, Eigen::ColMajor>()));
-  CALL_SUBTEST_2((run_matrix_tests<float, Eigen::RowMajor>()));
-  CALL_SUBTEST_2((run_matrix_tests<float, Eigen::ColMajor>()));
-  CALL_SUBTEST_3((run_matrix_tests<double, Eigen::RowMajor>()));
-  CALL_SUBTEST_3((run_matrix_tests<double, Eigen::ColMajor>()));
-  CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::RowMajor>()));
-  CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::ColMajor>()));
-  CALL_SUBTEST_5((run_matrix_tests<std::complex<double>, Eigen::RowMajor>()));
-  CALL_SUBTEST_6((run_matrix_tests<std::complex<double>, Eigen::ColMajor>()));
+  for(int i=0; i<g_repeat; ++i)
+  {
+    CALL_SUBTEST_1((run_matrix_tests<int, Eigen::RowMajor>()));
+    CALL_SUBTEST_1((run_matrix_tests<int, Eigen::ColMajor>()));
+    CALL_SUBTEST_2((run_matrix_tests<float, Eigen::RowMajor>()));
+    CALL_SUBTEST_2((run_matrix_tests<float, Eigen::ColMajor>()));
+    CALL_SUBTEST_3((run_matrix_tests<double, Eigen::RowMajor>()));
+    CALL_SUBTEST_3((run_matrix_tests<double, Eigen::ColMajor>()));
+    CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::RowMajor>()));
+    CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::ColMajor>()));
+    CALL_SUBTEST_5((run_matrix_tests<std::complex<double>, Eigen::RowMajor>()));
+    CALL_SUBTEST_6((run_matrix_tests<std::complex<double>, Eigen::ColMajor>()));
 
-  CALL_SUBTEST_1((run_vector_tests<int>()));
-  CALL_SUBTEST_2((run_vector_tests<float>()));
-  CALL_SUBTEST_3((run_vector_tests<double>()));
-  CALL_SUBTEST_4((run_vector_tests<std::complex<float> >()));
-  CALL_SUBTEST_5((run_vector_tests<std::complex<double> >()));
+    CALL_SUBTEST_1((run_vector_tests<int>()));
+    CALL_SUBTEST_2((run_vector_tests<float>()));
+    CALL_SUBTEST_3((run_vector_tests<double>()));
+    CALL_SUBTEST_4((run_vector_tests<std::complex<float> >()));
+    CALL_SUBTEST_5((run_vector_tests<std::complex<double> >()));
+  }
 }

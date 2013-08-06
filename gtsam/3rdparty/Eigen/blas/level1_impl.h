@@ -75,6 +75,9 @@ int EIGEN_CAT(EIGEN_CAT(i,SCALAR_SUFFIX),amin_)(int *n, RealScalar *px, int *inc
 
 int EIGEN_BLAS_FUNC(rotg)(RealScalar *pa, RealScalar *pb, RealScalar *pc, RealScalar *ps)
 {
+  using std::sqrt;
+  using std::abs;
+  
   Scalar& a = *reinterpret_cast<Scalar*>(pa);
   Scalar& b = *reinterpret_cast<Scalar*>(pb);
   RealScalar* c = pc;
@@ -82,8 +85,8 @@ int EIGEN_BLAS_FUNC(rotg)(RealScalar *pa, RealScalar *pb, RealScalar *pc, RealSc
 
   #if !ISCOMPLEX
   Scalar r,z;
-  Scalar aa = internal::abs(a);
-  Scalar ab = internal::abs(b);
+  Scalar aa = abs(a);
+  Scalar ab = abs(b);
   if((aa+ab)==Scalar(0))
   {
     *c = 1;
@@ -93,7 +96,7 @@ int EIGEN_BLAS_FUNC(rotg)(RealScalar *pa, RealScalar *pb, RealScalar *pc, RealSc
   }
   else
   {
-    r = internal::sqrt(a*a + b*b);
+    r = sqrt(a*a + b*b);
     Scalar amax = aa>ab ? a : b;
     r = amax>0 ? r : -r;
     *c = a/r;
@@ -108,7 +111,7 @@ int EIGEN_BLAS_FUNC(rotg)(RealScalar *pa, RealScalar *pb, RealScalar *pc, RealSc
   #else
   Scalar alpha;
   RealScalar norm,scale;
-  if(internal::abs(a)==RealScalar(0))
+  if(abs(a)==RealScalar(0))
   {
     *c = RealScalar(0);
     *s = Scalar(1);
@@ -116,11 +119,11 @@ int EIGEN_BLAS_FUNC(rotg)(RealScalar *pa, RealScalar *pb, RealScalar *pc, RealSc
   }
   else
   {
-    scale = internal::abs(a) + internal::abs(b);
-    norm = scale*internal::sqrt((internal::abs2(a/scale))+ (internal::abs2(b/scale)));
-    alpha = a/internal::abs(a);
-    *c = internal::abs(a)/norm;
-    *s = alpha*internal::conj(b)/norm;
+    scale = abs(a) + abs(b);
+    norm = scale*sqrt((numext::abs2(a/scale)) + (numext::abs2(b/scale)));
+    alpha = a/abs(a);
+    *c = abs(a)/norm;
+    *s = alpha*numext::conj(b)/norm;
     a = alpha*norm;
   }
   #endif

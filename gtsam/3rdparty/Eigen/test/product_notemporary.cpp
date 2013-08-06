@@ -9,7 +9,7 @@
 
 static int nb_temporaries;
 
-void on_temporary_creation(int size) {
+inline void on_temporary_creation(int size) {
   // here's a great place to set a breakpoint when debugging failures in this test!
   if(size!=0) nb_temporaries++;
 }
@@ -77,6 +77,9 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   VERIFY_EVALUATION_COUNT( m3.noalias() -= (s1 * m1).template triangularView<Lower>() * m2, 0);
   VERIFY_EVALUATION_COUNT( rm3.noalias() = (s1 * m1.adjoint()).template triangularView<Upper>() * (m2+m2), 1);
   VERIFY_EVALUATION_COUNT( rm3.noalias() = (s1 * m1.adjoint()).template triangularView<UnitUpper>() * m2.adjoint(), 0);
+  
+  VERIFY_EVALUATION_COUNT( m3.template triangularView<Upper>() = (m1 * m2.adjoint()), 0);
+  VERIFY_EVALUATION_COUNT( m3.template triangularView<Upper>() -= (m1 * m2.adjoint()), 0);
 
   // NOTE this is because the blas_traits require innerstride==1 to avoid a temporary, but that doesn't seem to be actually needed for the triangular products
   VERIFY_EVALUATION_COUNT( rm3.col(c0).noalias() = (s1 * m1.adjoint()).template triangularView<UnitUpper>() * (s2*m2.row(c0)).adjoint(), 1);
