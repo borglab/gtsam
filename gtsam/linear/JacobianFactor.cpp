@@ -355,7 +355,7 @@ namespace gtsam {
         return false;
 
       // Check noise model
-      if(model_ && !f.model_ || !model_ && f.model_)
+      if((model_ && !f.model_) || (!model_ && f.model_))
         return false;
       if(model_ && f.model_ && !model_->equals(*f.model_, tol))
         return false;

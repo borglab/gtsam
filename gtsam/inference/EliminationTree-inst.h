@@ -251,7 +251,7 @@ namespace gtsam {
           if(*it1 && *it2) {
             if(!(*it1)->equals(**it2, tol))
               return false;
-          } else if(*it1 && !*it2 || *it2 && !*it1) {
+          } else if((*it1 && !*it2) || (*it2 && !*it1)) {
             return false;
           }
         }

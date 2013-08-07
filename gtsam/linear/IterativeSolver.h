@@ -14,6 +14,7 @@
 #include <gtsam/global_includes.h>
 
 #include <string>
+#include <iostream>
 
 namespace gtsam {
 
