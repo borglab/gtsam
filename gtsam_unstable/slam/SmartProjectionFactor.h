@@ -44,8 +44,6 @@ namespace gtsam {
     const SharedNoiseModel noise_;   ///< noise model used
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
-
-
     // verbosity handling for Cheirality Exceptions
     bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
     bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
@@ -140,7 +138,6 @@ namespace gtsam {
           && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
     }
 
-
     /// get the dimension of the factor (number of rows on linearization)
     virtual size_t dim() const {
         return 6*keys_.size();
@@ -149,8 +146,7 @@ namespace gtsam {
     /// linearize returns a Hessianfactor that is an approximation of error(p)
     virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values,  const Ordering& ordering) const {
 
-//      std::cout.precision(20);
-
+      bool debug = true;
 
       // Collect all poses (Cameras)
       std::vector<Pose3> cameraPoses;
@@ -167,19 +163,25 @@ namespace gtsam {
       if (!point)
         return HessianFactor::shared_ptr(new HessianFactor());
 
-      std::cout << "point " << *point << std::endl;
+      if (debug) {
+        std::cout << "point " << *point << std::endl;
+      }
+
       std::vector<Matrix> Gs(keys_.size()*(keys_.size()+1)/2);
       std::vector<Vector> gs(keys_.size());
-      double f = 0;
+
       // fill in the keys
+      double f = 0;
       std::vector<Index> js;
       BOOST_FOREACH(const Key& k, keys_) {
         js += ordering[k];
       }
 
       bool blockwise = false;
-
-//      {
+      // For debug only
+      std::vector<Matrix> Gs1;
+      std::vector<Vector> gs1;
+      if (blockwise || debug){
         // ==========================================================================================================
         std::vector<Matrix> Hx(keys_.size());
         std::vector<Matrix> Hl(keys_.size());
@@ -190,7 +192,6 @@ namespace gtsam {
           std::cout << "pose " << pose << std::endl;
           PinholeCamera<CALIBRATION> camera(pose, *K_);
           b.at(i) = ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
-//          std::cout << "b.at(i)  " << b.at(i)  << std::endl;
         }
 
         // Shur complement trick
@@ -203,10 +204,8 @@ namespace gtsam {
         for(size_t i1 = 0; i1 < keys_.size(); i1++) {
           C += Hl.at(i1).transpose() * Hl.at(i1);
         }
-//        std::cout << "Cnoinv"<< "=[" << Ctemp << "];" << std::endl;
 
         C = C.inverse().eval(); //  this is very important: without eval, because of eigen aliasing the results will be incorrect
-
 
         // Calculate sub blocks
         for(size_t i1 = 0; i1 < keys_.size(); i1++) {
@@ -214,11 +213,14 @@ namespace gtsam {
             // we only need the upper triangular entries
             Hxl[i1][i2] = Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose();
             if (i1==0 & i2==0){
-            std::cout << "Hoff"<< i1 << i2 << "=[" << Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose() << "];" << std::endl;
-            std::cout << "Hxoff"<< "=[" << Hx.at(i1) << "];" << std::endl;
-            std::cout << "Hloff"<< "=[" << Hl.at(i1) << "];" << std::endl;
-            std::cout << "Hloff2"<< "=[" << Hl.at(i2) << "];" << std::endl;
-            std::cout << "C"<< "=[" << C << "];" << std::endl;
+
+              if (debug) {
+                std::cout << "Hoff"<< i1 << i2 << "=[" << Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose() << "];" << std::endl;
+                std::cout << "Hxoff"<< "=[" << Hx.at(i1) << "];" << std::endl;
+                std::cout << "Hloff"<< "=[" << Hl.at(i1) << "];" << std::endl;
+                std::cout << "Hloff2"<< "=[" << Hl.at(i2) << "];" << std::endl;
+                std::cout << "C"<< "=[" << C << "];" << std::endl;
+              }
             }
           }
         }
@@ -232,29 +234,39 @@ namespace gtsam {
 
             if (i2 == i1){
               Gs.at(GsCount) = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
-              std::cout << "HxlH"<< GsCount << "=[" << Hxl[i1][i2] * Hx.at(i2) << "];" << std::endl;
-              std::cout << "Hx2_"<< GsCount << "=[" << Hx.at(i2) << "];" << std::endl;
-              std::cout << "H"<< GsCount << "=[" << Gs.at(GsCount) << "];" << std::endl;
+
+              if (debug) {
+                std::cout << "HxlH"<< GsCount << "=[" << Hxl[i1][i2] * Hx.at(i2) << "];" << std::endl;
+                std::cout << "Hx2_"<< GsCount << "=[" << Hx.at(i2) << "];" << std::endl;
+                std::cout << "H"<< GsCount << "=[" << Gs.at(GsCount) << "];" << std::endl;
+              }
               GsCount++;
             }
             if (i2 > i1) {
               Gs.at(GsCount) = - Hxl[i1][i2] * Hx.at(i2);
-              std::cout << "HxlH"<< GsCount << "=[" << Hxl[i1][i2] * Hx.at(i2) << "];" << std::endl;
-              std::cout << "Hx2_"<< GsCount << "=[" << Hx.at(i2) << "];" << std::endl;
-              std::cout << "H"<< GsCount << "=[" << Gs.at(GsCount) << "];" << std::endl;
+
+              if (debug) {
+                std::cout << "HxlH"<< GsCount << "=[" << Hxl[i1][i2] * Hx.at(i2) << "];" << std::endl;
+                std::cout << "Hx2_"<< GsCount << "=[" << Hx.at(i2) << "];" << std::endl;
+                std::cout << "H"<< GsCount << "=[" << Gs.at(GsCount) << "];" << std::endl;
+              }
               GsCount++;
             }
           }
         }
+        if (debug) {
+          // Copy result for later comparison
+          BOOST_FOREACH(const Matrix& m, Gs) {
+            Gs1.push_back(m);
+          }
+          // Copy result for later comparison
+          BOOST_FOREACH(const Matrix& m, gs) {
+            gs1.push_back(m);
+          }
+        }
+      }
 
-//        std::cout << "GsCount  " << GsCount << std::endl;
-//      }
-
-      // debug only
-      std::vector<Matrix> Gs2(keys_.size()*(keys_.size()+1)/2);
-      std::vector<Vector> gs2(keys_.size());
-
-//      { // version with full matrix multiplication
+      if (blockwise == false || debug){ // version with full matrix multiplication
         // ==========================================================================================================
         Matrix Hx2 = zeros(2*keys_.size(), 6*keys_.size());
         Matrix Hl2 = zeros(2*keys_.size(), 3);
@@ -267,18 +279,14 @@ namespace gtsam {
            Vector bi = ( camera.project(*point,Hxi,Hli) - measured_.at(i) ).vector();
            Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
            Hl2.block( 2*i, 0, 2, 3  ) = Hli;
-//           std::cout << "Hxi= \n" << Hxi << std::endl;
-//           std::cout << "Hxi.transpose() * Hxi= \n" << Hxi.transpose() * Hxi << std::endl;
-//           std::cout << "Hxl.transpose() * Hxl= \n" << Hli.transpose() * Hli << std::endl;
+
+           if (debug) {
+             std::cout << "Hxi= \n" << Hxi << std::endl;
+             std::cout << "Hxi.transpose() * Hxi= \n" << Hxi.transpose() * Hxi << std::endl;
+             std::cout << "Hxl.transpose() * Hxl= \n" << Hli.transpose() * Hli << std::endl;
+           }
            subInsert(b2,bi,2*i);
 
-//           std::cout << "================= measurement " << i << std::endl;
-//           std::cout << "Hx " << Hx2 << std::endl;
-//           std::cout << "Hl " << Hl2 << std::endl;
-//           std::cout << "b " << b2.transpose() << std::endl;
-//           std::cout << "b.at(i)  " << b.at(i)  << std::endl;
-//           std::cout << "Hxi - Hx.at(i) " << Hxi - Hx.at(i) << std::endl;
-//           std::cout << "Hli - Hl.at(i) " << Hli - Hl.at(i) << std::endl;
         }
 
         // Shur complement trick
@@ -286,54 +294,54 @@ namespace gtsam {
         Matrix3 C2 = (Hl2.transpose() * Hl2).inverse();
         H = Hx2.transpose() * Hx2 - Hx2.transpose() * Hl2 * C2 * Hl2.transpose() * Hx2;
 
-        std::cout << "Hx2" << "=[" << Hx2 << "];" << std::endl;
-        std::cout << "Hl2" << "=[" << Hl2 << "];" << std::endl;
-        std::cout << "H" << "=[" << H << "];" << std::endl;
+        if (debug) {
+          std::cout << "Hx2" << "=[" << Hx2 << "];" << std::endl;
+          std::cout << "Hl2" << "=[" << Hl2 << "];" << std::endl;
+          std::cout << "H" << "=[" << H << "];" << std::endl;
 
+          std::cout << "Cnoinv2"<< "=[" << Hl2.transpose() * Hl2 << "];" << std::endl;
+          std::cout << "C2"<< "=[" << C2 << "];" << std::endl;
+          std::cout << "================================================================================"  << std::endl;
+        }
 
-        std::cout << "Cnoinv2"<< "=[" << Hl2.transpose() * Hl2 << "];" << std::endl;
-        std::cout << "C2"<< "=[" << C2 << "];" << std::endl;
+        Vector gs_vector =  Hx2.transpose() * b2 -  Hx2.transpose() * Hl2 * C2 * Hl2.transpose() * b2;
 
-//        std::cout << "Hx2= \n" << Hx2 << std::endl;
-//        std::cout << "Hx2.transpose() * Hx2= \n" << Hx2.transpose() * Hx2 << std::endl;
-
-        Vector gs2_vector =  Hx2.transpose() * b2 -  Hx2.transpose() * Hl2 * C2 * Hl2.transpose() * b2;
-
-        std::cout << "================================================================================"  << std::endl;
 
         // Populate Gs and gs
         int GsCount2 = 0;
         for(size_t i1 = 0; i1 < keys_.size(); i1++) {
-          gs2.at(i1) = sub(gs2_vector, 6*i1, 6*i1 + 6);
+          gs.at(i1) = sub(gs_vector, 6*i1, 6*i1 + 6);
 
           for(size_t i2 = 0; i2 < keys_.size(); i2++) {
             if (i2 >= i1) {
-              Gs2.at(GsCount2) = H.block(6*i1, 6*i2, 6, 6);
+              Gs.at(GsCount2) = H.block(6*i1, 6*i2, 6, 6);
               GsCount2++;
             }
           }
         }
-//      }
-//
-      // Compare blockwise and full version
-      bool gs2_equal_gs = true;
-      for(size_t i = 0; i < measured_.size(); i++) {
-        std::cout << "gs.at(i) " << gs.at(i).transpose() << std::endl;
-        std::cout << "gs2.at(i) " << gs2.at(i).transpose() << std::endl;
-        std::cout << "gs.error  " << (gs.at(i)- gs2.at(i)).transpose() << std::endl;
-        if( !equal(gs.at(i), gs2.at(i)), 1e-7) {
-          gs2_equal_gs = false;
+
+      }
+
+      if (debug) {
+        // Compare blockwise and full version
+        bool gs1_equal_gs = true;
+        for(size_t i = 0; i < measured_.size(); i++) {
+          std::cout << "gs.at(i) " << gs.at(i).transpose() << std::endl;
+          std::cout << "gs1.at(i) " << gs1.at(i).transpose() << std::endl;
+          std::cout << "gs.error  " << (gs.at(i)- gs1.at(i)).transpose() << std::endl;
+          if( !equal(gs.at(i), gs1.at(i)), 1e-7) {
+            gs1_equal_gs = false;
+          }
         }
-      }
-      std::cout << "gs2_equal_gs " << gs2_equal_gs << std::endl;
+        std::cout << "gs1_equal_gs " << gs1_equal_gs << std::endl;
 
-      for(size_t i = 0; i < keys_.size()*(keys_.size()+1)/2; i++) {
-        std::cout << "Gs.at(i) " << Gs.at(i).transpose() << std::endl;
-        std::cout << "Gs2.at(i) " << Gs2.at(i).transpose() << std::endl;
-        std::cout << "Gs.error  " << (Gs.at(i)- Gs2.at(i)).transpose() << std::endl;
+        for(size_t i = 0; i < keys_.size()*(keys_.size()+1)/2; i++) {
+          std::cout << "Gs.at(i) " << Gs.at(i).transpose() << std::endl;
+          std::cout << "Gs1.at(i) " << Gs1.at(i).transpose() << std::endl;
+          std::cout << "Gs.error  " << (Gs.at(i)- Gs1.at(i)).transpose() << std::endl;
+        }
+        std::cout << "Gs1_equal_Gs " << gs1_equal_gs << std::endl;
       }
-      std::cout << "Gs2_equal_Gs " << gs2_equal_gs << std::endl;
-
 
       // ==========================================================================================================
       return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
