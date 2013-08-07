@@ -265,7 +265,8 @@ namespace gtsam {
 
     // Allocate matrix and copy keys in order
     gttic(allocate);
-    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1,DenseIndex>(1)), m); // Allocate augmented matrix
+    Ab_ = VerticalBlockMatrix(boost::join(varDims, std::vector<DenseIndex>(1,1)), m); // Allocate augmented matrix
+//    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1,DenseIndex>(1)), m); // Allocate augmented matrix - original
     Base::keys_.resize(orderedSlots.size());
     boost::range::copy(    // Get variable keys
       orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys, Base::keys_.begin());

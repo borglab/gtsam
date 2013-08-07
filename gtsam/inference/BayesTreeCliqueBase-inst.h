@@ -160,7 +160,8 @@ namespace gtsam {
         gttic(BayesTreeCliqueBase_separatorMarginal);
         gttic(BayesTreeCliqueBase_separatorMarginal_cachemiss);
         // now add the parent conditional
-        p_Cp += parent->conditional_; // P(Fp|Sp)
+//        p_Cp += parent->conditional_; // P(Fp|Sp) // FIXME: assign error?
+        p_Cp.push_back(parent->conditional_);
 
         // The variables we want to keepSet are exactly the ones in S
         std::vector<Key> indicesS(this->conditional()->beginParents(), this->conditional()->endParents());

@@ -57,12 +57,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  KalmanFilter::State fuse(const KalmanFilter::State& p, GaussianFactor::shared_ptr newFactor,
+  KalmanFilter::State fuse(KalmanFilter::State p, GaussianFactor::shared_ptr newFactor,
     const GaussianFactorGraph::Eliminate& function)
   {
     // Create a factor graph
     GaussianFactorGraph factorGraph;
-    factorGraph += p, newFactor;
+    factorGraph.push_back(p);
+    factorGraph.push_back(newFactor);
+//    factorGraph += p, newFactor; // FIXME: bad insert at some point here - fills in a template argument with a shared_ptr where a non-pointer should go
 
     // Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
     return solve(factorGraph, function);

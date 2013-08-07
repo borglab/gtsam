@@ -82,9 +82,19 @@ namespace gtsam {
     // a single '1' to add a dimension for the b vector.
     {
       using boost::adaptors::transformed;
-      using boost::assign::cref_list_of;
+//      using boost::assign::cref_list_of;
       namespace br = boost::range;
-      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&_getColsJF), cref_list_of<1,DenseIndex>(1)), b.size());
+      // FIXME: compile error with type mismatch in boost::join
+//      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&_getColsJF), cref_list_of<1,DenseIndex>(1)), b.size()); // Original
+      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&_getColsJF), std::vector<DenseIndex>(1,1)), b.size());
+
+//      // Simple implementation
+//      std::vector<DenseIndex> dims(terms.size() + 1, 1);
+//      size_t i=0;
+//      typedef std::pair<Key,Matrix> KeyMatrixPair;
+//      BOOST_FOREACH(const KeyMatrixPair& p, terms)
+//        dims[i++] = p.second.cols();
+//      Ab_ = VerticalBlockMatrix(dims, b.size());
     }
 
     // Check and add terms
