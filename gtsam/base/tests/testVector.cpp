@@ -199,7 +199,7 @@ TEST( TestVector, weightedPseudoinverse_constraint )
 
   // verify
   EXPECT(assert_equal(expected,actual));
-  EXPECT(isinf(precision));
+  EXPECT(std::isinf(precision));
 }
 
 /* ************************************************************************* */
