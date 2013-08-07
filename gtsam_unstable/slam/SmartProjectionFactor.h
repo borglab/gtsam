@@ -146,7 +146,8 @@ namespace gtsam {
     /// linearize returns a Hessianfactor that is an approximation of error(p)
     virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values,  const Ordering& ordering) const {
 
-      bool debug = true;
+      bool debug = false;
+      bool blockwise = true;
 
       // Collect all poses (Cameras)
       std::vector<Pose3> cameraPoses;
@@ -177,7 +178,6 @@ namespace gtsam {
         js += ordering[k];
       }
 
-      bool blockwise = false;
       // For debug only
       std::vector<Matrix> Gs1;
       std::vector<Vector> gs1;
@@ -212,8 +212,7 @@ namespace gtsam {
           for(size_t i2 = 0; i2 < keys_.size(); i2++) {
             // we only need the upper triangular entries
             Hxl[i1][i2] = Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose();
-            if (i1==0 & i2==0){
-
+            if (i1==0 && i2==0){
               if (debug) {
                 std::cout << "Hoff"<< i1 << i2 << "=[" << Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose() << "];" << std::endl;
                 std::cout << "Hxoff"<< "=[" << Hx.at(i1) << "];" << std::endl;
@@ -373,17 +372,12 @@ namespace gtsam {
         if(point)
         { // triangulation produced a good estimate of landmark position
 
-//          std::cout << "point " << *point << std::endl;
-
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
-//            std::cout << "pose.compose(*body_P_sensor_) " << pose << std::endl;
 
             Point2 reprojectionError(camera.project(*point) - measured_.at(i));
-//            std::cout << "reprojectionError " << reprojectionError << std::endl;
             overallError += noise_->distance( reprojectionError.vector() );
-//            std::cout << "noise_->distance( reprojectionError.vector() ) " << noise_->distance( reprojectionError.vector() ) << std::endl;
           }
           return sqrt(overallError);
         }else{ // triangulation failed: we deactivate the factor, then the error should not contribute to the overall error

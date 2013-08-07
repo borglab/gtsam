@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testProjectionFactor.cpp
+ *  @file  TestSmartProjectionFactor.cpp
  *  @brief Unit tests for ProjectionFactor Class
  *  @author Frank Dellaert
  *  @date Nov 2009
@@ -56,63 +56,71 @@ static SharedNoiseModel model(noiseModel::Unit::Create(2));
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
-//typedef GenericProjectionFactor<Pose3, Point3> TestProjectionFactor;
+typedef SmartProjectionFactor<Pose3, Point3> TestSmartProjectionFactor;
 
-
-/* ************************************************************************* *
-TEST( MultiProjectionFactor, noiseless ){
-  cout << " ************************ MultiProjectionFactor: noiseless ****************************" << endl;
-  Values theta;
-  NonlinearFactorGraph graph;
-
-  Symbol x1('X',  1);
-  Symbol x2('X',  2);
-//  Symbol x3('X',  3);
-
-  const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
+/* ************************************************************************* */
+TEST( SmartProjectionFactor, Constructor) {
+  Key poseKey(X(1));
 
   std::vector<Key> views;
-  views += x1, x2; //, x3;
+  views += poseKey;
 
-  Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-  SimpleCamera level_camera(level_pose, *K);
+  std::vector<Point2> measurements;
+  measurements.push_back(Point2(323.0, 240.0));
 
-  // create second camera 1 meter to the right of first camera
-  Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1,0,0));
-  SimpleCamera level_camera_right(level_pose_right, *K);
-
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
-
-  Values value;
-  value.insert(x1, level_pose);
-  value.insert(x2, level_pose_right);
-
-//  poses += level_pose, level_pose_right;
-  vector<Point2> measurements;
-  measurements += level_uv, level_uv_right;
-
-  SmartProjectionFactor<Pose3, Point3, Cal3_S2> smartFactor(measurements, noiseProjection, views, K);
-
-  double actualError = smartFactor.error(value);
-  double expectedError = 0.0;
-
-  DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+  TestSmartProjectionFactor factor(measurements, model, views, K);
 }
 
-/* ************************************************************************* *
-TEST( MultiProjectionFactor, noisy ){
+/* ************************************************************************* */
+TEST( SmartProjectionFactor, ConstructorWithTransform) {
+  Key poseKey(X(1));
+
+  std::vector<Key> views;
+  views += poseKey;
+
+  std::vector<Point2> measurements;
+  measurements.push_back(Point2(323.0, 240.0));
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+
+  TestSmartProjectionFactor factor(measurements, model, views, K, body_P_sensor);
+}
+
+/* ************************************************************************* */
+TEST( SmartProjectionFactor, Equals ) {
+  // Create two identical factors and make sure they're equal
+  std::vector<Point2> measurements;
+  measurements.push_back(Point2(323.0, 240.0));
+
+  std::vector<Key> views;
+  views += X(1);
+  TestSmartProjectionFactor factor1(measurements, model, views, K);
+  TestSmartProjectionFactor factor2(measurements, model, views, K);
+
+  CHECK(assert_equal(factor1, factor2));
+}
+
+/* ************************************************************************* */
+TEST( SmartProjectionFactor, EqualsWithTransform ) {
+  // Create two identical factors and make sure they're equal
+  std::vector<Point2> measurements;
+  measurements.push_back(Point2(323.0, 240.0));
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+
+  std::vector<Key> views;
+  views += X(1);
+  TestSmartProjectionFactor factor1(measurements, model, views, K, body_P_sensor);
+  TestSmartProjectionFactor factor2(measurements, model, views, K, body_P_sensor);
+
+  CHECK(assert_equal(factor1, factor2));
+}
+
+
+/* ************************************************************************* */
+TEST( SmartProjectionFactor, noisy ){
   cout << " ************************ MultiProjectionFactor: noisy ****************************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
-//  Symbol x3('X',  3);
 
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
@@ -120,6 +128,7 @@ TEST( MultiProjectionFactor, noisy ){
   views += x1, x2; //, x3;
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
+
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 level_pose = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
   SimpleCamera level_camera(level_pose, *K);
@@ -141,7 +150,6 @@ TEST( MultiProjectionFactor, noisy ){
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
   values.insert(x2, level_pose_right.compose(noise_pose));
 
-//  poses += level_pose, level_pose_right;
   vector<Point2> measurements;
   measurements += level_uv, level_uv_right;
 
@@ -149,16 +157,16 @@ TEST( MultiProjectionFactor, noisy ){
     smartFactor(new SmartProjectionFactor<Pose3, Point3, Cal3_S2>(measurements, noiseProjection, views, K));
 
   double actualError = smartFactor->error(values);
-  double expectedError = sqrt(0.08);
+  std::cout << "Error: " << actualError << std::endl;
 
   // we do not expect to be able to predict the error, since the error on the pixel will change
   // the triangulation of the landmark which is internal to the factor.
-  //  DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+  // DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 }
 
 
 /* ************************************************************************* */
-TEST( MultiProjectionFactor, 3poses ){
+TEST( SmartProjectionFactor, 3poses ){
   cout << " ************************ MultiProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
   Symbol x1('X',  1);
@@ -171,6 +179,7 @@ TEST( MultiProjectionFactor, 3poses ){
   views += x1, x2, x3;
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
+
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
   SimpleCamera cam1(pose1, *K);
@@ -214,9 +223,6 @@ TEST( MultiProjectionFactor, 3poses ){
   SmartFactor::shared_ptr smartFactor2(new SmartFactor(measurements_cam2, noiseProjection, views, K));
   SmartFactor::shared_ptr smartFactor3(new SmartFactor(measurements_cam3, noiseProjection, views, K));
 
-//  double actualError = smartFactor->error(values);
-//  double expectedError = sqrt(0.08);
-
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
   NonlinearFactorGraph graph;
@@ -225,9 +231,6 @@ TEST( MultiProjectionFactor, 3poses ){
   graph.push_back(smartFactor3);
   graph.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
-
-//  smartFactor1->print("smartFactor1");
-
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1));
   Values values;
@@ -238,16 +241,23 @@ TEST( MultiProjectionFactor, 3poses ){
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   params.verbosity = NonlinearOptimizerParams::ERROR;
+
+
+  Values result;
+  gttic_(SmartProjectionFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
-  Values result = optimizer.optimize();
+  result = optimizer.optimize();
+  gttoc_(SmartProjectionFactor);
+  tictoc_finishedIteration_();
 
   result.print("results of 3 camera, 3 landmark optimization \n");
+  tictoc_print_();
 
 }
 
 
-/* *************************************************************************
-TEST( MultiProjectionFactor, 3poses_projection_factor ){
+/* ************************************************************************* */
+TEST( SmartProjectionFactor, 3poses_projection_factor ){
   cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
   Symbol x1('X',  1);
