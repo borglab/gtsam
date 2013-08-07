@@ -19,8 +19,6 @@
 
 #pragma once
 
-#if 0
-
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -344,10 +342,11 @@ struct GTSAM_EXPORT ISAM2Result {
  * Specialized Clique structure for ISAM2, incorporating caching and gradient contribution
  * TODO: more documentation
  */
-class GTSAM_EXPORT ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
+class GTSAM_EXPORT ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianFactorGraph>
+{
 public:
   typedef ISAM2Clique This;
-  typedef BayesTreeCliqueBase<This,GaussianConditional> Base;
+  typedef BayesTreeCliqueBase<This, GaussianFactorGraph> Base;
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
   typedef GaussianConditional ConditionalType;
@@ -356,29 +355,8 @@ public:
   Base::FactorType::shared_ptr cachedFactor_;
   Vector gradientContribution_;
 
-  /** Construct from a conditional */
-  ISAM2Clique(const sharedConditional& conditional) : Base(conditional) {
-    throw std::runtime_error("ISAM2Clique should always be constructed with the elimination result constructor"); }
-
-  /** Construct from an elimination result */
-  ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<ConditionalType::FactorType> >& result) :
-    Base(result.first), cachedFactor_(result.second),
-    gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
-    // Compute gradient contribution
-    const ConditionalType& conditional(*result.first);
-    // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
-    gradientContribution_ << -conditional.get_R().transpose() * conditional.get_d(),
-        -conditional.get_S().transpose() * conditional.get_d();
-  }
-
-  /** Produce a deep copy, copying the cached factor and gradient contribution */
-  shared_ptr clone() const {
-    shared_ptr copy(new ISAM2Clique(std::make_pair(
-        sharedConditional(new ConditionalType(*Base::conditional_)),
-        cachedFactor_ ? cachedFactor_->clone() : Base::FactorType::shared_ptr())));
-    copy->gradientContribution_ = gradientContribution_;
-    return copy;
-  }
+  /// Overridden to also store the remaining factor and gradient contribution
+  void setEliminationResult(const typename FactorGraphType::EliminationResult& eliminationResult);
 
   /** Access the cached factor */
   Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
@@ -386,35 +364,10 @@ public:
   /** Access the gradient contribution */
   const Vector& gradientContribution() const { return gradientContribution_; }
 
-  bool equals(const This& other, double tol=1e-9) const {
-    return Base::equals(other) &&
-        ((!cachedFactor_ && !other.cachedFactor_)
-            || (cachedFactor_ && other.cachedFactor_
-                && cachedFactor_->equals(*other.cachedFactor_, tol)));
-  }
+  bool equals(const This& other, double tol=1e-9) const;
 
   /** print this node */
-  void print(const std::string& s = "",
-      const IndexFormatter& formatter = DefaultIndexFormatter) const {
-    Base::print(s,formatter);
-    if(cachedFactor_)
-      cachedFactor_->print(s + "Cached: ", formatter);
-    else
-      std::cout << s << "Cached empty" << std::endl;
-    if(gradientContribution_.rows() != 0)
-      gtsam::print(gradientContribution_, "Gradient contribution: ");
-  }
-
-  void permuteWithInverse(const Permutation& inversePermutation) {
-    if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
-    Base::permuteWithInverse(inversePermutation);
-  }
-
-  bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction) {
-    bool changed = Base::reduceSeparatorWithInverse(inverseReduction);
-    if(changed) if(cachedFactor_) cachedFactor_->reduceWithInverse(inverseReduction);
-    return changed;
-  }
+  void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
 private:
 
@@ -438,7 +391,7 @@ private:
  * estimate of all variables.
  *
  */
-class ISAM2: public BayesTree<GaussianConditional, ISAM2Clique> {
+class ISAM2: public BayesTree<ISAM2Clique> {
 
 protected:
 
@@ -481,17 +434,13 @@ protected:
    * This is \c mutable because it is used internally to not update delta_
    * until it is needed.
    */
-  mutable std::vector<bool> deltaReplacedMask_;
+  mutable FastMap<Key,bool> deltaReplacedMask_; // TODO: Make sure accessed in the right way
 
   /** All original nonlinear factors are stored here to use during relinearization */
   NonlinearFactorGraph nonlinearFactors_;
 
   /** The current linear factors, which are only updated as needed */
   mutable GaussianFactorGraph linearFactors_;
-
-  /** The current elimination ordering Symbols to Index (integer) keys.
-   * We keep it up to date as we add and reorder variables. */
-  Ordering ordering_;
 
   /** The current parameters */
   ISAM2Params params_;
@@ -506,7 +455,7 @@ protected:
 public:
 
   typedef ISAM2 This; ///< This class
-  typedef BayesTree<GaussianConditional,ISAM2Clique> Base; ///< The BayesTree base class
+  typedef BayesTree<ISAM2Clique> Base; ///< The BayesTree base class
 
   /** Create an empty ISAM2 instance */
   GTSAM_EXPORT ISAM2(const ISAM2Params& params);
@@ -615,9 +564,6 @@ public:
   /** Access the set of nonlinear factors */
   GTSAM_EXPORT const NonlinearFactorGraph& getFactorsUnsafe() const { return nonlinearFactors_; }
 
-  /** Access the current ordering */
-  GTSAM_EXPORT const Ordering& getOrdering() const { return ordering_; }
-
   /** Access the nonlinear variable index */
   GTSAM_EXPORT const VariableIndex& getVariableIndex() const { return variableIndex_; }
 
@@ -637,12 +583,12 @@ public:
 
 private:
 
-  GTSAM_EXPORT FastList<size_t> getAffectedFactors(const FastList<Index>& keys) const;
-  GTSAM_EXPORT FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const FastSet<Index>& relinKeys) const;
+  GTSAM_EXPORT FastList<size_t> getAffectedFactors(const FastList<Key>& keys) const;
+  GTSAM_EXPORT GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const;
   GTSAM_EXPORT GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-  GTSAM_EXPORT boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys,
-      const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices, const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
+  GTSAM_EXPORT boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
+      const FastVector<Key>& observedKeys, const FastSet<Key>& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
   //  void linear_update(const GaussianFactorGraph& newFactors);
   GTSAM_EXPORT void updateDelta(bool forceFullSolve = false) const;
 
@@ -740,5 +686,3 @@ GTSAM_EXPORT void gradientAtZero(const ISAM2& bayesTree, VectorValues& g);
 
 #include <gtsam/nonlinear/ISAM2-inl.h>
 #include <gtsam/nonlinear/ISAM2-impl.h>
-
-#endif

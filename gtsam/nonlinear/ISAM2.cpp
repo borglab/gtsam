@@ -15,14 +15,13 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
-#if 0
-
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/algorithm/string.hpp>
+namespace br { using namespace boost::range; using namespace boost::adaptors; }
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
@@ -86,6 +85,38 @@ std::string ISAM2Params::factorizationTranslator(const ISAM2Params::Factorizatio
 }
 
 /* ************************************************************************* */
+void ISAM2Clique::setEliminationResult(const typename FactorGraphType::EliminationResult& eliminationResult)
+{
+  conditional_ = eliminationResult.first;
+  cachedFactor_ = eliminationResult.second;
+  // Compute gradient contribution
+  gradientContribution_.resize(conditional_->cols() - 1);
+  // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
+  gradientContribution_ = -conditional_->get_R().transpose() * conditional_->get_d(),
+    -conditional_->get_S().transpose() * conditional_->get_d();
+}
+
+/* ************************************************************************* */
+bool ISAM2Clique::equals(const This& other, double tol) const {
+  return Base::equals(other) &&
+    ((!cachedFactor_ && !other.cachedFactor_)
+    || (cachedFactor_ && other.cachedFactor_
+    && cachedFactor_->equals(*other.cachedFactor_, tol)));
+}
+
+/* ************************************************************************* */
+void ISAM2Clique::print(const std::string& s, const KeyFormatter& formatter) const
+{
+  Base::print(s,formatter);
+  if(cachedFactor_)
+    cachedFactor_->print(s + "Cached: ", formatter);
+  else
+    std::cout << s << "Cached empty" << std::endl;
+  if(gradientContribution_.rows() != 0)
+    gtsam::print(gradientContribution_, "Gradient contribution: ");
+}
+
+/* ************************************************************************* */
 ISAM2::ISAM2(const ISAM2Params& params):
     deltaDoglegUptodate_(true), deltaUptodate_(true), params_(params) {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
@@ -105,14 +136,12 @@ ISAM2::ISAM2(const ISAM2& other) {
 }
 
 /* ************************************************************************* */
-ISAM2& ISAM2::operator=(const ISAM2& rhs) {
+ISAM2& ISAM2::operator=(const ISAM2& rhs)
+{
   // Copy BayesTree
   this->Base::operator=(rhs);
 
   // Copy our variables
-  // When we have Permuted<...>, it is only necessary to copy this permuted
-  // view and not the original, because copying the permuted view automatically
-  // copies the original.
   theta_ = rhs.theta_;
   variableIndex_ = rhs.variableIndex_;
   delta_ = rhs.delta_;
@@ -122,16 +151,9 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
   deltaUptodate_ = rhs.deltaUptodate_;
   deltaReplacedMask_ = rhs.deltaReplacedMask_;
   nonlinearFactors_ = rhs.nonlinearFactors_;
-
-  linearFactors_ = GaussianFactorGraph();
-  linearFactors_.reserve(rhs.linearFactors_.size());
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& linearFactor, rhs.linearFactors_) {
-    linearFactors_.push_back(linearFactor ? linearFactor->clone() : GaussianFactor::shared_ptr()); }
-
-  ordering_ = rhs.ordering_;
+  linearFactors_ = rhs.linearFactors_;
   params_ = rhs.params_;
   doglegDelta_ = rhs.doglegDelta_;
-
   lastAffectedVariableCount = rhs.lastAffectedVariableCount;
   lastAffectedFactorCount = rhs.lastAffectedFactorCount;
   lastAffectedCliqueCount = rhs.lastAffectedCliqueCount;
@@ -143,15 +165,15 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
 }
 
 /* ************************************************************************* */
-FastList<size_t> ISAM2::getAffectedFactors(const FastList<Index>& keys) const {
+FastList<size_t> ISAM2::getAffectedFactors(const FastList<Key>& keys) const {
   static const bool debug = false;
   if(debug) cout << "Getting affected factors for ";
-  if(debug) { BOOST_FOREACH(const Index key, keys) { cout << key << " "; } }
+  if(debug) { BOOST_FOREACH(const Key key, keys) { cout << key << " "; } }
   if(debug) cout << endl;
 
-  FactorGraph<NonlinearFactor > allAffected;
+  NonlinearFactorGraph allAffected;
   FastList<size_t> indices;
-  BOOST_FOREACH(const Index key, keys) {
+  BOOST_FOREACH(const Key key, keys) {
 //    const list<size_t> l = nonlinearFactors_.factors(key);
 //    indices.insert(indices.begin(), l.begin(), l.end());
     const VariableIndex::Factors& factors(variableIndex_[key]);
@@ -172,9 +194,9 @@ FastList<size_t> ISAM2::getAffectedFactors(const FastList<Index>& keys) const {
 // retrieve all factors that ONLY contain the affected variables
 // (note that the remaining stuff is summarized in the cached factors)
 
-FactorGraph<GaussianFactor>::shared_ptr
-ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const FastSet<Index>& relinKeys) const {
-
+GaussianFactorGraph::shared_ptr
+ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const
+{
   gttic(getAffectedFactors);
   FastList<size_t> candidates = getAffectedFactors(affectedKeys);
   gttoc(getAffectedFactors);
@@ -183,33 +205,32 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const Fas
 
   gttic(affectedKeysSet);
   // for fast lookup below
-  FastSet<Index> affectedKeysSet;
+  FastSet<Key> affectedKeysSet;
   affectedKeysSet.insert(affectedKeys.begin(), affectedKeys.end());
   gttoc(affectedKeysSet);
 
   gttic(check_candidates_and_linearize);
-  FactorGraph<GaussianFactor>::shared_ptr linearized = boost::make_shared<FactorGraph<GaussianFactor> >();
+  GaussianFactorGraph::shared_ptr linearized = boost::make_shared<GaussianFactorGraph>();
   BOOST_FOREACH(size_t idx, candidates) {
     bool inside = true;
     bool useCachedLinear = params_.cacheLinearizedFactors;
     BOOST_FOREACH(Key key, nonlinearFactors_[idx]->keys()) {
-      Index var = ordering_[key];
-      if(affectedKeysSet.find(var) == affectedKeysSet.end()) {
+      if(affectedKeysSet.find(key) == affectedKeysSet.end()) {
         inside = false;
         break;
       }
-      if(useCachedLinear && relinKeys.find(var) != relinKeys.end())
+      if(useCachedLinear && relinKeys.find(key) != relinKeys.end())
         useCachedLinear = false;
     }
     if(inside) {
       if(useCachedLinear) {
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
         assert(linearFactors_[idx]);
-        assert(linearFactors_[idx]->keys() == nonlinearFactors_[idx]->symbolic(ordering_)->keys());
+        assert(linearFactors_[idx]->keys() == nonlinearFactors_[idx]->keys());
 #endif
         linearized->push_back(linearFactors_[idx]);
       } else {
-        GaussianFactor::shared_ptr linearFactor = nonlinearFactors_[idx]->linearize(theta_, ordering_);
+        GaussianFactor::shared_ptr linearFactor = nonlinearFactors_[idx]->linearize(theta_);
         linearized->push_back(linearFactor);
         if(params_.cacheLinearizedFactors) {
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
@@ -235,20 +256,20 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
   GaussianFactorGraph cachedBoundary;
 
   BOOST_FOREACH(sharedClique orphan, orphans) {
-    // find the last variable that was eliminated
-    Index key = (*orphan)->frontals().back();
     // retrieve the cached factor and add to boundary
     cachedBoundary.push_back(orphan->cachedFactor());
-    if(debug) { cout << "Cached factor for variable " << key; orphan->cachedFactor()->print(""); }
   }
 
   return cachedBoundary;
 }
 
-boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& markedKeys,
-    const FastSet<Index>& relinKeys, const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices,
-    const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result) {
-
+/* ************************************************************************* */
+boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
+                                                    const FastVector<Key>& observedKeys,
+                                                    const FastSet<Key>& unusedIndices,
+                                                    const boost::optional<FastMap<Key,int> >& constrainKeys,
+                                                    ISAM2Result& result)
+{
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
 
   const bool debug = ISDEBUG("ISAM2 recalculate");
@@ -275,10 +296,10 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
 
   if(debug) {
     cout << "markedKeys: ";
-    BOOST_FOREACH(const Index key, markedKeys) { cout << key << " "; }
+    BOOST_FOREACH(const Key key, markedKeys) { cout << key << " "; }
     cout << endl;
     cout << "observedKeys: ";
-    BOOST_FOREACH(const Index key, observedKeys) { cout << key << " "; }
+    BOOST_FOREACH(const Key key, observedKeys) { cout << key << " "; }
     cout << endl;
   }
 
@@ -287,7 +308,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
   // (b) Store orphaned sub-trees \BayesTree_{O} of removed cliques.
   gttic(removetop);
   Cliques orphans;
-  BayesNet<GaussianConditional> affectedBayesNet;
+  GaussianBayesNet affectedBayesNet;
   this->removeTop(markedKeys, affectedBayesNet, orphans);
   gttoc(removetop);
 
@@ -307,17 +328,19 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
 
   // ordering provides all keys in conditionals, there cannot be others because path to root included
   gttic(affectedKeys);
-  FastList<Index> affectedKeys = affectedBayesNet.ordering();
+  FastList<Key> affectedKeys;
+  BOOST_FOREACH(const ConditionalType::shared_ptr& conditional, affectedBayesNet)
+    affectedKeys.insert(affectedKeys.end(), conditional->beginFrontals(), conditional->endFrontals());
   gttoc(affectedKeys);
 
-  boost::shared_ptr<FastSet<Index> > affectedKeysSet(new FastSet<Index>()); // Will return this result
+  boost::shared_ptr<FastSet<Index> > affectedKeysSet(new FastSet<Key>()); // Will return this result
 
-  if(affectedKeys.size() >= theta_.size() * batchThreshold) {
-
+  if(affectedKeys.size() >= theta_.size() * batchThreshold)
+  {
     gttic(batch);
 
     gttic(add_keys);
-    BOOST_FOREACH(const Ordering::value_type& key_index, ordering_) { affectedKeysSet->insert(key_index.second); }
+    br::copy(variableIndex_ | br::map_keys, std::inserter(*affectedKeysSet, affectedKeysSet->end()));
     gttoc(add_keys);
 
     gttic(reorder);
@@ -341,6 +364,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
         BOOST_FOREACH(Index var, observedKeys) { cmember[var] = 1; }
       }
     }
+    Ordering order = Ordering::COLAMDConstrained()
     Permutation::shared_ptr colamd(inference::PermutationCOLAMD_(variableIndex_, cmember));
     Permutation::shared_ptr colamdInverse(colamd->inverse());
     gttoc(CCOLAMD);
@@ -1163,5 +1187,3 @@ void gradientAtZero(const ISAM2& bayesTree, VectorValues& g) {
 
 }
 /// namespace gtsam
-
-#endif
