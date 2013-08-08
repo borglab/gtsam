@@ -88,7 +88,10 @@ GaussianFactorGraph liquefy(const typename BAYESTREE::sharedClique& root, bool s
  */
 template <class BAYESTREE>
 GaussianFactorGraph liquefy(const BAYESTREE& bayesTree, bool splitConditionals = false) {
-  return liquefy<BAYESTREE>(bayesTree.root(), splitConditionals);
+  GaussianFactorGraph result;
+  BOOST_FOREACH(const typename BAYESTREE::sharedClique& root, bayesTree.roots())
+    result.push_back(liquefy<BAYESTREE>(root, splitConditionals));
+  return result;
 }
 
 } // \namespace gtsam

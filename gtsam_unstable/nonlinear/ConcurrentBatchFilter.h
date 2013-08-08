@@ -89,7 +89,7 @@ public:
    * If only a single variable is needed, it may be faster to call calculateEstimate(const KEY&).
    */
   Values calculateEstimate() const {
-    return theta_.retract(delta_, ordering_);
+    return theta_.retract(delta_);
   }
 
   /** Compute the current best estimate of a single variable. This is generally faster than
@@ -99,8 +99,7 @@ public:
    */
   template<class VALUE>
   VALUE calculateEstimate(Key key) const {
-    const Index index = ordering_.at(key);
-    const Vector delta = delta_.at(index);
+    const Vector delta = delta_.at(key);
     return theta_.at<VALUE>(key).retract(delta);
   }
 
@@ -213,7 +212,7 @@ private:
       const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /** Print just the nonlinear keys in a linear factor */
-  static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
+  static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor,
       const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   // A custom elimination tree that supports forests and partial elimination

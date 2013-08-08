@@ -22,7 +22,7 @@
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/inference/inference.h>
+//#include <gtsam/inference/inference.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {

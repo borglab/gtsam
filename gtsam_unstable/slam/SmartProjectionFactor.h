@@ -147,7 +147,7 @@ namespace gtsam {
     }
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values,  const Ordering& ordering) const {
+    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
 
 //      std::cout.precision(20);
 
@@ -171,11 +171,6 @@ namespace gtsam {
       std::vector<Matrix> Gs(keys_.size()*(keys_.size()+1)/2);
       std::vector<Vector> gs(keys_.size());
       double f = 0;
-      // fill in the keys
-      std::vector<Index> js;
-      BOOST_FOREACH(const Key& k, keys_) {
-        js += ordering[k];
-      }
 
       bool blockwise = false;
 
@@ -336,7 +331,7 @@ namespace gtsam {
 
 
       // ==========================================================================================================
-      return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
+      return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
     }
 
     /**

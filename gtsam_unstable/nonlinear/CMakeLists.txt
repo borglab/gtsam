@@ -20,11 +20,10 @@ set (nonlinear_full_libs
 
 # Exclude tests that don't work
 set (nonlinear_excluded_tests #"")
-"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testBatchFixedLagSmoother.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testConcurrentBatchFilter.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testConcurrentBatchSmoother.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testIncrementalFixedLagSmoother.cpp"
-#"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testLinearizedFactor.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/tests/testBatchFixedLagSmoother.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/tests/testConcurrentBatchFilter.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/tests/testConcurrentBatchSmoother.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/tests/testIncrementalFixedLagSmoother.cpp"
 )
 
 
