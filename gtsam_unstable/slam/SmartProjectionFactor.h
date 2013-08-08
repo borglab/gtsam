@@ -168,12 +168,12 @@ namespace gtsam {
         std::cout << "point " << *point << std::endl;
       }
 
+      std::vector<Index> js;
       std::vector<Matrix> Gs(keys_.size()*(keys_.size()+1)/2);
       std::vector<Vector> gs(keys_.size());
+      double f=0;
 
       // fill in the keys
-      double f = 0;
-      std::vector<Index> js;
       BOOST_FOREACH(const Key& k, keys_) {
         js += ordering[k];
       }
@@ -192,6 +192,8 @@ namespace gtsam {
           std::cout << "pose " << pose << std::endl;
           PinholeCamera<CALIBRATION> camera(pose, *K_);
           b.at(i) = ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
+          noise_-> WhitenSystem(Hx.at(i), Hl.at(i), b.at(i));
+          f += b.at(i).squaredNorm();
         }
 
         // Shur complement trick
@@ -276,6 +278,10 @@ namespace gtsam {
           PinholeCamera<CALIBRATION> camera(pose, *K_);
           Matrix Hxi, Hli;
            Vector bi = ( camera.project(*point,Hxi,Hli) - measured_.at(i) ).vector();
+
+           noise_-> WhitenSystem(Hxi, Hli, bi);
+           f += bi.squaredNorm();
+
            Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
            Hl2.block( 2*i, 0, 2, 3  ) = Hli;
 

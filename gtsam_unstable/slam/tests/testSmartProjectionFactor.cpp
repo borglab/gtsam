@@ -330,6 +330,62 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
 
 
 /* ************************************************************************* */
+TEST( SmartProjectionFactor, Hessian ){
+  cout << " ************************ Normal ProjectionFactor: Hessian **********************" << endl;
+
+  Symbol x1('X',  1);
+  Symbol x2('X',  2);
+
+  const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
+
+  std::vector<Key> views;
+  views += x1, x2;
+
+  Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  SimpleCamera cam1(pose1, *K);
+
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
+  SimpleCamera cam2(pose2, *K);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+
+  // 1. Project three landmarks into three cameras and triangulate
+  Point2 cam1_uv1 = cam1.project(landmark1);
+  Point2 cam2_uv1 = cam2.project(landmark1);
+  vector<Point2> measurements_cam1;
+  measurements_cam1 += cam1_uv1, cam2_uv1;
+
+  SmartProjectionFactor<Pose3, Point3, Cal3_S2> smartFactor(measurements_cam1, noiseProjection, views, K);
+
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  //  values.insert(L(1), landmark1);
+
+  Ordering ordering;
+  ordering.push_back(x1);
+  ordering.push_back(x2);
+
+  boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor.linearize(values, ordering);
+  hessianFactor->print("Hessian factor \n");
+
+  // compute triangulation from linearization point
+  // compute reprojection errors
+  // compare with hessianFactor.info(): the bottom right element is the squared sum of the reprojection errors (normalized by the covariance)
+
+
+
+
+
+}
+
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
 
