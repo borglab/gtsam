@@ -312,15 +312,18 @@ namespace gtsam {
     /* ************************************************************************* */
     /** Traversal function for PrintForest */
     namespace {
-      template<typename NODE>
-      std::string
-        PrintForestVisitorPre(const boost::shared_ptr<NODE>& node, const std::string& parentString, const KeyFormatter& formatter)
+      struct PrintForestVisitorPre
       {
-        // Print the current node
-        node->print(parentString + "-", formatter);
-        // Increment the indentation
-        return parentString + "| ";
-      }
+        const KeyFormatter& formatter;
+        PrintForestVisitorPre(const KeyFormatter& formatter) : formatter(formatter) {}
+        template<typename NODE> std::string operator()(const boost::shared_ptr<NODE>& node, const std::string& parentString)
+        {
+          // Print the current node
+          node->print(parentString + "-", formatter);
+          // Increment the indentation
+          return parentString + "| ";
+        }
+      };
     }
 
     /** Print a tree, prefixing each line with \c str, and formatting keys using \c keyFormatter.
@@ -328,7 +331,8 @@ namespace gtsam {
     template<class FOREST>
     void PrintForest(const FOREST& forest, std::string str, const KeyFormatter& keyFormatter) {
       typedef typename FOREST::Node Node;
-      DepthFirstForest(forest, str, boost::bind(PrintForestVisitorPre<Node>, _1, _2, keyFormatter));
+      PrintForestVisitorPre visitor(keyFormatter);
+      DepthFirstForest(forest, str, visitor);
     }
   }
 

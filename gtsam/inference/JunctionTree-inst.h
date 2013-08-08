@@ -161,47 +161,49 @@ namespace gtsam {
 
     /* ************************************************************************* */
     // Elimination post-order visitor - combine the child factors with our own factors, add the
-    // resulting conditional to the BayesTree, and add the remaining factor to the parent.  The
-    // extra argument 'eliminationFunction' is passed from JunctionTree::eliminate using
-    // boost::bind.
+    // resulting conditional to the BayesTree, and add the remaining factor to the parent.
     template<class JUNCTIONTREE>
-    void eliminationPostOrderVisitor(const typename JUNCTIONTREE::sharedNode& node, EliminationData<JUNCTIONTREE>& myData,
-      const typename JUNCTIONTREE::Eliminate& eliminationFunction)
+    struct EliminationPostOrderVisitor
     {
-      // Typedefs
-      typedef typename JUNCTIONTREE::sharedFactor sharedFactor;
-      typedef typename JUNCTIONTREE::FactorType FactorType;
-      typedef typename JUNCTIONTREE::FactorGraphType FactorGraphType;
-      typedef typename JUNCTIONTREE::ConditionalType ConditionalType;
-      typedef typename JUNCTIONTREE::BayesTreeType::Node BTNode;
-
-      // Gather factors
-      FactorGraphType gatheredFactors;
-      gatheredFactors.reserve(node->factors.size() + node->children.size());
-      gatheredFactors += node->factors;
-      gatheredFactors += myData.childFactors;
-
-      // Check for Bayes tree orphan subtrees, and add them to our children
-      BOOST_FOREACH(const sharedFactor& f, node->factors)
+      const typename JUNCTIONTREE::Eliminate& eliminationFunction;
+      EliminationPostOrderVisitor(const typename JUNCTIONTREE::Eliminate& eliminationFunction) : eliminationFunction(eliminationFunction) {}
+      void operator()(const typename JUNCTIONTREE::sharedNode& node, EliminationData<JUNCTIONTREE>& myData)
       {
-        if(const BayesTreeOrphanWrapper<BTNode>* asSubtree = dynamic_cast<const BayesTreeOrphanWrapper<BTNode>*>(f.get()))
+        // Typedefs
+        typedef typename JUNCTIONTREE::sharedFactor sharedFactor;
+        typedef typename JUNCTIONTREE::FactorType FactorType;
+        typedef typename JUNCTIONTREE::FactorGraphType FactorGraphType;
+        typedef typename JUNCTIONTREE::ConditionalType ConditionalType;
+        typedef typename JUNCTIONTREE::BayesTreeType::Node BTNode;
+
+        // Gather factors
+        FactorGraphType gatheredFactors;
+        gatheredFactors.reserve(node->factors.size() + node->children.size());
+        gatheredFactors += node->factors;
+        gatheredFactors += myData.childFactors;
+
+        // Check for Bayes tree orphan subtrees, and add them to our children
+        BOOST_FOREACH(const sharedFactor& f, node->factors)
         {
-          myData.bayesTreeNode->children.push_back(asSubtree->clique);
-          asSubtree->clique->parent_ = myData.bayesTreeNode;
+          if(const BayesTreeOrphanWrapper<BTNode>* asSubtree = dynamic_cast<const BayesTreeOrphanWrapper<BTNode>*>(f.get()))
+          {
+            myData.bayesTreeNode->children.push_back(asSubtree->clique);
+            asSubtree->clique->parent_ = myData.bayesTreeNode;
+          }
         }
+
+        // Do dense elimination step
+        std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
+            eliminationFunction(gatheredFactors, Ordering(node->keys));
+
+        // Store conditional in BayesTree clique
+        myData.bayesTreeNode->conditional_ = eliminationResult.first;
+
+        // Store remaining factor in parent's gathered factors
+        if(!eliminationResult.second->empty())
+          myData.parentData->childFactors[myData.myIndexInParent] = eliminationResult.second;
       }
-
-      // Do dense elimination step
-      std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-        eliminationFunction(gatheredFactors, Ordering(node->keys));
-
-      // Store conditional in BayesTree clique
-      myData.bayesTreeNode->conditional_ = eliminationResult.first;
-
-      // Store remaining factor in parent's gathered factors
-      if(!eliminationResult.second->empty())
-        myData.parentData->childFactors[myData.myIndexInParent] = eliminationResult.second;
-    }
+    };
   }
 
   /* ************************************************************************* */
@@ -278,9 +280,10 @@ namespace gtsam {
     // that contains all of the roots as its children.  rootsContainer also stores the remaining
     // uneliminated factors passed up from the roots.
     EliminationData<This> rootsContainer(0, roots_.size());
+    EliminationPostOrderVisitor<This> visitorPost(function);
     //tbb::task_scheduler_init init(1);
-    treeTraversal::DepthFirstForest/*Parallel*/(*this, rootsContainer, eliminationPreOrderVisitor<This>,
-      boost::bind(eliminationPostOrderVisitor<This>, _1, _2, function)/*, 10*/);
+    treeTraversal::DepthFirstForest/*Parallel*/(*this, rootsContainer,
+      eliminationPreOrderVisitor<This>, visitorPost/*, 10*/);
 
     // Create BayesTree from roots stored in the dummy BayesTree node.
     boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
