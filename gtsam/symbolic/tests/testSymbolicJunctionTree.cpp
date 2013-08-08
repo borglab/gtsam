@@ -16,17 +16,15 @@
  * @author  Frank Dellaert
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp> // for operator +=
-#include <boost/assign/std/set.hpp> // for operator +=
-using namespace boost::assign;
-
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/symbolic/SymbolicEliminationTree.h>
 #include <gtsam/symbolic/SymbolicJunctionTree.h>
+
+#include <boost/assign/list_of.hpp>
+using namespace boost::assign;
 
 #include "symbolicExampleGraphs.h"
 
@@ -44,10 +42,10 @@ TEST( JunctionTree, constructor )
 
   SymbolicJunctionTree actual(SymbolicEliminationTree(simpleChain, order));
 
-  vector<Index> frontal1; frontal1 += 2, 3;
-  vector<Index> frontal2; frontal2 += 0, 1;
-  vector<Index> sep1;
-  vector<Index> sep2; sep2 += 2;
+  vector<Key> frontal1 = list_of(2)(3);
+  vector<Key> frontal2 = list_of(0)(1);
+  vector<Key> sep1;
+  vector<Key> sep2 = list_of(2);
   EXPECT(assert_equal(frontal1, actual.roots().front()->keys));
   //EXPECT(assert_equal(sep1,     actual.roots().front()->separator));
   LONGS_EQUAL(1,                (long)actual.roots().front()->factors.size());

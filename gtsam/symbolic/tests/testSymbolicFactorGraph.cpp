@@ -22,7 +22,6 @@
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
-#include <boost/assign/std/vector.hpp>
 
 using namespace std;
 using namespace gtsam;
