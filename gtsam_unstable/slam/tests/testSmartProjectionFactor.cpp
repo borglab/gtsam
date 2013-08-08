@@ -375,8 +375,9 @@ TEST( SmartProjectionFactor, Hessian ){
   hessianFactor->print("Hessian factor \n");
 
   // compute triangulation from linearization point
-  // compute reprojection errors
+  // compute reprojection errors (sum squared)
   // compare with hessianFactor.info(): the bottom right element is the squared sum of the reprojection errors (normalized by the covariance)
+  // check that it is correctly scaled when using noiseProjection = [1/4  0; 0 1/4]
 
 
 
