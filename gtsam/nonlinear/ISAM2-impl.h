@@ -17,8 +17,6 @@
 
 #pragma once
 
-#if 0
-
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
@@ -62,15 +60,6 @@ struct GTSAM_EXPORT ISAM2::Impl {
     GaussianFactorGraph& linearFactors, FastSet<Key>& fixedVariables);
 
   /**
-   * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
-   * in each NonlinearFactor, obtains the index by calling ordering[symbol].
-   * @param ordering The current ordering from which to obtain the variable indices
-   * @param factors The factors from which to extract the variables
-   * @return The set of variables indices from the factors
-   */
-  static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph& factors);
-
-  /**
    * Find the set of variables to be relinearized according to relinearizeThreshold.
    * Any variables in the VectorValues delta whose vector magnitude is greater than
    * or equal to relinearizeThreshold are returned.
@@ -111,7 +100,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const std::vector<bool>& markedMask);
+  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const FastSet<Key>& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in
@@ -156,5 +145,3 @@ struct GTSAM_EXPORT ISAM2::Impl {
 };
 
 }
-
-#endif

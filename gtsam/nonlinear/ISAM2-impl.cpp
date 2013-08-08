@@ -16,8 +16,6 @@
  * @author  Richard Roberts
  */
 
-#if 0
-
 #include <gtsam/nonlinear/ISAM2-impl.h>
 #include <gtsam/nonlinear/Symbol.h> // for selective linearization thresholds
 #include <gtsam/base/debug.h>
@@ -128,17 +126,6 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
      if(root)
        root->permuteWithInverse(unusedToEndInverse);
      linearFactors.permuteWithInverse(unusedToEndInverse);
-}
-
-/* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph& factors) {
-  FastSet<Index> indices;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors) {
-    BOOST_FOREACH(Key key, factor->keys()) {
-      indices.insert(ordering[key]);
-    }
-  }
-  return indices;
 }
 
 /* ************************************************************************* */
@@ -495,5 +482,3 @@ size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, double wildfireThresho
 }
 
 }
-
-#endif

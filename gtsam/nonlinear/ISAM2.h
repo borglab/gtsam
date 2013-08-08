@@ -232,6 +232,12 @@ struct GTSAM_EXPORT ISAM2Params {
 
   Factorization factorizationTranslator(const std::string& str) const;
   std::string factorizationTranslator(const Factorization& value) const;
+
+  GaussianFactorGraph::Eliminate getEliminationFunction() const {
+    return factorization == CHOLESKY
+      ? (GaussianFactorGraph::Eliminate)EliminatePreferCholesky
+      : (GaussianFactorGraph::Eliminate)EliminateQR;
+  }
 };
 
 
