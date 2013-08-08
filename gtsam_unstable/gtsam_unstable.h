@@ -317,6 +317,7 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
       double prior_inlier, double prior_outlier);
 
   Vector whitenedError(const gtsam::Values& x);
+  Vector unwhitenedError(const gtsam::Values& x);
   Vector calcIndicatorProb(const gtsam::Values& x);
 
   void serializable() const; // enabling serialization functionality
