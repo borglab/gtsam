@@ -223,15 +223,7 @@ namespace gtsam {
     /* ************************************************************************* */
     gtsam::Vector calcIndicatorProb(const gtsam::Values& x) const {
 
-      const T& p1 = x.at<T>(key1_);
-      const T& p2 = x.at<T>(key2_);
-
-      Matrix H1, H2;
-
-      T hx = p1.between(p2, H1, H2); // h(x)
-      // manifold equivalent of h(x)-z -> log(z,h(x))
-
-      Vector err =  measured_.localCoordinates(hx);
+      Vector err =  unwhitenedError(x);
 
       // Calculate indicator probabilities (inlier and outlier)
       Vector err_wh_inlier  = model_inlier_->whiten(err);
@@ -262,6 +254,22 @@ namespace gtsam {
       return Vector_(2, p_inlier, p_outlier);
     }
 
+    /* ************************************************************************* */
+    gtsam::Vector unwhitenedError(const gtsam::Values& x) const {
+
+      bool debug = true;
+
+      const T& p1 = x.at<T>(key1_);
+      const T& p2 = x.at<T>(key2_);
+
+      Matrix H1, H2;
+
+      T hx = p1.between(p2, H1, H2); // h(x)
+
+      return measured_.localCoordinates(hx);
+    }
+
+    /* ************************************************************************* */
     /** return the measured */
     const VALUE& measured() const {
       return measured_;
