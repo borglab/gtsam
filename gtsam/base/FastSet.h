@@ -91,6 +91,9 @@ public:
     return std::set<VALUE>(this->begin(), this->end());
   }
 
+  /** Handy 'exists' function */
+  bool exists(const VALUE& e) const { return find(e) != end(); }
+
   /** Print to implement Testable */
   void print(const std::string& str = "") const { FastSetTestableHelper<VALUE>::print(*this, str); }
 

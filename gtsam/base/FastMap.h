@@ -58,6 +58,9 @@ public:
     return std::map<KEY,VALUE>(this->begin(), this->end());
   }
 
+  /** Handy 'exists' function */
+  bool exists(const KEY& e) const { return find(e) != end(); }
+
 private:
   /** Serialization function */
   friend class boost::serialization::access;
