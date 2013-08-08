@@ -76,7 +76,7 @@ GaussianFactorGraph liquefy(const typename BAYESTREE::sharedClique& root, bool s
     else
       result.push_back(splitFactor(conditional));
   }
-  BOOST_FOREACH(const typename BAYESTREE::sharedClique& child, root->children())
+  BOOST_FOREACH(typename BAYESTREE::sharedClique child, root->children)
     result.push_back(liquefy<BAYESTREE>(child, splitConditionals));
   return result;
 }

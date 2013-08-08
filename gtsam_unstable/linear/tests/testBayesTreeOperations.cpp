@@ -193,10 +193,10 @@ TEST( testBayesTreeOperations, liquefy ) {
   // Create smoother with 7 nodes
   Ordering ordering;
   ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
-  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+  GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
-  GaussianBayesTree bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 //  bayesTree.print("Full tree");
 
   SharedDiagonal unit6 = noiseModel::Diagonal::Sigmas(Vector_(ones(6)));
