@@ -30,15 +30,4 @@ namespace gtsam {
     const GaussianEliminationTree& eliminationTree) :
   Base(Base::FromEliminationTree(eliminationTree)) {}
 
-  /* ************************************************************************* */
-  GaussianJunctionTree::GaussianJunctionTree(const This& other) :
-    Base(other) {}
-
-  /* ************************************************************************* */
-  GaussianJunctionTree& GaussianJunctionTree::operator=(const This& other)
-  {
-    (void) Base::operator=(other);
-    return *this;
-  }
-
 }

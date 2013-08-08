@@ -31,17 +31,6 @@ namespace gtsam {
   template class BayesTreeCliqueBase<SymbolicBayesTreeClique, SymbolicFactorGraph>;
   template class BayesTree<SymbolicBayesTreeClique>;
 
-  /* ************************************************************************* */
-  SymbolicBayesTree::SymbolicBayesTree(const SymbolicBayesTree& other) :
-    Base(other) {}
-
-  /* ************************************************************************* */
-  SymbolicBayesTree& SymbolicBayesTree::operator=(const SymbolicBayesTree& other)
-  {
-    (void) Base::operator=(other);
-    return *this;
-  }
-
   /* ************************************************************************* */\
   bool SymbolicBayesTree::equals(const This& other, double tol /* = 1e-9 */) const
   {

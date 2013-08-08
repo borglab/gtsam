@@ -36,18 +36,6 @@ namespace gtsam {
   Base(factorGraph, order) {}
 
   /* ************************************************************************* */
-  GaussianEliminationTree::GaussianEliminationTree(
-    const This& other) :
-  Base(other) {}
-
-  /* ************************************************************************* */
-  GaussianEliminationTree& GaussianEliminationTree::operator=(const This& other)
-  {
-    (void) Base::operator=(other);
-    return *this;
-  }
-
-  /* ************************************************************************* */
   bool GaussianEliminationTree::equals(const This& other, double tol) const
   {
     return Base::equals(other, tol);

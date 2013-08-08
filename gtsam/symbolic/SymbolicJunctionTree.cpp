@@ -30,15 +30,4 @@ namespace gtsam {
     const SymbolicEliminationTree& eliminationTree) :
   Base(Base::FromEliminationTree(eliminationTree)) {}
 
-  /* ************************************************************************* */
-  SymbolicJunctionTree::SymbolicJunctionTree(const This& other) :
-    Base(other) {}
-
-  /* ************************************************************************* */
-  SymbolicJunctionTree& SymbolicJunctionTree::operator=(const This& other)
-  {
-    (void) Base::operator=(other);
-    return *this;
-  }
-
 }

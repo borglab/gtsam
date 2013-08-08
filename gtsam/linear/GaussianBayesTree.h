@@ -59,14 +59,6 @@ namespace gtsam {
     /** Default constructor, creates an empty Bayes tree */
     GaussianBayesTree() {}
 
-    /** Makes a deep copy of the tree structure, but only pointers to conditionals are
-     *  copied, the conditionals and their matrices are not cloned. */
-    GaussianBayesTree(const GaussianBayesTree& other);
-
-    /** Makes a deep copy of the tree structure, but only pointers to conditionals are
-     *  copied, the conditionals and their matrices are not cloned. */
-    GaussianBayesTree& operator=(const GaussianBayesTree& other);
-
     /** Check equality */
     bool equals(const This& other, double tol = 1e-9) const;
 

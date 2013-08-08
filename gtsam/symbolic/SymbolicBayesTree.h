@@ -58,14 +58,6 @@ namespace gtsam {
     /** Default constructor, creates an empty Bayes tree */
     SymbolicBayesTree() {}
 
-    /** Makes a deep copy of the tree structure, but only pointers to conditionals are
-     *  copied, the conditionals and their matrices are not cloned. */
-    SymbolicBayesTree(const SymbolicBayesTree& other);
-
-    /** Makes a deep copy of the tree structure, but only pointers to conditionals are
-     *  copied, the conditionals and their matrices are not cloned. */
-    SymbolicBayesTree& operator=(const SymbolicBayesTree& other);
-
     /** check equality */
     bool equals(const This& other, double tol = 1e-9) const;
   };

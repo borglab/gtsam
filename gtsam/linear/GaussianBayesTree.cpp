@@ -100,17 +100,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  GaussianBayesTree::GaussianBayesTree(const GaussianBayesTree& other) :
-    Base(other) {}
-
-  /* ************************************************************************* */
-  GaussianBayesTree& GaussianBayesTree::operator=(const GaussianBayesTree& other)
-  {
-    (void) Base::operator=(other);
-    return *this;
-  }
-
-  /* ************************************************************************* */
   bool GaussianBayesTree::equals(const This& other, double tol) const
   {
     return Base::equals(other, tol);
