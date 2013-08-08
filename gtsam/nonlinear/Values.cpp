@@ -82,10 +82,16 @@ namespace gtsam {
     Values result;
 
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
-      const Vector& singleDelta = delta[key_value->key]; // Delta for this value
+      VectorValues::const_iterator vector_item = delta.find(key_value->key);
       Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
-      Value* retractedValue(key_value->value.retract_(singleDelta)); // Retract
-      result.values_.insert(key, retractedValue); // Add retracted result directly to result values
+      if(vector_item != delta.end()) {
+//        const Vector& singleDelta = delta[key_value->key]; // Delta for this value
+        const Vector& singleDelta = vector_item->second;
+        Value* retractedValue(key_value->value.retract_(singleDelta)); // Retract
+        result.values_.insert(key, retractedValue); // Add retracted result directly to result values
+      } else {
+        result.values_.insert(key, key_value->value.clone_()); // Add original version to result values
+      }
     }
 
     return result;
