@@ -54,10 +54,13 @@ using symbol_shorthand::L;
 
 typedef PriorFactor<Pose3> Pose3Prior;
 
-static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
-
+//// Helper functions taken from VO code
+// Loaded all pose values into list
 Values::shared_ptr loadPoseValues(const string& filename) {
   Values::shared_ptr values(new Values());
+  bool addNoise = false;
+
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
 
   // read in camera poses
   string full_filename = filename;
@@ -70,14 +73,19 @@ Values::shared_ptr loadPoseValues(const string& filename) {
     for (int i = 0; i < 16; i++) {
       fin >> pose_matrix[i];
     }
-    values->insert(Symbol('x',pose_id), Pose3(Matrix_(4, 4, pose_matrix)));
+
+    if (addNoise) {
+      values->insert(Symbol('x',pose_id), Pose3(Matrix_(4, 4, pose_matrix)).compose(noise_pose));
+    } else {
+      values->insert(Symbol('x',pose_id), Pose3(Matrix_(4, 4, pose_matrix)));
+    }
   }
 
   fin.close();
   return values;
 }
 
-/* ************************************************************************* */
+// Loaded specific pose values that are in key list
 Values::shared_ptr loadPoseValues(const string& filename, list<Key> keys) {
   Values::shared_ptr values(new Values());
   std::list<Key>::iterator kit;
@@ -104,6 +112,26 @@ Values::shared_ptr loadPoseValues(const string& filename, list<Key> keys) {
   return values;
 }
 
+// Load calibration info
+Cal3_S2::shared_ptr loadCalibration(const string& filename) {
+  string full_filename = filename;
+  ifstream fin;
+  fin.open(full_filename.c_str());
+
+  // try loading from parent directory as backup
+  if(!fin) {
+    cerr << "Could not load " << full_filename;
+    exit(1);
+  }
+
+  double fx, fy, s, u, v, b;
+  fin >> fx >> fy >> s >> u >> v >> b;
+  fin.close();
+
+  Cal3_S2::shared_ptr K(new Cal3_S2(fx, fy, s, u, v));
+  return K;
+}
+
 // main
 int main(int argc, char** argv) {
 
@@ -113,12 +141,18 @@ int main(int argc, char** argv) {
   string HOME = getenv("HOME");
   //string input_dir = HOME + "/data/kitti/loop_closures_merged/";
   string input_dir = HOME + "/data/KITTI_00_200/";
-  Cal3_S2::shared_ptr K(new Cal3_S2(718.856, 718.856, 0.0, 607.1928, 185.2157));
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
+  static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(3));
+  static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
+  NonlinearFactorGraph graph;
+
+  // Load calibration
+  //Cal3_S2::shared_ptr K(new Cal3_S2(718.856, 718.856, 0.0, 607.1928, 185.2157));
+  boost::shared_ptr<Cal3_S2> K = loadCalibration(input_dir+"calibration.txt");
+  K->print("Calibration");
 
   // Read in kitti dataset
-  // load stereo factors and initialize landmarks when first seen
   ifstream fin;
   fin.open((input_dir+"stereo_factors.txt").c_str());
   if(!fin) {
@@ -126,11 +160,7 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(3));
-  static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
-  NonlinearFactorGraph graph;
-
-  // read all measurements tracked by VO
+  // read all measurements tracked by VO stereo
   cout << "Loading stereo_factors.txt" << endl;
   int count = 0;
   Key currentLandmark = 0;
@@ -191,10 +221,12 @@ int main(int argc, char** argv) {
       count=0;
     }
   }
-
   cout << "Graph size: " << graph.size() << endl;
+
+  // Load values from VO camera poses output
   gtsam::Values::shared_ptr loaded_values = loadPoseValues(input_dir+"camera_poses.txt");
   graph.add(Pose3Prior(X(0),loaded_values->at<Pose3>(X(0)), prior_model));
+  //graph.print("thegraph");
 
   // Get all view in the graph and populate poses from VO output
   // TODO: Handle loop closures properly
@@ -202,7 +234,7 @@ int main(int argc, char** argv) {
   allViews.unique();
   cout << "All Keys (" << allViews.size() << ")" << endl;
 
-  /*
+  /* If using only subset of graph, only read in values for keys that are used
   values = *loadPoseValues(input_dir+"camera_poses.txt", allViews);
   BOOST_FOREACH(const Key& k, allViews) {
     if (debug) cout << k << " ";
@@ -217,9 +249,19 @@ int main(int argc, char** argv) {
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   params.verbosity = NonlinearOptimizerParams::ERROR;
 
+  params.lambdaInitial = 1;
+  params.lambdaFactor = 10;
+  params.maxIterations = 100;
+  params.relativeErrorTol = 1e-5;
+  params.absoluteErrorTol = 1.0;
+  params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+  params.verbosity = NonlinearOptimizerParams::ERROR;
+  params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_CHOLESKY;
+
+  LevenbergMarquardtOptimizer optimizer(graph, *loaded_values, params);
+
   Values result;
   gttic_(SmartProjectionFactorExample_kitti);
-  LevenbergMarquardtOptimizer optimizer(graph, *loaded_values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionFactorExample_kitti);
   tictoc_finishedIteration_();
@@ -232,4 +274,3 @@ int main(int argc, char** argv) {
 
   exit(0);
 }
-
