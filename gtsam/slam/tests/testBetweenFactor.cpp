@@ -15,6 +15,9 @@ using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace gtsam::noiseModel;
 
+/**
+ * This TEST should fail. If you want it to pass, change noise to 0.
+ */
 TEST(BetweenFactor, Rot3) {
   Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
   Rot3 R2 = Rot3::rodriguez(0.4, 0.5, 0.6);
