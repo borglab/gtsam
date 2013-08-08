@@ -29,7 +29,7 @@ namespace gtsam {
   GaussianConditional::GaussianConditional(Index key, const Vector& d,
     const Matrix& R, const PARENTS& parents, const SharedDiagonal& sigmas, const typename PARENTS::value_type*) :
   BaseFactor(boost::join(
-    boost::assign::cref_list_of<1,typename PARENTS::value_type>(std::make_pair(key, R)),
+    ListOfOne<typename PARENTS::value_type>(std::make_pair(key, R)),
     parents), d, sigmas),
     BaseConditional(1) {}
 
