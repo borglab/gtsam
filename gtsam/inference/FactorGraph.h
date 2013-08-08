@@ -335,10 +335,10 @@ namespace gtsam {
     void replace(size_t index, sharedFactor factor) { at(index) = factor; }
 
     /** Erase factor and rearrange other factors to take up the empty space */
-    void erase(const_iterator item) { factors_.erase(item); }
+    void erase(iterator item) { factors_.erase(item); }
 
     /** Erase factors and rearrange other factors to take up the empty space */
-    void erase(const_iterator first, const_iterator last) { factors_.erase(first, last); }
+    void erase(iterator first, iterator last) { factors_.erase(first, last); }
 
     /// @}
     /// @name Advanced Interface

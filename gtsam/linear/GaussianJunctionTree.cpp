@@ -22,6 +22,9 @@
 
 namespace gtsam {
 
+  // Instantiate base class
+  template class JunctionTree<GaussianBayesTree, GaussianFactorGraph>;
+
   /* ************************************************************************* */
   GaussianJunctionTree::GaussianJunctionTree(
     const GaussianEliminationTree& eliminationTree) :

@@ -27,6 +27,10 @@
 
 namespace gtsam {
 
+  // Instantiate base classes
+  template class FactorGraph<SymbolicFactor>;
+  template class EliminateableFactorGraph<SymbolicFactorGraph>;
+
   using namespace std;
 
   /* ************************************************************************* */

@@ -30,6 +30,9 @@ using namespace gtsam;
 
 namespace gtsam {
 
+  // Instantiate base class
+  template class FactorGraph<GaussianConditional>;
+
   /* ************************************************************************* */
   bool GaussianBayesNet::equals(const This& bn, double tol) const
   {

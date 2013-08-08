@@ -35,6 +35,10 @@ using namespace gtsam;
 
 namespace gtsam {
 
+  // Instantiate base classes
+  template class FactorGraph<GaussianFactor>;
+  template class EliminateableFactorGraph<GaussianFactorGraph>;
+
   /* ************************************************************************* */
   bool GaussianFactorGraph::equals(const This& fg, double tol) const
   {
