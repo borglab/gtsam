@@ -309,15 +309,18 @@ virtual class BetweenFactor : gtsam::NonlinearFactor {
   void serializable() const; // enabling serialization functionality
 };
 
-//#include <gtsam_unstable/slam/BetweenFactorEM.h>
-//template<T = {gtsam::PoseRTV}>
-//virtual class BetweenFactorEM : gtsam::NonlinearFactor {
-//  BetweenFactorEM(size_t key1, size_t key2, const T& relativePose,
-//      const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
-//      double prior_inlier, double prior_outlier);
-//
-//  void serializable() const; // enabling serialization functionality
-//};
+#include <gtsam_unstable/slam/BetweenFactorEM.h>
+template<T = {gtsam::Pose2}>
+virtual class BetweenFactorEM : gtsam::NonlinearFactor {
+  BetweenFactorEM(size_t key1, size_t key2, const T& relativePose,
+      const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
+      double prior_inlier, double prior_outlier);
+
+  Vector whitenedError(const gtsam::Values& x);
+  Vector calcIndicatorProb(const gtsam::Values& x);
+
+  void serializable() const; // enabling serialization functionality
+};
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>

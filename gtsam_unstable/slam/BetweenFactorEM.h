@@ -68,7 +68,7 @@ namespace gtsam {
     BetweenFactorEM(Key key1, Key key2, const VALUE& measured,
         const SharedGaussian& model_inlier, const SharedGaussian& model_outlier,
         const double prior_inlier, const double prior_outlier) :
-          key1_(key1), key2_(key2), measured_(measured),
+          Base(key1, key2), key1_(key1), key2_(key2), measured_(measured),
           model_inlier_(model_inlier), model_outlier_(model_outlier),
           prior_inlier_(prior_inlier), prior_outlier_(prior_outlier){
     }
@@ -80,7 +80,16 @@ namespace gtsam {
 
     /** print */
     virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      Base::print(s, keyFormatter);
+      std::cout << s << "BetweenFactorEM("
+          << keyFormatter(key1_) << ","
+          << keyFormatter(key2_) << ")\n";
+      measured_.print("  measured: ");
+      model_inlier_->print("  noise model inlier: ");
+      model_outlier_->print("  noise model outlier: ");
+      std::cout << "(prior_inlier, prior_outlier_) = ("
+                << prior_inlier_ << ","
+                << prior_outlier_ << ")\n";
+      //      Base::print(s, keyFormatter);
     }
 
     /** equals */
@@ -144,26 +153,21 @@ namespace gtsam {
       Vector err = measured_.localCoordinates(hx);
 
       // Calculate indicator probabilities (inlier and outlier)
+      Vector p_inlier_outlier = calcIndicatorProb(x);
+      double p_inlier  = p_inlier_outlier[0];
+      double p_outlier = p_inlier_outlier[1];
+
       Vector err_wh_inlier  = model_inlier_->whiten(err);
       Vector err_wh_outlier = model_outlier_->whiten(err);
 
       Matrix invCov_inlier  = model_inlier_->R().transpose() * model_inlier_->R();
       Matrix invCov_outlier = model_outlier_->R().transpose() * model_outlier_->R();
 
-      double p_inlier  = prior_inlier_ * invCov_inlier.norm() * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
-      double p_outlier = prior_outlier_ * invCov_outlier.norm() * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
-
-      double sumP = p_inlier + p_outlier;
-      p_inlier  /= sumP;
-      p_outlier /= sumP;
-      // TODO: possibly need to bump up near-zero probabilities (as in linerFlow.h)
-
       Vector err_wh_eq;
       err_wh_eq.resize(err_wh_inlier.rows()*2);
       err_wh_eq << sqrt(p_inlier) * err_wh_inlier.array() , sqrt(p_outlier) * err_wh_outlier.array();
 
       if (H){
-
         // stack Jacobians for the two indicators for each of the key
 
         Matrix H1_inlier  = sqrt(p_inlier)*model_inlier_->Whiten(H1);
@@ -182,22 +186,22 @@ namespace gtsam {
       }
 
       if (debug){
-        std::cout<<"unwhitened error: "<<err[0]<<" "<<err[1]<<" "<<err[2]<<std::endl;
-        std::cout<<"err_wh_inlier: "<<err_wh_inlier[0]<<" "<<err_wh_inlier[1]<<" "<<err_wh_inlier[2]<<std::endl;
-        std::cout<<"err_wh_outlier: "<<err_wh_outlier[0]<<" "<<err_wh_outlier[1]<<" "<<err_wh_outlier[2]<<std::endl;
-
-        std::cout<<"p_inlier, p_outlier, sumP: "<<p_inlier<<" "<<p_outlier<<" " << sumP << std::endl;
-
-        std::cout<<"prior_inlier_, prior_outlier_: "<<prior_inlier_<<" "<<prior_outlier_<< std::endl;
-
-        double s_inl  = -0.5 * err_wh_inlier.dot(err_wh_inlier);
-        double s_outl = -0.5 * err_wh_outlier.dot(err_wh_outlier);
-        std::cout<<"s_inl, s_outl: "<<s_inl<<" "<<s_outl<<std::endl;
-
-        std::cout<<"norm of invCov_inlier, invCov_outlier: "<<invCov_inlier.norm()<<" "<<invCov_outlier.norm()<<std::endl;
-        double q_inl  = invCov_inlier.norm() * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
-        double q_outl = invCov_outlier.norm() * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
-        std::cout<<"q_inl, q_outl: "<<q_inl<<" "<<q_outl<<std::endl;
+        //        std::cout<<"unwhitened error: "<<err[0]<<" "<<err[1]<<" "<<err[2]<<std::endl;
+        //        std::cout<<"err_wh_inlier: "<<err_wh_inlier[0]<<" "<<err_wh_inlier[1]<<" "<<err_wh_inlier[2]<<std::endl;
+        //        std::cout<<"err_wh_outlier: "<<err_wh_outlier[0]<<" "<<err_wh_outlier[1]<<" "<<err_wh_outlier[2]<<std::endl;
+        //
+        //        std::cout<<"p_inlier, p_outlier, sumP: "<<p_inlier<<" "<<p_outlier<<" " << sumP << std::endl;
+        //
+        //        std::cout<<"prior_inlier_, prior_outlier_: "<<prior_inlier_<<" "<<prior_outlier_<< std::endl;
+        //
+        //        double s_inl  = -0.5 * err_wh_inlier.dot(err_wh_inlier);
+        //        double s_outl = -0.5 * err_wh_outlier.dot(err_wh_outlier);
+        //        std::cout<<"s_inl, s_outl: "<<s_inl<<" "<<s_outl<<std::endl;
+        //
+        //        std::cout<<"norm of invCov_inlier, invCov_outlier: "<<invCov_inlier.norm()<<" "<<invCov_outlier.norm()<<std::endl;
+        //        double q_inl  = invCov_inlier.norm() * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
+        //        double q_outl = invCov_outlier.norm() * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
+        //        std::cout<<"q_inl, q_outl: "<<q_inl<<" "<<q_outl<<std::endl;
 
         //        Matrix Cov_inlier  = invCov_inlier.inverse();
         //        Matrix Cov_outlier = invCov_outlier.inverse();
@@ -209,17 +213,15 @@ namespace gtsam {
         //                    Cov_outlier(0,0) << " " << Cov_outlier(0,1) << " " << Cov_outlier(0,2) <<std::endl<<
         //                    Cov_outlier(1,0) << " " << Cov_outlier(1,1) << " " << Cov_outlier(1,2) <<std::endl<<
         //                    Cov_outlier(2,0) << " " << Cov_outlier(2,1) << " " << Cov_outlier(2,2) <<std::endl;
-        std::cout<<"===="<<std::endl;
+        //        std::cout<<"===="<<std::endl;
       }
 
 
       return err_wh_eq;
     }
 
-
     /* ************************************************************************* */
-    void calcIndicatorProb(const gtsam::Values& x,
-        double& p_inlier, double& p_outlier, Vector& err) const {
+    gtsam::Vector calcIndicatorProb(const gtsam::Values& x) const {
 
       const T& p1 = x.at<T>(key1_);
       const T& p2 = x.at<T>(key2_);
@@ -229,7 +231,7 @@ namespace gtsam {
       T hx = p1.between(p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
 
-      err = measured_.localCoordinates(hx);
+      Vector err =  measured_.localCoordinates(hx);
 
       // Calculate indicator probabilities (inlier and outlier)
       Vector err_wh_inlier  = model_inlier_->whiten(err);
@@ -238,13 +240,26 @@ namespace gtsam {
       Matrix invCov_inlier  = model_inlier_->R().transpose() * model_inlier_->R();
       Matrix invCov_outlier = model_outlier_->R().transpose() * model_outlier_->R();
 
-      p_inlier  = prior_inlier_ * invCov_inlier.norm() * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
-      p_outlier = prior_outlier_ * invCov_outlier.norm() * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
+      double p_inlier  = prior_inlier_ * invCov_inlier.norm() * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
+      double p_outlier = prior_outlier_ * invCov_outlier.norm() * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
 
       double sumP = p_inlier + p_outlier;
       p_inlier  /= sumP;
       p_outlier /= sumP;
-      // TODO: possibly need to bump up near-zero probabilities (as in linerFlow.h)
+
+      // Bump up near-zero probabilities (as in linerFlow.h)
+      double minP = 0.05; // == 0.1 / 2 indicator variables
+      if (p_inlier < minP || p_outlier < minP){
+        if (p_inlier < minP)
+          p_inlier = minP;
+        if (p_outlier < minP)
+          p_outlier = minP;
+        sumP = p_inlier + p_outlier;
+        p_inlier  /= sumP;
+        p_outlier /= sumP;
+      }
+
+      return Vector_(2, p_inlier, p_outlier);
     }
 
     /** return the measured */
