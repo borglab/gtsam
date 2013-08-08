@@ -50,14 +50,20 @@ namespace gtsam {
 
       /* ************************************************************************* */
       template<class TREE, class RESULT>
-      void eliminationPostOrderVisitor(const typename TREE::sharedNode& node, EliminationData<TREE>& myData,
-        RESULT& result, const typename TREE::Eliminate& eliminationFunction)
+      struct EliminationPostOrderVisitor
       {
-        // Call eliminate on the node and add the result to the parent's gathered factors
-        typename TREE::sharedFactor childFactor = node->eliminate(result, eliminationFunction, myData.childFactors);
-        if(!childFactor->empty())
-          myData.parentData->childFactors.push_back(childFactor);
-      }
+        RESULT& result;
+        const typename TREE::Eliminate& eliminationFunction;
+        EliminationPostOrderVisitor(RESULT& result, const typename TREE::Eliminate& eliminationFunction) :
+          result(result), eliminationFunction(eliminationFunction) {}
+        void operator()(const typename TREE::sharedNode& node, EliminationData<TREE>& myData)
+        {
+          // Call eliminate on the node and add the result to the parent's gathered factors
+          typename TREE::sharedFactor childFactor = node->eliminate(result, eliminationFunction, myData.childFactors);
+          if(!childFactor->empty())
+            myData.parentData->childFactors.push_back(childFactor);
+        }
+      };
     }
 
     /* ************************************************************************* */
@@ -79,8 +85,8 @@ namespace gtsam {
       // elimination (using the gathered child factors) and store the result in the parent's
       // gathered factors.
       EliminationData<TREE> rootData(0, tree.roots().size());
-      treeTraversal::DepthFirstForest(tree, rootData, eliminationPreOrderVisitor<TREE>,
-        boost::bind(eliminationPostOrderVisitor<TREE,RESULT>, _1, _2, result, function));
+      EliminationPostOrderVisitor<TREE,RESULT> visitorPost(result, function);
+      treeTraversal::DepthFirstForest(tree, rootData, eliminationPreOrderVisitor<TREE>, visitorPost);
 
       // Return remaining factors
       return rootData.childFactors;

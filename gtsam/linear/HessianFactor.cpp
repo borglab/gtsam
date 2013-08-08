@@ -168,12 +168,14 @@ GaussianFactor(cref_list_of<3>(j1)(j2)(j3)),
 }
 
 /* ************************************************************************* */
-namespace { DenseIndex _getSizeHF(const Vector& m) { return m.size(); } }
+namespace {
+  DenseIndex _getSizeHF(const Vector& m) { return m.size(); }
+}
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
         const std::vector<Vector>& gs, double f) :
-GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), cref_list_of<1,DenseIndex>(1)))
+GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), ListOfOne((DenseIndex)1)))
 {
   // Get the number of variables
   size_t variable_count = js.size();
@@ -385,9 +387,9 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   // Apply updates to the upper triangle
   gttic(update);
   for(DenseIndex j2=0; j2<update.info_.nBlocks(); ++j2) {
-    DenseIndex slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
+    DenseIndex slot2 = (j2 == (DenseIndex)update.size()) ? this->info_.nBlocks()-1 : slots[j2];
     for(DenseIndex j1=0; j1<=j2; ++j1) {
-      DenseIndex slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
+      DenseIndex slot1 = (j1 == (DenseIndex)update.size()) ? this->info_.nBlocks()-1 : slots[j1];
       if(slot2 > slot1)
         info_(slot1, slot2).noalias() += update.info_(j1, j2);
       else if(slot1 > slot2)

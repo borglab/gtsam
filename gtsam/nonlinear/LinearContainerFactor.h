@@ -11,7 +11,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#if 0
 
 namespace gtsam {
 
@@ -160,4 +159,3 @@ private:
 
 } // \namespace gtsam
 
-#endif

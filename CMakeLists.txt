@@ -100,6 +100,10 @@ endif()
 ###############################################################################
 # Find boost
 
+# To change the path for boost, you will need to set:
+# BOOST_ROOT: path to install prefix for boost
+# Boost_NO_SYSTEM_PATHS: set to true to keep the find script from ignoring BOOST_ROOT
+
 # If using Boost shared libs, set up auto linking for shared libs
 if(MSVC AND NOT Boost_USE_STATIC_LIBS)
 	add_definitions(-DBOOST_ALL_DYN_LINK)

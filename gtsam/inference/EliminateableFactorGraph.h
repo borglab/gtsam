@@ -144,7 +144,7 @@ namespace gtsam {
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
-    /** Do sequential elimination of some variables in the given \c ordering to produce a Bayes net
+    /** Do sequential elimination of some variables, in \c ordering provided, to produce a Bayes net
      *  and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B) \f$,
      *  where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the factor graph, and \f$
      *  B = X\backslash A \f$. */
@@ -164,20 +164,20 @@ namespace gtsam {
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
-    /** Do multifrontal elimination of the given \c variables in an ordering computed by COLAMD to
-     *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
-     *  = p(A|B) p(B) \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the
-     *  factor graph, and \f$ B = X\backslash A \f$. */
+    /** Do multifrontal elimination of some variables, in \c ordering provided, to produce a Bayes
+     *  tree and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B)
+     *  \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the factor graph, and
+     *  \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialMultifrontal(
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
     
-    /** Do multifrontal elimination of some variables in the given \c ordering to produce a Bayes
-     *  tree and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B)
-     *  \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the factor graph, and
-     *  \f$ B = X\backslash A \f$. */
+    /** Do multifrontal elimination of the given \c variables in an ordering computed by COLAMD to
+     *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
+     *  = p(A|B) p(B) \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the
+     *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialMultifrontal(
       const std::vector<Key>& variables,

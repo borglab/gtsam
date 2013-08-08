@@ -21,6 +21,9 @@
 
 namespace gtsam {
 
+  // Instantiate base class
+  template class ISAM<SymbolicBayesTree>;
+
   /* ************************************************************************* */
   SymbolicISAM::SymbolicISAM() {}
 

@@ -19,9 +19,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <vector>
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
-using namespace boost::assign;
 #include <boost/make_shared.hpp>
 
 #include <gtsam/base/TestableAssertions.h>

@@ -21,7 +21,6 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/join.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 
 namespace gtsam {
@@ -40,11 +39,11 @@ namespace gtsam {
   Base(keys), Ab_(augmentedMatrix)
   {
     // Check noise model dimension
-    if(model && model->dim() != augmentedMatrix.rows())
+    if(model && (DenseIndex)model->dim() != augmentedMatrix.rows())
       throw InvalidNoiseModel(augmentedMatrix.rows(), model->dim());
 
     // Check number of variables
-    if(Base::keys_.size() != augmentedMatrix.nBlocks() - 1)
+    if((DenseIndex)Base::keys_.size() != augmentedMatrix.nBlocks() - 1)
       throw std::invalid_argument(
       "Error in JacobianFactor constructor input.  Number of provided keys plus\n"
       "one for the RHS vector must equal the number of provided matrix blocks.");
@@ -71,7 +70,7 @@ namespace gtsam {
   void JacobianFactor::fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel)
   {
     // Check noise model dimension
-    if(noiseModel && noiseModel->dim() != b.size())
+    if(noiseModel && (DenseIndex)noiseModel->dim() != b.size())
       throw InvalidNoiseModel(b.size(), noiseModel->dim());
 
     // Resize base class key vector
@@ -82,9 +81,8 @@ namespace gtsam {
     // a single '1' to add a dimension for the b vector.
     {
       using boost::adaptors::transformed;
-      using boost::assign::cref_list_of;
       namespace br = boost::range;
-      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&_getColsJF), cref_list_of<1,DenseIndex>(1)), b.size());
+      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&_getColsJF), ListOfOne((DenseIndex)1)), b.size());
     }
 
     // Check and add terms

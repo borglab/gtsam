@@ -21,6 +21,9 @@
 
 namespace gtsam {
 
+  // Instantiate base class
+  template class EliminationTree<SymbolicBayesNet, SymbolicFactorGraph>;
+
   /* ************************************************************************* */
   SymbolicEliminationTree::SymbolicEliminationTree(
     const SymbolicFactorGraph& factorGraph, const VariableIndex& structure,

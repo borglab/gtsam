@@ -27,6 +27,10 @@
 
 namespace gtsam {
 
+  // Instantiate base classes
+  template class BayesTreeCliqueBase<SymbolicBayesTreeClique, SymbolicFactorGraph>;
+  template class BayesTree<SymbolicBayesTreeClique>;
+
   /* ************************************************************************* */
   SymbolicBayesTree::SymbolicBayesTree(const SymbolicBayesTree& other) :
     Base(other) {}

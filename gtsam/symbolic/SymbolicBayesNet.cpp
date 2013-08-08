@@ -24,6 +24,9 @@
 
 namespace gtsam {
 
+  // Instantiate base class
+  template class FactorGraph<SymbolicConditional>;
+
   /* ************************************************************************* */
   bool SymbolicBayesNet::equals(const This& bn, double tol) const
   {

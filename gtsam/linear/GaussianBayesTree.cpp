@@ -26,6 +26,10 @@
 
 namespace gtsam {
 
+  // Instantiate base class
+  template class BayesTreeCliqueBase<GaussianBayesTreeClique, GaussianFactorGraph>;
+  template class BayesTree<GaussianBayesTreeClique>;
+
   /* ************************************************************************* */
   namespace internal
   {

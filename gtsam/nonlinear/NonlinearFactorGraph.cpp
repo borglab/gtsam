@@ -32,6 +32,9 @@ using namespace std;
 
 namespace gtsam {
 
+// Instantiate base classes
+template class FactorGraph<NonlinearFactor>;
+
 /* ************************************************************************* */
 double NonlinearFactorGraph::probPrime(const Values& c) const {
   return exp(-0.5 * error(c));

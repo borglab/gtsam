@@ -21,6 +21,9 @@
 
 namespace gtsam {
 
+  // Instantiate base class
+  template class EliminationTree<GaussianBayesNet, GaussianFactorGraph>;
+
   /* ************************************************************************* */
   GaussianEliminationTree::GaussianEliminationTree(
     const GaussianFactorGraph& factorGraph, const VariableIndex& structure,

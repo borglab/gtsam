@@ -265,7 +265,7 @@ namespace gtsam {
 
     // Allocate matrix and copy keys in order
     gttic(allocate);
-    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1,DenseIndex>(1)), m); // Allocate augmented matrix
+    Ab_ = VerticalBlockMatrix(boost::join(varDims, ListOfOne((DenseIndex)1)), m); // Allocate augmented matrix
     Base::keys_.resize(orderedSlots.size());
     boost::range::copy(    // Get variable keys
       orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys, Base::keys_.begin());
@@ -354,7 +354,7 @@ namespace gtsam {
         return false;
 
       // Check noise model
-      if(model_ && !f.model_ || !model_ && f.model_)
+      if((model_ && !f.model_) || (!model_ && f.model_))
         return false;
       if(model_ && f.model_ && !model_->equals(*f.model_, tol))
         return false;

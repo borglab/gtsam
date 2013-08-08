@@ -146,6 +146,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  // TODO: Clean up
   namespace {
     template<class FACTOR, class CLIQUE>
     int _pushClique(FactorGraph<FACTOR>& fg, const boost::shared_ptr<CLIQUE>& clique) {

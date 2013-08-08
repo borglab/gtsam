@@ -26,7 +26,7 @@ namespace gtsam {
     GaussianFactor(keys), info_(augmentedInformation)
   {
     // Check number of variables
-    if(Base::keys_.size() != augmentedInformation.nBlocks() - 1)
+    if((DenseIndex)Base::keys_.size() != augmentedInformation.nBlocks() - 1)
       throw std::invalid_argument(
       "Error in HessianFactor constructor input.  Number of provided keys plus\n"
       "one for the information vector must equal the number of provided matrix blocks.");
