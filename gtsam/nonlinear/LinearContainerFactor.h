@@ -38,10 +38,10 @@ protected:
 
 public:
 
-  /** Primary constructor: store a linear factor and decode the ordering */
+  /** Primary constructor: store a linear factor with optional linearization point */
   LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());
 
-  /** Primary constructor: store a linear factor and decode the ordering */
+  /** Primary constructor: store a linear factor with optional linearization point */
   LinearContainerFactor(const HessianFactor& factor, const Values& linearizationPoint = Values());
 
   /** Constructor from shared_ptr */

@@ -16,7 +16,7 @@ set(nonlinear_local_libs
 set(nonlinear_excluded_files
 # "${CMAKE_CURRENT_SOURCE_DIR}/tests/testTypedDiscreteFactor.cpp" # Example of excluding a test     
     #""  # Add to this list, with full path, to exclude
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testLinearContainerFactor.cpp"
+    #"${CMAKE_CURRENT_SOURCE_DIR}/tests/testLinearContainerFactor.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/testWhiteNoiseFactor.cpp"  
 )
 

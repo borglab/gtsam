@@ -9,10 +9,9 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <boost/foreach.hpp>
-
-#if 0
 
 namespace gtsam {
 
@@ -31,30 +30,27 @@ void LinearContainerFactor::initializeLinearizationPoint(const Values& lineariza
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
     const boost::optional<Values>& linearizationPoint)
-: factor_(factor), linearizationPoint_(linearizationPoint) {
-  // Extract keys stashed in linear factor
-  BOOST_FOREACH(const Index& idx, factor_->keys())
-    keys_.push_back(idx);
+: NonlinearFactor(factor->keys()), factor_(factor), linearizationPoint_(linearizationPoint) {
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
     const JacobianFactor& factor, const Values& linearizationPoint)
-: factor_(factor.clone()) {
+: NonlinearFactor(factor.keys()), factor_(factor.clone()) {
   initializeLinearizationPoint(linearizationPoint);
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
     const HessianFactor& factor, const Values& linearizationPoint)
-: factor_(factor.clone()) {
+: NonlinearFactor(factor.keys()), factor_(factor.clone()) {
   initializeLinearizationPoint(linearizationPoint);
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
     const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint)
-: factor_(factor->clone()) {
+: NonlinearFactor(factor->keys()), factor_(factor->clone()) {
   initializeLinearizationPoint(linearizationPoint);
 }
 
@@ -139,12 +135,12 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isJacobian() const {
-  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
+  return boost::dynamic_pointer_cast<JacobianFactor>(factor_).get();
 }
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isHessian() const {
-  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
+  return boost::dynamic_pointer_cast<HessianFactor>(factor_).get();
 }
 
 /* ************************************************************************* */
@@ -160,12 +156,13 @@ HessianFactor::shared_ptr LinearContainerFactor::toHessian() const {
 /* ************************************************************************* */
 GaussianFactor::shared_ptr LinearContainerFactor::negateToGaussian() const {
   GaussianFactor::shared_ptr result = factor_->negate();
+  return result;
 }
 
 /* ************************************************************************* */
 NonlinearFactor::shared_ptr LinearContainerFactor::negateToNonlinear() const {
   GaussianFactor::shared_ptr antifactor = factor_->negate(); // already has keys in place
-  return boost::make_shared<LinearContainerFactor>(antifactor, linearizationPoint_);
+  return NonlinearFactor::shared_ptr(new LinearContainerFactor(antifactor, linearizationPoint_));
 }
 
 /* ************************************************************************* */
@@ -183,4 +180,3 @@ NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
 /* ************************************************************************* */
 } // \namespace gtsam
 
-#endif
