@@ -168,26 +168,13 @@ GaussianFactor(cref_list_of<3>(j1)(j2)(j3)),
 }
 
 /* ************************************************************************* */
-namespace {
-DenseIndex _getSizeHF(const Vector& m) { return m.size(); }
-}
+namespace { DenseIndex _getSizeHF(const Vector& m) { return m.size(); } }
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
         const std::vector<Vector>& gs, double f) :
-GaussianFactor(js) //, info_(br::join(gs | br::transformed(&_getSizeHF), cref_list_of<1,DenseIndex>(1)))
+GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), cref_list_of<1,DenseIndex>(1)))
 {
-
-//  // FIXME: Issue with boost::range::join here - replacing with simpler version
-  info_ = SymmetricBlockMatrix(br::join(gs | br::transformed(&_getSizeHF), std::vector<DenseIndex>(1,1)));
-//  info_ = SymmetricBlockMatrix(br::join(gs | br::transformed(&_getSizeHF), cref_list_of<1,DenseIndex>(1))); // Original
-  // Alternate implementation
-//  std::vector<DenseIndex> dims(gs.size() + 1, 1);
-//  size_t i=0;
-//  BOOST_FOREACH(const Vector& m, gs)
-//    dims[i++] = m.size();
-//  info_ = SymmetricBlockMatrix(dims);
-
   // Get the number of variables
   size_t variable_count = js.size();
 

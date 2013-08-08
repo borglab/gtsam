@@ -41,8 +41,7 @@ namespace gtsam {
 
     // Add the orphaned subtrees
     BOOST_FOREACH(const sharedClique& orphan, orphans)
-      factors.push_back(boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan));
-//      factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
+      factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
 
     // eliminate into a Bayes net
     const VariableIndex varIndex(factors);
