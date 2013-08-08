@@ -144,7 +144,7 @@ namespace gtsam {
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
-    /** Do sequential elimination of some variables in the given \c ordering to produce a Bayes net
+    /** Do sequential elimination of some variables, in \c ordering provided, to produce a Bayes net
      *  and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B) \f$,
      *  where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the factor graph, and \f$
      *  B = X\backslash A \f$. */
