@@ -12,14 +12,8 @@
 #include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
-
-// Managing orderings
-
-/** Converts sets of keys to indices by way of orderings */
-GTSAM_UNSTABLE_EXPORT std::set<Index> keysToIndices(const KeySet& keys, const Ordering& ordering);
 
 // Linear Graph Operations
 
@@ -47,7 +41,7 @@ GTSAM_UNSTABLE_EXPORT GaussianFactorGraph removePriors(const GaussianFactorGraph
  * @return the set of conditionals extracted from cliques.
  */
 GTSAM_UNSTABLE_EXPORT std::set<GaussianConditional::shared_ptr> findAffectedCliqueConditionals(
-    const GaussianBayesTree& bayesTree, const std::set<Index>& savedIndices);
+    const GaussianBayesTree& bayesTree, const std::set<Key>& savedIndices);
 
 /**
  * Recursively traverses from a given clique in a Bayes Tree and collects all of the conditionals
@@ -78,9 +72,9 @@ GaussianFactorGraph liquefy(const typename BAYESTREE::sharedClique& root, bool s
   if (root && root->conditional()) {
     GaussianConditional::shared_ptr conditional = root->conditional();
     if (!splitConditionals)
-      result.push_back(conditional->toFactor());
+      result.push_back(conditional);
     else
-      result.push_back(splitFactor(conditional->toFactor()));
+      result.push_back(splitFactor(conditional));
   }
   BOOST_FOREACH(const typename BAYESTREE::sharedClique& child, root->children())
     result.push_back(liquefy<BAYESTREE>(child, splitConditionals));

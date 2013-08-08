@@ -7,7 +7,7 @@ set (gtsam_unstable_subdirs
     linear 
     dynamics
     nonlinear
-    slam
+    #slam
 )
 
 set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES})
@@ -19,10 +19,26 @@ add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-fail
 # Sources to remove from builds
 set (excluded_sources # "")
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/BatchFixedLagSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchFilter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentFilteringAndSmoothing.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/FixedLagSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/IncrementalFixedLagSmoother.cpp"
+#    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/LinearizedFactor.cpp"
 )
 
 set (excluded_headers # "")
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
+    
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/BatchFixedLagSmoother.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchFilter.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchSmoother.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentFilteringAndSmoothing.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/FixedLagSmoother.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/IncrementalFixedLagSmoother.h"
+#    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/LinearizedFactor.h"
 )
 
 # assemble core libaries

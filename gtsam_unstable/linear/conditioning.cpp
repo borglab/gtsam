@@ -8,13 +8,16 @@
 #include <gtsam_unstable/linear/conditioning.h>
 #include <gtsam_unstable/linear/bayesTreeOperations.h>
 
+#include <boost/assign/std/vector.hpp>
+
 using namespace std;
+using namespace boost::assign;
 
 namespace gtsam {
 
 /* ************************************************************************* */
 GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shared_ptr& initConditional,
-    const std::set<Index>& saved_indices, const VectorValues& solution) {
+    const std::set<Key>& saved_indices, const VectorValues& solution) {
   const bool verbose = false;
 
   if (!initConditional)
@@ -26,12 +29,12 @@ GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shar
   }
 
   // Check for presence of variables to remove
-  std::set<Index> frontalsToRemove, parentsToRemove;
-  BOOST_FOREACH(const Index& frontal, initConditional->frontals())
+  std::set<Key> frontalsToRemove, parentsToRemove;
+  BOOST_FOREACH(const Key& frontal, initConditional->frontals())
     if (!saved_indices.count(frontal))
       frontalsToRemove.insert(frontal);
 
-  BOOST_FOREACH(const Index& parent, initConditional->parents())
+  BOOST_FOREACH(const Key& parent, initConditional->parents())
     if (!saved_indices.count(parent))
       parentsToRemove.insert(parent);
 
@@ -50,14 +53,14 @@ GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shar
   size_t oldOffset = 0;
   vector<size_t> newDims, oldDims;
   vector<size_t> oldColOffsets;
-  vector<Index> newIndices;
+  vector<Key> newIndices;
   vector<size_t> newIdxToOldIdx; // Access to arrays, maps from new var to old var
-  const vector<Index>& oldIndices = initConditional->keys();
+  const vector<Key>& oldIndices = initConditional->keys();
   const size_t oldNrFrontals = initConditional->nrFrontals();
   GaussianConditional::const_iterator varIt = initConditional->beginFrontals();
   size_t oldIdx = 0;
   for (; varIt != initConditional->endFrontals(); ++varIt) {
-    size_t varDim = initConditional->dim(varIt);
+    size_t varDim = initConditional->getDim(varIt);
     oldDims += varDim;
     if (!frontalsToRemove.count(*varIt)) {
       newTotalCols += varDim;
@@ -73,7 +76,7 @@ GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shar
   }
   varIt = initConditional->beginParents();
   for (; varIt != initConditional->endParents(); ++varIt) {
-    size_t varDim = initConditional->dim(varIt);
+    size_t varDim = initConditional->getDim(varIt);
     oldDims += varDim;
     if (!parentsToRemove.count(*varIt)) {
       newTotalCols += varDim;
@@ -99,7 +102,7 @@ GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shar
     size_t oldColOffset = oldColOffsets.at(newfrontalIdx);
 
     // get R block, sliced by row
-    Eigen::Block<GaussianConditional::rsd_type::constBlock> rblock =
+    Eigen::Block<GaussianConditional::constABlock> rblock =
         initConditional->get_R().block(oldColOffset, oldColOffset, dim, oldRNrCols-oldColOffset);
     if (verbose) cout << "   rblock\n" << rblock << endl;
 
@@ -113,14 +116,14 @@ GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shar
     if (verbose) cout << "   full_matrix: set rhs\n" << full_matrix << endl;
 
     // set sigmas
-    sigmas.segment(newColOffset, dim) = initConditional->get_sigmas().segment(oldColOffset, dim);
+    sigmas.segment(newColOffset, dim) = initConditional->get_model()->sigmas().segment(oldColOffset, dim);
 
     // add parents in R block, while updating rhs
     // Loop through old variable list
     size_t newParentStartCol = newColOffset + dim;
     size_t oldParentStartCol = dim; // Copying from Rblock - offset already accounted for
     for (size_t oldIdx = newIdxToOldIdx[newfrontalIdx]+1; oldIdx<oldNrFrontals; ++oldIdx) {
-      Index parentKey = oldIndices[oldIdx];
+      Key parentKey = oldIndices[oldIdx];
       size_t parentDim = oldDims[oldIdx];
       if (verbose) cout << "   Adding parents from R: parentKey: " << parentKey << " parentDim: " << parentDim << endl;
       if (!frontalsToRemove.count(parentKey)) {
@@ -144,8 +147,8 @@ GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shar
     // add parents (looping over original block structure), while updating rhs
     GaussianConditional::const_iterator oldParent = initConditional->beginParents();
     for (; oldParent != initConditional->endParents(); ++oldParent) {
-      Index parentKey = *oldParent;
-      size_t parentDim = initConditional->dim(oldParent);
+      Key parentKey = *oldParent;
+      size_t parentDim = initConditional->getDim(oldParent);
       if (verbose) cout << "   Adding parents from S: parentKey: " << parentKey << " parentDim: " << parentDim << endl;
       if (parentsToRemove.count(parentKey)) {
         // Solve out the variable
@@ -169,17 +172,18 @@ GaussianConditional::shared_ptr conditionDensity(const GaussianConditional::shar
 
   // Construct a new conditional
   if (verbose) cout << "backsubSummarize() Complete!" << endl;
-  GaussianConditional::rsd_type matrices(full_matrix, newDims.begin(), newDims.end());
+//  GaussianConditional::rsd_type matrices(full_matrix, newDims.begin(), newDims.end());
+  VerticalBlockMatrix matrices(newDims, full_matrix);
   return GaussianConditional::shared_ptr(new
-      GaussianConditional(newIndices.begin(), newIndices.end(), newNrFrontals, matrices, sigmas));
+      GaussianConditional(newIndices, newNrFrontals, matrices, noiseModel::Diagonal::Sigmas(sigmas)));
 }
 
 /* ************************************************************************* */
 GaussianFactorGraph conditionDensity(const GaussianBayesTree& bayesTree,
-    const std::set<Index>& saved_indices) {
+    const std::set<Key>& saved_indices) {
   const bool verbose = false;
 
-  VectorValues solution = optimize(bayesTree);
+  VectorValues solution = bayesTree.optimize();
 
   // FIXME: set of conditionals does not manage possibility of solving out whole separators
   std::set<GaussianConditional::shared_ptr> affected_cliques = findAffectedCliqueConditionals(bayesTree, saved_indices);
@@ -191,7 +195,7 @@ GaussianFactorGraph conditionDensity(const GaussianBayesTree& bayesTree,
     GaussianConditional::shared_ptr reducedConditional = conditionDensity(conditional, saved_indices, solution);
     if (reducedConditional) {
       if (verbose) reducedConditional->print("Final conditional");
-      summarized_graph.push_back(reducedConditional->toFactor());
+      summarized_graph.push_back(reducedConditional);
     } else if (verbose) {
       cout << "Conditional removed after summarization!" << endl;
     }

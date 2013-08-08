@@ -19,7 +19,14 @@ set (nonlinear_full_libs
     ${gtsam_unstable-default})
 
 # Exclude tests that don't work
-set (nonlinear_excluded_tests "")
+set (nonlinear_excluded_tests #"")
+"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testBatchFixedLagSmoother.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testConcurrentBatchFilter.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testConcurrentBatchSmoother.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testIncrementalFixedLagSmoother.cpp"
+#"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/test/testLinearizedFactor.cpp"
+)
+
 
 # Add all tests
 gtsam_add_subdir_tests(nonlinear_unstable "${nonlinear_local_libs}" "${nonlinear_full_libs}" "${nonlinear_excluded_tests}") 
