@@ -39,11 +39,11 @@ namespace gtsam {
   Base(keys), Ab_(augmentedMatrix)
   {
     // Check noise model dimension
-    if(model && model->dim() != augmentedMatrix.rows())
+    if(model && (DenseIndex)model->dim() != augmentedMatrix.rows())
       throw InvalidNoiseModel(augmentedMatrix.rows(), model->dim());
 
     // Check number of variables
-    if(Base::keys_.size() != augmentedMatrix.nBlocks() - 1)
+    if((DenseIndex)Base::keys_.size() != augmentedMatrix.nBlocks() - 1)
       throw std::invalid_argument(
       "Error in JacobianFactor constructor input.  Number of provided keys plus\n"
       "one for the RHS vector must equal the number of provided matrix blocks.");

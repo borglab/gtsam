@@ -387,9 +387,9 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   // Apply updates to the upper triangle
   gttic(update);
   for(DenseIndex j2=0; j2<update.info_.nBlocks(); ++j2) {
-    DenseIndex slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
+    DenseIndex slot2 = (j2 == (DenseIndex)update.size()) ? this->info_.nBlocks()-1 : slots[j2];
     for(DenseIndex j1=0; j1<=j2; ++j1) {
-      DenseIndex slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
+      DenseIndex slot1 = (j1 == (DenseIndex)update.size()) ? this->info_.nBlocks()-1 : slots[j1];
       if(slot2 > slot1)
         info_(slot1, slot2).noalias() += update.info_(j1, j2);
       else if(slot1 > slot2)
