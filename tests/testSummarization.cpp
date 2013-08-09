@@ -9,8 +9,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#if 0
-
 #include <boost/assign/std/set.hpp>
 #include <boost/assign/std/vector.hpp>
 
@@ -78,23 +76,23 @@ TEST( testSummarization, example_from_ddf1 ) {
 
   {
     // Summarize to a linear system
-    GaussianFactorGraph actLinGraph; Ordering actOrdering;
+    GaussianFactorGraph actLinGraph;
     SummarizationMode mode = PARTIAL_QR;
-    boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
+    actLinGraph = summarize(graph, values, saved_keys, mode);
 
-    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
-    EXPECT(assert_equal(expSumOrdering, actOrdering));
+//    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
+//    EXPECT(assert_equal(expSumOrdering, actOrdering));
 
     // Does not split out subfactors where possible
     GaussianFactorGraph expLinGraph;
     expLinGraph += JacobianFactor(
-      expSumOrdering[lA3],
+      lA3,
       Matrix_(4,2,
         0.595867,  0.605092,
         0.0, -0.406109,
         0.0,       0.0,
         0.0,       0.0),
-      expSumOrdering[lA5],
+      lA5,
       Matrix_(4,2,
         -0.125971, -0.160052,
         0.13586,  0.301096,
@@ -105,30 +103,27 @@ TEST( testSummarization, example_from_ddf1 ) {
 
     // Summarize directly from a nonlinear graph to another nonlinear graph
     NonlinearFactorGraph actContainerGraph = summarizeAsNonlinearContainer(graph, values, saved_keys, mode);
-    NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph, expSumOrdering);
+    NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph);
 
     EXPECT(assert_equal(expContainerGraph, actContainerGraph, tol));
   }
 
   {
     // Summarize to a linear system using cholesky - compare to previous version
-    GaussianFactorGraph actLinGraph; Ordering actOrdering;
+    GaussianFactorGraph actLinGraph;
     SummarizationMode mode = PARTIAL_CHOLESKY;
-    boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
-
-    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
-    EXPECT(assert_equal(expSumOrdering, actOrdering));
+    actLinGraph = summarize(graph, values, saved_keys, mode);
 
     // Does not split out subfactors where possible
     GaussianFactorGraph expLinGraph;
     expLinGraph += HessianFactor(JacobianFactor(
-        expSumOrdering[lA3],
+        lA3,
         Matrix_(4,2,
           0.595867,  0.605092,
           0.0, -0.406109,
           0.0,       0.0,
           0.0,       0.0),
-        expSumOrdering[lA5],
+        lA5,
         Matrix_(4,2,
           -0.125971, -0.160052,
           0.13586,  0.301096,
@@ -139,35 +134,31 @@ TEST( testSummarization, example_from_ddf1 ) {
 
     // Summarize directly from a nonlinear graph to another nonlinear graph
     NonlinearFactorGraph actContainerGraph = summarizeAsNonlinearContainer(graph, values, saved_keys, mode);
-    NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph, expSumOrdering);
+    NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph);
 
     EXPECT(assert_equal(expContainerGraph, actContainerGraph, tol));
   }
 
   {
     // Summarize to a linear system with joint factor graph version
-    GaussianFactorGraph actLinGraph; Ordering actOrdering;
     SummarizationMode mode = SEQUENTIAL_QR;
-    boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
-
-    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
-    EXPECT(assert_equal(expSumOrdering, actOrdering));
+    GaussianFactorGraph actLinGraph = summarize(graph, values, saved_keys, mode);
 
     // Does not split out subfactors where possible
     GaussianFactorGraph expLinGraph;
     expLinGraph += JacobianFactor(
-        expSumOrdering[lA3],
+        lA3,
         Matrix_(2,2,
           0.595867, 0.605092,
           0.0, 0.406109),
-        expSumOrdering[lA5],
+        lA5,
         Matrix_(2,2,
           -0.125971, -0.160052,
           -0.13586, -0.301096),
         zero(2), diagmodel2);
 
     expLinGraph += JacobianFactor(
-        expSumOrdering[lA5],
+        lA5,
         Matrix_(2,2,
           0.268667,  0.31703,
           0.0, 0.131698),
@@ -177,35 +168,31 @@ TEST( testSummarization, example_from_ddf1 ) {
 
     // Summarize directly from a nonlinear graph to another nonlinear graph
     NonlinearFactorGraph actContainerGraph = summarizeAsNonlinearContainer(graph, values, saved_keys, mode);
-    NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph, expSumOrdering);
+    NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph);
 
     EXPECT(assert_equal(expContainerGraph, actContainerGraph, tol));
   }
 
   {
     // Summarize to a linear system with joint factor graph version
-    GaussianFactorGraph actLinGraph; Ordering actOrdering;
     SummarizationMode mode = SEQUENTIAL_CHOLESKY;
-    boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
-
-    Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
-    EXPECT(assert_equal(expSumOrdering, actOrdering));
+    GaussianFactorGraph actLinGraph = summarize(graph, values, saved_keys, mode);
 
     // Does not split out subfactors where possible
     GaussianFactorGraph expLinGraph;
     expLinGraph += JacobianFactor(
-        expSumOrdering[lA3],
+        lA3,
         Matrix_(2,2,
           0.595867, 0.605092,
           0.0, 0.406109),
-        expSumOrdering[lA5],
+        lA5,
         Matrix_(2,2,
           -0.125971, -0.160052,
           -0.13586, -0.301096),
         zero(2), diagmodel2);
 
     expLinGraph += JacobianFactor(
-        expSumOrdering[lA5],
+        lA5,
         Matrix_(2,2,
           0.268667,  0.31703,
           0.0, 0.131698),
@@ -215,7 +202,7 @@ TEST( testSummarization, example_from_ddf1 ) {
 
     // Summarize directly from a nonlinear graph to another nonlinear graph
     NonlinearFactorGraph actContainerGraph = summarizeAsNonlinearContainer(graph, values, saved_keys, mode);
-    NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph, expSumOrdering);
+    NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph);
 
     EXPECT(assert_equal(expContainerGraph, actContainerGraph, tol));
   }
@@ -233,15 +220,10 @@ TEST( testSummarization, no_summarize_case ) {
   values.insert(key, Pose2(0.0, 0.0, 0.1));
 
   SummarizationMode mode = SEQUENTIAL_CHOLESKY;
-  GaussianFactorGraph actLinGraph; Ordering actOrdering;
-  boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
-  Ordering expOrdering; expOrdering += key;
-  GaussianFactorGraph expLinGraph = *graph.linearize(values, expOrdering);
-  EXPECT(assert_equal(expOrdering, actOrdering));
+  GaussianFactorGraph actLinGraph = summarize(graph, values, saved_keys, mode);
+  GaussianFactorGraph expLinGraph = *graph.linearize(values);
   EXPECT(assert_equal(expLinGraph, actLinGraph));
 }
-
-#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
