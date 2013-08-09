@@ -22,38 +22,31 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-LinearizedGaussianFactor::LinearizedGaussianFactor(const GaussianFactor::shared_ptr& gaussian, const Ordering& ordering, const Values& lin_points) {
+LinearizedGaussianFactor::LinearizedGaussianFactor(
+    const GaussianFactor::shared_ptr& gaussian, const Values& lin_points)
+: NonlinearFactor(gaussian->keys())
+{
   // Extract the keys and linearization points
-  BOOST_FOREACH(const Index& idx, gaussian->keys()) {
-    // find full symbol
-    if (idx < ordering.size()) {
-      Key key = ordering.key(idx);
-
-      // extract linearization point
-      assert(lin_points.exists(key));
-      this->lin_points_.insert(key, lin_points.at(key));
-
-      // store keys
-      this->keys_.push_back(key);
-    } else {
-      throw std::runtime_error("LinearizedGaussianFactor: could not find index in decoder!");
-    }
+  BOOST_FOREACH(const Key& key, gaussian->keys()) {
+    // extract linearization point
+    assert(lin_points.exists(key));
+    this->lin_points_.insert(key, lin_points.at(key));
   }
 }
 
-
-
+/* ************************************************************************* */
+// LinearizedJacobianFactor
 /* ************************************************************************* */
 LinearizedJacobianFactor::LinearizedJacobianFactor() : Ab_(matrix_) {
 }
 
 /* ************************************************************************* */
-LinearizedJacobianFactor::LinearizedJacobianFactor(const JacobianFactor::shared_ptr& jacobian,
-    const Ordering& ordering, const Values& lin_points)
-: Base(jacobian, ordering, lin_points), Ab_(matrix_) {
+LinearizedJacobianFactor::LinearizedJacobianFactor(
+    const JacobianFactor::shared_ptr& jacobian, const Values& lin_points)
+: Base(jacobian, lin_points), Ab_(matrix_) {
 
   // Get the Ab matrix from the Jacobian factor, with any covariance baked in
-  AbMatrix fullMatrix = jacobian->matrix_augmented(true);
+  AbMatrix fullMatrix = jacobian->augmentedJacobian();
 
   // Create the dims array
   size_t *dims = (size_t *)alloca(sizeof(size_t) * (jacobian->size() + 1));
@@ -110,12 +103,12 @@ double LinearizedJacobianFactor::error(const Values& c) const {
 
 /* ************************************************************************* */
 boost::shared_ptr<GaussianFactor>
-LinearizedJacobianFactor::linearize(const Values& c, const Ordering& ordering) const {
+LinearizedJacobianFactor::linearize(const Values& c) const {
 
   // Create the 'terms' data structure for the Jacobian constructor
   std::vector<std::pair<Index, Matrix> > terms;
   BOOST_FOREACH(Key key, keys()) {
-    terms.push_back(std::make_pair(ordering[key], this->A(key)));
+    terms.push_back(std::make_pair(key, this->A(key)));
   }
 
   // compute rhs
@@ -140,19 +133,16 @@ Vector LinearizedJacobianFactor::error_vector(const Values& c) const {
   return errorVector;
 }
 
-
-
-
-
-
+/* ************************************************************************* */
+// LinearizedHessianFactor
 /* ************************************************************************* */
 LinearizedHessianFactor::LinearizedHessianFactor() : info_(matrix_) {
 }
 
 /* ************************************************************************* */
-LinearizedHessianFactor::LinearizedHessianFactor(const HessianFactor::shared_ptr& hessian,
-      const Ordering& ordering, const Values& lin_points)
-: Base(hessian, ordering, lin_points), info_(matrix_) {
+LinearizedHessianFactor::LinearizedHessianFactor(
+    const HessianFactor::shared_ptr& hessian, const Values& lin_points)
+: Base(hessian, lin_points), info_(matrix_) {
 
   // Copy the augmented matrix holding G, g, and f
   Matrix fullMatrix = hessian->info();
@@ -228,13 +218,7 @@ double LinearizedHessianFactor::error(const Values& c) const {
 
 /* ************************************************************************* */
 boost::shared_ptr<GaussianFactor>
-LinearizedHessianFactor::linearize(const Values& c, const Ordering& ordering) const {
-
-  // Use the ordering to convert the keys into indices;
-  std::vector<Index> js;
-  BOOST_FOREACH(Key key, this->keys()){
-    js.push_back(ordering.at(key));
-  }
+LinearizedHessianFactor::linearize(const Values& c) const {
 
   // Make a copy of the info matrix
   Matrix newMatrix;
@@ -275,7 +259,7 @@ LinearizedHessianFactor::linearize(const Values& c, const Ordering& ordering) co
 
   // Create a Hessian Factor from the modified info matrix
   //return boost::shared_ptr<GaussianFactor>(new HessianFactor(js, newInfo));
-  return boost::shared_ptr<GaussianFactor>(new HessianFactor(js, Gs, gs, f));
+  return boost::shared_ptr<GaussianFactor>(new HessianFactor(keys(), Gs, gs, f));
 }
 
 } // \namespace aspn

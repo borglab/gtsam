@@ -24,6 +24,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/LieVector.h>
+#include <gtsam/base/TestableAssertions.h>
 
 using namespace std;
 using namespace gtsam;
@@ -737,7 +738,7 @@ TEST( InertialNavFactor_GlobalVelocity, LinearizeTiming)
   GaussianFactorGraph graph;
   gttic_(LinearizeTiming);
   for(size_t i = 0; i < 100000; ++i) {
-    GaussianFactor::shared_ptr g = f.linearize(values, ordering);
+    GaussianFactor::shared_ptr g = f.linearize(values);
     graph.push_back(g);
   }
   gttoc_(LinearizeTiming);

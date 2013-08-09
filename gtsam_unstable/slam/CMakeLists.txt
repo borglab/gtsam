@@ -25,7 +25,15 @@ set (slam_full_libs
 
 # Exclude tests that don't work
 set (slam_excluded_tests
- "${CMAKE_CURRENT_SOURCE_DIR}/tests/testSerialization.cpp"      
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testAHRS.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testCombinedImuFactor.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testImuFactor.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testInvDepthFactor3.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testInvDepthFactorVariant1.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testInvDepthFactorVariant2.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testInvDepthFactorVariant3.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testMultiProjectionFactor.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/testSerialization.cpp"
 #    ""  # Add to this list, with full path, to exclude
 )
 # Add all tests

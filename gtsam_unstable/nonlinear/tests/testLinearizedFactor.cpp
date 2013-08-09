@@ -33,9 +33,6 @@ TEST( LinearizedFactor, equals_jacobian )
   // Create a Between Factor from a Point3. This is actually a linear factor.
   Key x1(1);
   Key x2(2);
-  Ordering ordering;
-  ordering.push_back(x1);
-  ordering.push_back(x2);
   Values values;
   values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
   values.insert(x2, Point3(-21.0,  +5.0, +21.0));
@@ -46,9 +43,9 @@ TEST( LinearizedFactor, equals_jacobian )
 
 
   // Create two identical factors and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
-  LinearizedJacobianFactor jacobian1(jf, ordering, values);
-  LinearizedJacobianFactor jacobian2(jf, ordering, values);
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  LinearizedJacobianFactor jacobian1(jf, values);
+  LinearizedJacobianFactor jacobian2(jf, values);
 
   CHECK(assert_equal(jacobian1, jacobian2));
 }
@@ -59,9 +56,6 @@ TEST( LinearizedFactor, clone_jacobian )
   // Create a Between Factor from a Point3. This is actually a linear factor.
   Key x1(1);
   Key x2(2);
-  Ordering ordering;
-  ordering.push_back(x1);
-  ordering.push_back(x2);
   Values values;
   values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
   values.insert(x2, Point3(-21.0,  +5.0, +21.0));
@@ -71,13 +65,13 @@ TEST( LinearizedFactor, clone_jacobian )
   BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
 
   // Create one factor that is a clone of the other and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
-  LinearizedJacobianFactor jacobian1(jf, ordering, values);
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  LinearizedJacobianFactor jacobian1(jf, values);
   LinearizedJacobianFactor::shared_ptr jacobian2 = boost::static_pointer_cast<LinearizedJacobianFactor>(jacobian1.clone());
   CHECK(assert_equal(jacobian1, *jacobian2));
 
-  JacobianFactor::shared_ptr jf1 = boost::static_pointer_cast<JacobianFactor>(jacobian1.linearize(values, ordering));
-  JacobianFactor::shared_ptr jf2 = boost::static_pointer_cast<JacobianFactor>(jacobian2->linearize(values, ordering));
+  JacobianFactor::shared_ptr jf1 = boost::static_pointer_cast<JacobianFactor>(jacobian1.linearize(values));
+  JacobianFactor::shared_ptr jf2 = boost::static_pointer_cast<JacobianFactor>(jacobian2->linearize(values));
   CHECK(assert_equal(*jf1, *jf2));
 
   Matrix information1 = jf1->augmentedInformation();
@@ -91,9 +85,6 @@ TEST( LinearizedFactor, add_jacobian )
   // Create a Between Factor from a Point3. This is actually a linear factor.
   Key x1(1);
   Key x2(2);
-  Ordering ordering;
-  ordering.push_back(x1);
-  ordering.push_back(x2);
   Values values;
   values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
   values.insert(x2, Point3(-21.0,  +5.0, +21.0));
@@ -103,10 +94,10 @@ TEST( LinearizedFactor, add_jacobian )
   BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
 
   // Create two factor graphs, one using 'push_back' and one using 'add' and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
-  LinearizedJacobianFactor::shared_ptr jacobian(new LinearizedJacobianFactor(jf, ordering, values));
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  LinearizedJacobianFactor::shared_ptr jacobian(new LinearizedJacobianFactor(jf, values));
   NonlinearFactorGraph graph1; graph1.push_back(jacobian);
-  NonlinearFactorGraph graph2; graph2.add(*jacobian);
+  NonlinearFactorGraph graph2; graph2.push_back(*jacobian);
 
   // TODO: When creating a Jacobian from a cached factor, I experienced a problem in the 'add' version
   // However, I am currently unable to reproduce the error in this unit test.
@@ -133,8 +124,8 @@ TEST( LinearizedFactor, add_jacobian )
 //
 //
 //  // Create a linearized jacobian factors
-//  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
-//  LinearizedJacobianFactor jacobian(jf, ordering, values);
+//  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+//  LinearizedJacobianFactor jacobian(jf, values);
 //
 //
 //  for(double x1 = -10; x1 < 10; x1 += 2.0) {
@@ -156,8 +147,8 @@ TEST( LinearizedFactor, add_jacobian )
 //              EXPECT_DOUBLES_EQUAL(expected_error, actual_error, 1e-9 );
 //
 //              // Check that the linearized factors are identical
-//              GaussianFactor::shared_ptr expected_factor = betweenFactor.linearize(linpoint, ordering);
-//              GaussianFactor::shared_ptr actual_factor   = jacobian.linearize(linpoint, ordering);
+//              GaussianFactor::shared_ptr expected_factor = betweenFactor.linearize(linpoint);
+//              GaussianFactor::shared_ptr actual_factor   = jacobian.linearize(linpoint);
 //              CHECK(assert_equal(*expected_factor, *actual_factor));
 //            }
 //          }
@@ -175,9 +166,6 @@ TEST( LinearizedFactor, equals_hessian )
   // Create a Between Factor from a Point3. This is actually a linear factor.
   Key x1(1);
   Key x2(2);
-  Ordering ordering;
-  ordering.push_back(x1);
-  ordering.push_back(x2);
   Values values;
   values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
   values.insert(x2, Point3(-21.0,  +5.0, +21.0));
@@ -188,10 +176,10 @@ TEST( LinearizedFactor, equals_hessian )
 
 
   // Create two identical factors and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   HessianFactor::shared_ptr hf(new HessianFactor(*jf));
-  LinearizedHessianFactor hessian1(hf, ordering, values);
-  LinearizedHessianFactor hessian2(hf, ordering, values);
+  LinearizedHessianFactor hessian1(hf, values);
+  LinearizedHessianFactor hessian2(hf, values);
 
   CHECK(assert_equal(hessian1, hessian2));
 }
@@ -202,9 +190,6 @@ TEST( LinearizedFactor, clone_hessian )
   // Create a Between Factor from a Point3. This is actually a linear factor.
   Key x1(1);
   Key x2(2);
-  Ordering ordering;
-  ordering.push_back(x1);
-  ordering.push_back(x2);
   Values values;
   values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
   values.insert(x2, Point3(-21.0,  +5.0, +21.0));
@@ -215,9 +200,9 @@ TEST( LinearizedFactor, clone_hessian )
 
 
   // Create two identical factors and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   HessianFactor::shared_ptr hf(new HessianFactor(*jf));
-  LinearizedHessianFactor hessian1(hf, ordering, values);
+  LinearizedHessianFactor hessian1(hf, values);
   LinearizedHessianFactor::shared_ptr hessian2 = boost::static_pointer_cast<LinearizedHessianFactor>(hessian1.clone());
 
   CHECK(assert_equal(hessian1, *hessian2));
@@ -229,9 +214,6 @@ TEST( LinearizedFactor, add_hessian )
   // Create a Between Factor from a Point3. This is actually a linear factor.
   Key x1(1);
   Key x2(2);
-  Ordering ordering;
-  ordering.push_back(x1);
-  ordering.push_back(x2);
   Values values;
   values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
   values.insert(x2, Point3(-21.0,  +5.0, +21.0));
@@ -242,11 +224,11 @@ TEST( LinearizedFactor, add_hessian )
 
 
   // Create two identical factors and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   HessianFactor::shared_ptr hf(new HessianFactor(*jf));
-  LinearizedHessianFactor::shared_ptr hessian(new LinearizedHessianFactor(hf, ordering, values));
+  LinearizedHessianFactor::shared_ptr hessian(new LinearizedHessianFactor(hf, values));
   NonlinearFactorGraph graph1; graph1.push_back(hessian);
-  NonlinearFactorGraph graph2; graph2.add(*hessian);
+  NonlinearFactorGraph graph2; graph2.push_back(*hessian);
 
   CHECK(assert_equal(graph1, graph2));
 }
@@ -270,9 +252,9 @@ TEST( LinearizedFactor, add_hessian )
 //
 //
 //  // Create a linearized hessian factor
-//  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+//  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
 //  HessianFactor::shared_ptr hf(new HessianFactor(*jf));
-//  LinearizedHessianFactor hessian(hf, ordering, values);
+//  LinearizedHessianFactor hessian(hf, values);
 //
 //
 //  for(double x1 = -10; x1 < 10; x1 += 2.0) {
@@ -294,8 +276,8 @@ TEST( LinearizedFactor, add_hessian )
 //              EXPECT_DOUBLES_EQUAL(expected_error, actual_error, 1e-9 );
 //
 //              // Check that the linearized factors are identical
-//              GaussianFactor::shared_ptr expected_factor = HessianFactor::shared_ptr(new HessianFactor(*betweenFactor.linearize(linpoint, ordering)));
-//              GaussianFactor::shared_ptr actual_factor   = hessian.linearize(linpoint, ordering);
+//              GaussianFactor::shared_ptr expected_factor = HessianFactor::shared_ptr(new HessianFactor(*betweenFactor.linearize(linpoint)));
+//              GaussianFactor::shared_ptr actual_factor   = hessian.linearize(linpoint);
 //              CHECK(assert_equal(*expected_factor, *actual_factor));
 //            }
 //          }

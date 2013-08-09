@@ -55,7 +55,7 @@ public:
    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
    */
   Values calculateEstimate() const {
-    return theta_.retract(delta_, ordering_);
+    return theta_.retract(delta_);
   }
 
   /** Compute an estimate for a single variable using its incomplete linear delta computed
@@ -66,8 +66,7 @@ public:
    */
   template<class VALUE>
   VALUE calculateEstimate(Key key) const {
-    const Index index = ordering_.at(key);
-    const Vector delta = delta_.at(index);
+    const Vector delta = delta_.at(key);
     return theta_.at<VALUE>(key).retract(delta);
   }
 

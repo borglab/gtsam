@@ -14,14 +14,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-std::set<Index> keysToIndices(const KeySet& keys, const Ordering& ordering) {
-  std::set<Index> result;
-  BOOST_FOREACH(const Key& key, keys)
-    result.insert(ordering[key]);
-  return result;
-}
-
-/* ************************************************************************* */
 GaussianFactorGraph splitFactors(const GaussianFactorGraph& fullgraph) {
   GaussianFactorGraph result;
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, fullgraph) {
@@ -55,9 +47,9 @@ GaussianFactorGraph splitFactor(const GaussianFactor::shared_ptr& factor) {
     size_t nrRows = std::min(rowsRemaining, varDim);
 
     // Extract submatrices
-    std::vector<std::pair<Index, Matrix> > matrices;
+    std::vector<std::pair<Key, Matrix> > matrices;
     for (colIt = rowIt; colIt != jf->end(); ++colIt) {
-      Index idx = *colIt;
+      Key idx = *colIt;
       const Matrix subA = jf->getA(colIt).middleRows(startRow, nrRows);
       matrices.push_back(make_pair(idx, subA));
     }
@@ -103,11 +95,11 @@ void findCliques(const GaussianBayesTree::sharedClique& current_clique,
 
 /* ************************************************************************* */
 std::set<GaussianConditional::shared_ptr> findAffectedCliqueConditionals(
-    const GaussianBayesTree& bayesTree, const std::set<Index>& savedIndices) {
+    const GaussianBayesTree& bayesTree, const std::set<Key>& savedIndices) {
   std::set<GaussianConditional::shared_ptr> affected_cliques;
   // FIXME: track previously found keys more efficiently
-  BOOST_FOREACH(const Index& index, savedIndices) {
-    GaussianBayesTree::sharedClique clique = bayesTree.nodes()[index];
+  BOOST_FOREACH(const Key& index, savedIndices) {
+    GaussianBayesTree::sharedClique clique = bayesTree[index];
 
     // add path back to root to affected set
     findCliques(clique, affected_cliques);

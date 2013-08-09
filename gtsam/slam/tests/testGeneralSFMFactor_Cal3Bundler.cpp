@@ -20,7 +20,6 @@
 #include <gtsam/slam/RangeFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/VectorValues.h>
@@ -369,7 +368,7 @@ TEST( GeneralSFMFactor_Cal3Bundler, optimize_varK_BA ) {
   graph.addCameraConstraint(0, cameras[0]);
 
   // Constrain the scale of the problem with a soft range factor of 1m between the cameras
-  graph.add(RangeFactor<GeneralCamera,GeneralCamera>(X(0), X(1), 2.0, noiseModel::Isotropic::Sigma(1, 10.0)));
+  graph.push_back(RangeFactor<GeneralCamera,GeneralCamera>(X(0), X(1), 2.0, noiseModel::Isotropic::Sigma(1, 10.0)));
 
   const double reproj_error = 1e-5 ;
 

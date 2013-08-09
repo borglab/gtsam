@@ -23,6 +23,10 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/geometry/Pose3.h>
 
 using namespace std;
@@ -40,21 +44,15 @@ TEST( AntiFactor, NegativeHessian)
   SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
 
   // Create a configuration corresponding to the ground truth
-  boost::shared_ptr<Values> values(new Values());
-  values->insert(1, pose1);
-  values->insert(2, pose2);
-
-  // Define an elimination ordering
-  Ordering::shared_ptr ordering(new Ordering());
-  ordering->insert(1, 0);
-  ordering->insert(2, 1);
-
+  Values values;
+  values.insert(1, pose1);
+  values.insert(2, pose2);
 
   // Create a "standard" factor
   BetweenFactor<Pose3>::shared_ptr originalFactor(new BetweenFactor<Pose3>(1, 2, z, sigma));
 
   // Linearize it into a Jacobian Factor
-  GaussianFactor::shared_ptr originalJacobian = originalFactor->linearize(*values, *ordering);
+  GaussianFactor::shared_ptr originalJacobian = originalFactor->linearize(values);
 
   // Convert it to a Hessian Factor
   HessianFactor::shared_ptr originalHessian = HessianFactor::shared_ptr(new HessianFactor(*originalJacobian));
@@ -63,7 +61,7 @@ TEST( AntiFactor, NegativeHessian)
   AntiFactor::shared_ptr antiFactor(new AntiFactor(originalFactor));
 
   // Linearize the AntiFactor into a Hessian Factor
-  GaussianFactor::shared_ptr antiGaussian = antiFactor->linearize(*values, *ordering);
+  GaussianFactor::shared_ptr antiGaussian = antiFactor->linearize(values);
   HessianFactor::shared_ptr antiHessian = boost::dynamic_pointer_cast<HessianFactor>(antiGaussian);
 
 
@@ -96,39 +94,39 @@ TEST( AntiFactor, EquivalentBayesNet)
   Pose3 z(Rot3(), Point3(1, 1, 1));
   SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
 
-  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph());
-  graph->add(PriorFactor<Pose3>(1, pose1, sigma));
-  graph->add(BetweenFactor<Pose3>(1, 2, pose1.between(pose2), sigma));
+  NonlinearFactorGraph graph;
+  graph.push_back(PriorFactor<Pose3>(1, pose1, sigma));
+  graph.push_back(BetweenFactor<Pose3>(1, 2, pose1.between(pose2), sigma));
 
   // Create a configuration corresponding to the ground truth
-  Values::shared_ptr values(new Values());
-  values->insert(1, pose1);
-  values->insert(2, pose2);
+  Values values;
+  values.insert(1, pose1);
+  values.insert(2, pose2);
 
   // Define an elimination ordering
-  Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
+  Ordering ordering = graph.orderingCOLAMD();
 
   // Eliminate into a BayesNet
-  GaussianSequentialSolver solver1(*graph->linearize(*values, *ordering));
-  GaussianBayesNet::shared_ptr expectedBayesNet = solver1.eliminate();
+  GaussianFactorGraph lin_graph = *graph.linearize(values);
+  GaussianBayesNet::shared_ptr expectedBayesNet = lin_graph.eliminateSequential(ordering);
 
   // Back-substitute to find the optimal deltas
-  VectorValues expectedDeltas = optimize(*expectedBayesNet);
+  VectorValues expectedDeltas = expectedBayesNet->optimize();
 
   // Add an additional factor between Pose1 and Pose2
   BetweenFactor<Pose3>::shared_ptr f1(new BetweenFactor<Pose3>(1, 2, z, sigma));
-  graph->push_back(f1);
+  graph.push_back(f1);
 
   // Add the corresponding AntiFactor between Pose1 and Pose2
   AntiFactor::shared_ptr f2(new AntiFactor(f1));
-  graph->push_back(f2);
+  graph.push_back(f2);
 
   // Again, Eliminate into a BayesNet
-  GaussianSequentialSolver solver2(*graph->linearize(*values, *ordering));
-  GaussianBayesNet::shared_ptr actualBayesNet = solver2.eliminate();
+  GaussianFactorGraph lin_graph1 = *graph.linearize(values);
+  GaussianBayesNet::shared_ptr actualBayesNet = lin_graph1.eliminateSequential(ordering);
 
   // Back-substitute to find the optimal deltas
-  VectorValues actualDeltas = optimize(*actualBayesNet);
+  VectorValues actualDeltas = actualBayesNet->optimize();
 
   // Verify the BayesNets are identical
   CHECK(assert_equal(*expectedBayesNet, *actualBayesNet, 1e-5));
