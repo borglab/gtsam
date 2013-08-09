@@ -206,8 +206,7 @@ TEST( CombinedImuFactor, ErrorWithBiases )
 
 
     // Create factor
-    noiseModel::Gaussian::shared_ptr model = noiseModel::Gaussian::Covariance(pre_int_data.PreintMeasCov);
-    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis, model);
+    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
     noiseModel::Gaussian::shared_ptr Combinedmodel = noiseModel::Gaussian::Covariance(Combined_pre_int_data.PreintMeasCov);
     CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), Combined_pre_int_data, gravity, omegaCoriolis, Combinedmodel);

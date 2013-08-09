@@ -182,8 +182,7 @@ TEST( ImuFactor, Error )
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(9, 0.15, 0.15, 0.15, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5));
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis, model);
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
   Vector errorActual = factor.evaluateError(x1, v1, x2, v2, bias);
 
@@ -265,8 +264,7 @@ TEST( ImuFactor, ErrorWithBiases )
 //    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
     // Create factor
-    noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(9, 0.15, 0.15, 0.15, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5));
-    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis, model);
+    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
     SETDEBUG("ImuFactor evaluateError", false);
     Vector errorActual = factor.evaluateError(x1, v1, x2, v2, bias);
@@ -320,7 +318,7 @@ TEST( ImuFactor, PartialDerivativeExpmap )
 
   // Compute numerical derivatives
   Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, LieVector>(boost::bind(
-      &evaluateRotation, measuredOmega, _1, deltaT), biasOmega);
+      &evaluateRotation, measuredOmega, _1, deltaT), LieVector(biasOmega));
 
   const Matrix3 Jr = ImuFactor::rightJacobianExpMapSO3((measuredOmega - biasOmega) * deltaT);
 
@@ -343,7 +341,7 @@ TEST( ImuFactor, PartialDerivativeLogmap )
 
   // Compute numerical derivatives
   Matrix expectedDelFdeltheta = numericalDerivative11<LieVector>(boost::bind(
-      &evaluateLogRotation, thetahat, _1), deltatheta);
+      &evaluateLogRotation, thetahat, _1), LieVector(deltatheta));
 
   const Vector3 x = thetahat; // parametrization of so(3)
   const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
@@ -529,8 +527,7 @@ TEST( ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement )
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
     // Create factor
-    noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(9, 0.15, 0.15, 0.15, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5));
-    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis, model);
+    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
     // Expected Jacobians
     Matrix H1e = numericalDerivative11<Pose3>(

@@ -646,11 +646,10 @@ class ImuFactorPreintegratedMeasurements {
 
 virtual class ImuFactor : gtsam::NonlinearFactor {
   ImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias,
-      const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements, Vector gravity, Vector omegaCoriolis,
-      const gtsam::noiseModel::Base* model);
+      const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements, Vector gravity, Vector omegaCoriolis);
   ImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias,
       const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements, Vector gravity, Vector omegaCoriolis,
-      const gtsam::noiseModel::Base* model, const gtsam::Pose3& body_P_sensor);
+      const gtsam::Pose3& body_P_sensor);
 
   // Standard Interface
   gtsam::ImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
