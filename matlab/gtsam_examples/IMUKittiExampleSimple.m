@@ -51,7 +51,7 @@ newValues.insert(symbol('b',1), currentBias);
 
 sigma_init_x = noiseModel.Diagonal.Precisions([0;0;0; 1;1;1]);
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1000.0);
-sigma_init_b = noiseModel.Isotropic.Sigma(6, 100000.0);
+sigma_init_b = noiseModel.Isotropic.Sigma(6, 0.01);
 
 newFactors.add(PriorFactorPose3(symbol('x',firstGPSPose), currentPoseGlobal, sigma_init_x));
 newFactors.add(PriorFactorLieVector(symbol('v',firstGPSPose), currentVelocityGlobal, sigma_init_v));
