@@ -161,8 +161,7 @@ namespace gtsam {
       // We triangulate the 3D position of the landmark
       boost::optional<Point3> point = triangulatePoint3(cameraPoses, measured_, *K_);
 
-      if (!point)
-        return HessianFactor::shared_ptr(new HessianFactor());
+
 
       if (debug) {
         std::cout << "point " << *point << std::endl;
@@ -176,6 +175,13 @@ namespace gtsam {
       // fill in the keys
       BOOST_FOREACH(const Key& k, keys_) {
         js += ordering[k];
+      }
+
+      // point is behind one of the cameras, turn factor off by setting everything to 0
+      if (!point) {
+        BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6,6);
+        BOOST_FOREACH(Vector& v, gs) v = zero(6);
+        return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
       }
 
       // For debug only
