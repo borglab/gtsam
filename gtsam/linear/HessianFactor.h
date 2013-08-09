@@ -221,7 +221,7 @@ namespace gtsam {
      * @param variable An iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      */
-    virtual size_t getDim(const_iterator variable) const { return info_(variable-this->begin(), 0).rows(); }
+    virtual DenseIndex getDim(const_iterator variable) const { return info_(variable-this->begin(), 0).rows(); }
 
     /** Return the number of columns and rows of the Hessian matrix, including the information vector. */
     size_t rows() const { return info_.rows(); }

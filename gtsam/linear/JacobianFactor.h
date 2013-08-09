@@ -227,7 +227,7 @@ namespace gtsam {
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
-    virtual size_t getDim(const_iterator variable) const { return Ab_(variable - begin()).cols(); }
+    virtual DenseIndex getDim(const_iterator variable) const { return Ab_(variable - begin()).cols(); }
 
     /**
      * return the number of rows in the corresponding linear system
