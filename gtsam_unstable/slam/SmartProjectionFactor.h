@@ -391,7 +391,7 @@ namespace gtsam {
             Point2 reprojectionError(camera.project(*point) - measured_.at(i));
             overallError += noise_->distance( reprojectionError.vector() );
           }
-          return sqrt(overallError);
+          return std::sqrt(overallError);
         }else{ // triangulation failed: we deactivate the factor, then the error should not contribute to the overall error
           return 0.0;
         }
