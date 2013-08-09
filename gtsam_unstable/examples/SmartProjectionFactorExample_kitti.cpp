@@ -38,6 +38,7 @@
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics SLAM problems.
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam_unstable/slam/SmartProjectionFactor.h>
 
 // Standard headers, added last, so we know headers above work on their own
@@ -136,6 +137,11 @@ Cal3_S2::shared_ptr loadCalibration(const string& filename) {
 int main(int argc, char** argv) {
 
   bool debug = false;
+
+  // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
+  bool useSmartProjectionFactor = true;
+
+  // Minimum number of views of a landmark before it is added to the graph (SmartProjectionFactor case only)
   unsigned int minimumNumViews = 1;
 
   string HOME = getenv("HOME");
@@ -143,7 +149,8 @@ int main(int argc, char** argv) {
   string input_dir = HOME + "/data/KITTI_00_200/";
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
-  static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(3));
+  typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> ProjectionFactor;
+  static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
   static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
   NonlinearFactorGraph graph;
 
@@ -151,6 +158,11 @@ int main(int argc, char** argv) {
   //Cal3_S2::shared_ptr K(new Cal3_S2(718.856, 718.856, 0.0, 607.1928, 185.2157));
   boost::shared_ptr<Cal3_S2> K = loadCalibration(input_dir+"calibration.txt");
   K->print("Calibration");
+
+  // Load values from VO camera poses output
+  gtsam::Values::shared_ptr loaded_values = loadPoseValues(input_dir+"camera_poses.txt");
+  graph.add(Pose3Prior(X(0),loaded_values->at<Pose3>(X(0)), prior_model));
+  //graph.print("thegraph");
 
   // Read in kitti dataset
   ifstream fin;
@@ -173,6 +185,17 @@ int main(int argc, char** argv) {
   Values values;
   while (fin >> r >> l >> uL >> uR >> v >> x >> y >> z) {
     if (debug) cout << "CurrentLandmark " << currentLandmark << " Landmark " << l << std::endl;
+
+    if (useSmartProjectionFactor == false) {
+      if (loaded_values->exists<Point3>(L(l)) == boost::none) {
+        Pose3 camera = loaded_values->at<Pose3>(X(r));
+        Point3 worldPoint = camera.transform_from(Point3(x, y, z));
+        loaded_values->insert(L(l), worldPoint); // add point;
+      }
+
+      ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(Point2(uL,v), pixel_sigma, X(r), L(l), K));
+      graph.push_back(projectionFactor);
+    }
 
     if (currentLandmark != l && views.size() < minimumNumViews) {
       // New landmark.  Not enough views for previous landmark so move on.
@@ -199,9 +222,12 @@ int main(int argc, char** argv) {
         cout << endl;
       }
 
+      if (useSmartProjectionFactor) {
+        SmartFactor::shared_ptr smartFactor(new SmartFactor(measurements, pixel_sigma, views, K));
+        graph.push_back(smartFactor);
+      }
+
       numLandmarks++;
-      SmartFactor::shared_ptr smartFactor(new SmartFactor(measurements, pixel_sigma, views, K));
-      graph.push_back(smartFactor);
 
       currentLandmark = l;
       views.clear();
@@ -223,10 +249,9 @@ int main(int argc, char** argv) {
   }
   cout << "Graph size: " << graph.size() << endl;
 
-  // Load values from VO camera poses output
-  gtsam::Values::shared_ptr loaded_values = loadPoseValues(input_dir+"camera_poses.txt");
-  graph.add(Pose3Prior(X(0),loaded_values->at<Pose3>(X(0)), prior_model));
-  //graph.print("thegraph");
+  /*
+
+  // If using only subset of graph, only read in values for keys that are used
 
   // Get all view in the graph and populate poses from VO output
   // TODO: Handle loop closures properly
@@ -234,7 +259,6 @@ int main(int argc, char** argv) {
   allViews.unique();
   cout << "All Keys (" << allViews.size() << ")" << endl;
 
-  /* If using only subset of graph, only read in values for keys that are used
   values = *loadPoseValues(input_dir+"camera_poses.txt", allViews);
   BOOST_FOREACH(const Key& k, allViews) {
     if (debug) cout << k << " ";
@@ -267,7 +291,7 @@ int main(int argc, char** argv) {
   tictoc_finishedIteration_();
 
   cout << "===================================================" << endl;
-  values.print("before optimization ");
+  loaded_values->print("before optimization ");
   result.print("results of kitti optimization ");
   tictoc_print_();
   cout << "===================================================" << endl;
