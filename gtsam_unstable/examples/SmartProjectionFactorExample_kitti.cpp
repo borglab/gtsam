@@ -162,6 +162,7 @@ int main(int argc, char** argv) {
   // Load values from VO camera poses output
   gtsam::Values::shared_ptr loaded_values = loadPoseValues(input_dir+"camera_poses.txt");
   graph.add(Pose3Prior(X(0),loaded_values->at<Pose3>(X(0)), prior_model));
+  graph.add(Pose3Prior(X(1),loaded_values->at<Pose3>(X(1)), prior_model));
   //graph.print("thegraph");
 
   // Read in kitti dataset
