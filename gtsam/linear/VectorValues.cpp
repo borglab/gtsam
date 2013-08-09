@@ -54,6 +54,24 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void VectorValues::update(const VectorValues& values)
+  {
+    iterator hint = begin();
+    BOOST_FOREACH(const KeyValuePair& key_value, values)
+    {
+      // Use this trick to find the value using a hint, since we are inserting from another sorted map
+      size_t oldSize = values_.size();
+      hint = values_.insert(hint, key_value);
+      if(values_.size() > oldSize) {
+        values_.erase(hint);
+        throw std::out_of_range("Requested to update a VectorValues with another VectorValues that contains keys not present in the first.");
+      } else {
+        hint->second = key_value.second;
+      }
+    }
+  }
+
+  /* ************************************************************************* */
   void VectorValues::insert(const VectorValues& values)
   {
     size_t originalSize = size();
