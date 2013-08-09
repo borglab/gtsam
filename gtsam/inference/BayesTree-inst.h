@@ -132,20 +132,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  typename BayesTree<CLIQUE>::sharedClique BayesTree<CLIQUE>::addClique(
-      const sharedConditional& conditional, std::list<sharedClique>& child_cliques)
-  {
-    sharedClique new_clique(new Clique(conditional));
-    BOOST_FOREACH(Index j, conditional->frontals())
-      nodes_[j] = new_clique;
-    new_clique->children.assign(child_cliques.begin(), child_cliques.end());
-    BOOST_FOREACH(sharedClique& child, child_cliques)
-      child->parent_ = new_clique;
-    return new_clique;
-  }
-
-  /* ************************************************************************* */
   // TODO: Clean up
   namespace {
     template<class FACTOR, class CLIQUE>

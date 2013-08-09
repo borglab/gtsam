@@ -239,9 +239,6 @@ namespace gtsam {
     /** remove a clique: warning, can result in a forest */
     void removeClique(sharedClique clique);
 
-    /** add a clique (bottom up) */
-    sharedClique addClique(const sharedConditional& conditional, std::list<sharedClique>& child_cliques);
-
     /** Fill the nodes index for a subtree */
     void fillNodesIndex(const sharedClique& subtree);
 
