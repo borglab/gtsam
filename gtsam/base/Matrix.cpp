@@ -524,6 +524,25 @@ Matrix stack(size_t nrMatrices, ...)
 }
 
 /* ************************************************************************* */
+Matrix stack(const std::vector<Matrix>& blocks) {
+  if (blocks.size() == 1) return blocks.at(0);
+  int nrows = 0, ncols = blocks.at(0).cols();
+  BOOST_FOREACH(const Matrix& mat, blocks) {
+    nrows += mat.rows();
+    if (ncols != mat.cols())
+      throw invalid_argument("Matrix::stack(): column size mismatch!");
+  }
+  Matrix result(nrows, ncols);
+
+  int cur_row = 0;
+  BOOST_FOREACH(const Matrix& mat, blocks) {
+    result.middleRows(cur_row, mat.rows()) = mat;
+    cur_row += mat.rows();
+  }
+  return result;
+}
+
+/* ************************************************************************* */
 Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 {
   // if we have known and constant dimensions, use them

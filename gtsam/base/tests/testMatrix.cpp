@@ -149,6 +149,12 @@ TEST( matrix, stack )
       C(i + 2, j) = B(i, j);
 
   EQUALITY(C,AB);
+
+  std::vector<gtsam::Matrix> matrices;
+  matrices.push_back(A);
+  matrices.push_back(B);
+  Matrix AB2 = stack(matrices);
+  EQUALITY(C,AB2);
 }
 
 /* ************************************************************************* */
