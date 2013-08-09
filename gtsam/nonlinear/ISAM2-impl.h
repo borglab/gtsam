@@ -26,9 +26,6 @@ struct GTSAM_EXPORT ISAM2::Impl {
 
   struct GTSAM_EXPORT PartialSolveResult {
     ISAM2::sharedClique bayesTree;
-    Permutation reorderingSelector;
-    Permutation reorderingPermutation;
-    internal::Reduction reorderingInverse;
   };
 
   struct GTSAM_EXPORT ReorderingMode {
@@ -48,16 +45,16 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
   static void AddVariables(const Values& newTheta, Values& theta, VectorValues& delta,
-      VectorValues& deltaNewton, VectorValues& RgProd, std::vector<bool>& replacedKeys,
-      Ordering& ordering, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+      VectorValues& deltaNewton, VectorValues& RgProd,
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter);
     
   /**
    * Remove variables from the ISAM2 system.
    */
-  static void RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
+  static void RemoveVariables(const FastSet<Key>& unusedKeys, const std::vector<ISAM2::sharedClique>& roots,
     Values& theta, VariableIndex& variableIndex, VectorValues& delta, VectorValues& deltaNewton,
-    VectorValues& RgProd, std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
-    GaussianFactorGraph& linearFactors, FastSet<Key>& fixedVariables);
+    VectorValues& RgProd, FastSet<Key>& replacedKeys, Base::Nodes& nodes,
+    FastSet<Key>& fixedVariables);
 
   /**
    * Find the set of variables to be relinearized according to relinearizeThreshold.
@@ -68,8 +65,8 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearizationFull(const VectorValues& delta, const Ordering& ordering,
-      const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+  static FastSet<Index> CheckRelinearizationFull(const VectorValues& delta,
+      const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
 
   /**
    * Find the set of variables to be relinearized according to relinearizeThreshold.
@@ -82,8 +79,8 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const VectorValues& delta, const Ordering& ordering,
-      const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+  static FastSet<Index> CheckRelinearizationPartial(const std::vector<ISAM2::sharedClique>& roots,
+    const VectorValues& delta, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
 
   /**
    * Recursively search this clique and its children for marked keys appearing
@@ -116,30 +113,14 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
   static void ExpmapMasked(Values& values, const VectorValues& delta,
-      const Ordering& ordering, const std::vector<bool>& mask,
+      const FastSet<Key>& mask,
       boost::optional<VectorValues&> invalidateIfDebug = boost::none,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
-  /**
-   * Reorder and eliminate factors.  These factors form a subset of the full
-   * problem, so along with the BayesTree we get a partial reordering of the
-   * problem that needs to be applied to the other data in ISAM2, which is the
-   * VariableIndex, the delta, the ordering, and the orphans (including cached
-   * factors).
-   * \param factors The factors to eliminate, representing part of the full
-   * problem.  This is permuted during use and so is cleared when this function
-   * returns in order to invalidate it.
-   * \param keys The set of indices used in \c factors.
-   * \param useQR Whether to use QR (if true), or Cholesky (if false).
-   * \return The eliminated BayesTree and the permutation to be applied to the
-   * rest of the ISAM2 data.
-   */
-  static PartialSolveResult PartialSolve(GaussianFactorGraph& factors, const FastSet<Index>& keys,
-      const ReorderingMode& reorderingMode, bool useQR);
+  static size_t UpdateDelta(const std::vector<ISAM2::sharedClique>& roots,
+    FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold);
 
-  static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, VectorValues& delta, double wildfireThreshold);
-
-  static size_t UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, std::vector<bool>& replacedKeys,
+  static size_t UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, FastSet<Key>& replacedKeys,
       VectorValues& deltaNewton, VectorValues& RgProd);
 
 };

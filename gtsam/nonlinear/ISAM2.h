@@ -362,7 +362,7 @@ public:
   Vector gradientContribution_;
 
   /// Overridden to also store the remaining factor and gradient contribution
-  void setEliminationResult(const typename FactorGraphType::EliminationResult& eliminationResult);
+  void setEliminationResult(const FactorGraphType::EliminationResult& eliminationResult);
 
   /** Access the cached factor */
   Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
@@ -397,7 +397,7 @@ private:
  * estimate of all variables.
  *
  */
-class ISAM2: public BayesTree<ISAM2Clique> {
+class GTSAM_EXPORT ISAM2: public BayesTree<ISAM2Clique> {
 
 protected:
 
@@ -440,7 +440,7 @@ protected:
    * This is \c mutable because it is used internally to not update delta_
    * until it is needed.
    */
-  mutable FastMap<Key,bool> deltaReplacedMask_; // TODO: Make sure accessed in the right way
+  mutable FastSet<Key> deltaReplacedMask_; // TODO: Make sure accessed in the right way
 
   /** All original nonlinear factors are stored here to use during relinearization */
   NonlinearFactorGraph nonlinearFactors_;
@@ -462,22 +462,18 @@ public:
 
   typedef ISAM2 This; ///< This class
   typedef BayesTree<ISAM2Clique> Base; ///< The BayesTree base class
-
-  /** Create an empty ISAM2 instance */
-  GTSAM_EXPORT ISAM2(const ISAM2Params& params);
-
-  /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
-  GTSAM_EXPORT ISAM2();
-
-  /** Copy constructor */
-  GTSAM_EXPORT ISAM2(const ISAM2& other);
-
-  /** Assignment operator */
-  GTSAM_EXPORT ISAM2& operator=(const ISAM2& rhs);
-
   typedef Base::Clique Clique; ///< A clique
   typedef Base::sharedClique sharedClique; ///< Shared pointer to a clique
   typedef Base::Cliques Cliques; ///< List of Clique typedef from base class
+
+  /** Create an empty ISAM2 instance */
+  ISAM2(const ISAM2Params& params);
+
+  /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
+  ISAM2();
+
+  /** Compare equality */
+  bool equals(const ISAM2& other, double tol = 1e-9) const;
 
   /**
    * Add new factors, updating the solution and relinearizing as needed.
@@ -507,7 +503,7 @@ public:
    * of the size of the linear delta. This allows the provided keys to be reordered.
    * @return An ISAM2Result struct containing information about the update
    */
-  GTSAM_EXPORT ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
+  ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
       const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
       const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
@@ -522,16 +518,24 @@ public:
    * fixed variables will include any involved with the marginalized variables
    * in the original factors, and possibly additional ones due to fill-in.
    */
-  GTSAM_EXPORT void marginalizeLeaves(const FastList<Key>& leafKeys);
+  void marginalizeLeaves(const FastList<Key>& leafKeys);
 
   /** Access the current linearization point */
   const Values& getLinearizationPoint() const { return theta_; }
+
+  /// Compute the current solution.  This is the "standard" function for computing the solution that
+  /// uses:
+  ///   - Partial relinearization and backsubstitution using the thresholds provided in ISAM2Params.
+  ///   - Dogleg trust-region step, if enabled in ISAM2Params.
+  ///   - Equivalent to getLinearizationPoint().retract(getDelta())
+  /// The solution returned is in general not the same as that returned by getLinearizationPoint().
+  Values optimize() const;
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
    */
-  GTSAM_EXPORT Values calculateEstimate() const;
+  Values calculateEstimate() const;
 
   /** Compute an estimate for a single variable using its incomplete linear delta computed
    * during the last update.  This is faster than calling the no-argument version of
@@ -549,10 +553,10 @@ public:
    * @param key
    * @return
    */
-  GTSAM_EXPORT const Value& calculateEstimate(Key key) const;
+  const Value& calculateEstimate(Key key) const;
 
   /** Return marginal on any variable as a covariance matrix */
-  GTSAM_EXPORT Matrix marginalCovariance(Index key) const;
+  Matrix marginalCovariance(Index key) const;
 
   /// @name Public members for non-typical usage
   /// @{
@@ -562,16 +566,19 @@ public:
 
   /** Compute an estimate using a complete delta computed by a full back-substitution.
    */
-  GTSAM_EXPORT Values calculateBestEstimate() const;
+  Values calculateBestEstimate() const;
 
   /** Access the current delta, computed during the last call to update */
-  GTSAM_EXPORT const VectorValues& getDelta() const;
+  const VectorValues& getDelta() const;
+
+  /** Compute the linear error */
+  double error(const VectorValues& x) const;
 
   /** Access the set of nonlinear factors */
-  GTSAM_EXPORT const NonlinearFactorGraph& getFactorsUnsafe() const { return nonlinearFactors_; }
+  const NonlinearFactorGraph& getFactorsUnsafe() const { return nonlinearFactors_; }
 
   /** Access the nonlinear variable index */
-  GTSAM_EXPORT const VariableIndex& getVariableIndex() const { return variableIndex_; }
+  const VariableIndex& getVariableIndex() const { return variableIndex_; }
 
   size_t lastAffectedVariableCount;
   size_t lastAffectedFactorCount;
@@ -580,26 +587,26 @@ public:
   mutable size_t lastBacksubVariableCount;
   size_t lastNnzTop;
 
-  GTSAM_EXPORT const ISAM2Params& params() const { return params_; }
+  const ISAM2Params& params() const { return params_; }
 
   /** prints out clique statistics */
-  GTSAM_EXPORT void printStats() const { getCliqueData().getStats().print(); }
+  void printStats() const { getCliqueData().getStats().print(); }
 
   /// @}
 
 private:
 
-  GTSAM_EXPORT FastList<size_t> getAffectedFactors(const FastList<Key>& keys) const;
-  GTSAM_EXPORT GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const;
-  GTSAM_EXPORT GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
+  FastList<size_t> getAffectedFactors(const FastList<Key>& keys) const;
+  GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const;
+  GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-  GTSAM_EXPORT boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
+  boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
       const FastVector<Key>& observedKeys, const FastSet<Key>& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
   //  void linear_update(const GaussianFactorGraph& newFactors);
-  GTSAM_EXPORT void updateDelta(bool forceFullSolve = false) const;
+  void updateDelta(bool forceFullSolve = false) const;
 
-  GTSAM_EXPORT friend void optimizeInPlace(const ISAM2&, VectorValues&);
-  GTSAM_EXPORT friend void optimizeGradientSearchInPlace(const ISAM2&, VectorValues&);
+  friend GTSAM_EXPORT void optimizeInPlace(const ISAM2&, VectorValues&);
+  friend GTSAM_EXPORT void optimizeGradientSearchInPlace(const ISAM2&, VectorValues&);
 
 }; // ISAM2
 
@@ -621,12 +628,12 @@ GTSAM_EXPORT void optimizeInPlace(const ISAM2& isam, VectorValues& delta);
 /// variables are contained in the subtree.
 /// @return The number of variables that were solved for
 template<class CLIQUE>
-int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const std::vector<bool>& replaced, VectorValues& delta);
+size_t optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
+    double threshold, const FastSet<Key>& replaced, VectorValues& delta);
 
 template<class CLIQUE>
-int optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const std::vector<bool>& replaced, VectorValues& delta);
+size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
+    double threshold, const FastSet<Key>& replaced, VectorValues& delta);
 
 /**
  * Optimize along the gradient direction, with a closed-form computation to
