@@ -100,8 +100,8 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
    */
   template<class M, class F, class VALUES>
   static IterationResult Iterate(
-      double Delta, TrustRegionAdaptationMode mode, const M& Rd,
-      const F& f, const VALUES& x0, const double f_error, const bool verbose=false);
+      double Delta, TrustRegionAdaptationMode mode, const VectorValues& dx_u, const VectorValues& dx_n,
+      const M& Rd, const F& f, const VALUES& x0, const double f_error, const bool verbose=false);
 
   /**
    * Compute the dogleg point given a trust region radius \f$ \Delta \f$.  The
@@ -143,16 +143,9 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
 /* ************************************************************************* */
 template<class M, class F, class VALUES>
 typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
-    double Delta, TrustRegionAdaptationMode mode, const M& Rd,
-    const F& f, const VALUES& x0, const double f_error, const bool verbose)
+    double Delta, TrustRegionAdaptationMode mode, const VectorValues& dx_u, const VectorValues& dx_n,
+    const M& Rd, const F& f, const VALUES& x0, const double f_error, const bool verbose)
 {
-  // Compute steepest descent and Newton's method points
-  gttic(optimizeGradientSearch);
-  VectorValues dx_u = GaussianFactorGraph(Rd).optimizeGradientSearch();
-  gttoc(optimizeGradientSearch);
-  gttic(optimize);
-  VectorValues dx_n = Rd.optimize();
-  gttoc(optimize);
   gttic(M_error);
   const double M_error = Rd.error(VectorValues::Zero(dx_u));
   gttoc(M_error);

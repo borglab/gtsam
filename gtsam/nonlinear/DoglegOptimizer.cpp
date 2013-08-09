@@ -64,14 +64,20 @@ void DoglegOptimizer::iterate(void) {
 
   if ( params_.isMultifrontal() ) {
     GaussianBayesTree bt = *linear->eliminateMultifrontal(*params_.ordering, params_.getEliminationFunction());
-    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, bt, graph_, state_.values, state_.error, dlVerbose);
+    VectorValues dx_u = bt.optimizeGradientSearch();
+    VectorValues dx_n = bt.optimize();
+    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION,
+      dx_u, dx_n, bt, graph_, state_.values, state_.error, dlVerbose);
   }
   else if ( params_.isSequential() ) {
     GaussianBayesNet bn = *linear->eliminateSequential(*params_.ordering, params_.getEliminationFunction());
-    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, bn, graph_, state_.values, state_.error, dlVerbose);
+    VectorValues dx_u = bn.optimizeGradientSearch();
+    VectorValues dx_n = bn.optimize();
+    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION,
+      dx_u, dx_n, bn, graph_, state_.values, state_.error, dlVerbose);
   }
   else if ( params_.isCG() ) {
-    throw runtime_error("todo: ");
+    throw runtime_error("Dogleg is not currently compatible with the linear conjugate gradient solver");
   }
   else {
     throw runtime_error("Optimization parameter is invalid: DoglegParams::elimination");
