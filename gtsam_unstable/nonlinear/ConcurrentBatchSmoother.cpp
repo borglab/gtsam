@@ -362,6 +362,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
           } else {
             // Increase lambda and continue searching
             lambda *= parameters_.lambdaFactor;
+          }
         }
       } // end while
     }
