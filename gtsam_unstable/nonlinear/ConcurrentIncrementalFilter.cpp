@@ -42,7 +42,8 @@ bool ConcurrentIncrementalFilter::equals(const ConcurrentFilter& rhs, double tol
 }
 
 /* ************************************************************************* */
-ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta, const boost::optional<FastList<Key> >& keysToMove) {
+ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< std::vector<size_t> >& removeFactorIndices) {
 
   gttic(update);
 
@@ -54,8 +55,11 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   // Create the return result meta-data
   Result result;
 
-  // We do not need to remove any factors at this time
+  // Remove any user-provided factors from iSAM2
   gtsam::FastVector<size_t> removedFactors;
+  if(removeFactorIndices){
+    removedFactors.insert(removedFactors.end(), removeFactorIndices->begin(), removeFactorIndices->end());
+  }
 
   // Generate ordering constraints that force the 'keys to move' to the end
   boost::optional<gtsam::FastMap<gtsam::Key,int> > orderingConstraints = boost::none;
@@ -147,7 +151,8 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   result.iterations = 1;
   result.linearVariables = isam2_.getFixedVariables().size();
   result.nonlinearVariables = isam2_.getLinearizationPoint().size() - result.linearVariables;
-  result.error = isam2_.getFactorsUnsafe().error(isam2_.calculateEstimate());
+  result.newFactorsIndices = isam2Result.newFactorsIndices;
+//  result.error = isam2_.getFactorsUnsafe().error(isam2_.calculateEstimate());
 
   if(debug) std::cout << "ConcurrentIncrementalFilter::update  End" << std::endl;
 

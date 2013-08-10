@@ -38,6 +38,7 @@ public:
     size_t iterations; ///< The number of optimizer iterations performed
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
+    std::vector<size_t> newFactorsIndices; ///< The indices of the newly-added factors, in 1-to-1 correspondence with the factors passed in
     double error; ///< The final factor graph error
 
     /// Constructor
@@ -110,9 +111,11 @@ public:
    * You must include here all new variables occurring in newFactors that were not already
    * in the filter.
    * @param keysToMove An optional set of keys to move from the filter to the smoother
+   * @param removeFactorIndices An optional set of indices corresponding to the factors you want to remove from the graph
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const boost::optional<FastList<Key> >& keysToMove = boost::none);
+      const boost::optional<FastList<Key> >& keysToMove = boost::none,
+      const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
 
   /**
    * Perform any required operations before the synchronization process starts.
