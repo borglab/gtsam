@@ -623,16 +623,15 @@ namespace {
         toKeep.push_back(j);
 
     // Calculate expected marginal from iSAM2 tree
-    expectedAugmentedHessian = GaussianFactorGraph(isam).marginal(toKeep)->augmentedHessian();
+    expectedAugmentedHessian = GaussianFactorGraph(isam).marginal(toKeep, EliminateQR)->augmentedHessian();
 
-    //// Calculate expected marginal from cached linear factors
-    //assert(isam.params().cacheLinearizedFactors);
-    //GaussianSequentialSolver solver2(isam.linearFactors_, isam.params().factorization == ISAM2Params::QR);
-    //expected2AugmentedHessian = solver2.jointFactorGraph(toKeep)->augmentedHessian();
+    // Calculate expected marginal from cached linear factors
+    assert(isam.params().cacheLinearizedFactors);
+    Matrix expected2AugmentedHessian = isam.linearFactors_.marginal(toKeep, EliminateQR)->augmentedHessian();
 
     // Calculate expected marginal from original nonlinear factors
     expected3AugmentedHessian = isam.getFactorsUnsafe().linearize(isam.getLinearizationPoint())
-      ->marginal(toKeep)->augmentedHessian();
+      ->marginal(toKeep, EliminateQR)->augmentedHessian();
 
     // Do marginalization
     isam.marginalizeLeaves(leafKeys);
@@ -648,7 +647,7 @@ namespace {
     // Check full marginalization
     //cout << "treeEqual" << endl;
     bool treeEqual = assert_equal(expectedAugmentedHessian, actualAugmentedHessian, 1e-6);
-    //bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
+    bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
     //cout << "nonlinEqual" << endl;
     bool nonlinEqual = assert_equal(expected3AugmentedHessian, actualAugmentedHessian, 1e-6);
     //bool linCorrect = assert_equal(expected3AugmentedHessian, expected2AugmentedHessian, 1e-6);
@@ -656,7 +655,7 @@ namespace {
     //cout << "nonlinCorrect" << endl;
     actual3AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterNonlinCorrect = assert_equal(expected3AugmentedHessian, actual3AugmentedHessian, 1e-6);
 
-    bool ok = treeEqual && /*linEqual &&*/ nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
+    bool ok = treeEqual && linEqual && nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
     return ok;
   }
 }
