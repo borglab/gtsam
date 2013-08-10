@@ -564,8 +564,16 @@ public:
    * of any variables involved in this linear marginal become fixed.  The set
    * fixed variables will include any key involved with the marginalized variables
    * in the original factors, and possibly additional ones due to fill-in.
+   *
+   * If provided, 'marginalFactorsIndices' will be augmented with the factor graph
+   * indices of the marginal factors added during the 'marginalizeLeaves' call
+   *
+   * If provided, 'deletedFactorsIndices' will be augmented with the factor graph
+   * indices of any factor that was removed during the 'marginalizeLeaves' call
    */
-  GTSAM_EXPORT void marginalizeLeaves(const FastList<Key>& leafKeys);
+  GTSAM_EXPORT void marginalizeLeaves(const FastList<Key>& leafKeys,
+      boost::optional<std::vector<size_t>&> marginalFactorsIndices = boost::none,
+      boost::optional<std::vector<size_t>&> deletedFactorsIndices = boost::none);
 
   /** Access the current linearization point */
   const Values& getLinearizationPoint() const { return theta_; }

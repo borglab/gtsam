@@ -792,7 +792,8 @@ ISAM2Result ISAM2::update(
 }
 
 /* ************************************************************************* */
-void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
+void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys, boost::optional<std::vector<size_t>&> marginalFactorsIndices,
+    boost::optional<std::vector<size_t>&> deletedFactorsIndices)
 {
   // Convert set of keys into a set of indices
   FastSet<Index> indices;
@@ -937,14 +938,18 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
   GaussianFactorGraph factorsToAdd;
   typedef pair<sharedClique, GaussianFactor::shared_ptr> Clique_Factor;
   BOOST_FOREACH(const Clique_Factor& clique_factor, marginalFactors) {
-    if(clique_factor.second)
+    if(clique_factor.second) {
       factorsToAdd.push_back(clique_factor.second);
-    nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
-      clique_factor.second, ordering_));
-    if(params_.cacheLinearizedFactors)
-      linearFactors_.push_back(clique_factor.second);
-    BOOST_FOREACH(Index factorIndex, *clique_factor.second) {
-      fixedVariables_.insert(ordering_.key(factorIndex)); }
+      if(marginalFactorsIndices) marginalFactorsIndices->push_back(nonlinearFactors_.size());
+      nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
+        clique_factor.second, ordering_));
+      if(params_.cacheLinearizedFactors) {
+        linearFactors_.push_back(clique_factor.second);
+      }
+      BOOST_FOREACH(Index factorIndex, *clique_factor.second) {
+        fixedVariables_.insert(ordering_.key(factorIndex)); 
+      }
+    }
   }
   variableIndex_.augment(factorsToAdd); // Augment the variable index
 
@@ -952,16 +957,17 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
   FastSet<size_t> factorIndicesToRemove;
   BOOST_FOREACH(Index j, indices) {
     factorIndicesToRemove.insert(variableIndex_[j].begin(), variableIndex_[j].end()); }
-  vector<size_t> removedFactorIndices;
+  vector<size_t> removedFactorsIndices;
   SymbolicFactorGraph removedFactors;
   BOOST_FOREACH(size_t i, factorIndicesToRemove) {
-    removedFactorIndices.push_back(i);
+    if(deletedFactorsIndices) deletedFactorsIndices->push_back(i);
+    removedFactorsIndices.push_back(i);
     removedFactors.push_back(nonlinearFactors_[i]->symbolic(ordering_));
     nonlinearFactors_.remove(i);
     if(params_.cacheLinearizedFactors)
       linearFactors_.remove(i);
   }
-  variableIndex_.remove(removedFactorIndices, removedFactors);
+  variableIndex_.remove(removedFactorsIndices, removedFactors);
 
   // Remove the marginalized variables
   Impl::RemoveVariables(FastSet<Key>(leafKeys.begin(), leafKeys.end()), root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
