@@ -132,7 +132,8 @@ bool ConcurrentBatchFilter::equals(const ConcurrentFilter& rhs, double tol) cons
 }
 
 /* ************************************************************************* */
-ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta, const boost::optional<FastList<Key> >& keysToMove) {
+ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< std::vector<size_t> >& removeFactorIndices) {
 
   gttic(update);
 
@@ -163,7 +164,10 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
     delta_[i].setZero();
   }
   // Add the new factors to the graph, updating the variable index
-  insertFactors(newFactors);
+  result.newFactorsIndices = insertFactors(newFactors);
+  // Remove any user-specified factors from the graph
+  if(removeFactorIndices)
+    removeFactors(*removeFactorIndices);
   gttoc(augment_system);
 
   if(debug) std::cout << "ConcurrentBatchFilter::update  Reordering System ..." << std::endl;
@@ -178,7 +182,7 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
   // Optimize the factors using a modified version of L-M
   gttic(optimize);
   if(factors_.size() > 0) {
-    result = optimize(factors_, theta_, ordering_, delta_, separatorValues_, parameters_);
+    optimize(factors_, theta_, ordering_, delta_, separatorValues_, parameters_, result);
   }
   gttoc(optimize);
 
@@ -398,8 +402,9 @@ void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysT
 }
 
 /* ************************************************************************* */
-ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values& theta, const Ordering& ordering,
-     VectorValues& delta, const Values& linearValues, const LevenbergMarquardtParams& parameters) {
+void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values& theta, const Ordering& ordering,
+     VectorValues& delta, const Values& linearValues, const LevenbergMarquardtParams& parameters,
+     ConcurrentBatchFilter::Result& result) {
 
   //  const bool debug = ISDEBUG("ConcurrentBatchFilter optimize");
   const bool debug = false;
@@ -407,7 +412,6 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFac
   if(debug) std::cout << "ConcurrentBatchFilter::optimize  Begin" << std::endl;
 
   // Create output result structure
-  Result result;
   result.nonlinearVariables = theta.size() - linearValues.size();
   result.linearVariables = linearValues.size();
 
@@ -428,7 +432,6 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFac
   // check if we're already close enough
   if(result.error <= errorTol) {
     if(debug) { std::cout << "Exiting, as error = " << result.error << " < " << errorTol << std::endl; }
-    return result;
   }
 
   if(debug) {
@@ -535,8 +538,6 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize(const NonlinearFac
   if(debug) { std::cout << "newError: " << result.error << std::endl; }
 
   if(debug) std::cout << "ConcurrentBatchFilter::optimize  End" << std::endl;
-
-  return result;
 }
 
 /* ************************************************************************* */
