@@ -54,7 +54,11 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
   // the BatchFixedLagSmoother should be identical (even with the linearized approximations at
   // the end of the smoothing lag)
 
-  SETDEBUG("BatchFixedLagSmoother update", false);
+//  SETDEBUG("BatchFixedLagSmoother update", true);
+//  SETDEBUG("BatchFixedLagSmoother reorder", true);
+//  SETDEBUG("BatchFixedLagSmoother optimize", true);
+//  SETDEBUG("BatchFixedLagSmoother marginalize", true);
+//  SETDEBUG("BatchFixedLagSmoother calculateMarginalFactors", true);
 
   // Set up parameters
   SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
