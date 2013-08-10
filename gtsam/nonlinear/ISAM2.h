@@ -562,7 +562,7 @@ public:
    * requested to be marginalized.  Marginalization leaves a linear
    * approximation of the marginal in the system, and the linearization points
    * of any variables involved in this linear marginal become fixed.  The set
-   * fixed variables will include any involved with the marginalized variables
+   * fixed variables will include any key involved with the marginalized variables
    * in the original factors, and possibly additional ones due to fill-in.
    */
   GTSAM_EXPORT void marginalizeLeaves(const FastList<Key>& leafKeys);
@@ -618,6 +618,9 @@ public:
 
   /** Access the nonlinear variable index */
   GTSAM_EXPORT const VariableIndex& getVariableIndex() const { return variableIndex_; }
+
+  /** Access the nonlinear variable index */
+  GTSAM_EXPORT const FastSet<Key>& getFixedVariables() const { return fixedVariables_; }
 
   size_t lastAffectedVariableCount;
   size_t lastAffectedFactorCount;
