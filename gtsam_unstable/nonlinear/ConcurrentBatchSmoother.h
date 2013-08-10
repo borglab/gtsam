@@ -60,10 +60,10 @@ public:
   virtual ~ConcurrentBatchSmoother() {};
 
   /** Implement a GTSAM standard 'print' function */
-  void print(const std::string& s = "Concurrent Batch Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  virtual void print(const std::string& s = "Concurrent Batch Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Check if two Concurrent Smoothers are equal */
-  bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const;
+  virtual bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const;
 
   /** Access the current set of factors */
   const NonlinearFactorGraph& getFactors() const {
@@ -118,23 +118,7 @@ public:
    * in the smoother).  There must not be any variables here that do not occur in newFactors,
    * and additionally, variables that were already in the system must not be included here.
    */
-  Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values());
-
-
-protected:
-
-  LevenbergMarquardtParams parameters_;  ///< LM parameters
-  NonlinearFactorGraph factors_;  ///< The set of all factors currently in the smoother
-  Values theta_;  ///< Current linearization point of all variables in the smoother
-  Ordering ordering_; ///< The current ordering used to calculate the linear deltas
-  VectorValues delta_; ///< The current set of linear deltas from the linearization point
-  VariableIndex variableIndex_; ///< The current variable index, which allows efficient factor lookup by variable
-  std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
-  Values separatorValues_; ///< The linearization points of the separator variables. These should not be updated during optimization.
-  std::vector<size_t> filterSummarizationSlots_;  ///< The slots in factor graph that correspond to the current filter summarization factors
-
-  // Storage for information to be sent to the filter
-  NonlinearFactorGraph smootherSummarization_; ///< A temporary holding place for calculated smoother summarization
+  virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values());
 
   /**
    * Perform any required operations before the synchronization process starts.
@@ -168,6 +152,21 @@ protected:
    */
   virtual void postsync();
 
+protected:
+
+  LevenbergMarquardtParams parameters_;  ///< LM parameters
+  NonlinearFactorGraph factors_;  ///< The set of all factors currently in the smoother
+  Values theta_;  ///< Current linearization point of all variables in the smoother
+  Ordering ordering_; ///< The current ordering used to calculate the linear deltas
+  VectorValues delta_; ///< The current set of linear deltas from the linearization point
+  VariableIndex variableIndex_; ///< The current variable index, which allows efficient factor lookup by variable
+  std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
+  Values separatorValues_; ///< The linearization points of the separator variables. These should not be updated during optimization.
+  std::vector<size_t> filterSummarizationSlots_;  ///< The slots in factor graph that correspond to the current filter summarization factors
+
+  // Storage for information to be sent to the filter
+  NonlinearFactorGraph smootherSummarization_; ///< A temporary holding place for calculated smoother summarization
+
 private:
 
   /** Augment the graph with new factors
@@ -199,56 +198,6 @@ private:
   /** Print just the nonlinear keys in a linear factor */
   static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
       const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
-
-  // A custom elimination tree that supports forests and partial elimination
-  class EliminationForest {
-  public:
-    typedef boost::shared_ptr<EliminationForest> shared_ptr; ///< Shared pointer to this class
-
-  private:
-    typedef FastList<GaussianFactor::shared_ptr> Factors;
-    typedef FastList<shared_ptr> SubTrees;
-    typedef std::vector<GaussianConditional::shared_ptr> Conditionals;
-
-    Index key_; ///< index associated with root
-    Factors factors_; ///< factors associated with root
-    SubTrees subTrees_; ///< sub-trees
-
-    /** default constructor, private, as you should use Create below */
-    EliminationForest(Index key = 0) : key_(key) {}
-
-    /**
-     * Static internal function to build a vector of parent pointers using the
-     * algorithm of Gilbert et al., 2001, BIT.
-     */
-    static std::vector<Index> ComputeParents(const VariableIndex& structure);
-
-    /** add a factor, for Create use only */
-    void add(const GaussianFactor::shared_ptr& factor) { factors_.push_back(factor); }
-
-    /** add a subtree, for Create use only */
-    void add(const shared_ptr& child) { subTrees_.push_back(child); }
-
-  public:
-
-    /** return the key associated with this tree node */
-    Index key() const { return key_; }
-
-    /** return the const reference of children */
-    const SubTrees& children() const { return subTrees_; }
-
-    /** return the const reference to the factors */
-    const Factors& factors() const { return factors_; }
-
-    /** Create an elimination tree from a factor graph */
-    static std::vector<shared_ptr> Create(const GaussianFactorGraph& factorGraph, const VariableIndex& structure);
-
-    /** Recursive routine that eliminates the factors arranged in an elimination tree */
-    GaussianFactor::shared_ptr eliminateRecursive(GaussianFactorGraph::Eliminate function);
-
-    /** Recursive function that helps find the top of each tree */
-    static void removeChildrenIndices(std::set<Index>& indices, const EliminationForest::shared_ptr& tree);
-  };
 
 }; // ConcurrentBatchSmoother
 

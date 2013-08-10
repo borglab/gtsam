@@ -39,21 +39,17 @@ class GTSAM_UNSTABLE_EXPORT ConcurrentFilter {
 public:
   typedef boost::shared_ptr<ConcurrentFilter> shared_ptr;
 
-  /** Implement a standard 'print' function */
-  virtual void print(const std::string& s = "Concurrent Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
-
-  /** Check if two Concurrent Smoothers are equal */
-  virtual bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const = 0;
-
-protected:
-
-  friend void GTSAM_UNSTABLE_EXPORT synchronize(ConcurrentFilter& filter, ConcurrentSmoother& smoother);
-
   /** Default constructor */
   ConcurrentFilter() {};
 
   /** Default destructor */
   virtual ~ConcurrentFilter() {};
+
+  /** Implement a standard 'print' function */
+  virtual void print(const std::string& s = "Concurrent Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
+
+  /** Check if two Concurrent Smoothers are equal */
+  virtual bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const = 0;
 
   /**
    * Perform any required operations before the synchronization process starts.
@@ -103,21 +99,17 @@ class GTSAM_UNSTABLE_EXPORT ConcurrentSmoother {
 public:
   typedef boost::shared_ptr<ConcurrentSmoother> shared_ptr;
 
-  /** Implement a standard 'print' function */
-  virtual void print(const std::string& s = "Concurrent Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
-
-  /** Check if two Concurrent Smoothers are equal */
-  virtual bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const = 0;
-
-protected:
-
-  GTSAM_UNSTABLE_EXPORT friend void synchronize(ConcurrentFilter& filter, ConcurrentSmoother& smoother);
-
   /** Default constructor */
   ConcurrentSmoother() {};
 
   /** Default destructor */
   virtual ~ConcurrentSmoother() {};
+
+  /** Implement a standard 'print' function */
+  virtual void print(const std::string& s = "Concurrent Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
+
+  /** Check if two Concurrent Smoothers are equal */
+  virtual bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const = 0;
 
   /**
    * Perform any required operations before the synchronization process starts.
@@ -153,5 +145,14 @@ protected:
   virtual void postsync() {};
 
 }; // ConcurrentSmoother
+
+namespace internal {
+
+  /** Calculate the marginal on the specified keys, returning a set of LinearContainerFactors.
+   * Unlike other GTSAM functions with similar purposes, this version can operate on disconnected graphs.  */
+  NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph, const Values& theta,
+      const FastSet<Key>& remainingKeys, const GaussianFactorGraph::Eliminate& eliminateFunction);
+
+}
 
 }/// namespace gtsam
