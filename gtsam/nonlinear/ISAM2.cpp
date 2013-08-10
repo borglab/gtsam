@@ -871,11 +871,11 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList)
         graph2.push_back(clique->conditional());
         GaussianFactorGraph::EliminationResult eliminationResult2 = 
           params_.getEliminationFunction()(graph2, Ordering(
-          clique->conditional()->beginFrontals(), jPosition));
+          clique->conditional()->beginFrontals(), jPosition + 1));
         GaussianFactorGraph graph3;
         graph3.push_back(eliminationResult2.second);
         GaussianFactorGraph::EliminationResult eliminationResult3 = 
-          params_.getEliminationFunction()(graph3, Ordering(jPosition, clique->conditional()->endFrontals()));
+          params_.getEliminationFunction()(graph3, Ordering(jPosition + 1, clique->conditional()->endFrontals()));
         sharedClique newClique = boost::make_shared<Clique>();
         newClique->setEliminationResult(make_pair(eliminationResult3.first, clique->cachedFactor()));
 
