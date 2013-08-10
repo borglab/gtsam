@@ -79,6 +79,26 @@ public:
     return isam_.params();
   }
 
+  /** Access the current set of factors */
+  const NonlinearFactorGraph& getFactors() const {
+    return isam_.getFactorsUnsafe();
+  }
+
+  /** Access the current linearization point */
+  const Values& getLinearizationPoint() const {
+    return isam_.getLinearizationPoint();
+  }
+
+  /** Access the current ordering */
+  const Ordering& getOrdering() const {
+    return isam_.getOrdering();
+  }
+
+  /** Access the current set of deltas to the linearization point */
+  const VectorValues& getDelta() const {
+    return isam_.getDelta();
+  }
+
 protected:
   /** An iSAM2 object used to perform inference. The smoother lag is controlled
    * by what factors are removed each iteration */
