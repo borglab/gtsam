@@ -139,10 +139,7 @@ public:
   template<typename ITERATOR, class FG>
   void remove(ITERATOR firstFactor, ITERATOR lastFactor, const FG& factors);
 
-  /** Remove unused empty variables at the end of the ordering (in debug mode
-   * verifies they are empty).
-   * @param nToRemove The number of unused variables at the end to remove
-   */
+  /** Remove unused empty variables (in debug mode verifies they are empty). */
   template<typename ITERATOR>
   void removeUnusedVariables(ITERATOR firstKey, ITERATOR lastKey);
 

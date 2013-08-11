@@ -80,6 +80,11 @@ namespace gtsam {
     derived_weak_ptr parent_;
     std::vector<derived_ptr> children;
 
+    /// Fill the elimination result produced during elimination.  Here this just stores the
+    /// conditional and ignores the remaining factor, but this is overridden in ISAM2Clique
+    /// to also cache the remaining factor.
+    void setEliminationResult(const typename FactorGraphType::EliminationResult& eliminationResult);
+
     /// @name Testable
     /// @{
 

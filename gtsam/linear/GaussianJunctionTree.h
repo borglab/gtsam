@@ -61,14 +61,6 @@ namespace gtsam {
     * @return The elimination tree
     */
     GaussianJunctionTree(const GaussianEliminationTree& eliminationTree);
-
-    /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
-     *  copied, factors are not cloned. */
-    GaussianJunctionTree(const This& other);
-
-    /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
-     *  copied, factors are not cloned. */
-    This& operator=(const This& other);
   };
 
 }

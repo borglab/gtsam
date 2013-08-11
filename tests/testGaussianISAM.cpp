@@ -53,18 +53,16 @@ TEST( ISAM, iSAM_smoother )
   }
 
   // Create expected Bayes Tree by solving smoother with "natural" ordering
-  GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
-  GaussianISAM expected;
-  expected.insertRoot(bayesTree.roots().front());
+  GaussianBayesTree expected = *smoother.eliminateMultifrontal(ordering);
 
   // Verify sigmas in the bayes tree
-  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, bayesTree.nodes() | br::map_values) {
+  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, expected.nodes() | br::map_values) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     EXPECT(!conditional->get_model());
   }
 
   // Check whether BayesTree is correct
-  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(GaussianFactorGraph(expected).augmentedHessian(), GaussianFactorGraph(actual).augmentedHessian()));
 
   // obtain solution
   VectorValues e; // expected solution

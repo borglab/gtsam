@@ -70,7 +70,7 @@ TEST( Graph, predecessorMap2Graph )
   p_map.insert(3, 2);
   boost::tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
 
-  LONGS_EQUAL(3, boost::num_vertices(graph));
+  LONGS_EQUAL(3, (long)boost::num_vertices(graph));
   CHECK(root == key2vertex[2]);
 }
 
@@ -101,7 +101,7 @@ TEST( Graph, composePoses )
   expected.insert(3, p3);
   expected.insert(4, p4);
 
-  LONGS_EQUAL(4, actual->size());
+  LONGS_EQUAL(4, (long)actual->size());
   CHECK(assert_equal(expected, *actual));
 }
 

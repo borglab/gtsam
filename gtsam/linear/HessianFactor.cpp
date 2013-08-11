@@ -70,7 +70,10 @@ Scatter::Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg) {
     if(factor) {
       for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
-        this->insert(make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
+        // TODO: Fix this hack to cope with zero-row Jacobians that come from BayesTreeOrphanWrappers
+        const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(factor.get());
+        if(!asJacobian || asJacobian->rows() > 0)
+          this->insert(make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
       }
     }
   }

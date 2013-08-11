@@ -28,8 +28,7 @@ namespace gtsam {
 /* ************************************************************************* */
 template<class VALUE>
 VALUE ISAM2::calculateEstimate(Key key) const {
-  const Index index = getOrdering()[key];
-  const Vector& delta = getDelta()[index];
+  const Vector& delta = getDelta()[key];
   return theta_.at<VALUE>(key).retract(delta);
 }
 
@@ -37,24 +36,25 @@ VALUE ISAM2::calculateEstimate(Key key) const {
 namespace internal {
 template<class CLIQUE>
 void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
-    std::vector<bool>& changed, const std::vector<bool>& replaced, VectorValues& delta, int& count) {
+    FastSet<Key>& changed, const FastSet<Key>& replaced, VectorValues& delta, size_t& count)
+{
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
   // cliques in the children need to be processed
 
   // Are any clique variables part of the tree that has been redone?
-  bool cliqueReplaced = replaced[(*clique)->frontals().front()];
+  bool cliqueReplaced = replaced.exists((*clique)->frontals().front());
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-  BOOST_FOREACH(Index frontal, (*clique)->frontals()) {
-    assert(cliqueReplaced == replaced[frontal]);
+  BOOST_FOREACH(Key frontal, clique->conditional()->frontals()) {
+    assert(cliqueReplaced == replaced.exists(frontal));
   }
 #endif
 
   // If not redone, then has one of the separator variables changed significantly?
   bool recalculate = cliqueReplaced;
   if(!recalculate) {
-    BOOST_FOREACH(Index parent, (*clique)->parents()) {
-      if(changed[parent]) {
+    BOOST_FOREACH(Key parent, clique->conditional()->parents()) {
+      if(changed.exists(parent)) {
         recalculate = true;
         break;
       }
@@ -66,22 +66,22 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
   if(recalculate) {
 
     // Temporary copy of the original values, to check how much they change
-    std::vector<Vector> originalValues((*clique)->nrFrontals());
+    std::vector<Vector> originalValues(clique->conditional()->nrFrontals());
     GaussianConditional::const_iterator it;
-    for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
-      originalValues[it - (*clique)->beginFrontals()] = delta[*it];
+    for(it = clique->conditional()->beginFrontals(); it!=clique->conditional()->endFrontals(); it++) {
+      originalValues[it - clique->conditional()->beginFrontals()] = delta[*it];
     }
 
     // Back-substitute
-    (*clique)->solveInPlace(delta);
-    count += (*clique)->nrFrontals();
+    delta.update(clique->conditional()->solve(delta));
+    count += clique->conditional()->nrFrontals();
 
     // Whether the values changed above a threshold, or always true if the
     // clique was replaced.
     bool valuesChanged = cliqueReplaced;
-    for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
+    for(it = clique->conditional()->beginFrontals(); it != clique->conditional()->endFrontals(); it++) {
       if(!valuesChanged) {
-        const Vector& oldValue(originalValues[it - (*clique)->beginFrontals()]);
+        const Vector& oldValue(originalValues[it - clique->conditional()->beginFrontals()]);
         const Vector& newValue(delta[*it]);
         if((oldValue - newValue).lpNorm<Eigen::Infinity>() >= threshold) {
           valuesChanged = true;
@@ -94,18 +94,18 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
     // If the values were above the threshold or this clique was replaced
     if(valuesChanged) {
       // Set changed flag for each frontal variable and leave the new values
-      BOOST_FOREACH(Index frontal, (*clique)->frontals()) {
-        changed[frontal] = true;
+      BOOST_FOREACH(Key frontal, clique->conditional()->frontals()) {
+        changed.insert(frontal);
       }
     } else {
       // Replace with the old values
-      for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
-        delta[*it] = originalValues[it - (*clique)->beginFrontals()];
+      for(it = clique->conditional()->beginFrontals(); it != clique->conditional()->endFrontals(); it++) {
+        delta[*it] = originalValues[it - clique->conditional()->beginFrontals()];
       }
     }
 
     // Recurse to children
-    BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children_) {
+    BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children) {
       optimizeWildfire(child, threshold, changed, replaced, delta, count);
     }
   }
@@ -113,24 +113,25 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
 
 template<class CLIQUE>
 bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double threshold,
-    std::vector<bool>& changed, const std::vector<bool>& replaced, VectorValues& delta, int& count) {
+    FastSet<Key>& changed, const FastSet<Key>& replaced, VectorValues& delta, size_t& count)
+{
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
   // cliques in the children need to be processed
 
   // Are any clique variables part of the tree that has been redone?
-  bool cliqueReplaced = replaced[(*clique)->frontals().front()];
+  bool cliqueReplaced = replaced.exists(clique->conditional()->frontals().front());
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-  BOOST_FOREACH(Index frontal, (*clique)->frontals()) {
-    assert(cliqueReplaced == replaced[frontal]);
+  BOOST_FOREACH(Key frontal, clique->conditional()->frontals()) {
+    assert(cliqueReplaced == replaced.exists(frontal));
   }
 #endif
 
   // If not redone, then has one of the separator variables changed significantly?
   bool recalculate = cliqueReplaced;
   if(!recalculate) {
-    BOOST_FOREACH(Index parent, (*clique)->parents()) {
-      if(changed[parent]) {
+    BOOST_FOREACH(Key parent, clique->conditional()->parents()) {
+      if(changed.exists(parent)) {
         recalculate = true;
         break;
       }
@@ -139,25 +140,25 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
 
   // Solve clique if it was replaced, or if any parents were changed above the
   // threshold or themselves replaced.
-  if(recalculate) {
-
+  if(recalculate)
+  {
     // Temporary copy of the original values, to check how much they change
-    std::vector<Vector> originalValues((*clique)->nrFrontals());
+    std::vector<Vector> originalValues(clique->conditional()->nrFrontals());
     GaussianConditional::const_iterator it;
-    for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
-      originalValues[it - (*clique)->beginFrontals()] = delta[*it];
+    for(it = clique->conditional()->beginFrontals(); it != clique->conditional()->endFrontals(); it++) {
+      originalValues[it - clique->conditional()->beginFrontals()] = delta[*it];
     }
 
     // Back-substitute
-    (*clique)->solveInPlace(delta);
-    count += (*clique)->nrFrontals();
+    delta.update(clique->conditional()->solve(delta));
+    count += clique->conditional()->nrFrontals();
 
     // Whether the values changed above a threshold, or always true if the
     // clique was replaced.
     bool valuesChanged = cliqueReplaced;
-    for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
+    for(it = clique->conditional()->beginFrontals(); it != clique->conditional()->endFrontals(); it++) {
       if(!valuesChanged) {
-        const Vector& oldValue(originalValues[it - (*clique)->beginFrontals()]);
+        const Vector& oldValue(originalValues[it - clique->conditional()->beginFrontals()]);
         const Vector& newValue(delta[*it]);
         if((oldValue - newValue).lpNorm<Eigen::Infinity>() >= threshold) {
           valuesChanged = true;
@@ -170,16 +171,15 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
     // If the values were above the threshold or this clique was replaced
     if(valuesChanged) {
       // Set changed flag for each frontal variable and leave the new values
-      BOOST_FOREACH(Index frontal, (*clique)->frontals()) {
-        changed[frontal] = true;
+      BOOST_FOREACH(Key frontal, clique->conditional()->frontals()) {
+        changed.insert(frontal);
       }
     } else {
       // Replace with the old values
-      for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
-        delta[*it] = originalValues[it - (*clique)->beginFrontals()];
+      for(it = clique->conditional()->beginFrontals(); it != clique->conditional()->endFrontals(); it++) {
+        delta[*it] = originalValues[it - clique->conditional()->beginFrontals()];
       }
     }
-
   }
 
   return recalculate;
@@ -189,8 +189,8 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
 
 /* ************************************************************************* */
 template<class CLIQUE>
-int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, VectorValues& delta) {
-  std::vector<bool> changed(keys.size(), false);
+size_t optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const FastSet<Key>& keys, VectorValues& delta) {
+  FastSet<Key> changed;
   int count = 0;
   // starting from the root, call optimize on each conditional
   if(root)
@@ -200,9 +200,10 @@ int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, co
 
 /* ************************************************************************* */
 template<class CLIQUE>
-int optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, VectorValues& delta) {
-  std::vector<bool> changed(keys.size(), false);
-  int count = 0;
+size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root, double threshold, const FastSet<Key>& keys, VectorValues& delta)
+{
+  FastSet<Key> changed;
+  size_t count = 0;
 
   if (root) {
     std::stack<boost::shared_ptr<CLIQUE> > travStack;
@@ -213,7 +214,7 @@ int optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root, double t
       travStack.pop();
       bool recalculate = internal::optimizeWildfireNode(currentNode, threshold, changed, keys, delta, count);
       if (recalculate) {
-        BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, currentNode->children_) {
+        BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, currentNode->children) {
           travStack.push(child);
         }
       }

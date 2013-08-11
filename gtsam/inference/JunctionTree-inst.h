@@ -196,8 +196,8 @@ namespace gtsam {
         std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
             eliminationFunction(gatheredFactors, Ordering(node->keys));
 
-        // Store conditional in BayesTree clique
-        myData.bayesTreeNode->conditional_ = eliminationResult.first;
+      // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the remaining factor
+      myData.bayesTreeNode->setEliminationResult(eliminationResult);
 
         // Store remaining factor in parent's gathered factors
         if(!eliminationResult.second->empty())

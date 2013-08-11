@@ -24,6 +24,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class FACTORGRAPH>
+  void BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::setEliminationResult(
+    const typename FactorGraphType::EliminationResult& eliminationResult)
+  {
+    conditional_ = eliminationResult.first;
+  }
+
+  /* ************************************************************************* */
+  template<class DERIVED, class FACTORGRAPH>
   bool BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::equals(
     const DERIVED& other, double tol) const
   {

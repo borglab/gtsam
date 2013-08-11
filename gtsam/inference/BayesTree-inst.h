@@ -132,20 +132,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  typename BayesTree<CLIQUE>::sharedClique BayesTree<CLIQUE>::addClique(
-      const sharedConditional& conditional, std::list<sharedClique>& child_cliques)
-  {
-    sharedClique new_clique(new Clique(conditional));
-    BOOST_FOREACH(Index j, conditional->frontals())
-      nodes_[j] = new_clique;
-    new_clique->children.assign(child_cliques.begin(), child_cliques.end());
-    BOOST_FOREACH(sharedClique& child, child_cliques)
-      child->parent_ = new_clique;
-    return new_clique;
-  }
-
-  /* ************************************************************************* */
   // TODO: Clean up
   namespace {
     template<class FACTOR, class CLIQUE>
@@ -248,7 +234,10 @@ namespace gtsam {
   template<class CLIQUE>
   void BayesTree<CLIQUE>::fillNodesIndex(const sharedClique& subtree) {
     // Add each frontal variable of this root node
-    BOOST_FOREACH(const Key& j, subtree->conditional()->frontals()) { nodes_[j] = subtree; }
+    BOOST_FOREACH(const Key& j, subtree->conditional()->frontals()) {
+      bool inserted = nodes_.insert(std::make_pair(j, subtree)).second;
+      assert(inserted); (void)inserted;
+    }
     // Fill index for each child
     typedef typename BayesTree<CLIQUE>::sharedClique sharedClique;
     BOOST_FOREACH(const sharedClique& child, subtree->children) {
@@ -350,7 +339,7 @@ namespace gtsam {
     // Factor the shortcuts to be conditioned on the full root
     // Get the set of variables to eliminate, which is C1\B.
     gttic(Full_root_factoring);
-    shared_ptr p_C1_B; {
+    boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
       std::vector<Index> C1_minus_B; {
         FastSet<Index> C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
         BOOST_FOREACH(const Index j, *B->conditional()) {
@@ -362,7 +351,7 @@ namespace gtsam {
       boost::tie(p_C1_B, temp_remaining) =
         FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
     }
-    shared_ptr p_C2_B; {
+    boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
       std::vector<Index> C2_minus_B; {
         FastSet<Index> C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
         BOOST_FOREACH(const Index j, *B->conditional()) {
@@ -436,7 +425,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::removePath(sharedClique clique, BayesNetType& bn, Cliques& orphans)
   {
     // base case is NULL, if so we do nothing and return empties above
-    if (clique!=NULL) {
+    if (clique) {
 
       // remove the clique from orphans in case it has been added earlier
       orphans.remove(clique);

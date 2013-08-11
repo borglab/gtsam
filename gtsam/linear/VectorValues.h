@@ -157,24 +157,31 @@ namespace gtsam {
         return item->second;
     }
 
-    /** Read/write access to the vector value with key \c j, throws std::out_of_range if \c j does not exist, identical to at(Key). */
+    /** Read/write access to the vector value with key \c j, throws std::out_of_range if \c j does
+    *   not exist, identical to at(Key). */
     Vector& operator[](Key j) { return at(j); }
 
-    /** Access the vector value with key \c j (const version), throws std::out_of_range if \c j does not exist, identical to at(Key). */
+    /** Access the vector value with key \c j (const version), throws std::out_of_range if \c j does
+    *   not exist, identical to at(Key). */
     const Vector& operator[](Key j) const { return at(j); }
 
-    /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c j is already used.
+    /** For all key/value pairs in \c values, replace values with corresponding keys in this class
+    *   with those in \c values.  Throws std::out_of_range if any keys in \c values are not present
+    *   in this class. */
+    void update(const VectorValues& values);
+
+    /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
+     *  j is already used.
      * @param value The vector to be inserted.
-     * @param j The index with which the value will be associated.
-     */
+     * @param j The index with which the value will be associated. */
     void insert(Key j, const Vector& value) {
       insert(std::pair<Key, const Vector&>(j, value)); // Note only passing a reference to the Vector
     }
 
-    /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c j is already used.
+    /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
+     *  j is already used.
      * @param value The vector to be inserted.
-     * @param j The index with which the value will be associated.
-     */
+     * @param j The index with which the value will be associated. */
     void insert(std::pair<Key, const Vector&> key_value) {
       // Note that here we accept a pair with a reference to the Vector, but the Vector is copied as
       // it is inserted into the values_ map.
@@ -194,6 +201,12 @@ namespace gtsam {
      *  returned. */
     std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
       return values_.insert(std::make_pair(j, value)); }
+
+    /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
+    void erase(Key var) {
+      if(values_.erase(var) == 0)
+        throw std::invalid_argument("Requested variable '" + DefaultKeyFormatter(var) + "', is not in this VectorValues.");
+    }
 
     /** Set all values to zero vectors. */
     void setZero();

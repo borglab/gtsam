@@ -58,7 +58,7 @@ namespace gtsam {
     virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
 
     /** Return the dimension of the variable pointed to by the given key iterator */
-    virtual size_t getDim(const_iterator variable) const = 0;
+    virtual DenseIndex getDim(const_iterator variable) const = 0;
 
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$

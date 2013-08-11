@@ -36,18 +36,6 @@ namespace gtsam {
   Base(factorGraph, order) {}
 
   /* ************************************************************************* */
-  SymbolicEliminationTree::SymbolicEliminationTree(
-    const This& other) :
-  Base(other) {}
-
-  /* ************************************************************************* */
-  SymbolicEliminationTree& SymbolicEliminationTree::operator=(const This& other)
-  {
-    (void) Base::operator=(other);
-    return *this;
-  }
-
-  /* ************************************************************************* */
   bool SymbolicEliminationTree::equals(const This& other, double tol) const
   {
     return Base::equals(other, tol);

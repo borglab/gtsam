@@ -51,14 +51,6 @@ namespace gtsam {
     GaussianEliminationTree(const GaussianFactorGraph& factorGraph,
       const Ordering& order);
 
-    /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
-     *  copied, factors are not cloned. */
-    GaussianEliminationTree(const This& other);
-
-    /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
-     *  copied, factors are not cloned. */
-    This& operator=(const This& other);
-
     /** Test whether the tree is equal to another */
     bool equals(const This& other, double tol = 1e-9) const;
 
