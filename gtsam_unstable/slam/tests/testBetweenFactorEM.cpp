@@ -104,7 +104,7 @@ TEST( BetweenFactorEM, EvaluateError)
   Vector actual_err_wh_outlier = Vector_(3, actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
 
   // in case of inlier, inlier-mode whitented error should be dominant
-  assert(actual_err_wh_inlier.norm() > 1000.0*actual_err_wh_outlier.norm());
+  CHECK(actual_err_wh_inlier.norm() > 1000.0*actual_err_wh_outlier.norm());
 
   cout << "Inlier test. norm of actual_err_wh_inlier, actual_err_wh_outlier: "<<actual_err_wh_inlier.norm()<<","<<actual_err_wh_outlier.norm()<<endl;
   cout<<actual_err_wh[0]<<" "<<actual_err_wh[1]<<" "<<actual_err_wh[2]<<actual_err_wh[3]<<" "<<actual_err_wh[4]<<" "<<actual_err_wh[5]<<endl;
@@ -123,7 +123,7 @@ TEST( BetweenFactorEM, EvaluateError)
   actual_err_wh_outlier = Vector_(3, actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
 
   // in case of outlier, outlier-mode whitented error should be dominant
-  assert(actual_err_wh_inlier.norm() < 1000.0*actual_err_wh_outlier.norm());
+  CHECK(actual_err_wh_inlier.norm() < 1000.0*actual_err_wh_outlier.norm());
 
   cout << "Outlier test. norm of actual_err_wh_inlier, actual_err_wh_outlier: "<<actual_err_wh_inlier.norm()<<","<<actual_err_wh_outlier<<endl;
   cout<<actual_err_wh[0]<<" "<<actual_err_wh[1]<<" "<<actual_err_wh[2]<<actual_err_wh[3]<<" "<<actual_err_wh[4]<<" "<<actual_err_wh[5]<<endl;

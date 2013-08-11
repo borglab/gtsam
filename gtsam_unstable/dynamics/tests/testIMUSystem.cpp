@@ -69,13 +69,13 @@ TEST( testIMUSystem, optimize_chain ) {
 
   // assemble simple graph with IMU measurements and velocity constraints
   NonlinearFactorGraph graph;
-  graph.add(NonlinearEquality<gtsam::PoseRTV>(x1, pose1));
-  graph.add(IMUFactor<PoseRTV>(imu12, dt, x1, x2, model));
-  graph.add(IMUFactor<PoseRTV>(imu23, dt, x2, x3, model));
-  graph.add(IMUFactor<PoseRTV>(imu34, dt, x3, x4, model));
-  graph.add(VelocityConstraint(x1, x2, dt));
-  graph.add(VelocityConstraint(x2, x3, dt));
-  graph.add(VelocityConstraint(x3, x4, dt));
+  graph += NonlinearEquality<gtsam::PoseRTV>(x1, pose1);
+  graph += IMUFactor<PoseRTV>(imu12, dt, x1, x2, model);
+  graph += IMUFactor<PoseRTV>(imu23, dt, x2, x3, model);
+  graph += IMUFactor<PoseRTV>(imu34, dt, x3, x4, model);
+  graph += VelocityConstraint(x1, x2, dt);
+  graph += VelocityConstraint(x2, x3, dt);
+  graph += VelocityConstraint(x3, x4, dt);
 
   // ground truth values
   Values true_values;
@@ -116,10 +116,10 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
 
   // assemble simple graph with IMU measurements and velocity constraints
   NonlinearFactorGraph graph;
-  graph.add(NonlinearEquality<gtsam::PoseRTV>(x1, pose1));
-  graph.add(FullIMUFactor<PoseRTV>(imu12, dt, x1, x2, model));
-  graph.add(FullIMUFactor<PoseRTV>(imu23, dt, x2, x3, model));
-  graph.add(FullIMUFactor<PoseRTV>(imu34, dt, x3, x4, model));
+  graph += NonlinearEquality<gtsam::PoseRTV>(x1, pose1);
+  graph += FullIMUFactor<PoseRTV>(imu12, dt, x1, x2, model);
+  graph += FullIMUFactor<PoseRTV>(imu23, dt, x2, x3, model);
+  graph += FullIMUFactor<PoseRTV>(imu34, dt, x3, x4, model);
 
   // ground truth values
   Values true_values;
@@ -158,7 +158,7 @@ TEST( testIMUSystem, linear_trajectory) {
   Values true_traj, init_traj;
   NonlinearFactorGraph graph;
 
-  graph.add(NonlinearEquality<gtsam::PoseRTV>(x0, start));
+  graph += NonlinearEquality<gtsam::PoseRTV>(x0, start);
   true_traj.insert(x0, start);
   init_traj.insert(x0, start);
 
@@ -167,7 +167,7 @@ TEST( testIMUSystem, linear_trajectory) {
   for (size_t i=1; i<nrPoses; ++i) {
     Key xA = i-1, xB = i;
     cur_pose = cur_pose.generalDynamics(accel, gyro, dt);
-    graph.add(FullIMUFactor<PoseRTV>(accel - g, gyro, dt, xA, xB, model));
+    graph += FullIMUFactor<PoseRTV>(accel - g, gyro, dt, xA, xB, model);
     true_traj.insert(xB, cur_pose);
     init_traj.insert(xB, PoseRTV());
   }
