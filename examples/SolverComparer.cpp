@@ -165,10 +165,15 @@ int main(int argc, char *argv[]) {
   if(!datasetName.empty())
   {
     cout << "Loading dataset " << datasetName << endl;
-    string datasetFile = findExampleDataFile(datasetName);
-    std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
-      load2D(datasetFile);
-    datasetMeasurements = *data.first;
+    try {
+      string datasetFile = findExampleDataFile(datasetName);
+      std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
+        load2D(datasetFile);
+      datasetMeasurements = *data.first;
+    } catch(std::exception& e) {
+      cout << e.what() << endl;
+      exit(1);
+    }
   }
 
 
@@ -262,21 +267,23 @@ void runIncremental()
 
         // Initialize the new variable
         if(measurement->key1() > measurement->key2()) {
-          if(step == 1)
-            newVariables.insert(measurement->key1(), measurement->measured().inverse());
-          else {
-            Pose prevPose = isam2.calculateEstimate<Pose>(measurement->key2());
-            newVariables.insert(measurement->key1(), prevPose * measurement->measured().inverse());
+          if(!newVariables.exists(measurement->key1())) { // Only need to check newVariables since loop closures come after odometry
+            if(step == 1)
+              newVariables.insert(measurement->key1(), measurement->measured().inverse());
+            else {
+              Pose prevPose = isam2.calculateEstimate<Pose>(measurement->key2());
+              newVariables.insert(measurement->key1(), prevPose * measurement->measured().inverse());
+            }
           }
-          //        cout << "Initializing " << step << endl;
         } else {
-          if(step == 1)
-            newVariables.insert(measurement->key2(), measurement->measured());
-          else {
-            Pose prevPose = isam2.calculateEstimate<Pose>(measurement->key1());
-            newVariables.insert(measurement->key2(), prevPose * measurement->measured());
+          if(!newVariables.exists(measurement->key1())) { // Only need to check newVariables since loop closures come after odometry
+            if(step == 1)
+              newVariables.insert(measurement->key2(), measurement->measured());
+            else {
+              Pose prevPose = isam2.calculateEstimate<Pose>(measurement->key1());
+              newVariables.insert(measurement->key2(), prevPose * measurement->measured());
+            }
           }
-          //        cout << "Initializing " << step << endl;
         }
       }
       else if(BearingRangeFactor<Pose, Point2>::shared_ptr measurement =
@@ -347,6 +354,8 @@ void runIncremental()
       exit(1);
     }
   }
+
+  tictoc_print_();
 
   // Compute marginals
   //try {
