@@ -110,7 +110,7 @@ namespace gtsam {
           myData.myJTNode->factors.insert(myData.myJTNode->factors.end(), childToMerge.factors.begin(), childToMerge.factors.end());
           myData.myJTNode->children.insert(myData.myJTNode->children.end(), childToMerge.children.begin(), childToMerge.children.end());
           // Remove child from list.
-          myData.myJTNode->children.erase(myData.myJTNode->children.begin() + child - nrMergedChildren);
+          myData.myJTNode->children.erase(myData.myJTNode->children.begin() + (child - nrMergedChildren));
           // Increment number of merged children
           ++ nrMergedChildren;
           // Increment problem size
