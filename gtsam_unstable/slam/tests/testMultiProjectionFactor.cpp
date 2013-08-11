@@ -16,7 +16,6 @@
  *  @date Nov 2009
  */
 
-#include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
@@ -25,10 +24,10 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point3.h>
@@ -76,7 +75,7 @@ TEST( MultiProjectionFactor, create ){
   views.insert(x3);
 
   MultiProjectionFactor<Pose3, Point3> mpFactor(n_measPixel, noiseProjection, views, l1, K);
-  graph.add(mpFactor);
+  graph += mpFactor;
 
 
 }
