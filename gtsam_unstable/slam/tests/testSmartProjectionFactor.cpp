@@ -16,7 +16,16 @@
  *  @date Nov 2009
  */
 
-#include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
+#include <CppUnitLite/TestHarness.h>
+#include <iostream>
+
+TEST(SmartProjectionFactor, disabled)
+{
+  CHECK(("*** testSmartProjectionFactor is disabled *** - Needs conversion for unordered", 0));
+}
+
+#if 0
+
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
@@ -35,7 +44,6 @@
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
-#include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/vector.hpp>
 
@@ -384,6 +392,7 @@ TEST( SmartProjectionFactor, Hessian ){
 
 }
 
+#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
