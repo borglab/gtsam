@@ -93,6 +93,9 @@ ISAM2 createSlamlikeISAM2(
       goto done;
   }
 
+  if(i > maxPoses)
+    goto done;
+
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     NonlinearFactorGraph newfactors;
@@ -131,6 +134,9 @@ ISAM2 createSlamlikeISAM2(
     if(i > maxPoses)
       goto done;
   }
+
+  if(i > maxPoses)
+    goto done;
 
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
@@ -229,9 +235,12 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   bool isamEqual = assert_equal(expected, actual);
 
   // Check information
-  ISAM2 expectedisam(isam.params());
-  expectedisam.update(fullgraph, fullinit);
-  bool isamTreeEqual = assert_equal(GaussianFactorGraph(expectedisam).augmentedHessian(), GaussianFactorGraph(isam).augmentedHessian());
+  GaussianFactorGraph isamGraph(isam);
+  isamGraph += isam.roots().front()->cachedFactor_;
+  Matrix expectedHessian = fullgraph.linearize(isam.getLinearizationPoint())->augmentedHessian();
+  Matrix actualHessian = isamGraph.augmentedHessian();
+  expectedHessian.bottomRightCorner(1,1) = actualHessian.bottomRightCorner(1,1);
+  bool isamTreeEqual = assert_equal(expectedHessian, actualHessian);
 
   // Check consistency
   ConsistencyVisitor visitor(isam);
@@ -284,10 +293,10 @@ TEST(ISAM2, simple)
     // These variables will be reused and accumulate factors and values
     Values fullinit;
     NonlinearFactorGraph fullgraph;
-    ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.0), 0.0, 0, false), i);
+    ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false), i);
 
     // Compare solutions
-    CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+    EXPECT(isam_check(fullgraph, fullinit, isam, *this, result_));
   }
 }
 
@@ -647,13 +656,13 @@ namespace {
     // Check full marginalization
     //cout << "treeEqual" << endl;
     bool treeEqual = assert_equal(expectedAugmentedHessian, actualAugmentedHessian, 1e-6);
-    bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
+    actualAugmentedHessian.bottomRightCorner(1,1) = expected2AugmentedHessian.bottomRightCorner(1,1); bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
     //cout << "nonlinEqual" << endl;
     bool nonlinEqual = assert_equal(expected3AugmentedHessian, actualAugmentedHessian, 1e-6);
     //bool linCorrect = assert_equal(expected3AugmentedHessian, expected2AugmentedHessian, 1e-6);
     //actual2AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterLinCorrect = assert_equal(expected3AugmentedHessian, actual2AugmentedHessian, 1e-6);
     //cout << "nonlinCorrect" << endl;
-    actual3AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterNonlinCorrect = assert_equal(expected3AugmentedHessian, actual3AugmentedHessian, 1e-6);
+    bool afterNonlinCorrect = assert_equal(expected3AugmentedHessian, actual3AugmentedHessian, 1e-6);
 
     bool ok = treeEqual && linEqual && nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
     return ok;
