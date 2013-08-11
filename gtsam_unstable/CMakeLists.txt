@@ -21,8 +21,10 @@ set (excluded_sources # "")
     "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/BatchFixedLagSmoother.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchFilter.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchSmoother.cpp"
-#    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentFilteringAndSmoothing.cpp"
-#    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/FixedLagSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentFilteringAndSmoothing.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentIncrementalFilter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentIncrementalSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/FixedLagSmoother.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/IncrementalFixedLagSmoother.cpp"
     
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
