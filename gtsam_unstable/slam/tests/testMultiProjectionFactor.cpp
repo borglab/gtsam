@@ -42,7 +42,7 @@ using namespace gtsam;
 
 // make a realistic calibration matrix
 static double fov = 60; // degrees
-static size_t w=640,h=480;
+static int w=640,h=480;
 static Cal3_S2::shared_ptr K(new Cal3_S2(fov,w,h));
 
 // Create a noise model for the pixel error
