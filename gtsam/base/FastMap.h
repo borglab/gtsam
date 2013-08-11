@@ -59,7 +59,7 @@ public:
   }
 
   /** Handy 'exists' function */
-  bool exists(const KEY& e) const { return find(e) != end(); }
+  bool exists(const KEY& e) const { return this->find(e) != this->end(); }
 
 private:
   /** Serialization function */

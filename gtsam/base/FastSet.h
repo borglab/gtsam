@@ -92,7 +92,7 @@ public:
   }
 
   /** Handy 'exists' function */
-  bool exists(const VALUE& e) const { return find(e) != end(); }
+  bool exists(const VALUE& e) const { return this->find(e) != this->end(); }
 
   /** Print to implement Testable */
   void print(const std::string& str = "") const { FastSetTestableHelper<VALUE>::print(*this, str); }

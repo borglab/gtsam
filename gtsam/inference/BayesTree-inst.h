@@ -339,7 +339,7 @@ namespace gtsam {
     // Factor the shortcuts to be conditioned on the full root
     // Get the set of variables to eliminate, which is C1\B.
     gttic(Full_root_factoring);
-    boost::shared_ptr<EliminationTraitsType::BayesTreeType> p_C1_B; {
+    boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
       std::vector<Index> C1_minus_B; {
         FastSet<Index> C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
         BOOST_FOREACH(const Index j, *B->conditional()) {
@@ -351,7 +351,7 @@ namespace gtsam {
       boost::tie(p_C1_B, temp_remaining) =
         FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
     }
-    boost::shared_ptr<EliminationTraitsType::BayesTreeType> p_C2_B; {
+    boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
       std::vector<Index> C2_minus_B; {
         FastSet<Index> C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
         BOOST_FOREACH(const Index j, *B->conditional()) {
