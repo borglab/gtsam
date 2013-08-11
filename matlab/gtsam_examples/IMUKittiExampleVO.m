@@ -4,6 +4,7 @@ clc
 import gtsam.*;
 
 %% Read metadata and compute relative sensor pose transforms
+% IMU metadata
 IMU_metadata = importdata('KittiEquivBiasedImu_metadata.txt');
 IMU_metadata = cell2struct(num2cell(IMU_metadata.data), IMU_metadata.colheaders, 2);
 IMUinBody = Pose3.Expmap([IMU_metadata.BodyPtx; IMU_metadata.BodyPty; IMU_metadata.BodyPtz;
@@ -12,20 +13,22 @@ if ~IMUinBody.equals(Pose3, 1e-5)
   error 'Currently only support IMUinBody is identity, i.e. IMU and body frame are the same';
 end
 
+% VO metadata
 VO_metadata = importdata('KittiRelativePose_metadata.txt');
 VO_metadata = cell2struct(num2cell(VO_metadata.data), VO_metadata.colheaders, 2);
 VOinBody = Pose3.Expmap([VO_metadata.BodyPtx; VO_metadata.BodyPty; VO_metadata.BodyPtz;
   VO_metadata.BodyPrx; VO_metadata.BodyPry; VO_metadata.BodyPrz; ]);
+VOinIMU = IMUinBody.inverse().compose(VOinBody);
 
+% GPS metadata
 GPS_metadata = importdata('KittiGps_metadata.txt');
 GPS_metadata = cell2struct(num2cell(GPS_metadata.data), GPS_metadata.colheaders, 2);
 GPSinBody = Pose3.Expmap([GPS_metadata.BodyPtx; GPS_metadata.BodyPty; GPS_metadata.BodyPtz;
   GPS_metadata.BodyPrx; GPS_metadata.BodyPry; GPS_metadata.BodyPrz; ]);
-
-VOinIMU = IMUinBody.inverse().compose(VOinBody);
 GPSinIMU = IMUinBody.inverse().compose(GPSinBody);
 
 %% Read data and change coordinate frame of GPS and VO measurements to IMU frame
+% IMU data
 IMU_data = importdata('KittiEquivBiasedImu.txt');
 IMU_data = cell2struct(num2cell(IMU_data.data), IMU_data.colheaders, 2);
 imum = cellfun(@(x) x', num2cell([ [IMU_data.accelX]' [IMU_data.accelY]' [IMU_data.accelZ]' [IMU_data.omegaX]' [IMU_data.omegaY]' [IMU_data.omegaZ]' ], 2), 'UniformOutput', false);
@@ -38,6 +41,7 @@ g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 clear imum
 
+% VO data
 VO_data = importdata('KittiRelativePose.txt');
 VO_data = cell2struct(num2cell(VO_data.data), VO_data.colheaders, 2);
 % Merge relative pose fields and convert to Pose3
@@ -50,23 +54,21 @@ VO_data = rmfield(VO_data, { 'dtx' 'dty' 'dtz' 'drx' 'dry' 'drz' });
 noiseModelVO = noiseModel.Diagonal.Sigmas([ VO_metadata.RotationSigma * [1;1;1]; VO_metadata.TranslationSigma * [1;1;1] ]);
 clear logposes relposes
 
+% GPS data
 GPS_data = importdata('KittiGps.txt');
 GPS_data = cell2struct(num2cell(GPS_data.data), GPS_data.colheaders, 2);
-
 % Convert GPS from lat/long to meters
 [ x, y, ~ ] = deg2utm( [GPS_data.Latitude], [GPS_data.Longitude] );
 for i = 1:numel(x)
   GPS_data(i).Position = gtsam.Point3(x(i), y(i), GPS_data(i).Altitude);
 end
-
 % % Calculate GPS sigma in meters
 % [ xSig, ySig, ~ ] = deg2utm( [GPS_data.Latitude] + [GPS_data.PositionSigma], ...
 %     [GPS_data.Longitude] + [GPS_data.PositionSigma]);
 % xSig = xSig - x;
 % ySig = ySig - y;
-
 %% Start at time of first GPS measurement
-firstGPSPose = 1;
+% firstGPSPose = 1;
 
 %% Get initial conditions for the estimated trajectory
 % currentPoseGlobal = Pose3(Rot3, GPS_data(firstGPSPose).Position); % initial pose is the reference frame (navigation frame)
@@ -82,7 +84,6 @@ isam = gtsam.ISAM2(isamParams);
 newFactors = NonlinearFactorGraph;
 newValues = Values;
 
-
 %% Main loop:
 % (1) we read the measurements
 % (2) we create the corresponding factors in the graph
@@ -90,12 +91,10 @@ newValues = Values;
 timestamps = sortrows( [ ...
   [VO_data.Time]' 1*ones(length([VO_data.Time]), 1); ...
   %[GPS_data.Time]' 2*ones(length([GPS_data.Time]), 1); ...
-  %[IMU_data.Time]' 3*ones(length([IMU_data.Time]), 1); ...
   ], 1); % this are the time-stamps at which we want to initialize a new node in the graph
 
-timestamps = timestamps(15:end,:);
-
-VOPoseKeys = [];
+timestamps = timestamps(15:end,:); % there seem to be issues with the initial IMU measurements
+VOPoseKeys = []; % here we store the keys of the poses involved in VO (between) factors
 
 for measurementIndex = 1:length(timestamps)
   
@@ -128,7 +127,7 @@ for measurementIndex = 1:length(timestamps)
       currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
         currentBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
         IMU_metadata.GyroscopeSigma.^2 * eye(3), IMU_metadata.IntegrationSigma.^2 * eye(3));
-      
+
       for imuIndex = IMUindices
         accMeas = [ IMU_data(imuIndex).accelX; IMU_data(imuIndex).accelY; IMU_data(imuIndex).accelZ ];
         omegaMeas = [ IMU_data(imuIndex).omegaX; IMU_data(imuIndex).omegaY; IMU_data(imuIndex).omegaZ ];
@@ -146,6 +145,7 @@ for measurementIndex = 1:length(timestamps)
       error('no IMU measurements in [t_previous, t]')
     end
     
+    % LC: sigma_init_b is wrong: this should be some uncertainty on bias evolution given in the IMU metadata
     newFactors.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), sigma_init_b));
     
     %% Create GPS factor
@@ -161,7 +161,7 @@ for measurementIndex = 1:length(timestamps)
     end
     
     % Add initial value
-    %newValues.insert(currentPoseKey, Pose3(currentPoseGlobal.rotation, GPS_data(measurementIndex).Position));
+    % newValues.insert(currentPoseKey, Pose3(currentPoseGlobal.rotation, GPS_data(measurementIndex).Position));
     newValues.insert(currentPoseKey,currentPoseGlobal);
     newValues.insert(currentVelKey, currentVelocityGlobal);
     newValues.insert(currentBiasKey, currentBias);
@@ -172,19 +172,16 @@ for measurementIndex = 1:length(timestamps)
     newFactors = NonlinearFactorGraph;
     newValues = Values;
     
-    if rem(measurementIndex,20)==0
+    if rem(measurementIndex,20)==0 % plot every 20 time steps
       cla;
       plot3DTrajectory(isam.calculateEstimate, 'g-');
       axis equal
       drawnow;
     end
-    % =======================================================================
-    
+    % ======================================================================= 
     currentPoseGlobal = isam.calculateEstimate(currentPoseKey);
     currentVelocityGlobal = isam.calculateEstimate(currentVelKey);
-    currentBias = isam.calculateEstimate(currentBiasKey);
-    
+    currentBias = isam.calculateEstimate(currentBiasKey);   
   end
-  
-  
+   
 end % end main loop
