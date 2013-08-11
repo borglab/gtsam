@@ -24,6 +24,8 @@
 using namespace boost::assign;
 
 #include <gtsam/base/debug.h>
+#include <gtsam/base/LieVector.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -172,6 +174,115 @@ TEST(GaussianBayesTree, complicatedMarginal) {
   actualCov = inverse(actualA.transpose() * actualA);
   EXPECT(assert_equal(expectedCov, actualCov, 1e1));
 }
+
+namespace {
+  /* ************************************************************************* */
+  double computeError(const GaussianBayesTree& gbt, const LieVector& values)
+  {
+    pair<Matrix,Vector> Rd = GaussianFactorGraph(gbt).jacobian();
+    return 0.5 * (Rd.first * values - Rd.second).squaredNorm();
+  }
+}
+
+/* ************************************************************************* */
+TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
+
+  // Create an arbitrary Bayes Tree
+  GaussianBayesTree bt;
+  bt.insertRoot(MakeClique(GaussianConditional(
+    pair_list_of
+    (2, Matrix_(6,2,
+    31.0,32.0,
+    0.0,34.0,
+    0.0,0.0,
+    0.0,0.0,
+    0.0,0.0,
+    0.0,0.0))
+    (3, Matrix_(6,2,
+    35.0,36.0,
+    37.0,38.0,
+    41.0,42.0,
+    0.0,44.0,
+    0.0,0.0,
+    0.0,0.0))
+    (4, Matrix_(6,2,
+    0.0,0.0,
+    0.0,0.0,
+    45.0,46.0,
+    47.0,48.0,
+    51.0,52.0,
+    0.0,54.0)),
+    3, Vector_(6, 29.0,30.0,39.0,40.0,49.0,50.0)), list_of
+      (MakeClique(GaussianConditional(
+      pair_list_of
+      (0, Matrix_(4,2,
+      3.0,4.0,
+      0.0,6.0,
+      0.0,0.0,
+      0.0,0.0))
+      (1, Matrix_(4,2,
+      0.0,0.0,
+      0.0,0.0,
+      17.0,18.0,
+      0.0,20.0))
+      (2, Matrix_(4,2,
+      0.0,0.0,
+      0.0,0.0,
+      21.0,22.0,
+      23.0,24.0))
+      (3, Matrix_(4,2,
+      7.0,8.0,
+      9.0,10.0,
+      0.0,0.0,
+      0.0,0.0))
+      (4, Matrix_(4,2,
+      11.0,12.0,
+      13.0,14.0,
+      25.0,26.0,
+      27.0,28.0)),
+      2, Vector_(4, 1.0,2.0,15.0,16.0))))));
+
+  // Compute the Hessian numerically
+  Matrix hessian = numericalHessian(
+    boost::function<double(const LieVector&)>(boost::bind(&computeError, bt, _1)),
+    LieVector(Vector::Zero(GaussianFactorGraph(bt).jacobian().first.cols())));
+
+  // Compute the gradient numerically
+  Vector gradient = numericalGradient(
+    boost::function<double(const LieVector&)>(boost::bind(&computeError, bt, _1)),
+    LieVector(Vector::Zero(GaussianFactorGraph(bt).jacobian().first.cols())));
+
+  // Compute the gradient using dense matrices
+  Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
+  LONGS_EQUAL(11, augmentedHessian.cols());
+  Vector denseMatrixGradient = -augmentedHessian.col(10).segment(0,10);
+  EXPECT(assert_equal(gradient, denseMatrixGradient, 1e-5));
+
+  // Compute the steepest descent point
+  double step = -gradient.squaredNorm() / (gradient.transpose() * hessian * gradient)(0);
+  Vector expected = gradient * step;
+
+  // Known steepest descent point from Bayes' net version
+  VectorValues expectedFromBN = pair_list_of
+    (0, Vector_(2, 0.000129034, 0.000688183))
+    (1, Vector_(2, 0.0109679, 0.0253767))
+    (2, Vector_(2, 0.0680441, 0.114496))
+    (3, Vector_(2, 0.16125, 0.241294))
+    (4, Vector_(2, 0.300134, 0.423233));
+
+  // Compute the steepest descent point with the dogleg function
+  VectorValues actual = bt.optimizeGradientSearch();
+
+  // Check that points agree
+  EXPECT(assert_equal(expected, actual.vector(), 1e-5));
+  EXPECT(assert_equal(expectedFromBN, actual, 1e-5));
+
+  // Check that point causes a decrease in error
+  double origError = GaussianFactorGraph(bt).error(VectorValues::Zero(actual));
+  double newError = GaussianFactorGraph(bt).error(actual);
+  EXPECT(newError < origError);
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
