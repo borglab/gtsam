@@ -13,6 +13,7 @@ virtual class gtsam::Point3;
 virtual class gtsam::Rot3;
 virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
+virtual class gtsam::noiseModel::Gaussian;
 virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::GaussianFactor;
@@ -308,6 +309,19 @@ virtual class BetweenFactor : gtsam::NonlinearFactor {
   void serializable() const; // enabling serialization functionality
 };
 
+#include <gtsam_unstable/slam/BetweenFactorEM.h>
+template<T = {gtsam::Pose2}>
+virtual class BetweenFactorEM : gtsam::NonlinearFactor {
+  BetweenFactorEM(size_t key1, size_t key2, const T& relativePose,
+      const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
+      double prior_inlier, double prior_outlier);
+
+  Vector whitenedError(const gtsam::Values& x);
+  Vector unwhitenedError(const gtsam::Values& x);
+  Vector calcIndicatorProb(const gtsam::Values& x);
+
+  void serializable() const; // enabling serialization functionality
+};
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
@@ -632,11 +646,10 @@ class ImuFactorPreintegratedMeasurements {
 
 virtual class ImuFactor : gtsam::NonlinearFactor {
   ImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias,
-      const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements, Vector gravity, Vector omegaCoriolis,
-      const gtsam::noiseModel::Base* model);
+      const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements, Vector gravity, Vector omegaCoriolis);
   ImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias,
       const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements, Vector gravity, Vector omegaCoriolis,
-      const gtsam::noiseModel::Base* model, const gtsam::Pose3& body_P_sensor);
+      const gtsam::Pose3& body_P_sensor);
 
   // Standard Interface
   gtsam::ImuFactorPreintegratedMeasurements preintegratedMeasurements() const;

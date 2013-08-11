@@ -404,6 +404,7 @@ GTSAM_EXPORT Vector backSubstituteLower(const Matrix& L, const Vector& b, bool u
  * @return combined matrix [A1; A2; A3]
  */
 GTSAM_EXPORT Matrix stack(size_t nrMatrices, ...);
+GTSAM_EXPORT Matrix stack(const std::vector<Matrix>& blocks);
 
 /**
  * create a matrix by concatenating

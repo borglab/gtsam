@@ -265,19 +265,17 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
   result.nonlinearVariables = theta_.size() - separatorValues_.size();
   result.linearVariables = separatorValues_.size();
 
-  // Set optimization parameters
+  // Pull out parameters we'll use
+  const NonlinearOptimizerParams::Verbosity nloVerbosity = parameters_.verbosity;
+  const LevenbergMarquardtParams::VerbosityLM lmVerbosity = parameters_.verbosityLM;
   double lambda = parameters_.lambdaInitial;
-  double lambdaFactor = parameters_.lambdaFactor;
-  double lambdaUpperBound = parameters_.lambdaUpperBound;
-  double lambdaLowerBound = 0.5 / parameters_.lambdaUpperBound;
-  size_t maxIterations = parameters_.maxIterations;
-  double relativeErrorTol = parameters_.relativeErrorTol;
-  double absoluteErrorTol = parameters_.absoluteErrorTol;
-  double errorTol = parameters_.errorTol;
 
   // Create a Values that holds the current evaluation point
   Values evalpoint = theta_.retract(delta_, ordering_);
   result.error = factors_.error(evalpoint);
+  if(result.error < parameters_.errorTol) {
+    return result;
+  }
 
   // Use a custom optimization loop so the linearization points can be controlled
   double previousError;
@@ -293,6 +291,9 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
 
       // Keep increasing lambda until we make make progress
       while(true) {
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+          std::cout << "trying lambda = " << lambda << std::endl;
+        
         // Add prior factors at the current solution
         gttic(damp);
         GaussianFactorGraph dampedFactorGraph(linearFactorGraph);
@@ -300,16 +301,18 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         {
           // for each of the variables, add a prior at the current solution
           for(size_t j=0; j<delta_.size(); ++j) {
-            Matrix A = lambda * eye(delta_[j].size());
-            Vector b = lambda * delta_[j];
-            SharedDiagonal model = noiseModel::Unit::Create(delta_[j].size());
+            Matrix A = eye(delta_[j].size());
+            Vector b = delta_[j];
+            SharedDiagonal model = noiseModel::Isotropic::Sigma(delta_[j].size(), 1.0 / std::sqrt(lambda));
             GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
             dampedFactorGraph.push_back(prior);
           }
         }
         gttoc(damp);
+        if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) 
+        	dampedFactorGraph.print("damped");
         result.lambdas++;
-
+                
         gttic(solve);
         // Solve Damped Gaussian Factor Graph
         newDelta = GaussianJunctionTree(dampedFactorGraph).optimize(parameters_.getEliminationFunction());
@@ -317,11 +320,19 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         evalpoint = theta_.retract(newDelta, ordering_);
         gttoc(solve);
 
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) 
+          std::cout << "linear delta norm = " << newDelta.norm() << std::endl;
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) 
+        	newDelta.print("delta");
+
         // Evaluate the new error
         gttic(compute_error);
         double error = factors_.error(evalpoint);
         gttoc(compute_error);
 
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) 
+        	std::cout << "next error = " << error << std::endl;
+        
         if(error < result.error) {
           // Keep this change
           // Update the error value
@@ -339,29 +350,30 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
             }
           }
           // Decrease lambda for next time
-          lambda /= lambdaFactor;
-          if(lambda < lambdaLowerBound) {
-            lambda = lambdaLowerBound;
-          }
+          lambda /= parameters_.lambdaFactor;
           // End this lambda search iteration
           break;
         } else {
           // Reject this change
-          // Increase lambda and continue searching
-          lambda *= lambdaFactor;
-          if(lambda > lambdaUpperBound) {
+          if(lambda >= parameters_.lambdaUpperBound) {
             // The maximum lambda has been used. Print a warning and end the search.
             std::cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << std::endl;
             break;
+          } else {
+            // Increase lambda and continue searching
+            lambda *= parameters_.lambdaFactor;
           }
         }
       } // end while
     }
     gttoc(optimizer_iteration);
 
+    if (lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
+      std::cout << "using lambda = " << lambda << std::endl;
+
     result.iterations++;
-  } while(result.iterations < maxIterations &&
-      !checkConvergence(relativeErrorTol, absoluteErrorTol, errorTol, previousError, result.error, NonlinearOptimizerParams::SILENT));
+  } while(result.iterations < parameters_.maxIterations &&
+      !checkConvergence(parameters_.relativeErrorTol, parameters_.absoluteErrorTol, parameters_.errorTol, previousError, result.error, NonlinearOptimizerParams::SILENT));
 
   return result;
 }
@@ -374,43 +386,20 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
   // These marginal factors will be cached for later transmission to the filter using
   // linear container factors
 
-  // Clear out any existing smoother summarized factors
-  smootherSummarization_.resize(0);
-
-  // Reorder the system so that the separator keys are eliminated last
-  // TODO: This is currently being done twice: here and in 'update'. Fix it.
-  reorder();
-
-  // Create the linear factor graph
-  GaussianFactorGraph linearFactorGraph = *factors_.linearize(theta_, ordering_);
-
-  // Construct an elimination tree to perform sparse elimination
-  std::vector<EliminationForest::shared_ptr> forest( EliminationForest::Create(linearFactorGraph, variableIndex_) );
-
-  // This is a forest. Only the top-most node/index of each tree needs to be eliminated; all of the children will be eliminated automatically
-  // Find the subset of nodes/keys that must be eliminated
-  std::set<Index> indicesToEliminate;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) {
-    indicesToEliminate.insert(ordering_.at(key_value.key));
+  // Create a nonlinear factor graph without the filter summarization factors
+  NonlinearFactorGraph graph(factors_);
+  BOOST_FOREACH(size_t slot, filterSummarizationSlots_) {
+    graph.remove(slot);
   }
+
+  // Get the set of separator keys
+  gtsam::FastSet<Key> separatorKeys;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-    indicesToEliminate.erase(ordering_.at(key_value.key));
-  }
-  std::vector<Index> indices(indicesToEliminate.begin(), indicesToEliminate.end());
-  BOOST_FOREACH(Index index, indices) {
-    EliminationForest::removeChildrenIndices(indicesToEliminate, forest.at(index));
+    separatorKeys.insert(key_value.key);
   }
 
-  // Eliminate each top-most key, returning a Gaussian Factor on some of the remaining variables
-  // Convert the marginal factors into Linear Container Factors and store
-  BOOST_FOREACH(Index index, indicesToEliminate) {
-    GaussianFactor::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(parameters_.getEliminationFunction());
-    if(gaussianFactor->size() > 0) {
-      LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering_, theta_));
-      smootherSummarization_.push_back(marginalFactor);
-    }
-  }
-
+  // Calculate the marginal factors on the separator
+  smootherSummarization_ = internal::calculateMarginalFactors(graph, theta_, separatorKeys, parameters_.getEliminationFunction());
 }
 
 /* ************************************************************************* */
@@ -446,95 +435,4 @@ void ConcurrentBatchSmoother::PrintLinearFactor(const GaussianFactor::shared_ptr
 }
 
 /* ************************************************************************* */
-std::vector<Index> ConcurrentBatchSmoother::EliminationForest::ComputeParents(const VariableIndex& structure) {
-  // Number of factors and variables
-  const size_t m = structure.nFactors();
-  const size_t n = structure.size();
-
-  static const Index none = std::numeric_limits<Index>::max();
-
-  // Allocate result parent vector and vector of last factor columns
-  std::vector<Index> parents(n, none);
-  std::vector<Index> prevCol(m, none);
-
-  // for column j \in 1 to n do
-  for (Index j = 0; j < n; j++) {
-    // for row i \in Struct[A*j] do
-    BOOST_FOREACH(const size_t i, structure[j]) {
-      if (prevCol[i] != none) {
-        Index k = prevCol[i];
-        // find root r of the current tree that contains k
-        Index r = k;
-        while (parents[r] != none)
-          r = parents[r];
-        if (r != j) parents[r] = j;
-      }
-      prevCol[i] = j;
-    }
-  }
-
-  return parents;
-}
-
-/* ************************************************************************* */
-std::vector<ConcurrentBatchSmoother::EliminationForest::shared_ptr> ConcurrentBatchSmoother::EliminationForest::Create(const GaussianFactorGraph& factorGraph, const VariableIndex& structure) {
-  // Compute the tree structure
-  std::vector<Index> parents(ComputeParents(structure));
-
-  // Number of variables
-  const size_t n = structure.size();
-
-  static const Index none = std::numeric_limits<Index>::max();
-
-  // Create tree structure
-  std::vector<shared_ptr> trees(n);
-  for (Index k = 1; k <= n; k++) {
-    Index j = n - k;  // Start at the last variable and loop down to 0
-    trees[j].reset(new EliminationForest(j));  // Create a new node on this variable
-    if (parents[j] != none)  // If this node has a parent, add it to the parent's children
-      trees[parents[j]]->add(trees[j]);
-  }
-
-  // Hang factors in right places
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factorGraph) {
-    if(factor && factor->size() > 0) {
-      Index j = *std::min_element(factor->begin(), factor->end());
-      if(j < structure.size())
-        trees[j]->add(factor);
-    }
-  }
-
-  return trees;
-}
-
-/* ************************************************************************* */
-GaussianFactor::shared_ptr ConcurrentBatchSmoother::EliminationForest::eliminateRecursive(GaussianFactorGraph::Eliminate function) {
-
-  // Create the list of factors to be eliminated, initially empty, and reserve space
-  GaussianFactorGraph factors;
-  factors.reserve(this->factors_.size() + this->subTrees_.size());
-
-  // Add all factors associated with the current node
-  factors.push_back(this->factors_.begin(), this->factors_.end());
-
-  // for all subtrees, eliminate into Bayes net and a separator factor, added to [factors]
-  BOOST_FOREACH(const shared_ptr& child, subTrees_)
-    factors.push_back(child->eliminateRecursive(function));
-
-  // Combine all factors (from this node and from subtrees) into a joint factor
-  GaussianFactorGraph::EliminationResult eliminated(function(factors, 1));
-
-  return eliminated.second;
-}
-
-/* ************************************************************************* */
-void ConcurrentBatchSmoother::EliminationForest::removeChildrenIndices(std::set<Index>& indices, const ConcurrentBatchSmoother::EliminationForest::shared_ptr& tree) {
-  BOOST_FOREACH(const EliminationForest::shared_ptr& child, tree->children()) {
-    indices.erase(child->key());
-    removeChildrenIndices(indices, child);
-  }
-}
-
-/* ************************************************************************* */
-
 }/// namespace gtsam

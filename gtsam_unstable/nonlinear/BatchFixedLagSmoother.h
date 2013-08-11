@@ -205,9 +205,13 @@ protected:
     static void removeChildrenIndices(std::set<Index>& indices, const EliminationForest::shared_ptr& tree);
   };
 
+  static NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph, const Values& theta,
+      const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& eliminateFunction);
+
 private:
   /** Private methods for printing debug information */
   static void PrintKeySet(const std::set<Key>& keys, const std::string& label);
+  static void PrintKeySet(const gtsam::FastSet<Key>& keys, const std::string& label);
   static void PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor);
   static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering);
   static void PrintSymbolicGraph(const NonlinearFactorGraph& graph, const std::string& label);

@@ -181,7 +181,7 @@ namespace gtsam {
     /// @{
 
     /** print */
-    void print(const std::string& s="R") const { gtsam::print((Matrix)matrix(), s);}
+    void print(const std::string& s="R") const;
 
     /** equals with an tolerance */
     bool equals(const Rot3& p, double tol = 1e-9) const;

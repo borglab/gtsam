@@ -58,7 +58,7 @@ TEST( testLabeledSymbol, KeyLabeledSymbolEncoding ) {
     string str = "xA5";
 
     EXPECT_LONGS_EQUAL(key, (Key)symbol);
-    EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
+    EXPECT(assert_equal(str, MultiRobotKeyFormatter(symbol)));
     EXPECT(assert_equal(symbol, LabeledSymbol(key)));
   }
 }

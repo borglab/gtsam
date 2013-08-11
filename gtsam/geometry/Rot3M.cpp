@@ -70,6 +70,11 @@ Rot3::Rot3(const Matrix& R) {
 Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {}
 
 /* ************************************************************************* */
+void Rot3::print(const std::string& s) const {
+  gtsam::print((Matrix)matrix(), s);
+}
+
+/* ************************************************************************* */
 Rot3 Rot3::Rx(double t) {
   double st = sin(t), ct = cos(t);
   return Rot3(

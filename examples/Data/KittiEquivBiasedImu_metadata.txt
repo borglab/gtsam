@@ -1,0 +1,2 @@
+BodyPtx BodyPty BodyPtz BodyPrx BodyPry BodyPrz AccelerometerSigma GyroscopeSigma IntegrationSigma AccelerometerBiasSigma GyroscopeBiasSigma AverageDeltaT
+0 0 0 0 0 0 0.01 0.000175 0 0.000167 2.91e-006 0.0100395199348279
