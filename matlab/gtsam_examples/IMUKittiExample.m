@@ -6,24 +6,21 @@ import gtsam.*;
 %% Read metadata and compute relative sensor pose transforms
 IMU_metadata = importdata('KittiEquivBiasedImu_metadata.txt');
 IMU_metadata = cell2struct(num2cell(IMU_metadata.data), IMU_metadata.colheaders, 2);
-IMUinBody = Pose3.Expmap([
-    IMU_metadata.BodyPtx; IMU_metadata.BodyPty; IMU_metadata.BodyPtz;
-    IMU_metadata.BodyPrx; IMU_metadata.BodyPry; IMU_metadata.BodyPrz; ]);
+IMUinBody = Pose3.Expmap([IMU_metadata.BodyPtx; IMU_metadata.BodyPty; IMU_metadata.BodyPtz;
+                          IMU_metadata.BodyPrx; IMU_metadata.BodyPry; IMU_metadata.BodyPrz; ]);
 if ~IMUinBody.equals(Pose3, 1e-5)
   error 'Currently only support IMUinBody is identity, i.e. IMU and body frame are the same';
 end
 
 VO_metadata = importdata('KittiRelativePose_metadata.txt');
 VO_metadata = cell2struct(num2cell(VO_metadata.data), VO_metadata.colheaders, 2);
-VOinBody = Pose3.Expmap([
-    VO_metadata.BodyPtx; VO_metadata.BodyPty; VO_metadata.BodyPtz;
-    VO_metadata.BodyPrx; VO_metadata.BodyPry; VO_metadata.BodyPrz; ]);
+VOinBody = Pose3.Expmap([VO_metadata.BodyPtx; VO_metadata.BodyPty; VO_metadata.BodyPtz;
+                         VO_metadata.BodyPrx; VO_metadata.BodyPry; VO_metadata.BodyPrz; ]);
 
 GPS_metadata = importdata('KittiGps_metadata.txt');
 GPS_metadata = cell2struct(num2cell(GPS_metadata.data), GPS_metadata.colheaders, 2);
-GPSinBody = Pose3.Expmap([
-    GPS_metadata.BodyPtx; GPS_metadata.BodyPty; GPS_metadata.BodyPtz;
-    GPS_metadata.BodyPrx; GPS_metadata.BodyPry; GPS_metadata.BodyPrz; ]);
+GPSinBody = Pose3.Expmap([GPS_metadata.BodyPtx; GPS_metadata.BodyPty; GPS_metadata.BodyPtz;
+                          GPS_metadata.BodyPrx; GPS_metadata.BodyPry; GPS_metadata.BodyPrz; ]);
 
 VOinIMU = IMUinBody.inverse().compose(VOinBody);
 GPSinIMU = IMUinBody.inverse().compose(GPSinBody);
@@ -86,74 +83,85 @@ factors.add(PriorFactorLieVector(symbol('v',0), ...
 factors.add(PriorFactorConstantBias(symbol('b',0), ...
   imuBias.ConstantBias(bias_acc,bias_omega), noiseModel.Isotropic.Sigma(6, sigma_init_b)));
 
-%% Main loop:
-% (1) we read the measurements
-% (2) we create the corresponding factors in the graph
-% (3) we solve the graph to obtain and optimal estimate of robot trajectory
-
-% lastTime = 0; TODO: delete?
-% lastIndex = 0; TODO: delete?
 currentSummarizedMeasurement = [];
 
 % Measurement types:
 %   1: VO
 %   2: GPS
 %   3: IMU
-times = sortrows( [ ...
+timestamps = sortrows( [ ...
   [VO_data.Time]' 1*ones(length([VO_data.Time]), 1); ...
   %[GPS_data.Time]' 2*ones(length([GPS_data.Time]), 1); ...
-  [IMU_data.Time]' 3*ones(length([IMU_data.Time]), 1); ...
+  %[IMU_data.Time]' 3*ones(length([IMU_data.Time]), 1); ...
   ], 1); % this are the time-stamps at which we want to initialize a new node in the graph
 
-t_previous = 0;
-poseIndex = 0;
-for measurementIndex = 1:size(times,1)
+%% Main loop:
+% (1) we read the measurements
+% (2) we create the corresponding factors in the graph
+% (3) we solve the graph to obtain and optimal estimate of robot trajectory
+
+% t_previous = 0;%LC
+% poseIndex = 0;%LC 
+
+% currentPose = Pose3; %LC
+
+position= []; %LC
+
+for measurementIndex = 1:size(timestamps,1)
+  
+  measurementIndex
+  
+%   currentPose = currentPose.compose(VO_data(measurementIndex).RelativePose);%LC
+%   
+%   position(measurementIndex,:) = currentPose.translation.vector;%LC
+
+  
   % At each non=IMU measurement we initialize a new node in the graph
   currentPoseKey = symbol('x',poseIndex);
   currentVelKey = symbol('v',poseIndex);
   currentBiasKey = symbol('b',poseIndex);
   
-  t = times(measurementIndex, 1);
-  type = times(measurementIndex, 2);
+  t = timestamps(measurementIndex, 1);
+  type = timestamps(measurementIndex, 2);
   
-  if type == 3
-    % Integrate IMU
-    
-    if isempty(currentSummarizedMeasurement)
-      % Create initial empty summarized measurement
-      % we assume that each row of the IMU.txt file has the following structure:
-      % timestamp delta_t acc_x acc_y acc_z omega_x omega_y omega_z
-      currentBias = isam.calculateEstimate(currentBiasKey - 1);
-      currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
-        currentBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
-        IMU_metadata.GyroscopeSigma.^2 * eye(3), IMU_metadata.IntegrationSigma.^2 * eye(3));
-    end
-    
-    % Accumulate preintegrated measurement
-    deltaT = IMU_data(index).dt;
-    accMeas = IMU_data(index).acc_omega(1:3);
-    omegaMeas = IMU_data(index).acc_omega(4:6);
-    currentSummarizedMeasurement.integrateMeasurement(accMeas, omegaMeas, deltaT);
-    
-  else
-    % Create IMU factor
-    factors.add(ImuFactor( ...
-      currentPoseKey-1, currentVelKey-1, ...
-      currentPoseKey, currentVelKey, ...
-      currentBiasKey-1, currentSummarizedMeasurement, g, cor_v, ...
-      currentSummarizedMeasurement.PreintMeasCov));
-
-    % Reset summarized measurement
-    currentSummarizedMeasurement = [];
-    
-    if type == 1
-      % Create VO factor
-    elseif type == 2
-      % Create GPS factor
-    end
-    
-    poseIndex = poseIndex + 1;
-  end
+%   if type == 3
+%     % Integrate IMU
+%     
+%     if isempty(currentSummarizedMeasurement)
+%       % Create initial empty summarized measurement
+%       % we assume that each row of the IMU.txt file has the following structure:
+%       % timestamp delta_t acc_x acc_y acc_z omega_x omega_y omega_z
+%       currentBias = isam.calculateEstimate(currentBiasKey - 1);
+%       currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
+%         currentBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
+%         IMU_metadata.GyroscopeSigma.^2 * eye(3), IMU_metadata.IntegrationSigma.^2 * eye(3));
+%     end
+%     
+%     % Accumulate preintegrated measurement
+%     deltaT = IMU_data(index).dt;
+%     accMeas = IMU_data(index).acc_omega(1:3);
+%     omegaMeas = IMU_data(index).acc_omega(4:6);
+%     currentSummarizedMeasurement.integrateMeasurement(accMeas, omegaMeas, deltaT);
+%     
+%   else
+%     % Create IMU factor
+%     factors.add(ImuFactor( ...
+%       currentPoseKey-1, currentVelKey-1, ...
+%       currentPoseKey, currentVelKey, ...
+%       currentBiasKey-1, currentSummarizedMeasurement, g, cor_v, ...
+%       currentSummarizedMeasurement.PreintMeasCov));
+% 
+%     % Reset summarized measurement
+%     currentSummarizedMeasurement = [];
+%     
+%     if type == 1
+%       % Create VO factor
+%     elseif type == 2
+%       % Create GPS factor
+%     end
+%     
+%     poseIndex = poseIndex + 1;
+%   end
   
  
   % =======================================================================
@@ -178,46 +186,49 @@ for measurementIndex = 1:size(times,1)
   % =======================================================================
   
   
-  %% add factor corresponding to VO measurements (if available at the current time)
-  % =======================================================================
-  if isempty(  find([VO_data.Time] == t, 1)  )== 0 % it is a GPS measurement
-    if length( find([VO_data.Time] == t) ) > 1
-      error('more VO measurements at the same time stamp: it should be an error')
-    end
-    
-    index = find([VO_data.Time] == t, 1); % the row of the IMU_data matrix that we have to integrate
-    
-    VOpose = VO_data(index).RelativePose;
-    noiseModelVO = noiseModel.Diagonal.Sigmas([ IMU_metadata.RotationSigma * [1;1;1]; IMU_metadata.TranslationSigma * [1;1;1] ]);
-    
-    % add factor
-    disp('TODO: is the VO noise right?')
-    factors.add(BetweenFactorPose3(lastVOPoseKey, currentPoseKey, VOpose, noiseModelVO));
-    
-    lastVOPoseKey = currentPoseKey;
-  end
-  % =======================================================================
-  
-  disp('TODO: add values')
-  %     values.insert(, initialPose);
-  %   values.insert(symbol('v',lastIndex+1), initialVel);
-  
-  %% Update solver
-  % =======================================================================
-  isam.update(factors, values);
-  factors = NonlinearFactorGraph;
-  values = Values;
-  
-  isam.calculateEstimate(currentPoseKey);
-  %   M = isam.marginalCovariance(key_pose);
-  % =======================================================================
-  
-  previousPoseKey = currentPoseKey;
-  previousVelKey = currentVelKey;
-  t_previous = t;
+%   %% add factor corresponding to VO measurements (if available at the current time)
+%   % =======================================================================
+%   if isempty(  find([VO_data.Time] == t, 1)  )== 0 % it is a GPS measurement
+%     if length( find([VO_data.Time] == t) ) > 1
+%       error('more VO measurements at the same time stamp: it should be an error')
+%     end
+%     
+%     index = find([VO_data.Time] == t, 1); % the row of the IMU_data matrix that we have to integrate
+%     
+%     VOpose = VO_data(index).RelativePose;
+%     noiseModelVO = noiseModel.Diagonal.Sigmas([ IMU_metadata.RotationSigma * [1;1;1]; IMU_metadata.TranslationSigma * [1;1;1] ]);
+%     
+%     % add factor
+%     disp('TODO: is the VO noise right?')
+%     factors.add(BetweenFactorPose3(lastVOPoseKey, currentPoseKey, VOpose, noiseModelVO));
+%     
+%     lastVOPoseKey = currentPoseKey;
+%   end
+%   % =======================================================================
+%   
+%   disp('TODO: add values')
+%   %     values.insert(, initialPose);
+%   %   values.insert(symbol('v',lastIndex+1), initialVel);
+%   
+%   %% Update solver
+%   % =======================================================================
+%   isam.update(factors, values);
+%   factors = NonlinearFactorGraph;
+%   values = Values;
+%   
+%   isam.calculateEstimate(currentPoseKey);
+%   %   M = isam.marginalCovariance(key_pose);
+%   % =======================================================================
+%   
+%   previousPoseKey = currentPoseKey;
+%   previousVelKey = currentVelKey;
+%   t_previous = t;
 end
 
-disp('TODO: display results')
+figure
+plot(position(:,1),position(:,2))
+
+
 % figure(1)
 % hold on;
 % plot(positions(1,:), positions(2,:), '-b');
