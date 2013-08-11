@@ -37,8 +37,6 @@ using boost::shared_ptr;
 
 const double tol = 1e-4;
 
-#define TEST TEST_UNSAFE
-
 //  SETDEBUG("ISAM2 update", true);
 //  SETDEBUG("ISAM2 update verbose", true);
 //  SETDEBUG("ISAM2 recalculate", true);
