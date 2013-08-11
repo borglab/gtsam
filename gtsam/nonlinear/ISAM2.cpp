@@ -781,7 +781,6 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList)
       if(marginalizeEntireClique) {
         // Remove the whole clique and its subtree, and keep the marginal factor.
         GaussianFactor::shared_ptr marginalFactor = clique->cachedFactor();
-        marginalFactor->print("marginalFactor: ");
         // We do not need the marginal factors associated with this clique
         // because their information is already incorporated in the new
         // marginal factor.  So, now associate this marginal factor with the
