@@ -399,7 +399,7 @@ private:
  */
 class GTSAM_EXPORT ISAM2: public BayesTree<ISAM2Clique> {
 
-public:
+protected:
 
   /** The current linearization point */
   Values theta_;
