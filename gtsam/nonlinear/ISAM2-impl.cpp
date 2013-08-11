@@ -68,7 +68,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
 {
   FastSet<Index> relinKeys;
 
-  if(const double* threshold = boost::get<const double*>(relinearizeThreshold))
+  if(const double* threshold = boost::get<double>(&relinearizeThreshold))
   {
     BOOST_FOREACH(const VectorValues::KeyValuePair& key_delta, delta) {
       double maxDelta = key_delta.second.lpNorm<Eigen::Infinity>();
@@ -76,7 +76,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
         relinKeys.insert(key_delta.first);
     }
   }
-  else if(const FastMap<char,Vector>* thresholds = boost::get<const FastMap<char,Vector>*>(relinearizeThreshold))
+  else if(const FastMap<char,Vector>* thresholds = boost::get<FastMap<char,Vector> >(&relinearizeThreshold))
   {
     BOOST_FOREACH(const VectorValues::KeyValuePair& key_delta, delta) {
       const Vector& threshold = thresholds->find(Symbol(key_delta.first).chr())->second;
