@@ -109,7 +109,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const Vector VectorValues::vector() const
+  Vector VectorValues::vector() const
   {
     // Count dimensions
     DenseIndex totalDim = 0;
@@ -128,7 +128,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const Vector VectorValues::vector(const std::vector<Key>& keys) const
+  Vector VectorValues::vector(const std::vector<Key>& keys) const
   {
     // Count dimensions and collect pointers to avoid double lookups
     DenseIndex totalDim = 0;

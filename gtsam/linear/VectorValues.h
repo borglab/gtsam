@@ -238,10 +238,10 @@ namespace gtsam {
     /// @{
 
     /** Retrieve the entire solution as a single vector */
-    const Vector vector() const;
+    Vector vector() const;
 
     /** Access a vector that is a subset of relevant keys. */
-    const Vector vector(const std::vector<Key>& keys) const;
+    Vector vector(const std::vector<Key>& keys) const;
 
     /** Swap the data in this VectorValues with another. */
     void swap(VectorValues& other);
