@@ -254,7 +254,7 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
-  LONGS_EQUAL(11, augmentedHessian.cols());
+  LONGS_EQUAL(11, (long)augmentedHessian.cols());
   Vector denseMatrixGradient = -augmentedHessian.col(10).segment(0,10);
   EXPECT(assert_equal(gradient, denseMatrixGradient, 1e-5));
 
