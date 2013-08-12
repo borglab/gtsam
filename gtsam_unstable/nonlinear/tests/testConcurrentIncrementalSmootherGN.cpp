@@ -73,7 +73,7 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, equals )
+TEST( ConcurrentIncrementalSmootherGN, equals )
 {
   // TODO: Test 'equals' more vigorously
 
@@ -99,7 +99,7 @@ TEST( ConcurrentIncrementalSmoother, equals )
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, getFactors )
+TEST( ConcurrentIncrementalSmootherGN, getFactors )
 {
   // Create a Concurrent Batch Smoother
   ISAM2Params parameters;
@@ -150,7 +150,7 @@ TEST( ConcurrentIncrementalSmoother, getFactors )
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, getLinearizationPoint )
+TEST( ConcurrentIncrementalSmootherGN, getLinearizationPoint )
 {
   // Create a Concurrent Batch Smoother
   ISAM2Params parameters;
@@ -201,19 +201,19 @@ TEST( ConcurrentIncrementalSmoother, getLinearizationPoint )
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, getOrdering )
+TEST( ConcurrentIncrementalSmootherGN, getOrdering )
 {
   // TODO: Think about how to check ordering...
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, getDelta )
+TEST( ConcurrentIncrementalSmootherGN, getDelta )
 {
   // TODO: Think about how to check ordering...
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, calculateEstimate )
+TEST( ConcurrentIncrementalSmootherGN, calculateEstimate )
 {
   // Create a Concurrent Batch Smoother
   ISAM2Params parameters;
@@ -287,7 +287,7 @@ TEST( ConcurrentIncrementalSmoother, calculateEstimate )
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, update_empty )
+TEST( ConcurrentIncrementalSmootherGN, update_empty )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
@@ -300,7 +300,7 @@ TEST( ConcurrentIncrementalSmoother, update_empty )
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, update_multiple )
+TEST( ConcurrentIncrementalSmootherGN, update_multiple )
 {
   // Create a Concurrent Batch Smoother
   ISAM2Params parameters;
@@ -358,7 +358,7 @@ TEST( ConcurrentIncrementalSmoother, update_multiple )
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, synchronize_empty )
+TEST( ConcurrentIncrementalSmootherGN, synchronize_empty )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
@@ -388,7 +388,7 @@ TEST( ConcurrentIncrementalSmoother, synchronize_empty )
 }
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, synchronize_1 )
+TEST( ConcurrentIncrementalSmootherGN, synchronize_1 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
@@ -450,7 +450,7 @@ TEST( ConcurrentIncrementalSmoother, synchronize_1 )
 
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, synchronize_2 )
+TEST( ConcurrentIncrementalSmootherGN, synchronize_2 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
@@ -531,7 +531,7 @@ TEST( ConcurrentIncrementalSmoother, synchronize_2 )
 
 
 /* ************************************************************************* */
-TEST( ConcurrentIncrementalSmoother, synchronize_3 )
+TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
