@@ -232,8 +232,8 @@ namespace gtsam {
       Matrix invCov_inlier  = model_inlier_->R().transpose() * model_inlier_->R();
       Matrix invCov_outlier = model_outlier_->R().transpose() * model_outlier_->R();
 
-      double p_inlier  = prior_inlier_ * invCov_inlier.norm() * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
-      double p_outlier = prior_outlier_ * invCov_outlier.norm() * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
+      double p_inlier  = prior_inlier_ * std::sqrt(invCov_inlier.norm()) * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
+      double p_outlier = prior_outlier_ * std::sqrt(invCov_outlier.norm()) * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
 
       double sumP = p_inlier + p_outlier;
       p_inlier  /= sumP;
