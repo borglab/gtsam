@@ -48,7 +48,7 @@ TEST ( Ordering, predecessorMap2Keys ) {
   expected += 4,5,3,2,1;
 
   list<Key> actual = predecessorMap2Keys<Key>(p_map);
-  LONGS_EQUAL(expected.size(), actual.size());
+  LONGS_EQUAL((long)expected.size(), (long)actual.size());
 
   list<Key>::const_iterator it1 = expected.begin();
   list<Key>::const_iterator it2 = actual.begin();
@@ -70,7 +70,7 @@ TEST( Graph, predecessorMap2Graph )
   p_map.insert(3, 2);
   boost::tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
 
-  LONGS_EQUAL(3, boost::num_vertices(graph));
+  LONGS_EQUAL(3, (long)boost::num_vertices(graph));
   CHECK(root == key2vertex[2]);
 }
 
@@ -81,9 +81,9 @@ TEST( Graph, composePoses )
   SharedNoiseModel cov = noiseModel::Unit::Create(3);
   Pose2 p1(1.0, 2.0, 0.3), p2(4.0, 5.0, 0.6), p3(7.0, 8.0, 0.9), p4(2.0, 2.0, 2.9);
   Pose2 p12=p1.between(p2), p23=p2.between(p3), p43=p4.between(p3);
-  graph.add(BetweenFactor<Pose2>(1,2, p12, cov));
-  graph.add(BetweenFactor<Pose2>(2,3, p23, cov));
-  graph.add(BetweenFactor<Pose2>(4,3, p43, cov));
+  graph += BetweenFactor<Pose2>(1,2, p12, cov);
+  graph += BetweenFactor<Pose2>(2,3, p23, cov);
+  graph += BetweenFactor<Pose2>(4,3, p43, cov);
 
   PredecessorMap<Key> tree;
   tree.insert(1,2);
@@ -101,7 +101,7 @@ TEST( Graph, composePoses )
   expected.insert(3, p3);
   expected.insert(4, p4);
 
-  LONGS_EQUAL(4, actual->size());
+  LONGS_EQUAL(4, (long)actual->size());
   CHECK(assert_equal(expected, *actual));
 }
 
@@ -110,12 +110,12 @@ TEST( Graph, composePoses )
 //  GaussianFactorGraph g;
 //  Matrix I = eye(2);
 //  Vector b = Vector_(0, 0, 0);
-//  g.add(X(1), I, X(2), I, b, model);
-//  g.add(X(1), I, X(3), I, b, model);
-//  g.add(X(1), I, X(4), I, b, model);
-//  g.add(X(2), I, X(3), I, b, model);
-//  g.add(X(2), I, X(4), I, b, model);
-//  g.add(X(3), I, X(4), I, b, model);
+//  g += X(1), I, X(2), I, b, model;
+//  g += X(1), I, X(3), I, b, model;
+//  g += X(1), I, X(4), I, b, model;
+//  g += X(2), I, X(3), I, b, model;
+//  g += X(2), I, X(4), I, b, model;
+//  g += X(3), I, X(4), I, b, model;
 //
 //  map<string, string> tree = g.findMinimumSpanningTree<string, GaussianFactor>();
 //  EXPECT(tree[X(1)].compare(X(1))==0);
@@ -130,11 +130,11 @@ TEST( Graph, composePoses )
 //  GaussianFactorGraph g;
 //  Matrix I = eye(2);
 //  Vector b = Vector_(0, 0, 0);
-//  g.add(X(1), I, X(2), I, b, model);
-//  g.add(X(1), I, X(3), I, b, model);
-//  g.add(X(1), I, X(4), I, b, model);
-//  g.add(X(2), I, X(3), I, b, model);
-//  g.add(X(2), I, X(4), I, b, model);
+//  g += X(1), I, X(2), I, b, model;
+//  g += X(1), I, X(3), I, b, model;
+//  g += X(1), I, X(4), I, b, model;
+//  g += X(2), I, X(3), I, b, model;
+//  g += X(2), I, X(4), I, b, model;
 //
 //  PredecessorMap<string> tree;
 //  tree[X(1)] = X(1);

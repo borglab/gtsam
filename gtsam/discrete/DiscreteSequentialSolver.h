@@ -47,7 +47,7 @@ namespace gtsam {
      * Construct the solver for a factor graph.  This builds the elimination
      * tree, which already does some of the work of elimination.
      */
-    DiscreteSequentialSolver(const FactorGraph<DiscreteFactor>& factorGraph) :
+    DiscreteSequentialSolver(const FactorGraphOrdered<DiscreteFactor>& factorGraph) :
       Base(factorGraph) {
     }
 
@@ -57,12 +57,12 @@ namespace gtsam {
      * is the fastest.
      */
     DiscreteSequentialSolver(
-        const FactorGraph<DiscreteFactor>::shared_ptr& factorGraph,
-        const VariableIndex::shared_ptr& variableIndex) :
+        const FactorGraphOrdered<DiscreteFactor>::shared_ptr& factorGraph,
+        const VariableIndexOrdered::shared_ptr& variableIndex) :
       Base(factorGraph, variableIndex) {
     }
 
-    const EliminationTree<DiscreteFactor>& eliminationTree() const {
+    const EliminationTreeOrdered<DiscreteFactor>& eliminationTree() const {
       return *eliminationTree_;
     }
 
@@ -70,7 +70,7 @@ namespace gtsam {
      * Eliminate the factor graph sequentially.  Uses a column elimination tree
      * to recursively eliminate.
      */
-    BayesNet<DiscreteConditional>::shared_ptr eliminate() const {
+    BayesNetOrdered<DiscreteConditional>::shared_ptr eliminate() const {
       return Base::eliminate(&EliminateDiscrete);
     }
 

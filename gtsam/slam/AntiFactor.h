@@ -47,7 +47,7 @@ namespace gtsam {
     AntiFactor() {}
 
     /** constructor - Creates the equivalent AntiFactor from an existing factor */
-    AntiFactor(NonlinearFactor::shared_ptr factor) : Base(factor->begin(), factor->end()), factor_(factor) {}
+    AntiFactor(NonlinearFactor::shared_ptr factor) : Base(factor->keys()), factor_(factor) {}
 
     virtual ~AntiFactor() {}
 
@@ -94,11 +94,10 @@ namespace gtsam {
      * returns a Jacobian instead of a full Hessian), but with the opposite sign. This
      * effectively cancels the effect of the original factor on the factor graph.
      */
-    boost::shared_ptr<GaussianFactor>
-    linearize(const Values& c, const Ordering& ordering) const {
+    boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
 
       // Generate the linearized factor from the contained nonlinear factor
-      GaussianFactor::shared_ptr gaussianFactor = factor_->linearize(c, ordering);
+      GaussianFactor::shared_ptr gaussianFactor = factor_->linearize(c);
 
       // return the negated version of the factor
       return gaussianFactor->negate();

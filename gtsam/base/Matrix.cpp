@@ -23,6 +23,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <cstdarg>
 #include <cstring>
@@ -587,7 +588,7 @@ void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask) {
   if (inf_mask) {
     for (size_t i=0; i<m; ++i) {
       const double& vi = v(i);
-      if (!isnan(vi) && !isinf(vi))
+      if (std::isfinite(vi))
         A.row(i) *= vi;
     }
   } else {
@@ -612,7 +613,7 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
   if (inf_mask) {
     for (size_t j=0; j<n; ++j) {
       const double& vj = v(j);
-      if (!isnan(vj) && !isinf(vj))
+      if (std::isfinite(vj))
         M.col(j) *= vj;
     }
   } else {
@@ -768,6 +769,44 @@ Matrix Cayley(const Matrix& A) {
   // inlined to let Eigen do more optimization
   return (Matrix::Identity(n, n) - A)*(Matrix::Identity(n, n) + A).inverse();
 }
+
 /* ************************************************************************* */
+std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal)
+{
+  stringstream ss;
+  const string firstline = label;
+  ss << firstline;
+  const string padding(firstline.size(), ' ');
+  const bool transposeMatrix = makeVectorHorizontal && matrix.cols() == 1 && matrix.rows() > 1;
+  const DenseIndex effectiveRows = transposeMatrix ? matrix.cols() : matrix.rows();
+
+  if(matrix.rows() > 0 && matrix.cols() > 0)
+  {
+    stringstream matrixPrinted;
+    if(transposeMatrix)
+      matrixPrinted << matrix.transpose();
+    else
+      matrixPrinted << matrix;
+    const std::string matrixStr = matrixPrinted.str();
+    boost::tokenizer<boost::char_separator<char> > tok(matrixStr, boost::char_separator<char>("\n"));
+
+    DenseIndex row = 0;
+    BOOST_FOREACH(const std::string& line, tok)
+    {
+      assert(row < effectiveRows);
+      if(row > 0)
+        ss << padding;
+      ss << "[ " << line << " ]";
+      if(row < effectiveRows - 1)
+        ss << "\n";
+      ++ row;
+    }
+  } else {
+    ss << "Empty (" << matrix.rows() << "x" << matrix.cols() << ")";
+  }
+  return ss.str();
+}
+
+
 
 } // namespace gtsam

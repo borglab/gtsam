@@ -128,7 +128,7 @@ TEST_UNSAFE( CSP, WesternUS)
 
   // Write out the dual graph for hmetis
 #ifdef DUAL
-  VariableIndex index(csp);
+  VariableIndexOrdered index(csp);
   index.print("index");
   ofstream os("/Users/dellaert/src/hmetis-1.5-osx-i686/US-West-dual.txt");
   index.outputMetisFormat(os);

@@ -18,8 +18,6 @@
 // \callgraph
 #pragma once
 
-#include <gtsam/inference/BayesTree.h>
-
 namespace gtsam {
 
   /**
@@ -27,12 +25,19 @@ namespace gtsam {
    * Given a set of new factors, it re-eliminates the invalidated part of the tree.
    * \nosubgrouping
    */
-  template<class CONDITIONAL>
-  class ISAM: public BayesTree<CONDITIONAL> {
-
+  template<class BAYESTREE>
+  class ISAM: public BAYESTREE
+  {
   private:
 
-    typedef BayesTree<CONDITIONAL> Base;
+    typedef BAYESTREE Base;
+    typedef typename Base::BayesNetType BayesNetType;
+    typedef typename Base::FactorGraphType FactorGraphType;
+    typedef typename Base::Clique Clique;
+    typedef typename Base::sharedClique sharedClique;
+    typedef typename Base::Cliques Cliques;
+    typedef typename Base::Eliminate Eliminate;
+    typedef typename Base::EliminationTraitsType EliminationTraitsType;
 
   public:
 
@@ -40,12 +45,10 @@ namespace gtsam {
     /// @{
 
     /** Create an empty Bayes Tree */
-    ISAM();
+    ISAM() {}
 
     /** Copy constructor */
-    ISAM(const Base& bayesTree) :
-        Base(bayesTree) {
-    }
+    ISAM(const Base& bayesTree) : Base(bayesTree) {}
 
     /// @}
     /// @name Advanced Interface Interface
@@ -56,21 +59,14 @@ namespace gtsam {
      * @param newFactors is a factor graph that contains the new factors
      * @param function an elimination routine
      */
-    template<class FG>
-    void update(const FG& newFactors, typename FG::Eliminate function);
-
-    typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique;  ///<TODO: comment
-    typedef typename BayesTree<CONDITIONAL>::Cliques Cliques;            ///<TODO: comment
+    void update(const FactorGraphType& newFactors, const Eliminate& function = EliminationTraitsType::DefaultEliminate);
 
     /** update_internal provides access to list of orphans for drawing purposes */
-    template<class FG>
-    void update_internal(const FG& newFactors, Cliques& orphans,
-        typename FG::Eliminate function);
+    void update_internal(const FactorGraphType& newFactors, Cliques& orphans,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate);
 
     /// @}
 
   };
 
 }/// namespace gtsam
-
-#include <gtsam/inference/ISAM-inl.h>

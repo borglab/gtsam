@@ -144,22 +144,21 @@ namespace gtsam {
      * Create a symbolic factor using the given ordering to determine the
      * variable indices.
      */
-    virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-      const Index j1 = ordering[meanKey_], j2 = ordering[precisionKey_];
-      return IndexFactor::shared_ptr(new IndexFactor(j1, j2));
-    }
+//    virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
+//      const Index j1 = ordering[meanKey_], j2 = ordering[precisionKey_];
+//      return IndexFactor::shared_ptr(new IndexFactor(j1, j2));
+//    }
 
     /// @}
     /// @name Advanced Interface
     /// @{
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x,
-        const Ordering& ordering) const {
+    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
       double u = x.at<LieScalar>(meanKey_);
       double p = x.at<LieScalar>(precisionKey_);
-      Index j1 = ordering[meanKey_];
-      Index j2 = ordering[precisionKey_];
+      Index j1 = meanKey_;
+      Index j2 = precisionKey_;
       return linearize(z_, u, p, j1, j2);
     }
 

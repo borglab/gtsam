@@ -20,7 +20,7 @@
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/Signature.h>
-#include <gtsam/inference/IndexConditional.h>
+#include <gtsam/inference/IndexConditionalOrdered.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
@@ -30,13 +30,13 @@ namespace gtsam {
    * Discrete Conditional Density
    * Derives from DecisionTreeFactor
    */
-  class GTSAM_EXPORT DiscreteConditional: public IndexConditional, public Potentials {
+  class GTSAM_EXPORT DiscreteConditional: public IndexConditionalOrdered, public Potentials {
 
   public:
     // typedefs needed to play nice with gtsam
     typedef DiscreteFactor FactorType;
     typedef boost::shared_ptr<DiscreteConditional> shared_ptr;
-    typedef IndexConditional Base;
+    typedef IndexConditionalOrdered Base;
 
     /** A map from keys to values */
     typedef Assignment<Index> Values;

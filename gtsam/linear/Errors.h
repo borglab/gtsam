@@ -19,19 +19,25 @@
 
 #pragma once
 
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/FastList.h>
+#include <gtsam/base/Vector.h>
+
+#include <string>
 
 namespace gtsam {
-  
+
+  // Forward declarations
+  class VectorValues;
+
   /** vector of errors */
-  class Errors : public std::list<Vector> {
+  class Errors : public FastList<Vector> {
 
   public:
 
     GTSAM_EXPORT Errors() ;
 
-  /** break V into pieces according to its start indices */
-  GTSAM_EXPORT Errors(const VectorValues &V) ;
+    /** break V into pieces according to its start indices */
+    GTSAM_EXPORT Errors(const VectorValues&V);
 
     /** print */
     GTSAM_EXPORT void print(const std::string& s = "Errors") const;
@@ -51,13 +57,13 @@ namespace gtsam {
   }; // Errors
 
   /**
-   * dot product
-   */
+  * dot product
+  */
   GTSAM_EXPORT double dot(const Errors& a, const Errors& b);
 
   /**
-   * BLAS level 2 style
-   */
+  * BLAS level 2 style
+  */
   template <>
   GTSAM_EXPORT void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y);
 

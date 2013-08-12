@@ -29,19 +29,19 @@ TEST(BetweenFactor, Rot3) {
   Vector actual = factor.evaluateError(R1, R2, actualH1, actualH2);
 
   Vector expected = Rot3::Logmap(measured.inverse() * R1.between(R2));
-  CHECK(assert_equal(expected,actual, 1e-100));
+  EXPECT(assert_equal(expected,actual, 1e-100));
 
   Matrix numericalH1 = numericalDerivative21(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);
-  CHECK(assert_equal(numericalH1,actualH1));
+  EXPECT(assert_equal(numericalH1,actualH1));
 
   Matrix numericalH2 = numericalDerivative22(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);
-  CHECK(assert_equal(numericalH2,actualH2));
+  EXPECT(assert_equal(numericalH2,actualH2));
 }
 
 /* ************************************************************************* */

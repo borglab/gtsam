@@ -18,13 +18,13 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/inference/BayesNet-inl.h>
+#include <gtsam/inference/BayesNetOrdered-inl.h>
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
 
   // Explicitly instantiate so we don't have to include everywhere
-  template class BayesNet<DiscreteConditional> ;
+  template class BayesNetOrdered<DiscreteConditional> ;
 
   /* ************************************************************************* */
   void add_front(DiscreteBayesNet& bayesNet, const Signature& s) {

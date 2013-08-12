@@ -20,8 +20,15 @@
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/inference/Ordering.h>
 
 namespace gtsam {
+
+  // Forward declarations
 
 class GTSAM_EXPORT SuccessiveLinearizationParams : public NonlinearOptimizerParams {
 public:
@@ -66,15 +73,13 @@ public:
 
     default:
       throw std::runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
-      return EliminateQR;
-      break;
     }
   }
 
   std::string getLinearSolverType() const { return linearSolverTranslator(linearSolverType); }
 
   void setLinearSolverType(const std::string& solver) { linearSolverType = linearSolverTranslator(solver); }
-  void setIterativeParams(const SubgraphSolverParameters &params);
+  void setIterativeParams(const SubgraphSolverParameters& params);
   void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
 
 private:
@@ -101,6 +106,6 @@ private:
 };
 
 /* a wrapper for solving a GaussianFactorGraph according to the parameters */
-GTSAM_EXPORT VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) ;
+GTSAM_EXPORT VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params);
 
 } /* namespace gtsam */

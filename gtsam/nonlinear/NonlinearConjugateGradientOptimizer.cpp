@@ -6,7 +6,6 @@
  */
 
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
@@ -19,18 +18,10 @@ namespace gtsam {
 
 /* Return the gradient vector of a nonlinear factor given a linearization point and a variable ordering
  * Can be moved to NonlinearFactorGraph.h if desired */
-void gradientInPlace(const NonlinearFactorGraph &nfg, const Values &values, const Ordering &ordering, VectorValues &g) {
+VectorValues gradientInPlace(const NonlinearFactorGraph &nfg, const Values &values) {
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = nfg.linearize(values, ordering);
-  FactorGraph<JacobianFactor> jfg;  jfg.reserve(linear->size());
-  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, *linear) {
-    if(boost::shared_ptr<JacobianFactor> jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
-      jfg.push_back((jf));
-    else
-      jfg.push_back(boost::make_shared<JacobianFactor>(*factor));
-  }
-  // compute the gradient direction
-  gradientAtZero(jfg, g);
+  GaussianFactorGraph::shared_ptr linear = nfg.linearize(values);
+  return linear->gradientAtZero();
 }
 
 double NonlinearConjugateGradientOptimizer::System::error(const State &state) const {
@@ -38,27 +29,26 @@ double NonlinearConjugateGradientOptimizer::System::error(const State &state) co
 }
 
 NonlinearConjugateGradientOptimizer::System::Gradient NonlinearConjugateGradientOptimizer::System::gradient(const State &state) const {
-  Gradient result = state.zeroVectors(ordering_);
-  gradientInPlace(graph_, state, ordering_, result);
-  return result;
+  return gradientInPlace(graph_, state);
 }
 NonlinearConjugateGradientOptimizer::System::State NonlinearConjugateGradientOptimizer::System::advance(const State &current, const double alpha, const Gradient &g) const {
   Gradient step = g;
-  scal(alpha, step);
-  return current.retract(step, ordering_);
+  step *= alpha;
+  return current.retract(step);
 }
 
 void NonlinearConjugateGradientOptimizer::iterate() {
   size_t dummy ;
-  boost::tie(state_.values, dummy) = nonlinearConjugateGradient<System, Values>(System(graph_, *ordering_), state_.values, params_, true /* single iterations */);
+  boost::tie(state_.values, dummy) = nonlinearConjugateGradient<System, Values>(System(graph_), state_.values, params_, true /* single iterations */);
   ++state_.iterations;
   state_.error = graph_.error(state_.values);
 }
 
 const Values& NonlinearConjugateGradientOptimizer::optimize() {
-  boost::tie(state_.values, state_.iterations) = nonlinearConjugateGradient<System, Values>(System(graph_, *ordering_), state_.values, params_, false /* up to convergent */);
+  boost::tie(state_.values, state_.iterations) = nonlinearConjugateGradient<System, Values>(System(graph_), state_.values, params_, false /* up to convergent */);
   state_.error = graph_.error(state_.values);
   return state_.values;
 }
 
 } /* namespace gtsam */
+

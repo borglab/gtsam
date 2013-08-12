@@ -5,7 +5,8 @@ set (gtsam_subdirs
     base 
     geometry 
     inference 
-    discrete 
+	symbolic 
+    #discrete 
     linear 
     nonlinear 
     slam
@@ -77,13 +78,21 @@ set(gtsam_srcs
     ${base_srcs}
     ${geometry_srcs}
     ${inference_srcs}
-    ${discrete_srcs}
+	${symbolic_srcs}
+    #${discrete_srcs}
     ${linear_srcs}
     ${nonlinear_srcs}
     ${slam_srcs}
 	${navigation_srcs}
 	${gtsam_core_headers}
 )
+	
+# Generate and install config and dllexport files
+configure_file(config.h.in config.h)
+set(library_name GTSAM) # For substitution in dllexport.h.in
+configure_file("${PROJECT_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
+list(APPEND gtsam_srcs "${CMAKE_BINARY_DIR}/gtsam/config.h" "${CMAKE_BINARY_DIR}/gtsam/dllexport.h")
+install(FILES "${CMAKE_BINARY_DIR}/gtsam/config.h" "${CMAKE_BINARY_DIR}/gtsam/dllexport.h" DESTINATION include/gtsam)
 
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
@@ -95,7 +104,7 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 if (GTSAM_BUILD_STATIC_LIBRARY)
     message(STATUS "Building GTSAM - static")
     add_library(gtsam-static STATIC ${gtsam_srcs})
-	target_link_libraries(gtsam-static ${GTSAM_BOOST_LIBRARIES})
+	target_link_libraries(gtsam-static ${GTSAM_BOOST_LIBRARIES} ${TBB_LIBS})
     set_target_properties(gtsam-static PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
@@ -114,7 +123,7 @@ endif ()
 if (GTSAM_BUILD_SHARED_LIBRARY)
     message(STATUS "Building GTSAM - shared")
     add_library(gtsam-shared SHARED ${gtsam_srcs})
-	target_link_libraries(gtsam-shared ${GTSAM_BOOST_LIBRARIES})
+	target_link_libraries(gtsam-shared ${GTSAM_BOOST_LIBRARIES} ${TBB_LIBS})
     set_target_properties(gtsam-shared PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
@@ -142,10 +151,6 @@ if(MSVC)
 	set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
 		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
 endif()
-	
-# Generate and install config file
-configure_file(config.h.in config.h)
-install(FILES ${CMAKE_BINARY_DIR}/gtsam/config.h DESTINATION include/gtsam)
 
 # Create the matlab toolbox for the gtsam library
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)

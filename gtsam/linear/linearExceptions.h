@@ -114,4 +114,46 @@ on gtsam::IndeterminantLinearSystemException for more information.\n";
     }
   };
 
-}
+  /* ************************************************************************* */
+  /** An exception indicating that the noise model dimension passed into a
+   * JacobianFactor has a different dimensionality than the factor. */
+  class GTSAM_EXPORT InvalidNoiseModel : public std::exception {
+  public:
+    const DenseIndex factorDims; ///< The dimensionality of the factor
+    const DenseIndex noiseModelDims; ///< The dimensionality of the noise model
+
+    InvalidNoiseModel(DenseIndex factorDims, DenseIndex noiseModelDims) :
+      factorDims(factorDims), noiseModelDims(noiseModelDims) {}
+    virtual ~InvalidNoiseModel() throw() {}
+
+    virtual const char* what() const throw();
+
+  private:
+    mutable std::string description_;
+  };
+
+  /* ************************************************************************* */
+  /** An exception indicating that a matrix block passed into a
+   * JacobianFactor has a different dimensionality than the factor. */
+  class GTSAM_EXPORT InvalidMatrixBlock : public std::exception {
+  public:
+    const DenseIndex factorRows; ///< The dimensionality of the factor
+    const DenseIndex blockRows; ///< The dimensionality of the noise model
+
+    InvalidMatrixBlock(DenseIndex factorRows, DenseIndex blockRows) :
+      factorRows(factorRows), blockRows(blockRows) {}
+    virtual ~InvalidMatrixBlock() throw() {}
+
+    virtual const char* what() const throw();
+
+  private:
+    mutable std::string description_;
+  };
+
+  /* ************************************************************************* */
+  class InvalidDenseElimination : public std::invalid_argument {
+  public:
+    InvalidDenseElimination(const char *message) : std::invalid_argument(message) {}
+  };
+
+ }

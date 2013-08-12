@@ -16,7 +16,6 @@
  *  @date Nov 2009
  */
 
-#include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
@@ -25,11 +24,10 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point3.h>
@@ -44,7 +42,7 @@ using namespace gtsam;
 
 // make a realistic calibration matrix
 static double fov = 60; // degrees
-static size_t w=640,h=480;
+static int w=640,h=480;
 static Cal3_S2::shared_ptr K(new Cal3_S2(fov,w,h));
 
 // Create a noise model for the pixel error
@@ -77,7 +75,7 @@ TEST( MultiProjectionFactor, create ){
   views.insert(x3);
 
   MultiProjectionFactor<Pose3, Point3> mpFactor(n_measPixel, noiseProjection, views, l1, K);
-  graph.add(mpFactor);
+  graph += mpFactor;
 
 
 }

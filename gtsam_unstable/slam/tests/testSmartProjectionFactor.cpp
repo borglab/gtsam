@@ -16,7 +16,16 @@
  *  @date Nov 2009
  */
 
-#include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
+#include <CppUnitLite/TestHarness.h>
+#include <iostream>
+
+TEST(SmartProjectionFactor, disabled)
+{
+  CHECK(("*** testSmartProjectionFactor is disabled *** - Needs conversion for unordered", 0));
+}
+
+#if 0
+
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
@@ -26,11 +35,8 @@
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam_unstable/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
@@ -39,10 +45,11 @@
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
-#include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/std/vector.hpp>
 
 using namespace std;
+using namespace boost::assign;
 using namespace gtsam;
 
 // make a realistic calibration matrix
@@ -369,8 +376,8 @@ TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
 //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
@@ -531,6 +538,7 @@ TEST( SmartProjectionFactor, Hessian ){
 
 }
 
+#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

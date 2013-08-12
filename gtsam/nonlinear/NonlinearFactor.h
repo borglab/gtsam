@@ -20,19 +20,14 @@
 
 #pragma once
 
-#include <list>
-#include <limits>
-
 #include <boost/serialization/base_object.hpp>
-#include <boost/function.hpp>
-
-#include <gtsam/inference/Factor-inl.h>
-#include <gtsam/inference/IndexFactor.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/JacobianFactor.h>
+#include <boost/assign/list_of.hpp>
 
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/inference/Factor.h>
+
 
 /**
  * Macro to add a standard clone function to a derived factor
@@ -45,6 +40,8 @@
 
 namespace gtsam {
 
+using boost::assign::cref_list_of;
+
 /* ************************************************************************* */
 /**
  * Nonlinear factor base class
@@ -54,51 +51,39 @@ namespace gtsam {
  * which are objects in non-linear manifolds (Lie groups).
  * \nosubgrouping
  */
-class NonlinearFactor: public Factor<Key> {
+class NonlinearFactor: public Factor {
 
 protected:
 
   // Some handy typedefs
-  typedef Factor<Key> Base;
+  typedef Factor Base;
   typedef NonlinearFactor This;
 
 public:
 
-  typedef boost::shared_ptr<NonlinearFactor> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /// @name Standard Constructors
   /// @{
 
   /** Default constructor for I/O only */
-  NonlinearFactor() {
-  }
+  NonlinearFactor() {}
 
   /**
-   * Constructor from a vector of the keys involved in this factor
+   * Constructor from a collection of the keys involved in this factor
    */
-  NonlinearFactor(const std::vector<size_t>& keys) :
+  template<typename CONTAINER>
+  NonlinearFactor(const CONTAINER& keys) :
     Base(keys) {}
-
-  /**
-   * Constructor from iterators over the keys involved in this factor
-   */
-  template<class ITERATOR>
-  NonlinearFactor(ITERATOR beginKeys, ITERATOR endKeys) :
-    Base(beginKeys, endKeys) {}
-
-  NonlinearFactor(Key key) : Base(key) {} ///< Convenience constructor for 1 key
-  NonlinearFactor(Key key1, Key key2) : Base(key1, key2) {} ///< Convenience constructor for 2 keys
-  NonlinearFactor(Key key1, Key key2, Key key3) : Base(key1, key2, key3) {} ///< Convenience constructor for 3 keys
-  NonlinearFactor(Key key1, Key key2, Key key3, Key key4) : Base(key1, key2, key3, key4) {} ///< Convenience constructor for 4 keys
-  NonlinearFactor(Key key1, Key key2, Key key3, Key key4, Key key5) : Base(key1, key2, key3, key4, key5) {} ///< Convenience constructor for 5 keys
-  NonlinearFactor(Key key1, Key key2, Key key3, Key key4, Key key5, Key key6) : Base(key1, key2, key3, key4, key5, key6) {} ///< Convenience constructor for 6 keys
 
   /// @}
   /// @name Testable
   /// @{
 
   /** print */
-  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  virtual void print(const std::string& s = "",
+    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
+  {
     std::cout << s << "  keys = { ";
     BOOST_FOREACH(Key key, this->keys()) { std::cout << keyFormatter(key) << " "; }
     std::cout << "}" << std::endl;
@@ -141,18 +126,18 @@ public:
 
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
-  linearize(const Values& c, const Ordering& ordering) const = 0;
+  linearize(const Values& c) const = 0;
 
   /**
    * Create a symbolic factor using the given ordering to determine the
    * variable indices.
    */
-  virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-    std::vector<Index> indices(this->size());
-    for(size_t j=0; j<this->size(); ++j)
-      indices[j] = ordering[this->keys()[j]];
-    return IndexFactor::shared_ptr(new IndexFactor(indices));
-  }
+  //virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
+  //  std::vector<Index> indices(this->size());
+  //  for(size_t j=0; j<this->size(); ++j)
+  //    indices[j] = ordering[this->keys()[j]];
+  //  return IndexFactor::shared_ptr(new IndexFactor(indices));
+  //}
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
@@ -218,11 +203,10 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<NoiseModelFactor > shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /** Default constructor for I/O only */
-  NoiseModelFactor() {
-  }
+  NoiseModelFactor() {}
 
   /** Destructor */
   virtual ~NoiseModelFactor() {}
@@ -230,17 +214,9 @@ public:
   /**
    * Constructor
    */
-  template<class ITERATOR>
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, ITERATOR beginKeys, ITERATOR endKeys)
-  : Base(beginKeys, endKeys), noiseModel_(noiseModel) {
-  }
-
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key) : Base(key), noiseModel_(noiseModel) {} ///< Convenience constructor for 1 key
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2) : Base(key1, key2), noiseModel_(noiseModel) {} ///< Convenience constructor for 2 keys
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2, Key key3) : Base(key1, key2, key3), noiseModel_(noiseModel) {} ///< Convenience constructor for 3 keys
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2, Key key3, Key key4) : Base(key1, key2, key3, key4), noiseModel_(noiseModel) {} ///< Convenience constructor for 4 keys
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2, Key key3, Key key4, Key key5) : Base(key1, key2, key3, key4, key5), noiseModel_(noiseModel) {} ///< Convenience constructor for 5 keys
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2, Key key3, Key key4, Key key5, Key key6) : Base(key1, key2, key3, key4, key5, key6), noiseModel_(noiseModel) {} ///< Convenience constructor for 6 keys
+  template<typename CONTAINER>
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, const CONTAINER& keys) :
+    Base(keys), noiseModel_(noiseModel) {}
 
 protected:
 
@@ -252,7 +228,9 @@ protected:
 public:
 
   /** Print */
-  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  virtual void print(const std::string& s = "",
+    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
+  {
     Base::print(s, keyFormatter);
     this->noiseModel_->print("  noise model: ");
   }
@@ -314,7 +292,7 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
     // Only linearize if the factor is active
     if (!this->active(x))
       return boost::shared_ptr<JacobianFactor>();
@@ -329,10 +307,10 @@ public:
 
     this->noiseModel_->WhitenSystem(A,b);
 
-    std::vector<std::pair<Index, Matrix> > terms(this->size());
+    std::vector<std::pair<Key, Matrix> > terms(this->size());
     // Fill in terms
     for(size_t j=0; j<this->size(); ++j) {
-      terms[j].first = ordering[this->keys()[j]];
+      terms[j].first = this->keys()[j];
       terms[j].second.swap(A[j]);
     }
 
@@ -340,11 +318,9 @@ public:
     noiseModel::Constrained::shared_ptr constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if(constrained)
-      return GaussianFactor::shared_ptr(
-          new JacobianFactor(terms, b, constrained->unit()));
+      return GaussianFactor::shared_ptr(new JacobianFactor(terms, b, constrained->unit()));
     else
-      return GaussianFactor::shared_ptr(
-          new JacobianFactor(terms, b, noiseModel::Unit::Create(b.size())));
+      return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
   }
 
 private:
@@ -392,7 +368,7 @@ public:
    *  @param key1 by which to look up X value in Values
    */
   NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1) :
-    Base(noiseModel, key1) {}
+    Base(noiseModel, cref_list_of<1>(key1)) {}
 
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
    *  so must be implemented in the derived class.
@@ -461,7 +437,7 @@ public:
    * @param j2 key of the second variable
    */
   NoiseModelFactor2(const SharedNoiseModel& noiseModel, Key j1, Key j2) :
-    Base(noiseModel, j1, j2) {}
+    Base(noiseModel, cref_list_of<2>(j1)(j2)) {}
 
   virtual ~NoiseModelFactor2() {}
 
@@ -538,7 +514,7 @@ public:
    * @param j3 key of the third variable
    */
   NoiseModelFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3) :
-    Base(noiseModel, j1, j2, j3) {}
+    Base(noiseModel, cref_list_of<3>(j1)(j2)(j3)) {}
 
   virtual ~NoiseModelFactor3() {}
 
@@ -617,7 +593,7 @@ public:
    * @param j4 key of the fourth variable
    */
   NoiseModelFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4) :
-    Base(noiseModel, j1, j2, j3, j4) {}
+    Base(noiseModel, cref_list_of<4>(j1)(j2)(j3)(j4)) {}
 
   virtual ~NoiseModelFactor4() {}
 
@@ -700,7 +676,7 @@ public:
    * @param j5 key of the fifth variable
    */
   NoiseModelFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5) :
-    Base(noiseModel, j1, j2, j3, j4, j5) {}
+    Base(noiseModel, cref_list_of<5>(j1)(j2)(j3)(j4)(j5)) {}
 
   virtual ~NoiseModelFactor5() {}
 
@@ -787,7 +763,7 @@ public:
    * @param j6 key of the fifth variable
    */
   NoiseModelFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
-    Base(noiseModel, j1, j2, j3, j4, j5, j6) {}
+    Base(noiseModel, cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
 
   virtual ~NoiseModelFactor6() {}
 

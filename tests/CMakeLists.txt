@@ -5,6 +5,7 @@ set(tests_local_libs
    linear
    discrete
    inference
+   symbolic
    geometry
    base
    ccolamd

@@ -1,0 +1,481 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\usepackage{color}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{mygreen},    % comment style
+%  deletekeywords={...},            % if you want to delete keywords from the given language
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  frame=single,                    % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language=C++,                 % the language of the code
+  morekeywords={*,...},            % if you want to add more keywords to the set
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  stepnumber=2,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{mymauve},     % string literal style
+  tabsize=2,                       % sets default tabsize to 2 spaces
+  title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman lmodern
+\font_sans lmss
+\font_typewriter lmtt
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Template Classes
+\end_layout
+
+\begin_layout Standard
+Templated classes are great for writing generic code for multiple types
+ (e.g.
+ the same elimination algorithm code for symbolic, discrete, and Gaussian
+ elimination) without the drawbacks of virtual inheritance (which include
+ rigid class interfaces, downcasting from returned base class pointers,
+ and additional runtime overhead).
+ Depending on how they're used, though, templates can result in very slow
+ compile times, large binary files, and hard-to-use code.
+ This section describes the 
+\begin_inset Quotes eld
+\end_inset
+
+best practices
+\begin_inset Quotes erd
+\end_inset
+
+ we have developed for gaining the benefits of templates without the drawbacks.
+\end_layout
+
+\begin_layout Standard
+If you need to write generic code or classes, here are several programming
+ patterns we have found to work very well:
+\end_layout
+
+\begin_layout Subsection
+The 
+\begin_inset Quotes eld
+\end_inset
+
+Templated Base, Specialized Derived
+\begin_inset Quotes erd
+\end_inset
+
+ Pattern
+\end_layout
+
+\begin_layout Standard
+This pattern is for when you have a generic class containing algorithm or
+ data structure code that will be specialized to several types.
+ The templated base class should never be used directly, instead only the
+ specializations should be used.
+ Some specialized types can be pre-compiled into the library, but the option
+ remains to specialize new types in external libraries or projects.
+\end_layout
+
+\begin_layout Subsubsection
+Basic Class Structure
+\end_layout
+
+\begin_layout Standard
+We'll use 
+\family typewriter
+FactorGraph
+\family default
+ as an example.
+ It is templated on the factor type stored in it and has several specializations.
+ The templated base class 
+\family typewriter
+FactorGraph<class FACTOR>
+\family default
+ is divided into a header file (
+\family typewriter
+.h
+\family default
+) and an 
+\begin_inset Quotes eld
+\end_inset
+
+instantiation
+\begin_inset Quotes erd
+\end_inset
+
+ file (
+\family typewriter
+-inst.h
+\family default
+).
+ The basic class structure is as follows.
+\begin_inset listings
+lstparams "basicstyle={\scriptsize\ttfamily},language={C++}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+// File FactorGraph.h
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+%*
+\backslash
+bfseries{
+\backslash
+emph{
+\backslash
+color{red}{// Include a minimal set of headers.
+  Do not include any '-inst.h' files (this is the key to fast compiles).}}}*)
+\end_layout
+
+\begin_layout Plain Layout
+
+#include <boost/serialization/nvp.hpp>
+\end_layout
+
+\begin_layout Plain Layout
+
+...
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+namespace gtsam {
+\end_layout
+
+\begin_layout Plain Layout
+
+  /** Class description */
+\end_layout
+
+\begin_layout Plain Layout
+
+  template<class FACTOR>
+\end_layout
+
+\begin_layout Plain Layout
+
+  class FactorGraph
+\end_layout
+
+\begin_layout Plain Layout
+
+  {
+\end_layout
+
+\begin_layout Plain Layout
+
+  %*
+\backslash
+bfseries{
+\backslash
+emph{
+\backslash
+color{red}{// Make 'private' any typedefs that must be redefined in derived
+ classes.
+  E.g.
+ 'This' in the context of the derived class should refer to the derived
+ class.
+  These typedefs will be used only by the generic code in this base class.}}}*)
+\end_layout
+
+\begin_layout Plain Layout
+
+  private:
+\end_layout
+
+\begin_layout Plain Layout
+
+    typedef FactorGraph<FACTOR> This;  ///< Typedef for this class
+\end_layout
+
+\begin_layout Plain Layout
+
+    typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to
+ this
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\end_layout
+
+\begin_layout Plain Layout
+
+  %*
+\backslash
+bfseries{
+\backslash
+emph{
+\backslash
+color{red}{// Make 'public' the typedefs that will be valid in the derived
+ class.}}}*)
+\end_layout
+
+\begin_layout Plain Layout
+
+  public:
+\end_layout
+
+\begin_layout Plain Layout
+
+    typedef FACTOR FactorType; ///< Factor type stored in this graph
+\end_layout
+
+\begin_layout Plain Layout
+
+    typedef boost::shared_ptr<FACTOR> sharedFactor; ///< Shared pointer
+ to a factor
+\end_layout
+
+\begin_layout Plain Layout
+
+    ...
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  %*
+\backslash
+bfseries{
+\backslash
+emph{
+\backslash
+color{red}{// Normally, data is 'protected' so the derived class can access
+ it.}}}*)
+\end_layout
+
+\begin_layout Plain Layout
+
+  protected:
+\end_layout
+
+\begin_layout Plain Layout
+
+    /** Collection of factors */
+\end_layout
+
+\begin_layout Plain Layout
+
+    std::vector<sharedFactor> factors_;
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  %*
+\backslash
+bfseries{
+\backslash
+emph{
+\backslash
+color{red}{// Make 'protected' all constructors, named constructors, or
+ methods returning the base class type.
+  These are not public - the derived class will call them and properly convert
+ returned base classes to the derived class.}}}*)
+\end_layout
+
+\begin_layout Plain Layout
+
+    /// @name Standard Constructors
+\end_layout
+
+\begin_layout Plain Layout
+
+    /// @{
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    /** Default constructor */
+\end_layout
+
+\begin_layout Plain Layout
+
+    FactorGraphUnordered() {}
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    /** Named constructor from iterator over factors */
+\end_layout
+
+\begin_layout Plain Layout
+
+    template<typename ITERATOR>
+\end_layout
+
+\begin_layout Plain Layout
+
+    static This FromIterator(ITERATOR firstFactor, ITERATOR lastFactor);
+\end_layout
+
+\begin_layout Plain Layout
+
+    /// @}
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  %*
+\backslash
+bfseries{
+\backslash
+emph{
+\backslash
+color{red}{// Make 'public' standard methods that will be available in the
+ derived class's API.}}}*)
+\end_layout
+
+\begin_layout Plain Layout
+
+  public:
+\end_layout
+
+\begin_layout Plain Layout
+
+    /// @name Adding Factors
+\end_layout
+
+\begin_layout Plain Layout
+
+    /// @{
+\end_layout
+
+\begin_layout Plain Layout
+
+    /** ...
+ */
+\end_layout
+
+\begin_layout Plain Layout
+
+    void reserve(size_t size);
+\end_layout
+
+\begin_layout Plain Layout
+
+    ...
+\end_layout
+
+\begin_layout Plain Layout
+
+    /// @}
+\end_layout
+
+\begin_layout Plain Layout
+
+  };
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

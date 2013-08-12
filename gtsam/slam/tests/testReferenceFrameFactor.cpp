@@ -116,7 +116,7 @@ TEST( ReferenceFrameFactor, jacobians_zero ) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( ReferenceFrameFactor, converge_trans ) {
+TEST( ReferenceFrameFactor, converge_trans ) {
 
   // initial points
   Point2 local1(2.0, 2.0), local2(4.0, 5.0),
@@ -136,15 +136,15 @@ TEST_UNSAFE( ReferenceFrameFactor, converge_trans ) {
   //  Pose2 trans = transIdeal * Pose2(-200.0, 100.0, 2.0); // beyond pi/2 - fails
 
   NonlinearFactorGraph graph;
-  graph.add(PointReferenceFrameFactor(lB1, tA1, lA1));
-  graph.add(PointReferenceFrameFactor(lB2, tA1, lA2));
+  graph.push_back(PointReferenceFrameFactor(lB1, tA1, lA1));
+  graph.push_back(PointReferenceFrameFactor(lB2, tA1, lA2));
 
   // hard constraints on points
   double error_gain = 1000.0;
-  graph.add(NonlinearEquality<gtsam::Point2>(lA1, local1, error_gain));
-  graph.add(NonlinearEquality<gtsam::Point2>(lA2, local2, error_gain));
-  graph.add(NonlinearEquality<gtsam::Point2>(lB1, global1, error_gain));
-  graph.add(NonlinearEquality<gtsam::Point2>(lB2, global2, error_gain));
+  graph.push_back(NonlinearEquality<gtsam::Point2>(lA1, local1, error_gain));
+  graph.push_back(NonlinearEquality<gtsam::Point2>(lA2, local2, error_gain));
+  graph.push_back(NonlinearEquality<gtsam::Point2>(lB1, global1, error_gain));
+  graph.push_back(NonlinearEquality<gtsam::Point2>(lB2, global2, error_gain));
 
   // create initial estimate
   Values init;
@@ -186,9 +186,9 @@ TEST( ReferenceFrameFactor, converge_local ) {
 
   NonlinearFactorGraph graph;
   double error_gain = 1000.0;
-  graph.add(PointReferenceFrameFactor(lB1, tA1, lA1));
-  graph.add(NonlinearEquality<gtsam::Point2>(lB1, global, error_gain));
-  graph.add(NonlinearEquality<gtsam::Pose2>(tA1, trans, error_gain));
+  graph.push_back(PointReferenceFrameFactor(lB1, tA1, lA1));
+  graph.push_back(NonlinearEquality<gtsam::Point2>(lB1, global, error_gain));
+  graph.push_back(NonlinearEquality<gtsam::Pose2>(tA1, trans, error_gain));
 
   // create initial estimate
   Values init;
@@ -222,9 +222,9 @@ TEST( ReferenceFrameFactor, converge_global ) {
 
   NonlinearFactorGraph graph;
   double error_gain = 1000.0;
-  graph.add(PointReferenceFrameFactor(lB1, tA1, lA1));
-  graph.add(NonlinearEquality<gtsam::Point2>(lA1, local, error_gain));
-  graph.add(NonlinearEquality<gtsam::Pose2>(tA1, trans, error_gain));
+  graph.push_back(PointReferenceFrameFactor(lB1, tA1, lA1));
+  graph.push_back(NonlinearEquality<gtsam::Point2>(lA1, local, error_gain));
+  graph.push_back(NonlinearEquality<gtsam::Pose2>(tA1, trans, error_gain));
 
   // create initial estimate
   Values init;

@@ -11,78 +11,56 @@
 
 /**
  * @file GaussianJunctionTree.h
- * @date Jul 12, 2010
- * @author Kai Ni
+ * @date Mar 29, 2013
  * @author Frank Dellaert
- * @brief: the Gaussian junction tree
+ * @author Richard Roberts
  */
 
-#pragma once
-
-#include <boost/foreach.hpp>
-#include <gtsam/inference/JunctionTree.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/inference/JunctionTree.h>
 
 namespace gtsam {
 
+  // Forward declarations
+  class GaussianEliminationTree;
+
   /**
-   * A JunctionTree where all the factors are of type GaussianFactor.
+   * A ClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
+   * the additional property that it represents the clique tree associated with a Bayes net.
    *
-   * In GTSAM, typically, a GaussianJunctionTree is created directly from a GaussianFactorGraph,
-   * after which you call optimize() to solve for the mean, or JunctionTree::eliminate() to
-   * create a BayesTree<GaussianConditional>. In both cases, you need to provide a basic
-   * GaussianFactorGraph::Eliminate function that will be used to
+   * In GTSAM a junction tree is an intermediate data structure in multifrontal
+   * variable elimination.  Each node is a cluster of factors, along with a
+   * clique of variables that are eliminated all at once. In detail, every node k represents
+   * a clique (maximal fully connected subset) of an associated chordal graph, such as a
+   * chordal Bayes net resulting from elimination.
+   *
+   * The difference with the BayesTree is that a JunctionTree stores factors, whereas a
+   * BayesTree stores conditionals, that are the product of eliminating the factors in the
+   * corresponding JunctionTree cliques.
+   *
+   * The tree structure and elimination method are exactly analagous to the EliminationTree,
+   * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
    *
    * \addtogroup Multifrontal
+   * \nosubgrouping
    */
-  class GaussianJunctionTree: public JunctionTree<GaussianFactorGraph> {
-
+  class GTSAM_EXPORT GaussianJunctionTree :
+    public JunctionTree<GaussianBayesTree, GaussianFactorGraph> {
   public:
-    typedef boost::shared_ptr<GaussianJunctionTree> shared_ptr;
-    typedef JunctionTree<GaussianFactorGraph> Base;
-    typedef Base::sharedClique sharedClique;
-    typedef GaussianFactorGraph::Eliminate Eliminate;
-
-  public :
-
-    /** Default constructor */
-    GaussianJunctionTree() : Base() {}
-
-    /** Constructor from a factor graph.  Builds a VariableIndex. */
-    GaussianJunctionTree(const GaussianFactorGraph& fg) : Base(fg) {}
-
-    /** Construct from a factor graph and a pre-computed variable index. */
-    GaussianJunctionTree(const GaussianFactorGraph& fg, const VariableIndex& variableIndex)
-    : Base(fg, variableIndex) {}
-
+    typedef JunctionTree<GaussianBayesTree, GaussianFactorGraph> Base; ///< Base class
+    typedef GaussianJunctionTree This; ///< This class
+    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    
     /**
-     *  optimize the linear graph
-     */
-    GTSAM_EXPORT VectorValues optimize(Eliminate function) const;
+    * Build the elimination tree of a factor graph using pre-computed column structure.
+    * @param factorGraph The factor graph for which to build the elimination tree
+    * @param structure The set of factors involving each variable.  If this is not
+    * precomputed, you can call the Create(const FactorGraph<DERIVEDFACTOR>&)
+    * named constructor instead.
+    * @return The elimination tree
+    */
+    GaussianJunctionTree(const GaussianEliminationTree& eliminationTree);
+  };
 
-    // convenient function to return dimensions of all variables in the BayesTree<GaussianConditional>
-    template<class DIM_CONTAINER, class CLIQUE>
-    static void countDims(const BayesTree<GaussianConditional,CLIQUE>& bayesTree, DIM_CONTAINER& dims) {
-      dims = DIM_CONTAINER(bayesTree.root()->conditional()->back()+1, 0);
-      countDims(bayesTree.root(), dims);
-    }
-
-  private:
-    template<class DIM_CONTAINER, class CLIQUE>
-    static void countDims(const boost::shared_ptr<CLIQUE>& clique, DIM_CONTAINER& dims) {
-      GaussianConditional::const_iterator it = clique->conditional()->beginFrontals();
-      for (; it != clique->conditional()->endFrontals(); ++it) {
-        assert(dims.at(*it) == 0);
-        dims.at(*it) = clique->conditional()->dim(it);
-      }
-
-      BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children()) {
-        countDims(child, dims);
-      }
-    }
-
-  }; // GaussianJunctionTree
-
-} // namespace gtsam
+}

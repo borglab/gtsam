@@ -49,7 +49,7 @@ TEST( InvDepthFactor, optimize) {
   InverseDepthFactor::shared_ptr factor(new InverseDepthFactor(expected_uv, sigma,
       Symbol('x',1), Symbol('l',1), Symbol('d',1), K));
   graph.push_back(factor);
-  graph.add(PoseConstraint(Symbol('x',1),level_pose));
+  graph += PoseConstraint(Symbol('x',1),level_pose);
   initial.insert(Symbol('x',1), level_pose);
   initial.insert(Symbol('l',1), inv_landmark);
   initial.insert(Symbol('d',1), inv_depth);
@@ -75,7 +75,7 @@ TEST( InvDepthFactor, optimize) {
       Symbol('x',2), Symbol('l',1),Symbol('d',1),K));
   graph.push_back(factor1);
 
-  graph.add(PoseConstraint(Symbol('x',2),right_pose));
+  graph += PoseConstraint(Symbol('x',2),right_pose);
 
   initial.insert(Symbol('x',2), right_pose);
 

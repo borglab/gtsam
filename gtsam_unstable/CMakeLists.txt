@@ -3,7 +3,7 @@
 set (gtsam_unstable_subdirs
     base 
     geometry
-    discrete
+    #discrete
     linear 
     dynamics
     nonlinear
@@ -18,11 +18,20 @@ add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-fail
 # Add the full name to this list, as in the following example
 # Sources to remove from builds
 set (excluded_sources # "")
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/BatchFixedLagSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchFilter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentFilteringAndSmoothing.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentIncrementalFilter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentIncrementalSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/FixedLagSmoother.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/IncrementalFixedLagSmoother.cpp"
+    
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
 )
 
 set (excluded_headers # "")
-    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"    
 )
 
 # assemble core libaries
@@ -48,7 +57,7 @@ endforeach(subdir)
 set(gtsam_unstable_srcs
     ${base_srcs} 
     ${geometry_srcs}
-    ${discrete_srcs}
+    #${discrete_srcs}
     ${dynamics_srcs}
     ${linear_srcs}    
     ${nonlinear_srcs}

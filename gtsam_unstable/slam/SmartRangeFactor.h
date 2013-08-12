@@ -11,8 +11,9 @@
 
 #include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/timing.h>
 #include <boost/foreach.hpp>
 #include <map>
 

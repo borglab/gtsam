@@ -55,9 +55,9 @@ TEST ( NonlinearEquality, linearization ) {
 
   // check linearize
   SharedDiagonal constraintModel = noiseModel::Constrained::All(3);
-  JacobianFactor expLF(0, eye(3), zero(3), constraintModel);
-  GaussianFactor::shared_ptr actualLF = nle->linearize(linearize, *linearize.orderingArbitrary());
-  EXPECT(assert_equal(*actualLF, (const GaussianFactor&)expLF));
+  JacobianFactor expLF(key, eye(3), zero(3), constraintModel);
+  GaussianFactor::shared_ptr actualLF = nle->linearize(linearize);
+  EXPECT(assert_equal((const GaussianFactor&)expLF, *actualLF));
 }
 
 /* ********************************************************************** */
@@ -71,7 +71,7 @@ TEST ( NonlinearEquality, linearization_pose ) {
   // create a nonlinear equality constraint
   shared_poseNLE nle(new PoseNLE(key, value));
 
-  GaussianFactor::shared_ptr actualLF = nle->linearize(config, *config.orderingArbitrary());
+  GaussianFactor::shared_ptr actualLF = nle->linearize(config);
   EXPECT(true);
 }
 
@@ -86,7 +86,7 @@ TEST ( NonlinearEquality, linearization_fail ) {
   shared_poseNLE nle(new PoseNLE(key, value));
 
   // check linearize to ensure that it fails for bad linearization points
-  CHECK_EXCEPTION(nle->linearize(bad_linearize, *bad_linearize.orderingArbitrary()), std::invalid_argument);
+  CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
 }
 
 /* ********************************************************************** */
@@ -102,7 +102,7 @@ TEST ( NonlinearEquality, linearization_fail_pose ) {
   shared_poseNLE nle(new PoseNLE(key, value));
 
   // check linearize to ensure that it fails for bad linearization points
-  CHECK_EXCEPTION(nle->linearize(bad_linearize, *bad_linearize.orderingArbitrary()), std::invalid_argument);
+  CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
 }
 
 /* ********************************************************************** */
@@ -118,7 +118,7 @@ TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
   shared_poseNLE nle(new PoseNLE(key, value));
 
   // check linearize to ensure that it fails for bad linearization points
-  CHECK_EXCEPTION(nle->linearize(bad_linearize, *bad_linearize.orderingArbitrary()), std::invalid_argument);
+  CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
 }
 
 /* ************************************************************************* */
@@ -176,11 +176,11 @@ TEST ( NonlinearEquality, allow_error_pose ) {
   DOUBLES_EQUAL(500.0, actError, 1e-9);
 
   // check linearization
-  GaussianFactor::shared_ptr actLinFactor = nle.linearize(config, *config.orderingArbitrary());
+  GaussianFactor::shared_ptr actLinFactor = nle.linearize(config);
   Matrix A1 = eye(3,3);
   Vector b = expVec;
   SharedDiagonal model = noiseModel::Constrained::All(3);
-  GaussianFactor::shared_ptr expLinFactor(new JacobianFactor(0, A1, b, model));
+  GaussianFactor::shared_ptr expLinFactor(new JacobianFactor(key1, A1, b, model));
   EXPECT(assert_equal(*expLinFactor, *actLinFactor, 1e-5));
 }
 
@@ -193,7 +193,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 
   // add to a graph
   NonlinearFactorGraph graph;
-  graph.add(nle);
+  graph += nle;
 
   // initialize away from the ideal
   Pose2 initPose(0.0, 2.0, 3.0);
@@ -231,8 +231,8 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 
   // add to a graph
   NonlinearFactorGraph graph;
-  graph.add(nle);
-  graph.add(prior);
+  graph += nle;
+  graph += prior;
 
   // optimize
   Ordering ordering;
@@ -277,21 +277,19 @@ TEST( testNonlinearEqualityConstraint, unary_linearization ) {
   Point2 pt(1.0, 2.0);
   Symbol key1('x',1);
   double mu = 1000.0;
-  Ordering ordering;
-  ordering += key;
   eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
 
   Values config1;
   config1.insert(key, pt);
-  GaussianFactor::shared_ptr actual1 = constraint.linearize(config1, ordering);
-  GaussianFactor::shared_ptr expected1(new JacobianFactor(ordering[key], eye(2,2), zero(2), hard_model));
+  GaussianFactor::shared_ptr actual1 = constraint.linearize(config1);
+  GaussianFactor::shared_ptr expected1(new JacobianFactor(key, eye(2,2), zero(2), hard_model));
   EXPECT(assert_equal(*expected1, *actual1, tol));
 
   Values config2;
   Point2 ptBad(2.0, 2.0);
   config2.insert(key, ptBad);
-  GaussianFactor::shared_ptr actual2 = constraint.linearize(config2, ordering);
-  GaussianFactor::shared_ptr expected2(new JacobianFactor(ordering[key], eye(2,2), Vector_(2,-1.0,0.0), hard_model));
+  GaussianFactor::shared_ptr actual2 = constraint.linearize(config2);
+  GaussianFactor::shared_ptr expected2(new JacobianFactor(key, eye(2,2), Vector_(2,-1.0,0.0), hard_model));
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
 
@@ -359,16 +357,14 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   Point2 x1(1.0, 2.0), x2(2.0, 3.0), odom(1.0, 1.0);
   Symbol key1('x',1), key2('x',2);
   double mu = 1000.0;
-  Ordering ordering;
-  ordering += key1, key2;
   eq2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
 
   Values config1;
   config1.insert(key1, x1);
   config1.insert(key2, x2);
-  GaussianFactor::shared_ptr actual1 = constraint.linearize(config1, ordering);
+  GaussianFactor::shared_ptr actual1 = constraint.linearize(config1);
   GaussianFactor::shared_ptr expected1(
-      new JacobianFactor(ordering[key1], -eye(2,2), ordering[key2],
+      new JacobianFactor(key1, -eye(2,2), key2,
           eye(2,2), zero(2), hard_model));
   EXPECT(assert_equal(*expected1, *actual1, tol));
 
@@ -377,9 +373,9 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   Point2 x2bad(2.0, 2.0);
   config2.insert(key1, x1bad);
   config2.insert(key2, x2bad);
-  GaussianFactor::shared_ptr actual2 = constraint.linearize(config2, ordering);
+  GaussianFactor::shared_ptr actual2 = constraint.linearize(config2);
   GaussianFactor::shared_ptr expected2(
-      new JacobianFactor(ordering[key1], -eye(2,2), ordering[key2],
+      new JacobianFactor(key1, -eye(2,2), key2,
           eye(2,2), Vector_(2, 1.0, 1.0), hard_model));
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
@@ -436,17 +432,17 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
   Symbol l1('l',1), l2('l',2);
   Point2 pt_x1(1.0, 1.0),
        pt_x2(5.0, 6.0);
-  graph.add(eq2D::UnaryEqualityConstraint(pt_x1, x1));
-  graph.add(eq2D::UnaryEqualityConstraint(pt_x2, x2));
+  graph += eq2D::UnaryEqualityConstraint(pt_x1, x1);
+  graph += eq2D::UnaryEqualityConstraint(pt_x2, x2);
 
   Point2 z1(0.0, 5.0);
   SharedNoiseModel sigma(noiseModel::Isotropic::Sigma(2, 0.1));
-  graph.add(simulated2D::Measurement(z1, sigma, x1,l1));
+  graph += simulated2D::Measurement(z1, sigma, x1,l1);
 
   Point2 z2(-4.0, 0.0);
-  graph.add(simulated2D::Measurement(z2, sigma, x2,l2));
+  graph += simulated2D::Measurement(z2, sigma, x2,l2);
 
-  graph.add(eq2D::PointEqualityConstraint(l1, l2));
+  graph += eq2D::PointEqualityConstraint(l1, l2);
 
   Values initialEstimate;
   initialEstimate.insert(x1, pt_x1);
@@ -475,20 +471,20 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 
   // constant constraint on x1
   Point2 pose1(1.0, 1.0);
-  graph.add(eq2D::UnaryEqualityConstraint(pose1, x1));
+  graph += eq2D::UnaryEqualityConstraint(pose1, x1);
 
   SharedDiagonal sigma = noiseModel::Isotropic::Sigma(2, 0.1);
 
   // measurement from x1 to l1
   Point2 z1(0.0, 5.0);
-  graph.add(simulated2D::Measurement(z1, sigma, x1, l1));
+  graph += simulated2D::Measurement(z1, sigma, x1, l1);
 
   // measurement from x2 to l2
   Point2 z2(-4.0, 0.0);
-  graph.add(simulated2D::Measurement(z2, sigma, x2, l2));
+  graph += simulated2D::Measurement(z2, sigma, x2, l2);
 
   // equality constraint between l1 and l2
-  graph.add(eq2D::PointEqualityConstraint(l1, l2));
+  graph += eq2D::PointEqualityConstraint(l1, l2);
 
   // create an initial estimate
   Values initialEstimate;
@@ -510,7 +506,7 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 
 // make a realistic calibration matrix
 static double fov = 60; // degrees
-static size_t w=640,h=480;
+static int w=640,h=480;
 static Cal3_S2 K(fov,w,h);
 static boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
 
@@ -542,16 +538,16 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
   VGraph graph;
 
   // create equality constraints for poses
-  graph.add(NonlinearEquality<Pose3>(x1, camera1.pose()));
-  graph.add(NonlinearEquality<Pose3>(x2, camera2.pose()));
+  graph += NonlinearEquality<Pose3>(x1, camera1.pose());
+  graph += NonlinearEquality<Pose3>(x2, camera2.pose());
 
   // create  factors
   SharedDiagonal vmodel = noiseModel::Unit::Create(2);
-  graph.add(GenericProjectionFactor<Pose3,Point3,Cal3_S2>(camera1.project(landmark), vmodel, x1, l1, shK));
-  graph.add(GenericProjectionFactor<Pose3,Point3,Cal3_S2>(camera2.project(landmark), vmodel, x2, l2, shK));
+  graph += GenericProjectionFactor<Pose3,Point3,Cal3_S2>(camera1.project(landmark), vmodel, x1, l1, shK);
+  graph += GenericProjectionFactor<Pose3,Point3,Cal3_S2>(camera2.project(landmark), vmodel, x2, l2, shK);
 
   // add equality constraint
-  graph.add(Point3Equality(l1, l2));
+  graph += Point3Equality(l1, l2);
 
   // create initial data
   Point3 landmark1(0.5, 5.0, 0.0);

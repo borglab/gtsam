@@ -25,6 +25,7 @@
 
 #include <string>
 #include <boost/function/function1.hpp>
+#include <boost/range/concepts.hpp>
 
 namespace gtsam {
 
@@ -39,6 +40,26 @@ namespace gtsam {
 
   /** The default IndexFormatter outputs the index */
   static const IndexFormatter DefaultIndexFormatter = &_defaultIndexFormatter;
+
+
+  /// Integer nonlinear key type
+  typedef size_t Key;
+
+  /// Typedef for a function to format a key, i.e. to convert it to a string
+  typedef boost::function<std::string(Key)> KeyFormatter;
+
+  // Helper function for DefaultKeyFormatter
+  GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);
+
+  /// The default KeyFormatter, which is used if no KeyFormatter is passed to
+  /// a nonlinear 'print' function.  Automatically detects plain integer keys
+  /// and Symbol keys.
+  static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
+
+
+  /// The index type for Eigen objects
+  typedef ptrdiff_t DenseIndex;
+
 
   /**
    * Helper class that uses templates to select between two types based on
@@ -82,6 +103,42 @@ namespace gtsam {
     /** Implicit conversion allows use in if statements for bool type, etc. */
     operator T() const { return value; }
   };
+
+  /** A helper class that behaves as a container with one element, and works with
+   * boost::range */
+  template<typename T>
+  class ListOfOneContainer {
+    T element_;
+  public:
+    typedef T value_type;
+    typedef const T* const_iterator;
+    typedef T* iterator;
+    ListOfOneContainer(const T& element) : element_(element) {}
+    const T* begin() const { return &element_; }
+    const T* end() const { return &element_ + 1; }
+    T* begin() { return &element_; }
+    T* end() { return &element_ + 1; }
+    size_t size() const { return 1; }
+  };
+
+  BOOST_CONCEPT_ASSERT((boost::RandomAccessRangeConcept<ListOfOneContainer<int> >));
+
+  /** Factory function for ListOfOneContainer to enable ListOfOne(e) syntax. */
+  template<typename T>
+  ListOfOneContainer<T> ListOfOne(const T& element) {
+    return ListOfOneContainer<T>(element);
+  }
+
+  /** An assertion that throws an exception if NDEBUG is not defined and
+   * evaluates to an empty statement otherwise. */
+#ifdef NDEBUG
+#define assert_throw(CONDITION, EXCEPTION) ((void)0)
+#else
+#define assert_throw(CONDITION, EXCEPTION) \
+  if(!(CONDITION)) { \
+    throw (EXCEPTION); \
+  }
+#endif
 
 }
 

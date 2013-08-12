@@ -20,7 +20,7 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
 
 #include <boost/assign/std/vector.hpp>
 

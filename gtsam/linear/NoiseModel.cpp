@@ -110,12 +110,14 @@ void Gaussian::WhitenInPlace(Matrix& H) const {
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
+  gttic(Gaussian_noise_model_QR);
+
   static const bool debug = false;
 
   // get size(A) and maxRank
   // TODO: really no rank problems ?
   size_t m = Ab.rows(), n = Ab.cols()-1;
-  size_t maxRank = min(m,n);
+//  size_t maxRank = min(m,n);
 
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
@@ -129,7 +131,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
   // TODO: necessary to isolate last column?
 //  householder(Ab, maxRank);
 
-  return Unit::Create(maxRank);
+  return SharedDiagonal();
 }
 
 void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
@@ -273,9 +275,9 @@ double Constrained::distance(const Vector& v) const {
   Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
   // TODO Find a better way of doing these checks
   for (size_t i=0; i<dim_; ++i) { // add mu weights on constrained variables
-    if (isinf(w[i])) // whiten makes constrained variables infinite
+    if (std::isinf(w[i])) // whiten makes constrained variables infinite
       w[i] = v[i] * sqrt(mu_[i]); // TODO: may want to store sqrt rather than rebuild
-    if (isnan(w[i])) // ensure no other invalid values make it through
+    if (std::isnan(w[i])) // ensure no other invalid values make it through
       w[i] = v[i];
   }
   return w.dot(w);

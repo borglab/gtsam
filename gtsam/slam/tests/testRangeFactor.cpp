@@ -24,6 +24,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/LieVector.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <boost/bind.hpp>
 
 using namespace std;

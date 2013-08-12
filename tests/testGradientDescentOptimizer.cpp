@@ -31,20 +31,20 @@ boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
   // 2a. Add Gaussian prior
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
-  graph.add(PriorFactor<Pose2>(1, priorMean, priorNoise));
+  graph += PriorFactor<Pose2>(1, priorMean, priorNoise);
 
   // 2b. Add odometry factors
   SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-  graph.add(BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, 0.0   ), odometryNoise));
-  graph.add(BetweenFactor<Pose2>(2, 3, Pose2(2.0, 0.0, M_PI_2), odometryNoise));
-  graph.add(BetweenFactor<Pose2>(3, 4, Pose2(2.0, 0.0, M_PI_2), odometryNoise));
-  graph.add(BetweenFactor<Pose2>(4, 5, Pose2(2.0, 0.0, M_PI_2), odometryNoise));
+  graph += BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, 0.0   ), odometryNoise);
+  graph += BetweenFactor<Pose2>(2, 3, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
+  graph += BetweenFactor<Pose2>(3, 4, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
+  graph += BetweenFactor<Pose2>(4, 5, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
 
   // 2c. Add pose constraint
   SharedDiagonal constraintUncertainty = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-  graph.add(BetweenFactor<Pose2>(5, 2, Pose2(2.0, 0.0, M_PI_2), constraintUncertainty));
+  graph += BetweenFactor<Pose2>(5, 2, Pose2(2.0, 0.0, M_PI_2), constraintUncertainty);
 
-  // 3. Create the data structure to hold the initialEstimate estinmate to the solution
+  // 3. Create the data structure to hold the initialEstimate estimate to the solution
   Values initialEstimate;
   Pose2 x1(0.5, 0.0, 0.2   ); initialEstimate.insert(1, x1);
   Pose2 x2(2.3, 0.1,-0.2   ); initialEstimate.insert(2, x2);

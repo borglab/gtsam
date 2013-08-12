@@ -24,13 +24,13 @@
 namespace gtsam {
 
   /**
-   * A Gaussian density.
-   *
-   * It is implemented as a GaussianConditional without parents.
-   * The negative log-probability is given by \f$ |Rx - d|^2 \f$
-   * with \f$ \Lambda = \Sigma^{-1} = R^T R \f$ and \f$ \mu = R^{-1} d \f$
-   */
-  class GTSAM_EXPORT GaussianDensity: public GaussianConditional {
+  * A Gaussian density.
+  *
+  * It is implemented as a GaussianConditional without parents.
+  * The negative log-probability is given by \f$ |Rx - d|^2 \f$
+  * with \f$ \Lambda = \Sigma^{-1} = R^T R \f$ and \f$ \mu = R^{-1} d \f$
+  */
+  class GTSAM_EXPORT GaussianDensity : public GaussianConditional {
 
   public:
 
@@ -38,24 +38,26 @@ namespace gtsam {
 
     /// default constructor needed for serialization
     GaussianDensity() :
-        GaussianConditional() {
+      GaussianConditional() {
     }
 
     /// Copy constructor from GaussianConditional
     GaussianDensity(const GaussianConditional& conditional) :
-        GaussianConditional(conditional) {
-      assert(conditional.nrParents() == 0);
+      GaussianConditional(conditional) {
+        if(conditional.nrParents() != 0)
+          throw std::invalid_argument("GaussianDensity can only be created from a conditional with no parents");
     }
 
     /// constructor using d, R
-    GaussianDensity(Index key, const Vector& d, const Matrix& R,
-        const Vector& sigmas) :
-        GaussianConditional(key, d, R, sigmas) {
-    }
+    GaussianDensity(Index key, const Vector& d, const Matrix& R, const SharedDiagonal& noiseModel = SharedDiagonal()) :
+      GaussianConditional(key, d, R, noiseModel) {}
+
+    /// Construct using a mean and variance
+    static GaussianDensity FromMeanAndStddev(Key key, const Vector& mean, const double& sigma);
 
     /// print
     void print(const std::string& = "GaussianDensity",
-        const IndexFormatter& formatter =DefaultIndexFormatter) const;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /// Mean \f$ \mu = R^{-1} d \f$
     Vector mean() const;
@@ -64,6 +66,6 @@ namespace gtsam {
     Matrix covariance() const;
 
   };
-// GaussianDensity
+  // GaussianDensity
 
 }// gtsam

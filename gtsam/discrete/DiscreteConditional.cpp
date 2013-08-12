@@ -37,14 +37,14 @@ namespace gtsam {
   /* ******************************************************************************** */
   DiscreteConditional::DiscreteConditional(const size_t nrFrontals,
       const DecisionTreeFactor& f) :
-      IndexConditional(f.keys(), nrFrontals), Potentials(
+      IndexConditionalOrdered(f.keys(), nrFrontals), Potentials(
           f / (*f.sum(nrFrontals))) {
   }
 
   /* ******************************************************************************** */
   DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
       const DecisionTreeFactor& marginal) :
-      IndexConditional(joint.keys(), joint.size() - marginal.size()), Potentials(
+      IndexConditionalOrdered(joint.keys(), joint.size() - marginal.size()), Potentials(
           ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal) {
     if (ISDEBUG("DiscreteConditional::DiscreteConditional"))
       cout << (firstFrontalKey()) << endl;  //TODO Print all keys
@@ -52,20 +52,20 @@ namespace gtsam {
 
   /* ******************************************************************************** */
   DiscreteConditional::DiscreteConditional(const Signature& signature) :
-      IndexConditional(signature.indices(), 1), Potentials(
+      IndexConditionalOrdered(signature.indices(), 1), Potentials(
           signature.discreteKeysParentsFirst(), signature.cpt()) {
   }
 
   /* ******************************************************************************** */
   void DiscreteConditional::print(const std::string& s, const IndexFormatter& formatter) const {
     std::cout << s << std::endl;
-    IndexConditional::print(s, formatter);
+    IndexConditionalOrdered::print(s, formatter);
     Potentials::print(s);
   }
 
   /* ******************************************************************************** */
   bool DiscreteConditional::equals(const DiscreteConditional& other, double tol) const {
-    return IndexConditional::equals(other, tol)
+    return IndexConditionalOrdered::equals(other, tol)
         && Potentials::equals(other, tol);
   }
 
@@ -197,7 +197,7 @@ namespace gtsam {
 
   /* ******************************************************************************** */
   void DiscreteConditional::permuteWithInverse(const Permutation& inversePermutation){
-    IndexConditional::permuteWithInverse(inversePermutation);
+    IndexConditionalOrdered::permuteWithInverse(inversePermutation);
     Potentials::permuteWithInverse(inversePermutation);
   }
 

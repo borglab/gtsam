@@ -19,6 +19,8 @@
 #include <cmath>
 
 #include <gtsam/linear/linearExceptions.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
@@ -74,7 +76,7 @@ void LevenbergMarquardtOptimizer::iterate() {
   gttic(LM_iterate);
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, *params_.ordering);
+  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values);
 
   // Pull out parameters we'll use
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_.verbosity;
@@ -88,18 +90,17 @@ void LevenbergMarquardtOptimizer::iterate() {
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
     gttic(damp);
-    GaussianFactorGraph dampedSystem(*linear);
+    GaussianFactorGraph dampedSystem = *linear;
     {
       double sigma = 1.0 / std::sqrt(state_.lambda);
-      dampedSystem.reserve(dampedSystem.size() + dimensions_.size());
+      dampedSystem.reserve(dampedSystem.size() + state_.values.size());
       // for each of the variables, add a prior
-      for(Index j=0; j<dimensions_.size(); ++j) {
-        size_t dim = (dimensions_)[j];
+      BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
+        size_t dim = key_value.value.dim();
         Matrix A = eye(dim);
         Vector b = zero(dim);
-        SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
-        GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
-        dampedSystem.push_back(prior);
+        SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
+        dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
       }
     }
     gttoc(damp);
@@ -115,7 +116,7 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       // update values
       gttic(retract);
-      Values newValues = state_.values.retract(delta, *params_.ordering);
+      Values newValues = state_.values.retract(delta);
       gttoc(retract);
 
       // create new optimization state with more adventurous lambda
@@ -143,6 +144,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         }
       }
     } catch(const IndeterminantLinearSystemException& e) {
+      (void) e; // Prevent unused variable warning
       if(lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
         cout << "Negative matrix, increasing lambda" << endl;
       // Either we're not cautious, or the same lambda was worse than the current error.
@@ -167,4 +169,14 @@ void LevenbergMarquardtOptimizer::iterate() {
   ++state_.iterations;
 }
 
+/* ************************************************************************* */
+LevenbergMarquardtParams LevenbergMarquardtOptimizer::ensureHasOrdering(
+  LevenbergMarquardtParams params, const NonlinearFactorGraph& graph) const
+{
+  if(!params.ordering)
+    params.ordering = Ordering::COLAMD(graph);
+  return params;
+}
+
 } /* namespace gtsam */
+

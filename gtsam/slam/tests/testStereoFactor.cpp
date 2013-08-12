@@ -189,11 +189,11 @@ TEST( StereoFactor, singlePoint)
 {
   NonlinearFactorGraph graph;
 
-  graph.add(NonlinearEquality<Pose3>(X(1), camera1));
+  graph.push_back(NonlinearEquality<Pose3>(X(1), camera1));
 
   StereoPoint2 measurement(320, 320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-  graph.add(GenericStereoFactor<Pose3, Point3>(measurement, model, X(1), L(1), K));
+  graph.push_back(GenericStereoFactor<Pose3, Point3>(measurement, model, X(1), L(1), K));
 
   // Create a configuration corresponding to the ground truth
   Values values;

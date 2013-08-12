@@ -21,77 +21,62 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/inference/IndexFactor.h>
-
-#include <boost/lexical_cast.hpp>
-
-#include <string>
-#include <utility>
+#include <gtsam/inference/Factor.h>
 
 namespace gtsam {
 
   // Forward declarations
   class VectorValues;
-  class Permutation;
-  class GaussianConditional;
-  template<class C> class BayesNet;
 
   /**
-   * An abstract virtual base class for JacobianFactor and HessianFactor.
-   * A GaussianFactor has a quadratic error function.
-   * GaussianFactor is non-mutable (all methods const!).
-   * The factor value is exp(-0.5*||Ax-b||^2)
-   */
-  class GTSAM_EXPORT GaussianFactor: public IndexFactor {
-
-  protected:
-
-    /** Copy constructor */
-    GaussianFactor(const This& f) : IndexFactor(f) {}
-
-    /** Construct from derived type */
-    GaussianFactor(const GaussianConditional& c);
-
-    /** Constructor from a collection of keys */
-    template<class KeyIterator> GaussianFactor(KeyIterator beginKey, KeyIterator endKey) :
-        Base(beginKey, endKey) {}
-
-    /** Default constructor for I/O */
-    GaussianFactor() {}
-
-    /** Construct unary factor */
-    GaussianFactor(Index j) : IndexFactor(j) {}
-
-    /** Construct binary factor */
-    GaussianFactor(Index j1, Index j2) : IndexFactor(j1, j2) {}
-
-    /** Construct ternary factor */
-    GaussianFactor(Index j1, Index j2, Index j3) : IndexFactor(j1, j2, j3) {}
-
-    /** Construct 4-way factor */
-    GaussianFactor(Index j1, Index j2, Index j3, Index j4) : IndexFactor(j1, j2, j3, j4) {}
-
-    /** Construct n-way factor */
-    GaussianFactor(const std::set<Index>& js) : IndexFactor(js) {}
-
-    /** Construct n-way factor */
-    GaussianFactor(const std::vector<Index>& js) : IndexFactor(js) {}
-
+   * An abstract virtual base class for JacobianFactor and HessianFactor. A GaussianFactor has a
+   * quadratic error function. GaussianFactor is non-mutable (all methods const!). The factor value
+   * is exp(-0.5*||Ax-b||^2) */
+  class GTSAM_EXPORT GaussianFactor : public Factor
+  {
   public:
+    typedef GaussianFactor This; ///< This class
+    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef Factor Base; ///< Our base class
 
-    typedef GaussianConditional ConditionalType;
-    typedef boost::shared_ptr<GaussianFactor> shared_ptr;
+    /** Default constructor creates empty factor */
+    GaussianFactor() {}
+    
+    /** Construct from container of keys.  This constructor is used internally from derived factor
+     *  constructors, either from a container of keys or from a boost::assign::list_of. */
+    template<typename CONTAINER>
+    GaussianFactor(const CONTAINER& keys) : Base(keys) {}
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const = 0;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const = 0;
 
+    /** Equals for testable */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 
+    /** Print for testable */
     virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
 
     /** Return the dimension of the variable pointed to by the given key iterator */
-    virtual size_t getDim(const_iterator variable) const = 0;
+    virtual DenseIndex getDim(const_iterator variable) const = 0;
+
+    /**
+     * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
+     * Jacobian matrix, augmented with b with the noise models baked
+     * into A and b.  The negative log-likelihood is
+     * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+     * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
+     */
+    virtual Matrix augmentedJacobian() const = 0;
+
+    /**
+     * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
+     * with the noise models baked into A and b. The negative log-likelihood
+     * is \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+     * GaussianFactorGraph::augmentedJacobian and
+     * GaussianFactorGraph::sparseJacobian.
+     */
+    virtual std::pair<Matrix,Vector> jacobian() const = 0;
 
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an
@@ -111,21 +96,8 @@ namespace gtsam {
     /** Clone a factor (make a deep copy) */
     virtual GaussianFactor::shared_ptr clone() const = 0;
 
-    /**
-     * Permutes the GaussianFactor, but for efficiency requires the permutation
-     * to already be inverted.  This acts just as a change-of-name for each
-     * variable.  The order of the variables within the factor is not changed.
-     */
-    virtual void permuteWithInverse(const Permutation& inversePermutation) {
-      IndexFactor::permuteWithInverse(inversePermutation);
-    }
-
-    /**
-     * Apply a reduction, which is a remapping of variable indices.
-     */
-    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
-      IndexFactor::reduceWithInverse(inverseReduction);
-    }
+    /** Test whether the factor is empty */
+    virtual bool empty() const = 0;
 
     /**
      * Construct the corresponding anti-factor to negate information
@@ -139,18 +111,9 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(IndexFactor);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
 
   }; // GaussianFactor
-
-  /** make keys from list, vector, or map of matrices */
-  template<typename ITERATOR>
-  static std::vector<Index> GetKeys(size_t n, ITERATOR begin, ITERATOR end) {
-    std::vector<Index> keys;
-    keys.reserve(n);
-    for (ITERATOR it=begin;it!=end;++it) keys.push_back(it->first);
-    return keys;
-  }
-
+  
 } // namespace gtsam

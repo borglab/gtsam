@@ -24,19 +24,20 @@
 #include <tests/simulated2D.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <boost/tuple/tuple.hpp>
+#include <boost/assign/list_of.hpp>
 
 namespace gtsam {
 namespace example {
   namespace {
 
-typedef NonlinearFactorGraph Graph;
-
 /**
  * Create small example for non-linear factor graph
  */
-boost::shared_ptr<const Graph> sharedNonlinearFactorGraph();
-Graph createNonlinearFactorGraph();
+boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph();
+NonlinearFactorGraph createNonlinearFactorGraph();
 
 /**
  * Create values structure to go with it
@@ -56,18 +57,18 @@ Values createNoisyValues();
 /**
  * Zero delta config
  */
-VectorValues createZeroDelta(const Ordering& ordering);
+VectorValues createZeroDelta();
 
 /**
  * Delta config that, when added to noisyValues, returns the ground truth
  */
-VectorValues createCorrectDelta(const Ordering& ordering);
+VectorValues createCorrectDelta();
 
 /**
  * create a linear factor graph
  * The non-linear graph above evaluated at NoisyValues
  */
-GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
+GaussianFactorGraph createGaussianFactorGraph();
 
 /**
  * create small Chordal Bayes Net x <- y
@@ -77,21 +78,21 @@ GaussianBayesNet createSmallGaussianBayesNet();
 /**
  * Create really non-linear factor graph (cos/sin)
  */
-boost::shared_ptr<const Graph>
+boost::shared_ptr<const NonlinearFactorGraph>
 sharedReallyNonlinearFactorGraph();
-Graph createReallyNonlinearFactorGraph();
+NonlinearFactorGraph createReallyNonlinearFactorGraph();
 
 /**
  * Create a full nonlinear smoother
  * @param T number of time-steps
  */
-std::pair<Graph, Values> createNonlinearSmoother(int T);
+std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T);
 
 /**
  * Create a Kalman smoother by linearizing a non-linear factor graph
  * @param T number of time-steps
  */
-std::pair<FactorGraph<GaussianFactor>, Ordering> createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
+GaussianFactorGraph createSmoother(int T);
 
 /* ******************************************************* */
 // Linear Constrained Examples
@@ -165,19 +166,19 @@ static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
 static SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
 static SharedDiagonal constraintModel = noiseModel::Constrained::All(2);
 
-static const Index _l1_=0, _x1_=1, _x2_=2;
-static const Index _x_=0, _y_=1, _z_=2;
+static const Key _l1_=0, _x1_=1, _x2_=2;
+static const Key _x_=0, _y_=1, _z_=2;
 } // \namespace impl
 
 
 /* ************************************************************************* */
-boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
+boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
   using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   // Create
-  boost::shared_ptr<Graph> nlfg(
-      new Graph);
+  boost::shared_ptr<NonlinearFactorGraph> nlfg(
+      new NonlinearFactorGraph);
 
   // prior on x1
   Point2 mu;
@@ -203,7 +204,7 @@ boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
-Graph createNonlinearFactorGraph() {
+NonlinearFactorGraph createNonlinearFactorGraph() {
   return *sharedNonlinearFactorGraph();
 }
 
@@ -221,10 +222,10 @@ Values createValues() {
 /* ************************************************************************* */
 VectorValues createVectorValues() {
   using namespace impl;
-  VectorValues c(std::vector<size_t>(3, 2));
-  c[_l1_] = Vector_(2, 0.0, -1.0);
-  c[_x1_] = Vector_(2, 0.0, 0.0);
-  c[_x2_] = Vector_(2, 1.5, 0.0);
+  VectorValues c = boost::assign::pair_list_of
+    (_l1_, Vector_(2, 0.0, -1.0))
+    (_x1_, Vector_(2, 0.0, 0.0))
+    (_x2_, Vector_(2, 1.5, 0.0));
   return c;
 }
 
@@ -245,47 +246,45 @@ Values createNoisyValues() {
 }
 
 /* ************************************************************************* */
-VectorValues createCorrectDelta(const Ordering& ordering) {
+VectorValues createCorrectDelta() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  VectorValues c(std::vector<size_t>(3,2));
-  c[ordering[L(1)]] = Vector_(2, -0.1, 0.1);
-  c[ordering[X(1)]] = Vector_(2, -0.1, -0.1);
-  c[ordering[X(2)]] = Vector_(2, 0.1, -0.2);
+  VectorValues c;
+  c.insert(L(1), Vector_(2, -0.1, 0.1));
+  c.insert(X(1), Vector_(2, -0.1, -0.1));
+  c.insert(X(2), Vector_(2, 0.1, -0.2));
   return c;
 }
 
 /* ************************************************************************* */
-VectorValues createZeroDelta(const Ordering& ordering) {
+VectorValues createZeroDelta() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  VectorValues c(std::vector<size_t>(3,2));
-  c[ordering[L(1)]] = zero(2);
-  c[ordering[X(1)]] = zero(2);
-  c[ordering[X(2)]] = zero(2);
+  VectorValues c;
+  c.insert(L(1), zero(2));
+  c.insert(X(1), zero(2));
+  c.insert(X(2), zero(2));
   return c;
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
+GaussianFactorGraph createGaussianFactorGraph() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   // Create empty graph
   GaussianFactorGraph fg;
 
-  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
-
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg.push_back(boost::make_shared<JacobianFactor>(ordering[X(1)], 10*eye(2), -1.0*ones(2), unit2));
+  fg += JacobianFactor(X(1), 10*eye(2), -1.0*ones(2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg.push_back(boost::make_shared<JacobianFactor>(ordering[X(1)], -10*eye(2),ordering[X(2)], 10*eye(2), Vector_(2, 2.0, -1.0), unit2));
+  fg += JacobianFactor(X(1), -10*eye(2), X(2), 10*eye(2), Vector_(2, 2.0, -1.0));
 
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg.push_back(boost::make_shared<JacobianFactor>(ordering[X(1)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, 0.0, 1.0), unit2));
+  fg += JacobianFactor(X(1), -5*eye(2), L(1), 5*eye(2), Vector_(2, 0.0, 1.0));
 
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg.push_back(boost::make_shared<JacobianFactor>(ordering[X(2)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, -1.0, 1.5), unit2));
+  fg += JacobianFactor(X(2), -5*eye(2), L(1), 5*eye(2), Vector_(2, -1.0, 1.5));
 
   return fg;
 }
@@ -303,12 +302,10 @@ GaussianBayesNet createSmallGaussianBayesNet() {
   Vector d1(1), d2(1);
   d1(0) = 9;
   d2(0) = 5;
-  Vector tau(1);
-  tau(0) = 1.0;
 
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11, _y_, S12, tau));
-  GaussianConditional::shared_ptr Py(new GaussianConditional(_y_, d2, R22, tau));
+  GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11, _y_, S12));
+  GaussianConditional::shared_ptr Py(new GaussianConditional(_y_, d2, R22));
   GaussianBayesNet cbn;
   cbn.push_back(Px_y);
   cbn.push_back(Py);
@@ -349,10 +346,10 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<const Graph> sharedReallyNonlinearFactorGraph() {
+boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  boost::shared_ptr<Graph> fg(new Graph);
+  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
   Vector z = Vector_(2, 1.0, 0.0);
   double sigma = 0.1;
   boost::shared_ptr<smallOptimize::UnaryFactor> factor(
@@ -361,18 +358,18 @@ boost::shared_ptr<const Graph> sharedReallyNonlinearFactorGraph() {
   return fg;
 }
 
-Graph createReallyNonlinearFactorGraph() {
+NonlinearFactorGraph createReallyNonlinearFactorGraph() {
   return *sharedReallyNonlinearFactorGraph();
 }
 
 /* ************************************************************************* */
-std::pair<Graph, Values> createNonlinearSmoother(int T) {
+std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
   using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
 
   // Create
-  Graph nlfg;
+  NonlinearFactorGraph nlfg;
   Values poses;
 
   // prior on x1
@@ -400,13 +397,12 @@ std::pair<Graph, Values> createNonlinearSmoother(int T) {
 }
 
 /* ************************************************************************* */
-std::pair<FactorGraph<GaussianFactor>, Ordering> createSmoother(int T, boost::optional<Ordering> ordering) {
-  Graph nlfg;
+GaussianFactorGraph createSmoother(int T) {
+  NonlinearFactorGraph nlfg;
   Values poses;
   boost::tie(nlfg, poses) = createNonlinearSmoother(T);
 
-  if(!ordering) ordering = *poses.orderingArbitrary();
-  return std::make_pair(*nlfg.linearize(poses, *ordering), *ordering);
+  return *nlfg.linearize(poses);
 }
 
 /* ************************************************************************* */
@@ -443,10 +439,10 @@ VectorValues createSimpleConstraintValues() {
   using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  VectorValues config(std::vector<size_t>(2,2));
+  VectorValues config;
   Vector v = Vector_(2, 1.0, -1.0);
-  config[_x_] = v;
-  config[_y_] = v;
+  config.insert(_x_, v);
+  config.insert(_y_, v);
   return config;
 }
 
@@ -487,9 +483,9 @@ GaussianFactorGraph createSingleConstraintGraph() {
 /* ************************************************************************* */
 VectorValues createSingleConstraintValues() {
   using namespace impl;
-  VectorValues config(std::vector<size_t>(2,2));
-  config[_x_] = Vector_(2, 1.0, -1.0);
-  config[_y_] = Vector_(2, 0.2, 0.1);
+  VectorValues config = boost::assign::pair_list_of
+    (_x_, Vector_(2, 1.0, -1.0))
+    (_y_, Vector_(2, 0.2, 0.1));
   return config;
 }
 
@@ -551,17 +547,17 @@ GaussianFactorGraph createMultiConstraintGraph() {
 /* ************************************************************************* */
 VectorValues createMultiConstraintValues() {
   using namespace impl;
-  VectorValues config(std::vector<size_t>(3,2));
-  config[_x_] = Vector_(2, -2.0, 2.0);
-  config[_y_] = Vector_(2, -0.1, 0.4);
-  config[_z_] = Vector_(2, -4.0, 5.0);
+  VectorValues config = boost::assign::pair_list_of
+    (_x_, Vector_(2, -2.0, 2.0))
+    (_y_, Vector_(2, -0.1, 0.4))
+    (_z_, Vector_(2, -4.0, 5.0));
   return config;
 }
 
 /* ************************************************************************* */
 // Create key for simulated planar graph
 namespace impl {
-Symbol key(int x, int y) {
+Symbol key(size_t x, size_t y) {
   using symbol_shorthand::X;
   return X(1000*x+y);
 }
@@ -599,14 +595,13 @@ boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
       zeros.insert(key(x, y), Point2());
-  Ordering ordering(planarOrdering(N));
-  VectorValues xtrue(zeros.dims(ordering));
+  VectorValues xtrue;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      xtrue[ordering[key(x, y)]] = Point2(x,y).vector();
+      xtrue.insert(key(x, y), Point2((double)x, (double)y).vector());
 
   // linearize around zero
-  boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros, ordering);
+  boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);
   return boost::make_tuple(*gfg, xtrue);
 }
 

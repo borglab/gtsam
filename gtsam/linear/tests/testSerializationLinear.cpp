@@ -19,7 +19,6 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/NoiseModel.h>
 
@@ -164,7 +163,7 @@ TEST (Serialization, gaussian_conditional) {
   Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
   Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
   Vector d(2); d << 0.2, 0.5;
-  GaussianConditional cg(0, d, R, 1, A1, 2, A2, ones(2));
+  GaussianConditional cg(0, d, R, 1, A1, 2, A2);
 
   EXPECT(equalsObj(cg));
   EXPECT(equalsXML(cg));

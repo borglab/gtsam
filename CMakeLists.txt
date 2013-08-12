@@ -100,10 +100,15 @@ endif()
 ###############################################################################
 # Find boost
 
+# To change the path for boost, you will need to set:
+# BOOST_ROOT: path to install prefix for boost
+# Boost_NO_SYSTEM_PATHS: set to true to keep the find script from ignoring BOOST_ROOT
+
 # If using Boost shared libs, set up auto linking for shared libs
 if(MSVC AND NOT Boost_USE_STATIC_LIBS)
 	add_definitions(-DBOOST_ALL_DYN_LINK)
 endif()
+add_definitions(-DBOOST_ALL_NO_LIB)
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time regex timer chrono)
 
@@ -115,7 +120,9 @@ endif()
 
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
-set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
+set(GTSAM_BOOST_LIBRARIES
+    ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY}
+	${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     add_definitions(-DGTSAM_DISABLE_NEW_TIMERS)
@@ -123,7 +130,7 @@ else()
     if(Boost_TIMER_LIBRARY)
       list(APPEND GTSAM_BOOST_LIBRARIES ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
     else()
-      message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
+      message("WARNING:  GTSAM timing instrumentation will use the older, less accurate, Boost timer library because boost older than 1.48 was found.")
     endif()
 endif()
 
@@ -157,11 +164,31 @@ install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINAT
 
 
 ###############################################################################
+# Find TBB
+set(ENV{TBB_ARCH_PLATFORM} "intel64/vc11")
+set(ENV{TBB_BIN_DIR} "C:/Program Files/Intel/TBB/bin")
+set(ENV{TBB_TARGET_ARCH} intel64)
+set(ENV{TBB_TARGET_VS} vc11)
+find_package(TBB REQUIRED)
+set(TBB_LIBS "")
+if(TBB_DEBUG_LIBRARIES)
+    foreach(lib ${TBB_LIBRARIES})
+    	list(APPEND TBB_LIBS optimized "${lib}")
+    endforeach()
+    foreach(lib ${TBB_DEBUG_LIBRARIES})
+    	list(APPEND TBB_LIBS debug "${lib}")
+    endforeach()
+else()
+    set(TBB_LIBS ${TBB_LIBRARIES})
+endif()
+
+
+###############################################################################
 # Global compile options
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
 # takes precedence over a system-installed one.
-include_directories(BEFORE ${Boost_INCLUDE_DIR})
+include_directories(BEFORE ${TBB_INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
@@ -175,7 +202,9 @@ include_directories(BEFORE
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	add_definitions(/wd4251 /wd4275 /wd4251) # Disable non-DLL-exported base class warnings
+	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661) # Disable non-DLL-exported base class and other warnings
+else()
+    list(APPEND CMAKE_CXX_FLAGS "-std=c++11") # FIXME: we should probably avoid these extensions
 endif()
 
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)

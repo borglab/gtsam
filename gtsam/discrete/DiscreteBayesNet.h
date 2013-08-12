@@ -20,12 +20,12 @@
 #include <vector>
 #include <map>
 #include <boost/shared_ptr.hpp>
-#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/BayesNetOrdered.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 
 namespace gtsam {
 
-  typedef BayesNet<DiscreteConditional> DiscreteBayesNet;
+  typedef BayesNetOrdered<DiscreteConditional> DiscreteBayesNet;
 
   /** Add a DiscreteCondtional */
   GTSAM_EXPORT void add(DiscreteBayesNet&, const Signature& s);

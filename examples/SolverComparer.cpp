@@ -26,6 +26,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 
 #include <fstream>
+#include <iostream>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/export.hpp>
@@ -489,15 +490,14 @@ void runPerturb()
 
   // Perturb values
   VectorValues noise;
-  Ordering ordering = *initial.orderingArbitrary();
   BOOST_FOREACH(const Values::KeyValuePair& key_val, initial)
   {
     Vector noisev(key_val.value.dim());
     for(Vector::Index i = 0; i < noisev.size(); ++i)
       noisev(i) = normal(rng);
-    noise.insert(ordering[key_val.key], noisev);
+    noise.insert(key_val.key, noisev);
   }
-  Values perturbed = initial.retract(noise, ordering);
+  Values perturbed = initial.retract(noise);
 
   // Write results
   try {

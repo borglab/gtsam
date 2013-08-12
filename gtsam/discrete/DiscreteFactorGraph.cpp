@@ -19,14 +19,14 @@
 //#define ENABLE_TIMING
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/inference/EliminationTreeOrdered-inl.h>
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
 
   // Explicitly instantiate so we don't have to include everywhere
-  template class FactorGraph<DiscreteFactor> ;
-  template class EliminationTree<DiscreteFactor> ;
+  template class FactorGraphOrdered<DiscreteFactor> ;
+  template class EliminationTreeOrdered<DiscreteFactor> ;
 
   /* ************************************************************************* */
   DiscreteFactorGraph::DiscreteFactorGraph() {
@@ -34,8 +34,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   DiscreteFactorGraph::DiscreteFactorGraph(
-      const BayesNet<DiscreteConditional>& bayesNet) :
-      FactorGraph<DiscreteFactor>(bayesNet) {
+      const BayesNetOrdered<DiscreteConditional>& bayesNet) :
+      FactorGraphOrdered<DiscreteFactor>(bayesNet) {
   }
 
   /* ************************************************************************* */
@@ -95,7 +95,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
-  EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors, size_t num) {
+  EliminateDiscrete(const FactorGraphOrdered<DiscreteFactor>& factors, size_t num) {
 
     // PRODUCT: multiply all factors
     gttic(product);

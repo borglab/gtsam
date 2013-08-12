@@ -497,6 +497,8 @@ Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
   return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
 }
 
+std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal = false);
+
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>

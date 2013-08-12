@@ -89,7 +89,7 @@ public:
    * If only a single variable is needed, it may be faster to call calculateEstimate(const KEY&).
    */
   Values calculateEstimate() const {
-    return theta_.retract(delta_, ordering_);
+    return theta_.retract(delta_);
   }
 
   /** Compute the current best estimate of a single variable. This is generally faster than

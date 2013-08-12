@@ -20,13 +20,13 @@
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
-#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/FactorGraphOrdered.h>
 #include <gtsam/base/FastSet.h>
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
 
-class DiscreteFactorGraph: public FactorGraph<DiscreteFactor> {
+class DiscreteFactorGraph: public FactorGraphOrdered<DiscreteFactor> {
 public:
 
   /** A map from keys to values */
@@ -39,12 +39,12 @@ public:
 
   /** Constructor from a factor graph of GaussianFactor or a derived type */
   template<class DERIVEDFACTOR>
-  DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg) {
+  DiscreteFactorGraph(const FactorGraphOrdered<DERIVEDFACTOR>& fg) {
     push_back(fg);
   }
 
   /** construct from a BayesNet */
-  GTSAM_EXPORT DiscreteFactorGraph(const BayesNet<DiscreteConditional>& bayesNet);
+  GTSAM_EXPORT DiscreteFactorGraph(const BayesNetOrdered<DiscreteConditional>& bayesNet);
 
   template<class SOURCE>
   void add(const DiscreteKey& j, SOURCE table) {
@@ -90,7 +90,7 @@ public:
 
 /** Main elimination function for DiscreteFactorGraph */
 GTSAM_EXPORT std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
-EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors,
+EliminateDiscrete(const FactorGraphOrdered<DiscreteFactor>& factors,
     size_t nrFrontals = 1);
 
 } // namespace gtsam

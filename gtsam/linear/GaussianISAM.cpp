@@ -10,58 +10,25 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GaussianISAM.cpp
- * @brief   Linear ISAM only
- * @author  Michael Kaess
+ * @file SymbolicISAM.cpp
+ * @date July 29, 2013
+ * @author Frank Dellaert
+ * @author Richard Roberts
  */
 
 #include <gtsam/linear/GaussianISAM.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-
-#include <gtsam/inference/ISAM.h>
-
-using namespace std;
-using namespace gtsam;
+#include <gtsam/inference/ISAM-inst.h>
 
 namespace gtsam {
 
-// Explicitly instantiate so we don't have to include everywhere
-template class ISAM<GaussianConditional>;
+  // Instantiate base class
+  template class ISAM<GaussianBayesTree>;
 
-/* ************************************************************************* */
-GaussianFactor::shared_ptr GaussianISAM::marginalFactor(Index j) const {
-  return Super::marginalFactor(j, &EliminateQR);
+  /* ************************************************************************* */
+  GaussianISAM::GaussianISAM() {}
+
+  /* ************************************************************************* */
+  GaussianISAM::GaussianISAM(const GaussianBayesTree& bayesTree) :
+    Base(bayesTree) {}
+
 }
-
-/* ************************************************************************* */
-BayesNet<GaussianConditional>::shared_ptr GaussianISAM::marginalBayesNet(Index j) const {
-  return Super::marginalBayesNet(j, &EliminateQR);
-}
-
-/* ************************************************************************* */
-Matrix GaussianISAM::marginalCovariance(Index j) const {
-  GaussianConditional::shared_ptr conditional = marginalBayesNet(j)->front();
-  return conditional->information().inverse();
-}
-
-/* ************************************************************************* */
-  BayesNet<GaussianConditional>::shared_ptr GaussianISAM::jointBayesNet(
-      Index key1, Index key2) const {
-  return Super::jointBayesNet(key1, key2, &EliminateQR);
-}
-
-/* ************************************************************************* */
-VectorValues optimize(const GaussianISAM& isam) {
-  VectorValues result(isam.dims_);
-  // Call optimize for BayesTree
-  optimizeInPlace((const BayesTree<GaussianConditional>&)isam, result);
-  return result;
-}
-
-/* ************************************************************************* */
-BayesNet<GaussianConditional> GaussianISAM::shortcut(sharedClique clique, sharedClique root) {
-  return clique->shortcut(root,&EliminateQR);
-}
-/* ************************************************************************* */
-
-} // \namespace gtsam

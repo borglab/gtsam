@@ -24,12 +24,7 @@
 
 #pragma once
 
-#include <gtsam/base/Value.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/Ordering.h>
-
+#include <boost/optional.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>
@@ -49,9 +44,14 @@
 #include <string>
 #include <utility>
 
+#include <gtsam/base/Value.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/inference/Key.h>
+
 namespace gtsam {
 
   // Forward declarations / utilities
+  class VectorValues;
   class ValueCloneAllocator;
   class ValueAutomaticCasting;
   template<typename T> static bool _truePredicate(const T&) { return true; }
@@ -206,9 +206,6 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
-    /** Get a zero VectorValues of the correct structure */
-    VectorValues zeroVectors(const Ordering& ordering) const;
-
     const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
     const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
     iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
@@ -222,13 +219,10 @@ namespace gtsam {
     /// @{
 
     /** Add a delta config to current config and returns a new config */
-    Values retract(const VectorValues& delta, const Ordering& ordering) const;
+    Values retract(const VectorValues& delta) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorValues localCoordinates(const Values& cp, const Ordering& ordering) const;
-
-    /** Get a delta config about a linearization point c0 (*this) - assumes uninitialized delta */
-    void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
+    VectorValues localCoordinates(const Values& cp) const;
 
     ///@}
 
@@ -262,19 +256,11 @@ namespace gtsam {
     /** Remove all variables from the config */
     void clear() { values_.clear(); }
 
-    /** Create an array of variable dimensions using the given ordering (\f$ O(n) \f$) */
-    std::vector<size_t> dims(const Ordering& ordering) const;
-
     /** Compute the total dimensionality of all values (\f$ O(n) \f$) */
     size_t dim() const;
 
-    /**
-     * Generate a default ordering, simply in key sort order.  To instead
-     * create a fill-reducing ordering, use
-     * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
-     * this ordering yourself (as orderingCOLAMD() does internally).
-     */
-    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const;
+    /** Return a VectorValues of zero vectors for each variable in this Values */
+    VectorValues zeroVectors() const;
 
     /**
      * Return a filtered view of this Values class, without copying any data.

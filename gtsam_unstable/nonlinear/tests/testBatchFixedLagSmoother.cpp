@@ -18,16 +18,16 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/base/debug.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 using namespace std;
 using namespace gtsam;
@@ -35,11 +35,9 @@ using namespace gtsam;
 /* ************************************************************************* */
 bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullinit, const BatchFixedLagSmoother& smoother, const Key& key) {
 
-  Ordering ordering = *fullgraph.orderingCOLAMD(fullinit);
-  GaussianFactorGraph linearized = *fullgraph.linearize(fullinit, ordering);
-  GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
-  VectorValues delta = optimize(gbn);
-  Values fullfinal = fullinit.retract(delta, ordering);
+  GaussianFactorGraph linearized = *fullgraph.linearize(fullinit);
+  VectorValues delta = linearized.optimize();
+  Values fullfinal = fullinit.retract(delta);
 
   Point2 expected = fullfinal.at<Point2>(key);
   Point2 actual = smoother.calculateEstimate<Point2>(key);
@@ -48,7 +46,7 @@ bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullini
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( BatchFixedLagSmoother, Example )
+TEST( BatchFixedLagSmoother, Example )
 {
   // Test the BatchFixedLagSmoother in a pure linear environment. Thus, full optimization and
   // the BatchFixedLagSmoother should be identical (even with the linearized approximations at

@@ -26,6 +26,8 @@
 
 #include <utility>
 
+#include <boost/foreach.hpp>
+
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
 

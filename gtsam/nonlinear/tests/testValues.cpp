@@ -16,6 +16,7 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Testable.h>
@@ -24,6 +25,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/list_of.hpp>
 using namespace boost::assign;
 #include <stdexcept>
 #include <limits>
@@ -168,16 +170,15 @@ TEST(Values, expmap_a)
   config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  Ordering ordering(*config0.orderingArbitrary());
-  VectorValues increment(config0.dims(ordering));
-  increment[ordering[key1]] = Vector_(3, 1.0, 1.1, 1.2);
-  increment[ordering[key2]] = Vector_(3, 1.3, 1.4, 1.5);
+  VectorValues increment = pair_list_of
+    (key1, Vector_(3, 1.0, 1.1, 1.2))
+    (key2, Vector_(3, 1.3, 1.4, 1.5));
 
   Values expected;
   expected.insert(key1, LieVector(3, 2.0, 3.1, 4.2));
   expected.insert(key2, LieVector(3, 6.3, 7.4, 8.5));
 
-  CHECK(assert_equal(expected, config0.retract(increment, ordering)));
+  CHECK(assert_equal(expected, config0.retract(increment)));
 }
 
 /* ************************************************************************* */
@@ -187,15 +188,14 @@ TEST(Values, expmap_b)
   config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  Ordering ordering(*config0.orderingArbitrary());
-  VectorValues increment(VectorValues::Zero(config0.dims(ordering)));
-  increment[ordering[key2]] = LieVector(3, 1.3, 1.4, 1.5);
+  VectorValues increment = pair_list_of
+    (key2, LieVector(3, 1.3, 1.4, 1.5));
 
   Values expected;
   expected.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   expected.insert(key2, LieVector(3, 6.3, 7.4, 8.5));
 
-  CHECK(assert_equal(expected, config0.retract(increment, ordering)));
+  CHECK(assert_equal(expected, config0.retract(increment)));
 }
 
 /* ************************************************************************* */
@@ -241,15 +241,13 @@ TEST(Values, localCoordinates)
   valuesA.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  Ordering ordering = *valuesA.orderingArbitrary();
+  VectorValues expDelta = pair_list_of
+    (key1, Vector_(3, 0.1, 0.2, 0.3))
+    (key2, Vector_(3, 0.4, 0.5, 0.6));
 
-  VectorValues expDelta = valuesA.zeroVectors(ordering);
-//  expDelta.at(ordering[key1]) = Vector_(3, 0.1, 0.2, 0.3);
-//  expDelta.at(ordering[key2]) = Vector_(3, 0.4, 0.5, 0.6);
+  Values valuesB = valuesA.retract(expDelta);
 
-  Values valuesB = valuesA.retract(expDelta, ordering);
-
-  EXPECT(assert_equal(expDelta, valuesA.localCoordinates(valuesB, ordering)));
+  EXPECT(assert_equal(expDelta, valuesA.localCoordinates(valuesB)));
 }
 
 /* ************************************************************************* */

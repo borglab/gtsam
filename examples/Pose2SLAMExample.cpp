@@ -29,7 +29,7 @@
 #include <gtsam/geometry/Pose2.h>
 
 // We will use simple integer Keys to refer to the robot poses.
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.

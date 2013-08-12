@@ -6,8 +6,8 @@
  */
 
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
-#include <gtsam/inference/EliminationTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <boost/shared_ptr.hpp>
@@ -53,20 +53,19 @@ void SuccessiveLinearizationParams::print(const std::string& str) const {
   std::cout.flush();
 }
 
-VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) {
+VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params)
+{
   gttic(solveGaussianFactorGraph);
   VectorValues delta;
   if (params.isMultifrontal()) {
-    delta = GaussianJunctionTree(gfg).optimize(params.getEliminationFunction());
+    delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
   } else if(params.isSequential()) {
-    const boost::shared_ptr<GaussianBayesNet> gbn =
-      EliminationTree<GaussianFactor>::Create(gfg)->eliminate(params.getEliminationFunction());
-    delta = gtsam::optimize(*gbn);
+    delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction())->optimize();
   }
   else if ( params.isCG() ) {
     if ( !params.iterativeParams ) throw std::runtime_error("solveGaussianFactorGraph: cg parameter has to be assigned ...");
     if ( boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams) ) {
-      SubgraphSolver solver (gfg, *boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams));
+      SubgraphSolver solver(gfg, dynamic_cast<const SubgraphSolverParameters&>(*params.iterativeParams), *params.ordering);
       delta = solver.optimize();
     }
     else {

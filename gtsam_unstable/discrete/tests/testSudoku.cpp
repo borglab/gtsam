@@ -179,7 +179,7 @@ TEST_UNSAFE( Sudoku, extreme)
   sudoku.runArcConsistency(9,10,PRINT);
 
 #ifdef METIS
-  VariableIndex index(sudoku);
+  VariableIndexOrdered index(sudoku);
   index.print("index");
   ofstream os("/Users/dellaert/src/hmetis-1.5-osx-i686/extreme-dual.txt");
   index.outputMetisFormat(os);

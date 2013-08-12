@@ -68,7 +68,7 @@ namespace gtsam {
     BetweenFactorEM(Key key1, Key key2, const VALUE& measured,
         const SharedGaussian& model_inlier, const SharedGaussian& model_outlier,
         const double prior_inlier, const double prior_outlier) :
-          Base(key1, key2), key1_(key1), key2_(key2), measured_(measured),
+          Base(cref_list_of<2>(key1)(key2)), key1_(key1), key2_(key2), measured_(measured),
           model_inlier_(model_inlier), model_outlier_(model_outlier),
           prior_inlier_(prior_inlier), prior_outlier_(prior_outlier){
     }
@@ -119,7 +119,7 @@ namespace gtsam {
      * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
      */
     /* This version of linearize recalculates the noise model each time */
-    virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x, const gtsam::Ordering& ordering) const {
+    virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const {
       // Only linearize if the factor is active
       if (!this->active(x))
         return boost::shared_ptr<gtsam::JacobianFactor>();
@@ -132,7 +132,7 @@ namespace gtsam {
       A2 = A[1];
 
       return gtsam::GaussianFactor::shared_ptr(
-          new gtsam::JacobianFactor(ordering[key1_], A1, ordering[key2_], A2, b, gtsam::noiseModel::Unit::Create(b.size())));
+          new gtsam::JacobianFactor(key1_, A1, key2_, A2, b, gtsam::noiseModel::Unit::Create(b.size())));
     }
 
 
@@ -165,17 +165,17 @@ namespace gtsam {
 
       Vector err_wh_eq;
       err_wh_eq.resize(err_wh_inlier.rows()*2);
-      err_wh_eq << std::sqrt(p_inlier) * err_wh_inlier.array() , std::sqrt(p_outlier) * err_wh_outlier.array();
+      err_wh_eq << sqrt(p_inlier) * err_wh_inlier.array() , sqrt(p_outlier) * err_wh_outlier.array();
 
       if (H){
         // stack Jacobians for the two indicators for each of the key
 
-        Matrix H1_inlier  = std::sqrt(p_inlier)*model_inlier_->Whiten(H1);
-        Matrix H1_outlier = std::sqrt(p_outlier)*model_outlier_->Whiten(H1);
+        Matrix H1_inlier  = sqrt(p_inlier)*model_inlier_->Whiten(H1);
+        Matrix H1_outlier = sqrt(p_outlier)*model_outlier_->Whiten(H1);
         Matrix H1_aug = gtsam::stack(2, &H1_inlier, &H1_outlier);
 
-        Matrix H2_inlier  = std::sqrt(p_inlier)*model_inlier_->Whiten(H2);
-        Matrix H2_outlier = std::sqrt(p_outlier)*model_outlier_->Whiten(H2);
+        Matrix H2_inlier  = sqrt(p_inlier)*model_inlier_->Whiten(H2);
+        Matrix H2_outlier = sqrt(p_outlier)*model_outlier_->Whiten(H2);
         Matrix H2_aug = gtsam::stack(2, &H2_inlier, &H2_outlier);
 
         (*H)[0].resize(H1_aug.rows(),H1_aug.cols());
@@ -232,8 +232,8 @@ namespace gtsam {
       Matrix invCov_inlier  = model_inlier_->R().transpose() * model_inlier_->R();
       Matrix invCov_outlier = model_outlier_->R().transpose() * model_outlier_->R();
 
-      double p_inlier  = prior_inlier_ * sqrt(invCov_inlier.norm()) * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
-      double p_outlier = prior_outlier_ * sqrt(invCov_outlier.norm()) * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
+      double p_inlier  = prior_inlier_ * std::sqrt(invCov_inlier.norm()) * exp( -0.5 * err_wh_inlier.dot(err_wh_inlier) );
+      double p_outlier = prior_outlier_ * std::sqrt(invCov_outlier.norm()) * exp( -0.5 * err_wh_outlier.dot(err_wh_outlier) );
 
       double sumP = p_inlier + p_outlier;
       p_inlier  /= sumP;

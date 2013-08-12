@@ -124,11 +124,11 @@ TEST( KalmanFilter, linear1 ) {
   // Run iteration 3
   KalmanFilter::State p3p = kf.predict(p2, F, B, u, modelQ);
   EXPECT(assert_equal(expected3, p3p->mean()));
-  LONGS_EQUAL(3, KalmanFilter::step(p3p));
+  LONGS_EQUAL(3, (long)KalmanFilter::step(p3p));
 
   KalmanFilter::State p3 = kf.update(p3p, H, z3, modelR);
   EXPECT(assert_equal(expected3, p3->mean()));
-  LONGS_EQUAL(3, KalmanFilter::step(p3));
+  LONGS_EQUAL(3, (long)KalmanFilter::step(p3));
 }
 
 /* ************************************************************************* */
