@@ -42,6 +42,7 @@ namespace gtsam {
     ///< (important that the order is the same as the keys that we use to create the factor)
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     const SharedNoiseModel noise_;   ///< noise model used
+    boost::optional<Point3> point_;
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
     // verbosity handling for Cheirality Exceptions
@@ -73,8 +74,9 @@ namespace gtsam {
      */
     SmartProjectionFactor(const std::vector<Point2> measured, const SharedNoiseModel& model,
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
+        boost::optional<LANDMARK> point = boost::none,
         boost::optional<POSE> body_P_sensor = boost::none) :
-          measured_(measured),  K_(K), noise_(model), body_P_sensor_(body_P_sensor),
+          measured_(measured),  K_(K), noise_(model), point_(point), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
     }
@@ -93,8 +95,9 @@ namespace gtsam {
     SmartProjectionFactor(const std::vector<Point2> measured, const SharedNoiseModel& model,
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
+        boost::optional<LANDMARK> point = boost::none,
         boost::optional<POSE> body_P_sensor = boost::none) :
-          measured_(measured),  K_(K),  noise_(model), body_P_sensor_(body_P_sensor),
+          measured_(measured),  K_(K),  noise_(model), point_(point), body_P_sensor_(body_P_sensor),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /** Virtual destructor */
@@ -159,8 +162,23 @@ namespace gtsam {
       }
 
       // We triangulate the 3D position of the landmark
-      boost::optional<Point3> point = triangulatePoint3(cameraPoses, measured_, *K_);
-
+      if (debug) {
+        BOOST_FOREACH(const Pose3& pose, cameraPoses) {
+          std::cout << "Pose: " << pose << std::endl;
+        }
+        BOOST_FOREACH(const Point2& point, measured_) {
+          std::cout << "Point: " << point << std::endl;
+        }
+      }
+      boost::optional<Point3> point;
+      if (point_) {
+      	point = point_;
+        //std::cout << "Using existing point " << *point << std::endl;
+      } else {
+        //std::cout << "Triangulating in linearize " << std::endl;
+        point = triangulatePoint3(cameraPoses, measured_, *K_);
+      }
+      if (debug) std::cout << "Result: " << *point << std::endl;
 
 
       if (debug) {
@@ -179,6 +197,7 @@ namespace gtsam {
 
       // point is behind one of the cameras, turn factor off by setting everything to 0
       if (!point) {
+        std::cout << "WARNING: Could not triangulate during linearize" << std::endl;
         BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6,6);
         BOOST_FOREACH(Vector& v, gs) v = zero(6);
         return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
@@ -365,6 +384,7 @@ namespace gtsam {
      * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
      */
     virtual double error(const Values& values) const {
+      bool debug = false;
       if (this->active(values)) {
         double overallError=0;
 
@@ -379,7 +399,23 @@ namespace gtsam {
         }
 
         // We triangulate the 3D position of the landmark
-        boost::optional<Point3> point = triangulatePoint3(cameraPoses, measured_, *K_);
+        if (debug) {
+          BOOST_FOREACH(const Pose3& pose, cameraPoses) {
+            std::cout << "Pose: " << pose << std::endl;
+          }
+          BOOST_FOREACH(const Point2& point, measured_) {
+            std::cout << "Point: " << point << std::endl;
+          }
+        }
+        boost::optional<Point3> point;
+        if (point_) {
+        	point = point_;
+          //std::cout << "Using existing point " << *point << std::endl;
+        } else {
+          //std::cout << "Triangulate during error calc" << std::endl;
+          point = triangulatePoint3(cameraPoses, measured_, *K_);
+        }
+        if (debug) std::cout << "Result: " << *point << std::endl;
 
         if(point)
         { // triangulation produced a good estimate of landmark position
@@ -392,7 +428,8 @@ namespace gtsam {
             overallError += noise_->distance( reprojectionError.vector() );
           }
           return std::sqrt(overallError);
-        }else{ // triangulation failed: we deactivate the factor, then the error should not contribute to the overall error
+        } else{ // triangulation failed: we deactivate the factor, then the error should not contribute to the overall error
+          std::cout << "WARNING: Could not triangulate during error calc" << std::endl;
           return 0.0;
         }
       } else {
@@ -429,5 +466,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
+
   };
 } // \ namespace gtsam
