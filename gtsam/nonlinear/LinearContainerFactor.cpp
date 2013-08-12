@@ -135,12 +135,12 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isJacobian() const {
-  return boost::dynamic_pointer_cast<JacobianFactor>(factor_).get();
+  return dynamic_cast<const JacobianFactor*>(factor_.get()) != 0;
 }
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isHessian() const {
-  return boost::dynamic_pointer_cast<HessianFactor>(factor_).get();
+  return dynamic_cast<const HessianFactor*>(factor_.get()) != 0;
 }
 
 /* ************************************************************************* */
