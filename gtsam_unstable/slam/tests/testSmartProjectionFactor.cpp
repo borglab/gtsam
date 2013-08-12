@@ -166,8 +166,8 @@ TEST( SmartProjectionFactor, noisy ){
 
 
 /* ************************************************************************* */
-TEST( SmartProjectionFactor, 3poses ){
-  cout << " ************************ MultiProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
+TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
+  cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -232,16 +232,18 @@ TEST( SmartProjectionFactor, 3poses ){
   graph.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1));
+//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
   Values values;
   values.insert(x1, pose1);
-  values.insert(x2, pose2*noise_pose);
-  values.insert(x3, pose3);
+  values.insert(x2, pose2);
+  // initialize third pose with some noise, we expect it to move back to original pose3
+  values.insert(x3, pose3*noise_pose);
+  values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   params.verbosity = NonlinearOptimizerParams::ERROR;
-
 
   Values result;
   gttic_(SmartProjectionFactor);
@@ -250,7 +252,9 @@ TEST( SmartProjectionFactor, 3poses ){
   gttoc_(SmartProjectionFactor);
   tictoc_finishedIteration_();
 
-  result.print("results of 3 camera, 3 landmark optimization \n");
+  // result.print("results of 3 camera, 3 landmark optimization \n");
+  result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
   tictoc_print_();
 
 }
@@ -258,7 +262,7 @@ TEST( SmartProjectionFactor, 3poses ){
 
 /* ************************************************************************* */
 TEST( SmartProjectionFactor, 3poses_projection_factor ){
-  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
+//  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -280,7 +284,6 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
-  pose3.print("Pose3: ");
   SimpleCamera cam3(pose3, *K);
 
   // three landmarks ~5 meters infront of camera
@@ -317,6 +320,7 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
   values.insert(L(1), landmark1);
   values.insert(L(2), landmark2);
   values.insert(L(3), landmark3);
+//  values.at<Pose3>(x3).print("Pose3 before optimization: ");
 
   LevenbergMarquardtParams params;
 //  params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
@@ -324,14 +328,15 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   Values result = optimizer.optimize();
 
-  result.print("Regular Projection Factor: results of 3 camera, 3 landmark optimization \n");
+//  result.at<Pose3>(x3).print("Pose3 after optimization: ");
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
 
 }
 
 
 /* ************************************************************************* */
 TEST( SmartProjectionFactor, Hessian ){
-  cout << " ************************ Normal ProjectionFactor: Hessian **********************" << endl;
+  cout << " ************************ SmartProjectionFactor: Hessian **********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
