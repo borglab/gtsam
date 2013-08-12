@@ -57,7 +57,7 @@ namespace gtsam {
   /* ************************************************************************* */
   std::vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
     // First find dimensions of each variable
-    FastVector<size_t> dims;
+    vector<size_t> dims;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
       for(GaussianFactor::const_iterator pos = factor->begin(); pos != factor->end(); ++pos) {
         if(dims.size() <= *pos)
@@ -73,7 +73,7 @@ namespace gtsam {
 
     // Iterate over all factors, adding sparse scalar entries
     typedef boost::tuple<size_t, size_t, double> triplet;
-    FastVector<triplet> entries;
+    vector<triplet> entries;
     size_t row = 0;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
       // Convert to JacobianFactor if necessary

@@ -504,7 +504,7 @@ public:
    * @return An ISAM2Result struct containing information about the update
    */
   ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
+      const std::vector<size_t>& removeFactorIndices = std::vector<size_t>(),
       const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
       const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
@@ -610,7 +610,7 @@ private:
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
   boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
-      const FastVector<Key>& observedKeys, const FastSet<Key>& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
+      const std::vector<Key>& observedKeys, const FastSet<Key>& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
   //  void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
 

@@ -273,7 +273,7 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 
 /* ************************************************************************* */
 boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
-                                                    const FastVector<Key>& observedKeys,
+                                                    const vector<Key>& observedKeys,
                                                     const FastSet<Key>& unusedIndices,
                                                     const boost::optional<FastMap<Key,int> >& constrainKeys,
                                                     ISAM2Result& result)
@@ -519,7 +519,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
 
 /* ************************************************************************* */
 ISAM2Result ISAM2::update(
-    const NonlinearFactorGraph& newFactors, const Values& newTheta, const FastVector<size_t>& removeFactorIndices,
+    const NonlinearFactorGraph& newFactors, const Values& newTheta, const vector<size_t>& removeFactorIndices,
     const boost::optional<FastMap<Key,int> >& constrainedKeys, const boost::optional<FastList<Key> >& noRelinKeys,
     const boost::optional<FastList<Key> >& extraReelimKeys, bool force_relinearize) {
 
@@ -633,7 +633,7 @@ ISAM2Result ISAM2::update(
   // NOTE: we use assign instead of the iterator constructor here because this
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Index value) instead of the iterator constructor.
-  FastVector<Index> observedKeys;  observedKeys.reserve(markedKeys.size());
+  vector<Index> observedKeys;  observedKeys.reserve(markedKeys.size());
   BOOST_FOREACH(Index index, markedKeys) {
     if(unusedIndices.find(index) == unusedIndices.end()) // Only add if not unused
       observedKeys.push_back(index); // Make a copy of these, as we'll soon add to them
