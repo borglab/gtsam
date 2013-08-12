@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/blockMatrices.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>

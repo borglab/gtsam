@@ -37,16 +37,13 @@ LinearizedGaussianFactor::LinearizedGaussianFactor(
 /* ************************************************************************* */
 // LinearizedJacobianFactor
 /* ************************************************************************* */
-LinearizedJacobianFactor::LinearizedJacobianFactor() : Ab_(matrix_) {
+LinearizedJacobianFactor::LinearizedJacobianFactor() {
 }
 
 /* ************************************************************************* */
 LinearizedJacobianFactor::LinearizedJacobianFactor(
     const JacobianFactor::shared_ptr& jacobian, const Values& lin_points)
-: Base(jacobian, lin_points), Ab_(matrix_) {
-
-  // Get the Ab matrix from the Jacobian factor, with any covariance baked in
-  AbMatrix fullMatrix = jacobian->augmentedJacobian();
+: Base(jacobian, lin_points) {
 
   // Create the dims array
   size_t *dims = (size_t *)alloca(sizeof(size_t) * (jacobian->size() + 1));
@@ -57,8 +54,9 @@ LinearizedJacobianFactor::LinearizedJacobianFactor(
   dims[index] = 1;
 
   // Update the BlockInfo accessor
-  BlockAb Ab(fullMatrix, dims, dims+jacobian->size()+1);
-  Ab.swap(Ab_);
+  Ab_ = VerticalBlockMatrix(dims, dims+jacobian->size()+1, jacobian->rows());
+  // Get the Ab matrix from the Jacobian factor, with any covariance baked in
+  Ab_.matrix() = jacobian->augmentedJacobian();
 }
 
 /* ************************************************************************* */
@@ -136,16 +134,13 @@ Vector LinearizedJacobianFactor::error_vector(const Values& c) const {
 /* ************************************************************************* */
 // LinearizedHessianFactor
 /* ************************************************************************* */
-LinearizedHessianFactor::LinearizedHessianFactor() : info_(matrix_) {
+LinearizedHessianFactor::LinearizedHessianFactor() {
 }
 
 /* ************************************************************************* */
 LinearizedHessianFactor::LinearizedHessianFactor(
     const HessianFactor::shared_ptr& hessian, const Values& lin_points)
-: Base(hessian, lin_points), info_(matrix_) {
-
-  // Copy the augmented matrix holding G, g, and f
-  Matrix fullMatrix = hessian->info();
+: Base(hessian, lin_points) {
 
   // Create the dims array
   size_t *dims = (size_t*)alloca(sizeof(size_t)*(hessian->size() + 1));
@@ -156,8 +151,9 @@ LinearizedHessianFactor::LinearizedHessianFactor(
   dims[index] = 1;
 
   // Update the BlockInfo accessor
-  BlockInfo infoMatrix(fullMatrix, dims, dims+hessian->size()+1);
-  infoMatrix.swap(info_);
+  info_ = SymmetricBlockMatrix(dims, dims+hessian->size()+1);
+  // Copy the augmented matrix holding G, g, and f
+  info_.matrix() = hessian->info();
 }
 
 /* ************************************************************************* */
@@ -220,11 +216,6 @@ double LinearizedHessianFactor::error(const Values& c) const {
 boost::shared_ptr<GaussianFactor>
 LinearizedHessianFactor::linearize(const Values& c) const {
 
-  // Make a copy of the info matrix
-  Matrix newMatrix;
-  SymmetricBlockView<Matrix> newInfo(newMatrix);
-  newInfo.assignNoalias(info_);
-
   // Construct an error vector in key-order from the Values
   Vector dx = zero(dim());
   size_t index = 0;
@@ -244,15 +235,15 @@ LinearizedHessianFactor::linearize(const Values& c) const {
   //newInfo.rangeColumn(0, this->size(), this->size(), 0) -= squaredTerm().selfadjointView<Eigen::Upper>() * dx;
   Vector g = linearTerm() - squaredTerm().selfadjointView<Eigen::Upper>() * dx;
   std::vector<Vector> gs;
-  for(size_t i = 0; i < info_.nBlocks()-1; ++i) {
+  for(DenseIndex i = 0; i < info_.nBlocks()-1; ++i) {
     gs.push_back(g.segment(info_.offset(i), info_.offset(i+1) - info_.offset(i)));
   }
 
   // G2 = G1
   // Do Nothing
   std::vector<Matrix> Gs;
-  for(size_t i = 0; i < info_.nBlocks()-1; ++i) {
-    for(size_t j = i; j < info_.nBlocks()-1; ++j) {
+  for(DenseIndex i = 0; i < info_.nBlocks()-1; ++i) {
+    for(DenseIndex j = i; j < info_.nBlocks()-1; ++j) {
       Gs.push_back(info_(i,j));
     }
   }
