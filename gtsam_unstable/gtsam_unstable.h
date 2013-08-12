@@ -466,132 +466,132 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NonlinearFactor {
 //*************************************************************************
 // nonlinear
 //*************************************************************************
-#include <gtsam_unstable/nonlinear/sequentialSummarization.h>
-gtsam::GaussianFactorGraph* summarizeGraphSequential(
-    const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
-gtsam::GaussianFactorGraph* summarizeGraphSequential(
-    const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
+// #include <gtsam_unstable/nonlinear/sequentialSummarization.h>
+// gtsam::GaussianFactorGraph* summarizeGraphSequential(
+//     const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
+// gtsam::GaussianFactorGraph* summarizeGraphSequential(
+//     const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
 
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
-class FixedLagSmootherKeyTimestampMapValue {
-  FixedLagSmootherKeyTimestampMapValue(const gtsam::Key& key, double timestamp);
-  FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
-};
-
-class FixedLagSmootherKeyTimestampMap {
-  FixedLagSmootherKeyTimestampMap();
-  FixedLagSmootherKeyTimestampMap(const gtsam::FixedLagSmootherKeyTimestampMap& other);
-
-  // Note: no print function
-
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  double at(const gtsam::Key& key) const;
-  void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
-};
-
-class FixedLagSmootherResult {
-  size_t getIterations() const;
-  size_t getNonlinearVariables() const;
-  size_t getLinearVariables() const;
-  double getError() const;
-};
-
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
-virtual class FixedLagSmoother {
-  void print(string s) const;
-  bool equals(const gtsam::FixedLagSmoother& rhs, double tol) const;
-
-  gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
-  double smootherLag() const;
-
-  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FixedLagSmootherKeyTimestampMap& timestamps);
-  gtsam::Values calculateEstimate() const;
-};
-
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
-virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
-  BatchFixedLagSmoother();
-  BatchFixedLagSmoother(double smootherLag);
-  BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
-
-  gtsam::LevenbergMarquardtParams params() const;
-};
-
-#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
-  IncrementalFixedLagSmoother();
-  IncrementalFixedLagSmoother(double smootherLag);
-  IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
-
-  gtsam::ISAM2Params params() const;
-};
-
-#include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
-virtual class ConcurrentFilter {
-  void print(string s) const;
-  bool equals(const gtsam::ConcurrentFilter& rhs, double tol) const;
-};
-
-virtual class ConcurrentSmoother {
-  void print(string s) const;
-  bool equals(const gtsam::ConcurrentSmoother& rhs, double tol) const;
-};
-
-// Synchronize function
-void synchronize(gtsam::ConcurrentFilter& filter, gtsam::ConcurrentSmoother& smoother);
-
-#include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
-class ConcurrentBatchFilterResult {
-  size_t getIterations() const;
-  size_t getLambdas() const;
-  size_t getNonlinearVariables() const;
-  size_t getLinearVariables() const;
-  double getError() const;
-};
-
-virtual class ConcurrentBatchFilter : gtsam::ConcurrentFilter {
-  ConcurrentBatchFilter();
-  ConcurrentBatchFilter(const gtsam::LevenbergMarquardtParams& parameters);
-
-  gtsam::NonlinearFactorGraph getFactors() const;
-  gtsam::Values getLinearizationPoint() const;
-  gtsam::Ordering getOrdering() const;
-  gtsam::VectorValues getDelta() const;
-
-  gtsam::ConcurrentBatchFilterResult update();
-  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors);
-  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
-  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyList& keysToMove);
-  gtsam::Values calculateEstimate() const;
-};
-
-#include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
-class ConcurrentBatchSmootherResult {
-  size_t getIterations() const;
-  size_t getLambdas() const;
-  size_t getNonlinearVariables() const;
-  size_t getLinearVariables() const;
-  double getError() const;
-};
-
-virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
-  ConcurrentBatchSmoother();
-  ConcurrentBatchSmoother(const gtsam::LevenbergMarquardtParams& parameters);
-
-  gtsam::NonlinearFactorGraph getFactors() const;
-  gtsam::Values getLinearizationPoint() const;
-  gtsam::Ordering getOrdering() const;
-  gtsam::VectorValues getDelta() const;
-
-  gtsam::ConcurrentBatchSmootherResult update();
-  gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors);
-  gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
-  gtsam::Values calculateEstimate() const;
-};
+// #include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+// class FixedLagSmootherKeyTimestampMapValue {
+//   FixedLagSmootherKeyTimestampMapValue(const gtsam::Key& key, double timestamp);
+//   FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
+// };
+// 
+// class FixedLagSmootherKeyTimestampMap {
+//   FixedLagSmootherKeyTimestampMap();
+//   FixedLagSmootherKeyTimestampMap(const gtsam::FixedLagSmootherKeyTimestampMap& other);
+// 
+//   // Note: no print function
+// 
+//   // common STL methods
+//   size_t size() const;
+//   bool empty() const;
+//   void clear();
+// 
+//   double at(const gtsam::Key& key) const;
+//   void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
+// };
+// 
+// class FixedLagSmootherResult {
+//   size_t getIterations() const;
+//   size_t getNonlinearVariables() const;
+//   size_t getLinearVariables() const;
+//   double getError() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+// virtual class FixedLagSmoother {
+//   void print(string s) const;
+//   bool equals(const gtsam::FixedLagSmoother& rhs, double tol) const;
+// 
+//   gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
+//   double smootherLag() const;
+// 
+//   gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FixedLagSmootherKeyTimestampMap& timestamps);
+//   gtsam::Values calculateEstimate() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
+// virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
+//   BatchFixedLagSmoother();
+//   BatchFixedLagSmoother(double smootherLag);
+//   BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
+// 
+//   gtsam::LevenbergMarquardtParams params() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
+// virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
+//   IncrementalFixedLagSmoother();
+//   IncrementalFixedLagSmoother(double smootherLag);
+//   IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
+// 
+//   gtsam::ISAM2Params params() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
+// virtual class ConcurrentFilter {
+//   void print(string s) const;
+//   bool equals(const gtsam::ConcurrentFilter& rhs, double tol) const;
+// };
+// 
+// virtual class ConcurrentSmoother {
+//   void print(string s) const;
+//   bool equals(const gtsam::ConcurrentSmoother& rhs, double tol) const;
+// };
+// 
+// // Synchronize function
+// void synchronize(gtsam::ConcurrentFilter& filter, gtsam::ConcurrentSmoother& smoother);
+// 
+// #include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
+// class ConcurrentBatchFilterResult {
+//   size_t getIterations() const;
+//   size_t getLambdas() const;
+//   size_t getNonlinearVariables() const;
+//   size_t getLinearVariables() const;
+//   double getError() const;
+// };
+// 
+// virtual class ConcurrentBatchFilter : gtsam::ConcurrentFilter {
+//   ConcurrentBatchFilter();
+//   ConcurrentBatchFilter(const gtsam::LevenbergMarquardtParams& parameters);
+// 
+//   gtsam::NonlinearFactorGraph getFactors() const;
+//   gtsam::Values getLinearizationPoint() const;
+//   gtsam::Ordering getOrdering() const;
+//   gtsam::VectorValues getDelta() const;
+// 
+//   gtsam::ConcurrentBatchFilterResult update();
+//   gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors);
+//   gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
+//   gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyList& keysToMove);
+//   gtsam::Values calculateEstimate() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
+// class ConcurrentBatchSmootherResult {
+//   size_t getIterations() const;
+//   size_t getLambdas() const;
+//   size_t getNonlinearVariables() const;
+//   size_t getLinearVariables() const;
+//   double getError() const;
+// };
+// 
+// virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
+//   ConcurrentBatchSmoother();
+//   ConcurrentBatchSmoother(const gtsam::LevenbergMarquardtParams& parameters);
+// 
+//   gtsam::NonlinearFactorGraph getFactors() const;
+//   gtsam::Values getLinearizationPoint() const;
+//   gtsam::Ordering getOrdering() const;
+//   gtsam::VectorValues getDelta() const;
+// 
+//   gtsam::ConcurrentBatchSmootherResult update();
+//   gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors);
+//   gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
+//   gtsam::Values calculateEstimate() const;
+// };
 
 //*************************************************************************
 // slam
