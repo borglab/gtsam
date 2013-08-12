@@ -201,7 +201,7 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta,
     assert(key_value->key == key_delta->first);
     Key var = key_value->key;
     assert(delta[var].size() == (int)key_value->value.dim());
-    assert(delta[var].unaryExpr(ptr_fun(isfinite<double>)).all());
+    assert(delta[var].allFinite());
     if(mask.exists(var)) {
       Value* retracted = key_value->value.retract_(delta[var]);
       key_value->value = *retracted;

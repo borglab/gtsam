@@ -258,9 +258,6 @@ ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastS
 // find intermediate (linearized) factors from cache that are passed into the affected area
 
 GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
-
-  static const bool debug = false;
-
   GaussianFactorGraph cachedBoundary;
 
   BOOST_FOREACH(sharedClique orphan, orphans) {

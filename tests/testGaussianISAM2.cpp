@@ -649,7 +649,7 @@ namespace {
     //Matrix actual2AugmentedHessian = linearFactors_.augmentedHessian();
     Matrix actual3AugmentedHessian = isam.getFactorsUnsafe().linearize(
       isam.getLinearizationPoint())->augmentedHessian();
-    assert(actualAugmentedHessian.unaryExpr(std::ptr_fun(&std::isfinite<double>)).all());
+    assert(actualAugmentedHessian.allFinite());
 
     // Check full marginalization
     //cout << "treeEqual" << endl;
