@@ -106,6 +106,14 @@ namespace gtsam {
     void push_factor(Key key1, Key key2, Key key3, Key key4);
 
     /// @}
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    }
   };
 
 } // namespace gtsam
