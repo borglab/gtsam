@@ -45,7 +45,7 @@
 #include <gtsam/nonlinear/Values.h>
 
 // We will use simple integer Keys to uniquely identify each robot pose.
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 
 // We will use Pose2 variables (x, y, theta) to represent the robot positions
 #include <gtsam/geometry/Pose2.h>
