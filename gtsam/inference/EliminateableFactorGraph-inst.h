@@ -139,6 +139,26 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
+  std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, boost::shared_ptr<FACTORGRAPH> >
+    EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialMultifrontal(
+    const std::vector<Key>& variables, const Eliminate& function, OptionalVariableIndex variableIndex) const
+  {
+    if(variableIndex) {
+      gttic(eliminatePartialMultifrontal);
+      // Compute full ordering
+      Ordering fullOrdering = Ordering::COLAMDConstrainedFirst(*variableIndex, variables);
+
+      // Split off the part of the ordering for the variables being eliminated
+      Ordering ordering(fullOrdering.begin(), fullOrdering.begin() + variables.size());
+      return eliminatePartialMultifrontal(ordering, function, variableIndex);
+    } else {
+      // If no variable index is provided, compute one and call this function again
+      return eliminatePartialMultifrontal(variables, function, VariableIndex(asDerived()));
+    }
+  }
+
+  /* ************************************************************************* */
+  template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesNet(
     boost::variant<const Ordering&, const std::vector<Key>&> variables,
