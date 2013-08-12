@@ -166,7 +166,10 @@ namespace gtsam {
     struct EliminationPostOrderVisitor
     {
       const typename JUNCTIONTREE::Eliminate& eliminationFunction;
-      EliminationPostOrderVisitor(const typename JUNCTIONTREE::Eliminate& eliminationFunction) : eliminationFunction(eliminationFunction) {}
+      typename JUNCTIONTREE::BayesTreeType::Nodes& nodesIndex;
+      EliminationPostOrderVisitor(const typename JUNCTIONTREE::Eliminate& eliminationFunction,
+        typename JUNCTIONTREE::BayesTreeType::Nodes& nodesIndex) :
+      eliminationFunction(eliminationFunction), nodesIndex(nodesIndex) {}
       void operator()(const typename JUNCTIONTREE::sharedNode& node, EliminationData<JUNCTIONTREE>& myData)
       {
         // Typedefs
@@ -194,10 +197,16 @@ namespace gtsam {
 
         // Do dense elimination step
         std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-            eliminationFunction(gatheredFactors, Ordering(node->keys));
+          eliminationFunction(gatheredFactors, Ordering(node->keys));
 
-      // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the remaining factor
-      myData.bayesTreeNode->setEliminationResult(eliminationResult);
+        // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the remaining factor
+        myData.bayesTreeNode->setEliminationResult(eliminationResult);
+
+        // Fill nodes index - we do this here instead of calling insertRoot at the end to avoid
+        // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
+        // object they're added to.
+        BOOST_FOREACH(const Key& j, myData.bayesTreeNode->conditional()->frontals())
+          nodesIndex.insert(std::make_pair(j, myData.bayesTreeNode)).second;
 
         // Store remaining factor in parent's gathered factors
         if(!eliminationResult.second->empty())
@@ -279,16 +288,15 @@ namespace gtsam {
     // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
     // that contains all of the roots as its children.  rootsContainer also stores the remaining
     // uneliminated factors passed up from the roots.
+    boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
     EliminationData<This> rootsContainer(0, roots_.size());
-    EliminationPostOrderVisitor<This> visitorPost(function);
+    EliminationPostOrderVisitor<This> visitorPost(function, result->nodes_);
     //tbb::task_scheduler_init init(1);
     treeTraversal::DepthFirstForest/*Parallel*/(*this, rootsContainer,
       eliminationPreOrderVisitor<This>, visitorPost/*, 10*/);
 
     // Create BayesTree from roots stored in the dummy BayesTree node.
-    boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
-    BOOST_FOREACH(const typename BayesTreeType::sharedNode& root, rootsContainer.bayesTreeNode->children)
-      result->insertRoot(root);
+    result->roots_.insert(result->roots_.end(), rootsContainer.bayesTreeNode->children.begin(), rootsContainer.bayesTreeNode->children.end());
 
     // Add remaining factors that were not involved with eliminated variables
     boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
