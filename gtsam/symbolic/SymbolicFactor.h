@@ -20,6 +20,7 @@
 #include <utility>
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/make_shared.hpp>
 
 #include <gtsam/inference/Factor.h>
 #include <gtsam/inference/Key.h>
@@ -75,6 +76,9 @@ namespace gtsam {
       Base(boost::assign::cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
 
     virtual ~SymbolicFactor() {}
+
+    /// Copy this object as its actual derived type.
+    SymbolicFactor::shared_ptr clone() const { return boost::make_shared<This>(*this); }
 
     /// @}
 

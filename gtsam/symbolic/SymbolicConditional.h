@@ -78,6 +78,9 @@ namespace gtsam {
 
     virtual ~SymbolicConditional() {}
 
+    /// Copy this object as its actual derived type.
+    SymbolicFactor::shared_ptr clone() const { return boost::make_shared<This>(*this); }
+
     /// @}
 
     /// @name Testable
