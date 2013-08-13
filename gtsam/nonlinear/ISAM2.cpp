@@ -19,6 +19,7 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 #include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm/copy.hpp>
 #include <boost/algorithm/string.hpp>
 namespace br { using namespace boost::range; using namespace boost::adaptors; }
 
