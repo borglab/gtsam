@@ -21,6 +21,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/join.hpp>
+#include <boost/range/algorithm/copy.hpp>
 #include <boost/foreach.hpp>
 
 namespace gtsam {

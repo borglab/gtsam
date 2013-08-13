@@ -150,7 +150,7 @@ namespace gtsam {
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
     typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
-    push_back(boost::shared_ptr<DERIVEDFACTOR>& factor) {
+    push_back(boost::shared_ptr<DERIVEDFACTOR> factor) {
       factors_.push_back(boost::shared_ptr<FACTOR>(factor)); }
 
     /** Add a factor directly using a shared_ptr */

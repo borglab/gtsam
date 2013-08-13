@@ -21,6 +21,7 @@
 #include <gtsam/inference/BayesTree.h>
 
 #include <boost/foreach.hpp>
+#include <iostream>
 
 namespace gtsam {
 
