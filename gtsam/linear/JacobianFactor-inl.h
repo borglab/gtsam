@@ -21,7 +21,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/join.hpp>
-#include <boost/range/algorithm/copy.hpp>
+#include <boost/range/algorithm/for_each.hpp>
 #include <boost/foreach.hpp>
 
 namespace gtsam {
@@ -64,12 +64,34 @@ namespace gtsam {
     DenseIndex _getColsJF(const std::pair<Key,Matrix>& p) {
       return p.second.cols();
     }
+
+    //struct _fillTerm {
+    //  mutable std::vector<Key>& keys;
+    //  mutable VerticalBlockMatrix& Ab;
+    //  mutable DenseIndex& i;
+    //  _fillTerm(std::vector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
+    //    : keys(keys), Ab(Ab), i(i) {}
+    //  template<class TERM> void operator()(const TERM& term) const
+    //  {
+    //    // Check block rows
+    //    if(term.second.rows() != Ab.rows())
+    //      throw InvalidMatrixBlock(Ab.rows(), term.second.rows());
+    //    // Assign key and matrix
+    //    keys[i] = term.first;
+    //    Ab(i) = term.second;
+    //    // Increment block index
+    //    ++ i;
+    //  }
+    //};
   }
 
   /* ************************************************************************* */
   template<typename TERMS>
   void JacobianFactor::fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel)
   {
+    using boost::adaptors::transformed;
+    namespace br = boost::range;
+
     // Check noise model dimension
     if(noiseModel && (DenseIndex)noiseModel->dim() != b.size())
       throw InvalidNoiseModel(b.size(), noiseModel->dim());
@@ -81,12 +103,13 @@ namespace gtsam {
     // matrices, then extract the number of columns e.g. dimensions in each matrix.  Then joins with
     // a single '1' to add a dimension for the b vector.
     {
-      using boost::adaptors::transformed;
-      namespace br = boost::range;
       Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&_getColsJF), ListOfOne((DenseIndex)1)), b.size());
     }
 
     // Check and add terms
+    //DenseIndex i = 0; // For block index
+    //br::for_each(terms, _fillTerm(Base::keys_, Ab_, i));
+
     typedef std::pair<Key, Matrix> Term;
     DenseIndex i = 0; // For block index
     BOOST_FOREACH(const Term& term, terms) {
