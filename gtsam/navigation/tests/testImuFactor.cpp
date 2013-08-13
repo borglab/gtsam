@@ -15,8 +15,7 @@
  * @author  Luca Carlone, Stephen Williams, Richard Roberts
  */
 
-#include <gtsam_unstable/slam/ImuFactor.h>
-#include <gtsam/navigation/EquivInertialNavFactor_GlobalVel.h>
+#include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
