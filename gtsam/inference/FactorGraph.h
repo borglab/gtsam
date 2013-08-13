@@ -26,7 +26,8 @@
 #include <boost/assign/list_inserter.hpp>
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
-#include <type_traits>
+#include <boost/utility/enable_if.hpp>
+#include <boost/type_traits.hpp>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
@@ -149,7 +150,7 @@ namespace gtsam {
 
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
-    typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
+    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR>>::type
     push_back(boost::shared_ptr<DERIVEDFACTOR> factor) {
       factors_.push_back(boost::shared_ptr<FACTOR>(factor)); }
 
@@ -159,13 +160,13 @@ namespace gtsam {
 
     /** push back many factors with an iterator over shared_ptr (factors are not copied) */
     template<typename ITERATOR>
-    typename std::enable_if<std::is_base_of<FactorType, typename ITERATOR::value_type::element_type>::value>::type
+    typename boost::enable_if<boost::is_base_of<FactorType, typename ITERATOR::value_type::element_type>>::type
       push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
         factors_.insert(end(), firstFactor, lastFactor); }
 
     /** push back many factors as shared_ptr's in a container (factors are not copied) */
     template<typename CONTAINER>
-    typename std::enable_if<std::is_base_of<FactorType, typename CONTAINER::value_type::element_type>::value>::type
+    typename boost::enable_if<boost::is_base_of<FactorType, typename CONTAINER::value_type::element_type>>::type
       push_back(const CONTAINER& container) {
         push_back(container.begin(), container.end());
     }
@@ -173,7 +174,7 @@ namespace gtsam {
     /** push back a BayesTree as a collection of factors.  NOTE: This should be hidden in derived
      *  classes in favor of a type-specialized version that calls this templated function. */
     template<class CLIQUE>
-    typename std::enable_if<std::is_base_of<This, typename CLIQUE::FactorGraphType>::value>::type
+    typename boost::enable_if<boost::is_base_of<This, typename CLIQUE::FactorGraphType>>::type
     push_back(const BayesTree<CLIQUE>& bayesTree) {
       bayesTree.addFactorsToGraph(*this);
     }
@@ -189,7 +190,7 @@ namespace gtsam {
 
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
-    typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value,
+    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR>,
       boost::assign::list_inserter<RefCallPushBack<This> > >::type
       operator+=(boost::shared_ptr<DERIVEDFACTOR>& factor) {
         return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(factor);
@@ -215,7 +216,7 @@ namespace gtsam {
 
     ///** push back many factors as shared_ptr's in a container (factors are not copied) */
     //template<typename CONTAINER>
-    //typename std::enable_if<std::is_base_of<FactorType, typename CONTAINER::value_type::element_type>::value,
+    //typename boost::enable_if<boost::is_base_of<FactorType, typename CONTAINER::value_type::element_type>,
     //  boost::assign::list_inserter<CRefCallPushBack<This> > >::type
     //  operator+=(const CONTAINER& container) {
     //    return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this));
@@ -232,13 +233,13 @@ namespace gtsam {
     /** Add a factor by value, will be copy-constructed (use push_back with a shared_ptr to avoid
      *  the copy). */
     template<class DERIVEDFACTOR>
-    typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
+    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR>>::type
       push_back(const DERIVEDFACTOR& factor) {
         factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor)); }
 
     /** push back many factors with an iterator over plain factors (factors are copied) */
     template<typename ITERATOR>
-    typename std::enable_if<std::is_base_of<FactorType, typename ITERATOR::value_type>::value>::type
+    typename boost::enable_if<boost::is_base_of<FactorType, typename ITERATOR::value_type>>::type
       push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
         for(ITERATOR f = firstFactor; f != lastFactor; ++f)
           push_back(*f);
@@ -246,7 +247,7 @@ namespace gtsam {
 
     /** push back many factors as non-pointer objects in a container (factors are copied) */
     template<typename CONTAINER>
-    typename std::enable_if<std::is_base_of<FactorType, typename CONTAINER::value_type>::value>::type
+    typename boost::enable_if<boost::is_base_of<FactorType, typename CONTAINER::value_type>>::type
       push_back(const CONTAINER& container) {
         push_back(container.begin(), container.end());
     }
