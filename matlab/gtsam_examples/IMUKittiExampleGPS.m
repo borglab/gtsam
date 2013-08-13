@@ -12,10 +12,6 @@ if ~IMUinBody.equals(Pose3, 1e-5)
   error 'Currently only support IMUinBody is identity, i.e. IMU and body frame are the same';
 end
 
-% GPS metadata
-GPS_metadata = importdata(findExampleDataFile('KittiRelativePose_metadata.txt'));
-GPS_metadata = cell2struct(num2cell(GPS_metadata.data), GPS_metadata.colheaders, 2);
-
 %% Read data
 disp('-- Reading sensor data from file')
 % IMU data
@@ -26,7 +22,7 @@ imum = cellfun(@(x) x', num2cell([ [IMU_data.accelX]' [IMU_data.accelY]' [IMU_da
 clear imum
 
 % GPS data
-GPS_data = importdata(findExampleDataFile('Gps_converted.txt'));
+GPS_data = importdata(findExampleDataFile('KittiGps_converted.txt'));
 GPS_data = cell2struct(num2cell(GPS_data.data), GPS_data.colheaders, 2);
 for i = 1:numel(GPS_data)
     GPS_data(i).Position = gtsam.Point3(GPS_data(i).X, GPS_data(i).Y, GPS_data(i).Z);
