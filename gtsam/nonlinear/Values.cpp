@@ -125,8 +125,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::insert(Key j, const Value& val) {
-    Key key = j; // Non-const duplicate to deal with non-const insert argument
-    std::pair<KeyValueMap::iterator,bool> insertResult = values_.insert(key, val.clone_());
+    std::pair<iterator,bool> insertResult = tryInsert(j, val);
     if(!insertResult.second)
       throw ValuesKeyAlreadyExists(j);
   }
@@ -137,6 +136,12 @@ namespace gtsam {
       Key key = key_value->key; // Non-const duplicate to deal with non-const insert argument
       insert(key, key_value->value);
     }
+  }
+
+  /* ************************************************************************* */
+  std::pair<Values::iterator, bool> Values::tryInsert(Key j, const Value& value) {
+    std::pair<KeyValueMap::iterator, bool> result = values_.insert(j, value.clone_());
+    return std::make_pair(boost::make_transform_iterator(result.first, &make_deref_pair), result.second);
   }
 
   /* ************************************************************************* */

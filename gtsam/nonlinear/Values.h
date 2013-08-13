@@ -232,6 +232,12 @@ namespace gtsam {
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
     void insert(const Values& values);
 
+    /** insert that mimics the STL map insert - if the value already exists, the map is not modified
+     *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
+     *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
+     *  returned. */
+    std::pair<iterator, bool> tryInsert(Key j, const Value& value);
+
     /** single element change of existing element */
     void update(Key j, const Value& val);
 
