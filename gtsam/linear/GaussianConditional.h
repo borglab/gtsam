@@ -59,15 +59,6 @@ namespace gtsam {
       Key name1, const Matrix& S, Key name2, const Matrix& T,
       const SharedDiagonal& sigmas = SharedDiagonal());
 
-    /** Constructor with number of arbitrary parents.  \f$ |Rx+sum(Ai*xi)-d| \f$
-     *  @tparam PARENTS A container whose value type is std::pair<Key, Matrix>, specifying the
-     *          collection of parent keys and matrices. */
-    template<class PARENTS>
-    GaussianConditional(Key key, const Vector& d,
-      const Matrix& R, const PARENTS& parents,
-      const SharedDiagonal& sigmas = SharedDiagonal(),
-      const typename PARENTS::value_type* = 0);
-
     /** Constructor with arbitrary number of frontals and parents.
     *   @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
     *           collection of keys and matrices making up the conditional. */

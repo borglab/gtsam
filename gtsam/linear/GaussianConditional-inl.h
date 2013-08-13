@@ -25,15 +25,6 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  template<class PARENTS>
-  GaussianConditional::GaussianConditional(Index key, const Vector& d,
-    const Matrix& R, const PARENTS& parents, const SharedDiagonal& sigmas, const typename PARENTS::value_type*) :
-  BaseFactor(boost::join(
-    ListOfOne<typename PARENTS::value_type>(std::make_pair(key, R)),
-    parents), d, sigmas),
-    BaseConditional(1) {}
-
-  /* ************************************************************************* */
   template<typename TERMS>
   GaussianConditional::GaussianConditional(const TERMS& terms,
     size_t nrFrontals, const Vector& d, const SharedDiagonal& sigmas) :
