@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/linear/linearExceptions.h>
+#include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/join.hpp>
 #include <boost/range/algorithm/for_each.hpp>
@@ -65,24 +66,55 @@ namespace gtsam {
       return p.second.cols();
     }
 
-    //struct _fillTerm {
-    //  mutable std::vector<Key>& keys;
-    //  mutable VerticalBlockMatrix& Ab;
-    //  mutable DenseIndex& i;
-    //  _fillTerm(std::vector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
-    //    : keys(keys), Ab(Ab), i(i) {}
-    //  template<class TERM> void operator()(const TERM& term) const
-    //  {
-    //    // Check block rows
-    //    if(term.second.rows() != Ab.rows())
-    //      throw InvalidMatrixBlock(Ab.rows(), term.second.rows());
-    //    // Assign key and matrix
-    //    keys[i] = term.first;
-    //    Ab(i) = term.second;
-    //    // Increment block index
-    //    ++ i;
-    //  }
-    //};
+    // Helper to fill terms from any Eigen matrix type, e.g. could be a matrix expression.  Also
+    // handles the cases where the matrix part of the term pair is or isn't a reference, and also
+    // assignment from boost::cref_list_of, where the term ends up wrapped in a assign_reference<T>
+    // that is implicitly convertible to T&.  This was introduced to work around a problem where
+    // BOOST_FOREACH over terms did not work on GCC.
+    struct _fillTerm {
+      std::vector<Key>& keys;
+      VerticalBlockMatrix& Ab;
+      DenseIndex& i;
+      _fillTerm(std::vector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
+        : keys(keys), Ab(Ab), i(i) {}
+
+      template<class MATRIX>
+      void operator()(const std::pair<Key, const MATRIX&>& term) const
+      {
+        // Check block rows
+        if(term.second.rows() != Ab.rows())
+          throw InvalidMatrixBlock(Ab.rows(), term.second.rows());
+        // Assign key and matrix
+        keys[i] = term.first;
+        Ab(i) = term.second;
+        // Increment block index
+        ++ i;
+      }
+
+      template<class MATRIX>
+      void operator()(const std::pair<int, const MATRIX&>& term) const
+      {
+        operator()(std::pair<Key, const MATRIX&>(term));
+      }
+
+      template<class MATRIX>
+      void operator()(const std::pair<Key, MATRIX>& term) const
+      {
+        operator()(std::pair<Key, const MATRIX&>(term));
+      }
+
+      template<class MATRIX>
+      void operator()(const std::pair<int, MATRIX>& term) const
+      {
+        operator()(std::pair<Key, const MATRIX&>(term));
+      }
+
+      template<class T>
+      void operator()(boost::assign_detail::assign_reference<T> assignReference) const
+      {
+        operator()(assignReference.get_ref());
+      }
+    };
   }
 
   /* ************************************************************************* */
@@ -107,21 +139,8 @@ namespace gtsam {
     }
 
     // Check and add terms
-    //DenseIndex i = 0; // For block index
-    //br::for_each(terms, _fillTerm(Base::keys_, Ab_, i));
-
-    typedef std::pair<Key, Matrix> Term;
     DenseIndex i = 0; // For block index
-    BOOST_FOREACH(const Term& term, terms) {
-      // Check block rows
-      if(term.second.rows() != b.size())
-        throw InvalidMatrixBlock(b.size(), term.second.rows());
-      // Assign key and matrix
-      Base::keys_[i] = term.first;
-      Ab_(i) = term.second;
-      // Increment block index
-      ++ i;
-    }
+    br::for_each(terms, _fillTerm(Base::keys_, Ab_, i));
 
     // Assign RHS vector
     getb() = b;
