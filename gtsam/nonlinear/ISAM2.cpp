@@ -505,10 +505,11 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
   }
 
   // Root clique variables for detailed results
-  if(params_.enableDetailedResults)
+  if(params_.enableDetailedResults) {
     BOOST_FOREACH(const sharedNode& root, this->roots())
       BOOST_FOREACH(Key var, *root->conditional())
         result.detail->variableStatus[var].inRootClique = true;
+  }
 
   return affectedKeysSet;
 }
