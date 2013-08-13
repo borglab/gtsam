@@ -1,13 +1,10 @@
-close all
-clc
-
 import gtsam.*;
 disp('Example of application of ISAM2 for GPS-aided navigation on the KITTI VISION BENCHMARK SUITE (http://www.computervisiononline.com/dataset/kitti-vision-benchmark-suite)')
 
 %% Read metadata and compute relative sensor pose transforms
 % IMU metadata
 disp('-- Reading sensor metadata')
-IMU_metadata = importdata('KittiEquivBiasedImu_metadata.txt');
+IMU_metadata = importdata(findExampleDataFile('KittiEquivBiasedImu_metadata.txt'));
 IMU_metadata = cell2struct(num2cell(IMU_metadata.data), IMU_metadata.colheaders, 2);
 IMUinBody = Pose3.Expmap([IMU_metadata.BodyPtx; IMU_metadata.BodyPty; IMU_metadata.BodyPtz;
   IMU_metadata.BodyPrx; IMU_metadata.BodyPry; IMU_metadata.BodyPrz; ]);
@@ -16,20 +13,20 @@ if ~IMUinBody.equals(Pose3, 1e-5)
 end
 
 % GPS metadata
-GPS_metadata = importdata('KittiRelativePose_metadata.txt');
+GPS_metadata = importdata(findExampleDataFile('KittiRelativePose_metadata.txt'));
 GPS_metadata = cell2struct(num2cell(GPS_metadata.data), GPS_metadata.colheaders, 2);
 
 %% Read data
 disp('-- Reading sensor data from file')
 % IMU data
-IMU_data = importdata('KittiEquivBiasedImu.txt');
+IMU_data = importdata(findExampleDataFile('KittiEquivBiasedImu.txt'));
 IMU_data = cell2struct(num2cell(IMU_data.data), IMU_data.colheaders, 2);
 imum = cellfun(@(x) x', num2cell([ [IMU_data.accelX]' [IMU_data.accelY]' [IMU_data.accelZ]' [IMU_data.omegaX]' [IMU_data.omegaY]' [IMU_data.omegaZ]' ], 2), 'UniformOutput', false);
 [IMU_data.acc_omega] = deal(imum{:});
 clear imum
 
 % GPS data
-GPS_data = importdata('Gps_converted.txt');
+GPS_data = importdata(findExampleDataFile('Gps_converted.txt'));
 GPS_data = cell2struct(num2cell(GPS_data.data), GPS_data.colheaders, 2);
 for i = 1:numel(GPS_data)
     GPS_data(i).Position = gtsam.Point3(GPS_data(i).X, GPS_data(i).Y, GPS_data(i).Z);
