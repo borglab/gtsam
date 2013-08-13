@@ -61,7 +61,7 @@ void ConcurrentBatchFilter::PrintNonlinearFactorGraph(const NonlinearFactorGraph
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
+void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& factor,
     const std::string& indent, const KeyFormatter& keyFormatter) {
   std::cout << indent;
   if(factor) {
@@ -74,8 +74,8 @@ void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& 
     } else {
       std::cout << "g( ";
     }
-    BOOST_FOREACH(Index index, *factor) {
-      std::cout << keyFormatter(ordering.key(index)) << " ";
+    BOOST_FOREACH(Key key, *factor) {
+      std::cout << keyFormatter(key) << " ";
     }
     std::cout << ")" << std::endl;
   } else {
@@ -84,11 +84,11 @@ void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& 
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchFilter::PrintLinearFactorGraph(const GaussianFactorGraph& factors, const Ordering& ordering,
+void ConcurrentBatchFilter::PrintLinearFactorGraph(const GaussianFactorGraph& factors,
     const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter) {
   std::cout << indent << title << std::endl;
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-    PrintLinearFactor(factor, ordering, indent + "  ", keyFormatter);
+    PrintLinearFactor(factor, indent + "  ", keyFormatter);
   }
 }
 
@@ -149,20 +149,16 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
 
   // Update all of the internal variables with the new information
   gttic(augment_system);
+
   // Add the new variables to theta
   theta_.insert(newTheta);
   // Add new variables to the end of the ordering
-  std::vector<size_t> dims;
-  dims.reserve(newTheta.size());
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
     ordering_.push_back(key_value.key);
-    dims.push_back(key_value.value.dim());
   }
   // Augment Delta
-  delta_.append(dims);
-  for(size_t i = delta_.size() - dims.size(); i < delta_.size(); ++i) {
-    delta_[i].setZero();
-  }
+  delta_.insert(newTheta.zeroVectors());
+
   // Add the new factors to the graph, updating the variable index
   result.newFactorsIndices = insertFactors(newFactors);
   // Remove any user-specified factors from the graph
@@ -358,10 +354,7 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
   gttic(remove_factors);
 
   // For each factor slot to delete...
-  SymbolicFactorGraph factors;
   BOOST_FOREACH(size_t slot, slots) {
-    // Create a symbolic version for the variable index
-    factors.push_back(factors_.at(slot)->symbolic(ordering_));
 
     // Remove the factor from the graph
     factors_.remove(slot);
@@ -376,29 +369,13 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
 /* ************************************************************************* */
 void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysToMove) {
 
-  // Calculate the variable index
-  VariableIndex variableIndex(*factors_.symbolic(ordering_), ordering_.size());
-
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
-  int group0 = 0;
-  int group1 = (keysToMove && (keysToMove->size() > 0) ) ? 1 : 0;
-
-  // Initialize all variables to group1
-  std::vector<int> cmember(variableIndex.size(), group1);
-
-  // Set all of the keysToMove to Group0
   if(keysToMove && keysToMove->size() > 0) {
-    BOOST_FOREACH(Key key, *keysToMove) {
-      cmember[ordering_.at(key)] = group0;
-    }
+    ordering_ = Ordering::COLAMDConstrainedFirst(factors_, std::vector<Key>(keysToMove->begin(), keysToMove->end()));
+  }else{
+    ordering_ = Ordering::COLAMD(factors_);
   }
 
-  // Generate the permutation
-  Permutation forwardPermutation = *inference::PermutationCOLAMD_(variableIndex, cmember);
-
-  // Permute the ordering, variable index, and deltas
-  ordering_.permuteInPlace(forwardPermutation);
-  delta_.permuteInPlace(forwardPermutation);
 }
 
 /* ************************************************************************* */
@@ -426,7 +403,7 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
   double errorTol = parameters.errorTol;
 
   // Create a Values that holds the current evaluation point
-  Values evalpoint = theta.retract(delta, ordering);
+  Values evalpoint = theta.retract(delta);
   result.error = factors.error(evalpoint);
 
   // check if we're already close enough
@@ -447,9 +424,9 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
 
     // Do next iteration
     gttic(optimizer_iteration);
-    {
+
       // Linearize graph around the linearization point
-      GaussianFactorGraph linearFactorGraph = *factors.linearize(theta, ordering);
+      GaussianFactorGraph linearFactorGraph = *factors.linearize(theta);
 
       // Keep increasing lambda until we make make progress
       while(true) {
@@ -461,24 +438,25 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
         GaussianFactorGraph dampedFactorGraph(linearFactorGraph);
         dampedFactorGraph.reserve(linearFactorGraph.size() + delta.size());
         double sigma = 1.0 / std::sqrt(lambda);
-        {
-          // for each of the variables, add a prior at the current solution
-          for(size_t j=0; j<delta.size(); ++j) {
-            Matrix A = eye(delta[j].size());
-            Vector b = delta[j];
-            SharedDiagonal model = noiseModel::Isotropic::Sigma(delta[j].size(), sigma);
-            GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
-            dampedFactorGraph.push_back(prior);
-          }
+
+        // for each of the variables, add a prior at the current solution
+        BOOST_FOREACH(const VectorValues::KeyValuePair& key_value, delta) {
+          size_t dim = key_value.second.size();
+          Matrix A = Matrix::Identity(dim,dim);
+          Vector b = key_value.second;
+          SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
+          GaussianFactor::shared_ptr prior(new JacobianFactor(key_value.first, A, b, model));
+          dampedFactorGraph.push_back(prior);
         }
+
         gttoc(damp);
         result.lambdas++;
 
         gttic(solve);
         // Solve Damped Gaussian Factor Graph
-        newDelta = GaussianJunctionTree(dampedFactorGraph).optimize(parameters.getEliminationFunction());
+        newDelta = dampedFactorGraph.optimize(ordering, parameters.getEliminationFunction());
         // update the evalpoint with the new delta
-        evalpoint = theta.retract(newDelta, ordering);
+        evalpoint = theta.retract(newDelta);
         gttoc(solve);
 
         // Evaluate the new nonlinear error
@@ -503,10 +481,10 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
           if(linearValues.size() > 0) {
             theta.update(linearValues);
             BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linearValues) {
-              Index index = ordering.at(key_value.key);
-              delta.at(index) = newDelta.at(index);
+              delta.at(key_value.key) = newDelta.at(key_value.key);
             }
           }
+
           // Decrease lambda for next time
           lambda /= lambdaFactor;
           if(lambda < lambdaLowerBound) {
@@ -526,7 +504,7 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
           }
         }
       } // end while
-    }
+
     gttoc(optimizer_iteration);
 
     if(debug) { std::cout << "using lambda = " << lambda << std::endl; }
@@ -562,13 +540,17 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
 
   if(debug) { PrintKeys(keysToMove, "ConcurrentBatchFilter::moveSeparator  ", "Keys To Move:", DefaultKeyFormatter); }
 
+
   // Identify all of the new factors to be sent to the smoother (any factor involving keysToMove)
   std::vector<size_t> removedFactorSlots;
-  VariableIndex variableIndex(*factors_.symbolic(ordering_), theta_.size());
+  VariableIndex variableIndex(factors_);
   BOOST_FOREACH(Key key, keysToMove) {
-    const FastList<size_t>& slots = variableIndex[ordering_.at(key)];
-    removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
+    const FastList<size_t>& slots = variableIndex[key];
+    BOOST_FOREACH(size_t slot, slots) {
+      removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
+    }
   }
+
   // Sort and remove duplicates
   std::sort(removedFactorSlots.begin(), removedFactorSlots.end());
   removedFactorSlots.erase(std::unique(removedFactorSlots.begin(), removedFactorSlots.end()), removedFactorSlots.end());
@@ -677,22 +659,8 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   // Remove marginalized keys from values (and separator)
   BOOST_FOREACH(Key key, keysToMove) {
     theta_.erase(key);
-  }
-
-  // Permute the ordering such that the removed keys are at the end.
-  // This is a prerequisite for removing them from several structures
-  std::vector<Index> toBack;
-  BOOST_FOREACH(Key key, keysToMove) {
-    toBack.push_back(ordering_.at(key));
-  }
-  Permutation forwardPermutation = Permutation::PushToBack(toBack, ordering_.size());
-  ordering_.permuteInPlace(forwardPermutation);
-  delta_.permuteInPlace(forwardPermutation);
-
-  // Remove marginalized keys from the ordering and delta
-  for(size_t i = 0; i < keysToMove.size(); ++i) {
-    ordering_.pop_back();
-    delta_.pop_back();
+    ordering_.erase(std::find(ordering_.begin(), ordering_.end(), key));
+    delta_.erase(key);
   }
 
   if(debug) std::cout << "ConcurrentBatchFilter::moveSeparator  End" << std::endl;

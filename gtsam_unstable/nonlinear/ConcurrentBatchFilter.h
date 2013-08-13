@@ -225,7 +225,7 @@ private:
       const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /** Print just the nonlinear keys in each linear factor for a whole Gaussian Factor Graph */
-  static void PrintLinearFactorGraph(const GaussianFactorGraph& factors, const Ordering& ordering,
+  static void PrintLinearFactorGraph(const GaussianFactorGraph& factors,
       const std::string& indent = "", const std::string& title = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /** Print just the nonlinear keys contained inside a container */

@@ -23,10 +23,10 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -104,8 +104,8 @@ TEST( ConcurrentBatchSmoother, getFactors )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors1;
-  newFactors1.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors1.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
   newValues1.insert(2, newValues1.at<Pose3>(1).compose(poseOdometry));
@@ -121,8 +121,8 @@ TEST( ConcurrentBatchSmoother, getFactors )
 
   // Add some more factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors2.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors2.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors2.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(3, newValues1.at<Pose3>(2).compose(poseOdometry));
   newValues2.insert(4, newValues2.at<Pose3>(3).compose(poseOdometry));
@@ -154,8 +154,8 @@ TEST( ConcurrentBatchSmoother, getLinearizationPoint )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors1;
-  newFactors1.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors1.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
   newValues1.insert(2, newValues1.at<Pose3>(1).compose(poseOdometry));
@@ -171,8 +171,8 @@ TEST( ConcurrentBatchSmoother, getLinearizationPoint )
 
   // Add some more factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors2.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors2.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors2.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(3, newValues1.at<Pose3>(2).compose(poseOdometry));
   newValues2.insert(4, newValues2.at<Pose3>(3).compose(poseOdometry));
@@ -216,8 +216,8 @@ TEST( ConcurrentBatchSmoother, calculateEstimate )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors2.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
   newValues2.insert(2, newValues2.at<Pose3>(1).compose(poseOdometry).compose(poseError));
@@ -236,8 +236,8 @@ TEST( ConcurrentBatchSmoother, calculateEstimate )
 
   // Add some more factors to the smoother
   NonlinearFactorGraph newFactors3;
-  newFactors3.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors3.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors3.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors3.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues3;
   newValues3.insert(3, newValues2.at<Pose3>(2).compose(poseOdometry).compose(poseError));
   newValues3.insert(4, newValues3.at<Pose3>(3).compose(poseOdometry).compose(poseError));
@@ -302,8 +302,8 @@ TEST( ConcurrentBatchSmoother, update_multiple )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors2.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
   newValues2.insert(2, newValues2.at<Pose3>(1).compose(poseOdometry).compose(poseError));
@@ -322,8 +322,8 @@ TEST( ConcurrentBatchSmoother, update_multiple )
 
   // Add some more factors to the smoother
   NonlinearFactorGraph newFactors3;
-  newFactors3.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors3.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors3.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors3.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues3;
   newValues3.insert(3, newValues2.at<Pose3>(2).compose(poseOdometry).compose(poseError));
   newValues3.insert(4, newValues3.at<Pose3>(3).compose(poseOdometry).compose(poseError));
@@ -391,8 +391,8 @@ TEST( ConcurrentBatchSmoother, synchronize_1 )
   Ordering ordering;
   ordering.push_back(1);
   ordering.push_back(2);
-  filterSumarization.add(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues, ordering), ordering, filterSeparatorValues));
-  filterSumarization.add(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues, ordering), ordering, filterSeparatorValues));
+  filterSumarization.push_back(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues), filterSeparatorValues));
+  filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues), filterSeparatorValues));
 
   // Create expected values: the smoother output will be empty for this case
   NonlinearFactorGraph expectedSmootherSummarization;
@@ -452,10 +452,10 @@ TEST( ConcurrentBatchSmoother, synchronize_2 )
   ordering.push_back(2);
   filterSeparatorValues.insert(1, Pose3().compose(poseError));
   filterSeparatorValues.insert(2, filterSeparatorValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
-  filterSumarization.add(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues, ordering), ordering, filterSeparatorValues));
-  filterSumarization.add(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues, ordering), ordering, filterSeparatorValues));
-  smootherFactors.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  smootherFactors.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  filterSumarization.push_back(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues), filterSeparatorValues));
+  filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues), filterSeparatorValues));
+  smootherFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  smootherFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   smootherValues.insert(3, filterSeparatorValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
   smootherValues.insert(4, smootherValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
@@ -523,11 +523,11 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   ordering.push_back(2);
   filterSeparatorValues.insert(1, Pose3().compose(poseError));
   filterSeparatorValues.insert(2, filterSeparatorValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
-  filterSumarization.add(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues, ordering), ordering, filterSeparatorValues));
-  filterSumarization.add(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues, ordering), ordering, filterSeparatorValues));
-  smootherFactors.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  smootherFactors.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  smootherFactors.add(PriorFactor<Pose3>(4, poseInitial, noisePrior));
+  filterSumarization.push_back(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues), filterSeparatorValues));
+  filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues), filterSeparatorValues));
+  smootherFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  smootherFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  smootherFactors.push_back(PriorFactor<Pose3>(4, poseInitial, noisePrior));
   smootherValues.insert(3, filterSeparatorValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
   smootherValues.insert(4, smootherValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
@@ -557,19 +557,18 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   NonlinearFactorGraph allFactors = smootherFactors;
   Values allValues = smoother.getLinearizationPoint();
   ordering = smoother.getOrdering();  // I'm really hoping this is an acceptable ordering...
-  GaussianFactorGraph::shared_ptr linearFactors = allFactors.linearize(allValues, ordering);
+  GaussianFactorGraph::shared_ptr linearFactors = allFactors.linearize(allValues);
 
-  FastSet<Index> eliminateIndices = linearFactors->keys();
+  FastSet<Key> eliminateKeys = linearFactors->keys();
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
-    Index index = ordering.at(key_value.key);
-    eliminateIndices.erase(index);
+    eliminateKeys.erase(key_value.key);
   }
-  std::vector<Index> variables(eliminateIndices.begin(), eliminateIndices.end());
-  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = linearFactors->eliminate(variables, EliminateCholesky);
+  std::vector<Key> variables(eliminateKeys.begin(), eliminateKeys.end());
+  GaussianFactorGraph result = *linearFactors->eliminatePartialMultifrontal(variables, EliminateCholesky).second;
 
   expectedSmootherSummarization.resize(0);
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
-    expectedSmootherSummarization.add(LinearContainerFactor(factor, ordering, allValues));
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
+    expectedSmootherSummarization.push_back(LinearContainerFactor(factor, allValues));
   }
 
   CHECK(assert_equal(expectedSmootherSummarization, actualSmootherSummarization, 1e-6));

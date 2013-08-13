@@ -18,13 +18,8 @@ add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-fail
 # Add the full name to this list, as in the following example
 # Sources to remove from builds
 set (excluded_sources # "")
-    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/BatchFixedLagSmoother.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchFilter.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentBatchSmoother.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentFilteringAndSmoothing.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentIncrementalFilter.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ConcurrentIncrementalSmoother.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/FixedLagSmoother.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/IncrementalFixedLagSmoother.cpp"
     
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"

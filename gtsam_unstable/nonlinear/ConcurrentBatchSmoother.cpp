@@ -58,18 +58,15 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
   {
     // Add the new variables to theta
     theta_.insert(newTheta);
+
     // Add new variables to the end of the ordering
-    std::vector<size_t> dims;
-    dims.reserve(newTheta.size());
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
       ordering_.push_back(key_value.key);
-      dims.push_back(key_value.value.dim());
     }
+
     // Augment Delta
-    delta_.append(dims);
-    for(size_t i = delta_.size() - dims.size(); i < delta_.size(); ++i) {
-      delta_[i].setZero();
-    }
+    delta_.insert(newTheta.zeroVectors());
+
     // Add the new factors to the graph, updating the variable index
     insertFactors(newFactors);
   }
@@ -134,33 +131,27 @@ void ConcurrentBatchSmoother::synchronize(const NonlinearFactorGraph& smootherFa
   removeFactors(filterSummarizationSlots_);
 
   // Insert new linpoints into the values, augment the ordering, and store new dims to augment delta
-  std::vector<size_t> dims;
-  dims.reserve(smootherValues.size() + separatorValues.size());
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues) {
-    Values::iterator iter = theta_.find(key_value.key);
-    if(iter == theta_.end()) {
-      theta_.insert(key_value.key, key_value.value);
+    std::pair<Values::iterator, bool> iter_inserted = theta_.tryInsert(key_value.key, key_value.value);
+    if(iter_inserted.second) {
+      // If the insert succeeded
       ordering_.push_back(key_value.key);
-      dims.push_back(key_value.value.dim());
+      delta_.insert(key_value.key, Vector::Zero(key_value.value.dim()));
     } else {
-      iter->value = key_value.value;
+      // If the element already existed in theta_
+      iter_inserted.first->value = key_value.value;
     }
   }
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues) {
-    Values::iterator iter = theta_.find(key_value.key);
-    if(iter == theta_.end()) {
-      theta_.insert(key_value.key, key_value.value);
+    std::pair<Values::iterator, bool> iter_inserted = theta_.tryInsert(key_value.key, key_value.value);
+    if(iter_inserted.second) {
+      // If the insert succeeded
       ordering_.push_back(key_value.key);
-      dims.push_back(key_value.value.dim());
+      delta_.insert(key_value.key, Vector::Zero(key_value.value.dim()));
     } else {
-      iter->value = key_value.value;
+      // If the element already existed in theta_
+      iter_inserted.first->value = key_value.value;
     }
-  }
-
-  // Augment Delta
-  delta_.append(dims);
-  for(size_t i = delta_.size() - dims.size(); i < delta_.size(); ++i) {
-    delta_[i].setZero();
   }
 
   // Insert the new smoother factors
@@ -217,10 +208,7 @@ void ConcurrentBatchSmoother::removeFactors(const std::vector<size_t>& slots) {
   gttic(remove_factors);
 
   // For each factor slot to delete...
-  SymbolicFactorGraph factors;
   BOOST_FOREACH(size_t slot, slots) {
-    // Create a symbolic version for the variable index
-    factors.push_back(factors_.at(slot)->symbolic(ordering_));
 
     // Remove the factor from the graph
     factors_.remove(slot);
@@ -236,25 +224,11 @@ void ConcurrentBatchSmoother::removeFactors(const std::vector<size_t>& slots) {
 void ConcurrentBatchSmoother::reorder() {
 
   // Recalculate the variable index
-  variableIndex_ = VariableIndex(*factors_.symbolic(ordering_));
+  variableIndex_ = VariableIndex(factors_);
 
-  // Initialize all variables to group0
-  std::vector<int> cmember(variableIndex_.size(), 0);
+  FastList<Key> separatorKeys = separatorValues_.keys();
+  ordering_ = Ordering::COLAMDConstrainedLast(variableIndex_, std::vector<Key>(separatorKeys.begin(), separatorKeys.end()));
 
-  // Set all of the separator keys to Group1
-  if(separatorValues_.size() > 0) {
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-      cmember[ordering_.at(key_value.key)] = 1;
-    }
-  }
-
-  // Generate the permutation
-  Permutation forwardPermutation = *inference::PermutationCOLAMD_(variableIndex_, cmember);
-
-  // Permute the ordering, variable index, and deltas
-  ordering_.permuteInPlace(forwardPermutation);
-  variableIndex_.permuteInPlace(forwardPermutation);
-  delta_.permuteInPlace(forwardPermutation);
 }
 
 /* ************************************************************************* */
@@ -271,7 +245,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
   double lambda = parameters_.lambdaInitial;
 
   // Create a Values that holds the current evaluation point
-  Values evalpoint = theta_.retract(delta_, ordering_);
+  Values evalpoint = theta_.retract(delta_);
   result.error = factors_.error(evalpoint);
   if(result.error < parameters_.errorTol) {
     return result;
@@ -287,7 +261,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
     gttic(optimizer_iteration);
     {
       // Linearize graph around the linearization point
-      GaussianFactorGraph linearFactorGraph = *factors_.linearize(theta_, ordering_);
+      GaussianFactorGraph linearFactorGraph = *factors_.linearize(theta_);
 
       // Keep increasing lambda until we make make progress
       while(true) {
@@ -300,11 +274,12 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         dampedFactorGraph.reserve(linearFactorGraph.size() + delta_.size());
         {
           // for each of the variables, add a prior at the current solution
-          for(size_t j=0; j<delta_.size(); ++j) {
-            Matrix A = eye(delta_[j].size());
-            Vector b = delta_[j];
-            SharedDiagonal model = noiseModel::Isotropic::Sigma(delta_[j].size(), 1.0 / std::sqrt(lambda));
-            GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
+          BOOST_FOREACH(const VectorValues::KeyValuePair& key_value, delta_) {
+            size_t dim = key_value.second.size();
+            Matrix A = Matrix::Identity(dim,dim);
+            Vector b = key_value.second;
+            SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, 1.0 / std::sqrt(lambda));
+            GaussianFactor::shared_ptr prior(new JacobianFactor(key_value.first, A, b, model));
             dampedFactorGraph.push_back(prior);
           }
         }
@@ -312,12 +287,12 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) 
         	dampedFactorGraph.print("damped");
         result.lambdas++;
-                
+
         gttic(solve);
         // Solve Damped Gaussian Factor Graph
-        newDelta = GaussianJunctionTree(dampedFactorGraph).optimize(parameters_.getEliminationFunction());
+        newDelta = dampedFactorGraph.optimize(ordering_, parameters_.getEliminationFunction());
         // update the evalpoint with the new delta
-        evalpoint = theta_.retract(newDelta, ordering_);
+        evalpoint = theta_.retract(newDelta);
         gttoc(solve);
 
         if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) 
@@ -345,10 +320,10 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
           if(separatorValues_.size() > 0) {
             theta_.update(separatorValues_);
             BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-              Index index = ordering_.at(key_value.key);
-              delta_.at(index) = newDelta.at(index);
+              delta_.at(key_value.key) = newDelta.at(key_value.key);
             }
           }
+
           // Decrease lambda for next time
           lambda /= parameters_.lambdaFactor;
           // End this lambda search iteration
@@ -421,12 +396,12 @@ void ConcurrentBatchSmoother::PrintNonlinearFactor(const NonlinearFactor::shared
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchSmoother::PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering, const std::string& indent, const KeyFormatter& keyFormatter) {
+void ConcurrentBatchSmoother::PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const std::string& indent, const KeyFormatter& keyFormatter) {
   std::cout << indent;
   if(factor) {
     std::cout << "g( ";
-    BOOST_FOREACH(Index index, *factor) {
-      std::cout << keyFormatter(ordering.key(index)) << " ";
+    BOOST_FOREACH(Key key, *factor) {
+      std::cout << keyFormatter(key) << " ";
     }
     std::cout << ")" << std::endl;
   } else {
