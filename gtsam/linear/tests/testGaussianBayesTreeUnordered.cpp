@@ -60,8 +60,8 @@ namespace {
       boost::make_shared<GaussianBayesTreeClique>(
       boost::make_shared<GaussianConditional>(conditional));
     clique->children.assign(children.begin(), children.end());
-    BOOST_FOREACH(const GaussianBayesTreeClique::shared_ptr& child, children)
-      child->parent_ = clique;
+    for(typename CHILDREN::const_iterator child = children.begin(); child != children.end(); ++child)
+      (*child)->parent_ = clique;
     return clique;
   }
 }

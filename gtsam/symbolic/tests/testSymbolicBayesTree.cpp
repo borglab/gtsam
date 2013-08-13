@@ -59,8 +59,8 @@ namespace {
       boost::make_shared<SymbolicConditional>(
       SymbolicConditional::FromKeys(keys, nrFrontals)));
     clique->children.assign(children.begin(), children.end());
-    BOOST_FOREACH(const SymbolicBayesTreeClique::shared_ptr& child, children)
-      child->parent_ = clique;
+    for(typename CHILDREN::const_iterator child = children.begin(); child != children.end(); ++child)
+      (*child)->parent_ = clique;
     return clique;
   }
 
