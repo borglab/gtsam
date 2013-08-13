@@ -60,11 +60,12 @@ TEST(GaussianConditional, constructor)
   SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector_(2, 3.0, 4.0));
 
   vector<pair<Key, Matrix> > terms = pair_list_of
+      (1, R)
       (3, S1)
       (5, S2)
       (7, S3);
 
-  GaussianConditional actual(1, d, R, terms, s);
+  GaussianConditional actual(terms, 1, d, s);
 
   GaussianConditional::const_iterator it = actual.beginFrontals();
   EXPECT(assert_equal(Key(1), *it));
