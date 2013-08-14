@@ -172,7 +172,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
         {
           // Count dimensions of vector
           DenseIndex dim = 0;
-          vector<VectorValues::const_iterator> parentPointers;
+          std::vector<VectorValues::const_iterator> parentPointers;
           parentPointers.reserve(clique->conditional()->nrParents());
           BOOST_FOREACH(Key parent, clique->conditional()->parents()) {
             parentPointers.push_back(clique->solnPointers_.at(parent));
