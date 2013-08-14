@@ -489,10 +489,10 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
     // Generate ordering
     gttic(Ordering);
     Ordering ordering = Ordering::COLAMDConstrained(affectedFactorsVarIndex, constraintGroups);
+    gttoc(Ordering);
 
     ISAM2BayesTree::shared_ptr bayesTree = ISAM2JunctionTree(GaussianEliminationTree(
       factors, affectedFactorsVarIndex, ordering)).eliminate(params_.getEliminationFunction()).first;
-    gttoc(Ordering);
 
     gttoc(reorder_and_eliminate);
 
