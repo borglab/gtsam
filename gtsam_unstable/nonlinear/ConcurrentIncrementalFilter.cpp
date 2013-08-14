@@ -93,15 +93,14 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
     std::set<Key> markedKeys;
     BOOST_FOREACH(gtsam::Key key, *keysToMove) {
       if(isam2_.getLinearizationPoint().exists(key)) {
-        Index index = isam2_.getOrdering().at(key);
-        ISAM2Clique::shared_ptr clique = isam2_[index];
-        GaussianConditional::const_iterator index_iter = clique->conditional()->begin();
-        while(*index_iter != index) {
-          markedKeys.insert(isam2_.getOrdering().key(*index_iter));
-          ++index_iter;
+        ISAM2Clique::shared_ptr clique = isam2_[key];
+        GaussianConditional::const_iterator key_iter = clique->conditional()->begin();
+        while(*key_iter != key) {
+          markedKeys.insert(*key_iter);
+          ++key_iter;
         }
-        BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children()) {
-          RecursiveMarkAffectedKeys(index, child, isam2_.getOrdering(), markedKeys);
+        BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children) {
+          RecursiveMarkAffectedKeys(key, child, markedKeys);
         }
       }
     }
@@ -261,20 +260,21 @@ void ConcurrentIncrementalFilter::postsync() {
   gttoc(postsync);
 }
 
+
 /* ************************************************************************* */
-void ConcurrentIncrementalFilter::RecursiveMarkAffectedKeys(Index index, const ISAM2Clique::shared_ptr& clique, const Ordering& ordering, std::set<Key>& additionalKeys) {
+void ConcurrentIncrementalFilter::RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys) {
 
   // Check if the separator keys of the current clique contain the specified key
-  if(std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), index) != clique->conditional()->endParents()) {
+  if(std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), key) != clique->conditional()->endParents()) {
 
     // Mark the frontal keys of the current clique
-    BOOST_FOREACH(Index idx, clique->conditional()->frontals()) {
-      additionalKeys.insert(ordering.key(idx));
+    BOOST_FOREACH(Key idx, clique->conditional()->frontals()) {
+      additionalKeys.insert(idx);
     }
 
     // Recursively mark all of the children
-    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children()) {
-      RecursiveMarkAffectedKeys(index, child, ordering, additionalKeys);
+    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
+      RecursiveMarkAffectedKeys(key, child, additionalKeys);
     }
   }
   // If the key was not found in the separator/parents, then none of its children can have it either
@@ -288,7 +288,7 @@ std::vector<size_t> ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2
   std::vector<size_t> removedFactorSlots;
   const VariableIndex& variableIndex = isam2.getVariableIndex();
   BOOST_FOREACH(Key key, keys) {
-    const FastList<size_t>& slots = variableIndex[isam2.getOrdering().at(key)];
+    const FastList<size_t>& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
@@ -345,27 +345,23 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
   // Find all cliques that contain any separator variables
   std::set<ISAM2Clique::shared_ptr> separatorCliques;
   BOOST_FOREACH(Key key, separatorKeys) {
-    Index index = isam2_.getOrdering().at(key);
-    ISAM2Clique::shared_ptr clique = isam2_[index];
+    ISAM2Clique::shared_ptr clique = isam2_[key];
     separatorCliques.insert( clique );
   }
 
-  // Create the set of clique keys
-  std::vector<Index> cliqueIndices;
+  // Create the set of clique keys LC:
   std::vector<Key> cliqueKeys;
   BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
-    BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
-      cliqueIndices.push_back(index);
-      cliqueKeys.push_back(isam2_.getOrdering().key(index));
+    BOOST_FOREACH(Key key, clique->conditional()->frontals()) {
+      cliqueKeys.push_back(key);
     }
   }
-  std::sort(cliqueIndices.begin(), cliqueIndices.end());
   std::sort(cliqueKeys.begin(), cliqueKeys.end());
 
   // Gather all factors that involve only clique keys
   std::set<size_t> cliqueFactorSlots;
-  BOOST_FOREACH(Index index, cliqueIndices) {
-    BOOST_FOREACH(size_t slot, isam2_.getVariableIndex()[index]) {
+  BOOST_FOREACH(Key key, cliqueKeys) {
+    BOOST_FOREACH(size_t slot, isam2_.getVariableIndex()[key]) {
       const NonlinearFactor::shared_ptr& factor = isam2_.getFactorsUnsafe().at(slot);
       if(factor) {
         std::set<Key> factorKeys(factor->begin(), factor->end());
@@ -391,7 +387,7 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
   std::set<ISAM2Clique::shared_ptr> childCliques;
   // Add all of the children
   BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
-    childCliques.insert(clique->children().begin(), clique->children().end());
+    childCliques.insert(clique->children.begin(), clique->children.end());
   }
   // Remove any separator cliques that were added because they were children of other separator cliques
   BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
@@ -400,7 +396,7 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
 
   // Augment the factor graph with cached factors from the children
   BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, childCliques) {
-    LinearContainerFactor::shared_ptr factor(new LinearContainerFactor(clique->cachedFactor(), isam2_.getOrdering(), isam2_.getLinearizationPoint()));
+    LinearContainerFactor::shared_ptr factor(new LinearContainerFactor(clique->cachedFactor(), isam2_.getLinearizationPoint()));
     graph.push_back( factor );
   }
 

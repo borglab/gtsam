@@ -89,11 +89,6 @@ public:
     return isam_.getLinearizationPoint();
   }
 
-  /** Access the current ordering */
-  const Ordering& getOrdering() const {
-    return isam_.getOrdering();
-  }
-
   /** Access the current set of deltas to the linearization point */
   const VectorValues& getDelta() const {
     return isam_.getDelta();
@@ -113,10 +108,10 @@ protected:
 private:
   /** Private methods for printing debug information */
   static void PrintKeySet(const std::set<Key>& keys, const std::string& label = "Keys:");
-  static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor, const gtsam::Ordering& ordering);
-  static void PrintSymbolicGraph(const GaussianFactorGraph& graph, const gtsam::Ordering& ordering, const std::string& label = "Factor Graph:");
+  static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor);
+  static void PrintSymbolicGraph(const GaussianFactorGraph& graph, const std::string& label = "Factor Graph:");
   static void PrintSymbolicTree(const gtsam::ISAM2& isam, const std::string& label = "Bayes Tree:");
-  static void PrintSymbolicTreeHelper(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering, const std::string indent = "");
+  static void PrintSymbolicTreeHelper(const gtsam::ISAM2Clique::shared_ptr& clique, const std::string indent = "");
 
 }; // IncrementalFixedLagSmoother
 

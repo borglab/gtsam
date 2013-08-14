@@ -73,11 +73,6 @@ public:
     return isam2_.getLinearizationPoint();
   }
 
-  /** Access the current ordering */
-  const Ordering& getOrdering() const {
-    return isam2_.getOrdering();
-  }
-
   /** Access the current set of deltas to the linearization point */
   const VectorValues& getDelta() const {
     return isam2_.getDelta();
@@ -171,7 +166,7 @@ protected:
 private:
 
   /** Traverse the iSAM2 Bayes Tree, inserting all descendants of the provided index/key into 'additionalKeys' */
-  static void RecursiveMarkAffectedKeys(Index index, const ISAM2Clique::shared_ptr& clique, const Ordering& ordering, std::set<Key>& additionalKeys);
+  static void RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys);
 
   /** Find the set of iSAM2 factors adjacent to 'keys' */
   static std::vector<size_t> FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const std::vector<size_t>& factorsToIgnore);

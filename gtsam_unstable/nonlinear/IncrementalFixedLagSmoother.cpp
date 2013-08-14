@@ -25,19 +25,19 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-void recursiveMarkAffectedKeys(const Index& index, const ISAM2Clique::shared_ptr& clique, const Ordering& ordering, std::set<Key>& additionalKeys) {
+void recursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys) {
 
   // Check if the separator keys of the current clique contain the specified key
-  if(std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), index) != clique->conditional()->endParents()) {
+  if(std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), key) != clique->conditional()->endParents()) {
 
     // Mark the frontal keys of the current clique
-    BOOST_FOREACH(Index i, clique->conditional()->frontals()) {
-      additionalKeys.insert(ordering.key(i));
+    BOOST_FOREACH(Key i, clique->conditional()->frontals()) {
+      additionalKeys.insert(i);
     }
 
     // Recursively mark all of the children
-    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children()) {
-      recursiveMarkAffectedKeys(index, child, ordering, additionalKeys);
+    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
+      recursiveMarkAffectedKeys(key, child, additionalKeys);
     }
   }
   // If the key was not found in the separator/parents, then none of its children can have it either
@@ -106,10 +106,9 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
   // Mark additional keys between the marginalized keys and the leaves
   std::set<gtsam::Key> additionalKeys;
   BOOST_FOREACH(gtsam::Key key, marginalizableKeys) {
-    gtsam::Index index = isam_.getOrdering().at(key);
-    gtsam::ISAM2Clique::shared_ptr clique = isam_[index];
-    BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children()) {
-      recursiveMarkAffectedKeys(index, child, isam_.getOrdering(), additionalKeys);
+    gtsam::ISAM2Clique::shared_ptr clique = isam_[key];
+    BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children) {
+      recursiveMarkAffectedKeys(key, child, additionalKeys);
     }
   }
   KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
@@ -184,48 +183,52 @@ void IncrementalFixedLagSmoother::PrintKeySet(const std::set<Key>& keys, const s
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor, const gtsam::Ordering& ordering) {
+void IncrementalFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor) {
   std::cout << "f(";
-  BOOST_FOREACH(Index index, factor->keys()) {
-    std::cout << " " << index << "[" << gtsam::DefaultKeyFormatter(ordering.key(index)) << "]";
+  BOOST_FOREACH(gtsam::Key key, factor->keys()) {
+    std::cout << " " << gtsam::DefaultKeyFormatter(key);
   }
   std::cout << " )" << std::endl;
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph, const gtsam::Ordering& ordering, const std::string& label) {
+void IncrementalFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph, const std::string& label) {
   std::cout << label << std::endl;
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, graph) {
-    PrintSymbolicFactor(factor, ordering);
+    PrintSymbolicFactor(factor);
   }
 }
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::PrintSymbolicTree(const gtsam::ISAM2& isam, const std::string& label) {
   std::cout << label << std::endl;
-  if(isam.root())
-    PrintSymbolicTreeHelper(isam.root(), isam.getOrdering());
+  if(!isam.roots().empty())
+  {
+    BOOST_FOREACH(const ISAM2::sharedClique& root, isam.roots()){
+    PrintSymbolicTreeHelper(root);
+    }
+  }
   else
     std::cout << "{Empty Tree}" << std::endl;
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintSymbolicTreeHelper(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering, const std::string indent) {
+void IncrementalFixedLagSmoother::PrintSymbolicTreeHelper(const gtsam::ISAM2Clique::shared_ptr& clique, const std::string indent) {
 
   // Print the current clique
   std::cout << indent << "P( ";
-  BOOST_FOREACH(gtsam::Index index, clique->conditional()->frontals()) {
-    std::cout << gtsam::DefaultKeyFormatter(ordering.key(index)) << " ";
+  BOOST_FOREACH(gtsam::Key key, clique->conditional()->frontals()) {
+    std::cout << gtsam::DefaultKeyFormatter(key) << " ";
   }
   if(clique->conditional()->nrParents() > 0) std::cout << "| ";
-  BOOST_FOREACH(gtsam::Index index, clique->conditional()->parents()) {
-    std::cout << gtsam::DefaultKeyFormatter(ordering.key(index)) << " ";
+  BOOST_FOREACH(gtsam::Key key, clique->conditional()->parents()) {
+    std::cout << gtsam::DefaultKeyFormatter(key) << " ";
   }
   std::cout << ")" << std::endl;
 
   // Recursively print all of the children
-  BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children()) {
-    PrintSymbolicTreeHelper(child, ordering, indent+" ");
+  BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children) {
+    PrintSymbolicTreeHelper(child, indent+" ");
   }
 }
 

@@ -83,7 +83,7 @@ TEST( IncrementalFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.add(PriorFactor<Point2>(key0, Point2(0.0, 0.0), odometerNoise));
+    newFactors.push_back(PriorFactor<Point2>(key0, Point2(0.0, 0.0), odometerNoise));
     newValues.insert(key0, Point2(0.01, 0.01));
     newTimestamps[key0] = 0.0;
 
@@ -108,7 +108,7 @@ TEST( IncrementalFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.add(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
     newValues.insert(key2, Point2(double(i)+0.1, -0.1));
     newTimestamps[key2] = double(i);
 
@@ -134,8 +134,8 @@ TEST( IncrementalFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.add(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
-    newFactors.add(BetweenFactor<Point2>(MakeKey(2), MakeKey(5), Point2(3.5, 0.0), loopNoise));
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+    newFactors.push_back(BetweenFactor<Point2>(MakeKey(2), MakeKey(5), Point2(3.5, 0.0), loopNoise));
     newValues.insert(key2, Point2(double(i)+0.1, -0.1));
     newTimestamps[key2] = double(i);
 
@@ -160,7 +160,7 @@ TEST( IncrementalFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.add(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
     newValues.insert(key2, Point2(double(i)+0.1, -0.1));
     newTimestamps[key2] = double(i);
 
