@@ -624,7 +624,7 @@ public:
 
 private:
 
-  FastList<size_t> getAffectedFactors(const FastList<Key>& keys) const;
+  FastSet<size_t> getAffectedFactors(const FastList<Key>& keys) const;
   GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 

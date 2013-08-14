@@ -173,25 +173,18 @@ bool ISAM2::equals(const ISAM2& other, double tol) const {
 }
 
 /* ************************************************************************* */
-FastList<size_t> ISAM2::getAffectedFactors(const FastList<Key>& keys) const {
+FastSet<size_t> ISAM2::getAffectedFactors(const FastList<Key>& keys) const {
   static const bool debug = false;
   if(debug) cout << "Getting affected factors for ";
   if(debug) { BOOST_FOREACH(const Key key, keys) { cout << key << " "; } }
   if(debug) cout << endl;
 
   NonlinearFactorGraph allAffected;
-  FastList<size_t> indices;
+  FastSet<size_t> indices;
   BOOST_FOREACH(const Key key, keys) {
-//    const list<size_t> l = nonlinearFactors_.factors(key);
-//    indices.insert(indices.begin(), l.begin(), l.end());
     const VariableIndex::Factors& factors(variableIndex_[key]);
-    BOOST_FOREACH(size_t factor, factors) {
-      if(debug) cout << "Variable " << key << " affects factor " << factor << endl;
-      indices.push_back(factor);
-    }
+    indices.insert(factors.begin(), factors.end());
   }
-  indices.sort();
-  indices.unique();
   if(debug) cout << "Affected factors are: ";
   if(debug) { BOOST_FOREACH(const size_t index, indices) { cout << index << " "; } }
   if(debug) cout << endl;
@@ -206,7 +199,7 @@ GaussianFactorGraph::shared_ptr
 ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const
 {
   gttic(getAffectedFactors);
-  FastList<size_t> candidates = getAffectedFactors(affectedKeys);
+  FastSet<size_t> candidates = getAffectedFactors(affectedKeys);
   gttoc(getAffectedFactors);
 
   NonlinearFactorGraph nonlinearAffectedFactors;
