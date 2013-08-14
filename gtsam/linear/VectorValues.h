@@ -174,21 +174,23 @@ namespace gtsam {
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    void insert(Key j, const Vector& value) {
-      insert(std::make_pair(j, value)); // Note only passing a reference to the Vector
+    iterator insert(Key j, const Vector& value) {
+      return insert(std::make_pair(j, value)); // Note only passing a reference to the Vector
     }
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    void insert(const std::pair<Key, Vector>& key_value) {
+    iterator insert(const std::pair<Key, Vector>& key_value) {
       // Note that here we accept a pair with a reference to the Vector, but the Vector is copied as
       // it is inserted into the values_ map.
-      if(!values_.insert(key_value).second)
+      std::pair<iterator, bool> result = values_.insert(key_value);
+      if(!result.second)
         throw std::invalid_argument(
         "Requested to insert variable '" + DefaultKeyFormatter(key_value.first)
         + "' already in this VectorValues.");
+      return result.first;
     }
 
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
