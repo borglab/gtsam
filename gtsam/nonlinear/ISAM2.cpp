@@ -754,7 +754,9 @@ ISAM2Result ISAM2::update(
 }
 
 /* ************************************************************************* */
-void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList)
+void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
+                              boost::optional<std::vector<size_t>&> marginalFactorsIndices,
+                              boost::optional<std::vector<size_t>&> deletedFactorsIndices)
 {
   // Convert to ordered set
   FastSet<Key> leafKeys(leafKeysList.begin(), leafKeysList.end());
@@ -895,6 +897,8 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList)
   BOOST_FOREACH(const Clique_Factor& clique_factor, marginalFactors) {
     if(clique_factor.second)
       factorsToAdd.push_back(clique_factor.second);
+    if(marginalFactorsIndices)
+      marginalFactorsIndices->push_back(nonlinearFactors_.size());
     nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
       clique_factor.second));
     if(params_.cacheLinearizedFactors)
@@ -908,16 +912,17 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList)
   FastSet<size_t> factorIndicesToRemove;
   BOOST_FOREACH(Key j, leafKeys) {
     factorIndicesToRemove.insert(variableIndex_[j].begin(), variableIndex_[j].end()); }
-  vector<size_t> removedFactorIndices;
   NonlinearFactorGraph removedFactors;
   BOOST_FOREACH(size_t i, factorIndicesToRemove) {
-    removedFactorIndices.push_back(i);
     removedFactors.push_back(nonlinearFactors_[i]);
     nonlinearFactors_.remove(i);
     if(params_.cacheLinearizedFactors)
       linearFactors_.remove(i);
   }
-  variableIndex_.remove(removedFactorIndices.begin(), removedFactorIndices.end(), removedFactors);
+  variableIndex_.remove(factorIndicesToRemove.begin(), factorIndicesToRemove.end(), removedFactors);
+
+  if(deletedFactorsIndices)
+    deletedFactorsIndices->assign(factorIndicesToRemove.begin(), factorIndicesToRemove.end());
 
   // Remove the marginalized variables
   Impl::RemoveVariables(FastSet<Key>(leafKeys.begin(), leafKeys.end()), roots_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,

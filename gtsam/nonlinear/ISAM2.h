@@ -524,7 +524,9 @@ public:
    * If provided, 'deletedFactorsIndices' will be augmented with the factor graph
    * indices of any factor that was removed during the 'marginalizeLeaves' call
    */
-  void marginalizeLeaves(const FastList<Key>& leafKeys);
+  void marginalizeLeaves(const FastList<Key>& leafKeys,
+    boost::optional<std::vector<size_t>&> marginalFactorsIndices = boost::none,
+    boost::optional<std::vector<size_t>&> deletedFactorsIndices = boost::none);
 
   /** Access the current linearization point */
   const Values& getLinearizationPoint() const { return theta_; }
