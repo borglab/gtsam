@@ -367,6 +367,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
         order = Ordering::COLAMD(variableIndex_);
       }
     }
+    gttoc(ordering);
 
     gttic(linearize);
     GaussianFactorGraph linearized = *nonlinearFactors_.linearize(theta_);
@@ -491,7 +492,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
 
     ISAM2BayesTree::shared_ptr bayesTree = ISAM2JunctionTree(GaussianEliminationTree(
       factors, affectedFactorsVarIndex, ordering)).eliminate(params_.getEliminationFunction()).first;
-    gttoc(PartialSolve);
+    gttoc(Ordering);
 
     gttoc(reorder_and_eliminate);
 
@@ -519,10 +520,13 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
 ISAM2Result ISAM2::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta, const vector<size_t>& removeFactorIndices,
     const boost::optional<FastMap<Key,int> >& constrainedKeys, const boost::optional<FastList<Key> >& noRelinKeys,
-    const boost::optional<FastList<Key> >& extraReelimKeys, bool force_relinearize) {
+    const boost::optional<FastList<Key> >& extraReelimKeys, bool force_relinearize)
+{
 
   const bool debug = ISDEBUG("ISAM2 update");
   const bool verbose = ISDEBUG("ISAM2 update verbose");
+
+  gttic(ISAM2_update);
 
   static int count = 0;
   count++;
@@ -930,8 +934,9 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
 }
 
 /* ************************************************************************* */
-void ISAM2::updateDelta(bool forceFullSolve) const {
-
+void ISAM2::updateDelta(bool forceFullSolve) const
+{
+  gttic(updateDelta);
   if(params_.optimizationParams.type() == typeid(ISAM2GaussNewtonParams)) {
     // If using Gauss-Newton, update with wildfireThreshold
     const ISAM2GaussNewtonParams& gaussNewtonParams =
@@ -967,12 +972,11 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
 
 /* ************************************************************************* */
 Values ISAM2::calculateEstimate() const {
+  gttic(ISAM2_calculateEstimate);
   gttic(Copy_Values);
   Values ret(theta_);
   gttoc(Copy_Values);
-  gttic(getDelta);
   const VectorValues& delta(getDelta());
-  gttoc(getDelta);
   gttic(Expmap);
   ret = ret.retract(delta);
   gttoc(Expmap);
@@ -1016,7 +1020,9 @@ VectorValues optimize(const ISAM2& isam) {
 }
 
 /* ************************************************************************* */
-void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
+void optimizeInPlace(const ISAM2& isam, VectorValues& delta)
+{
+  gttic(ISAM2_optimizeInPlace);
   // We may need to update the solution calculations
   if(!isam.deltaDoglegUptodate_) {
     gttic(UpdateDoglegDeltas);
@@ -1046,7 +1052,9 @@ VectorValues optimizeGradientSearch(const ISAM2& isam) {
 }
 
 /* ************************************************************************* */
-void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
+void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad)
+{
+  gttic(ISAM2_optimizeGradientSearchInPlace);
   // We may need to update the solution calcaulations
   if(!isam.deltaDoglegUptodate_) {
     gttic(UpdateDoglegDeltas);
