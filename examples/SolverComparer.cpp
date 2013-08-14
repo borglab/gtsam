@@ -34,6 +34,10 @@
 #include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/random.hpp>
 
+#include <tbb/tbb.h>
+#undef max // TBB seems to include windows.h and we don't want these macros
+#undef min
+
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
@@ -82,6 +86,7 @@ string inputFile;
 string datasetName;
 int firstStep;
 int lastStep;
+int nThreads;
 bool incremental;
 bool batch;
 bool compare;
@@ -109,6 +114,7 @@ int main(int argc, char *argv[]) {
     ("dataset,d", po::value<string>(&datasetName)->default_value(""), "Read a dataset file (if and only if --incremental is used)")
     ("first-step,f", po::value<int>(&firstStep)->default_value(0), "First step to process from the dataset file")
     ("last-step,l", po::value<int>(&lastStep)->default_value(-1), "Last step to process, or -1 to process until the end of the dataset")
+    ("threads", po::value<int>(&nThreads)->default_value(-1), "Number of threads, or -1 to use all processors")
     ("incremental", "Run in incremental mode using ISAM2 (default)")
     ("batch", "Run in batch mode, requires an initialization from --read-solution")
     ("compare", po::value<vector<string> >()->multitoken(), "Compare two solution files")
@@ -177,6 +183,9 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  std::auto_ptr<tbb::task_scheduler_init> init;
+  if(nThreads > 0)
+    init.reset(new tbb::task_scheduler_init(nThreads));
 
   // Run mode
   if(incremental)
@@ -322,7 +331,9 @@ void runIncremental()
     gttoc_(Collect_measurements);
 
     // Update iSAM2
+    gttic_(Update_ISAM2);
     isam2.update(newFactors, newVariables);
+    gttoc_(Update_ISAM2);
 
     if((step - firstPose) % 100 == 0) {
       gttic_(chi2);
