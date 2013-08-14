@@ -22,6 +22,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <vector>
 #include <gtsam_unstable/geometry/triangulation.h>
 #include <boost/optional.hpp>
@@ -147,7 +148,7 @@ namespace gtsam {
     }
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values,  const Ordering& ordering) const {
+    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
 
       bool debug = false;
       bool blockwise = true;
@@ -185,22 +186,16 @@ namespace gtsam {
         std::cout << "point " << *point << std::endl;
       }
 
-      std::vector<Index> js;
       std::vector<Matrix> Gs(keys_.size()*(keys_.size()+1)/2);
       std::vector<Vector> gs(keys_.size());
       double f=0;
-
-      // fill in the keys
-      BOOST_FOREACH(const Key& k, keys_) {
-        js += ordering[k];
-      }
 
       // point is behind one of the cameras, turn factor off by setting everything to 0
       if (!point) {
         std::cout << "WARNING: Could not triangulate during linearize" << std::endl;
         BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6,6);
         BOOST_FOREACH(Vector& v, gs) v = zero(6);
-        return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
+        return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
       }
 
       // For debug only
@@ -374,7 +369,7 @@ namespace gtsam {
       }
 
       // ==========================================================================================================
-      return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
+      return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
     }
 
     /**

@@ -19,12 +19,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
-TEST(SmartProjectionFactor, disabled)
-{
-  CHECK(("*** testSmartProjectionFactor is disabled *** - Needs conversion for unordered", 0));
-}
 
-#if 0
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -234,20 +229,20 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
   NonlinearFactorGraph graphWithOriginalFactor;
-  graphWithOriginalFactor.add(ProjectionFactor(cam1.project(landmark1), noiseProjection, x1, L(1), K));
-  graphWithOriginalFactor.add(ProjectionFactor(cam2.project(landmark1), noiseProjection, x2, L(1), K));
-  graphWithOriginalFactor.add(ProjectionFactor(cam3.project(landmark1), noiseProjection, x3, L(1), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam1.project(landmark1), noiseProjection, x1, L(1), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam2.project(landmark1), noiseProjection, x2, L(1), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam3.project(landmark1), noiseProjection, x3, L(1), K));
 
-  graphWithOriginalFactor.add(ProjectionFactor(cam1.project(landmark2), noiseProjection, x1, L(2), K));
-  graphWithOriginalFactor.add(ProjectionFactor(cam2.project(landmark2), noiseProjection, x2, L(2), K));
-  graphWithOriginalFactor.add(ProjectionFactor(cam3.project(landmark2), noiseProjection, x3, L(2), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam1.project(landmark2), noiseProjection, x1, L(2), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam2.project(landmark2), noiseProjection, x2, L(2), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam3.project(landmark2), noiseProjection, x3, L(2), K));
 
-  graphWithOriginalFactor.add(ProjectionFactor(cam1.project(landmark3), noiseProjection, x1, L(3), K));
-  graphWithOriginalFactor.add(ProjectionFactor(cam2.project(landmark3), noiseProjection, x2, L(3), K));
-  graphWithOriginalFactor.add(ProjectionFactor(cam3.project(landmark3), noiseProjection, x3, L(3), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam1.project(landmark3), noiseProjection, x1, L(3), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam2.project(landmark3), noiseProjection, x2, L(3), K));
+  graphWithOriginalFactor.push_back(ProjectionFactor(cam3.project(landmark3), noiseProjection, x3, L(3), K));
 
-  graphWithOriginalFactor.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graphWithOriginalFactor.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graphWithOriginalFactor.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graphWithOriginalFactor.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
   Values valuesOriginalFactor;
@@ -262,8 +257,8 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
   graphWithSmartFactor.push_back(smartFactor1);
   graphWithSmartFactor.push_back(smartFactor2);
   graphWithSmartFactor.push_back(smartFactor3);
-  graphWithSmartFactor.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graphWithSmartFactor.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graphWithSmartFactor.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graphWithSmartFactor.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
   Values valuesSmartFactor;
   valuesSmartFactor.insert(x1, pose1);
@@ -442,22 +437,22 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
   NonlinearFactorGraph graph;
 
   // 1. Project three landmarks into three cameras and triangulate
-  graph.add(ProjectionFactor(cam1.project(landmark1), noiseProjection, x1, L(1), K));
-  graph.add(ProjectionFactor(cam2.project(landmark1), noiseProjection, x2, L(1), K));
-  graph.add(ProjectionFactor(cam3.project(landmark1), noiseProjection, x3, L(1), K));
+  graph.push_back(ProjectionFactor(cam1.project(landmark1), noiseProjection, x1, L(1), K));
+  graph.push_back(ProjectionFactor(cam2.project(landmark1), noiseProjection, x2, L(1), K));
+  graph.push_back(ProjectionFactor(cam3.project(landmark1), noiseProjection, x3, L(1), K));
 
   //
-  graph.add(ProjectionFactor(cam1.project(landmark2), noiseProjection, x1, L(2), K));
-  graph.add(ProjectionFactor(cam2.project(landmark2), noiseProjection, x2, L(2), K));
-  graph.add(ProjectionFactor(cam3.project(landmark2), noiseProjection, x3, L(2), K));
+  graph.push_back(ProjectionFactor(cam1.project(landmark2), noiseProjection, x1, L(2), K));
+  graph.push_back(ProjectionFactor(cam2.project(landmark2), noiseProjection, x2, L(2), K));
+  graph.push_back(ProjectionFactor(cam3.project(landmark2), noiseProjection, x3, L(2), K));
 
-  graph.add(ProjectionFactor(cam1.project(landmark3), noiseProjection, x1, L(3), K));
-  graph.add(ProjectionFactor(cam2.project(landmark3), noiseProjection, x2, L(3), K));
-  graph.add(ProjectionFactor(cam3.project(landmark3), noiseProjection, x3, L(3), K));
+  graph.push_back(ProjectionFactor(cam1.project(landmark3), noiseProjection, x1, L(3), K));
+  graph.push_back(ProjectionFactor(cam2.project(landmark3), noiseProjection, x2, L(3), K));
+  graph.push_back(ProjectionFactor(cam3.project(landmark3), noiseProjection, x3, L(3), K));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-  graph.add(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.add(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
   Values values;
@@ -520,11 +515,7 @@ TEST( SmartProjectionFactor, Hessian ){
   values.insert(x2, pose2);
   //  values.insert(L(1), landmark1);
 
-  Ordering ordering;
-  ordering.push_back(x1);
-  ordering.push_back(x2);
-
-  boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor.linearize(values, ordering);
+  boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor.linearize(values);
   hessianFactor->print("Hessian factor \n");
 
   // compute triangulation from linearization point
@@ -537,8 +528,6 @@ TEST( SmartProjectionFactor, Hessian ){
 
 
 }
-
-#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
