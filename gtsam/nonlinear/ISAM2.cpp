@@ -764,7 +764,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
 
   // Remove each variable and its subtrees
   BOOST_REVERSE_FOREACH(Key j, leafKeys) {
-    if(nodes_.exists(j)) { // If the index was not already removed by removing another subtree
+    if(nodes_.count(j)) { // If the index was not already removed by removing another subtree
       sharedClique clique = nodes_[j];
 
       // See if we should remove the whole clique

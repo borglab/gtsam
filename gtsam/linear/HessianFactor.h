@@ -23,6 +23,10 @@
 
 #include <vector>
 #include <boost/make_shared.hpp>
+#include <tbb/tbb.h>
+#undef max
+#undef min
+#undef ERROR
 
 namespace gtsam {
 
@@ -51,7 +55,7 @@ namespace gtsam {
     : slot(_slot), dimension(_dimension) {}
     std::string toString() const;
   };
-  class Scatter : public FastMap<Key, SlotEntry> {
+  class Scatter : public std::map<Key, SlotEntry, std::less<Key>, tbb::tbb_allocator<std::pair<const Key, SlotEntry> > > {
   public:
     Scatter() {}
     Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering = boost::none);

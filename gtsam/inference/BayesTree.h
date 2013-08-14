@@ -21,6 +21,10 @@
 
 #include <vector>
 #include <string>
+#include <tbb/tbb.h>
+#undef max
+#undef min
+#undef ERROR
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastList.h>
@@ -87,7 +91,7 @@ namespace gtsam {
     typedef FastList<sharedClique> Cliques;
 
     /** Map from keys to Clique */
-    typedef FastMap<Key, sharedClique> Nodes;
+    typedef tbb::concurrent_unordered_map<Key, sharedClique> Nodes;
 
   protected:
 
