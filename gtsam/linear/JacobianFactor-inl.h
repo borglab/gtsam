@@ -79,7 +79,7 @@ namespace gtsam {
         : keys(keys), Ab(Ab), i(i) {}
 
       template<class MATRIX>
-      void operator()(const std::pair<Key, const MATRIX&>& term) const
+      void operator()(const std::pair<Key, MATRIX>& term) const
       {
         // Check block rows
         if(term.second.rows() != Ab.rows())
@@ -89,18 +89,6 @@ namespace gtsam {
         Ab(i) = term.second;
         // Increment block index
         ++ i;
-      }
-
-      template<class MATRIX>
-      void operator()(const std::pair<int, const MATRIX&>& term) const
-      {
-        operator()(std::pair<Key, const MATRIX&>(term));
-      }
-
-      template<class MATRIX>
-      void operator()(const std::pair<Key, MATRIX>& term) const
-      {
-        operator()(std::pair<Key, const MATRIX&>(term));
       }
 
       template<class MATRIX>

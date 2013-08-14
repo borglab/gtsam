@@ -175,14 +175,14 @@ namespace gtsam {
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
     void insert(Key j, const Vector& value) {
-      insert(std::pair<Key, const Vector&>(j, value)); // Note only passing a reference to the Vector
+      insert(std::make_pair(j, value)); // Note only passing a reference to the Vector
     }
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    void insert(std::pair<Key, const Vector&> key_value) {
+    void insert(const std::pair<Key, Vector>& key_value) {
       // Note that here we accept a pair with a reference to the Vector, but the Vector is copied as
       // it is inserted into the values_ map.
       if(!values_.insert(key_value).second)
