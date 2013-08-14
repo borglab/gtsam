@@ -322,9 +322,7 @@ void runIncremental()
     gttoc_(Collect_measurements);
 
     // Update iSAM2
-    gttic_(Update_ISAM2);
     isam2.update(newFactors, newVariables);
-    gttoc_(Update_ISAM2);
 
     if((step - firstPose) % 100 == 0) {
       gttic_(chi2);
