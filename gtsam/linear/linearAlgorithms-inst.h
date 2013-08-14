@@ -30,6 +30,7 @@ namespace gtsam
       /* ************************************************************************* */
       struct OptimizeData {
         boost::optional<OptimizeData&> parentData;
+        //FastMap<Key, VectorValues::const_iterator> cliqueResults;
         //VectorValues ancestorResults;
         //VectorValues results;
       };
@@ -54,11 +55,28 @@ namespace gtsam
           myData.parentData = parentData;
           // Take any ancestor results we'll need
           //BOOST_FOREACH(Key parent, clique->conditional_->parents())
-          //  myData.ancestorResults.insert(parent, myData.parentData->ancestorResults[parent]);
+          //  myData.cliqueResults.insert(std::make_pair(parent, myData.parentData->cliqueResults.at(parent)));
           // Solve and store in our results
-          VectorValues result = clique->conditional()->solve(collectedResult/*myData.ancestorResults*/);
-          collectedResult.insert(result);
-          //myData.ancestorResults.insert(result);
+          collectedResult.insert(clique->conditional()->solve(collectedResult/*myData.ancestorResults*/));
+          //{
+          //  GaussianConditional& c = *clique->conditional();
+          //  // Solve matrix
+          //  Vector xS = x.vector(vector<Key>(c.beginParents(), c.endParents()));
+          //  xS = c.getb() - c.get_S() * xS;
+          //  Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
+
+          //  // Check for indeterminant solution
+          //  if(soln.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
+
+          //  // Insert solution into a VectorValues
+          //  DenseIndex vectorPosition = 0;
+          //  for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
+          //    VectorValues::const_iterator r =
+          //      collectedResult.insert(*frontal, soln.segment(vectorPosition, c.getDim(frontal)));
+          //    myData.cliqueResults.insert(r->first, r);
+          //    vectorPosition += c.getDim(frontal);
+          //  }
+          //}
           return myData;
         }
       };

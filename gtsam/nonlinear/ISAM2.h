@@ -360,6 +360,23 @@ public:
 
   Base::FactorType::shared_ptr cachedFactor_;
   Vector gradientContribution_;
+  FastMap<Key, VectorValues::iterator> solnPointers_;
+
+  /// Default constructor
+  ISAM2Clique() : Base() {}
+
+  /// Copy constructor, does *not* copy solution pointers as these are invalid in different trees.
+  ISAM2Clique(const ISAM2Clique& other) :
+    Base(other), cachedFactor_(other.cachedFactor_), gradientContribution_(other.gradientContribution_) {}
+
+  /// Assignment operator, does *not* copy solution pointers as these are invalid in different trees.
+  ISAM2Clique& operator=(const ISAM2Clique& other)
+  {
+    Base::operator=(other);
+    cachedFactor_ = other.cachedFactor_;
+    gradientContribution_ = other.gradientContribution_;
+    return *this;
+  }
 
   /// Overridden to also store the remaining factor and gradient contribution
   void setEliminationResult(const FactorGraphType::EliminationResult& eliminationResult);
