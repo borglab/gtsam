@@ -43,11 +43,14 @@
 
 // Standard headers, added last, so we know headers above work on their own
 #include <boost/foreach.hpp>
+#include <boost/assign.hpp>
+#include <boost/assign/std/vector.hpp>
 #include <fstream>
 #include <iostream>
 
 using namespace std;
 using namespace gtsam;
+using namespace boost::assign;
 namespace NM = gtsam::noiseModel;
 
 using symbol_shorthand::X;
@@ -161,8 +164,8 @@ int main(int argc, char** argv) {
 
   // Load values from VO camera poses output
   gtsam::Values::shared_ptr loaded_values = loadPoseValues(input_dir+"camera_poses.txt");
-  graph.add(Pose3Prior(X(0),loaded_values->at<Pose3>(X(0)), prior_model));
-  graph.add(Pose3Prior(X(1),loaded_values->at<Pose3>(X(1)), prior_model));
+  graph.push_back(Pose3Prior(X(0),loaded_values->at<Pose3>(X(0)), prior_model));
+  graph.push_back(Pose3Prior(X(1),loaded_values->at<Pose3>(X(1)), prior_model));
   //graph.print("thegraph");
 
   // Read in kitti dataset

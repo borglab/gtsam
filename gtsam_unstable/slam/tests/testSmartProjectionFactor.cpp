@@ -120,7 +120,7 @@ TEST( SmartProjectionFactor, EqualsWithTransform ) {
 
 /* ************************************************************************* */
 TEST( SmartProjectionFactor, noisy ){
-  cout << " ************************ MultiProjectionFactor: noisy ****************************" << endl;
+  cout << " ************************ SmartProjectionFactor: noisy ****************************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -291,9 +291,11 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
   resultWithSmartFactor.at<Pose3>(x3).print("\nSmart: Pose3 after optimization: ");
   EXPECT(assert_equal(resultWithOriginalFactor.at<Pose3>(x3),resultWithSmartFactor.at<Pose3>(x3)));
 
+  std::cout << "\n================= STARTING GN ITERATION ========================" << std::endl;
   GaussNewtonParams params2;
   params2.maxIterations = 1;
   Values resultWithOriginalFactor2;
+  params2.verbosity = NonlinearOptimizerParams::DELTA;
   GaussNewtonOptimizer optimizerForOriginalFactor2(graphWithOriginalFactor, valuesOriginalFactor, params2);
   resultWithOriginalFactor2 = optimizerForOriginalFactor2.optimize();
 
@@ -301,6 +303,7 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
   GaussNewtonOptimizer optimizerForSmartFactor2(graphWithSmartFactor, valuesSmartFactor, params2);
   resultWithSmartFactor2 = optimizerForSmartFactor2.optimize();
 
+  std::cout << "\n=========================================" << std::endl;
   resultWithOriginalFactor2.at<Pose3>(x3).print("Original: Pose3 after optimization (GaussNewton): ");
   resultWithSmartFactor2.at<Pose3>(x3).print("\nSmart: Pose3 after optimization (GaussNewton): ");
 
@@ -522,10 +525,6 @@ TEST( SmartProjectionFactor, Hessian ){
   // compute reprojection errors (sum squared)
   // compare with hessianFactor.info(): the bottom right element is the squared sum of the reprojection errors (normalized by the covariance)
   // check that it is correctly scaled when using noiseProjection = [1/4  0; 0 1/4]
-
-
-
-
 
 }
 

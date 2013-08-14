@@ -209,9 +209,9 @@ namespace gtsam {
 
         for(size_t i = 0; i < measured_.size(); i++) {
           Pose3 pose = cameraPoses.at(i);
-          std::cout << "pose " << pose << std::endl;
+//          std::cout << "pose " << pose << std::endl;
           PinholeCamera<CALIBRATION> camera(pose, *K_);
-          b.at(i) = ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
+          b.at(i) = - ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
           noise_-> WhitenSystem(Hx.at(i), Hl.at(i), b.at(i));
           f += b.at(i).squaredNorm();
         }
@@ -405,7 +405,7 @@ namespace gtsam {
         boost::optional<Point3> point;
         if (point_) {
         	point = point_;
-          //std::cout << "Using existing point " << *point << std::endl;
+            std::cout << "Using existing point " << *point << std::endl;
         } else {
           //std::cout << "Triangulate during error calc" << std::endl;
           point = triangulatePoint3(cameraPoses, measured_, *K_);
@@ -422,7 +422,7 @@ namespace gtsam {
             Point2 reprojectionError(camera.project(*point) - measured_.at(i));
             overallError += noise_->distance( reprojectionError.vector() );
           }
-          return std::sqrt(overallError);
+          return overallError;
         } else{ // triangulation failed: we deactivate the factor, then the error should not contribute to the overall error
           std::cout << "WARNING: Could not triangulate during error calc" << std::endl;
           return 0.0;
