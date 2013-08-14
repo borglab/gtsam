@@ -184,8 +184,11 @@ int main(int argc, char *argv[]) {
   }
 
   std::auto_ptr<tbb::task_scheduler_init> init;
-  if(nThreads > 0)
+  if(nThreads > 0) {
+    cout << "Using " << nThreads << " threads" << endl;
     init.reset(new tbb::task_scheduler_init(nThreads));
+  } else
+    cout << "Using threads for all processors" << endl;
 
   // Run mode
   if(incremental)
