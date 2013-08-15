@@ -30,7 +30,7 @@ namespace gtsam
       /* ************************************************************************* */
       struct OptimizeData {
         boost::optional<OptimizeData&> parentData;
-        //FastMap<Key, VectorValues::const_iterator> cliqueResults;
+        FastMap<Key, VectorValues::const_iterator> cliqueResults;
         //VectorValues ancestorResults;
         //VectorValues results;
       };
@@ -54,29 +54,47 @@ namespace gtsam
           OptimizeData myData;
           myData.parentData = parentData;
           // Take any ancestor results we'll need
-          //BOOST_FOREACH(Key parent, clique->conditional_->parents())
-          //  myData.cliqueResults.insert(std::make_pair(parent, myData.parentData->cliqueResults.at(parent)));
+          BOOST_FOREACH(Key parent, clique->conditional_->parents())
+            myData.cliqueResults.insert(std::make_pair(parent, myData.parentData->cliqueResults.at(parent)));
           // Solve and store in our results
-          collectedResult.insert(clique->conditional()->solve(collectedResult/*myData.ancestorResults*/));
-          //{
-          //  GaussianConditional& c = *clique->conditional();
-          //  // Solve matrix
-          //  Vector xS = x.vector(vector<Key>(c.beginParents(), c.endParents()));
-          //  xS = c.getb() - c.get_S() * xS;
-          //  Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
+          //collectedResult.insert(clique->conditional()->solve(collectedResult/*myData.ancestorResults*/));
+          {
+            GaussianConditional& c = *clique->conditional();
+            // Solve matrix
+            Vector xS;
+            {
+              // Count dimensions of vector
+              DenseIndex dim = 0;
+              FastVector<VectorValues::const_iterator> parentPointers;
+              parentPointers.reserve(clique->conditional()->nrParents());
+              BOOST_FOREACH(Key parent, clique->conditional()->parents()) {
+                parentPointers.push_back(myData.cliqueResults.at(parent));
+                dim += parentPointers.back()->second.size();
+              }
 
-          //  // Check for indeterminant solution
-          //  if(soln.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
+              // Fill parent vector
+              xS.resize(dim);
+              DenseIndex vectorPos = 0;
+              BOOST_FOREACH(const VectorValues::const_iterator& parentPointer, parentPointers) {
+                xS.segment(vectorPos, parentPointer->second.size()) = parentPointer->second;
+                vectorPos += parentPointer->second.size();
+              }
+            }
+            xS = c.getb() - c.get_S() * xS;
+            Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
 
-          //  // Insert solution into a VectorValues
-          //  DenseIndex vectorPosition = 0;
-          //  for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
-          //    VectorValues::const_iterator r =
-          //      collectedResult.insert(*frontal, soln.segment(vectorPosition, c.getDim(frontal)));
-          //    myData.cliqueResults.insert(r->first, r);
-          //    vectorPosition += c.getDim(frontal);
-          //  }
-          //}
+            // Check for indeterminant solution
+            if(soln.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
+
+            // Insert solution into a VectorValues
+            DenseIndex vectorPosition = 0;
+            for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
+              VectorValues::const_iterator r =
+                collectedResult.insert(*frontal, soln.segment(vectorPosition, c.getDim(frontal)));
+              myData.cliqueResults.insert(make_pair(r->first, r));
+              vectorPosition += c.getDim(frontal);
+            }
+          }
           return myData;
         }
       };
