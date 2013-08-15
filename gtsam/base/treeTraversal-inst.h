@@ -51,8 +51,10 @@ namespace gtsam {
       };
 
       // Do nothing - default argument for post-visitor for tree traversal
-      template<typename NODE, typename DATA>
-      void no_op(const boost::shared_ptr<NODE>& node, const DATA& data) {}
+      struct no_op {
+        template<typename NODE, typename DATA>
+        void operator()(const boost::shared_ptr<NODE>& node, const DATA& data) {}
+      };
 
       // Internal node used in parallel traversal stack
       template<typename NODE, typename DATA>
@@ -251,7 +253,8 @@ namespace gtsam {
     template<class FOREST, typename DATA, typename VISITOR_PRE>
     void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre)
     {
-      DepthFirstForest(forest, rootData, visitorPre, no_op<typename FOREST::Node, DATA>);
+      no_op visitorPost;
+      DepthFirstForest(forest, rootData, visitorPre, visitorPost);
     }
 
     /** Traverse a forest depth-first with pre-order and post-order visits.
