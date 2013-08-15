@@ -113,7 +113,8 @@ namespace gtsam {
           {
             BOOST_FOREACH(const boost::shared_ptr<NODE>& child, node->children)
             {
-              processNode(child, visitorPre(child, myData));
+              DATA childData = visitorPre(child, myData);
+              processNode(child, childData);
             }
           }
 
