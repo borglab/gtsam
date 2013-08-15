@@ -416,7 +416,7 @@ namespace gtsam {
       child->parent_ = typename Clique::weak_ptr();
 
     BOOST_FOREACH(Key j, clique->conditional()->frontals()) {
-      nodes_.unsafe_erase(j);
+      nodes_.erase(j);
     }
   }
 
@@ -495,7 +495,7 @@ namespace gtsam {
 
       // Remove this node from the nodes index
       BOOST_FOREACH(Key j, (*clique)->conditional()->frontals()) {
-        nodes_.unsafe_erase(j); }
+        nodes_.erase(j); }
 
       // Erase the parent and children pointers
       (*clique)->parent_.reset();
