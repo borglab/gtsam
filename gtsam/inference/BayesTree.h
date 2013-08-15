@@ -91,7 +91,7 @@ namespace gtsam {
     typedef FastList<sharedClique> Cliques;
 
     /** Map from keys to Clique */
-    typedef tbb::concurrent_unordered_map<Key, sharedClique> Nodes;
+    typedef FastMap<Key, sharedClique> Nodes;
 
   protected:
 
