@@ -42,14 +42,14 @@ TEST( JunctionTree, constructor )
 
   SymbolicJunctionTree actual(SymbolicEliminationTree(simpleChain, order));
 
-  vector<Key> frontal1 = list_of(2)(3);
-  vector<Key> frontal2 = list_of(0)(1);
-  vector<Key> sep1;
-  vector<Key> sep2 = list_of(2);
-  EXPECT(assert_equal(frontal1, actual.roots().front()->keys));
+  SymbolicJunctionTree::Node::Keys
+    frontal1 = list_of(2)(3),
+    frontal2 = list_of(0)(1),
+    sep1, sep2 = list_of(2);
+  EXPECT(assert_container_equality(frontal1, actual.roots().front()->keys));
   //EXPECT(assert_equal(sep1,     actual.roots().front()->separator));
   LONGS_EQUAL(1,                (long)actual.roots().front()->factors.size());
-  EXPECT(assert_equal(frontal2, actual.roots().front()->children.front()->keys));
+  EXPECT(assert_container_equality(frontal2, actual.roots().front()->children.front()->keys));
   //EXPECT(assert_equal(sep2,     actual.roots().front()->children.front()->separator));
   LONGS_EQUAL(2,                (long)actual.roots().front()->children.front()->factors.size());
   EXPECT(assert_equal(*simpleChain[2],   *actual.roots().front()->factors[0]));

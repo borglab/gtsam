@@ -47,7 +47,7 @@ TEST( testLinearContainerFactor, generic_jacobian_factor ) {
   EXPECT(!actFactor.isHessian());
 
   // check keys
-  std::vector<gtsam::Key> expKeys; expKeys += l1, l2;
+  FastVector<Key> expKeys; expKeys += l1, l2;
   EXPECT(assert_container_equality(expKeys, actFactor.keys()));
 
   Values values;
@@ -229,10 +229,7 @@ TEST( testLinearContainerFactor, hessian_factor_withlinpoints ) {
 /* ************************************************************************* */
 TEST( testLinearContainerFactor, creation ) {
   // Create a set of local keys (No robot label)
-  Key  l1 = 11, l2 = 12,
-      l3 = 13, l4 = 14,
-      l5 = 15, l6 = 16,
-      l7 = 17, l8 = 18;
+  Key  l1 = 11, l3 = 13, l5 = 15;
 
   // create a linear factor
   SharedDiagonal model = noiseModel::Unit::Create(2);
@@ -249,7 +246,7 @@ TEST( testLinearContainerFactor, creation ) {
   LinearContainerFactor actual(linear_factor, full_values);
 
   // Verify the keys
-  std::vector<gtsam::Key> expKeys;
+  FastVector<Key> expKeys;
   expKeys += l3, l5;
   EXPECT(assert_container_equality(expKeys, actual.keys()));
 
