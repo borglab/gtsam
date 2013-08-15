@@ -170,5 +170,5 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 
     # Macro to handle details of setting up targets
     # FIXME: issue with dependency between wrap_gtsam and wrap_gtsam_build, only shows up on CMake 2.8.3
-    wrap_library(gtsam "${mexFlags}" "../" "")
+    wrap_library(gtsam "${mexFlags}" "../" "${TBB_LIBS}")
 endif ()
