@@ -289,7 +289,7 @@ void runIncremental()
             }
           }
         } else {
-          if(!newVariables.exists(measurement->key1())) { // Only need to check newVariables since loop closures come after odometry
+          if(!newVariables.exists(measurement->key2())) { // Only need to check newVariables since loop closures come after odometry
             if(step == 1)
               newVariables.insert(measurement->key2(), measurement->measured());
             else {
