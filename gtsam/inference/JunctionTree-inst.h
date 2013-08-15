@@ -156,7 +156,9 @@ namespace gtsam {
     EliminationData<JUNCTIONTREE> eliminationPreOrderVisitor(
       const typename JUNCTIONTREE::sharedNode& node, EliminationData<JUNCTIONTREE>& parentData)
     {
-      return EliminationData<JUNCTIONTREE>(&parentData, node->children.size());
+      EliminationData<JUNCTIONTREE> myData(&parentData, node->children.size());
+      myData.bayesTreeNode->problemSize_ = node->problemSize();
+      return myData;
     }
 
     /* ************************************************************************* */

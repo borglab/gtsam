@@ -132,7 +132,8 @@ namespace gtsam
         //return rootData.results;
         OptimizeData rootData;
         OptimizeClique<typename BAYESTREE::Clique> preVisitor;
-        treeTraversal::DepthFirstForest(bayesTree, rootData, preVisitor);
+        treeTraversal::no_op postVisitor;
+        treeTraversal::DepthFirstForestParallel(bayesTree, rootData, preVisitor, postVisitor);
         return preVisitor.collectedResult;
       }
     }

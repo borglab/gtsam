@@ -63,7 +63,7 @@ namespace gtsam {
       size_t oldSize = values_.size();
       hint = values_.insert(hint, key_value);
       if(values_.size() > oldSize) {
-        values_.erase(hint);
+        values_.unsafe_erase(hint);
         throw std::out_of_range("Requested to update a VectorValues with another VectorValues that contains keys not present in the first.");
       } else {
         hint->second = key_value.second;

@@ -24,6 +24,11 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <tbb/concurrent_unordered_map.h>
+#undef min
+#undef max
+#undef ERROR
+
 namespace gtsam {
 
   /**
@@ -88,14 +93,14 @@ namespace gtsam {
   class GTSAM_EXPORT VectorValues {
   protected:
     typedef VectorValues This;
-    typedef FastMap<Key, Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
+    typedef tbb::concurrent_unordered_map<Key, Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
     Values values_; ///< Collection of Vectors making up this VectorValues
 
   public:
     typedef Values::iterator iterator; ///< Iterator over vector values
     typedef Values::const_iterator const_iterator; ///< Const iterator over vector values
-    typedef Values::reverse_iterator reverse_iterator; ///< Reverse iterator over vector values
-    typedef Values::const_reverse_iterator const_reverse_iterator; ///< Const reverse iterator over vector values
+    //typedef Values::reverse_iterator reverse_iterator; ///< Reverse iterator over vector values
+    //typedef Values::const_reverse_iterator const_reverse_iterator; ///< Const reverse iterator over vector values
     typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Values::value_type value_type; ///< Typedef to pair<Key, Vector>, a key-value pair
     typedef value_type KeyValuePair; ///< Typedef to pair<Key, Vector>, a key-value pair
@@ -207,7 +212,7 @@ namespace gtsam {
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
     void erase(Key var) {
-      if(values_.erase(var) == 0)
+      if(values_.unsafe_erase(var) == 0)
         throw std::invalid_argument("Requested variable '" + DefaultKeyFormatter(var) + "', is not in this VectorValues.");
     }
 
@@ -218,10 +223,10 @@ namespace gtsam {
     const_iterator begin() const          { return values_.begin(); }  ///< Iterator over variables
     iterator end()                        { return values_.end(); }    ///< Iterator over variables
     const_iterator end() const            { return values_.end(); }    ///< Iterator over variables
-    reverse_iterator rbegin()             { return values_.rbegin(); } ///< Reverse iterator over variables
-    const_reverse_iterator rbegin() const { return values_.rbegin(); } ///< Reverse iterator over variables
-    reverse_iterator rend()               { return values_.rend(); }   ///< Reverse iterator over variables
-    const_reverse_iterator rend() const   { return values_.rend(); }   ///< Reverse iterator over variables
+    //reverse_iterator rbegin()             { return values_.rbegin(); } ///< Reverse iterator over variables
+    //const_reverse_iterator rbegin() const { return values_.rbegin(); } ///< Reverse iterator over variables
+    //reverse_iterator rend()               { return values_.rend(); }   ///< Reverse iterator over variables
+    //const_reverse_iterator rend() const   { return values_.rend(); }   ///< Reverse iterator over variables
 
     /** Return the iterator corresponding to the requested key, or end() if no variable is present with this key. */
     iterator find(Key j) { return values_.find(j); }

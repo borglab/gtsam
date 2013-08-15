@@ -66,10 +66,10 @@ namespace gtsam {
     /// @{
 
     /** Default constructor */
-    BayesTreeCliqueBase() {}
+    BayesTreeCliqueBase() : problemSize_(1) {}
 
     /** Construct from a conditional, leaving parent and child pointers uninitialized */
-    BayesTreeCliqueBase(const sharedConditional& conditional) : conditional_(conditional) {}
+    BayesTreeCliqueBase(const sharedConditional& conditional) : conditional_(conditional), problemSize_(1) {}
 
     /// @}
 
@@ -80,6 +80,7 @@ namespace gtsam {
     sharedConditional conditional_;
     derived_weak_ptr parent_;
     FastVector<derived_ptr> children;
+    int problemSize_;
 
     /// Fill the elimination result produced during elimination.  Here this just stores the
     /// conditional and ignores the remaining factor, but this is overridden in ISAM2Clique
@@ -113,6 +114,9 @@ namespace gtsam {
 
     /** return a shared_ptr to the parent clique */
     derived_ptr parent() const { return parent_.lock(); }
+
+    /** Problem size (used for parallel traversal) */
+    int problemSize() const { return problemSize_; }
 
     /// @}
     /// @name Advanced Interface
