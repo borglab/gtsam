@@ -72,11 +72,6 @@ public:
     return isam2_.getLinearizationPoint();
   }
 
-  /** Access the current ordering */
-  const Ordering& getOrdering() const {
-    return isam2_.getOrdering();
-  }
-
   /** Access the current set of deltas to the linearization point */
   const VectorValues& getDelta() const {
     return isam2_.getDelta();
