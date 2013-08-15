@@ -81,6 +81,7 @@ string inputFile;
 string datasetName;
 int firstStep;
 int lastStep;
+int relinSkip;
 bool incremental;
 bool batch;
 bool compare;
@@ -108,6 +109,7 @@ int main(int argc, char *argv[]) {
     ("dataset,d", po::value<string>(&datasetName)->default_value(""), "Read a dataset file (if and only if --incremental is used)")
     ("first-step,f", po::value<int>(&firstStep)->default_value(0), "First step to process from the dataset file")
     ("last-step,l", po::value<int>(&lastStep)->default_value(-1), "Last step to process, or -1 to process until the end of the dataset")
+    ("relinSkip", po::value<int>(&relinSkip)->default_value(10), "Fluid relinearization check every arg steps")
     ("incremental", "Run in incremental mode using ISAM2 (default)")
     ("batch", "Run in batch mode, requires an initialization from --read-solution")
     ("compare", po::value<vector<string> >()->multitoken(), "Compare two solution files")
@@ -193,7 +195,10 @@ int main(int argc, char *argv[]) {
 /* ************************************************************************* */
 void runIncremental()
 {
-  ISAM2 isam2;
+  ISAM2Params params;
+  params.relinearizeSkip = relinSkip;
+  params.enablePartialRelinearizationCheck = true;
+  ISAM2 isam2(params);
 
   // Look for the first measurement to use
   cout << "Looking for first measurement from step " << firstStep << endl;
@@ -321,16 +326,26 @@ void runIncremental()
     gttoc_(Collect_measurements);
 
     // Update iSAM2
-    gttic_(Update_ISAM2);
-    isam2.update(newFactors, newVariables);
-    gttoc_(Update_ISAM2);
+    try {
+      gttic_(Update_ISAM2);
+      isam2.update(newFactors, newVariables);
+      gttoc_(Update_ISAM2);
+    } catch(std::exception& e) {
+      cout << e.what() << endl;
+      exit(1);
+    }
 
-    if((step - firstPose) % 100 == 0) {
-      gttic_(chi2);
-      Values estimate(isam2.calculateEstimate());
-      double chi2 = chi2_red(isam2.getFactorsUnsafe(), estimate);
-      cout << "chi2 = " << chi2 << endl;
-      gttoc_(chi2);
+    if((step - firstPose) % 1000 == 0) {
+      try {
+        gttic_(chi2);
+        Values estimate(isam2.calculateEstimate());
+        double chi2 = chi2_red(isam2.getFactorsUnsafe(), estimate);
+        cout << "chi2 = " << chi2 << endl;
+        gttoc_(chi2);
+      } catch(std::exception& e) {
+        cout << e.what() << endl;
+        exit(1);
+      }
     }
 
     tictoc_finishedIteration_();
@@ -405,7 +420,7 @@ void runBatch()
 
   gttic_(Create_optimizer);
   GaussNewtonParams params;
-  params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_QR;
+  params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_CHOLESKY;
   GaussNewtonOptimizer optimizer(measurements, initial, params);
   gttoc_(Create_optimizer);
   double lastError;
