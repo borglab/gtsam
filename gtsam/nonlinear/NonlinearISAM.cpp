@@ -18,7 +18,6 @@
 #include <gtsam/nonlinear/NonlinearISAM.h>
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/ISAM-inst.h>
 #include <gtsam/inference/Ordering.h>
 
 #include <boost/foreach.hpp>
