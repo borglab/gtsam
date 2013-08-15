@@ -55,7 +55,7 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const FastVect
     deltaNewton.erase(key);
     RgProd.erase(key);
     replacedKeys.erase(key);
-    nodes.erase(key);
+    nodes.unsafe_erase(key);
     theta.erase(key);
     fixedVariables.erase(key);
   }
