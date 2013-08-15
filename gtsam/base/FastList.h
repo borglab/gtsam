@@ -18,8 +18,9 @@
 
 #pragma once
 
+#include <gtsam/base/FastDefaultAllocator.h>
 #include <list>
-#include <boost/pool/pool_alloc.hpp>
+#include <boost/utility/enable_if.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/list.hpp>
 
@@ -34,11 +35,11 @@ namespace gtsam {
    * @addtogroup base
  */
 template<typename VALUE>
-class FastList: public std::list<VALUE, boost::fast_pool_allocator<VALUE> > {
+class FastList: public std::list<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> {
 
 public:
 
-  typedef std::list<VALUE, boost::fast_pool_allocator<VALUE> > Base;
+  typedef std::list<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> Base;
 
   /** Default constructor */
   FastList() {}
@@ -54,7 +55,7 @@ public:
   FastList(const Base& x) : Base(x) {}
 
   /** Copy constructor from a standard STL container */
-  FastList(const std::list<VALUE>& x) {
+  FastList(const std::list<VALUE>& x, typename boost::disable_if_c<internal::FastDefaultAllocator<VALUE>::isSTL>::type* = 0) {
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.

@@ -18,8 +18,8 @@
 
 #pragma once
 
+#include <gtsam/base/FastDefaultAllocator.h>
 #include <map>
-#include <boost/pool/pool_alloc.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/map.hpp>
 
@@ -34,11 +34,13 @@ namespace gtsam {
  * @addtogroup base
  */
 template<typename KEY, typename VALUE>
-class FastMap : public std::map<KEY, VALUE, std::less<KEY>, boost::fast_pool_allocator<std::pair<const KEY, VALUE> > > {
+class FastMap : public std::map<KEY, VALUE, std::less<KEY>,
+  typename internal::FastDefaultAllocator<std::pair<const KEY, VALUE> >::type> {
 
 public:
 
-  typedef std::map<KEY, VALUE, std::less<KEY>, boost::fast_pool_allocator<std::pair<const KEY, VALUE> > > Base;
+  typedef std::map<KEY, VALUE, std::less<KEY>,
+    typename internal::FastDefaultAllocator<std::pair<const KEY, VALUE> >::type > Base;
 
   /** Default constructor */
   FastMap() {}

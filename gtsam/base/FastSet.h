@@ -18,11 +18,12 @@
 
 #pragma once
 
+#include <gtsam/base/FastDefaultAllocator.h>
+
 #include <set>
 #include <iostream>
 #include <string>
 #include <cmath>
-#include <boost/pool/pool_alloc.hpp>
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -45,11 +46,11 @@ struct FastSetTestableHelper;
  * @addtogroup base
  */
 template<typename VALUE, class ENABLE = void>
-class FastSet: public std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > {
+class FastSet: public std::set<VALUE, std::less<VALUE>, typename internal::FastDefaultAllocator<VALUE>::type> {
 
 public:
 
-  typedef std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > Base;
+  typedef std::set<VALUE, std::less<VALUE>, typename internal::FastDefaultAllocator<VALUE>::type> Base;
 
   /** Default constructor */
   FastSet() {
@@ -78,7 +79,7 @@ public:
   }
 
   /** Copy constructor from a standard STL container */
-  FastSet(const std::set<VALUE>& x) {
+  FastSet(const std::set<VALUE>& x, typename boost::disable_if_c<internal::FastDefaultAllocator<VALUE>::isSTL>::type* = 0) {
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.
