@@ -59,52 +59,5 @@ namespace gtsam {
     push_back(boost::make_shared<SymbolicFactor>(key1,key2,key3,key4));
   }
 
-//  /* ************************************************************************* */
-//  std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
-//    SymbolicFactorGraph::eliminateFrontals(size_t nFrontals) const
-//  {
-//    return FactorGraph<IndexFactor>::eliminateFrontals(nFrontals, EliminateSymbolic);
-//  }
-//
-//  /* ************************************************************************* */
-//  std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
-//    SymbolicFactorGraph::eliminate(const std::vector<Index>& variables) const
-//  {
-//    return FactorGraph<IndexFactor>::eliminate(variables, EliminateSymbolic);
-//  }
-//
-//  /* ************************************************************************* */
-//  std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
-//    SymbolicFactorGraph::eliminateOne(Index variable) const
-//  {
-//    return FactorGraph<IndexFactor>::eliminateOne(variable, EliminateSymbolic);
-//  }
-//
-//  /* ************************************************************************* */
-//  IndexFactor::shared_ptr CombineSymbolic(
-//      const FactorGraph<IndexFactor>& factors, const FastMap<Index,
-//          vector<Index> >& variableSlots) {
-//    IndexFactor::shared_ptr combined(Combine<IndexFactor, Index> (factors, variableSlots));
-////    combined->assertInvariants();
-//    return combined;
-//  }
-//
-//  /* ************************************************************************* */
-//  pair<IndexConditional::shared_ptr, IndexFactor::shared_ptr> //
-//  EliminateSymbolic(const FactorGraph<IndexFactor>& factors, size_t nrFrontals) {
-//
-//    FastSet<Index> keys;
-//    BOOST_FOREACH(const IndexFactor::shared_ptr& factor, factors)
-//      BOOST_FOREACH(Index var, *factor)
-//      keys.insert(var);
-//
-//    if (keys.size() < nrFrontals) throw invalid_argument(
-//      "EliminateSymbolic requested to eliminate more variables than exist in graph.");
-//
-//    vector<Index> newKeys(keys.begin(), keys.end());
-//    return make_pair(boost::make_shared<IndexConditional>(newKeys, nrFrontals),
-//      boost::make_shared<IndexFactor>(newKeys.begin() + nrFrontals, newKeys.end()));
-//  }
-
   /* ************************************************************************* */
 }
