@@ -20,6 +20,7 @@
 
 #include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/base/timing.h>
 
 #include <iostream>
@@ -28,7 +29,6 @@
 #include <boost/tuple/tuple.hpp>
 
 #include <string>
-#include <vector>
 
 namespace gtsam {
 
@@ -50,11 +50,11 @@ namespace gtsam {
 *  
 *   \nosubgrouping */
 
-class VariableSlots : public FastMap<Index, std::vector<size_t> > {
+class VariableSlots : public FastMap<Index, FastVector<size_t> > {
 
 public:
 
-  typedef FastMap<Index, std::vector<size_t> > Base;
+  typedef FastMap<Index, FastVector<size_t> > Base;
 
   /// @name Standard Constructors
   /// @{
@@ -106,7 +106,7 @@ VariableSlots::VariableSlots(const FG& factorGraph)
       // the array entry for each factor that will indicate the factor
       // does not involve the variable.
       iterator thisVarSlots; bool inserted;
-      boost::tie(thisVarSlots, inserted) = this->insert(make_pair(involvedVariable, std::vector<size_t>()));
+      boost::tie(thisVarSlots, inserted) = this->insert(make_pair(involvedVariable, FastVector<size_t>()));
       if(inserted)
         thisVarSlots->second.resize(factorGraph.size(), std::numeric_limits<size_t>::max());
       thisVarSlots->second[jointFactorPos] = factorVarSlot;

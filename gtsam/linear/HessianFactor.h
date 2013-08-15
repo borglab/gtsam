@@ -19,9 +19,9 @@
 #pragma once
 
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/linear/GaussianFactor.h>
 
-#include <vector>
 #include <boost/make_shared.hpp>
 #include <tbb/tbb.h>
 #undef max

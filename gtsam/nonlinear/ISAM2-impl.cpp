@@ -43,7 +43,7 @@ void ISAM2::Impl::AddVariables(
 }
 
 /* ************************************************************************* */
-void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const std::vector<ISAM2::sharedClique>& roots,
+void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const FastVector<ISAM2::sharedClique>& roots,
                                   Values& theta, VariableIndex& variableIndex,
                                   VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,
                                   FastSet<Key>& replacedKeys, Base::Nodes& nodes,
@@ -144,7 +144,7 @@ void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<c
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const std::vector<ISAM2::sharedClique>& roots,
+FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
                                                         const VectorValues& delta,
                                                         const ISAM2Params::RelinearizationThreshold& relinearizeThreshold)
 {
@@ -224,7 +224,7 @@ inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique,
 }
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateDelta(const std::vector<ISAM2::sharedClique>& roots, FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold) {
+size_t ISAM2::Impl::UpdateDelta(const FastVector<ISAM2::sharedClique>& roots, FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold) {
 
   size_t lastBacksubVariableCount;
 
@@ -272,8 +272,8 @@ void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, const Fast
   if(anyReplaced) {
     // Update the current variable
     // Get VectorValues slice corresponding to current variables
-    Vector gR = grad.vector(std::vector<Key>(clique->conditional()->beginFrontals(), clique->conditional()->endFrontals()));
-    Vector gS = grad.vector(std::vector<Key>(clique->conditional()->beginParents(), clique->conditional()->endParents()));
+    Vector gR = grad.vector(FastVector<Key>(clique->conditional()->beginFrontals(), clique->conditional()->endFrontals()));
+    Vector gS = grad.vector(FastVector<Key>(clique->conditional()->beginParents(), clique->conditional()->endParents()));
 
     // Compute R*g and S*g for this clique
     Vector RSgProd = clique->conditional()->get_R() * gR + clique->conditional()->get_S() * gS;

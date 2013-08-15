@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include <vector>
 #include <string>
 #include <tbb/tbb.h>
 #undef max
@@ -29,6 +28,7 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
 
 namespace gtsam {
 
@@ -48,8 +48,8 @@ namespace gtsam {
 
   /** store all the sizes  */
   struct GTSAM_EXPORT BayesTreeCliqueData {
-    std::vector<std::size_t> conditionalSizes;
-    std::vector<std::size_t> separatorSizes;
+    FastVector<std::size_t> conditionalSizes;
+    FastVector<std::size_t> separatorSizes;
     BayesTreeCliqueStats getStats() const;
   };
 
@@ -91,7 +91,7 @@ namespace gtsam {
     typedef FastList<sharedClique> Cliques;
 
     /** Map from keys to Clique */
-    typedef FastMap<Key, sharedClique> Nodes;
+    typedef tbb::concurrent_unordered_map<Key, sharedClique> Nodes;
 
   protected:
 
@@ -99,7 +99,7 @@ namespace gtsam {
     Nodes nodes_;
 
     /** Root cliques */
-    std::vector<sharedClique> roots_;
+    FastVector<sharedClique> roots_;
 
     /// @name Standard Constructors
     /// @{
@@ -145,7 +145,7 @@ namespace gtsam {
     const sharedNode operator[](Key j) const { return nodes_.at(j); }
 
     /** return root cliques */
-    const std::vector<sharedClique>& roots() const { return roots_;  }
+    const FastVector<sharedClique>& roots() const { return roots_;  }
 
     /** alternate syntax for matlab: find the clique that contains the variable with Index j */
     const sharedClique& clique(Key j) const {
@@ -215,7 +215,7 @@ namespace gtsam {
      * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
      * Factors and orphans are added to the in/out arguments.
      */
-    void removeTop(const std::vector<Key>& keys, BayesNetType& bn, Cliques& orphans);
+    void removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans);
 
     /**
      * Remove the requested subtree. */

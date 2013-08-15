@@ -307,7 +307,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
   gttic(removetop);
   Cliques orphans;
   GaussianBayesNet affectedBayesNet;
-  this->removeTop(vector<Key>(markedKeys.begin(), markedKeys.end()), affectedBayesNet, orphans);
+  this->removeTop(FastVector<Key>(markedKeys.begin(), markedKeys.end()), affectedBayesNet, orphans);
   gttoc(removetop);
 
   //    FactorGraph<GaussianFactor> factors(affectedBayesNet);
@@ -628,7 +628,7 @@ ISAM2Result ISAM2::update(
   // NOTE: we use assign instead of the iterator constructor here because this
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Index value) instead of the iterator constructor.
-  vector<Index> observedKeys;  observedKeys.reserve(markedKeys.size());
+  FastVector<Index> observedKeys;  observedKeys.reserve(markedKeys.size());
   BOOST_FOREACH(Index index, markedKeys) {
     if(unusedIndices.find(index) == unusedIndices.end()) // Only add if not unused
       observedKeys.push_back(index); // Make a copy of these, as we'll soon add to them
@@ -827,7 +827,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
         }
 
         // Gather remaining children after we removed marginalized subtrees
-        vector<sharedClique> orphans(clique->children.begin(), clique->children.end());
+        FastVector<sharedClique> orphans(clique->children.begin(), clique->children.end());
 
         // Add the factors that are pulled into the current clique by the marginalized variables.
         // These are the factors that involve *marginalized* frontal variables in this clique
@@ -852,7 +852,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
         FastSet<Index> cliqueFrontalsToEliminate;
         std::set_intersection(cliqueFrontals.begin(), cliqueFrontals.end(), leafKeys.begin(), leafKeys.end(),
           std::inserter(cliqueFrontalsToEliminate, cliqueFrontalsToEliminate.end()));
-        vector<Index> cliqueFrontalsToEliminateV(cliqueFrontalsToEliminate.begin(), cliqueFrontalsToEliminate.end());
+        FastVector<Index> cliqueFrontalsToEliminateV(cliqueFrontalsToEliminate.begin(), cliqueFrontalsToEliminate.end());
         pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr> eliminationResult1 =
           params_.getEliminationFunction()(graph, Ordering(cliqueFrontalsToEliminateV));
 

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/FastVector.h>
 
 namespace gtsam {
 
@@ -44,7 +45,7 @@ namespace gtsam {
 
   protected:
     Matrix matrix_; ///< The full matrix
-    std::vector<DenseIndex> variableColOffsets_; ///< the starting columns of each block (0-based)
+    FastVector<DenseIndex> variableColOffsets_; ///< the starting columns of each block (0-based)
 
     DenseIndex blockStart_; ///< Changes apparent matrix view, see main class comment.
 

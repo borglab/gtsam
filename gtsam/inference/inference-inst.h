@@ -24,6 +24,7 @@
 #include <utility>
 
 #include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/base/FastVector.h>
 
 namespace gtsam {
   namespace inference {
@@ -33,7 +34,7 @@ namespace gtsam {
       template<class TREE>
       struct EliminationData {
         EliminationData* const parentData;
-        std::vector<typename TREE::sharedFactor> childFactors;
+        FastVector<typename TREE::sharedFactor> childFactors;
         EliminationData(EliminationData* _parentData, size_t nChildren) :
           parentData(_parentData) { childFactors.reserve(nChildren); }
       };
@@ -71,7 +72,7 @@ namespace gtsam {
      *  TREE::BayesNetType, TREE::FactorGraphType, TREE::sharedConditional, TREE::sharedFactor,
      *  TREE::Node, TREE::sharedNode, TREE::Node::factors, TREE::Node::children. */
     template<class TREE, class RESULT>
-    std::vector<typename TREE::sharedFactor>
+    FastVector<typename TREE::sharedFactor>
     EliminateTree(RESULT& result, const TREE& tree, const typename TREE::Eliminate& function)
     {
       // Typedefs

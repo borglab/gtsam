@@ -51,7 +51,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
   /**
    * Remove variables from the ISAM2 system.
    */
-  static void RemoveVariables(const FastSet<Key>& unusedKeys, const std::vector<ISAM2::sharedClique>& roots,
+  static void RemoveVariables(const FastSet<Key>& unusedKeys, const FastVector<ISAM2::sharedClique>& roots,
     Values& theta, VariableIndex& variableIndex, VectorValues& delta, VectorValues& deltaNewton,
     VectorValues& RgProd, FastSet<Key>& replacedKeys, Base::Nodes& nodes,
     FastSet<Key>& fixedVariables);
@@ -79,7 +79,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearizationPartial(const std::vector<ISAM2::sharedClique>& roots,
+  static FastSet<Index> CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
     const VectorValues& delta, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
 
   /**
@@ -117,7 +117,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
       boost::optional<VectorValues&> invalidateIfDebug = boost::none,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
-  static size_t UpdateDelta(const std::vector<ISAM2::sharedClique>& roots,
+  static size_t UpdateDelta(const FastVector<ISAM2::sharedClique>& roots,
     FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold);
 
   static size_t UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, FastSet<Key>& replacedKeys,

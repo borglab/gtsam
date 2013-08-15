@@ -36,7 +36,7 @@ namespace gtsam {
   typename EliminationTree<BAYESNET,GRAPH>::sharedFactor
     EliminationTree<BAYESNET,GRAPH>::Node::eliminate(
     const boost::shared_ptr<BayesNetType>& output,
-    const Eliminate& function, const std::vector<sharedFactor>& childrenResults) const
+    const Eliminate& function, const FastVector<sharedFactor>& childrenResults) const
   {
     // This function eliminates one node (Node::eliminate) - see below eliminate for the whole tree.
 
@@ -49,7 +49,7 @@ namespace gtsam {
     gatheredFactors.push_back(childrenResults.begin(), childrenResults.end());
 
     // Do dense elimination step
-    std::vector<Key> keyAsVector(1); keyAsVector[0] = key;
+    FastVector<Key> keyAsVector(1); keyAsVector[0] = key;
     std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
       function(gatheredFactors, Ordering(keyAsVector));
 
@@ -90,10 +90,10 @@ namespace gtsam {
     static const size_t none = std::numeric_limits<size_t>::max();
 
     // Allocate result parent vector and vector of last factor columns
-    std::vector<sharedNode> nodes(n);
-    std::vector<size_t> parents(n, none);
-    std::vector<size_t> prevCol(m, none);
-    std::vector<bool> factorUsed(m, false);
+    FastVector<sharedNode> nodes(n);
+    FastVector<size_t> parents(n, none);
+    FastVector<size_t> prevCol(m, none);
+    FastVector<bool> factorUsed(m, false);
 
     try {
       // for column j \in 1 to n do
@@ -192,7 +192,7 @@ namespace gtsam {
     boost::shared_ptr<BayesNetType> result = boost::make_shared<BayesNetType>();
 
     // Run tree elimination algorithm
-    std::vector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
+    FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
 
     // Add remaining factors that were not involved with eliminated variables
     boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
@@ -215,7 +215,7 @@ namespace gtsam {
   bool EliminationTree<BAYESNET,GRAPH>::equals(const This& expected, double tol) const
   {
     // Depth-first-traversal stacks
-    std::stack<sharedNode, std::vector<sharedNode> > stack1, stack2;
+    std::stack<sharedNode, FastVector<sharedNode> > stack1, stack2;
 
     // Add roots in sorted order
     {

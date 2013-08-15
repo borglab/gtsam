@@ -18,6 +18,7 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
+#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
@@ -47,7 +48,7 @@ namespace gtsam {
     const size_t nFrontals = keys.size();
 
     // Build a key vector with the frontals followed by the separator
-    vector<Key> orderedKeys(allKeys.size());
+    FastVector<Key> orderedKeys(allKeys.size());
     std::copy(keys.begin(), keys.end(), orderedKeys.begin());
     std::set_difference(allKeys.begin(), allKeys.end(), frontals.begin(), frontals.end(), orderedKeys.begin() + nFrontals);
 

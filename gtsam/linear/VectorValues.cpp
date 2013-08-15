@@ -128,11 +128,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector VectorValues::vector(const std::vector<Key>& keys) const
+  Vector VectorValues::vector(const FastVector<Key>& keys) const
   {
     // Count dimensions and collect pointers to avoid double lookups
     DenseIndex totalDim = 0;
-    std::vector<const Vector*> items(keys.size());
+    FastVector<const Vector*> items(keys.size());
     for(size_t i = 0; i < keys.size(); ++i) {
       items[i] = &at(keys[i]);
       totalDim += items[i]->size();

@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/global_includes.h>
 
 #include <boost/shared_ptr.hpp>
@@ -243,7 +244,7 @@ namespace gtsam {
     Vector vector() const;
 
     /** Access a vector that is a subset of relevant keys. */
-    Vector vector(const std::vector<Key>& keys) const;
+    Vector vector(const FastVector<Key>& keys) const;
 
     /** Swap the data in this VectorValues with another. */
     void swap(VectorValues& other);

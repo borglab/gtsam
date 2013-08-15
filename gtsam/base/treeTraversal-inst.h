@@ -17,6 +17,7 @@
 #pragma once
 
 #include <gtsam/base/FastList.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Key.h>
 
 #include <stack>
@@ -143,7 +144,7 @@ namespace gtsam {
           // Set TBB ref count
           set_ref_count(1 + (int)roots.size());
           // Create data and tasks for our children
-          std::vector<PreOrderTask*> tasks;
+          FastVector<PreOrderTask*> tasks;
           tasks.reserve(roots.size());
           BOOST_FOREACH(const boost::shared_ptr<NODE>& root, roots)
           {
@@ -301,12 +302,12 @@ namespace gtsam {
      *         return a collection of shared pointers to \c FOREST::Node.
      *  @return The new collection of roots. */
     template<class FOREST>
-    std::vector<boost::shared_ptr<typename FOREST::Node> > CloneForest(const FOREST& forest)
+    FastVector<boost::shared_ptr<typename FOREST::Node> > CloneForest(const FOREST& forest)
     {
       typedef typename FOREST::Node Node;
       boost::shared_ptr<Node> rootContainer = boost::make_shared<Node>();
       DepthFirstForest(forest, rootContainer, CloneForestVisitorPre<Node>);
-      return std::vector<boost::shared_ptr<Node> >(rootContainer->children.begin(), rootContainer->children.end());
+      return FastVector<boost::shared_ptr<Node> >(rootContainer->children.begin(), rootContainer->children.end());
     }
 
 

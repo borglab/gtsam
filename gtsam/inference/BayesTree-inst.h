@@ -340,7 +340,7 @@ namespace gtsam {
     // Get the set of variables to eliminate, which is C1\B.
     gttic(Full_root_factoring);
     boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
-      std::vector<Index> C1_minus_B; {
+      FastVector<Index> C1_minus_B; {
         FastSet<Index> C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
         BOOST_FOREACH(const Index j, *B->conditional()) {
           C1_minus_B_set.erase(j); }
@@ -352,7 +352,7 @@ namespace gtsam {
         FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
     }
     boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
-      std::vector<Index> C2_minus_B; {
+      FastVector<Index> C2_minus_B; {
         FastSet<Index> C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
         BOOST_FOREACH(const Index j, *B->conditional()) {
           C2_minus_B_set.erase(j); }
@@ -401,12 +401,12 @@ namespace gtsam {
   void BayesTree<CLIQUE>::removeClique(sharedClique clique)
   {
     if (clique->isRoot()) {
-      typename std::vector<sharedClique>::iterator root = std::find(roots_.begin(), roots_.end(), clique);
+      typename FastVector<sharedClique>::iterator root = std::find(roots_.begin(), roots_.end(), clique);
       if(root != roots_.end())
         roots_.erase(root);
     } else { // detach clique from parent
       sharedClique parent = clique->parent_.lock();
-      typename std::vector<sharedClique>::iterator child = std::find(parent->children.begin(), parent->children.end(), clique);
+      typename FastVector<sharedClique>::iterator child = std::find(parent->children.begin(), parent->children.end(), clique);
       assert(child != parent->children.end());
       parent->children.erase(child);
     }
@@ -447,7 +447,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  void BayesTree<CLIQUE>::removeTop(const std::vector<Key>& keys, BayesNetType& bn, Cliques& orphans)
+  void BayesTree<CLIQUE>::removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans)
   {
     // process each key of the new factor
     BOOST_FOREACH(const Key& j, keys)

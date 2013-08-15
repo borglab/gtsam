@@ -21,6 +21,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/FastVector.h>
 
 class EliminationTreeTester; // for unit tests, see testEliminationTree
 
@@ -63,15 +64,15 @@ namespace gtsam {
     typedef typename GRAPH::Eliminate Eliminate;
 
     struct Node {
-      typedef std::vector<sharedFactor> Factors;
-      typedef std::vector<boost::shared_ptr<Node> > Children;
+      typedef FastVector<sharedFactor> Factors;
+      typedef FastVector<boost::shared_ptr<Node> > Children;
 
       Key key; ///< key associated with root
       Factors factors; ///< factors associated with root
       Children children; ///< sub-trees
 
       sharedFactor eliminate(const boost::shared_ptr<BayesNetType>& output,
-        const Eliminate& function, const std::vector<sharedFactor>& childrenFactors) const;
+        const Eliminate& function, const FastVector<sharedFactor>& childrenFactors) const;
 
       void print(const std::string& str, const KeyFormatter& keyFormatter) const;
     };
@@ -82,8 +83,8 @@ namespace gtsam {
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
-    std::vector<sharedNode> roots_;
-    std::vector<sharedFactor> remainingFactors_;
+    FastVector<sharedNode> roots_;
+    FastVector<sharedFactor> remainingFactors_;
 
     /// @name Standard Constructors
     /// @{
@@ -147,10 +148,10 @@ namespace gtsam {
     /// @{
     
     /** Return the set of roots (one for a tree, multiple for a forest) */
-    const std::vector<sharedNode>& roots() const { return roots_; }
+    const FastVector<sharedNode>& roots() const { return roots_; }
 
     /** Return the remaining factors that are not pulled into elimination */
-    const std::vector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
+    const FastVector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
 
     /** Swap the data of this tree with another one, this operation is very fast. */
     void swap(This& other);

@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Key.h>
 
 namespace gtsam {
@@ -61,9 +62,9 @@ namespace gtsam {
     typedef typename FactorGraphType::Eliminate Eliminate; ///< Typedef for an eliminate subroutine
 
     struct Node {
-      typedef std::vector<Key> Keys;
-      typedef std::vector<sharedFactor> Factors;
-      typedef std::vector<boost::shared_ptr<Node> > Children;
+      typedef FastVector<Key> Keys;
+      typedef FastVector<sharedFactor> Factors;
+      typedef FastVector<boost::shared_ptr<Node> > Children;
 
       Keys keys; ///< Frontal keys of this node
       Factors factors; ///< Factors associated with this node
@@ -83,8 +84,8 @@ namespace gtsam {
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
-    std::vector<sharedNode> roots_;
-    std::vector<sharedFactor> remainingFactors_;
+    FastVector<sharedNode> roots_;
+    FastVector<sharedFactor> remainingFactors_;
 
   protected:
 
@@ -127,10 +128,10 @@ namespace gtsam {
     /// @{
     
     /** Return the set of roots (one for a tree, multiple for a forest) */
-    const std::vector<sharedNode>& roots() const { return roots_; }
+    const FastVector<sharedNode>& roots() const { return roots_; }
 
     /** Return the remaining factors that are not pulled into elimination */
-    const std::vector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
+    const FastVector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
 
     /// @}
 

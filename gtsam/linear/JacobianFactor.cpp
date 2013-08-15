@@ -137,14 +137,14 @@ namespace gtsam {
   /* ************************************************************************* */
   // Helper functions for combine constructor
   namespace {
-    boost::tuple<vector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
-      const std::vector<JacobianFactor::shared_ptr>& factors, const vector<VariableSlots::const_iterator>& variableSlots)
+    boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
+      const FastVector<JacobianFactor::shared_ptr>& factors, const FastVector<VariableSlots::const_iterator>& variableSlots)
     {
       gttic(countDims);
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-      vector<DenseIndex> varDims(variableSlots.size(), numeric_limits<DenseIndex>::max());
+      FastVector<DenseIndex> varDims(variableSlots.size(), numeric_limits<DenseIndex>::max());
 #else
-      vector<DenseIndex> varDims(variableSlots.size());
+      FastVector<DenseIndex> varDims(variableSlots.size());
 #endif
       DenseIndex m = 0;
       DenseIndex n = 0;
@@ -185,11 +185,11 @@ namespace gtsam {
     }
 
     /* ************************************************************************* */
-    std::vector<JacobianFactor::shared_ptr>
+    FastVector<JacobianFactor::shared_ptr>
       _convertOrCastToJacobians(const GaussianFactorGraph& factors)
     {
       gttic(Convert_to_Jacobians);
-      std::vector<JacobianFactor::shared_ptr> jacobians;
+      FastVector<JacobianFactor::shared_ptr> jacobians;
       jacobians.reserve(factors.size());
       BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
         if(factor) {
@@ -219,13 +219,13 @@ namespace gtsam {
     }
 
     // Cast or convert to Jacobians
-    std::vector<JacobianFactor::shared_ptr> jacobians = _convertOrCastToJacobians(graph);
+    FastVector<JacobianFactor::shared_ptr> jacobians = _convertOrCastToJacobians(graph);
 
     gttic(Order_slots);
     // Order variable slots - we maintain the vector of ordered slots, as well as keep a list
     // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
     // be added after all of the ordered variables.
-    vector<VariableSlots::const_iterator> orderedSlots;
+    FastVector<VariableSlots::const_iterator> orderedSlots;
     orderedSlots.reserve(variableSlots->size());
     if(ordering) {
       // If an ordering is provided, arrange the slots first that ordering
@@ -259,7 +259,7 @@ namespace gtsam {
     gttoc(Order_slots);
 
     // Count dimensions
-    vector<DenseIndex> varDims;
+    FastVector<DenseIndex> varDims;
     DenseIndex m, n;
     boost::tie(varDims, m, n) = _countDims(jacobians, orderedSlots);
 

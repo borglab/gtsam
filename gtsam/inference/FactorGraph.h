@@ -30,6 +30,7 @@
 #include <boost/type_traits.hpp>
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Key.h>
 
 namespace gtsam {
@@ -82,8 +83,8 @@ namespace gtsam {
     typedef FACTOR FactorType;  ///< factor type
     typedef boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
     typedef sharedFactor value_type;
-    typedef typename std::vector<sharedFactor>::iterator iterator;
-    typedef typename std::vector<sharedFactor>::const_iterator const_iterator;
+    typedef typename FastVector<sharedFactor>::iterator iterator;
+    typedef typename FastVector<sharedFactor>::const_iterator const_iterator;
 
   private:
     typedef FactorGraph<FACTOR> This;  ///< Typedef for this class
@@ -94,7 +95,7 @@ namespace gtsam {
     GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
 
     /** Collection of factors */
-    std::vector<sharedFactor> factors_;
+    FastVector<sharedFactor> factors_;
 
     /// @name Standard Constructors
     /// @{
@@ -142,7 +143,7 @@ namespace gtsam {
 
     /**
      * Reserve space for the specified number of factors if you know in
-     * advance how many there will be (works like std::vector::reserve).
+     * advance how many there will be (works like FastVector::reserve).
      */
     void reserve(size_t size) { factors_.reserve(size); }
 

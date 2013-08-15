@@ -38,8 +38,8 @@ namespace gtsam {
     struct ConstructorTraversalData {
       ConstructorTraversalData* const parentData;
       typename JunctionTree<BAYESTREE,GRAPH>::sharedNode myJTNode;
-      std::vector<SymbolicConditional::shared_ptr> childSymbolicConditionals;
-      std::vector<SymbolicFactor::shared_ptr> childSymbolicFactors;
+      FastVector<SymbolicConditional::shared_ptr> childSymbolicConditionals;
+      FastVector<SymbolicFactor::shared_ptr> childSymbolicFactors;
       ConstructorTraversalData(ConstructorTraversalData* _parentData) : parentData(_parentData) {}
     };
 
@@ -128,7 +128,7 @@ namespace gtsam {
     struct EliminationData {
       EliminationData* const parentData;
       size_t myIndexInParent;
-      std::vector<typename JUNCTIONTREE::sharedFactor> childFactors;
+      FastVector<typename JUNCTIONTREE::sharedFactor> childFactors;
       boost::shared_ptr<typename JUNCTIONTREE::BayesTreeType::Node> bayesTreeNode;
       EliminationData(EliminationData* _parentData, size_t nChildren) :
         parentData(_parentData),

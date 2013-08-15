@@ -113,7 +113,7 @@ namespace gtsam {
   VectorValues GaussianConditional::solve(const VectorValues& x) const
   {
     // Solve matrix
-    Vector xS = x.vector(vector<Key>(beginParents(), endParents()));
+    Vector xS = x.vector(FastVector<Key>(beginParents(), endParents()));
     xS = getb() - get_S() * xS;
     Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
 
@@ -135,8 +135,8 @@ namespace gtsam {
   VectorValues GaussianConditional::solveOtherRHS(
     const VectorValues& parents, const VectorValues& rhs) const
   {
-    Vector xS = parents.vector(vector<Key>(beginParents(), endParents()));
-    const Vector rhsR = rhs.vector(vector<Key>(beginFrontals(), endFrontals()));
+    Vector xS = parents.vector(FastVector<Key>(beginParents(), endParents()));
+    const Vector rhsR = rhs.vector(FastVector<Key>(beginFrontals(), endFrontals()));
     xS = rhsR - get_S() * xS;
     Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
 
@@ -158,7 +158,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const
   {
-    Vector frontalVec = gy.vector(vector<Key>(beginFrontals(), endFrontals()));
+    Vector frontalVec = gy.vector(FastVector<Key>(beginFrontals(), endFrontals()));
     frontalVec = gtsam::backSubstituteUpper(frontalVec, Matrix(get_R()));
 
     // Check for indeterminant solution

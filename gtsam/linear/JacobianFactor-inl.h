@@ -72,10 +72,10 @@ namespace gtsam {
     // that is implicitly convertible to T&.  This was introduced to work around a problem where
     // BOOST_FOREACH over terms did not work on GCC.
     struct _fillTerm {
-      std::vector<Key>& keys;
+      FastVector<Key>& keys;
       VerticalBlockMatrix& Ab;
       DenseIndex& i;
-      _fillTerm(std::vector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
+      _fillTerm(FastVector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
         : keys(keys), Ab(Ab), i(i) {}
 
       template<class MATRIX>

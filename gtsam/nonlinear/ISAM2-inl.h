@@ -66,7 +66,7 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
   if(recalculate) {
 
     // Temporary copy of the original values, to check how much they change
-    std::vector<Vector> originalValues(clique->conditional()->nrFrontals());
+    FastVector<Vector> originalValues(clique->conditional()->nrFrontals());
     GaussianConditional::const_iterator it;
     for(it = clique->conditional()->beginFrontals(); it!=clique->conditional()->endFrontals(); it++) {
       originalValues[it - clique->conditional()->beginFrontals()] = delta[*it];
@@ -143,7 +143,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
   if(recalculate)
   {
     // Temporary copy of the original values, to check how much they change
-    std::vector<Vector> originalValues(clique->conditional()->nrFrontals());
+    FastVector<Vector> originalValues(clique->conditional()->nrFrontals());
     GaussianConditional::const_iterator it;
     for(it = clique->conditional()->beginFrontals(); it != clique->conditional()->endFrontals(); it++) {
       originalValues[it - clique->conditional()->beginFrontals()] = delta[*it];
@@ -172,7 +172,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
         {
           // Count dimensions of vector
           DenseIndex dim = 0;
-          std::vector<VectorValues::const_iterator> parentPointers;
+          FastVector<VectorValues::const_iterator> parentPointers;
           parentPointers.reserve(clique->conditional()->nrParents());
           BOOST_FOREACH(Key parent, clique->conditional()->parents()) {
             parentPointers.push_back(clique->solnPointers_.at(parent));

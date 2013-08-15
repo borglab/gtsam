@@ -21,10 +21,10 @@
 
 #pragma once
 
-#include <vector>
 #include <boost/serialization/nvp.hpp>
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Key.h>
 
 namespace gtsam {
@@ -58,15 +58,15 @@ namespace gtsam {
 
   public:
     /// Iterator over keys
-    typedef std::vector<Key>::iterator iterator;
+    typedef FastVector<Key>::iterator iterator;
 
     /// Const iterator over keys
-    typedef std::vector<Key>::const_iterator const_iterator;
+    typedef FastVector<Key>::const_iterator const_iterator;
 
   protected:
 
     /// The keys involved in this factor
-    std::vector<Key> keys_;
+    FastVector<Key> keys_;
 
     /// @name Standard Constructors
     /// @{
@@ -112,7 +112,7 @@ namespace gtsam {
     const_iterator find(Key key) const { return std::find(begin(), end(), key); }
 
     /// Access the factor's involved variable keys
-    const std::vector<Key>& keys() const { return keys_; }
+    const FastVector<Key>& keys() const { return keys_; }
 
     /** Iterator at beginning of involved variable keys */
     const_iterator begin() const { return keys_.begin(); }
@@ -148,7 +148,7 @@ namespace gtsam {
     /// @{
 
     /** @return keys involved in this factor */
-    std::vector<Key>& keys() { return keys_; }
+    FastVector<Key>& keys() { return keys_; }
 
     /** Iterator at beginning of involved variable keys */
     iterator begin() { return keys_.begin(); }

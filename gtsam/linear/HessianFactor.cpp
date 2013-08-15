@@ -282,7 +282,7 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
   gttic(allocate);
   // Allocate with dimensions for each variable plus 1 at the end for the information vector
   keys_.resize(scatter->size());
-  vector<DenseIndex> dims(scatter->size() + 1);
+  FastVector<DenseIndex> dims(scatter->size() + 1);
   BOOST_FOREACH(const Scatter::value_type& key_slotentry, *scatter) {
     keys_[key_slotentry.second.slot] = key_slotentry.first;
     dims[key_slotentry.second.slot] = key_slotentry.second.dimension;
@@ -379,7 +379,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   // First build an array of slots
   gttic(slots);
   //size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
-  vector<DenseIndex> slots(update.size());
+  FastVector<DenseIndex> slots(update.size());
   DenseIndex slot = 0;
   BOOST_FOREACH(Key j, update) {
     slots[slot] = scatter.at(j).slot;
