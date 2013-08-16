@@ -39,7 +39,7 @@ class FastVector: public std::vector<VALUE, typename internal::FastDefaultVector
 
 public:
 
-  typedef std::vector<VALUE, allocator_type> Base;
+  typedef std::vector<VALUE, typename internal::FastDefaultVectorAllocator<VALUE>::type> Base;
 
   /** Default constructor */
   FastVector() {}
