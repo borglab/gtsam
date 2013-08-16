@@ -184,8 +184,8 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
   VectorValues actual = gbn.optimizeGradientSearch();
 
   // Check that points agree
-  Vector actualAsVector = actual.vector(FastVector<Key>(list_of
-    (0)(1)(2)(3)(4)));
+  FastVector<Key> keys = list_of(0)(1)(2)(3)(4);
+  Vector actualAsVector = actual.vector(keys);
   EXPECT(assert_equal(expected, actualAsVector, 1e-5));
 
   // Check that point causes a decrease in error

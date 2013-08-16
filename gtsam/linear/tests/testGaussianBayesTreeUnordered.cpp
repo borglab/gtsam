@@ -274,9 +274,8 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
   VectorValues actual = bt.optimizeGradientSearch();
 
   // Check that points agree
-  Vector actualAsVector = actual.vector(FastVector<Key>(list_of
-    (0)(1)(2)(3)(4)));
-  EXPECT(assert_equal(expected, actualAsVector, 1e-5));
+  FastVector<Key> keys = list_of(0)(1)(2)(3)(4);
+  EXPECT(assert_equal(expected, actual.vector(keys), 1e-5));
   EXPECT(assert_equal(expectedFromBN, actual, 1e-5));
 
   // Check that point causes a decrease in error

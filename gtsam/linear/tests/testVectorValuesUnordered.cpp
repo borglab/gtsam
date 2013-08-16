@@ -60,8 +60,8 @@ TEST(VectorValues, basics)
   EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
   EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
   EXPECT(assert_equal(Vector_(2, 6.0, 7.0), actual[5]));
-  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.vector(FastVector<Key>(list_of
-    (0)(1)(2)(5)))));
+  FastVector<Key> keys = list_of(0)(1)(2)(5);
+  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.vector(keys)));
 
   // Check exceptions
   CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
