@@ -124,7 +124,7 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
     HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
     size_t dim = hesFactor->linearTerm().size();
     Eigen::Block<HessianFactor::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
-    Vector deltaVector = delta.vector();
+    Vector deltaVector = delta.vector(keys());
     Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * deltaVector;
     hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm());
     hesFactor->linearTerm() -= G_delta;
