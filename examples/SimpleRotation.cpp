@@ -90,7 +90,7 @@ int main() {
    * many more factors would be added.
    */
   NonlinearFactorGraph graph;
-  graph.add(factor);
+  graph.push_back(factor);
   graph.print("full graph");
 
   /**

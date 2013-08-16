@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
     for (size_t j = 0; j < points.size(); ++j) {
       SimpleCamera camera(poses[i], *K);
       Point2 measurement = camera.project(points[j]);
-      graph.add(GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K));
+      graph.push_back(GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K));
     }
 
     // Add an initial guess for the current pose
@@ -119,11 +119,11 @@ int main(int argc, char* argv[]) {
     if( i == 0) {
       // Add a prior on pose x0
       noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(Vector_(6, 0.3, 0.3, 0.3, 0.1, 0.1, 0.1)); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-      graph.add(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
+      graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
 
       // Add a prior on landmark l0
       noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-      graph.add(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
+      graph.push_back(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
 
       // Add initial guesses to all observed landmarks
       // Intentionally initialize the variables off from the ground truth

@@ -125,7 +125,7 @@ int main (int argc, char** argv) {
   Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120,
       M_PI - 2.02108900000000);
   NonlinearFactorGraph newFactors;
-  newFactors.add(PriorFactor<Pose2>(0, pose0, priorNoise));
+  newFactors.push_back(PriorFactor<Pose2>(0, pose0, priorNoise));
   Values initial;
   initial.insert(0, pose0);
 
@@ -158,7 +158,7 @@ int main (int argc, char** argv) {
     boost::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
-    newFactors.add(BetweenFactor<Pose2>(i-1, i, odometry,NM::Diagonal::Sigmas(odoSigmas)));
+    newFactors.push_back(BetweenFactor<Pose2>(i-1, i, odometry,NM::Diagonal::Sigmas(odoSigmas)));
 
     // predict pose and add as initial estimate
     Pose2 predictedPose = lastPose.compose(odometry);
@@ -169,7 +169,7 @@ int main (int argc, char** argv) {
     while (k < K && t >= boost::get<0>(triples[k])) {
       size_t j = boost::get<1>(triples[k]);
       double range = boost::get<2>(triples[k]);
-      newFactors.add(RangeFactor<Pose2, Point2>(i, symbol('L', j), range,rangeNoise));
+      newFactors.push_back(RangeFactor<Pose2, Point2>(i, symbol('L', j), range,rangeNoise));
       k = k + 1;
       countK = countK + 1;
     }

@@ -4,6 +4,17 @@ endif()
 
 # Build example executables
 FILE(GLOB example_srcs "*.cpp")
+
+set (excluded_examples #"")
+    "${CMAKE_CURRENT_SOURCE_DIR}/DiscreteBayesNet_FG.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/UGM_chain.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/UGM_small.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/easyPoint2KalmanFilter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/elaboratePoint2KalmanFilter.cpp"
+)
+
+list(REMOVE_ITEM example_srcs ${excluded_examples})
+
 foreach(example_src ${example_srcs} )
     get_filename_component(example_base ${example_src} NAME_WE)
     set( example_bin ${example_base} )
