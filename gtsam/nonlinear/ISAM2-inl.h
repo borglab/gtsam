@@ -183,8 +183,9 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
           xS.resize(dim);
           DenseIndex vectorPos = 0;
           BOOST_FOREACH(const VectorValues::const_iterator& parentPointer, parentPointers) {
-            xS.segment(vectorPos, parentPointer->second.size()) = parentPointer->second;
-            vectorPos += parentPointer->second.size();
+            const Vector& parentVector = parentPointer->second;
+            xS.block(vectorPos,0,parentVector.size(),1) = parentVector.block(0,0,parentVector.size(),1);
+            vectorPos += parentVector.size();
           }
         }
         xS = c.getb() - c.get_S() * xS;
