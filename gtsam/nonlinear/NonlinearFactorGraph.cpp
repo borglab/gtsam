@@ -28,6 +28,10 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
+#ifdef GTSAM_USE_TBB
+#  include <tbb/parallel_for.h>
+#endif
+
 using namespace std;
 
 namespace gtsam {
@@ -258,12 +262,46 @@ Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>
 //}
 
 /* ************************************************************************* */
+namespace {
+
+#ifdef GTSAM_USE_TBB
+  struct _LinearizeOneFactor {
+    const NonlinearFactorGraph& graph;
+    const Values& linearizationPoint;
+    GaussianFactorGraph& result;
+    _LinearizeOneFactor(const NonlinearFactorGraph& graph, const Values& linearizationPoint, GaussianFactorGraph& result) :
+      graph(graph), linearizationPoint(linearizationPoint), result(result) {}
+    void operator()(const tbb::blocked_range<size_t>& r) const
+    {
+      for(size_t i = r.begin(); i != r.end(); ++i)
+      {
+        if(graph[i])
+          result[i] = graph[i]->linearize(linearizationPoint);
+        else
+          result[i] = GaussianFactor::shared_ptr();
+      }
+    }
+  };
+#endif
+
+}
+
+/* ************************************************************************* */
 GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& linearizationPoint) const
 {
   gttic(NonlinearFactorGraph_linearize);
 
   // create an empty linear FG
   GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
+
+#ifdef GTSAM_USE_TBB
+
+  linearFG->resize(this->size());
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, this->size()),
+    _LinearizeOneFactor(*this, linearizationPoint, *linearFG));
+
+#else
+
   linearFG->reserve(this->size());
 
   // linearize all factors
@@ -273,6 +311,8 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
     } else
       (*linearFG) += GaussianFactor::shared_ptr();
   }
+
+#endif
 
   return linearFG;
 }
