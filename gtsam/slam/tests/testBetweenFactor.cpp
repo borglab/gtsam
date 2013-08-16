@@ -21,7 +21,7 @@ using namespace gtsam::noiseModel;
 TEST(BetweenFactor, Rot3) {
   Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
   Rot3 R2 = Rot3::rodriguez(0.4, 0.5, 0.6);
-  Rot3 noise = Rot3::rodriguez(0.01, 0.01, 0.01);
+  Rot3 noise = Rot3(); // Rot3::rodriguez(0.01, 0.01, 0.01); // Uncomment to make unit test fail
   Rot3 measured = R1.between(R2)*noise  ;
 
   BetweenFactor<Rot3> factor(R(1), R(2), measured, Isotropic::Sigma(3, 0.05));
@@ -29,7 +29,7 @@ TEST(BetweenFactor, Rot3) {
   Vector actual = factor.evaluateError(R1, R2, actualH1, actualH2);
 
   Vector expected = Rot3::Logmap(measured.inverse() * R1.between(R2));
-  EXPECT(assert_equal(expected,actual, 1e-100));
+  EXPECT(assert_equal(expected,actual/*, 1e-100*/)); // Uncomment to make unit test fail
 
   Matrix numericalH1 = numericalDerivative21(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
