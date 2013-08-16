@@ -82,10 +82,13 @@ public:
 #ifndef GTSAM_USE_TBB
   // If we're not using TBB and this is actually a FastMap, we need to add these functions and hide
   // the original erase functions.
-  iterator unsafe_erase(const_iterator position) { return Base::erase(position); }
-  size_type unsafe_erase(const key_type& k) { return Base::erase(k); }
-  iterator unsafe_erase(const_iterator first, const_iterator last) { return Base::erase(first, last); }
-  void erase() { BOOST_STATIC_ASSERT_MSG(0, "For ConcurrentMap, use unsafe_erase instead of erase."); }
+  void unsafe_erase(typename Base::iterator position) { ((Base*)this)->erase(position); }
+  typename Base::size_type unsafe_erase(const KEY& k) { return ((Base*)this)->erase(k); }
+  void unsafe_erase(typename Base::iterator first, typename Base::iterator last) {
+    return ((Base*)this)->erase(first, last); }
+private:
+  void erase() {}
+public:
 #endif
 
 private:
