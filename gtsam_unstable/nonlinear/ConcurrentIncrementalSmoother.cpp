@@ -177,7 +177,7 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
 
   // Find all cliques that contain any separator variables
   std::set<ISAM2Clique::shared_ptr> separatorCliques;
-  BOOST_FOREACH(Key key, separatorKeys) {
+  BOOST_FOREACH(Key key, separatorValues_.keys()) {
     ISAM2Clique::shared_ptr clique = isam2_[key];
     separatorCliques.insert( clique );
   }
@@ -241,7 +241,7 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
 
   // Calculate the marginal factors on the separator
   smootherSummarization_ = internal::calculateMarginalFactors(graph, isam2_.getLinearizationPoint(), separatorKeys,
-      isam2_.params().factorization == ISAM2Params::CHOLESKY ? EliminateCholesky : EliminateQR);
+      isam2_.params().getEliminationFunction());
 }
 
 /* ************************************************************************* */

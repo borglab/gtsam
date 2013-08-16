@@ -204,7 +204,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
 
   // Calculate the summarized factor on just the new separator keys
   NonlinearFactorGraph currentSmootherSummarization = internal::calculateMarginalFactors(graph, values, newSeparatorKeys,
-      isam2_.params().factorization == ISAM2Params::CHOLESKY ? EliminateCholesky : EliminateQR);
+      isam2_.params().getEliminationFunction());
 
   // Remove the old factors on the separator and insert the new ones
   FastVector<size_t> removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
@@ -329,7 +329,7 @@ void ConcurrentIncrementalFilter::updateShortcut(const NonlinearFactorGraph& rem
   values.insert(isam2_.getLinearizationPoint());
   // Calculate the summarized factor on the shortcut keys
   smootherShortcut_ = internal::calculateMarginalFactors(graph, values, shortcutKeys,
-      isam2_.params().factorization == ISAM2Params::CHOLESKY ? EliminateCholesky : EliminateQR);
+      isam2_.params().getEliminationFunction());
 }
 
 /* ************************************************************************* */
@@ -402,7 +402,7 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
 
   // Calculate the marginal factors on the separator
   NonlinearFactorGraph filterSummarization = internal::calculateMarginalFactors(graph, isam2_.getLinearizationPoint(), separatorKeys,
-      isam2_.params().factorization == ISAM2Params::CHOLESKY ? EliminateCholesky : EliminateQR);
+      isam2_.params().getEliminationFunction());
 
   return filterSummarization;
 }
