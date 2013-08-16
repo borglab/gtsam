@@ -64,6 +64,7 @@ string SlotEntry::toString() const {
 /* ************************************************************************* */
 Scatter::Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering)
 {
+  gttic(Scatter_Constructor);
   static const size_t none = std::numeric_limits<size_t>::max();
 
   // First do the set union.
@@ -223,13 +224,15 @@ GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), ListOfOne(
 namespace {
   void _FromJacobianHelper(const JacobianFactor& jf, SymmetricBlockMatrix& info)
   {
+    gttic(HessianFactor_fromJacobian);
     const SharedDiagonal& jfModel = jf.get_model();
     if(jfModel)
     {
       if(jf.get_model()->isConstrained())
         throw invalid_argument("Cannot construct HessianFactor from JacobianFactor with constrained noise model");
-      info.full().noalias() = jf.matrixObject().full().transpose() * jfModel->invsigmas().asDiagonal() *
-        jfModel->invsigmas().asDiagonal() * jf.matrixObject().full();
+      info.full().noalias() = jf.matrixObject().full().transpose() *
+        (jfModel->invsigmas().array() * jfModel->invsigmas().array()).matrix().asDiagonal() *
+        jf.matrixObject().full();
     } else {
       info.full().noalias() = jf.matrixObject().full().transpose() * jf.matrixObject().full();
     }
@@ -373,6 +376,7 @@ double HessianFactor::error(const VectorValues& c) const {
 /* ************************************************************************* */
 void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatter)
 {
+  gttic(updateATA);
   // This function updates 'combined' with the information in 'update'. 'scatter' maps variables in
   // the update factor to slots in the combined factor.
 
