@@ -68,7 +68,11 @@ namespace gtsam {
     }
 
     /** compose with another object */
-    LieScalar compose(const LieScalar& p) const {
+    LieScalar compose(const LieScalar& p,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = eye(1);
+      if(H2) *H2 = eye(1);
       return LieScalar(d_ + p.d_);
     }
 
@@ -93,6 +97,16 @@ namespace gtsam {
 
     /** Logmap around identity - just returns with default cast back */
     static Vector Logmap(const LieScalar& p) { return Vector_(1,p.value()); }
+
+    /// Left-trivialized derivative of the exponential map
+    static Matrix dexpL(const Vector& v) {
+      return eye(1);
+    }
+
+    /// Left-trivialized derivative inverse of the exponential map
+    static Matrix dexpInvL(const Vector& v) {
+      return eye(1);
+    }
 
   private:
       double d_;
