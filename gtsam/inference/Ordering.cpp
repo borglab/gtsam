@@ -163,7 +163,7 @@ namespace gtsam {
         ++ group;
     }
 
-    if(!forceOrder)
+    if(!forceOrder && !constrainFirst.empty())
       ++ group;
     BOOST_FOREACH(int& c, cmember)
       if(c == none)
