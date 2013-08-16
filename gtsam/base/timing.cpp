@@ -149,7 +149,8 @@ const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child, const
 }
 
 /* ************************************************************************* */
-void TimingOutline::ticInternal() {
+void TimingOutline::ticInternal()
+{
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   assert(timer_.is_stopped());
   timer_.start();
@@ -158,24 +159,41 @@ void TimingOutline::ticInternal() {
   timer_.restart();
   *timerActive_ = true;
 #endif
+
+#ifdef GTSAM_USE_TBB
   tbbTimer_ = tbb::tick_count::now();
+#endif
 }
 
 /* ************************************************************************* */
-void TimingOutline::tocInternal() {
+void TimingOutline::tocInternal()
+{
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
+
   assert(!timer_.is_stopped());
   timer_.stop();
-  add((timer_.elapsed().user + timer_.elapsed().system) / 1000,
-    //timer_.elapsed().wall / 1000
-    size_t((tbb::tick_count::now() - tbbTimer_).seconds() * 1e6)
-    );
+  size_t cpuTime = (timer_.elapsed().user + timer_.elapsed().system) / 1000;
+#  ifndef GTSAM_USE_TBB
+  size_t wallTime = timer_.elapsed().wall / 1000;
+#  endif
+
 #else
+
   assert(timerActive_);
   double elapsed = timer_.elapsed();
-  add(size_t(elapsed * 1000000.0), 0);
+  size_t cpuTime = size_t(elapsed * 1000000.0);
   *timerActive_ = false;
+#  ifndef GTSAM_USE_TBB
+  size_t wallTime = cpuTime;
+#  endif
+
 #endif
+
+#ifdef GTSAM_USE_TBB
+  size_t wallTime = size_t((tbb::tick_count::now() - tbbTimer_).seconds() * 1e6);
+#endif
+
+  add(cpuTime, wallTime);
 }
 
 /* ************************************************************************* */

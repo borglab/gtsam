@@ -60,6 +60,7 @@ endif()
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
 option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
 option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF) 
+option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TBB) if available" ON)
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -136,6 +137,27 @@ endif()
 
 
 ###############################################################################
+# Find TBB
+find_package(TBB)
+
+# Set up variables if we're using TBB
+if(TBB_FOUND AND GTSAM_WITH_TBB)
+	set(GTSAM_USE_TBB 1)  # This will go into config.h
+	set(GTSAM_TBB_LIBRARIES "")
+	if(TBB_DEBUG_LIBRARIES)
+		foreach(lib ${TBB_LIBRARIES})
+			list(APPEND GTSAM_TBB_LIBRARIES optimized "${lib}")
+		endforeach()
+		foreach(lib ${TBB_DEBUG_LIBRARIES})
+			list(APPEND GTSAM_TBB_LIBRARIES debug "${lib}")
+		endforeach()
+	else()
+		set(GTSAM_TBB_LIBRARIES ${TBB_LIBRARIES})
+	endif()
+endif()
+
+
+###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
 option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
@@ -161,26 +183,6 @@ configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eig
 
 # Install the configuration file for Eigen
 install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
-
-
-###############################################################################
-# Find TBB
-set(ENV{TBB_ARCH_PLATFORM} "intel64/vc11")
-set(ENV{TBB_BIN_DIR} "C:/Program Files/Intel/TBB/bin")
-set(ENV{TBB_TARGET_ARCH} intel64)
-set(ENV{TBB_TARGET_VS} vc11)
-find_package(TBB REQUIRED)
-set(TBB_LIBS "")
-if(TBB_DEBUG_LIBRARIES)
-    foreach(lib ${TBB_LIBRARIES})
-    	list(APPEND TBB_LIBS optimized "${lib}")
-    endforeach()
-    foreach(lib ${TBB_DEBUG_LIBRARIES})
-    	list(APPEND TBB_LIBS debug "${lib}")
-    endforeach()
-else()
-    set(TBB_LIBS ${TBB_LIBRARIES})
-endif()
 
 
 ###############################################################################
@@ -317,6 +319,14 @@ string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
 message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
 message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
 message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
+if(GTSAM_USE_TBB)
+	message(STATUS "  Use Intel TBB                  : Yes")
+elseif(TBB_FOUND)
+	message(STATUS "  Use Intel TBB                  : TBB found but GTSAM_WITH_TBB is disabled")
+else()
+	message(STATUS "  Use Intel TBB                  : TBB not found")
+endif()
+
 
 message(STATUS "Packaging flags                                               ")
 message(STATUS "  CPack Source Generator         : ${CPACK_SOURCE_GENERATOR}")
@@ -332,6 +342,10 @@ print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox  
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
 print_config_flag(${GTSAM_INSTALL_WRAP}                "Install wrap utility           ")
 message(STATUS "===============================================================")
+
+if(GTSAM_WITH_TBB AND NOT TBB_FOUND)
+	message(WARNING "GTSAM_USE_TBB is set to 'On' but TBB was not found.  This is ok, but GTSAM parallelization will be disabled.  Set GTSAM_USE_TBB to 'Off' to avoid this warning.")
+endif()
 
 # Include CPack *after* all flags
 include(CPack)

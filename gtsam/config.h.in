@@ -31,3 +31,6 @@
 #ifndef GTSAM_USE_QUATERNIONS
 	#cmakedefine GTSAM_ROT3_EXPMAP 
 #endif
+
+// Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
+#cmakedefine GTSAM_USE_TBB

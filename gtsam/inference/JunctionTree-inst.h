@@ -293,10 +293,6 @@ namespace gtsam {
     boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
     EliminationData<This> rootsContainer(0, roots_.size());
     EliminationPostOrderVisitor<This> visitorPost(function, result->nodes_);
-#ifdef ENABLE_TIMING
-    // In timing mode, use a single thread only, timing outline is not thread-safe.
-    tbb::task_scheduler_init init(1);
-#endif
     treeTraversal::DepthFirstForestParallel(*this, rootsContainer,
       eliminationPreOrderVisitor<This>, visitorPost, 10);
 

@@ -18,13 +18,31 @@
 
 #pragma once
 
-#include <tbb/concurrent_unordered_map.h>
-#undef min
-#undef max
-#undef ERROR
+#include <gtsam/global_includes.h>
+
+// Change class depending on whether we are using TBB
+#ifdef GTSAM_USE_TBB
+
+// Include TBB header
+#  include <tbb/concurrent_unordered_map.h>
+#  undef min // TBB seems to include Windows.h which defines these macros that cause problems
+#  undef max
+#  undef ERROR
+
+// Use TBB concurrent_unordered_map for ConcurrentMap
+#  define CONCURRENT_MAP_BASE tbb::concurrent_unordered_map<KEY, VALUE>
+
+#else
+
+// If we're not using TBB, use a FastMap for ConcurrentMap
+#  include <gtsam/base/FastMap.h>
+#  define CONCURRENT_MAP_BASE gtsam::FastMap<KEY, VALUE>
+
+#endif
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <boost/static_assert.hpp>
 
 #include <gtsam/base/FastVector.h>
 
@@ -39,11 +57,11 @@ namespace gtsam {
  * @addtogroup base
  */
 template<typename KEY, typename VALUE>
-class ConcurrentMap : public tbb::concurrent_unordered_map<KEY, VALUE> {
+class ConcurrentMap : public CONCURRENT_MAP_BASE {
 
 public:
 
-  typedef tbb::concurrent_unordered_map<KEY, VALUE> Base;
+  typedef CONCURRENT_MAP_BASE Base;
 
   /** Default constructor */
   ConcurrentMap() {}
@@ -52,7 +70,7 @@ public:
   template<typename INPUTITERATOR>
   ConcurrentMap(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
 
-  /** Copy constructor from another FastMap */
+  /** Copy constructor from another ConcurrentMap */
   ConcurrentMap(const ConcurrentMap<KEY,VALUE>& x) : Base(x) {}
 
   /** Copy constructor from the base map class */
@@ -60,6 +78,15 @@ public:
 
   /** Handy 'exists' function */
   bool exists(const KEY& e) const { return this->count(e); }
+
+#ifndef GTSAM_USE_TBB
+  // If we're not using TBB and this is actually a FastMap, we need to add these functions and hide
+  // the original erase functions.
+  iterator unsafe_erase(const_iterator position) { return Base::erase(position); }
+  size_type unsafe_erase(const key_type& k) { return Base::erase(k); }
+  iterator unsafe_erase(const_iterator first, const_iterator last) { return Base::erase(first, last); }
+  void erase() { BOOST_STATIC_ASSERT_MSG(0, "For ConcurrentMap, use unsafe_erase instead of erase."); }
+#endif
 
 private:
   /** Serialization function */

@@ -26,21 +26,23 @@
 
 // Automatically use the new Boost timers if version is recent enough.
 #if BOOST_VERSION >= 104800
-#ifndef GTSAM_DISABLE_NEW_TIMERS
-#define GTSAM_USING_NEW_BOOST_TIMERS
-#endif
+#  ifndef GTSAM_DISABLE_NEW_TIMERS
+#    define GTSAM_USING_NEW_BOOST_TIMERS
+#  endif
 #endif
 
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
-#include <boost/timer/timer.hpp>
+#  include <boost/timer/timer.hpp>
 #else
-#include <boost/timer.hpp>
+#  include <boost/timer.hpp>
 #endif
 
-#include <tbb/tick_count.h>
-#undef min
-#undef max
-#undef ERROR
+#ifdef GTSAM_USE_TBB
+#  include <tbb/tick_count.h>
+#  undef min
+#  undef max
+#  undef ERROR
+#endif
 
 namespace gtsam {
 
@@ -71,7 +73,9 @@ namespace gtsam {
       boost::timer timer_;
       gtsam::ValueWithDefault<bool,false> timerActive_;
 #endif
+#ifdef GTSAM_USE_TBB
       tbb::tick_count tbbTimer_;
+#endif
       void add(size_t usecs, size_t usecsWall);
     public:
       TimingOutline(const std::string& label, size_t myId);

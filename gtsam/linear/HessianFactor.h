@@ -24,10 +24,6 @@
 #include <gtsam/linear/GaussianFactor.h>
 
 #include <boost/make_shared.hpp>
-#include <tbb/tbb.h>
-#undef max
-#undef min
-#undef ERROR
 
 namespace gtsam {
 

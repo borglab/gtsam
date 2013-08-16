@@ -35,11 +35,11 @@ namespace gtsam {
  * @addtogroup base
  */
 template<typename VALUE>
-class FastVector: public std::vector<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> {
+class FastVector: public std::vector<VALUE, typename internal::FastDefaultVectorAllocator<VALUE>::type> {
 
 public:
 
-  typedef std::vector<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> Base;
+  typedef std::vector<VALUE, allocator_type> Base;
 
   /** Default constructor */
   FastVector() {}
@@ -60,9 +60,6 @@ public:
       Base::assign(first, last);
   }
 
-  /** Copy constructor from another FastVector */
-  FastVector(const FastVector<VALUE>& x) : Base(x) {}
-
   /** Copy constructor from a FastList */
   FastVector(const FastList<VALUE>& x) {
     if(x.size() > 0)
@@ -79,7 +76,9 @@ public:
   FastVector(const Base& x) : Base(x) {}
 
   /** Copy constructor from a standard STL container */
-  FastVector(const std::vector<VALUE>& x, typename boost::disable_if_c<internal::FastDefaultAllocator<VALUE>::isSTL>::type* = 0) {
+  template<typename ALLOCATOR>
+  FastVector(const std::vector<VALUE, ALLOCATOR>& x)
+  {
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.

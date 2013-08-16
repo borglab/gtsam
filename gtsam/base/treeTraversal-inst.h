@@ -28,9 +28,12 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
-#include <tbb/tbb.h>
-#undef max // TBB seems to include windows.h and we don't want these macros
-#undef min
+#ifdef GTSAM_USE_TBB
+#  include <tbb/tbb.h>
+#  undef max // TBB seems to include windows.h and we don't want these macros
+#  undef min
+#  undef ERROR
+#endif
 
 namespace gtsam {
 
@@ -55,6 +58,9 @@ namespace gtsam {
         template<typename NODE, typename DATA>
         void operator()(const boost::shared_ptr<NODE>& node, const DATA& data) {}
       };
+
+
+#ifdef GTSAM_USE_TBB
 
       // Internal node used in parallel traversal stack
       template<typename NODE, typename DATA>
@@ -172,12 +178,8 @@ namespace gtsam {
         return *new(tbb::task::allocate_root()) RootTask(roots, rootData, visitorPre, visitorPost, problemSizeThreshold);
       }
 
-      /* ************************************************************************* */
-      //template<class NODE, typename DATA>
-      //struct ParallelDFSData {
-      //  DATA myData;
-      //  FastList<ParallelTraversalNode<NODE,DATA> >& 
-      //};
+#endif
+
     }
 
     /** Traverse a forest depth-first with pre-order and post-order visits.
@@ -275,12 +277,16 @@ namespace gtsam {
     void DepthFirstForestParallel(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost,
       int problemSizeThreshold = 10)
     {
+#ifdef GTSAM_USE_TBB
       // Typedefs
       typedef typename FOREST::Node Node;
       typedef boost::shared_ptr<Node> sharedNode;
 
       tbb::task::spawn_root_and_wait(CreateRootTask<Node>(
         forest.roots(), rootData, visitorPre, visitorPost, problemSizeThreshold));
+#else
+      DepthFirstForest(forest, rootData, visitorPre, visitorPost);
+#endif
     }
 
 

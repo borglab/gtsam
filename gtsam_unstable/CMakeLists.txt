@@ -122,7 +122,7 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	endif()
     
     # Macro to handle details of setting up targets
-    wrap_library(gtsam_unstable "${mexFlags}" "./" "gtsam;${TBB_LIBS}")
+    wrap_library(gtsam_unstable "${mexFlags}" "./" "gtsam;${GTSAM_TBB_LIBRARIES}")
 
 endif(GTSAM_INSTALL_MATLAB_TOOLBOX)
 
