@@ -51,7 +51,8 @@ void TimingOutline::add(size_t usecs, size_t usecsWall) {
 
 /* ************************************************************************* */
 TimingOutline::TimingOutline(const std::string& label, size_t myId) :
-   myId_(myId), t_(0), tWall_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), myOrder_(0), lastChildOrder_(0), label_(label)
+   myId_(myId), t_(0), tWall_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0),
+   myOrder_(0), lastChildOrder_(0), label_(label)
 {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   timer_.stop();
@@ -157,6 +158,7 @@ void TimingOutline::ticInternal() {
   timer_.restart();
   *timerActive_ = true;
 #endif
+  tbbTimer_ = tbb::tick_count::now();
 }
 
 /* ************************************************************************* */
@@ -164,7 +166,10 @@ void TimingOutline::tocInternal() {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   assert(!timer_.is_stopped());
   timer_.stop();
-  add((timer_.elapsed().user + timer_.elapsed().system) / 1000, timer_.elapsed().wall / 1000);
+  add((timer_.elapsed().user + timer_.elapsed().system) / 1000,
+    //timer_.elapsed().wall / 1000
+    size_t((tbb::tick_count::now() - tbbTimer_).seconds() * 1e6)
+    );
 #else
   assert(timerActive_);
   double elapsed = timer_.elapsed();

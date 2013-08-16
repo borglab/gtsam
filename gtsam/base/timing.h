@@ -37,6 +37,11 @@
 #include <boost/timer.hpp>
 #endif
 
+#include <tbb/tick_count.h>
+#undef min
+#undef max
+#undef ERROR
+
 namespace gtsam {
 
   namespace internal {
@@ -66,6 +71,7 @@ namespace gtsam {
       boost::timer timer_;
       gtsam::ValueWithDefault<bool,false> timerActive_;
 #endif
+      tbb::tick_count tbbTimer_;
       void add(size_t usecs, size_t usecsWall);
     public:
       TimingOutline(const std::string& label, size_t myId);
