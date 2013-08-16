@@ -18,16 +18,11 @@
 #pragma once
 
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/FastMap.h>
+#include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/global_includes.h>
 
 #include <boost/shared_ptr.hpp>
-
-#include <tbb/concurrent_unordered_map.h>
-#undef min
-#undef max
-#undef ERROR
 
 namespace gtsam {
 
@@ -93,7 +88,7 @@ namespace gtsam {
   class GTSAM_EXPORT VectorValues {
   protected:
     typedef VectorValues This;
-    typedef tbb::concurrent_unordered_map<Key, Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
+    typedef ConcurrentMap<Key, Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
     Values values_; ///< Collection of Vectors making up this VectorValues
 
   public:

@@ -20,6 +20,7 @@
 
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
+#include <gtsam/base/FastMap.h>
 #include <gtsam/linear/GaussianFactor.h>
 
 #include <boost/make_shared.hpp>
@@ -55,7 +56,7 @@ namespace gtsam {
     : slot(_slot), dimension(_dimension) {}
     std::string toString() const;
   };
-  class Scatter : public std::map<Key, SlotEntry, std::less<Key>, tbb::tbb_allocator<std::pair<const Key, SlotEntry> > > {
+  class Scatter : public FastMap<Key, SlotEntry> {
   public:
     Scatter() {}
     Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering = boost::none);
