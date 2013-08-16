@@ -440,6 +440,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_1 )
 
   GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint);
 
+  // TODO: Correct?
   GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph expectedGraph;
@@ -532,6 +533,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
 
   GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint);
 
+  // TODO: correct?
     GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
     NonlinearFactorGraph expectedGraph;
