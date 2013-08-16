@@ -10,13 +10,6 @@
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
-TEST(testSerialization, disabled)
-{
-  CHECK(("*** testSerialization in gtsam_unstable/slam is disabled *** - Needs conversion for unordered", 0));
-}
-
-#if 0
-
 #include <gtsam/slam/serialization.h>
 
 #include <gtsam/geometry/Pose2.h>
@@ -124,8 +117,6 @@ TEST( testSerialization, serialization_file ) {
   EXPECT(assert_equal(values, actValues));
   EXPECT(assert_equal(values, actValuesXML));
 }
-
-#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

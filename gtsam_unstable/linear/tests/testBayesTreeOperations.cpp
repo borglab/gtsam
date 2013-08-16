@@ -277,7 +277,6 @@ TEST( testBayesTreeOperations, liquefy ) {
 
   // Liquefy the tree back into a graph, splitting factors
   {
-    CHECK(("*** liquify fails here *** - does not check for null noiseModel", 0));
     GaussianFactorGraph actGraph = liquefy(bayesTree, true);
     GaussianFactorGraph expGraph;
 

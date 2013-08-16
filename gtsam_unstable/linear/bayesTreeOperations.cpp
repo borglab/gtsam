@@ -55,12 +55,14 @@ GaussianFactorGraph splitFactor(const GaussianFactor::shared_ptr& factor) {
     }
 
     Vector subB = jf->getb().segment(startRow, nrRows);
-    Vector sigmas = jf->get_model()->sigmas().segment(startRow, nrRows);
     SharedDiagonal model;
-    if (jf->get_model()->isConstrained())
-      model = noiseModel::Constrained::MixedSigmas(sigmas);
-    else
-      model = noiseModel::Diagonal::Sigmas(sigmas);
+    if(jf->get_model()) {
+      Vector sigmas = jf->get_model()->sigmas().segment(startRow, nrRows);
+      if (jf->get_model()->isConstrained())
+        model = noiseModel::Constrained::MixedSigmas(sigmas);
+      else
+        model = noiseModel::Diagonal::Sigmas(sigmas);
+    }
 
     // extract matrices from each
     // assemble into new JacobianFactor
