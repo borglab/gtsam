@@ -1730,6 +1730,10 @@ virtual class NonlinearOptimizerParams {
   void setVerbosity(string s);
 };
 
+bool checkConvergence(double relativeErrorTreshold,
+    double absoluteErrorTreshold, double errorThreshold,
+    double currentError, double newError);
+
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 virtual class SuccessiveLinearizationParams : gtsam::NonlinearOptimizerParams {
   SuccessiveLinearizationParams();

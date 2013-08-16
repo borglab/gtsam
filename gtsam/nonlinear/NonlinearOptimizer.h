@@ -251,6 +251,6 @@ protected:
  */
 GTSAM_EXPORT bool checkConvergence(double relativeErrorTreshold,
     double absoluteErrorTreshold, double errorThreshold,
-    double currentError, double newError, NonlinearOptimizerParams::Verbosity verbosity);
+    double currentError, double newError, NonlinearOptimizerParams::Verbosity verbosity = NonlinearOptimizerParams::SILENT);
 
 } // gtsam
