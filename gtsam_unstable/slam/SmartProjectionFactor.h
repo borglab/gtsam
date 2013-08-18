@@ -101,6 +101,17 @@ namespace gtsam {
           measured_(measured),  K_(K),  noise_(model), point_(point), body_P_sensor_(body_P_sensor),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
+    /**
+     * Constructor with exception-handling flags
+     * @param model is the standard deviation (current version assumes that the uncertainty is the same for all views)
+     * @param K shared pointer to the constant calibration
+     */
+    SmartProjectionFactor(const SharedNoiseModel& model, const boost::shared_ptr<CALIBRATION>& K, 
+        boost::optional<LANDMARK> point = boost::none,
+        boost::optional<POSE> body_P_sensor = boost::none) :
+        noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor) {
+    }
+
     /** Virtual destructor */
     virtual ~SmartProjectionFactor() {}
 
@@ -108,6 +119,16 @@ namespace gtsam {
 //    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
 //      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
 //          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
+    /**
+     * add
+     * @param measured is the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
+     * @param poseKey is the index corresponding to the camera observing the same landmark
+     */
+    void add(const Point2 measured, const Key poseKey) {
+      measured_.push_back(measured);
+      keys_.push_back(poseKey);
+    }
 
     /**
      * print
@@ -297,7 +318,7 @@ namespace gtsam {
           Pose3 pose = cameraPoses.at(i);
           PinholeCamera<CALIBRATION> camera(pose, *K_);
           Matrix Hxi, Hli;
-           Vector bi = ( camera.project(*point,Hxi,Hli) - measured_.at(i) ).vector();
+           Vector bi = -( camera.project(*point,Hxi,Hli) - measured_.at(i) ).vector();
 
            noise_-> WhitenSystem(Hxi, Hli, bi);
            f += bi.squaredNorm();

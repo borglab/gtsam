@@ -309,7 +309,6 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
 
 }
 
-
 /* ************************************************************************* */
 TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
@@ -404,6 +403,110 @@ TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
 
 }
 
+/* ************************************************************************* */
+TEST( SmartProjectionFactor, 3poses_iterative_smart_projection_factor ){
+  cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
+
+  Symbol x1('X',  1);
+  Symbol x2('X',  2);
+  Symbol x3('X',  3);
+
+  const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
+
+  std::vector<Key> views;
+  views += x1, x2, x3;
+
+  Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
+
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  SimpleCamera cam1(pose1, *K);
+
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
+  SimpleCamera cam2(pose2, *K);
+
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
+  SimpleCamera cam3(pose3, *K);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(3, 0, 3.0);
+
+  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+
+  // 1. Project three landmarks into three cameras and triangulate
+  Point2 cam1_uv1 = cam1.project(landmark1);
+  Point2 cam2_uv1 = cam2.project(landmark1);
+  Point2 cam3_uv1 = cam3.project(landmark1);
+  measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
+
+  //
+  Point2 cam1_uv2 = cam1.project(landmark2);
+  Point2 cam2_uv2 = cam2.project(landmark2);
+  Point2 cam3_uv2 = cam3.project(landmark2);
+  measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
+
+
+  Point2 cam1_uv3 = cam1.project(landmark3);
+  Point2 cam2_uv3 = cam2.project(landmark3);
+  Point2 cam3_uv3 = cam3.project(landmark3);
+  measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3;
+
+  typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
+
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(noiseProjection, K));
+  smartFactor1->add(cam1_uv1, views[0]);
+  smartFactor1->add(cam2_uv1, views[1]);
+  smartFactor1->add(cam3_uv1, views[2]);
+
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(noiseProjection, K));
+  smartFactor2->add(cam1_uv2, views[0]);
+  smartFactor2->add(cam2_uv2, views[1]);
+  smartFactor2->add(cam3_uv2, views[2]);
+
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(noiseProjection, K));
+  smartFactor3->add(cam1_uv3, views[0]);
+  smartFactor3->add(cam2_uv3, views[1]);
+  smartFactor3->add(cam3_uv3, views[2]);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+
+//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  // initialize third pose with some noise, we expect it to move back to original pose3
+  values.insert(x3, pose3*noise_pose);
+  values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+
+  LevenbergMarquardtParams params;
+  params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+  params.verbosity = NonlinearOptimizerParams::ERROR;
+
+  Values result;
+  gttic_(SmartProjectionFactor);
+  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  result = optimizer.optimize();
+  gttoc_(SmartProjectionFactor);
+  tictoc_finishedIteration_();
+
+  // result.print("results of 3 camera, 3 landmark optimization \n");
+  result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  tictoc_print_();
+
+}
 
 /* ************************************************************************* */
 TEST( SmartProjectionFactor, 3poses_projection_factor ){
