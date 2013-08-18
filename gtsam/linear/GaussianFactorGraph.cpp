@@ -80,11 +80,10 @@ namespace gtsam {
       JacobianFactor::shared_ptr jacobianFactor(
           boost::dynamic_pointer_cast<JacobianFactor>(factor));
       if (!jacobianFactor) {
-        //TODO : re-enable
-        //HessianFactor::shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
-        //if (hessian)
-        //  jacobianFactor.reset(new JacobianFactor(*hessian));
-        //else
+        HessianFactor::shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
+        if (hessian)
+          jacobianFactor.reset(new JacobianFactor(*hessian));
+        else
           throw invalid_argument(
               "GaussianFactorGraph contains a factor that is neither a JacobianFactor nor a HessianFactor.");
       }

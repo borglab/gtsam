@@ -28,7 +28,7 @@
 namespace gtsam {
 
   // Forward declarations
-  //class HessianFactor;
+  class HessianFactor;
   class VariableSlots;
   class GaussianFactorGraph;
   class GaussianConditional;
@@ -138,9 +138,6 @@ namespace gtsam {
     template<typename KEYS>
     JacobianFactor(
       const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas = SharedDiagonal());
-    
-    /** Convert from a HessianFactor (does Cholesky) */
-    //JacobianFactor(const HessianFactor& factor);
 
     /**
      * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots

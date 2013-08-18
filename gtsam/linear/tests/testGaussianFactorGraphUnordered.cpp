@@ -143,16 +143,16 @@ TEST(GaussianFactorGraph, matrices) {
   Vector expectedeta = expectedA.transpose() * expectedb;
 
   Matrix actualJacobian = gfg.augmentedJacobian();
-  //Matrix actualHessian = gfg.augmentedHessian();
+  Matrix actualHessian = gfg.augmentedHessian();
   Matrix actualA; Vector actualb; boost::tie(actualA,actualb) = gfg.jacobian();
-  //Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
+  Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
 
   EXPECT(assert_equal(expectedJacobian, actualJacobian));
-  //EXPECT(assert_equal(expectedHessian, actualHessian));
+  EXPECT(assert_equal(expectedHessian, actualHessian));
   EXPECT(assert_equal(expectedA, actualA));
   EXPECT(assert_equal(expectedb, actualb));
-  //EXPECT(assert_equal(expectedL, actualL));
-  //EXPECT(assert_equal(expectedeta, actualeta));
+  EXPECT(assert_equal(expectedL, actualL));
+  EXPECT(assert_equal(expectedeta, actualeta));
 }
 
 /* ************************************************************************* */

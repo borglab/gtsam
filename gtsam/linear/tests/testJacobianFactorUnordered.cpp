@@ -125,25 +125,25 @@ TEST(JacobianFactor, constructors_and_accessors)
 }
 
 /* ************************************************************************* */
-//TEST(JabobianFactor, Hessian_conversion) {
-//  HessianFactor hessian(0, (Matrix(4,4) <<
-//        1.57,        2.695,         -1.1,        -2.35,
-//       2.695,      11.3125,        -0.65,      -10.225,
-//        -1.1,        -0.65,            1,          0.5,
-//       -2.35,      -10.225,          0.5,         9.25).finished(),
-//      (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
-//      73.1725);
-//
-//  JacobianFactor expected(0, (Matrix(2,4) <<
-//      1.2530,   2.1508,   -0.8779,  -1.8755,
-//           0,   2.5858,    0.4789,  -2.3943).finished(),
-//      (Vector(2) << -6.2929, -5.7941).finished(),
-//      noiseModel::Unit::Create(2));
-//
-//  JacobianFactor actual(hessian);
-//
-//  EXPECT(assert_equal(expected, actual, 1e-3));
-//}
+TEST(JabobianFactor, Hessian_conversion) {
+  HessianFactor hessian(0, (Matrix(4,4) <<
+        1.57,        2.695,         -1.1,        -2.35,
+       2.695,      11.3125,        -0.65,      -10.225,
+        -1.1,        -0.65,            1,          0.5,
+       -2.35,      -10.225,          0.5,         9.25).finished(),
+      (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
+      73.1725);
+
+  JacobianFactor expected(0, (Matrix(2,4) <<
+      1.2530,   2.1508,   -0.8779,  -1.8755,
+           0,   2.5858,    0.4789,  -2.3943).finished(),
+      (Vector(2) << -6.2929, -5.7941).finished(),
+      noiseModel::Unit::Create(2));
+
+  JacobianFactor actual(hessian);
+
+  EXPECT(assert_equal(expected, actual, 1e-3));
+}
 
 /* ************************************************************************* */
 TEST( JacobianFactor, construct_from_graph)
@@ -458,18 +458,6 @@ TEST(JacobianFactor, EliminateQR)
   EXPECT(assert_equal(Matrix(R.block(6, 8, 4, 2)), actualJF.getA(actualJF.begin()+1), 0.001));
   EXPECT(assert_equal(Vector(R.col(10).segment(6, 4)), actualJF.getb(), 0.001));
   EXPECT(!actualJF.get_model());
-
-  // Eliminate (3 frontal variables, 6 scalar columns) using Cholesky !!!!
-  // TODO: HessianFactor
-  //GaussianBayesNet actualFragment_Chol = *actualFactor_Chol.eliminate(3, JacobianFactor::SOLVE_CHOLESKY);
-  //EXPECT(assert_equal(expectedFragment, actualFragment_Chol, 0.001));
-  //EXPECT(assert_equal(size_t(2), actualFactor_Chol.keys().size()));
-  //EXPECT(assert_equal(Index(9), actualFactor_Chol.keys()[0]));
-  //EXPECT(assert_equal(Index(11), actualFactor_Chol.keys()[1]));
-  //EXPECT(assert_equal(Ae1, actualFactor_Chol.getA(actualFactor_Chol.begin()), 0.001)); ////
-  //EXPECT(linear_dependent(Ae2, actualFactor_Chol.getA(actualFactor_Chol.begin()+1), 0.001));
-  //EXPECT(assert_equal(be, actualFactor_Chol.getb(), 0.001)); ////
-  //EXPECT(assert_equal(ones(4), actualFactor_Chol.get_sigmas(), 0.001));
 }
 
 /* ************************************************************************* */
