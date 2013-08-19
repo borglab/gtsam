@@ -124,7 +124,7 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta)
 /* ************************************************************************* */
 TEST( CombinedImuFactor, PreintegratedMeasurements )
 {
-  cout << "++++++++++++++++++++++++++++++ PreintegratedMeasurements +++++++++++++++++++++++++++++++++++++++ " << endl;
+  //cout << "++++++++++++++++++++++++++++++ PreintegratedMeasurements +++++++++++++++++++++++++++++++++++++++ " << endl;
   // Linearization point
   imuBias::ConstantBias bias(Vector3(0,0,0), Vector3(0,0,0)); ///< Current estimate of acceleration and angular rate biases
 
@@ -163,7 +163,7 @@ TEST( CombinedImuFactor, PreintegratedMeasurements )
 /* ************************************************************************* */
 TEST( CombinedImuFactor, ErrorWithBiases )
 {
-  cout << "++++++++++++++++++++++++++++++ ErrorWithBiases +++++++++++++++++++++++++++++++++++++++ " << endl;
+  //cout << "++++++++++++++++++++++++++++++ ErrorWithBiases +++++++++++++++++++++++++++++++++++++++ " << endl;
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   imuBias::ConstantBias bias2(Vector3(0.2, 0.2, 0), Vector3(1, 0, 0.3)); // Biases (acc, rot)
@@ -237,7 +237,7 @@ TEST( CombinedImuFactor, ErrorWithBiases )
 /* ************************************************************************* */
 TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements )
 {
-  cout << "++++++++++++++++++++++++++++++ FirstOrderPreIntegratedMeasurements +++++++++++++++++++++++++++++++++++++++ " << endl;
+  //cout << "++++++++++++++++++++++++++++++ FirstOrderPreIntegratedMeasurements +++++++++++++++++++++++++++++++++++++++ " << endl;
   // Linearization point
   imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
 
