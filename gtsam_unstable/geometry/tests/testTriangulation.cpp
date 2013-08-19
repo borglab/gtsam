@@ -89,10 +89,47 @@ TEST( triangulation, twoPoses) {
   poses += level_pose180;
   measurements += Point2(400,400);
 
-  boost::optional<Point3> triangulated_4cameras = triangulatePoint3(poses, measurements, K);
-  EXPECT(boost::none == triangulated_4cameras);
-
+  CHECK_EXCEPTION(triangulatePoint3(poses, measurements, K), TriangulationCheiralityException);
 }
+
+/* ************************************************************************* */
+TEST( triangulation, twoIdenticalPoses) {
+  Cal3_S2 K(1500, 1200, 0, 640, 480);
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  SimpleCamera level_camera(level_pose, K);
+
+  // landmark ~5 meters infront of camera
+  Point3 landmark(5, 0.5, 1.2);
+
+  // 1. Project two landmarks into two cameras and triangulate
+  Point2 level_uv = level_camera.project(landmark);
+
+  vector<Pose3> poses;
+  vector<Point2> measurements;
+
+  poses += level_pose, level_pose;
+  measurements += level_uv, level_uv;
+
+  CHECK_EXCEPTION(triangulatePoint3(poses, measurements, K), TriangulationUnderconstrainedException);
+}
+
+/* ************************************************************************* */
+TEST( triangulation, onePose) {
+  // we expect this test to fail with a TriangulationUnderconstrainedException
+  // because there's only one camera observation
+
+  Cal3_S2 K(1500, 1200, 0, 640, 480);
+
+  vector<Pose3> poses;
+  vector<Point2> measurements;
+
+  poses += Pose3();
+  measurements += Point2();
+
+  CHECK_EXCEPTION(triangulatePoint3(poses, measurements, K), TriangulationUnderconstrainedException);
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

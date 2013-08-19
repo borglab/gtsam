@@ -29,7 +29,7 @@ namespace gtsam {
 /* ************************************************************************* */
 // See Hartley and Zisserman, 2nd Ed., page 312
 Point3 triangulateDLT(const vector<Matrix>& projection_matrices,
-    const vector<Point2>& measurements) {
+    const vector<Point2>& measurements, double rank_tol) {
 
   Matrix A = Matrix_(projection_matrices.size() *2, 4);
 
@@ -45,18 +45,22 @@ Point3 triangulateDLT(const vector<Matrix>& projection_matrices,
   int rank;
   double error;
   Vector v;
-  boost::tie(rank, error, v) = DLT(A);
+  boost::tie(rank, error, v) = DLT(A, rank_tol);
+
+  if(rank < 3)
+    throw(TriangulationUnderconstrainedException());
+
   return Point3(sub( (v / v(3)),0,3));
 }
 
 /* ************************************************************************* */
-boost::optional<Point3> triangulatePoint3(const vector<Pose3>& poses,
-    const vector<Point2>& measurements, const Cal3_S2& K) {
+Point3 triangulatePoint3(const vector<Pose3>& poses,
+    const vector<Point2>& measurements, const Cal3_S2& K, double rank_tol) {
 
   assert(poses.size() == measurements.size());
 
   if(poses.size() < 2)
-    return boost::none;
+    throw(TriangulationUnderconstrainedException());
 
   vector<Matrix> projection_matrices;
 
@@ -64,13 +68,13 @@ boost::optional<Point3> triangulatePoint3(const vector<Pose3>& poses,
   BOOST_FOREACH(const Pose3& pose, poses)
     projection_matrices += K.matrix() * sub(pose.inverse().matrix(),0,3,0,4);
 
-  Point3 triangulated_point = triangulateDLT(projection_matrices, measurements);
+  Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // verify that the triangulated point lies infront of all cameras
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(triangulated_point);
     if(p_local.z() <= 0)
-      return boost::none;
+      throw(TriangulationCheiralityException());
   }
 
   return triangulated_point;

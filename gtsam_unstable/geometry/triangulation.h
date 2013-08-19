@@ -26,6 +26,23 @@
 
 namespace gtsam {
 
+/// Exception thrown by triangulateDLT when SVD returns rank < 3
+class GTSAM_UNSTABLE_EXPORT TriangulationUnderconstrainedException: public std::runtime_error {
+public:
+  TriangulationUnderconstrainedException() :
+      std::runtime_error("Triangulation Underconstrained Exception.") {
+  }
+};
+
+/// Exception thrown by triangulateDLT when SVD returns rank < 3
+class GTSAM_UNSTABLE_EXPORT TriangulationCheiralityException: public std::runtime_error {
+public:
+  TriangulationCheiralityException() :
+      std::runtime_error(
+          "Triangulation Cheirality Exception: The resulting landmark is behind one or more cameras.") {
+  }
+};
+
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
  * of poses (at least 2) using the DLT. The function checks that the
@@ -34,10 +51,12 @@ namespace gtsam {
  * @param poses A vector of camera poses
  * @param measurements A vector of camera measurements
  * @param K The camera calibration
+ * @param rank tolerance, default 1e-9
  * @return Returns a Point3 on success, boost::none otherwise.
  */
-GTSAM_UNSTABLE_EXPORT boost::optional<Point3> triangulatePoint3(const std::vector<Pose3>& poses,
-    const std::vector<Point2>& measurements, const Cal3_S2& K);
+GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
+    const std::vector<Point2>& measurements, const Cal3_S2& K, double rank_tol =
+        1e-9);
 
 
 } // \namespace gtsam
