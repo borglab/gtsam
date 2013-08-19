@@ -9,7 +9,7 @@ ${gtsam_unstable-default})
 
 # Exclude tests that don't work
 set (nonlinear_excluded_tests #"")
-"${CMAKE_CURRENT_SOURCE_DIR}/tests/testConcurrentIncrementalFilter.cpp" 
+#"${CMAKE_CURRENT_SOURCE_DIR}/tests/testConcurrentIncrementalFilter.cpp" 
 #"${CMAKE_CURRENT_SOURCE_DIR}/tests/testIncrementalFixedLagSmoother.cpp"
 )
 

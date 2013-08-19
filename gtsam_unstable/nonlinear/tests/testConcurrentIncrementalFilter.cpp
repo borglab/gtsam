@@ -31,6 +31,9 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <tbb/tbb.h>
+tbb::task_scheduler_init init(1);
+
 using namespace std;
 using namespace gtsam;
 
@@ -105,10 +108,6 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
     LinearContainerForGaussianMarginals.push_back(LinearContainerFactor(factor, linPoint));
   }
 
-  NonlinearFactorGraph LinearContainerForGaussianMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal.second) {
-    LinearContainerForGaussianMarginals.push_back(LinearContainerFactor(factor, ordering, linPoint));
-  }
   return LinearContainerForGaussianMarginals;
 }
 
@@ -431,16 +430,8 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_1 )
   partialGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   partialGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
 
-  Values partialValues;
-  // ISAM2 after the update is computing the delta, without applying them to the current lin point
-  partialValues.insert(1, newValues.at(1));
-  partialValues.insert(2, newValues.at(2));
-  partialValues.insert(3, newValues.at(3));
+  GaussianFactorGraph linearGraph = *partialGraph.linearize(newValues);
 
-
-  GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint);
-
-  // TODO: Correct?
   GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph expectedGraph;
@@ -523,17 +514,8 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
   partialGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   partialGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
 
-  Values partialValues;
-  // ISAM2 after the update is computing the delta, without applying them to the current lin point
-  partialValues.insert(1, optimalValues.at(1));
-  partialValues.insert(2, optimalValues.at(2));
-  partialValues.insert(3, optimalValues.at(3));
+  GaussianFactorGraph linearGraph = *partialGraph.linearize(newValues);
 
-
-
-  GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint);
-
-  // TODO: correct?
     GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
     NonlinearFactorGraph expectedGraph;
