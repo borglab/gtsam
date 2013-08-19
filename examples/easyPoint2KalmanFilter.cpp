@@ -39,10 +39,11 @@ int main() {
   Point2 x_initial(0.0, 0.0);
   SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
 
+  // Create Key for initial pose
+  Symbol x0('x',0);
+
   // Create an ExtendedKalmanFilter object
-  ExtendedKalmanFilter<Point2> ekf(x_initial, P_initial);
-
-
+  ExtendedKalmanFilter<Point2> ekf(x0, x_initial, P_initial);
 
   // Now predict the state at t=1, i.e. argmax_{x1} P(x1) = P(x1|x0) P(x0)
   // In Kalman Filter notation, this is x_{t+1|t} and P_{t+1|t}
@@ -60,8 +61,8 @@ int main() {
   SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1), true);
 
   // This simple motion can be modeled with a BetweenFactor
-  // Create Keys
-  Symbol x0('x',0), x1('x',1);
+  // Create Key for next pose
+  Symbol x1('x',1);
   // Predict delta based on controls
   Point2 difference(1,0);
   // Create Factor

@@ -9,7 +9,6 @@ set (excluded_examples #"")
     "${CMAKE_CURRENT_SOURCE_DIR}/DiscreteBayesNet_FG.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/UGM_chain.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/UGM_small.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/easyPoint2KalmanFilter.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/elaboratePoint2KalmanFilter.cpp"
 )
 
