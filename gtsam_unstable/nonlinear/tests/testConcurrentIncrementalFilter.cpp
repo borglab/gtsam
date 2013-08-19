@@ -31,9 +31,6 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <tbb/tbb.h>
-tbb::task_scheduler_init init(1);
-
 using namespace std;
 using namespace gtsam;
 
@@ -514,7 +511,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
   partialGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   partialGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
 
-  GaussianFactorGraph linearGraph = *partialGraph.linearize(newValues);
+  GaussianFactorGraph linearGraph = *partialGraph.linearize(optimalValues);
 
     GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
