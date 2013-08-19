@@ -16,7 +16,7 @@
  * @author: Richard Roberts
  */
 
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 #include <boost/mpl/char.hpp>
 #include <boost/format.hpp>

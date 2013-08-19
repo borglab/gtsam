@@ -19,7 +19,7 @@
 #include <gtsam/slam/RangeFactor.h>
 #include <gtsam/slam/StereoFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/base/LieVector.h>

@@ -19,7 +19,7 @@
 
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/symbolic/SymbolicBayesNet.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
 
 #include <boost/assign/list_of.hpp>

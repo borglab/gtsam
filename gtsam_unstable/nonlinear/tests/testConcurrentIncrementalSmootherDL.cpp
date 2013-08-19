@@ -24,7 +24,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/JunctionTree.h>

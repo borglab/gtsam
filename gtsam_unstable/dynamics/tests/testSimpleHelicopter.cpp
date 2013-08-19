@@ -5,7 +5,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 
 /* ************************************************************************* */

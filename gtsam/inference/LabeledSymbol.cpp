@@ -26,7 +26,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include <gtsam/nonlinear/LabeledSymbol.h>
+#include <gtsam/inference/LabeledSymbol.h>
 
 namespace gtsam {
 

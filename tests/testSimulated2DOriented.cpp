@@ -18,7 +18,7 @@
 
 #include <tests/simulated2D.h>
 #include <tests/simulated2DOriented.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 

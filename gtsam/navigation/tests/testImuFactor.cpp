@@ -17,7 +17,7 @@
 
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/LieVector.h>

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
 

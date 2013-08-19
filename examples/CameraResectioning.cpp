@@ -16,7 +16,7 @@
  * @date    Aug 23, 2011
  */
 
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/SimpleCamera.h>
 #include <boost/make_shared.hpp>

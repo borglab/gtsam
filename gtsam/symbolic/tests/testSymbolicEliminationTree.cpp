@@ -23,7 +23,7 @@
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/symbolic/SymbolicEliminationTree.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 #include "symbolicExampleGraphs.h"
 

@@ -19,7 +19,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 // for all nonlinear keys
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 // for points and poses
 #include <gtsam/geometry/Point2.h>

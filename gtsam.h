@@ -1456,7 +1456,7 @@ class KalmanFilter {
 // nonlinear
 //*************************************************************************
 
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
@@ -1465,7 +1465,7 @@ size_t symbolIndex(size_t key);
 void printKeySet(const gtsam::KeySet& keys);
 void printKeySet(const gtsam::KeySet& keys, string s);
 
-#include <gtsam/nonlinear/LabeledSymbol.h>
+#include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {
   LabeledSymbol(size_t full_key);
   LabeledSymbol(const gtsam::LabeledSymbol& key);

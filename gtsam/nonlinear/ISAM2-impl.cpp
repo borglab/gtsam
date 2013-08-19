@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/nonlinear/ISAM2-impl.h>
-#include <gtsam/nonlinear/Symbol.h> // for selective linearization thresholds
+#include <gtsam/inference/Symbol.h> // for selective linearization thresholds
 #include <gtsam/base/debug.h>
 #include <functional>
 #include <boost/range/adaptors.hpp>

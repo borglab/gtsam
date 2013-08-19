@@ -10,7 +10,7 @@
 #include <gtsam/nonlinear/NonlinearISAM.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/geometry/Pose2.h>
 

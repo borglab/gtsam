@@ -20,7 +20,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/types.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
 

@@ -32,7 +32,7 @@ using namespace boost::assign;
 #include <tests/smallExample.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 using namespace gtsam;
 using namespace example;

@@ -24,7 +24,7 @@
 
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/Sampler.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>

@@ -20,7 +20,7 @@
 #include <gtsam/slam/RangeFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/VectorValues.h>

@@ -22,7 +22,7 @@
 // Each variable in the system (poses and landmarks) must be identified with a unique key.
 // We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
 // Here we will use Symbols
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 // We want to use iSAM2 to solve the range-SLAM problem incrementally
 #include <gtsam/nonlinear/ISAM2.h>

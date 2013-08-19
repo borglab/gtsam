@@ -19,7 +19,7 @@
 
 #include <tests/smallExample.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/base/numericalDerivative.h>

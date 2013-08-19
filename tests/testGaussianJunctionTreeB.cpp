@@ -26,7 +26,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/geometry/Pose2.h>

@@ -17,7 +17,7 @@
  */
 
 #include <gtsam_unstable/slam/PosePriorFactor.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>

@@ -23,7 +23,7 @@
 #include <boost/foreach.hpp>
 
 #include <gtsam/inference/Key.h>
-#include <gtsam/nonlinear/LabeledSymbol.h>
+#include <gtsam/inference/LabeledSymbol.h>
 
 namespace gtsam {
 

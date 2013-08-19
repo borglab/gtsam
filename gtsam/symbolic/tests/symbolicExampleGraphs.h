@@ -25,7 +25,7 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/inference/Ordering.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <boost/assign/list_of.hpp>
 
 namespace gtsam {

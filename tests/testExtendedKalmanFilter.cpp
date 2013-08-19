@@ -18,7 +18,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Point2.h>
 
 #include <CppUnitLite/TestHarness.h>

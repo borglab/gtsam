@@ -20,7 +20,7 @@
 #if 0
 
 #include <tests/smallExample.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/iterative.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
