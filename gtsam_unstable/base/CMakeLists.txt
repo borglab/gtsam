@@ -2,11 +2,6 @@
 file(GLOB base_headers "*.h")
 install(FILES ${base_headers} DESTINATION include/gtsam_unstable/base)
 
-# Components to link tests in this subfolder against
-set(base_local_libs 
-    base
-    base_unstable)
-
 set (base_full_libs
     ${gtsam-default}
     ${gtsam_unstable-default})
@@ -15,5 +10,5 @@ set (base_full_libs
 set (base_excluded_tests "")
 
 # Add all tests
-gtsam_add_subdir_tests(base_unstable "${base_local_libs}" "${base_full_libs}" "${base_excluded_tests}") 
+gtsam_add_subdir_tests(base_unstable "${base_full_libs}" "${base_full_libs}" "${base_excluded_tests}") 
 add_dependencies(check.unstable check.base_unstable)

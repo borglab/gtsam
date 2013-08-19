@@ -2,15 +2,6 @@
 file(GLOB discrete_headers "*.h")
 install(FILES ${discrete_headers} DESTINATION include/gtsam_unstable/discrete)
 
-# Components to link tests in this subfolder against
-set(discrete_local_libs 
-   discrete_unstable
-   discrete
-   inference
-   base
-   ccolamd
-)
-
 set (discrete_full_libs
     ${gtsam-default}
     ${gtsam_unstable-default})
@@ -22,7 +13,7 @@ set (discrete_full_libs
 
 
 # Add all tests
-gtsam_add_subdir_tests(discrete_unstable "${discrete_local_libs}" "${discrete_full_libs}" "${discrete_excluded_tests}") 
+gtsam_add_subdir_tests(discrete_unstable "${discrete_full_libs}" "${discrete_full_libs}" "${discrete_excluded_tests}") 
 add_dependencies(check.unstable check.discrete_unstable)
 
 # List examples to build - comment out here to exclude from compilation

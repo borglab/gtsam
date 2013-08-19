@@ -25,10 +25,6 @@ set (3rdparty_srcs
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd_global.c
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/UFconfig/UFconfig.c)
 gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
-if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
-    message(STATUS "Building Convenience Library: ccolamd")
-    add_library(ccolamd STATIC ${3rdparty_srcs})
-endif()
 
 # To exclude a source from the library build (in any subfolder)
 # Add the full name to this list, as in the following example
@@ -61,10 +57,6 @@ foreach(subdir ${gtsam_subdirs})
     set(subdir_srcs ${subdir_cpp_srcs} ${subdir_headers}) # Include header files so they show up in Visual Studio
     gtsam_assign_source_folders("${subdir_srcs}") # Create MSVC structure
     set(${subdir}_srcs ${subdir_srcs})
-    if (GTSAM_BUILD_CONVENIENCE_LIBRARIES AND (subdir_cpp_srcs)) # Only build convenience library if sources exist
-        message(STATUS "Building Convenience Library: ${subdir}")
-        add_library(${subdir} STATIC ${subdir_srcs})
-    endif()
 
     # Build local library and tests
     message(STATUS "Building ${subdir}") 

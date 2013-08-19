@@ -33,10 +33,6 @@ foreach(subdir ${gtsam_unstable_subdirs})
     list(REMOVE_ITEM subdir_headers ${excluded_headers})
     set(${subdir}_srcs ${subdir_srcs} ${subdir_headers})
     gtsam_assign_source_folders("${${subdir}_srcs}") # Create MSVC structure
-    if (subdir_srcs AND GTSAM_BUILD_CONVENIENCE_LIBRARIES)
-        message(STATUS "Building Convenience Library: ${subdir}_unstable")
-        add_library("${subdir}_unstable" STATIC ${${subdir}_srcs})
-    endif()
 
     # Build local library and tests
     message(STATUS "Building ${subdir}_unstable") 
