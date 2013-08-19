@@ -39,11 +39,11 @@ public:
   typedef boost::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
 
   /** default constructor */
-  IncrementalFixedLagSmoother(double smootherLag = 0.0, const ISAM2Params& parameters = ISAM2Params()) :
-    FixedLagSmoother(smootherLag), isam_(parameters) { };
+  IncrementalFixedLagSmoother(double smootherLag = 0.0, const ISAM2Params& parameters = ISAM2Params())
+  : FixedLagSmoother(smootherLag), isam_(parameters) {}
 
   /** destructor */
-  virtual ~IncrementalFixedLagSmoother() { };
+  virtual ~IncrementalFixedLagSmoother() {}
 
   /** Print the factor for debugging and testing (implementing Testable) */
   virtual void print(const std::string& s = "IncrementalFixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;

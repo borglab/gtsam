@@ -49,7 +49,7 @@
 #include <gtsam/nonlinear/Values.h>
 
 // We will use simple integer Keys to uniquely identify each robot pose.
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 
 // We will use Pose2 variables (x, y, theta) to represent the robot positions
 #include <gtsam/geometry/Pose2.h>
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
   Key priorKey = 0;
-  newFactors.add(PriorFactor<Pose2>(priorKey, priorMean, priorNoise));
+  newFactors.push_back(PriorFactor<Pose2>(priorKey, priorMean, priorNoise));
   newValues.insert(priorKey, priorMean); // Initialize the first pose at the mean of the prior
   newTimestamps[priorKey] = 0.0; // Set the timestamp associated with this key to 0.0 seconds;
 
@@ -111,11 +111,11 @@ int main(int argc, char** argv) {
     // Add odometry factors from two different sources with different error stats
     Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
     noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, 0.05));
-    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
+    newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
 
     Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
     noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 0.05));
-    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
+    newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
     // requires the user to supply the specify which keys to move to the smoother
@@ -190,11 +190,11 @@ int main(int argc, char** argv) {
     // Add odometry factors from two different sources with different error stats
     Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
     noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, 0.05));
-    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
+    newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
 
     Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
     noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 0.05));
-    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
+    newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
     // requires the user to supply the specify which keys to marginalize
@@ -263,11 +263,11 @@ int main(int argc, char** argv) {
     // Add odometry factors from two different sources with different error stats
     Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
     noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, 0.05));
-    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
+    newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
 
     Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
     noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 0.05));
-    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
+    newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
     // requires the user to supply the specify which keys to marginalize

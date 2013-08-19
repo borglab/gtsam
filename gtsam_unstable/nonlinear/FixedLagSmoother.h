@@ -61,10 +61,10 @@ public:
 
 
   /** default constructor */
-  FixedLagSmoother(double smootherLag = 0.0) : smootherLag_(smootherLag) { };
+  FixedLagSmoother(double smootherLag = 0.0) : smootherLag_(smootherLag) { }
 
   /** destructor */
-  virtual ~FixedLagSmoother() { };
+  virtual ~FixedLagSmoother() { }
 
   /** Print the factor for debugging and testing (implementing Testable) */
   virtual void print(const std::string& s = "FixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;

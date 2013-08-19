@@ -399,8 +399,8 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_1 )
   Ordering ordering;
   ordering.push_back(1);
   ordering.push_back(2);
-  filterSumarization.push_back(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues, ordering), ordering, filterSeparatorValues));
-  filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues, ordering), ordering, filterSeparatorValues));
+  filterSumarization.push_back(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues), filterSeparatorValues));
+  filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues), filterSeparatorValues));
 
   // Create expected values: the smoother output will be empty for this case
   NonlinearFactorGraph expectedSmootherSummarization;
@@ -582,16 +582,14 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
 //  GaussianBayesNet::shared_ptr GBNsptr = GSS.eliminate();
 
   FastSet<Index> allkeys = LinFactorGraph->keys();
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
-    Index index = ordering.at(key_value.key);
-    allkeys.erase(index);
-  }
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues)
+    allkeys.erase(key_value.key);
   std::vector<Index> variables(allkeys.begin(), allkeys.end());
-  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = LinFactorGraph->eliminate(variables, EliminateCholesky);
+  std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
-    expectedSmootherSummarization.push_back(LinearContainerFactor(factor, ordering, allValues));
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, *result.second) {
+    expectedSmootherSummarization.push_back(LinearContainerFactor(factor, allValues));
   }
 
   CHECK(assert_equal(expectedSmootherSummarization, actualSmootherSummarization, 1e-6));

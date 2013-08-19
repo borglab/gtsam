@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
   // Add prior on first pose
   Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120, -2.02108900000000);
   NonlinearFactorGraph newFactors;
-  newFactors.add(PriorFactor<Pose2>(0, pose0, priorNoise));
+  newFactors.push_back(PriorFactor<Pose2>(0, pose0, priorNoise));
 
   //  initialize points (Gaussian)
   Values initial;
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
     boost::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
-    newFactors.add(
+    newFactors.push_back(
         BetweenFactor<Pose2>(i - 1, i, odometry,
             NM::Diagonal::Sigmas(odoSigmas)));
 
@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
       // Throw out obvious outliers based on current landmark estimates
       Vector error = factor.unwhitenedError(landmarkEstimates);
       if (k <= 200 || fabs(error[0]) < 5)
-        newFactors.add(factor);
+        newFactors.push_back(factor);
       k = k + 1;
       countK = countK + 1;
     }

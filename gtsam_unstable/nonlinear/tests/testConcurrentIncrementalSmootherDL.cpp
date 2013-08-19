@@ -23,10 +23,10 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -463,7 +463,7 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_2 )
   filterSeparatorValues.insert(1, Pose3().compose(poseError));
   filterSeparatorValues.insert(2, filterSeparatorValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
   filterSumarization.push_back(LinearContainerFactor(PriorFactor<Pose3>(1, poseInitial, noisePrior).linearize(filterSeparatorValues), filterSeparatorValues));
-  filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues,), filterSeparatorValues));
+  filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues), filterSeparatorValues));
   smootherFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
   smootherFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   smootherValues.insert(3, filterSeparatorValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
@@ -573,23 +573,21 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_3 )
   // Check the optimized value of smoother state
   NonlinearFactorGraph allFactors = smootherFactors;
   Values allValues = smoother.getLinearizationPoint();
-  ordering = smoother.getOrdering();  // I'm really hoping this is an acceptable ordering...
 
-  GaussianFactorGraph::shared_ptr LinFactorGraph = allFactors.linearize(allValues, ordering);
+  GaussianFactorGraph::shared_ptr LinFactorGraph = allFactors.linearize(allValues);
 //  GaussianSequentialSolver GSS = GaussianSequentialSolver(*LinFactorGraph);
 //  GaussianBayesNet::shared_ptr GBNsptr = GSS.eliminate();
 
   FastSet<Index> allkeys = LinFactorGraph->keys();
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
-    Index index = ordering.at(key_value.key);
-    allkeys.erase(index);
+    allkeys.erase(key_value.key);
   }
   std::vector<Index> variables(allkeys.begin(), allkeys.end());
-  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = LinFactorGraph->eliminate(variables, EliminateCholesky);
+  std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
-    expectedSmootherSummarization.push_back(LinearContainerFactor(factor, ordering, allValues));
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, *result.second) {
+    expectedSmootherSummarization.push_back(LinearContainerFactor(factor, allValues));
   }
 
   CHECK(assert_equal(expectedSmootherSummarization, actualSmootherSummarization, 1e-6));
