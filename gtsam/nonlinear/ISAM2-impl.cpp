@@ -195,9 +195,15 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta,
   assert(values.size() == delta.size());
   Values::iterator key_value;
   VectorValues::const_iterator key_delta;
+#ifdef GTSAM_USE_TBB
+  for(key_value = values.begin(); key_value != values.end(); ++key_value)
+  {
+    key_delta = delta.find(key_value->key);
+#else
   for(key_value = values.begin(), key_delta = delta.begin(); key_value != values.end(); ++key_value, ++key_delta)
   {
     assert(key_value->key == key_delta->first);
+#endif
     Key var = key_value->key;
     assert(delta[var].size() == (int)key_value->value.dim());
     assert(delta[var].allFinite());

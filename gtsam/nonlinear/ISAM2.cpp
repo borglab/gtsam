@@ -473,9 +473,11 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
     }
 
     // Remove unaffected keys from the constraints
-    for(FastMap<Key,int>::iterator iter = constraintGroups.begin(); iter != constraintGroups.end(); ++iter) {
+    for(FastMap<Key,int>::iterator iter = constraintGroups.begin(); iter != constraintGroups.end(); /*Incremented in loop ++iter*/) {
       if(unusedIndices.exists(iter->first) || !affectedKeysSet->exists(iter->first))
-        constraintGroups.erase(iter);
+        constraintGroups.erase(iter ++);
+      else
+        ++ iter;
     }
     gttoc(ordering_constraints);
 
