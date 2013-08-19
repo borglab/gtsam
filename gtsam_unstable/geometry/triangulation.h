@@ -34,7 +34,7 @@ public:
   }
 };
 
-/// Exception thrown by triangulateDLT when SVD returns rank < 3
+/// Exception thrown by triangulateDLT when landmark is behind one or more of the cameras
 class GTSAM_UNSTABLE_EXPORT TriangulationCheiralityException: public std::runtime_error {
 public:
   TriangulationCheiralityException() :
