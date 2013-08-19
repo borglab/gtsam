@@ -63,6 +63,11 @@ namespace gtsam {
   Rot3::Rot3(const Quaternion& q) : quaternion_(q) {}
 
   /* ************************************************************************* */
+  void Rot3::print(const std::string& s) const {
+    gtsam::print((Matrix)matrix(), s);
+  }
+
+  /* ************************************************************************* */
   Rot3 Rot3::Rx(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX())); }
 
   /* ************************************************************************* */
