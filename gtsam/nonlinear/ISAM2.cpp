@@ -762,7 +762,8 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
 
   // Keep track of marginal factors - map from clique to the marginal factors
   // that should be incorporated into it, passed up from it's children.
-  multimap<sharedClique, GaussianFactor::shared_ptr> marginalFactors;
+//  multimap<sharedClique, GaussianFactor::shared_ptr> marginalFactors;
+  map<Key, vector<GaussianFactor::shared_ptr> > marginalFactors; // Steve's fix for making factor order consistent
 
   // Remove each variable and its subtrees
   BOOST_REVERSE_FOREACH(Key j, leafKeys) {
@@ -784,7 +785,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
         // because their information is already incorporated in the new
         // marginal factor.  So, now associate this marginal factor with the
         // parent of this clique.
-        marginalFactors.insert(make_pair(clique->parent(), marginalFactor));
+        marginalFactors[clique->parent()->conditional()->front()].push_back(marginalFactor);
         // Now remove this clique and its subtree - all of its marginal
         // information has been stored in marginalFactors.
         const Cliques removedCliques = this->removeSubtree(clique); // Remove the subtree and throw away the cliques
