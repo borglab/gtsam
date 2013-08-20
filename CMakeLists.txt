@@ -6,7 +6,8 @@ cmake_minimum_required(VERSION 2.6)
 set (GTSAM_VERSION_MAJOR 3)
 set (GTSAM_VERSION_MINOR 0)
 set (GTSAM_VERSION_PATCH 0)
-
+math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
+set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
 
 ###############################################################################
 # Gather information, perform checks, set defaults
@@ -102,11 +103,10 @@ endif()
 # BOOST_ROOT: path to install prefix for boost
 # Boost_NO_SYSTEM_PATHS: set to true to keep the find script from ignoring BOOST_ROOT
 
-# If using Boost shared libs, set up auto linking for shared libs
+# If using Boost shared libs, disable auto linking
 if(MSVC AND NOT Boost_USE_STATIC_LIBS)
-	add_definitions(-DBOOST_ALL_DYN_LINK)
+	add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
-add_definitions(-DBOOST_ALL_NO_LIB)
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time regex timer chrono)
 
