@@ -762,7 +762,8 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
 
   // Keep track of marginal factors - map from clique to the marginal factors
   // that should be incorporated into it, passed up from it's children.
-  multimap<sharedClique, GaussianFactor::shared_ptr> marginalFactors;
+//  multimap<sharedClique, GaussianFactor::shared_ptr> marginalFactors;
+  map<Index, vector<GaussianFactor::shared_ptr> > marginalFactors;
 
   // Remove each variable and its subtrees
   BOOST_REVERSE_FOREACH(Key j, leafKeys) {
@@ -784,12 +785,12 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
         // because their information is already incorporated in the new
         // marginal factor.  So, now associate this marginal factor with the
         // parent of this clique.
-        marginalFactors.insert(make_pair(clique->parent(), marginalFactor));
+        marginalFactors[clique->parent()->conditional()->front()].push_back(marginalFactor);
         // Now remove this clique and its subtree - all of its marginal
         // information has been stored in marginalFactors.
         const Cliques removedCliques = this->removeSubtree(clique); // Remove the subtree and throw away the cliques
         BOOST_FOREACH(const sharedClique& removedClique, removedCliques) {
-          marginalFactors.erase(removedClique);
+          marginalFactors.erase(removedClique->conditional()->front());
           BOOST_FOREACH(Key frontal, removedClique->conditional()->frontals()) {
             if(!leafKeys.exists(frontal))
               throw runtime_error("Requesting to marginalize variables that are not leaves, the ISAM2 object is now in an inconsistent state so should no longer be used."); }
@@ -821,7 +822,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
           const Cliques removedCliques = this->removeSubtree(childToRemove); // Remove the subtree and throw away the cliques
           childrenRemoved.insert(childrenRemoved.end(), removedCliques.begin(), removedCliques.end());
           BOOST_FOREACH(const sharedClique& removedClique, removedCliques) {
-            marginalFactors.erase(removedClique);
+            marginalFactors.erase(removedClique->conditional()->front());
             BOOST_FOREACH(Key frontal, removedClique->conditional()->frontals()) {
               if(!leafKeys.exists(frontal))
                 throw runtime_error("Requesting to marginalize variables that are not leaves, the ISAM2 object is now in an inconsistent state so should no longer be used."); }
@@ -860,7 +861,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
 
         // Add the resulting marginal
         if(eliminationResult1.second)
-          marginalFactors.insert(make_pair(clique, eliminationResult1.second));
+          marginalFactors[clique->conditional()->front()].push_back(eliminationResult1.second);
 
         // Recover the conditional on the remaining subset of frontal variables
         // of this clique being partially marginalized.
@@ -892,18 +893,21 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
 
   // Gather factors to add - the new marginal factors
   GaussianFactorGraph factorsToAdd;
-  typedef pair<sharedClique, GaussianFactor::shared_ptr> Clique_Factor;
-  BOOST_FOREACH(const Clique_Factor& clique_factor, marginalFactors) {
-    if(clique_factor.second)
-      factorsToAdd.push_back(clique_factor.second);
-    if(marginalFactorsIndices)
-      marginalFactorsIndices->push_back(nonlinearFactors_.size());
-    nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
-      clique_factor.second));
-    if(params_.cacheLinearizedFactors)
-      linearFactors_.push_back(clique_factor.second);
-    BOOST_FOREACH(Key factorKey, *clique_factor.second) {
-      fixedVariables_.insert(factorKey); }
+  typedef pair<Key, vector<GaussianFactor::shared_ptr> > Key_Factors;
+  BOOST_FOREACH(const Key_Factors& key_factors, marginalFactors) {
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, key_factors.second) {
+      if(factor) {
+        factorsToAdd.push_back(factor);
+        if(marginalFactorsIndices)
+          marginalFactorsIndices->push_back(nonlinearFactors_.size());
+        nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
+          factor));
+        if(params_.cacheLinearizedFactors)
+          linearFactors_.push_back(factor);
+        BOOST_FOREACH(Key factorKey, *factor) {
+          fixedVariables_.insert(factorKey); }
+      }
+    }
   }
   variableIndex_.augment(factorsToAdd); // Augment the variable index
 
