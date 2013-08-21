@@ -20,12 +20,18 @@
 #pragma once
 
 #include <gtsam/dllexport.h>
+#include <gtsam/config.h>
 
 #include <cstddef>
 
 #include <string>
 #include <boost/function/function1.hpp>
 #include <boost/range/concepts.hpp>
+#include <boost/optional.hpp>
+
+#ifdef GTSAM_USE_TBB
+#include <tbb/tbb_exception.h>
+#endif
 
 namespace gtsam {
 
@@ -61,6 +67,7 @@ namespace gtsam {
   typedef ptrdiff_t DenseIndex;
 
 
+  /* ************************************************************************* */
   /**
    * Helper class that uses templates to select between two types based on
    * whether TEST_TYPE is const or not.
@@ -82,6 +89,7 @@ namespace gtsam {
     typedef AS_CONST type;
   };
 
+  /* ************************************************************************* */
   /**
    * Helper struct that encapsulates a value with a default, this is just used
    * as a member object so you don't have to specify defaults in the class
@@ -104,6 +112,7 @@ namespace gtsam {
     operator T() const { return value; }
   };
 
+  /* ************************************************************************* */
   /** A helper class that behaves as a container with one element, and works with
    * boost::range */
   template<typename T>
@@ -129,18 +138,101 @@ namespace gtsam {
     return ListOfOneContainer<T>(element);
   }
 
-  /** An assertion that throws an exception if NDEBUG is not defined and
-   * evaluates to an empty statement otherwise. */
+  /* ************************************************************************* */
+  /// Base exception type that uses tbb_exception if GTSAM is compiled with TBB.
+  template<class DERIVED>
+  class ThreadsafeException :
+#ifdef GTSAM_USE_TBB
+    public tbb::tbb_exception
+#else
+    public std::exception
+#endif
+  {
+  private:
+#ifdef GTSAM_USE_TBB
+    typedef tbb::tbb_exception Base;
+#else
+    typedef std::exception Base;
+#endif
+
+  protected:
+    bool dynamic_; ///< Whether this object was moved
+    boost::optional<std::string> description_; ///< Optional description
+
+    /// Default constructor is protected - may only be created from derived classes
+    ThreadsafeException() : dynamic_(false) {}
+
+    /// Copy constructor is protected - may only be created from derived classes
+    ThreadsafeException(const ThreadsafeException& other) : Base(other), dynamic_(false) {}
+
+    /// Construct with description string
+    ThreadsafeException(const std::string& description) : dynamic_(false), description_(description) {}
+
+  public:
+    // Implement functions for tbb_exception
+#ifdef GTSAM_USE_TBB
+    virtual tbb::tbb_exception* move() {
+      DERIVED* clone = ::new DERIVED(static_cast<DERIVED&>(*this));
+      clone->dynamic_ = true;
+      return clone;
+    }
+
+    virtual void destroy() throw() {
+      if (dynamic_)
+        ::delete this;
+    }
+
+    virtual void throw_self() {
+      throw *this; }
+
+    virtual const char* name() const throw() {
+      return typeid(DERIVED).name(); }
+#endif
+
+    virtual const char* what() const throw() {
+      return description_ ? description_->c_str() : ""; }
+  };
+
+  /* ************************************************************************* */
+  /// Threadsafe runtime error exception
+  class RuntimeErrorThreadsafe : public ThreadsafeException<RuntimeErrorThreadsafe>
+  {
+  public:
+    /// Construct with a string describing the exception
+    RuntimeErrorThreadsafe(const std::string& description) : ThreadsafeException(description) {}
+  };
+
+  /* ************************************************************************* */
+  /// Threadsafe runtime error exception
+  class OutOfRangeThreadsafe : public ThreadsafeException<OutOfRangeThreadsafe>
+  {
+  public:
+    /// Construct with a string describing the exception
+    OutOfRangeThreadsafe(const std::string& description) : ThreadsafeException(description) {}
+  };
+
+  /* ************************************************************************* */
+  /// Threadsafe invalid argument exception
+  class InvalidArgumentThreadsafe : public ThreadsafeException<InvalidArgumentThreadsafe>
+  {
+  public:
+    /// Construct with a string describing the exception
+    InvalidArgumentThreadsafe(const std::string& description) : ThreadsafeException(description) {}
+  };
+
+}
+
+/* ************************************************************************* */
+/** An assertion that throws an exception if NDEBUG is not defined and
+* evaluates to an empty statement otherwise. */
 #ifdef NDEBUG
 #define assert_throw(CONDITION, EXCEPTION) ((void)0)
 #else
 #define assert_throw(CONDITION, EXCEPTION) \
-  if(!(CONDITION)) { \
-    throw (EXCEPTION); \
+  if (!(CONDITION)) { \
+  throw (EXCEPTION); \
   }
 #endif
-
-}
 
 #ifdef _MSC_VER
 
@@ -177,3 +269,6 @@ namespace std {
 #undef max
 #endif
 
+#ifdef ERROR
+#undef ERROR
+#endif

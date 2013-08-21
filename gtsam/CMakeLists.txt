@@ -140,7 +140,9 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
 	
 # Special cases
 if(MSVC)
-	set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
+	set_property(SOURCE
+		"${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ISAM2.cpp"
 		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
 endif()
 

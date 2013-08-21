@@ -24,9 +24,9 @@
 
 namespace gtsam {
 
-  class GTSAM_EXPORT CheiralityException: public std::runtime_error {
+  class GTSAM_EXPORT CheiralityException: public ThreadsafeException<CheiralityException> {
   public:
-    CheiralityException() : std::runtime_error("Cheirality Exception") {}
+    CheiralityException() : ThreadsafeException("Cheirality Exception") {}
   };
 
   /**

@@ -92,7 +92,7 @@ namespace gtsam {
      ordered in elimination order and occupy scalars in the same way as
      described for Jacobian columns in the previous bullet.
    */
-  class IndeterminantLinearSystemException : public std::exception {
+  class IndeterminantLinearSystemException : public ThreadsafeException<IndeterminantLinearSystemException> {
     Index j_;
     mutable std::string what_;
   public:
@@ -117,7 +117,7 @@ on gtsam::IndeterminantLinearSystemException for more information.\n";
   /* ************************************************************************* */
   /** An exception indicating that the noise model dimension passed into a
    * JacobianFactor has a different dimensionality than the factor. */
-  class GTSAM_EXPORT InvalidNoiseModel : public std::exception {
+  class GTSAM_EXPORT InvalidNoiseModel : public ThreadsafeException<InvalidNoiseModel> {
   public:
     const DenseIndex factorDims; ///< The dimensionality of the factor
     const DenseIndex noiseModelDims; ///< The dimensionality of the noise model
@@ -135,7 +135,7 @@ on gtsam::IndeterminantLinearSystemException for more information.\n";
   /* ************************************************************************* */
   /** An exception indicating that a matrix block passed into a
    * JacobianFactor has a different dimensionality than the factor. */
-  class GTSAM_EXPORT InvalidMatrixBlock : public std::exception {
+  class GTSAM_EXPORT InvalidMatrixBlock : public ThreadsafeException<InvalidMatrixBlock> {
   public:
     const DenseIndex factorRows; ///< The dimensionality of the factor
     const DenseIndex blockRows; ///< The dimensionality of the noise model
@@ -151,9 +151,9 @@ on gtsam::IndeterminantLinearSystemException for more information.\n";
   };
 
   /* ************************************************************************* */
-  class InvalidDenseElimination : public std::invalid_argument {
+  class InvalidDenseElimination : public ThreadsafeException<InvalidDenseElimination> {
   public:
-    InvalidDenseElimination(const char *message) : std::invalid_argument(message) {}
+    InvalidDenseElimination(const char *message) : ThreadsafeException(message) {}
   };
 
  }
