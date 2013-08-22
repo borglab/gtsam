@@ -171,7 +171,9 @@ namespace gtsam {
   public:
     // Implement functions for tbb_exception
 #ifdef GTSAM_USE_TBB
-    virtual tbb::tbb_exception* move() {
+    virtual ~ThreadsafeException() throw () {} // Default destructor doesn't have the throw()
+
+    virtual tbb::tbb_exception* move() throw () {
       DERIVED* clone = ::new DERIVED(static_cast<DERIVED&>(*this));
       clone->dynamic_ = true;
       return clone;
