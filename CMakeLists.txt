@@ -104,8 +104,13 @@ endif()
 # Boost_NO_SYSTEM_PATHS: set to true to keep the find script from ignoring BOOST_ROOT
 
 # If using Boost shared libs, disable auto linking
-if(MSVC AND NOT Boost_USE_STATIC_LIBS)
-	add_definitions(-DBOOST_ALL_NO_LIB)
+if(MSVC)
+	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols
+	add_definitions(-DBOOST_ALL_DYN_LINK)
+	# Disable autolinking
+	if(NOT Boost_USE_STATIC_LIBS)
+		add_definitions(-DBOOST_ALL_NO_LIB)
+	endif()
 endif()
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time regex timer chrono)
