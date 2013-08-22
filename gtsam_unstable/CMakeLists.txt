@@ -108,7 +108,7 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	set(GTSAM_UNSTABLE_LIB_DIR ${MEX_LIB_ROOT}/gtsam_unstable) # FIXME: is this used?
     
     # Generate, build and install toolbox
-    set(mexFlags -I${MEX_INCLUDE_ROOT} -I${Boost_INCLUDE_DIR} -I${CMAKE_BINARY_DIR})
+    set(mexFlags -I${MEX_INCLUDE_ROOT} -I${TBB_INCLUDE_DIRS} -I${Boost_INCLUDE_DIR} -I${CMAKE_BINARY_DIR})
 	if("${gtsam-default}" STREQUAL "gtsam-static")
 		list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 	endif()
