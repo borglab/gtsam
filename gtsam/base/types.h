@@ -168,11 +168,12 @@ namespace gtsam {
     /// Construct with description string
     ThreadsafeException(const std::string& description) : dynamic_(false), description_(description) {}
 
+    /// Default destructor doesn't have the throw()
+    virtual ~ThreadsafeException() throw () {}
+
   public:
     // Implement functions for tbb_exception
 #ifdef GTSAM_USE_TBB
-    virtual ~ThreadsafeException() throw () {} // Default destructor doesn't have the throw()
-
     virtual tbb::tbb_exception* move() throw () {
       DERIVED* clone = ::new DERIVED(static_cast<DERIVED&>(*this));
       clone->dynamic_ = true;
