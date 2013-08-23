@@ -79,7 +79,7 @@ namespace gtsam {
         const gtsam::Values valA, const gtsam::Values valB,
         const SharedGaussian& model_inlier, const SharedGaussian& model_outlier,
         const double prior_inlier, const double prior_outlier) :
-          Base(key), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
+          Base(cref_list_of<1>(key)), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
           model_inlier_(model_inlier), model_outlier_(model_outlier),
           prior_inlier_(prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(false){
 
@@ -156,7 +156,7 @@ namespace gtsam {
      * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
      */
     /* This version of linearize recalculates the noise model each time */
-    virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x, const gtsam::Ordering& ordering) const {
+    virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const {
       // Only linearize if the factor is active
       if (!this->active(x))
         return boost::shared_ptr<gtsam::JacobianFactor>();
@@ -168,7 +168,7 @@ namespace gtsam {
       A1 = A[0];
 
       return gtsam::GaussianFactor::shared_ptr(
-          new gtsam::JacobianFactor(ordering[key_], A1, b, gtsam::noiseModel::Unit::Create(b.size())));
+          new gtsam::JacobianFactor(key_, A1, b, gtsam::noiseModel::Unit::Create(b.size())));
     }
 
 
