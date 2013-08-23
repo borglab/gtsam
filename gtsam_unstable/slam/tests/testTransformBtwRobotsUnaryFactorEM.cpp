@@ -27,7 +27,7 @@ using namespace gtsam;
 
 // Disabled this test because it is currently failing - remove the lines "#if 0" and "#endif" below
 // to reenable the test.
-#if 0
+//#if 0
 /* ************************************************************************* */
 LieVector predictionError(const Pose2& org1_T_org2, const gtsam::Key& key, const TransformBtwRobotsUnaryFactorEM<gtsam::Pose2>& factor){
   gtsam::Values values;
@@ -211,10 +211,10 @@ TEST( TransformBtwRobotsUnaryFactorEM, Optimize)
   values.insert(key, gtsam::Pose2());
 
   gtsam::NonlinearFactorGraph graph;
-  graph.add(g1);
-  graph.add(g2);
-  graph.add(g3);
-  graph.add(g4);
+  graph.push_back(g1);
+  graph.push_back(g2);
+  graph.push_back(g3);
+  graph.push_back(g4);
 
   gtsam::GaussNewtonParams params;
   gtsam::GaussNewtonOptimizer optimizer(graph, values, params);
@@ -332,7 +332,7 @@ TEST( TransformBtwRobotsUnaryFactorEM, Jacobian)
 //
 //}
 
-#endif
+//#endif
 
 /* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
