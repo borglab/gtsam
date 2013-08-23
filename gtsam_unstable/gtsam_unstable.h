@@ -319,6 +319,25 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
   Vector whitenedError(const gtsam::Values& x);
   Vector unwhitenedError(const gtsam::Values& x);
   Vector calcIndicatorProb(const gtsam::Values& x);
+  gtsam::Pose2 measured(); // TODO: figure out how to output a template instead
+  void set_flag_bump_up_near_zero_probs(bool flag);
+  bool get_flag_bump_up_near_zero_probs() const;
+
+  void serializable() const; // enabling serialization functionality
+};
+
+#include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
+template<T = {gtsam::Pose2}>
+virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
+  TransformBtwRobotsUnaryFactorEM(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+      const gtsam::Values& valA, const gtsam::Values& valB,
+      const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
+      double prior_inlier, double prior_outlier);
+
+  Vector whitenedError(const gtsam::Values& x);
+  Vector unwhitenedError(const gtsam::Values& x);
+  Vector calcIndicatorProb(const gtsam::Values& x);
+  void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
 
   void serializable() const; // enabling serialization functionality
 };
