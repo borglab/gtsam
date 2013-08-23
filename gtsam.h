@@ -829,6 +829,7 @@ class SymbolicFactorGraph {
   void print(string s) const;
   bool equals(const gtsam::SymbolicFactorGraph& rhs, double tol) const;
   size_t size() const;
+  bool exists(size_t idx) const;
 
   // Standard interface
   gtsam::KeySet keys() const;
@@ -1246,6 +1247,7 @@ class GaussianFactorGraph {
   size_t size() const;
   gtsam::GaussianFactor* at(size_t idx) const;
   gtsam::KeySet keys() const;
+  bool exists(size_t idx) const;
 
   // Building the graph
   void push_back(gtsam::GaussianFactor* factor);
@@ -1520,6 +1522,7 @@ class NonlinearFactorGraph {
   gtsam::NonlinearFactor* at(size_t idx) const;
   void push_back(const gtsam::NonlinearFactorGraph& factors);
   void push_back(gtsam::NonlinearFactor* factor);
+  bool exists(size_t idx) const;
 
   // NonlinearFactorGraph
   double error(const gtsam::Values& values) const;

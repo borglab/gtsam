@@ -352,6 +352,9 @@ namespace gtsam {
     /** Potentially very slow function to return all keys involved */
     FastSet<Key> keys() const;
 
+    /** MATLAB interface utility: Checks whether a factor index idx exists in the graph and is a live pointer */
+    inline bool exists(size_t idx) const { return idx < size() && at(idx); }
+
   private:
 
     /** Serialization function */
