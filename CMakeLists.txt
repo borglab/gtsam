@@ -259,7 +259,7 @@ if (GTSAM_BUILD_UNSTABLE)
 endif(GTSAM_BUILD_UNSTABLE)
 
 # Install config and export files
-GtsamMakeConfigFile(GTSAM)
+GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
 # Check for doxygen availability - optional dependency
