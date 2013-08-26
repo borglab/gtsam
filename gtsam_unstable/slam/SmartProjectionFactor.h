@@ -40,9 +40,9 @@ namespace gtsam {
 
     // Keep a copy of measurement and calibration for I/O
     std::vector<Point2> measured_;                    ///< 2D measurement for each of the m views
+    const SharedNoiseModel noise_;   ///< noise model used
     ///< (important that the order is the same as the keys that we use to create the factor)
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
-    const SharedNoiseModel noise_;   ///< noise model used
     boost::optional<Point3> point_;
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
@@ -77,7 +77,7 @@ namespace gtsam {
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
         boost::optional<LANDMARK> point = boost::none,
         boost::optional<POSE> body_P_sensor = boost::none) :
-          measured_(measured),  K_(K), noise_(model), point_(point), body_P_sensor_(body_P_sensor),
+          measured_(measured), noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
     }
@@ -98,7 +98,7 @@ namespace gtsam {
         bool throwCheirality, bool verboseCheirality,
         boost::optional<LANDMARK> point = boost::none,
         boost::optional<POSE> body_P_sensor = boost::none) :
-          measured_(measured),  K_(K),  noise_(model), point_(point), body_P_sensor_(body_P_sensor),
+          measured_(measured), noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /**
@@ -191,7 +191,11 @@ namespace gtsam {
       // We triangulate the 3D position of the landmark
       boost::optional<Point3> point;
       try {
-          point = triangulatePoint3(cameraPoses, measured_, *K_);
+          if (point_) {
+            point = point_;
+          } else {
+            point = triangulatePoint3(cameraPoses, measured_, *K_);
+          }
       } catch( TriangulationCheiralityException& e) {
           // point is behind one of the cameras, turn factor off by setting everything to 0
           //std::cout << e.what() << std::end;
@@ -326,7 +330,11 @@ namespace gtsam {
         // We triangulate the 3D position of the landmark
         boost::optional<Point3> point;
         try {
+          if (point_) {
+            point = point_;
+          } else {
             point = triangulatePoint3(cameraPoses, measured_, *K_);
+          }
         } catch( TriangulationCheiralityException& e) {
             // point is behind one of the cameras, turn factor off by setting everything to 0
             //std::cout << e.what() << std::end;
