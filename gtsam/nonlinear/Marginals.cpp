@@ -103,23 +103,27 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
         jointFG = *bayesTree_.joint(variables[0], variables[1], EliminateQR);
     } else {
       if(factorization_ == CHOLESKY)
-        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(Ordering(variables), boost::none, EliminatePreferCholesky));
+        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(variables, boost::none, EliminatePreferCholesky));
       else if(factorization_ == QR)
-        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(Ordering(variables), boost::none, EliminateQR));
-    }
-
-    // Get dimensions from factor graph
-    std::vector<size_t> dims;
-    dims.reserve(variables.size());
-    BOOST_FOREACH(Key key, variables) {
-      dims.push_back(values_.at(key).dim());
+        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(variables, boost::none, EliminateQR));
     }
 
     // Get information matrix
     Matrix augmentedInfo = jointFG.augmentedHessian();
     Matrix info = augmentedInfo.topLeftCorner(augmentedInfo.rows()-1, augmentedInfo.cols()-1);
 
-    return JointMarginal(info, dims, variables);
+    // Information matrix will be returned with sorted keys
+    std::vector<Key> variablesSorted = variables;
+    std::sort(variablesSorted.begin(), variablesSorted.end());
+
+    // Get dimensions from factor graph
+    std::vector<size_t> dims;
+    dims.reserve(variablesSorted.size());
+    BOOST_FOREACH(Key key, variablesSorted) {
+      dims.push_back(values_.at(key).dim());
+    }
+
+    return JointMarginal(info, dims, variablesSorted);
   }
 }
 

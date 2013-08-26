@@ -140,8 +140,8 @@ TEST(Marginals, planarSLAMmarginals) {
      -0.104516127560770,   0.351935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,   0.007741936219615,   0.351935664055174,   0.056129031890193,
      -0.050967744878460,   0.056129031890193,   0.000000000000000,   0.000000000000000,   0.010000000000000,   0.004516127560770,   0.056129031890193,   0.027741936219615;
   vector<Key> variables(3);
-  variables[0] = l2;
-  variables[1] = x1;
+  variables[0] = x1;
+  variables[1] = l2;
   variables[2] = x3;
   JointMarginal joint_l2x1x3 = marginals.jointMarginalCovariance(variables);
   EXPECT(assert_equal(Matrix(expected_l2x1x3.block(0,0,2,2)), Matrix(joint_l2x1x3(l2,l2)), 1e-6));
