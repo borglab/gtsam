@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
   NonlinearFactorGraph::shared_ptr graph ;
   Values::shared_ptr initial;
   SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 5.0*M_PI/180.0));
-  boost::tie(graph,initial) = load2D("../../examples/Data/w100-odom.graph",model);
+  boost::tie(graph,initial) = load2D("../../examples/Data/w100.graph",model);
   initial->print("Initial estimate:\n");
 
   // Add a Gaussian prior on first poses
