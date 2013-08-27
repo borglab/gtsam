@@ -202,7 +202,7 @@ namespace gtsam {
   {
   public:
     /// Construct with a string describing the exception
-    RuntimeErrorThreadsafe(const std::string& description) : ThreadsafeException(description) {}
+    RuntimeErrorThreadsafe(const std::string& description) : ThreadsafeException<RuntimeErrorThreadsafe>(description) {}
   };
 
   /* ************************************************************************* */
@@ -211,7 +211,7 @@ namespace gtsam {
   {
   public:
     /// Construct with a string describing the exception
-    OutOfRangeThreadsafe(const std::string& description) : ThreadsafeException(description) {}
+    OutOfRangeThreadsafe(const std::string& description) : ThreadsafeException<OutOfRangeThreadsafe>(description) {}
   };
 
   /* ************************************************************************* */
@@ -220,7 +220,7 @@ namespace gtsam {
   {
   public:
     /// Construct with a string describing the exception
-    InvalidArgumentThreadsafe(const std::string& description) : ThreadsafeException(description) {}
+    InvalidArgumentThreadsafe(const std::string& description) : ThreadsafeException<InvalidArgumentThreadsafe>(description) {}
   };
 
 }

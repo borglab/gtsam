@@ -26,7 +26,7 @@ namespace gtsam {
 
   class GTSAM_EXPORT CheiralityException: public ThreadsafeException<CheiralityException> {
   public:
-    CheiralityException() : ThreadsafeException("Cheirality Exception") {}
+    CheiralityException() : ThreadsafeException<CheiralityException>("Cheirality Exception") {}
   };
 
   /**

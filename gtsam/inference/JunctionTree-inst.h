@@ -239,8 +239,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class BAYESTREE, class GRAPH>
   template<class ETREE>
-  JunctionTree<BAYESTREE,GRAPH>
-    JunctionTree<BAYESTREE,GRAPH>::FromEliminationTree(const ETREE& eliminationTree)
+  JunctionTree<BAYESTREE,GRAPH>::JunctionTree(const ETREE& eliminationTree)
   {
     gttic(JunctionTree_FromEliminationTree);
     // Here we rely on the BayesNet having been produced by this elimination tree, such that the
@@ -258,13 +257,10 @@ namespace gtsam {
       ConstructorTraversalVisitorPre<BAYESTREE,GRAPH,ETreeNode>, ConstructorTraversalVisitorPost<BAYESTREE,GRAPH,ETreeNode>);
 
     // Assign roots from the dummy node
-    This result;
-    result.roots_ = rootData.myJTNode->children;
+    roots_ = rootData.myJTNode->children;
 
     // Transfer remaining factors from elimination tree
-    result.remainingFactors_ = eliminationTree.remainingFactors();
-
-    return result;
+    remainingFactors_ = eliminationTree.remainingFactors();
   }
 
   /* ************************************************************************* */

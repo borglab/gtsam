@@ -28,6 +28,6 @@ namespace gtsam {
   /* ************************************************************************* */
   SymbolicJunctionTree::SymbolicJunctionTree(
     const SymbolicEliminationTree& eliminationTree) :
-  Base(Base::FromEliminationTree(eliminationTree)) {}
+  Base(eliminationTree) {}
 
 }

@@ -94,7 +94,11 @@ namespace gtsam {
 
     /** Build the junction tree from an elimination tree. */
     template<class ETREE>
-    static This FromEliminationTree(const ETREE& eliminationTree);
+      static This FromEliminationTree(const ETREE& eliminationTree) { return This(eliminationTree); }
+      
+    /** Build the junction tree from an elimination tree. */
+    template<class ETREE>
+    JunctionTree(const ETREE& eliminationTree);
     
     /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */

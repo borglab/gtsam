@@ -73,7 +73,7 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   ISAM2JunctionTree(const GaussianEliminationTree& eliminationTree) :
-    Base(Base::FromEliminationTree(eliminationTree)) {}
+    Base(eliminationTree) {}
 };
 
 /* ************************************************************************* */

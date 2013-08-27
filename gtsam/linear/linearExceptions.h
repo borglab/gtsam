@@ -153,7 +153,7 @@ on gtsam::IndeterminantLinearSystemException for more information.\n";
   /* ************************************************************************* */
   class InvalidDenseElimination : public ThreadsafeException<InvalidDenseElimination> {
   public:
-    InvalidDenseElimination(const char *message) : ThreadsafeException(message) {}
+    InvalidDenseElimination(const char *message) : ThreadsafeException<InvalidDenseElimination>(message) {}
   };
 
  }
