@@ -180,69 +180,19 @@ namespace gtsam {
       bayesTree.addFactorsToGraph(*this);
     }
 
-    /** += syntax for push_back, e.g. graph += f1, f2, f3 */
-    //template<class T>
-    //boost::assign::list_inserter<boost::function<void(const T&)> >
-    //  operator+=(const T& factorOrContainer)
-    //{
-    //  return boost::assign::make_list_inserter(
-    //    boost::bind(&This::push_back<T>, this, _1));
-    //}
-
-    /** Add a factor directly using a shared_ptr */
-    template<class DERIVEDFACTOR>
-    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR>,
-      boost::assign::list_inserter<RefCallPushBack<This> > >::type
-      operator+=(boost::shared_ptr<DERIVEDFACTOR>& factor) {
-        return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(factor);
-    }
-
-    /** Add a factor directly using a shared_ptr */
-    boost::assign::list_inserter<CRefCallPushBack<This> >
-      operator+=(const sharedFactor& factor) {
-        return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(factor);
-    }
-
-    template<class FACTOR_OR_CONTAINER>
-    boost::assign::list_inserter<CRefCallPushBack<This> >
-      operator+=(const FACTOR_OR_CONTAINER& factorOrContainer) {
-        return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(factorOrContainer);
-    }
-
-    ///** Add a factor directly using a shared_ptr */
-    //boost::assign::list_inserter<CRefCallPushBack<This> >
-    //  operator+=(const sharedFactor& factor) {
-    //    return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this));
-    //}
-
-    ///** push back many factors as shared_ptr's in a container (factors are not copied) */
-    //template<typename CONTAINER>
-    //typename boost::enable_if<boost::is_base_of<FactorType, typename CONTAINER::value_type::element_type>,
-    //  boost::assign::list_inserter<CRefCallPushBack<This> > >::type
-    //  operator+=(const CONTAINER& container) {
-    //    return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this));
-    //}
-
-    ///** push back a BayesTree as a collection of factors.  NOTE: This should be hidden in derived
-    // *  classes in favor of a type-specialized version that calls this templated function. */
-    //template<class CLIQUE>
-    //boost::assign::list_inserter<CRefCallPushBack<This> >
-    //  operator+=(const BayesTree<CLIQUE>& bayesTree) {
-    //    return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this));
-    //}
-
     /** Add a factor by value, will be copy-constructed (use push_back with a shared_ptr to avoid
-     *  the copy). */
+    *  the copy). */
     template<class DERIVEDFACTOR>
     typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR> >::type
       push_back(const DERIVEDFACTOR& factor) {
-        factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor)); }
+        factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor));
+    }
 
     /** push back many factors with an iterator over plain factors (factors are copied) */
     template<typename ITERATOR>
     typename boost::enable_if<boost::is_base_of<FactorType, typename ITERATOR::value_type> >::type
       push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
-        for(ITERATOR f = firstFactor; f != lastFactor; ++f)
+        for (ITERATOR f = firstFactor; f != lastFactor; ++f)
           push_back(*f);
     }
 
@@ -253,11 +203,45 @@ namespace gtsam {
         push_back(container.begin(), container.end());
     }
 
-    //template<class FACTOR_OR_CONTAINER>
-    //boost::assign::list_inserter<CRefCallPushBack<This> >
-    //  operator*=(const FACTOR_OR_CONTAINER& factorOrContainer) {
-    //    return boost::assign::make_list_inserter(CRefCallAddCopy<This>(*this));
-    //}
+    /** Add a factor directly using a shared_ptr */
+    template<class DERIVEDFACTOR>
+    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR>,
+      boost::assign::list_inserter<RefCallPushBack<This> > >::type
+      operator+=(boost::shared_ptr<DERIVEDFACTOR> factor) {
+        return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(factor);
+    }
+
+    /** Add a factor directly using a shared_ptr */
+    boost::assign::list_inserter<CRefCallPushBack<This> >
+      operator+=(const sharedFactor& factor) {
+        return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(factor);
+    }
+
+    /** Add a factor or container of factors, including STL collections, BayesTrees, etc. */
+    template<class FACTOR_OR_CONTAINER>
+    boost::assign::list_inserter<CRefCallPushBack<This> >
+      operator+=(const FACTOR_OR_CONTAINER& factorOrContainer) {
+        return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(factorOrContainer);
+    }
+
+    /** Add a factor directly using a shared_ptr */
+    template<class DERIVEDFACTOR>
+    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR>,
+      boost::assign::list_inserter<RefCallPushBack<This> > >::type
+      add(boost::shared_ptr<DERIVEDFACTOR> factor) {
+        push_back(factor);
+    }
+
+    /** Add a factor directly using a shared_ptr */
+    void add(const sharedFactor& factor) {
+      push_back(factor);
+    }
+
+    /** Add a factor or container of factors, including STL collections, BayesTrees, etc. */
+    template<class FACTOR_OR_CONTAINER>
+    void add(const FACTOR_OR_CONTAINER& factorOrContainer) {
+      push_back(Factor);
+    }
 
     /// @}
     /// @name Testable

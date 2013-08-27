@@ -1522,6 +1522,7 @@ class NonlinearFactorGraph {
   gtsam::NonlinearFactor* at(size_t idx) const;
   void push_back(const gtsam::NonlinearFactorGraph& factors);
   void push_back(gtsam::NonlinearFactor* factor);
+  void add(gtsam::NonlinearFactor* factor);
   bool exists(size_t idx) const;
 
   // NonlinearFactorGraph

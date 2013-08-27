@@ -96,10 +96,10 @@ namespace gtsam {
     /// @}
 
     /** Add a factor by value - makes a copy */
-    void add(const GaussianFactor& factor) { factors_.push_back(factor.clone()); }
+    void add(const GaussianFactor& factor) { push_back(factor.clone()); }
 
     /** Add a factor by pointer - stores pointer without copying the factor */
-    void add(const sharedFactor& factor) { factors_.push_back(factor); }
+    void add(const sharedFactor& factor) { push_back(factor); }
 
     /** Add a null factor */
     void add(const Vector& b) {
