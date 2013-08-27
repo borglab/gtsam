@@ -189,10 +189,10 @@ namespace gtsam {
       }
 
       // We triangulate the 3D position of the landmark
-      boost::optional<Point3> point;
+      Point3 point;
       try {
           if (point_) {
-            point = point_;
+            point = *point_;
           } else {
             point = triangulatePoint3(cameraPoses, measured_, *K_);
           }
@@ -213,7 +213,7 @@ namespace gtsam {
         for(size_t i = 0; i < measured_.size(); i++) {
           Pose3 pose = cameraPoses.at(i);
           PinholeCamera<CALIBRATION> camera(pose, *K_);
-          b.at(i) = - ( camera.project(*point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
+          b.at(i) = - ( camera.project(point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
           noise_-> WhitenSystem(Hx.at(i), Hl.at(i), b.at(i));
           f += b.at(i).squaredNorm();
         }
@@ -268,7 +268,7 @@ namespace gtsam {
           Pose3 pose = cameraPoses.at(i);
           PinholeCamera<CALIBRATION> camera(pose, *K_);
           Matrix Hxi, Hli;
-           Vector bi = -( camera.project(*point,Hxi,Hli) - measured_.at(i) ).vector();
+           Vector bi = -( camera.project(point,Hxi,Hli) - measured_.at(i) ).vector();
 
            noise_-> WhitenSystem(Hxi, Hli, bi);
            f += bi.squaredNorm();
@@ -328,10 +328,10 @@ namespace gtsam {
         }
 
         // We triangulate the 3D position of the landmark
-        boost::optional<Point3> point;
+        Point3 point;
         try {
           if (point_) {
-            point = point_;
+            point = *point_;
           } else {
             point = triangulatePoint3(cameraPoses, measured_, *K_);
           }
@@ -345,7 +345,7 @@ namespace gtsam {
           Pose3 pose = cameraPoses.at(i);
           PinholeCamera<CALIBRATION> camera(pose, *K_);
 
-          Point2 reprojectionError(camera.project(*point) - measured_.at(i));
+          Point2 reprojectionError(camera.project(point) - measured_.at(i));
           overallError += noise_->distance( reprojectionError.vector() );
         }
         return overallError;
