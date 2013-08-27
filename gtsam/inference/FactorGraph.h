@@ -240,7 +240,7 @@ namespace gtsam {
     /** Add a factor or container of factors, including STL collections, BayesTrees, etc. */
     template<class FACTOR_OR_CONTAINER>
     void add(const FACTOR_OR_CONTAINER& factorOrContainer) {
-      push_back(Factor);
+      push_back(factorOrContainer);
     }
 
     /// @}
