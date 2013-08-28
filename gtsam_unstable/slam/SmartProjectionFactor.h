@@ -232,32 +232,32 @@ namespace gtsam {
         // Allocate inv(Hl'Hl)
         Matrix3 C = zeros(3,3);
         for(size_t i1 = 0; i1 < keys_.size(); i1++) {
-          C += Hl.at(i1).transpose() * Hl.at(i1);
+          C.noalias() += Hl.at(i1).transpose() * Hl.at(i1);
         }
 
-        C = C.inverse().eval(); //  this is very important: without eval, because of eigen aliasing the results will be incorrect
+        Matrix3 Cinv = C.inverse(); //  this is very important: without eval, because of eigen aliasing the results will be incorrect
 
         // Calculate sub blocks
         for(size_t i1 = 0; i1 < keys_.size(); i1++) {
           for(size_t i2 = 0; i2 < keys_.size(); i2++) {
             // we only need the upper triangular entries
-            Hxl[i1][i2] = Hx.at(i1).transpose() * Hl.at(i1) * C * Hl.at(i2).transpose();
+            Hxl[i1][i2].noalias() = Hx.at(i1).transpose() * Hl.at(i1) * Cinv * Hl.at(i2).transpose();
           }
         }
         // Populate Gs and gs
         int GsCount = 0;
         for(size_t i1 = 0; i1 < numKeys; i1++) {
-          gs.at(i1) = Hx.at(i1).transpose() * b.at(i1);
+          gs.at(i1).noalias() = Hx.at(i1).transpose() * b.at(i1);
 
           for(size_t i2 = 0; i2 < numKeys; i2++) {
-            gs.at(i1) -= Hxl[i1][i2] * b.at(i2);
+            gs.at(i1).noalias() -= Hxl[i1][i2] * b.at(i2);
 
             if (i2 == i1){
-              Gs.at(GsCount) = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
+              Gs.at(GsCount).noalias() = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
               GsCount++;
             }
             if (i2 > i1) {
-              Gs.at(GsCount) = - Hxl[i1][i2] * Hx.at(i2);
+              Gs.at(GsCount).noalias() = - Hxl[i1][i2] * Hx.at(i2);
               GsCount++;
             }
           }
