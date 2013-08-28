@@ -30,6 +30,8 @@
 
 namespace gtsam {
 
+  class SmartProjectionFactorState;
+
   /**
    * The calibration is known here.
    * @addtogroup SLAM
@@ -45,6 +47,7 @@ namespace gtsam {
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     boost::optional<Point3> point_;
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+    boost::shared_ptr<SmartProjectionFactorState> state_;
 
     // verbosity handling for Cheirality Exceptions
     bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
@@ -76,9 +79,10 @@ namespace gtsam {
     SmartProjectionFactor(const std::vector<Point2> measured, const SharedNoiseModel& model,
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
         boost::optional<LANDMARK> point = boost::none,
-        boost::optional<POSE> body_P_sensor = boost::none) :
+        boost::optional<POSE> body_P_sensor = boost::none,
+        boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
           measured_(measured), noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor),
-          throwCheirality_(false), verboseCheirality_(false) {
+          state_(state), throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
     }
 
@@ -97,9 +101,10 @@ namespace gtsam {
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
         boost::optional<LANDMARK> point = boost::none,
-        boost::optional<POSE> body_P_sensor = boost::none) :
+        boost::optional<POSE> body_P_sensor = boost::none,
+        boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
           measured_(measured), noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor),
-          throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
+          state_(state), throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /**
      * Constructor with exception-handling flags
@@ -108,8 +113,9 @@ namespace gtsam {
      */
     SmartProjectionFactor(const SharedNoiseModel& model, const boost::shared_ptr<CALIBRATION>& K, 
         boost::optional<LANDMARK> point = boost::none,
-        boost::optional<POSE> body_P_sensor = boost::none) :
-        noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor) {
+        boost::optional<POSE> body_P_sensor = boost::none,
+        boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
+        noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor), state_(state) {
     }
 
     /** Virtual destructor */
@@ -395,4 +401,30 @@ namespace gtsam {
     }
 
   };
+
+  /**
+   * Structure for storing some state memory, used to speed up optimization
+   * @addtogroup SLAM
+   */
+  class SmartProjectionFactorState {
+  public:
+    // Landmark key
+    Key landmarkKey_;
+
+    // Set of involved pose keys
+    std::list<Key> poseKeys_;
+
+    // Linearization point
+    Values values_;
+
+    // inv(C)
+    Matrix3 Cinv_;
+
+    // E
+    // W
+    // Hessian
+    Matrix H_;
+
+  };
+
 } // \ namespace gtsam
