@@ -250,6 +250,20 @@ namespace gtsam {
       return Point2(P.x() / P.z(), P.y() / P.z());
     }
 
+    /**
+     * projects a 3-dimensional point at infinity (direction-only) in camera coordinates into the
+     * camera and returns a 2-dimensional point, no calibration applied
+     * With optional 2by3 derivative
+     */
+    inline static Point2 project_point_at_infinity_to_camera(const Point3& P,
+                             boost::optional<Matrix&> H1 = boost::none){
+      if (H1) {
+        double d = 1.0 / P.z(), d2 = d * d;
+        *H1 = Matrix_(2, 3, d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
+      }
+      return Point2(P.x() / P.z(), P.y() / P.z());
+    }
+
     /// Project a point into the image and check depth
     inline std::pair<Point2,bool> projectSafe(const Point3& pw) const {
       const Point3 pc = pose_.transform_to(pw) ;
@@ -295,6 +309,48 @@ namespace gtsam {
       if (H3) *H3 = Hk;
       return pi;
     }
+
+    /** project a point at infinity from world coordinate to the image
+         *  @param pw is a point in the world coordinate (it is pw = lambda*[pw_x  pw_y  pw_z] with lambda->inf)
+         *  @param H1 is the jacobian w.r.t. pose3
+         *  @param H2 is the jacobian w.r.t. point3
+         *  @param H3 is the jacobian w.r.t. calibration
+         */
+        inline Point2 project_point_at_infinity(const Point3& pw,
+            boost::optional<Matrix&> H1 = boost::none,
+            boost::optional<Matrix&> H2 = boost::none,
+            boost::optional<Matrix&> H3 = boost::none) const {
+
+          if (!H1 && !H2 && !H3) {
+            const Point3 pc = pose_.rotation().unrotate(pw) ;
+            if ( pc.z() <= 0 ) throw CheiralityException();
+            const Point2 pn = project_point_at_infinity_to_camera(pc) ;
+            return K_.uncalibrate(pn);
+          }
+
+          // world to camera coordinate
+          Matrix Hc1 /* 3*6 */, Hc2 /* 3*3 */ ;
+          const Point3 pc = pose_.rotation().unrotate(pw, Hc1, Hc2) ;
+          if( pc.z() <= 0 ) throw CheiralityException();
+
+          // camera to normalized image coordinate
+          Matrix Hn; // 2*3
+          const Point2 pn = project_point_at_infinity_to_camera(pc, Hn) ;
+
+          // uncalibration
+          Matrix Hk, Hi; // 2*2
+          Matrix H23 = Matrix::Zero(3,2);
+          H23.block(0,0,2,2) = Matrix::Identity(2,2);
+          const Point2 pi = K_.uncalibrate(pn, Hk, Hi);
+
+          // chain the jacobian matrices
+          const Matrix tmp = Hi*Hn;
+          if (H1) *H1 = tmp * Hc1;
+          if (H2) *H2 = tmp * Hc2 * H23;
+          if (H3) *H3 = Hk;
+          return pi;
+        }
+
 
     /** project a point from world coordinate to the image
      *  @param pw is a point in the world coordinate

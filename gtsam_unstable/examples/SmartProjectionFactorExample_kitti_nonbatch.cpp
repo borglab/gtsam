@@ -285,7 +285,7 @@ int main(int argc, char** argv) {
 
       // This is a new landmark, create a new factor and add to mapping
       boost::shared_ptr<SmartProjectionFactorState> smartFactorState(new SmartProjectionFactorState());
-      SmartFactor::shared_ptr smartFactor(new SmartFactor(measurements, pixel_sigma, views, K, boost::none, boost::none, smartFactorState));
+      SmartFactor::shared_ptr smartFactor(new SmartFactor(measurements, pixel_sigma, views, K));
       smartFactorStates.insert( make_pair(L(l), smartFactorState) );
       smartFactors.insert( make_pair(L(l), smartFactor) );
       graph.push_back(smartFactor);

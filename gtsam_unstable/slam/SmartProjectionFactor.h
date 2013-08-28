@@ -45,9 +45,9 @@ namespace gtsam {
     const SharedNoiseModel noise_;   ///< noise model used
     ///< (important that the order is the same as the keys that we use to create the factor)
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
-    boost::optional<Point3> point_;
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
     boost::shared_ptr<SmartProjectionFactorState> state_;
+    boost::optional<Point3> point_;
 
     // verbosity handling for Cheirality Exceptions
     bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
@@ -78,10 +78,9 @@ namespace gtsam {
      */
     SmartProjectionFactor(const std::vector<Point2> measured, const SharedNoiseModel& model,
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
-        boost::optional<LANDMARK> point = boost::none,
         boost::optional<POSE> body_P_sensor = boost::none,
         boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
-          measured_(measured), noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor),
+          measured_(measured), noise_(model), K_(K), body_P_sensor_(body_P_sensor),
           state_(state), throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
     }
@@ -100,10 +99,9 @@ namespace gtsam {
     SmartProjectionFactor(const std::vector<Point2> measured, const SharedNoiseModel& model,
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
-        boost::optional<LANDMARK> point = boost::none,
         boost::optional<POSE> body_P_sensor = boost::none,
         boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
-          measured_(measured), noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor),
+          measured_(measured), noise_(model), K_(K), body_P_sensor_(body_P_sensor),
           state_(state), throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /**
@@ -112,10 +110,9 @@ namespace gtsam {
      * @param K shared pointer to the constant calibration
      */
     SmartProjectionFactor(const SharedNoiseModel& model, const boost::shared_ptr<CALIBRATION>& K, 
-        boost::optional<LANDMARK> point = boost::none,
         boost::optional<POSE> body_P_sensor = boost::none,
         boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
-        noise_(model), K_(K), point_(point), body_P_sensor_(body_P_sensor), state_(state) {
+        noise_(model), K_(K), body_P_sensor_(body_P_sensor), state_(state) {
     }
 
     /** Virtual destructor */
@@ -195,13 +192,8 @@ namespace gtsam {
       }
 
       // We triangulate the 3D position of the landmark
-      Point3 point;
       try {
-          if (point_) {
-            point = *point_;
-          } else {
-            point = triangulatePoint3(cameraPoses, measured_, *K_);
-          }
+          point_ = triangulatePoint3(cameraPoses, measured_, *K_);
       } catch( TriangulationCheiralityException& e) {
           // point is behind one of the cameras, turn factor off by setting everything to 0
           //std::cout << e.what() << std::end;
@@ -209,6 +201,12 @@ namespace gtsam {
           BOOST_FOREACH(Vector& v, gs) v = zero(6);
           return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));         
       }
+
+      bool degenerate = true;
+
+      int dim_landmark = 2;
+
+
 
       if (blockwise){
         // ==========================================================================================================
@@ -219,7 +217,7 @@ namespace gtsam {
         for(size_t i = 0; i < measured_.size(); i++) {
           Pose3 pose = cameraPoses.at(i);
           PinholeCamera<CALIBRATION> camera(pose, *K_);
-          b.at(i) = - ( camera.project(point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
+          b.at(i) = - ( camera.project(point_,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
           noise_-> WhitenSystem(Hx.at(i), Hl.at(i), b.at(i));
           f += b.at(i).squaredNorm();
         }
@@ -266,24 +264,42 @@ namespace gtsam {
 
       if (blockwise == false){ // version with full matrix multiplication
         // ==========================================================================================================
+
         Matrix Hx2 = zeros(2 * numKeys, 6 * numKeys);
-        Matrix Hl2 = zeros(2 * numKeys, 3);
+        Matrix Hl2 = zeros(2 * numKeys, dim_landmark);
         Vector b2 = zero(2 * numKeys);
 
-        for(size_t i = 0; i < measured_.size(); i++) {
-          Pose3 pose = cameraPoses.at(i);
-          PinholeCamera<CALIBRATION> camera(pose, *K_);
-          Matrix Hxi, Hli;
-           Vector bi = -( camera.project(point,Hxi,Hli) - measured_.at(i) ).vector();
+        if(degenerate){
+          for(size_t i = 0; i < measured_.size(); i++) {
+            Pose3 pose = cameraPoses.at(i);
+            PinholeCamera<CALIBRATION> camera(pose, *K_);
+            Matrix Hxi, Hli;
+            Vector bi = -( camera.project(point,Hxi,Hli) - measured_.at(i) ).vector();
 
-           noise_-> WhitenSystem(Hxi, Hli, bi);
-           f += bi.squaredNorm();
+            noise_-> WhitenSystem(Hxi, Hli, bi);
+            f += bi.squaredNorm();
 
-           Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
-           Hl2.block( 2*i, 0, 2, 3  ) = Hli;
+            Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
+            Hl2.block( 2*i, 0, 2, 2  ) = Hli;
 
-           subInsert(b2,bi,2*i);
+            subInsert(b2,bi,2*i);
+          }
+        }
+        else{
+          for(size_t i = 0; i < measured_.size(); i++) {
+            Pose3 pose = cameraPoses.at(i);
+            PinholeCamera<CALIBRATION> camera(pose, *K_);
+            Matrix Hxi, Hli;
+            Vector bi = -( camera.project(point,Hxi,Hli) - measured_.at(i) ).vector();
 
+            noise_-> WhitenSystem(Hxi, Hli, bi);
+            f += bi.squaredNorm();
+
+            Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
+            Hl2.block( 2*i, 0, 2, 3  ) = Hli;
+
+            subInsert(b2,bi,2*i);
+          }
         }
 
         // Shur complement trick
@@ -334,13 +350,8 @@ namespace gtsam {
         }
 
         // We triangulate the 3D position of the landmark
-        Point3 point;
         try {
-          if (point_) {
-            point = *point_;
-          } else {
-            point = triangulatePoint3(cameraPoses, measured_, *K_);
-          }
+          point_ = triangulatePoint3(cameraPoses, measured_, *K_);
         } catch( TriangulationCheiralityException& e) {
             // point is behind one of the cameras, turn factor off by setting everything to 0
             //std::cout << e.what() << std::end;
@@ -351,7 +362,7 @@ namespace gtsam {
           Pose3 pose = cameraPoses.at(i);
           PinholeCamera<CALIBRATION> camera(pose, *K_);
 
-          Point2 reprojectionError(camera.project(point) - measured_.at(i));
+          Point2 reprojectionError(camera.project(point_) - measured_.at(i));
           overallError += noise_->distance( reprojectionError.vector() );
         }
         return overallError;
@@ -370,7 +381,7 @@ namespace gtsam {
       return noise_; 
     }
 
-    /** return the noise landmark */
+    /** return the landmark */
     boost::optional<Point3> point() const {
       return point_;
     }
