@@ -206,8 +206,12 @@ namespace gtsam {
           //std::cout << e.what() << std::end;
           BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
           BOOST_FOREACH(Vector& v, gs) v = zero(6);
-          return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));         
+          //return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
+          // TODO: this is a debug condition, should be removed the comment
       }
+
+      degenerate = true; // TODO: this is a debug condition, should be removed
+      dim_landmark = 2; // TODO: this is a debug condition, should be removed the comment
 
       if (blockwise){
         // ==========================================================================================================
@@ -265,7 +269,6 @@ namespace gtsam {
 
       if (blockwise == false){ // version with full matrix multiplication
         // ==========================================================================================================
-
         Matrix Hx2 = zeros(2 * numKeys, 6 * numKeys);
         Matrix Hl2 = zeros(2 * numKeys, dim_landmark);
         Vector b2 = zero(2 * numKeys);
@@ -276,10 +279,12 @@ namespace gtsam {
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             if(i==0){ // first pose
               point_ = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
-              std::cout << "point_ " << point_<< std::endl;
+              // std::cout << "point_ " << point_<< std::endl;
             }
             Matrix Hxi, Hli;
             Vector bi = -( camera.projectPointAtInfinity(point_,Hxi,Hli) - measured_.at(i) ).vector();
+            // std::cout << "Hxi \n" << Hxi<< std::endl;
+            // std::cout << "Hli \n" << Hli<< std::endl;
 
             noise_-> WhitenSystem(Hxi, Hli, bi);
             f += bi.squaredNorm();
@@ -289,6 +294,8 @@ namespace gtsam {
 
             subInsert(b2,bi,2*i);
           }
+          // std::cout << "Hx2 \n" << Hx2<< std::endl;
+          // std::cout << "Hl2 \n" << Hl2<< std::endl;
         }
         else{
           std::cout << "non degenerate " << point_<< std::endl;
@@ -308,13 +315,15 @@ namespace gtsam {
           }
         }
 
+        std::cout << "dim_landmark " << dim_landmark << std::endl;
         // Shur complement trick
         Matrix H(6 * numKeys, 6 * numKeys);
-        Matrix3 C2 = (Hl2.transpose() * Hl2).inverse();
+        std::cout << "Hl2.transpose() * Hl2 \n" << Hl2.transpose() * Hl2 << std::endl;
+        Matrix C2 = (Hl2.transpose() * Hl2).inverse();
+        std::cout << "C2 \n" << C2.size() << std::endl;
         H = Hx2.transpose() * (Hx2 - (Hl2 * (C2 * (Hl2.transpose() * Hx2))));
 
         Vector gs_vector = Hx2.transpose() * (b2 - (Hl2 * (C2 * (Hl2.transpose() * b2))));
-
 
         // Populate Gs and gs
         int GsCount2 = 0;
@@ -362,17 +371,17 @@ namespace gtsam {
         try {
             point_ = triangulatePoint3(cameraPoses, measured_, *K_);
         } catch( TriangulationCheiralityException& e) {
-             std::cout << "TriangulationCheiralityException "  << std::endl;
+             // std::cout << "TriangulationCheiralityException "  << std::endl;
             // point is behind one of the cameras, turn factor off by setting everything to 0
             //std::cout << e.what() << std::end;
-            return 0.0;
+            // return 0.0; // TODO: this is a debug condition, should be removed the comment
         } catch( TriangulationUnderconstrainedException& e) {
           // point is triangulated at infinity
           //std::cout << e.what() << std::endl;
           degenerate = true;
         }
 
-        std::cout << "degenerate " << degenerate << std::endl;
+        degenerate = true; // TODO: this is a debug condition, should be removed
 
         if(degenerate){
           for(size_t i = 0; i < measured_.size(); i++) {
@@ -380,7 +389,6 @@ namespace gtsam {
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             if(i==0){ // first pose
               point_ = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
-              std::cout << "point_ " << point_<< std::endl;
             }
             Point2 reprojectionError(camera.projectPointAtInfinity(point_) - measured_.at(i));
             overallError += noise_->distance( reprojectionError.vector() );

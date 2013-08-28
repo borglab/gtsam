@@ -329,9 +329,12 @@ namespace gtsam {
           }
 
           // world to camera coordinate
-          Matrix Hc1 /* 3*6 */, Hc2 /* 3*3 */ ;
-          const Point3 pc = pose_.rotation().unrotate(pw, Hc1, Hc2) ;
+          Matrix Hc1_rot /* 3*3 */, Hc2 /* 3*3 */ ;
+          const Point3 pc = pose_.rotation().unrotate(pw, Hc1_rot, Hc2) ;
           if( pc.z() <= 0 ) throw CheiralityException();
+
+          Matrix Hc1 = Matrix::Zero(3,6);
+          Hc1.block(0,0,3,3) = Hc1_rot;
 
           // camera to normalized image coordinate
           Matrix Hn; // 2*3
