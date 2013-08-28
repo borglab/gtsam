@@ -61,6 +61,7 @@ namespace gtsam {
     double prior_outlier_;
 
     bool flag_bump_up_near_zero_probs_;
+    mutable bool start_with_M_step_;
 
     /** concept check by type */
     GTSAM_CONCEPT_LIE_TYPE(T)
@@ -78,10 +79,11 @@ namespace gtsam {
     TransformBtwRobotsUnaryFactorEM(Key key, const VALUE& measured, Key keyA, Key keyB,
         const gtsam::Values valA, const gtsam::Values valB,
         const SharedGaussian& model_inlier, const SharedGaussian& model_outlier,
-        const double prior_inlier, const double prior_outlier) :
+        const double prior_inlier, const double prior_outlier, const bool start_with_M_step = false) :
           Base(cref_list_of<1>(key)), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
           model_inlier_(model_inlier), model_outlier_(model_outlier),
-          prior_inlier_(prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(false){
+          prior_inlier_(prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(false),
+          start_with_M_step_(false){
 
       setValAValB(valA, valB);
 
@@ -197,6 +199,13 @@ namespace gtsam {
       Vector p_inlier_outlier = calcIndicatorProb(x);
       double p_inlier  = p_inlier_outlier[0];
       double p_outlier = p_inlier_outlier[1];
+
+      if (start_with_M_step_){
+        start_with_M_step_ = false;
+
+        p_inlier  = 0.5;
+        p_outlier = 0.5;
+      }
 
       Vector err_wh_inlier  = model_inlier_->whiten(err);
       Vector err_wh_outlier = model_outlier_->whiten(err);
