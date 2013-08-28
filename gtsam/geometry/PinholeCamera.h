@@ -255,7 +255,7 @@ namespace gtsam {
      * camera and returns a 2-dimensional point, no calibration applied
      * With optional 2by3 derivative
      */
-    inline static Point2 project_point_at_infinity_to_camera(const Point3& P,
+    inline static Point2 projectPointAtInfinityToCamera(const Point3& P,
                              boost::optional<Matrix&> H1 = boost::none){
       if (H1) {
         double d = 1.0 / P.z(), d2 = d * d;
@@ -316,7 +316,7 @@ namespace gtsam {
          *  @param H2 is the jacobian w.r.t. point3
          *  @param H3 is the jacobian w.r.t. calibration
          */
-        inline Point2 project_point_at_infinity(const Point3& pw,
+        inline Point2 projectPointAtInfinity(const Point3& pw,
             boost::optional<Matrix&> H1 = boost::none,
             boost::optional<Matrix&> H2 = boost::none,
             boost::optional<Matrix&> H3 = boost::none) const {
@@ -324,7 +324,7 @@ namespace gtsam {
           if (!H1 && !H2 && !H3) {
             const Point3 pc = pose_.rotation().unrotate(pw) ;
             if ( pc.z() <= 0 ) throw CheiralityException();
-            const Point2 pn = project_point_at_infinity_to_camera(pc) ;
+            const Point2 pn = projectPointAtInfinityToCamera(pc) ;
             return K_.uncalibrate(pn);
           }
 
@@ -335,7 +335,7 @@ namespace gtsam {
 
           // camera to normalized image coordinate
           Matrix Hn; // 2*3
-          const Point2 pn = project_point_at_infinity_to_camera(pc, Hn) ;
+          const Point2 pn = projectPointAtInfinityToCamera(pc, Hn) ;
 
           // uncalibration
           Matrix Hk, Hi; // 2*2
@@ -384,6 +384,13 @@ namespace gtsam {
       const Point2 pn = K_.calibrate(p);
       const Point3 pc(pn.x()*depth, pn.y()*depth, depth);
       return pose_.transform_from(pc);
+    }
+
+    /// backproject a 2-dimensional point to a 3-dimensional point at infinity
+    inline Point3 backprojectPointAtInfinity(const Point2& p) const {
+      const Point2 pn = K_.calibrate(p);
+      const Point3 pc(pn.x(), pn.y(), 1.0);
+      return pose_.rotation().rotate(pc);
     }
 
     /**

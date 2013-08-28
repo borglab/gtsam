@@ -47,7 +47,7 @@ namespace gtsam {
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
     boost::shared_ptr<SmartProjectionFactorState> state_;
-    boost::optional<Point3> point_;
+    mutable Point3 point_;
 
     // verbosity handling for Cheirality Exceptions
     bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
@@ -175,6 +175,8 @@ namespace gtsam {
     virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
 
       bool blockwise = false;
+      bool degenerate = false;
+      int dim_landmark = 3;
       
       unsigned int numKeys = keys_.size();
       std::vector<Index> js;
@@ -194,6 +196,11 @@ namespace gtsam {
       // We triangulate the 3D position of the landmark
       try {
           point_ = triangulatePoint3(cameraPoses, measured_, *K_);
+      } catch( TriangulationUnderconstrainedException& e) {
+        // point is triangulated at infinity
+        //std::cout << e.what() << std::end;
+        degenerate = true;
+        dim_landmark = 2;
       } catch( TriangulationCheiralityException& e) {
           // point is behind one of the cameras, turn factor off by setting everything to 0
           //std::cout << e.what() << std::end;
@@ -201,12 +208,6 @@ namespace gtsam {
           BOOST_FOREACH(Vector& v, gs) v = zero(6);
           return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));         
       }
-
-      bool degenerate = true;
-
-      int dim_landmark = 2;
-
-
 
       if (blockwise){
         // ==========================================================================================================
@@ -273,8 +274,12 @@ namespace gtsam {
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
+            if(i==0){ // first pose
+              point_ = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
+              std::cout << "point_ " << point_<< std::endl;
+            }
             Matrix Hxi, Hli;
-            Vector bi = -( camera.project(point,Hxi,Hli) - measured_.at(i) ).vector();
+            Vector bi = -( camera.projectPointAtInfinity(point_,Hxi,Hli) - measured_.at(i) ).vector();
 
             noise_-> WhitenSystem(Hxi, Hli, bi);
             f += bi.squaredNorm();
@@ -286,11 +291,12 @@ namespace gtsam {
           }
         }
         else{
+          std::cout << "non degenerate " << point_<< std::endl;
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             Matrix Hxi, Hli;
-            Vector bi = -( camera.project(point,Hxi,Hli) - measured_.at(i) ).vector();
+            Vector bi = -( camera.project(point_,Hxi,Hli) - measured_.at(i) ).vector();
 
             noise_-> WhitenSystem(Hxi, Hli, bi);
             f += bi.squaredNorm();
@@ -338,6 +344,9 @@ namespace gtsam {
     virtual double error(const Values& values) const {
       if (this->active(values)) {
         double overallError=0;
+        bool degenerate = false;
+
+        std::cout << "evaluating error in smart factor " << std::endl;
 
         // Collect all poses (Cameras)
         std::vector<Pose3> cameraPoses;
@@ -351,22 +360,44 @@ namespace gtsam {
 
         // We triangulate the 3D position of the landmark
         try {
-          point_ = triangulatePoint3(cameraPoses, measured_, *K_);
+            point_ = triangulatePoint3(cameraPoses, measured_, *K_);
         } catch( TriangulationCheiralityException& e) {
+             std::cout << "TriangulationCheiralityException "  << std::endl;
             // point is behind one of the cameras, turn factor off by setting everything to 0
             //std::cout << e.what() << std::end;
             return 0.0;
+        } catch( TriangulationUnderconstrainedException& e) {
+          // point is triangulated at infinity
+          //std::cout << e.what() << std::endl;
+          degenerate = true;
         }
 
-        for(size_t i = 0; i < measured_.size(); i++) {
-          Pose3 pose = cameraPoses.at(i);
-          PinholeCamera<CALIBRATION> camera(pose, *K_);
+        std::cout << "degenerate " << degenerate << std::endl;
 
-          Point2 reprojectionError(camera.project(point_) - measured_.at(i));
-          overallError += noise_->distance( reprojectionError.vector() );
+        if(degenerate){
+          for(size_t i = 0; i < measured_.size(); i++) {
+            Pose3 pose = cameraPoses.at(i);
+            PinholeCamera<CALIBRATION> camera(pose, *K_);
+            if(i==0){ // first pose
+              point_ = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
+              std::cout << "point_ " << point_<< std::endl;
+            }
+            Point2 reprojectionError(camera.projectPointAtInfinity(point_) - measured_.at(i));
+            overallError += noise_->distance( reprojectionError.vector() );
+          }
+          return overallError;
         }
-        return overallError;
-      } else {
+        else{
+          for(size_t i = 0; i < measured_.size(); i++) {
+            Pose3 pose = cameraPoses.at(i);
+            PinholeCamera<CALIBRATION> camera(pose, *K_);
+
+            Point2 reprojectionError(camera.project(point_) - measured_.at(i));
+            overallError += noise_->distance( reprojectionError.vector() );
+          }
+          return overallError;
+        }
+      } else { // else of active flag
         return 0.0;
       }
     }
