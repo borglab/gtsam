@@ -316,6 +316,10 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
       const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
       double prior_inlier, double prior_outlier);
 
+  BetweenFactorEM(size_t key1, size_t key2, const T& relativePose,
+        const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
+        double prior_inlier, double prior_outlier,  bool flag_bump_up_near_zero_probs);
+
   Vector whitenedError(const gtsam::Values& x);
   Vector unwhitenedError(const gtsam::Values& x);
   Vector calcIndicatorProb(const gtsam::Values& x);
@@ -337,7 +341,7 @@ virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
   TransformBtwRobotsUnaryFactorEM(size_t key, const T& relativePose, size_t keyA, size_t keyB,
         const gtsam::Values& valA, const gtsam::Values& valB,
         const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
-        double prior_inlier, double prior_outlier, bool start_with_M_step);
+        double prior_inlier, double prior_outlier, bool flag_bump_up_near_zero_probs, bool start_with_M_step);
 
   Vector whitenedError(const gtsam::Values& x);
   Vector unwhitenedError(const gtsam::Values& x);

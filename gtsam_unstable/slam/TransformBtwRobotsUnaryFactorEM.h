@@ -79,10 +79,12 @@ namespace gtsam {
     TransformBtwRobotsUnaryFactorEM(Key key, const VALUE& measured, Key keyA, Key keyB,
         const gtsam::Values valA, const gtsam::Values valB,
         const SharedGaussian& model_inlier, const SharedGaussian& model_outlier,
-        const double prior_inlier, const double prior_outlier, const bool start_with_M_step = false) :
+        const double prior_inlier, const double prior_outlier,
+        const bool flag_bump_up_near_zero_probs = false,
+        const bool start_with_M_step = false) :
           Base(cref_list_of<1>(key)), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
           model_inlier_(model_inlier), model_outlier_(model_outlier),
-          prior_inlier_(prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(false),
+          prior_inlier_(prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(flag_bump_up_near_zero_probs),
           start_with_M_step_(false){
 
       setValAValB(valA, valB);
@@ -260,19 +262,19 @@ namespace gtsam {
       p_inlier  /= sumP;
       p_outlier /= sumP;
 
-      //      if (flag_bump_up_near_zero_probs_){
-      // Bump up near-zero probabilities (as in linerFlow.h)
-      double minP = 0.05; // == 0.1 / 2 indicator variables
-      if (p_inlier < minP || p_outlier < minP){
-        if (p_inlier < minP)
-          p_inlier = minP;
-        if (p_outlier < minP)
-          p_outlier = minP;
-        sumP = p_inlier + p_outlier;
-        p_inlier  /= sumP;
-        p_outlier /= sumP;
+      if (flag_bump_up_near_zero_probs_){
+        // Bump up near-zero probabilities (as in linerFlow.h)
+        double minP = 0.05; // == 0.1 / 2 indicator variables
+        if (p_inlier < minP || p_outlier < minP){
+          if (p_inlier < minP)
+            p_inlier = minP;
+          if (p_outlier < minP)
+            p_outlier = minP;
+          sumP = p_inlier + p_outlier;
+          p_inlier  /= sumP;
+          p_outlier /= sumP;
+        }
       }
-      //      }
 
       return Vector_(2, p_inlier, p_outlier);
     }
