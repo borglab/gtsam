@@ -69,10 +69,10 @@ namespace gtsam {
     /** Constructor */
     BetweenFactorEM(Key key1, Key key2, const VALUE& measured,
         const SharedGaussian& model_inlier, const SharedGaussian& model_outlier,
-        const double prior_inlier, const double prior_outlier) :
+        const double prior_inlier, const double prior_outlier, const bool flag_bump_up_near_zero_probs = false) :
           Base(cref_list_of<2>(key1)(key2)), key1_(key1), key2_(key2), measured_(measured),
           model_inlier_(model_inlier), model_outlier_(model_outlier),
-          prior_inlier_(prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(false){
+          prior_inlier_(prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(flag_bump_up_near_zero_probs){
     }
 
     virtual ~BetweenFactorEM() {}
