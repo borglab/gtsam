@@ -64,10 +64,10 @@ int main(int argc, char* argv[]) {
   noiseModel::Isotropic::shared_ptr measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Create the set of ground-truth landmarks
-  std::vector<gtsam::Point3> points = createPoints();
+  vector<Point3> points = createPoints();
 
   // Create the set of ground-truth poses
-  std::vector<gtsam::Pose3> poses = createPoses();
+  vector<Pose3> poses = createPoses();
 
   // Create an iSAM2 object. Unlike iSAM1, which performs periodic batch steps to maintain proper linearization
   // and efficient variable ordering, iSAM2 performs partial relinearization/reordering at each step. A parameter

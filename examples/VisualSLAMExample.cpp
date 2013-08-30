@@ -71,10 +71,10 @@ int main(int argc, char* argv[]) {
   noiseModel::Isotropic::shared_ptr measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Create the set of ground-truth landmarks
-  std::vector<gtsam::Point3> points = createPoints();
+  vector<Point3> points = createPoints();
 
   // Create the set of ground-truth poses
-  std::vector<gtsam::Pose3> poses = createPoses();
+  vector<Pose3> poses = createPoses();
 
   // Create a factor graph
   NonlinearFactorGraph graph;
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
   graph.push_back(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
   graph.print("Factor Graph:\n");
 
-  // Create the data structure to hold the initialEstimate estimate to the solution
+  // Create the data structure to hold the initial estimate to the solution
   // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
   for (size_t i = 0; i < poses.size(); ++i)

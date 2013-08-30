@@ -46,8 +46,8 @@ using namespace gtsam;
 int main(int argc, char* argv[]) {
 
   // Create the set of ground-truth
-  std::vector<gtsam::Point3> points = createPoints();
-  std::vector<gtsam::Pose3> poses = createPoses();
+  vector<Point3> points = createPoints();
+  vector<Pose3> poses = createPoses();
 
   // Create the factor graph
   NonlinearFactorGraph graph;
