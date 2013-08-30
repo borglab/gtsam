@@ -21,14 +21,11 @@
  *  - The robot rotates around the landmarks, always facing towards the cube
  */
 
-// As this is a full 3D problem, we will use Pose3 variables to represent the camera
-// positions and Point3 variables (x, y, z) to represent the landmark coordinates.
+// For loading the data
+#include "visualSLAMdata.h"
+
 // Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
-// We will also need a camera object to hold calibration information and perform projections.
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/SimpleCamera.h>
 
 // Each variable in the system (poses and landmarks) must be identified with a unique key.
 // We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
@@ -74,28 +71,10 @@ int main(int argc, char* argv[]) {
   noiseModel::Isotropic::shared_ptr measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Create the set of ground-truth landmarks
-  std::vector<gtsam::Point3> points;
-  points.push_back(gtsam::Point3(10.0,10.0,10.0));
-  points.push_back(gtsam::Point3(-10.0,10.0,10.0));
-  points.push_back(gtsam::Point3(-10.0,-10.0,10.0));
-  points.push_back(gtsam::Point3(10.0,-10.0,10.0));
-  points.push_back(gtsam::Point3(10.0,10.0,-10.0));
-  points.push_back(gtsam::Point3(-10.0,10.0,-10.0));
-  points.push_back(gtsam::Point3(-10.0,-10.0,-10.0));
-  points.push_back(gtsam::Point3(10.0,-10.0,-10.0));
+  std::vector<gtsam::Point3> points = createPoints();
 
   // Create the set of ground-truth poses
-  std::vector<gtsam::Pose3> poses;
-  double radius = 30.0;
-  int i = 0;
-  double theta = 0.0;
-  gtsam::Point3 up(0,0,1);
-  gtsam::Point3 target(0,0,0);
-  for(; i < 8; ++i, theta += 2*M_PI/8) {
-    gtsam::Point3 position = Point3(radius*cos(theta), radius*sin(theta), 0.0);
-    gtsam::SimpleCamera camera = SimpleCamera::Lookat(position, target, up);
-    poses.push_back(camera.pose());
-  }
+  std::vector<gtsam::Pose3> poses = createPoses();
 
   // Create a factor graph
   NonlinearFactorGraph graph;
