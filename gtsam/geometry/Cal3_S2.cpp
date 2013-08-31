@@ -33,7 +33,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Cal3_S2::Cal3_S2(const std::string &path) {
+  Cal3_S2::Cal3_S2(const std::string &path) :
+    fx_(320), fy_(320), s_(0), u0_(320), v0_(140) {
 
     char buffer[200];
     buffer[0] = 0;
@@ -68,10 +69,12 @@ namespace gtsam {
   /* ************************************************************************* */
   Point2 Cal3_S2::uncalibrate(const Point2& p, boost::optional<Matrix&> H1,
       boost::optional<Matrix&> H2) const {
-    if (H1) *H1 = Matrix_(2, 5, p.x(), 000.0, p.y(), 1.0, 0.0, 0.000, p.y(),
-        0.000, 0.0, 1.0);
-    if (H2) *H2 = Matrix_(2, 2, fx_, s_, 0.000, fy_);
     const double x = p.x(), y = p.y();
+  if (H1)
+    *H1 = Matrix_(2, 5,
+          x, 0.0,   y, 1.0, 0.0,
+        0.0,   y, 0.0, 0.0, 1.0);
+    if (H2) *H2 = Matrix_(2, 2, fx_, s_, 0.000, fy_);
     return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
   }
 
