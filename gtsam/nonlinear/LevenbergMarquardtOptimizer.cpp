@@ -157,9 +157,11 @@ void LevenbergMarquardtOptimizer::iterate() {
       } else {
         state_.lambda *= params_.lambdaFactor;
       }
-    } catch(...) {
-      throw;
     }
+// Frank asks: why would we do that?
+//    catch(...) {
+//      throw;
+//    }
   } // end while
 
   if (lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
