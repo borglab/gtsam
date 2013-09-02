@@ -21,9 +21,6 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/inference/Ordering.h>
 
 namespace gtsam {

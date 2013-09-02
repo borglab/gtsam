@@ -6,9 +6,7 @@
  */
 
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
-#include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <boost/shared_ptr.hpp>
 #include <stdexcept>
