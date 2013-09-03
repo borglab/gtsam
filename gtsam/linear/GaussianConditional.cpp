@@ -74,39 +74,46 @@ namespace gtsam {
   }    
 
   /* ************************************************************************* */
-  bool GaussianConditional::equals(const GaussianConditional &c, double tol) const
+  bool GaussianConditional::equals(const GaussianFactor& f, double tol) const
   {
-    // check if the size of the parents_ map is the same
-    if (parents().size() != c.parents().size())
-      return false;
+    if (const GaussianConditional* c = dynamic_cast<const GaussianConditional*>(&f))
+    {
+      // check if the size of the parents_ map is the same
+      if (parents().size() != c->parents().size())
+        return false;
 
-    // check if R_ and d_ are linear independent
-    for (DenseIndex i=0; i<Ab_.rows(); i++) {
-      list<Vector> rows1; rows1.push_back(Vector(get_R().row(i)));
-      list<Vector> rows2; rows2.push_back(Vector(c.get_R().row(i)));
+      // check if R_ and d_ are linear independent
+      for (DenseIndex i = 0; i < Ab_.rows(); i++) {
+        list<Vector> rows1; rows1.push_back(Vector(get_R().row(i)));
+        list<Vector> rows2; rows2.push_back(Vector(c->get_R().row(i)));
 
-      // check if the matrices are the same
-      // iterate over the parents_ map
-      for (const_iterator it = beginParents(); it != endParents(); ++it) {
-        const_iterator it2 = c.beginParents() + (it-beginParents());
-        if(*it != *(it2))
+        // check if the matrices are the same
+        // iterate over the parents_ map
+        for (const_iterator it = beginParents(); it != endParents(); ++it) {
+          const_iterator it2 = c->beginParents() + (it - beginParents());
+          if (*it != *(it2))
+            return false;
+          rows1.push_back(row(getA(it), i));
+          rows2.push_back(row(c->getA(it2), i));
+        }
+
+        Vector row1 = concatVectors(rows1);
+        Vector row2 = concatVectors(rows2);
+        if (!linear_dependent(row1, row2, tol))
           return false;
-        rows1.push_back(row(getA(it), i));
-        rows2.push_back(row(c.getA(it2), i));
       }
 
-      Vector row1 = concatVectors(rows1);
-      Vector row2 = concatVectors(rows2);
-      if (!linear_dependent(row1, row2, tol))
+      // check if sigmas are equal
+      if ((model_ && !c->model_) || (!model_ && c->model_)
+        || (model_ && c->model_ && !model_->equals(*c->model_, tol)))
         return false;
+
+      return true;
     }
-
-    // check if sigmas are equal
-    if ((model_ && !c.model_) || (!model_ && c.model_)
-      || (model_ && c.model_ && !model_->equals(*c.model_, tol)))
+    else
+    {
       return false;
-
-    return true;
+    }
   }
 
   /* ************************************************************************* */

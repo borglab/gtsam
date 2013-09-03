@@ -91,7 +91,7 @@ namespace gtsam {
       const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /** equals function */
-    bool equals(const GaussianConditional&cg, double tol = 1e-9) const;
+    bool equals(const GaussianFactor&cg, double tol = 1e-9) const;
 
     /** Return a view of the upper-triangular R block of the conditional */
     constABlock get_R() const { return Ab_.range(0, nrFrontals()); }
