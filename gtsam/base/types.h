@@ -23,8 +23,8 @@
 #include <gtsam/config.h>
 
 #include <cstddef>
-
 #include <string>
+#include <iostream>
 #include <boost/function/function1.hpp>
 #include <boost/range/concepts.hpp>
 #include <boost/optional.hpp>
