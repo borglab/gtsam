@@ -108,7 +108,7 @@ Thrown when a linear system is ill-posed.  The most common cause for this\n\
 error is having underconstrained variables.  Mathematically, the system is\n\
 either underdetermined, or its quadratic error function is concave in some\n\
 directions.  See the GTSAM Doxygen documentation at http://borg.cc.gatech.edu/ \n\
-on gtsam::IndeterminantLinearSystemException for more information.\n");
+on gtsam::IndeterminantLinearSystemException for more information.");
       return description_->c_str();
     }
   };
