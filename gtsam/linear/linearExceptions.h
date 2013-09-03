@@ -94,23 +94,22 @@ namespace gtsam {
    */
   class IndeterminantLinearSystemException : public ThreadsafeException<IndeterminantLinearSystemException> {
     Index j_;
-    mutable std::string what_;
   public:
     IndeterminantLinearSystemException(Index j) throw() : j_(j) {}
     virtual ~IndeterminantLinearSystemException() throw() {}
     Index nearbyVariable() const { return j_; }
     virtual const char* what() const throw() {
-      if(what_.empty())
-        what_ = 
+      if(!description_)
+        description_ = String(
 "\nIndeterminant linear system detected while working near variable with\n"
-"index " + boost::lexical_cast<std::string>(j_) + " in ordering.\n"
+"index " + boost::lexical_cast<String>(j_) + " in ordering.\n"
 "\n\
 Thrown when a linear system is ill-posed.  The most common cause for this\n\
 error is having underconstrained variables.  Mathematically, the system is\n\
 either underdetermined, or its quadratic error function is concave in some\n\
 directions.  See the GTSAM Doxygen documentation at http://borg.cc.gatech.edu/ \n\
-on gtsam::IndeterminantLinearSystemException for more information.\n";
-      return what_.c_str();
+on gtsam::IndeterminantLinearSystemException for more information.\n");
+      return description_->c_str();
     }
   };
 

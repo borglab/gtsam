@@ -31,6 +31,7 @@
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb_exception.h>
+#include <tbb/scalable_allocator.h>
 #endif
 
 namespace gtsam {
@@ -148,16 +149,21 @@ namespace gtsam {
     public std::exception
 #endif
   {
-  private:
 #ifdef GTSAM_USE_TBB
+  private:
     typedef tbb::tbb_exception Base;
+  protected:
+    typedef std::basic_string<char, std::char_traits<char>, tbb::tbb_allocator<char> > String;
 #else
+  private:
     typedef std::exception Base;
+  protected:
+    typedef std::string String;
 #endif
 
   protected:
     bool dynamic_; ///< Whether this object was moved
-    boost::optional<std::string> description_; ///< Optional description
+    mutable boost::optional<String> description_; ///< Optional description
 
     /// Default constructor is protected - may only be created from derived classes
     ThreadsafeException() : dynamic_(false) {}
@@ -166,7 +172,7 @@ namespace gtsam {
     ThreadsafeException(const ThreadsafeException& other) : Base(other), dynamic_(false) {}
 
     /// Construct with description string
-    ThreadsafeException(const std::string& description) : dynamic_(false), description_(description) {}
+    ThreadsafeException(const std::string& description) : dynamic_(false), description_(String(description.begin(), description.end())) {}
 
     /// Default destructor doesn't have the throw()
     virtual ~ThreadsafeException() throw () {}
@@ -175,14 +181,22 @@ namespace gtsam {
     // Implement functions for tbb_exception
 #ifdef GTSAM_USE_TBB
     virtual tbb::tbb_exception* move() throw () {
-      DERIVED* clone = ::new DERIVED(static_cast<DERIVED&>(*this));
+      void* cloneMemory = scalable_malloc(sizeof(DERIVED));
+      if (!cloneMemory) {
+        std::cerr << "Failed allocating memory to copy thrown exception, exiting now." << std::endl;
+        exit(-1);
+      }
+      DERIVED* clone = ::new(cloneMemory) DERIVED(static_cast<DERIVED&>(*this));
       clone->dynamic_ = true;
       return clone;
     }
 
     virtual void destroy() throw() {
-      if (dynamic_)
-        ::delete this;
+      if (dynamic_) {
+        DERIVED* derivedPtr = static_cast<DERIVED*>(this);
+        derivedPtr->~DERIVED();
+        scalable_free(derivedPtr);
+      }
     }
 
     virtual void throw_self() {
