@@ -77,7 +77,7 @@ namespace gtsam {
     /** Construct factor from container of keys.  This constructor is used internally from derived factor
     *  constructors, either from a container of keys or from a boost::assign::list_of. */
     template<typename CONTAINER>
-    Factor(const CONTAINER& keys) : keys_(keys.begin(), keys.end()) {}
+    explicit Factor(const CONTAINER& keys) : keys_(keys.begin(), keys.end()) {}
 
     /** Construct factor from iterator keys.  This constructor may be used internally from derived
     *  factor constructors, although our code currently does not use this. */
