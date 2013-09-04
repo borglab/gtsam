@@ -257,7 +257,7 @@ namespace gtsam {
     /* ************************************************************************* */
     gtsam::Vector unwhitenedError(const gtsam::Values& x) const {
 
-      bool debug = true;
+//      bool debug = true;
 
       const T& p1 = x.at<T>(key1_);
       const T& p2 = x.at<T>(key2_);
