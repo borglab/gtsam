@@ -107,25 +107,25 @@ namespace gtsam {
 
     /** Add a unary factor */
     void add(Key key1, const Matrix& A1,
-        const Vector& b, const SharedDiagonal& model) {
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal()) {
       add(JacobianFactor(key1,A1,b,model)); }
 
     /** Add a binary factor */
     void add(Key key1, const Matrix& A1,
         Key key2, const Matrix& A2,
-        const Vector& b, const SharedDiagonal& model) {
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal()) {
       add(JacobianFactor(key1,A1,key2,A2,b,model)); }
 
     /** Add a ternary factor */
     void add(Key key1, const Matrix& A1,
         Key key2, const Matrix& A2,
         Key key3, const Matrix& A3,
-        const Vector& b, const SharedDiagonal& model) {
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal()) {
       add(JacobianFactor(key1,A1,key2,A2,key3,A3,b,model)); }
 
     /** Add an n-ary factor */
     template<class TERMS>
-    void add(const TERMS& terms, const Vector &b, const SharedDiagonal& model) {
+    void add(const TERMS& terms, const Vector &b, const SharedDiagonal& model = SharedDiagonal()) {
       add(JacobianFactor(terms,b,model)); }
 
     /**
