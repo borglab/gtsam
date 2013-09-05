@@ -489,8 +489,11 @@ public:
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
   ISAM2();
 
+  /** default virtual destructor */
+  virtual ~ISAM2() {}
+
   /** Compare equality */
-  bool equals(const ISAM2& other, double tol = 1e-9) const;
+  virtual bool equals(const ISAM2& other, double tol = 1e-9) const;
 
   /**
    * Add new factors, updating the solution and relinearizing as needed.
@@ -520,7 +523,8 @@ public:
    * of the size of the linear delta. This allows the provided keys to be reordered.
    * @return An ISAM2Result struct containing information about the update
    */
-  ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
+  virtual ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
+      const Values& newTheta = Values(),
       const std::vector<size_t>& removeFactorIndices = std::vector<size_t>(),
       const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
@@ -622,13 +626,13 @@ public:
 
   /// @}
 
-private:
+protected:
 
   FastSet<size_t> getAffectedFactors(const FastList<Key>& keys) const;
   GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-  boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
+  virtual boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
       const std::vector<Key>& observedKeys, const FastSet<Key>& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
   //  void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
