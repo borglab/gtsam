@@ -60,7 +60,7 @@ int main (int argc, char** argv) {
   Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
 
   // save factor graph as graphviz dot file
-  // Render to PDF using "dot Pose2SLAMExample.dot -Tpdf > graph.pdf"
+  // Render to PDF using "fdp Pose2SLAMExample.dot -Tpdf > graph.pdf"
   ofstream os("Pose2SLAMExample.dot");
   graph.saveGraph(os, result);
 
