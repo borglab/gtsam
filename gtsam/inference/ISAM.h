@@ -30,7 +30,7 @@ namespace gtsam {
   template<class BAYESTREE>
   class ISAM: public BAYESTREE
   {
-  private:
+  public:
 
     typedef BAYESTREE Base;
     typedef typename Base::BayesNetType BayesNetType;
@@ -38,6 +38,9 @@ namespace gtsam {
     typedef typename Base::Clique Clique;
     typedef typename Base::sharedClique sharedClique;
     typedef typename Base::Cliques Cliques;
+
+  private:
+
     typedef typename Base::Eliminate Eliminate;
     typedef typename Base::EliminationTraitsType EliminationTraitsType;
 
