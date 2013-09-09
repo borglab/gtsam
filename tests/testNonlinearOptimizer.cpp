@@ -283,6 +283,26 @@ TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
 }
 
 /* ************************************************************************* */
+TEST(NonlinearOptimizer, disconnected_graph) {
+  Values expected;
+  expected.insert(X(1), Pose2(0.,0.,0.));
+  expected.insert(X(2), Pose2(1.5,0.,0.));
+  expected.insert(X(3), Pose2(3.0,0.,0.));
+
+  Values init;
+  init.insert(X(1), Pose2(0.,0.,0.));
+  init.insert(X(2), Pose2(0.,0.,0.));
+  init.insert(X(3), Pose2(0.,0.,0.));
+
+  NonlinearFactorGraph graph;
+  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph += PriorFactor<Pose2>(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+
+  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(graph, init).optimize()));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

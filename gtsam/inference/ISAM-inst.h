@@ -27,7 +27,6 @@ namespace gtsam {
   void ISAM<BAYESTREE>::update_internal(const FactorGraphType& newFactors, Cliques& orphans, const Eliminate& function)
   {
     // Remove the contaminated part of the Bayes tree
-    // Throw exception if disconnected
     BayesNetType bn;
     if (!this->empty()) {
       const FastSet<Key> newFactorKeys = newFactors.keys();
