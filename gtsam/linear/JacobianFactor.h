@@ -291,12 +291,6 @@ namespace gtsam {
     friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
       EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
-  private:
-
-    /// Internal function to fill blocks and set dimensions
-    template<typename TERMS>
-    void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
-    
     /**
      * splits a pre-factorized factor into a conditional, and changes the current
      * factor to be the remaining component. Performs same operation as eliminate(),
@@ -304,6 +298,12 @@ namespace gtsam {
      */
     boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals);
 
+  private:
+
+    /// Internal function to fill blocks and set dimensions
+    template<typename TERMS>
+    void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
+    
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
