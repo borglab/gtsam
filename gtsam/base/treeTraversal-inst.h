@@ -107,9 +107,12 @@ namespace gtsam {
             tbb::task_list childTasks;
             BOOST_FOREACH(const boost::shared_ptr<NODE>& child, node->children)
             {
-              // Process child in a subtask
+              // Process child in a subtask.  Important:  Run visitorPre before calling
+              // allocate_child so that if visitorPre throws an exception, we will not have
+              // allocated an extra child, this causes a TBB error.
+              const DATA childData = visitorPre(child, myData);
               childTasks.push_back(*new(allocate_child())
-                PreOrderTask(child, visitorPre(child, myData), visitorPre, visitorPost,
+                PreOrderTask(child, childData, visitorPre, visitorPost,
                 problemSizeThreshold, overThreshold));
             }
 
