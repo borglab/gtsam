@@ -276,6 +276,10 @@ namespace gtsam {
       // this subtree into the elimination.
       this->keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
     }
+
+    void print(const std::string& s="", const KeyFormatter& formatter = DefaultKeyFormatter) const {
+      clique->print(s + "stored clique", formatter);
+    }
   };
 
 } /// namespace gtsam
