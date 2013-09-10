@@ -104,8 +104,10 @@ size_t LinearContainerFactor::dim() const {
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) const {
+  // Clone factor and update as necessary
+  GaussianFactor::shared_ptr linFactor = factor_->clone();
   if (!hasLinearizationPoint())
-    return factor_;
+    return linFactor;
 
   // Extract subset of values
   Values subsetC;
@@ -115,8 +117,7 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
   // Determine delta between linearization points using new ordering
   VectorValues delta = linearizationPoint_->localCoordinates(subsetC);
 
-  // clone and reorder linear factor to final ordering
-  GaussianFactor::shared_ptr linFactor = factor_->clone();
+  // Apply changes due to relinearization
   if (isJacobian()) {
     JacobianFactor::shared_ptr jacFactor = boost::dynamic_pointer_cast<JacobianFactor>(linFactor);
     jacFactor->getb() = -jacFactor->unweighted_error(delta);

@@ -79,9 +79,8 @@ public:
 
   /**
    * Linearize to a GaussianFactor, with method depending on the presence of a linearizationPoint
-   *  - With no linearization point, returns a reordered, but numerically identical,
-   *  version of the existing stored linear factor
-   *  - With a linearization point provided, returns a reordered and relinearized version of
+   *  - With no linearization point, returns a cloned version of the stored linear factor.
+   *  - With a linearization point provided, returns a relinearized version of
    *  the linearized factor.
    *
    * The relinearization approach used computes a linear delta between the original linearization
@@ -97,13 +96,12 @@ public:
   GaussianFactor::shared_ptr linearize(const Values& c) const;
 
   /**
-   * Creates an anti-factor directly and performs rekeying due to ordering
+   * Creates an anti-factor directly
    */
   GaussianFactor::shared_ptr negateToGaussian() const;
 
   /**
-   * Creates the equivalent anti-factor as another LinearContainerFactor,
-   * so it remains independent of ordering.
+   * Creates the equivalent anti-factor as another LinearContainerFactor.
    */
   NonlinearFactor::shared_ptr negateToNonlinear() const;
 
