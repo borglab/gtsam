@@ -30,7 +30,56 @@
 
 namespace gtsam {
 
-  class SmartProjectionFactorState;
+  /**
+   * Structure for storing some state memory, used to speed up optimization
+   * @addtogroup SLAM
+   */
+  class SmartProjectionFactorState {
+  public:
+
+    static int lastID;
+    int ID;
+
+    SmartProjectionFactorState() {
+      ID = lastID++;
+      calculatedHessian = false;
+    }
+
+    // Linearization point
+    Values values;
+    std::vector<Pose3> cameraPosesLinearization;
+
+    // Triangulation at current linearization point
+    Point3 point;
+    std::vector<Pose3> cameraPosesTriangulation;
+    bool degenerate;
+    bool cheiralityException;
+
+    // Overall reprojection error
+    double overallError;
+    std::vector<Pose3> cameraPosesError;
+
+    // Hessian
+    bool calculatedHessian;
+    Matrix H;
+    Vector gs_vector;
+    double f;
+
+    std::vector<Matrix> Gs;
+    std::vector<Vector> gs;
+
+    // C = Hl'Hl
+
+    // Cinv = inv(Hl'Hl)
+    // Matrix3 Cinv;
+
+    // E = Hx'Hl
+
+    // w = Hl'b
+
+  };
+
+  int SmartProjectionFactorState::lastID = 0;
 
   /**
    * The calibration is known here.
@@ -47,7 +96,6 @@ namespace gtsam {
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
     boost::shared_ptr<SmartProjectionFactorState> state_;
-    mutable Point3 point_;
 
     // verbosity handling for Cheirality Exceptions
     bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
@@ -64,6 +112,9 @@ namespace gtsam {
     /// shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<This> shared_ptr;
 
+    /// shorthand for smart projection factor state variable
+    typedef boost::shared_ptr<SmartProjectionFactorState> SmartFactorStatePtr;
+
     /// Default constructor
     SmartProjectionFactor() : throwCheirality_(false), verboseCheirality_(false) {}
 
@@ -79,7 +130,7 @@ namespace gtsam {
     SmartProjectionFactor(const std::vector<Point2> measured, const SharedNoiseModel& model,
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
         boost::optional<POSE> body_P_sensor = boost::none,
-        boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
+        SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
           measured_(measured), noise_(model), K_(K), body_P_sensor_(body_P_sensor),
           state_(state), throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
@@ -100,9 +151,11 @@ namespace gtsam {
         std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
         boost::optional<POSE> body_P_sensor = boost::none,
-        boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
+        SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
           measured_(measured), noise_(model), K_(K), body_P_sensor_(body_P_sensor),
-          state_(state), throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
+          state_(state), throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {
+
+    }
 
     /**
      * Constructor with exception-handling flags
@@ -111,20 +164,15 @@ namespace gtsam {
      */
     SmartProjectionFactor(const SharedNoiseModel& model, const boost::shared_ptr<CALIBRATION>& K, 
         boost::optional<POSE> body_P_sensor = boost::none,
-        boost::shared_ptr<SmartProjectionFactorState> state = boost::shared_ptr<SmartProjectionFactorState>()) :
+        SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
         noise_(model), K_(K), body_P_sensor_(body_P_sensor), state_(state) {
     }
 
     /** Virtual destructor */
     virtual ~SmartProjectionFactor() {}
 
-    /// @return a deep copy of this factor
-//    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-//      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-//          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
-
     /**
-     * add
+     * add a new measurement and pose key
      * @param measured is the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
      * @param poseKey is the index corresponding to the camera observing the same landmark
      */
@@ -175,8 +223,10 @@ namespace gtsam {
     virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
 
       bool blockwise = false;
-      bool degenerate = false;
+      double retriangulationThreshold = 1e-9;
+
       int dim_landmark = 3;
+      bool retriangulate = true;
       
       unsigned int numKeys = keys_.size();
       std::vector<Index> js;
@@ -185,33 +235,68 @@ namespace gtsam {
       double f=0;
 
       // Collect all poses (Cameras)
+      bool valuesEqualRetriangulation = true;
       std::vector<Pose3> cameraPoses;
+      int poseCount = 0;
       BOOST_FOREACH(const Key& k, keys_) {
+        Pose3 cameraPose;
+
         if(body_P_sensor_)
-          cameraPoses.push_back(values.at<Pose3>(k).compose(*body_P_sensor_));
+          cameraPose = values.at<Pose3>(k).compose(*body_P_sensor_);
         else
-          cameraPoses.push_back(values.at<Pose3>(k));
+          cameraPose = values.at<Pose3>(k);
+
+        if (!state_->cameraPosesTriangulation.empty()) {
+          if (!cameraPose.equals(state_->cameraPosesTriangulation[poseCount], retriangulationThreshold)) {
+            valuesEqualRetriangulation = false;
+          }
+        } else {
+          valuesEqualRetriangulation = false;
+        }
+
+        cameraPoses.push_back(cameraPose);
+        poseCount++;
       }
 
-      // We triangulate the 3D position of the landmark
-      try {
-          point_ = triangulatePoint3(cameraPoses, measured_, *K_);
-      } catch( TriangulationUnderconstrainedException& e) {
-        // point is triangulated at infinity
-        //std::cout << e.what() << std::end;
-        degenerate = true;
-        dim_landmark = 2;
-      } catch( TriangulationCheiralityException& e) {
+      if (valuesEqualRetriangulation) {
+        retriangulate = false;
+      } else {
+        state_->cameraPosesTriangulation = cameraPoses;
+      }
+
+      if (retriangulate) {
+        // We triangulate the 3D position of the landmark
+        try {
+          state_->point = triangulatePoint3(cameraPoses, measured_, *K_);
+          state_->degenerate = false;
+          state_->cheiralityException = false;
+        } catch( TriangulationUnderconstrainedException& e) {
+          // point is triangulated at infinity
+          //std::cout << e.what() << std::end;
+          state_->degenerate = true;
+          state_->cheiralityException = false;
+          dim_landmark = 2;
+        } catch( TriangulationCheiralityException& e) {
           // point is behind one of the cameras, turn factor off by setting everything to 0
           //std::cout << e.what() << std::end;
           BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
           BOOST_FOREACH(Vector& v, gs) v = zero(6);
-          //return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
+          //state_->cheiralityException = true; // TODO: Debug condition, uncomment when fixed
+          //return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f)); // TODO: Debug condition, uncomment when fixed
           // TODO: this is a debug condition, should be removed the comment
+        }
       }
-
-      degenerate = true; // TODO: this is a debug condition, should be removed
+      state_->degenerate = true; // TODO: this is a debug condition, should be removed
       dim_landmark = 2; // TODO: this is a debug condition, should be removed the comment
+
+      if (!retriangulate && state_->cheiralityException) {
+        BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
+        BOOST_FOREACH(Vector& v, gs) v = zero(6);
+        return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
+      }
+      if (!retriangulate && state_->degenerate) {
+        dim_landmark = 2;
+      }
 
       if (blockwise){
         // ==========================================================================================================
@@ -222,7 +307,7 @@ namespace gtsam {
         for(size_t i = 0; i < measured_.size(); i++) {
           Pose3 pose = cameraPoses.at(i);
           PinholeCamera<CALIBRATION> camera(pose, *K_);
-          b.at(i) = - ( camera.project(point_,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
+          b.at(i) = - ( camera.project(state_->point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
           noise_-> WhitenSystem(Hx.at(i), Hl.at(i), b.at(i));
           f += b.at(i).squaredNorm();
         }
@@ -273,16 +358,16 @@ namespace gtsam {
         Matrix Hl2 = zeros(2 * numKeys, dim_landmark);
         Vector b2 = zero(2 * numKeys);
 
-        if(degenerate){
+        if(state_->degenerate){
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             if(i==0){ // first pose
-              point_ = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
-              // std::cout << "point_ " << point_<< std::endl;
+              state_->point = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
+              // std::cout << "point_ " << state_->point<< std::endl;
             }
             Matrix Hxi, Hli;
-            Vector bi = -( camera.projectPointAtInfinity(point_,Hxi,Hli) - measured_.at(i) ).vector();
+            Vector bi = -( camera.projectPointAtInfinity(state_->point,Hxi,Hli) - measured_.at(i) ).vector();
             // std::cout << "Hxi \n" << Hxi<< std::endl;
             // std::cout << "Hli \n" << Hli<< std::endl;
 
@@ -298,12 +383,18 @@ namespace gtsam {
           // std::cout << "Hl2 \n" << Hl2<< std::endl;
         }
         else{
-          std::cout << "non degenerate " << point_<< std::endl;
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             Matrix Hxi, Hli;
-            Vector bi = -( camera.project(point_,Hxi,Hli) - measured_.at(i) ).vector();
+
+            Vector bi;
+            try {
+              bi = -( camera.project(state_->point,Hxi,Hli) - measured_.at(i) ).vector();
+            } catch ( CheiralityException& e) {
+              std::cout << "Cheirality exception " << state_->ID << std::endl;
+              exit(EXIT_FAILURE);
+            }
 
             noise_-> WhitenSystem(Hxi, Hli, bi);
             f += bi.squaredNorm();
@@ -315,15 +406,15 @@ namespace gtsam {
           }
         }
 
-        std::cout << "dim_landmark " << dim_landmark << std::endl;
+
         // Shur complement trick
         Matrix H(6 * numKeys, 6 * numKeys);
-        std::cout << "Hl2.transpose() * Hl2 \n" << Hl2.transpose() * Hl2 << std::endl;
-        Matrix C2 = (Hl2.transpose() * Hl2).inverse();
-        std::cout << "C2 \n" << C2.size() << std::endl;
-        H = Hx2.transpose() * (Hx2 - (Hl2 * (C2 * (Hl2.transpose() * Hx2))));
+        Matrix C2;
+        Vector gs_vector;
 
-        Vector gs_vector = Hx2.transpose() * (b2 - (Hl2 * (C2 * (Hl2.transpose() * b2))));
+        C2.noalias() = (Hl2.transpose() * Hl2).inverse();
+        H.noalias() = Hx2.transpose() * (Hx2 - (Hl2 * (C2 * (Hl2.transpose() * Hx2))));
+        gs_vector.noalias() = Hx2.transpose() * (b2 - (Hl2 * (C2 * (Hl2.transpose() * b2))));
 
         // Populate Gs and gs
         int GsCount2 = 0;
@@ -337,10 +428,14 @@ namespace gtsam {
             }
           }
         }
-
       }
 
       // ==========================================================================================================
+      state_->calculatedHessian = true;
+      state_->Gs = Gs;
+      state_->gs = gs;
+      state_->f = f;
+
       return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
     }
 
@@ -351,46 +446,74 @@ namespace gtsam {
      * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
      */
     virtual double error(const Values& values) const {
+      double retriangulationThreshold = 1e-9;
       if (this->active(values)) {
         double overallError=0;
-        bool degenerate = false;
-
-        std::cout << "evaluating error in smart factor " << std::endl;
+        bool retriangulate = true;
 
         // Collect all poses (Cameras)
+        bool valuesEqualRetriangulation = true;
         std::vector<Pose3> cameraPoses;
-
+        int poseCount = 0;
         BOOST_FOREACH(const Key& k, keys_) {
+          Pose3 cameraPose;
+
           if(body_P_sensor_)
-            cameraPoses.push_back(values.at<Pose3>(k).compose(*body_P_sensor_));
+            cameraPose = values.at<Pose3>(k).compose(*body_P_sensor_);
           else
-            cameraPoses.push_back(values.at<Pose3>(k));
+            cameraPose = values.at<Pose3>(k);
+
+          if (!state_->cameraPosesTriangulation.empty()) {
+            if (!cameraPose.equals(state_->cameraPosesTriangulation[poseCount], retriangulationThreshold)) {
+              valuesEqualRetriangulation = false;
+            }
+          } else {
+            valuesEqualRetriangulation = false;
+          }
+
+          cameraPoses.push_back(cameraPose);
+          poseCount++;
+        }
+
+        if (valuesEqualRetriangulation) {
+          retriangulate = false;
+        } else {
+          state_->cameraPosesTriangulation = cameraPoses;
         }
 
         // We triangulate the 3D position of the landmark
-        try {
-            point_ = triangulatePoint3(cameraPoses, measured_, *K_);
-        } catch( TriangulationCheiralityException& e) {
-             // std::cout << "TriangulationCheiralityException "  << std::endl;
+        if (retriangulate) {
+          try {
+            state_->point = triangulatePoint3(cameraPoses, measured_, *K_);
+            state_->degenerate = false;
+            state_->cheiralityException = false;
+          } catch( TriangulationCheiralityException& e) {
+            // std::cout << "TriangulationCheiralityException "  << std::endl;
             // point is behind one of the cameras, turn factor off by setting everything to 0
             //std::cout << e.what() << std::end;
-            // return 0.0; // TODO: this is a debug condition, should be removed the comment
-        } catch( TriangulationUnderconstrainedException& e) {
-          // point is triangulated at infinity
-          //std::cout << e.what() << std::endl;
-          degenerate = true;
+            //state_->cheiralityException = true; // TODO: Debug condition, remove comment
+            //return 0.0; // TODO: this is a debug condition, should be removed the comment
+          } catch( TriangulationUnderconstrainedException& e) {
+            // point is triangulated at infinity
+            //std::cout << e.what() << std::endl;
+            state_->degenerate = true;
+            state_->cheiralityException = false;
+          }
+        }
+        state_->degenerate = true; // TODO: this is a debug condition, should be removed
+
+        if (!retriangulate && state_->cheiralityException) {
+          return 0.0;
         }
 
-        degenerate = true; // TODO: this is a debug condition, should be removed
-
-        if(degenerate){
+        if(state_->degenerate){
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             if(i==0){ // first pose
-              point_ = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
+              state_->point = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
             }
-            Point2 reprojectionError(camera.projectPointAtInfinity(point_) - measured_.at(i));
+            Point2 reprojectionError(camera.projectPointAtInfinity(state_->point) - measured_.at(i));
             overallError += noise_->distance( reprojectionError.vector() );
           }
           return overallError;
@@ -400,8 +523,13 @@ namespace gtsam {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
 
-            Point2 reprojectionError(camera.project(point_) - measured_.at(i));
-            overallError += noise_->distance( reprojectionError.vector() );
+            try {
+              Point2 reprojectionError(camera.project(state_->point) - measured_.at(i));
+              overallError += noise_->distance( reprojectionError.vector() );
+            } catch ( CheiralityException& e) {
+              std::cout << "Cheirality exception " << state_->ID << std::endl;
+              exit(EXIT_FAILURE);
+            }
           }
           return overallError;
         }
@@ -422,7 +550,7 @@ namespace gtsam {
 
     /** return the landmark */
     boost::optional<Point3> point() const {
-      return point_;
+      return state_->point;
     }
 
     /** return the calibration object */
@@ -449,31 +577,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
-
-  };
-
-  /**
-   * Structure for storing some state memory, used to speed up optimization
-   * @addtogroup SLAM
-   */
-  class SmartProjectionFactorState {
-  public:
-    // Landmark key
-    Key landmarkKey_;
-
-    // Set of involved pose keys
-    std::list<Key> poseKeys_;
-
-    // Linearization point
-    Values values_;
-
-    // inv(C)
-    Matrix3 Cinv_;
-
-    // E
-    // W
-    // Hessian
-    Matrix H_;
 
   };
 
