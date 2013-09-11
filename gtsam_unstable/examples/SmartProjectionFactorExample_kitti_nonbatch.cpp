@@ -37,6 +37,8 @@
 
 // We will use a non-liear solver to batch-inituialize from the first 150 frames
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics SLAM problems.
@@ -60,6 +62,13 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 typedef PriorFactor<Pose3> Pose3Prior;
+typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
+typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> ProjectionFactor;
+typedef FastMap<Key, boost::shared_ptr<SmartProjectionFactorState> > SmartFactorToStateMap;
+typedef FastMap<Key, boost::shared_ptr<SmartFactor> > SmartFactorMap;
+typedef FastMap<Key, std::vector<boost::shared_ptr<ProjectionFactor> > > ProjectionFactorMap;
+
+bool debug = false;
 
 //// Helper functions taken from VO code
 // Loaded all pose values into list
@@ -175,28 +184,78 @@ void writeValues(string directory_, const Values& values){
   }
 }
 
-// main
-int main(int argc, char** argv) {
+void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr loadedValues,
+    gtsam::Values::shared_ptr graphValues, boost::shared_ptr<Cal3_S2> K, ProjectionFactorMap &projectionFactors) {
 
-  bool debug = false;
-  unsigned int maxNumLandmarks = 2000000;
-  unsigned int maxNumPoses = 200000;
+  std::vector<boost::shared_ptr<ProjectionFactor> > projectionFactorVector;
+  std::vector<boost::shared_ptr<ProjectionFactor> >::iterator vfit;
+  std::vector<Key> keys;
+  Point3 point;
+  Pose3 cameraPose;
 
-  // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = true;
-  std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
+  ProjectionFactorMap::iterator pfit;
 
-  // Get home directory and dataset
-  string HOME = getenv("HOME");
-  //string input_dir = HOME + "/data/kitti/loop_closures_merged/";
-  string input_dir = HOME + "/data/KITTI_00_200/";
+  // Iterate through all landmarks
+  for (pfit = projectionFactors.begin(); pfit != projectionFactors.end(); pfit++) {
+    projectionFactorVector = (*pfit).second;
 
-  typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
-  typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> ProjectionFactor;
-  static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
-  static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
-  NonlinearFactorGraph graph;
+    std::vector<Pose3> cameraPoses;
+    std::vector<Point2> measured;
 
+    // Iterate through projection factors
+    for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) {
+
+      if (debug) std::cout << "ProjectionFactor: " << std::endl;
+      if (debug) (*vfit)->print("ProjectionFactor");
+
+      // Iterate through poses
+      cameraPoses.push_back( loadedValues->at<Pose3>((*vfit)->key1() ) );
+      measured.push_back( (*vfit)->measured() );
+
+    }
+
+    // Triangulate landmark based on set of poses and measurements
+    if (debug) std::cout << "Triangulating: " << std::endl;
+    try {
+      point = triangulatePoint3(cameraPoses, measured, *K);
+      if (1||debug) std::cout << "Triangulation succeeded: " << point << std::endl;
+    } catch( TriangulationUnderconstrainedException& e) {
+      if (1||debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
+      BOOST_FOREACH(const Pose3& pose, cameraPoses) {
+        std::cout << " Pose: " << pose << std::endl;
+      }
+      //exit(EXIT_FAILURE);
+      continue;
+    } catch( TriangulationCheiralityException& e) {
+      if (1||debug) std::cout << "Triangulation failed because of cheirality exception" << std::endl;
+      BOOST_FOREACH(const Pose3& pose, cameraPoses) {
+        std::cout << " Pose: " << pose << std::endl;
+      }
+      //exit(EXIT_FAILURE);
+      continue;
+    }
+
+    // Add projection factors and pose values
+    for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) {
+      if (debug) std::cout << "Adding factor " << std::endl;
+      if (debug) (*vfit)->print("Projection Factor");
+      graph.push_back( (*vfit) );
+
+      // TODO: Add poses to values here!
+      if (!graphValues->exists<Pose3>( (*vfit)->key1()) && loadedValues->exists<Pose3>((*vfit)->key1())) {
+        graphValues->insert((*vfit)->key1(), loadedValues->at<Pose3>((*vfit)->key1()));
+      }
+    }
+
+    // Add landmark value
+    if (debug) std::cout << "Adding value " << std::endl;
+    graphValues->insert( projectionFactorVector[0]->key2(), point); // add point;
+
+
+  }
+}
+
+void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result) {
   // Optimization parameters
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
@@ -209,6 +268,61 @@ int main(int argc, char** argv) {
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   params.verbosity = NonlinearOptimizerParams::ERROR;
   params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_CHOLESKY;
+
+  cout << "Graph size: " << graph.size() << endl;
+  std::cout << " OPTIMIZATION " << std::endl;
+
+  std::cout << "\n\n=================================================\n\n";
+  if (debug) {
+     graph.print("thegraph");
+   }
+  std::cout << "\n\n=================================================\n\n";
+
+  //for (int i = 0; i < 3; i++) {
+    LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
+    gttic_(SmartProjectionFactorExample_kitti);
+    result = optimizer.optimize();
+    gttoc_(SmartProjectionFactorExample_kitti);
+    tictoc_finishedIteration_();
+  //}
+
+}
+
+void optimizeGraphGN(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result) {
+  GaussNewtonParams params;
+  //params.maxIterations = 1;
+  params.verbosity = NonlinearOptimizerParams::DELTA;
+
+  GaussNewtonOptimizer optimizer(graph, *graphValues, params);
+  gttic_(SmartProjectionFactorExample_kitti);
+  result = optimizer.optimize();
+  gttoc_(SmartProjectionFactorExample_kitti);
+  tictoc_finishedIteration_();
+
+}
+// main
+int main(int argc, char** argv) {
+
+  unsigned int maxNumLandmarks = 37106; //1000000;
+  unsigned int maxNumPoses = 200;
+
+  // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
+  bool useSmartProjectionFactor = true;
+  bool useTriangulation = false;
+  bool useLM = true;
+
+  std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
+  std::cout << "PARAM Triangulation: " << useTriangulation << std::endl;
+  std::cout << "PARAM LM: " << useLM << std::endl;
+
+  // Get home directory and dataset
+  string HOME = getenv("HOME");
+  //string input_dir = HOME + "/data/kitti/loop_closures_merged/";
+  string input_dir = HOME + "/data/KITTI_00_200/";
+
+  static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
+  static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
+  NonlinearFactorGraph graph;
 
   // Load calibration
   //Cal3_S2::shared_ptr K(new Cal3_S2(718.856, 718.856, 0.0, 607.1928, 185.2157));
@@ -239,82 +353,139 @@ int main(int argc, char** argv) {
   std::vector<Key> views;
   std::vector<Point2> measurements;
   Values values;
-  FastMap<Key, boost::shared_ptr<SmartProjectionFactorState> > smartFactorStates;
-  FastMap<Key, boost::shared_ptr<SmartFactor> > smartFactors;
+  SmartFactorToStateMap smartFactorStates;
+  SmartFactorMap smartFactors;
+  ProjectionFactorMap projectionFactors;
   Values result;
   while (fin >> r >> l >> uL >> uR >> v >> x >> y >> z) {
-    fprintf(stderr,"Landmark %ld\n", l);
-    fprintf(stderr,"Line %d: %d landmarks, (max landmarks %d), %d poses, max poses %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+    if (debug) fprintf(stderr,"Landmark %ld\n", l);
+    if (debug) fprintf(stderr,"Line %d: %d landmarks, (max landmarks %d), %d poses, max poses %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
-    if (currentLandmark != l && (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks) ) { //numLandmarks > 3 && ) {
-      cout << "Graph size: " << graph.size() << endl;
-      graph.print("thegraph");
-      std::cout << " OPTIMIZATION " << std::endl;
-      LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
-      gttic_(SmartProjectionFactorExample_kitti);
-      result = optimizer.optimize();
-      gttoc_(SmartProjectionFactorExample_kitti);
-      tictoc_finishedIteration_();
+    // Optimize if have a certain number of poses/landmarks
+    if (currentLandmark != l && (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks) ) {
+
+      if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+
+      cout << "Adding triangulated landmarks: " << graph.size() << endl;
+      if (useTriangulation) {
+        addTriangulatedLandmarks(graph, loadedValues, graphValues, K, projectionFactors);
+      }
+      cout << "Adding triangulated landmarks: " << graph.size() << endl;
+
+      if (useLM)
+        optimizeGraphLM(graph, graphValues, result);
+      else
+        optimizeGraphGN(graph, graphValues, result);
 
       // Only process first N measurements (for development/debugging)
       if ( (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks) ) {
-        fprintf(stderr,"BREAKING %d %d\n", count, maxNumLandmarks);
+        if (1||debug) fprintf(stderr,"%d: BREAKING %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
         break;
       }
+      break;
     }
 
-    // Check if landmark exists in mapping
-    FastMap<Key, boost::shared_ptr<SmartProjectionFactorState> >::iterator fsit = smartFactorStates.find(L(l));
-    FastMap<Key, boost::shared_ptr<SmartFactor> >::iterator fit = smartFactors.find(L(l));
-    if (fsit != smartFactorStates.end() && fit != smartFactors.end()) {
-      fprintf(stderr,"Adding measurement to existing landmark\n");
+    if (useSmartProjectionFactor) {
 
-      // Add measurement to smart factor
-      (*fit).second->add(Point2(uL,v), X(r));
+      // Check if landmark exists in mapping
+      SmartFactorToStateMap::iterator fsit = smartFactorStates.find(L(l));
+      SmartFactorMap::iterator fit = smartFactors.find(L(l));
+      if (fsit != smartFactorStates.end() && fit != smartFactors.end()) {
+        if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
+
+        // Add measurement to smart factor
+        (*fit).second->add(Point2(uL,v), X(r));
+
+        if (debug) (*fit).second->print();
+      } else {
+        if (debug) fprintf(stderr,"New landmark (%d,%d)\n", fsit != smartFactorStates.end(), fit != smartFactors.end());
+
+        views += X(r);
+        measurements += Point2(uL,v);
+
+        // This is a new landmark, create a new factor and add to mapping
+        boost::shared_ptr<SmartProjectionFactorState> smartFactorState(new SmartProjectionFactorState());
+        SmartFactor::shared_ptr smartFactor(new SmartFactor(measurements, pixel_sigma, views, K));
+        smartFactorStates.insert( make_pair(L(l), smartFactorState) );
+        smartFactors.insert( make_pair(L(l), smartFactor) );
+        graph.push_back(smartFactor);
+        numLandmarks++;
+
+        views.clear();
+        measurements.clear();
+
+      }
+
+      // Add initial pose value if pose does not exist
       if (!graphValues->exists<Pose3>(X(r)) && loadedValues->exists<Pose3>(X(r))) {
         graphValues->insert(X(r), loadedValues->at<Pose3>(X(r)));
         numPoses++;
       }
 
-      (*fit).second->print();
     } else {
-      fprintf(stderr,"New landmark (%d,%d)\n", fsit != smartFactorStates.end(), fit != smartFactors.end());
 
-      views += X(r);
-      measurements += Point2(uL,v);
-
-      // This is a new landmark, create a new factor and add to mapping
-      boost::shared_ptr<SmartProjectionFactorState> smartFactorState(new SmartProjectionFactorState());
-      SmartFactor::shared_ptr smartFactor(new SmartFactor(measurements, pixel_sigma, views, K));
-      smartFactorStates.insert( make_pair(L(l), smartFactorState) );
-      smartFactors.insert( make_pair(L(l), smartFactor) );
-      graph.push_back(smartFactor);
-      numLandmarks++;
-
-      views.clear();
-      measurements.clear();
-
-      if (!graphValues->exists<Pose3>(X(r)) && loadedValues->exists<Pose3>(X(r))) {
-        graphValues->insert(X(r), loadedValues->at<Pose3>(X(r)));
-        numPoses++;
-      }
-    }
-
-    fprintf(stderr,"%d %d\n", count, maxNumLandmarks);
-
-    if (debug) cout << "CurrentLandmark " << currentLandmark << " Landmark " << l << std::endl;
-
-    if (useSmartProjectionFactor == false) {
-      // For projection factor, landmarks positions are used, but have to be transformed to world coordinates
-      //if (loaded_values->exists<Point3>(L(l)) == boost::none) {
-        //Pose3 camera = loaded_values->at<Pose3>(X(r));
-        //Point3 worldPoint = camera.transform_from(Point3(x, y, z));
-        //loaded_values->insert(L(l), worldPoint); // add point;
-      //}
-
+      // Create projection factor
       ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(Point2(uL,v), pixel_sigma, X(r), L(l), K));
-      graph.push_back(projectionFactor);
+
+      // Check if landmark exists in mapping
+      ProjectionFactorMap::iterator pfit = projectionFactors.find(L(l));
+      if (pfit != projectionFactors.end()) {
+        if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
+
+        // Add projection factor to list of projection factors associated with this landmark
+        (*pfit).second.push_back(projectionFactor);
+
+      } else {
+        if (debug) fprintf(stderr,"New landmark (%d)\n", pfit != projectionFactors.end());
+
+        // Create a new vector of projection factors
+        std::vector<ProjectionFactor::shared_ptr> projectionFactorVector;
+        projectionFactorVector.push_back(projectionFactor);
+
+        // Insert projection factor to NEW list of projection factors associated with this landmark
+        projectionFactors.insert( make_pair(L(l), projectionFactorVector) );
+
+        // Add projection factor to graph
+        //graph.push_back(projectionFactor);
+
+        // We have a new landmark
+        numLandmarks++;
+      }
+
+      // Add landmark if triangulation is not being used to initialize them
+      if (!useTriangulation) {
+        // For projection factor, landmarks positions are used, but have to be transformed to world coordinates
+        if (graphValues->exists<Point3>(L(l)) == boost::none) {
+          Pose3 camera = loadedValues->at<Pose3>(X(r));
+          Point3 worldPoint = camera.transform_from(Point3(x, y, z));
+          graphValues->insert(L(l), worldPoint); // add point;
+        }
+
+        // Add initial pose value if pose does not exist
+        // Only do this if triangulation is not used.  Otherwise, it depends what projection factors are added
+        // based on triangulation success
+        if (!graphValues->exists<Pose3>(X(r)) && loadedValues->exists<Pose3>(X(r))) {
+          graphValues->insert(X(r), loadedValues->at<Pose3>(X(r)));
+          numPoses++;
+        }
+
+        // Add projection factor to graph
+        graph.push_back(projectionFactor);
+
+
+      } else {
+
+        // Alternatively: Triangulate similar to how SmartProjectionFactor does it
+        // We only do this at the end, when all of the camera poses are available
+        // Note we do not add anything to the graph until then, since in some cases
+        // of triangulation failure we cannot add the landmark to the graph
+
+      }
+
     }
+
+    if (debug) fprintf(stderr,"%d %d\n", count, maxNumLandmarks);
+    if (debug) cout << "CurrentLandmark " << currentLandmark << " Landmark " << l << std::endl;
 
     currentLandmark = l;
     count++;
@@ -322,16 +493,7 @@ int main(int argc, char** argv) {
       cout << "Loading graph... " << graph.size() << endl;
     }
   }
-
-  cout << "Graph size: " << graph.size() << endl;
-  graph.print("thegraph");
-  std::cout << " OPTIMIZATION " << std::endl;
-  LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
-  gttic_(SmartProjectionFactorExample_kitti);
-  result = optimizer.optimize();
-  gttoc_(SmartProjectionFactorExample_kitti);
-  tictoc_finishedIteration_();
-
+ 
   cout << "===================================================" << endl;
   graphValues->print("before optimization ");
   result.print("results of kitti optimization ");
