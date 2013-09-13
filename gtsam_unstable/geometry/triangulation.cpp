@@ -31,7 +31,7 @@ namespace gtsam {
 Point3 triangulateDLT(const vector<Matrix>& projection_matrices,
     const vector<Point2>& measurements, double rank_tol) {
 
-  Matrix A = Matrix_(projection_matrices.size() *2, 4);
+  Matrix A = zeros(projection_matrices.size() *2, 4);
 
   for(size_t i=0; i< projection_matrices.size(); i++) {
     size_t row = i*2;
@@ -46,6 +46,7 @@ Point3 triangulateDLT(const vector<Matrix>& projection_matrices,
   double error;
   Vector v;
   boost::tie(rank, error, v) = DLT(A, rank_tol);
+
 
   if(rank < 3)
     throw(TriangulationUnderconstrainedException());
