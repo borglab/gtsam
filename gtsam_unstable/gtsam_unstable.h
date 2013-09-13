@@ -15,6 +15,7 @@ virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
 virtual class gtsam::imuBias::ConstantBias;
+virtual class gtsam::NoiseModelFactor;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
@@ -350,6 +351,17 @@ virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
 
   void serializable() const; // enabling serialization functionality
 };
+
+#include <gtsam_unstable/slam/SmartRangeFactor.h>
+virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
+  SmartRangeFactor(double s);
+
+  void addRange(size_t key, double measuredRange);
+  gtsam::Point2 triangulate(const gtsam::Values& x) const;
+  void print(string s) const;
+
+};
+
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
