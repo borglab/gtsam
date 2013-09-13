@@ -196,7 +196,12 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
   ProjectionFactorMap::iterator pfit;
 
   // Iterate through all landmarks
+  if (debug) std::cout << " PROJECTION FACTOR GROUPED: " << projectionFactors.size();
+  int numProjectionFactors = 0;
+  int numProjectionFactorsAdded = 0;
+  int numFailures = 0;
   for (pfit = projectionFactors.begin(); pfit != projectionFactors.end(); pfit++) {
+
     projectionFactorVector = (*pfit).second;
 
     std::vector<Pose3> cameraPoses;
@@ -204,6 +209,7 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
 
     // Iterate through projection factors
     for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) {
+      numProjectionFactors++;
 
       if (debug) std::cout << "ProjectionFactor: " << std::endl;
       if (debug) (*vfit)->print("ProjectionFactor");
@@ -218,25 +224,30 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
     if (debug) std::cout << "Triangulating: " << std::endl;
     try {
       point = triangulatePoint3(cameraPoses, measured, *K);
-      if (1||debug) std::cout << "Triangulation succeeded: " << point << std::endl;
+      if (debug) std::cout << "Triangulation succeeded: " << point << std::endl;
     } catch( TriangulationUnderconstrainedException& e) {
-      if (1||debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
-      BOOST_FOREACH(const Pose3& pose, cameraPoses) {
-        std::cout << " Pose: " << pose << std::endl;
+      if (debug) {
+        std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
+        BOOST_FOREACH(const Pose3& pose, cameraPoses) {
+          std::cout << " Pose: " << pose << std::endl;
+        }
       }
-      //exit(EXIT_FAILURE);
+      numFailures++;
       continue;
     } catch( TriangulationCheiralityException& e) {
-      if (1||debug) std::cout << "Triangulation failed because of cheirality exception" << std::endl;
-      BOOST_FOREACH(const Pose3& pose, cameraPoses) {
-        std::cout << " Pose: " << pose << std::endl;
+      if (debug) {
+        std::cout << "Triangulation failed because of cheirality exception" << std::endl;
+        BOOST_FOREACH(const Pose3& pose, cameraPoses) {
+          std::cout << " Pose: " << pose << std::endl;
+        }
       }
-      //exit(EXIT_FAILURE);
+      numFailures++;
       continue;
     }
 
     // Add projection factors and pose values
     for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) {
+      numProjectionFactorsAdded++;
       if (debug) std::cout << "Adding factor " << std::endl;
       if (debug) (*vfit)->print("Projection Factor");
       graph.push_back( (*vfit) );
@@ -253,6 +264,9 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
 
 
   }
+  if (debug) std::cout << " # PROJECTION FACTORS CALCULATED: " << numProjectionFactors;
+  if (debug) std::cout << " # PROJECTION FACTORS ADDED: " << numProjectionFactorsAdded;
+  if (debug) std::cout << " # FAILURES: " << numFailures;
 }
 
 void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result) {
@@ -270,12 +284,13 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_CHOLESKY;
 
   cout << "Graph size: " << graph.size() << endl;
+  cout << "Number of variables: " << graphValues->size() << endl;
   std::cout << " OPTIMIZATION " << std::endl;
 
   std::cout << "\n\n=================================================\n\n";
   if (debug) {
      graph.print("thegraph");
-   }
+  }
   std::cout << "\n\n=================================================\n\n";
 
   //for (int i = 0; i < 3; i++) {
@@ -303,12 +318,12 @@ void optimizeGraphGN(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
 // main
 int main(int argc, char** argv) {
 
-  unsigned int maxNumLandmarks = 37106; //1000000;
-  unsigned int maxNumPoses = 200;
+  unsigned int maxNumLandmarks = 3909393; //100000000; //37106 //(reduced kitti);
+  unsigned int maxNumPoses = 35410;
 
   // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
   bool useSmartProjectionFactor = true;
-  bool useTriangulation = false;
+  bool useTriangulation = true;
   bool useLM = true;
 
   std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
@@ -317,8 +332,8 @@ int main(int argc, char** argv) {
 
   // Get home directory and dataset
   string HOME = getenv("HOME");
-  //string input_dir = HOME + "/data/kitti/loop_closures_merged/";
-  string input_dir = HOME + "/data/KITTI_00_200/";
+  //string input_dir = HOME + "/data/KITTI_00_200/";
+  string input_dir = HOME + "/data/kitti/loop_closures_merged/"; // 399997 landmarks, 4541 poses
 
   static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
   static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
@@ -342,6 +357,7 @@ int main(int argc, char** argv) {
   gtsam::Values::shared_ptr loadedValues = loadPoseValues(input_dir+"camera_poses.txt");
   graph.push_back(Pose3Prior(X(0),loadedValues->at<Pose3>(X(0)), prior_model));
   graph.push_back(Pose3Prior(X(1),loadedValues->at<Pose3>(X(1)), prior_model));
+  graph.print("Priors");
 
   // read all measurements tracked by VO stereo
   cout << "Loading stereo_factors.txt" << endl;
@@ -357,6 +373,7 @@ int main(int argc, char** argv) {
   SmartFactorMap smartFactors;
   ProjectionFactorMap projectionFactors;
   Values result;
+  bool optimized = false;
   while (fin >> r >> l >> uL >> uR >> v >> x >> y >> z) {
     if (debug) fprintf(stderr,"Landmark %ld\n", l);
     if (debug) fprintf(stderr,"Line %d: %d landmarks, (max landmarks %d), %d poses, max poses %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
@@ -364,25 +381,27 @@ int main(int argc, char** argv) {
     // Optimize if have a certain number of poses/landmarks
     if (currentLandmark != l && (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks) ) {
 
-      if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+      if (debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
-      cout << "Adding triangulated landmarks: " << graph.size() << endl;
-      if (useTriangulation) {
+      if (debug) cout << "Adding triangulated landmarks, graph size: " << graph.size() << endl;
+      if (useSmartProjectionFactor == false && useTriangulation) {
         addTriangulatedLandmarks(graph, loadedValues, graphValues, K, projectionFactors);
       }
-      cout << "Adding triangulated landmarks: " << graph.size() << endl;
+      if (debug) cout << "Adding triangulated landmarks, graph size after: " << graph.size() << endl;
 
       if (useLM)
         optimizeGraphLM(graph, graphValues, result);
       else
         optimizeGraphGN(graph, graphValues, result);
+      optimized = true;
 
       // Only process first N measurements (for development/debugging)
       if ( (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks) ) {
-        if (1||debug) fprintf(stderr,"%d: BREAKING %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+        if (debug) fprintf(stderr,"%d: BREAKING %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
         break;
       }
       break;
+
     }
 
     if (useSmartProjectionFactor) {
@@ -493,13 +512,26 @@ int main(int argc, char** argv) {
       cout << "Loading graph... " << graph.size() << endl;
     }
   }
- 
+
+  if (!optimized) {
+    if (useSmartProjectionFactor == false && useTriangulation) {
+      addTriangulatedLandmarks(graph, loadedValues, graphValues, K, projectionFactors);
+    }
+
+    if (useLM)
+      optimizeGraphLM(graph, graphValues, result);
+    else
+      optimizeGraphGN(graph, graphValues, result);
+    optimized = true;
+  }
+
   cout << "===================================================" << endl;
-  graphValues->print("before optimization ");
-  result.print("results of kitti optimization ");
+  //graphValues->print("before optimization ");
+  //result.print("results of kitti optimization ");
   tictoc_print_();
   cout << "===================================================" << endl;
   writeValues("./", result);
 
+  if (debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
   exit(0);
 }
