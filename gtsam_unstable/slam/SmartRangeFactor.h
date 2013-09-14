@@ -86,7 +86,7 @@ public:
    * Checks for best pair that includes first point
    */
   Point2 triangulate(const Values& x) const {
-    gttic_(triangulate);
+    //gttic_(triangulate);
     // create n circles corresponding to measured range around each pose
     std::list<Circle2> circles;
     size_t n = size();
@@ -128,7 +128,7 @@ public:
       error2 += it.center.dist(p2);
     }
     return (error1 < error2) ? p1 : p2;
-    gttoc_(triangulate);
+    //gttoc_(triangulate);
   }
 
   /**
