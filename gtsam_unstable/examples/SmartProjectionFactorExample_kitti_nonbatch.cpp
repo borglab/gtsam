@@ -226,8 +226,8 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
       point = triangulatePoint3(cameraPoses, measured, *K);
       if (debug) std::cout << "Triangulation succeeded: " << point << std::endl;
     } catch( TriangulationUnderconstrainedException& e) {
+      if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
       if (debug) {
-        std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
         BOOST_FOREACH(const Pose3& pose, cameraPoses) {
           std::cout << " Pose: " << pose << std::endl;
         }
@@ -235,6 +235,7 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
       numFailures++;
       continue;
     } catch( TriangulationCheiralityException& e) {
+      if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
       if (debug) {
         std::cout << "Triangulation failed because of cheirality exception" << std::endl;
         BOOST_FOREACH(const Pose3& pose, cameraPoses) {
@@ -315,16 +316,26 @@ void optimizeGraphGN(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   tictoc_finishedIteration_();
 
 }
+
+void optimizeGraphISAM2(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result) {
+  ISAM2 isam;
+  gttic_(SmartProjectionFactorExample_kitti);
+  isam.update(graph, *graphValues);
+  result = isam.calculateEstimate();
+  gttoc_(SmartProjectionFactorExample_kitti);
+  tictoc_finishedIteration_();
+}
+
 // main
 int main(int argc, char** argv) {
 
-  unsigned int maxNumLandmarks = 3909393; //100000000; //37106 //(reduced kitti);
-  unsigned int maxNumPoses = 35410;
+  unsigned int maxNumLandmarks = 399997; //100000000; // 309393 // (loop_closure_merged) //37106 //(reduced kitti);
+  unsigned int maxNumPoses = 4539; //3541
 
   // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
   bool useSmartProjectionFactor = true;
-  bool useTriangulation = true;
-  bool useLM = true;
+  bool useTriangulation = false;
+  bool useLM = true; 
 
   std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
   std::cout << "PARAM Triangulation: " << useTriangulation << std::endl;
@@ -334,9 +345,11 @@ int main(int argc, char** argv) {
   string HOME = getenv("HOME");
   //string input_dir = HOME + "/data/KITTI_00_200/";
   string input_dir = HOME + "/data/kitti/loop_closures_merged/"; // 399997 landmarks, 4541 poses
+  //string input_dir = HOME + "/data/kitti_00_full_dirty/";
 
   static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
   static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
+  //static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 1e-9, 1e-9, 1e-9, 1e-9, 1e-9, 1e-9)));
   NonlinearFactorGraph graph;
 
   // Load calibration
@@ -392,7 +405,7 @@ int main(int argc, char** argv) {
       if (useLM)
         optimizeGraphLM(graph, graphValues, result);
       else
-        optimizeGraphGN(graph, graphValues, result);
+        optimizeGraphISAM2(graph, graphValues, result);
       optimized = true;
 
       // Only process first N measurements (for development/debugging)
@@ -521,7 +534,7 @@ int main(int argc, char** argv) {
     if (useLM)
       optimizeGraphLM(graph, graphValues, result);
     else
-      optimizeGraphGN(graph, graphValues, result);
+      optimizeGraphISAM2(graph, graphValues, result);
     optimized = true;
   }
 
