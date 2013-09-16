@@ -615,6 +615,36 @@ Huber::shared_ptr Huber::Create(const double c, const ReweightScheme reweight) {
 }
 
 /* ************************************************************************* */
+// Cauchy
+/* ************************************************************************* */
+
+Cauchy::Cauchy(const double k, const ReweightScheme reweight)
+  : Base(reweight), k_(k) {
+  if ( k_ <= 0 ) {
+    cout << "mEstimator Cauchy takes only positive double in constructor. forced to 1.0" << endl;
+    k_ = 1.0;
+  }
+}
+
+double Cauchy::weight(const double &error) const {
+  return k_*k_ / (k_*k_ + error*error);
+}
+
+void Cauchy::print(const std::string &s="") const {
+  cout << s << "cauchy (" << k_ << ")" << endl;
+}
+
+bool Cauchy::equals(const Base &expected, const double tol) const {
+  const Cauchy* p = dynamic_cast<const Cauchy*>(&expected);
+  if (p == NULL) return false;
+  return fabs(k_ - p->k_) < tol;
+}
+
+Cauchy::shared_ptr Cauchy::Create(const double c, const ReweightScheme reweight) {
+  return shared_ptr(new Cauchy(c, reweight));
+}
+
+/* ************************************************************************* */
 // Tukey
 /* ************************************************************************* */
 Tukey::Tukey(const double c, const ReweightScheme reweight)

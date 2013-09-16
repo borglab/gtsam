@@ -689,6 +689,35 @@ namespace gtsam {
         }
       };
 
+      /// Cauchy implements the "Cauchy" robust error model (Lee2013IROS).  Contributed by:
+      ///   Dipl.-Inform. Jan Oberländer (M.Sc.), FZI Research Center for
+      ///   Information Technology, Karlsruhe, Germany.
+      ///   oberlaender@fzi.de
+      /// Thanks Jan!
+      class GTSAM_EXPORT Cauchy : public Base {
+      public:
+        typedef boost::shared_ptr<Cauchy> shared_ptr;
+
+        virtual ~Cauchy() {}
+        Cauchy(const double k = 0.1, const ReweightScheme reweight = Block);
+        virtual double weight(const double &error) const ;
+        virtual void print(const std::string &s) const ;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double k_;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(k_);
+        }
+      };
+
       /// Tukey implements the "Tukey" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Tukey : public Base {
       public:
