@@ -155,18 +155,14 @@ namespace gtsam {
           // Set TBB ref count
           set_ref_count(1 + (int)roots.size());
           // Create data and tasks for our children
-          FastVector<PreOrderTask*> tasks;
-          tasks.reserve(roots.size());
+          tbb::task_list tasks;
           BOOST_FOREACH(const boost::shared_ptr<NODE>& root, roots)
           {
-            tasks.push_back(new(allocate_child())
+            tasks.push_back(*new(allocate_child())
               PreOrderTask(root, visitorPre(root, myData), visitorPre, visitorPost, problemSizeThreshold));
           }
           // Spawn tasks
-          BOOST_FOREACH(PreOrderTask* task, tasks)
-            spawn(*task);
-          // Wait for tasks to finish
-          wait_for_all();
+          spawn_and_wait_for_all(tasks);
           // Return NULL
           return NULL;
         }
