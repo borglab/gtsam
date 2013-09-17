@@ -118,8 +118,7 @@ namespace gtsam {
 
             // If we have child tasks, start subtasks and wait for them to complete
             set_ref_count(1 + (int)node->children.size());
-            spawn(childTasks);
-            wait_for_all();
+            spawn_and_wait_for_all(childTasks);
           }
           else
           {
@@ -152,15 +151,16 @@ namespace gtsam {
         tbb::task* execute()
         {
           typedef PreOrderTask<NODE, DATA, VISITOR_PRE, VISITOR_POST> PreOrderTask;
-          // Set TBB ref count
-          set_ref_count(1 + (int)roots.size());
           // Create data and tasks for our children
           tbb::task_list tasks;
           BOOST_FOREACH(const boost::shared_ptr<NODE>& root, roots)
           {
+            DATA rootData = visitorPre(root, myData);
             tasks.push_back(*new(allocate_child())
-              PreOrderTask(root, visitorPre(root, myData), visitorPre, visitorPost, problemSizeThreshold));
+              PreOrderTask(root, rootData, visitorPre, visitorPost, problemSizeThreshold));
           }
+          // Set TBB ref count
+          set_ref_count(1 + (int)roots.size());
           // Spawn tasks
           spawn_and_wait_for_all(tasks);
           // Return NULL
