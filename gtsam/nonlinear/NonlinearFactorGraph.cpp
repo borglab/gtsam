@@ -20,12 +20,13 @@
 #include <cmath>
 #include <limits>
 #include <boost/foreach.hpp>
-#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #ifdef GTSAM_USE_TBB
@@ -233,33 +234,21 @@ Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>
 }
 
 /* ************************************************************************* */
-//SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic(const Ordering& ordering) const {
-//  gttic(NonlinearFactorGraph_symbolic_from_Ordering);
-//
-//  // Generate the symbolic factor graph
-//  SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
-//  symbolicfg->reserve(this->size());
-//
-//  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
-//    if(factor)
-//      symbolicfg->push_back(factor->symbolic(ordering));
-//    else
-//      symbolicfg->push_back(SymbolicFactorGraph::sharedFactor());
-//  }
-//
-//  return symbolicfg;
-//}
+SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
+{
+  // Generate the symbolic factor graph
+  SymbolicFactorGraph::shared_ptr symbolic = boost::make_shared<SymbolicFactorGraph>();
+  symbolic->reserve(this->size());
 
-/* ************************************************************************* */
-//pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph::symbolic(
-//    const Values& config) const
-//{
-//  gttic(NonlinearFactorGraph_symbolic_from_Values);
-//
-//  // Generate an initial key ordering in iterator order
-//  Ordering::shared_ptr ordering(config.orderingArbitrary());
-//  return make_pair(symbolic(*ordering), ordering);
-//}
+  BOOST_FOREACH(const sharedFactor& factor, *this) {
+    if(factor)
+      *symbolic += SymbolicFactor(*factor);
+    else
+      *symbolic += SymbolicFactorGraph::sharedFactor();
+  }
+
+  return symbolic;
+}
 
 /* ************************************************************************* */
 namespace {

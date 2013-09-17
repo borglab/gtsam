@@ -52,7 +52,7 @@ namespace gtsam {
     SymbolicFactor() {}
 
     /** Construct unary factor */
-    SymbolicFactor(Key j) :
+    explicit SymbolicFactor(Key j) :
       Base(boost::assign::cref_list_of<1>(j)) {}
 
     /** Construct binary factor */
@@ -75,6 +75,9 @@ namespace gtsam {
     SymbolicFactor(Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
       Base(boost::assign::cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
 
+    /** Create symbolic version of any factor */
+    explicit SymbolicFactor(const Factor& factor) : Base(factor.keys()) {}
+
     virtual ~SymbolicFactor() {}
 
     /// Copy this object as its actual derived type.
@@ -91,10 +94,6 @@ namespace gtsam {
     
     /// @name Advanced Constructors
     /// @{
-  private:
-    explicit SymbolicFactor(const Base& base) :
-      Base(base) {}
-
   public:
     /** Constructor from a collection of keys */
     template<typename KEYITERATOR>

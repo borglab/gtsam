@@ -31,6 +31,7 @@ namespace gtsam {
   class Values;
   class Ordering;
   class GaussianFactorGraph;
+  class SymbolicFactorGraph;
 
   /**
    * Formatting options when saving in GraphViz format using
@@ -106,18 +107,9 @@ namespace gtsam {
     double probPrime(const Values& c) const;
 
     /**
-     * Create a symbolic factor graph using an existing ordering
+     * Create a symbolic factor graph
      */
-    //SymbolicFactorGraph::shared_ptr symbolic() const;
-
-    /**
-     * Create a symbolic factor graph and initial variable ordering that can
-     * be used for graph operations like determining a fill-reducing ordering.
-     * The graph and ordering should be permuted after such a fill-reducing
-     * ordering is found.
-     */
-    //std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-    //  symbolic(const Values& config) const;
+    boost::shared_ptr<SymbolicFactorGraph> symbolic() const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.

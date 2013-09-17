@@ -31,8 +31,9 @@ using namespace boost::assign;
 #include <gtsam/base/Matrix.h>
 #include <tests/smallExample.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace gtsam;
 using namespace example;
@@ -146,6 +147,22 @@ TEST( NonlinearFactorGraph, rekey )
   expRekey += simulated2D::Measurement(z4, sigma0_2, X(2), L(4));
 
   EXPECT(assert_equal(expRekey, actRekey));
+}
+
+/* ************************************************************************* */
+TEST( NonlinearFactorGraph, symbolic )
+{
+  NonlinearFactorGraph graph = createNonlinearFactorGraph();
+
+  SymbolicFactorGraph expected;
+  expected.push_factor(X(1));
+  expected.push_factor(X(1), X(2));
+  expected.push_factor(X(1), L(1));
+  expected.push_factor(X(2), L(1));
+
+  SymbolicFactorGraph actual = *graph.symbolic();
+
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
