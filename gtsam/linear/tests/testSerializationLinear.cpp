@@ -22,6 +22,9 @@
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/NoiseModel.h>
 
+#include <boost/assign/list_of.hpp>
+using namespace boost::assign;
+
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -123,10 +126,6 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
   EXPECT(equalsDereferencedBinary<SharedDiagonal>(constrained3));
 }
 
-/* ************************************************************************* */
-// Linear components
-/* ************************************************************************* */
-
 /* Create GUIDs for factors */
 /* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
@@ -170,6 +169,25 @@ TEST (Serialization, gaussian_conditional) {
   EXPECT(equalsBinary(cg));
 }
 
+/* ************************************************************************* */
+TEST (Serialization, gaussian_bayes_tree) {
+  const Key x1=1, x2=2, x3=3, x4=4;
+  const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
+  const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
+  const GaussianFactorGraph chain = list_of
+    (JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  chainNoise))
+    (JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  chainNoise))
+    (JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  chainNoise))
+    (JacobianFactor(x4, Matrix_(1,1,1.), Vector_(1,1.),  chainNoise));
+
+  GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
+  GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);
+  GaussianBayesTree actual;
+
+  std::string serialized = serialize(init);
+  deserialize(serialized, actual);
+  EXPECT(assert_equal(expected, actual));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
