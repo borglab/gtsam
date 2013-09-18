@@ -45,7 +45,7 @@ namespace gtsam {
       Key me = frontals.front();
       typename CONDITIONAL::Parents parents = conditional->parents();
       BOOST_FOREACH(Key p, parents)
-        of << p << "->" << me << std::endl;
+        of << keyFormatter(p) << "->" << keyFormatter(me) << std::endl;
     }
 
     of << "}";
