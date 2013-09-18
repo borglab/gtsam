@@ -1273,6 +1273,27 @@ class GaussianFactorGraph {
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
   gtsam::VectorValues gradientAtZero() const;
 
+  // Elimination and marginals
+  gtsam::GaussianBayesNet* eliminateSequential();
+  gtsam::GaussianBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
+  gtsam::GaussianBayesTree* eliminateMultifrontal();
+  gtsam::GaussianBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);
+  pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
+    const gtsam::Ordering& ordering);
+  pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
+    const gtsam::KeyVector& keys);
+  pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*> eliminatePartialMultifrontal(
+    const gtsam::Ordering& ordering);
+  pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*> eliminatePartialMultifrontal(
+    const gtsam::KeyVector& keys);
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables);
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables);
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables,
+    const gtsam::Ordering& marginalizedVariableOrdering);
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables,
+    const gtsam::Ordering& marginalizedVariableOrdering);
+  gtsam::GaussianFactorGraph* marginal(const gtsam::KeyVector& variables);
+
   // Conversion to matrices
   Matrix sparseJacobian_() const;
   Matrix augmentedJacobian() const;
