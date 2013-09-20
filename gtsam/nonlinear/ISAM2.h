@@ -585,7 +585,7 @@ public:
   const Value& calculateEstimate(Key key) const;
 
   /** Return marginal on any variable as a covariance matrix */
-  Matrix marginalCovariance(Index key) const;
+  Matrix marginalCovariance(Key key) const;
 
   /// @name Public members for non-typical usage
   /// @{
