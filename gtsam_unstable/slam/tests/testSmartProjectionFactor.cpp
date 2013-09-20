@@ -670,7 +670,7 @@ TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor 
   tictoc_print_();
 }
 
-/* ************************************************************************* */
+/* *************************************************************************
 TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks: Rotation Only**********************" << endl;
 

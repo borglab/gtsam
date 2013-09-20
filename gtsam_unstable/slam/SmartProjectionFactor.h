@@ -68,6 +68,10 @@ namespace gtsam {
     std::vector<Matrix> Gs;
     std::vector<Vector> gs;
 
+    Matrix Hx;
+    Matrix Hl;
+    Vector b;
+
     // C = Hl'Hl
 
     // Cinv = inv(Hl'Hl)
@@ -234,6 +238,9 @@ namespace gtsam {
       std::vector<Vector> gs(numKeys);
       double f=0;
 
+      Vector changeLinPoses(numKeys*6);
+      Point3 changeLinPoint;
+
       // Collect all poses (Cameras)
       bool valuesEqualRetriangulation = true;
       std::vector<Pose3> cameraPoses;
@@ -247,11 +254,17 @@ namespace gtsam {
           cameraPose = values.at<Pose3>(k);
 
         if (!state_->cameraPosesTriangulation.empty()) {
+          // TODO: are you sure that when using "add" the number of poses will be ok? (old linearization point will contain 1 pose less)
           if (!cameraPose.equals(state_->cameraPosesTriangulation[poseCount], retriangulationThreshold)) {
             valuesEqualRetriangulation = false;
+            subInsert(changeLinPoses, Vector::Zero(6), 6*poseCount);
+          }else{
+            Vector changeLinPoses_i = Pose3::Logmap(state_->cameraPosesTriangulation[poseCount].between(cameraPose));
+            subInsert(changeLinPoses, changeLinPoses_i, 6*poseCount);
           }
         } else {
           valuesEqualRetriangulation = false;
+          subInsert(changeLinPoses, Vector::Zero(6), 6*poseCount);
         }
 
         cameraPoses.push_back(cameraPose);
@@ -267,7 +280,9 @@ namespace gtsam {
       if (retriangulate) {
         // We triangulate the 3D position of the landmark
         try {
-          state_->point = triangulatePoint3(cameraPoses, measured_, *K_);
+          Point3 newPoint = triangulatePoint3(cameraPoses, measured_, *K_);
+          changeLinPoint = newPoint - state_->point;  // TODO: implement this check for the degenerate case
+          state_->point = newPoint;
           state_->degenerate = false;
           state_->cheiralityException = false;
         } catch( TriangulationUnderconstrainedException& e) {
@@ -300,56 +315,58 @@ namespace gtsam {
 
       if (blockwise){
         // ==========================================================================================================
-        std::vector<Matrix> Hx(numKeys);
-        std::vector<Matrix> Hl(numKeys);
-        std::vector<Vector> b(numKeys);
-
-        for(size_t i = 0; i < measured_.size(); i++) {
-          Pose3 pose = cameraPoses.at(i);
-          PinholeCamera<CALIBRATION> camera(pose, *K_);
-          b.at(i) = - ( camera.project(state_->point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
-          noise_-> WhitenSystem(Hx.at(i), Hl.at(i), b.at(i));
-          f += b.at(i).squaredNorm();
-        }
-
-        // Shur complement trick
-
-        // Allocate m^2 matrix blocks
-        std::vector< std::vector<Matrix> > Hxl(keys_.size(), std::vector<Matrix>( keys_.size()));
-
-        // Allocate inv(Hl'Hl)
-        Matrix3 C = zeros(3,3);
-        for(size_t i1 = 0; i1 < keys_.size(); i1++) {
-          C.noalias() += Hl.at(i1).transpose() * Hl.at(i1);
-        }
-
-        Matrix3 Cinv = C.inverse(); //  this is very important: without eval, because of eigen aliasing the results will be incorrect
-
-        // Calculate sub blocks
-        for(size_t i1 = 0; i1 < keys_.size(); i1++) {
-          for(size_t i2 = 0; i2 < keys_.size(); i2++) {
-            // we only need the upper triangular entries
-            Hxl[i1][i2].noalias() = Hx.at(i1).transpose() * Hl.at(i1) * Cinv * Hl.at(i2).transpose();
-          }
-        }
-        // Populate Gs and gs
-        int GsCount = 0;
-        for(size_t i1 = 0; i1 < numKeys; i1++) {
-          gs.at(i1).noalias() = Hx.at(i1).transpose() * b.at(i1);
-
-          for(size_t i2 = 0; i2 < numKeys; i2++) {
-            gs.at(i1).noalias() -= Hxl[i1][i2] * b.at(i2);
-
-            if (i2 == i1){
-              Gs.at(GsCount).noalias() = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
-              GsCount++;
-            }
-            if (i2 > i1) {
-              Gs.at(GsCount).noalias() = - Hxl[i1][i2] * Hx.at(i2);
-              GsCount++;
-            }
-          }
-        }
+        std::cout << "Deprecated use of blockwise version. This is slower and no longer supported" << std::endl;
+        blockwise = false;
+        //        std::vector<Matrix> Hx(numKeys);
+        //        std::vector<Matrix> Hl(numKeys);
+        //        std::vector<Vector> b(numKeys);
+        //
+        //        for(size_t i = 0; i < measured_.size(); i++) {
+        //          Pose3 pose = cameraPoses.at(i);
+        //          PinholeCamera<CALIBRATION> camera(pose, *K_);
+        //          b.at(i) = - ( camera.project(state_->point,Hx.at(i),Hl.at(i)) - measured_.at(i) ).vector();
+        //          noise_-> WhitenSystem(Hx.at(i), Hl.at(i), b.at(i));
+        //          f += b.at(i).squaredNorm();
+        //        }
+        //
+        //        // Shur complement trick
+        //
+        //        // Allocate m^2 matrix blocks
+        //        std::vector< std::vector<Matrix> > Hxl(keys_.size(), std::vector<Matrix>( keys_.size()));
+        //
+        //        // Allocate inv(Hl'Hl)
+        //        Matrix3 C = zeros(3,3);
+        //        for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+        //          C.noalias() += Hl.at(i1).transpose() * Hl.at(i1);
+        //        }
+        //
+        //        Matrix3 Cinv = C.inverse(); //  this is very important: without eval, because of eigen aliasing the results will be incorrect
+        //
+        //        // Calculate sub blocks
+        //        for(size_t i1 = 0; i1 < keys_.size(); i1++) {
+        //          for(size_t i2 = 0; i2 < keys_.size(); i2++) {
+        //            // we only need the upper triangular entries
+        //            Hxl[i1][i2].noalias() = Hx.at(i1).transpose() * Hl.at(i1) * Cinv * Hl.at(i2).transpose();
+        //          }
+        //        }
+        //        // Populate Gs and gs
+        //        int GsCount = 0;
+        //        for(size_t i1 = 0; i1 < numKeys; i1++) {
+        //          gs.at(i1).noalias() = Hx.at(i1).transpose() * b.at(i1);
+        //
+        //          for(size_t i2 = 0; i2 < numKeys; i2++) {
+        //            gs.at(i1).noalias() -= Hxl[i1][i2] * b.at(i2);
+        //
+        //            if (i2 == i1){
+        //              Gs.at(GsCount).noalias() = Hx.at(i1).transpose() * Hx.at(i1) - Hxl[i1][i2] * Hx.at(i2);
+        //              GsCount++;
+        //            }
+        //            if (i2 > i1) {
+        //              Gs.at(GsCount).noalias() = - Hxl[i1][i2] * Hx.at(i2);
+        //              GsCount++;
+        //            }
+        //          }
+        //        }
       }
 
       if (blockwise == false){ // version with full matrix multiplication
@@ -383,10 +400,40 @@ namespace gtsam {
           // std::cout << "Hl2 \n" << Hl2<< std::endl;
         }
         else{
+
+
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             Matrix Hxi, Hli;
+
+            // Selective relinearization (check if new linearization is needed)
+            Vector repErr_i;
+            try {
+              repErr_i = - ( camera.project(state_->point) - measured_.at(i) ).vector();
+            } catch ( CheiralityException& e) {
+              std::cout << "Cheirality exception " << state_->ID << std::endl;
+              exit(EXIT_FAILURE);
+            }
+            noise_-> whitenInPlace(repErr_i);
+            f += repErr_i.squaredNorm();
+
+            Vector linRepErr;
+
+            linRepErr = state_->Hx * changeLinPoses + state_->Hl * changeLinPoint.vector() - state_->b;
+
+            double f_lin = linRepErr.squaredNorm();
+
+            // Relinearization check
+            if (state_->f - f_lin > 1e-7){
+              double rho = (state_->f - f) / (state_->f - f_lin);
+              if( fabs(rho) > 0.75 ){
+                return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
+              }
+            }
+            else{
+              return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
+            }
 
             Vector bi;
             try {
@@ -395,9 +442,7 @@ namespace gtsam {
               std::cout << "Cheirality exception " << state_->ID << std::endl;
               exit(EXIT_FAILURE);
             }
-
             noise_-> WhitenSystem(Hxi, Hli, bi);
-            f += bi.squaredNorm();
 
             Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
             Hl2.block( 2*i, 0, 2, 3  ) = Hli;
@@ -406,6 +451,9 @@ namespace gtsam {
           }
         }
 
+        state_->Hx = Hx2;
+        state_->Hl = Hl2;
+        state_->b = b2;
 
         // Shur complement trick
         Matrix H(6 * numKeys, 6 * numKeys);
