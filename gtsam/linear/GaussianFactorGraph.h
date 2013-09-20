@@ -172,7 +172,7 @@ namespace gtsam {
      * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
      * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
      */
-    Matrix augmentedJacobian() const;
+    Matrix augmentedJacobian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
 
     /**
      * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
@@ -181,7 +181,7 @@ namespace gtsam {
      * GaussianFactorGraph::augmentedJacobian and
      * GaussianFactorGraph::sparseJacobian.
      */
-    std::pair<Matrix,Vector> jacobian() const;
+    std::pair<Matrix,Vector> jacobian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
 
     /**
      * Return a dense \f$ \Lambda \in \mathbb{R}^{n+1 \times n+1} \f$ Hessian
@@ -194,7 +194,7 @@ namespace gtsam {
      and the negative log-likelihood is
      \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
      */
-    Matrix augmentedHessian() const;
+    Matrix augmentedHessian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
 
     /**
      * Return the dense Hessian \f$ \Lambda \f$ and information vector
@@ -202,7 +202,7 @@ namespace gtsam {
      * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
      * GaussianFactorGraph::augmentedHessian.
      */
-    std::pair<Matrix,Vector> hessian() const;
+    std::pair<Matrix,Vector> hessian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
 
     /** Solve the factor graph by performing multifrontal variable elimination in COLAMD order using
      *  the dense elimination function specified in \c function (default EliminatePreferCholesky),

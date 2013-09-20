@@ -134,24 +134,24 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix GaussianFactorGraph::augmentedJacobian() const {
+  Matrix GaussianFactorGraph::augmentedJacobian(boost::optional<const Ordering&> optionalOrdering) const {
     // combine all factors
-    JacobianFactor combined(*this);
+    JacobianFactor combined(*this, optionalOrdering);
     return combined.augmentedJacobian();
   }
 
   /* ************************************************************************* */
-  std::pair<Matrix,Vector> GaussianFactorGraph::jacobian() const {
-    Matrix augmented = augmentedJacobian();
+  std::pair<Matrix,Vector> GaussianFactorGraph::jacobian(boost::optional<const Ordering&> optionalOrdering) const {
+    Matrix augmented = augmentedJacobian(optionalOrdering);
     return make_pair(
       augmented.leftCols(augmented.cols()-1),
       augmented.col(augmented.cols()-1));
   }
 
   /* ************************************************************************* */
-  Matrix GaussianFactorGraph::augmentedHessian() const {
+  Matrix GaussianFactorGraph::augmentedHessian(boost::optional<const Ordering&> optionalOrdering) const {
     // combine all factors and get upper-triangular part of Hessian
-    HessianFactor combined(*this);
+    HessianFactor combined(*this, Scatter(*this, optionalOrdering));
     Matrix result = combined.info();
     // Fill in lower-triangular part of Hessian
     result.triangularView<Eigen::StrictlyLower>() = result.transpose();
@@ -159,8 +159,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::pair<Matrix,Vector> GaussianFactorGraph::hessian() const {
-    Matrix augmented = augmentedHessian();
+  std::pair<Matrix,Vector> GaussianFactorGraph::hessian(boost::optional<const Ordering&> optionalOrdering) const {
+    Matrix augmented = augmentedHessian(optionalOrdering);
     return make_pair(
       augmented.topLeftCorner(augmented.rows()-1, augmented.rows()-1),
       augmented.col(augmented.rows()-1).head(augmented.rows()-1));
