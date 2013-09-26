@@ -265,9 +265,9 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
 
 
   }
-  if (debug) std::cout << " # PROJECTION FACTORS CALCULATED: " << numProjectionFactors;
-  if (debug) std::cout << " # PROJECTION FACTORS ADDED: " << numProjectionFactorsAdded;
-  if (debug) std::cout << " # FAILURES: " << numFailures;
+  if (1||debug) std::cout << " # PROJECTION FACTORS CALCULATED: " << numProjectionFactors;
+  if (1||debug) std::cout << " # PROJECTION FACTORS ADDED: " << numProjectionFactorsAdded;
+  if (1||debug) std::cout << " # FAILURES: " << numFailures;
 }
 
 void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result) {
@@ -329,12 +329,12 @@ void optimizeGraphISAM2(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr g
 // main
 int main(int argc, char** argv) {
 
-  unsigned int maxNumLandmarks = 399997; //100000000; // 309393 // (loop_closure_merged) //37106 //(reduced kitti);
-  unsigned int maxNumPoses = 4539; //3541
+  unsigned int maxNumLandmarks = 389007; //100000000; // 309393 // (loop_closure_merged) //37106 //(reduced kitti);
+  unsigned int maxNumPoses = 45400; //3541
 
   // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = true;
-  bool useTriangulation = false;
+  bool useSmartProjectionFactor = false;
+  bool useTriangulation = true;
   bool useLM = true; 
 
   std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
@@ -368,8 +368,8 @@ int main(int argc, char** argv) {
   // Load all values, add priors
   gtsam::Values::shared_ptr graphValues(new gtsam::Values());
   gtsam::Values::shared_ptr loadedValues = loadPoseValues(input_dir+"camera_poses.txt");
-  graph.push_back(Pose3Prior(X(0),loadedValues->at<Pose3>(X(0)), prior_model));
-  graph.push_back(Pose3Prior(X(1),loadedValues->at<Pose3>(X(1)), prior_model));
+  //graph.push_back(Pose3Prior(X(0),loadedValues->at<Pose3>(X(0)), prior_model));
+  //graph.push_back(Pose3Prior(X(1),loadedValues->at<Pose3>(X(1)), prior_model));
   graph.print("Priors");
 
   // read all measurements tracked by VO stereo
@@ -386,6 +386,7 @@ int main(int argc, char** argv) {
   SmartFactorMap smartFactors;
   ProjectionFactorMap projectionFactors;
   Values result;
+  int totalNumMeasurements = 0;
   bool optimized = false;
   while (fin >> r >> l >> uL >> uR >> v >> x >> y >> z) {
     if (debug) fprintf(stderr,"Landmark %ld\n", l);
@@ -402,6 +403,7 @@ int main(int argc, char** argv) {
       }
       if (debug) cout << "Adding triangulated landmarks, graph size after: " << graph.size() << endl;
 
+  if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
       if (useLM)
         optimizeGraphLM(graph, graphValues, result);
       else
@@ -427,6 +429,7 @@ int main(int argc, char** argv) {
 
         // Add measurement to smart factor
         (*fit).second->add(Point2(uL,v), X(r));
+        totalNumMeasurements++;
 
         if (debug) (*fit).second->print();
       } else {
@@ -442,6 +445,7 @@ int main(int argc, char** argv) {
         smartFactors.insert( make_pair(L(l), smartFactor) );
         graph.push_back(smartFactor);
         numLandmarks++;
+        totalNumMeasurements++;
 
         views.clear();
         measurements.clear();
@@ -525,6 +529,8 @@ int main(int argc, char** argv) {
       cout << "Loading graph... " << graph.size() << endl;
     }
   }
+ 
+  if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
   if (!optimized) {
     if (useSmartProjectionFactor == false && useTriangulation) {
@@ -537,6 +543,7 @@ int main(int argc, char** argv) {
       optimizeGraphISAM2(graph, graphValues, result);
     optimized = true;
   }
+  if (useSmartProjectionFactor||debug) std::cout << "TOTAL NUM MEASUREMENTS " << totalNumMeasurements;
 
   cout << "===================================================" << endl;
   //graphValues->print("before optimization ");
@@ -545,6 +552,6 @@ int main(int argc, char** argv) {
   cout << "===================================================" << endl;
   writeValues("./", result);
 
-  if (debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+  if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
   exit(0);
 }
