@@ -31,7 +31,7 @@
 namespace gtsam {
 
   // default threshold for selective relinearization
-  static double defaultLinThreshold = 0; // 1e-7; // 0.01
+  static double defaultLinThreshold = -1; // 1e-7; // 0.01
   // default threshold for retriangulation
   static double defaultTriangThreshold = 1e-7;
 
@@ -372,7 +372,14 @@ namespace gtsam {
         dim_landmark = 2;
       }
 
-      bool doLinearize = decideIfLinearize(cameraPoses, state_->cameraPosesLinearization, linearizationThreshold);
+      bool doLinearize;
+      if (linearizationThreshold >= 0){//by convention if linearizationThreshold is negative we always relinearize
+        std::cout << "Temporary disabled" << std::endl;
+        doLinearize = decideIfLinearize(cameraPoses, state_->cameraPosesLinearization, linearizationThreshold);
+      }
+      else{
+        doLinearize = true;
+      }
 
       if (doLinearize) {
         state_->cameraPosesLinearization = cameraPoses;
@@ -517,10 +524,12 @@ namespace gtsam {
       }
 
       // ==========================================================================================================
-//      state_->calculatedHessian = true;
-//      state_->Gs = Gs;
-//      state_->gs = gs;
-//      state_->f = f;
+//      if(linearizationThreshold >= 0){ // if we do not use selective relinearization we don't need to store these variables
+//        state_->calculatedHessian = true;
+//        state_->Gs = Gs;
+//        state_->gs = gs;
+//        state_->f = f;
+//      }
 
       return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
     }
