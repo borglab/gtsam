@@ -583,7 +583,7 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
 
 }
 
-/* ************************************************************************* */
+/* *************************************************************************
 TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 2 landmarks: Rotation Only**********************" << endl;
 
