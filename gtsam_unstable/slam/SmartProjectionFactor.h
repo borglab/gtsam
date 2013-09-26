@@ -59,28 +59,24 @@ namespace gtsam {
     double overallError;
     std::vector<Pose3> cameraPosesError;
 
-    // Hessian
+    // Hessian representation (after Schur complement)
     bool calculatedHessian;
     Matrix H;
     Vector gs_vector;
-    double f;
-
     std::vector<Matrix> Gs;
     std::vector<Vector> gs;
+    double f;
 
+    // Jacobian representation (before Schur complement)
     Matrix Hx;
     Matrix Hl;
     Vector b;
 
     // C = Hl'Hl
-
     // Cinv = inv(Hl'Hl)
     // Matrix3 Cinv;
-
     // E = Hx'Hl
-
     // w = Hl'b
-
   };
 
   int SmartProjectionFactorState::lastID = 0;
@@ -105,6 +101,7 @@ namespace gtsam {
     bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
     bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
+
   public:
 
     /// shorthand for base class type
@@ -124,15 +121,16 @@ namespace gtsam {
 
     /**
      * Constructor
-     * TODO: Mark argument order standard (keys, measurement, parameters)
+     * @param poseKeys is the set of indices corresponding to the cameras observing the same landmark
      * @param measured is the 2m dimensional location of the projection of a single landmark in the m views (the measurements)
      * @param model is the standard deviation (current version assumes that the uncertainty is the same for all views)
-     * @param poseKeys is the set of indices corresponding to the cameras observing the same landmark
      * @param K shared pointer to the constant calibration
      * @param body_P_sensor is the transform from body to sensor frame (default identity)
      */
-    SmartProjectionFactor(const std::vector<Point2> measured, const SharedNoiseModel& model,
-        std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
+    SmartProjectionFactor(std::vector<Key> poseKeys, // camera poses
+        const std::vector<Point2> measured,          // pixel measurements
+        const SharedNoiseModel& model,               // noise model (same for all measurements)
+        const boost::shared_ptr<CALIBRATION>& K,     // calibration matrix (same for all measurements)
         boost::optional<POSE> body_P_sensor = boost::none,
         SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
           measured_(measured), noise_(model), K_(K), body_P_sensor_(body_P_sensor),
@@ -151,14 +149,15 @@ namespace gtsam {
      * @param verboseCheirality determines whether exceptions are printed for Cheirality
      * @param body_P_sensor is the transform from body to sensor frame  (default identity)
      */
-    SmartProjectionFactor(const std::vector<Point2> measured, const SharedNoiseModel& model,
-        std::vector<Key> poseKeys, const boost::shared_ptr<CALIBRATION>& K,
+    SmartProjectionFactor(std::vector<Key> poseKeys,
+        const std::vector<Point2> measured,
+        const SharedNoiseModel& model,
+        const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
         boost::optional<POSE> body_P_sensor = boost::none,
         SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
           measured_(measured), noise_(model), K_(K), body_P_sensor_(body_P_sensor),
           state_(state), throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {
-
     }
 
     /**
@@ -184,6 +183,83 @@ namespace gtsam {
       measured_.push_back(measured);
       keys_.push_back(poseKey);
     }
+
+    // This function decides whether a new triangulation is needed
+    inline bool decideIfTriangulate(std::vector<Pose3> cameraPoses, const Values& values) const {
+      // several calls to linearize will be done from the same linearization point, hence it is not needed to re-triangulate
+      // Note that this is not yet "selecting linearization", that will come later, and we only check if the
+      // current linearization is the "same" (up to tolerance) w.r.t. the last time we triangulated the point
+      bool retriangulate = true;
+      bool valuesEqualRetriangulation = true;
+      double retriangulationThreshold = 1e-9;
+
+      int poseCount = 0;
+      BOOST_FOREACH(const Key& k, keys_) {
+        Pose3 cameraPose;
+
+        if(body_P_sensor_)
+          cameraPose = values.at<Pose3>(k).compose(*body_P_sensor_);
+        else
+          cameraPose = values.at<Pose3>(k);
+
+        if (!state_->cameraPosesTriangulation.empty()) {
+
+          // TODO: are you sure that when using "add" the number of poses will be ok? (old linearization point will contain 1 pose less)
+          if (!cameraPose.equals(state_->cameraPosesTriangulation[poseCount], retriangulationThreshold)) {
+            valuesEqualRetriangulation = false;
+          }
+
+        } else {
+          valuesEqualRetriangulation = false;
+        }
+
+        cameraPoses.push_back(cameraPose);
+        poseCount++;
+      }
+
+      if (valuesEqualRetriangulation) {
+        retriangulate = false;
+      }
+
+      return retriangulate;
+    }
+
+    // This function decides whether a new triangulation is needed
+    //    bool decideIfLinearize(std::vector<Pose3> cameraPoses) const {
+    //      // "selecting linearization"
+    //      bool doLinearize = true;
+    //      double linearizationThreshold = 1e-2;
+    //
+    //      Pose3 firstCameraPose;
+    //      Pose3 firstCameraPoseOld;
+    //
+    //      for(size_t i = 0; i < cameraPoses.size(); i++) {
+    //        Pose3 cameraPose = cameraPoses.at(i);
+    //
+    //        if (!state_->cameraPosesLinearization.empty()) { // if we have a previous linearization point
+    //
+    //          if(i==0){ // we store the initial pose, this is useful for selective re-linearization
+    //            firstCameraPose = cameraPose;
+    //            firstCameraPoseOld = state_->cameraPosesLinearization[i];
+    //            continue;
+    //          }
+    //
+    //          // we compare the poses in the frame of the first pose
+    //          Pose3 localCameraPose = firstCameraPose.between(cameraPose);
+    //          Pose3 localCameraPoseOld = firstCameraPoseOld.between(state_->cameraPosesLinearization[i]);
+    //
+    //          if (!localCameraPose.equals(localCameraPoseOld, linearizationThreshold)) {
+    //            doLinearize = false;
+    //          }
+    //
+    //        } else {
+    //          doLinearize = false;
+    //        }
+    //      }
+    //
+    //      return doLinearize;
+    //    }
+
 
     /**
      * print
@@ -226,25 +302,21 @@ namespace gtsam {
     /// linearize returns a Hessianfactor that is an approximation of error(p)
     virtual boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
 
-      bool blockwise = false;
-      double retriangulationThreshold = 1e-9;
-
-      int dim_landmark = 3;
-      bool retriangulate = true;
+      bool blockwise = false;                  // the full matrix version in faster
+      int dim_landmark = 3;                    // for degenerate instances this will become 2 (direction-only information)
       
+      // Create structures for Hessian Factors
       unsigned int numKeys = keys_.size();
       std::vector<Index> js;
       std::vector<Matrix> Gs(numKeys*(numKeys+1)/2);
       std::vector<Vector> gs(numKeys);
       double f=0;
 
-      Vector changeLinPoses(numKeys*6);
-      Point3 changeLinPoint;
-
       // Collect all poses (Cameras)
-      bool valuesEqualRetriangulation = true;
       std::vector<Pose3> cameraPoses;
-      int poseCount = 0;
+
+      bool retriangulate = true; // decideIfTriangulate(cameraPoses, values);
+
       BOOST_FOREACH(const Key& k, keys_) {
         Pose3 cameraPose;
 
@@ -253,27 +325,10 @@ namespace gtsam {
         else
           cameraPose = values.at<Pose3>(k);
 
-        if (!state_->cameraPosesTriangulation.empty()) {
-          // TODO: are you sure that when using "add" the number of poses will be ok? (old linearization point will contain 1 pose less)
-          if (!cameraPose.equals(state_->cameraPosesTriangulation[poseCount], retriangulationThreshold)) {
-            valuesEqualRetriangulation = false;
-            subInsert(changeLinPoses, Vector::Zero(6), 6*poseCount);
-          }else{
-            Vector changeLinPoses_i = Pose3::Logmap(state_->cameraPosesTriangulation[poseCount].between(cameraPose));
-            subInsert(changeLinPoses, changeLinPoses_i, 6*poseCount);
-          }
-        } else {
-          valuesEqualRetriangulation = false;
-          subInsert(changeLinPoses, Vector::Zero(6), 6*poseCount);
-        }
-
         cameraPoses.push_back(cameraPose);
-        poseCount++;
       }
 
-      if (valuesEqualRetriangulation) {
-        retriangulate = false;
-      } else {
+      if(retriangulate) {
         state_->cameraPosesTriangulation = cameraPoses;
       }
 
@@ -281,7 +336,7 @@ namespace gtsam {
         // We triangulate the 3D position of the landmark
         try {
           Point3 newPoint = triangulatePoint3(cameraPoses, measured_, *K_);
-          changeLinPoint = newPoint - state_->point;  // TODO: implement this check for the degenerate case
+          // changeLinPoint = newPoint - state_->point;  // TODO: implement this check for the degenerate case
           state_->point = newPoint;
           state_->degenerate = false;
           state_->cheiralityException = false;
@@ -312,6 +367,17 @@ namespace gtsam {
       if (!retriangulate && state_->degenerate) {
         dim_landmark = 2;
       }
+
+      bool doLinearize = true; //= decideIfLinearize(cameraPoses);
+
+      if (doLinearize) {
+        state_->cameraPosesLinearization = cameraPoses;
+      }
+
+      if(!doLinearize){ // return the previous Hessian factor
+        return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
+      }
+      //otherwise redo linearization
 
       if (blockwise){
         // ==========================================================================================================
@@ -401,39 +467,10 @@ namespace gtsam {
         }
         else{
 
-
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             Matrix Hxi, Hli;
-
-            // Selective relinearization (check if new linearization is needed)
-            Vector repErr_i;
-            try {
-              repErr_i = - ( camera.project(state_->point) - measured_.at(i) ).vector();
-            } catch ( CheiralityException& e) {
-              std::cout << "Cheirality exception " << state_->ID << std::endl;
-              exit(EXIT_FAILURE);
-            }
-            noise_-> whitenInPlace(repErr_i);
-            f += repErr_i.squaredNorm();
-
-            Vector linRepErr;
-
-            linRepErr = state_->Hx * changeLinPoses + state_->Hl * changeLinPoint.vector() - state_->b;
-
-            double f_lin = linRepErr.squaredNorm();
-
-            // Relinearization check
-            if (state_->f - f_lin > 1e-7){
-              double rho = (state_->f - f) / (state_->f - f_lin);
-              if( fabs(rho) > 0.75 ){
-                return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
-              }
-            }
-            else{
-              return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
-            }
 
             Vector bi;
             try {
@@ -494,15 +531,15 @@ namespace gtsam {
      * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
      */
     virtual double error(const Values& values) const {
-      double retriangulationThreshold = 1e-9;
       if (this->active(values)) {
         double overallError=0;
-        bool retriangulate = true;
 
         // Collect all poses (Cameras)
-        bool valuesEqualRetriangulation = true;
         std::vector<Pose3> cameraPoses;
-        int poseCount = 0;
+
+        // check if triangulation and linearization are actually needed
+        bool retriangulate = true; //decideIfTriangulate(cameraPoses, values);
+
         BOOST_FOREACH(const Key& k, keys_) {
           Pose3 cameraPose;
 
@@ -511,21 +548,10 @@ namespace gtsam {
           else
             cameraPose = values.at<Pose3>(k);
 
-          if (!state_->cameraPosesTriangulation.empty()) {
-            if (!cameraPose.equals(state_->cameraPosesTriangulation[poseCount], retriangulationThreshold)) {
-              valuesEqualRetriangulation = false;
-            }
-          } else {
-            valuesEqualRetriangulation = false;
-          }
-
           cameraPoses.push_back(cameraPose);
-          poseCount++;
         }
 
-        if (valuesEqualRetriangulation) {
-          retriangulate = false;
-        } else {
+        if(retriangulate) {
           state_->cameraPosesTriangulation = cameraPoses;
         }
 
@@ -629,3 +655,80 @@ namespace gtsam {
   };
 
 } // \ namespace gtsam
+
+/*
+// Discarded version of decideIfTriangulate and decideIfLinearize
+ *  This function decides whether a new triangulation and linearization is needed
+bool decideIfLinearize(std::vector<Pose3> cameraPoses) {
+  // Selective relinearization (check if new linearization is needed)
+        Vector repErr_i;
+        try {
+          repErr_i = - ( camera.project(state_->point) - measured_.at(i) ).vector();
+        } catch ( CheiralityException& e) {
+          std::cout << "Cheirality exception " << state_->ID << std::endl;
+          exit(EXIT_FAILURE);
+        }
+        noise_-> whitenInPlace(repErr_i);
+        f += repErr_i.squaredNorm();
+
+        Vector linRepErr;
+
+        linRepErr = state_->Hx * changeLinPoses + state_->Hl * changeLinPoint.vector() - state_->b;
+
+        double f_lin = linRepErr.squaredNorm();
+
+        // Relinearization check
+        if (state_->f - f_lin > 1e-7){
+          double rho = (state_->f - f) / (state_->f - f_lin);
+          if( fabs(rho) > 0.75 ){
+            return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
+          }
+        }
+        else{
+          return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
+        }
+
+
+
+bool decideIfTriangulateAndLinearize(std::vector<Pose3> cameraPoses) {
+      //      Vector changeLinPoses(numKeys*6);
+      //      Point3 changeLinPoint;
+
+      Pose3 firstCameraPose;
+      Pose3 firstCameraPoseOld;
+
+      int poseCount = 0;
+      BOOST_FOREACH(const Key& k, keys_) {
+        Pose3 cameraPose;
+
+        if(body_P_sensor_)
+          cameraPose = values.at<Pose3>(k).compose(*body_P_sensor_);
+        else
+          cameraPose = values.at<Pose3>(k);
+
+        if (!state_->cameraPosesTriangulation.empty()) {
+
+          if(poseCount==0){ // we store the initial pose, this is useful for selective re-linearization
+            firstCameraPose = cameraPose;
+            firstCameraPoseOld = state_->cameraPosesTriangulation[poseCount];
+          }
+
+          // TODO: are you sure that when using "add" the number of poses will be ok? (old linearization point will contain 1 pose less)
+          if (!cameraPose.equals(state_->cameraPosesTriangulation[poseCount], retriangulationThreshold)) {
+            valuesEqualRetriangulation = false;
+            subInsert(changeLinPoses, Vector::Zero(6), 6*poseCount);
+          }else{
+            Vector changeLinPoses_i = Pose3::Logmap(state_->cameraPosesTriangulation[poseCount].between(cameraPose));
+            subInsert(changeLinPoses, changeLinPoses_i, 6*poseCount);
+          }
+        } else {
+          valuesEqualRetriangulation = false;
+          subInsert(changeLinPoses, Vector::Zero(6), 6*poseCount);
+        }
+
+        cameraPoses.push_back(cameraPose);
+        poseCount++;
+      }
+    }
+    */
+

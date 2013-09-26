@@ -73,7 +73,7 @@ TEST( SmartProjectionFactor, Constructor) {
   std::vector<Point2> measurements;
   measurements.push_back(Point2(323.0, 240.0));
 
-  TestSmartProjectionFactor factor(measurements, model, views, K);
+  TestSmartProjectionFactor factor(views, measurements, model, K);
 }
 
 /* ************************************************************************* */
@@ -87,7 +87,7 @@ TEST( SmartProjectionFactor, ConstructorWithTransform) {
   measurements.push_back(Point2(323.0, 240.0));
   Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
 
-  TestSmartProjectionFactor factor(measurements, model, views, K, body_P_sensor);
+  TestSmartProjectionFactor factor(views, measurements, model, K, body_P_sensor);
 }
 
 /* ************************************************************************* */
@@ -98,8 +98,8 @@ TEST( SmartProjectionFactor, Equals ) {
 
   std::vector<Key> views;
   views += X(1);
-  TestSmartProjectionFactor factor1(measurements, model, views, K);
-  TestSmartProjectionFactor factor2(measurements, model, views, K);
+  TestSmartProjectionFactor factor1(views, measurements, model, K);
+  TestSmartProjectionFactor factor2(views, measurements, model, K);
 
   CHECK(assert_equal(factor1, factor2));
 }
@@ -113,8 +113,8 @@ TEST( SmartProjectionFactor, EqualsWithTransform ) {
 
   std::vector<Key> views;
   views += X(1);
-  TestSmartProjectionFactor factor1(measurements, model, views, K, body_P_sensor);
-  TestSmartProjectionFactor factor2(measurements, model, views, K, body_P_sensor);
+  TestSmartProjectionFactor factor1(views, measurements, model, K, body_P_sensor);
+  TestSmartProjectionFactor factor2(views, measurements, model, K, body_P_sensor);
 
   CHECK(assert_equal(factor1, factor2));
 }
@@ -631,8 +631,8 @@ TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor 
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(measurements_cam1, noiseProjection, views, K));
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(measurements_cam2, noiseProjection, views, K));
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(views, measurements_cam1, noiseProjection, K));
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(views, measurements_cam2, noiseProjection, K));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   const SharedDiagonal noisePriorTranslation = noiseModel::Isotropic::Sigma(3, 0.10);

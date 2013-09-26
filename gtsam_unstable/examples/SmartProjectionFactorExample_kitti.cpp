@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
       }
 
       if (useSmartProjectionFactor) {
-        SmartFactor::shared_ptr smartFactor(new SmartFactor(measurements, pixel_sigma, views, K));
+        SmartFactor::shared_ptr smartFactor(new SmartFactor(views, measurements, pixel_sigma, K));
         graph.push_back(smartFactor);
       }
 
@@ -290,7 +290,7 @@ int main(int argc, char** argv) {
   }
   // Add last measurements
   if (useSmartProjectionFactor) {
-    SmartFactor::shared_ptr smartFactor(new SmartFactor(measurements, pixel_sigma, views, K));
+    SmartFactor::shared_ptr smartFactor(new SmartFactor(views, measurements, pixel_sigma, K));
     graph.push_back(smartFactor);
   }
 
