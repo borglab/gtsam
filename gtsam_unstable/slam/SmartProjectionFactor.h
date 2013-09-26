@@ -31,7 +31,7 @@
 namespace gtsam {
 
   // default threshold for selective relinearization
-  static double defaultLinThreshold = 1e-7; // 0.01
+  static double defaultLinThreshold = 0; // 1e-7; // 0.01
   // default threshold for retriangulation
   static double defaultTriangThreshold = 1e-7;
 
@@ -71,11 +71,6 @@ namespace gtsam {
     std::vector<Matrix> Gs;
     std::vector<Vector> gs;
     double f;
-
-    // Jacobian representation (before Schur complement)
-    Matrix Hx;
-    Matrix Hl;
-    Vector b;
 
     // C = Hl'Hl
     // Cinv = inv(Hl'Hl)
@@ -347,23 +342,26 @@ namespace gtsam {
           state_->degenerate = false;
           state_->cheiralityException = false;
         } catch( TriangulationUnderconstrainedException& e) {
-          // point is triangulated at infinity
-          //std::cout << e.what() << std::end;
+		  // point is triangulated at infinity
+          //std::cout << "Triangulation failed " << e.what() << std::endl;
+          BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
+          BOOST_FOREACH(Vector& v, gs) v = zero(6);
           state_->degenerate = true;
           state_->cheiralityException = false;
           dim_landmark = 2;
+          return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f)); // TODO: Debug condition, uncomment when fixed
         } catch( TriangulationCheiralityException& e) {
           // point is behind one of the cameras, turn factor off by setting everything to 0
           //std::cout << e.what() << std::end;
           BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
           BOOST_FOREACH(Vector& v, gs) v = zero(6);
-          //state_->cheiralityException = true; // TODO: Debug condition, uncomment when fixed
-          //return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f)); // TODO: Debug condition, uncomment when fixed
+          state_->cheiralityException = true; // TODO: Debug condition, uncomment when fixed
+          return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f)); // TODO: Debug condition, uncomment when fixed
           // TODO: this is a debug condition, should be removed the comment
         }
       }
-      state_->degenerate = true; // TODO: this is a debug condition, should be removed
-      dim_landmark = 2; // TODO: this is a debug condition, should be removed the comment
+//      state_->degenerate = true; // TODO: this is a debug condition, should be removed
+//      dim_landmark = 2; // TODO: this is a debug condition, should be removed the comment
 
       if (!retriangulate && state_->cheiralityException) {
         BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
@@ -486,6 +484,7 @@ namespace gtsam {
               exit(EXIT_FAILURE);
             }
             noise_-> WhitenSystem(Hxi, Hli, bi);
+            f += bi.squaredNorm();
 
             Hx2.block( 2*i, 6*i, 2, 6 ) = Hxi;
             Hl2.block( 2*i, 0, 2, 3  ) = Hli;
@@ -493,10 +492,6 @@ namespace gtsam {
             subInsert(b2,bi,2*i);
           }
         }
-
-        state_->Hx = Hx2;
-        state_->Hl = Hl2;
-        state_->b = b2;
 
         // Shur complement trick
         Matrix H(6 * numKeys, 6 * numKeys);
@@ -522,10 +517,10 @@ namespace gtsam {
       }
 
       // ==========================================================================================================
-      state_->calculatedHessian = true;
-      state_->Gs = Gs;
-      state_->gs = gs;
-      state_->f = f;
+//      state_->calculatedHessian = true;
+//      state_->Gs = Gs;
+//      state_->gs = gs;
+//      state_->f = f;
 
       return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
     }
@@ -565,8 +560,8 @@ namespace gtsam {
             // std::cout << "TriangulationCheiralityException "  << std::endl;
             // point is behind one of the cameras, turn factor off by setting everything to 0
             //std::cout << e.what() << std::end;
-            //state_->cheiralityException = true; // TODO: Debug condition, remove comment
-            //return 0.0; // TODO: this is a debug condition, should be removed the comment
+            state_->cheiralityException = true; // TODO: Debug condition, remove comment
+            return 0.0; // TODO: this is a debug condition, should be removed the comment
           } catch( TriangulationUnderconstrainedException& e) {
             // point is triangulated at infinity
             //std::cout << e.what() << std::endl;
@@ -574,7 +569,7 @@ namespace gtsam {
             state_->cheiralityException = false;
           }
         }
-        state_->degenerate = true; // TODO: this is a debug condition, should be removed
+        // state_->degenerate = true; // TODO: this is a debug condition, should be removed
 
         if (!retriangulate && state_->cheiralityException) {
           return 0.0;
@@ -588,7 +583,8 @@ namespace gtsam {
               state_->point = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
             }
             Point2 reprojectionError(camera.projectPointAtInfinity(state_->point) - measured_.at(i));
-            overallError += noise_->distance( reprojectionError.vector() );
+            overallError +=  0.5 * noise_->distance( reprojectionError.vector() );
+            //overallError +=  reprojectionError.vector().norm();
           }
           return overallError;
         }
@@ -599,7 +595,9 @@ namespace gtsam {
 
             try {
               Point2 reprojectionError(camera.project(state_->point) - measured_.at(i));
-              overallError += noise_->distance( reprojectionError.vector() );
+//std::cout << "Reprojection error: " << reprojectionError << std::endl;
+              overallError += 0.5 * noise_->distance( reprojectionError.vector() );
+              //overallError += reprojectionError.vector().norm();
             } catch ( CheiralityException& e) {
               std::cout << "Cheirality exception " << state_->ID << std::endl;
               exit(EXIT_FAILURE);
