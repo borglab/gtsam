@@ -35,10 +35,9 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 
-// We will use a non-liear solver to batch-inituialize from the first 150 frames
+// We will use a non-linear solver to batch-initialize from the first 150 frames
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics SLAM problems.
@@ -333,7 +332,7 @@ int main(int argc, char** argv) {
   unsigned int maxNumPoses = 45400; //3541
 
   // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = false;
+  bool useSmartProjectionFactor = true;
   bool useTriangulation = true;
   bool useLM = true; 
 
