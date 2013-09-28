@@ -120,7 +120,7 @@ TEST( SmartProjectionFactor, EqualsWithTransform ) {
 }
 
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionFactor, noisy ){
   cout << " ************************ SmartProjectionFactor: noisy ****************************" << endl;
 
@@ -159,7 +159,7 @@ TEST( SmartProjectionFactor, noisy ){
   measurements += level_uv, level_uv_right;
 
   SmartProjectionFactor<Pose3, Point3, Cal3_S2>::shared_ptr
-    smartFactor(new SmartProjectionFactor<Pose3, Point3, Cal3_S2>(measurements, noiseProjection, views, K));
+    smartFactor(new SmartProjectionFactor<Pose3, Point3, Cal3_S2>(views, measurements, noiseProjection,  K));
 
   double actualError = smartFactor->error(values);
   std::cout << "Error: " << actualError << std::endl;
@@ -224,9 +224,9 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
   typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(measurements_cam1, noiseProjection, views, K, boost::make_optional<Point3>(landmark1) ));
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(measurements_cam2, noiseProjection, views, K, boost::make_optional<Point3>(landmark2) ));
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor(measurements_cam3, noiseProjection, views, K, boost::make_optional<Point3>(landmark3) ));
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(views, measurements_cam1, noiseProjection,  K, boost::make_optional<Point3>(landmark1) ));
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(views, measurements_cam2, noiseProjection, K, boost::make_optional<Point3>(landmark2) ));
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(views, measurements_cam3, noiseProjection, K, boost::make_optional<Point3>(landmark3) ));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -311,7 +311,7 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
 
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
@@ -365,9 +365,9 @@ TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(measurements_cam1, noiseProjection, views, K));
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(measurements_cam2, noiseProjection, views, K));
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor(measurements_cam3, noiseProjection, views, K));
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(views, measurements_cam1, noiseProjection, K));
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(views, measurements_cam2, noiseProjection, K));
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(views, measurements_cam3, noiseProjection, K));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -405,7 +405,7 @@ TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
 
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_iterative_smart_projection_factor ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
@@ -510,7 +510,7 @@ TEST( SmartProjectionFactor, 3poses_iterative_smart_projection_factor ){
 
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_projection_factor ){
 //  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
@@ -583,7 +583,7 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
 
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 2 landmarks: Rotation Only**********************" << endl;
 
@@ -670,7 +670,7 @@ TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor 
   tictoc_print_();
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks: Rotation Only**********************" << endl;
 
@@ -724,9 +724,9 @@ TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(measurements_cam1, noiseProjection, views, K));
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(measurements_cam2, noiseProjection, views, K));
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor(measurements_cam3, noiseProjection, views, K));
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(views, measurements_cam1, noiseProjection, K));
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(views, measurements_cam2, noiseProjection, K));
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(views, measurements_cam3, noiseProjection, K));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   const SharedDiagonal noisePriorTranslation = noiseModel::Isotropic::Sigma(3, 0.10);
@@ -767,7 +767,7 @@ TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
 }
 
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionFactor, Hessian ){
   cout << " ************************ SmartProjectionFactor: Hessian **********************" << endl;
 
@@ -797,7 +797,7 @@ TEST( SmartProjectionFactor, Hessian ){
   vector<Point2> measurements_cam1;
   measurements_cam1 += cam1_uv1, cam2_uv1;
 
-  SmartProjectionFactor<Pose3, Point3, Cal3_S2> smartFactor(measurements_cam1, noiseProjection, views, K);
+  SmartProjectionFactor<Pose3, Point3, Cal3_S2> smartFactor(views, measurements_cam1, noiseProjection, K);
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
   Values values;
@@ -806,7 +806,7 @@ TEST( SmartProjectionFactor, Hessian ){
   //  values.insert(L(1), landmark1);
 
   boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor.linearize(values);
-  hessianFactor->print("Hessian factor \n");
+  // hessianFactor->print("Hessian factor \n");
 
   // compute triangulation from linearization point
   // compute reprojection errors (sum squared)

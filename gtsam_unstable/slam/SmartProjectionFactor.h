@@ -34,6 +34,10 @@ namespace gtsam {
   static double defaultLinThreshold = -1; // 1e-7; // 0.01
   // default threshold for retriangulation
   static double defaultTriangThreshold = 1e-7;
+  // if set to true will use the rotation-only version for degenerate cases
+  static bool manageDegeneracy = true;
+  // if set to true will use the rotation-only version for degenerate cases
+  static double rankTolerance = 50;
 
   /**
    * Structure for storing some state memory, used to speed up optimization
@@ -327,6 +331,13 @@ namespace gtsam {
         cameraPoses.push_back(cameraPose);
       }
 
+      if(cameraPoses.size() < 2){ // if we have a single pose the corresponding factor is uninformative
+        state_->degenerate = true;
+        BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
+        BOOST_FOREACH(Vector& v, gs) v = zero(6);
+        return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f)); // TODO: Debug condition, uncomment when fixed
+      }
+
       bool retriangulate = decideIfTriangulate(cameraPoses, state_->cameraPosesTriangulation, retriangulationThreshold);
 
       if(retriangulate) {// we store the current poses used for triangulation
@@ -336,39 +347,34 @@ namespace gtsam {
       if (retriangulate) {
         // We triangulate the 3D position of the landmark
         try {
-          Point3 newPoint = triangulatePoint3(cameraPoses, measured_, *K_);
-          // changeLinPoint = newPoint - state_->point;  // TODO: implement this check for the degenerate case
-          state_->point = newPoint;
+          state_->point = triangulatePoint3(cameraPoses, measured_, *K_, rankTolerance);
           state_->degenerate = false;
           state_->cheiralityException = false;
         } catch( TriangulationUnderconstrainedException& e) {
-		  // point is triangulated at infinity
-          //std::cout << "Triangulation failed " << e.what() << std::endl;
-          BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
-          BOOST_FOREACH(Vector& v, gs) v = zero(6);
+          // if TriangulationUnderconstrainedException can be
+          // 1) There is a single pose for triangulation - this should not happen because we checked the number of poses before
+          // 2) The rank of the matrix used for triangulation is < 3: rotation-only, parallel cameras (or motion towards the landmark)
+          // in the second case we want to use a rotation-only smart factor
+          //std::cout << "Triangulation failed " << e.what() << std::endl; // point triangulated at infinity
           state_->degenerate = true;
           state_->cheiralityException = false;
-          dim_landmark = 2;
-          return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f)); // TODO: Debug condition, uncomment when fixed
         } catch( TriangulationCheiralityException& e) {
-          // point is behind one of the cameras, turn factor off by setting everything to 0
+          // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
+          // we manage this case by either discarding the smart factor, or imposing a rotation-only constraint
           //std::cout << e.what() << std::end;
-          BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
-          BOOST_FOREACH(Vector& v, gs) v = zero(6);
-          state_->cheiralityException = true; // TODO: Debug condition, uncomment when fixed
-          return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f)); // TODO: Debug condition, uncomment when fixed
-          // TODO: this is a debug condition, should be removed the comment
+          state_->cheiralityException = true;
         }
       }
-//      state_->degenerate = true; // TODO: this is a debug condition, should be removed
-//      dim_landmark = 2; // TODO: this is a debug condition, should be removed the comment
 
-      if (!retriangulate && state_->cheiralityException) {
+      if (!manageDegeneracy && (state_->cheiralityException || state_->degenerate) ){
+        std::cout << "In linearize: exception" << std::endl;
         BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
         BOOST_FOREACH(Vector& v, gs) v = zero(6);
         return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
       }
-      if (!retriangulate && state_->degenerate) {
+
+      if (state_->cheiralityException || state_->degenerate){ // if we want to manage the exceptions with rotation-only factors
+        state_->degenerate = true;
         dim_landmark = 2;
       }
 
@@ -388,8 +394,8 @@ namespace gtsam {
       if(!doLinearize){ // return the previous Hessian factor
         return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
       }
-      //otherwise redo linearization
 
+      //otherwise redo linearization
       if (blockwise){
         // ==========================================================================================================
         std::cout << "Deprecated use of blockwise version. This is slower and no longer supported" << std::endl;
@@ -498,6 +504,7 @@ namespace gtsam {
 
             subInsert(b2,bi,2*i);
           }
+
         }
 
         // Shur complement trick
@@ -524,12 +531,12 @@ namespace gtsam {
       }
 
       // ==========================================================================================================
-//      if(linearizationThreshold >= 0){ // if we do not use selective relinearization we don't need to store these variables
-//        state_->calculatedHessian = true;
-//        state_->Gs = Gs;
-//        state_->gs = gs;
-//        state_->f = f;
-//      }
+      if(linearizationThreshold >= 0){ // if we do not use selective relinearization we don't need to store these variables
+        state_->calculatedHessian = true;
+        state_->Gs = Gs;
+        state_->gs = gs;
+        state_->f = f;
+      }
 
       return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
     }
@@ -553,35 +560,45 @@ namespace gtsam {
           cameraPoses.push_back(cameraPose);
         }
 
+        if(cameraPoses.size() < 2){ // if we have a single pose the corresponding factor is uninformative
+          return 0.0;
+        }
+
         bool retriangulate = decideIfTriangulate(cameraPoses, state_->cameraPosesTriangulation, retriangulationThreshold);
 
         if(retriangulate) {// we store the current poses used for triangulation
           state_->cameraPosesTriangulation = cameraPoses;
         }
 
-        // We triangulate the 3D position of the landmark
         if (retriangulate) {
+          // We triangulate the 3D position of the landmark
           try {
-            state_->point = triangulatePoint3(cameraPoses, measured_, *K_);
+            state_->point = triangulatePoint3(cameraPoses, measured_, *K_, rankTolerance);
             state_->degenerate = false;
             state_->cheiralityException = false;
-          } catch( TriangulationCheiralityException& e) {
-            // std::cout << "TriangulationCheiralityException "  << std::endl;
-            // point is behind one of the cameras, turn factor off by setting everything to 0
-            //std::cout << e.what() << std::end;
-            state_->cheiralityException = true; // TODO: Debug condition, remove comment
-            return 0.0; // TODO: this is a debug condition, should be removed the comment
           } catch( TriangulationUnderconstrainedException& e) {
-            // point is triangulated at infinity
-            //std::cout << e.what() << std::endl;
+            // if TriangulationUnderconstrainedException can be
+            // 1) There is a single pose for triangulation - this should not happen because we checked the number of poses before
+            // 2) The rank of the matrix used for triangulation is < 3: rotation-only, parallel cameras (or motion towards the landmark)
+            // in the second case we want to use a rotation-only smart factor
+            //std::cout << "Triangulation failed " << e.what() << std::endl; // point triangulated at infinity
             state_->degenerate = true;
             state_->cheiralityException = false;
+          } catch( TriangulationCheiralityException& e) {
+            // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
+            // we manage this case by either discarding the smart factor, or imposing a rotation-only constraint
+            //std::cout << e.what() << std::end;
+            state_->cheiralityException = true;
           }
         }
-        // state_->degenerate = true; // TODO: this is a debug condition, should be removed
 
-        if (!retriangulate && state_->cheiralityException) {
+        if (!manageDegeneracy && (state_->cheiralityException || state_->degenerate) ){ // if we want to manage the exceptions with rotation-only factors
+          std::cout << "In error evaluation: exception" << std::endl;
           return 0.0;
+        }
+
+        if (state_->cheiralityException || state_->degenerate){ // if we want to manage the exceptions with rotation-only factors
+          state_->degenerate = true;
         }
 
         if(state_->degenerate){
@@ -604,7 +621,7 @@ namespace gtsam {
 
             try {
               Point2 reprojectionError(camera.project(state_->point) - measured_.at(i));
-//std::cout << "Reprojection error: " << reprojectionError << std::endl;
+              //std::cout << "Reprojection error: " << reprojectionError << std::endl;
               overallError += 0.5 * noise_->distance( reprojectionError.vector() );
               //overallError += reprojectionError.vector().norm();
             } catch ( CheiralityException& e) {
