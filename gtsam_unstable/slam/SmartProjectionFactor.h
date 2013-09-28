@@ -34,10 +34,10 @@ namespace gtsam {
   static double defaultLinThreshold = -1; // 1e-7; // 0.01
   // default threshold for retriangulation
   static double defaultTriangThreshold = 1e-7;
+  // default threshold for rank deficient triangulation
+  static double defaultRankTolerance = 1; // this value may be scenario-dependent and has to be larger in  presence of larger noise
   // if set to true will use the rotation-only version for degenerate cases
   static bool manageDegeneracy = true;
-  // if set to true will use the rotation-only version for degenerate cases
-  static double rankTolerance = 50;
 
   /**
    * Structure for storing some state memory, used to speed up optimization
@@ -100,6 +100,9 @@ namespace gtsam {
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
 
     double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
+
+    double rankTolerance; ///< threshold to decide whether triangulation is degenerate
+
     double linearizationThreshold; ///< threshold to decide whether to re-linearize
 
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
@@ -124,7 +127,9 @@ namespace gtsam {
     typedef boost::shared_ptr<SmartProjectionFactorState> SmartFactorStatePtr;
 
     /// Default constructor
-    SmartProjectionFactor() : throwCheirality_(false), verboseCheirality_(false) {}
+    SmartProjectionFactor() : retriangulationThreshold(defaultTriangThreshold),
+                              rankTolerance(defaultRankTolerance), linearizationThreshold(defaultLinThreshold),
+                              throwCheirality_(false), verboseCheirality_(false) {}
 
     /**
      * Constructor
@@ -141,8 +146,8 @@ namespace gtsam {
         boost::optional<POSE> body_P_sensor = boost::none,
         SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
           measured_(measured), noise_(model), K_(K),
-          retriangulationThreshold(defaultTriangThreshold), linearizationThreshold(defaultLinThreshold),
-          body_P_sensor_(body_P_sensor),
+          retriangulationThreshold(defaultTriangThreshold), rankTolerance(defaultRankTolerance),
+          linearizationThreshold(defaultLinThreshold), body_P_sensor_(body_P_sensor),
           state_(state), throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
     }
@@ -159,12 +164,13 @@ namespace gtsam {
         const std::vector<Point2> measured,          // pixel measurements
         const SharedNoiseModel& model,               // noise model (same for all measurements)
         const boost::shared_ptr<CALIBRATION>& K,     // calibration matrix (same for all measurements)
-        const double linThreshold,
+        const double rankTol,
+        const double linThreshold = defaultLinThreshold,
         boost::optional<POSE> body_P_sensor = boost::none,
         SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
           measured_(measured), noise_(model), K_(K),
-          retriangulationThreshold(defaultTriangThreshold), linearizationThreshold(linThreshold),
-          body_P_sensor_(body_P_sensor),
+          retriangulationThreshold(defaultTriangThreshold), rankTolerance(rankTol),
+          linearizationThreshold(linThreshold), body_P_sensor_(body_P_sensor),
           state_(state), throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
     }
@@ -188,8 +194,8 @@ namespace gtsam {
         boost::optional<POSE> body_P_sensor = boost::none,
         SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
           measured_(measured), noise_(model), K_(K),
-          retriangulationThreshold(defaultTriangThreshold),  linearizationThreshold(defaultLinThreshold),
-          body_P_sensor_(body_P_sensor),
+          retriangulationThreshold(defaultTriangThreshold),  rankTolerance(defaultRankTolerance),
+          linearizationThreshold(defaultLinThreshold), body_P_sensor_(body_P_sensor),
           state_(state), throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {
     }
 
@@ -201,8 +207,8 @@ namespace gtsam {
     SmartProjectionFactor(const SharedNoiseModel& model, const boost::shared_ptr<CALIBRATION>& K, 
         boost::optional<POSE> body_P_sensor = boost::none,
         SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
-        noise_(model), K_(K), retriangulationThreshold(defaultTriangThreshold),  linearizationThreshold(defaultLinThreshold),
-        body_P_sensor_(body_P_sensor), state_(state) {
+        noise_(model), K_(K), retriangulationThreshold(defaultTriangThreshold), rankTolerance(defaultRankTolerance),
+        linearizationThreshold(defaultLinThreshold),  body_P_sensor_(body_P_sensor), state_(state) {
     }
 
     /** Virtual destructor */

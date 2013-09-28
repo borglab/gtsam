@@ -631,8 +631,10 @@ TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor 
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(views, measurements_cam1, noiseProjection, K));
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(views, measurements_cam2, noiseProjection, K));
+  double rankTol = 50;
+
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(views, measurements_cam1, noiseProjection, K, rankTol));
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(views, measurements_cam2, noiseProjection, K, rankTol));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   const SharedDiagonal noisePriorTranslation = noiseModel::Isotropic::Sigma(3, 0.10);
@@ -724,9 +726,11 @@ TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(views, measurements_cam1, noiseProjection, K));
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(views, measurements_cam2, noiseProjection, K));
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor(views, measurements_cam3, noiseProjection, K));
+  double rankTol = 10;
+
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(views, measurements_cam1, noiseProjection, K, rankTol));
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(views, measurements_cam2, noiseProjection, K, rankTol));
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(views, measurements_cam3, noiseProjection, K, rankTol));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   const SharedDiagonal noisePriorTranslation = noiseModel::Isotropic::Sigma(3, 0.10);
