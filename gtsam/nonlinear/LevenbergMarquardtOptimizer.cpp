@@ -143,7 +143,7 @@ void LevenbergMarquardtOptimizer::iterate() {
           state_.lambda *= params_.lambdaFactor;
         }
       }
-    } catch(const IndeterminantLinearSystemException& e) {
+    } catch(IndeterminantLinearSystemException& e) {
       (void) e; // Prevent unused variable warning
       if(lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
         cout << "Negative matrix, increasing lambda" << endl;
