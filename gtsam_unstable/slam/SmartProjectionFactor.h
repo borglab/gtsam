@@ -373,7 +373,7 @@ namespace gtsam {
       }
 
       if (!manageDegeneracy && (state_->cheiralityException || state_->degenerate) ){
-        std::cout << "In linearize: exception" << std::endl;
+        // std::cout << "In linearize: exception" << std::endl;
         BOOST_FOREACH(gtsam::Matrix& m, Gs) m = zeros(6, 6);
         BOOST_FOREACH(Vector& v, gs) v = zero(6);
         return HessianFactor::shared_ptr(new HessianFactor(keys_, Gs, gs, f));
@@ -599,7 +599,7 @@ namespace gtsam {
         }
 
         if (!manageDegeneracy && (state_->cheiralityException || state_->degenerate) ){ // if we want to manage the exceptions with rotation-only factors
-          std::cout << "In error evaluation: exception" << std::endl;
+          // std::cout << "In error evaluation: exception" << std::endl;
           return 0.0;
         }
 

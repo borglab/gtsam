@@ -32,7 +32,6 @@
 
 // iSAM2 requires as input a set set of new factors to be added stored in a factor graph,
 // and initial guesses for any new variables used in the added factors
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 
 // We will use a non-linear solver to batch-initialize from the first 150 frames
@@ -69,13 +68,17 @@ typedef FastMap<Key, std::vector<boost::shared_ptr<ProjectionFactor> > > Project
 
 bool debug = false;
 
+static double KittiLinThreshold = -1; // 1e-7; // 0.01
+static double KittiRankTolerance = 1; //1;
+
 //// Helper functions taken from VO code
 // Loaded all pose values into list
 Values::shared_ptr loadPoseValues(const string& filename) {
   Values::shared_ptr values(new Values());
   bool addNoise = false;
   std::cout << "PARAM Noise: " << addNoise << std::endl; 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
+//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3));
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.3,0.1,0.3));
 
   // read in camera poses
   string full_filename = filename;
@@ -276,8 +279,11 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   params.verbosity = NonlinearOptimizerParams::ERROR;
   params.lambdaInitial = 1;
   params.lambdaFactor = 10;
+  // Profile a single iteration
+//  params.maxIterations = 1;
   params.maxIterations = 100;
-  //params.relativeErrorTol = 1e-5;
+  std::cout << " LM max iterations: " << params.maxIterations << std::endl;
+  // // params.relativeErrorTol = 1e-5;
   params.absoluteErrorTol = 1.0;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   params.verbosity = NonlinearOptimizerParams::ERROR;
@@ -332,7 +338,7 @@ int main(int argc, char** argv) {
   unsigned int maxNumPoses = 45400; //3541
 
   // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = true;
+  bool useSmartProjectionFactor = false;
   bool useTriangulation = true;
   bool useLM = true; 
 
@@ -439,7 +445,7 @@ int main(int argc, char** argv) {
 
         // This is a new landmark, create a new factor and add to mapping
         boost::shared_ptr<SmartProjectionFactorState> smartFactorState(new SmartProjectionFactorState());
-        SmartFactor::shared_ptr smartFactor(new SmartFactor(views, measurements, pixel_sigma,  K));
+        SmartFactor::shared_ptr smartFactor(new SmartFactor(views, measurements, pixel_sigma,  K ,KittiRankTolerance, KittiLinThreshold));
         smartFactorStates.insert( make_pair(L(l), smartFactorState) );
         smartFactors.insert( make_pair(L(l), smartFactor) );
         graph.push_back(smartFactor);
