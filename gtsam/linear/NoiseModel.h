@@ -446,8 +446,9 @@ namespace gtsam {
       /**
        * Returns a Unit version of a constrained noisemodel in which
        * constrained sigmas remain constrained and the rest are unit scaled
+       * Now support augmented part from the Lagrange multiplier.
        */
-      shared_ptr unit() const;
+      shared_ptr unit(size_t augmentedDim = 0) const;
 
     private:
       /** Serialization function */
@@ -815,6 +816,7 @@ namespace gtsam {
   typedef noiseModel::Base::shared_ptr SharedNoiseModel;
   typedef noiseModel::Gaussian::shared_ptr SharedGaussian;
   typedef noiseModel::Diagonal::shared_ptr SharedDiagonal;
+  typedef noiseModel::Constrained::shared_ptr SharedConstrained;
 
 } // namespace gtsam
 
