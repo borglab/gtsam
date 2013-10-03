@@ -161,9 +161,16 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
 
   // Add the new factors to the graph, updating the variable index
   result.newFactorsIndices = insertFactors(newFactors);
-  // Remove any user-specified factors from the graph
-  if(removeFactorIndices)
+
+  if(removeFactorIndices){
+    if(debug){
+      BOOST_FOREACH(size_t slot, *removeFactorIndices) {
+        std::cout << "ConcurrentBatchFilter::update  removeFactorIndices " << std::endl;
+      }
+    }
     removeFactors(*removeFactorIndices);
+  }
+
   gttoc(augment_system);
 
   if(debug) std::cout << "ConcurrentBatchFilter::update  Reordering System ..." << std::endl;

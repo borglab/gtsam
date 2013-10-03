@@ -562,6 +562,7 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_3 )
 
   // Check
   CHECK(assert_equal(expectedSmootherSummarization, actualSmootherSummarization, 1e-6));
+  CHECK(assert_equal(expectedSmootherSeparatorValues, actualSmootherSeparatorValues, 1e-6));
 
 
   // Update the smoother

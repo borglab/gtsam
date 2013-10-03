@@ -709,6 +709,32 @@ Tukey::shared_ptr Tukey::Create(const double c, const ReweightScheme reweight) {
   return shared_ptr(new Tukey(c, reweight));
 }
 
+/* ************************************************************************* */
+// Welsh
+/* ************************************************************************* */
+Welsh::Welsh(const double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c) {
+}
+
+double Welsh::weight(const double &error) const {
+  double xc2 = (error/c_)*(error/c_);
+  return std::exp(-xc2);
+}
+
+void Welsh::print(const std::string &s="") const {
+  std::cout << s << ": Welsh (" << c_ << ")" << std::endl;
+}
+
+bool Welsh::equals(const Base &expected, const double tol) const {
+  const Welsh* p = dynamic_cast<const Welsh*>(&expected);
+  if (p == NULL) return false;
+  return fabs(c_ - p->c_) < tol;
+}
+
+Welsh::shared_ptr Welsh::Create(const double c, const ReweightScheme reweight) {
+  return shared_ptr(new Welsh(c, reweight));
+}
+
 } // namespace mEstimator
 
 /* ************************************************************************* */

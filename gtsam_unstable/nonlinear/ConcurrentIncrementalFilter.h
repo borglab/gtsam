@@ -38,7 +38,13 @@ public:
     size_t iterations; ///< The number of optimizer iterations performed
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
-    std::vector<size_t> newFactorsIndices; ///< The indices of the newly-added factors, in 1-to-1 correspondence with the factors passed in
+
+    /** The indices of the newly-added factors, in 1-to-1 correspondence with the
+     * factors passed as \c newFactors update().  These indices may be
+     * used later to refer to the factors in order to remove them.
+     */
+    std::vector<size_t> newFactorsIndices;
+
     double error; ///< The final factor graph error
 
     /// Constructor

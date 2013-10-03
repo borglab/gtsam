@@ -44,12 +44,23 @@ bool ConcurrentIncrementalSmoother::equals(const ConcurrentSmoother& rhs, double
 }
 
 /* ************************************************************************* */
-ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta) {
+ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const boost::optional< std::vector<size_t> >& removeFactorIndices) {
 
   gttic(update);
 
   // Create the return result meta-data
   Result result;
+
+  gtsam::FastVector<size_t> removedFactors;
+
+  if(removeFactorIndices){
+    // Be very careful to this line
+    std::cout << "ConcurrentIncrementalSmoother::update    removeFactorIndices - not implemented yet" << std::endl;
+    filterSummarizationSlots_.insert(filterSummarizationSlots_.end(), removeFactorIndices->begin(), removeFactorIndices->end());
+    // before it was:
+    //  removedFactors.insert(removedFactors.end(), removeFactorIndices->begin(), removeFactorIndices->end());
+  }
 
   // Constrain the separator keys to remain in the root
   // Also, mark the separator keys as fixed linearization points

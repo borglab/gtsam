@@ -245,7 +245,7 @@ int main(int argc, char** argv) {
 
   // Now run for a few more seconds so the concurrent smoother and filter have to to re-sync
   // Continue adding odometry factors until the loop closure may be incorporated into the concurrent smoother
-  for(double time = 8.0+deltaT; time <= 10.0; time += deltaT) {
+  for(double time = 8.0+deltaT; time <= 15.0; time += deltaT) {
 
     // Define the keys related to this timestamp
     Key previousKey(1000 * (time-deltaT));
@@ -307,7 +307,7 @@ int main(int argc, char** argv) {
 
 
   // And to demonstrate the fixed-lag aspect, print the keys contained in each smoother after 3.0 seconds
-  cout << "After 10.0 seconds, each version contains to the following keys:" << endl;
+  cout << "After 15.0 seconds, each version contains to the following keys:" << endl;
   cout << "  Concurrent Filter Keys: " << endl;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, concurrentFilter.getLinearizationPoint()) {
     cout << setprecision(5) << "    Key: " << key_value.key << endl;

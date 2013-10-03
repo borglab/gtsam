@@ -55,8 +55,9 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   // Create the return result meta-data
   Result result;
 
-  // Remove any user-provided factors from iSAM2
+  // We do not need to remove any factors at this time
   gtsam::FastVector<size_t> removedFactors;
+
   if(removeFactorIndices){
     removedFactors.insert(removedFactors.end(), removeFactorIndices->begin(), removeFactorIndices->end());
   }

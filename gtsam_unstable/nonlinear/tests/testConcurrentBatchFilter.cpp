@@ -540,6 +540,7 @@ TEST( ConcurrentBatchFilter, synchronize_1 )
 /* ************************************************************************* */
 TEST( ConcurrentBatchFilter, synchronize_2 )
 {
+  std::cout << "*********************** synchronize_2 ************************" << std::endl;
   // Create a set of optimizer parameters
   LevenbergMarquardtParams parameters;
   //parameters.maxIterations = 1;
@@ -607,6 +608,7 @@ TEST( ConcurrentBatchFilter, synchronize_2 )
 /* ************************************************************************* */
 TEST( ConcurrentBatchFilter, synchronize_3 )
 {
+  std::cout << "*********************** synchronize_3 ************************" << std::endl;
   // Create a set of optimizer parameters
   LevenbergMarquardtParams parameters;
   //parameters.maxIterations = 1;
@@ -784,6 +786,7 @@ TEST( ConcurrentBatchFilter, synchronize_4 )
 /* ************************************************************************* */
 TEST( ConcurrentBatchFilter, synchronize_5 )
 {
+  std::cout << "*********************** synchronize_5 ************************" << std::endl;
   // Create a set of optimizer parameters
   LevenbergMarquardtParams parameters;
   parameters.maxIterations = 1;
@@ -1080,6 +1083,258 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_2 )
   // Check
   CHECK(assert_equal(expectedMarginals, actualMarginals, 1e-6));
 }
+
+///* ************************************************************************* */
+TEST( ConcurrentBatchFilter, removeFactors_topology_1 )
+{
+  std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
+
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+
+  // Update the filter: add all factors
+  filter.update(newFactors, newValues, keysToMove);
+
+  // factor we want to remove
+  // NOTE: we can remove factors, paying attention that the remaining graph remains connected
+  // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
+  std::vector<size_t> removeFactorIndices(1,1);
+
+  // Add no factors to the filter (we only want to test the removal)
+  NonlinearFactorGraph noFactors;
+  Values noValues;
+  filter.update(noFactors, noValues, keysToMove, removeFactorIndices);
+
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  // we should add an empty one, so that the ordering and labeling of the factors is preserved
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+}
+
+///* ************************************************************************* */
+TEST( ConcurrentBatchFilter, removeFactors_topology_2 )
+{
+  std::cout << "*********************** removeFactors_topology_2 ************************" << std::endl;
+  // we try removing the last factor
+
+
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+
+  // Update the filter: add all factors
+  filter.update(newFactors, newValues, keysToMove);
+
+  // factor we want to remove
+  // NOTE: we can remove factors, paying attention that the remaining graph remains connected
+  // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
+  std::vector<size_t> removeFactorIndices(1,4);
+
+  // Add no factors to the filter (we only want to test the removal)
+  NonlinearFactorGraph noFactors;
+  Values noValues;
+  filter.update(noFactors, noValues, keysToMove, removeFactorIndices);
+
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  // we should add an empty one, so that the ordering and labeling of the factors is preserved
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+}
+
+
+///* ************************************************************************* */
+TEST( ConcurrentBatchFilter, removeFactors_topology_3 )
+{
+  std::cout << "*********************** removeFactors_topology_3 ************************" << std::endl;
+  // we try removing the first factor
+
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+
+  // Update the filter: add all factors
+  filter.update(newFactors, newValues, keysToMove);
+
+  // factor we want to remove
+  // NOTE: we can remove factors, paying attention that the remaining graph remains connected
+  // we remove a single factor, the number 0, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
+  std::vector<size_t> removeFactorIndices(1,0);
+
+  // Add no factors to the filter (we only want to test the removal)
+  NonlinearFactorGraph noFactors;
+  Values noValues;
+  filter.update(noFactors, noValues, keysToMove, removeFactorIndices);
+
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+
+  NonlinearFactorGraph expectedGraph;
+  // we should add an empty one, so that the ordering and labeling of the factors is preserved
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+}
+
+///* ************************************************************************* */
+TEST( ConcurrentBatchFilter, removeFactors_values )
+{
+  std::cout << "*********************** removeFactors_values ************************" << std::endl;
+  // we try removing the last factor
+
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+
+  // Update the filter: add all factors
+  filter.update(newFactors, newValues, keysToMove);
+
+  // factor we want to remove
+  // NOTE: we can remove factors, paying attention that the remaining graph remains connected
+  // we remove a single factor, the number 4, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
+  std::vector<size_t> removeFactorIndices(1,4);
+
+  // Add no factors to the filter (we only want to test the removal)
+  NonlinearFactorGraph noFactors;
+  Values noValues;
+  filter.update(noFactors, noValues, keysToMove, removeFactorIndices);
+
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+  Values actualValues = filter.calculateEstimate();
+
+  // note: factors are removed before the optimization
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  // we removed this one:   expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  // we should add an empty one, so that the ordering and labeling of the factors is preserved
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+
+  // Calculate expected factor graph and values
+  Values expectedValues = BatchOptimize(expectedGraph, newValues);
+
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+  CHECK(assert_equal(expectedValues, actualValues, 1e-6));
+}
+
+///* ************************************************************************* */
+//TEST( ConcurrentBatchFilter, synchronize_10 )
+//{
+//  // Create a set of optimizer parameters
+//  LevenbergMarquardtParams parameters;
+//  parameters.maxIterations = 1;
+//
+//  // Create a Concurrent Batch Filter
+//  ConcurrentBatchFilter filter(parameters);
+//
+//  // Insert factors into the filter, and marginalize out several variables.
+//  // This test places several factors in the smoother side, while leaving
+//  // several factors on the filter side
+//}
+//
+///* ************************************************************************* */
+//TEST( ConcurrentBatchFilter, synchronize_11 )
+//{
+//  // Create a set of optimizer parameters
+//  LevenbergMarquardtParams parameters;
+//  parameters.maxIterations = 1;
+//
+//  // Create a Concurrent Batch Filter
+//  ConcurrentBatchFilter filter(parameters);
+//
+//  // Insert factors into the filter, and marginalize out several variables.
+//
+//  // Generate a non-empty smoother update, simulating synchronizing with a non-empty smoother
+//}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

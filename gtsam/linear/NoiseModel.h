@@ -763,6 +763,31 @@ namespace gtsam {
         }
       };
 
+      /// Welsh implements the "Welsh" robust error model (Zhang97ivc)
+      class GTSAM_EXPORT Welsh : public Base {
+      public:
+        typedef boost::shared_ptr<Welsh> shared_ptr;
+
+        Welsh(const double c = 2.9846, const ReweightScheme reweight = Block);
+        virtual ~Welsh() {}
+        virtual double weight(const double &error) const ;
+        virtual void print(const std::string &s) const ;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double c_;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(c_);
+        }
+      };
+
     } ///\namespace mEstimator
 
     /// Base class for robust error models

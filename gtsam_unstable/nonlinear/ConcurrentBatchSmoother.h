@@ -117,7 +117,8 @@ public:
    * in the smoother).  There must not be any variables here that do not occur in newFactors,
    * and additionally, variables that were already in the system must not be included here.
    */
-  virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values());
+  virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
+      const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
 
   /**
    * Perform any required operations before the synchronization process starts.

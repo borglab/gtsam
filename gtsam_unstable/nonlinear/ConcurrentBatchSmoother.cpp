@@ -46,7 +46,8 @@ bool ConcurrentBatchSmoother::equals(const ConcurrentSmoother& rhs, double tol) 
 }
 
 /* ************************************************************************* */
-ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta) {
+ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const boost::optional< std::vector<size_t> >& removeFactorIndices) {
 
   gttic(update);
 
@@ -69,6 +70,9 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
 
     // Add the new factors to the graph, updating the variable index
     insertFactors(newFactors);
+
+    if(removeFactorIndices)
+      removeFactors(*removeFactorIndices);
   }
   gttoc(augment_system);
 
