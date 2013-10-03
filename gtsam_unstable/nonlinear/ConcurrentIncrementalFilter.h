@@ -31,7 +31,6 @@ class GTSAM_UNSTABLE_EXPORT ConcurrentIncrementalFilter : public virtual Concurr
 
 public:
 
-  ISAM2 isam2_; ///< The iSAM2 inference engine
   typedef boost::shared_ptr<ConcurrentIncrementalFilter> shared_ptr;
   typedef ConcurrentFilter Base; ///< typedef for base class
 
@@ -40,6 +39,8 @@ public:
     size_t iterations; ///< The number of optimizer iterations performed
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
+    size_t variablesReeliminated;
+    size_t variablesRelinearized;
 
     /** The indices of the newly-added factors, in 1-to-1 correspondence with the
      * factors passed as \c newFactors update().  These indices may be
@@ -74,6 +75,11 @@ public:
   /** Access the current set of factors */
   const NonlinearFactorGraph& getFactors() const {
     return isam2_.getFactorsUnsafe();
+  }
+
+  /** Access the current linearization point */
+  const ISAM2& getISAM2() const {
+    return isam2_;
   }
 
   /** Access the current linearization point */
@@ -160,7 +166,7 @@ public:
 
 protected:
 
-//  ISAM2 isam2_; ///< The iSAM2 inference engine
+  ISAM2 isam2_; ///< The iSAM2 inference engine
 
   // ???
   NonlinearFactorGraph previousSmootherSummarization_; ///< The smoother summarization on the old separator sent by the smoother during the last synchronization

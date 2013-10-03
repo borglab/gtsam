@@ -152,6 +152,8 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   result.linearVariables = isam2_.getFixedVariables().size();
   result.nonlinearVariables = isam2_.getLinearizationPoint().size() - result.linearVariables;
   result.newFactorsIndices = isam2Result.newFactorsIndices;
+  result.variablesReeliminated = isam2Result.variablesReeliminated;
+  result.variablesRelinearized = isam2Result.variablesRelinearized;
 //  result.error = isam2_.getFactorsUnsafe().error(isam2_.calculateEstimate());
 
   if(debug) std::cout << "ConcurrentIncrementalFilter::update  End" << std::endl;
