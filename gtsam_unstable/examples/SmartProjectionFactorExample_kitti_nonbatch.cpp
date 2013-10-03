@@ -68,9 +68,6 @@ typedef FastMap<Key, std::vector<boost::shared_ptr<ProjectionFactor> > > Project
 
 bool debug = false;
 
-static double KittiLinThreshold = -1; // 1e-7; // 0.01
-static double KittiRankTolerance = 1; //1;
-
 //// Helper functions taken from VO code
 // Loaded all pose values into list
 Values::shared_ptr loadPoseValues(const string& filename) {
@@ -337,10 +334,16 @@ int main(int argc, char** argv) {
   unsigned int maxNumLandmarks = 389007; //100000000; // 309393 // (loop_closure_merged) //37106 //(reduced kitti);
   unsigned int maxNumPoses = 45400; //3541
 
-  // Set to true to use SmartProjectionFactor.  Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = false;
+  // Set to true to use SmartProjectionFactor. Otherwise GenericProjectionFactor will be used
+  bool useSmartProjectionFactor = true;
   bool useTriangulation = true;
   bool useLM = true; 
+
+  double KittiLinThreshold = -1; // 1e-7; // 0.01
+  double KittiRankTolerance = 1;
+
+  bool incrementalFlag = true;
+  int optSkip = 200; // we optimize the graph every optSkip poses
 
   std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
   std::cout << "PARAM Triangulation: " << useTriangulation << std::endl;
@@ -393,26 +396,33 @@ int main(int argc, char** argv) {
   Values result;
   int totalNumMeasurements = 0;
   bool optimized = false;
+
+  // main loop: reads measurements and adds factors (also performs optimization if desired)
   while (fin >> r >> l >> uL >> uR >> v >> x >> y >> z) {
     if (debug) fprintf(stderr,"Landmark %ld\n", l);
     if (debug) fprintf(stderr,"Line %d: %d landmarks, (max landmarks %d), %d poses, max poses %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
-    // Optimize if have a certain number of poses/landmarks
-    if (currentLandmark != l && (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks) ) {
+    // Optimize if have a certain number of poses/landmarks, or we want to do incremental inference
+    if (currentLandmark != l && (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks || (incrementalFlag && !optimized && ((numPoses+1) % optSkip)==0 )) ) {
 
       if (debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
-
       if (debug) cout << "Adding triangulated landmarks, graph size: " << graph.size() << endl;
+
       if (useSmartProjectionFactor == false && useTriangulation) {
         addTriangulatedLandmarks(graph, loadedValues, graphValues, K, projectionFactors);
       }
-      if (debug) cout << "Adding triangulated landmarks, graph size after: " << graph.size() << endl;
 
-  if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+      if (debug) cout << "Adding triangulated landmarks, graph size after: " << graph.size() << endl;
+      if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+
+      // optimize
       if (useLM)
         optimizeGraphLM(graph, graphValues, result);
       else
         optimizeGraphISAM2(graph, graphValues, result);
+
+      if(incrementalFlag) *graphValues = result; // we use optimized solution as initial guess for the next one
+
       optimized = true;
 
       // Only process first N measurements (for development/debugging)
@@ -420,12 +430,12 @@ int main(int argc, char** argv) {
         if (debug) fprintf(stderr,"%d: BREAKING %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
         break;
       }
-      break;
-
+      if(!incrementalFlag) break;
     }
 
+    // add factors
+    // SMART FACTORS ..
     if (useSmartProjectionFactor) {
-
       // Check if landmark exists in mapping
       SmartFactorToStateMap::iterator fsit = smartFactorStates.find(L(l));
       SmartFactorMap::iterator fit = smartFactors.find(L(l));
@@ -435,9 +445,10 @@ int main(int argc, char** argv) {
         // Add measurement to smart factor
         (*fit).second->add(Point2(uL,v), X(r));
         totalNumMeasurements++;
-
         if (debug) (*fit).second->print();
+
       } else {
+
         if (debug) fprintf(stderr,"New landmark (%d,%d)\n", fsit != smartFactorStates.end(), fit != smartFactors.end());
 
         views += X(r);
@@ -454,17 +465,17 @@ int main(int argc, char** argv) {
 
         views.clear();
         measurements.clear();
-
       }
 
       // Add initial pose value if pose does not exist
       if (!graphValues->exists<Pose3>(X(r)) && loadedValues->exists<Pose3>(X(r))) {
         graphValues->insert(X(r), loadedValues->at<Pose3>(X(r)));
         numPoses++;
+        optimized = false;
       }
 
+    // or STANDARD PROJECTION FACTORS
     } else {
-
       // Create projection factor
       ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(Point2(uL,v), pixel_sigma, X(r), L(l), K));
 
@@ -513,14 +524,11 @@ int main(int argc, char** argv) {
         // Add projection factor to graph
         graph.push_back(projectionFactor);
 
-
       } else {
-
         // Alternatively: Triangulate similar to how SmartProjectionFactor does it
         // We only do this at the end, when all of the camera poses are available
         // Note we do not add anything to the graph until then, since in some cases
         // of triangulation failure we cannot add the landmark to the graph
-
       }
 
     }
@@ -537,6 +545,7 @@ int main(int argc, char** argv) {
  
   if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
+  // if we haven't optimized yet
   if (!optimized) {
     if (useSmartProjectionFactor == false && useTriangulation) {
       addTriangulatedLandmarks(graph, loadedValues, graphValues, K, projectionFactors);
