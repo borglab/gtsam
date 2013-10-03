@@ -181,7 +181,7 @@ Diagonal::Diagonal(const Vector& sigmas, bool initialize_invsigmas):
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
   if (smart) {
     // check whether all the same entry
-    int j, n = variances.size();
+    DenseIndex j, n = variances.size();
     for (j = 1; j < n; j++)
       if (variances(j) != variances(0)) goto full;
     return Isotropic::Variance(n, variances(0), true);
