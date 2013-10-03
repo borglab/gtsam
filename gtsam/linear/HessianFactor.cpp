@@ -382,7 +382,6 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 
   // First build an array of slots
   gttic(slots);
-  //size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
   FastVector<DenseIndex> slots(update.size());
   DenseIndex slot = 0;
   BOOST_FOREACH(Key j, update) {
@@ -409,10 +408,63 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 }
 
 /* ************************************************************************* */
-void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatter)
-{
-  if(update.rows() > 0) // Zero-row Jacobians are treated specially
-    updateATA(HessianFactor(update), scatter);
+void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatter) {
+
+  // This function updates 'combined' with the information in 'update'.
+  // 'scatter' maps variables in the update factor to slots in the combined
+  // factor.
+  
+  gttic(updateATA);
+
+  if(update.rows() > 0)
+  {
+    // First build an array of slots
+    gttic(slots);
+    FastVector<DenseIndex> slots(update.size());
+    DenseIndex slot = 0;
+    BOOST_FOREACH(Key j, update) {
+      slots[slot] = scatter.at(j).slot;
+      ++ slot;
+    }
+    gttoc(slots);
+
+    gttic(whiten);
+    // Whiten the factor if it has a noise model
+    boost::optional<JacobianFactor> _whitenedFactor;
+    const JacobianFactor* whitenedFactor;
+    if(update.get_model())
+    {
+      if(update.get_model()->isConstrained())
+        throw invalid_argument("Cannot update HessianFactor from JacobianFactor with constrained noise model");
+
+      _whitenedFactor = update.whiten();
+      whitenedFactor = &(*_whitenedFactor);
+    }
+    else
+    {
+      whitenedFactor = &update;
+    }
+    gttoc(whiten);
+
+    const VerticalBlockMatrix& updateBlocks = whitenedFactor->matrixObject();
+
+    // Apply updates to the upper triangle
+    gttic(update);
+    for(DenseIndex j2=0; j2<updateBlocks.nBlocks(); ++j2) { // Horizontal block of Hessian
+      DenseIndex slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
+      for(DenseIndex j1=0; j1<=j2; ++j1) { // Vertical block of Hessian
+        DenseIndex slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
+        DenseIndex off0 = updateBlocks.offset(0);
+        if(slot2 > slot1)
+          info_(slot1, slot2).noalias() += updateBlocks(j1).transpose() * updateBlocks(j2);
+        else if(slot1 > slot2)
+          info_(slot2, slot1).noalias() += updateBlocks(j2).transpose() * updateBlocks(j1);
+        else
+          info_(slot1, slot2).triangularView<Eigen::Upper>() += updateBlocks(j1).transpose() * updateBlocks(j2);
+      }
+    }
+    gttoc(update);
+  }
 }
 
 /* ************************************************************************* */

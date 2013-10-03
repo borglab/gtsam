@@ -93,6 +93,16 @@ namespace gtsam {
         v = unwhiten(v);
       }
 
+      /** in-place whiten, override if can be done more efficiently */
+      virtual void whitenInPlace(Eigen::Block<Vector>& v) const {
+        v = whiten(v);
+      }
+
+      /** in-place unwhiten, override if can be done more efficiently */
+      virtual void unwhitenInPlace(Eigen::Block<Vector>& v) const {
+        v = unwhiten(v);
+      }
+
     private:
       /** Serialization function */
       friend class boost::serialization::access;
@@ -185,6 +195,11 @@ namespace gtsam {
        * In-place version
        */
       virtual void WhitenInPlace(Matrix& H) const;
+
+      /**
+       * In-place version
+       */
+      virtual void WhitenInPlace(Eigen::Block<Matrix>& H) const;
 
       /**
        * Whiten a system, in place as well
@@ -282,6 +297,7 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
       virtual void WhitenInPlace(Matrix& H) const;
+      virtual void WhitenInPlace(Eigen::Block<Matrix>& H) const;
 
       /**
        * Return standard deviations (sqrt of diagonal)
@@ -431,6 +447,7 @@ namespace gtsam {
       /// with a non-zero sigma.  Other rows remain untouched.
       virtual Matrix Whiten(const Matrix& H) const;
       virtual void WhitenInPlace(Matrix& H) const;
+      virtual void WhitenInPlace(Eigen::Block<Matrix>& H) const;
 
       /**
        * Apply QR factorization to the system [A b], taking into account constraints
@@ -510,6 +527,7 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
       virtual void WhitenInPlace(Matrix& H) const;
+      virtual void WhitenInPlace(Eigen::Block<Matrix>& H) const;
 
       /**
        * Return standard deviation
@@ -557,6 +575,7 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const { return v; }
       virtual Matrix Whiten(const Matrix& H) const { return H; }
       virtual void WhitenInPlace(Matrix& H) const {}
+      virtual void WhitenInPlace(Eigen::Block<Matrix>& H) const {}
 
     private:
       /** Serialization function */

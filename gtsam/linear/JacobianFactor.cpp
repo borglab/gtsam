@@ -481,8 +481,8 @@ namespace gtsam {
   JacobianFactor JacobianFactor::whiten() const {
     JacobianFactor result(*this);
     if(model_) {
-      result.model_->WhitenInPlace(result.Ab_.matrix());
-      result.model_ = noiseModel::Unit::Create(result.model_->dim());
+      result.model_->WhitenInPlace(result.Ab_.full());
+      result.model_ = SharedDiagonal();
     }
     return result;
   }

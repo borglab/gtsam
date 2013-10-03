@@ -107,6 +107,11 @@ void Gaussian::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
+void Gaussian::WhitenInPlace(Eigen::Block<Matrix>& H) const {
+  H = thisR() * H;
+}
+
+/* ************************************************************************* */
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
@@ -233,6 +238,11 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
+void Diagonal::WhitenInPlace(Eigen::Block<Matrix>& H) const {
+  H = invsigmas().asDiagonal() * H;
+}
+
+/* ************************************************************************* */
 // Constrained
 /* ************************************************************************* */
 Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector& sigmas, bool smart) {
@@ -302,6 +312,18 @@ void Constrained::WhitenInPlace(Matrix& H) const {
   // Now allow augmented Matrix with a new additional part coming
   // from the Lagrange multiplier.
   vector_scale_inplace(invsigmas(), H, true);
+}
+
+/* ************************************************************************* */
+void Constrained::WhitenInPlace(Eigen::Block<Matrix>& H) const {
+  // selective scaling
+  // Scale row i of H by sigmas[i], basically multiplying H with diag(sigmas)
+  // Set inf_mask flag is true so that if invsigmas[i] is inf, i.e. sigmas[i] = 0,
+  // indicating a hard constraint, we leave H's row i in place.
+  const Vector& _invsigmas = invsigmas();
+  for(DenseIndex row = 0; row < _invsigmas.size(); ++row)
+    if(isfinite(_invsigmas(row)))
+      H.row(row) *= _invsigmas(row);
 }
 
 /* ************************************************************************* */
@@ -440,6 +462,11 @@ Matrix Isotropic::Whiten(const Matrix& H) const {
 
 /* ************************************************************************* */
 void Isotropic::WhitenInPlace(Matrix& H) const {
+  H *= invsigma_;
+}
+
+/* ************************************************************************* */
+void Isotropic::WhitenInPlace(Eigen::Block<Matrix>& H) const {
   H *= invsigma_;
 }
 
