@@ -107,7 +107,7 @@ void Gaussian::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-void Gaussian::WhitenInPlace(Eigen::Block<Matrix>& H) const {
+void Gaussian::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H = thisR() * H;
 }
 
@@ -238,7 +238,7 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-void Diagonal::WhitenInPlace(Eigen::Block<Matrix>& H) const {
+void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H = invsigmas().asDiagonal() * H;
 }
 
@@ -315,7 +315,7 @@ void Constrained::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-void Constrained::WhitenInPlace(Eigen::Block<Matrix>& H) const {
+void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
   // selective scaling
   // Scale row i of H by sigmas[i], basically multiplying H with diag(sigmas)
   // Set inf_mask flag is true so that if invsigmas[i] is inf, i.e. sigmas[i] = 0,
@@ -466,7 +466,7 @@ void Isotropic::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-void Isotropic::WhitenInPlace(Eigen::Block<Matrix>& H) const {
+void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H *= invsigma_;
 }
 
