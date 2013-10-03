@@ -30,6 +30,8 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentIncrementalFilter : public virtual ConcurrentFilter {
 
 public:
+
+  ISAM2 isam2_; ///< The iSAM2 inference engine
   typedef boost::shared_ptr<ConcurrentIncrementalFilter> shared_ptr;
   typedef ConcurrentFilter Base; ///< typedef for base class
 
@@ -158,7 +160,7 @@ public:
 
 protected:
 
-  ISAM2 isam2_; ///< The iSAM2 inference engine
+//  ISAM2 isam2_; ///< The iSAM2 inference engine
 
   // ???
   NonlinearFactorGraph previousSmootherSummarization_; ///< The smoother summarization on the old separator sent by the smoother during the last synchronization
