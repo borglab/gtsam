@@ -65,6 +65,7 @@ typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> ProjectionFactor;
 typedef FastMap<Key, boost::shared_ptr<SmartProjectionFactorState> > SmartFactorToStateMap;
 typedef FastMap<Key, boost::shared_ptr<SmartFactor> > SmartFactorMap;
 typedef FastMap<Key, std::vector<boost::shared_ptr<ProjectionFactor> > > ProjectionFactorMap;
+typedef FastMap<Key, int> OrderingMap;
 
 bool debug = false;
 
@@ -296,7 +297,7 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   }
   std::cout << "\n\n=================================================\n\n";
 
-  if (ordering) {
+  if (ordering && ordering->size() > 0) {
     if (debug) {
       std::cout << "Have an ordering\n" << std::endl;
       BOOST_FOREACH(const Key& key, *ordering) {
@@ -367,6 +368,7 @@ int main(int argc, char** argv) {
   bool useSmartProjectionFactor = true;
   bool useTriangulation = true;
   bool useLM = true; 
+  int landmarkFirstOrderingMethod = 2; // 0 - COLAMD, 1 - landmark first, poses from smart factor, 2 - landmark first through constrained ordering
 
   double KittiLinThreshold = -1; // 1e-7; // 0.01
   double KittiRankTolerance = 1;
@@ -456,15 +458,28 @@ int main(int argc, char** argv) {
       if (1||debug) std::cout << "Landmark Keys: " << landmarkKeys.size() << " Pose Keys: " << cameraPoseKeys.size() << std::endl;
       if (1||debug) std::cout << "Pose ordering: " << ordering->size() << std::endl;
 
-      // Add landmark keys first for ordering
-      BOOST_FOREACH(const Key& key, landmarkKeys) {
-        landmarkFirstOrdering->push_back(key);
-      }
+      if (landmarkFirstOrderingMethod == 1) {
+        // Add landmark keys first for ordering
+        BOOST_FOREACH(const Key& key, landmarkKeys) {
+          landmarkFirstOrdering->push_back(key);
+        }
 
-      // Add COLAMD on pose keys to ordering
-      //Ordering::iterator oit;
-      BOOST_FOREACH(const Key& key, *ordering) {
-        landmarkFirstOrdering->push_back(key);
+        // Add COLAMD on pose keys to ordering
+        //Ordering::iterator oit;
+        BOOST_FOREACH(const Key& key, *ordering) {
+          landmarkFirstOrdering->push_back(key);
+        }
+      } else if (landmarkFirstOrderingMethod == 2) {
+        OrderingMap orderingMap;
+        // Add landmark keys first for ordering
+        BOOST_FOREACH(const Key& key, landmarkKeys) {
+          orderingMap.insert( make_pair(key, 1) );
+        }
+        //Ordering::iterator oit;
+        BOOST_FOREACH(const Key& key, *ordering) {
+          orderingMap.insert( make_pair(key, 2) );
+        }
+        *landmarkFirstOrdering = graphProjection.orderingCOLAMDConstrained(orderingMap);
       }
 
       if (1||debug) std::cout << "Optimizing landmark first " << landmarkFirstOrdering->size() << std::endl;
