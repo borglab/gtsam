@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file JunctionTree-inl.h
+ * @file JunctionTree-inst.h
  * @date Feb 4, 2010
  * @author Kai Ni
  * @author Frank Dellaert
