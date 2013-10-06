@@ -169,7 +169,7 @@ TEST( SmartProjectionFactor, noisy ){
   // DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 }
 
-/* *************************************************************************
+/* **************************************************************************
 TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks, 1 iteration, comparison b/w Generic and Smart Projection Factors **********************" << endl;
 
@@ -311,7 +311,7 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
 
 }
 
-/* ************************************************************************ */
+/* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
   cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
