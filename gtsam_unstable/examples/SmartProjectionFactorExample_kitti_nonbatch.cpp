@@ -149,7 +149,7 @@ Cal3_S2::shared_ptr loadCalibration(const string& filename) {
 }
 
 void writeValues(string directory_, const Values& values){
-  string filename = directory_ + "camera_poses.txt";
+  string filename = directory_ + "out_camera_poses.txt";
   ofstream fout;
   fout.open(filename.c_str());
   fout.precision(20);
@@ -194,6 +194,9 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
 
   ProjectionFactorMap::iterator pfit;
 
+  if (debug)  graphValues->print("graphValues \n");
+  if (debug) std::cout << " # END VALUES: " << std::endl;
+
   // Iterate through all landmarks
   if (debug) std::cout << " PROJECTION FACTOR GROUPED: " << projectionFactors.size();
   int numProjectionFactors = 0;
@@ -216,7 +219,6 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
       // Iterate through poses
       cameraPoses.push_back( loadedValues->at<Pose3>((*vfit)->key1() ) );
       measured.push_back( (*vfit)->measured() );
-
     }
 
     // Triangulate landmark based on set of poses and measurements
@@ -262,7 +264,6 @@ void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared
     if (debug) std::cout << "Adding value " << std::endl;
     graphValues->insert( projectionFactorVector[0]->key2(), point); // add point;
     landmarkKeys.push_back( projectionFactorVector[0]->key2() );
-
 
   }
   if (1||debug) std::cout << " # PROJECTION FACTORS CALCULATED: " << numProjectionFactors;
@@ -370,8 +371,8 @@ int main(int argc, char** argv) {
   bool useLM = true; 
   int landmarkFirstOrderingMethod = 2; // 0 - COLAMD, 1 - landmark first, poses from smart factor, 2 - landmark first through constrained ordering
 
-  double KittiLinThreshold = -1; // 1e-7; // 0.01
-  double KittiRankTolerance = 1;
+  double KittiLinThreshold = -1.0; // 0.005; //
+  double KittiRankTolerance = 1.0;
 
   bool incrementalFlag = false;
   int optSkip = 200; // we optimize the graph every optSkip poses
@@ -379,6 +380,7 @@ int main(int argc, char** argv) {
   std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
   std::cout << "PARAM Triangulation: " << useTriangulation << std::endl;
   std::cout << "PARAM LM: " << useLM << std::endl;
+  std::cout << "PARAM KittiLinThreshold (negative is disabled): " << KittiLinThreshold << std::endl;
 
   // Get home directory and dataset
   string HOME = getenv("HOME");
@@ -446,6 +448,8 @@ int main(int argc, char** argv) {
       if (debug) cout << "Adding triangulated landmarks, graph size after: " << graphProjection.size() << endl;
       if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
+    // Optimize every optSkip poses if we want to do incremental inference
+    if (incrementalFlag && !optimized && ((numPoses+1) % optSkip)==0 ){
       // optimize
       if (useLM)
         optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
@@ -589,7 +593,7 @@ int main(int argc, char** argv) {
         // Add projection factor to graph
         graphProjection.push_back(projectionFactor);
 
-      } else {
+      }else {
         // Alternatively: Triangulate similar to how SmartProjectionFactor does it
         // We only do this at the end, when all of the camera poses are available
         // Note we do not add anything to the graph until then, since in some cases
@@ -608,7 +612,7 @@ int main(int argc, char** argv) {
       cout << "Loading graph projection... " << graphProjection.size() << endl;
     }
   }
- 
+
   if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
   // if we haven't optimized yet
@@ -616,7 +620,6 @@ int main(int argc, char** argv) {
     if (useSmartProjectionFactor == false && useTriangulation) {
       addTriangulatedLandmarks(graphSmart, loadedValues, graphSmartValues, K, projectionFactors, cameraPoseKeys, landmarkKeys);
     }
-
     if (useLM)
       optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
     else

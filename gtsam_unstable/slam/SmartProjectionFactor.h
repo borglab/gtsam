@@ -190,6 +190,8 @@ namespace gtsam {
         const std::vector<Point2> measured,
         const SharedNoiseModel& model,
         const boost::shared_ptr<CALIBRATION>& K,
+        const double rankTol,
+        const double linThreshold,
         bool throwCheirality, bool verboseCheirality,
         boost::optional<POSE> body_P_sensor = boost::none,
         SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
@@ -269,7 +271,7 @@ namespace gtsam {
           Pose3 localCameraPose = firstCameraPose.between(cameraPoses[i]);
           Pose3 localCameraPoseOld = firstCameraPoseOld.between(oldPoses[i]);
 
-          if (!cameraPoses[i].equals(oldPoses[i], linearizationThreshold)) {
+          if (!localCameraPose.equals(localCameraPoseOld, linearizationThreshold)) {
             return true; // at least two "relative" poses are different, hence we re-linerize
           }
       }
@@ -386,7 +388,7 @@ namespace gtsam {
 
       bool doLinearize;
       if (linearizationThreshold >= 0){//by convention if linearizationThreshold is negative we always relinearize
-        std::cout << "Temporary disabled" << std::endl;
+        // std::cout << "Temporary disabled" << std::endl;
         doLinearize = decideIfLinearize(cameraPoses, state_->cameraPosesLinearization, linearizationThreshold);
       }
       else{
@@ -398,6 +400,7 @@ namespace gtsam {
       }
 
       if(!doLinearize){ // return the previous Hessian factor
+        // std::cout << "Using stored factors :) " << std::endl;
         return HessianFactor::shared_ptr(new HessianFactor(keys_, state_->Gs, state_->gs, state_->f));
       }
 

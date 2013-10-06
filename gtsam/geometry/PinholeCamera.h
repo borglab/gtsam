@@ -323,7 +323,7 @@ namespace gtsam {
 
           if (!H1 && !H2 && !H3) {
             const Point3 pc = pose_.rotation().unrotate(pw) ;
-            if ( pc.z() <= 0 ) throw CheiralityException();
+            // if ( pc.z() <= 0 ) throw CheiralityException();  // this does not make sense for point at infinity
             const Point2 pn = projectPointAtInfinityToCamera(pc) ;
             return K_.uncalibrate(pn);
           }
@@ -331,7 +331,7 @@ namespace gtsam {
           // world to camera coordinate
           Matrix Hc1_rot /* 3*3 */, Hc2 /* 3*3 */ ;
           const Point3 pc = pose_.rotation().unrotate(pw, Hc1_rot, Hc2) ;
-          if( pc.z() <= 0 ) throw CheiralityException();
+          // if( pc.z() <= 0 ) throw CheiralityException(); // this does not make sense for point at infinity
 
           Matrix Hc1 = Matrix::Zero(3,6);
           Hc1.block(0,0,3,3) = Hc1_rot;
@@ -342,14 +342,14 @@ namespace gtsam {
 
           // uncalibration
           Matrix Hk, Hi; // 2*2
-          Matrix H23 = Matrix::Zero(3,2);
-          H23.block(0,0,2,2) = Matrix::Identity(2,2);
+           // Matrix H23 = Matrix::Zero(3,2);
+          // H23.block(0,0,2,2) = Matrix::Identity(2,2);
           const Point2 pi = K_.uncalibrate(pn, Hk, Hi);
 
           // chain the jacobian matrices
           const Matrix tmp = Hi*Hn;
           if (H1) *H1 = tmp * Hc1;
-          if (H2) *H2 = tmp * Hc2 * H23;
+          if (H2) *H2 = (tmp * Hc2).block(0,0,3,2);
           if (H3) *H3 = Hk;
           return pi;
         }
