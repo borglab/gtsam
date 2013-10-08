@@ -19,8 +19,6 @@
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
-
-
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
@@ -42,6 +40,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
+#ifdef DEVELOP
 
 #include <boost/assign/std/vector.hpp>
 
@@ -976,7 +975,10 @@ TEST( SmartProjectionFactor, HessianWithRotationDegenerate ){
     EXPECT(assert_equal(hessianFactor->information(), hessianFactorRotTran->information(), 1e-8) );
 }
 
+#endif
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
+
 
