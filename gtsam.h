@@ -1163,7 +1163,7 @@ virtual class GaussianFactor {
 
 #include <gtsam/linear/JacobianFactor.h>
 virtual class JacobianFactor : gtsam::GaussianFactor {
-    //Constructors
+  //Constructors
   JacobianFactor();
   JacobianFactor(const gtsam::GaussianFactor& factor);
   JacobianFactor(Vector b_in);
@@ -1173,6 +1173,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
       const gtsam::noiseModel::Diagonal* model);
   JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
       Vector b, const gtsam::noiseModel::Diagonal* model);
+  JacobianFactor(const gtsam::GaussianFactorGraph& graph);
 
   //Testable
   void print(string s) const;
@@ -1207,7 +1208,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
 
 #include <gtsam/linear/HessianFactor.h>
 virtual class HessianFactor : gtsam::GaussianFactor {
-    //Constructors
+  //Constructors
   HessianFactor();
   HessianFactor(const gtsam::GaussianFactor& factor);
   HessianFactor(size_t j, Matrix G, Vector g, double f);
@@ -1217,6 +1218,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
   HessianFactor(size_t j1, size_t j2, size_t j3, Matrix G11, Matrix G12, Matrix G13,
       Vector g1, Matrix G22, Matrix G23, Vector g2, Matrix G33, Vector g3,
       double f);
+  HessianFactor(const gtsam::GaussianFactorGraph& factors);
 
   //Testable
   size_t size() const;
