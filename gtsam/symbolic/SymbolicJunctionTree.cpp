@@ -23,6 +23,7 @@
 namespace gtsam {
 
   // Instantiate base class
+  template class ClusterTree<SymbolicBayesTree, SymbolicFactorGraph>;
   template class JunctionTree<SymbolicBayesTree, SymbolicFactorGraph>;
 
   /* ************************************************************************* */

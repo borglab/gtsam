@@ -20,15 +20,14 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/FastVector.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/inference/ClusterTree.h>
 
 namespace gtsam {
 
   /**
-   * A ClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
-   * the additional property that it represents the clique tree associated with a Bayes net.
+   * A JunctionTree is a ClusterTree, i.e., a set of variable clusters with factors, arranged
+   * in a tree, with the additional property that it represents the clique tree associated
+   * with a Bayes net.
    *
    * In GTSAM a junction tree is an intermediate data structure in multifrontal
    * variable elimination.  Each node is a cluster of factors, along with a
@@ -47,45 +46,13 @@ namespace gtsam {
    * \nosubgrouping
    */
   template<class BAYESTREE, class GRAPH>
-  class JunctionTree {
+  class JunctionTree : public ClusterTree<BAYESTREE, GRAPH> {
 
   public:
 
-    typedef GRAPH FactorGraphType; ///< The factor graph type
-    typedef typename GRAPH::FactorType FactorType; ///< The type of factors
     typedef JunctionTree<BAYESTREE, GRAPH> This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-    typedef boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
-    typedef BAYESTREE BayesTreeType; ///< The BayesTree type produced by elimination
-    typedef typename BayesTreeType::ConditionalType ConditionalType; ///< The type of conditionals
-    typedef boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
-    typedef typename FactorGraphType::Eliminate Eliminate; ///< Typedef for an eliminate subroutine
-
-    struct Node {
-      typedef FastVector<Key> Keys;
-      typedef FastVector<sharedFactor> Factors;
-      typedef FastVector<boost::shared_ptr<Node> > Children;
-
-      Keys keys; ///< Frontal keys of this node
-      Factors factors; ///< Factors associated with this node
-      Children children; ///< sub-trees
-      int problemSize_;
-
-      int problemSize() const { return problemSize_; }
-
-      /** print this node */
-      void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-    };
-
-    typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
-
-  private:
-
-    /** concept check */
-    GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
-
-    FastVector<sharedNode> roots_;
-    FastVector<sharedFactor> remainingFactors_;
+    typedef ClusterTree<BAYESTREE, GRAPH> Base; ///< Our base class
 
   protected:
 
@@ -99,43 +66,6 @@ namespace gtsam {
     /** Build the junction tree from an elimination tree. */
     template<class ETREE>
     JunctionTree(const ETREE& eliminationTree);
-    
-    /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
-     *  copied, factors are not cloned. */
-    JunctionTree(const This& other) { *this = other; }
-
-    /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors
-     *  are copied, factors are not cloned. */
-    This& operator=(const This& other);
-
-    /// @}
-
-  public:
-
-    /// @name Standard Interface
-    /// @{
-
-    /** Eliminate the factors to a Bayes net and remaining factor graph
-    * @param function The function to use to eliminate, see the namespace functions
-    * in GaussianFactorGraph.h
-    * @return The Bayes net and factor graph resulting from elimination
-    */
-    std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
-      eliminate(const Eliminate& function) const;
-
-    /** Print the junction tree */
-    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-
-    /// @}
-
-    /// @name Advanced Interface
-    /// @{
-    
-    /** Return the set of roots (one for a tree, multiple for a forest) */
-    const FastVector<sharedNode>& roots() const { return roots_; }
-
-    /** Return the remaining factors that are not pulled into elimination */
-    const FastVector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
 
     /// @}
 
