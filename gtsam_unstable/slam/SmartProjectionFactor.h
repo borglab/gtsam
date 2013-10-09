@@ -196,8 +196,8 @@ namespace gtsam {
         boost::optional<POSE> body_P_sensor = boost::none,
         SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
           measured_(measured), noise_(model), K_(K),
-          retriangulationThreshold(defaultTriangThreshold),  rankTolerance(defaultRankTolerance),
-          linearizationThreshold(defaultLinThreshold), body_P_sensor_(body_P_sensor),
+          retriangulationThreshold(defaultTriangThreshold),  rankTolerance(rankTol),
+          linearizationThreshold(linThreshold), body_P_sensor_(body_P_sensor),
           state_(state), throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {
     }
 
