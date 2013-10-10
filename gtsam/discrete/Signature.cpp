@@ -12,7 +12,7 @@
 /**
  * @file Signature.cpp
  * @brief signatures for conditional densities
- * @author Frank dellaert
+ * @author Frank Dellaert
  * @date Feb 27, 2011
  */
 

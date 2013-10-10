@@ -19,23 +19,23 @@
 //#define ENABLE_TIMING
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/inference/EliminationTreeOrdered-inl.h>
+#include <gtsam/discrete/DiscreteBayesTree.h>
+#include <gtsam/discrete/DiscreteEliminationTree.h>
+#include <gtsam/discrete/DiscreteJunctionTree.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
 
-  // Explicitly instantiate so we don't have to include everywhere
-  template class FactorGraphOrdered<DiscreteFactor> ;
-  template class EliminationTreeOrdered<DiscreteFactor> ;
+  // Instantiate base classes
+  template class FactorGraph<DiscreteFactor>;
+  template class EliminateableFactorGraph<DiscreteFactorGraph>;
 
   /* ************************************************************************* */
-  DiscreteFactorGraph::DiscreteFactorGraph() {
-  }
-
-  /* ************************************************************************* */
-  DiscreteFactorGraph::DiscreteFactorGraph(
-      const BayesNetOrdered<DiscreteConditional>& bayesNet) :
-      FactorGraphOrdered<DiscreteFactor>(bayesNet) {
+  bool DiscreteFactorGraph::equals(const This& fg, double tol) const
+  {
+    return Base::equals(fg, tol);
   }
 
   /* ************************************************************************* */
@@ -75,27 +75,34 @@ namespace gtsam {
     }
   }
 
-  /* ************************************************************************* */
-  void DiscreteFactorGraph::permuteWithInverse(
-    const Permutation& inversePermutation) {
-      BOOST_FOREACH(const sharedFactor& factor, factors_) {
-        if(factor)
-          factor->permuteWithInverse(inversePermutation);
-      }
-  }
+//  /* ************************************************************************* */
+//  void DiscreteFactorGraph::permuteWithInverse(
+//    const Permutation& inversePermutation) {
+//      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+//        if(factor)
+//          factor->permuteWithInverse(inversePermutation);
+//      }
+//  }
+//
+//  /* ************************************************************************* */
+//  void DiscreteFactorGraph::reduceWithInverse(
+//    const internal::Reduction& inverseReduction) {
+//      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+//        if(factor)
+//          factor->reduceWithInverse(inverseReduction);
+//      }
+//  }
 
   /* ************************************************************************* */
-  void DiscreteFactorGraph::reduceWithInverse(
-    const internal::Reduction& inverseReduction) {
-      BOOST_FOREACH(const sharedFactor& factor, factors_) {
-        if(factor)
-          factor->reduceWithInverse(inverseReduction);
-      }
+  DiscreteFactor::sharedValues DiscreteFactorGraph::optimize() const
+  {
+    gttic(DiscreteFactorGraph_optimize);
+    return BaseEliminateable::eliminateSequential()->optimize();
   }
 
   /* ************************************************************************* */
   std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
-  EliminateDiscrete(const FactorGraphOrdered<DiscreteFactor>& factors, size_t num) {
+  EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& frontalKeys) {
 
     // PRODUCT: multiply all factors
     gttic(product);
@@ -107,17 +114,21 @@ namespace gtsam {
 
     // sum out frontals, this is the factor on the separator
     gttic(sum);
-    DecisionTreeFactor::shared_ptr sum = product.sum(num);
+    DecisionTreeFactor::shared_ptr sum = product.sum(frontalKeys);
     gttoc(sum);
+
+    // Ordering keys for the conditional so that frontalKeys are really in front
+    Ordering orderedKeys;
+    orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(), frontalKeys.end());
+    orderedKeys.insert(orderedKeys.end(), sum->keys().begin(), sum->keys().end());
 
     // now divide product/sum to get conditional
     gttic(divide);
-    DiscreteConditional::shared_ptr cond(new DiscreteConditional(product, *sum));
+    DiscreteConditional::shared_ptr cond(new DiscreteConditional(product, *sum, orderedKeys));
     gttoc(divide);
 
     return std::make_pair(cond, sum);
   }
-
 
 /* ************************************************************************* */
 } // namespace

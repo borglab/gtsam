@@ -11,7 +11,7 @@
 
 /**
  * @file    DecisionTree.h
- * @brief    Decision Tree for use in DiscreteFactors
+ * @brief   Decision Tree for use in DiscreteFactors
  * @author  Frank Dellaert
  * @author  Can Erdogan
  * @date    Jan 30, 2012
@@ -177,7 +177,8 @@ namespace gtsam {
     /** apply binary operation "op" to f and g */
     DecisionTree apply(const DecisionTree& g, const Binary& op) const;
 
-    /** create a new function where value(label)==index */
+    /** create a new function where value(label)==index
+     * It's like "restrict" in Darwiche09book pg329, 330? */
     DecisionTree choose(const L& label, size_t index) const {
       NodePtr newRoot = root_->choose(label, index);
       return DecisionTree(newRoot);

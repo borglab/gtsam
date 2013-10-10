@@ -20,6 +20,7 @@
 
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/Potentials.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
@@ -41,7 +42,7 @@ namespace gtsam {
 
     // typedefs needed to play nice with gtsam
     typedef DecisionTreeFactor This;
-    typedef DiscreteConditional ConditionalType;
+    typedef DiscreteFactor Base; ///< Typedef to base class
     typedef boost::shared_ptr<DecisionTreeFactor> shared_ptr;
 
   public:
@@ -69,7 +70,7 @@ namespace gtsam {
     /// @{
 
     /// equality
-    bool equals(const DecisionTreeFactor& other, double tol = 1e-9) const;
+    bool equals(const DiscreteFactor& other, double tol = 1e-9) const;
 
     // print
     virtual void print(const std::string& s = "DecisionTreeFactor:\n",
@@ -104,6 +105,11 @@ namespace gtsam {
       return combine(nrFrontals, ADT::Ring::add);
     }
 
+    /// Create new factor by summing all values with the same separator values
+    shared_ptr sum(const Ordering& keys) const {
+      return combine(keys, ADT::Ring::add);
+    }
+
     /// Create new factor by maximizing over all values with the same separator values
     shared_ptr max(size_t nrFrontals) const {
       return combine(nrFrontals, ADT::Ring::max);
@@ -129,27 +135,39 @@ namespace gtsam {
     shared_ptr combine(size_t nrFrontals, ADT::Binary op) const;
 
     /**
-     * @brief Permutes the keys in Potentials and DiscreteFactor
-     *
-     * This re-implements the permuteWithInverse() in both Potentials
-     * and DiscreteFactor by doing both of them together.
+     * Combine frontal variables in an Ordering using binary operator "op"
+     * @param nrFrontals nr. of frontal to combine variables in this factor
+     * @param op a binary operator that operates on AlgebraicDecisionDiagram potentials
+     * @return shared pointer to newly created DecisionTreeFactor
      */
+    shared_ptr combine(const Ordering& keys, ADT::Binary op) const;
 
-    void permuteWithInverse(const Permutation& inversePermutation){
-      DiscreteFactor::permuteWithInverse(inversePermutation);
-      Potentials::permuteWithInverse(inversePermutation);
-    }
-    
-    /**
-     * Apply a reduction, which is a remapping of variable indices.
-     */
-    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
-      DiscreteFactor::reduceWithInverse(inverseReduction);
-      Potentials::reduceWithInverse(inverseReduction);
-    }
+
+    /** Test whether the factor is empty */
+    virtual bool empty() const { return size() == 0; }
+
+//    /**
+//     * @brief Permutes the keys in Potentials and DiscreteFactor
+//     *
+//     * This re-implements the permuteWithInverse() in both Potentials
+//     * and DiscreteFactor by doing both of them together.
+//     */
+//
+//    void permuteWithInverse(const Permutation& inversePermutation){
+//      DiscreteFactor::permuteWithInverse(inversePermutation);
+//      Potentials::permuteWithInverse(inversePermutation);
+//    }
+//
+//    /**
+//     * Apply a reduction, which is a remapping of variable indices.
+//     */
+//    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
+//      DiscreteFactor::reduceWithInverse(inverseReduction);
+//      Potentials::reduceWithInverse(inverseReduction);
+//    }
 
     /// @}
-  };
+};
 // DecisionTreeFactor
 
 }// namespace gtsam

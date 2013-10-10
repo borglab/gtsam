@@ -21,7 +21,8 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/inference/GenericMultifrontalSolver.h>
+#include <gtsam/discrete/DiscreteBayesTree.h>
+#include <gtsam/base/Vector.h>
 
 namespace gtsam {
 
@@ -32,7 +33,7 @@ namespace gtsam {
 
   protected:
 
-    BayesTreeOrdered<DiscreteConditional> bayesTree_;
+    DiscreteBayesTree::shared_ptr bayesTree_;
 
   public:
 
@@ -40,16 +41,14 @@ namespace gtsam {
    * @param graph The factor graph defining the full joint density on all variables.
    */
   DiscreteMarginals(const DiscreteFactorGraph& graph) {
-    typedef JunctionTreeOrdered<DiscreteFactorGraph> DiscreteJT;
-    GenericMultifrontalSolver<DiscreteFactor, DiscreteJT> solver(graph);
-    bayesTree_ = *solver.eliminate(&EliminateDiscrete);
+    bayesTree_ = graph.eliminateMultifrontal();
   }
 
   /** Compute the marginal of a single variable */
   DiscreteFactor::shared_ptr operator()(Index variable) const {
     // Compute marginal
     DiscreteFactor::shared_ptr marginalFactor;
-    marginalFactor = bayesTree_.marginalFactor(variable, &EliminateDiscrete);
+    marginalFactor = bayesTree_->marginalFactor(variable, &EliminateDiscrete);
     return marginalFactor;
   }
 
@@ -60,7 +59,7 @@ namespace gtsam {
   Vector marginalProbabilities(const DiscreteKey& key) const {
     // Compute marginal
     DiscreteFactor::shared_ptr marginalFactor;
-    marginalFactor = bayesTree_.marginalFactor(key.first, &EliminateDiscrete);
+    marginalFactor = bayesTree_->marginalFactor(key.first, &EliminateDiscrete);
 
     //Create result
     Vector vResult(key.second);
