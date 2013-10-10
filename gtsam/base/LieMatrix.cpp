@@ -19,18 +19,23 @@
 
 namespace gtsam {
 
-  /* ************************************************************************* */
-  LieMatrix::LieMatrix(size_t m, size_t n, ...)
-    : Matrix(m,n) {
-    va_list ap;
-    va_start(ap, n);
-    for(size_t i = 0; i < m; ++i) {
-      for(size_t j = 0; j < n; ++j) {
-        double value = va_arg(ap, double);
-        (*this)(i,j) = value;
-      }
+/* ************************************************************************* */
+LieMatrix::LieMatrix(size_t m, size_t n, ...)
+: Matrix(m,n) {
+  va_list ap;
+  va_start(ap, n);
+  for(size_t i = 0; i < m; ++i) {
+    for(size_t j = 0; j < n; ++j) {
+      double value = va_arg(ap, double);
+      (*this)(i,j) = value;
     }
-    va_end(ap);
   }
+  va_end(ap);
+}
+
+/* ************************************************************************* */
+void LieMatrix::print(const std::string& name) const {
+  gtsam::print(matrix(), name);
+}
 
 }
