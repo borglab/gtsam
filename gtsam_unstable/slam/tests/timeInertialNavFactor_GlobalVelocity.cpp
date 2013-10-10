@@ -28,9 +28,9 @@ using namespace std;
 using namespace gtsam;
 
 gtsam::Rot3 world_R_ECEF(
-		0.31686,      0.51505,      0.79645,
-		0.85173,     -0.52399,            0,
-		0.41733,      0.67835,     -0.60471);
+    0.31686,      0.51505,      0.79645,
+    0.85173,     -0.52399,            0,
+    0.41733,      0.67835,     -0.60471);
 
 gtsam::Vector ECEF_omega_earth(Vector_(3, 0.0, 0.0, 7.292115e-5));
 gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);

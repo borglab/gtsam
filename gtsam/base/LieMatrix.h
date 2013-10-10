@@ -154,7 +154,7 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   /** Logmap around identity - just returns with default cast back */
   static inline Vector Logmap(const LieMatrix& p) {
     return Eigen::Map<const Vector>(&p(0,0), p.dim()); }
-	
+
   /// @}
 
 private:

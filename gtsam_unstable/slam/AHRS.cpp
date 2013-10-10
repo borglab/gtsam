@@ -25,7 +25,7 @@ Matrix Z3 = zeros(3, 3);
 
 /* ************************************************************************* */
 AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
-		bool flat) :
+    bool flat) :
     KF_(9) {
 
   // Initial state
@@ -182,8 +182,8 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     // F(:,k) = mech.x_a + dx_a - bRn*n_g;
     // F(:,k) = mech.x_a + dx_a - bRn*(I+P)*n_g;
     // F(:,k) = mech.x_a + dx_a - b_g - bRn*(rho x n_g); // P = [rho]_x
-	// Hence, the measurement z = b_g - (mech.x_a - F(:,k)) is predicted
-	// from the filter state (dx_a, rho) as  dx_a + bRn*(n_g x rho)
+  // Hence, the measurement z = b_g - (mech.x_a - F(:,k)) is predicted
+  // from the filter state (dx_a, rho) as  dx_a + bRn*(n_g x rho)
     // z = b_g - (mech.x_a - F(:,k)) = dx_a + bRn*(n_g x rho)
     z = bRn * n_g_ - measured_b_g;
     // Now the Jacobian H

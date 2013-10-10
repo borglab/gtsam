@@ -118,14 +118,14 @@ namespace gtsam {
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
       delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(15,15))
       {
-    	  // COVARIANCE OF: [Integration AccMeasurement OmegaMeasurement BiasAccRandomWalk BiasOmegaRandomWalk (BiasAccInit BiasOmegaInit)] SIZE (21x21)
-        measurementCovariance << integrationErrorCovariance , Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), 		Matrix3::Zero(),
-                                       Matrix3::Zero(), measuredAccCovariance,  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), 	Matrix3::Zero(),
+        // COVARIANCE OF: [Integration AccMeasurement OmegaMeasurement BiasAccRandomWalk BiasOmegaRandomWalk (BiasAccInit BiasOmegaInit)] SIZE (21x21)
+        measurementCovariance << integrationErrorCovariance , Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     Matrix3::Zero(),
+                                       Matrix3::Zero(), measuredAccCovariance,  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),   Matrix3::Zero(),
                                        Matrix3::Zero(),   Matrix3::Zero(), measuredOmegaCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),  Matrix3::Zero(),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasAccCovariance, Matrix3::Zero(),   Matrix3::Zero(), 		Matrix3::Zero(),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasOmegaCovariance, Matrix3::Zero(), 		Matrix3::Zero(),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(0,0,3,3),  	biasAccOmegaInit.block(0,3,3,3),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(3,0,3,3), 		biasAccOmegaInit.block(3,3,3,3);
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasAccCovariance, Matrix3::Zero(),   Matrix3::Zero(),     Matrix3::Zero(),
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasOmegaCovariance, Matrix3::Zero(),     Matrix3::Zero(),
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(0,0,3,3),    biasAccOmegaInit.block(0,3,3,3),
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(3,0,3,3),     biasAccOmegaInit.block(3,3,3,3);
       }
 
       CombinedPreintegratedMeasurements() :
@@ -231,10 +231,10 @@ namespace gtsam {
         // overall Jacobian wrt preintegrated measurements (df/dx)
         Matrix F(15,15);
         F << H_pos_pos,    H_pos_vel,     H_pos_angles,          Z_3x3,                     Z_3x3,
-        		H_vel_pos,     H_vel_vel,     H_vel_angles,      H_vel_biasacc,  				        Z_3x3,
-        		H_angles_pos,  H_angles_vel,  H_angles_angles,   Z_3x3,                         H_angles_biasomega,
-        		Z_3x3,         Z_3x3,         Z_3x3,             I_3x3,                         Z_3x3,
-        		Z_3x3,         Z_3x3,         Z_3x3,             Z_3x3,                         I_3x3;
+            H_vel_pos,     H_vel_vel,     H_vel_angles,      H_vel_biasacc,                  Z_3x3,
+            H_angles_pos,  H_angles_vel,  H_angles_angles,   Z_3x3,                         H_angles_biasomega,
+            Z_3x3,         Z_3x3,         Z_3x3,             I_3x3,                         Z_3x3,
+            Z_3x3,         Z_3x3,         Z_3x3,             Z_3x3,                         I_3x3;
 
 
         // first order uncertainty propagation
@@ -567,18 +567,18 @@ namespace gtsam {
 
       if(H6) {
 
-    	  H6->resize(15,6);
-    	  (*H6) <<
-    			  // dfP/dBias_j
-    			  Matrix3::Zero(), Matrix3::Zero(),
-    			  // dfV/dBias_j
-    			  Matrix3::Zero(), Matrix3::Zero(),
-    			  // dfR/dBias_j
-    			  Matrix3::Zero(), Matrix3::Zero(),
-    			  //dBiasAcc/dBias_j
-    			  Matrix3::Identity(), Matrix3::Zero(),
-    			  //dBiasOmega/dBias_j
-    			  Matrix3::Zero(), Matrix3::Identity();
+        H6->resize(15,6);
+        (*H6) <<
+            // dfP/dBias_j
+            Matrix3::Zero(), Matrix3::Zero(),
+            // dfV/dBias_j
+            Matrix3::Zero(), Matrix3::Zero(),
+            // dfR/dBias_j
+            Matrix3::Zero(), Matrix3::Zero(),
+            //dBiasAcc/dBias_j
+            Matrix3::Identity(), Matrix3::Zero(),
+            //dBiasOmega/dBias_j
+            Matrix3::Zero(), Matrix3::Identity();
       }
 
 

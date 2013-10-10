@@ -31,11 +31,11 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST( EquivInertialNavFactor_GlobalVel, Constructor)
 {
-	Key poseKey1(11);
-	Key poseKey2(12);
-	Key velKey1(21);
-	Key velKey2(22);
-	Key biasKey1(31);
+  Key poseKey1(11);
+  Key poseKey2(12);
+  Key velKey1(21);
+  Key velKey2(22);
+  Key biasKey1(31);
 
   // IMU accumulation variables
   Vector delta_pos_in_t0 = Vector_(3, 0.0, 0.0, 0.0);
@@ -46,16 +46,16 @@ TEST( EquivInertialNavFactor_GlobalVel, Constructor)
   Matrix Jacobian_wrt_t0_Overall = eye(15);
   imuBias::ConstantBias bias1 = imuBias::ConstantBias();
 
-	// Earth Terms (gravity, etc)
+  // Earth Terms (gravity, etc)
   Vector3 g(0.0, 0.0, -9.80);
   Vector3 rho(0.0, 0.0, 0.0);
   Vector3 omega_earth(0.0, 0.0, 0.0);
 
-	// IMU Noise Model
-	SharedGaussian imu_model = noiseModel::Gaussian::Covariance(EquivCov_Overall.block(0,0,9,9));
+  // IMU Noise Model
+  SharedGaussian imu_model = noiseModel::Gaussian::Covariance(EquivCov_Overall.block(0,0,9,9));
 
-	// Constructor
-	EquivInertialNavFactor_GlobalVel<Pose3, LieVector, imuBias::ConstantBias> factor(
+  // Constructor
+  EquivInertialNavFactor_GlobalVel<Pose3, LieVector, imuBias::ConstantBias> factor(
       poseKey1, velKey1, biasKey1, poseKey2, velKey2,
           delta_pos_in_t0, delta_vel_in_t0, delta_angles, delta_t,
           g, rho, omega_earth, imu_model, Jacobian_wrt_t0_Overall, bias1);
@@ -63,5 +63,5 @@ TEST( EquivInertialNavFactor_GlobalVel, Constructor)
 }
 
 /* ************************************************************************* */
-	int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+  int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

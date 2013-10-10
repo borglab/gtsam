@@ -136,12 +136,12 @@ TEST( CombinedImuFactor, PreintegratedMeasurements )
 
   // Actual preintegrated values
   ImuFactor::PreintegratedMeasurements expected1(bias, Matrix3::Zero(),
-		  Matrix3::Zero(), Matrix3::Zero());
+      Matrix3::Zero(), Matrix3::Zero());
   expected1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   CombinedImuFactor::CombinedPreintegratedMeasurements actual1(bias,
-		  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),
-		  Matrix3::Zero(), Matrix3::Zero(), Matrix::Zero(6,6));
+      Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),
+      Matrix3::Zero(), Matrix3::Zero(), Matrix::Zero(6,6));
 
 //           const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
 //           const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
@@ -193,13 +193,13 @@ TEST( CombinedImuFactor, ErrorWithBiases )
 
 
   ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
-		  Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
+      Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
 
     pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
    CombinedImuFactor::CombinedPreintegratedMeasurements Combined_pre_int_data(
-		   imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0),  Vector3(0.0, 0.0, 0.0)),
-  		  Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(), 2 * Matrix3::Identity(),	I6x6 );
+       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0),  Vector3(0.0, 0.0, 0.0)),
+        Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(), 2 * Matrix3::Identity(),  I6x6 );
 
    Combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
@@ -224,14 +224,14 @@ TEST( CombinedImuFactor, ErrorWithBiases )
 
 
     // Actual Jacobians
-	Matrix H1a, H2a, H3a, H4a, H5a, H6a;
-	(void) Combinedfactor.evaluateError(x1, v1, x2, v2, bias, bias2, H1a, H2a, H3a, H4a, H5a, H6a);
+  Matrix H1a, H2a, H3a, H4a, H5a, H6a;
+  (void) Combinedfactor.evaluateError(x1, v1, x2, v2, bias, bias2, H1a, H2a, H3a, H4a, H5a, H6a);
 
-	EXPECT(assert_equal(H1e, H1a.topRows(9)));
-	EXPECT(assert_equal(H2e, H2a.topRows(9)));
-	EXPECT(assert_equal(H3e, H3a.topRows(9)));
-	EXPECT(assert_equal(H4e, H4a.topRows(9)));
-	EXPECT(assert_equal(H5e, H5a.topRows(9)));
+  EXPECT(assert_equal(H1e, H1a.topRows(9)));
+  EXPECT(assert_equal(H2e, H2a.topRows(9)));
+  EXPECT(assert_equal(H3e, H3a.topRows(9)));
+  EXPECT(assert_equal(H4e, H4a.topRows(9)));
+  EXPECT(assert_equal(H5e, H5a.topRows(9)));
 }
 
 /* ************************************************************************* */

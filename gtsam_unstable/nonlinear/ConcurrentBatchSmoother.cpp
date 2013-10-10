@@ -289,7 +289,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         }
         gttoc(damp);
         if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) 
-        	dampedFactorGraph.print("damped");
+          dampedFactorGraph.print("damped");
         result.lambdas++;
 
         gttic(solve);
@@ -302,7 +302,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) 
           std::cout << "linear delta norm = " << newDelta.norm() << std::endl;
         if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) 
-        	newDelta.print("delta");
+          newDelta.print("delta");
 
         // Evaluate the new error
         gttic(compute_error);
@@ -310,7 +310,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         gttoc(compute_error);
 
         if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) 
-        	std::cout << "next error = " << error << std::endl;
+          std::cout << "next error = " << error << std::endl;
         
         if(error < result.error) {
           // Keep this change

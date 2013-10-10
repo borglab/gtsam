@@ -907,7 +907,7 @@ class SymbolicBayesTree {
 
     //Constructors
     SymbolicBayesTree();
-	SymbolicBayesTree(const gtsam::SymbolicBayesTree& other);
+  SymbolicBayesTree(const gtsam::SymbolicBayesTree& other);
 
     // Testable
     void print(string s);
@@ -920,10 +920,10 @@ class SymbolicBayesTree {
     void clear();
     void deleteCachedShortcuts();
     size_t numCachedSeparatorMarginals() const;
-	
-	gtsam::SymbolicConditional* marginalFactor(size_t key) const;
-	gtsam::SymbolicFactorGraph* joint(size_t key1, size_t key2) const;
-	gtsam::SymbolicBayesNet* jointBayesNet(size_t key1, size_t key2) const;
+  
+  gtsam::SymbolicConditional* marginalFactor(size_t key) const;
+  gtsam::SymbolicFactorGraph* joint(size_t key1, size_t key2) const;
+  gtsam::SymbolicBayesNet* jointBayesNet(size_t key1, size_t key2) const;
 };
 
 // class SymbolicBayesTreeClique {
