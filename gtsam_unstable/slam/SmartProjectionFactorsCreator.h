@@ -88,6 +88,9 @@ namespace gtsam {
       }
     }
 
+    unsigned int getTotalNumMeasurements() { return totalNumMeasurements; }
+    unsigned int getNumLandmarks() { return numLandmarks; }
+
   protected:
     const SharedNoiseModel noise_;   ///< noise model used
     ///< (important that the order is the same as the keys that we use to create the factor)
@@ -102,8 +105,8 @@ namespace gtsam {
     SmartFactorToStateMap smartFactorStates;
     SmartFactorMap smartFactors;
 
-    int totalNumMeasurements;
-    int numLandmarks;
+    unsigned int totalNumMeasurements;
+    unsigned int numLandmarks;
 
   };
 

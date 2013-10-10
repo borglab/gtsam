@@ -325,7 +325,7 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
 
     //for (int i = 0; i < 3; i++) {
       LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
-      // params = optimizer.ensureHasOrdering(params, graph);
+      params.ordering = Ordering::COLAMD(graph);
       gttic_(SmartProjectionFactorExample_kitti);
       result = optimizer.optimize();
       gttoc_(SmartProjectionFactorExample_kitti);
@@ -333,10 +333,13 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
     //}
 
     //*ordering = params.ordering;
-    std::cout << "Graph size: " << graph.size() << " ORdering: " << params.ordering->size() << std::endl;
-    ordering = boost::make_shared<Ordering>(*(new Ordering()));
-    *ordering = *params.ordering;
-
+    if (params.ordering) {
+        std::cout << "Graph size: " << graph.size() << " ORdering: " << params.ordering->size() << std::endl;
+        ordering = boost::make_shared<Ordering>(*(new Ordering()));
+        *ordering = *params.ordering;
+    } else {
+        std::cout << "WARNING: NULL ordering!" << std::endl;
+    }
   }
 }
 
@@ -450,6 +453,7 @@ int main(int argc, char** argv) {
     if (useSmartProjectionFactor) {
 
       smartCreator.add(L(l), X(r), Point2(uL,v), graphSmart);
+      numLandmarks = smartCreator.getNumLandmarks();
 
       // Add initial pose value if pose does not exist
       if (!graphSmartValues->exists<Pose3>(X(r)) && loadedValues->exists<Pose3>(X(r))) {
@@ -569,7 +573,7 @@ int main(int argc, char** argv) {
         }
 
         if (1||debug) std::cout << "Optimizing landmark first " << ordering->size() << std::endl;
-        optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
+        //optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
 
         // Only process first N measurements (for development/debugging)
         if ( (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks) ) {
