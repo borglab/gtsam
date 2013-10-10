@@ -25,6 +25,8 @@
 namespace gtsam {
 
   /**
+   * TODO: Update comments. The following comments are out of date!!!
+   *
    * Base class for conditional densities, templated on KEY type.  This class
    * provides storage for the keys involved in a conditional, and iterators and
    * access to the frontal and separator keys.
