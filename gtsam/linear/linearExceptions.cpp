@@ -23,6 +23,22 @@
 namespace gtsam {
 
   /* ************************************************************************* */
+  const char* IndeterminantLinearSystemException::what() const throw()
+  {
+    if(!description_)
+      description_ = String(
+          "\nIndeterminant linear system detected while working near variable with\n"
+          "index " + boost::lexical_cast<String>(j_) + " in ordering.\n"
+          "\n\
+Thrown when a linear system is ill-posed.  The most common cause for this\n\
+error is having underconstrained variables.  Mathematically, the system is\n\
+underdetermined.  See the GTSAM Doxygen documentation at\n\
+http://borg.cc.gatech.edu/ on gtsam::IndeterminantLinearSystemException for\n\
+more information.");
+    return description_->c_str();
+  }
+
+  /* ************************************************************************* */
   const char* InvalidNoiseModel::what() const throw() {
     if(description_.empty())
       description_ = (boost::format(
