@@ -49,7 +49,7 @@ DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
     const DecisionTreeFactor& marginal, const boost::optional<Ordering>& orderedKeys) :
     BaseFactor(
         ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal), BaseConditional(
-        joint.size()-marginal.size()) {
+            joint.size()-marginal.size()) {
   if (ISDEBUG("DiscreteConditional::DiscreteConditional"))
     cout << (firstFrontalKey()) << endl; //TODO Print all keys
   if (orderedKeys) {
@@ -60,8 +60,8 @@ DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
 
 /* ******************************************************************************** */
 DiscreteConditional::DiscreteConditional(const Signature& signature) :
-    BaseFactor(signature.discreteKeysParentsFirst(), signature.cpt()), BaseConditional(
-        1) {
+        BaseFactor(signature.discreteKeysParentsFirst(), signature.cpt()), BaseConditional(
+            1) {
 }
 
 /* ******************************************************************************** */
@@ -72,9 +72,15 @@ void DiscreteConditional::print(const std::string& s,
 }
 
 /* ******************************************************************************** */
-bool DiscreteConditional::equals(const DiscreteConditional& other,
+bool DiscreteConditional::equals(const DiscreteFactor& other,
     double tol) const {
-  return Potentials::equals(other, tol);
+  if (!dynamic_cast<const DecisionTreeFactor*>(&other))
+    return false;
+  else {
+    const DecisionTreeFactor& f(
+        static_cast<const DecisionTreeFactor&>(other));
+    return DecisionTreeFactor::equals(f, tol);
+  }
 }
 
 /* ******************************************************************************** */
@@ -82,15 +88,15 @@ Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
   ADT pFS(*this);
   Index j; size_t value;
   BOOST_FOREACH(Index key, parents())
-    try {
-      j = (key);
-      value = parentsValues.at(j);
-      pFS = pFS.choose(j, value);
-    } catch (exception&) {
-      cout << "Key: " << j << "  Value: " << value << endl;
-      pFS.print("pFS: ");
-      throw runtime_error("DiscreteConditional::choose: parent value missing");
-    };
+  try {
+    j = (key);
+    value = parentsValues.at(j);
+    pFS = pFS.choose(j, value);
+  } catch (exception&) {
+    cout << "Key: " << j << "  Value: " << value << endl;
+    pFS.print("pFS: ");
+    throw runtime_error("DiscreteConditional::choose: parent value missing");
+  };
   return pFS;
 }
 

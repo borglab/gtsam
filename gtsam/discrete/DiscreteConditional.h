@@ -82,7 +82,7 @@ public:
       const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /// GTSAM-style equals
-  bool equals(const DiscreteConditional& other, double tol = 1e-9) const;
+  bool equals(const DiscreteFactor& other, double tol = 1e-9) const;
 
   /// @}
   /// @name Standard Interface

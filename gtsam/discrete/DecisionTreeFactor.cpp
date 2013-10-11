@@ -45,8 +45,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   bool DecisionTreeFactor::equals(const DiscreteFactor& other, double tol) const {
-    if(!dynamic_cast<const DecisionTreeFactor*>(&other))
+    if(!dynamic_cast<const DecisionTreeFactor*>(&other)) {
       return false;
+    }
     else {
       const DecisionTreeFactor& f(static_cast<const DecisionTreeFactor&>(other));
       return Potentials::equals(f, tol);
