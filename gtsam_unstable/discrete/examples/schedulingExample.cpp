@@ -53,16 +53,10 @@ void addStudent(Scheduler& s, size_t i) {
 }
 /* ************************************************************************* */
 Scheduler largeExample(size_t nrStudents = 7) {
-  char cCurrentPath[FILENAME_MAX];
-
-   if (!getcwd(cCurrentPath, sizeof(cCurrentPath)))
-       {
-       return errno;
-       }
-
-  cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
-
-  printf ("The current working directory is %s", cCurrentPath);
+//  char cCurrentPath[FILENAME_MAX];
+//  if (!getcwd(cCurrentPath, sizeof(cCurrentPath))) return errno;
+//  cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
+//  printf ("The current working directory is %s", cCurrentPath);
 
   string path("../../../gtsam_unstable/discrete/examples/");
   Scheduler s(nrStudents, path + "Doodle.csv");
