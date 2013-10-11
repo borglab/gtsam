@@ -7,7 +7,6 @@
 
 #include <gtsam_unstable/discrete/Scheduler.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
@@ -257,11 +256,8 @@ namespace gtsam {
 
   /** Eliminate, return a Bayes net */
   DiscreteBayesNet::shared_ptr Scheduler::eliminate() const {
-    gttic(my_solver);
-    DiscreteSequentialSolver solver(*this);
-    gttoc(my_solver);
     gttic(my_eliminate);
-    DiscreteBayesNet::shared_ptr chordal = solver.eliminate();
+    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
     gttoc(my_eliminate);
     return chordal;
   }
@@ -271,14 +267,14 @@ namespace gtsam {
     DiscreteBayesNet::shared_ptr chordal = eliminate();
 
     if (ISDEBUG("Scheduler::optimalAssignment")) {
-      DiscreteBayesNet::const_reverse_iterator it = chordal->rbegin();
+      DiscreteBayesNet::const_iterator it = chordal->end()-1;
       const Student & student = students_.front();
       cout << endl;
       (*it)->print(student.name_);
     }
 
     gttic(my_optimize);
-    sharedValues mpe = optimize(*chordal);
+    sharedValues mpe = chordal->optimize();
     gttoc(my_optimize);
     return mpe;
   }

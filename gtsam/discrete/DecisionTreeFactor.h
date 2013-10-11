@@ -143,9 +143,6 @@ namespace gtsam {
     shared_ptr combine(const Ordering& keys, ADT::Binary op) const;
 
 
-    /** Test whether the factor is empty */
-    virtual bool empty() const { return size() == 0; }
-
 //    /**
 //     * @brief Permutes the keys in Potentials and DiscreteFactor
 //     *

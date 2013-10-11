@@ -37,6 +37,18 @@ namespace gtsam {
     virtual void print(const std::string& s = "",
         const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
+    /// equals
+    bool equals(const DiscreteFactor& other, double tol) const {
+      if(!dynamic_cast<const AllDiff*>(&other))
+        return false;
+      else {
+        const AllDiff& f(static_cast<const AllDiff&>(other));
+        return cardinalities_.size() == f.cardinalities_.size()
+            && std::equal(cardinalities_.begin(), cardinalities_.end(),
+                          f.cardinalities_.begin());
+      }
+    }
+
     /// Calculate value = expensive !
     virtual double operator()(const Values& values) const;
 

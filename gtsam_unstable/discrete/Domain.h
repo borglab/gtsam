@@ -69,6 +69,16 @@ namespace gtsam {
     virtual void print(const std::string& s = "",
         const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
+    /// equals
+    bool equals(const DiscreteFactor& other, double tol) const {
+      if(!dynamic_cast<const Domain*>(&other))
+        return false;
+      else {
+        const Domain& f(static_cast<const Domain&>(other));
+        return (cardinality_==f.cardinality_) && (values_==f.values_);
+      }
+    }
+
     bool contains(size_t value) const {
       return values_.count(value)>0;
     }

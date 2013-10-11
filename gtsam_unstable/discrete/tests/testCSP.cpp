@@ -123,6 +123,11 @@ TEST_UNSAFE( CSP, WesternUS)
   (WA.first,1)(CA.first,1)(NV.first,3)(OR.first,0)
   (MT.first,1)(WY.first,0)(NM.first,3)(CO.first,2)
   (ID.first,2)(UT.first,1)(AZ.first,0);
+
+  // TODO: Fix me! mpe result seems to be right. (See the printing)
+  // It has the same prob as the expected solution.
+  // Is mpe another solution, or the expected solution is unique???
+  cout << csp(*mpe) << " should be >= " << csp(expected) << endl;
   EXPECT(assert_equal(expected,*mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9);
 

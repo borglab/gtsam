@@ -19,6 +19,7 @@
 
 #include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/discrete/DiscreteFactor.h>
+#include <boost/assign.hpp>
 
 namespace gtsam {
 
@@ -43,12 +44,12 @@ namespace gtsam {
 
     /// Construct unary factor
     Constraint(Index j) :
-      DiscreteFactor(j) {
+      DiscreteFactor(boost::assign::cref_list_of<1>(j)) {
     }
 
     /// Construct binary factor
     Constraint(Index j1, Index j2) :
-      DiscreteFactor(j1, j2) {
+      DiscreteFactor(boost::assign::cref_list_of<2>(j1)(j2)) {
     }
 
     /// construct from container

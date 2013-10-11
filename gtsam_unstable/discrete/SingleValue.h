@@ -45,6 +45,16 @@ namespace gtsam {
     virtual void print(const std::string& s = "",
         const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
+    /// equals
+    bool equals(const DiscreteFactor& other, double tol) const {
+      if(!dynamic_cast<const SingleValue*>(&other))
+        return false;
+      else {
+        const SingleValue& f(static_cast<const SingleValue&>(other));
+        return (cardinality_==f.cardinality_) && (value_==f.value_);
+      }
+    }
+
     /// Calculate value
     virtual double operator()(const Values& values) const;
 

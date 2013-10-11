@@ -7,7 +7,6 @@
 
 #include <gtsam_unstable/discrete/Domain.h>
 #include <gtsam_unstable/discrete/CSP.h>
-#include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 
@@ -17,15 +16,14 @@ namespace gtsam {
 
   /// Find the best total assignment - can be expensive
   CSP::sharedValues CSP::optimalAssignment() const {
-    DiscreteSequentialSolver solver(*this);
-    DiscreteBayesNet::shared_ptr chordal = solver.eliminate();
-    sharedValues mpe = optimize(*chordal);
+    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
+    sharedValues mpe = chordal->optimize();
     return mpe;
   }
 
   void CSP::runArcConsistency(size_t cardinality, size_t nrIterations, bool print) const {
     // Create VariableIndex
-    VariableIndexOrdered index(*this);
+    VariableIndex index(*this);
     // index.print();
 
     size_t n = index.size();
@@ -46,7 +44,7 @@ namespace gtsam {
         // keep track of which domains changed
         changed[v] = false;
         // loop over all factors/constraints for variable v
-        const VariableIndexOrdered::Factors& factors = index[v];
+        const VariableIndex::Factors& factors = index[v];
         BOOST_FOREACH(size_t f,factors) {
           // if not already a singleton
           if (!domains[v].isSingleton()) {

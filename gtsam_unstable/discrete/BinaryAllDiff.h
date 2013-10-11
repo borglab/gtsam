@@ -39,6 +39,16 @@ namespace gtsam {
           << formatter(keys_[1]) << std::endl;
     }
 
+    /// equals
+    bool equals(const DiscreteFactor& other, double tol) const {
+      if(!dynamic_cast<const BinaryAllDiff*>(&other))
+        return false;
+      else {
+        const BinaryAllDiff& f(static_cast<const BinaryAllDiff&>(other));
+        return (cardinality0_==f.cardinality0_) && (cardinality1_==f.cardinality1_);
+      }
+    }
+
     /// Calculate value
     virtual double operator()(const Values& values) const {
       return (double) (values.at(keys_[0]) != values.at(keys_[1]));

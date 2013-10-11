@@ -97,10 +97,6 @@ Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
 /* ******************************************************************************** */
 void DiscreteConditional::solveInPlace(Values& values) const {
   // TODO: Abhijit asks: is this really the fastest way? He thinks it is.
-  print("Me: ");
-  values.print("values:");
-  cout << "nrFrontals/nrParents: " << nrFrontals() << "/" << nrParents() << endl;
-  cout << "first frontal: " << firstFrontalKey() << endl;
   ADT pFS = choose(values); // P(F|S=parentsValues)
 
   // Initialize
