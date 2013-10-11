@@ -94,7 +94,8 @@ Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
     pFS = pFS.choose(j, value);
   } catch (exception&) {
     cout << "Key: " << j << "  Value: " << value << endl;
-    pFS.print("pFS: ");
+    parentsValues.print("parentsValues: ");
+//    pFS.print("pFS: ");
     throw runtime_error("DiscreteConditional::choose: parent value missing");
   };
   return pFS;

@@ -208,7 +208,7 @@ void solveStaged(size_t addMutex = 2) {
     gttoc_(eliminate);
 
     // find root node
-    DiscreteConditional::shared_ptr root = *(chordal->end()-1);
+    DiscreteConditional::shared_ptr root = chordal->back();
     if (debug)
       root->print(""/*scheduler.studentName(s)*/);
 

@@ -257,7 +257,12 @@ namespace gtsam {
   /** Eliminate, return a Bayes net */
   DiscreteBayesNet::shared_ptr Scheduler::eliminate() const {
     gttic(my_eliminate);
-    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
+    // TODO: fix this!!
+    size_t maxKey = keys().size();
+    Ordering defaultKeyOrdering;
+    for (size_t i = 0; i<maxKey; ++i)
+      defaultKeyOrdering += Key(i);
+    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(defaultKeyOrdering);
     gttoc(my_eliminate);
     return chordal;
   }
