@@ -15,8 +15,8 @@ using namespace std;
 namespace gtsam {
 
   /// Find the best total assignment - can be expensive
-  CSP::sharedValues CSP::optimalAssignment() const {
-    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
+  CSP::sharedValues CSP::optimalAssignment(OptionalOrdering ordering) const {
+    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(ordering);
     sharedValues mpe = chordal->optimize();
     return mpe;
   }
