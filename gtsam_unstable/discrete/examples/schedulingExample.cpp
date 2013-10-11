@@ -167,8 +167,6 @@ void solveStaged(size_t addMutex = 2) {
     gttoc_(eliminate);
 
     // find root node
-    chordal->back()->print("back: ");
-    chordal->front()->print("front: ");
     DiscreteConditional::shared_ptr root = chordal->back();
     if (debug)
       root->print(""/*scheduler.studentName(s)*/);
@@ -334,8 +332,6 @@ void accomodateStudent() {
   // get corresponding count
   DiscreteKey dkey = scheduler.studentKey(0);
   values[dkey.first] = bestSlot;
-  values.print("Values: ");
-  root->print("Root: ");
   size_t count = (*root)(values);
   cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(0)
       % scheduler.slotName(bestSlot) % bestSlot % count << endl;
