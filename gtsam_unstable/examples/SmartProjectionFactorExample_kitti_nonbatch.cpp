@@ -41,9 +41,8 @@
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics SLAM problems.
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam_unstable/slam/SmartProjectionFactor.h>
 #include <gtsam_unstable/slam/SmartProjectionFactorsCreator.h>
+#include <gtsam_unstable/slam/GenericProjectionFactorsCreator.h>
 
 // Standard headers, added last, so we know headers above work on their own
 #include <boost/foreach.hpp>
@@ -61,12 +60,8 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 typedef PriorFactor<Pose3> Pose3Prior;
-typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
-typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> ProjectionFactor;
-typedef FastMap<Key, boost::shared_ptr<SmartProjectionFactorState> > SmartFactorToStateMap;
-typedef FastMap<Key, boost::shared_ptr<SmartFactor> > SmartFactorMap;
-typedef FastMap<Key, std::vector<boost::shared_ptr<ProjectionFactor> > > ProjectionFactorMap;
+typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
 typedef FastMap<Key, int> OrderingMap;
 
 bool debug = false;
@@ -151,6 +146,7 @@ Cal3_S2::shared_ptr loadCalibration(const string& filename) {
   return K;
 }
 
+// Write key values to file
 void writeValues(string directory_, const Values& values){
   string filename = directory_ + "out_camera_poses.txt";
   ofstream fout;
@@ -185,93 +181,6 @@ void writeValues(string directory_, const Values& values){
     fout.close();
 
   }
-}
-
-void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr loadedValues,
-    gtsam::Values::shared_ptr graphValues, boost::shared_ptr<Cal3_S2> K, ProjectionFactorMap &projectionFactors,
-    vector<Key> &cameraPoseKeys, vector<Key> &landmarkKeys) {
-  std::vector<boost::shared_ptr<ProjectionFactor> > projectionFactorVector;
-  std::vector<boost::shared_ptr<ProjectionFactor> >::iterator vfit;
-  Point3 point;
-  Pose3 cameraPose;
-
-  ProjectionFactorMap::iterator pfit;
-
-  if (debug)  graphValues->print("graphValues \n");
-  if (debug) std::cout << " # END VALUES: " << std::endl;
-
-  // Iterate through all landmarks
-  if (debug) std::cout << " PROJECTION FACTOR GROUPED: " << projectionFactors.size();
-  int numProjectionFactors = 0;
-  int numProjectionFactorsAdded = 0;
-  int numFailures = 0;
-  for (pfit = projectionFactors.begin(); pfit != projectionFactors.end(); pfit++) {
-
-    projectionFactorVector = (*pfit).second;
-
-    std::vector<Pose3> cameraPoses;
-    std::vector<Point2> measured;
-
-    // Iterate through projection factors
-    for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) {
-      numProjectionFactors++;
-
-      if (debug) std::cout << "ProjectionFactor: " << std::endl;
-      if (debug) (*vfit)->print("ProjectionFactor");
-
-      // Iterate through poses
-      cameraPoses.push_back( loadedValues->at<Pose3>((*vfit)->key1() ) );
-      measured.push_back( (*vfit)->measured() );
-    }
-
-    // Triangulate landmark based on set of poses and measurements
-    if (debug) std::cout << "Triangulating: " << std::endl;
-    try {
-      point = triangulatePoint3(cameraPoses, measured, *K);
-      if (debug) std::cout << "Triangulation succeeded: " << point << std::endl;
-    } catch( TriangulationUnderconstrainedException& e) {
-      if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
-      if (debug) {
-        BOOST_FOREACH(const Pose3& pose, cameraPoses) {
-          std::cout << " Pose: " << pose << std::endl;
-        }
-      }
-      numFailures++;
-      continue;
-    } catch( TriangulationCheiralityException& e) {
-      if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
-      if (debug) {
-        std::cout << "Triangulation failed because of cheirality exception" << std::endl;
-        BOOST_FOREACH(const Pose3& pose, cameraPoses) {
-          std::cout << " Pose: " << pose << std::endl;
-        }
-      }
-      numFailures++;
-      continue;
-    }
-
-    // Add projection factors and pose values
-    for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) {
-      numProjectionFactorsAdded++;
-      if (debug) std::cout << "Adding factor " << std::endl;
-      if (debug) (*vfit)->print("Projection Factor");
-      graph.push_back( (*vfit) );
-
-      if (!graphValues->exists<Pose3>( (*vfit)->key1()) && loadedValues->exists<Pose3>((*vfit)->key1())) {
-        graphValues->insert((*vfit)->key1(), loadedValues->at<Pose3>((*vfit)->key1()));
-        cameraPoseKeys.push_back( (*vfit)->key1() );
-      }
-    }
-
-    // Add landmark value
-    if (debug) std::cout << "Adding value " << std::endl;
-    graphValues->insert( projectionFactorVector[0]->key2(), point); // add point;
-    landmarkKeys.push_back( projectionFactorVector[0]->key2() );
-
-  }
-  if (1||debug) std::cout << " # PROJECTION FACTORS CALCULATED: " << numProjectionFactors;
-  if (1||debug) std::cout << " # PROJECTION FACTORS ADDED: " << numProjectionFactorsAdded;
-  if (1||debug) std::cout << " # FAILURES: " << numFailures;
 }
 
 void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result, boost::shared_ptr<Ordering> &ordering) {
@@ -368,14 +277,12 @@ void optimizeGraphISAM2(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr g
 // main
 int main(int argc, char** argv) {
 
-  unsigned int maxNumLandmarks = 389007; //100000000; // 309393 // (loop_closure_merged) //37106 //(reduced kitti);
+  unsigned int maxNumLandmarks = 10000; //389007; //100000000; // 309393 // (loop_closure_merged) //37106 //(reduced kitti);
   unsigned int maxNumPoses = 1e+6;
 
   // Set to true to use SmartProjectionFactor. Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = true;
-  bool useTriangulation = true;
+  bool useSmartProjectionFactor = false;
   bool useLM = true; 
-  int landmarkFirstOrderingMethod = 1; // 0 - COLAMD, 1 - landmark first, then COLAMD on poses (constrained ordering)
 
   double KittiLinThreshold = -1.0; // 0.005; //
   double KittiRankTolerance = 1.0;
@@ -384,7 +291,6 @@ int main(int argc, char** argv) {
   int optSkip = 200; // we optimize the graph every optSkip poses
 
   std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
-  std::cout << "PARAM Triangulation: " << useTriangulation << std::endl;
   std::cout << "PARAM LM: " << useLM << std::endl;
   std::cout << "PARAM KittiLinThreshold (negative is disabled): " << KittiLinThreshold << std::endl;
 
@@ -395,12 +301,9 @@ int main(int argc, char** argv) {
   //string input_dir = HOME + "/data/kitti_00_full_dirty/";
 
   static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
-  static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)));
-  //static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 1e-9, 1e-9, 1e-9, 1e-9, 1e-9, 1e-9)));
   NonlinearFactorGraph graphSmart, graphProjection;
 
   // Load calibration
-  //Cal3_S2::shared_ptr K(new Cal3_S2(718.856, 718.856, 0.0, 607.1928, 185.2157));
   boost::shared_ptr<Cal3_S2> K = loadCalibration(input_dir+"calibration.txt");
   K->print("Calibration");
 
@@ -412,12 +315,10 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  // Load all values, add priors
+  // Load all values
   gtsam::Values::shared_ptr graphSmartValues(new gtsam::Values());
   gtsam::Values::shared_ptr graphProjectionValues(new gtsam::Values());
   gtsam::Values::shared_ptr loadedValues = loadPoseValues(input_dir+"camera_poses.txt");
-  //graph.push_back(Pose3Prior(X(0),loadedValues->at<Pose3>(X(0)), prior_model));
-  //graph.push_back(Pose3Prior(X(1),loadedValues->at<Pose3>(X(1)), prior_model));
 
   // read all measurements tracked by VO stereo
   cout << "Loading stereo_factors.txt" << endl;
@@ -427,15 +328,13 @@ int main(int argc, char** argv) {
   Key r, l;
   double uL, uR, v, x, y, z;
   std::vector<Key> landmarkKeys, cameraPoseKeys;
-  std::vector<Key> views;
-  std::vector<Point2> measurements;
   Values values;
-  ProjectionFactorMap projectionFactors;
   Values result;
-  int totalNumMeasurements = 0;
   bool optimized = false;
   boost::shared_ptr<Ordering> ordering(new Ordering());
+  bool breakingCondition;
   SmartFactorsCreator smartCreator(pixel_sigma, K, KittiRankTolerance, KittiLinThreshold);
+  ProjectionFactorsCreator projectionCreator(pixel_sigma, K);
 
   // main loop: reads measurements and adds factors (also performs optimization if desired)
   // r >> pose id
@@ -464,158 +363,62 @@ int main(int argc, char** argv) {
 
     } else {
       // or STANDARD PROJECTION FACTORS
-      // Create projection factor
-      ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(Point2(uL,v), pixel_sigma, X(r), L(l), K));
-
-      // Check if landmark exists in mapping
-      ProjectionFactorMap::iterator pfit = projectionFactors.find(L(l));
-      if (pfit != projectionFactors.end()) {
-        if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
-
-        // Add projection factor to list of projection factors associated with this landmark
-        (*pfit).second.push_back(projectionFactor);
-
-      } else {
-        if (debug) fprintf(stderr,"New landmark (%d)\n", pfit != projectionFactors.end());
-
-        // Create a new vector of projection factors
-        std::vector<ProjectionFactor::shared_ptr> projectionFactorVector;
-        projectionFactorVector.push_back(projectionFactor);
-
-        // Insert projection factor to NEW list of projection factors associated with this landmark
-        projectionFactors.insert( make_pair(L(l), projectionFactorVector) );
-
-
-        optimized = false; // TODO
-
-
-        // Add projection factor to graph
-        //graphProjection.push_back(projectionFactor);
-
-        // We have a new landmark
-        //numLandmarks++;
-        //landmarkKeys.push_back( L(l) );
-      }
-
-      if (!useTriangulation) {
-        cerr << "Deprecated use of -useTriangulation- flag" << endl;
-      }
-//      // Add landmark if triangulation is not being used to initialize them
-//      if (!useTriangulation) {
-//        // For projection factor, landmarks positions are used, but have to be transformed to world coordinates
-//        if (graphProjectionValues->exists<Point3>(L(l)) == boost::none) {
-//          Pose3 camera = loadedValues->at<Pose3>(X(r));
-//          Point3 worldPoint = camera.transform_from(Point3(x, y, z));
-//          graphProjectionValues->insert(L(l), worldPoint); // add point;
-//        }
-//
-//        // Add initial pose value if pose does not exist
-//        // Only do this if triangulation is not used.  Otherwise, it depends what projection factors are added
-//        // based on triangulation success
-//        if (!graphProjectionValues->exists<Pose3>(X(r)) && loadedValues->exists<Pose3>(X(r))) {
-//          graphProjectionValues->insert(X(r), loadedValues->at<Pose3>(X(r)));
-//          cameraPoseKeys.push_back( X(r) );
-//          //numPoses++;
-//        }
-//
-//        // Add projection factor to graph
-//        graphProjection.push_back(projectionFactor);
-//
-//      }else {
-//        // Alternatively: Triangulate similar to how SmartProjectionFactor does it
-//        // We only do this at the end, when all of the camera poses are available
-//        // Note we do not add anything to the graph until then, since in some cases
-//        // of triangulation failure we cannot add the landmark to the graph
-//      }
-
+      projectionCreator.add(L(l), X(r), Point2(uL,v), graphProjection);
+      numLandmarks = projectionCreator.getNumLandmarks();
+      optimized = false;
     }
 
+    breakingCondition = currentLandmark != l && (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks);
+
     // Optimize if have a certain number of poses/landmarks, or we want to do incremental inference
-    if (incrementalFlag && !optimized && ((numPoses+1) % optSkip)==0) {
+    if (breakingCondition || (incrementalFlag && !optimized && ((numPoses+1) % optSkip)==0) ) {
 
       if (debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
       if (debug) cout << "Adding triangulated landmarks, graph size: " << graphProjection.size() << endl;
 
-      //if (useSmartProjectionFactor == false && useTriangulation) {
-      // addTriangulatedLandmarks(graphProjection, loadedValues, graphProjectionValues, K, projectionFactors, cameraPoseKeys, landmarkKeys);
-      //}
+      if (useSmartProjectionFactor == false) {
+          projectionCreator.update(graphProjection, loadedValues, graphProjectionValues);
+          ordering = projectionCreator.getOrdering();
+      }
 
       if (debug) cout << "Adding triangulated landmarks, graph size after: " << graphProjection.size() << endl;
       if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
-      // Optimize every optSkip poses if we want to do incremental inference
-      if (incrementalFlag && !optimized && ((numPoses+1) % optSkip)==0 ){
-        if (useSmartProjectionFactor == false && useTriangulation) {
-          addTriangulatedLandmarks(graphSmart, loadedValues, graphSmartValues, K, projectionFactors, cameraPoseKeys, landmarkKeys);
-        }
-        if (useLM)
-          optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
-        else
-          optimizeGraphISAM2(graphSmart, graphSmartValues, result);
-
-        if(incrementalFlag) *graphSmartValues = result; // we use optimized solution as initial guess for the next one
-
-        optimized = true;
-        if (1||debug) std::cout << "Landmark Keys: " << landmarkKeys.size() << " Pose Keys: " << cameraPoseKeys.size() << std::endl;
-        if (1||debug) std::cout << "Pose ordering: " << ordering->size() << std::endl;
-
-        if (landmarkFirstOrderingMethod == 1) {
-          OrderingMap orderingMap;
-          // Add landmark keys first for ordering
-          BOOST_FOREACH(const Key& key, landmarkKeys) {
-            orderingMap.insert( make_pair(key, 1) );
-          }
-          //Ordering::iterator oit;
-          BOOST_FOREACH(const Key& key, cameraPoseKeys) {
-            orderingMap.insert( make_pair(key, 2) );
-          }
-          *ordering = graphProjection.orderingCOLAMDConstrained(orderingMap);
-        }
-
-        if (1||debug) std::cout << "Optimizing landmark first " << ordering->size() << std::endl;
-        //optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
-
-        // Only process first N measurements (for development/debugging)
-        if ( (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks) ) {
-          if (debug) fprintf(stderr,"%d: BREAKING %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
-          break;
-        }
-        if(!incrementalFlag) break;
+      if (useSmartProjectionFactor) {
+          if (useLM)
+              optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
+          else
+              optimizeGraphISAM2(graphSmart, graphSmartValues, result);
+      } else {
+          if (useLM)
+              optimizeGraphLM(graphProjection, graphProjectionValues, result, ordering);
+          else
+              optimizeGraphISAM2(graphSmart, graphSmartValues, result);
       }
+      if(incrementalFlag) *graphSmartValues = result; // we use optimized solution as initial guess for the next one
 
+      optimized = true;
 
-
-      if (debug) fprintf(stderr,"%d %d\n", count, maxNumLandmarks);
-      if (debug) cout << "CurrentLandmark " << currentLandmark << " Landmark " << l << std::endl;
-
-      currentLandmark = l;
-      count++;
-      if(count==100000) {
-        cout << "Loading graph smart... " << graphSmart.size() << endl;
-        cout << "Loading graph projection... " << graphProjection.size() << endl;
-      }
     }
 
-    if(currentLandmark != l && (numPoses > maxNumPoses || numLandmarks > maxNumLandmarks)){ // reached desired number of landmarks/poses
+    if (debug) fprintf(stderr,"%d %d\n", count, maxNumLandmarks);
+    if (debug) cout << "CurrentLandmark " << currentLandmark << " Landmark " << l << std::endl;
+
+    if (1||debug) fprintf(stderr,"%d: %d, %d > %d, %d > %d\n", count, currentLandmark != l, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+    if(breakingCondition){ // reached desired number of landmarks/poses
       break;
+    }
+
+    currentLandmark = l;
+    count++;
+    if(count==100000) {
+      cout << "Loading graph smart... " << graphSmart.size() << endl;
+      cout << "Loading graph projection... " << graphProjection.size() << endl;
     }
 
   } // end of while
 
   if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
-
-  // if we haven't optimized yet
-  if (!optimized) {
-    if (useSmartProjectionFactor == false && useTriangulation) {
-      addTriangulatedLandmarks(graphSmart, loadedValues, graphSmartValues, K, projectionFactors, cameraPoseKeys, landmarkKeys);
-    }
-    if (useLM)
-      optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
-    else
-      optimizeGraphISAM2(graphSmart, graphSmartValues, result);
-    optimized = true;
-  }
-  if (useSmartProjectionFactor||debug) std::cout << "TOTAL NUM MEASUREMENTS " << totalNumMeasurements;
 
   cout << "===================================================" << endl;
   //graphSmartValues->print("before optimization ");
