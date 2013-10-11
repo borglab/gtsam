@@ -156,7 +156,7 @@ void solveStaged(size_t addMutex = 2) {
     gttoc_(eliminate);
 
     // find root node
-    DiscreteConditional::shared_ptr root = *(chordal->rbegin());
+    DiscreteConditional::shared_ptr root = *(chordal->end()-1);
     if (debug)
       root->print(""/*scheduler.studentName(s)*/);
 
@@ -223,7 +223,7 @@ void sampleSolutions() {
     vector<size_t> stats(19, 0);
     vector<Scheduler::sharedValues> samples;
     for (size_t i = 0; i < 7; i++) {
-      samples.push_back(sample(*samplers[i]));
+      samples.push_back(samplers[i]->sample());
       schedulers[i].accumulateStats(samples[i], stats);
     }
     size_t max = *max_element(stats.begin(), stats.end());
@@ -309,7 +309,7 @@ void accomodateStudent() {
   DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
 
   // find root node
-  DiscreteConditional::shared_ptr root = *(chordal->rbegin());
+  DiscreteConditional::shared_ptr root = *(chordal->end()-1);
   if (debug)
     root->print(""/*scheduler.studentName(s)*/);
   //  GTSAM_PRINT(*chordal);
@@ -327,7 +327,7 @@ void accomodateStudent() {
 
   // sample schedules
   for (size_t n = 0; n < 10; n++) {
-    Scheduler::sharedValues sample0 = sample(*chordal);
+    Scheduler::sharedValues sample0 = chordal->sample();
     scheduler.printAssignment(sample0);
   }
 }
