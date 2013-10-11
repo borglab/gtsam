@@ -68,7 +68,6 @@ TEST(DiscreteBayesNet, Asia)
   // Create solver and eliminate
   Ordering ordering;
   ordering += Key(0),Key(1),Key(2),Key(3),Key(4),Key(5),Key(6),Key(7);
-  ordering.print("ordering: ");
   DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
 //    GTSAM_PRINT(*chordal);
   DiscreteConditional expected2(B % "11/9");
@@ -88,9 +87,8 @@ TEST(DiscreteBayesNet, Asia)
 
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential();
-  GTSAM_PRINT(*chordal2);
+//  GTSAM_PRINT(*chordal2);
   DiscreteFactor::sharedValues actualMPE2 = chordal2->optimize();
-  cout << "optimized!" << endl;
   DiscreteFactor::Values expectedMPE2;
   insert(expectedMPE2)(A.first, 1)(D.first, 1)(X.first, 0)(T.first, 0)(S.first,
       1)(E.first, 0)(L.first, 0)(B.first, 1);
