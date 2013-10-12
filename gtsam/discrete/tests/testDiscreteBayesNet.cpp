@@ -86,7 +86,7 @@ TEST(DiscreteBayesNet, Asia)
 //  fg.product().dot("fg");
 
   // solve again, now with evidence
-  DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential();
+  DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
 //  GTSAM_PRINT(*chordal2);
   DiscreteFactor::sharedValues actualMPE2 = chordal2->optimize();
   DiscreteFactor::Values expectedMPE2;
@@ -99,8 +99,8 @@ TEST(DiscreteBayesNet, Asia)
   SETDEBUG("DiscreteConditional::sample", false);
   insert(expectedSample)(A.first, 1)(D.first, 1)(X.first, 0)(T.first, 0)(
       S.first, 1)(E.first, 0)(L.first, 0)(B.first, 1);
-  DiscreteFactor::sharedValues actualSample = chordal->sample();
-//  EXPECT(assert_equal(expectedSample, *actualSample));
+  DiscreteFactor::sharedValues actualSample = chordal2->sample();
+  EXPECT(assert_equal(expectedSample, *actualSample));
 }
 
 /* ************************************************************************* */

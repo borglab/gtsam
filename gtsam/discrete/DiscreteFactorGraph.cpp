@@ -109,7 +109,6 @@ namespace gtsam {
     DecisionTreeFactor product;
     BOOST_FOREACH(const DiscreteFactor::shared_ptr& factor, factors)
       product = (*factor) * product;
-
     gttoc(product);
 
     // sum out frontals, this is the factor on the separator
