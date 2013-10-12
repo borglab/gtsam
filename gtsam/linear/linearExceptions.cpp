@@ -27,8 +27,8 @@ namespace gtsam {
   {
     if(!description_)
       description_ = String(
-          "\nIndeterminant linear system detected while working near variable with\n"
-          "index " + boost::lexical_cast<String>(j_) + " in ordering.\n"
+          "\nIndeterminant linear system detected while working near variable\n"
+          + boost::lexical_cast<String>(j_) + ".\n"
           "\n\
 Thrown when a linear system is ill-posed.  The most common cause for this\n\
 error is having underconstrained variables.  Mathematically, the system is\n\

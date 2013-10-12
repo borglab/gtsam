@@ -95,7 +95,7 @@ namespace gtsam {
   class GTSAM_EXPORT IndeterminantLinearSystemException : public ThreadsafeException<IndeterminantLinearSystemException> {
     Index j_;
   public:
-    IndeterminantLinearSystemException(Index j) throw() : j_(j) {}
+    IndeterminantLinearSystemException(Index j) throw();
     virtual ~IndeterminantLinearSystemException() throw() {}
     Index nearbyVariable() const { return j_; }
     virtual const char* what() const throw();
