@@ -45,8 +45,11 @@ int main()
    */
 
   // Oct 12 2013, iMac 3.06GHz Core i3
-  // 447577 calls/second
-  // 2.23425 musecs/call
+  //  6.78564e+06 calls/second
+  //  0.14737 musecs/call
+  // And after collapse:
+  //  8.71916e+06 calls/second
+  //  0.11469 musecs/call
   {
     long timeLog = clock();
     for(int i = 0; i < n; i++)
@@ -58,8 +61,11 @@ int main()
   }
 
   // Oct 12 2013, iMac 3.06GHz Core i3
-  // 35367.5 calls/second
-  // 28.2746 musecs/call
+  //  258265 calls/second
+  //  3.87199 musecs/call
+  // And after collapse:
+  //  380686 calls/second
+  //  2.62684 musecs/call
   {
     Matrix Dpose, Dpoint;
     long timeLog = clock();
@@ -72,8 +78,11 @@ int main()
   }
 
   // Oct 12 2013, iMac 3.06GHz Core i3
-  // 34325.7 calls/second
-  // 29.1327 musecs/call
+  //  249258 calls/second
+  //  4.0119 musecs/call
+  // And after collapse:
+  //  389135 calls/second
+  //  2.5698 musecs/call
   {
     Matrix Dpose, Dpoint, Dcal;
     long timeLog = clock();

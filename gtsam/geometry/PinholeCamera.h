@@ -313,35 +313,43 @@ public:
       boost::optional<Matrix&> Dpoint = boost::none,
       boost::optional<Matrix&> Dcal = boost::none) const {
 
-    if (!Dpose && !Dpoint && !Dcal) {
-      const Point3 pc = pose_.transform_to(pw);
-      if (pc.z() <= 0)
-        throw CheiralityException();
-      const Point2 pn = project_to_camera(pc);
-      return K_.uncalibrate(pn);
-    }
-
-    // world to camera coordinate
-    Matrix Dpc_pose /* 3*6 */, Dpc_point /* 3*3 */;
-    const Point3 pc = pose_.transform_to(pw, Dpc_pose, Dpc_point);
+    // Transform to camera coordinates and check cheirality
+    const Point3 pc = pose_.transform_to(pw);
     if (pc.z() <= 0)
       throw CheiralityException();
 
-    // camera to normalized image coordinate
-    Matrix Dpn_pc; // 2*3
-    const Point2 pn = project_to_camera(pc, Dpn_pc);
+    // Project to normalized image coordinates
+    const Point2 pn = project_to_camera(pc);
 
-    // uncalibration
-    Matrix Dpi_pn; // 2*2
-    const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
+    if (Dpose || Dpoint) {
+      // optimized version of derivatives, see CalibratedCamera.nb
+      const double z = pc.z(), d = 1.0 / z;
+      const double u = pn.x(), v = pn.y();
+      Matrix Dpn_pose(2, 6), Dpn_point(2, 3);
+      if (Dpose) {
+        double uv = u * v, uu = u * u, vv = v * v;
+        Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
+      }
+      if (Dpoint) {
+        const Matrix R(pose_.rotation().matrix());
+        Dpn_point << //
+            R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
+        /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
+        Dpn_point *= d;
+      }
 
-    // chain the Jacobian matrices
-    const Matrix Dpi_pc = Dpi_pn * Dpn_pc;
-    if (Dpose)
-      *Dpose = Dpi_pc * Dpc_pose;
-    if (Dpoint)
-      *Dpoint = Dpi_pc * Dpc_point;
-    return pi;
+      // uncalibration
+      Matrix Dpi_pn; // 2*2
+      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
+
+      // chain the Jacobian matrices
+      if (Dpose)
+        *Dpose = Dpi_pn * Dpn_pose;
+      if (Dpoint)
+        *Dpoint = Dpi_pn * Dpn_point;
+      return pi;
+    } else
+      return K_.uncalibrate(pn, Dcal);
   }
 
   /** project a point at infinity from world coordinate to the image
@@ -531,4 +539,5 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
   /// @}
-      };}
+      }
+      ;}
