@@ -15,7 +15,6 @@
  */
 
 // \callgraph
-
 #pragma once
 
 #include <gtsam/config.h>
@@ -32,111 +31,123 @@
 
 namespace gtsam {
 
-  class Pose2; // forward declare
+class Pose2;
+// forward declare
+
+/**
+ * A 3D pose (R,t) : (Rot3,Point3)
+ * @addtogroup geometry
+ * \nosubgrouping
+ */
+class GTSAM_EXPORT Pose3: public DerivedValue<Pose3> {
+public:
+  static const size_t dimension = 6;
+
+  /** Pose Concept requirements */
+  typedef Rot3 Rotation;
+  typedef Point3 Translation;
+
+private:
+  Rot3 R_;
+  Point3 t_;
+
+public:
+
+  /// @name Standard Constructors
+  /// @{
+
+  /** Default constructor is origin */
+  Pose3() {
+  }
+
+  /** Copy constructor */
+  Pose3(const Pose3& pose) :
+      R_(pose.R_), t_(pose.t_) {
+  }
+
+  /** Construct from R,t */
+  Pose3(const Rot3& R, const Point3& t) :
+      R_(R), t_(t) {
+  }
+
+  /** Construct from Pose2 */
+  explicit Pose3(const Pose2& pose2);
+
+  /** Constructor from 4*4 matrix */
+  Pose3(const Matrix &T) :
+      R_(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0), T(2, 1),
+          T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {
+  }
+
+  /// @}
+  /// @name Testable
+  /// @{
+
+  /// print with optional string
+  void print(const std::string& s = "") const;
+
+  /// assert equality up to a tolerance
+  bool equals(const Pose3& pose, double tol = 1e-9) const;
+
+  /// @}
+  /// @name Group
+  /// @{
+
+  /// identity for group operation
+  static Pose3 identity() {
+    return Pose3();
+  }
+
+  /// inverse transformation with derivatives
+  Pose3 inverse(boost::optional<Matrix&> H1 = boost::none) const;
+
+  ///compose this transformation onto another (first *this and then p2)
+  Pose3 compose(const Pose3& p2, boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const;
+
+  /// compose syntactic sugar
+  Pose3 operator*(const Pose3& T) const {
+    return Pose3(R_ * T.R_, t_ + R_ * T.t_);
+  }
 
   /**
-   * A 3D pose (R,t) : (Rot3,Point3)
-   * @addtogroup geometry
-   * \nosubgrouping
+   * Return relative pose between p1 and p2, in p1 coordinate frame
+   * as well as optionally the derivatives
    */
-  class GTSAM_EXPORT Pose3 : public DerivedValue<Pose3> {
-  public:
-    static const size_t dimension = 6;
+  Pose3 between(const Pose3& p2, boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const;
 
-    /** Pose Concept requirements */
-    typedef Rot3 Rotation;
-    typedef Point3 Translation;
+  /// @}
+  /// @name Manifold
+  /// @{
 
-  private:
-    Rot3 R_;
-    Point3 t_;
+  /** Enum to indicate which method should be used in Pose3::retract() and
+   * Pose3::localCoordinates()
+   */
+  enum CoordinatesMode {
+    EXPMAP, ///< The correct exponential map, computationally expensive.
+    FIRST_ORDER ///< A fast first-order approximation to the exponential map.
+  };
 
-  public:
+  /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
+  static size_t Dim() {
+    return dimension;
+  }
 
-    /// @name Standard Constructors
-    /// @{
+  /// Dimensionality of the tangent space = 6 DOF
+  size_t dim() const {
+    return dimension;
+  }
 
-    /** Default constructor is origin */
-    Pose3() {}
+  /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ from R^ with fast first-order approximation to the exponential map
+  Pose3 retractFirstOrder(const Vector& d) const;
 
-    /** Copy constructor */
-    Pose3(const Pose3& pose) : R_(pose.R_), t_(pose.t_) {}
+  /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ to Pose3 manifold neighborhood around current pose
+  Pose3 retract(const Vector& d, Pose3::CoordinatesMode mode =
+      POSE3_DEFAULT_COORDINATES_MODE) const;
 
-    /** Construct from R,t */
-    Pose3(const Rot3& R, const Point3& t) : R_(R), t_(t) {}
-
-    /** Construct from Pose2 */
-    explicit Pose3(const Pose2& pose2);
-
-    /** Constructor from 4*4 matrix */
-    Pose3(const Matrix &T) :
-      R_(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0),
-          T(2, 1), T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {}
-
-    /// @}
-    /// @name Testable
-    /// @{
-
-    /// print with optional string
-    void print(const std::string& s = "") const;
-
-    /// assert equality up to a tolerance
-    bool equals(const Pose3& pose, double tol = 1e-9) const;
-
-    /// @}
-    /// @name Group
-    /// @{
-
-    /// identity for group operation
-    static Pose3 identity() { return Pose3(); }
-
-    /// inverse transformation with derivatives
-    Pose3 inverse(boost::optional<Matrix&> H1=boost::none) const;
-
-    ///compose this transformation onto another (first *this and then p2)
-    Pose3 compose(const Pose3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
-
-    /// compose syntactic sugar
-    Pose3 operator*(const Pose3& T) const {
-      return Pose3(R_*T.R_, t_ + R_*T.t_);
-    }
-
-    /**
-     * Return relative pose between p1 and p2, in p1 coordinate frame
-     * as well as optionally the derivatives
-     */
-    Pose3 between(const Pose3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
-
-    /// @}
-    /// @name Manifold
-    /// @{
-
-    /** Enum to indicate which method should be used in Pose3::retract() and
-     * Pose3::localCoordinates()
-     */
-    enum CoordinatesMode {
-      EXPMAP, ///< The correct exponential map, computationally expensive.
-      FIRST_ORDER ///< A fast first-order approximation to the exponential map.
-    };
-
-    /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
-    static size_t Dim() { return dimension; }
-
-    /// Dimensionality of the tangent space = 6 DOF
-    size_t dim() const { return dimension; }
-
-    /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ from R^ with fast first-order approximation to the exponential map
-    Pose3 retractFirstOrder(const Vector& d) const;
-
-    /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ to Pose3 manifold neighborhood around current pose
-    Pose3 retract(const Vector& d, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
-
-    /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
-    Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
+      /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
+      Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode =POSE3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
@@ -218,16 +229,28 @@ namespace gtsam {
     /// @name Group Action on Point3
     /// @{
 
-    /** receives the point in Pose coordinates and transforms it to world coordinates */
+    /**
+     * @brief takes point in Pose coordinates and transforms it to world coordinates
+     * @param p point in Pose coordinates
+     * @param Dpose optional 3*6 Jacobian wrpt this pose
+     * @param Dpoint optional 3*3 Jacobian wrpt point
+     * @return point in world coordinates
+     */
     Point3 transform_from(const Point3& p,
-        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+        boost::optional<Matrix&> Dpose=boost::none, boost::optional<Matrix&> Dpoint=boost::none) const;
 
     /** syntactic sugar for transform_from */
     inline Point3 operator*(const Point3& p) const { return transform_from(p); }
 
-    /** receives the point in world coordinates and transforms it to Pose coordinates */
+    /**
+     * @brief takes point in world coordinates and transforms it to Pose coordinates
+     * @param p point in world coordinates
+     * @param Dpose optional 3*6 Jacobian wrpt this pose
+     * @param Dpoint optional 3*3 Jacobian wrpt point
+     * @return point in Pose coordinates
+     */
     Point3 transform_to(const Point3& p,
-        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+        boost::optional<Matrix&> Dpose=boost::none, boost::optional<Matrix&> Dpoint=boost::none) const;
 
     /// @}
     /// @name Standard Interface
@@ -305,7 +328,7 @@ namespace gtsam {
     }
     /// @}
 
-  }; // Pose3 class
+  };// Pose3 class
 
   /**
    * wedge for Pose3:
@@ -314,16 +337,16 @@ namespace gtsam {
    *  v = 3D velocity
    * @return xihat, 4*4 element of Lie algebra that can be exponentiated
    */
-  template <>
-  inline Matrix wedge<Pose3>(const Vector& xi) {
-    return Pose3::wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
-  }
+template<>
+inline Matrix wedge<Pose3>(const Vector& xi) {
+  return Pose3::wedge(xi(0), xi(1), xi(2), xi(3), xi(4), xi(5));
+}
 
-  /**
-   * Calculate pose between a vector of 3D point correspondences (p,q)
-   * where q = Pose3::transform_from(p) = t + R*p
-   */
-  typedef std::pair<Point3,Point3> Point3Pair;
-  GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
+/**
+ * Calculate pose between a vector of 3D point correspondences (p,q)
+ * where q = Pose3::transform_from(p) = t + R*p
+ */
+typedef std::pair<Point3, Point3> Point3Pair;
+GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 
 } // namespace gtsam
