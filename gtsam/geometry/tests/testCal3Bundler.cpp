@@ -66,5 +66,15 @@ TEST( Cal3Bundler, assert_equal)
 }
 
 /* ************************************************************************* */
+TEST( Cal3Bundler, retract)
+{
+  Cal3Bundler expected(510, 2e-3, 2e-3);
+  Vector d(3);
+  d << 10, 1e-3, 1e-3;
+  Cal3Bundler actual = K.retract(d);
+  CHECK(assert_equal(expected,actual,1e-7));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
