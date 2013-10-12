@@ -270,12 +270,12 @@ Vector Constrained::whiten(const Vector& v) const {
   // a hard constraint, we don't do anything.
   const Vector& a = v;
   const Vector& b = sigmas_;
-  size_t n = a.size();
+  DenseIndex n = a.size();
   // Now allow for whiten augmented vector with a new additional part coming
   // from the Lagrange multiplier. So a.size() >= b.size()
 //  assert (b.size()==a.size());
   Vector c = a;
-  for( size_t i = 0; i < b.size(); i++ ) {
+  for( DenseIndex i = 0; i < b.size(); i++ ) {
     const double& ai = a(i), &bi = b(i);
     if (bi!=0) c(i) = ai/bi;
   }

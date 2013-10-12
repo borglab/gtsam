@@ -527,7 +527,7 @@ Matrix stack(size_t nrMatrices, ...)
 /* ************************************************************************* */
 Matrix stack(const std::vector<Matrix>& blocks) {
   if (blocks.size() == 1) return blocks.at(0);
-  int nrows = 0, ncols = blocks.at(0).cols();
+  DenseIndex nrows = 0, ncols = blocks.at(0).cols();
   BOOST_FOREACH(const Matrix& mat, blocks) {
     nrows += mat.rows();
     if (ncols != mat.cols())
@@ -535,7 +535,7 @@ Matrix stack(const std::vector<Matrix>& blocks) {
   }
   Matrix result(nrows, ncols);
 
-  int cur_row = 0;
+  DenseIndex cur_row = 0;
   BOOST_FOREACH(const Matrix& mat, blocks) {
     result.middleRows(cur_row, mat.rows()) = mat;
     cur_row += mat.rows();
@@ -584,16 +584,16 @@ Matrix collect(size_t nrMatrices, ...)
 /* ************************************************************************* */
 // row scaling, in-place
 void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask) {
-  const size_t m = A.rows();
+  const DenseIndex m = A.rows();
   if (inf_mask) {
     // only scale the first v.size() rows of A to support augmented Matrix
-    for (size_t i=0; i<v.size(); ++i) {
+    for (DenseIndex i=0; i<v.size(); ++i) {
       const double& vi = v(i);
       if (std::isfinite(vi))
         A.row(i) *= vi;
     }
   } else {
-    for (size_t i=0; i<m; ++i)
+    for (DenseIndex i=0; i<m; ++i)
       A.row(i) *= v(i);
   }
 }
