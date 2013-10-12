@@ -45,7 +45,9 @@ Point2 uncalibrate_(const Cal3Bundler& k, const Point2& pt) { return k.uncalibra
 TEST( Cal3Bundler, Duncalibrate)
 {
   Matrix Dcal, Dp;
-  K.uncalibrate(p, Dcal, Dp);
+  Point2 actual = K.uncalibrate(p, Dcal, Dp);
+  Point2 expected(1182, 1773);
+  CHECK(assert_equal(expected,actual,1e-7));
   Matrix numerical1 = numericalDerivative21(uncalibrate_, K, p);
   Matrix numerical2 = numericalDerivative22(uncalibrate_, K, p);
   CHECK(assert_equal(numerical1,Dcal,1e-7));

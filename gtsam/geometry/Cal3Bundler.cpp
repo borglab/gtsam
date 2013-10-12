@@ -74,9 +74,9 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 //  pi(:,i) = g * pn(:,i)
   const double x = p.x(), y = p.y();
   const double r = x * x + y * y;
-  const double r2 = r * r;
-  const double g = 1 + (k1_ + k2_ * r) * r;
-  const double fg = f_ * g;
+  const double g = 1. + (k1_ + k2_ * r) * r;
+  const double u = g * x, v = g * y;
+  const double f = f_;
 
   // semantic meaningful version
   //if (H1) *H1 = D2d_calibration(p);
@@ -84,26 +84,24 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 
   // unrolled version, much faster
   if (Dcal || Dp) {
+    double rx = r * x, ry = r * y;
 
-    const double fx = f_ * x, fy = f_ * y;
     if (Dcal) {
-      *Dcal = Matrix_(2, 3, //
-          g * x, fx * r, fx * r2, //
-          g * y, fy * r, fy * r2);
+      Eigen::Matrix<double, 2, 3> D;
+      D << u, f * rx, f * r * rx, v, f * ry, f * r * ry;
+      *Dcal = D;
     }
 
     if (Dp) {
-      const double dr_dx = 2 * x;
-      const double dr_dy = 2 * y;
-      const double dg_dx = k1_ * dr_dx + k2_ * 2 * r * dr_dx;
-      const double dg_dy = k1_ * dr_dy + k2_ * 2 * r * dr_dy;
-      *Dp = Matrix_(2, 2, //
-          fg + fx * dg_dx, fx * dg_dy, //
-          fy * dg_dx, fg + fy * dg_dy);
+      const double dg_dx = 2. * k1_ * x + 4. * k2_ * rx;
+      const double dg_dy = 2. * k1_ * y + 4. * k2_ * ry;
+      Eigen::Matrix<double, 2, 2> D;
+      D << g + x * dg_dx, x * dg_dy, y * dg_dx, g + y * dg_dy;
+      *Dp = f * D;
     }
   }
 
-  return Point2(fg * x, fg * y);
+  return Point2(f * u, f * v);
 }
 
 /* ************************************************************************* */

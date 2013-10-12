@@ -19,14 +19,14 @@
 #include <iostream>
 
 #include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 
 using namespace std;
 using namespace gtsam;
 
 int main()
 {
-  int n = 100000;
+  int n = 1000000;
 
   const Pose3 pose1(Matrix_(3,3,
       1., 0., 0.,
@@ -35,8 +35,10 @@ int main()
   ),
   Point3(0,0,0.5));
 
-  static Cal3DS2 K(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
-  const PinholeCamera<Cal3DS2> camera(pose1,K);
+//  static Cal3_S2 K(500, 100, 0.1, 320, 240);
+//  static Cal3DS2 K(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
+  static Cal3Bundler K(500, 1e-3, 2.0*1e-3);
+  const PinholeCamera<Cal3Bundler> camera(pose1,K);
   const Point3 point1(-0.08,-0.08, 0.0);
 
   /**
@@ -45,17 +47,12 @@ int main()
    */
 
   // Oct 12 2013, iMac 3.06GHz Core i3
-  //  6.78564e+06 calls/second
-  //  0.14737 musecs/call
-  // And after collapse:
-  //  8.71916e+06 calls/second
-  //  0.11469 musecs/call
-  // Cal3DS2:
-  //  7.04176e+06 calls/second
-  //  0.14201 musecs/call
-  // After Cal3DS2 fix:
-  //  8.17595e+06 calls/second
-  //  0.12231 musecs/call
+  // Original:          0.14737 musecs/call
+  // After collapse:    0.11469 musecs/call
+  // Cal3DS2:           0.14201 musecs/call
+  // After Cal3DS2 fix: 0.12231 musecs/call
+  // Cal3Bundler:       0.12000 musecs/call
+  // Cal3Bundler fix:   0.13864 musecs/call
   {
     long timeLog = clock();
     for(int i = 0; i < n; i++)
@@ -67,17 +64,12 @@ int main()
   }
 
   // Oct 12 2013, iMac 3.06GHz Core i3
-  //  258265 calls/second
-  //  3.87199 musecs/call
-  // And after collapse:
-  //  380686 calls/second
-  //  2.62684 musecs/call
-  // Cal3DS2:
-  //  230789 calls/second
-  //  4.33297 musecs/call
-  // After Cal3DS2 fix:
-  //  304354 calls/second
-  //  3.28565 musecs/call
+  // Original:          3.87199 musecs/call
+  // After collapse:    2.62684 musecs/call
+  // Cal3DS2:           4.33297 musecs/call
+  // After Cal3DS2 fix: 3.28565 musecs/call
+  // Cal3Bundler:       2.65559 musecs/call
+  // Cal3Bundler fix:   2.18481 musecs/call
   {
     Matrix Dpose, Dpoint;
     long timeLog = clock();
@@ -90,17 +82,12 @@ int main()
   }
 
   // Oct 12 2013, iMac 3.06GHz Core i3
-  //  249258 calls/second
-  //  4.0119 musecs/call
-  // And after collapse:
-  //  389135 calls/second
-  //  2.5698 musecs/call
-  // Cal3DS2:
-  //  206933 calls/second
-  //  4.83248 musecs/call
-  // After Cal3DS2 fix:
-  //  289996 calls/second
-  //  3.44832 musecs/call
+  // Original:          4.0119 musecs/call
+  // After collapse:    2.5698 musecs/call
+  // Cal3DS2:           4.83248 musecs/call
+  // After Cal3DS2 fix: 3.44832 musecs/call
+  // Cal3Bundler:       2.51124 musecs/call
+  // Cal3Bundler fix:   2.17292 musecs/call
   {
     Matrix Dpose, Dpoint, Dcal;
     long timeLog = clock();
