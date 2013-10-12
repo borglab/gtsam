@@ -68,13 +68,13 @@ namespace gtsam {
     /// @{
 
     /** Add a DiscreteCondtional */
-    GTSAM_EXPORT void add(const Signature& s);
+    void add(const Signature& s);
 
 //    /** Add a DiscreteCondtional in front, when listing parents first*/
 //    GTSAM_EXPORT void add_front(const Signature& s);
 
     //** evaluate for given Values */
-    GTSAM_EXPORT double evaluate(const DiscreteConditional::Values & values) const;
+    double evaluate(const DiscreteConditional::Values & values) const;
 
     /**
     * Solve the DiscreteBayesNet by back-substitution
@@ -82,7 +82,7 @@ namespace gtsam {
     DiscreteFactor::sharedValues optimize() const;
 
     /** Do ancestral sampling */
-    GTSAM_EXPORT DiscreteFactor::sharedValues sample() const;
+    DiscreteFactor::sharedValues sample() const;
 
     ///@}
 
