@@ -39,24 +39,22 @@ TEST( Cal3Bundler, calibrate)
   CHECK(assert_equal(q,q_hat));
 }
 
-
 Point2 uncalibrate_(const Cal3Bundler& k, const Point2& pt) { return k.uncalibrate(pt); }
 
 /* ************************************************************************* */
-TEST( Cal3Bundler, Duncalibrate1)
+TEST( Cal3Bundler, Duncalibrate)
 {
-  Matrix computed;
-  K.uncalibrate(p, computed, boost::none);
-  Matrix numerical = numericalDerivative21(uncalibrate_, K, p);
-  CHECK(assert_equal(numerical,computed,1e-7));
-}
-
-/* ************************************************************************* */
-TEST( Cal3Bundler, Duncalibrate2)
-{
-  Matrix computed; K.uncalibrate(p, boost::none, computed);
-  Matrix numerical = numericalDerivative22(uncalibrate_, K, p);
-  CHECK(assert_equal(numerical,computed,1e-7));
+  Matrix Dcal, Dp;
+  K.uncalibrate(p, Dcal, Dp);
+  Matrix numerical1 = numericalDerivative21(uncalibrate_, K, p);
+  Matrix numerical2 = numericalDerivative22(uncalibrate_, K, p);
+  CHECK(assert_equal(numerical1,Dcal,1e-7));
+  CHECK(assert_equal(numerical2,Dp,1e-7));
+  CHECK(assert_equal(numerical1,K.D2d_calibration(p),1e-7));
+  CHECK(assert_equal(numerical2,K.D2d_intrinsic(p),1e-7));
+  Matrix Dcombined(2,5);
+  Dcombined << Dp, Dcal;
+  CHECK(assert_equal(Dcombined,K.D2d_intrinsic_calibration(p),1e-7));
 }
 
 /* ************************************************************************* */

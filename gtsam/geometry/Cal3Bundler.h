@@ -13,7 +13,7 @@
  * @file Cal3Bundler.h
  * @brief Calibration used by Bundler
  * @date Sep 25, 2010
- * @author ydjian
+ * @author Yong Dian Jian
  */
 
 #pragma once
@@ -31,30 +31,31 @@ namespace gtsam {
 class GTSAM_EXPORT Cal3Bundler : public DerivedValue<Cal3Bundler> {
 
 private:
-  double f_, k1_, k2_ ;
+  double f_; ///< focal length
+  double k1_, k2_;///< radial distortion
 
 public:
 
-  Matrix K() const ;
-  Vector k() const ;
+  Matrix K() const;///< Standard 3*3 calibration matrix
+  Vector k() const;///< Radial distortion parameters
 
   Vector vector() const;
 
   /// @name Standard Constructors
   /// @{
 
-  ///TODO: comment
-  Cal3Bundler() ;
+  /// Default constructor
+  Cal3Bundler();
 
-  ///TODO: comment
-  Cal3Bundler(const double f, const double k1, const double k2) ;
+  /// Constructor
+  Cal3Bundler(const double f, const double k1, const double k2);
 
   /// @}
   /// @name Advanced Constructors
   /// @{
 
-  ///TODO: comment
-  Cal3Bundler(const Vector &v) ;
+  /// Construct from vector
+  Cal3Bundler(const Vector &v);
 
   /// @}
   /// @name Testable
@@ -70,35 +71,41 @@ public:
   /// @name Standard Interface
   /// @{
 
-  ///TODO: comment
+  /**
+   * convert intrinsic coordinates xy to image coordinates uv
+   * @param p point in intrinsic coordinates
+   * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in image coordinates
+   */
   Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const ;
+      boost::optional<Matrix&> Dcal = boost::none,
+      boost::optional<Matrix&> Dp = boost::none) const;
 
-  ///TODO: comment
-  Matrix D2d_intrinsic(const Point2& p) const ;
+  /// 2*2 Jacobian of uncalibrate with respect to intrinsic coordinates
+  Matrix D2d_intrinsic(const Point2& p) const;
 
-  ///TODO: comment
-  Matrix D2d_calibration(const Point2& p) const ;
+  /// 2*3 Jacobian of uncalibrate wrpt CalBundler parameters
+  Matrix D2d_calibration(const Point2& p) const;
 
-  ///TODO: comment
-  Matrix D2d_intrinsic_calibration(const Point2& p) const ;
+  /// 2*5 Jacobian of uncalibrate wrpt both intrinsic and calibration
+  Matrix D2d_intrinsic_calibration(const Point2& p) const;
 
   /// @}
   /// @name Manifold
   /// @{
 
-  ///TODO: comment
-  Cal3Bundler retract(const Vector& d) const ;
+  /// Update calibration with tangent space delta
+  Cal3Bundler retract(const Vector& d) const;
 
-  ///TODO: comment
-  Vector localCoordinates(const Cal3Bundler& T2) const ;
+  /// Calculate local coordinates to another calibration
+  Vector localCoordinates(const Cal3Bundler& T2) const;
 
-  ///TODO: comment
-  virtual size_t dim() const { return 3 ; }  //TODO: make a final dimension variable (also, usually size_t in other classes  e.g. Pose2)
+  /// dimensionality
+  virtual size_t dim() const {return 3;}
 
-  ///TODO: comment
-  static size_t Dim() { return 3; }  //TODO: make a final dimension variable
+  /// dimensionality
+  static size_t Dim() {return 3;}
 
 private:
 
@@ -117,7 +124,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(k1_);
     ar & BOOST_SERIALIZATION_NVP(k2_);
   }
-
 
   /// @}
 
