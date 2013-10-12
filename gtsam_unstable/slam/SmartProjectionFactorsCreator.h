@@ -71,8 +71,8 @@ namespace gtsam {
 
         if (debug) fprintf(stderr,"New landmark (%d,%d)\n", fsit != smartFactorStates.end(), fit != smartFactors.end());
 
-        views += poseKey;
-        measurements += measurement;
+        views.push_back(poseKey);
+        measurements.push_back(measurement);
 
         // This is a new landmark, create a new factor and add to mapping
         boost::shared_ptr<SmartProjectionFactorState> smartFactorState(new SmartProjectionFactorState());

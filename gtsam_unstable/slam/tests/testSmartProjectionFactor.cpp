@@ -40,8 +40,6 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
-#ifdef DEVELOP
-
 #include <boost/assign/std/vector.hpp>
 
 using namespace std;
@@ -62,12 +60,14 @@ using symbol_shorthand::L;
 
 typedef SmartProjectionFactor<Pose3, Point3> TestSmartProjectionFactor;
 
+#ifdef DEVELOP
+
 /* ************************************************************************* */
 TEST( SmartProjectionFactor, Constructor) {
   Key poseKey(X(1));
 
   std::vector<Key> views;
-  views += poseKey;
+  views.push_back(poseKey);
 
   std::vector<Point2> measurements;
   measurements.push_back(Point2(323.0, 240.0));
@@ -80,7 +80,7 @@ TEST( SmartProjectionFactor, ConstructorWithTransform) {
   Key poseKey(X(1));
 
   std::vector<Key> views;
-  views += poseKey;
+  views.push_back(poseKey);
 
   std::vector<Point2> measurements;
   measurements.push_back(Point2(323.0, 240.0));
@@ -96,7 +96,7 @@ TEST( SmartProjectionFactor, Equals ) {
   measurements.push_back(Point2(323.0, 240.0));
 
   std::vector<Key> views;
-  views += X(1);
+  views.push_back(X(1));
   TestSmartProjectionFactor factor1(views, measurements, model, K);
   TestSmartProjectionFactor factor2(views, measurements, model, K);
 
@@ -111,7 +111,7 @@ TEST( SmartProjectionFactor, EqualsWithTransform ) {
   Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
 
   std::vector<Key> views;
-  views += X(1);
+  views.push_back(X(1));
   TestSmartProjectionFactor factor1(views, measurements, model, K, body_P_sensor);
   TestSmartProjectionFactor factor2(views, measurements, model, K, body_P_sensor);
 
@@ -121,7 +121,7 @@ TEST( SmartProjectionFactor, EqualsWithTransform ) {
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, noisy ){
-  cout << " ************************ SmartProjectionFactor: noisy ****************************" << endl;
+  // cout << " ************************ SmartProjectionFactor: noisy ****************************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -129,7 +129,8 @@ TEST( SmartProjectionFactor, noisy ){
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   std::vector<Key> views;
-  views += x1, x2; //, x3;
+  views.push_back(x1);
+  views.push_back(x2);
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 
@@ -155,13 +156,14 @@ TEST( SmartProjectionFactor, noisy ){
   values.insert(x2, level_pose_right.compose(noise_pose));
 
   vector<Point2> measurements;
-  measurements += level_uv, level_uv_right;
+  measurements.push_back(level_uv);
+  measurements.push_back(level_uv_right);
 
   SmartProjectionFactor<Pose3, Point3, Cal3_S2>::shared_ptr
-    smartFactor(new SmartProjectionFactor<Pose3, Point3, Cal3_S2>(views, measurements, noiseProjection,  K));
+  smartFactor(new SmartProjectionFactor<Pose3, Point3, Cal3_S2>(views, measurements, noiseProjection,  K));
 
   double actualError = smartFactor->error(values);
-  std::cout << "Error: " << actualError << std::endl;
+  // std::cout << "Error: " << actualError << std::endl;
 
   // we do not expect to be able to predict the error, since the error on the pixel will change
   // the triangulation of the landmark which is internal to the factor.
@@ -179,7 +181,9 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   std::vector<Key> views;
-  views += x1, x2, x3;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 
@@ -206,19 +210,19 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   Point2 cam3_uv1 = cam3.project(landmark1);
-  measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
+  measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1; // TODO: change to push_back
 
   //
   Point2 cam1_uv2 = cam1.project(landmark2);
   Point2 cam2_uv2 = cam2.project(landmark2);
   Point2 cam3_uv2 = cam3.project(landmark2);
-  measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
+  measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2; TODO: change to push_back
 
 
   Point2 cam1_uv3 = cam1.project(landmark3);
   Point2 cam2_uv3 = cam2.project(landmark3);
   Point2 cam3_uv3 = cam3.project(landmark3);
-  measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3;
+  measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3; TODO: change to push_back
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
   typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
@@ -312,7 +316,7 @@ TEST( SmartProjectionFactor, 3poses_1iteration_projection_factor_comparison ){
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
-  cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
+  // cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -321,7 +325,9 @@ TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   std::vector<Key> views;
-  views += x1, x2, x3;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 
@@ -348,19 +354,28 @@ TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   Point2 cam3_uv1 = cam3.project(landmark1);
-  measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
+  measurements_cam1.push_back(cam1_uv1);
+  measurements_cam1.push_back(cam2_uv1);
+  measurements_cam1.push_back(cam3_uv1);
+  // measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
 
   //
   Point2 cam1_uv2 = cam1.project(landmark2);
   Point2 cam2_uv2 = cam2.project(landmark2);
   Point2 cam3_uv2 = cam3.project(landmark2);
-  measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
+  measurements_cam2.push_back(cam1_uv2);
+  measurements_cam2.push_back(cam2_uv2);
+  measurements_cam2.push_back(cam3_uv2);
+  // measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
 
 
   Point2 cam1_uv3 = cam1.project(landmark3);
   Point2 cam2_uv3 = cam2.project(landmark3);
   Point2 cam3_uv3 = cam3.project(landmark3);
-  measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3;
+  measurements_cam3.push_back(cam1_uv3);
+  measurements_cam3.push_back(cam2_uv3);
+  measurements_cam3.push_back(cam3_uv3);
+  // measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3;
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
@@ -377,7 +392,7 @@ TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
   graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
   Values values;
   values.insert(x1, pose1);
@@ -406,7 +421,7 @@ TEST( SmartProjectionFactor, 3poses_smart_projection_factor ){
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_iterative_smart_projection_factor ){
-  cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
+  // cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -415,7 +430,10 @@ TEST( SmartProjectionFactor, 3poses_iterative_smart_projection_factor ){
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   std::vector<Key> views;
-  views += x1, x2, x3;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+  // views += x1, x2, x3;
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 
@@ -442,19 +460,28 @@ TEST( SmartProjectionFactor, 3poses_iterative_smart_projection_factor ){
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   Point2 cam3_uv1 = cam3.project(landmark1);
-  measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
+  measurements_cam1.push_back(cam1_uv1);
+  measurements_cam1.push_back(cam2_uv1);
+  measurements_cam1.push_back(cam3_uv1);
+  // measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
 
   //
   Point2 cam1_uv2 = cam1.project(landmark2);
   Point2 cam2_uv2 = cam2.project(landmark2);
   Point2 cam3_uv2 = cam3.project(landmark2);
-  measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
+  measurements_cam2.push_back(cam1_uv2);
+  measurements_cam2.push_back(cam2_uv2);
+  measurements_cam2.push_back(cam3_uv2);
+  // measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
 
 
   Point2 cam1_uv3 = cam1.project(landmark3);
   Point2 cam2_uv3 = cam2.project(landmark3);
   Point2 cam3_uv3 = cam3.project(landmark3);
-  measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3;
+  measurements_cam3.push_back(cam1_uv3);
+  measurements_cam3.push_back(cam2_uv3);
+  measurements_cam3.push_back(cam3_uv3);
+  // measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3;
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
@@ -482,7 +509,7 @@ TEST( SmartProjectionFactor, 3poses_iterative_smart_projection_factor ){
   graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
   Values values;
   values.insert(x1, pose1);
@@ -511,7 +538,7 @@ TEST( SmartProjectionFactor, 3poses_iterative_smart_projection_factor ){
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_projection_factor ){
-//  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
+  //  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -520,7 +547,9 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   std::vector<Key> views;
-  views += x1, x2, x3;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
@@ -569,22 +598,22 @@ TEST( SmartProjectionFactor, 3poses_projection_factor ){
   values.insert(L(1), landmark1);
   values.insert(L(2), landmark2);
   values.insert(L(3), landmark3);
-//  values.at<Pose3>(x3).print("Pose3 before optimization: ");
+  //  values.at<Pose3>(x3).print("Pose3 before optimization: ");
 
   LevenbergMarquardtParams params;
-//  params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-//  params.verbosity = NonlinearOptimizerParams::ERROR;
+  //  params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+  //  params.verbosity = NonlinearOptimizerParams::ERROR;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   Values result = optimizer.optimize();
 
-//  result.at<Pose3>(x3).print("Pose3 after optimization: ");
+  //  result.at<Pose3>(x3).print("Pose3 after optimization: ");
   EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
 
 }
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor ){
-  cout << " ************************ SmartProjectionFactor: 3 cams + 2 landmarks: Rotation Only**********************" << endl;
+  // cout << " ************************ SmartProjectionFactor: 3 cams + 2 landmarks: Rotation Only**********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -593,7 +622,9 @@ TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor 
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   std::vector<Key> views;
-  views += x1, x2, x3;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 
@@ -620,13 +651,19 @@ TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor 
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   Point2 cam3_uv1 = cam3.project(landmark1);
-  measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
+  measurements_cam1.push_back(cam1_uv1);
+  measurements_cam1.push_back(cam2_uv1);
+  measurements_cam1.push_back(cam3_uv1);
+  // measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
 
   //
   Point2 cam1_uv2 = cam1.project(landmark2);
   Point2 cam2_uv2 = cam2.project(landmark2);
   Point2 cam3_uv2 = cam3.project(landmark2);
-  measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
+  measurements_cam2.push_back(cam1_uv2);
+  measurements_cam2.push_back(cam2_uv2);
+  measurements_cam2.push_back(cam3_uv2);
+  // measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
@@ -673,7 +710,7 @@ TEST( SmartProjectionFactor, 3poses_2land_rotation_only_smart_projection_factor 
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
-  cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks: Rotation Only**********************" << endl;
+  // cout << " ************************ SmartProjectionFactor: 3 cams + 3 landmarks: Rotation Only**********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -682,7 +719,10 @@ TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   std::vector<Key> views;
-  views += x1, x2, x3;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+  // views += x1, x2, x3;
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 
@@ -709,19 +749,26 @@ TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   Point2 cam3_uv1 = cam3.project(landmark1);
-  measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
+  measurements_cam1.push_back(cam1_uv1);
+  measurements_cam1.push_back(cam2_uv1);
+  measurements_cam1.push_back(cam3_uv1);
+  // measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
 
-  //
   Point2 cam1_uv2 = cam1.project(landmark2);
   Point2 cam2_uv2 = cam2.project(landmark2);
   Point2 cam3_uv2 = cam3.project(landmark2);
-  measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
-
+  measurements_cam2.push_back(cam1_uv2);
+  measurements_cam2.push_back(cam2_uv2);
+  measurements_cam2.push_back(cam3_uv2);
+  // measurements_cam2 += cam1_uv2, cam2_uv2, cam3_uv2;
 
   Point2 cam1_uv3 = cam1.project(landmark3);
   Point2 cam2_uv3 = cam2.project(landmark3);
   Point2 cam3_uv3 = cam3.project(landmark3);
-  measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3;
+  measurements_cam3.push_back(cam1_uv3);
+  measurements_cam3.push_back(cam2_uv3);
+  measurements_cam3.push_back(cam3_uv3);
+  // measurements_cam3 += cam1_uv3, cam2_uv3, cam3_uv3;
 
   typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
@@ -743,7 +790,7 @@ TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
   graph.push_back(PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
   graph.push_back(PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
 
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
   Values values;
   values.insert(x1, pose1);
@@ -772,7 +819,7 @@ TEST( SmartProjectionFactor, 3poses_rotation_only_smart_projection_factor ){
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, Hessian ){
-  cout << " ************************ SmartProjectionFactor: Hessian **********************" << endl;
+  // cout << " ************************ SmartProjectionFactor: Hessian **********************" << endl;
 
   Symbol x1('X',  1);
   Symbol x2('X',  2);
@@ -780,7 +827,9 @@ TEST( SmartProjectionFactor, Hessian ){
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   std::vector<Key> views;
-  views += x1, x2;
+  views.push_back(x1);
+  views.push_back(x2);
+  // views += x1, x2;
 
   Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
@@ -798,7 +847,9 @@ TEST( SmartProjectionFactor, Hessian ){
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   vector<Point2> measurements_cam1;
-  measurements_cam1 += cam1_uv1, cam2_uv1;
+  measurements_cam1.push_back(cam1_uv1);
+  measurements_cam1.push_back(cam2_uv1);
+  // measurements_cam1 += cam1_uv1, cam2_uv1;
 
   SmartProjectionFactor<Pose3, Point3, Cal3_S2> smartFactor(views, measurements_cam1, noiseProjection, K);
 
@@ -821,158 +872,170 @@ TEST( SmartProjectionFactor, Hessian ){
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, HessianWithRotation ){
-  cout << " ************************ SmartProjectionFactor: rotated Hessian **********************" << endl;
+  // cout << " ************************ SmartProjectionFactor: rotated Hessian **********************" << endl;
 
-    Symbol x1('X',  1);
-    Symbol x2('X',  2);
-    Symbol x3('X',  3);
+  Symbol x1('X',  1);
+  Symbol x2('X',  2);
+  Symbol x3('X',  3);
 
-    const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
+  const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
-    std::vector<Key> views;
-    views += x1, x2, x3;
+  std::vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+  // views += x1, x2, x3;
 
-    Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
+  Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 
-    // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-    Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-    SimpleCamera cam1(pose1, *K);
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  SimpleCamera cam1(pose1, *K);
 
-    // create second camera 1 meter to the right of first camera
-    Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
-    SimpleCamera cam2(pose2, *K);
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
+  SimpleCamera cam2(pose2, *K);
 
-    // create third camera 1 meter above the first camera
-    Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
-    SimpleCamera cam3(pose3, *K);
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
+  SimpleCamera cam3(pose3, *K);
 
-    Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark1(5, 0.5, 1.2);
 
-    vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-    // 1. Project three landmarks into three cameras and triangulate
-    Point2 cam1_uv1 = cam1.project(landmark1);
-    Point2 cam2_uv1 = cam2.project(landmark1);
-    Point2 cam3_uv1 = cam3.project(landmark1);
-    measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
+  // 1. Project three landmarks into three cameras and triangulate
+  Point2 cam1_uv1 = cam1.project(landmark1);
+  Point2 cam2_uv1 = cam2.project(landmark1);
+  Point2 cam3_uv1 = cam3.project(landmark1);
+  measurements_cam1.push_back(cam1_uv1);
+  measurements_cam1.push_back(cam2_uv1);
+  measurements_cam1.push_back(cam3_uv1);
+  // measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
 
-    typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
+  typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
-    SmartFactor::shared_ptr smartFactor(new SmartFactor(noiseProjection, K));
-    smartFactor->add(cam1_uv1, views[0]);
-    smartFactor->add(cam2_uv1, views[1]);
-    smartFactor->add(cam3_uv1, views[2]);
+  SmartFactor::shared_ptr smartFactor(new SmartFactor(noiseProjection, K));
+  smartFactor->add(cam1_uv1, views[0]);
+  smartFactor->add(cam2_uv1, views[1]);
+  smartFactor->add(cam3_uv1, views[2]);
 
-    Values values;
-    values.insert(x1, pose1);
-    values.insert(x2, pose2);
-    values.insert(x3, pose3);
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  values.insert(x3, pose3);
 
-    boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(values);
-    // hessianFactor->print("Hessian factor \n");
+  boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(values);
+  // hessianFactor->print("Hessian factor \n");
 
-    Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,0));
+  Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,0));
 
-    Values rotValues;
-    rotValues.insert(x1, poseDrift.compose(pose1));
-    rotValues.insert(x2, poseDrift.compose(pose2));
-    rotValues.insert(x3, poseDrift.compose(pose3));
+  Values rotValues;
+  rotValues.insert(x1, poseDrift.compose(pose1));
+  rotValues.insert(x2, poseDrift.compose(pose2));
+  rotValues.insert(x3, poseDrift.compose(pose3));
 
-    boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(rotValues);
-    // hessianFactorRot->print("Hessian factor \n");
+  boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(rotValues);
+  // hessianFactorRot->print("Hessian factor \n");
 
-    // Hessian is invariant to rotations in the nondegenerate case
-    EXPECT(assert_equal(hessianFactor->information(), hessianFactorRot->information(), 1e-8) );
+  // Hessian is invariant to rotations in the nondegenerate case
+  EXPECT(assert_equal(hessianFactor->information(), hessianFactorRot->information(), 1e-8) );
 
-    Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI/2, -M_PI/3, -M_PI/2), gtsam::Point3(10,-4,5));
+  Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI/2, -M_PI/3, -M_PI/2), gtsam::Point3(10,-4,5));
 
-    Values tranValues;
-    tranValues.insert(x1, poseDrift2.compose(pose1));
-    tranValues.insert(x2, poseDrift2.compose(pose2));
-    tranValues.insert(x3, poseDrift2.compose(pose3));
+  Values tranValues;
+  tranValues.insert(x1, poseDrift2.compose(pose1));
+  tranValues.insert(x2, poseDrift2.compose(pose2));
+  tranValues.insert(x3, poseDrift2.compose(pose3));
 
-    boost::shared_ptr<GaussianFactor> hessianFactorRotTran = smartFactor->linearize(tranValues);
+  boost::shared_ptr<GaussianFactor> hessianFactorRotTran = smartFactor->linearize(tranValues);
 
-    // Hessian is invariant to rotations and translations in the nondegenerate case
-    EXPECT(assert_equal(hessianFactor->information(), hessianFactorRotTran->information(), 1e-8) );
+  // Hessian is invariant to rotations and translations in the nondegenerate case
+  EXPECT(assert_equal(hessianFactor->information(), hessianFactorRotTran->information(), 1e-8) );
 }
 
 /* *************************************************************************/
 TEST( SmartProjectionFactor, HessianWithRotationDegenerate ){
-  cout << " ************************ SmartProjectionFactor: rotated Hessian (degenerate) **********************" << endl;
+  // cout << " ************************ SmartProjectionFactor: rotated Hessian (degenerate) **********************" << endl;
 
-    Symbol x1('X',  1);
-    Symbol x2('X',  2);
-    Symbol x3('X',  3);
+  Symbol x1('X',  1);
+  Symbol x2('X',  2);
+  Symbol x3('X',  3);
 
-    const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
+  const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
-    std::vector<Key> views;
-    views += x1, x2, x3;
+  std::vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+  // views += x1, x2, x3;
 
-    Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
+  Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 
-    // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-    Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-    SimpleCamera cam1(pose1, *K);
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  SimpleCamera cam1(pose1, *K);
 
-    // create second camera 1 meter to the right of first camera
-    Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(0,0,0));
-    SimpleCamera cam2(pose2, *K);
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(0,0,0));
+  SimpleCamera cam2(pose2, *K);
 
-    // create third camera 1 meter above the first camera
-    Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,0,0));
-    SimpleCamera cam3(pose3, *K);
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,0,0));
+  SimpleCamera cam3(pose3, *K);
 
-    Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark1(5, 0.5, 1.2);
 
-    vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-    // 1. Project three landmarks into three cameras and triangulate
-    Point2 cam1_uv1 = cam1.project(landmark1);
-    Point2 cam2_uv1 = cam2.project(landmark1);
-    Point2 cam3_uv1 = cam3.project(landmark1);
-    measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
+  // 1. Project three landmarks into three cameras and triangulate
+  Point2 cam1_uv1 = cam1.project(landmark1);
+  Point2 cam2_uv1 = cam2.project(landmark1);
+  Point2 cam3_uv1 = cam3.project(landmark1);
+  measurements_cam1.push_back(cam1_uv1);
+  measurements_cam1.push_back(cam2_uv1);
+  measurements_cam1.push_back(cam3_uv1);
+  // measurements_cam1 += cam1_uv1, cam2_uv1, cam3_uv1;
 
-    typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
+  typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
 
-    SmartFactor::shared_ptr smartFactor(new SmartFactor(noiseProjection, K));
-    smartFactor->add(cam1_uv1, views[0]);
-    smartFactor->add(cam2_uv1, views[1]);
-    smartFactor->add(cam3_uv1, views[2]);
+  SmartFactor::shared_ptr smartFactor(new SmartFactor(noiseProjection, K));
+  smartFactor->add(cam1_uv1, views[0]);
+  smartFactor->add(cam2_uv1, views[1]);
+  smartFactor->add(cam3_uv1, views[2]);
 
-    Values values;
-    values.insert(x1, pose1);
-    values.insert(x2, pose2);
-    values.insert(x3, pose3);
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  values.insert(x3, pose3);
 
-    boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(values);
-    // hessianFactor->print("Hessian factor \n");
+  boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(values);
+  // hessianFactor->print("Hessian factor \n");
 
-    Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,0));
+  Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,0));
 
-    Values rotValues;
-    rotValues.insert(x1, poseDrift.compose(pose1));
-    rotValues.insert(x2, poseDrift.compose(pose2));
-    rotValues.insert(x3, poseDrift.compose(pose3));
+  Values rotValues;
+  rotValues.insert(x1, poseDrift.compose(pose1));
+  rotValues.insert(x2, poseDrift.compose(pose2));
+  rotValues.insert(x3, poseDrift.compose(pose3));
 
-    boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(rotValues);
-    // hessianFactorRot->print("Hessian factor \n");
+  boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(rotValues);
+  // hessianFactorRot->print("Hessian factor \n");
 
-    // Hessian is invariant to rotations in the nondegenerate case
-    EXPECT(assert_equal(hessianFactor->information(), hessianFactorRot->information(), 1e-8) );
+  // Hessian is invariant to rotations in the nondegenerate case
+  EXPECT(assert_equal(hessianFactor->information(), hessianFactorRot->information(), 1e-8) );
 
-    Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI/2, -M_PI/3, -M_PI/2), gtsam::Point3(10,-4,5));
+  Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI/2, -M_PI/3, -M_PI/2), gtsam::Point3(10,-4,5));
 
-    Values tranValues;
-    tranValues.insert(x1, poseDrift2.compose(pose1));
-    tranValues.insert(x2, poseDrift2.compose(pose2));
-    tranValues.insert(x3, poseDrift2.compose(pose3));
+  Values tranValues;
+  tranValues.insert(x1, poseDrift2.compose(pose1));
+  tranValues.insert(x2, poseDrift2.compose(pose2));
+  tranValues.insert(x3, poseDrift2.compose(pose3));
 
-    boost::shared_ptr<GaussianFactor> hessianFactorRotTran = smartFactor->linearize(tranValues);
+  boost::shared_ptr<GaussianFactor> hessianFactorRotTran = smartFactor->linearize(tranValues);
 
-    // Hessian is invariant to rotations and translations in the nondegenerate case
-    EXPECT(assert_equal(hessianFactor->information(), hessianFactorRotTran->information(), 1e-8) );
+  // Hessian is invariant to rotations and translations in the nondegenerate case
+  EXPECT(assert_equal(hessianFactor->information(), hessianFactorRotTran->information(), 1e-8) );
 }
 
 #endif

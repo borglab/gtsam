@@ -26,7 +26,7 @@
 #include <vector>
 #include <gtsam_unstable/geometry/triangulation.h>
 #include <boost/optional.hpp>
-#include <boost/assign.hpp>
+//#include <boost/assign.hpp>
 
 namespace gtsam {
 
@@ -472,7 +472,8 @@ namespace gtsam {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_);
             if(i==0){ // first pose
-              state_->point = camera.backprojectPointAtInfinity(measured_.at(i)); // 3D parametrization of point at infinity
+              state_->point = camera.backprojectPointAtInfinity(measured_.at(i));
+              // 3D parametrization of point at infinity: [px py 1]
               // std::cout << "point_ " << state_->point<< std::endl;
             }
             Matrix Hxi, Hli;

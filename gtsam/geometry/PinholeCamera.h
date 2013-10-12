@@ -278,22 +278,6 @@ public:
     return Point2(P.x() / P.z(), P.y() / P.z());
   }
 
-  /**
-   * projects a 3-dimensional point at infinity (direction-only) in camera coordinates into the
-   * camera and returns a 2-dimensional point, no calibration applied
-   * TODO: Frank says: this function seems to be identical as the above
-   * @param P A point in camera coordinates
-   * @param Dpoint is the 2*3 Jacobian w.r.t. P
-   */
-  inline static Point2 projectPointAtInfinityToCamera(const Point3& P,
-      boost::optional<Matrix&> Dpoint = boost::none) {
-    if (Dpoint) {
-      double d = 1.0 / P.z(), d2 = d * d;
-      *Dpoint = Matrix_(2, 3, d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
-    }
-    return Point2(P.x() / P.z(), P.y() / P.z());
-  }
-
   /// Project a point into the image and check depth
   inline std::pair<Point2, bool> projectSafe(const Point3& pw) const {
     const Point3 pc = pose_.transform_to(pw);
@@ -365,8 +349,8 @@ public:
       boost::optional<Matrix&> Dcal = boost::none) const {
 
     if (!Dpose && !Dpoint && !Dcal) {
-      const Point3 pc = pose_.rotation().unrotate(pw);
-      const Point2 pn = projectPointAtInfinityToCamera(pc);
+      const Point3 pc = pose_.rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
+      const Point2 pn = project_to_camera(pc); // project the point to the camera
       return K_.uncalibrate(pn);
     }
 
@@ -379,7 +363,7 @@ public:
 
     // camera to normalized image coordinate
     Matrix Dpn_pc; // 2*3
-    const Point2 pn = projectPointAtInfinityToCamera(pc, Dpn_pc);
+    const Point2 pn = project_to_camera(pc, Dpn_pc);
 
     // uncalibration
     Matrix Dpi_pn; // 2*2
@@ -390,7 +374,7 @@ public:
     if (Dpose)
       *Dpose = Dpi_pc * Dpc_pose;
     if (Dpoint)
-      *Dpoint = (Dpi_pc * Dpc_point).block(0, 0, 3, 2);
+      *Dpoint = (Dpi_pc * Dpc_point).block(0, 0, 2, 2); // only 2dof are important for the point (direction-only)
     return pi;
   }
 
@@ -434,7 +418,7 @@ public:
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
   inline Point3 backprojectPointAtInfinity(const Point2& p) const {
     const Point2 pn = K_.calibrate(p);
-    const Point3 pc(pn.x(), pn.y(), 1.0);
+    const Point3 pc(pn.x(), pn.y(), 1.0); //by convention the last element is 1
     return pose_.rotation().rotate(pc);
   }
 
