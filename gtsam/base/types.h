@@ -200,7 +200,7 @@ namespace gtsam {
     }
 
     virtual void throw_self() {
-      throw *this; }
+      throw *static_cast<DERIVED*>(this); }
 
     virtual const char* name() const throw() {
       return typeid(DERIVED).name(); }
