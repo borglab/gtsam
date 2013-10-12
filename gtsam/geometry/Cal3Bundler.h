@@ -28,16 +28,17 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3Bundler : public DerivedValue<Cal3Bundler> {
+class GTSAM_EXPORT Cal3Bundler: public DerivedValue<Cal3Bundler> {
 
 private:
   double f_; ///< focal length
-  double k1_, k2_;///< radial distortion
+  double k1_, k2_; ///< radial distortion
+  double u0_, v0_; ///< image center, not a parameter to be optimized but a constant
 
 public:
 
-  Matrix K() const;///< Standard 3*3 calibration matrix
-  Vector k() const;///< Radial distortion parameters
+  Matrix K() const; ///< Standard 3*3 calibration matrix
+  Vector k() const; ///< Radial distortion parameters (4 of them, 2 0)
 
   Vector vector() const;
 
@@ -47,15 +48,15 @@ public:
   /// Default constructor
   Cal3Bundler();
 
-  /// Constructor
-  Cal3Bundler(const double f, const double k1, const double k2);
-
-  /// @}
-  /// @name Advanced Constructors
-  /// @{
-
-  /// Construct from vector
-  Cal3Bundler(const Vector &v);
+  /**
+   *  Constructor
+   *  @param f focal length
+   *  @param k1 first radial distortion coefficient (quadratic)
+   *  @param k2 second radial distortion coefficient (quartic)
+   *  @param u0 optional image center (default 0), considered a constant
+   *  @param v0 optional image center (default 0), considered a constant
+   */
+  Cal3Bundler(double f, double k1, double k2, double u0 = 0, double v0 = 0);
 
   /// @}
   /// @name Testable
@@ -78,17 +79,16 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> Dcal = boost::none,
-      boost::optional<Matrix&> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal =
+      boost::none, boost::optional<Matrix&> Dp = boost::none) const;
 
-  /// 2*2 Jacobian of uncalibrate with respect to intrinsic coordinates
+  /// @deprecated might be removed in next release, use uncalibrate
   Matrix D2d_intrinsic(const Point2& p) const;
 
-  /// 2*3 Jacobian of uncalibrate wrpt CalBundler parameters
+  /// @deprecated might be removed in next release, use uncalibrate
   Matrix D2d_calibration(const Point2& p) const;
 
-  /// 2*5 Jacobian of uncalibrate wrpt both intrinsic and calibration
+  /// @deprecated might be removed in next release, use uncalibrate
   Matrix D2d_intrinsic_calibration(const Point2& p) const;
 
   /// @}
@@ -102,10 +102,14 @@ public:
   Vector localCoordinates(const Cal3Bundler& T2) const;
 
   /// dimensionality
-  virtual size_t dim() const {return 3;}
+  virtual size_t dim() const {
+    return 3;
+  }
 
   /// dimensionality
-  static size_t Dim() {return 3;}
+  static size_t Dim() {
+    return 3;
+  }
 
 private:
 
@@ -116,17 +120,19 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
-  {
-    ar & boost::serialization::make_nvp("Cal3Bundler",
-        boost::serialization::base_object<Value>(*this));
+  void serialize(Archive & ar, const unsigned int version) {
+    ar
+        & boost::serialization::make_nvp("Cal3Bundler",
+            boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(f_);
     ar & BOOST_SERIALIZATION_NVP(k1_);
     ar & BOOST_SERIALIZATION_NVP(k2_);
+    ar & BOOST_SERIALIZATION_NVP(u0_);
+    ar & BOOST_SERIALIZATION_NVP(v0_);
   }
 
   /// @}
 
-};
+      };
 
-} // namespace gtsam
+      } // namespace gtsam

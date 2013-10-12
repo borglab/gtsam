@@ -29,18 +29,15 @@ Cal3Bundler::Cal3Bundler() :
 }
 
 /* ************************************************************************* */
-Cal3Bundler::Cal3Bundler(const Vector &v) :
-    f_(v(0)), k1_(v(1)), k2_(v(2)) {
-}
-
-/* ************************************************************************* */
-Cal3Bundler::Cal3Bundler(const double f, const double k1, const double k2) :
-    f_(f), k1_(k1), k2_(k2) {
+Cal3Bundler::Cal3Bundler(double f, double k1, double k2, double u0, double v0) :
+    f_(f), k1_(k1), k2_(k2), u0_(u0), v0_(v0) {
 }
 
 /* ************************************************************************* */
 Matrix Cal3Bundler::K() const {
-  return Matrix_(3, 3, f_, 0.0, 0.0, 0.0, f_, 0.0, 0.0, 0.0, 1.0);
+  Matrix3 K;
+  K << f_, 0, u0_, 0, f_, v0_, 0, 0, 1;
+  return K;
 }
 
 /* ************************************************************************* */
@@ -55,13 +52,14 @@ Vector Cal3Bundler::vector() const {
 
 /* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const {
-  gtsam::print(vector(), s + ".K");
+  gtsam::print(Vector_(5, f_, k1_, k2_, u0_, v0_), s + ".K");
 }
 
 /* ************************************************************************* */
 bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
   if (fabs(f_ - K.f_) > tol || fabs(k1_ - K.k1_) > tol
-      || fabs(k2_ - K.k2_) > tol)
+      || fabs(k2_ - K.k2_) > tol || fabs(u0_ - K.u0_) > tol
+      || fabs(v0_ - K.v0_) > tol)
     return false;
   return true;
 }
@@ -69,92 +67,59 @@ bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
 /* ************************************************************************* */
 Point2 Cal3Bundler::uncalibrate(const Point2& p, //
     boost::optional<Matrix&> Dcal, boost::optional<Matrix&> Dp) const {
-//  r = x^2 + y^2;
-//  g = (1 + k(1)*r + k(2)*r^2);
-//  pi(:,i) = g * pn(:,i)
+  //  r = x^2 + y^2;
+  //  g = (1 + k(1)*r + k(2)*r^2);
+  //  pi(:,i) = g * pn(:,i)
   const double x = p.x(), y = p.y();
   const double r = x * x + y * y;
   const double g = 1. + (k1_ + k2_ * r) * r;
   const double u = g * x, v = g * y;
-  const double f = f_;
 
-  // semantic meaningful version
-  //if (H1) *H1 = D2d_calibration(p);
-  //if (H2) *H2 = D2d_intrinsic(p);
-
-  // unrolled version, much faster
-  if (Dcal || Dp) {
+  // Derivatives make use of intermediate variables above
+  if (Dcal) {
     double rx = r * x, ry = r * y;
-
-    if (Dcal) {
-      Eigen::Matrix<double, 2, 3> D;
-      D << u, f * rx, f * r * rx, v, f * ry, f * r * ry;
-      *Dcal = D;
-    }
-
-    if (Dp) {
-      const double dg_dx = 2. * k1_ * x + 4. * k2_ * rx;
-      const double dg_dy = 2. * k1_ * y + 4. * k2_ * ry;
-      Eigen::Matrix<double, 2, 2> D;
-      D << g + x * dg_dx, x * dg_dy, y * dg_dx, g + y * dg_dy;
-      *Dp = f * D;
-    }
+    Eigen::Matrix<double, 2, 3> D;
+    D << u, f_ * rx, f_ * r * rx, v, f_ * ry, f_ * r * ry;
+    *Dcal = D;
   }
 
-  return Point2(f * u, f * v);
+  if (Dp) {
+    const double a = 2. * (k1_ + 2. * k2_ * r);
+    const double axx = a * x * x, axy = a * x * y, ayy = a * y * y;
+    Eigen::Matrix<double, 2, 2> D;
+    D << g + axx, axy, axy, g + ayy;
+    *Dp = f_ * D;
+  }
+
+  return Point2(u0_ + f_ * u, v0_ + f_ * v);
 }
 
 /* ************************************************************************* */
 Matrix Cal3Bundler::D2d_intrinsic(const Point2& p) const {
-  const double x = p.x(), y = p.y(), xx = x * x, yy = y * y;
-  const double r = xx + yy;
-  const double dr_dx = 2 * x;
-  const double dr_dy = 2 * y;
-  const double g = 1 + (k1_ + k2_ * r) * r;
-  const double dg_dx = k1_ * dr_dx + k2_ * 2 * r * dr_dx;
-  const double dg_dy = k1_ * dr_dy + k2_ * 2 * r * dr_dy;
-
-  Matrix DK = Matrix_(2, 2, f_, 0.0, 0.0, f_);
-  Matrix DR = Matrix_(2, 2, g + x * dg_dx, x * dg_dy, y * dg_dx, g + y * dg_dy);
-  return DK * DR;
+  Matrix Dp;
+  uncalibrate(p, boost::none, Dp);
+  return Dp;
 }
 
 /* ************************************************************************* */
 Matrix Cal3Bundler::D2d_calibration(const Point2& p) const {
-
-  const double x = p.x(), y = p.y(), xx = x * x, yy = y * y;
-  const double r = xx + yy;
-  const double r2 = r * r;
-  const double f = f_;
-  const double g = 1 + (k1_ + k2_ * r) * r;
-
-  return Matrix_(2, 3, g * x, f * x * r, f * x * r2, g * y, f * y * r,
-      f * y * r2);
+  Matrix Dcal;
+  uncalibrate(p, Dcal, boost::none);
+  return Dcal;
 }
 
 /* ************************************************************************* */
 Matrix Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
-
-  const double x = p.x(), y = p.y(), xx = x * x, yy = y * y;
-  const double r = xx + yy;
-  const double r2 = r * r;
-  const double dr_dx = 2 * x;
-  const double dr_dy = 2 * y;
-  const double g = 1 + (k1_ + k2_ * r) * r;
-  const double f = f_;
-  const double dg_dx = k1_ * dr_dx + k2_ * 2 * r * dr_dx;
-  const double dg_dy = k1_ * dr_dy + k2_ * 2 * r * dr_dy;
-
-  Matrix H = Matrix_(2, 5, f * (g + x * dg_dx), f * (x * dg_dy), g * x,
-      f * x * r, f * x * r2, f * (y * dg_dx), f * (g + y * dg_dy), g * y,
-      f * y * r, f * y * r2);
-
+  Matrix Dcal, Dp;
+  uncalibrate(p, Dcal, Dp);
+  Matrix H(2, 5);
+  H << Dp, Dcal;
   return H;
 }
 
 /* ************************************************************************* */
 Cal3Bundler Cal3Bundler::retract(const Vector& d) const {
-  return Cal3Bundler(vector() + d);
+  return Cal3Bundler(f_ + d(0), k1_ + d(1), k2_ + d(2), u0_, v0_);
 }
 
 /* ************************************************************************* */

@@ -52,7 +52,7 @@ int main()
   // Cal3DS2:           0.14201 musecs/call
   // After Cal3DS2 fix: 0.12231 musecs/call
   // Cal3Bundler:       0.12000 musecs/call
-  // Cal3Bundler fix:   0.13864 musecs/call
+  // Cal3Bundler fix:   0.14637 musecs/call
   {
     long timeLog = clock();
     for(int i = 0; i < n; i++)
@@ -64,12 +64,12 @@ int main()
   }
 
   // Oct 12 2013, iMac 3.06GHz Core i3
-  // Original:          3.87199 musecs/call
-  // After collapse:    2.62684 musecs/call
-  // Cal3DS2:           4.33297 musecs/call
-  // After Cal3DS2 fix: 3.28565 musecs/call
-  // Cal3Bundler:       2.65559 musecs/call
-  // Cal3Bundler fix:   2.18481 musecs/call
+  // Original:          3.8720 musecs/call
+  // After collapse:    2.6269 musecs/call
+  // Cal3DS2:           4.3330 musecs/call
+  // After Cal3DS2 fix: 3.2857 musecs/call
+  // Cal3Bundler:       2.6556 musecs/call
+  // Cal3Bundler fix:   2.1613 musecs/call
   {
     Matrix Dpose, Dpoint;
     long timeLog = clock();
@@ -84,10 +84,10 @@ int main()
   // Oct 12 2013, iMac 3.06GHz Core i3
   // Original:          4.0119 musecs/call
   // After collapse:    2.5698 musecs/call
-  // Cal3DS2:           4.83248 musecs/call
-  // After Cal3DS2 fix: 3.44832 musecs/call
-  // Cal3Bundler:       2.51124 musecs/call
-  // Cal3Bundler fix:   2.17292 musecs/call
+  // Cal3DS2:           4.8325 musecs/call
+  // After Cal3DS2 fix: 3.4483 musecs/call
+  // Cal3Bundler:       2.5112 musecs/call
+  // Cal3Bundler fix:   2.0946 musecs/call
   {
     Matrix Dpose, Dpoint, Dcal;
     long timeLog = clock();

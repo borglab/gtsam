@@ -25,7 +25,7 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(Cal3Bundler)
 GTSAM_CONCEPT_MANIFOLD_INST(Cal3Bundler)
 
-static Cal3Bundler K(500, 1e-3, 1e-3);
+static Cal3Bundler K(500, 1e-3, 1e-3, 1000, 2000);
 static Point2 p(2,3);
 
 /* ************************************************************************* */
@@ -34,11 +34,12 @@ TEST( Cal3Bundler, calibrate)
   Vector v = K.vector() ;
   double r = p.x()*p.x() + p.y()*p.y() ;
   double g = v[0]*(1+v[1]*r+v[2]*r*r) ;
-  Point2 q_hat (g*p.x(), g*p.y()) ;
-  Point2 q = K.uncalibrate(p);
-  CHECK(assert_equal(q,q_hat));
+  Point2 expected (1000+g*p.x(), 2000+g*p.y()) ;
+  Point2 actual = K.uncalibrate(p);
+  CHECK(assert_equal(actual,expected));
 }
 
+/* ************************************************************************* */
 Point2 uncalibrate_(const Cal3Bundler& k, const Point2& pt) { return k.uncalibrate(pt); }
 
 /* ************************************************************************* */
@@ -46,7 +47,7 @@ TEST( Cal3Bundler, Duncalibrate)
 {
   Matrix Dcal, Dp;
   Point2 actual = K.uncalibrate(p, Dcal, Dp);
-  Point2 expected(1182, 1773);
+  Point2 expected(2182, 3773);
   CHECK(assert_equal(expected,actual,1e-7));
   Matrix numerical1 = numericalDerivative21(uncalibrate_, K, p);
   Matrix numerical2 = numericalDerivative22(uncalibrate_, K, p);
@@ -68,7 +69,7 @@ TEST( Cal3Bundler, assert_equal)
 /* ************************************************************************* */
 TEST( Cal3Bundler, retract)
 {
-  Cal3Bundler expected(510, 2e-3, 2e-3);
+  Cal3Bundler expected(510, 2e-3, 2e-3, 1000, 2000);
   Vector d(3);
   d << 10, 1e-3, 1e-3;
   Cal3Bundler actual = K.retract(d);
