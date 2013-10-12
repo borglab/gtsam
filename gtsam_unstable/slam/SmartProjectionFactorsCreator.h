@@ -8,23 +8,16 @@
 #ifndef SMARTPROJECTIONFACTORSCREATOR_H_
 #define SMARTPROJECTIONFACTORSCREATOR_H_
 
-// Both relative poses and recovered trajectory poses will be stored as Pose3 objects
-#include <gtsam/geometry/Pose3.h>
-
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/linear/NoiseModel.h>
-
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 // Use a map to store landmark/smart factor pairs
 #include <gtsam/base/FastMap.h>
 #include <gtsam_unstable/slam/SmartProjectionFactor.h>
 
-#include <gtsam/geometry/PinholeCamera.h>
-
 #include <boost/foreach.hpp>
-#include <boost/assign.hpp>
 #include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
 
 #include <fstream>
 #include <iostream>
