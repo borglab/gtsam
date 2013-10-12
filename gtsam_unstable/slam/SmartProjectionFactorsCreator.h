@@ -24,6 +24,8 @@
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
 #include <boost/assign/std/vector.hpp>
+using namespace boost::assign;
+
 #include <fstream>
 #include <iostream>
 #include <utility>
