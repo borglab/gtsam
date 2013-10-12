@@ -21,11 +21,11 @@
 
 #include <gtsam/geometry/PinholeCamera.h>
 
-//#include <boost/foreach.hpp>
-//#include <boost/assign.hpp>
-//#include <boost/assign/std/vector.hpp>
-//#include <fstream>
-//#include <iostream>
+#include <boost/foreach.hpp>
+#include <boost/assign.hpp>
+#include <boost/assign/std/vector.hpp>
+#include <fstream>
+#include <iostream>
 #include <utility>
 
 namespace gtsam {
