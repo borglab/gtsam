@@ -23,26 +23,27 @@ namespace gtsam {
 
 /* ************************************************************************* */
 CalibratedCamera::CalibratedCamera(const Pose3& pose) :
-        pose_(pose) {
+    pose_(pose) {
 }
 
 /* ************************************************************************* */
-CalibratedCamera::CalibratedCamera(const Vector &v) : pose_(Pose3::Expmap(v)) {}
+CalibratedCamera::CalibratedCamera(const Vector &v) :
+    pose_(Pose3::Expmap(v)) {
+}
 
 /* ************************************************************************* */
 Point2 CalibratedCamera::project_to_camera(const Point3& P,
     boost::optional<Matrix&> H1) {
   if (H1) {
     double d = 1.0 / P.z(), d2 = d * d;
-    *H1 = Matrix_(2, 3,
-        d, 0.0, -P.x() * d2,
-        0.0, d, -P.y() * d2);
+    *H1 = Matrix_(2, 3, d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
   }
   return Point2(P.x() / P.z(), P.y() / P.z());
 }
 
 /* ************************************************************************* */
-Point3 CalibratedCamera::backproject_from_camera(const Point2& p, const double scale) {
+Point3 CalibratedCamera::backproject_from_camera(const Point2& p,
+    const double scale) {
   return Point3(p.x() * scale, p.y() * scale, scale);
 }
 
@@ -58,41 +59,39 @@ CalibratedCamera CalibratedCamera::Level(const Pose2& pose2, double height) {
 
 /* ************************************************************************* */
 Point2 CalibratedCamera::project(const Point3& point,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+    boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) const {
 
 #ifdef CALIBRATEDCAMERA_CHAIN_RULE
-  Point3 q = pose_.transform_to(point, H1, H2);
+  Point3 q = pose_.transform_to(point, Dpose, Dpoint);
 #else
   Point3 q = pose_.transform_to(point);
 #endif
   Point2 intrinsic = project_to_camera(q);
 
   // Check if point is in front of camera
-  if(q.z() <= 0)
+  if (q.z() <= 0)
     throw CheiralityException();
 
-  if (H1 || H2) {
+  if (Dpose || Dpoint) {
 #ifdef CALIBRATEDCAMERA_CHAIN_RULE
     // just implement chain rule
     Matrix H;
     project_to_camera(q,H);
-    if (H1) *H1 = H * (*H1);
-    if (H2) *H2 = H * (*H2);
+    if (Dpose) *Dpose = H * (*Dpose);
+    if (Dpoint) *Dpoint = H * (*Dpoint);
 #else
     // optimized version, see CalibratedCamera.nb
-    const double z = q.z(), d = 1.0/z;
-    const double u = intrinsic.x(), v = intrinsic.y(), uv = u*v;
-    if (H1) *H1 = Matrix_(2,6,
-              uv,-(1.+u*u), v, -d , 0., d*u,
-        (1.+v*v),      -uv,-u,  0.,-d , d*v
-        );
-    if (H2) {
+    const double z = q.z(), d = 1.0 / z;
+    const double u = intrinsic.x(), v = intrinsic.y(), uv = u * v;
+    if (Dpose)
+      *Dpose = Matrix_(2, 6, uv, -(1. + u * u), v, -d, 0., d * u, (1. + v * v),
+          -uv, -u, 0., -d, d * v);
+    if (Dpoint) {
       const Matrix R(pose_.rotation().matrix());
-      *H2 = d * Matrix_(2,3,
-          R(0,0) - u*R(0,2), R(1,0) - u*R(1,2), R(2,0) - u*R(2,2),
-          R(0,1) - v*R(0,2), R(1,1) - v*R(1,2), R(2,1) - v*R(2,2)
-        );
+      *Dpoint = d
+          * Matrix_(2, 3, R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2),
+              R(2, 0) - u * R(2, 2), R(0, 1) - v * R(0, 2),
+              R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2));
     }
 #endif
   }
@@ -101,12 +100,12 @@ Point2 CalibratedCamera::project(const Point3& point,
 
 /* ************************************************************************* */
 CalibratedCamera CalibratedCamera::retract(const Vector& d) const {
-  return CalibratedCamera(pose().retract(d)) ;
+  return CalibratedCamera(pose().retract(d));
 }
 
 /* ************************************************************************* */
 Vector CalibratedCamera::localCoordinates(const CalibratedCamera& T2) const {
-  return pose().localCoordinates(T2.pose()) ;
+  return pose().localCoordinates(T2.pose());
 }
 
 /* ************************************************************************* */
