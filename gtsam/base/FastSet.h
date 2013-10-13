@@ -78,14 +78,16 @@ public:
       Base(x) {
   }
 
+#ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
-  FastSet(const std::set<VALUE>& x, typename boost::disable_if_c<internal::FastDefaultAllocator<VALUE>::isSTL>::type* = 0) {
+  FastSet(const std::set<VALUE>& x) {
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.
     if(x.size() > 0)
       Base::insert(x.begin(), x.end());
   }
+#endif
 
   /** Conversion to a standard STL container */
   operator std::set<VALUE>() const {

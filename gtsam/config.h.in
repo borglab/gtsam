@@ -41,3 +41,8 @@
 
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
+
+// The default allocator to use
+#cmakedefine GTSAM_ALLOCATOR_BOOSTPOOL
+#cmakedefine GTSAM_ALLOCATOR_TBB
+#cmakedefine GTSAM_ALLOCATOR_STL

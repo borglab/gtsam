@@ -54,14 +54,16 @@ public:
   /** Copy constructor from the base list class */
   FastList(const Base& x) : Base(x) {}
 
+#ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
-  FastList(const std::list<VALUE>& x, typename boost::disable_if_c<internal::FastDefaultAllocator<VALUE>::isSTL>::type* = 0) {
+  FastList(const std::list<VALUE>& x) {
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.
     if(x.size() > 0)
       Base::assign(x.begin(), x.end());
   }
+#endif
 
   /** Conversion to a standard STL container */
   operator std::list<VALUE>() const {

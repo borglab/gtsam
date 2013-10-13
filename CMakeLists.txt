@@ -156,7 +156,14 @@ if(TBB_FOUND AND GTSAM_WITH_TBB)
 	else()
 		set(GTSAM_TBB_LIBRARIES ${TBB_LIBRARIES})
 	endif()
+else()
+	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
+
+
+###############################################################################
+# Find Google perftools
+find_package(GooglePerfTools)
 
 
 ###############################################################################
@@ -189,6 +196,46 @@ install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINAT
 
 ###############################################################################
 # Global compile options
+
+# Build list of possible allocators
+set(possible_allocators "")
+if(GTSAM_USE_TBB)
+	list(APPEND possible_allocators TBB)
+	set(preferred_allocator TBB)
+else()
+	list(APPEND possible_allocators BoostPool STL)
+	set(preferred_allocator BoostPool)
+	if(GOOGLE_PERFTOOLS_FOUND)
+		list(APPEND possible_allocators tcmalloc)
+	endif()
+endif()
+
+# Check if current allocator choice is valid
+list(FIND possible_allocators "${GTSAM_DEFAULT_ALLOCATOR}" allocator_valid)
+if(allocator_valid EQUAL -1)
+	set(force_allocator true)
+endif()
+
+# Set allocator cache option
+if(force_allocator)
+	set(GTSAM_DEFAULT_ALLOCATOR ${preferred_allocator} CACHE STRING "Default allocator" FORCE)
+else()
+	set(GTSAM_DEFAULT_ALLOCATOR ${preferred_allocator} CACHE STRING "Default allocator")
+endif()
+set_property(CACHE GTSAM_DEFAULT_ALLOCATOR PROPERTY STRINGS ${possible_allocators})
+mark_as_advanced(GTSAM_DEFAULT_ALLOCATOR)
+
+# Define compile flags depending on allocator
+if("${GTSAM_DEFAULT_ALLOCATOR}" STREQUAL "BoostPool")
+	set(GTSAM_ALLOCATOR_BOOSTPOOL 1)
+elseif("${GTSAM_DEFAULT_ALLOCATOR}" STREQUAL "STL")
+	set(GTSAM_ALLOCATOR_STL 1)
+elseif("${GTSAM_DEFAULT_ALLOCATOR}" STREQUAL "TBB")
+	set(GTSAM_ALLOCATOR_TBB 1)
+elseif("${GTSAM_DEFAULT_ALLOCATOR}" STREQUAL "tcmalloc")
+	set(GTSAM_ALLOCATOR_STL 1) # tcmalloc replaces malloc, so to use it we use the STL allocator
+	list(APPEND GTSAM_ADDITIONAL_LIBRARIES "tcmalloc")
+endif()
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
 # takes precedence over a system-installed one.
@@ -325,6 +372,7 @@ elseif(TBB_FOUND)
 else()
 	message(STATUS "  Use Intel TBB                  : TBB not found")
 endif()
+message(STATUS "  Default allocator              : ${GTSAM_DEFAULT_ALLOCATOR}")
 
 
 message(STATUS "Packaging flags                                               ")
@@ -343,7 +391,7 @@ print_config_flag(${GTSAM_INSTALL_WRAP}                "Install wrap utility    
 message(STATUS "===============================================================")
 
 if(GTSAM_WITH_TBB AND NOT TBB_FOUND)
-	message(WARNING "GTSAM_USE_TBB is set to 'On' but TBB was not found.  This is ok, but GTSAM parallelization will be disabled.  Set GTSAM_USE_TBB to 'Off' to avoid this warning.")
+	message(WARNING "GTSAM_USE_TBB is set to 'On' but TBB was not found.  This is ok, but GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
 endif()
 
 # Include CPack *after* all flags
