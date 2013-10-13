@@ -47,9 +47,6 @@ public:
   /// default constructor
   Point2(): x_(0), y_(0) {}
 
-  /// copy constructor
-  Point2(const Point2 &p) : x_(p.x_), y_(p.y_) {}
-
   /// construct from doubles
   Point2(double x, double y): x_(x), y_(y) {}
 
