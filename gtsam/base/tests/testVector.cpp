@@ -23,112 +23,6 @@
 using namespace std;
 using namespace gtsam;
 
-#include <boost/utility/enable_if.hpp>
-
-// Row-vectors not tested
-//template<typename XprType>
-//inline void resizeHelper(XprType& xpr, DenseIndex sizeIncrement,
-//    typename boost::enable_if_c<
-//    XprType::ColsAtCompileTime == Eigen::Dynamic && XprType::RowsAtCompileTime == 1>::type* = 0)
-//{
-//  xpr.conservativeResize(xpr.cols() + sizeIncrement);
-//}
-
-template<typename XprType>
-inline void resizeHelper(XprType& xpr, DenseIndex sizeIncrement,
-    typename boost::enable_if_c<
-    XprType::RowsAtCompileTime == Eigen::Dynamic && XprType::ColsAtCompileTime == 1>::type* = 0)
-{
-  xpr.conservativeResize(xpr.rows() + sizeIncrement);
-}
-
-/// A special comma initializer for Eigen that is implicitly convertible to Vector and Matrix.
-template<typename XprType>
-class SpecialCommaInitializer : public Eigen::CommaInitializer<XprType>
-{
-private:
-  bool dynamic_;
-
-public:
-  typedef Eigen::CommaInitializer<XprType> Base;
-
-  // Forward to base class
-  inline SpecialCommaInitializer(XprType& xpr, const typename XprType::Scalar& s, bool dynamic) :
-      Base(xpr, s), dynamic_(dynamic) {}
-
-  // Forward to base class
-  template<typename OtherDerived>
-  inline SpecialCommaInitializer(XprType& xpr, const Eigen::DenseBase<OtherDerived>& other, bool dynamic) :
-      Base(xpr, other), dynamic_(dynamic) {}
-
-  /// Implicit conversion to expression type, e.g. Vector or Matrix
-  inline operator XprType ()
-  {
-    return this->finished();
-  }
-
-  /// Override base class comma operators to return this class instead of the base class.
-  SpecialCommaInitializer& operator,(const typename XprType::Scalar& s)
-  {
-    // If dynamic, resize the underlying object
-    if(dynamic_)
-    {
-      // Dynamic expansion currently only tested for column-vectors
-      assert(XprType::RowsAtCompileTime == Eigen::Dynamic);
-      // Current col should be zero and row should be at the end
-      assert(Base::m_col == 1);
-      assert(Base::m_row == Base::m_xpr.rows() - Base::m_currentBlockRows);
-      resizeHelper(Base::m_xpr, 1);
-    }
-    (void) Base::operator,(s);
-    return *this;
-  }
-
-  /// Override base class comma operators to return this class instead of the base class.
-  template<typename OtherDerived>
-  SpecialCommaInitializer& operator,(const Eigen::DenseBase<OtherDerived>& other)
-  {
-    // If dynamic, resize the underlying object
-    if(dynamic_)
-    {
-      // Dynamic expansion currently only tested for column-vectors
-      assert(XprType::RowsAtCompileTime == Eigen::Dynamic);
-      // Current col should be zero and row should be at the end
-      assert(Base::m_col == 1);
-      assert(Base::m_row == Base::m_xpr.rows() - Base::m_currentBlockRows);
-      resizeHelper(Base::m_xpr, other.size());
-    }
-    (void) Base::operator,(other);
-    return *this;
-  }
-};
-
-class Vec
-{
-  Vector vector_;
-  bool dynamic_;
-
-public:
-  Vec(DenseIndex size) : vector_(size), dynamic_(false) {}
-
-  Vec() : dynamic_(true) {}
-
-  SpecialCommaInitializer<Vector> operator<< (double s)
-  {
-    if(dynamic_)
-      vector_.resize(1);
-    return SpecialCommaInitializer<Vector>(vector_, s, dynamic_);
-  }
-
-  template<typename OtherDerived>
-  SpecialCommaInitializer<Vector> operator<<(const Eigen::DenseBase<OtherDerived>& other)
-  {
-    if(dynamic_)
-      vector_.resize(other.size());
-    return SpecialCommaInitializer<Vector>(vector_, other, dynamic_);
-  }
-};
-
 /* ************************************************************************* */
 TEST( TestVector, Vector_variants )
 {
@@ -136,6 +30,22 @@ TEST( TestVector, Vector_variants )
   double data[] = {10,20};
   Vector b = Vector_(2,data);
   EXPECT(assert_equal(a, b));
+}
+
+namespace {
+  /* ************************************************************************* */
+  template<typename Derived>
+  Vector testFcn1(const Eigen::DenseBase<Derived>& in)
+  {
+    return in;
+  }
+
+  /* ************************************************************************* */
+  template<typename Derived>
+  Vector testFcn2(const Eigen::MatrixBase<Derived>& in)
+  {
+    return in;
+  }
 }
 
 /* ************************************************************************* */
@@ -156,11 +66,16 @@ TEST( TestVector, special_comma_initializer)
   Vector subvec2 = (Vec() << 1, 2);
   Vector actual5 = (Vec() << subvec2, 3);
 
+  Vector actual6 = testFcn1((Vec() << 1, 2, 3));
+  Vector actual7 = testFcn2((Vec() << 1, 2, 3));
+
   EXPECT(assert_equal(expected, actual1));
   EXPECT(assert_equal(expected, actual2));
   EXPECT(assert_equal(expected, actual3));
   EXPECT(assert_equal(expected, actual4));
   EXPECT(assert_equal(expected, actual5));
+  EXPECT(assert_equal(expected, actual6));
+  EXPECT(assert_equal(expected, actual7));
 }
 
 /* ************************************************************************* */

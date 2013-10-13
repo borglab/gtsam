@@ -69,6 +69,51 @@ TEST( matrix, Matrix_ )
 
 }
 
+namespace {
+  /* ************************************************************************* */
+  template<typename Derived>
+  Matrix testFcn1(const Eigen::DenseBase<Derived>& in)
+  {
+    return in;
+  }
+
+  /* ************************************************************************* */
+  template<typename Derived>
+  Matrix testFcn2(const Eigen::MatrixBase<Derived>& in)
+  {
+    return in;
+  }
+}
+
+/* ************************************************************************* */
+TEST( matrix, special_comma_initializer)
+{
+  Matrix expected(2,2);
+  expected(0,0) = 1;
+  expected(0,1) = 2;
+  expected(1,0) = 3;
+  expected(1,1) = 4;
+
+  Matrix actual1 = (Mat(2,2) << 1, 2, 3, 4);
+  Matrix actual2((Mat(2,2) << 1, 2, 3, 4));
+
+  Matrix submat1 = (Mat(1,2) << 3, 4);
+  Matrix actual3 = (Mat(2,2) << 1, 2, submat1);
+
+  Matrix submat2 = (Mat(1,2) << 1, 2);
+  Matrix actual4 = (Mat(2,2) << submat2, 3, 4);
+
+  Matrix actual5 = testFcn1((Mat(2,2) << 1, 2, 3, 4));
+  Matrix actual6 = testFcn2((Mat(2,2) << 1, 2, 3, 4));
+
+  EXPECT(assert_equal(expected, actual1));
+  EXPECT(assert_equal(expected, actual2));
+  EXPECT(assert_equal(expected, actual3));
+  EXPECT(assert_equal(expected, actual4));
+  EXPECT(assert_equal(expected, actual5));
+  EXPECT(assert_equal(expected, actual6));
+}
+
 /* ************************************************************************* */
 TEST( matrix, col_major )
 {
