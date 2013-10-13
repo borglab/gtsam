@@ -149,10 +149,14 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
     throw std::runtime_error("LieMatrix::Expmap(): Don't use this function");
     return LieMatrix(v); }
 
-  /** Logmap around identity - just returns with default cast back */
+  /** Logmap around identity */
   static inline Vector Logmap(const LieMatrix& p) {
-    return Eigen::Map<const Vector>(&p(0,0), p.dim()); }
-
+    Vector result(p.size());
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >(
+        result.data(), p.rows(), p.cols()) = p;
+    return result;
+  }
+	
   /// @}
 
 private:
