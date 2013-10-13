@@ -205,19 +205,14 @@ if(GTSAM_USE_TBB)
 else()
 	list(APPEND possible_allocators BoostPool STL)
 	set(preferred_allocator BoostPool)
-	if(GOOGLE_PERFTOOLS_FOUND)
-		list(APPEND possible_allocators tcmalloc)
-	endif()
+endif()
+if(GOOGLE_PERFTOOLS_FOUND)
+	list(APPEND possible_allocators tcmalloc)
 endif()
 
-# Check if current allocator choice is valid
+# Check if current allocator choice is valid and set cache option
 list(FIND possible_allocators "${GTSAM_DEFAULT_ALLOCATOR}" allocator_valid)
 if(allocator_valid EQUAL -1)
-	set(force_allocator true)
-endif()
-
-# Set allocator cache option
-if(force_allocator)
 	set(GTSAM_DEFAULT_ALLOCATOR ${preferred_allocator} CACHE STRING "Default allocator" FORCE)
 else()
 	set(GTSAM_DEFAULT_ALLOCATOR ${preferred_allocator} CACHE STRING "Default allocator")
