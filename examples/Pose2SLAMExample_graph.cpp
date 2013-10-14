@@ -31,13 +31,13 @@ int main (int argc, char** argv) {
   // we are in build/examples, data is in examples/Data
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 5.0 * M_PI / 180.0));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vec(3) << 0.05, 0.05, 5.0 * M_PI / 180.0));
   boost::tie(graph, initial) = load2D("../../examples/Data/w100.graph", model);
   initial->print("Initial estimate:\n");
 
   // Add a Gaussian prior on first poses
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.01, 0.01, 0.01));
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas((Vec(3) << 0.01, 0.01, 0.01));
   graph->push_back(PriorFactor<Pose2>(0, priorMean, priorNoise));
 
   // Single Step Optimization using Levenberg-Marquardt
