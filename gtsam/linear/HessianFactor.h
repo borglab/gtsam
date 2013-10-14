@@ -356,6 +356,9 @@ namespace gtsam {
      */
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
+    /** Return A'A*x */
+    // Vector operator*(const VectorValues& x) const;
+
     /**
     *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
     *   left-multiplied with their transpose to form the Hessian using the conversion constructor
