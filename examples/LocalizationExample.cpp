@@ -93,7 +93,7 @@ public:
     // Consequently, the Jacobians are:
     // [ derror_x/dx  derror_x/dy  derror_x/dtheta ] = [1 0 0]
     // [ derror_y/dx  derror_y/dy  derror_y/dtheta ] = [0 1 0]
-    if (H) (*H) = Matrix_(2,3, 1.0,0.0,0.0, 0.0,1.0,0.0);
+    if (H) (*H) = (Mat(2,3) << 1.0,0.0,0.0, 0.0,1.0,0.0);
     return (Vec(2) << q.x() - mx_, q.y() - my_);
   }
 
