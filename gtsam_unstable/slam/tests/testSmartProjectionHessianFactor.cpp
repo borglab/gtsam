@@ -75,7 +75,7 @@ static Key poseKey1(x1);
 static Point2 measurement1(323.0, 240.0);
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
 
-typedef SmartProjectionHessianFactor<Pose3, Point3,Cal3_S2> SmartFactor;
+typedef SmartProjectionHessianFactor<Pose3,Point3,Cal3_S2> SmartFactor;
 
 /* ************************************************************************* */
 TEST( SmartProjectionHessianFactor, Constructor) {
@@ -465,6 +465,103 @@ TEST( SmartProjectionHessianFactor, 3poses_projection_factor ){
 }
 
 /* *************************************************************************/
+TEST( SmartProjectionHessianFactor, CheckHessian){
+
+  std::vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  SimpleCamera cam1(pose1, *K);
+
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0,0,0));
+  SimpleCamera cam2(pose2, *K);
+
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0,0,0));
+  SimpleCamera cam3(pose3, *K);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(3, 0, 3.0);
+
+  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+
+  // 1. Project three landmarks into three cameras and triangulate
+  Point2 cam1_uv1 = cam1.project(landmark1);
+  Point2 cam2_uv1 = cam2.project(landmark1);
+  Point2 cam3_uv1 = cam3.project(landmark1);
+  measurements_cam1.push_back(cam1_uv1);
+  measurements_cam1.push_back(cam2_uv1);
+  measurements_cam1.push_back(cam3_uv1);
+
+  Point2 cam1_uv2 = cam1.project(landmark2);
+  Point2 cam2_uv2 = cam2.project(landmark2);
+  Point2 cam3_uv2 = cam3.project(landmark2);
+  measurements_cam2.push_back(cam1_uv2);
+  measurements_cam2.push_back(cam2_uv2);
+  measurements_cam2.push_back(cam3_uv2);
+
+  Point2 cam1_uv3 = cam1.project(landmark3);
+  Point2 cam2_uv3 = cam2.project(landmark3);
+  Point2 cam3_uv3 = cam3.project(landmark3);
+  measurements_cam3.push_back(cam1_uv3);
+  measurements_cam3.push_back(cam2_uv3);
+  measurements_cam3.push_back(cam3_uv3);
+
+  double rankTol = 10;
+
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(rankTol));
+  smartFactor1->add(measurements_cam1, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(rankTol));
+  smartFactor2->add(measurements_cam2, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(rankTol));
+  smartFactor3->add(measurements_cam3, views, model, K);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+
+  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  // initialize third pose with some noise, we expect it to move back to original pose3
+  values.insert(x3, pose3*noise_pose);
+  if(isDebugTest) values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+
+  boost::shared_ptr<GaussianFactor> hessianFactor1 = smartFactor1->linearize(values);
+  boost::shared_ptr<GaussianFactor> hessianFactor2 = smartFactor2->linearize(values);
+  boost::shared_ptr<GaussianFactor> hessianFactor3 = smartFactor3->linearize(values);
+
+  Matrix CumulativeInformation = hessianFactor1->information() +  hessianFactor2->information() + hessianFactor3->information();
+
+  boost::shared_ptr<GaussianFactorGraph> GaussianGraph = graph.linearize(values);
+  Matrix GraphInformation = GaussianGraph->hessian().first;
+
+  // Check Hessian
+  EXPECT(assert_equal(GraphInformation, CumulativeInformation, 1e-8));
+
+  Matrix AugInformationMatrix = hessianFactor1->augmentedInformation() +
+      hessianFactor2->augmentedInformation() + hessianFactor3->augmentedInformation();
+
+  // Check Information vector
+  cout << AugInformationMatrix.size() << endl;
+  Vector InfoVector = AugInformationMatrix.block(0,18,18,1); // 18x18 Hessian + information vector
+
+  // Check Hessian
+  EXPECT(assert_equal(InfoVector, GaussianGraph->hessian().second, 1e-8));
+}
+
+/* *************************************************************************/
 TEST( SmartProjectionHessianFactor, 3poses_2land_rotation_only_smart_projection_factor ){
   // cout << " ************************ SmartProjectionHessianFactor: 3 cams + 2 landmarks: Rotation Only**********************" << endl;
 
@@ -840,8 +937,8 @@ TEST( SmartProjectionHessianFactor, HessianWithRotationDegenerate ){
 /* ************************************************************************* */
 //TEST( SmartProjectionHessianFactor, ConstructorWithCal3Bundler) {
 //  SmartProjectionHessianFactor<Pose3,Point3,Cal3Bundler> factor1(rankTol, linThreshold);
-//  Cal3Bundler Kbundler(500, 1e-3, 1e-3, 1000, 2000);
-//  factor1.add(measurement1, poseKey1, model, boost::shared_ptr<Cal3Bundler> &Kbundler);
+//  boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
+//  factor1.add(measurement1, poseKey1, model, Kbundler);
 //}
 
 /* *************************************************************************/
