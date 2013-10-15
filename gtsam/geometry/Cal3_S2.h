@@ -125,8 +125,13 @@ public:
   }
 
   /// return calibration matrix K
-  Matrix matrix() const {
+  Matrix K() const {
     return Matrix_(3, 3, fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0);
+  }
+
+  /** @deprecated The following function has been deprecated, use K above */
+  Matrix matrix() const {
+    return K();
   }
 
   /// return inverted calibration matrix inv(K)
