@@ -277,7 +277,7 @@ void optimizeGraphISAM2(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr g
 // main
 int main(int argc, char** argv) {
 
-  unsigned int maxNumLandmarks = 10000; //389007; //100000000; // 309393 // (loop_closure_merged) //37106 //(reduced kitti);
+  unsigned int maxNumLandmarks = 389007; // 10000; //100000000; // 309393 // (loop_closure_merged) //37106 //(reduced kitti);
   unsigned int maxNumPoses = 1e+6;
 
   // Set to true to use SmartProjectionFactor. Otherwise GenericProjectionFactor will be used
@@ -382,7 +382,7 @@ int main(int argc, char** argv) {
       }
 
       if (debug) cout << "Adding triangulated landmarks, graph size after: " << graphProjection.size() << endl;
-      if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+      if (debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
 
       if (useSmartProjectionFactor) {
           if (useLM)
@@ -404,7 +404,7 @@ int main(int argc, char** argv) {
     if (debug) fprintf(stderr,"%d %d\n", count, maxNumLandmarks);
     if (debug) cout << "CurrentLandmark " << currentLandmark << " Landmark " << l << std::endl;
 
-    if (1||debug) fprintf(stderr,"%d: %d, %d > %d, %d > %d\n", count, currentLandmark != l, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+    if (debug) fprintf(stderr,"%d: %d, %d > %d, %d > %d\n", count, currentLandmark != l, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
     if(breakingCondition){ // reached desired number of landmarks/poses
       break;
     }
