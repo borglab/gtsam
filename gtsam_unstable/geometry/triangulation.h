@@ -22,7 +22,11 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <boost/foreach.hpp>
+#include <boost/assign.hpp>
+#include <boost/assign/std/vector.hpp>
 #include <gtsam_unstable/base/dllexport.h>
+
 
 namespace gtsam {
 
@@ -57,6 +61,39 @@ public:
 GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     const std::vector<Point2>& measurements, const Cal3_S2& K, double rank_tol =
         1e-9);
+
+Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices,
+    const std::vector<Point2>& measurements, double rank_tol);
+
+/* ************************************************************************* */
+template<class CALIBRATION>
+Point3 triangulatePoint3(const std::vector<Pose3>& poses,
+    const  std::vector<Point2>& measurements, const  std::vector<boost::shared_ptr<CALIBRATION> >& Ks, double rank_tol) {
+
+  assert(poses.size() == measurements.size());
+  assert(poses.size() == Ks.size());
+
+  if(poses.size() < 2)
+    throw(TriangulationUnderconstrainedException());
+
+  std::vector<Matrix> projection_matrices;
+
+  // construct projection matrices from poses & calibration
+  for(size_t i = 0; i<poses.size(); i++){
+    projection_matrices.push_back( Ks.at(i)->matrix() * sub(poses.at(i).inverse().matrix(),0,3,0,4) );
+  }
+
+  Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);
+
+  // verify that the triangulated point lies infront of all cameras
+  BOOST_FOREACH(const Pose3& pose, poses) {
+    const Point3& p_local = pose.transform_to(triangulated_point);
+    if(p_local.z() <= 0)
+      throw(TriangulationCheiralityException());
+  }
+
+  return triangulated_point;
+}
 
 
 } // \namespace gtsam
