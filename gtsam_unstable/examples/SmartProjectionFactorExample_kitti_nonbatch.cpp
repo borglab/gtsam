@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
   unsigned int maxNumPoses = 1e+6;
 
   // Set to true to use SmartProjectionFactor. Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = false;
+  bool useSmartProjectionFactor = true;
   bool useLM = true; 
 
   double KittiLinThreshold = -1.0; // 0.005; //

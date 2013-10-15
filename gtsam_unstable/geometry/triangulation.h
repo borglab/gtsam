@@ -47,6 +47,9 @@ public:
   }
 };
 
+Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices,
+    const std::vector<Point2>& measurements, double rank_tol);
+
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
  * of poses (at least 2) using the DLT. The function checks that the
@@ -58,12 +61,32 @@ public:
  * @param rank tolerance, default 1e-9
  * @return Returns a Point3 on success, boost::none otherwise.
  */
+template<class CALIBRATION>
 GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
-    const std::vector<Point2>& measurements, const Cal3_S2& K, double rank_tol =
-        1e-9);
+    const std::vector<Point2>& measurements, const CALIBRATION& K, double rank_tol =  1e-9){
 
-Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices,
-    const std::vector<Point2>& measurements, double rank_tol);
+  assert(poses.size() == measurements.size());
+
+  if(poses.size() < 2)
+    throw(TriangulationUnderconstrainedException());
+
+  std::vector<Matrix> projection_matrices;
+
+  // construct projection matrices from poses & calibration
+  BOOST_FOREACH(const Pose3& pose, poses)
+  projection_matrices.push_back( K.K() * sub(pose.inverse().matrix(),0,3,0,4) );
+
+  Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);
+
+  // verify that the triangulated point lies infront of all cameras
+  BOOST_FOREACH(const Pose3& pose, poses) {
+    const Point3& p_local = pose.transform_to(triangulated_point);
+    if(p_local.z() <= 0)
+      throw(TriangulationCheiralityException());
+  }
+
+  return triangulated_point;
+}
 
 /* ************************************************************************* */
 template<class CALIBRATION>
@@ -80,7 +103,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 
   // construct projection matrices from poses & calibration
   for(size_t i = 0; i<poses.size(); i++){
-    projection_matrices.push_back( Ks.at(i)->matrix() * sub(poses.at(i).inverse().matrix(),0,3,0,4) );
+    projection_matrices.push_back( Ks.at(i)->K() * sub(poses.at(i).inverse().matrix(),0,3,0,4) );
   }
 
   Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);

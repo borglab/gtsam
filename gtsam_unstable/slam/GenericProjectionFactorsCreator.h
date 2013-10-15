@@ -31,12 +31,14 @@
 
 namespace gtsam {
 
-  typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> ProjectionFactor;
-  typedef FastMap<Key, std::vector<boost::shared_ptr<ProjectionFactor> > > ProjectionFactorMap;
-  typedef FastMap<Key, int> OrderingMap;
 
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
   class GenericProjectionFactorsCreator {
+
+    typedef GenericProjectionFactor<Pose3, Point3, CALIBRATION> ProjectionFactor;
+    typedef FastMap<Key, std::vector<boost::shared_ptr<ProjectionFactor> > > ProjectionFactorMap;
+    typedef FastMap<Key, int> OrderingMap;
+
   public:
     GenericProjectionFactorsCreator(const SharedNoiseModel& model,
         const boost::shared_ptr<CALIBRATION>& K,
@@ -51,10 +53,10 @@ namespace gtsam {
         bool debug = false;
 
         // Create projection factor
-        ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(measurement, noise_, poseKey, landmarkKey, K_));
+        boost::shared_ptr<ProjectionFactor> projectionFactor(new ProjectionFactor(measurement, noise_, poseKey, landmarkKey, K_));
 
         // Check if landmark exists in mapping
-        ProjectionFactorMap::iterator pfit = projectionFactors.find(landmarkKey);
+        typename ProjectionFactorMap::iterator pfit = projectionFactors.find(landmarkKey);
         if (pfit != projectionFactors.end()) {
           if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
 
@@ -65,7 +67,7 @@ namespace gtsam {
           if (debug) fprintf(stderr,"New landmark (%d)\n", pfit != projectionFactors.end());
 
           // Create a new vector of projection factors
-          std::vector<ProjectionFactor::shared_ptr> projectionFactorVector;
+          std::vector<boost::shared_ptr<ProjectionFactor> > projectionFactorVector;
           projectionFactorVector.push_back(projectionFactor);
 
           // Insert projection factor to NEW list of projection factors associated with this landmark
@@ -89,10 +91,10 @@ namespace gtsam {
             bool debug = false;
 
             // Create projection factor
-            ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(measurement, model, poseKey, landmarkKey, K));
+            typename ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(measurement, model, poseKey, landmarkKey, K));
 
             // Check if landmark exists in mapping
-            ProjectionFactorMap::iterator pfit = projectionFactors.find(landmarkKey);
+            typename ProjectionFactorMap::iterator pfit = projectionFactors.find(landmarkKey);
             if (pfit != projectionFactors.end()) {
               if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
 
@@ -103,7 +105,7 @@ namespace gtsam {
               if (debug) fprintf(stderr,"New landmark (%d)\n", pfit != projectionFactors.end());
 
               // Create a new vector of projection factors
-              std::vector<ProjectionFactor::shared_ptr> projectionFactorVector;
+              std::vector<boost::shared_ptr<ProjectionFactor> > projectionFactorVector;
               projectionFactorVector.push_back(projectionFactor);
 
               // Insert projection factor to NEW list of projection factors associated with this landmark
@@ -166,11 +168,11 @@ namespace gtsam {
         std::cout << "Reading initial guess for 3D points from file" << std::endl;
 
       std::vector<boost::shared_ptr<ProjectionFactor> > projectionFactorVector;
-      std::vector<boost::shared_ptr<ProjectionFactor> >::iterator vfit;
+      typename std::vector<boost::shared_ptr<ProjectionFactor> >::iterator vfit;
       Point3 point;
       Pose3 cameraPose;
 
-      ProjectionFactorMap::iterator pfit;
+      typename ProjectionFactorMap::iterator pfit;
 
       if (debug)  graphValues->print("graphValues \n");
       if (debug) std::cout << " # END VALUES: " << std::endl;

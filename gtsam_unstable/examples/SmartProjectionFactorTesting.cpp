@@ -62,6 +62,8 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 typedef PriorFactor<Pose3> Pose3Prior;
+//typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> SmartFactorsCreator;
+//typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFactorsCreator;
 typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
 typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
 typedef FastMap<Key, int> OrderingMap;
@@ -199,12 +201,10 @@ void optimizeGraphISAM2(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr g
 // main
 int main(int argc, char** argv) {
 
-  //  unsigned int maxNumLandmarks = 1e+7;
-  //  unsigned int maxNumPoses = 1e+7;
-
   // Set to true to use SmartProjectionFactor. Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = false;
+  bool useSmartProjectionFactor = true;
   bool useLM = true; 
+  bool addNoise = false;
 
   // Smart factors settings
   double linThreshold = -1.0; // negative is disabled
@@ -216,6 +216,8 @@ int main(int argc, char** argv) {
   std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
   std::cout << "PARAM LM: " << useLM << std::endl;
   std::cout << "PARAM linThreshold (negative is disabled): " << linThreshold << std::endl;
+  if(addNoise)
+    std::cout << "PARAM Noise: " << addNoise << std::endl;
 
   // Get home directory and dataset
   string HOME = getenv("HOME");
@@ -249,10 +251,10 @@ int main(int argc, char** argv) {
   bool optimized = false;
   boost::shared_ptr<Ordering> ordering(new Ordering());
 
-  // std::vector< boost::shared_ptr<Cal3Bundler> > K_bundler_cameras; // TODO: uncomment
-  std::vector< boost::shared_ptr<Cal3_S2> > K_S2_cameras;
+//   std::vector< boost::shared_ptr<Cal3Bundler> > K_cameras; // TODO: uncomment
+  std::vector< boost::shared_ptr<Cal3_S2> > K_cameras;
 
-  // boost::shared_ptr<Cal3Bundler> Kbund(new Cal3Bundler());// TODO: uncomment
+//  boost::shared_ptr<Cal3Bundler> K(new Cal3Bundler()); // TODO: uncomment
   Cal3_S2::shared_ptr K(new Cal3_S2());
 
   SmartFactorsCreator smartCreator(pixel_sigma, K, rankTolerance, linThreshold); // this initial K is not used
@@ -287,14 +289,23 @@ int main(int argc, char** argv) {
   for(unsigned int i = 0; i < totNumPoses; i++){
     // R,t,f,k1 and k2.
     fin >> rotx >> roty >> rotz  >> x >> y >> z >> f >> k1 >> k2;
-    // boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(f, k1, k2, 0.0, 0.0)); // TODO: uncomment
-    // K_cameras.push_back(Kbundler); // TODO: uncomment
+//    boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(f, k1, k2, 0.0, 0.0)); //TODO: uncomment
+//    K_cameras.push_back(Kbundler); //TODO: uncomment
     boost::shared_ptr<Cal3_S2> K_S2(new Cal3_S2(f, f, 0.0, 0.0, 0.0));
-    K_S2_cameras.push_back(K_S2);
+    K_cameras.push_back(K_S2);
     Vector3 rotVect(rotx,roty,rotz);
     // FORMAT CONVERSION!! R -> R'
     Rot3 R = Rot3::Expmap(rotVect);
-    loadedValues->insert(X(i), Pose3(R.inverse(), - R.unrotate(Point3(x,y,z)) ) );
+    Matrix3  R_bal_gtsam_mat = Matrix3::Zero(3,3);
+    R_bal_gtsam_mat(0,0) = 1.0;  R_bal_gtsam_mat(1,1) = -1.0; R_bal_gtsam_mat(2,2) = -1.0;
+    Rot3 R_bal_gtsam_ = Rot3(R_bal_gtsam_mat);
+    Pose3 CameraPose((R.inverse()).compose(R_bal_gtsam_), - R.unrotate(Point3(x,y,z)));
+
+    if(addNoise){
+      Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.3,0.1,0.3));
+      CameraPose = CameraPose.compose(noise_pose);
+    }
+    loadedValues->insert(X(i), CameraPose );
   }
 
   cout << "last pose: " << x << " " << y << " " << z << " " << rotx << " "
@@ -319,7 +330,7 @@ int main(int argc, char** argv) {
     l = vector_l.at(i);
     r = vector_r.at(i);
     // FORMAT CONVERSION!! XPOINT
-    u = - vector_u.at(i);
+    u = vector_u.at(i);
     // FORMAT CONVERSION!! XPOINT
     v = - vector_v.at(i);
 
@@ -337,7 +348,7 @@ int main(int argc, char** argv) {
 
     } else {
       // or STANDARD PROJECTION FACTORS
-      projectionCreator.add(L(l), X(r), Point2(u,v), pixel_sigma, K_S2_cameras.at(r), graphProjection);
+      projectionCreator.add(L(l), X(r), Point2(u,v), pixel_sigma, K_cameras.at(r), graphProjection);
       numLandmarks = projectionCreator.getNumLandmarks();
       optimized = false;
     }
@@ -382,6 +393,9 @@ int main(int argc, char** argv) {
 
   optimized = true;
 
+  cout << "===================================================" << endl;
+  tictoc_print_();
+  cout << "===================================================" << endl;
   writeValues("./", result);
 
   // if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);

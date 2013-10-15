@@ -55,32 +55,5 @@ Point3 triangulateDLT(const vector<Matrix>& projection_matrices,
 }
 
 /* ************************************************************************* */
-Point3 triangulatePoint3(const vector<Pose3>& poses,
-    const vector<Point2>& measurements, const Cal3_S2& K, double rank_tol) {
-
-  assert(poses.size() == measurements.size());
-
-  if(poses.size() < 2)
-    throw(TriangulationUnderconstrainedException());
-
-  vector<Matrix> projection_matrices;
-
-  // construct projection matrices from poses & calibration
-  BOOST_FOREACH(const Pose3& pose, poses)
-    projection_matrices += K.matrix() * sub(pose.inverse().matrix(),0,3,0,4);
-
-  Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);
-
-  // verify that the triangulated point lies infront of all cameras
-  BOOST_FOREACH(const Pose3& pose, poses) {
-    const Point3& p_local = pose.transform_to(triangulated_point);
-    if(p_local.z() <= 0)
-      throw(TriangulationCheiralityException());
-  }
-
-  return triangulated_point;
-}
-
-/* ************************************************************************* */
 
 } // namespace gtsam

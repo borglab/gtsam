@@ -14,7 +14,8 @@
 
 // Use a map to store landmark/smart factor pairs
 #include <gtsam/base/FastMap.h>
-#include <gtsam_unstable/slam/SmartProjectionFactor.h>
+// #include <gtsam_unstable/slam/SmartProjectionFactor.h>
+#include <gtsam_unstable/slam/SmartProjectionHessianFactor.h>
 
 #include <boost/foreach.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -25,12 +26,13 @@
 
 namespace gtsam {
 
-  typedef SmartProjectionFactor<Pose3, Point3, Cal3_S2> SmartFactor;
-  typedef FastMap<Key, boost::shared_ptr<SmartProjectionFactorState> > SmartFactorToStateMap;
-  typedef FastMap<Key, boost::shared_ptr<SmartFactor> > SmartFactorMap;
-
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
   class SmartProjectionFactorsCreator {
+
+  typedef SmartProjectionHessianFactor<Pose3, Point3, CALIBRATION> SmartFactor;
+  typedef FastMap<Key, boost::shared_ptr<SmartProjectionHessianFactorState> > SmartFactorToStateMap;
+  typedef FastMap<Key, boost::shared_ptr<SmartFactor> > SmartFactorMap;
+
   public:
     SmartProjectionFactorsCreator(const SharedNoiseModel& model,
         const boost::shared_ptr<CALIBRATION>& K,
@@ -51,12 +53,12 @@ namespace gtsam {
 
       // Check if landmark exists in mapping
       SmartFactorToStateMap::iterator fsit = smartFactorStates.find(landmarkKey);
-      SmartFactorMap::iterator fit = smartFactors.find(landmarkKey);
+      typename SmartFactorMap::iterator fit = smartFactors.find(landmarkKey);
       if (fsit != smartFactorStates.end() && fit != smartFactors.end()) {
         if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
 
         // Add measurement to smart factor
-        (*fit).second->add(measurement, poseKey);
+        (*fit).second->add(measurement, poseKey, noise_, K_);
         totalNumMeasurements++;
         if (debug) (*fit).second->print();
 
@@ -68,8 +70,9 @@ namespace gtsam {
         measurements.push_back(measurement);
 
         // This is a new landmark, create a new factor and add to mapping
-        boost::shared_ptr<SmartProjectionFactorState> smartFactorState(new SmartProjectionFactorState());
-        SmartFactor::shared_ptr smartFactor(new SmartFactor(views, measurements, noise_, K_, rankTolerance_, linearizationThreshold_));
+        boost::shared_ptr<SmartProjectionHessianFactorState> smartFactorState(new SmartProjectionHessianFactorState());
+        boost::shared_ptr<SmartFactor> smartFactor(new SmartFactor(rankTolerance_, linearizationThreshold_));
+        smartFactor->add(measurement, poseKey, noise_, K_);
         smartFactorStates.insert( std::make_pair(landmarkKey, smartFactorState) );
         smartFactors.insert( std::make_pair(landmarkKey, smartFactor) );
         graph.push_back(smartFactor);
@@ -80,6 +83,46 @@ namespace gtsam {
 
         views.clear();
         measurements.clear();
+      }
+    }
+
+    void add(Key landmarkKey, Key poseKey,
+        Point2 measurement,
+        const SharedNoiseModel& model,
+        const boost::shared_ptr<CALIBRATION>& K,
+        NonlinearFactorGraph &graph) {
+
+      std::vector<Key> views;
+      std::vector<Point2> measurements;
+
+      bool debug = false;
+
+      // Check if landmark exists in mapping
+      SmartFactorToStateMap::iterator fsit = smartFactorStates.find(landmarkKey);
+      typename SmartFactorMap::iterator fit = smartFactors.find(landmarkKey);
+      if (fsit != smartFactorStates.end() && fit != smartFactors.end()) {
+        if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
+
+        // Add measurement to smart factor
+        (*fit).second->add(measurement, poseKey, model, K);
+        totalNumMeasurements++;
+        if (debug) (*fit).second->print();
+
+      } else {
+
+        if (debug) fprintf(stderr,"New landmark (%d,%d)\n", fsit != smartFactorStates.end(), fit != smartFactors.end());
+
+        // This is a new landmark, create a new factor and add to mapping
+        boost::shared_ptr<SmartProjectionHessianFactorState> smartFactorState(new SmartProjectionHessianFactorState());
+        boost::shared_ptr<SmartFactor> smartFactor(new SmartFactor(rankTolerance_, linearizationThreshold_));
+        smartFactor->add(measurement, poseKey, model, K);
+        smartFactorStates.insert( std::make_pair(landmarkKey, smartFactorState) );
+        smartFactors.insert( std::make_pair(landmarkKey, smartFactor) );
+        graph.push_back(smartFactor);
+
+        numLandmarks++;
+        totalNumMeasurements++;
+
       }
     }
 
