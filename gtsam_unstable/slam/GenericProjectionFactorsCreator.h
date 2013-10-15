@@ -81,7 +81,8 @@ namespace gtsam {
     }
 
     void add(Key landmarkKey,
-            Key poseKey, Point2 measurement,
+            Key poseKey,
+            Point2 measurement,
             const SharedNoiseModel& model,
             const boost::shared_ptr<CALIBRATION>& K,
             NonlinearFactorGraph &graph) {
@@ -117,8 +118,8 @@ namespace gtsam {
             }
         }
 
-    void update(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr inputValues, gtsam::Values::shared_ptr outputValues) {
-        addTriangulatedLandmarks(graph, inputValues, outputValues);
+    void update(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr inputValues, gtsam::Values::shared_ptr outputValues, bool doTriangualatePoints = true) {
+        addTriangulatedLandmarks(graph, inputValues, outputValues, doTriangualatePoints);
         updateOrdering(graph);
     }
 
@@ -155,9 +156,14 @@ namespace gtsam {
     }
 
     void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr loadedValues,
-        gtsam::Values::shared_ptr graphValues) {
+        gtsam::Values::shared_ptr graphValues, bool doTriangualatePoints) {
 
       bool debug = false;
+
+      if(doTriangualatePoints)
+        std::cout << "Triangulating 3D points" << std::endl;
+      else
+        std::cout << "Reading initial guess for 3D points from file" << std::endl;
 
       std::vector<boost::shared_ptr<ProjectionFactor> > projectionFactorVector;
       std::vector<boost::shared_ptr<ProjectionFactor> >::iterator vfit;
@@ -174,73 +180,85 @@ namespace gtsam {
       int numProjectionFactors = 0;
       int numProjectionFactorsAdded = 0;
       int numFailures = 0;
-      for (pfit = projectionFactors.begin(); pfit != projectionFactors.end(); pfit++) {
+      for (pfit = projectionFactors.begin(); pfit != projectionFactors.end(); pfit++) { // for each landmark!
 
-        projectionFactorVector = (*pfit).second;
+        projectionFactorVector = (*pfit).second; // all factors connected to a given landmark
 
         std::vector<Pose3> cameraPoses;
         std::vector<Point2> measured;
 
         // Iterate through projection factors
-        for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) {
+        for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) { // for each factors connected to the landmark
           numProjectionFactors++;
 
           if (debug) std::cout << "ProjectionFactor: " << std::endl;
           if (debug) (*vfit)->print("ProjectionFactor");
 
           // Iterate through poses
-          cameraPoses.push_back( loadedValues->at<Pose3>((*vfit)->key1() ) );
-          measured.push_back( (*vfit)->measured() );
+          cameraPoses.push_back( loadedValues->at<Pose3>((*vfit)->key1() ) ); // get poses connected to the landmark
+          measured.push_back( (*vfit)->measured() ); // get measurements of the landmark
         }
 
         // Triangulate landmark based on set of poses and measurements
-        if (debug) std::cout << "Triangulating: " << std::endl;
-        try {
-          point = triangulatePoint3(cameraPoses, measured, *K_);
-          if (debug) std::cout << "Triangulation succeeded: " << point << std::endl;
-        } catch( TriangulationUnderconstrainedException& e) {
-          if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
-          if (debug) {
-            BOOST_FOREACH(const Pose3& pose, cameraPoses) {
-              std::cout << " Pose: " << pose << std::endl;
+        if (doTriangualatePoints){
+          // std::cout << "Triangulating points " << std::endl;
+          try {
+            point = triangulatePoint3(cameraPoses, measured, *K_);
+            if (debug) std::cout << "Triangulation succeeded: " << point << std::endl;
+          } catch( TriangulationUnderconstrainedException& e) {
+            if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
+            if (debug) {
+              BOOST_FOREACH(const Pose3& pose, cameraPoses) {
+                std::cout << " Pose: " << pose << std::endl;
+              }
             }
-          }
-          numFailures++;
-          continue;
-        } catch( TriangulationCheiralityException& e) {
-          if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
-          if (debug) {
-            std::cout << "Triangulation failed because of cheirality exception" << std::endl;
-            BOOST_FOREACH(const Pose3& pose, cameraPoses) {
-              std::cout << " Pose: " << pose << std::endl;
+            numFailures++;
+            continue;
+          } catch( TriangulationCheiralityException& e) {
+            if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
+            if (debug) {
+              std::cout << "Triangulation failed because of cheirality exception" << std::endl;
+              BOOST_FOREACH(const Pose3& pose, cameraPoses) {
+                std::cout << " Pose: " << pose << std::endl;
+              }
             }
+            numFailures++;
+            continue;
           }
-          numFailures++;
-          continue;
+        }else{ // we read 3D points from file
+          if (loadedValues->exists<Point3>((*pfit).first)){ // (*pfit).first) is the key of the landmark
+            // point
+          }else{
+            std::cout << "Trying to read non existing point from file " << std::endl;
+          }
         }
 
         // Add projection factors and pose values
-        for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) {
+        for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) { // for each proj factor connected to the landmark
           numProjectionFactorsAdded++;
+
           if (debug) std::cout << "Adding factor " << std::endl;
           if (debug) (*vfit)->print("Projection Factor");
-          graph.push_back( (*vfit) );
+
+          graph.push_back( (*vfit) ); // add factor to the graph
 
           if (!graphValues->exists<Pose3>( (*vfit)->key1()) && loadedValues->exists<Pose3>((*vfit)->key1())) {
             graphValues->insert((*vfit)->key1(), loadedValues->at<Pose3>((*vfit)->key1()));
-            cameraPoseKeys.push_back( (*vfit)->key1() );
+            cameraPoseKeys.push_back( (*vfit)->key1() ); // add camera poses, if necessary
+            // std::cout << "Added camera value " << std::endl;
           }
         }
 
         // Add landmark value
         if (debug) std::cout << "Adding value " << std::endl;
-        graphValues->insert( projectionFactorVector[0]->key2(), point); // add point;
+        graphValues->insert( projectionFactorVector[0]->key2(), point); // add point
+        // std::cout << "Added point value " << std::endl;
         landmarkKeys.push_back( projectionFactorVector[0]->key2() );
 
       }
       if (1||debug) std::cout << " # PROJECTION FACTORS CALCULATED: " << numProjectionFactors;
       if (1||debug) std::cout << " # PROJECTION FACTORS ADDED: " << numProjectionFactorsAdded;
-      if (1||debug) std::cout << " # FAILURES: " << numFailures;
+      if (1||debug) std::cout << " # FAILURES: " << numFailures << std::endl;
     }
 
     const SharedNoiseModel noise_;   ///< noise model used

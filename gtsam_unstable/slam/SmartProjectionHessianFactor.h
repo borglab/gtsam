@@ -318,7 +318,7 @@ namespace gtsam {
       if (retriangulate) {
         // We triangulate the 3D position of the landmark
         try {
-          state_->point = triangulatePoint3(cameraPoses, measured_, *K_all_.at(0), rankTolerance);
+          state_->point = triangulatePoint3(cameraPoses, measured_, K_all_, rankTolerance);
           state_->degenerate = false;
           state_->cheiralityException = false;
         } catch( TriangulationUnderconstrainedException& e) {
@@ -491,7 +491,7 @@ namespace gtsam {
         if (retriangulate) {
           // We triangulate the 3D position of the landmark
           try {
-            state_->point = triangulatePoint3(cameraPoses, measured_, *K_all_.at(0), rankTolerance);
+            state_->point = triangulatePoint3(cameraPoses, measured_, K_all_, rankTolerance);
             state_->degenerate = false;
             state_->cheiralityException = false;
           } catch( TriangulationUnderconstrainedException& e) {
