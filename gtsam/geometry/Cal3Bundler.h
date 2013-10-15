@@ -45,6 +45,16 @@ public:
   /// @name Standard Constructors
   /// @{
 
+  /// focal length x
+  inline double fx() const {
+    return f_;
+  }
+
+  /// focal length y
+  inline double fy() const {
+    return f_;
+  }
+
   /// Default constructor
   Cal3Bundler();
 
