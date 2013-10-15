@@ -206,11 +206,12 @@ int main(int argc, char** argv) {
   bool useSmartProjectionFactor = false;
   bool useLM = true; 
 
+  // Smart factors settings
   double linThreshold = -1.0; // negative is disabled
   double rankTolerance = 1.0;
 
-  bool incrementalFlag = false;
-  int optSkip = 200; // we optimize the graph every optSkip poses
+  // bool incrementalFlag = false;
+  // int optSkip = 200; // we optimize the graph every optSkip poses
 
   std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
   std::cout << "PARAM LM: " << useLM << std::endl;
@@ -219,14 +220,15 @@ int main(int argc, char** argv) {
   // Get home directory and dataset
   string HOME = getenv("HOME");
   string input_dir = HOME + "/data/SfM/BAL/Ladybug/";
-  string datasetName = "problem-1723-156502-pre.txt";
+  string datasetName = "problem-1031-110968-pre.txt";
 
   static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
   NonlinearFactorGraph graphSmart, graphProjection;
 
   gtsam::Values::shared_ptr graphSmartValues(new gtsam::Values());
   gtsam::Values::shared_ptr graphProjectionValues(new gtsam::Values());
-  gtsam::Values::shared_ptr loadedValues(new gtsam::Values());
+  gtsam::Values::shared_ptr loadedValues(new gtsam::Values()); // values we read from file
+  Values result;
 
   // Read in kitti dataset
   ifstream fin;
@@ -243,24 +245,27 @@ int main(int argc, char** argv) {
   double u, v;
   double x, y, z, rotx, roty, rotz, f, k1, k2;
   std::vector<Key> landmarkKeys, cameraPoseKeys;
-  Values result;
+
   bool optimized = false;
   boost::shared_ptr<Ordering> ordering(new Ordering());
 
-  // std::vector< boost::shared_ptr<Cal3Bundler> > K_cameras; // TODO: uncomment
-  Cal3_S2::shared_ptr K(new Cal3_S2(1, 1, 0, 0, 0));
+  // std::vector< boost::shared_ptr<Cal3Bundler> > K_bundler_cameras; // TODO: uncomment
+  std::vector< boost::shared_ptr<Cal3_S2> > K_S2_cameras;
 
   // boost::shared_ptr<Cal3Bundler> Kbund(new Cal3Bundler());// TODO: uncomment
+  Cal3_S2::shared_ptr K(new Cal3_S2());
 
-  SmartFactorsCreator smartCreator(pixel_sigma, K, rankTolerance, linThreshold);
-  ProjectionFactorsCreator projectionCreator(pixel_sigma, K);
+  SmartFactorsCreator smartCreator(pixel_sigma, K, rankTolerance, linThreshold); // this initial K is not used
+  ProjectionFactorsCreator projectionCreator(pixel_sigma, K);  // this initial K is not used
 
   // main loop: reads measurements and adds factors (also performs optimization if desired)
   // r >> pose id
   // l >> landmark id
   // (u >> u) >> measurement
   unsigned int totNumLandmarks=0, totNumPoses=0, totNumMeasurements=0;
-  fin >> totNumPoses >> totNumPoses >> totNumMeasurements;
+  fin >> totNumPoses >> totNumLandmarks >> totNumMeasurements;
+
+  cout << "Dataset: #poses: " << totNumPoses << " #points: " << totNumLandmarks << " #measurements: " << totNumMeasurements << " " << endl;
 
   std::vector<double> vector_u;
   std::vector<double> vector_v;
@@ -276,32 +281,47 @@ int main(int argc, char** argv) {
     vector_l.push_back(l);
   }
 
+  cout << "last measurement: " << r << " " << l << " " << u << " " << v << endl;
+
   // create values
   for(unsigned int i = 0; i < totNumPoses; i++){
     // R,t,f,k1 and k2.
-    fin >> x >> y >> z >> rotx >> roty >> rotz >> f >> k1 >> k2;
+    fin >> rotx >> roty >> rotz  >> x >> y >> z >> f >> k1 >> k2;
     // boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(f, k1, k2, 0.0, 0.0)); // TODO: uncomment
     // K_cameras.push_back(Kbundler); // TODO: uncomment
+    boost::shared_ptr<Cal3_S2> K_S2(new Cal3_S2(f, f, 0.0, 0.0, 0.0));
+    K_S2_cameras.push_back(K_S2);
     Vector3 rotVect(rotx,roty,rotz);
-    loadedValues->insert(Symbol('x',i), Pose3(Rot3::Expmap(rotVect), Point3(x,y,z) ) );
+    // FORMAT CONVERSION!! R -> R'
+    Rot3 R = Rot3::Expmap(rotVect);
+    loadedValues->insert(X(i), Pose3(R.inverse(), - R.unrotate(Point3(x,y,z)) ) );
   }
+
+  cout << "last pose: " << x << " " << y << " " << z << " " << rotx << " "
+      << roty << " " << rotz << " " << f << " " << k1 << " " << k2 << endl;
 
   // add landmarks in standard projection factors
   if(!useSmartProjectionFactor){
     for(unsigned int i = 0; i < totNumLandmarks; i++){
       fin >> x >> y >> z;
-      loadedValues->insert(Symbol('l',i), Point3(x,y,z) );
+      // FORMAT CONVERSION!! XPOINT
+      loadedValues->insert(L(i), Point3(x,y,z) );
     }
   }
+
+  cout << "last point: " << x << " " << y << " " << z << endl;
 
   // 1: add values and factors to the graph
   // 1.1: add factors
   // SMART FACTORS ..
   for(size_t i = 0; i < vector_u.size(); i++){
+
     l = vector_l.at(i);
     r = vector_r.at(i);
-    u = vector_u.at(i);
-    v = vector_v.at(i);
+    // FORMAT CONVERSION!! XPOINT
+    u = - vector_u.at(i);
+    // FORMAT CONVERSION!! XPOINT
+    v = - vector_v.at(i);
 
     if (useSmartProjectionFactor) {
 
@@ -317,16 +337,35 @@ int main(int argc, char** argv) {
 
     } else {
       // or STANDARD PROJECTION FACTORS
-      projectionCreator.add(L(l), X(r), Point2(u,v), pixel_sigma, K, graphProjection);
+      projectionCreator.add(L(l), X(r), Point2(u,v), pixel_sigma, K_S2_cameras.at(r), graphProjection);
       numLandmarks = projectionCreator.getNumLandmarks();
       optimized = false;
     }
   }
 
+  cout << "Before call to update: ------------------ " << endl;
+  cout << "Poses in SmartGraph values: "<< graphSmartValues->size() << endl;
+  Values valuesProjPoses = graphProjectionValues->filter<Pose3>();
+  cout << "Poses in ProjectionGraph values: "<< valuesProjPoses.size() << endl;
+  Values valuesProjPoints = graphProjectionValues->filter<Point3>();
+  cout << "Points in ProjectionGraph values: "<< valuesProjPoints.size() << endl;
+  cout << "---------------------------------------------------------- " << endl;
+
   if (!useSmartProjectionFactor) {
-    projectionCreator.update(graphProjection, loadedValues, graphProjectionValues);
+    bool doTriangulation = false; // we read points initial guess from file
+    projectionCreator.update(graphProjection, loadedValues, graphProjectionValues, doTriangulation);
+
+    graphProjectionValues = loadedValues;
     ordering = projectionCreator.getOrdering();
   }
+
+  cout << "After call to update: ------------------ " << endl;
+  cout << "Poses in SmartGraph values: "<< graphSmartValues->size() << endl;
+  valuesProjPoses = graphProjectionValues->filter<Pose3>();
+  cout << "Poses in ProjectionGraph values: "<< valuesProjPoses.size() << endl;
+  valuesProjPoints = graphProjectionValues->filter<Point3>();
+  cout << "Points in ProjectionGraph values: "<< valuesProjPoints.size() << endl;
+  cout << "---------------------------------------------------------- " << endl;
 
   if (useSmartProjectionFactor) {
     if (useLM)
@@ -337,7 +376,7 @@ int main(int argc, char** argv) {
     if (useLM)
       optimizeGraphLM(graphProjection, graphProjectionValues, result, ordering);
     else
-      optimizeGraphISAM2(graphSmart, graphSmartValues, result);
+      optimizeGraphISAM2(graphSmart, graphSmartValues, result); // ?
   }
   // *graphSmartValues = result; // we use optimized solution as initial guess for the next one
 
