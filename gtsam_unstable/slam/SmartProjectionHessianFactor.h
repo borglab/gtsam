@@ -21,6 +21,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <vector>

@@ -21,7 +21,7 @@
 
 
 #include <gtsam/geometry/PinholeCamera.h>
-
+#include <gtsam/geometry/Cal3Bundler.h>
 //#include <boost/foreach.hpp>
 //#include <boost/assign.hpp>
 //#include <boost/assign/std/vector.hpp>
@@ -79,6 +79,43 @@ namespace gtsam {
           landmarkKeys.push_back( landmarkKey );
         }
     }
+
+    void add(Key landmarkKey,
+            Key poseKey, Point2 measurement,
+            const SharedNoiseModel& model,
+            const boost::shared_ptr<CALIBRATION>& K,
+            NonlinearFactorGraph &graph) {
+            bool debug = false;
+
+            // Create projection factor
+            ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(measurement, model, poseKey, landmarkKey, K));
+
+            // Check if landmark exists in mapping
+            ProjectionFactorMap::iterator pfit = projectionFactors.find(landmarkKey);
+            if (pfit != projectionFactors.end()) {
+              if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
+
+              // Add projection factor to list of projection factors associated with this landmark
+              (*pfit).second.push_back(projectionFactor);
+
+            } else {
+              if (debug) fprintf(stderr,"New landmark (%d)\n", pfit != projectionFactors.end());
+
+              // Create a new vector of projection factors
+              std::vector<ProjectionFactor::shared_ptr> projectionFactorVector;
+              projectionFactorVector.push_back(projectionFactor);
+
+              // Insert projection factor to NEW list of projection factors associated with this landmark
+              projectionFactors.insert( std::make_pair(landmarkKey, projectionFactorVector) );
+
+              // Add projection factor to graph
+              //graph.push_back(projectionFactor);
+
+              // We have a new landmark
+              numLandmarks++;
+              landmarkKeys.push_back( landmarkKey );
+            }
+        }
 
     void update(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr inputValues, gtsam::Values::shared_ptr outputValues) {
         addTriangulatedLandmarks(graph, inputValues, outputValues);
