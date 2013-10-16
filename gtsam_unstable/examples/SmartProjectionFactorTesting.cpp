@@ -128,8 +128,8 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   cout << "Number of variables: " << graphValues->size() << endl;
   std::cout << " OPTIMIZATION " << std::endl;
 
-  std::cout << "\n\n=================================================\n\n";
   if (debug) {
+    std::cout << "\n\n=================================================\n\n";
     graph.print("thegraph");
   }
   std::cout << "\n\n=================================================\n\n";
@@ -163,6 +163,8 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
       result = optimizer.optimize();
       gttoc_(SmartProjectionFactorExample_kitti);
       tictoc_finishedIteration_();
+
+      std::cout << "Total number of LM iterations: " << optimizer.state().iterations << std::endl;
     //}
 
     //*ordering = params.ordering;
@@ -224,13 +226,13 @@ int main(int argc, char** argv) {
   // Get home directory and dataset
   string HOME = getenv("HOME");
   string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1031-110968-pre.txt";
-//  string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1723-156502-pre.txt";
-//  string datasetFile = HOME + "/data/SfM/BAL/final/problem-1936-649673-pre.txt";
+  //  string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1723-156502-pre.txt";
+  //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-961-187103-pre.txt";
+  //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-1936-649673-pre.txt";
 
-//  1936     649673      5213733    problem-1936-649673-pre.txt.bz2
-//  3068     310854      1653812    problem-3068-310854-pre.txt.bz2
-//  4585     1324582     9125125    problem-4585-1324582-pre.txt.bz2
-//  13682    4456117     28987644   problem-13682-4456117-pre.txt.bz2
+  //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-3068-310854-pre.txt";
+  //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-4585-1324582-pre.txt";
+  //  13682    4456117     28987644   problem-13682-4456117-pre.txt.bz2
 
   static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
   NonlinearFactorGraph graphSmart, graphProjection;
