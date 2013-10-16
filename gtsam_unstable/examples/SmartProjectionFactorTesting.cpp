@@ -164,7 +164,8 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
       gttoc_(SmartProjectionFactorExample_kitti);
       tictoc_finishedIteration_();
 
-      std::cout << "Total number of LM iterations: " << optimizer.state().iterations << std::endl;
+      std::cout << "Number of outer LM iterations: " << optimizer.state().iterations << std::endl;
+      std::cout << "Total number of LM iterations (inner and outer): " << optimizer.getInnerIterations() << std::endl;
     //}
 
     //*ordering = params.ordering;
@@ -214,25 +215,53 @@ int main(int argc, char** argv) {
   double linThreshold = -1.0; // negative is disabled
   double rankTolerance = 1.0;
 
-  // bool incrementalFlag = false;
-  // int optSkip = 200; // we optimize the graph every optSkip poses
-
-  std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
-  std::cout << "PARAM LM: " << useLM << std::endl;
-  std::cout << "PARAM linThreshold (negative is disabled): " << linThreshold << std::endl;
-  if(addNoise)
-    std::cout << "PARAM Noise: " << addNoise << std::endl;
-
   // Get home directory and dataset
   string HOME = getenv("HOME");
   string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1031-110968-pre.txt";
   //  string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1723-156502-pre.txt";
+  //  string datasetFile = HOME + "/data/SfM/BAL/Trafalgar-Square/problem-257-65132-pre.txt";
+
   //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-961-187103-pre.txt";
   //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-1936-649673-pre.txt";
 
   //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-3068-310854-pre.txt";
   //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-4585-1324582-pre.txt";
   //  13682    4456117     28987644   problem-13682-4456117-pre.txt.bz2
+
+  std::cout << "argc: " << argc << std::endl;
+
+  if(argc>1){ // if we have any input arguments
+    string useSmartArgument = argv[1];
+    string useTriangulationArgument = argv[2];
+    string datasetFile = argv[3];
+    if(useSmartArgument.compare("smart")==0){
+      useSmartProjectionFactor=true;
+    } else{
+      if(useSmartArgument.compare("standard")==0){
+        useSmartProjectionFactor=false;
+      }else{
+        cout << "Selected wrong option for input argument - useSmartProjectionFactor" << endl;
+        exit(1);
+      }
+    }
+    if(useTriangulationArgument.compare("do")==0){
+      doTriangulation=true;
+    } else{
+      if(useTriangulationArgument.compare("dont")==0){
+        doTriangulation=false;
+      }else{
+        cout << "Selected wrong option for input argument - doTriangulation - not important for SmartFactors" << endl;
+      }
+    }
+  }
+  std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
+  std::cout << "PARAM doTriangulation: " << doTriangulation << std::endl;
+  // std::cout << "PARAM LM: " << useLM << std::endl;
+  std::cout << "PARAM linThreshold (negative is disabled): " << linThreshold << std::endl;
+  if(addNoise)
+    std::cout << "PARAM Noise: " << addNoise << std::endl;
+
+  std::cout << "datasetFile: " << datasetFile << std::endl;
 
   static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
   NonlinearFactorGraph graphSmart, graphProjection;
