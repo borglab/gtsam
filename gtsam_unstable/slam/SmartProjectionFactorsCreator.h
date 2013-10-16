@@ -89,11 +89,13 @@ namespace gtsam {
     void add(Key landmarkKey, Key poseKey,
         Point2 measurement,
         const SharedNoiseModel& model,
-        const boost::shared_ptr<CALIBRATION>& K,
+        const boost::shared_ptr<CALIBRATION>& Ki,
         NonlinearFactorGraph &graph) {
 
       std::vector<Key> views;
       std::vector<Point2> measurements;
+
+      // std::cout << "matrix : " << K->K() << std::endl;
 
       bool debug = false;
 
@@ -102,23 +104,30 @@ namespace gtsam {
       typename SmartFactorMap::iterator fit = smartFactors.find(landmarkKey);
       if (fsit != smartFactorStates.end() && fit != smartFactors.end()) {
         if (debug) fprintf(stderr,"Adding measurement to existing landmark\n");
-
+        // (*fit).second->print("before: ");
         // Add measurement to smart factor
-        (*fit).second->add(measurement, poseKey, model, K);
+        (*fit).second->add(measurement, poseKey, model, Ki);
+        // (*fit).second->print("after: ");
         totalNumMeasurements++;
         if (debug) (*fit).second->print();
 
       } else {
 
-        if (debug) fprintf(stderr,"New landmark (%d,%d)\n", fsit != smartFactorStates.end(), fit != smartFactors.end());
+        if (debug) std::cout <<"landmark " << DefaultKeyFormatter(landmarkKey) << "pose " << DefaultKeyFormatter(poseKey) << std::endl;
+
+        // if (debug) fprintf(stderr,"landmarkKey %d poseKey %d measurement\n", landmarkKey, fit != smartFactors.end());
 
         // This is a new landmark, create a new factor and add to mapping
         boost::shared_ptr<SmartProjectionHessianFactorState> smartFactorState(new SmartProjectionHessianFactorState());
         boost::shared_ptr<SmartFactor> smartFactor(new SmartFactor(rankTolerance_, linearizationThreshold_));
-        smartFactor->add(measurement, poseKey, model, K);
+        smartFactor->add(measurement, poseKey, model, Ki);
+        // smartFactor->print("created: ");
+        // smartFactor->print(" ");
         smartFactorStates.insert( std::make_pair(landmarkKey, smartFactorState) );
         smartFactors.insert( std::make_pair(landmarkKey, smartFactor) );
         graph.push_back(smartFactor);
+
+        if (debug) std::cout <<" graph size " << graph.size() << std::endl;
 
         numLandmarks++;
         totalNumMeasurements++;
@@ -144,6 +153,7 @@ namespace gtsam {
     SmartFactorMap smartFactors;
 
     unsigned int totalNumMeasurements;
+    //landmarkKeys.push_back( L(l) );
     unsigned int numLandmarks;
 
   };

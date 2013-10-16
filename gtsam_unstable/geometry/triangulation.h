@@ -73,8 +73,11 @@ GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   std::vector<Matrix> projection_matrices;
 
   // construct projection matrices from poses & calibration
-  BOOST_FOREACH(const Pose3& pose, poses)
+  BOOST_FOREACH(const Pose3& pose, poses){
   projection_matrices.push_back( K.K() * sub(pose.inverse().matrix(),0,3,0,4) );
+  // std::cout << "Calibration i \n" << K.K() << std::endl;
+  // std::cout << "rank_tol i \n" << rank_tol << std::endl;
+  }
 
   Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
@@ -104,6 +107,8 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   // construct projection matrices from poses & calibration
   for(size_t i = 0; i<poses.size(); i++){
     projection_matrices.push_back( Ks.at(i)->K() * sub(poses.at(i).inverse().matrix(),0,3,0,4) );
+    // std::cout << "2Calibration i \n" << Ks.at(i)->K() << std::endl;
+    // std::cout << "2rank_tol i \n" << rank_tol << std::endl;
   }
 
   Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);

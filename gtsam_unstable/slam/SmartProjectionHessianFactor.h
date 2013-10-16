@@ -40,7 +40,7 @@ namespace gtsam {
   // default threshold for rank deficient triangulation
   static double defaultRankTolerance = 1; // this value may be scenario-dependent and has to be larger in  presence of larger noise
   // if set to true will use the rotation-only version for degenerate cases
-  static bool manageDegeneracy = true;
+  static bool manageDegeneracy = false;
 
   /**
    * Structure for storing some state memory, used to speed up optimization
@@ -250,6 +250,10 @@ namespace gtsam {
       BOOST_FOREACH(const SharedNoiseModel& noise_i, noise_) {
         noise_i->print("noise model = ");
       }
+      BOOST_FOREACH(const boost::shared_ptr<CALIBRATION>& K, K_all_) {
+        K->print("calibration = ");
+      }
+
       if(this->body_P_sensor_){
         this->body_P_sensor_->print("  sensor pose in body frame: ");
       }
@@ -318,6 +322,7 @@ namespace gtsam {
       if (retriangulate) {
         // We triangulate the 3D position of the landmark
         try {
+          std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
           state_->point = triangulatePoint3(cameraPoses, measured_, K_all_, rankTolerance);
           state_->degenerate = false;
           state_->cheiralityException = false;
@@ -521,6 +526,7 @@ namespace gtsam {
         }
 
         if(state_->degenerate){
+          // return 0.0; // TODO: this maybe should be zero?
           for(size_t i = 0; i < measured_.size(); i++) {
             Pose3 pose = cameraPoses.at(i);
             PinholeCamera<CALIBRATION> camera(pose, *K_all_.at(i));

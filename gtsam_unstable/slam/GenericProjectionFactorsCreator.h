@@ -37,6 +37,7 @@ namespace gtsam {
 
     typedef GenericProjectionFactor<Pose3, Point3, CALIBRATION> ProjectionFactor;
     typedef FastMap<Key, std::vector<boost::shared_ptr<ProjectionFactor> > > ProjectionFactorMap;
+    typedef FastMap<Key, boost::shared_ptr<CALIBRATION> > CalibrationMap;
     typedef FastMap<Key, int> OrderingMap;
 
   public:
@@ -89,6 +90,12 @@ namespace gtsam {
             const boost::shared_ptr<CALIBRATION>& K,
             NonlinearFactorGraph &graph) {
             bool debug = false;
+
+            // Check if landmark exists in mapping
+            typename CalibrationMap::iterator calfit = keyCalibrationMap.find(poseKey);
+            if (calfit == keyCalibrationMap.end()){
+              keyCalibrationMap.insert( std::make_pair(poseKey, K) );
+            }
 
             // Create projection factor
             typename ProjectionFactor::shared_ptr projectionFactor(new ProjectionFactor(measurement, model, poseKey, landmarkKey, K));
@@ -167,6 +174,10 @@ namespace gtsam {
       else
         std::cout << "Reading initial guess for 3D points from file" << std::endl;
 
+      double rankTolerance=1;
+
+      std::cout << "rankTolerance " << rankTolerance << std::endl;
+
       std::vector<boost::shared_ptr<ProjectionFactor> > projectionFactorVector;
       typename std::vector<boost::shared_ptr<ProjectionFactor> >::iterator vfit;
       Point3 point;
@@ -188,6 +199,7 @@ namespace gtsam {
 
         std::vector<Pose3> cameraPoses;
         std::vector<Point2> measured;
+        typename std::vector< boost::shared_ptr<CALIBRATION> > Ks;
 
         // Iterate through projection factors
         for (vfit = projectionFactorVector.begin(); vfit != projectionFactorVector.end(); vfit++) { // for each factors connected to the landmark
@@ -196,8 +208,16 @@ namespace gtsam {
           if (debug) std::cout << "ProjectionFactor: " << std::endl;
           if (debug) (*vfit)->print("ProjectionFactor");
 
-          // Iterate through poses
-          cameraPoses.push_back( loadedValues->at<Pose3>((*vfit)->key1() ) ); // get poses connected to the landmark
+          // Iterate through poses // find calibration
+          Key poseKey = (*vfit)->key1();
+          typename CalibrationMap::iterator calfit = keyCalibrationMap.find(poseKey);
+          if (calfit == keyCalibrationMap.end()){ // the pose is not there
+            std::cout << "ProjectionFactor: " << std::endl;
+          }else{
+            Ks.push_back(calfit->second);
+          }
+
+          cameraPoses.push_back( loadedValues->at<Pose3>(poseKey) ); // get poses connected to the landmark
           measured.push_back( (*vfit)->measured() ); // get measurements of the landmark
         }
 
@@ -205,7 +225,7 @@ namespace gtsam {
         if (doTriangualatePoints){
           // std::cout << "Triangulating points " << std::endl;
           try {
-            point = triangulatePoint3(cameraPoses, measured, *K_);
+            point = triangulatePoint3(cameraPoses, measured, Ks, rankTolerance);
             if (debug) std::cout << "Triangulation succeeded: " << point << std::endl;
           } catch( TriangulationUnderconstrainedException& e) {
             if (debug) std::cout << "Triangulation failed because of unconstrained exception" << std::endl;
@@ -272,6 +292,7 @@ namespace gtsam {
     std::vector<Key> cameraPoseKeys;
     std::vector<Key> landmarkKeys;
     ProjectionFactorMap projectionFactors;
+    CalibrationMap keyCalibrationMap;
     boost::shared_ptr<Ordering> ordering;
     // orderingMethod: 0 - COLAMD, 1 - landmark first, then COLAMD on poses (constrained ordering)
     int orderingMethod;

@@ -203,6 +203,8 @@ int main(int argc, char** argv) {
 
   // Set to true to use SmartProjectionFactor. Otherwise GenericProjectionFactor will be used
   bool useSmartProjectionFactor = true;
+  bool doTriangulation = true; // we read points initial guess from file or we triangulate
+
   bool useLM = true; 
   bool addNoise = false;
 
@@ -221,8 +223,14 @@ int main(int argc, char** argv) {
 
   // Get home directory and dataset
   string HOME = getenv("HOME");
-  string input_dir = HOME + "/data/SfM/BAL/Ladybug/";
-  string datasetName = "problem-1031-110968-pre.txt";
+  string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1031-110968-pre.txt";
+//  string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1723-156502-pre.txt";
+//  string datasetFile = HOME + "/data/SfM/BAL/final/problem-1936-649673-pre.txt";
+
+//  1936     649673      5213733    problem-1936-649673-pre.txt.bz2
+//  3068     310854      1653812    problem-3068-310854-pre.txt.bz2
+//  4585     1324582     9125125    problem-4585-1324582-pre.txt.bz2
+//  13682    4456117     28987644   problem-13682-4456117-pre.txt.bz2
 
   static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
   NonlinearFactorGraph graphSmart, graphProjection;
@@ -234,7 +242,7 @@ int main(int argc, char** argv) {
 
   // Read in kitti dataset
   ifstream fin;
-  fin.open((input_dir+datasetName).c_str());
+  fin.open((datasetFile).c_str());
   if(!fin) {
     cerr << "Could not open dataset" << endl;
     exit(1);
@@ -252,7 +260,6 @@ int main(int argc, char** argv) {
   boost::shared_ptr<Ordering> ordering(new Ordering());
 
 //   std::vector< boost::shared_ptr<Cal3Bundler> > K_cameras; // TODO: uncomment
-  std::vector< boost::shared_ptr<Cal3_S2> > K_cameras;
 
 //  boost::shared_ptr<Cal3Bundler> K(new Cal3Bundler()); // TODO: uncomment
   Cal3_S2::shared_ptr K(new Cal3_S2());
@@ -285,6 +292,8 @@ int main(int argc, char** argv) {
 
   cout << "last measurement: " << r << " " << l << " " << u << " " << v << endl;
 
+  std::vector< boost::shared_ptr<Cal3_S2> > K_cameras;
+
   // create values
   for(unsigned int i = 0; i < totNumPoses; i++){
     // R,t,f,k1 and k2.
@@ -292,6 +301,7 @@ int main(int argc, char** argv) {
 //    boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(f, k1, k2, 0.0, 0.0)); //TODO: uncomment
 //    K_cameras.push_back(Kbundler); //TODO: uncomment
     boost::shared_ptr<Cal3_S2> K_S2(new Cal3_S2(f, f, 0.0, 0.0, 0.0));
+    // cout << "f "<< f << endl;
     K_cameras.push_back(K_S2);
     Vector3 rotVect(rotx,roty,rotz);
     // FORMAT CONVERSION!! R -> R'
@@ -336,7 +346,7 @@ int main(int argc, char** argv) {
 
     if (useSmartProjectionFactor) {
 
-      smartCreator.add(L(l), X(r), Point2(u,v), graphSmart);
+      smartCreator.add(L(l), X(r), Point2(u,v), pixel_sigma, K_cameras.at(r), graphSmart);
       numLandmarks = smartCreator.getNumLandmarks();
 
       // Add initial pose value if pose does not exist
@@ -363,10 +373,8 @@ int main(int argc, char** argv) {
   cout << "---------------------------------------------------------- " << endl;
 
   if (!useSmartProjectionFactor) {
-    bool doTriangulation = false; // we read points initial guess from file
     projectionCreator.update(graphProjection, loadedValues, graphProjectionValues, doTriangulation);
-
-    graphProjectionValues = loadedValues;
+    // graphProjectionValues = loadedValues;
     ordering = projectionCreator.getOrdering();
   }
 
@@ -383,13 +391,16 @@ int main(int argc, char** argv) {
       optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
     else
       optimizeGraphISAM2(graphSmart, graphSmartValues, result);
+
+    cout << "Final reprojection error (smart): " << graphSmart.error(result);
   } else {
     if (useLM)
       optimizeGraphLM(graphProjection, graphProjectionValues, result, ordering);
     else
-      optimizeGraphISAM2(graphSmart, graphSmartValues, result); // ?
+      optimizeGraphISAM2(graphProjection, graphProjectionValues, result); // ?
+
+    cout << "Final reprojection error (standard): " << graphProjection.error(result);
   }
-  // *graphSmartValues = result; // we use optimized solution as initial guess for the next one
 
   optimized = true;
 
@@ -398,6 +409,7 @@ int main(int argc, char** argv) {
   cout << "===================================================" << endl;
   writeValues("./", result);
 
-  // if (1||debug) fprintf(stderr,"%d: %d > %d, %d > %d\n", count, numLandmarks, maxNumLandmarks, numPoses, maxNumPoses);
+  if (debug) cout << numLandmarks << " " <<  numPoses << " " << optimized << endl;
+
   exit(0);
 }
