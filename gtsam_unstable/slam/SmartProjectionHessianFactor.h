@@ -40,7 +40,7 @@ namespace gtsam {
   // default threshold for rank deficient triangulation
   static double defaultRankTolerance = 1; // this value may be scenario-dependent and has to be larger in  presence of larger noise
   // if set to true will use the rotation-only version for degenerate cases
-  static bool manageDegeneracy = false;
+  static bool manageDegeneracy = true;
 
   /**
    * Structure for storing some state memory, used to speed up optimization
@@ -322,7 +322,7 @@ namespace gtsam {
       if (retriangulate) {
         // We triangulate the 3D position of the landmark
         try {
-          std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
+          // std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
           state_->point = triangulatePoint3(cameraPoses, measured_, K_all_, rankTolerance);
           state_->degenerate = false;
           state_->cheiralityException = false;
