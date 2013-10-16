@@ -74,6 +74,7 @@ class GTSAM_EXPORT LevenbergMarquardtState : public NonlinearOptimizerState {
 
 public:
   double lambda;
+  int totalNumberInnerIterations; // The total number of inner iterations in the optimization (for each iteration, LM may try multiple iterations with different lambdas)
 
   LevenbergMarquardtState() {}
 
@@ -81,7 +82,7 @@ public:
 
 protected:
   LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
-    NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial) {}
+    NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial), totalNumberInnerIterations(0) {}
 
   friend class LevenbergMarquardtOptimizer;
 };
@@ -94,6 +95,7 @@ class GTSAM_EXPORT LevenbergMarquardtOptimizer : public NonlinearOptimizer {
 protected:
   LevenbergMarquardtParams params_; ///< LM parameters
   LevenbergMarquardtState state_;   ///< optimization state
+
 
 public:
   typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
@@ -128,6 +130,9 @@ public:
 
   /// Access the current damping value
   double lambda() const { return state_.lambda; }
+
+  /// Access the current number of inner iterations
+  int getInnerIterations() const { return state_.totalNumberInnerIterations; }
 
   /// print
   virtual void print(const std::string& str = "") const {
