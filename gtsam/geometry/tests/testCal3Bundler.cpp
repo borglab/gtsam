@@ -29,7 +29,7 @@ static Cal3Bundler K(500, 1e-3, 1e-3, 1000, 2000);
 static Point2 p(2,3);
 
 /* ************************************************************************* */
-TEST( Cal3Bundler, calibrate)
+TEST( Cal3Bundler, uncalibrate)
 {
   Vector v = K.vector() ;
   double r = p.x()*p.x() + p.y()*p.y() ;
@@ -37,6 +37,14 @@ TEST( Cal3Bundler, calibrate)
   Point2 expected (1000+g*p.x(), 2000+g*p.y()) ;
   Point2 actual = K.uncalibrate(p);
   CHECK(assert_equal(actual,expected));
+}
+
+TEST( Cal3Bundler, calibrate )
+{
+  Point2 pn(0.5, 0.5);
+  Point2 pi = K.uncalibrate(pn);
+  Point2 pn_hat = K.calibrate(pi);
+  CHECK( pn.equals(pn_hat, 1e-5));
 }
 
 /* ************************************************************************* */

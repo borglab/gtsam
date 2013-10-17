@@ -95,6 +95,34 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 }
 
 /* ************************************************************************* */
+Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
+  // Copied from Cal3DS2 :-(
+  // but specialized with k1,k2 non-zero only and fx=fy and s=0
+  const Point2 invKPi((pi.x() - u0_)/f_, (pi.y() - v0_)/f_);
+
+  // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
+  Point2 pn = invKPi;
+
+  // iterate until the uncalibrate is close to the actual pixel coordinate
+  const int maxIterations = 10;
+  int iteration;
+  for (iteration = 0; iteration < maxIterations; ++iteration) {
+    if (uncalibrate(pn).distance(pi) <= tol)
+      break;
+    const double x = pn.x(), y = pn.y(), xx = x * x, yy = y * y;
+    const double rr = xx + yy;
+    const double g = (1 + k1_ * rr + k2_ * rr * rr);
+    pn = invKPi / g;
+  }
+
+  if (iteration >= maxIterations)
+    throw std::runtime_error(
+        "Cal3DS2::calibrate fails to converge. need a better initialization");
+
+  return pn;
+}
+
+/* ************************************************************************* */
 Matrix Cal3Bundler::D2d_intrinsic(const Point2& p) const {
   Matrix Dp;
   uncalibrate(p, boost::none, Dp);

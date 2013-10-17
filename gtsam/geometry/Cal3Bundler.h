@@ -92,7 +92,10 @@ public:
   Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal =
       boost::none, boost::optional<Matrix&> Dp = boost::none) const;
 
-  /// @deprecated might be removed in next release, use uncalibrate
+  /// Conver a pixel coordinate to ideal coordinate
+  Point2 calibrate(const Point2& pi, const double tol=1e-5) const;
+
+    /// @deprecated might be removed in next release, use uncalibrate
   Matrix D2d_intrinsic(const Point2& p) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
