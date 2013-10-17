@@ -292,6 +292,9 @@ TEST( SmartProjectionHessianFactor, 3poses_smart_projection_factor ){
   gttoc_(SmartProjectionHessianFactor);
   tictoc_finishedIteration_();
 
+//  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
+//  VectorValues delta = GFG->optimize();
+
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if(isDebugTest) result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));

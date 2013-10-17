@@ -58,15 +58,21 @@ using namespace gtsam;
 using namespace boost::assign;
 namespace NM = gtsam::noiseModel;
 
+// #define USE_BUNDLER
+
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 typedef PriorFactor<Pose3> Pose3Prior;
-//typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> SmartFactorsCreator;
-//typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFactorsCreator;
-typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
-typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
 typedef FastMap<Key, int> OrderingMap;
+
+#ifdef USE_BUNDLER
+  typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> SmartFactorsCreator;
+  typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFactorsCreator;
+#else
+  typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
+  typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
+#endif
 
 bool debug = false;
 
@@ -156,17 +162,15 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
     std::cout << "Using COLAMD ordering\n" << std::endl;
     //boost::shared_ptr<Ordering> ordering2(new Ordering()); ordering = ordering2;
 
-    //for (int i = 0; i < 3; i++) {
-      LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
-      params.ordering = Ordering::COLAMD(graph);
-      gttic_(SmartProjectionFactorExample_kitti);
-      result = optimizer.optimize();
-      gttoc_(SmartProjectionFactorExample_kitti);
-      tictoc_finishedIteration_();
+    LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
+    params.ordering = Ordering::COLAMD(graph);
+    gttic_(SmartProjectionFactorExample_kitti);
+    result = optimizer.optimize();
+    gttoc_(SmartProjectionFactorExample_kitti);
+    tictoc_finishedIteration_();
 
-      std::cout << "Number of outer LM iterations: " << optimizer.state().iterations << std::endl;
-      std::cout << "Total number of LM iterations (inner and outer): " << optimizer.getInnerIterations() << std::endl;
-    //}
+    std::cout << "Number of outer LM iterations: " << optimizer.state().iterations << std::endl;
+    std::cout << "Total number of LM iterations (inner and outer): " << optimizer.getInnerIterations() << std::endl;
 
     //*ordering = params.ordering;
     if (params.ordering) {
@@ -218,22 +222,12 @@ int main(int argc, char** argv) {
   // Get home directory and dataset
   string HOME = getenv("HOME");
   string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1031-110968-pre.txt";
-  //  string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1723-156502-pre.txt";
-  //  string datasetFile = HOME + "/data/SfM/BAL/Trafalgar-Square/problem-257-65132-pre.txt";
-
-  //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-961-187103-pre.txt";
-  //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-1936-649673-pre.txt";
-
-  //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-3068-310854-pre.txt";
-  //  string datasetFile = HOME + "/data/SfM/BAL/Final/problem-4585-1324582-pre.txt";
-  //  13682    4456117     28987644   problem-13682-4456117-pre.txt.bz2
-
-  std::cout << "argc: " << argc << std::endl;
 
   if(argc>1){ // if we have any input arguments
     string useSmartArgument = argv[1];
     string useTriangulationArgument = argv[2];
-    string datasetFile = argv[3];
+    datasetFile = argv[3];
+
     if(useSmartArgument.compare("smart")==0){
       useSmartProjectionFactor=true;
     } else{
@@ -290,10 +284,13 @@ int main(int argc, char** argv) {
   bool optimized = false;
   boost::shared_ptr<Ordering> ordering(new Ordering());
 
-//   std::vector< boost::shared_ptr<Cal3Bundler> > K_cameras; // TODO: uncomment
-
-//  boost::shared_ptr<Cal3Bundler> K(new Cal3Bundler()); // TODO: uncomment
-  Cal3_S2::shared_ptr K(new Cal3_S2());
+  #ifdef USE_BUNDLER
+    std::vector< boost::shared_ptr<Cal3Bundler> > K_cameras;
+    boost::shared_ptr<Cal3Bundler> K(new Cal3Bundler());
+  #else
+    std::vector< boost::shared_ptr<Cal3_S2> > K_cameras;
+    Cal3_S2::shared_ptr K(new Cal3_S2());
+  #endif
 
   SmartFactorsCreator smartCreator(pixel_sigma, K, rankTolerance, linThreshold); // this initial K is not used
   ProjectionFactorsCreator projectionCreator(pixel_sigma, K);  // this initial K is not used
@@ -323,17 +320,17 @@ int main(int argc, char** argv) {
 
   cout << "last measurement: " << r << " " << l << " " << u << " " << v << endl;
 
-  std::vector< boost::shared_ptr<Cal3_S2> > K_cameras;
-
   // create values
   for(unsigned int i = 0; i < totNumPoses; i++){
     // R,t,f,k1 and k2.
     fin >> rotx >> roty >> rotz  >> x >> y >> z >> f >> k1 >> k2;
-//    boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(f, k1, k2, 0.0, 0.0)); //TODO: uncomment
-//    K_cameras.push_back(Kbundler); //TODO: uncomment
-    boost::shared_ptr<Cal3_S2> K_S2(new Cal3_S2(f, f, 0.0, 0.0, 0.0));
-    // cout << "f "<< f << endl;
-    K_cameras.push_back(K_S2);
+    #ifdef USE_BUNDLER
+        boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(f, k1, k2, 0.0, 0.0));
+        K_cameras.push_back(Kbundler);
+    #else
+        boost::shared_ptr<Cal3_S2> K_S2(new Cal3_S2(f, f, 0.0, 0.0, 0.0));
+        K_cameras.push_back(K_S2);
+    #endif
     Vector3 rotVect(rotx,roty,rotz);
     // FORMAT CONVERSION!! R -> R'
     Rot3 R = Rot3::Expmap(rotVect);

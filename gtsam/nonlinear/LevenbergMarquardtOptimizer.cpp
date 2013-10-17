@@ -87,7 +87,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
       cout << "trying lambda = " << state_.lambda << endl;
       ++state_.totalNumberInnerIterations;
-      cout << "state_.totalNumberInnerIterations = " << state_.totalNumberInnerIterations << endl;
+      // cout << "state_.totalNumberInnerIterations = " << state_.totalNumberInnerIterations << endl;
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
     gttic(damp);
