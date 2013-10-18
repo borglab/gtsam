@@ -47,8 +47,12 @@ public:
   }
 };
 
-Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices,
-    const std::vector<Point2>& measurements, double rank_tol);
+Point3 triangulateDLT(const std::vector<Pose3>& poses, const std::vector<Matrix>& projection_matrices,
+    const std::vector<Point2>& measurements, const Cal3_S2 &K, double rank_tol, bool optimize);
+
+Point3 triangulateDLT(const std::vector<Pose3>& poses, const std::vector<Matrix>& projection_matrices,
+    const std::vector<Point2>& measurements, const std::vector<Cal3_S2::shared_ptr> &Ks, double rank_tol, bool optimize);
+
 
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
@@ -63,7 +67,7 @@ Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices,
  */
 template<class CALIBRATION>
 GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
-    const std::vector<Point2>& measurements, const CALIBRATION& K, double rank_tol =  1e-9){
+    const std::vector<Point2>& measurements, const CALIBRATION& K, double rank_tol =  1e-9, bool optimize = false){
 
   assert(poses.size() == measurements.size());
 
@@ -79,7 +83,7 @@ GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   // std::cout << "rank_tol i \n" << rank_tol << std::endl;
   }
 
-  Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);
+  Point3 triangulated_point = triangulateDLT(poses, projection_matrices, measurements, K, rank_tol, optimize);
 
   // verify that the triangulated point lies infront of all cameras
   BOOST_FOREACH(const Pose3& pose, poses) {
@@ -94,7 +98,8 @@ GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 /* ************************************************************************* */
 template<class CALIBRATION>
 Point3 triangulatePoint3(const std::vector<Pose3>& poses,
-    const  std::vector<Point2>& measurements, const  std::vector<boost::shared_ptr<CALIBRATION> >& Ks, double rank_tol) {
+    const  std::vector<Point2>& measurements, const  std::vector<boost::shared_ptr<CALIBRATION> >& Ks, double rank_tol,
+    bool optimize = false) {
 
   assert(poses.size() == measurements.size());
   assert(poses.size() == Ks.size());
@@ -111,7 +116,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     // std::cout << "2rank_tol i \n" << rank_tol << std::endl;
   }
 
-  Point3 triangulated_point = triangulateDLT(projection_matrices, measurements, rank_tol);
+  Point3 triangulated_point = triangulateDLT(poses, projection_matrices, measurements, Ks, rank_tol, optimize);
 
   // verify that the triangulated point lies infront of all cameras
   BOOST_FOREACH(const Pose3& pose, poses) {
