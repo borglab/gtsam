@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    visualSLAMdata.h
- * @brief   Simple visual SLAM example for the structure-from-motion problems
+ * @file    SFMMdata.h
+ * @brief   Simple example for the structure-from-motion problems
  * @author  Duy-Nguyen Ta
  */
 

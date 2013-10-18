@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    VisualSLAMExample.cpp
- * @brief   A visualSLAM example for the structure-from-motion problem on a simulated dataset
+ * @file    SFMExample.cpp
+ * @brief   A structure-from-motion problem on a simulated dataset
  * @author  Duy-Nguyen Ta
  */
 
@@ -22,7 +22,7 @@
  */
 
 // For loading the data
-#include "visualSLAMdata.h"
+#include "SFMdata.h"
 
 // Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
 #include <gtsam/geometry/Point2.h>

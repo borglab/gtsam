@@ -23,7 +23,7 @@
  */
 
 // For loading the data
-#include "visualSLAMdata.h"
+#include "SFMdata.h"
 
 // Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
 #include <gtsam/geometry/Point2.h>
