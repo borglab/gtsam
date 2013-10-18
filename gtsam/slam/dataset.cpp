@@ -50,6 +50,7 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name);
   namesToSearch.push_back(name + ".graph");
   namesToSearch.push_back(name + ".txt");
+  namesToSearch.push_back(name + ".out");
 
   // Find first name that exists
   BOOST_FOREACH(const fs::path& root, rootsToSearch) {
@@ -405,6 +406,107 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
             << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
+}
+
+/* ************************************************************************* */
+bool readBundler(const string& cad, SfM_data &data)
+{
+    // Load the data file
+    ifstream is(cad.c_str(),ifstream::in);
+    if(!is)
+    {
+        cout << "Error in readBundler: can not find the file!!" << endl;
+        return false;
+    }
+
+    // Ignore the first line
+    char aux[500];
+    is.getline(aux,500);
+
+    // Get the number of camera poses and 3D points
+    size_t nposes, npoints;
+    is >> nposes >> npoints;
+
+    // Get the information for the camera poses
+    for( size_t i = 0; i < nposes; i++ )
+    {
+        // Get the focal length and the radial distortion parameters
+        float f, k1, k2;
+        is >> f >> k1 >> k2;
+        Cal3DS2 K(f, f, 0, 0, 0, k1, k2);
+
+        // Get the rotation matrix
+        float r11, r12, r13;
+        float r21, r22, r23;
+        float r31, r32, r33;
+        is >> r11 >> r12 >> r13
+           >> r21 >> r22 >> r23
+           >> r31 >> r32 >> r33;
+
+        // Bundler-OpenGL rotation matrix
+        Rot3 R(
+            r11, r12, r13,
+            r21, r22, r23,
+            r31, r32, r33);
+
+        // Check for all-zero R, in which case quit
+        if(r11==0 && r12==0 && r13==0)
+        {
+            cout << "Error in readBundler: zero rotation matrix for pose " << i << endl;
+            return false;
+        }
+
+        // Our camera-to-world rotation matrix wRc' = [e1 -e2 -e3] * R
+        Rot3 cRw(
+             r11,  r12,  r13,
+            -r21, -r22, -r23,
+            -r31, -r32, -r33);
+        Rot3 wRc = cRw.inverse();
+
+        // Get the translation vector
+        float tx, ty, tz;
+        is >> tx >> ty >> tz;
+
+        // Our camera-to-world translation wTc = -R'*t
+        Pose3 pose(wRc, R.unrotate(Point3(-tx,-ty,-tz)));
+
+        data.cameras.push_back(SfM_Camera(pose,K));
+    }
+
+    // Get the information for the 3D points
+    for( size_t i = 0; i < npoints; i++ )
+    {
+        SfM_Track track;
+
+        // Get the 3D position
+        float x, y, z;
+        is >> x >> y >> z;
+        track.p = Point3(x,y,z);
+
+        // Get the color information
+        float r, g, b;
+        is >> r >> g >> b;
+        track.r = r/255.0;
+        track.g = g/255.0;
+        track.b = b/255.0;
+
+        // Now get the visibility information
+        size_t nvisible = 0;
+        is >> nvisible;
+
+        for( size_t j = 0; j < nvisible; j++ )
+        {
+            size_t cam_idx = 0, sift_idx = 0;
+            float u, v;
+            is >> cam_idx >> sift_idx >> u >> v;
+            track.measurements.push_back(make_pair(cam_idx,Point2(u,-v)));
+        }
+
+        data.tracks.push_back(track);
+    }
+
+    is.close();
+    return true;
 }
 
 } // \namespace gtsam
