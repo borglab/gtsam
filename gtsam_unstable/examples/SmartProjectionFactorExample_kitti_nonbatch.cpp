@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SmartProjectionFactorExample_kitti.cpp
+ * @file SmartProjectionFactorExample_kitti_nonbatch.cpp
  * @brief Example usage of SmartProjectionFactor using real dataset in a non-batch fashion
  * @date August, 2013
  * @author Zsolt Kira
@@ -60,8 +60,8 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 typedef PriorFactor<Pose3> Pose3Prior;
-typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> SmartFactorsCreator;
-typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFactorsCreator;
+typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
+typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
 typedef FastMap<Key, int> OrderingMap;
 
 bool debug = false;
@@ -127,10 +127,9 @@ Values::shared_ptr loadPoseValues(const string& filename, list<Key> keys) {
 }
 
 // Load calibration info
-Cal3_S2::shared_ptr loadCalibration(const string& filename) {
+boost::shared_ptr<Cal3_S2> loadCalibration(const string& filename) {
   string full_filename = filename;
-  ifstream fin;
-  fin.open(full_filename.c_str());
+  ifstream fin(full_filename.c_str());
 
   // try loading from parent directory as backup
   if(!fin) {
@@ -140,10 +139,8 @@ Cal3_S2::shared_ptr loadCalibration(const string& filename) {
 
   double fx, fy, s, u, v, b;
   fin >> fx >> fy >> s >> u >> v >> b;
-  fin.close();
 
-  Cal3_S2::shared_ptr K(new Cal3_S2(fx, fy, s, u, v));
-  return K;
+  return boost::make_shared<Cal3_S2>(fx,fy, s, u, v);
 }
 
 // Write key values to file
