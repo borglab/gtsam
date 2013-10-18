@@ -16,8 +16,6 @@
  * @author Luca Carlone
  */
 
-#ifdef DEVELOP
-
 // Use a map to store landmark/smart factor pairs
 #include <gtsam/base/FastMap.h>
 
@@ -60,7 +58,7 @@ using namespace gtsam;
 using namespace boost::assign;
 namespace NM = gtsam::noiseModel;
 
- #define USE_BUNDLER
+// #define USE_BUNDLER
 
 using symbol_shorthand::X;
 using symbol_shorthand::L;
@@ -444,11 +442,4 @@ int main(int argc, char** argv) {
 
   exit(0);
 }
-
-#endif
-
-int main(){
-  return 1;
-}
-
 

@@ -127,8 +127,8 @@ namespace gtsam {
             }
         }
 
-    void update(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr inputValues, gtsam::Values::shared_ptr outputValues, bool doTriangualatePoints = true) {
-        addTriangulatedLandmarks(graph, inputValues, outputValues, doTriangualatePoints);
+    void update(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr inputValues, gtsam::Values::shared_ptr outputValues, bool doTriangulatePoints = true) {
+        addTriangulatedLandmarks(graph, inputValues, outputValues, doTriangulatePoints);
         updateOrdering(graph);
     }
 
@@ -165,11 +165,11 @@ namespace gtsam {
     }
 
     void addTriangulatedLandmarks(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr loadedValues,
-        gtsam::Values::shared_ptr graphValues, bool doTriangualatePoints) {
+        gtsam::Values::shared_ptr graphValues, bool doTriangulatePoints) {
 
       bool debug = false;
 
-      if(doTriangualatePoints)
+      if(doTriangulatePoints)
         std::cout << "Triangulating 3D points" << std::endl;
       else
         std::cout << "Reading initial guess for 3D points from file" << std::endl;
@@ -222,7 +222,7 @@ namespace gtsam {
         }
 
         // Triangulate landmark based on set of poses and measurements
-        if (doTriangualatePoints){
+        if (doTriangulatePoints){
           // std::cout << "Triangulating points " << std::endl;
           try {
             point = triangulatePoint3(cameraPoses, measured, Ks, rankTolerance);
