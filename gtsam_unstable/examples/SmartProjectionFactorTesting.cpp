@@ -16,6 +16,8 @@
  * @author Luca Carlone
  */
 
+#ifdef DEVELOP
+
 // Use a map to store landmark/smart factor pairs
 #include <gtsam/base/FastMap.h>
 
@@ -107,36 +109,6 @@ void writeValues(string directory_, const Values& values){
       fout << " " << key_value.value.y();
       fout << " " << key_value.value.z();
       fout << endl;
-    }
-    fout.close();
-  } // end of if on landmarks
-
-}
-
-// Write key values to file
-void writeValuesBAL(string directory_, const Values& values, std::vector<int> vector_r, std::vector<int> vector_l,
-    std::vector<double> vector_u, std::vector<double> vector_v, int totNumPoses, int totNumLandmarks, int totNumMeasurements){
-
-  string filename = directory_ + "est_BAL_poses.txt";
-  ofstream fout;
-  fout.open(filename.c_str());
-  fout.precision(20);
-
-  fout << totNumPoses << " " << totNumLandmarks << " " << totNumMeasurements << endl;
-
-  for(size_t i=0; i<totNumMeasurements;i++){
-    fout << vector_r.at(i) << " " << vector_l.at(i) << " " << vector_u.at(i) << " " << vector_v.at(i) << endl;
-  }
-
-  // write out camera poses
-  BOOST_FOREACH(Values::ConstFiltered<Pose3>::value_type key_value, values.filter<Pose3>()) {
-    Pose3 CurrPose = key_value.value;
-    fout << Pose3::Logmap(CurrPose) << endl;
-  }
-  if(values.filter<Point3>().size() > 0) {
-    // write landmarks
-    BOOST_FOREACH(Values::ConstFiltered<Point3>::value_type key_value, values.filter<Point3>()) {
-      fout << key_value.value.vector() << endl;
     }
     fout.close();
   } // end of if on landmarks
@@ -468,9 +440,15 @@ int main(int argc, char** argv) {
   cout << "===================================================" << endl;
   writeValues("./", result);
 
-  writeValuesBAL("./", result, vector_r, vector_l, vector_u, vector_v, totNumPoses, totNumLandmarks,  totNumMeasurements);
-
   if (debug) cout << numLandmarks << " " <<  numPoses << " " << optimized << endl;
 
   exit(0);
 }
+
+#endif
+
+int main(){
+  return 1;
+}
+
+
