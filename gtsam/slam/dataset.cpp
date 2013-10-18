@@ -229,7 +229,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-                << " vertices and " << graph->nrFactors() << " factors" << endl;
+                    << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
@@ -403,24 +403,45 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-                << " vertices and " << graph->nrFactors() << " factors" << endl;
+                    << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */
+Rot3 openGLFixedRotation(){ // this is due to different convention for cameras in gtsam and openGL
+  /* R = [ 1   0   0
+   *       0  -1   0
+   *       0   0  -1]
+   */
+  Matrix3  R_mat = Matrix3::Zero(3,3);
+  R_mat(0,0) = 1.0;  R_mat(1,1) = -1.0; R_mat(2,2) = -1.0;
+  return Rot3(R_mat);
+}
+
+/* ************************************************************************* */
 Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz)
 {
-// Our camera-to-world rotation matrix wRc' = [e1 -e2 -e3] * R
-Point3 r1 = R.r1(), r2 = R.r2(), r3 = R.r3(); //columns!
-Rot3 cRw(
-    r1.x(),  r2.x(),  r3.x(),
-   -r1.y(), -r2.y(), -r3.y(),
-    -r1.z(), -r2.z(), -r3.z());
-Rot3 wRc = cRw.inverse();
+  Rot3 R90 = openGLFixedRotation();
+  Rot3 wRc = (  R.inverse() ).compose(R90);
 
-// Our camera-to-world translation wTc = -R'*t
-return Pose3 (wRc, R.unrotate(Point3(-tx,-ty,-tz)));
+  // Our camera-to-world translation wTc = -R'*t
+  return Pose3 (wRc, R.unrotate(Point3(-tx,-ty,-tz)));
+}
+
+/* ************************************************************************* */
+Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz)
+{
+  Rot3 R90 = openGLFixedRotation();
+  Rot3 cRw_openGL = R90.compose(  R.inverse() );
+  Point3 t_openGL = cRw_openGL.rotate(Point3(-tx,-ty,-tz));
+  return Pose3(cRw_openGL, t_openGL);
+}
+
+/* ************************************************************************* */
+Pose3 gtsam2openGL(const Pose3& PoseGTSAM)
+{
+  return gtsam2openGL(PoseGTSAM.rotation(), PoseGTSAM.x(), PoseGTSAM.y(), PoseGTSAM.z());
 }
 
 /* ************************************************************************* */
@@ -578,6 +599,64 @@ bool readBAL(const string& filename, SfM_data &data)
   }
 
   is.close();
+  return true;
+}
+
+/* ************************************************************************* */
+bool writeBAL(const string& filename, SfM_data &data)
+{
+  // Load the data file
+  ofstream os;
+  os.open(filename.c_str());
+  os.precision(20);
+  if (!os.is_open()) {
+    cout << "Error in writeBAL: can not open the file!!" << endl;
+    return false;
+  }
+
+  // Write the number of camera poses and 3D points
+  int nrObservations=0;
+  for (size_t j = 0; j < data.number_tracks(); j++){
+    nrObservations += data.tracks[j].number_measurements();
+  }
+
+  // Write observations
+  os <<  data.number_cameras() << " " << data.number_tracks() << " " << nrObservations << endl;
+  os << endl;
+
+  for (size_t j = 0; j < data.number_tracks(); j++){ // for each 3D point j
+    SfM_Track track = data.tracks[j];
+    for(size_t k = 0; k < track.number_measurements(); k++){ // for each observation of the 3D point j
+      Point2 pixelMeasurement(track.measurements[k].second.x(), -track.measurements[k].second.y());
+      os <<  track.measurements[k].first /*camera id*/ << " " << j /*point id*/ << " "
+          << pixelMeasurement.x() /*u of the pixel*/ << " " << pixelMeasurement.y() /*v of the pixel*/ << endl;
+    }
+  }
+  os << endl;
+
+  // Write cameras
+  for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
+    Pose3 poseGTSAM = data.cameras[i].pose();
+    Cal3Bundler cameraCalibration = data.cameras[i].calibration();
+    Pose3 poseOpenGL = gtsam2openGL(poseGTSAM);
+    os <<  Rot3::Logmap(poseOpenGL.rotation()) << endl;
+    os <<  poseOpenGL.translation().vector() << endl;
+    os <<  cameraCalibration.fx() << endl;
+    os <<  cameraCalibration.k1() << endl;
+    os <<  cameraCalibration.k2() << endl;
+    os << endl;
+  }
+
+  // Write the points
+  for (size_t j = 0; j < data.number_tracks(); j++){ // for each 3D point j
+    Point3 point = data.tracks[j].p;
+    os << point.x() << endl;
+    os << point.y() << endl;
+    os << point.z() << endl;
+    os << endl;
+  }
+
+  os.close();
   return true;
 }
 

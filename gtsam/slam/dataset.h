@@ -126,4 +126,40 @@ bool readBundler(const std::string& filename, SfM_data &data);
  */
 bool readBAL(const std::string& filename, SfM_data &data);
 
+/**
+ * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
+ * SfM_data structure
+ * @param filename The name of the BAL file to write
+ * @param data SfM structure where the data is stored
+ * @return true if the parsing was successful, false otherwise
+ */
+bool writeBAL(const std::string& filename, SfM_data &data);
+
+/**
+ * @brief This function converts an openGL camera pose to an GTSAM camera pose
+ * @param R rotation in openGL
+ * @param tx x component of the translation in openGL
+ * @param ty y component of the translation in openGL
+ * @param tz z component of the translation in openGL
+ * @return Pose3 in GTSAM format
+ */
+Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz);
+
+/**
+ * @brief This function converts a GTSAM camera pose to an openGL camera pose
+ * @param R rotation in GTSAM
+ * @param tx x component of the translation in GTSAM
+ * @param ty y component of the translation in GTSAM
+ * @param tz z component of the translation in GTSAM
+ * @return Pose3 in openGL format
+ */
+Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz);
+
+/**
+ * @brief This function converts a GTSAM camera pose to an openGL camera pose
+ * @param PoseGTSAM pose in GTSAM format
+ * @return Pose3 in openGL format
+ */
+Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
+
 } // namespace gtsam
