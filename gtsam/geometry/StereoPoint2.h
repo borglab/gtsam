@@ -147,6 +147,11 @@ namespace gtsam {
       return Point2(uL_, v_);
     }
 
+    /** convenient function to get a Point2 from the right image */
+    inline Point2 right(){
+      return Point2(uR_, v_);
+    }
+
   private:
 
     /// @}
