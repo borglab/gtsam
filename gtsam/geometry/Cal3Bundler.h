@@ -82,6 +82,17 @@ public:
     return f_;
   }
 
+  /// distorsion parameter k1
+  inline double k1() const {
+    return k1_;
+  }
+
+  /// distorsion parameter k2
+  inline double k2() const {
+    return k2_;
+  }
+
+
   /**
    * convert intrinsic coordinates xy to image coordinates uv
    * @param p point in intrinsic coordinates
