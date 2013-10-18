@@ -60,8 +60,8 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 typedef PriorFactor<Pose3> Pose3Prior;
-typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
-typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
+typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> SmartFactorsCreator;
+typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFactorsCreator;
 typedef FastMap<Key, int> OrderingMap;
 
 bool debug = false;
