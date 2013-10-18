@@ -37,23 +37,8 @@ private:
 
 public:
 
-  Matrix K() const; ///< Standard 3*3 calibration matrix
-  Vector k() const; ///< Radial distortion parameters (4 of them, 2 0)
-
-  Vector vector() const;
-
   /// @name Standard Constructors
   /// @{
-
-  /// focal length x
-  inline double fx() const {
-    return f_;
-  }
-
-  /// focal length y
-  inline double fy() const {
-    return f_;
-  }
 
   /// Default constructor
   Cal3Bundler();
@@ -82,6 +67,21 @@ public:
   /// @name Standard Interface
   /// @{
 
+  Matrix K() const; ///< Standard 3*3 calibration matrix
+  Vector k() const; ///< Radial distortion parameters (4 of them, 2 0)
+
+  Vector vector() const;
+
+  /// focal length x
+  inline double fx() const {
+    return f_;
+  }
+
+  /// focal length y
+  inline double fy() const {
+    return f_;
+  }
+
   /**
    * convert intrinsic coordinates xy to image coordinates uv
    * @param p point in intrinsic coordinates
@@ -93,9 +93,9 @@ public:
       boost::none, boost::optional<Matrix&> Dp = boost::none) const;
 
   /// Conver a pixel coordinate to ideal coordinate
-  Point2 calibrate(const Point2& pi, const double tol=1e-5) const;
+  Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
 
-    /// @deprecated might be removed in next release, use uncalibrate
+  /// @deprecated might be removed in next release, use uncalibrate
   Matrix D2d_intrinsic(const Point2& p) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
