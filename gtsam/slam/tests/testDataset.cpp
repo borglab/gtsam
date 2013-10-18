@@ -51,12 +51,29 @@ TEST( dataSet, Balbianello)
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
   const SfM_Camera& camera0 = mydata.cameras[0];
-  Point2 predicted = camera0.project(track0.p), measured = track0.measurements[0].second;
-  EXPECT(assert_equal(measured,predicted,1));
+  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
+  EXPECT(assert_equal(expected,actual,1));
+}
 
-  // Check projection-derived error 0.5*(du^2/0.25+dv^2/0.25)
-  double du = predicted.x() - measured.x(), dv = predicted.y() - measured.y();
-  EXPECT_DOUBLES_EQUAL(2.32894391, 2*du*du+2*dv*dv, 0.01);
+/* ************************************************************************* */
+TEST( dataSet, Dubrovnik)
+{
+  ///< The structure where we will save the SfM data
+  const string filename = findExampleDataFile("dubrovnik-3-7-pre");
+  SfM_data mydata;
+  CHECK(readBAL(filename, mydata));
+
+  // Check number of things
+  EXPECT_LONGS_EQUAL(3,mydata.number_cameras());
+  EXPECT_LONGS_EQUAL(7,mydata.number_tracks());
+  const SfM_Track& track0 = mydata.tracks[0];
+  EXPECT_LONGS_EQUAL(3,track0.number_measurements());
+
+  // Check projection of a given point
+  EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
+  const SfM_Camera& camera0 = mydata.cameras[0];
+  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
+  EXPECT(assert_equal(expected,actual,12));
 }
 
 /* ************************************************************************* */

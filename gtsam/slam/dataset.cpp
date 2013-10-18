@@ -62,10 +62,10 @@ string findExampleDataFile(const string& name) {
 
   // If we did not return already, then we did not find the file
   throw std::invalid_argument(
-    "gtsam::findExampleDataFile could not find a matching file in\n"
-    SOURCE_TREE_DATASET_DIR " or\n"
-    INSTALLED_DATASET_DIR " named\n" +
-    name + ", " + name + ".graph, or " + name + ".txt");
+      "gtsam::findExampleDataFile could not find a matching file in\n"
+      SOURCE_TREE_DATASET_DIR " or\n"
+      INSTALLED_DATASET_DIR " named\n" +
+      name + ", " + name + ".graph, or " + name + ".txt");
 }
 #endif
 
@@ -179,7 +179,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
         continue;
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
-           noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
+          noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
       *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
 
       // Insert poses or points if they do not exist yet
@@ -217,7 +217,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       {
         if(!haveLandmark) {
           cout << "Warning: load2D is a very simple dataset loader and is ignoring the\n"
-            "non-uniform covariance on LANDMARK measurements in this file." << endl;
+              "non-uniform covariance on LANDMARK measurements in this file." << endl;
           haveLandmark = true;
         }
       }
@@ -229,7 +229,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-            << " vertices and " << graph->nrFactors() << " factors" << endl;
+                << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
@@ -386,7 +386,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
         continue;
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
-           noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
+          noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
       *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
 
       // Insert poses or points if they do not exist yet
@@ -403,110 +403,183 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-            << " vertices and " << graph->nrFactors() << " factors" << endl;
+                << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */
-bool readBundler(const string& cad, SfM_data &data)
+Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz)
 {
-    // Load the data file
-    ifstream is(cad.c_str(),ifstream::in);
-    if(!is)
-    {
-        cout << "Error in readBundler: can not find the file!!" << endl;
-        return false;
-    }
+// Our camera-to-world rotation matrix wRc' = [e1 -e2 -e3] * R
+Point3 r1 = R.r1(), r2 = R.r2(), r3 = R.r3(); //columns!
+Rot3 cRw(
+    r1.x(),  r2.x(),  r3.x(),
+   -r1.y(), -r2.y(), -r3.y(),
+    -r1.z(), -r2.z(), -r3.z());
+Rot3 wRc = cRw.inverse();
 
-    // Ignore the first line
-    char aux[500];
-    is.getline(aux,500);
-
-    // Get the number of camera poses and 3D points
-    size_t nposes, npoints;
-    is >> nposes >> npoints;
-
-    // Get the information for the camera poses
-    for( size_t i = 0; i < nposes; i++ )
-    {
-        // Get the focal length and the radial distortion parameters
-        float f, k1, k2;
-        is >> f >> k1 >> k2;
-        Cal3DS2 K(f, f, 0, 0, 0, k1, k2);
-
-        // Get the rotation matrix
-        float r11, r12, r13;
-        float r21, r22, r23;
-        float r31, r32, r33;
-        is >> r11 >> r12 >> r13
-           >> r21 >> r22 >> r23
-           >> r31 >> r32 >> r33;
-
-        // Bundler-OpenGL rotation matrix
-        Rot3 R(
-            r11, r12, r13,
-            r21, r22, r23,
-            r31, r32, r33);
-
-        // Check for all-zero R, in which case quit
-        if(r11==0 && r12==0 && r13==0)
-        {
-            cout << "Error in readBundler: zero rotation matrix for pose " << i << endl;
-            return false;
-        }
-
-        // Our camera-to-world rotation matrix wRc' = [e1 -e2 -e3] * R
-        Rot3 cRw(
-             r11,  r12,  r13,
-            -r21, -r22, -r23,
-            -r31, -r32, -r33);
-        Rot3 wRc = cRw.inverse();
-
-        // Get the translation vector
-        float tx, ty, tz;
-        is >> tx >> ty >> tz;
-
-        // Our camera-to-world translation wTc = -R'*t
-        Pose3 pose(wRc, R.unrotate(Point3(-tx,-ty,-tz)));
-
-        data.cameras.push_back(SfM_Camera(pose,K));
-    }
-
-    // Get the information for the 3D points
-    for( size_t i = 0; i < npoints; i++ )
-    {
-        SfM_Track track;
-
-        // Get the 3D position
-        float x, y, z;
-        is >> x >> y >> z;
-        track.p = Point3(x,y,z);
-
-        // Get the color information
-        float r, g, b;
-        is >> r >> g >> b;
-        track.r = r/255.0;
-        track.g = g/255.0;
-        track.b = b/255.0;
-
-        // Now get the visibility information
-        size_t nvisible = 0;
-        is >> nvisible;
-
-        for( size_t j = 0; j < nvisible; j++ )
-        {
-            size_t cam_idx = 0, sift_idx = 0;
-            float u, v;
-            is >> cam_idx >> sift_idx >> u >> v;
-            track.measurements.push_back(make_pair(cam_idx,Point2(u,-v)));
-        }
-
-        data.tracks.push_back(track);
-    }
-
-    is.close();
-    return true;
+// Our camera-to-world translation wTc = -R'*t
+return Pose3 (wRc, R.unrotate(Point3(-tx,-ty,-tz)));
 }
+
+/* ************************************************************************* */
+bool readBundler(const string& filename, SfM_data &data)
+{
+  // Load the data file
+  ifstream is(filename.c_str(),ifstream::in);
+  if(!is)
+  {
+    cout << "Error in readBundler: can not find the file!!" << endl;
+    return false;
+  }
+
+  // Ignore the first line
+  char aux[500];
+  is.getline(aux,500);
+
+  // Get the number of camera poses and 3D points
+  size_t nrPoses, nrPoints;
+  is >> nrPoses >> nrPoints;
+
+  // Get the information for the camera poses
+  for( size_t i = 0; i < nrPoses; i++ )
+  {
+    // Get the focal length and the radial distortion parameters
+    float f, k1, k2;
+    is >> f >> k1 >> k2;
+    Cal3Bundler K(f, k1, k2);
+
+    // Get the rotation matrix
+    float r11, r12, r13;
+    float r21, r22, r23;
+    float r31, r32, r33;
+    is >> r11 >> r12 >> r13
+    >> r21 >> r22 >> r23
+    >> r31 >> r32 >> r33;
+
+    // Bundler-OpenGL rotation matrix
+    Rot3 R(
+        r11, r12, r13,
+        r21, r22, r23,
+        r31, r32, r33);
+
+    // Check for all-zero R, in which case quit
+    if(r11==0 && r12==0 && r13==0)
+    {
+      cout << "Error in readBundler: zero rotation matrix for pose " << i << endl;
+      return false;
+    }
+
+    // Get the translation vector
+    float tx, ty, tz;
+    is >> tx >> ty >> tz;
+
+    Pose3 pose = openGL2gtsam(R,tx,ty,tz);
+
+    data.cameras.push_back(SfM_Camera(pose,K));
+  }
+
+  // Get the information for the 3D points
+  for( size_t j = 0; j < nrPoints; j++ )
+  {
+    SfM_Track track;
+
+    // Get the 3D position
+    float x, y, z;
+    is >> x >> y >> z;
+    track.p = Point3(x,y,z);
+
+    // Get the color information
+    float r, g, b;
+    is >> r >> g >> b;
+    track.r = r/255.0;
+    track.g = g/255.0;
+    track.b = b/255.0;
+
+    // Now get the visibility information
+    size_t nvisible = 0;
+    is >> nvisible;
+
+    for( size_t k = 0; k < nvisible; k++ )
+    {
+      size_t cam_idx = 0, point_idx = 0;
+      float u, v;
+      is >> cam_idx >> point_idx >> u >> v;
+      track.measurements.push_back(make_pair(cam_idx,Point2(u,-v)));
+    }
+
+    data.tracks.push_back(track);
+  }
+
+  is.close();
+  return true;
+}
+
+/* ************************************************************************* */
+bool readBAL(const string& filename, SfM_data &data)
+{
+  // Load the data file
+  ifstream is(filename.c_str(),ifstream::in);
+  if(!is)
+  {
+    cout << "Error in readBAL: can not find the file!!" << endl;
+    return false;
+  }
+
+  // Get the number of camera poses and 3D points
+  size_t nrPoses, nrPoints, nrObservations;
+  is >> nrPoses >> nrPoints >> nrObservations;
+
+  data.tracks.resize(nrPoints);
+
+  // Get the information for the observations
+  for( size_t k = 0; k < nrObservations; k++ )
+  {
+    size_t i = 0, j = 0;
+    float u, v;
+    is >> i >> j >> u >> v;
+    data.tracks[j].measurements.push_back(make_pair(i,Point2(u,-v)));
+  }
+
+  // Get the information for the camera poses
+  for( size_t i = 0; i < nrPoses; i++ )
+  {
+    // Get the rodriguez vector
+    float wx, wy, wz;
+    is >> wx >> wy >> wz;
+    Rot3 R = Rot3::rodriguez(wx, wy, wz);// BAL-OpenGL rotation matrix
+
+    // Get the translation vector
+    float tx, ty, tz;
+    is >> tx >> ty >> tz;
+
+    Pose3 pose = openGL2gtsam(R,tx,ty,tz);
+
+    // Get the focal length and the radial distortion parameters
+    float f, k1, k2;
+    is >> f >> k1 >> k2;
+    Cal3Bundler K(f, k1, k2);
+
+    data.cameras.push_back(SfM_Camera(pose,K));
+  }
+
+  // Get the information for the 3D points
+  for( size_t j = 0; j < nrPoints; j++ )
+  {
+    // Get the 3D position
+    float x, y, z;
+    is >> x >> y >> z;
+    SfM_Track& track = data.tracks[j];
+    track.p = Point3(x,y,z);
+    track.r = 0.4;
+    track.g = 0.4;
+    track.b = 0.4;
+  }
+
+  is.close();
+  return true;
+}
+
 
 } // \namespace gtsam

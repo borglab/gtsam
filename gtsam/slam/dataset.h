@@ -22,7 +22,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
 
 #include <vector>
@@ -97,7 +97,7 @@ struct SfM_Track
 };
 
 /// Define the structure for the camera poses
-typedef gtsam::PinholeCamera<gtsam::Cal3DS2> SfM_Camera;
+typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> SfM_Camera;
 
 /// Define the structure for SfM data
 struct SfM_data
@@ -111,11 +111,19 @@ struct SfM_data
 /**
  * @brief This function parses a bundler output file and stores the data into a
  * SfM_data structure
- * @param cad The name of the bundler file
+ * @param filename The name of the bundler file
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-bool readBundler(const std::string& cad, SfM_data &data);
+bool readBundler(const std::string& filename, SfM_data &data);
 
+/**
+ * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and stores the data into a
+ * SfM_data structure
+ * @param filename The name of the BAL file
+ * @param data SfM structure where the data is stored
+ * @return true if the parsing was successful, false otherwise
+ */
+bool readBAL(const std::string& filename, SfM_data &data);
 
 } // namespace gtsam
