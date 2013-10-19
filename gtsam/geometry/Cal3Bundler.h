@@ -92,6 +92,16 @@ public:
     return k2_;
   }
 
+  /// get parameter u0
+  inline double u0() const {
+    return u0_;
+  }
+
+  /// get parameter v0
+  inline double v0() const {
+    return v0_;
+  }
+
 
   /**
    * convert intrinsic coordinates xy to image coordinates uv

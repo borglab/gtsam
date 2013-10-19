@@ -614,8 +614,6 @@ bool writeBAL(const string& filename, SfM_data &data)
     return false;
   }
 
-  cout << "writeBAL assumes the origin of the camera frame to coincide with camera center!!" << endl;
-
   // Write the number of camera poses and 3D points
   int nrObservations=0;
   for (size_t j = 0; j < data.number_tracks(); j++){
@@ -628,9 +626,18 @@ bool writeBAL(const string& filename, SfM_data &data)
 
   for (size_t j = 0; j < data.number_tracks(); j++){ // for each 3D point j
     SfM_Track track = data.tracks[j];
+
     for(size_t k = 0; k < track.number_measurements(); k++){ // for each observation of the 3D point j
-      Point2 pixelMeasurement(track.measurements[k].second.x(), -track.measurements[k].second.y());
-      os <<  track.measurements[k].first /*camera id*/ << " " << j /*point id*/ << " "
+      int i = track.measurements[k].first; // camera id
+      double u0 = data.cameras[i].calibration().u0();
+      double v0 = data.cameras[i].calibration().v0();
+
+      if(u0 != 0 || v0 != 0){cout<< "writeBAL has not been tested for calibration with nonzero (u0,v0)"<< endl;}
+
+      double pixelBALx = track.measurements[k].second.x() - u0; // center of image is the origin
+      double pixelBALy = - (track.measurements[k].second.y() - v0); // center of image is the origin
+      Point2 pixelMeasurement(pixelBALx, pixelBALy);
+      os <<  i /*camera id*/ << " " << j /*point id*/ << " "
           << pixelMeasurement.x() /*u of the pixel*/ << " " << pixelMeasurement.y() /*v of the pixel*/ << endl;
     }
   }
