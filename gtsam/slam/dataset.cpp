@@ -682,7 +682,6 @@ bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
   if( valuesPoints.size() != data.number_tracks()){
     cout << "writeBALfromValues: different number of points in SfM_data (#points= " << data.number_tracks()
         <<") and values (#points " << valuesPoints.size() << ")!!" << endl;
-    return false;
   }
   if(valuesPoints.size() + valuesPoses.size() != values.size()){
     cout << "writeBALfromValues write only poses and points values!!" << endl;
@@ -703,8 +702,15 @@ bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
 
   for (size_t j = 0; j < data.number_tracks(); j++){ // for each point
     Key pointKey = symbol('l',j);
-    Point3 point = values.at<Point3>(pointKey);
-    data.tracks[j].p = point;
+    if(values.exists(pointKey)){
+      Point3 point = values.at<Point3>(pointKey);
+      data.tracks[j].p = point;
+    }else{
+      data.tracks[j].r = 1.0;
+      data.tracks[j].g = 0.0;
+      data.tracks[j].b = 0.0;
+      data.tracks[j].p = Point3();
+    }
   }
 
   return writeBAL(filename, data);

@@ -581,6 +581,11 @@ namespace gtsam {
       return K_all_;
     }
 
+    /** return the calibration object */
+    inline bool isDegenerate() const {
+      return (state_->cheiralityException || state_->degenerate);
+    }
+
     /** return verbosity */
     inline bool verboseCheirality() const { return verboseCheirality_; }
 

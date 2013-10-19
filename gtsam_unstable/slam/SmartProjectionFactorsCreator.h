@@ -43,6 +43,22 @@ namespace gtsam {
           linearizationThreshold_(linThreshold), body_P_sensor_(body_P_sensor),
           totalNumMeasurements(0), numLandmarks(0) {};
 
+    void computePoints(Values& values) {
+
+      typename SmartFactorMap::iterator fit;
+      // Check if landmark exists in mapping
+      for(fit = smartFactors.begin(); fit != smartFactors.end(); fit++) {
+        Key pointKey = (*fit).first;
+        Point3 currentPoint;
+        if((*fit).second->point() && !(*fit).second->isDegenerate()){
+          currentPoint = *((*fit).second->point());
+        }else{
+          currentPoint = Point3(); // if we cannot the smartFactor is degenerate
+        }
+        values.insert(pointKey, currentPoint);
+      }
+    }
+
     void add(Key landmarkKey,
         Key poseKey, Point2 measurement, NonlinearFactorGraph &graph) {
 

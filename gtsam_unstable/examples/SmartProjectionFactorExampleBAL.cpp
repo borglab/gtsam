@@ -370,6 +370,10 @@ int main(int argc, char** argv) {
   cout << "===================================================" << endl;
 
   // --------------- WRITE OUTPUT TO BAL FILE  ----------------------------------------
+  if(useSmartProjectionFactor){
+    smartCreator.computePoints(result);
+  }
+
   cout << "- writing results to (BAL) file... " << endl;
   std::size_t stringCut1 = datasetFile.rfind("/");
   std::size_t stringCut2 = datasetFile.rfind(".txt");
