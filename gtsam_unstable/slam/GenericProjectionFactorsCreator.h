@@ -2,7 +2,7 @@
  * GenericProjectionFactorsCreator.h
  *
  *  Created on: Oct 10, 2013
- *      Author: zkira
+ *  @author Zsolt Kira
  */
 
 #ifndef GENERICPROJECTIONFACTORSCREATOR_H_

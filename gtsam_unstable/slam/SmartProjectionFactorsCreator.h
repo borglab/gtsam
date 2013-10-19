@@ -2,7 +2,7 @@
  * SmartProjectionFactorsCreator.h
  *
  *  Created on: Oct 8, 2013
- *      Author: aspn
+ *  @author Zsolt Kira
  */
 
 #ifndef SMARTPROJECTIONFACTORSCREATOR_H_

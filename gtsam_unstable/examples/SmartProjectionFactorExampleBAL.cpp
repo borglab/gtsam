@@ -43,6 +43,7 @@
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics SLAM problems.
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/dataset.h>
 #include <gtsam_unstable/slam/SmartProjectionFactorsCreator.h>
 #include <gtsam_unstable/slam/GenericProjectionFactorsCreator.h>
 
@@ -58,7 +59,7 @@ using namespace gtsam;
 using namespace boost::assign;
 namespace NM = gtsam::noiseModel;
 
-// #define USE_BUNDLER
+#define USE_BUNDLER
 
 using symbol_shorthand::X;
 using symbol_shorthand::L;
@@ -67,11 +68,11 @@ typedef PriorFactor<Pose3> Pose3Prior;
 typedef FastMap<Key, int> OrderingMap;
 
 #ifdef USE_BUNDLER
-  typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> SmartFactorsCreator;
-  typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFactorsCreator;
+typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> SmartFactorsCreator;
+typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFactorsCreator;
 #else
-  typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
-  typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
+typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
+typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
 #endif
 
 bool debug = false;
@@ -121,7 +122,7 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   params.lambdaInitial = 1;
   params.lambdaFactor = 10;
   // Profile a single iteration
-//  params.maxIterations = 1;
+  //  params.maxIterations = 1;
   params.maxIterations = 100;
   std::cout << " LM max iterations: " << params.maxIterations << std::endl;
   // // params.relativeErrorTol = 1e-5;
@@ -152,11 +153,11 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
     params.ordering = *ordering;
 
     //for (int i = 0; i < 3; i++) {
-      LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
-      gttic_(GenericProjectionFactorExample_kitti);
-      result = optimizer.optimize();
-      gttoc_(GenericProjectionFactorExample_kitti);
-      tictoc_finishedIteration_();
+    LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
+    gttic_(GenericProjectionFactorExample_kitti);
+    result = optimizer.optimize();
+    gttoc_(GenericProjectionFactorExample_kitti);
+    tictoc_finishedIteration_();
     //}
   } else {
     std::cout << "Using COLAMD ordering\n" << std::endl;
@@ -174,11 +175,11 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
 
     //*ordering = params.ordering;
     if (params.ordering) {
-        std::cout << "Graph size: " << graph.size() << " ORdering: " << params.ordering->size() << std::endl;
-        ordering = boost::make_shared<Ordering>(*(new Ordering()));
-        *ordering = *params.ordering;
+      std::cout << "Graph size: " << graph.size() << " ORdering: " << params.ordering->size() << std::endl;
+      ordering = boost::make_shared<Ordering>(*(new Ordering()));
+      *ordering = *params.ordering;
     } else {
-        std::cout << "WARNING: NULL ordering!" << std::endl;
+      std::cout << "WARNING: NULL ordering!" << std::endl;
     }
   }
 }
@@ -219,11 +220,15 @@ int main(int argc, char** argv) {
   double linThreshold = -1.0; // negative is disabled
   double rankTolerance = 1.0;
 
-  // Get home directory and dataset
+  // Get home directory and default dataset
   string HOME = getenv("HOME");
   string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1031-110968-pre.txt";
 
+  // --------------- READ USER INPUTS (main arguments) ------------------------------------
   if(argc>1){ // if we have any input arguments
+    // Arg1: "smart" or "standard" (select if to use smart factors or standard projection factors)
+    // Arg2: "triangulation=0" or "triangulation=1" (select whether to initialize initial guess for points using triangulation)
+    // Arg3: name of the dataset, e.g., /home/aspn/data/SfM/BAL/Ladybug/problem-1031-110968-pre.txt
     string useSmartArgument = argv[1];
     string useTriangulationArgument = argv[2];
     datasetFile = argv[3];
@@ -238,160 +243,108 @@ int main(int argc, char** argv) {
         exit(1);
       }
     }
-    if(useTriangulationArgument.compare("do")==0){
+    if(useTriangulationArgument.compare("triangulation=1")==0){
       doTriangulation=true;
     } else{
-      if(useTriangulationArgument.compare("dont")==0){
+      if(useTriangulationArgument.compare("triangulation=0")==0){
         doTriangulation=false;
       }else{
         cout << "Selected wrong option for input argument - doTriangulation - not important for SmartFactors" << endl;
       }
     }
   }
-  std::cout << "PARAM SmartFactor: " << useSmartProjectionFactor << std::endl;
-  std::cout << "PARAM doTriangulation: " << doTriangulation << std::endl;
-  // std::cout << "PARAM LM: " << useLM << std::endl;
-  std::cout << "PARAM linThreshold (negative is disabled): " << linThreshold << std::endl;
+
+  // --------------- PRINT USER's CHOICE  ------------------------------------
+  std::cout << "- useSmartFactor: " << useSmartProjectionFactor << std::endl;
+  std::cout << "- doTriangulation: " << doTriangulation << std::endl;
+  std::cout << "- datasetFile: " << datasetFile << std::endl;
+
+  if (linThreshold >= 0)
+    std::cout << "PARAM linThreshold (negative is disabled): " << linThreshold << std::endl;
+
   if(addNoise)
     std::cout << "PARAM Noise: " << addNoise << std::endl;
 
-  std::cout << "datasetFile: " << datasetFile << std::endl;
+  // --------------- READ INPUT DATA  ----------------------------------------
+  SfM_data inputData;
+  readBAL(datasetFile, inputData);
+  std::cout << "read data from file... " << std::endl;
 
+  // --------------- CREATE FACTOR GRAPH  ------------------------------------
   static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
-  NonlinearFactorGraph graphSmart, graphProjection;
-
-  gtsam::Values::shared_ptr graphSmartValues(new gtsam::Values());
-  gtsam::Values::shared_ptr graphProjectionValues(new gtsam::Values());
-  gtsam::Values::shared_ptr loadedValues(new gtsam::Values()); // values we read from file
-  Values result;
-
-  // Read in kitti dataset
-  ifstream fin;
-  fin.open((datasetFile).c_str());
-  if(!fin) {
-    cerr << "Could not open dataset" << endl;
-    exit(1);
-  }
-
-  // read all measurements
-  cout << "Reading dataset... " << endl;
-  unsigned int numLandmarks = 0, numPoses = 0;
-  Key r, l;
-  double u, v;
-  double x, y, z, rotx, roty, rotz, f, k1, k2;
-  std::vector<Key> landmarkKeys, cameraPoseKeys;
-
-  bool optimized = false;
   boost::shared_ptr<Ordering> ordering(new Ordering());
 
-  #ifdef USE_BUNDLER
-    std::vector< boost::shared_ptr<Cal3Bundler> > K_cameras;
-    boost::shared_ptr<Cal3Bundler> K(new Cal3Bundler());
-  #else
-    std::vector< boost::shared_ptr<Cal3_S2> > K_cameras;
-    Cal3_S2::shared_ptr K(new Cal3_S2());
-  #endif
+  NonlinearFactorGraph graphSmart;
+  gtsam::Values::shared_ptr graphSmartValues(new gtsam::Values());
+
+  NonlinearFactorGraph graphProjection;
+  gtsam::Values::shared_ptr graphProjectionValues(new gtsam::Values());
+
+#ifdef USE_BUNDLER
+  std::vector< boost::shared_ptr<Cal3Bundler> > K_cameras;
+  boost::shared_ptr<Cal3Bundler> K(new Cal3Bundler());
+#else
+  std::vector< boost::shared_ptr<Cal3_S2> > K_cameras;
+  Cal3_S2::shared_ptr K(new Cal3_S2());
+#endif
 
   SmartFactorsCreator smartCreator(pixel_sigma, K, rankTolerance, linThreshold); // this initial K is not used
   ProjectionFactorsCreator projectionCreator(pixel_sigma, K);  // this initial K is not used
+  int numLandmarks=0;
 
-  // main loop: reads measurements and adds factors (also performs optimization if desired)
-  // r >> pose id
-  // l >> landmark id
-  // (u >> u) >> measurement
-  unsigned int totNumLandmarks=0, totNumPoses=0, totNumMeasurements=0;
-  fin >> totNumPoses >> totNumLandmarks >> totNumMeasurements;
-
-  cout << "Dataset: #poses: " << totNumPoses << " #points: " << totNumLandmarks << " #measurements: " << totNumMeasurements << " " << endl;
-
-  std::vector<double> vector_u;
-  std::vector<double> vector_v;
-  std::vector<int> vector_r;
-  std::vector<int> vector_l;
-
-  // read measurements
-  for(unsigned int i = 0; i < totNumMeasurements; i++){
-    fin >> r >> l >> u >> v;
-    vector_u.push_back(u);
-    vector_v.push_back(v);
-    vector_r.push_back(r);
-    vector_l.push_back(l);
+  if(debug){
+    std::cout << "Constructors for factor creators " << std::endl;
+    std::cout << "inputData.number_cameras() " << inputData.number_cameras()  << std::endl;
+    std::cout << "inputData.number_tracks() " << inputData.number_tracks()  << std::endl;
   }
 
-  cout << "last measurement: " << r << " " << l << " " << u << " " << v << endl;
-
-  // create values
-  for(unsigned int i = 0; i < totNumPoses; i++){
-    // R,t,f,k1 and k2.
-    fin >> rotx >> roty >> rotz  >> x >> y >> z >> f >> k1 >> k2;
-    #ifdef USE_BUNDLER
-        boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(f, k1, k2, 0.0, 0.0));
-        // cout << k1 << " " << k2 << endl;
-        K_cameras.push_back(Kbundler);
-    #else
-        boost::shared_ptr<Cal3_S2> K_S2(new Cal3_S2(f, f, 0.0, 0.0, 0.0));
-        K_cameras.push_back(K_S2);
-    #endif
-    Vector3 rotVect(rotx,roty,rotz);
-    // FORMAT CONVERSION!! R -> R'
-    Rot3 R = Rot3::Expmap(rotVect);
-    Matrix3  R_bal_gtsam_mat = Matrix3::Zero(3,3);
-    R_bal_gtsam_mat(0,0) = 1.0;  R_bal_gtsam_mat(1,1) = -1.0; R_bal_gtsam_mat(2,2) = -1.0;
-    Rot3 R_bal_gtsam_ = Rot3(R_bal_gtsam_mat);
-    Pose3 CameraPose((R.inverse()).compose(R_bal_gtsam_), - R.unrotate(Point3(x,y,z)));
-
+  // Load graph values
+  gtsam::Values::shared_ptr loadedValues(new gtsam::Values()); // values we read from file
+  for (size_t i = 0; i < inputData.number_cameras(); i++){ // for each camera
+    Pose3 cameraPose =  inputData.cameras[i].pose();
     if(addNoise){
       Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.3,0.1,0.3));
-      CameraPose = CameraPose.compose(noise_pose);
+      cameraPose = cameraPose.compose(noise_pose);
     }
-    loadedValues->insert(X(i), CameraPose );
+    loadedValues->insert(X(i), cameraPose);
+    graphSmartValues->insert(X(i), cameraPose);
   }
+  if(debug) std::cout << "Initialized values " << std::endl;
 
-  cout << "last pose: " << x << " " << y << " " << z << " " << rotx << " "
-      << roty << " " << rotz << " " << f << " " << k1 << " " << k2 << endl;
-
-  // add landmarks in standard projection factors
-  if(!useSmartProjectionFactor){
-    for(unsigned int i = 0; i < totNumLandmarks; i++){
-      fin >> x >> y >> z;
-      // FORMAT CONVERSION!! XPOINT
-      loadedValues->insert(L(i), Point3(x,y,z) );
-    }
+  for (size_t j = 0; j < inputData.number_tracks(); j++){ // for each 3D point
+    Point3 point = inputData.tracks[j].p;
+    loadedValues->insert(L(j), point);
   }
+  if(debug) std::cout << "Initialized points " << std::endl;
 
-  cout << "last point: " << x << " " << y << " " << z << endl;
+  // Create the graph
+  for (size_t j = 0; j < inputData.number_tracks(); j++){ // for each 3D point
+    SfM_Track track  = inputData.tracks[j];
+    Point3 point = track.p;
 
-  // 1: add values and factors to the graph
-  // 1.1: add factors
-  // SMART FACTORS ..
-  for(size_t i = 0; i < vector_u.size(); i++){
+    for (size_t k = 0; k < track.number_measurements(); k++){ // for each measurement of the point
+      SfM_Measurement measurement = track.measurements[k];
+      int    i = measurement.first;
+      double u = measurement.second.x();
+      double v = measurement.second.y();
+      boost::shared_ptr<Cal3Bundler> Ki(new Cal3Bundler(inputData.cameras[i].calibration()));
+      //boost::shared_ptr<Cal3_S2> Ki(new Cal3_S2());
 
-    l = vector_l.at(i);
-    r = vector_r.at(i);
-    // FORMAT CONVERSION!! XPOINT
-    u = vector_u.at(i);
-    // FORMAT CONVERSION!! XPOINT
-    v = - vector_v.at(i);
-
-    if (useSmartProjectionFactor) {
-
-      smartCreator.add(L(l), X(r), Point2(u,v), pixel_sigma, K_cameras.at(r), graphSmart);
-      numLandmarks = smartCreator.getNumLandmarks();
-
-      // Add initial pose value if pose does not exist
-      if (!graphSmartValues->exists<Pose3>(X(r)) && loadedValues->exists<Pose3>(X(r))) {
-        graphSmartValues->insert(X(r), loadedValues->at<Pose3>(X(r)));
-        numPoses++;
-        optimized = false;
+      // insert data in a format that can be understood
+      if (useSmartProjectionFactor) {
+        // Use smart factors
+        smartCreator.add(L(j), X(i), Point2(u,v), pixel_sigma, Ki, graphSmart);
+        numLandmarks = smartCreator.getNumLandmarks();
+      } else {
+        // or STANDARD PROJECTION FACTORS
+        projectionCreator.add(L(j), X(i), Point2(u,v), pixel_sigma, Ki, graphProjection);
+        numLandmarks = projectionCreator.getNumLandmarks();
       }
-
-    } else {
-      // or STANDARD PROJECTION FACTORS
-      projectionCreator.add(L(l), X(r), Point2(u,v), pixel_sigma, K_cameras.at(r), graphProjection);
-      numLandmarks = projectionCreator.getNumLandmarks();
-      optimized = false;
     }
   }
+  if(debug) std::cout << "Included measurements in the graph " << std::endl;
+
+  cout << "Number of landmarks  " << numLandmarks << endl;
 
   cout << "Before call to update: ------------------ " << endl;
   cout << "Poses in SmartGraph values: "<< graphSmartValues->size() << endl;
@@ -415,30 +368,25 @@ int main(int argc, char** argv) {
   cout << "Points in ProjectionGraph values: "<< valuesProjPoints.size() << endl;
   cout << "---------------------------------------------------------- " << endl;
 
+  Values result;
   if (useSmartProjectionFactor) {
     if (useLM)
       optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
     else
       optimizeGraphISAM2(graphSmart, graphSmartValues, result);
-
     cout << "Final reprojection error (smart): " << graphSmart.error(result);
   } else {
     if (useLM)
       optimizeGraphLM(graphProjection, graphProjectionValues, result, ordering);
     else
       optimizeGraphISAM2(graphProjection, graphProjectionValues, result); // ?
-
     cout << "Final reprojection error (standard): " << graphProjection.error(result);
   }
-
-  optimized = true;
 
   cout << "===================================================" << endl;
   tictoc_print_();
   cout << "===================================================" << endl;
   writeValues("./", result);
-
-  if (debug) cout << numLandmarks << " " <<  numPoses << " " << optimized << endl;
 
   exit(0);
 }

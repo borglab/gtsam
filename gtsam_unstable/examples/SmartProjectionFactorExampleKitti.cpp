@@ -14,6 +14,7 @@
  * @brief Example usage of SmartProjectionFactor using real dataset in a non-batch fashion
  * @date August, 2013
  * @author Zsolt Kira
+ * @author Luca Carlone
  */
 
 // Use a map to store landmark/smart factor pairs
