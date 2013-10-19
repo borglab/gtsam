@@ -12,7 +12,7 @@
 /**
  * @file dataset.h
  * @date Jan 22, 2010
- * @author nikai
+ * @author nikai, Luca Carlone
  * @brief utility functions for loading datasets
  */
 
@@ -134,6 +134,17 @@ bool readBAL(const std::string& filename, SfM_data &data);
  * @return true if the parsing was successful, false otherwise
  */
 bool writeBAL(const std::string& filename, SfM_data &data);
+
+/**
+ * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
+ * SfM_data structure and a value structure (measurements are the same as the SfM input data,
+ * while camera poses and values are read from Values)
+ * @param filename The name of the BAL file to write
+ * @param data SfM structure where the data is stored
+ * @param values structure where the graph values are stored
+ * @return true if the parsing was successful, false otherwise
+ */
+bool writeBALfromValues(const std::string& filename, SfM_data &data, Values& values);
 
 /**
  * @brief This function converts an openGL camera pose to an GTSAM camera pose

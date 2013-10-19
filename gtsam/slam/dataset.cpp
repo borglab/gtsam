@@ -12,7 +12,7 @@
 /**
  * @file dataset.cpp
  * @date Jan 22, 2010
- * @author nikai
+ * @author nikai, Luca Carlone
  * @brief utility functions for loading datasets
  */
 
@@ -605,7 +605,7 @@ bool readBAL(const string& filename, SfM_data &data)
 /* ************************************************************************* */
 bool writeBAL(const string& filename, SfM_data &data)
 {
-  // Load the data file
+  // Open the output file
   ofstream os;
   os.open(filename.c_str());
   os.precision(20);
@@ -613,6 +613,8 @@ bool writeBAL(const string& filename, SfM_data &data)
     cout << "Error in writeBAL: can not open the file!!" << endl;
     return false;
   }
+
+  cout << "writeBAL assumes the origin of the camera frame to coincide with camera center!!" << endl;
 
   // Write the number of camera poses and 3D points
   int nrObservations=0;
@@ -658,6 +660,47 @@ bool writeBAL(const string& filename, SfM_data &data)
 
   os.close();
   return true;
+}
+
+bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
+
+  // CHECKS
+  Values valuesPoses = values.filter<Pose3>();
+  if( valuesPoses.size() != data.number_cameras()){
+    cout << "writeBALfromValues: different number of cameras in SfM_data (#cameras= " << data.number_cameras()
+        <<") and values (#cameras " << valuesPoses.size() << ")!!" << endl;
+    return false;
+  }
+  Values valuesPoints = values.filter<Point3>();
+  if( valuesPoints.size() != data.number_tracks()){
+    cout << "writeBALfromValues: different number of points in SfM_data (#points= " << data.number_tracks()
+        <<") and values (#points " << valuesPoints.size() << ")!!" << endl;
+    return false;
+  }
+  if(valuesPoints.size() + valuesPoses.size() != values.size()){
+    cout << "writeBALfromValues write only poses and points values!!" << endl;
+    return false;
+  }
+  if(valuesPoints.size()==0 || valuesPoses.size()==0){
+    cout << "writeBALfromValues: No point or pose in values!!" << endl;
+    return false;
+  }
+
+  for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
+    Key poseKey = symbol('x',i);
+    Pose3 pose = values.at<Pose3>(poseKey);
+    Cal3Bundler K = data.cameras[i].calibration();
+    PinholeCamera<Cal3Bundler> camera(pose, K);
+    data.cameras[i] = camera;
+  }
+
+  for (size_t j = 0; j < data.number_tracks(); j++){ // for each point
+    Key pointKey = symbol('l',j);
+    Point3 point = values.at<Point3>(pointKey);
+    data.tracks[j].p = point;
+  }
+
+  return writeBAL(filename, data);
 }
 
 

@@ -41,7 +41,7 @@
 // have been provided with the library for solving robotics SLAM problems.
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam_unstable/slam/SmartProjectionFactor.h>
+#include <gtsam_unstable/slam/SmartProjectionHessianFactor.h>
 
 // We need to use SFM_data to save it to BAL format
 #include <gtsam/slam/dataset.h>

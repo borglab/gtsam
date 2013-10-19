@@ -59,7 +59,6 @@ using namespace gtsam;
 using namespace boost::assign;
 namespace NM = gtsam::noiseModel;
 
-#define USE_BUNDLER
 
 using symbol_shorthand::X;
 using symbol_shorthand::L;
@@ -67,13 +66,8 @@ using symbol_shorthand::L;
 typedef PriorFactor<Pose3> Pose3Prior;
 typedef FastMap<Key, int> OrderingMap;
 
-#ifdef USE_BUNDLER
 typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> SmartFactorsCreator;
 typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFactorsCreator;
-#else
-typedef SmartProjectionFactorsCreator<Pose3, Point3, Cal3_S2> SmartFactorsCreator;
-typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3_S2> ProjectionFactorsCreator;
-#endif
 
 bool debug = false;
 
@@ -120,68 +114,58 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   params.verbosity = NonlinearOptimizerParams::ERROR;
   params.lambdaInitial = 1;
-  params.lambdaFactor = 10;
+  // Other parameters: if needed
+  // params.lambdaFactor = 10;
   // Profile a single iteration
-  //  params.maxIterations = 1;
-  params.maxIterations = 100;
-  std::cout << " LM max iterations: " << params.maxIterations << std::endl;
-  // // params.relativeErrorTol = 1e-5;
-  params.absoluteErrorTol = 1.0;
-  params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  params.verbosity = NonlinearOptimizerParams::ERROR;
-  params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_CHOLESKY;
+  params.maxIterations = 1;
+  // params.relativeErrorTol = 1e-5;
+  // params.absoluteErrorTol = 1.0;
+  cout << "==================== Optimization ==================" << endl;
+  cout << "- Number of factors: " << graph.size() << endl;
+  cout << "- Number of variables: " << graphValues->size() << endl;
 
-  cout << "Graph size: " << graph.size() << endl;
-  cout << "Number of variables: " << graphValues->size() << endl;
-  std::cout << " OPTIMIZATION " << std::endl;
+  params.print("PARAMETERS FOR LM: \n");
 
   if (debug) {
-    std::cout << "\n\n=================================================\n\n";
+    cout << "\n\n===============================================\n\n";
     graph.print("thegraph");
   }
-  std::cout << "\n\n=================================================\n\n";
+  cout << "-----------------------------------------------------" << endl;
 
   if (ordering && ordering->size() > 0) {
-    if (debug) {
-      std::cout << "Have an ordering\n" << std::endl;
-      BOOST_FOREACH(const Key& key, *ordering) {
-        std::cout << key << " ";
-      }
-      std::cout << std::endl;
-    }
-
+    std::cout << "Starting graph optimization with user specified ordering" << std::endl;
     params.ordering = *ordering;
-
-    //for (int i = 0; i < 3; i++) {
     LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
     gttic_(GenericProjectionFactorExample_kitti);
     result = optimizer.optimize();
     gttoc_(GenericProjectionFactorExample_kitti);
     tictoc_finishedIteration_();
-    //}
-  } else {
-    std::cout << "Using COLAMD ordering\n" << std::endl;
-    //boost::shared_ptr<Ordering> ordering2(new Ordering()); ordering = ordering2;
+    cout << "-----------------------------------------------------" << endl;
+    std::cout << "Number of outer LM iterations: " << optimizer.state().iterations << std::endl;
+    std::cout << "Total number of LM iterations (inner and outer): " << optimizer.getInnerIterations() << std::endl;
 
+  } else {
+    std::cout << "Starting graph optimization with COLAMD ordering" << std::endl;
     LevenbergMarquardtOptimizer optimizer(graph, *graphValues, params);
     params.ordering = Ordering::COLAMD(graph);
-    gttic_(SmartProjectionFactorExample_kitti);
+    gttic_(smartProjectionFactorExample);
     result = optimizer.optimize();
-    gttoc_(SmartProjectionFactorExample_kitti);
+    gttoc_(smartProjectionFactorExample);
     tictoc_finishedIteration_();
-
+    cout << "-----------------------------------------------------" << endl;
     std::cout << "Number of outer LM iterations: " << optimizer.state().iterations << std::endl;
     std::cout << "Total number of LM iterations (inner and outer): " << optimizer.getInnerIterations() << std::endl;
 
     //*ordering = params.ordering;
     if (params.ordering) {
-      std::cout << "Graph size: " << graph.size() << " ORdering: " << params.ordering->size() << std::endl;
+      if(debug) std::cout << "Graph size: " << graph.size() << " Ordering: " << params.ordering->size() << std::endl;
       ordering = boost::make_shared<Ordering>(*(new Ordering()));
       *ordering = *params.ordering;
     } else {
       std::cout << "WARNING: NULL ordering!" << std::endl;
     }
   }
+  cout << "======================================================" << endl;
 }
 
 void optimizeGraphGN(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result) {
@@ -190,31 +174,31 @@ void optimizeGraphGN(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   params.verbosity = NonlinearOptimizerParams::DELTA;
 
   GaussNewtonOptimizer optimizer(graph, *graphValues, params);
-  gttic_(SmartProjectionFactorExample_kitti);
+  gttic_(smartProjectionFactorExample);
   result = optimizer.optimize();
-  gttoc_(SmartProjectionFactorExample_kitti);
+  gttoc_(smartProjectionFactorExample);
   tictoc_finishedIteration_();
-
 }
 
 void optimizeGraphISAM2(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result) {
   ISAM2 isam;
-  gttic_(SmartProjectionFactorExample_kitti);
+  gttic_(smartProjectionFactorExample);
   isam.update(graph, *graphValues);
   result = isam.calculateEstimate();
-  gttoc_(SmartProjectionFactorExample_kitti);
+  gttoc_(smartProjectionFactorExample);
   tictoc_finishedIteration_();
 }
 
+// ************************************************************************************************
+// ************************************************************************************************
 // main
 int main(int argc, char** argv) {
 
-  // Set to true to use SmartProjectionFactor. Otherwise GenericProjectionFactor will be used
-  bool useSmartProjectionFactor = true;
-  bool doTriangulation = true; // we read points initial guess from file or we triangulate
+  bool useSmartProjectionFactor = true; // default choice is to use the smart projection factors
+  bool doTriangulation = true; // default choice is to initialize points from triangulation (only for standard projection factors)
 
+  bool addNoise = false; // add (fixed) noise to the initial guess of camera poses
   bool useLM = true; 
-  bool addNoise = false;
 
   // Smart factors settings
   double linThreshold = -1.0; // negative is disabled
@@ -225,6 +209,7 @@ int main(int argc, char** argv) {
   string datasetFile = HOME + "/data/SfM/BAL/Ladybug/problem-1031-110968-pre.txt";
 
   // --------------- READ USER INPUTS (main arguments) ------------------------------------
+  // COMMAND TO RUN (EXAMPLE): ./SmartProjectionFactorExampleBAL smart triangulation=0 /home/aspn/data/SfM/BAL/Ladybug/problem-1031-110968-pre.txt
   if(argc>1){ // if we have any input arguments
     // Arg1: "smart" or "standard" (select if to use smart factors or standard projection factors)
     // Arg2: "triangulation=0" or "triangulation=1" (select whether to initialize initial guess for points using triangulation)
@@ -260,18 +245,19 @@ int main(int argc, char** argv) {
   std::cout << "- datasetFile: " << datasetFile << std::endl;
 
   if (linThreshold >= 0)
-    std::cout << "PARAM linThreshold (negative is disabled): " << linThreshold << std::endl;
+    std::cout << "- linThreshold (negative is disabled): " << linThreshold << std::endl;
 
   if(addNoise)
-    std::cout << "PARAM Noise: " << addNoise << std::endl;
+    std::cout << "- Noise: " << addNoise << std::endl;
 
   // --------------- READ INPUT DATA  ----------------------------------------
+  std::cout << "- reading dataset from file... " << std::endl;
   SfM_data inputData;
   readBAL(datasetFile, inputData);
-  std::cout << "read data from file... " << std::endl;
 
   // --------------- CREATE FACTOR GRAPH  ------------------------------------
-  static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2));
+  std::cout << "- creating factor graph... " << std::endl;
+  static SharedNoiseModel pixel_sigma(noiseModel::Unit::Create(2)); // pixel noise
   boost::shared_ptr<Ordering> ordering(new Ordering());
 
   NonlinearFactorGraph graphSmart;
@@ -280,13 +266,8 @@ int main(int argc, char** argv) {
   NonlinearFactorGraph graphProjection;
   gtsam::Values::shared_ptr graphProjectionValues(new gtsam::Values());
 
-#ifdef USE_BUNDLER
   std::vector< boost::shared_ptr<Cal3Bundler> > K_cameras;
   boost::shared_ptr<Cal3Bundler> K(new Cal3Bundler());
-#else
-  std::vector< boost::shared_ptr<Cal3_S2> > K_cameras;
-  Cal3_S2::shared_ptr K(new Cal3_S2());
-#endif
 
   SmartFactorsCreator smartCreator(pixel_sigma, K, rankTolerance, linThreshold); // this initial K is not used
   ProjectionFactorsCreator projectionCreator(pixel_sigma, K);  // this initial K is not used
@@ -306,8 +287,8 @@ int main(int argc, char** argv) {
       Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.3,0.1,0.3));
       cameraPose = cameraPose.compose(noise_pose);
     }
-    loadedValues->insert(X(i), cameraPose);
-    graphSmartValues->insert(X(i), cameraPose);
+    loadedValues->insert(X(i), cameraPose); // this will be used for the graphProjection
+    graphSmartValues->insert(X(i), cameraPose); // we insert the value for the graphSmart that only contains poses
   }
   if(debug) std::cout << "Initialized values " << std::endl;
 
@@ -324,15 +305,13 @@ int main(int argc, char** argv) {
 
     for (size_t k = 0; k < track.number_measurements(); k++){ // for each measurement of the point
       SfM_Measurement measurement = track.measurements[k];
-      int    i = measurement.first;
+      int    i = measurement.first; // camera id
       double u = measurement.second.x();
       double v = measurement.second.y();
       boost::shared_ptr<Cal3Bundler> Ki(new Cal3Bundler(inputData.cameras[i].calibration()));
-      //boost::shared_ptr<Cal3_S2> Ki(new Cal3_S2());
 
-      // insert data in a format that can be understood
       if (useSmartProjectionFactor) {
-        // Use smart factors
+        // use SMART PROJECTION FACTORS
         smartCreator.add(L(j), X(i), Point2(u,v), pixel_sigma, Ki, graphSmart);
         numLandmarks = smartCreator.getNumLandmarks();
       } else {
@@ -342,31 +321,33 @@ int main(int argc, char** argv) {
       }
     }
   }
-  if(debug) std::cout << "Included measurements in the graph " << std::endl;
-
-  cout << "Number of landmarks  " << numLandmarks << endl;
-
-  cout << "Before call to update: ------------------ " << endl;
-  cout << "Poses in SmartGraph values: "<< graphSmartValues->size() << endl;
-  Values valuesProjPoses = graphProjectionValues->filter<Pose3>();
-  cout << "Poses in ProjectionGraph values: "<< valuesProjPoses.size() << endl;
-  Values valuesProjPoints = graphProjectionValues->filter<Point3>();
-  cout << "Points in ProjectionGraph values: "<< valuesProjPoints.size() << endl;
-  cout << "---------------------------------------------------------- " << endl;
+  if(debug){
+    cout << "Included measurements in the graph " << endl;
+    cout << "Number of landmarks  " << numLandmarks << endl;
+    cout << "Before call to update: ------------------ " << endl;
+    cout << "Poses in SmartGraph values: "<< graphSmartValues->size() << endl;
+    Values valuesProjPoses = graphProjectionValues->filter<Pose3>();
+    cout << "Poses in ProjectionGraph values: "<< valuesProjPoses.size() << endl;
+    Values valuesProjPoints = graphProjectionValues->filter<Point3>();
+    cout << "Points in ProjectionGraph values: "<< valuesProjPoints.size() << endl;
+    cout << "---------------------------------------------------------- " << endl;
+  }
 
   if (!useSmartProjectionFactor) {
     projectionCreator.update(graphProjection, loadedValues, graphProjectionValues, doTriangulation);
-    // graphProjectionValues = loadedValues;
     ordering = projectionCreator.getOrdering();
   }
 
-  cout << "After call to update: ------------------ " << endl;
-  cout << "Poses in SmartGraph values: "<< graphSmartValues->size() << endl;
-  valuesProjPoses = graphProjectionValues->filter<Pose3>();
-  cout << "Poses in ProjectionGraph values: "<< valuesProjPoses.size() << endl;
-  valuesProjPoints = graphProjectionValues->filter<Point3>();
-  cout << "Points in ProjectionGraph values: "<< valuesProjPoints.size() << endl;
-  cout << "---------------------------------------------------------- " << endl;
+  if(debug) {
+    cout << "After call to update: ------------------ " << endl;
+    cout << "--------------------------------------------------------- " << endl;
+    cout << "Poses in SmartGraph values: "<< graphSmartValues->size() << endl;
+    Values valuesProjPoses = graphProjectionValues->filter<Pose3>();
+    cout << "Poses in ProjectionGraph values: "<< valuesProjPoses.size() << endl;
+    Values valuesProjPoints = graphProjectionValues->filter<Point3>();
+    cout << "Points in ProjectionGraph values: "<< valuesProjPoints.size() << endl;
+    cout << "---------------------------------------------------------- " << endl;
+  }
 
   Values result;
   if (useSmartProjectionFactor) {
@@ -374,20 +355,28 @@ int main(int argc, char** argv) {
       optimizeGraphLM(graphSmart, graphSmartValues, result, ordering);
     else
       optimizeGraphISAM2(graphSmart, graphSmartValues, result);
-    cout << "Final reprojection error (smart): " << graphSmart.error(result);
+    cout << "Initial reprojection error (smart): " << graphSmart.error(*graphSmartValues) << endl;;
+    cout << "Final reprojection error (smart): " << graphSmart.error(result) << endl;;
   } else {
     if (useLM)
       optimizeGraphLM(graphProjection, graphProjectionValues, result, ordering);
     else
-      optimizeGraphISAM2(graphProjection, graphProjectionValues, result); // ?
-    cout << "Final reprojection error (standard): " << graphProjection.error(result);
+      optimizeGraphISAM2(graphProjection, graphProjectionValues, result);
+    cout << "Initial reprojection error (standard): " << graphProjection.error(*graphProjectionValues) << endl;;
+    cout << "Final reprojection error (standard): " << graphProjection.error(result) << endl;;
   }
 
-  cout << "===================================================" << endl;
   tictoc_print_();
   cout << "===================================================" << endl;
-  writeValues("./", result);
 
+  // --------------- WRITE OUTPUT TO BAL FILE  ----------------------------------------
+  cout << "- writing results to (BAL) file... " << endl;
+  std::size_t stringCut1 = datasetFile.rfind("/");
+  std::size_t stringCut2 = datasetFile.rfind(".txt");
+  string outputFile = "." + datasetFile.substr(stringCut1, stringCut2-stringCut1) + "-optimized.txt";
+  if(debug) cout << outputFile << endl;
+  writeBALfromValues(outputFile, inputData, result);
+  cout << "- mission accomplished! " << endl;
   exit(0);
 }
 

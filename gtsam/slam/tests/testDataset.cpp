@@ -12,7 +12,7 @@
 /**
  * @file    testDataset.cpp
  * @brief   Unit test for dataset.cpp
- * @author  Richard Roberts
+ * @author  Richard Roberts, Luca Carlone
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -20,6 +20,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std;
@@ -116,7 +117,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
   ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
   SfM_data readData;
-  CHECK(readBAL(filenameToRead, readData));
+  readBAL(filenameToRead, readData);
 
   // Write readData to file filenameToWrite
   const string filenameToWrite = findExampleDataFile("dubrovnik-3-7-pre-rewritten");
@@ -156,6 +157,62 @@ TEST( dataSet, writeBAL_Dubrovnik)
     }
   }
 }
+
+
+/* ************************************************************************* */
+TEST( dataSet, writeBALfromValues_Dubrovnik){
+
+  ///< Read a file using the unit tested readBAL
+  const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
+  SfM_data readData;
+  readBAL(filenameToRead, readData);
+
+  Pose3 poseChange = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.3,0.1,0.3));
+
+  Values value;
+  for(size_t i=0; i < readData.number_cameras(); i++){ // for each camera
+    Key poseKey = symbol('x',i);
+    Pose3 pose = poseChange.compose(readData.cameras[i].pose());
+    value.insert(poseKey, pose);
+  }
+  for(size_t j=0; j < readData.number_tracks(); j++){ // for each point
+    Key pointKey = symbol('l',j);
+    Point3 point = poseChange.transform_from( readData.tracks[j].p );
+    value.insert(pointKey, point);
+  }
+
+  // Write values and readData to a file
+  const string filenameToWrite = findExampleDataFile("dubrovnik-3-7-pre-rewritten");
+  writeBALfromValues(filenameToWrite, readData, value);
+
+  // Read the file we wrote
+  SfM_data writtenData;
+  readBAL(filenameToWrite, writtenData);
+
+  // Check that the reprojection errors are the same and the poses are correct
+  // Check number of things
+  EXPECT_LONGS_EQUAL(3,writtenData.number_cameras());
+  EXPECT_LONGS_EQUAL(7,writtenData.number_tracks());
+  const SfM_Track& track0 = writtenData.tracks[0];
+  EXPECT_LONGS_EQUAL(3,track0.number_measurements());
+
+  // Check projection of a given point
+  EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
+  const SfM_Camera& camera0 = writtenData.cameras[0];
+  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
+  EXPECT(assert_equal(expected,actual,12));
+
+  Pose3 expectedPose = camera0.pose();
+  Key poseKey = symbol('x',0);
+  Pose3 actualPose = value.at<Pose3>(poseKey);
+  EXPECT(assert_equal(expectedPose,actualPose, 1e-7));
+
+  Point3 expectedPoint = track0.p;
+  Key pointKey = symbol('l',0);
+  Point3 actualPoint = value.at<Point3>(pointKey);
+  EXPECT(assert_equal(expectedPoint,actualPoint, 1e-6));
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
