@@ -27,6 +27,13 @@
 #include <boost/assign/std/vector.hpp>
 #include <gtsam_unstable/base/dllexport.h>
 
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+
+#include <gtsam/slam/ProjectionFactor.h>
+
 
 namespace gtsam {
 
@@ -34,7 +41,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT TriangulationUnderconstrainedException: public std::runtime_error {
 public:
   TriangulationUnderconstrainedException() :
-      std::runtime_error("Triangulation Underconstrained Exception.") {
+    std::runtime_error("Triangulation Underconstrained Exception.") {
   }
 };
 
@@ -42,16 +49,90 @@ public:
 class GTSAM_UNSTABLE_EXPORT TriangulationCheiralityException: public std::runtime_error {
 public:
   TriangulationCheiralityException() :
-      std::runtime_error(
-          "Triangulation Cheirality Exception: The resulting landmark is behind one or more cameras.") {
+    std::runtime_error(
+        "Triangulation Cheirality Exception: The resulting landmark is behind one or more cameras.") {
   }
 };
 
 Point3 triangulateDLT(const std::vector<Pose3>& poses, const std::vector<Matrix>& projection_matrices,
     const std::vector<Point2>& measurements, const Cal3_S2 &K, double rank_tol, bool optimize);
 
+/* ************************************************************************* */
+// See Hartley and Zisserman, 2nd Ed., page 312
+template<class CALIBRATION>
 Point3 triangulateDLT(const std::vector<Pose3>& poses, const std::vector<Matrix>& projection_matrices,
-    const std::vector<Point2>& measurements, const std::vector<Cal3_S2::shared_ptr> &Ks, double rank_tol, bool optimize);
+    const std::vector<Point2>& measurements, const  std::vector<boost::shared_ptr<CALIBRATION> >& Ks, double rank_tol, bool optimize) {
+
+  Matrix A = zeros(projection_matrices.size() *2, 4);
+
+  for(size_t i=0; i< projection_matrices.size(); i++) {
+    size_t row = i*2;
+    const Matrix& projection = projection_matrices.at(i);
+    const Point2& p = measurements.at(i);
+
+    // build system of equations
+    A.row(row) = p.x() * projection.row(2) - projection.row(0);
+    A.row(row+1) = p.y() * projection.row(2) - projection.row(1);
+  }
+  int rank;
+  double error;
+  Vector v;
+  boost::tie(rank, error, v) = DLT(A, rank_tol);
+  //  std::cout << "s " << s.transpose() << std:endl;
+
+  if(rank < 3)
+    throw(TriangulationUnderconstrainedException());
+
+  Point3 point = Point3(sub( (v / v(3)),0,3));
+  if (optimize) {
+    NonlinearFactorGraph graph;
+    gtsam::Values::shared_ptr values(new gtsam::Values());
+    static SharedNoiseModel noise(noiseModel::Unit::Create(2));
+    static SharedNoiseModel prior_model(noiseModel::Diagonal::Sigmas(Vector_(6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6)));
+    int ij = 0;
+    Key landmarkKey = Symbol('l',0);
+
+    BOOST_FOREACH(const Point2 &measurement, measurements) {
+      // Factor for pose i
+      typedef GenericProjectionFactor<Pose3,Point3,CALIBRATION> ProjectionFactor;
+      typedef PriorFactor<Pose3> Pose3Prior;
+      Key poseKey = Symbol('x',ij);
+      boost::shared_ptr<ProjectionFactor> projectionFactor(new ProjectionFactor(measurement, noise, poseKey, landmarkKey, Ks[ij]));
+      graph.push_back(projectionFactor);
+      //ProjectionFactor *projectionFactor = new ProjectionFactor(measurement, noise, X(ij), L(0), Ks[ij]);
+      //graph.push_back( boost::make_shared<ProjectionFactor>(*projectionFactor) );
+
+      // Prior on pose
+      graph.push_back(Pose3Prior(poseKey, poses[ij], prior_model));
+
+      // Initial pose values
+      values->insert( poseKey, poses[ij]);
+
+      ij++;
+    }
+
+    // Initial landmark value
+    values->insert(landmarkKey, point);
+
+    // Optimize
+    LevenbergMarquardtParams params;
+    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+    params.verbosity = NonlinearOptimizerParams::ERROR;
+    params.lambdaInitial = 1;
+    params.lambdaFactor = 10;
+    params.maxIterations = 100;
+    params.absoluteErrorTol = 1.0;
+    params.verbosityLM = LevenbergMarquardtParams::SILENT;
+    params.verbosity = NonlinearOptimizerParams::SILENT;
+    params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_CHOLESKY;
+    LevenbergMarquardtOptimizer optimizer(graph, *values, params);
+    Values result = optimizer.optimize();
+
+    point = result.at<Point3>(landmarkKey);
+  }
+
+  return point;
+}
 
 
 /**
@@ -78,9 +159,9 @@ GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 
   // construct projection matrices from poses & calibration
   BOOST_FOREACH(const Pose3& pose, poses){
-  projection_matrices.push_back( K.K() * sub(pose.inverse().matrix(),0,3,0,4) );
-  // std::cout << "Calibration i \n" << K.K() << std::endl;
-  // std::cout << "rank_tol i \n" << rank_tol << std::endl;
+    projection_matrices.push_back( K.K() * sub(pose.inverse().matrix(),0,3,0,4) );
+    // std::cout << "Calibration i \n" << K.K() << std::endl;
+    // std::cout << "rank_tol i \n" << rank_tol << std::endl;
   }
 
   Point3 triangulated_point = triangulateDLT(poses, projection_matrices, measurements, K, rank_tol, optimize);
