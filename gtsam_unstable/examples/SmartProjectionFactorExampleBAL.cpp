@@ -59,7 +59,6 @@ using namespace gtsam;
 using namespace boost::assign;
 namespace NM = gtsam::noiseModel;
 
-
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
@@ -71,42 +70,6 @@ typedef GenericProjectionFactorsCreator<Pose3, Point3, Cal3Bundler> ProjectionFa
 
 bool debug = false;
 
-// Write key values to file
-void writeValues(string directory_, const Values& values){
-  string filename = directory_ + "out_camera_poses.txt";
-  ofstream fout;
-  fout.open(filename.c_str());
-  fout.precision(20);
-
-  // write out camera poses
-  BOOST_FOREACH(Values::ConstFiltered<Pose3>::value_type key_value, values.filter<Pose3>()) {
-    fout << Symbol(key_value.key).index();
-    const gtsam::Matrix& matrix= key_value.value.matrix();
-    for (size_t row=0; row < 4; ++row) {
-      for (size_t col=0; col < 4; ++col) {
-        fout << " " << matrix(row, col);
-      }
-    }
-    fout << endl;
-  }
-  fout.close();
-
-  if(values.filter<Point3>().size() > 0) {
-    // write landmarks
-    filename = directory_ + "landmarks.txt";
-    fout.open(filename.c_str());
-
-    BOOST_FOREACH(Values::ConstFiltered<Point3>::value_type key_value, values.filter<Point3>()) {
-      fout << Symbol(key_value.key).index();
-      fout << " " << key_value.value.x();
-      fout << " " << key_value.value.y();
-      fout << " " << key_value.value.z();
-      fout << endl;
-    }
-    fout.close();
-  } // end of if on landmarks
-
-}
 
 void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr graphValues, Values &result, boost::shared_ptr<Ordering> &ordering) {
   // Optimization parameters
@@ -117,7 +80,7 @@ void optimizeGraphLM(NonlinearFactorGraph &graph, gtsam::Values::shared_ptr grap
   // Other parameters: if needed
   // params.lambdaFactor = 10;
   // Profile a single iteration
-  params.maxIterations = 1;
+  // params.maxIterations = 1;
   // params.relativeErrorTol = 1e-5;
   // params.absoluteErrorTol = 1.0;
   cout << "==================== Optimization ==================" << endl;
@@ -377,7 +340,20 @@ int main(int argc, char** argv) {
   cout << "- writing results to (BAL) file... " << endl;
   std::size_t stringCut1 = datasetFile.rfind("/");
   std::size_t stringCut2 = datasetFile.rfind(".txt");
-  string outputFile = "." + datasetFile.substr(stringCut1, stringCut2-stringCut1) + "-optimized.txt";
+  string outputFile;
+
+  if(useSmartProjectionFactor){
+    outputFile = "." + datasetFile.substr(stringCut1, stringCut2-stringCut1) + "-optimized-smart.txt";
+  }else{
+    if(doTriangulation){
+      outputFile = "." + datasetFile.substr(stringCut1, stringCut2-stringCut1) + "-optimized-standard-triangulation.txt";
+    }else{
+      outputFile = "." + datasetFile.substr(stringCut1, stringCut2-stringCut1) + "-optimized-standard.txt";
+    }
+  }
+
+
+
   if(debug) cout << outputFile << endl;
   writeBALfromValues(outputFile, inputData, result);
   cout << "- mission accomplished! " << endl;
