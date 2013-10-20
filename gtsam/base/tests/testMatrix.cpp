@@ -209,15 +209,15 @@ TEST( matrix, column )
       0., 0., 0.3, 1., 0., 0., 0., -1., 0., 0.2, 0., 1., 0., 0., 0., -1.,
       -0.1);
   Vector a1 = column(A, 0);
-  Vector exp1 = Vector_(4, -1., 0., 1., 0.);
+  Vector exp1 = (Vec(4) << -1., 0., 1., 0.);
   EXPECT(assert_equal(a1, exp1));
 
   Vector a2 = column(A, 3);
-  Vector exp2 = Vector_(4, 0., 1., 0., 0.);
+  Vector exp2 = (Vec(4) << 0., 1., 0., 0.);
   EXPECT(assert_equal(a2, exp2));
 
   Vector a3 = column(A, 6);
-  Vector exp3 = Vector_(4, -0.2, 0.3, 0.2, -0.1);
+  Vector exp3 = (Vec(4) << -0.2, 0.3, 0.2, -0.1);
   EXPECT(assert_equal(a3, exp3));
 }
 
@@ -270,15 +270,15 @@ TEST( matrix, row )
       0., 0., 0.3, 1., 0., 0., 0., -1., 0., 0.2, 0., 1., 0., 0., 0., -1.,
       -0.1);
   Vector a1 = row(A, 0);
-  Vector exp1 = Vector_(7, -1., 0., 1., 0., 0., 0., -0.2);
+  Vector exp1 = (Vec(7) << -1., 0., 1., 0., 0., 0., -0.2);
   EXPECT(assert_equal(a1, exp1));
 
   Vector a2 = row(A, 2);
-  Vector exp2 = Vector_(7, 1., 0., 0., 0., -1., 0., 0.2);
+  Vector exp2 = (Vec(7) << 1., 0., 0., 0., -1., 0., 0.2);
   EXPECT(assert_equal(a2, exp2));
 
   Vector a3 = row(A, 3);
-  Vector exp3 = Vector_(7, 0., 1., 0., 0., 0., -1., -0.1);
+  Vector exp3 = (Vec(7) << 0., 1., 0., 0., 0., -1., -0.1);
   EXPECT(assert_equal(a3, exp3));
 }
 
@@ -374,7 +374,7 @@ TEST( matrix, scale_columns )
   A(2, 2) = 1.;
   A(2, 3) = 1.;
 
-  Vector v = Vector_(4, 2., 3., 4., 5.);
+  Vector v = (Vec(4) << 2., 3., 4., 5.);
 
   Matrix actual = vector_scale(A, v);
 
@@ -412,7 +412,7 @@ TEST( matrix, scale_rows )
   A(2, 2) = 1.;
   A(2, 3) = 1.;
 
-  Vector v = Vector_(3, 2., 3., 4.);
+  Vector v = (Vec(3) << 2., 3., 4.);
 
   Matrix actual = vector_scale(v, A);
 
@@ -450,7 +450,7 @@ TEST( matrix, scale_rows_mask )
   A(2, 2) = 1.;
   A(2, 3) = 1.;
 
-  Vector v = Vector_(3, 2., std::numeric_limits<double>::infinity(), 4.);
+  Vector v = (Vec(3) << 2., std::numeric_limits<double>::infinity(), 4.);
 
   Matrix actual = vector_scale(v, A, true);
 
@@ -614,9 +614,9 @@ TEST( matrix, matrix_vector_multiplication )
   Vector result(2);
 
   Matrix A = Matrix_(2, 3, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-  Vector v = Vector_(3, 1., 2., 3.);
-  Vector Av = Vector_(2, 14., 32.);
-  Vector AtAv = Vector_(3, 142., 188., 234.);
+  Vector v = (Vec(3) << 1., 2., 3.);
+  Vector Av = (Vec(2) << 14., 32.);
+  Vector AtAv = (Vec(3) << 142., 188., 234.);
 
   EQUALITY(A*v,Av);
   EQUALITY(A^Av,AtAv);
@@ -783,19 +783,19 @@ TEST( matrix, inverse2 )
 TEST( matrix, backsubtitution )
 {
   // TEST ONE  2x2 matrix U1*x=b1
-  Vector expected1 = Vector_(2, 3.6250, -0.75);
+  Vector expected1 = (Vec(2) << 3.6250, -0.75);
   Matrix U22 = Matrix_(2, 2, 2., 3., 0., 4.);
   Vector b1 = U22 * expected1;
   EXPECT( assert_equal(expected1 , backSubstituteUpper(U22, b1), 0.000001));
 
   // TEST TWO  3x3 matrix U2*x=b2
-  Vector expected2 = Vector_(3, 5.5, -8.5, 5.);
+  Vector expected2 = (Vec(3) << 5.5, -8.5, 5.);
   Matrix U33 = Matrix_(3, 3, 3., 5., 6., 0., 2., 3., 0., 0., 1.);
   Vector b2 = U33 * expected2;
   EXPECT( assert_equal(expected2 , backSubstituteUpper(U33, b2), 0.000001));
 
   // TEST THREE  Lower triangular 3x3 matrix L3*x=b3
-  Vector expected3 = Vector_(3, 1., 1., 1.);
+  Vector expected3 = (Vec(3) << 1., 1., 1.);
   Matrix L3 = trans(U33);
   Vector b3 = L3 * expected3;
   EXPECT( assert_equal(expected3 , backSubstituteLower(L3, b3), 0.000001));
@@ -956,14 +956,14 @@ TEST( matrix, weighted_elimination )
   // create a matrix to eliminate
   Matrix A = Matrix_(4, 6, -1., 0., 1., 0., 0., 0., 0., -1., 0., 1., 0., 0.,
       1., 0., 0., 0., -1., 0., 0., 1., 0., 0., 0., -1.);
-  Vector b = Vector_(4, -0.2, 0.3, 0.2, -0.1);
-  Vector sigmas = Vector_(4, 0.2, 0.2, 0.1, 0.1);
+  Vector b = (Vec(4) << -0.2, 0.3, 0.2, -0.1);
+  Vector sigmas = (Vec(4) << 0.2, 0.2, 0.1, 0.1);
 
   //   expected values
   Matrix expectedR = Matrix_(4, 6, 1., 0., -0.2, 0., -0.8, 0., 0., 1., 0.,
       -0.2, 0., -0.8, 0., 0., 1., 0., -1., 0., 0., 0., 0., 1., 0., -1.);
-  Vector d = Vector_(4, 0.2, -0.14, 0.0, 0.2);
-  Vector newSigmas = Vector_(4, 0.0894427, 0.0894427, 0.223607, 0.223607);
+  Vector d = (Vec(4) << 0.2, -0.14, 0.0, 0.2);
+  Vector newSigmas = (Vec(4) << 0.0894427, 0.0894427, 0.223607, 0.223607);
 
   Vector r;
   double di, sigma;
@@ -1046,7 +1046,7 @@ TEST( matrix, LLt )
 TEST( matrix, multiplyAdd )
 {
   Matrix A = Matrix_(3, 4, 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.);
-  Vector x = Vector_(4, 1., 2., 3., 4.), e = Vector_(3, 5., 6., 7.),
+  Vector x = (Vec(4) << 1., 2., 3., 4.), e = (Vec(3) << 5., 6., 7.),
       expected = e + A * x;
 
   multiplyAdd(1, A, x, e);
@@ -1057,7 +1057,7 @@ TEST( matrix, multiplyAdd )
 TEST( matrix, transposeMultiplyAdd )
 {
   Matrix A = Matrix_(3, 4, 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.);
-  Vector x = Vector_(4, 1., 2., 3., 4.), e = Vector_(3, 5., 6., 7.),
+  Vector x = (Vec(4) << 1., 2., 3., 4.), e = (Vec(3) << 5., 6., 7.),
       expected = x + trans(A) * e;
 
   transposeMultiplyAdd(1, A, e, x);
@@ -1091,7 +1091,7 @@ TEST( matrix, linear_dependent3 )
 /* ************************************************************************* */
 TEST( matrix, svd1 )
 {
-  Vector v = Vector_(3, 2., 1., 0.);
+  Vector v = (Vec(3) << 2., 1., 0.);
   Matrix U1 = eye(4, 3), S1 = diag(v), V1 = eye(3, 3), A = (U1 * S1)
       * Matrix(trans(V1));
   Matrix U, V;
@@ -1114,7 +1114,7 @@ TEST( matrix, svd2 )
   Vector s;
 
   Matrix expectedU = Matrix_(3, 2, 0.,-1.,0.,0.,1.,0.);
-  Vector expected_s = Vector_(2, 3.,2.);
+  Vector expected_s = (Vec(2) << 3.,2.);
   Matrix expectedV = Matrix_(2, 2, 1.,0.,0.,1.);
 
   svd(sampleA, U, s, V);
@@ -1131,7 +1131,7 @@ TEST( matrix, svd3 )
   Vector s;
 
   Matrix expectedU = Matrix_(2, 2, -1.,0.,0.,-1.);
-  Vector expected_s = Vector_(2, 3.0,2.0);
+  Vector expected_s = (Vec(2) << 3.0, 2.0);
   Matrix expectedV = Matrix_(3, 2, 0.,1.,0.,0.,-1.,0.);
 
   svd(sampleAt, U, s, V);
@@ -1161,7 +1161,7 @@ TEST( matrix, svd4 )
      0.6659,   -0.7370,
      0.0970,   -0.0689);
 
-  Vector expected_s = Vector_(2, 1.6455, 0.1910);
+  Vector expected_s = (Vec(2) << 1.6455, 0.1910);
 
   Matrix expectedV = Matrix_(2,2,
      0.7403,   -0.6723,
@@ -1193,7 +1193,7 @@ TEST( matrix, DLT )
   double error;
   Vector actual;
   boost::tie(rank,error,actual) = DLT(A);
-  Vector expected = Vector_(9, -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0);
+  Vector expected = (Vec(9) << -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0);
   EXPECT_LONGS_EQUAL(8,rank);
   EXPECT_DOUBLES_EQUAL(0,error,1e-8);
   EXPECT(assert_equal(expected, actual, 1e-4));

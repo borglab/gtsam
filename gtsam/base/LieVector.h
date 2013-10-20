@@ -39,7 +39,7 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   LieVector(const Eigen::Matrix<double, N, 1>& v) : Vector(v) {}
 
   /** wrap a double */
-  LieVector(double d) : Vector(Vector_(1, d)) {}
+  LieVector(double d) : Vector((Vec(1) << d)) {}
 
   /** constructor with size and initial data, row order ! */
   GTSAM_EXPORT LieVector(size_t m, const double* const data);
