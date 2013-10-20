@@ -200,15 +200,15 @@ int main(int argc, char** argv) {
   unsigned int minimumNumViews = 1;
 
   string HOME = getenv("HOME");
-  string input_dir = HOME + "/Research/datasets/kitti/loop_closures_merged/";
-  string output_file = HOME + "/Research/datasets/kitti/loop_closures_merged/loop_closures_merged_bal.txt";
+  string input_dir = HOME + "/data/kitti/loop_closures_merged/";
+  string output_file = HOME + "/data/kitti/loop_closures_merged/loop_closures_merged_bal.txt";
 
   typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> ProjectionFactor;
   NonlinearFactorGraph graph;
 
   // Load calibration
   boost::shared_ptr<Cal3_S2> K = loadCalibration(input_dir+"calibration.txt");
-  Cal3Bundler Kd(K->fx(),0,0,0,0);
+  Cal3Bundler Kd(K->fx(),0,0,K->px(),K->py());
   K->print("Calibration");
 
   // Load values from VO camera poses output
@@ -223,14 +223,14 @@ int main(int argc, char** argv) {
 
   // Read in kitti dataset
   ifstream fin;
-  fin.open((input_dir+"sorted_contiguous_stereo_factors.txt").c_str());
+  fin.open((input_dir+"stereo_factors.txt").c_str());
   if(!fin) {
-    cerr << "Could not open sorted_contiguous_stereo_factors.txt" << endl;
+    cerr << "Could not open stereo_factors.txt" << endl;
     exit(1);
   }
 
   // Read all measurements tracked by VO stereo
-  cout << "Loading sorted_contiguous_stereo_factors.txt" << endl;
+  cout << "Loading stereo_factors.txt" << endl;
   Key r, l, currentLandmark = 0;
   std::list<Key> allViews;
   std::vector<Key> views;
