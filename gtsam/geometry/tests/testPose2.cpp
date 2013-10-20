@@ -68,7 +68,7 @@ TEST(Pose2, retract) {
 #else
   Pose2 expected(M_PI/2.0+0.99, Point2(1.015, 2.01));
 #endif
-  Pose2 actual = pose.retract(Vector_(3, 0.01, -0.015, 0.99));
+  Pose2 actual = pose.retract((Vec(3) << 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -76,7 +76,7 @@ TEST(Pose2, retract) {
 TEST(Pose2, expmap) {
   Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
-  Pose2 actual = expmap_default<Pose2>(pose, Vector_(3, 0.01, -0.015, 0.99));
+  Pose2 actual = expmap_default<Pose2>(pose, (Vec(3) << 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -84,7 +84,7 @@ TEST(Pose2, expmap) {
 TEST(Pose2, expmap2) {
   Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
-  Pose2 actual = expmap_default<Pose2>(pose, Vector_(3, 0.01, -0.015, 0.99));
+  Pose2 actual = expmap_default<Pose2>(pose, (Vec(3) << 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -99,7 +99,7 @@ TEST(Pose2, expmap3) {
   Matrix A2 = A*A/2.0, A3 = A2*A/3.0, A4=A3*A/4.0;
   Matrix expected = eye(3) + A + A2 + A3 + A4;
 
-  Vector v = Vector_(3, 0.01, -0.015, 0.99);
+  Vector v = (Vec(3) << 0.01, -0.015, 0.99);
   Pose2 pose = Pose2::Expmap(v);
   Pose2 pose2(v);
   EXPECT(assert_equal(pose, pose2));
@@ -110,7 +110,7 @@ TEST(Pose2, expmap3) {
 /* ************************************************************************* */
 TEST(Pose2, expmap0a) {
   Pose2 expected(0.0101345, -0.0149092, 0.018);
-  Pose2 actual = Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
+  Pose2 actual = Pose2::Expmap((Vec(3) << 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -118,7 +118,7 @@ TEST(Pose2, expmap0a) {
 TEST(Pose2, expmap0b) {
   // a quarter turn
   Pose2 expected(1.0, 1.0, M_PI/2);
-  Pose2 actual = Pose2::Expmap(Vector_(3, M_PI/2, 0.0, M_PI/2));
+  Pose2 actual = Pose2::Expmap((Vec(3) << M_PI/2, 0.0, M_PI/2));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -126,7 +126,7 @@ TEST(Pose2, expmap0b) {
 TEST(Pose2, expmap0c) {
   // a half turn
   Pose2 expected(0.0, 2.0, M_PI);
-  Pose2 actual = Pose2::Expmap(Vector_(3, M_PI, 0.0, M_PI));
+  Pose2 actual = Pose2::Expmap((Vec(3) << M_PI, 0.0, M_PI));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -134,7 +134,7 @@ TEST(Pose2, expmap0c) {
 TEST(Pose2, expmap0d) {
   // a full turn
   Pose2 expected(0, 0, 0);
-  Pose2 actual = Pose2::Expmap(Vector_(3, 2*M_PI, 0.0, 2*M_PI));
+  Pose2 actual = Pose2::Expmap((Vec(3) << 2*M_PI, 0.0, 2*M_PI));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -143,7 +143,7 @@ TEST(Pose2, expmap0d) {
 // test case for screw motion in the plane
 namespace screw {
   double w=0.3;
-  Vector xi = Vector_(3, 0.0, w, w);
+  Vector xi = (Vec(3) << 0.0, w, w);
   Rot2 expectedR = Rot2::fromAngle(w);
   Point2 expectedT(-0.0446635, 0.29552);
   Pose2 expected(expectedR, expectedT);
@@ -161,7 +161,7 @@ TEST(Pose3, expmap_c)
 TEST(Pose2, expmap_c_full)
 {
   double w=0.3;
-  Vector xi = Vector_(3, 0.0, w, w);
+  Vector xi = (Vec(3) << 0.0, w, w);
   Rot2 expectedR = Rot2::fromAngle(w);
   Point2 expectedT(-0.0446635, 0.29552);
   Pose2 expected(expectedR, expectedT);
@@ -175,9 +175,9 @@ TEST(Pose2, logmap) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
-  Vector expected = Vector_(3, 0.00986473, -0.0150896, 0.018);
+  Vector expected = (Vec(3) << 0.00986473, -0.0150896, 0.018);
 #else
-  Vector expected = Vector_(3, 0.01, -0.015, 0.018);
+  Vector expected = (Vec(3) << 0.01, -0.015, 0.018);
 #endif
   Vector actual = pose0.localCoordinates(pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -187,7 +187,7 @@ TEST(Pose2, logmap) {
 TEST(Pose2, logmap_full) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
-  Vector expected = Vector_(3, 0.00986473, -0.0150896, 0.018);
+  Vector expected = (Vec(3) << 0.00986473, -0.0150896, 0.018);
   Vector actual = logmap_default<Pose2>(pose0, pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
@@ -348,7 +348,7 @@ TEST(Pose2, inverse )
 namespace {
   /* ************************************************************************* */
   Vector homogeneous(const Point2& p) {
-    return Vector_(3, p.x(), p.y(), 1.0);
+    return (Vec(3) << p.x(), p.y(), 1.0);
   }
 
   /* ************************************************************************* */
