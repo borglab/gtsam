@@ -83,10 +83,20 @@ Values::shared_ptr loadPoseValues(const string& filename) {
       fin >> pose_matrix[i];
     }
 
-    if (addNoise) {
+    Pose3 pose_(Matrix_(4, 4, pose_matrix));
+    Rot3 r_ = pose_.rotation();
+    Point3 t_ = pose_.translation();
+
+    /*if (addNoise) {
       values->insert(Symbol('x',pose_id), Pose3(Matrix_(4, 4, pose_matrix)).compose(noise_pose));
     } else {
       values->insert(Symbol('x',pose_id), Pose3(Matrix_(4, 4, pose_matrix)));
+    }*/
+
+    if (addNoise) {
+      values->insert(Symbol('x',pose_id), Pose3(r_,t_).compose(noise_pose));
+    } else {
+      values->insert(Symbol('x',pose_id), Pose3(r_,t_));
     }
   }
 
@@ -199,8 +209,8 @@ int main(int argc, char** argv) {
   unsigned int minimumNumViews = 1;
 
   string HOME = getenv("HOME");
-  string input_dir = HOME + "/data/kitti/loop_closures_merged/";
-  string output_file = HOME + "/data/kitti/loop_closures_merged/loop_closures_merged_bal.txt";
+  string input_dir = HOME + "/Research/datasets/kitti/test/";
+  string output_file = HOME + "/Research/datasets/kitti/test/test_bal.txt";
 
   typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> ProjectionFactor;
   NonlinearFactorGraph graph;
@@ -243,10 +253,13 @@ int main(int argc, char** argv) {
 
     if (loaded_values->exists<Point3>(L(l)) == boost::none) {
       Pose3 camera = loaded_values->at<Pose3>(X(r));
+
+      // Use transform to to get points in world coordinate frame
       Point3 worldPoint = camera.transform_from(Point3(x, y, z));
       loaded_values->insert(L(l), worldPoint); // add point;
       npoints++;
 
+      //cout << "world p " << worldPoint << endl;
       // Create a track without observations
       SfM_Track track;
       track.p = worldPoint;
@@ -262,13 +275,12 @@ int main(int argc, char** argv) {
   fin.close();
 
   // Open again the file to store the measurements
-  fin.open((input_dir+"sorted_contiguous_stereo_factors.txt").c_str());
+  fin.open((input_dir+"stereo_factors.txt").c_str());
   if(!fin) {
-    cerr << "Could not open sorted_contiguous_stereo_factors.txt" << endl;
+    cerr << "Could not stereo_factors.txt" << endl;
     exit(1);
   }
   while (fin >> r >> l >> uL >> uR >> v >> x >> y >> z){
-
     SfM_Measurement observation = make_pair(r,Point2(uL,v));
     kitti_sfm.tracks[l].measurements.push_back(observation);
   }
