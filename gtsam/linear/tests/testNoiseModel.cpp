@@ -45,17 +45,17 @@ static Matrix Sigma = Matrix_(3, 3,
 /* ************************************************************************* */
 TEST(NoiseModel, constructors)
 {
-  Vector whitened = Vector_(3,5.0,10.0,15.0);
-  Vector unwhitened = Vector_(3,10.0,20.0,30.0);
+  Vector whitened = (Vec(3) << 5.0,10.0,15.0);
+  Vector unwhitened = (Vec(3) << 10.0,20.0,30.0);
 
   // Construct noise models
   vector<Gaussian::shared_ptr> m;
   m.push_back(Gaussian::SqrtInformation(R));
   m.push_back(Gaussian::Covariance(Sigma));
   //m.push_back(Gaussian::Information(Q));
-  m.push_back(Diagonal::Sigmas(Vector_(3, sigma, sigma, sigma)));
-  m.push_back(Diagonal::Variances(Vector_(3, var, var, var)));
-  m.push_back(Diagonal::Precisions(Vector_(3, prc, prc, prc)));
+  m.push_back(Diagonal::Sigmas((Vec(3) << sigma, sigma, sigma)));
+  m.push_back(Diagonal::Variances((Vec(3) << var, var, var)));
+  m.push_back(Diagonal::Precisions((Vec(3) << prc, prc, prc)));
   m.push_back(Isotropic::Sigma(3, sigma));
   m.push_back(Isotropic::Variance(3, var));
   m.push_back(Isotropic::Precision(3, prc));
@@ -104,7 +104,7 @@ TEST(NoiseModel, constructors)
 /* ************************************************************************* */
 TEST(NoiseModel, Unit)
 {
-  Vector v = Vector_(3,5.0,10.0,15.0);
+  Vector v = (Vec(3) << 5.0,10.0,15.0);
   Gaussian::shared_ptr u(Unit::Create(3));
   EXPECT(assert_equal(v,u->whiten(v)));
 }
@@ -114,8 +114,8 @@ TEST(NoiseModel, equals)
 {
   Gaussian::shared_ptr g1 = Gaussian::SqrtInformation(R),
                        g2 = Gaussian::SqrtInformation(eye(3,3));
-  Diagonal::shared_ptr d1 = Diagonal::Sigmas(Vector_(3, sigma, sigma, sigma)),
-                       d2 = Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
+  Diagonal::shared_ptr d1 = Diagonal::Sigmas((Vec(3) << sigma, sigma, sigma)),
+                       d2 = Diagonal::Sigmas((Vec(3) << 0.1, 0.2, 0.3));
   Isotropic::shared_ptr i1 = Isotropic::Sigma(3, sigma),
                         i2 = Isotropic::Sigma(3, 0.7);
 
@@ -133,7 +133,7 @@ TEST(NoiseModel, equals)
 ///* ************************************************************************* */
 //TEST(NoiseModel, ConstrainedSmart )
 //{
-//  Gaussian::shared_ptr nonconstrained = Constrained::MixedSigmas(Vector_(3, sigma, 0.0, sigma), true);
+//  Gaussian::shared_ptr nonconstrained = Constrained::MixedSigmas((Vec(3) << sigma, 0.0, sigma), true);
 //  Diagonal::shared_ptr n1 = boost::dynamic_pointer_cast<Diagonal>(nonconstrained);
 //  Constrained::shared_ptr n2 = boost::dynamic_pointer_cast<Constrained>(nonconstrained);
 //  EXPECT(n1);
@@ -152,8 +152,8 @@ TEST(NoiseModel, ConstrainedConstructors )
   Constrained::shared_ptr actual;
   size_t d = 3;
   double m = 100.0;
-  Vector sigmas = Vector_(3, sigma, 0.0, 0.0);
-  Vector mu = Vector_(3, 200.0, 300.0, 400.0);
+  Vector sigmas = (Vec(3) << sigma, 0.0, 0.0);
+  Vector mu = (Vec(3) << 200.0, 300.0, 400.0);
   actual = Constrained::All(d);
   EXPECT(assert_equal(gtsam::repeat(d, 1000.0), actual->mu()));
 
@@ -173,12 +173,12 @@ TEST(NoiseModel, ConstrainedConstructors )
 /* ************************************************************************* */
 TEST(NoiseModel, ConstrainedMixed )
 {
-  Vector feasible = Vector_(3, 1.0, 0.0, 1.0),
-      infeasible = Vector_(3, 1.0, 1.0, 1.0);
-  Diagonal::shared_ptr d = Constrained::MixedSigmas(Vector_(3, sigma, 0.0, sigma));
+  Vector feasible = (Vec(3) << 1.0, 0.0, 1.0),
+      infeasible = (Vec(3) << 1.0, 1.0, 1.0);
+  Diagonal::shared_ptr d = Constrained::MixedSigmas((Vec(3) << sigma, 0.0, sigma));
   // NOTE: we catch constrained variables elsewhere, so whitening does nothing
-  EXPECT(assert_equal(Vector_(3, 0.5, 1.0, 0.5),d->whiten(infeasible)));
-  EXPECT(assert_equal(Vector_(3, 0.5, 0.0, 0.5),d->whiten(feasible)));
+  EXPECT(assert_equal((Vec(3) << 0.5, 1.0, 0.5),d->whiten(infeasible)));
+  EXPECT(assert_equal((Vec(3) << 0.5, 0.0, 0.5),d->whiten(feasible)));
 
   DOUBLES_EQUAL(1000.0 + 0.25 + 0.25,d->distance(infeasible),1e-9);
   DOUBLES_EQUAL(0.5,d->distance(feasible),1e-9);
@@ -187,13 +187,13 @@ TEST(NoiseModel, ConstrainedMixed )
 /* ************************************************************************* */
 TEST(NoiseModel, ConstrainedAll )
 {
-  Vector feasible = Vector_(3, 0.0, 0.0, 0.0),
-       infeasible = Vector_(3, 1.0, 1.0, 1.0);
+  Vector feasible = (Vec(3) << 0.0, 0.0, 0.0),
+       infeasible = (Vec(3) << 1.0, 1.0, 1.0);
 
   Constrained::shared_ptr i = Constrained::All(3);
   // NOTE: we catch constrained variables elsewhere, so whitening does nothing
-  EXPECT(assert_equal(Vector_(3, 1.0, 1.0, 1.0),i->whiten(infeasible)));
-  EXPECT(assert_equal(Vector_(3, 0.0, 0.0, 0.0),i->whiten(feasible)));
+  EXPECT(assert_equal((Vec(3) << 1.0, 1.0, 1.0),i->whiten(infeasible)));
+  EXPECT(assert_equal((Vec(3) << 0.0, 0.0, 0.0),i->whiten(feasible)));
 
   DOUBLES_EQUAL(1000.0 * 3.0,i->distance(infeasible),1e-9);
   DOUBLES_EQUAL(0.0,i->distance(feasible),1e-9);
@@ -207,7 +207,7 @@ namespace exampleQR {
       0., -1.,  0.,  1.,  0.,  0.,  0.3,
       1.,  0.,  0.,  0., -1.,  0.,  0.2,
       0.,  1.,  0.,  0.,  0., -1., -0.1);
-  Vector sigmas = Vector_(4, 0.2, 0.2, 0.1, 0.1);
+  Vector sigmas = (Vec(4) << 0.2, 0.2, 0.1, 0.1);
 
   // the matrix AB yields the following factorized version:
   Matrix Rd = Matrix_(4, 6+1,
@@ -225,7 +225,7 @@ TEST( NoiseModel, QR )
   Matrix Ab2 = exampleQR::Ab; // otherwise overwritten !
 
   // Expected result
-  Vector expectedSigmas = Vector_(4, 0.0894427, 0.0894427, 0.223607, 0.223607);
+  Vector expectedSigmas = (Vec(4) << 0.0894427, 0.0894427, 0.223607, 0.223607);
   SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
 
   // Call Gaussian version
@@ -281,7 +281,7 @@ TEST(NoiseModel, ScalarOrVector )
 /* ************************************************************************* */
 TEST(NoiseModel, WhitenInPlace)
 {
-  Vector sigmas = Vector_(3, 0.1, 0.1, 0.1);
+  Vector sigmas = (Vec(3) << 0.1, 0.1, 0.1);
   SharedDiagonal model = Diagonal::Sigmas(sigmas);
   Matrix A = eye(3);
   model->WhitenInPlace(A);
@@ -305,7 +305,7 @@ TEST(NoiseModel, robustNoise)
 {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
   Matrix A = Matrix_(2, 2, 1.0, 10.0, 100.0, 1000.0);
-  Vector b = Vector_(2, error1, error2);
+  Vector b = (Vec(2) <<  error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::Huber::Create(k, mEstimator::Huber::Scalar),
     Unit::Create(2));

@@ -56,8 +56,8 @@ TEST(GaussianConditional, constructor)
       -11.3820,  -7.2581,
       -3.0153,  -3.5635);
 
-  Vector d = Vector_(2, 1.0, 2.0);
-  SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector_(2, 3.0, 4.0));
+  Vector d = (Vec(2) << 1.0, 2.0);
+  SharedDiagonal s = noiseModel::Diagonal::Sigmas((Vec(2) << 3.0, 4.0));
 
   vector<pair<Key, Matrix> > terms = pair_list_of
       (1, R)
@@ -114,9 +114,9 @@ TEST( GaussianConditional, equals )
   R(0,0) = 0.1 ; R(1,0) = 0.3;
   R(0,1) = 0.0 ; R(1,1) = 0.34;
 
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(2, 1.0, 0.34));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vec(2) << 1.0, 0.34));
 
-  Vector d = Vector_(2, 0.2, 0.5);
+  Vector d = (Vec(2) << 0.2, 0.5);
 
   GaussianConditional
     expected(1, d, R, 2, A1, 10, A2, model),
@@ -177,7 +177,7 @@ TEST( GaussianConditional, solve_simple )
   GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
 
   // partial solution
-  Vector sx1 = Vector_(2, 9.0, 10.0);
+  Vector sx1 = (Vec(2) << 9.0, 10.0);
 
   // elimination order: 1, 2
   VectorValues actual = map_list_of
@@ -185,7 +185,7 @@ TEST( GaussianConditional, solve_simple )
 
   VectorValues expected = map_list_of
     (2, sx1)
-    (1, Vector_(4, -3.1,-3.4,-11.9,-13.2));
+    (1, (Vec(4) << -3.1,-3.4,-11.9,-13.2));
 
   // verify indices/size
   EXPECT_LONGS_EQUAL(2, (long)cg.size());
@@ -213,15 +213,15 @@ TEST( GaussianConditional, solve_multifrontal )
   EXPECT(assert_equal(Vector(blockMatrix.full().rightCols(1)), cg.get_d()));
 
   // partial solution
-  Vector sl1 = Vector_(2, 9.0, 10.0);
+  Vector sl1 = (Vec(2) << 9.0, 10.0);
 
   // elimination order; _x_, _x1_, _l1_
   VectorValues actual = map_list_of
     (10, sl1); // parent
 
   VectorValues expected = map_list_of
-    (1, Vector_(2, -3.1,-3.4))
-    (2, Vector_(2, -11.9,-13.2))
+    (1, (Vector)(Vec(2) << -3.1,-3.4))
+    (2, (Vector)(Vec(2) << -11.9,-13.2))
     (10, sl1);
 
   // verify indices/size
@@ -258,11 +258,11 @@ TEST( GaussianConditional, solveTranspose ) {
 
   VectorValues
     x = map_list_of
-      (1, Vector_(1,2.))
-      (2, Vector_(1,5.)),
+      (1, (Vec(1) << 2.))
+      (2, (Vec(1) << 5.)),
     y = map_list_of
-      (1, Vector_(1,2.))
-      (2, Vector_(1,3.));
+      (1, (Vec(1) << 2.))
+      (2, (Vec(1) << 3.));
 
   // test functional version
   VectorValues actual = cbn.backSubstituteTranspose(x);

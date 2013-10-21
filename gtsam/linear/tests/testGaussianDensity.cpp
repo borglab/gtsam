@@ -29,7 +29,7 @@ TEST(GaussianDensity, constructor)
       -12.1244,  -5.1962,
             0.,   4.6904);
 
-  Vector d = Vector_(2, 1.0, 2.0), s = Vector_(2, 3.0, 4.0);
+  Vector d = (Vec(2) << 1.0, 2.0), s = (Vec(2) << 3.0, 4.0);
   GaussianConditional conditional(1, d, R, noiseModel::Diagonal::Sigmas(s));
 
   GaussianDensity copied(conditional);

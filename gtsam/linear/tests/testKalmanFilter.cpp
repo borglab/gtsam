@@ -30,7 +30,7 @@ using namespace gtsam;
 /** Small 2D point class implemented as a Vector */
 struct State: Vector {
   State(double x, double y) :
-      Vector(Vector_(2, x, y)) {
+      Vector((Vec(2) << x, y)) {
   }
 };
 
@@ -67,7 +67,7 @@ TEST( KalmanFilter, linear1 ) {
   // Create the controls and measurement properties for our example
   Matrix F = eye(2, 2);
   Matrix B = eye(2, 2);
-  Vector u = Vector_(2, 1.0, 0.0);
+  Vector u = (Vec(2) << 1.0, 0.0);
   SharedDiagonal modelQ = noiseModel::Isotropic::Sigma(2, 0.1);
   Matrix Q = 0.01*eye(2, 2);
   Matrix H = eye(2, 2);
@@ -137,7 +137,7 @@ TEST( KalmanFilter, predict ) {
   // Create dynamics model
   Matrix F = Matrix_(2, 2, 1.0, 0.1, 0.2, 1.1);
   Matrix B = Matrix_(2, 3, 1.0, 0.1, 0.2, 1.1, 1.2, 0.8);
-  Vector u = Vector_(3, 1.0, 0.0, 2.0);
+  Vector u = (Vec(3) << 1.0, 0.0, 2.0);
   Matrix R = Matrix_(2, 2, 1.0, 0.5, 0.0, 3.0);
   Matrix M = trans(R)*R;
   Matrix Q = inverse(M);
@@ -219,7 +219,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   EXPECT(assert_equal(pa->information(), pb->information(), 1e-7));
 
   // and in addition attain the correct covariance
-  Vector expectedMean = Vector_(9, 0.9814, 1.0200, 1.0190, 1., 1., 1., 1., 1., 1.);
+  Vector expectedMean = (Vec(9) << 0.9814, 1.0200, 1.0190, 1., 1., 1., 1., 1., 1.);
   EXPECT(assert_equal(expectedMean, pa->mean(), 1e-7));
   EXPECT(assert_equal(expectedMean, pb->mean(), 1e-7));
   Matrix expected = 1e-6*Matrix_(9, 9,
@@ -240,8 +240,8 @@ TEST( KalmanFilter, QRvsCholesky ) {
       0.0, 9795.9, 83.6, 0.0, 0.0, 0.0, 1000.0, 0.0, 0.0,
       -9795.9, 0.0, -5.2, 0.0, 0.0, 0.0, 0.0, 1000.0, 0.0,
       -83.6, 5.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000.);
-  Vector z = Vector_(3, 0.2599 , 1.3327 , 0.2007);
-  Vector sigmas = Vector_(3, 0.3323 , 0.2470 , 0.1904);
+  Vector z = (Vec(3) << 0.2599 , 1.3327 , 0.2007);
+  Vector sigmas = (Vec(3) << 0.3323 , 0.2470 , 0.1904);
   SharedDiagonal modelR = noiseModel::Diagonal::Sigmas(sigmas);
 
   // do update
@@ -253,7 +253,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   EXPECT(assert_equal(pa2->information(), pb2->information(), 1e-7));
 
   // and in addition attain the correct mean and covariance
-  Vector expectedMean2 = Vector_(9, 0.9207, 0.9030, 1.0178, 1.0002, 0.9992, 0.9998, 0.9981, 1.0035, 0.9882);
+  Vector expectedMean2 = (Vec(9) << 0.9207, 0.9030, 1.0178, 1.0002, 0.9992, 0.9998, 0.9981, 1.0035, 0.9882);
   EXPECT(assert_equal(expectedMean2, pa2->mean(), 1e-4));// not happy with tolerance here !
   EXPECT(assert_equal(expectedMean2, pb2->mean(), 1e-4));// is something still amiss?
   Matrix expected2 = 1e-6*Matrix_(9, 9,

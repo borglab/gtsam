@@ -38,10 +38,10 @@ namespace {
   const Key x1=1, x2=2, x3=3, x4=4;
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
   const GaussianFactorGraph chain = list_of
-    (JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  chainNoise))
-    (JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  chainNoise))
-    (JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  chainNoise))
-    (JacobianFactor(x4, Matrix_(1,1,1.), Vector_(1,1.),  chainNoise));
+    (JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x4, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise));
   const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
 
   /* ************************************************************************* */
@@ -89,8 +89,8 @@ TEST( GaussianBayesTree, eliminate )
 
   GaussianBayesTree bayesTree_expected;
   bayesTree_expected.insertRoot(
-    MakeClique(GaussianConditional(pair_list_of (x3, Matrix_(2,1, 2., 0.)) (x4, Matrix_(2,1, 2., 2.)), 2, Vector_(2, 2., 2.)), list_of
-      (MakeClique(GaussianConditional(pair_list_of (x2, Matrix_(2,1, -2.*sqrt(2.), 0.)) (x1, Matrix_(2,1, -sqrt(2.), -sqrt(2.))) (x3, Matrix_(2,1, -sqrt(2.), sqrt(2.))), 2, Vector_(2, -2.*sqrt(2.), 0.))))));
+    MakeClique(GaussianConditional(pair_list_of (x3, Matrix_(2,1, 2., 0.)) (x4, Matrix_(2,1, 2., 2.)), 2, (Vec(2) << 2., 2.)), list_of
+      (MakeClique(GaussianConditional(pair_list_of (x2, Matrix_(2,1, -2.*sqrt(2.), 0.)) (x1, Matrix_(2,1, -sqrt(2.), -sqrt(2.))) (x3, Matrix_(2,1, -sqrt(2.), sqrt(2.))), 2, (Vec(2) << -2.*sqrt(2.), 0.))))));
 
   EXPECT(assert_equal(bayesTree_expected, bt));
 }
@@ -99,10 +99,10 @@ TEST( GaussianBayesTree, eliminate )
 TEST( GaussianBayesTree, optimizeMultiFrontal )
 {
   VectorValues expected = pair_list_of
-    (x1, Vector_(1, 0.))
-    (x2, Vector_(1, 1.))
-    (x3, Vector_(1, 0.))
-    (x4, Vector_(1, 1.));
+    (x1, (Vec(1) << 0.))
+    (x2, (Vec(1) << 1.))
+    (x3, (Vec(1) << 0.))
+    (x4, (Vec(1) << 1.));
 
   VectorValues actual = chain.eliminateMultifrontal(chainOrdering)->optimize();
   EXPECT(assert_equal(expected,actual));
@@ -212,7 +212,7 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
     47.0,48.0,
     51.0,52.0,
     0.0,54.0)),
-    3, Vector_(6, 29.0,30.0,39.0,40.0,49.0,50.0)), list_of
+    3, (Vec(6) << 29.0,30.0,39.0,40.0,49.0,50.0)), list_of
       (MakeClique(GaussianConditional(
       pair_list_of
       (0, Matrix_(4,2,
@@ -240,7 +240,7 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
       13.0,14.0,
       25.0,26.0,
       27.0,28.0)),
-      2, Vector_(4, 1.0,2.0,15.0,16.0))))));
+      2, (Vec(4) << 1.0,2.0,15.0,16.0))))));
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian(
@@ -264,11 +264,11 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
 
   // Known steepest descent point from Bayes' net version
   VectorValues expectedFromBN = pair_list_of
-    (0, Vector_(2, 0.000129034, 0.000688183))
-    (1, Vector_(2, 0.0109679, 0.0253767))
-    (2, Vector_(2, 0.0680441, 0.114496))
-    (3, Vector_(2, 0.16125, 0.241294))
-    (4, Vector_(2, 0.300134, 0.423233));
+    (0, (Vec(2) << 0.000129034, 0.000688183))
+    (1, (Vec(2) << 0.0109679, 0.0253767))
+    (2, (Vec(2) << 0.0680441, 0.114496))
+    (3, (Vec(2) << 0.16125, 0.241294))
+    (4, (Vec(2) << 0.300134, 0.423233));
 
   // Compute the steepest descent point with the dogleg function
   VectorValues actual = bt.optimizeGradientSearch();

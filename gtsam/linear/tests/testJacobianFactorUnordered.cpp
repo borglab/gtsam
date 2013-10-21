@@ -41,8 +41,8 @@ namespace {
       (make_pair(15, 3*Matrix3::Identity()));
 
     // RHS and sigmas
-    const Vector b = Vector_(3, 1., 2., 3.);
-    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.5, 0.5, 0.5));
+    const Vector b = (Vec(3) << 1., 2., 3.);
+    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vec(3) << 0.5, 0.5, 0.5));
   }
 }
 
@@ -239,22 +239,22 @@ TEST(JacobianFactor, operators )
   SharedDiagonal  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
 
   Matrix I = eye(2);
-  Vector b = Vector_(2,0.2,-0.1);
+  Vector b = (Vec(2) << 0.2,-0.1);
   JacobianFactor lf(1, -I, 2, I, b, sigma0_1);
 
   VectorValues c;
-  c.insert(1, Vector_(2,10.,20.));
-  c.insert(2, Vector_(2,30.,60.));
+  c.insert(1, (Vec(2) << 10.,20.));
+  c.insert(2, (Vec(2) << 30.,60.));
 
   // test A*x
-  Vector expectedE = Vector_(2,200.,400.);
+  Vector expectedE = (Vec(2) << 200.,400.);
   Vector actualE = lf * c;
   EXPECT(assert_equal(expectedE, actualE));
 
   // test A^e
   VectorValues expectedX;
-  expectedX.insert(1, Vector_(2,-2000.,-4000.));
-  expectedX.insert(2, Vector_(2, 2000., 4000.));
+  expectedX.insert(1, (Vec(2) << -2000.,-4000.));
+  expectedX.insert(2, (Vec(2) << 2000., 4000.));
   VectorValues actualX = VectorValues::Zero(expectedX);
   lf.transposeMultiplyAdd(1.0, actualE, actualX);
   EXPECT(assert_equal(expectedX, actualX));
@@ -283,8 +283,8 @@ TEST(JacobianFactor, eliminate)
     1.0, 0.0, 0.0,
     0.0, 1.0, 0.0,
     0.0, 0.0, 1.0);
-  Vector b0 = Vector_(3, 1.5, 1.5, 1.5);
-  Vector s0 = Vector_(3, 1.6, 1.6, 1.6);
+  Vector b0 = (Vec(3) << 1.5, 1.5, 1.5);
+  Vector s0 = (Vec(3) << 1.6, 1.6, 1.6);
 
   Matrix A10 = Matrix_(3,3,
     2.0, 0.0, 0.0,
@@ -294,15 +294,15 @@ TEST(JacobianFactor, eliminate)
     -2.0, 0.0, 0.0,
     0.0, -2.0, 0.0,
     0.0, 0.0, -2.0);
-  Vector b1 = Vector_(3, 2.5, 2.5, 2.5);
-  Vector s1 = Vector_(3, 2.6, 2.6, 2.6);
+  Vector b1 = (Vec(3) << 2.5, 2.5, 2.5);
+  Vector s1 = (Vec(3) << 2.6, 2.6, 2.6);
 
   Matrix A21 = Matrix_(3,3,
     3.0, 0.0, 0.0,
     0.0, 3.0, 0.0,
     0.0, 0.0, 3.0);
-  Vector b2 = Vector_(3, 3.5, 3.5, 3.5);
-  Vector s2 = Vector_(3, 3.6, 3.6, 3.6);
+  Vector b2 = (Vec(3) << 3.5, 3.5, 3.5);
+  Vector s2 = (Vec(3) << 3.6, 3.6, 3.6);
 
   GaussianFactorGraph gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
@@ -334,7 +334,7 @@ TEST(JacobianFactor, eliminate2 )
   // sigmas
   double sigma1 = 0.2;
   double sigma2 = 0.1;
-  Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
+  Vector sigmas = (Vec(4) << sigma1, sigma1, sigma2, sigma2);
 
   // the combined linear factor
   Matrix Ax2 = Matrix_(4,2,
@@ -379,7 +379,7 @@ TEST(JacobianFactor, eliminate2 )
     -0.20, 0.00,-0.80, 0.00,
     +0.00,-0.20,+0.00,-0.80
     )/oldSigma;
-  Vector d = Vector_(2,0.2,-0.14)/oldSigma;
+  Vector d = (Vec(2) << 0.2,-0.14)/oldSigma;
   GaussianConditional expectedCG(2, d, R11, 11, S12);
 
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
@@ -391,7 +391,7 @@ TEST(JacobianFactor, eliminate2 )
     1.00, 0.00, -1.00,  0.00,
     0.00, 1.00, +0.00, -1.00
     )/sigma;
-  Vector b1 = Vector_(2, 0.0, 0.894427);
+  Vector b1 = (Vec(2) << 0.0, 0.894427);
   JacobianFactor expectedLF(11, Bl1x1, b1);
   EXPECT(assert_equal(expectedLF, *actual.second,1e-3));
 }
@@ -475,7 +475,7 @@ TEST ( JacobianFactor, constraint_eliminate1 )
   EXPECT(actual.second->size() == 0);
 
   // verify conditional Gaussian
-  Vector sigmas = Vector_(2, 0.0, 0.0);
+  Vector sigmas = (Vec(2) << 0.0, 0.0);
   GaussianConditional expCG(1, v, eye(2), noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expCG, *actual.first));
 }
@@ -518,8 +518,8 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   Matrix S = Matrix_(2,2,
       1.0,    2.0,
       0.0,    0.0);
-  Vector d = Vector_(2, 3.0, 0.6666);
-  Vector sigmas = Vector_(2, 0.0, 0.0);
+  Vector d = (Vec(2) << 3.0, 0.6666);
+  Vector sigmas = (Vec(2) << 0.0, 0.0);
   GaussianConditional expectedCG(1, d, R, 2, S, noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
 }

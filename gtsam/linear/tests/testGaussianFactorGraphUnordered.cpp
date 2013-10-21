@@ -43,11 +43,11 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
   fg += JacobianFactor(2, 10*eye(2), -1.0*ones(2), unit2);
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(2, -10*eye(2), 0, 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+  fg += JacobianFactor(2, -10*eye(2), 0, 10*eye(2), (Vec(2) << 2.0, -1.0), unit2);
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(2, -5*eye(2), 1, 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+  fg += JacobianFactor(2, -5*eye(2), 1, 5*eye(2), (Vec(2) << 0.0, 1.0), unit2);
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), (Vec(2) << -1.0, 1.5), unit2);
   return fg;
 }
 
@@ -59,9 +59,9 @@ TEST(GaussianFactorGraph, initialization) {
 
   fg +=
     JacobianFactor(0, 10*eye(2), -1.0*ones(2), unit2),
-    JacobianFactor(0, -10*eye(2),1, 10*eye(2), Vector_(2, 2.0, -1.0), unit2),
-    JacobianFactor(0, -5*eye(2), 2, 5*eye(2), Vector_(2, 0.0, 1.0), unit2),
-    JacobianFactor(1, -5*eye(2), 2, 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+    JacobianFactor(0, -10*eye(2),1, 10*eye(2), (Vec(2) << 2.0, -1.0), unit2),
+    JacobianFactor(0, -5*eye(2), 2, 5*eye(2), (Vec(2) << 0.0, 1.0), unit2),
+    JacobianFactor(1, -5*eye(2), 2, 5*eye(2), (Vec(2) << -1.0, 1.5), unit2);
 
   EXPECT_LONGS_EQUAL(4, (long)fg.size());
 
@@ -106,7 +106,7 @@ TEST(GaussianFactorGraph, sparseJacobian) {
 
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
-  gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), Vector_(2, 4., 8.), model);
+  gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), (Vec(2) << 4., 8.), model);
   gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
 
   Matrix actual = gfg.sparseJacobian_();
@@ -125,7 +125,7 @@ TEST(GaussianFactorGraph, matrices) {
 
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Unit::Create(2);
-  gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), Vector_(2, 4., 8.), model);
+  gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), (Vec(2) << 4., 8.), model);
   gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
 
   Matrix jacobian(4,6);
@@ -164,9 +164,9 @@ TEST( GaussianFactorGraph, gradient )
   // 2*f(x) = 100*(x1+c[X(1)])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
   // worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
   VectorValues expected = map_list_of
-    (1, Vector_(2,  5.0,-12.5))
-    (2, Vector_(2, 30.0,  5.0))
-    (0, Vector_(2,-25.0, 17.5));
+    (1, (Vec(2) << 5.0, -12.5))
+    (2, (Vec(2) << 30.0, 5.0))
+    (0, (Vec(2) << -25.0, 17.5));
 
   // Check the gradient at delta=0
   VectorValues zero = VectorValues::Zero(expected);
@@ -185,15 +185,15 @@ TEST( GaussianFactorGraph, transposeMultiplication )
   GaussianFactorGraph A = createSimpleGaussianFactorGraph();
 
   Errors e; e +=
-    Vector_(2, 0.0, 0.0),
-    Vector_(2,15.0, 0.0),
-    Vector_(2, 0.0,-5.0),
-    Vector_(2,-7.5,-5.0);
+    (Vec(2) <<  0.0, 0.0),
+    (Vec(2) << 15.0, 0.0),
+    (Vec(2) <<  0.0,-5.0),
+    (Vec(2) << -7.5,-5.0);
 
   VectorValues expected;
-  expected.insert(1, Vector_(2, -37.5,-50.0));
-  expected.insert(2, Vector_(2,-150.0, 25.0));
-  expected.insert(0, Vector_(2, 187.5, 25.0));
+  expected.insert(1, (Vec(2) <<  -37.5,-50.0));
+  expected.insert(2, (Vec(2) << -150.0, 25.0));
+  expected.insert(0, (Vec(2) <<  187.5, 25.0));
 
   VectorValues actual = A.transposeMultiply(e);
   EXPECT(assert_equal(expected, actual));
