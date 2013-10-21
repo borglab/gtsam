@@ -75,8 +75,8 @@ namespace gtsam {
         Index j1, Index j2) {
       double e = u - z, e2 = e * e;
       double c = 2 * logSqrt2PI - log(p) + e2 * p;
-      Vector g1 = Vector_(1, -e * p);
-      Vector g2 = Vector_(1, 0.5 / p - 0.5 * e2);
+      Vector g1 = (Vec(1) << -e * p);
+      Vector g2 = (Vec(1) <<  0.5 / p - 0.5 * e2);
       Matrix G11 = Matrix_(1, 1, p);
       Matrix G12 = Matrix_(1, 1, e);
       Matrix G22 = Matrix_(1, 1, 0.5 / (p * p));
@@ -137,7 +137,7 @@ namespace gtsam {
      * TODO: Where is this used? should disappear.
      */
     virtual Vector unwhitenedError(const Values& x) const {
-      return Vector_(1, std::sqrt(2 * error(x)));
+      return (Vec(1) << std::sqrt(2 * error(x)));
     }
 
     /**
