@@ -86,7 +86,7 @@ static const SharedNoiseModel sigma1(noiseModel::Unit::Create(2));
 TEST( GeneralSFMFactor, equals )
 {
   // Create two identical factors and make sure they're equal
-  Vector z = Vector_(2,323.,240.);
+  Vector z = (Vec(2) << 323.,240.);
   const Symbol cameraFrameNumber('x',1), landmarkNumber('l',1);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
   boost::shared_ptr<Projection>
@@ -110,7 +110,7 @@ TEST( GeneralSFMFactor, error ) {
   Pose3 x1(R,t1);
   values.insert(X(1), GeneralCamera(x1));
   Point3 l1;  values.insert(L(1), l1);
-  EXPECT(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(values)));
+  EXPECT(assert_equal((Vec(2) << -3.0, 0.0), factor->unwhitenedError(values)));
 }
 
 static const double baseline = 5.0 ;
@@ -309,7 +309,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
     }
     else {
 
-      Vector delta = Vector_(11,
+      Vector delta = (Vec(11) <<
           rot_noise, rot_noise, rot_noise, // rotation
           trans_noise, trans_noise, trans_noise, // translation
           focal_noise, focal_noise, // f_x, f_y

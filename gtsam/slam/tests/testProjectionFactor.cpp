@@ -108,7 +108,7 @@ TEST( ProjectionFactor, Error ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-  Vector expectedError = Vector_(2, -3.0, 0.0);
+  Vector expectedError = (Vec(2) << -3.0, 0.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -131,7 +131,7 @@ TEST( ProjectionFactor, ErrorWithTransform ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-  Vector expectedError = Vector_(2, -3.0, 0.0);
+  Vector expectedError = (Vec(2) << -3.0, 0.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));

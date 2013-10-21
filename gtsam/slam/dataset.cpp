@@ -151,7 +151,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
 
       // SharedNoiseModel noise = noiseModel::Gaussian::Covariance(m, smart);
       if (!model) {
-        Vector variances = Vector_(3, m(0, 0), m(1, 1), m(2, 2));
+        Vector variances = (Vec(3) << m(0, 0), m(1, 1), m(2, 2));
         model = noiseModel::Diagonal::Variances(variances, smart);
       }
 
@@ -179,7 +179,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
         continue;
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
-          noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
+          noiseModel::Diagonal::Sigmas((Vec(2) << bearing_std, range_std));
       *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
 
       // Insert poses or points if they do not exist yet
@@ -211,7 +211,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       {
         double rangeVar = v1;
         double bearingVar = v1 / 10.0;
-        measurementNoise = noiseModel::Diagonal::Sigmas(Vector_(2, bearingVar, rangeVar));
+        measurementNoise = noiseModel::Diagonal::Sigmas((Vec(2) << bearingVar, rangeVar));
       }
       else
       {
@@ -386,7 +386,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
         continue;
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
-          noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
+          noiseModel::Diagonal::Sigmas((Vec(2) << bearing_std, range_std));
       *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
 
       // Insert poses or points if they do not exist yet
