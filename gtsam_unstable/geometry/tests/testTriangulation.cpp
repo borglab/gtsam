@@ -79,6 +79,9 @@ TEST( triangulation, twoPoses) {
   boost::optional<Point3> triangulated_3cameras = triangulatePoint3(poses, measurements, K);
   EXPECT(assert_equal(landmark, *triangulated_3cameras, 1e-2));
 
+  // Again with nonlinear optimization
+  boost::optional<Point3> triangulated_3cameras_opt = triangulatePoint3(poses, measurements, K, 1e-9, true);
+  EXPECT(assert_equal(landmark, *triangulated_3cameras_opt, 1e-2));
 
   // 4. Test failure: Add a 4th camera facing the wrong way
   Pose3 level_pose180 = Pose3(Rot3::ypr(M_PI/2, 0., -M_PI/2), Point3(0,0,1));
