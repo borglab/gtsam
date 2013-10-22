@@ -223,9 +223,9 @@ Values createValues() {
 VectorValues createVectorValues() {
   using namespace impl;
   VectorValues c = boost::assign::pair_list_of
-    (_l1_, Vector_(2, 0.0, -1.0))
-    (_x1_, Vector_(2, 0.0, 0.0))
-    (_x2_, Vector_(2, 1.5, 0.0));
+    (_l1_, (Vec(2) << 0.0, -1.0))
+    (_x1_, (Vec(2) << 0.0, 0.0))
+    (_x2_, (Vec(2) << 1.5, 0.0));
   return c;
 }
 
@@ -250,9 +250,9 @@ VectorValues createCorrectDelta() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   VectorValues c;
-  c.insert(L(1), Vector_(2, -0.1, 0.1));
-  c.insert(X(1), Vector_(2, -0.1, -0.1));
-  c.insert(X(2), Vector_(2, 0.1, -0.2));
+  c.insert(L(1), (Vec(2) << -0.1, 0.1));
+  c.insert(X(1), (Vec(2) << -0.1, -0.1));
+  c.insert(X(2), (Vec(2) << 0.1, -0.2));
   return c;
 }
 
@@ -278,13 +278,13 @@ GaussianFactorGraph createGaussianFactorGraph() {
   fg += JacobianFactor(X(1), 10*eye(2), -1.0*ones(2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(X(1), -10*eye(2), X(2), 10*eye(2), Vector_(2, 2.0, -1.0));
+  fg += JacobianFactor(X(1), -10*eye(2), X(2), 10*eye(2), (Vec(2) << 2.0, -1.0));
 
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(X(1), -5*eye(2), L(1), 5*eye(2), Vector_(2, 0.0, 1.0));
+  fg += JacobianFactor(X(1), -5*eye(2), L(1), 5*eye(2), (Vec(2) << 0.0, 1.0));
 
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(X(2), -5*eye(2), L(1), 5*eye(2), Vector_(2, -1.0, 1.5));
+  fg += JacobianFactor(X(2), -5*eye(2), L(1), 5*eye(2), (Vec(2) << -1.0, 1.5));
 
   return fg;
 }
@@ -350,7 +350,7 @@ boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph()
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
-  Vector z = Vector_(2, 1.0, 0.0);
+  Vector z = (Vec(2) << 1.0, 0.0);
   double sigma = 0.1;
   boost::shared_ptr<smallOptimize::UnaryFactor> factor(
       new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
@@ -422,7 +422,7 @@ GaussianFactorGraph createSimpleConstraintGraph() {
   // |0 1||x_2|   | 0 -1||y_2|   |0|
   Matrix Ax1 = eye(2);
   Matrix Ay1 = eye(2) * -1;
-  Vector b2 = Vector_(2, 0.0, 0.0);
+  Vector b2 = (Vec(2) << 0.0, 0.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
       constraintModel));
 
@@ -440,7 +440,7 @@ VectorValues createSimpleConstraintValues() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   VectorValues config;
-  Vector v = Vector_(2, 1.0, -1.0);
+  Vector v = (Vec(2) << 1.0, -1.0);
   config.insert(_x_, v);
   config.insert(_y_, v);
   return config;
@@ -468,7 +468,7 @@ GaussianFactorGraph createSingleConstraintGraph() {
   Ax1(1, 0) = 2.0;
   Ax1(1, 1) = 1.0;
   Matrix Ay1 = eye(2) * 10;
-  Vector b2 = Vector_(2, 1.0, 2.0);
+  Vector b2 = (Vec(2) << 1.0, 2.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
       constraintModel));
 
@@ -484,8 +484,8 @@ GaussianFactorGraph createSingleConstraintGraph() {
 VectorValues createSingleConstraintValues() {
   using namespace impl;
   VectorValues config = boost::assign::pair_list_of
-    (_x_, Vector_(2, 1.0, -1.0))
-    (_y_, Vector_(2, 0.2, 0.1));
+    (_x_, (Vec(2) << 1.0, -1.0))
+    (_y_, (Vec(2) << 0.2, 0.1));
   return config;
 }
 
@@ -494,7 +494,7 @@ GaussianFactorGraph createMultiConstraintGraph() {
   using namespace impl;
   // unary factor 1
   Matrix A = eye(2);
-  Vector b = Vector_(2, -2.0, 2.0);
+  Vector b = (Vec(2) << -2.0, 2.0);
   JacobianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, sigma0_1));
 
   // constraint 1
@@ -548,9 +548,9 @@ GaussianFactorGraph createMultiConstraintGraph() {
 VectorValues createMultiConstraintValues() {
   using namespace impl;
   VectorValues config = boost::assign::pair_list_of
-    (_x_, Vector_(2, -2.0, 2.0))
-    (_y_, Vector_(2, -0.1, 0.4))
-    (_z_, Vector_(2, -4.0, 5.0));
+    (_x_, (Vec(2) << -2.0, 2.0))
+    (_y_, (Vec(2) << -0.1, 0.4))
+    (_z_, (Vec(2) <<-4.0, 5.0));
   return config;
 }
 

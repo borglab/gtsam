@@ -296,13 +296,13 @@ TEST(GaussianBayesTree, shortcut_overlapping_separator)
   // f(6,7)
   GaussianFactorGraph fg;
   noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
-  fg.add(1, Matrix_(1,1, 1.0), 3, Matrix_(1,1, 2.0), 5, Matrix_(1,1, 3.0), Vector_(1, 4.0), model);
-  fg.add(1, Matrix_(1,1, 5.0), Vector_(1, 6.0), model);
-  fg.add(2, Matrix_(1,1, 7.0), 4, Matrix_(1,1, 8.0), 5, Matrix_(1,1, 9.0), Vector_(1, 10.0), model);
-  fg.add(2, Matrix_(1,1, 11.0), Vector_(1, 12.0), model);
-  fg.add(5, Matrix_(1,1, 13.0), 6, Matrix_(1,1, 14.0), Vector_(1, 15.0), model);
-  fg.add(6, Matrix_(1,1, 17.0), 7, Matrix_(1,1, 18.0), Vector_(1, 19.0), model);
-  fg.add(7, Matrix_(1,1, 20.0), Vector_(1, 21.0), model);
+  fg.add(1, Matrix_(1,1, 1.0), 3, Matrix_(1,1, 2.0), 5, Matrix_(1,1, 3.0), (Vec(1) << 4.0), model);
+  fg.add(1, Matrix_(1,1, 5.0), (Vec(1) << 6.0), model);
+  fg.add(2, Matrix_(1,1, 7.0), 4, Matrix_(1,1, 8.0), 5, Matrix_(1,1, 9.0), (Vec(1) << 10.0), model);
+  fg.add(2, Matrix_(1,1, 11.0), (Vec(1) << 12.0), model);
+  fg.add(5, Matrix_(1,1, 13.0), 6, Matrix_(1,1, 14.0), (Vec(1) << 15.0), model);
+  fg.add(6, Matrix_(1,1, 17.0), 7, Matrix_(1,1, 18.0), (Vec(1) << 19.0), model);
+  fg.add(7, Matrix_(1,1, 20.0), (Vec(1) << 21.0), model);
 
   // Eliminate into BayesTree
   // c(6,7)

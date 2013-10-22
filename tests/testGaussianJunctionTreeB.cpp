@@ -105,7 +105,7 @@ TEST( GaussianJunctionTreeB, optimizeMultiFrontal )
 
   // verify
   VectorValues expected(vector<size_t>(7,2)); // expected solution
-  Vector v = Vector_(2, 0., 0.);
+  Vector v = (Vec(2) << 0., 0.);
   for (int i=1; i<=7; i++)
     expected[ordering[X(i)]] = v;
   EXPECT(assert_equal(expected,actual));
@@ -134,8 +134,8 @@ TEST(GaussianJunctionTreeB, slamlike) {
   Values init;
   NonlinearFactorGraph newfactors;
   NonlinearFactorGraph fullgraph;
-  SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas(Vector_(2, M_PI/100.0, 0.1));
+  SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vec(3) << 0.1, 0.1, M_PI/100.0));
+  SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vec(2) << M_PI/100.0, 0.1));
 
   size_t i = 0;
 
