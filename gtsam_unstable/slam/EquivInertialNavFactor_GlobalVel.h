@@ -613,7 +613,7 @@ public:
 
     Rot3 R_ECEF_to_ENU( UEN_to_ENU * C2 * C1 );
 
-    Vector omega_earth_ECEF(Vector_(3, 0.0, 0.0, 7.292115e-5));
+    Vector omega_earth_ECEF((Vec(3) << 0.0, 0.0, 7.292115e-5));
     omega_earth_ENU = R_ECEF_to_ENU.matrix() * omega_earth_ECEF;
 
     // Calculating g
@@ -627,7 +627,7 @@ public:
     double Ro( sqrt(Rp*Rm) );           // mean earth radius of curvature
     double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
     double g_calc( g0/( pow(1 + height/Ro, 2) ) );
-    g_ENU = Vector_(3, 0.0, 0.0, -g_calc);
+    g_ENU = (Vec(3) << 0.0, 0.0, -g_calc);
 
 
     // Calculate rho
@@ -636,7 +636,7 @@ public:
     double rho_E = -Vn/(Rm + height);
     double rho_N = Ve/(Rp + height);
     double rho_U = Ve*tan(lat_new)/(Rp + height);
-    rho_ENU = Vector_(3, rho_E, rho_N, rho_U);
+    rho_ENU = (Vec(3) << rho_E, rho_N, rho_U);
   }
 
   static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){

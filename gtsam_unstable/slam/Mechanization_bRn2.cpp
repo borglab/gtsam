@@ -33,14 +33,14 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
   if(g_e == 0) {
     if (flat)
       // acceleration measured is  along the z-axis.
-      b_g = Vector_(3, 0.0, 0.0, norm_2(meanF));
+      b_g = (Vec(3) << 0.0, 0.0, norm_2(meanF));
     else
       // acceleration measured is the opposite of gravity (10.13)
       b_g = -meanF;
   } else {
     if (flat)
       // gravity is downward along the z-axis since we are flat on the ground
-      b_g = Vector_(3,0.0,0.0,g_e);
+      b_g = (Vec(3) << 0.0,0.0,g_e);
     else
       // normalize b_g and attribute remainder to biases
       b_g = - g_e * meanF/meanF.norm();
