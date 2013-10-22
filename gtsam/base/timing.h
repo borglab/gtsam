@@ -24,6 +24,84 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
 
+// This file contains the GTSAM timing instrumentation library, a low-overhead method for
+// learning at a medium-fine level how much time various components of an algorithm take
+// in CPU and wall time.
+//
+// The output of this instrumentation is a call-tree-like printout containing statistics
+// about each instrumented code block.  To print this output at any time, call
+// tictoc_print() or tictoc_print_().
+//
+// An overall point to be aware of is that there are two versions of each function - one
+// ending in an underscore '_' and one without the trailing underscore.  The underscore
+// versions always are active, but the versions without an underscore are active only when
+// GTSAM_ENABLE_TIMING is defined (automatically defined in our CMake Timing build type).
+// GTSAM algorithms are all instrumented with the non-underscore versions, so generally
+// you should use the underscore versions in your own code to leave out the GTSAM detail.
+//
+// gttic and gttoc start and stop a timed section, respectively.  gttic creates a *scoped*
+// object - when it goes out of scope gttoc is called automatically.  Thus, you do not
+// need to call gttoc if you are timing an entire function (see basic use examples below).
+// However, you must be *aware* of this scoped nature - putting gttic inside of an if(...)
+// block, for example, will only time code until the closing brace '}'.  See advanced
+// usage below if you need to avoid this.
+//
+// Multiple calls nest automatically - each gttic nests under the previous gttic called
+// for which gttoc has not been called (or the previous gttic did not go out of scope).
+//
+// Basic usage examples are as follows:
+//
+// - Timing an entire function:
+//   void myFunction() {
+//     gttic_(myFunction);
+//     ........
+//   }
+//
+// - Timing an entire function as well as its component parts:
+//   void myLongFunction() {
+//     gttic_(myLongFunction);
+//     gttic_(step1); // Will nest under the 'myLongFunction' label
+//     ........
+//     gttoc_(step1);
+//     gttic_(step2); // Will nest under the 'myLongFunction' label
+//     ........
+//     gttoc_(step2);
+//     ........
+//   }
+//
+// - Timing functions calling/called by other functions:
+//   void oneStep() {
+//     gttic_(oneStep); // Will automatically nest under the gttic label of the calling function
+//     .......
+//   }
+//   void algorithm() {
+//     gttic_(algorithm);
+//     oneStep(); // gttic's inside this function will automatically nest inside our 'algorithm' label
+//     twoStep(); // gttic's inside this function will automatically nest inside our 'algorithm' label
+//   }
+//
+//
+// Advanced usage:
+//
+// - "Finishing iterations" - to get correct min/max times for each call, you must define
+//   in your code what constitutes an iteration.  A single sum for the min/max times is
+//   accumulated within each iteration.  If you don't care about min/max times, you don't
+//   need to worry about this.  For example:
+//   void myOuterLoop() {
+//     while(true) {
+//       iterateMyAlgorithm();
+//       tictoc_finishedIteration_();
+//       tictoc_print_(); // Optional
+//     }
+//   }
+//
+// - Stopping timing a section in a different scope than it is started.  Normally, a gttoc
+//   statement goes out of scope at end of C++ scope.  However, you can use longtic and
+//   longtoc to start and stop timing with the specified label at any point, without regard
+//   too scope.  Note that if you use these, it may become difficult to ensure that you
+//   have matching gttic/gttoc statments.  You may want to consider reorganizing your timing
+//   outline to match the scope of your code.
+
 // Automatically use the new Boost timers if version is recent enough.
 #if BOOST_VERSION >= 104800
 #  ifndef GTSAM_DISABLE_NEW_TIMERS
