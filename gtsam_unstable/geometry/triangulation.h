@@ -56,9 +56,22 @@ public:
 
 /* ************************************************************************* */
 // See Hartley and Zisserman, 2nd Ed., page 312
+/**
+ *
+ * @param poses Camera poses
+ * @param projection_matrices Projection matrices (K*P^-1)
+ * @param measurements 2D measurements
+ * @param Ks vector of calibrations
+ * @param rank_tol SVD rank tolerance
+ * @param Flag to turn on nonlinear refinement of triangulation
+ * @return Triangulated Point3
+ */
 template<class CALIBRATION>
-Point3 triangulateDLT(const std::vector<Pose3>& poses, const std::vector<Matrix>& projection_matrices,
-    const std::vector<Point2>& measurements, const  std::vector<boost::shared_ptr<CALIBRATION> >& Ks, double rank_tol, bool optimize) {
+Point3 triangulateDLT(const std::vector<Pose3>& poses,
+    const std::vector<Matrix>& projection_matrices,
+    const std::vector<Point2>& measurements,
+    const std::vector<boost::shared_ptr<CALIBRATION> >& Ks, double rank_tol,
+    bool optimize) {
 
   Matrix A = zeros(projection_matrices.size() *2, 4);
 
