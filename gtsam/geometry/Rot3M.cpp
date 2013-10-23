@@ -322,7 +322,7 @@ Matrix3 Rot3::dexpL(const Vector3& v) {
 }
 
 /* ************************************************************************* */
-/// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
+/// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
 Matrix3 Rot3::dexpInvL(const Vector3& v) {
   if(zero(v)) return eye(3);
   Matrix x = skewSymmetric(v);
