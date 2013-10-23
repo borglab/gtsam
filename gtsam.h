@@ -214,7 +214,7 @@ virtual class LieVector : gtsam::Value {
   static Vector Logmap(const gtsam::LieVector& p);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 #include <gtsam/base/LieMatrix.h>
@@ -246,7 +246,7 @@ virtual class LieMatrix : gtsam::Value {
   static Vector Logmap(const gtsam::LieMatrix& p);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 //*************************************************************************
@@ -287,7 +287,7 @@ virtual class Point2 : gtsam::Value {
   double norm() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class StereoPoint2 : gtsam::Value {
@@ -322,7 +322,7 @@ virtual class StereoPoint2 : gtsam::Value {
   double v() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class Point3 : gtsam::Value {
@@ -358,7 +358,7 @@ virtual class Point3 : gtsam::Value {
   double z() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class Rot2 : gtsam::Value {
@@ -403,7 +403,7 @@ virtual class Rot2 : gtsam::Value {
   Matrix matrix() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class Rot3 : gtsam::Value {
@@ -459,7 +459,7 @@ virtual class Rot3 : gtsam::Value {
   Vector quaternion() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class Pose2 : gtsam::Value {
@@ -509,7 +509,7 @@ virtual class Pose2 : gtsam::Value {
   Matrix matrix() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class Pose3 : gtsam::Value {
@@ -560,7 +560,7 @@ virtual class Pose3 : gtsam::Value {
   double range(const gtsam::Pose3& pose);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class Cal3_S2 : gtsam::Value {
@@ -596,7 +596,7 @@ virtual class Cal3_S2 : gtsam::Value {
   Matrix matrix_inverse() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 #include <gtsam/geometry/Cal3DS2.h>
@@ -633,7 +633,7 @@ virtual class Cal3DS2 : gtsam::Value {
   //Matrix K() const; //FIXME: Uppercase
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 class Cal3_S2Stereo {
@@ -686,7 +686,7 @@ virtual class CalibratedCamera : gtsam::Value {
   double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class SimpleCamera : gtsam::Value {
@@ -724,7 +724,7 @@ virtual class SimpleCamera : gtsam::Value {
   double range(const gtsam::Pose3& point);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 template<CALIBRATION = {gtsam::Cal3DS2}>
@@ -763,7 +763,7 @@ virtual class PinholeCamera : gtsam::Value {
   double range(const gtsam::Pose3& point);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class StereoCamera : gtsam::Value {
@@ -791,7 +791,7 @@ virtual class StereoCamera : gtsam::Value {
   gtsam::Point3 backproject(const gtsam::StereoPoint2& p) const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 //*************************************************************************
@@ -1143,7 +1143,7 @@ class VectorValues {
   double squaredNorm() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 #include <gtsam/linear/GaussianFactor.h>
@@ -1203,7 +1203,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   gtsam::noiseModel::Diagonal* get_model() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 #include <gtsam/linear/HessianFactor.h>
@@ -1234,7 +1234,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
   Vector linearTerm() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -1304,7 +1304,7 @@ class GaussianFactorGraph {
   pair<Matrix,Vector> hessian() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 #include <gtsam/linear/GaussianConditional.h>
@@ -1327,7 +1327,7 @@ virtual class GaussianConditional : gtsam::GaussianFactor {
   void scaleFrontalsBySigma(gtsam::VectorValues& gy) const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 #include <gtsam/linear/GaussianDensity.h>
@@ -1528,7 +1528,7 @@ class Ordering {
   void push_back(size_t key);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 class NonlinearFactorGraph {
@@ -1557,7 +1557,7 @@ class NonlinearFactorGraph {
   gtsam::NonlinearFactorGraph clone() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 virtual class NonlinearFactor {
@@ -1613,7 +1613,7 @@ class Values {
   gtsam::VectorValues localCoordinates(const gtsam::Values& cp) const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 // Actually a FastList<Key>
@@ -1994,7 +1994,7 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
   T prior() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 
@@ -2005,7 +2005,7 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
   T measured() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 
@@ -2018,7 +2018,7 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   NonlinearEquality(size_t j, const T& feasible, double error_gain);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 
@@ -2044,7 +2044,7 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
   BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
@@ -2056,7 +2056,7 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
   BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingRangeFactor2D;
@@ -2082,7 +2082,7 @@ virtual class GenericProjectionFactor : gtsam::NoiseModelFactor {
   bool throwCheirality() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
@@ -2103,7 +2103,7 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   gtsam::Point2 measured() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 
 
@@ -2116,7 +2116,7 @@ virtual class GenericStereoFactor : gtsam::NoiseModelFactor {
   gtsam::Cal3_S2Stereo* calibration() const;
 
   // enabling serialization functionality
-  void serialize() const;
+  //void serialize() const;
 };
 typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFactor3D;
 
