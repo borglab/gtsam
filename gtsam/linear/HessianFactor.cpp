@@ -86,8 +86,8 @@ Scatter::Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&
       const_iterator entry = find(key);
       if(entry == end())
         throw std::invalid_argument(
-        "The ordering provided to the HessianFactor Scatter constructor\n"
-        "contained extra variables that did not appear in the factors to combine.");
+            "The ordering provided to the HessianFactor Scatter constructor\n"
+            "contained extra variables that did not appear in the factors to combine.");
       at(key).slot = (slot ++);
     }
   }
@@ -102,7 +102,7 @@ Scatter::Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor() :
-  info_(cref_list_of<1>(1))
+                          info_(cref_list_of<1>(1))
 {
   linearTerm().setZero();
   constantTerm() = 0.0;
@@ -110,10 +110,10 @@ HessianFactor::HessianFactor() :
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(Key j, const Matrix& G, const Vector& g, double f) :
-  GaussianFactor(cref_list_of<1>(j)), info_(cref_list_of<2>(G.cols())(1))
+                          GaussianFactor(cref_list_of<1>(j)), info_(cref_list_of<2>(G.cols())(1))
 {
   if(G.rows() != G.cols() || G.rows() != g.size()) throw invalid_argument(
-    "Attempting to construct HessianFactor with inconsistent matrix and/or vector dimensions");
+      "Attempting to construct HessianFactor with inconsistent matrix and/or vector dimensions");
   info_(0,0) = G;
   info_(0,1) = g;
   info_(1,1)(0,0) = f;
@@ -123,11 +123,11 @@ HessianFactor::HessianFactor(Key j, const Matrix& G, const Vector& g, double f) 
 // error is 0.5*(x-mu)'*inv(Sigma)*(x-mu) = 0.5*(x'*G*x - 2*x'*G*mu + mu'*G*mu)
 // where G = inv(Sigma), g = G*mu, f = mu'*G*mu = mu'*g
 HessianFactor::HessianFactor(Key j, const Vector& mu, const Matrix& Sigma) :
-    GaussianFactor(cref_list_of<1>(j)),
-    info_(cref_list_of<2> (Sigma.cols()) (1) )
+                            GaussianFactor(cref_list_of<1>(j)),
+                            info_(cref_list_of<2> (Sigma.cols()) (1) )
 {
   if (Sigma.rows() != Sigma.cols() || Sigma.rows() != mu.size()) throw invalid_argument(
-    "Attempting to construct HessianFactor with inconsistent matrix and/or vector dimensions");
+      "Attempting to construct HessianFactor with inconsistent matrix and/or vector dimensions");
   info_(0,0) = Sigma.inverse(); // G
   info_(0,1) = info_(0,0) * mu; // g
   info_(1,1)(0,0) = mu.dot(info_(0,1).col(0)); // f
@@ -135,10 +135,10 @@ HessianFactor::HessianFactor(Key j, const Vector& mu, const Matrix& Sigma) :
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(Key j1, Key j2,
-                             const Matrix& G11, const Matrix& G12, const Vector& g1,
-                             const Matrix& G22, const Vector& g2, double f) :
-GaussianFactor(cref_list_of<2>(j1)(j2)),
-  info_(cref_list_of<3> (G11.cols()) (G22.cols()) (1) )
+    const Matrix& G11, const Matrix& G12, const Vector& g1,
+    const Matrix& G22, const Vector& g2, double f) :
+                        GaussianFactor(cref_list_of<2>(j1)(j2)),
+                        info_(cref_list_of<3> (G11.cols()) (G22.cols()) (1) )
 {
   info_(0,0) = G11;
   info_(0,1) = G12;
@@ -150,14 +150,14 @@ GaussianFactor(cref_list_of<2>(j1)(j2)),
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(Key j1, Key j2, Key j3,
-                             const Matrix& G11, const Matrix& G12, const Matrix& G13, const Vector& g1,
-                             const Matrix& G22, const Matrix& G23, const Vector& g2,
-                             const Matrix& G33, const Vector& g3, double f) :
-GaussianFactor(cref_list_of<3>(j1)(j2)(j3)),
-  info_(cref_list_of<4> (G11.cols()) (G22.cols()) (G33.cols()) (1) )
+    const Matrix& G11, const Matrix& G12, const Matrix& G13, const Vector& g1,
+    const Matrix& G22, const Matrix& G23, const Vector& g2,
+    const Matrix& G33, const Vector& g3, double f) :
+                        GaussianFactor(cref_list_of<3>(j1)(j2)(j3)),
+                        info_(cref_list_of<4> (G11.cols()) (G22.cols()) (G33.cols()) (1) )
 {
   if(G11.rows() != G11.cols() || G11.rows() != G12.rows() || G11.rows() != G13.rows()  || G11.rows() != g1.size() ||
-    G22.cols() != G12.cols() || G33.cols() != G13.cols() ||  G22.cols() != g2.size() || G33.cols() != g3.size())
+      G22.cols() != G12.cols() || G33.cols() != G13.cols() ||  G22.cols() != g2.size() || G33.cols() != g3.size())
     throw invalid_argument("Inconsistent matrix and/or vector dimensions in HessianFactor constructor");
   info_(0,0) = G11;
   info_(0,1) = G12;
@@ -173,13 +173,13 @@ GaussianFactor(cref_list_of<3>(j1)(j2)(j3)),
 
 /* ************************************************************************* */
 namespace {
-  DenseIndex _getSizeHF(const Vector& m) { return m.size(); }
+DenseIndex _getSizeHF(const Vector& m) { return m.size(); }
 }
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
-        const std::vector<Vector>& gs, double f) :
-GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), ListOfOne((DenseIndex)1)))
+    const std::vector<Vector>& gs, double f) :
+                        GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), ListOfOne((DenseIndex)1)))
 {
   // Get the number of variables
   size_t variable_count = js.size();
@@ -222,33 +222,33 @@ GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), ListOfOne(
 
 /* ************************************************************************* */
 namespace {
-  void _FromJacobianHelper(const JacobianFactor& jf, SymmetricBlockMatrix& info)
+void _FromJacobianHelper(const JacobianFactor& jf, SymmetricBlockMatrix& info)
+{
+  gttic(HessianFactor_fromJacobian);
+  const SharedDiagonal& jfModel = jf.get_model();
+  if(jfModel)
   {
-    gttic(HessianFactor_fromJacobian);
-    const SharedDiagonal& jfModel = jf.get_model();
-    if(jfModel)
-    {
-      if(jf.get_model()->isConstrained())
-        throw invalid_argument("Cannot construct HessianFactor from JacobianFactor with constrained noise model");
-      info.full().noalias() = jf.matrixObject().full().transpose() *
+    if(jf.get_model()->isConstrained())
+      throw invalid_argument("Cannot construct HessianFactor from JacobianFactor with constrained noise model");
+    info.full().noalias() = jf.matrixObject().full().transpose() *
         (jfModel->invsigmas().array() * jfModel->invsigmas().array()).matrix().asDiagonal() *
         jf.matrixObject().full();
-    } else {
-      info.full().noalias() = jf.matrixObject().full().transpose() * jf.matrixObject().full();
-    }
+  } else {
+    info.full().noalias() = jf.matrixObject().full().transpose() * jf.matrixObject().full();
   }
+}
 }
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const JacobianFactor& jf) :
-  GaussianFactor(jf), info_(SymmetricBlockMatrix::LikeActiveViewOf(jf.matrixObject()))
+                          GaussianFactor(jf), info_(SymmetricBlockMatrix::LikeActiveViewOf(jf.matrixObject()))
 {
   _FromJacobianHelper(jf, info_);
 }
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianFactor& gf) :
-  GaussianFactor(gf)
+                          GaussianFactor(gf)
 {
   // Copy the matrix data depending on what type of factor we're copying from
   if(const JacobianFactor* jf = dynamic_cast<const JacobianFactor*>(&gf))
@@ -268,12 +268,12 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) :
 
 /* ************************************************************************* */
 namespace {
-  DenseIndex _dimFromScatterEntry(const Scatter::value_type& key_slotentry) {
-    return key_slotentry.second.dimension; } }
+DenseIndex _dimFromScatterEntry(const Scatter::value_type& key_slotentry) {
+  return key_slotentry.second.dimension; } }
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
-                             boost::optional<const Scatter&> scatter)
+    boost::optional<const Scatter&> scatter)
 {
   boost::optional<Scatter> computedScatter;
   if(!scatter) {
@@ -413,7 +413,7 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
   // This function updates 'combined' with the information in 'update'.
   // 'scatter' maps variables in the update factor to slots in the combined
   // factor.
-  
+
   gttic(updateATA);
 
   if(update.rows() > 0)
@@ -478,7 +478,7 @@ GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFr
   VerticalBlockMatrix Ab = VerticalBlockMatrix::LikeActiveViewOf(info_, varDim);
   Ab.full() = info_.range(0, nrFrontals, 0, info_.nBlocks());
   GaussianConditional::shared_ptr conditional = boost::make_shared<GaussianConditional>(
-    keys_, nrFrontals, Ab);
+      keys_, nrFrontals, Ab);
   gttoc(Construct_conditional);
 
   gttic(Remaining_factor);
@@ -503,11 +503,25 @@ GaussianFactor::shared_ptr HessianFactor::negate() const
 void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
     VectorValues& y) {
 
+  for(size_t posRow=0; posRow<size(); ++posRow){ // loops over the rows
+    pair<VectorValues::iterator, bool> yi = y.tryInsert(keys_[posRow], Vector());
+    if(yi.second)
+      yi.first->second = Vector::Zero(getDim(begin() + posRow));
+
+    for(size_t posCol=0; posCol<size(); ++posCol){ // loops over the columns
+      Vector X = x.at(keys_[posCol]);
+      // yi.at(keys_[posRow])// this is what we have to update
+      // X is the input vector
+      // we should select the blocks we need in (A'A)
+      Matrix Hij = info(begin()+posRow, begin()+posCol);
+      gtsam::transposeMultiplyAdd(alpha, Hij, X, yi.first->second);
+    }
+  }
 }
 
 /* ************************************************************************* */
 std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
-  EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
+EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
 {
   gttic(EliminateCholesky);
 
@@ -517,8 +531,8 @@ std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFacto
     jointFactor = boost::make_shared<HessianFactor>(factors, Scatter(factors, keys));
   } catch(std::invalid_argument&) {
     throw InvalidDenseElimination(
-      "EliminateCholesky was called with a request to eliminate variables that are not\n"
-      "involved in the provided factors.");
+        "EliminateCholesky was called with a request to eliminate variables that are not\n"
+        "involved in the provided factors.");
   }
 
   // Do dense elimination
@@ -533,7 +547,7 @@ std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFacto
 
 /* ************************************************************************* */
 std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> >
-  EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
+EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
 {
   gttic(EliminatePreferCholesky);
 

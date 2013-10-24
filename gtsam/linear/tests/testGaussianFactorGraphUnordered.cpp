@@ -158,6 +158,15 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   return fg;
 }
 
+
+/* ************************************************************************* */
+static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
+  GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
+  fg += HessianFactor(1, 2, 100*ones(2,2), 200*ones(2,2), (Vec(2) << 0.0, 1.0),
+                                           400*ones(2,2), (Vec(2) << 1.0, 1.0), 0.0);
+  return fg;
+}
+
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, gradient )
 {
@@ -241,6 +250,26 @@ TEST( GaussianFactorGraph, multiplyHessian )
   VectorValues actual = A.multiplyHessian(x);
   EXPECT(assert_equal(expected, actual));
 }
+
+/* ************************************************************************* */
+//TEST( GaussianFactorGraph, multiplyHessian2 )
+//{
+//  GaussianFactorGraph A = createGaussianFactorGraphWithHessianFactor();
+//
+//  VectorValues x = map_list_of
+//    (0, (Vec(2) << 1,2))
+//    (1, (Vec(2) << 3,4))
+//    (2, (Vec(2) << 5,6));
+//
+//  // expected from matlab:         -450        -450        2900        2900        6750        6850
+//  VectorValues expected;
+//  expected.insert(0, (Vec(2) <<  -450, -450));
+//  expected.insert(1, (Vec(2) << 2900, 2900));
+//  expected.insert(2, (Vec(2) <<  6750, 6850));
+//
+//  VectorValues actual = A.multiplyHessian(x);
+//  EXPECT(assert_equal(expected, actual));
+//}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
