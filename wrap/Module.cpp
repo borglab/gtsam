@@ -382,14 +382,22 @@ void Module::parseMarkup(const std::string& data) {
   BOOST_FOREACH(Class& cls, classes) {
     Class::Methods::iterator serializable_it = cls.methods.find("serializable");
     if (serializable_it != cls.methods.end()) {
+#ifndef WRAP_DISABLE_SERIALIZE
       cls.isSerializable = true;
+#else
+      cout << "Ignoring serializable() flag in class " << cls.name << endl;
+#endif
       cls.methods.erase(serializable_it);
     }
 
     Class::Methods::iterator serialize_it = cls.methods.find("serialize");
     if (serialize_it != cls.methods.end()) {
+#ifndef WRAP_DISABLE_SERIALIZE
       cls.isSerializable = true;
       cls.hasSerialization= true;
+#else
+      cout << "Ignoring serialize() flag in class " << cls.name << endl;
+#endif
       cls.methods.erase(serialize_it);
     }
   }
