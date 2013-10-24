@@ -37,20 +37,6 @@ static SharedDiagonal
   sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
   constraintModel = noiseModel::Constrained::All(2);
 
-static GaussianFactorGraph createSimpleGaussianFactorGraph() {
-  GaussianFactorGraph fg;
-  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
-  // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(2, 10*eye(2), -1.0*ones(2), unit2);
-  // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(2, -10*eye(2), 0, 10*eye(2), (Vec(2) << 2.0, -1.0), unit2);
-  // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(2, -5*eye(2), 1, 5*eye(2), (Vec(2) << 0.0, 1.0), unit2);
-  // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), (Vec(2) << -1.0, 1.5), unit2);
-  return fg;
-}
-
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, initialization) {
   // Create empty graph
@@ -156,6 +142,23 @@ TEST(GaussianFactorGraph, matrices) {
 }
 
 /* ************************************************************************* */
+static Key X1=2,X2=0,L1=1;
+
+static GaussianFactorGraph createSimpleGaussianFactorGraph() {
+  GaussianFactorGraph fg;
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
+  fg += JacobianFactor(2, 10*eye(2), -1.0*ones(2), unit2);
+  // odometry between x1 and x2: x2-x1=[0.2;-0.1]
+  fg += JacobianFactor(2, -10*eye(2), 0, 10*eye(2), (Vec(2) << 2.0, -1.0), unit2);
+  // measurement between x1 and l1: l1-x1=[0.0;0.2]
+  fg += JacobianFactor(2, -5*eye(2), 1, 5*eye(2), (Vec(2) << 0.0, 1.0), unit2);
+  // measurement between x2 and l1: l1-x2=[-0.2;0.3]
+  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), (Vec(2) << -1.0, 1.5), unit2);
+  return fg;
+}
+
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, gradient )
 {
   GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
@@ -221,39 +224,23 @@ TEST(GaussianFactorGraph, eliminate_empty )
 }
 
 /* ************************************************************************* */
-//TEST( GaussianFactorGraph, multiplyHessian )
-//{
-//  // A is :
-//  // x1 x2 x3 x4 x5
-//  //  1  2  3  0  0
-//  //  5  6  7  0  0
-//  //  9 10  0 11 12
-//  //  0  0  0 14 15
-//  GaussianFactorGraph A = createSimpleGaussianFactorGraph();
-//
-//  VectorValues x = map_list_of
-//    (0, (Vec(2) << 1,2))
-//    (1, (Vec(2) << 3,4))
-//    (2, (Vec(1) << 5));
-//
-//  // AtA is :
-//  // x1 x2 x3 x4 x5
-//  //  107   122    38    99   108
-//  //  122   140    48   110   120
-//  //   38    48    58     0     0
-//  //   99   110     0   317   342
-//  //  108   120     0   342   369
-//
-//  // AtAx is:
-//  // 1401        1586         308        3297        3561
-//  VectorValues expected;
-//  expected.insert(0, (Vec(2) <<  1401,1586));
-//  expected.insert(1, (Vec(2) << 308,3297));
-//  expected.insert(2, (Vec(1) <<  3561));
-//
-//  VectorValues actual = A.multiplyHessian(x);
-//  EXPECT(assert_equal(expected, actual));
-//}
+TEST( GaussianFactorGraph, multiplyHessian )
+{
+  GaussianFactorGraph A = createSimpleGaussianFactorGraph();
+
+  VectorValues x = map_list_of
+    (0, (Vec(2) << 1,2))
+    (1, (Vec(2) << 3,4))
+    (2, (Vec(2) << 5,6));
+
+  VectorValues expected;
+  expected.insert(0, (Vec(2) <<  -450, -450));
+  expected.insert(1, (Vec(2) << 0, 0));
+  expected.insert(2, (Vec(2) <<  950, 1050));
+
+  VectorValues actual = A.multiplyHessian(x);
+  EXPECT(assert_equal(expected, actual));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

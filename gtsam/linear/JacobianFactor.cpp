@@ -435,7 +435,8 @@ namespace gtsam {
   /* ************************************************************************* */
   void JacobianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
       VectorValues& y) {
-
+    Vector Ax = (*this)*x;
+    transposeMultiplyAdd(alpha,Ax,y);
   }
 
   /* ************************************************************************* */
