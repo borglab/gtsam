@@ -106,6 +106,9 @@ namespace gtsam {
      */
     virtual GaussianFactor::shared_ptr negate() const = 0;
 
+    /// y += alpha * A'*A*x
+    virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y)=0;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

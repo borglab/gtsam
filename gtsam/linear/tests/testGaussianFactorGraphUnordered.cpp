@@ -221,5 +221,40 @@ TEST(GaussianFactorGraph, eliminate_empty )
 }
 
 /* ************************************************************************* */
+//TEST( GaussianFactorGraph, multiplyHessian )
+//{
+//  // A is :
+//  // x1 x2 x3 x4 x5
+//  //  1  2  3  0  0
+//  //  5  6  7  0  0
+//  //  9 10  0 11 12
+//  //  0  0  0 14 15
+//  GaussianFactorGraph A = createSimpleGaussianFactorGraph();
+//
+//  VectorValues x = map_list_of
+//    (0, (Vec(2) << 1,2))
+//    (1, (Vec(2) << 3,4))
+//    (2, (Vec(1) << 5));
+//
+//  // AtA is :
+//  // x1 x2 x3 x4 x5
+//  //  107   122    38    99   108
+//  //  122   140    48   110   120
+//  //   38    48    58     0     0
+//  //   99   110     0   317   342
+//  //  108   120     0   342   369
+//
+//  // AtAx is:
+//  // 1401        1586         308        3297        3561
+//  VectorValues expected;
+//  expected.insert(0, (Vec(2) <<  1401,1586));
+//  expected.insert(1, (Vec(2) << 308,3297));
+//  expected.insert(2, (Vec(1) <<  3561));
+//
+//  VectorValues actual = A.multiplyHessian(x);
+//  EXPECT(assert_equal(expected, actual));
+//}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

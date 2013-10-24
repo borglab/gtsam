@@ -500,6 +500,12 @@ GaussianFactor::shared_ptr HessianFactor::negate() const
 }
 
 /* ************************************************************************* */
+void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
+    VectorValues& y) {
+
+}
+
+/* ************************************************************************* */
 std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
   EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
 {

@@ -263,6 +263,9 @@ namespace gtsam {
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
 
+    /** y += alpha * A'*A*x */
+    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y);
+
     /** x += A'*e.  If x is initially missing any values, they are created and assumed to start as
      *  zero vectors. */
     void transposeMultiplyAdd(double alpha, const Vector& e, VectorValues& x) const;

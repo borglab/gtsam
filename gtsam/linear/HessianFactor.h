@@ -356,8 +356,8 @@ namespace gtsam {
      */
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
-    /** Return A'A*x */
-    // Vector operator*(const VectorValues& x) const;
+    /** y += alpha * A'*A*x */
+    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y);
 
     /**
     *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are

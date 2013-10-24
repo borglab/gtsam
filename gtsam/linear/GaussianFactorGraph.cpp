@@ -247,6 +247,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::multiplyHessian(const VectorValues& x) const {
+    VectorValues y;
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
+      f->multiplyHessianAdd(1.0,x,y);
+    return y;
+  }
+
+  /* ************************************************************************* */
   void GaussianFactorGraph::multiplyInPlace(const VectorValues& x, Errors& e) const {
     multiplyInPlace(x, e.begin());
   }
@@ -275,15 +283,15 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // x += alpha*A'*e
-  void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e, VectorValues& x) const
-  {
-    // For each factor add the gradient contribution
-    Errors::const_iterator ei = e.begin();
-    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
-      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      Ai->transposeMultiplyAdd(alpha, *(ei++), x);
-    }
+void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
+    VectorValues& x) const {
+  // For each factor add the gradient contribution
+  Errors::const_iterator ei = e.begin();
+  BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+    Ai->transposeMultiplyAdd(alpha, *(ei++), x);
   }
+}
 
   ///* ************************************************************************* */
   //void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
