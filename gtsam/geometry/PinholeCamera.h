@@ -299,8 +299,11 @@ public:
 
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
+
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (pc.z() <= 0)
       throw CheiralityException();
+#endif
 
     // Project to normalized image coordinates
     const Point2 pn = project_to_camera(pc);
@@ -390,8 +393,11 @@ public:
 
     if (!Dcamera && !Dpoint) {
       const Point3 pc = pose_.transform_to(pw);
-      if (pc.z() <= 0)
-        throw CheiralityException();
+
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+    if (pc.z() <= 0)
+      throw CheiralityException();
+#endif
       const Point2 pn = project_to_camera(pc);
       return K_.uncalibrate(pn);
     }
