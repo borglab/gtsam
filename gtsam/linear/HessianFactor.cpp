@@ -503,18 +503,25 @@ GaussianFactor::shared_ptr HessianFactor::negate() const
 void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
     VectorValues& y) {
 
-  for(size_t posRow=0; posRow<size(); ++posRow){ // loops over the rows
-    pair<VectorValues::iterator, bool> yi = y.tryInsert(keys_[posRow], Vector());
-    if(yi.second)
-      yi.first->second = Vector::Zero(getDim(begin() + posRow));
+  std::cout << "size() " << size() << std::endl;
 
-    for(size_t posCol=0; posCol<size(); ++posCol){ // loops over the columns
-      Vector X = x.at(keys_[posCol]);
-      // yi.at(keys_[posRow])// this is what we have to update
-      // X is the input vector
+  for (size_t i = 0; i < size(); ++i) {
+    pair<VectorValues::iterator, bool> it = y.tryInsert(keys_[i], Vector());
+    Vector& yi = it.first->second;
+    if (it.second) {
+      // if the value does not exist we initialize it
+      yi = Vector::Zero(getDim(begin() + i));
+    }
+
+    for (size_t j = 0; j < size(); ++j) { // loops over the columns
+      Vector xj = x.at(keys_[j]);
+      // yi.at(keys_[i])// this is what we have to update
+      // xj is the input vector
       // we should select the blocks we need in (A'A)
-      Matrix Hij = info(begin()+posRow, begin()+posCol);
-      gtsam::transposeMultiplyAdd(alpha, Hij, X, yi.first->second);
+      if (i <= j)
+        yi += alpha * info(begin() + i, begin() + j) * xj;
+      else
+        yi += alpha * info(begin() + j, begin() + i).transpose() * xj;
     }
   }
 }
