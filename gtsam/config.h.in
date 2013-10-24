@@ -46,3 +46,8 @@
 #cmakedefine GTSAM_ALLOCATOR_BOOSTPOOL
 #cmakedefine GTSAM_ALLOCATOR_TBB
 #cmakedefine GTSAM_ALLOCATOR_STL
+
+// Option for not throwing the CheiralityException for points that are behind a camera
+#cmakedefine GTSAM_THROW_CHEIRALITY_EXCEPTION
+
+
