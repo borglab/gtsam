@@ -16,51 +16,26 @@
  * @date Jul 17, 2010
  */
 
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
+
+#include <gtsam/inference/Ordering.h>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <stdexcept>
 #include <iostream>
 #include <iomanip>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <boost/algorithm/string.hpp>
+
 using namespace std;
 
 namespace gtsam {
-
-/* ************************************************************************* */
-NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslator(const std::string &src) const {
-  std::string s = src;  boost::algorithm::to_upper(s);
-  if (s == "SILENT") return NonlinearOptimizerParams::SILENT;
-  if (s == "ERROR") return NonlinearOptimizerParams::ERROR;
-  if (s == "VALUES") return NonlinearOptimizerParams::VALUES;
-  if (s == "DELTA") return NonlinearOptimizerParams::DELTA;
-  if (s == "LINEAR") return NonlinearOptimizerParams::LINEAR;
-
-  /* default is silent */
-  return NonlinearOptimizerParams::SILENT;
-}
-
-/* ************************************************************************* */
-std::string NonlinearOptimizerParams::verbosityTranslator(Verbosity value) const {
-  std::string s;
-  switch (value) {
-  case NonlinearOptimizerParams::SILENT:  s = "SILENT"; break;
-  case NonlinearOptimizerParams::ERROR:   s = "ERROR"; break;
-  case NonlinearOptimizerParams::VALUES:  s = "VALUES"; break;
-  case NonlinearOptimizerParams::DELTA:   s = "DELTA"; break;
-  case NonlinearOptimizerParams::LINEAR:  s = "LINEAR"; break;
-  default:                                s = "UNDEFINED"; break;
-  }
-  return s;
-}
-
-/* ************************************************************************* */
-void NonlinearOptimizerParams::print(const std::string& str) const {
-  std::cout << str << "\n";
-  std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
-  std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
-  std::cout << "      total error threshold: " << errorTol << "\n";
-  std::cout << "         maximum iterations: " << maxIterations << "\n";
-  std::cout << "                  verbosity: " << verbosityTranslator(verbosity) << "\n";
-  std::cout.flush();
-}
 
 /* ************************************************************************* */
 void NonlinearOptimizer::defaultOptimize() {
@@ -115,6 +90,36 @@ const Values& NonlinearOptimizer::optimizeSafely() {
 }
 
 /* ************************************************************************* */
+VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph &gfg,
+    const Values& initial, const NonlinearOptimizerParams& params) const {
+  VectorValues delta;
+  if (params.isMultifrontal()) {
+    delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
+  } else if (params.isSequential()) {
+    delta = gfg.eliminateSequential(*params.ordering,
+        params.getEliminationFunction())->optimize();
+  } else if (params.isCG()) {
+    if (!params.iterativeParams)
+      throw std::runtime_error(
+          "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
+    if (boost::dynamic_pointer_cast<SubgraphSolverParameters>(
+        params.iterativeParams)) {
+      SubgraphSolver solver(gfg,
+          dynamic_cast<const SubgraphSolverParameters&>(*params.iterativeParams),
+          *params.ordering);
+      delta = solver.optimize();
+    } else {
+      throw std::runtime_error(
+          "NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
+    }
+  } else {
+    throw std::runtime_error(
+        "NonlinearOptimizer::solve: Optimization parameter is invalid");
+  }
+  return delta;
+}
+
+/* ************************************************************************* */
 bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold,
     double errorThreshold, double currentError, double newError,
     NonlinearOptimizerParams::Verbosity verbosity) {
@@ -155,6 +160,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
   }
   return converged;
 }
+
 /* ************************************************************************* */
 
 

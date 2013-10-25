@@ -442,7 +442,7 @@ void runBatch()
 
   gttic_(Create_optimizer);
   GaussNewtonParams params;
-  params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_CHOLESKY;
+  params.linearSolverType = NonlinearSolverParams::MULTIFRONTAL_CHOLESKY;
   GaussNewtonOptimizer optimizer(measurements, initial, params);
   gttoc_(Create_optimizer);
   double lastError;

@@ -16,16 +16,14 @@
  * @date  Feb 26, 2012
  */
 
-#include <cmath>
-
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
 #include <boost/algorithm/string.hpp>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
@@ -62,7 +60,7 @@ std::string LevenbergMarquardtParams::verbosityLMTranslator(VerbosityLM value) c
 
 /* ************************************************************************* */
 void LevenbergMarquardtParams::print(const std::string& str) const {
-  SuccessiveLinearizationParams::print(str);
+  NonlinearOptimizerParams::print(str);
   std::cout << "              lambdaInitial: " << lambdaInitial << "\n";
   std::cout << "               lambdaFactor: " << lambdaFactor << "\n";
   std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
@@ -110,7 +108,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     // Try solving
     try {
       // Solve Damped Gaussian Factor Graph
-      const VectorValues delta = solveGaussianFactorGraph(dampedSystem, params_);
+      const VectorValues delta = solve(dampedSystem, state_.values, params_);
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.norm() << endl;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");

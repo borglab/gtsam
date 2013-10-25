@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace gtsam {
 
@@ -29,7 +29,7 @@ class LevenbergMarquardtOptimizer;
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class GTSAM_EXPORT LevenbergMarquardtParams : public SuccessiveLinearizationParams {
+class GTSAM_EXPORT LevenbergMarquardtParams : public NonlinearOptimizerParams {
 
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */

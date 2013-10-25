@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace gtsam {
 
@@ -29,7 +29,7 @@ class DoglegOptimizer;
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class GTSAM_EXPORT DoglegParams : public SuccessiveLinearizationParams {
+class GTSAM_EXPORT DoglegParams : public NonlinearOptimizerParams {
 public:
   /** See DoglegParams::dlVerbosity */
   enum VerbosityDL {
@@ -46,7 +46,7 @@ public:
   virtual ~DoglegParams() {}
 
   virtual void print(const std::string& str = "") const {
-    SuccessiveLinearizationParams::print(str);
+    NonlinearOptimizerParams::print(str);
     std::cout << "               deltaInitial: " << deltaInitial << "\n";
     std::cout.flush();
   }

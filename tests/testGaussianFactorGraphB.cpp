@@ -587,7 +587,7 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   // Check that all sigmas in an unconstrained bayes tree are set to one
   BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, actBT.nodes() | br::map_values) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
-    size_t dim = conditional->rows();
+    //size_t dim = conditional->rows();
     //EXPECT(assert_equal(gtsam::ones(dim), conditional->get_model()->sigmas(), tol));
     EXPECT(!conditional->get_model());
   }

@@ -1761,9 +1761,9 @@ bool checkConvergence(double relativeErrorTreshold,
     double absoluteErrorTreshold, double errorThreshold,
     double currentError, double newError);
 
-#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
-virtual class SuccessiveLinearizationParams : gtsam::NonlinearOptimizerParams {
-  SuccessiveLinearizationParams();
+#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
+virtual class NonlinearSolverParams : gtsam::NonlinearOptimizerParams {
+  NonlinearSolverParams();
 
   string getLinearSolverType() const;
   
@@ -1778,12 +1778,12 @@ virtual class SuccessiveLinearizationParams : gtsam::NonlinearOptimizerParams {
 };
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-virtual class GaussNewtonParams : gtsam::SuccessiveLinearizationParams {
+virtual class GaussNewtonParams : gtsam::NonlinearSolverParams {
   GaussNewtonParams();
 };
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-virtual class LevenbergMarquardtParams : gtsam::SuccessiveLinearizationParams {
+virtual class LevenbergMarquardtParams : gtsam::NonlinearSolverParams {
   LevenbergMarquardtParams();
 
   double getlambdaInitial() const;
@@ -1798,7 +1798,7 @@ virtual class LevenbergMarquardtParams : gtsam::SuccessiveLinearizationParams {
 };
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
-virtual class DoglegParams : gtsam::SuccessiveLinearizationParams {
+virtual class DoglegParams : gtsam::NonlinearSolverParams {
   DoglegParams();
 
   double getDeltaInitial() const;

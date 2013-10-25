@@ -303,6 +303,52 @@ TEST(NonlinearOptimizer, disconnected_graph) {
 }
 
 /* ************************************************************************* */
+#include <gtsam/linear/iterative.h>
+
+class IterativeLM: public LevenbergMarquardtOptimizer {
+
+  /// Solver specific parameters
+  ConjugateGradientParameters cgParams_;
+
+public:
+  /// Constructor
+  IterativeLM(const NonlinearFactorGraph& graph, const Values& initialValues,
+      const ConjugateGradientParameters &p,
+      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
+      LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p) {
+  }
+
+  /// Solve that uses conjugate gradient
+  virtual VectorValues solve(const GaussianFactorGraph &gfg,
+      const Values& initial, const NonlinearOptimizerParams& params) const {
+    VectorValues zeros = initial.zeroVectors();
+    return conjugateGradientDescent(gfg, zeros, cgParams_);
+  }
+};
+
+/* ************************************************************************* */
+TEST(NonlinearOptimizer, subclass_solver) {
+  Values expected;
+  expected.insert(X(1), Pose2(0.,0.,0.));
+  expected.insert(X(2), Pose2(1.5,0.,0.));
+  expected.insert(X(3), Pose2(3.0,0.,0.));
+
+  Values init;
+  init.insert(X(1), Pose2(0.,0.,0.));
+  init.insert(X(2), Pose2(0.,0.,0.));
+  init.insert(X(3), Pose2(0.,0.,0.));
+
+  NonlinearFactorGraph graph;
+  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph += PriorFactor<Pose2>(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+
+  ConjugateGradientParameters p;
+  Values actual = IterativeLM(graph, init, p).optimize();
+  EXPECT(assert_equal(expected, actual, 1e-4));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

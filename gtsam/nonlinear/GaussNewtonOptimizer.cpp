@@ -33,7 +33,7 @@ void GaussNewtonOptimizer::iterate() {
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(current.values);
 
   // Solve Factor Graph
-  const VectorValues delta = solveGaussianFactorGraph(*linear, params_);
+  const VectorValues delta = solve(*linear, current.values, params_);
 
   // Maybe show output
   if(params_.verbosity >= NonlinearOptimizerParams::DELTA) delta.print("delta");

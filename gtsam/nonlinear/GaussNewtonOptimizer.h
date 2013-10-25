@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace gtsam {
 
@@ -27,7 +27,7 @@ class GaussNewtonOptimizer;
 /** Parameters for Gauss-Newton optimization, inherits from
  * NonlinearOptimizationParams.
  */
-class GTSAM_EXPORT GaussNewtonParams : public SuccessiveLinearizationParams {
+class GTSAM_EXPORT GaussNewtonParams : public NonlinearOptimizerParams {
 };
 
 class GTSAM_EXPORT GaussNewtonState : public NonlinearOptimizerState {

@@ -133,7 +133,7 @@ Point3 triangulateDLT(const std::vector<Pose3>& poses,
     params.absoluteErrorTol = 1.0;
     params.verbosityLM = LevenbergMarquardtParams::SILENT;
     params.verbosity = NonlinearOptimizerParams::SILENT;
-    params.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_CHOLESKY;
+    params.linearSolverType = NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY;
     LevenbergMarquardtOptimizer optimizer(graph, values, params);
     Values result = optimizer.optimize();
 

@@ -57,7 +57,7 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 //  parameters.lambdaInitial = 1;
 //  parameters.verbosity = NonlinearOptimizerParams::ERROR;
 //  parameters.verbosityLM = ISAM2Params::DAMPED;
-//  parameters.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_QR;
+//  parameters.linearSolverType = NonlinearSolverParams::MULTIFRONTAL_QR;
 
   ISAM2 optimizer(parameters);
   optimizer.update( graph, theta );
