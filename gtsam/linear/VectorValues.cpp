@@ -126,8 +126,8 @@ namespace gtsam {
   {
     // Count dimensions
     DenseIndex totalDim = 0;
-    BOOST_FOREACH(const value_type& v, *this)
-      totalDim += v.second.size();
+    BOOST_FOREACH(const Vector& v, *this | map_values)
+      totalDim += v.size();
 
     // Copy vectors
     Vector result(totalDim);

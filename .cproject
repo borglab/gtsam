@@ -1787,10 +1787,10 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testVectorValues.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="testVectorValuesUnordered.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>testVectorValues.run</buildTarget>
+				<buildTarget>testVectorValuesUnordered.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
