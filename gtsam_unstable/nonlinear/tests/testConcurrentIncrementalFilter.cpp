@@ -58,7 +58,7 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 //  parameters.lambdaInitial = 1;
 //  parameters.verbosity = NonlinearOptimizerParams::ERROR;
 //  parameters.verbosityLM = ISAM2Params::DAMPED;
-//  parameters.linearSolverType = NonlinearSolverParams::MULTIFRONTAL_QR;
+//  parameters.linearSolverType = NonlinearOptimizerParams::MULTIFRONTAL_QR;
 
   // it is the same as the input graph, but we removed the empty factors that may be present in the input graph
   NonlinearFactorGraph graphForISAM2;
