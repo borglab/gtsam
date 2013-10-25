@@ -15,13 +15,13 @@
  * @date    Sep 16, 2010
  */
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/std/vector.hpp>
+#include <boost/assign/list_of.hpp>
 
 using namespace std;
 using namespace boost::assign;
@@ -34,10 +34,10 @@ TEST(VectorValues, basics)
 
   // insert
   VectorValues actual;
-  actual.insert(0, (Vec(1) << 1.0));
-  actual.insert(1, (Vec(2) << 2.0, 3.0));
-  actual.insert(5, (Vec(2) << 6.0, 7.0));
-  actual.insert(2, (Vec(2) << 4.0, 5.0));
+  actual.insert(0, (Vec(1) << 1));
+  actual.insert(1, (Vec(2) << 2, 3));
+  actual.insert(5, (Vec(2) << 6, 7));
+  actual.insert(2, (Vec(2) << 4, 5));
 
   // Check dimensions
   LONGS_EQUAL(4, actual.size());
@@ -56,12 +56,12 @@ TEST(VectorValues, basics)
   EXPECT(!actual.exists(6));
 
   // Check values
-  EXPECT(assert_equal((Vec(1) << 1.0), actual[0]));
-  EXPECT(assert_equal((Vec(2) << 2.0, 3.0), actual[1]));
-  EXPECT(assert_equal((Vec(2) << 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal((Vec(2) << 6.0, 7.0), actual[5]));
+  EXPECT(assert_equal((Vec(1) << 1), actual[0]));
+  EXPECT(assert_equal((Vec(2) << 2, 3), actual[1]));
+  EXPECT(assert_equal((Vec(2) << 4, 5), actual[2]));
+  EXPECT(assert_equal((Vec(2) << 6, 7), actual[5]));
   FastVector<Key> keys = list_of(0)(1)(2)(5);
-  EXPECT(assert_equal((Vec(7) << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.vector(keys)));
+  EXPECT(assert_equal((Vec(7) << 1, 2, 3, 4, 5, 6, 7), actual.vector(keys)));
 
   // Check exceptions
   CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
@@ -72,18 +72,18 @@ TEST(VectorValues, basics)
 TEST(VectorValues, combine)
 {
   VectorValues expected;
-  expected.insert(0, (Vec(1) << 1.0));
-  expected.insert(1, (Vec(2) << 2.0, 3.0));
-  expected.insert(5, (Vec(2) << 6.0, 7.0));
-  expected.insert(2, (Vec(2) << 4.0, 5.0));
+  expected.insert(0, (Vec(1) << 1));
+  expected.insert(1, (Vec(2) << 2, 3));
+  expected.insert(5, (Vec(2) << 6, 7));
+  expected.insert(2, (Vec(2) << 4, 5));
 
   VectorValues first;
-  first.insert(0, (Vec(1) << 1.0));
-  first.insert(1, (Vec(2) << 2.0, 3.0));
+  first.insert(0, (Vec(1) << 1));
+  first.insert(1, (Vec(2) << 2, 3));
 
   VectorValues second;
-  second.insert(5, (Vec(2) << 6.0, 7.0));
-  second.insert(2, (Vec(2) << 4.0, 5.0));
+  second.insert(5, (Vec(2) << 6, 7));
+  second.insert(2, (Vec(2) << 4, 5));
 
   VectorValues actual(first, second);
 
@@ -94,14 +94,14 @@ TEST(VectorValues, combine)
 TEST(VectorValues, subvector)
 {
   VectorValues init;
-  init.insert(10, (Vec(1) << 1.0));
-  init.insert(11, (Vec(2) << 2.0, 3.0));
-  init.insert(12, (Vec(2) << 4.0, 5.0));
-  init.insert(13, (Vec(2) << 6.0, 7.0));
+  init.insert(10, (Vec(1) << 1));
+  init.insert(11, (Vec(2) << 2, 3));
+  init.insert(12, (Vec(2) << 4, 5));
+  init.insert(13, (Vec(2) << 6, 7));
 
   std::vector<Key> keys;
   keys += 10, 12, 13;
-  Vector expSubVector = (Vec(5) << 1.0, 4.0, 5.0, 6.0, 7.0);
+  Vector expSubVector = (Vec(5) << 1, 4, 5, 6, 7);
   EXPECT(assert_equal(expSubVector, init.vector(keys)));
 }
 
@@ -109,16 +109,16 @@ TEST(VectorValues, subvector)
 TEST(VectorValues, LinearAlgebra)
 {
   VectorValues test1;
-  test1.insert(0, (Vec(1) << 1.0));
-  test1.insert(1, (Vec(2) << 2.0, 3.0));
-  test1.insert(5, (Vec(2) << 6.0, 7.0));
-  test1.insert(2, (Vec(2) << 4.0, 5.0));
+  test1.insert(0, (Vec(1) << 1));
+  test1.insert(1, (Vec(2) << 2, 3));
+  test1.insert(5, (Vec(2) << 6, 7));
+  test1.insert(2, (Vec(2) << 4, 5));
 
   VectorValues test2;
-  test2.insert(0, (Vec(1) << 6.0));
-  test2.insert(1, (Vec(2) << 1.0, 6.0));
-  test2.insert(5, (Vec(2) << 4.0, 3.0));
-  test2.insert(2, (Vec(2) << 1.0, 8.0));
+  test2.insert(0, (Vec(1) << 6));
+  test2.insert(1, (Vec(2) << 1, 6));
+  test2.insert(5, (Vec(2) << 4, 3));
+  test2.insert(2, (Vec(2) << 1, 8));
 
   // Dot product
   double dotExpected = test1.vector().dot(test2.vector());
@@ -158,6 +158,30 @@ TEST(VectorValues, LinearAlgebra)
   EXPECT(assert_equal(scalExpected, scalActual.vector()));
   VectorValues scal2Actual = 5.0 * test1;
   EXPECT(assert_equal(scalExpected, scal2Actual.vector()));
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, convert)
+{
+  Vector x(7);
+  x << 1, 2, 3, 4, 5, 6, 7;
+
+  VectorValues expected;
+  expected.insert(0, (Vec(1) << 1));
+  expected.insert(1, (Vec(2) << 2, 3));
+  expected.insert(2, (Vec(2) << 4, 5));
+  expected.insert(5, (Vec(2) << 6, 7));
+
+  std::map<Key,size_t> dims;
+  dims.insert(make_pair(0,1));
+  dims.insert(make_pair(1,2));
+  dims.insert(make_pair(2,2));
+  dims.insert(make_pair(5,2));
+  VectorValues actual(x,dims);
+  EXPECT(assert_equal(expected, actual));
+
+  // Test other direction
+  EXPECT(assert_equal(x, actual.vector()));
 }
 
 /* ************************************************************************* */

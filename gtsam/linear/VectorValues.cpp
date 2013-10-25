@@ -38,10 +38,23 @@ namespace gtsam {
   VectorValues::VectorValues(const VectorValues& first, const VectorValues& second)
   {
     // Merge using predicate for comparing first of pair
-    std::merge(first.begin(), first.end(), second.begin(), second.end(), std::inserter(values_, values_.end()),
-      boost::bind(&std::less<Key>::operator(), std::less<Key>(), boost::bind(&KeyValuePair::first, _1), boost::bind(&KeyValuePair::first, _2)));
+    merge(first.begin(), first.end(), second.begin(), second.end(), inserter(values_, values_.end()),
+      boost::bind(&less<Key>::operator(), less<Key>(), boost::bind(&KeyValuePair::first, _1), boost::bind(&KeyValuePair::first, _2)));
     if(size() != first.size() + second.size())
-      throw std::invalid_argument("Requested to merge two VectorValues that have one or more variables in common.");
+      throw invalid_argument("Requested to merge two VectorValues that have one or more variables in common.");
+  }
+
+  /* ************************************************************************* */
+  VectorValues::VectorValues(const Vector& x, const map<Key, size_t>& dims) {
+    typedef pair<Key, size_t> Pair;
+    size_t j = 0;
+    BOOST_FOREACH(const Pair& v, dims) {
+      Key key;
+      size_t n;
+      boost::tie(key, n) = v;
+      values_.insert(make_pair(key, sub(x, j, j + n)));
+      j += n;
+    }
   }
 
   /* ************************************************************************* */
@@ -64,7 +77,7 @@ namespace gtsam {
       hint = values_.insert(hint, key_value);
       if(values_.size() > oldSize) {
         values_.unsafe_erase(hint);
-        throw std::out_of_range("Requested to update a VectorValues with another VectorValues that contains keys not present in the first.");
+        throw out_of_range("Requested to update a VectorValues with another VectorValues that contains keys not present in the first.");
       } else {
         hint->second = key_value.second;
       }
@@ -77,7 +90,7 @@ namespace gtsam {
     size_t originalSize = size();
     values_.insert(values.begin(), values.end());
     if(size() != originalSize + values.size())
-      throw std::invalid_argument("Requested to insert a VectorValues into another VectorValues that already contains one or more of its keys.");
+      throw invalid_argument("Requested to insert a VectorValues into another VectorValues that already contains one or more of its keys.");
   }
 
   /* ************************************************************************* */
@@ -88,11 +101,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void VectorValues::print(const std::string& str, const KeyFormatter& formatter) const {
-    std::cout << str << ": " << size() << " elements\n";
+  void VectorValues::print(const string& str, const KeyFormatter& formatter) const {
+    cout << str << ": " << size() << " elements\n";
     BOOST_FOREACH(const value_type& key_value, *this)
-      std::cout << "  " << formatter(key_value.first) << ": " << key_value.second.transpose() << "\n";
-    std::cout.flush();
+      cout << "  " << formatter(key_value.first) << ": " << key_value.second.transpose() << "\n";
+    cout.flush();
   }
 
   /* ************************************************************************* */
@@ -169,7 +182,7 @@ namespace gtsam {
   bool VectorValues::hasSameStructure(const VectorValues other) const
   {
     return accumulate(combine(*this, other)
-      | transformed(internal::structureCompareOp), true, std::logical_and<bool>());
+      | transformed(internal::structureCompareOp), true, logical_and<bool>());
   }
 
   /* ************************************************************************* */
@@ -182,9 +195,9 @@ namespace gtsam {
     using boost::adaptors::map_values;
     BOOST_FOREACH(const ValuePair& values, boost::combine(*this, v)) {
       assert_throw(values.get<0>().first == values.get<1>().first,
-        std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
+        invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
       assert_throw(values.get<0>().second.size() == values.get<1>().second.size(),
-        std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
+        invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
       result += values.get<0>().second.dot(values.get<1>().second);
     }
     return result;

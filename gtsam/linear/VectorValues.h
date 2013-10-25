@@ -21,6 +21,7 @@
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/global_includes.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -121,6 +122,9 @@ namespace gtsam {
     /** Create from a pair of iterators over pair<Key,Vector>. */
     template<typename ITERATOR>
     VectorValues(ITERATOR first, ITERATOR last) : values_(first, last) {}
+
+    /** Constructor from Vector. */
+    VectorValues(const Vector& c, const std::map<Key,size_t>& dims);
 
     /** Create a VectorValues with the same structure as \c other, but filled with zeros. */
     static VectorValues Zero(const VectorValues& other);
