@@ -1773,13 +1773,6 @@ bool checkConvergence(double relativeErrorTreshold,
     double absoluteErrorTreshold, double errorThreshold,
     double currentError, double newError);
 
-//#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
-//virtual class NonlinearSolverParams : gtsam::NonlinearOptimizerParams {
-//  NonlinearSolverParams();
-//
-//
-//};
-
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 virtual class GaussNewtonParams : gtsam::NonlinearOptimizerParams {
   GaussNewtonParams();
