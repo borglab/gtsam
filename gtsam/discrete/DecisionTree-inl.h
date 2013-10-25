@@ -421,7 +421,7 @@ namespace gtsam {
   DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
       const std::string& table) {
 
-    // Convert std::string to doubles
+    // Convert std::string to values of type Y
     std::vector<Y> ys;
     std::istringstream iss(table);
     copy(std::istream_iterator<Y>(iss), std::istream_iterator<Y>(),
