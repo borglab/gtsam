@@ -92,7 +92,7 @@ private:
 
 public:
 
-  /** See NonlinearSolverParams::linearSolverType */
+  /** See NonlinearOptimizerParams::linearSolverType */
 
   enum LinearSolverType {
     MULTIFRONTAL_CHOLESKY,

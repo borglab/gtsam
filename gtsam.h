@@ -1740,6 +1740,7 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
 //*************************************************************************
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 virtual class NonlinearOptimizerParams {
   NonlinearOptimizerParams();
   void print(string s) const;
@@ -1755,15 +1756,6 @@ virtual class NonlinearOptimizerParams {
   void setAbsoluteErrorTol(double value);
   void setErrorTol(double value);
   void setVerbosity(string s);
-};
-
-bool checkConvergence(double relativeErrorTreshold,
-    double absoluteErrorTreshold, double errorThreshold,
-    double currentError, double newError);
-
-#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
-virtual class NonlinearSolverParams : gtsam::NonlinearOptimizerParams {
-  NonlinearSolverParams();
 
   string getLinearSolverType() const;
   
@@ -1777,13 +1769,24 @@ virtual class NonlinearSolverParams : gtsam::NonlinearOptimizerParams {
   bool isCG() const;
 };
 
+bool checkConvergence(double relativeErrorTreshold,
+    double absoluteErrorTreshold, double errorThreshold,
+    double currentError, double newError);
+
+//#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
+//virtual class NonlinearSolverParams : gtsam::NonlinearOptimizerParams {
+//  NonlinearSolverParams();
+//
+//
+//};
+
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-virtual class GaussNewtonParams : gtsam::NonlinearSolverParams {
+virtual class GaussNewtonParams : gtsam::NonlinearOptimizerParams {
   GaussNewtonParams();
 };
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-virtual class LevenbergMarquardtParams : gtsam::NonlinearSolverParams {
+virtual class LevenbergMarquardtParams : gtsam::NonlinearOptimizerParams {
   LevenbergMarquardtParams();
 
   double getlambdaInitial() const;
@@ -1798,7 +1801,7 @@ virtual class LevenbergMarquardtParams : gtsam::NonlinearSolverParams {
 };
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
-virtual class DoglegParams : gtsam::NonlinearSolverParams {
+virtual class DoglegParams : gtsam::NonlinearOptimizerParams {
   DoglegParams();
 
   double getDeltaInitial() const;
