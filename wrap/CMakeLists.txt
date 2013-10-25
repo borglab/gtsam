@@ -2,6 +2,12 @@
 
 set(WRAP_BOOST_LIBRARIES ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_REGEX_LIBRARY})
 
+# Allow for disabling serialization to handle errors related to Clang's linker
+option(GTSAM_WRAP_SERIALIZATION "If enabled, allows for wrapped objects to be saved via boost.serialization" ON)
+if (NOT GTSAM_WRAP_SERIALIZATION)
+    add_definitions(-DWRAP_DISABLE_SERIALIZE)
+endif()  
+
 # Build the executable itself
 file(GLOB wrap_srcs "*.cpp")
 file(GLOB wrap_headers "*.h")
