@@ -43,12 +43,11 @@ DSFBase::DSFBase(const boost::shared_ptr<V>& v_in) {
 
 /* ************************************************************************* */
 size_t DSFBase::findSet(size_t key) const {
-  size_t parent = (*v_)[key];
   // follow parent pointers until we reach set representative
-  while (parent != key) {
-    key = parent;
-    parent = (*v_)[key];
-  }
+  size_t parent = (*v_)[key];
+  if (parent != key)
+    parent = findSet(parent); // recursive call
+  (*v_)[key] = parent; // path compression
   return parent;
 }
 
