@@ -26,33 +26,55 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-DSFVector::DSFVector(const size_t numNodes) {
+DSFBase::DSFBase(const size_t numNodes) {
   v_ = boost::make_shared < V > (numNodes);
   int index = 0;
-  keys_.reserve(numNodes);
-  for (V::iterator it = v_->begin(); it != v_->end(); it++, index++) {
+  for (V::iterator it = v_->begin(); it != v_->end(); it++, index++)
     *it = index;
-    keys_.push_back(index);
+}
+
+/* ************************************************************************* */
+DSFBase::DSFBase(const boost::shared_ptr<V>& v_in) {
+  v_ = v_in;
+  int index = 0;
+  for (V::iterator it = v_->begin(); it != v_->end(); it++, index++)
+    *it = index;
+}
+
+/* ************************************************************************* */
+size_t DSFBase::findSet(size_t key) const {
+  size_t parent = (*v_)[key];
+  // follow parent pointers until we reach set representative
+  while (parent != key) {
+    key = parent;
+    parent = (*v_)[key];
   }
+  return parent;
+}
+
+/* ************************************************************************* */
+void DSFBase::makeUnionInPlace(const size_t& i1, const size_t& i2) {
+  (*v_)[findSet(i2)] = findSet(i1);
+}
+
+/* ************************************************************************* */
+DSFVector::DSFVector(const size_t numNodes) :
+    DSFBase(numNodes) {
+  keys_.reserve(numNodes);
+  for (size_t index = 0; index < numNodes; index++)
+    keys_.push_back(index);
 }
 
 /* ************************************************************************* */
 DSFVector::DSFVector(const std::vector<size_t>& keys) :
-    keys_(keys) {
-  size_t maxKey = *(std::max_element(keys.begin(), keys.end()));
-  v_ = boost::make_shared < V > (maxKey + 1);
-  BOOST_FOREACH(const size_t key, keys)
-    (*v_)[key] = key;
+    DSFBase(1 + *std::max_element(keys.begin(), keys.end())), keys_(keys) {
 }
 
 /* ************************************************************************* */
 DSFVector::DSFVector(const boost::shared_ptr<V>& v_in,
     const std::vector<size_t>& keys) :
-    keys_(keys) {
+    DSFBase(v_in), keys_(keys) {
   assert(*(std::max_element(keys.begin(), keys.end()))<v_in->size());
-  v_ = v_in;
-  BOOST_FOREACH(const size_t key, keys)
-    (*v_)[key] = key;
 }
 
 /* ************************************************************************* */
@@ -92,11 +114,6 @@ std::map<size_t, std::vector<size_t> > DSFVector::arrays() const {
   BOOST_FOREACH(size_t key,keys_)
     arrays[findSet(key)].push_back(key);
   return arrays;
-}
-
-/* ************************************************************************* */
-void DSFVector::makeUnionInPlace(const size_t& i1, const size_t& i2) {
-  (*v_)[findSet(i2)] = findSet(i1);
 }
 
 } // namespace  gtsam

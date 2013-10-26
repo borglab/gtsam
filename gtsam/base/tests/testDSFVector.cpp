@@ -186,9 +186,6 @@ TEST(DSFVector, mergePairwiseMatches) {
   BOOST_FOREACH(const Match& m, matches)
     dsf.makeUnionInPlace(m.first,m.second);
 
-  cout << endl;
-  map<size_t, set<size_t> > sets1 = dsf.sets();
-
   // Each point is now associated with a set, represented by one of its members
   size_t rep1 = 1, rep2 = 4;
   EXPECT_LONGS_EQUAL(rep1,dsf.findSet(1));
@@ -199,16 +196,13 @@ TEST(DSFVector, mergePairwiseMatches) {
   EXPECT_LONGS_EQUAL(rep2,dsf.findSet(6));
 
   // Check that we have two connected components, 1,2,3 and 4,5,6
-  cout << endl;
   map<size_t, set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(2, sets.size());
   set<size_t> expected1; expected1 += 1,2,3;
   set<size_t> actual1 = sets[rep1];
-  BOOST_FOREACH(size_t i, actual1) cout << i << " ";
   EXPECT(expected1 == actual1);
   set<size_t> expected2; expected2 += 4,5,6;
   set<size_t> actual2 = sets[rep2];
-  BOOST_FOREACH(size_t i, actual2) cout << i << " ";
   EXPECT(expected2 == actual2);
 }
 

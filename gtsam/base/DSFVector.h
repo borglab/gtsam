@@ -28,16 +28,39 @@ namespace gtsam {
 
 /**
  * A fast implementation of disjoint set forests that uses vector as underly data structure.
+ * This is the absolute minimal DSF data structure, and only allows size_t keys
  * @addtogroup base
  */
-class GTSAM_EXPORT DSFVector {
+class GTSAM_EXPORT DSFBase {
 
 public:
   typedef std::vector<size_t> V; ///< Vector of ints
 
 private:
   boost::shared_ptr<V> v_;///< Stores parent pointers, representative iff v[i]==i
-  std::vector<size_t> keys_;///< stores keys
+
+public:
+  /// constructor that allocate new memory, allows for keys 0...numNodes-1
+  DSFBase(const size_t numNodes);
+
+  /// constructor that uses the existing memory
+  DSFBase(const boost::shared_ptr<V>& v_in);
+
+  /// find the label of the set in which {key} lives
+  size_t findSet(size_t key) const;
+
+  /// the in-place version of makeUnion
+  void makeUnionInPlace(const size_t& i1, const size_t& i2);
+};
+
+/**
+ * A fast implementation of disjoint set forests that uses vector as underly data structure.
+ * @addtogroup base
+ */
+class GTSAM_EXPORT DSFVector: public DSFBase {
+
+private:
+  std::vector<size_t> keys_;///< stores keys to support more expensive operations
 
 public:
   /// constructor that allocate new memory, uses sequential keys 0...numNodes-1
@@ -48,17 +71,6 @@ public:
 
   /// constructor that uses the existing memory
   DSFVector(const boost::shared_ptr<V>& v_in, const std::vector<size_t>& keys);
-
-  /// find the label of the set in which {key} lives
-  inline size_t findSet(size_t key) const {
-    size_t parent = (*v_)[key];
-    // follow parent pointers until we reach set representative
-    while (parent != key) {
-      key = parent;
-      parent = (*v_)[key];
-    }
-    return parent;
-  }
 
   /// find whether there is one and only one occurrence for the given {label}
   bool isSingleton(const size_t& label) const;
@@ -71,9 +83,6 @@ public:
 
   /// return all sets, i.e. a partition of all elements
   std::map<size_t, std::vector<size_t> > arrays() const;
-
-  /// the in-place version of makeUnion
-  void makeUnionInPlace(const size_t& i1, const size_t& i2);
 };
 
 }
