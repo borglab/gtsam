@@ -33,13 +33,13 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(DSFVectorVector, find) {
+TEST(DSFBase, find) {
   DSFBase dsf(3);
   EXPECT(dsf.find(0) != dsf.find(2));
 }
 
 /* ************************************************************************* */
-TEST(DSFVectorVector, merge) {
+TEST(DSFBase, merge) {
   DSFBase dsf(3);
   dsf.merge(0,2);
   EXPECT(dsf.find(0) == dsf.find(2));

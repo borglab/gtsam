@@ -18,12 +18,12 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/BTree.h>
+#include <boost/foreach.hpp>
 #include <iostream>
 #include <list>
 #include <set>
 #include <map>
-#include <boost/foreach.hpp>
-#include <gtsam_unstable/base/BTree.h>
 
 namespace gtsam {
 
@@ -40,11 +40,10 @@ namespace gtsam {
   class DSF : protected BTree<KEY, KEY> {
 
   public:
-    typedef KEY Label; // label can be different from key, but for now they are same
     typedef DSF<KEY> Self;
     typedef std::set<KEY> Set;
-    typedef BTree<KEY, Label> Tree;
-    typedef std::pair<KEY, Label> KeyLabel;
+    typedef BTree<KEY, KEY> Tree;
+    typedef std::pair<KEY, KEY> KeyLabel;
 
     // constructor
     DSF() : Tree() { }
@@ -62,7 +61,7 @@ namespace gtsam {
     Self makeSet(const KEY& key) const { if (this->mem(key)) return *this; else return this->add(key, key); }
 
     // find the label of the set in which {key} lives
-    Label findSet(const KEY& key) const {
+    KEY findSet(const KEY& key) const {
       KEY parent = this->find(key);
       return parent == key ? key : findSet(parent); }
 
@@ -111,23 +110,23 @@ namespace gtsam {
     size_t size() const { return Tree::size(); }
 
     // return all sets, i.e. a partition of all elements
-    std::map<Label, Set> sets() const {
-      std::map<Label, Set> sets;
+    std::map<KEY, Set> sets() const {
+      std::map<KEY, Set> sets;
       BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
         sets[findSet(pair.second)].insert(pair.first);
       return sets;
     }
 
     // return a partition of the given elements {keys}
-    std::map<Label, Set> partition(const std::list<KEY>& keys) const {
-      std::map<Label, Set> partitions;
+    std::map<KEY, Set> partition(const std::list<KEY>& keys) const {
+      std::map<KEY, Set> partitions;
       BOOST_FOREACH(const KEY& key, keys)
         partitions[findSet(key)].insert(key);
       return partitions;
     }
 
     // get the nodes in the tree with the given label
-    Set set(const Label& label) const {
+    Set set(const KEY& label) const {
       Set set;
       BOOST_FOREACH(const KeyLabel& pair, (Tree)*this) {
         if (pair.second == label || findSet(pair.second) == label)
