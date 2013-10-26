@@ -458,9 +458,6 @@ void Module::generateIncludes(FileWriter& file) const {
   file.oss << "\n"; 
 } 
 
-/* ************************************************************************* */ 
-void Module::python_code(const string& toolboxPath, const string& headerPath) const {
-}
  
 /* ************************************************************************* */ 
 void Module::matlab_code(const string& toolboxPath, const string& headerPath) const { 
