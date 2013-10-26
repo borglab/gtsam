@@ -45,7 +45,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues::VectorValues(const Vector& x, const map<Key, size_t>& dims) {
+  VectorValues::VectorValues(const Vector& x, const Dims& dims) {
     typedef pair<Key, size_t> Pair;
     size_t j = 0;
     BOOST_FOREACH(const Pair& v, dims) {
@@ -159,6 +159,22 @@ namespace gtsam {
       pos += v->size();
     }
 
+    return result;
+  }
+
+  /* ************************************************************************* */
+  Vector VectorValues::vector(const Dims& keys) const
+  {
+    // Count dimensions
+    DenseIndex totalDim = 0;
+    BOOST_FOREACH(size_t dim, keys | map_values)
+      totalDim += dim;
+    Vector result(totalDim);
+    size_t j = 0;
+    BOOST_FOREACH(const Dims::value_type& it, keys) {
+      result.segment(j,it.second) = at(it.first);
+      j += it.second;
+    }
     return result;
   }
 

@@ -185,6 +185,34 @@ TEST(VectorValues, convert)
   // Test other direction, note vector() is not guaranteed to give right result
   FastVector<Key> keys = list_of(0)(1)(2)(5);
   EXPECT(assert_equal(x, actual.vector(keys)));
+
+  // Test version with dims argument
+  EXPECT(assert_equal(x, actual.vector(dims)));
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, vector_sub)
+{
+  VectorValues vv;
+  vv.insert(0, (Vec(1) << 1));
+  vv.insert(1, (Vec(2) << 2, 3));
+  vv.insert(2, (Vec(2) << 4, 5));
+  vv.insert(5, (Vec(2) << 6, 7));
+  vv.insert(7, (Vec(2) << 8, 9));
+
+  std::map<Key,size_t> dims;
+  dims.insert(make_pair(0,1));
+  dims.insert(make_pair(5,2));
+
+  Vector expected(3);
+  expected << 1, 6, 7;
+
+  // Test FastVector version
+  FastVector<Key> keys = list_of(0)(5);
+  EXPECT(assert_equal(expected, vv.vector(keys)));
+
+  // Test version with dims argument
+  EXPECT(assert_equal(expected, vv.vector(dims)));
 }
 
 /* ************************************************************************* */

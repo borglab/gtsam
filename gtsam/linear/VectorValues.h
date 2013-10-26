@@ -100,6 +100,7 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Values::value_type value_type; ///< Typedef to pair<Key, Vector>, a key-value pair
     typedef value_type KeyValuePair; ///< Typedef to pair<Key, Vector>, a key-value pair
+    typedef std::map<Key,size_t> Dims;
 
     /// @name Standard Constructors
     /// @{
@@ -124,7 +125,7 @@ namespace gtsam {
     VectorValues(ITERATOR first, ITERATOR last) : values_(first, last) {}
 
     /** Constructor from Vector. */
-    VectorValues(const Vector& c, const std::map<Key,size_t>& dims);
+    VectorValues(const Vector& c, const Dims& dims);
 
     /** Create a VectorValues with the same structure as \c other, but filled with zeros. */
     static VectorValues Zero(const VectorValues& other);
@@ -249,6 +250,9 @@ namespace gtsam {
 
     /** Access a vector that is a subset of relevant keys. */
     Vector vector(const FastVector<Key>& keys) const;
+
+    /** Access a vector that is a subset of relevant keys, dims version. */
+    Vector vector(const Dims& dims) const;
 
     /** Swap the data in this VectorValues with another. */
     void swap(VectorValues& other);
