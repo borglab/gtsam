@@ -66,8 +66,8 @@ namespace gtsam {
       KEY parent = this->find(key);
       return parent == key ? key : findSet(parent); }
 
-    // return a new DSF where x and y are in the same set. Kai: the caml implementation is not const, and I followed
-    Self makeUnion(const KEY& key1, const KEY& key2) { return this->add(findSet_(key2), findSet_(key1));  }
+    // return a ***new*** DSF where x and y are in the same set. No path compression
+    Self makeUnion(const KEY& key1, const KEY& key2) const { return this->add(findSet(key2), findSet(key1));  }
 
     // the in-place version of makeUnion
     void makeUnionInPlace(const KEY& key1, const KEY& key2) { *this = this->add(findSet_(key2), findSet_(key1)); }
