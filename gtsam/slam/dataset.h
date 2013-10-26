@@ -115,7 +115,7 @@ struct SfM_data
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-bool readBundler(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_data &data);
 
 /**
  * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and stores the data into a
@@ -124,7 +124,7 @@ bool readBundler(const std::string& filename, SfM_data &data);
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-bool readBAL(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool readBAL(const std::string& filename, SfM_data &data);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
@@ -133,7 +133,7 @@ bool readBAL(const std::string& filename, SfM_data &data);
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-bool writeBAL(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
@@ -144,7 +144,7 @@ bool writeBAL(const std::string& filename, SfM_data &data);
  * @param values structure where the graph values are stored
  * @return true if the parsing was successful, false otherwise
  */
-bool writeBALfromValues(const std::string& filename, SfM_data &data, Values& values);
+GTSAM_EXPORT bool writeBALfromValues(const std::string& filename, SfM_data &data, Values& values);
 
 /**
  * @brief This function converts an openGL camera pose to an GTSAM camera pose
@@ -154,7 +154,7 @@ bool writeBALfromValues(const std::string& filename, SfM_data &data, Values& val
  * @param tz z component of the translation in openGL
  * @return Pose3 in GTSAM format
  */
-Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz);
+GTSAM_EXPORT Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz);
 
 /**
  * @brief This function converts a GTSAM camera pose to an openGL camera pose
@@ -164,13 +164,13 @@ Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz);
  * @param tz z component of the translation in GTSAM
  * @return Pose3 in openGL format
  */
-Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz);
+GTSAM_EXPORT Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz);
 
 /**
  * @brief This function converts a GTSAM camera pose to an openGL camera pose
  * @param PoseGTSAM pose in GTSAM format
  * @return Pose3 in openGL format
  */
-Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
+GTSAM_EXPORT Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
 
 } // namespace gtsam
