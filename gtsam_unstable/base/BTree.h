@@ -128,6 +128,12 @@ namespace gtsam {
       root_(new Node(l, keyValue, r)) {
     }
 
+    /** assignment operator */
+    BTree & operator= (const BTree & other) {
+      root_ = other.root_;
+      return *this;
+    }
+
     /** Check whether tree is empty */
     bool empty() const {
       return !root_;
