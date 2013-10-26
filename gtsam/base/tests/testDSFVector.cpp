@@ -61,6 +61,29 @@ TEST(DSFBase, makeUnion3) {
 }
 
 /* ************************************************************************* */
+TEST(DSFBase, mergePairwiseMatches) {
+
+  // Create some "matches"
+  typedef pair<size_t,size_t> Match;
+  vector<Match> matches;
+  matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
+
+  // Merge matches
+  DSFBase dsf(7); // We allow for keys 0..6
+  BOOST_FOREACH(const Match& m, matches)
+    dsf.merge(m.first,m.second);
+
+  // Each point is now associated with a set, represented by one of its members
+  size_t rep1 = 1, rep2 = 4;
+  EXPECT_LONGS_EQUAL(rep1,dsf.find(1));
+  EXPECT_LONGS_EQUAL(rep1,dsf.find(2));
+  EXPECT_LONGS_EQUAL(rep1,dsf.find(3));
+  EXPECT_LONGS_EQUAL(rep2,dsf.find(4));
+  EXPECT_LONGS_EQUAL(rep2,dsf.find(5));
+  EXPECT_LONGS_EQUAL(rep2,dsf.find(6));
+}
+
+/* ************************************************************************* */
 TEST(DSFVector, merge2) {
   boost::shared_ptr<DSFBase::V> v = boost::make_shared<DSFBase::V>(5);
   std::vector<size_t> keys; keys += 1, 3;
@@ -186,23 +209,14 @@ TEST(DSFVector, mergePairwiseMatches) {
   BOOST_FOREACH(const Match& m, matches)
     dsf.merge(m.first,m.second);
 
-  // Each point is now associated with a set, represented by one of its members
-  size_t rep1 = 1, rep2 = 4;
-  EXPECT_LONGS_EQUAL(rep1,dsf.find(1));
-  EXPECT_LONGS_EQUAL(rep1,dsf.find(2));
-  EXPECT_LONGS_EQUAL(rep1,dsf.find(3));
-  EXPECT_LONGS_EQUAL(rep2,dsf.find(4));
-  EXPECT_LONGS_EQUAL(rep2,dsf.find(5));
-  EXPECT_LONGS_EQUAL(rep2,dsf.find(6));
-
   // Check that we have two connected components, 1,2,3 and 4,5,6
   map<size_t, set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(2, sets.size());
   set<size_t> expected1; expected1 += 1,2,3;
-  set<size_t> actual1 = sets[rep1];
+  set<size_t> actual1 = sets[dsf.find(2)];
   EXPECT(expected1 == actual1);
   set<size_t> expected2; expected2 += 4,5,6;
-  set<size_t> actual2 = sets[rep2];
+  set<size_t> actual2 = sets[dsf.find(5)];
   EXPECT(expected2 == actual2);
 }
 
