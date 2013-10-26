@@ -20,12 +20,12 @@
 
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp>
-//#include <boost/assign/std/set.hpp>
+#include <boost/assign/std/set.hpp>
 using namespace boost::assign;
 //
 #include <CppUnitLite/TestHarness.h>
 //
-//#include <iostream>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -115,7 +115,34 @@ TEST(DSFMap, mergePairwiseMatches2) {
   EXPECT(dsf.find(m25)==m14);
   EXPECT(dsf.find(m26)==m14);
 }
+/* ************************************************************************* */
+TEST(DSFMap, sets){
+  // Create some "matches"
+  typedef pair<size_t,size_t> Match;
+  typedef pair<size_t, set<size_t> > key_pair;
+  list<Match> matches;
+  matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
 
+  // Merge matches
+  DSFMap<size_t> dsf;
+  BOOST_FOREACH(const Match& m, matches)
+    dsf.merge(m.first,m.second);
+
+  map<size_t, set<size_t> > sets = dsf.sets();
+  set<size_t> s1, s2;
+  s1 += 1,2,3;
+  s2 += 4,5,6;
+  
+  /*BOOST_FOREACH(key_pair st, sets){
+    cout << "Set " << st.first << " :{";
+    BOOST_FOREACH(const size_t s, st.second)
+      cout << s << ", ";
+    cout << "}" << endl;
+  }*/
+    
+  EXPECT(s1 == sets[1]);
+  EXPECT(s2 == sets[4]);
+}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

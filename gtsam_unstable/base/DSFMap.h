@@ -19,6 +19,9 @@
 #pragma once
 
 #include <map>
+#include <set>
+#include <boost/foreach.hpp>
+
 
 namespace gtsam {
 
@@ -32,6 +35,8 @@ class DSFMap {
 
   /// We store the forest in an STL map
   typedef std::map<KEY, KEY> Map;
+  typedef std::set<KEY> Set;
+  typedef std::pair<KEY, KEY> key_pair;
   mutable Map parent_;
 
 public:
@@ -58,6 +63,14 @@ public:
   /// Merge two sets
   void merge(const KEY& i1, const KEY& i2) {
     parent_[find(i2)] = find(i1);
+  }
+
+  /// return all sets, i.e. a partition of all elements
+  std::map<KEY, Set> sets() const {
+    std::map<KEY, Set> sets;
+    BOOST_FOREACH(const key_pair& pair, parent_)
+      sets[find(pair.second)].insert(pair.first);
+    return sets;
   }
 
 };

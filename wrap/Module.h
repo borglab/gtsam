@@ -61,6 +61,11 @@ struct Module {
        const std::string& path,
        const std::string& headerPath) const; // FIXME: headerPath not actually used?
 
+    /// Python code generation:
+  void python_code(
+       const std::string& path,
+       const std::string& headerPath) const; // FIXME: headerPath not actually used?
+
   void finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const;
 
   void generateIncludes(FileWriter& file) const;

@@ -20,7 +20,7 @@
 #include "Module.h" 
 #include "FileWriter.h" 
 #include "TypeAttributesTable.h" 
-#include "utilities.h" 
+#include "utilities.h"
 
 //#define BOOST_SPIRIT_DEBUG
 #include "spirit_actors.h" 
@@ -457,6 +457,10 @@ void Module::generateIncludes(FileWriter& file) const {
     file.oss << "#include <" << *it << ">" << endl; 
   file.oss << "\n"; 
 } 
+
+/* ************************************************************************* */ 
+void Module::python_code(const string& toolboxPath, const string& headerPath) const {
+}
  
 /* ************************************************************************* */ 
 void Module::matlab_code(const string& toolboxPath, const string& headerPath) const { 
