@@ -33,114 +33,114 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(DSFVectorVector, findSet) {
-  DSFVector dsf(3);
-  EXPECT(dsf.findSet(0) != dsf.findSet(2));
+TEST(DSFVectorVector, find) {
+  DSFBase dsf(3);
+  EXPECT(dsf.find(0) != dsf.find(2));
 }
 
 /* ************************************************************************* */
-TEST(DSFVectorVector, makeUnionInPlace) {
-  DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,2);
-  EXPECT(dsf.findSet(0) == dsf.findSet(2));
+TEST(DSFVectorVector, merge) {
+  DSFBase dsf(3);
+  dsf.merge(0,2);
+  EXPECT(dsf.find(0) == dsf.find(2));
 }
 
 /* ************************************************************************* */
-TEST(DSFVectorVector, makeUnionInPlace2) {
-  boost::shared_ptr<DSFVector::V> v = boost::make_shared<DSFVector::V>(5);
+TEST(DSFBase, makeUnion2) {
+  DSFBase dsf(3);
+  dsf.merge(2,0);
+  EXPECT(dsf.find(0) == dsf.find(2));
+}
+
+/* ************************************************************************* */
+TEST(DSFBase, makeUnion3) {
+  DSFBase dsf(3);
+  dsf.merge(0,1);
+  dsf.merge(1,2);
+  EXPECT(dsf.find(0) == dsf.find(2));
+}
+
+/* ************************************************************************* */
+TEST(DSFVector, merge2) {
+  boost::shared_ptr<DSFBase::V> v = boost::make_shared<DSFBase::V>(5);
   std::vector<size_t> keys; keys += 1, 3;
   DSFVector dsf(v, keys);
-  dsf.makeUnionInPlace(1,3);
-  EXPECT(dsf.findSet(1) == dsf.findSet(3));
-}
-
-/* ************************************************************************* */
-TEST(DSFVector, makeUnion2) {
-  DSFVector dsf(3);
-  dsf.makeUnionInPlace(2,0);
-  EXPECT(dsf.findSet(0) == dsf.findSet(2));
-}
-
-/* ************************************************************************* */
-TEST(DSFVector, makeUnion3) {
-  DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,1);
-  dsf.makeUnionInPlace(1,2);
-  EXPECT(dsf.findSet(0) == dsf.findSet(2));
+  dsf.merge(1,3);
+  EXPECT(dsf.find(1) == dsf.find(3));
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, sets) {
   DSFVector dsf(2);
-  dsf.makeUnionInPlace(0,1);
+  dsf.merge(0,1);
   map<size_t, set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(1, sets.size());
 
   set<size_t> expected; expected += 0, 1;
-  EXPECT(expected == sets[dsf.findSet(0)]);
+  EXPECT(expected == sets[dsf.find(0)]);
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, arrays) {
   DSFVector dsf(2);
-  dsf.makeUnionInPlace(0,1);
+  dsf.merge(0,1);
   map<size_t, vector<size_t> > arrays = dsf.arrays();
   LONGS_EQUAL(1, arrays.size());
 
   vector<size_t> expected; expected += 0, 1;
-  EXPECT(expected == arrays[dsf.findSet(0)]);
+  EXPECT(expected == arrays[dsf.find(0)]);
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, sets2) {
   DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,1);
-  dsf.makeUnionInPlace(1,2);
+  dsf.merge(0,1);
+  dsf.merge(1,2);
   map<size_t, set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(1, sets.size());
 
   set<size_t> expected; expected += 0, 1, 2;
-  EXPECT(expected == sets[dsf.findSet(0)]);
+  EXPECT(expected == sets[dsf.find(0)]);
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, arrays2) {
   DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,1);
-  dsf.makeUnionInPlace(1,2);
+  dsf.merge(0,1);
+  dsf.merge(1,2);
   map<size_t, vector<size_t> > arrays = dsf.arrays();
   LONGS_EQUAL(1, arrays.size());
 
   vector<size_t> expected; expected += 0, 1, 2;
-  EXPECT(expected == arrays[dsf.findSet(0)]);
+  EXPECT(expected == arrays[dsf.find(0)]);
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, sets3) {
   DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,1);
+  dsf.merge(0,1);
   map<size_t, set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(2, sets.size());
 
   set<size_t> expected; expected += 0, 1;
-  EXPECT(expected == sets[dsf.findSet(0)]);
+  EXPECT(expected == sets[dsf.find(0)]);
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, arrays3) {
   DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,1);
+  dsf.merge(0,1);
   map<size_t, vector<size_t> > arrays = dsf.arrays();
   LONGS_EQUAL(2, arrays.size());
 
   vector<size_t> expected; expected += 0, 1;
-  EXPECT(expected == arrays[dsf.findSet(0)]);
+  EXPECT(expected == arrays[dsf.find(0)]);
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, set) {
   DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,1);
+  dsf.merge(0,1);
   set<size_t> set = dsf.set(0);
   LONGS_EQUAL(2, set.size());
 
@@ -151,8 +151,8 @@ TEST(DSFVector, set) {
 /* ************************************************************************* */
 TEST(DSFVector, set2) {
   DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,1);
-  dsf.makeUnionInPlace(1,2);
+  dsf.merge(0,1);
+  dsf.merge(1,2);
   set<size_t> set = dsf.set(0);
   LONGS_EQUAL(3, set.size());
 
@@ -163,7 +163,7 @@ TEST(DSFVector, set2) {
 /* ************************************************************************* */
 TEST(DSFVector, isSingleton) {
   DSFVector dsf(3);
-  dsf.makeUnionInPlace(0,1);
+  dsf.merge(0,1);
   EXPECT(!dsf.isSingleton(0));
   EXPECT(!dsf.isSingleton(1));
   EXPECT( dsf.isSingleton(2));
@@ -184,16 +184,16 @@ TEST(DSFVector, mergePairwiseMatches) {
   // Merge matches
   DSFVector dsf(keys);
   BOOST_FOREACH(const Match& m, matches)
-    dsf.makeUnionInPlace(m.first,m.second);
+    dsf.merge(m.first,m.second);
 
   // Each point is now associated with a set, represented by one of its members
   size_t rep1 = 1, rep2 = 4;
-  EXPECT_LONGS_EQUAL(rep1,dsf.findSet(1));
-  EXPECT_LONGS_EQUAL(rep1,dsf.findSet(2));
-  EXPECT_LONGS_EQUAL(rep1,dsf.findSet(3));
-  EXPECT_LONGS_EQUAL(rep2,dsf.findSet(4));
-  EXPECT_LONGS_EQUAL(rep2,dsf.findSet(5));
-  EXPECT_LONGS_EQUAL(rep2,dsf.findSet(6));
+  EXPECT_LONGS_EQUAL(rep1,dsf.find(1));
+  EXPECT_LONGS_EQUAL(rep1,dsf.find(2));
+  EXPECT_LONGS_EQUAL(rep1,dsf.find(3));
+  EXPECT_LONGS_EQUAL(rep2,dsf.find(4));
+  EXPECT_LONGS_EQUAL(rep2,dsf.find(5));
+  EXPECT_LONGS_EQUAL(rep2,dsf.find(6));
 
   // Check that we have two connected components, 1,2,3 and 4,5,6
   map<size_t, set<size_t> > sets = dsf.sets();

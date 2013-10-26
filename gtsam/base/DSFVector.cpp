@@ -42,18 +42,18 @@ DSFBase::DSFBase(const boost::shared_ptr<V>& v_in) {
 }
 
 /* ************************************************************************* */
-size_t DSFBase::findSet(size_t key) const {
+size_t DSFBase::find(size_t key) const {
   // follow parent pointers until we reach set representative
   size_t parent = (*v_)[key];
   if (parent != key)
-    parent = findSet(parent); // recursive call
+    parent = find(parent); // recursive call
   (*v_)[key] = parent; // path compression
   return parent;
 }
 
 /* ************************************************************************* */
-void DSFBase::makeUnionInPlace(const size_t& i1, const size_t& i2) {
-  (*v_)[findSet(i2)] = findSet(i1);
+void DSFBase::merge(const size_t& i1, const size_t& i2) {
+  (*v_)[find(i2)] = find(i1);
 }
 
 /* ************************************************************************* */
@@ -80,7 +80,7 @@ DSFVector::DSFVector(const boost::shared_ptr<V>& v_in,
 bool DSFVector::isSingleton(const size_t& label) const {
   bool result = false;
   BOOST_FOREACH(size_t key,keys_) {
-    if (findSet(key) == label) {
+    if (find(key) == label) {
       if (!result) // find the first occurrence
         result = true;
       else
@@ -94,7 +94,7 @@ bool DSFVector::isSingleton(const size_t& label) const {
 std::set<size_t> DSFVector::set(const size_t& label) const {
   std::set < size_t > set;
   BOOST_FOREACH(size_t key,keys_)
-    if (findSet(key) == label)
+    if (find(key) == label)
       set.insert(key);
   return set;
 }
@@ -103,7 +103,7 @@ std::set<size_t> DSFVector::set(const size_t& label) const {
 std::map<size_t, std::set<size_t> > DSFVector::sets() const {
   std::map<size_t, std::set<size_t> > sets;
   BOOST_FOREACH(size_t key,keys_)
-    sets[findSet(key)].insert(key);
+    sets[find(key)].insert(key);
   return sets;
 }
 
@@ -111,7 +111,7 @@ std::map<size_t, std::set<size_t> > DSFVector::sets() const {
 std::map<size_t, std::vector<size_t> > DSFVector::arrays() const {
   std::map<size_t, std::vector<size_t> > arrays;
   BOOST_FOREACH(size_t key,keys_)
-    arrays[findSet(key)].push_back(key);
+    arrays[find(key)].push_back(key);
   return arrays;
 }
 
