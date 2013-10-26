@@ -22,9 +22,11 @@
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/range/adaptor/map.hpp>
 
 using namespace std;
 using namespace boost::assign;
+using boost::adaptors::map_keys;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -180,8 +182,9 @@ TEST(VectorValues, convert)
   VectorValues actual(x,dims);
   EXPECT(assert_equal(expected, actual));
 
-  // Test other direction
-  EXPECT(assert_equal(x, actual.vector()));
+  // Test other direction, note vector() is not guaranteed to give right result
+  FastVector<Key> keys = list_of(0)(1)(2)(5);
+  EXPECT(assert_equal(x, actual.vector(keys)));
 }
 
 /* ************************************************************************* */
