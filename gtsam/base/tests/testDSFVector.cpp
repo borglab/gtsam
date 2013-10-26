@@ -16,15 +16,18 @@
  * @brief unit tests for DSF
  */
 
-#include <iostream>
+#include <gtsam/base/DSFVector.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
-#include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/base/DSFVector.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -32,14 +35,14 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST(DSFVectorVector, findSet) {
   DSFVector dsf(3);
-  CHECK(dsf.findSet(0) != dsf.findSet(2));
+  EXPECT(dsf.findSet(0) != dsf.findSet(2));
 }
 
 /* ************************************************************************* */
 TEST(DSFVectorVector, makeUnionInPlace) {
   DSFVector dsf(3);
   dsf.makeUnionInPlace(0,2);
-  CHECK(dsf.findSet(0) == dsf.findSet(2));
+  EXPECT(dsf.findSet(0) == dsf.findSet(2));
 }
 
 /* ************************************************************************* */
@@ -48,14 +51,14 @@ TEST(DSFVectorVector, makeUnionInPlace2) {
   std::vector<size_t> keys; keys += 1, 3;
   DSFVector dsf(v, keys);
   dsf.makeUnionInPlace(1,3);
-  CHECK(dsf.findSet(1) == dsf.findSet(3));
+  EXPECT(dsf.findSet(1) == dsf.findSet(3));
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, makeUnion2) {
   DSFVector dsf(3);
   dsf.makeUnionInPlace(2,0);
-  CHECK(dsf.findSet(0) == dsf.findSet(2));
+  EXPECT(dsf.findSet(0) == dsf.findSet(2));
 }
 
 /* ************************************************************************* */
@@ -63,7 +66,7 @@ TEST(DSFVector, makeUnion3) {
   DSFVector dsf(3);
   dsf.makeUnionInPlace(0,1);
   dsf.makeUnionInPlace(1,2);
-  CHECK(dsf.findSet(0) == dsf.findSet(2));
+  EXPECT(dsf.findSet(0) == dsf.findSet(2));
 }
 
 /* ************************************************************************* */
@@ -74,7 +77,7 @@ TEST(DSFVector, sets) {
   LONGS_EQUAL(1, sets.size());
 
   set<size_t> expected; expected += 0, 1;
-  CHECK(expected == sets[dsf.findSet(0)]);
+  EXPECT(expected == sets[dsf.findSet(0)]);
 }
 
 /* ************************************************************************* */
@@ -85,7 +88,7 @@ TEST(DSFVector, arrays) {
   LONGS_EQUAL(1, arrays.size());
 
   vector<size_t> expected; expected += 0, 1;
-  CHECK(expected == arrays[dsf.findSet(0)]);
+  EXPECT(expected == arrays[dsf.findSet(0)]);
 }
 
 /* ************************************************************************* */
@@ -97,7 +100,7 @@ TEST(DSFVector, sets2) {
   LONGS_EQUAL(1, sets.size());
 
   set<size_t> expected; expected += 0, 1, 2;
-  CHECK(expected == sets[dsf.findSet(0)]);
+  EXPECT(expected == sets[dsf.findSet(0)]);
 }
 
 /* ************************************************************************* */
@@ -109,7 +112,7 @@ TEST(DSFVector, arrays2) {
   LONGS_EQUAL(1, arrays.size());
 
   vector<size_t> expected; expected += 0, 1, 2;
-  CHECK(expected == arrays[dsf.findSet(0)]);
+  EXPECT(expected == arrays[dsf.findSet(0)]);
 }
 
 /* ************************************************************************* */
@@ -120,7 +123,7 @@ TEST(DSFVector, sets3) {
   LONGS_EQUAL(2, sets.size());
 
   set<size_t> expected; expected += 0, 1;
-  CHECK(expected == sets[dsf.findSet(0)]);
+  EXPECT(expected == sets[dsf.findSet(0)]);
 }
 
 /* ************************************************************************* */
@@ -131,7 +134,7 @@ TEST(DSFVector, arrays3) {
   LONGS_EQUAL(2, arrays.size());
 
   vector<size_t> expected; expected += 0, 1;
-  CHECK(expected == arrays[dsf.findSet(0)]);
+  EXPECT(expected == arrays[dsf.findSet(0)]);
 }
 
 /* ************************************************************************* */
@@ -142,7 +145,7 @@ TEST(DSFVector, set) {
   LONGS_EQUAL(2, set.size());
 
   std::set<size_t> expected; expected += 0, 1;
-  CHECK(expected == set);
+  EXPECT(expected == set);
 }
 
 /* ************************************************************************* */
@@ -154,17 +157,61 @@ TEST(DSFVector, set2) {
   LONGS_EQUAL(3, set.size());
 
   std::set<size_t> expected; expected += 0, 1, 2;
-  CHECK(expected == set);
+  EXPECT(expected == set);
 }
 
 /* ************************************************************************* */
 TEST(DSFVector, isSingleton) {
   DSFVector dsf(3);
   dsf.makeUnionInPlace(0,1);
-  CHECK(!dsf.isSingleton(0));
-  CHECK(!dsf.isSingleton(1));
-  CHECK( dsf.isSingleton(2));
+  EXPECT(!dsf.isSingleton(0));
+  EXPECT(!dsf.isSingleton(1));
+  EXPECT( dsf.isSingleton(2));
 }
+
+/* ************************************************************************* */
+TEST(DSFVector, mergePairwiseMatches) {
+
+  // Create some measurements
+  vector<size_t> keys;
+  keys += 1,2,3,4,5,6;
+
+  // Create some "matches"
+  typedef pair<size_t,size_t> Match;
+  vector<Match> matches;
+  matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
+
+  // Merge matches
+  DSFVector dsf(keys);
+  BOOST_FOREACH(const Match& m, matches)
+    dsf.makeUnionInPlace(m.first,m.second);
+
+  cout << endl;
+  map<size_t, set<size_t> > sets1 = dsf.sets();
+
+  // Each point is now associated with a set, represented by one of its members
+  size_t rep1 = 1, rep2 = 4;
+  EXPECT_LONGS_EQUAL(rep1,dsf.findSet(1));
+  EXPECT_LONGS_EQUAL(rep1,dsf.findSet(2));
+  EXPECT_LONGS_EQUAL(rep1,dsf.findSet(3));
+  EXPECT_LONGS_EQUAL(rep2,dsf.findSet(4));
+  EXPECT_LONGS_EQUAL(rep2,dsf.findSet(5));
+  EXPECT_LONGS_EQUAL(rep2,dsf.findSet(6));
+
+  // Check that we have two connected components, 1,2,3 and 4,5,6
+  cout << endl;
+  map<size_t, set<size_t> > sets = dsf.sets();
+  LONGS_EQUAL(2, sets.size());
+  set<size_t> expected1; expected1 += 1,2,3;
+  set<size_t> actual1 = sets[rep1];
+  BOOST_FOREACH(size_t i, actual1) cout << i << " ";
+  EXPECT(expected1 == actual1);
+  set<size_t> expected2; expected2 += 4,5,6;
+  set<size_t> actual2 = sets[rep2];
+  BOOST_FOREACH(size_t i, actual2) cout << i << " ";
+  EXPECT(expected2 == actual2);
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
