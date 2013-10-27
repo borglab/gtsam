@@ -142,8 +142,6 @@ TEST(GaussianFactorGraph, matrices) {
 }
 
 /* ************************************************************************* */
-static Key X1=2,X2=0,L1=1;
-
 static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   GaussianFactorGraph fg;
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
@@ -224,7 +222,7 @@ TEST(GaussianFactorGraph, eliminate_empty )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, multiplyHessian )
+TEST( GaussianFactorGraph, multiplyHessianAdd )
 {
   GaussianFactorGraph A = createSimpleGaussianFactorGraph();
 
@@ -238,8 +236,13 @@ TEST( GaussianFactorGraph, multiplyHessian )
   expected.insert(1, (Vec(2) << 0, 0));
   expected.insert(2, (Vec(2) <<  950, 1050));
 
-  VectorValues actual = A.multiplyHessian(x);
+  VectorValues actual;
+  A.multiplyHessianAdd(1.0, x, actual);
   EXPECT(assert_equal(expected, actual));
+
+  // now, do it with non-zero y
+  A.multiplyHessianAdd(1.0, x, actual);
+  EXPECT(assert_equal(2*expected, actual));
 }
 
 /* ************************************************************************* */
@@ -251,7 +254,7 @@ static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, multiplyHessian2 )
+TEST( GaussianFactorGraph, multiplyHessianAdd2 )
 {
   GaussianFactorGraph A = createGaussianFactorGraphWithHessianFactor();
 
@@ -266,8 +269,13 @@ TEST( GaussianFactorGraph, multiplyHessian2 )
   expected.insert(1, (Vec(2) << 2900, 2900));
   expected.insert(2, (Vec(2) <<  6750, 6850));
 
-  VectorValues actual = A.multiplyHessian(x);
+  VectorValues actual;
+  A.multiplyHessianAdd(1.0, x, actual);
   EXPECT(assert_equal(expected, actual));
+
+  // now, do it with non-zero y
+  A.multiplyHessianAdd(1.0, x, actual);
+  EXPECT(assert_equal(2*expected, actual));
 }
 
 

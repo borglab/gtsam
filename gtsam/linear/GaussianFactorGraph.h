@@ -269,8 +269,9 @@ namespace gtsam {
     ///** return A*x */
     Errors operator*(const VectorValues& x) const;
 
-    ///** return A'A*x */
-    VectorValues multiplyHessian(const VectorValues& x) const;
+    ///** y += alpha*A'A*x */
+    void multiplyHessianAdd(double alpha, const VectorValues& x,
+        VectorValues& y) const;
 
     ///** In-place version e <- A*x that overwrites e. */
     void multiplyInPlace(const VectorValues& x, Errors& e) const;

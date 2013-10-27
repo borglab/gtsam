@@ -247,11 +247,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues GaussianFactorGraph::multiplyHessian(const VectorValues& x) const {
-    VectorValues y;
+  void GaussianFactorGraph::multiplyHessianAdd(double alpha,
+      const VectorValues& x, VectorValues& y) const {
     BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
-      f->multiplyHessianAdd(1.0,x,y);
-    return y;
+      f->multiplyHessianAdd(alpha, x, y);
   }
 
   /* ************************************************************************* */
