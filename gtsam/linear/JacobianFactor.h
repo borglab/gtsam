@@ -301,12 +301,14 @@ namespace gtsam {
      */
     boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals);
 
-  private:
+  protected:
 
     /// Internal function to fill blocks and set dimensions
     template<typename TERMS>
     void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
     
+  private:
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
