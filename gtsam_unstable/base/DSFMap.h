@@ -35,45 +35,41 @@ protected:
 
 	/// We store the forest in an STL map, but parents are done with pointers
 	struct Entry {
-		KEY key_;
+		typedef std::map<KEY, Entry> Map;
+		typename Map::iterator parent_;
+		Entry() {}
 		size_t rank_;
-		Entry* parent_;
-		Entry(KEY key) :
-				key_(key), rank_(0), parent_(0) {
-		}
-		void makeRoot() {
-			parent_ = this;
-		}
 	};
 
-	typedef std::map<KEY, Entry> Map;
-	mutable Map entries_;
+	typedef typename Entry::Map::iterator iterator;
+	mutable typename Entry::Map entries_;
 
 	/// Given key, find iterator to initial entry
-	typename Map::iterator find__(const KEY& key) const {
-		typename Map::iterator it = entries_.find(key);
+	iterator find__(const KEY& key) const {
+		static const Entry empty;
+		iterator it = entries_.find(key);
 		// if key does not exist, create and return itself
 		if (it == entries_.end()) {
-			it = entries_.insert(it, std::make_pair(key, Entry(key)));
-			it->second.makeRoot();
+			it = entries_.insert(std::make_pair(key, empty)).first;
+			it->second.parent_ = it;
+			it->second.rank_ = 0;
 		}
 		return it;
 	}
 
 	/// Given iterator to initial entry, find the root Entry
-	Entry* find_(const typename Map::iterator& it) const {
+	iterator find_(const iterator& it) const {
 		// follow parent pointers until we reach set representative
-		Entry* parent = it->second.parent_;
-		while (parent->parent_ != parent)
-			parent = parent->parent_; // not yet, recurse!
-		it->second.parent_ = parent; // path compression
+		iterator& parent = it->second.parent_;
+		if (parent != it)
+			parent = find_(parent); // not yet, recurse!
 		return parent;
 	}
 
 	/// Given key, find the root Entry
-	Entry* find_(const KEY& key) const {
-		typename Map::iterator it = find__(key);
-		return find_(it);
+	inline iterator find_(const KEY& key) const {
+		iterator initial = find__(key);
+		return find_(initial);
 	}
 
 public:
@@ -85,38 +81,38 @@ public:
 	}
 
 	/// Given key, find the representative key for the set in which it lives
-	KEY find(const KEY& key) const {
-		Entry* root = find_(key);
-		return root->key_;
+	inline KEY find(const KEY& key) const {
+		iterator root = find_(key);
+		return root->first;
 	}
 
 	/// Merge two sets
 	void merge(const KEY& x, const KEY& y) {
 
 		// straight from http://en.wikipedia.org/wiki/Disjoint-set_data_structure
-		Entry* xRoot = find_(x);
-		Entry* yRoot = find_(y);
+		iterator xRoot = find_(x);
+		iterator yRoot = find_(y);
 		if (xRoot == yRoot)
 			return;
 
 		// Merge sets
-		if (xRoot->rank_ < yRoot->rank_)
-			xRoot->parent_ = yRoot;
-		else if (xRoot->rank_ > yRoot->rank_)
-			yRoot->parent_ = xRoot;
+		if (xRoot->second.rank_ < yRoot->second.rank_)
+			xRoot->second.parent_ = yRoot;
+		else if (xRoot->second.rank_ > yRoot->second.rank_)
+			yRoot->second.parent_ = xRoot;
 		else {
-			yRoot->parent_ = xRoot;
-			xRoot->rank_ = xRoot->rank_ + 1;
+			yRoot->second.parent_ = xRoot;
+			xRoot->second.rank_ = xRoot->second.rank_ + 1;
 		}
 	}
 
 	/// return all sets, i.e. a partition of all elements
 	std::map<KEY, Set> sets() const {
 		std::map<KEY, Set> sets;
-		typename Map::iterator it = entries_.begin();
-		for(;it!=entries_.end();it++) {
-			Entry* root = find_(it);
-			sets[root->key_].insert(it->first);
+		iterator it = entries_.begin();
+		for (; it != entries_.end(); it++) {
+			iterator root = find_(it);
+			sets[root->first].insert(it->first);
 		}
 		return sets;
 	}
