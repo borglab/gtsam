@@ -82,17 +82,7 @@ int main(int argc, char* argv[]) {
     {
       // DSFMap version
       timer tim;
-      DSFMapIt<size_t> dsf;
-      BOOST_FOREACH(const Match& m, matches)
-        dsf.merge(m.first, m.second);
-      os << tim.elapsed() << ",";
-      cout << format("DSFMap: %1% s") % tim.elapsed() << endl;
-    }
-
-    {
-      // DSFMap2 version
-      timer tim;
-      DSFMap2<size_t> dsf;
+      DSFMap<size_t> dsf;
       BOOST_FOREACH(const Match& m, matches)
         dsf.merge(m.first, m.second);
       os << tim.elapsed() << endl;

@@ -32,7 +32,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 TEST(DSFMap, find) {
-  DSFMapIt<size_t> dsf;
+  DSFMap<size_t> dsf;
   EXPECT(dsf.find(0)==0);
   EXPECT(dsf.find(2)==2);
   EXPECT(dsf.find(0)==0);
@@ -42,21 +42,21 @@ TEST(DSFMap, find) {
 
 /* ************************************************************************* */
 TEST(DSFMap, merge) {
-  DSFMapIt<size_t> dsf;
+  DSFMap<size_t> dsf;
   dsf.merge(0,2);
   EXPECT(dsf.find(0) == dsf.find(2));
 }
 
 /* ************************************************************************* */
 TEST(DSFMap, merge2) {
-  DSFMapIt<size_t> dsf;
+  DSFMap<size_t> dsf;
   dsf.merge(2,0);
   EXPECT(dsf.find(0) == dsf.find(2));
 }
 
 /* ************************************************************************* */
 TEST(DSFMap, merge3) {
-  DSFMapIt<size_t> dsf;
+  DSFMap<size_t> dsf;
   dsf.merge(0,1);
   dsf.merge(1,2);
   EXPECT(dsf.find(0) == dsf.find(2));
@@ -71,7 +71,7 @@ TEST(DSFMap, mergePairwiseMatches) {
   matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
 
   // Merge matches
-  DSFMapIt<size_t> dsf;
+  DSFMap<size_t> dsf;
   BOOST_FOREACH(const Match& m, matches)
     dsf.merge(m.first,m.second);
 
@@ -101,7 +101,7 @@ TEST(DSFMap, mergePairwiseMatches2) {
   matches += Match(m11,m22), Match(m12,m23), Match(m14,m25), Match(m14,m26);
 
   // Merge matches
-  DSFMapIt<Measurement> dsf;
+  DSFMap<Measurement> dsf;
   BOOST_FOREACH(const Match& m, matches)
     dsf.merge(m.first,m.second);
 
