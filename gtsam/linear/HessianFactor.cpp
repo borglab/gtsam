@@ -454,7 +454,7 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
       DenseIndex slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
       for(DenseIndex j1=0; j1<=j2; ++j1) { // Vertical block of Hessian
         DenseIndex slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
-        DenseIndex off0 = updateBlocks.offset(0);
+        updateBlocks.offset(0);
         if(slot2 > slot1)
           info_(slot1, slot2).noalias() += updateBlocks(j1).transpose() * updateBlocks(j2);
         else if(slot1 > slot2)
