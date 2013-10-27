@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
 
   // loop over number of images
   vector<size_t> ms;
-  ms += 10, 20, 30, 40, 50, 100, 200, 300, 400, 500;
+  ms += 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000;
   BOOST_FOREACH(size_t m,ms) {
     // We use volatile here to make these appear to the optimizing compiler as
     // if their values are only known at run-time.
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     {
       // DSFMap version
       timer tim;
-      DSFMap<size_t> dsf;
+      DSFMapIt<size_t> dsf;
       BOOST_FOREACH(const Match& m, matches)
         dsf.merge(m.first, m.second);
       os << tim.elapsed() << ",";
@@ -90,6 +90,16 @@ int main(int argc, char* argv[]) {
     }
 
     {
+      // DSFMap2 version
+      timer tim;
+      DSFMap2<size_t> dsf;
+      BOOST_FOREACH(const Match& m, matches)
+        dsf.merge(m.first, m.second);
+      os << tim.elapsed() << endl;
+      cout << format("DSFMap: %1% s") % tim.elapsed() << endl;
+    }
+
+    if (false) {
       // DSF version, functional
       timer tim;
       DSF<size_t> dsf;

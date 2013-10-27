@@ -22,9 +22,9 @@
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>
 using namespace boost::assign;
-//
+
 #include <CppUnitLite/TestHarness.h>
-//
+
 #include <iostream>
 
 using namespace std;
@@ -32,7 +32,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 TEST(DSFMap, find) {
-  DSFMap<size_t> dsf;
+  DSFMapIt<size_t> dsf;
   EXPECT(dsf.find(0)==0);
   EXPECT(dsf.find(2)==2);
   EXPECT(dsf.find(0)==0);
@@ -42,20 +42,21 @@ TEST(DSFMap, find) {
 
 /* ************************************************************************* */
 TEST(DSFMap, merge) {
-  DSFMap<size_t> dsf;
+  DSFMapIt<size_t> dsf;
   dsf.merge(0,2);
   EXPECT(dsf.find(0) == dsf.find(2));
 }
+
 /* ************************************************************************* */
 TEST(DSFMap, merge2) {
-  DSFMap<size_t> dsf;
+  DSFMapIt<size_t> dsf;
   dsf.merge(2,0);
   EXPECT(dsf.find(0) == dsf.find(2));
 }
 
 /* ************************************************************************* */
 TEST(DSFMap, merge3) {
-  DSFMap<size_t> dsf;
+  DSFMapIt<size_t> dsf;
   dsf.merge(0,1);
   dsf.merge(1,2);
   EXPECT(dsf.find(0) == dsf.find(2));
@@ -70,16 +71,14 @@ TEST(DSFMap, mergePairwiseMatches) {
   matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
 
   // Merge matches
-  DSFMap<size_t> dsf;
+  DSFMapIt<size_t> dsf;
   BOOST_FOREACH(const Match& m, matches)
     dsf.merge(m.first,m.second);
 
   // Each point is now associated with a set, represented by one of its members
-  size_t rep1 = 1, rep2 = 4;
-  EXPECT_LONGS_EQUAL(rep1,dsf.find(1));
+  size_t rep1 = dsf.find(1), rep2 = dsf.find(4);
   EXPECT_LONGS_EQUAL(rep1,dsf.find(2));
   EXPECT_LONGS_EQUAL(rep1,dsf.find(3));
-  EXPECT_LONGS_EQUAL(rep2,dsf.find(4));
   EXPECT_LONGS_EQUAL(rep2,dsf.find(5));
   EXPECT_LONGS_EQUAL(rep2,dsf.find(6));
 }
@@ -102,19 +101,17 @@ TEST(DSFMap, mergePairwiseMatches2) {
   matches += Match(m11,m22), Match(m12,m23), Match(m14,m25), Match(m14,m26);
 
   // Merge matches
-  DSFMap<Measurement> dsf;
+  DSFMapIt<Measurement> dsf;
   BOOST_FOREACH(const Match& m, matches)
     dsf.merge(m.first,m.second);
 
   // Check that sets are merged correctly
-  EXPECT(dsf.find(m11)==m11);
-  EXPECT(dsf.find(m12)==m12);
-  EXPECT(dsf.find(m14)==m14);
-  EXPECT(dsf.find(m22)==m11);
-  EXPECT(dsf.find(m23)==m12);
-  EXPECT(dsf.find(m25)==m14);
-  EXPECT(dsf.find(m26)==m14);
+  EXPECT(dsf.find(m22)==dsf.find(m11));
+  EXPECT(dsf.find(m23)==dsf.find(m12));
+  EXPECT(dsf.find(m25)==dsf.find(m14));
+  EXPECT(dsf.find(m26)==dsf.find(m14));
 }
+
 /* ************************************************************************* */
 TEST(DSFMap, sets){
   // Create some "matches"
@@ -143,6 +140,7 @@ TEST(DSFMap, sets){
   EXPECT(s1 == sets[1]);
   EXPECT(s2 == sets[4]);
 }
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
