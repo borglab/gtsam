@@ -20,6 +20,7 @@
 
 #include <map>
 #include <set>
+#include <cstdlib>        // Provides size_t
 
 namespace gtsam {
 
@@ -37,8 +38,9 @@ protected:
 	struct Entry {
 		typedef std::map<KEY, Entry> Map;
 		typename Map::iterator parent_;
-		Entry() {}
 		size_t rank_;
+		Entry() {}
+
 	};
 
 	typedef typename Entry::Map::iterator iterator;
