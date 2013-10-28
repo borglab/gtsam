@@ -129,12 +129,15 @@ namespace gtsam {
     GTSAM_EXPORT void ticInternal(size_t id, const char *label);
     GTSAM_EXPORT void tocInternal(size_t id, const char *label);
 
+    /**
+     * Timing Entry, arranged in a tree
+     */
     class GTSAM_EXPORT TimingOutline {
     protected:
       size_t myId_;
       size_t t_;
       size_t tWall_;
-      double t2_ ; /* cache the \sum t_i^2 */
+      double t2_ ; ///< cache the \sum t_i^2
       size_t tIt_;
       size_t tMax_;
       size_t tMin_;
@@ -142,9 +145,12 @@ namespace gtsam {
       size_t myOrder_;
       size_t lastChildOrder_;
       std::string label_;
-      boost::weak_ptr<TimingOutline> parent_;
+
+      // Tree structure
+      boost::weak_ptr<TimingOutline> parent_; ///< parent pointer
       typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildMap;
-      ChildMap children_;
+      ChildMap children_; ///< subtrees
+
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
       boost::timer::cpu_timer timer_;
 #else
@@ -155,12 +161,21 @@ namespace gtsam {
       tbb::tick_count tbbTimer_;
 #endif
       void add(size_t usecs, size_t usecsWall);
+
     public:
+      /// Constructor
       TimingOutline(const std::string& label, size_t myId);
-      size_t time() const;
+      size_t time() const; ///< time taken, including children
+      double secs() const { return double(time()) / 1000000.0;} ///< time taken, in seconds, including children
+      double self() const { return double(t_)     / 1000000.0;} ///< self time only, in seconds
+      double wall() const { return double(tWall_) / 1000000.0;} ///< wall time, in seconds
+      double min()  const { return double(tMin_)  / 1000000.0;} ///< min time, in seconds
+      double max()  const { return double(tMax_)  / 1000000.0;} ///< max time, in seconds
+      double mean() const { return self() / double(n_); } ///< mean self time, in seconds
       void print(const std::string& outline = "") const;
       void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
-      const boost::shared_ptr<TimingOutline>& child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
+      const boost::shared_ptr<TimingOutline>&
+        child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
       void ticInternal();
       void tocInternal();
       void finishedIteration();
@@ -168,6 +183,9 @@ namespace gtsam {
       GTSAM_EXPORT friend void tocInternal(size_t id, const char *label);
     }; // \TimingOutline
 
+    /**
+     * No documentation
+     */
     class AutoTicToc {
     private:
       size_t id_;
@@ -188,28 +206,45 @@ namespace gtsam {
 // static variable is created for each tic/toc statement storing an integer ID, but the
 // integer ID is only looked up by string once when the static variable is initialized
 // as the program starts.
+
+// tic
 #define gttic_(label) \
   static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::AutoTicToc label##_obj = ::gtsam::internal::AutoTicToc(label##_id_tic, #label)
+
+// toc
 #define gttoc_(label) \
   label##_obj.stop()
+
+// tic
 #define longtic_(label) \
   static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::ticInternal(label##_id_tic, #label)
+
+// toc
 #define longtoc_(label) \
   static const size_t label##_id_toc = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::tocInternal(label##_id_toc, #label)
+
+// indicate iteration is finished
 inline void tictoc_finishedIteration_() {
   internal::timingRoot->finishedIteration(); }
+
+// print
 inline void tictoc_print_() {
   internal::timingRoot->print(); }
-/* print mean and standard deviation */
+
+// print mean and standard deviation
 inline void tictoc_print2_() {
   internal::timingRoot->print2(); }
+
+// get a node by label and assign it to variable
 #define tictoc_getNode(variable, label) \
   static const size_t label##_id_getnode = ::gtsam::internal::getTicTocID(#label); \
   const boost::shared_ptr<const internal::TimingOutline> variable = \
   internal::timingCurrent.lock()->child(label##_id_getnode, #label, internal::timingCurrent);
+
+// reset
 inline void tictoc_reset_() {
   internal::timingRoot.reset(new internal::TimingOutline("Total", internal::getTicTocID("Total")));
   internal::timingCurrent = internal::timingRoot; }
