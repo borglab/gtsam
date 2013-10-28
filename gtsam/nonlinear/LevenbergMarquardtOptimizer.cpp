@@ -69,12 +69,17 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
 }
 
 /* ************************************************************************* */
+GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::linearize() const {
+  return graph_.linearize(state_.values);
+}
+
+/* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
   gttic(LM_iterate);
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values);
+  GaussianFactorGraph::shared_ptr linear = linearize();
 
   // Pull out parameters we'll use
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_.verbosity;

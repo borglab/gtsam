@@ -177,6 +177,9 @@ protected:
 
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
   LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph) const;
+
+  /** linearize, can  be overwritten */
+  virtual GaussianFactorGraph::shared_ptr linearize() const;
 };
 
 }
