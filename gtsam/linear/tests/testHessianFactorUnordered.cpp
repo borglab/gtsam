@@ -74,7 +74,7 @@ TEST(HessianFactor, ConversionConstructor)
 
   HessianFactor actual(jacobian);
 
-  VectorValues values = pair_list_of
+  VectorValues values = pair_list_of<Key, Vector>
     (0, (Vec(2) << 1.0, 2.0))
     (1, (Vec(4) << 3.0, 4.0, 5.0, 6.0));
 
@@ -89,7 +89,6 @@ TEST(HessianFactor, Constructor1)
   Matrix G = Matrix_(2,2, 3.0, 5.0, 0.0, 6.0);
   Vector g = (Vec(2) << -8.0, -9.0);
   double f = 10.0;
-
   HessianFactor factor(0, G, g, f);
 
   // extract underlying parts
@@ -98,7 +97,7 @@ TEST(HessianFactor, Constructor1)
   EXPECT(assert_equal(g, Vector(factor.linearTerm())));
   EXPECT_LONGS_EQUAL(1, (long)factor.size());
 
-  VectorValues dx = pair_list_of(0, (Vec(2) << 1.5, 2.5));
+  VectorValues dx = pair_list_of<Key, Vector>(0, (Vec(2) << 1.5, 2.5));
 
   // error 0.5*(f - 2*x'*g + x'*G*x)
   double expected = 80.375;
@@ -162,7 +161,7 @@ TEST(HessianFactor, Constructor2)
   EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
 
   // Check case when vector values is larger than factor
-  VectorValues dxLarge = pair_list_of
+  VectorValues dxLarge = pair_list_of<Key, Vector>
     (0, dx0)
     (1, dx1)
     (2, (Vec(2) << 0.1, 0.2));

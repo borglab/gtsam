@@ -62,7 +62,7 @@ TEST( GaussianBayesNet, optimize )
 {
   VectorValues actual = smallBayesNet.optimize();
 
-  VectorValues expected = map_list_of
+  VectorValues expected = map_list_of<Key, Vector>
     (_x_, (Vec(1) << 4.0))
     (_y_, (Vec(1) << 5.0));
 
@@ -77,12 +77,12 @@ TEST( GaussianBayesNet, optimize3 )
   // 5     1    5
   // NOTE: we are supplying a new RHS here
 
-  VectorValues expected = map_list_of
+  VectorValues expected = map_list_of<Key, Vector>
     (_x_, (Vec(1) << -1.0))
     (_y_, (Vec(1) <<  5.0));
 
   // Test different RHS version
-  VectorValues gx = map_list_of
+  VectorValues gx = map_list_of<Key, Vector>
     (_x_, (Vec(1) << 4.0))
     (_y_, (Vec(1) << 5.0));
   VectorValues actual = smallBayesNet.backSubstitute(gx);
@@ -96,10 +96,10 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
   // 2 = 1    2
   // 5   1 1  3
   VectorValues
-    x = map_list_of
+    x = map_list_of<Key, Vector>
       (_x_, (Vec(1) << 2.0))
       (_y_, (Vec(1) << 5.0)),
-    expected = map_list_of
+    expected = map_list_of<Key, Vector>
       (_x_, (Vec(1) << 2.0))
       (_y_, (Vec(1) << 3.0));
 

@@ -38,7 +38,7 @@ class DiscreteBayesTree;
 class DiscreteJunctionTree;
 
 /** Main elimination function for DiscreteFactorGraph */
-std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
+GTSAM_EXPORT std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
 EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
@@ -62,7 +62,7 @@ template<> struct EliminationTraits<DiscreteFactorGraph>
  * A Discrete Factor Graph is a factor graph where all factors are Discrete, i.e.
  *   Factor == DiscreteFactor
  */
-class DiscreteFactorGraph: public FactorGraph<DiscreteFactor>,
+class GTSAM_EXPORT DiscreteFactorGraph: public FactorGraph<DiscreteFactor>,
 public EliminateableFactorGraph<DiscreteFactorGraph> {
 public:
 
@@ -120,16 +120,16 @@ public:
   }
 
   /** Return the set of variables involved in the factors (set union) */
-  GTSAM_EXPORT FastSet<Index> keys() const;
+  FastSet<Index> keys() const;
 
   /** return product of all factors as a single factor */
-  GTSAM_EXPORT DecisionTreeFactor product() const;
+  DecisionTreeFactor product() const;
 
   /** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
-  GTSAM_EXPORT double operator()(const DiscreteFactor::Values & values) const;
+  double operator()(const DiscreteFactor::Values & values) const;
 
   /// print
-  GTSAM_EXPORT void print(const std::string& s = "DiscreteFactorGraph",
+  void print(const std::string& s = "DiscreteFactorGraph",
       const IndexFormatter& formatter =DefaultIndexFormatter) const;
 
   /** Solve the factor graph by performing variable elimination in COLAMD order using

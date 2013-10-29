@@ -157,7 +157,7 @@ Point3 triangulateDLT(const std::vector<Pose3>& poses,
  * @return Returns a Point3 on success, boost::none otherwise.
  */
 template<class CALIBRATION>
-GTSAM_UNSTABLE_EXPORT Point3 triangulatePoint3(const std::vector<Pose3>& poses,
+Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     const std::vector<Point2>& measurements, const CALIBRATION& K,
     double rank_tol = 1e-9, bool optimize = false) {
 

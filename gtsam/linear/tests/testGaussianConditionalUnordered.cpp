@@ -183,7 +183,7 @@ TEST( GaussianConditional, solve_simple )
   VectorValues actual = map_list_of
     (2, sx1); // parent
 
-  VectorValues expected = map_list_of
+  VectorValues expected = map_list_of<Key, Vector>
     (2, sx1)
     (1, (Vec(4) << -3.1,-3.4,-11.9,-13.2));
 
@@ -219,7 +219,7 @@ TEST( GaussianConditional, solve_multifrontal )
   VectorValues actual = map_list_of
     (10, sl1); // parent
 
-  VectorValues expected = map_list_of
+  VectorValues expected = map_list_of<Key, Vector>
     (1, (Vector)(Vec(2) << -3.1,-3.4))
     (2, (Vector)(Vec(2) << -11.9,-13.2))
     (10, sl1);
@@ -257,10 +257,10 @@ TEST( GaussianConditional, solveTranspose ) {
   // 5   1 1  3
 
   VectorValues
-    x = map_list_of
+    x = map_list_of<Key, Vector>
       (1, (Vec(1) << 2.))
       (2, (Vec(1) << 5.)),
-    y = map_list_of
+    y = map_list_of<Key, Vector>
       (1, (Vec(1) << 2.))
       (2, (Vec(1) << 3.));
 

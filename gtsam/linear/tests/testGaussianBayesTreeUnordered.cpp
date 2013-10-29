@@ -98,7 +98,7 @@ TEST( GaussianBayesTree, eliminate )
 /* ************************************************************************* */
 TEST( GaussianBayesTree, optimizeMultiFrontal )
 {
-  VectorValues expected = pair_list_of
+  VectorValues expected = pair_list_of<Key, Vector>
     (x1, (Vec(1) << 0.))
     (x2, (Vec(1) << 1.))
     (x3, (Vec(1) << 0.))
@@ -263,7 +263,7 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
   Vector expected = gradient * step;
 
   // Known steepest descent point from Bayes' net version
-  VectorValues expectedFromBN = pair_list_of
+  VectorValues expectedFromBN = pair_list_of<Key, Vector>
     (0, (Vec(2) << 0.000129034, 0.000688183))
     (1, (Vec(2) << 0.0109679, 0.0253767))
     (2, (Vec(2) << 0.0680441, 0.114496))

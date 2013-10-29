@@ -222,7 +222,7 @@ Values createValues() {
 /* ************************************************************************* */
 VectorValues createVectorValues() {
   using namespace impl;
-  VectorValues c = boost::assign::pair_list_of
+  VectorValues c = boost::assign::pair_list_of<Key, Vector>
     (_l1_, (Vec(2) << 0.0, -1.0))
     (_x1_, (Vec(2) << 0.0, 0.0))
     (_x2_, (Vec(2) << 1.5, 0.0));
@@ -483,7 +483,7 @@ GaussianFactorGraph createSingleConstraintGraph() {
 /* ************************************************************************* */
 VectorValues createSingleConstraintValues() {
   using namespace impl;
-  VectorValues config = boost::assign::pair_list_of
+  VectorValues config = boost::assign::pair_list_of<Key, Vector>
     (_x_, (Vec(2) << 1.0, -1.0))
     (_y_, (Vec(2) << 0.2, 0.1));
   return config;
@@ -547,7 +547,7 @@ GaussianFactorGraph createMultiConstraintGraph() {
 /* ************************************************************************* */
 VectorValues createMultiConstraintValues() {
   using namespace impl;
-  VectorValues config = boost::assign::pair_list_of
+  VectorValues config = boost::assign::pair_list_of<Key, Vector>
     (_x_, (Vec(2) << -2.0, 2.0))
     (_y_, (Vec(2) << -0.1, 0.4))
     (_z_, (Vec(2) <<-4.0, 5.0));

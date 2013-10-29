@@ -56,7 +56,7 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   /// @{
 
   /** print @param s optional string naming the object */
-  void print(const std::string& name="") const;
+  GTSAM_EXPORT void print(const std::string& name="") const;
 
   /** equality up to tolerance */
   inline bool equals(const LieMatrix& expected, double tol=1e-5) const {

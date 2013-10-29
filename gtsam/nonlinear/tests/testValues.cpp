@@ -170,7 +170,7 @@ TEST(Values, expmap_a)
   config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  VectorValues increment = pair_list_of
+  VectorValues increment = pair_list_of<Key, Vector>
     (key1, (Vec(3) << 1.0, 1.1, 1.2))
     (key2, (Vec(3) << 1.3, 1.4, 1.5));
 
@@ -188,8 +188,8 @@ TEST(Values, expmap_b)
   config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  VectorValues increment = pair_list_of
-    (key2, LieVector(3, 1.3, 1.4, 1.5));
+  VectorValues increment = pair_list_of<Key, Vector>
+    (key2, (Vec(3) << 1.3, 1.4, 1.5));
 
   Values expected;
   expected.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
@@ -241,7 +241,7 @@ TEST(Values, localCoordinates)
   valuesA.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
   valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-  VectorValues expDelta = pair_list_of
+  VectorValues expDelta = pair_list_of<Key, Vector>
     (key1, (Vec(3) << 0.1, 0.2, 0.3))
     (key2, (Vec(3) << 0.4, 0.5, 0.6));
 
