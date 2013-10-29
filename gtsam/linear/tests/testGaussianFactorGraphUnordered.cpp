@@ -173,6 +173,7 @@ TEST( GaussianFactorGraph, gradient )
   VectorValues zero = VectorValues::Zero(expected);
   VectorValues actual = fg.gradient(zero);
   EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, fg.gradientAtZero()));
 
   // Check the gradient at the solution (should be zero)
   VectorValues solution = fg.optimize();
@@ -222,9 +223,20 @@ TEST(GaussianFactorGraph, eliminate_empty )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, matrices2 )
+{
+  GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
+  Matrix A; Vector b; boost::tie(A,b) = gfg.jacobian();
+  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
+  EXPECT(assert_equal(A.transpose()*A, AtA));
+  EXPECT(assert_equal(A.transpose()*b, eta));
+}
+
+
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, multiplyHessianAdd )
 {
-  GaussianFactorGraph A = createSimpleGaussianFactorGraph();
+  GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
   VectorValues x = map_list_of
     (0, (Vec(2) << 1,2))
@@ -237,45 +249,69 @@ TEST( GaussianFactorGraph, multiplyHessianAdd )
   expected.insert(2, (Vec(2) <<  950, 1050));
 
   VectorValues actual;
-  A.multiplyHessianAdd(1.0, x, actual);
+  gfg.multiplyHessianAdd(1.0, x, actual);
   EXPECT(assert_equal(expected, actual));
 
   // now, do it with non-zero y
-  A.multiplyHessianAdd(1.0, x, actual);
+  gfg.multiplyHessianAdd(1.0, x, actual);
   EXPECT(assert_equal(2*expected, actual));
 }
 
 /* ************************************************************************* */
 static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
-  GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
-  fg += HessianFactor(1, 2, 100*ones(2,2), 200*ones(2,2), (Vec(2) << 0.0, 1.0),
+  GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
+  gfg += HessianFactor(1, 2, 100*ones(2,2), 200*ones(2,2), (Vec(2) << 0.0, 1.0),
                                            400*ones(2,2), (Vec(2) << 1.0, 1.0), 0.0);
-  return fg;
+  return gfg;
 }
 
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, multiplyHessianAdd2 )
 {
-  GaussianFactorGraph A = createGaussianFactorGraphWithHessianFactor();
+  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
 
   VectorValues x = map_list_of
     (0, (Vec(2) << 1,2))
     (1, (Vec(2) << 3,4))
     (2, (Vec(2) << 5,6));
 
-  // expected from matlab:         -450        -450        2900        2900        6750        6850
+  // expected from matlab: -450        -450        2900        2900        6750        6850
   VectorValues expected;
   expected.insert(0, (Vec(2) <<  -450, -450));
   expected.insert(1, (Vec(2) << 2900, 2900));
   expected.insert(2, (Vec(2) <<  6750, 6850));
 
   VectorValues actual;
-  A.multiplyHessianAdd(1.0, x, actual);
+  gfg.multiplyHessianAdd(1.0, x, actual);
   EXPECT(assert_equal(expected, actual));
 
   // now, do it with non-zero y
-  A.multiplyHessianAdd(1.0, x, actual);
+  gfg.multiplyHessianAdd(1.0, x, actual);
   EXPECT(assert_equal(2*expected, actual));
+}
+
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, matricesMixed )
+{
+  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
+  Matrix A; Vector b; boost::tie(A,b) = gfg.jacobian();
+  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
+  EXPECT(assert_equal(A.transpose()*A, AtA));
+  EXPECT(assert_equal(A.transpose()*b, eta));
+}
+
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, gradientAtZero )
+{
+  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
+  VectorValues expected;
+  VectorValues actual = gfg.gradientAtZero();
+  expected.insert(0, (Vec(2) << -25, 17.5));
+  expected.insert(1, (Vec(2) << 5, -12.5));
+  expected.insert(2, (Vec(2) << 30, 5));
+  EXPECT(assert_equal(expected, actual));
 }
 
 
