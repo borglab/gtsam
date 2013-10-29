@@ -433,13 +433,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void JacobianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
-      VectorValues& y) const {
-    Vector Ax = (*this)*x;
-    transposeMultiplyAdd(alpha,Ax,y);
-  }
-
-  /* ************************************************************************* */
   void JacobianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
       VectorValues& x) const
   {
@@ -451,8 +444,15 @@ namespace gtsam {
       pair<VectorValues::iterator, bool> xi = x.tryInsert(keys_[pos], Vector());
       if(xi.second)
         xi.first->second = Vector::Zero(getDim(begin() + pos));
-      gtsam::transposeMultiplyAdd(1.0, Ab_(pos), E, xi.first->second);
+      gtsam::transposeMultiplyAdd(Ab_(pos), E, xi.first->second);
     }
+  }
+
+  /* ************************************************************************* */
+  void JacobianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
+      VectorValues& y) const {
+    Vector Ax = (*this)*x;
+    transposeMultiplyAdd(alpha,Ax,y);
   }
 
   /* ************************************************************************* */
