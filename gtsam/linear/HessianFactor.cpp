@@ -501,7 +501,7 @@ GaussianFactor::shared_ptr HessianFactor::negate() const
 
 /* ************************************************************************* */
 void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
-    VectorValues& y) {
+    VectorValues& y) const {
 
   for (size_t i = 0; i < size(); ++i) {
     pair<VectorValues::iterator, bool> it = y.tryInsert(keys_[i], Vector());

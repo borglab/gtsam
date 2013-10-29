@@ -357,7 +357,7 @@ namespace gtsam {
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
     /** y += alpha * A'*A*x */
-    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y);
+    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
 
     /// eta for Hessian
     VectorValues gradientAtZero() const;
