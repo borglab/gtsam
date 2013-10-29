@@ -261,13 +261,8 @@ TEST( GaussianFactorGraph, multiplyHessianAdd )
 /* ************************************************************************* */
 static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
-#ifdef LUCA
-  gfg += HessianFactor(1, 2, 100*ones(2,2), 200*ones(2,2), (Vec(2) << 0.0, 1.0),
-                                            400*ones(2,2), (Vec(2) << 1.0, 1.0), 3.0);
-#else
   gfg += HessianFactor(1, 2, 100*eye(2,2), zeros(2,2),   (Vec(2) << 0.0, 1.0),
                                            400*eye(2,2), (Vec(2) << 1.0, 1.0), 3.0);
-#endif
   return gfg;
 }
 
@@ -282,16 +277,9 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
     (2, (Vec(2) << 5,6));
 
   VectorValues expected;
-#ifdef LUCA
-  // expected from matlab: -450        -450        2900        2900        6750        6850
-  expected.insert(0, (Vec(2) <<  -450, -450));
-  expected.insert(1, (Vec(2) << 2900, 2900));
-  expected.insert(2, (Vec(2) <<  6750, 6850));
-#else
   expected.insert(0, (Vec(2) <<  -450, -450));
   expected.insert(1, (Vec(2) <<  300, 400));
   expected.insert(2, (Vec(2) << 2950, 3450));
-#endif
 
   VectorValues actual;
   gfg.multiplyHessianAdd(1.0, x, actual);
