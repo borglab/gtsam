@@ -147,6 +147,12 @@ TEST(VectorValues, LinearAlgebra)
   sum2Actual += test1;
   EXPECT(assert_equal(sum2Expected, sum2Actual.vector()));
 
+  // Add to empty
+  VectorValues sumActual3;
+  sumActual3.addInPlace_(test1);
+  sumActual3.addInPlace_(test2);
+  EXPECT(assert_equal(sumExpected, sumActual3.vector()));
+
   // Subtraction
   Vector difExpected = test1.vector() - test2.vector();
   VectorValues difActual = test1 - test2;

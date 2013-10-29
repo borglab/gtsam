@@ -279,6 +279,19 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues& VectorValues::addInPlace_(const VectorValues& c)
+  {
+    for(const_iterator j2 = c.begin(); j2 != c.end(); ++j2) {
+      pair<VectorValues::iterator, bool> xi = tryInsert(j2->first, Vector());
+      if(xi.second)
+        xi.first->second = j2->second;
+      else
+        xi.first->second += j2->second;
+    }
+    return *this;
+  }
+
+  /* ************************************************************************* */
   VectorValues VectorValues::operator-(const VectorValues& c) const
   {
     if(this->size() != c.size())

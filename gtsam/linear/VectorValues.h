@@ -291,6 +291,9 @@ namespace gtsam {
      * same structure (checked when NDEBUG is not defined). */
     VectorValues& addInPlace(const VectorValues& c);
 
+    /** Element-wise addition in-place, but allows for empty slots in *this. Slower */
+    VectorValues& addInPlace_(const VectorValues& c);
+
     /** Element-wise subtraction, synonym for subtract().  Both VectorValues must have the same
      *  structure (checked when NDEBUG is not defined). */
     VectorValues operator-(const VectorValues& c) const;
