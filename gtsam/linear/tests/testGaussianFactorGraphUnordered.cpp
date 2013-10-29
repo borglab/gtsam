@@ -261,8 +261,13 @@ TEST( GaussianFactorGraph, multiplyHessianAdd )
 /* ************************************************************************* */
 static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
+#ifdef LUCA
   gfg += HessianFactor(1, 2, 100*ones(2,2), 200*ones(2,2), (Vec(2) << 0.0, 1.0),
-                                           400*ones(2,2), (Vec(2) << 1.0, 1.0), 0.0);
+                                            400*ones(2,2), (Vec(2) << 1.0, 1.0), 3.0);
+#else
+  gfg += HessianFactor(1, 2, 100*eye(2,2), zeros(2,2),   (Vec(2) << 0.0, 1.0),
+                                           400*eye(2,2), (Vec(2) << 1.0, 1.0), 3.0);
+#endif
   return gfg;
 }
 
@@ -276,11 +281,17 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
     (1, (Vec(2) << 3,4))
     (2, (Vec(2) << 5,6));
 
-  // expected from matlab: -450        -450        2900        2900        6750        6850
   VectorValues expected;
+#ifdef LUCA
+  // expected from matlab: -450        -450        2900        2900        6750        6850
   expected.insert(0, (Vec(2) <<  -450, -450));
   expected.insert(1, (Vec(2) << 2900, 2900));
   expected.insert(2, (Vec(2) <<  6750, 6850));
+#else
+  expected.insert(0, (Vec(2) <<  -450, -450));
+  expected.insert(1, (Vec(2) <<  300, 400));
+  expected.insert(2, (Vec(2) << 2950, 3450));
+#endif
 
   VectorValues actual;
   gfg.multiplyHessianAdd(1.0, x, actual);
@@ -296,9 +307,11 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
 TEST( GaussianFactorGraph, matricesMixed )
 {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
-  Matrix A; Vector b; boost::tie(A,b) = gfg.jacobian();
-  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
+  Matrix A; Vector b; boost::tie(A,b) = gfg.jacobian(); // incorrect !
+  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian(); // correct
   EXPECT(assert_equal(A.transpose()*A, AtA));
+  Vector expected = - (Vec(6) << -25, 17.5, 5, -13.5, 29, 4);
+  EXPECT(assert_equal(expected, eta));
   EXPECT(assert_equal(A.transpose()*b, eta));
 }
 
@@ -310,8 +323,8 @@ TEST( GaussianFactorGraph, gradientAtZero )
   VectorValues expected;
   VectorValues actual = gfg.gradientAtZero();
   expected.insert(0, (Vec(2) << -25, 17.5));
-  expected.insert(1, (Vec(2) << 5, -12.5));
-  expected.insert(2, (Vec(2) << 30, 5));
+  expected.insert(1, (Vec(2) << 5, -13.5));
+  expected.insert(2, (Vec(2) << 29, 4));
   EXPECT(assert_equal(expected, actual));
 }
 
