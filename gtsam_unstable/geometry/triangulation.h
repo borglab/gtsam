@@ -184,8 +184,11 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   // verify that the triangulated point lies infront of all cameras
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(triangulated_point);
-    if(p_local.z() <= 0)
-      throw(TriangulationCheiralityException());
+
+  #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+      if(p_local.z() <= 0)
+        throw(TriangulationCheiralityException());
+  #endif
   }
 
   return triangulated_point;
