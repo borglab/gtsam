@@ -90,9 +90,6 @@ TEST(HessianFactor, Constructor1)
   Vector g = (Vec(2) << -8.0, -9.0);
   double f = 10.0;
 
-  VectorValues dx = pair_list_of
-    (0, (Vec(2) << 1.5, 2.5));
-
   HessianFactor factor(0, G, g, f);
 
   // extract underlying parts
@@ -101,6 +98,8 @@ TEST(HessianFactor, Constructor1)
   EXPECT(assert_equal(g, Vector(factor.linearTerm())));
   EXPECT_LONGS_EQUAL(1, (long)factor.size());
 
+  VectorValues dx = pair_list_of(0, (Vec(2) << 1.5, 2.5));
+
   // error 0.5*(f - 2*x'*g + x'*G*x)
   double expected = 80.375;
   double actual = factor.error(dx);
@@ -108,6 +107,7 @@ TEST(HessianFactor, Constructor1)
   EXPECT_DOUBLES_EQUAL(expected, expected_manual, 1e-10);
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-10);
 }
+
 
 /* ************************************************************************* */
 TEST(HessianFactor, Constructor1b)
@@ -427,6 +427,27 @@ TEST(HessianFactor, combine) {
   EXPECT(assert_equal(Matrix(expected.triangularView<Eigen::Upper>()),
       Matrix(actual.matrixObject().full().triangularView<Eigen::Upper>()), tol));
 
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, gradientAtZero)
+{
+  Matrix G11 = Matrix_(1,1, 1.0);
+  Matrix G12 = Matrix_(1,2, 0.0, 0.0);
+  Matrix G22 = Matrix_(2,2, 1.0, 0.0, 0.0, 1.0);
+  Vector g1 = (Vec(1) << -7.0);
+  Vector g2 = (Vec(2) << -8.0, -9.0);
+  double f = 194;
+
+  HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
+
+  // test gradient at zero
+  VectorValues expectedG = pair_list_of(0, -g1) (1, -g2);
+  Matrix A; Vector b; boost::tie(A,b) = factor.jacobian();
+  FastVector<Key> keys; keys += 0,1;
+  EXPECT(assert_equal(-A.transpose()*b, expectedG.vector(keys)));
+  VectorValues actualG = factor.gradientAtZero();
+  EXPECT(assert_equal(expectedG, actualG));
 }
 
 /* ************************************************************************* */

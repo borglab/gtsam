@@ -24,6 +24,7 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -258,6 +259,16 @@ TEST(JacobianFactor, operators )
   VectorValues actualX = VectorValues::Zero(expectedX);
   lf.transposeMultiplyAdd(1.0, actualE, actualX);
   EXPECT(assert_equal(expectedX, actualX));
+
+  // test gradient at zero
+  Matrix A; Vector b2; boost::tie(A,b2) = lf.jacobian();
+  VectorValues expectedG;
+  expectedG.insert(1, (Vec(2) << 20,-10));
+  expectedG.insert(2, (Vec(2) << -20, 10));
+  FastVector<Key> keys; keys += 1,2;
+  EXPECT(assert_equal(-A.transpose()*b2, expectedG.vector(keys)));
+  VectorValues actualG = lf.gradientAtZero();
+  EXPECT(assert_equal(expectedG, actualG));
 }
 
 /* ************************************************************************* */

@@ -456,6 +456,17 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues JacobianFactor::gradientAtZero() const {
+    VectorValues g;
+    Vector b = getb();
+    // Gradient is really -A'*b / sigma^2
+    // transposeMultiplyAdd will divide by sigma once, so we need one more
+    Vector b_sigma = model_ ? model_->whiten(b) : b;
+    this->transposeMultiplyAdd(-1.0, b_sigma, g); // g -= A'*b/sigma^2
+    return g;
+  }
+
+  /* ************************************************************************* */
   pair<Matrix,Vector> JacobianFactor::jacobian() const {
     pair<Matrix,Vector> result = jacobianUnweighted();
     // divide in sigma so error is indeed 0.5*|Ax-b|

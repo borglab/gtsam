@@ -10,10 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   testGaussianFactor.cpp
+ *  @file   testGaussianFactorGraphUnordered.cpp
  *  @brief  Unit tests for Linear Factor
  *  @author Christian Potthast
  *  @author Frank Dellaert
+ *  @author Richard Roberts
  **/
 
 #include <boost/assign/std/list.hpp> // for operator +=

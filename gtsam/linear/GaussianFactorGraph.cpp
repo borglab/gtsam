@@ -174,15 +174,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues GaussianFactorGraph::gradient(const VectorValues& x0) const
-  {
-    VectorValues g = VectorValues::Zero(x0);
-    Errors e = gaussianErrors(x0);
-    transposeMultiplyAdd(1.0, e, g);
-    return g;
-  }
-
-  /* ************************************************************************* */
   namespace {
     JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
       JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
@@ -194,16 +185,25 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues GaussianFactorGraph::gradientAtZero() const
+  VectorValues GaussianFactorGraph::gradient(const VectorValues& x0) const
   {
-    // Zero-out the gradient
-    VectorValues g;
-    Errors e;
+    VectorValues g = VectorValues::Zero(x0);
     BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      e.push_back(-Ai->getb());
+      Vector e = Ai->error_vector(x0);
+      Ai->transposeMultiplyAdd(1.0, e, g);
     }
-    transposeMultiplyAdd(1.0, e, g);
+    return g;
+  }
+
+  /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::gradientAtZero() const {
+    // Zero-out the gradient
+    VectorValues g;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      VectorValues gi = factor->gradientAtZero();
+      g.addInPlace_(gi);
+    }
     return g;
   }
 

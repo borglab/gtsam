@@ -359,6 +359,9 @@ namespace gtsam {
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y);
 
+    /// eta for Hessian
+    VectorValues gradientAtZero() const;
+
     /**
     *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
     *   left-multiplied with their transpose to form the Hessian using the conversion constructor

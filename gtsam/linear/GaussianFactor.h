@@ -107,7 +107,10 @@ namespace gtsam {
     virtual GaussianFactor::shared_ptr negate() const = 0;
 
     /// y += alpha * A'*A*x
-    virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y)=0;
+    virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) = 0;
+
+    /// A'*b for Jacobian, eta for Hessian
+    virtual VectorValues gradientAtZero() const = 0;
 
   private:
     /** Serialization function */

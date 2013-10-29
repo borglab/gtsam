@@ -182,27 +182,23 @@ namespace gtsam {
     virtual Matrix information() const;
     
     /**
-     * Return (dense) matrix associated with factor
-     * @param ordering of variables needed for matrix column order
-     * @param set weight to true to bake in the weights
+     * @brief Returns (dense) A,b pair associated with factor, bakes in the weights
      */
     virtual std::pair<Matrix, Vector> jacobian() const;
     
     /**
-     * Return (dense) matrix associated with factor
-     * @param ordering of variables needed for matrix column order
-     * @param set weight to true to bake in the weights
+     * @brief Returns (dense) A,b pair associated with factor, does not bake in weights
      */
     std::pair<Matrix, Vector> jacobianUnweighted() const;
 
     /** Return (dense) matrix associated with factor.  The returned system is an augmented matrix:
     *   [A b]
-    *   @param set weight to use whitening to bake in weights*/
+    *  weights are baked in */
     virtual Matrix augmentedJacobian() const;
 
     /** Return (dense) matrix associated with factor.  The returned system is an augmented matrix:
     *   [A b]
-    *   @param set weight to use whitening to bake in weights */
+    *   weights are not baked in */
     Matrix augmentedJacobianUnweighted() const;
 
     /** Return the full augmented Jacobian matrix of this factor as a VerticalBlockMatrix object. */
@@ -242,13 +238,13 @@ namespace gtsam {
     /** get a copy of model (non-const version) */
     SharedDiagonal& get_model() { return model_;  }
 
-    /** Get a view of the r.h.s. vector b */
+    /** Get a view of the r.h.s. vector b, not weighted by noise */
     const constBVector getb() const { return Ab_(size()).col(0); }
 
     /** Get a view of the A matrix for the variable pointed to by the given key iterator */
     constABlock getA(const_iterator variable) const { return Ab_(variable - begin()); }
 
-    /** Get a view of the A matrix */
+    /** Get a view of the A matrix, not weighted by noise */
     constABlock getA() const { return Ab_.range(0, size()); }
 
     /** Get a view of the r.h.s. vector b (non-const version) */
@@ -269,6 +265,9 @@ namespace gtsam {
     /** x += A'*e.  If x is initially missing any values, they are created and assumed to start as
      *  zero vectors. */
     void transposeMultiplyAdd(double alpha, const Vector& e, VectorValues& x) const;
+
+    /// A'*b for Jacobian
+    VectorValues gradientAtZero() const;
 
     /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactor whiten() const;

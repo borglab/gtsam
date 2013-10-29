@@ -525,6 +525,15 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 }
 
 /* ************************************************************************* */
+VectorValues HessianFactor::gradientAtZero() const {
+  VectorValues g;
+  size_t n = size();
+  for (size_t j = 0; j < n; ++j)
+    g.insert(keys_[j],-info_(j,n));
+  return g;
+}
+
+/* ************************************************************************* */
 std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
 EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
 {
