@@ -36,15 +36,14 @@ protected:
 
 	/// We store the forest in an STL map, but parents are done with pointers
 	struct Entry {
-		typedef std::map<KEY, Entry> Map;
-		typename Map::iterator parent_;
+		typename std::map<KEY, Entry>::iterator parent_;
 		size_t rank_;
 		Entry() {}
-
 	};
 
-	typedef typename Entry::Map::iterator iterator;
-	mutable typename Entry::Map entries_;
+    typedef typename std::map<KEY, Entry> Map;
+	typedef typename Map::iterator iterator;
+	mutable Map entries_;
 
 	/// Given key, find iterator to initial entry
 	iterator find__(const KEY& key) const {
