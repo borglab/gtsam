@@ -24,6 +24,8 @@
 #include <boost/algorithm/string.hpp>
 #include <string>
 #include <cmath>
+#include <ctime>
+#include <fstream>
 
 using namespace std;
 
@@ -170,6 +172,14 @@ void LevenbergMarquardtOptimizer::iterate() {
 
   if (lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
     cout << "using lambda = " << state_.lambda << endl;
+
+  if (!params_.logFile.empty()) {
+    ofstream os(params_.logFile.c_str(), ios::app);
+    time_t rawtime;
+    time (&rawtime);
+    os << state_.iterations << "," << rawtime << "," << state_.error << "," << state_.lambda << endl;
+  }
+
 
   // Increment the iteration counter
   ++state_.iterations;

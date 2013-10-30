@@ -37,6 +37,7 @@
 using namespace boost::assign;
 
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 using namespace gtsam;
@@ -346,6 +347,34 @@ TEST(NonlinearOptimizer, subclass_solver) {
   ConjugateGradientParameters p;
   Values actual = IterativeLM(graph, init, p).optimize();
   EXPECT(assert_equal(expected, actual, 1e-4));
+}
+
+/* ************************************************************************* */
+#include <wrap/utilities.h>
+TEST( NonlinearOptimizer, logfile )
+{
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
+
+  // Levenberg-Marquardt
+  LevenbergMarquardtParams lmParams;
+  static const string filename("testNonlinearOptimizer.log");
+  lmParams.setLogFile(filename);
+  CHECK(lmParams.getLogFile()==filename);
+  LevenbergMarquardtOptimizer(fg, c0, lmParams).optimize();
+
+//  stringstream expected,actual;
+//  ifstream ifs(("../../gtsam/tests/" + filename).c_str());
+//  if(!ifs) throw std::runtime_error(filename);
+//  expected << ifs.rdbuf();
+//  ifs.close();
+//  ifstream ifs2(filename.c_str());
+//  if(!ifs2) throw std::runtime_error(filename);
+//  actual << ifs2.rdbuf();
+//  EXPECT(actual.str()==expected.str());
 }
 
 /* ************************************************************************* */

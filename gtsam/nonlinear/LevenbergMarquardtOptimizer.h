@@ -42,10 +42,17 @@ public:
     DAMPED
   };
 
+private:
+  VerbosityLM verbosityLMTranslator(const std::string &s) const;
+  std::string verbosityLMTranslator(VerbosityLM value) const;
+
+public:
+
   double lambdaInitial; ///< The initial Levenberg-Marquardt damping term (default: 1e-5)
   double lambdaFactor; ///< The amount by which to multiply or divide lambda when adjusting lambda (default: 10.0)
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
+  std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
 
   LevenbergMarquardtParams() : lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(SILENT) {}
   virtual ~LevenbergMarquardtParams() {}
@@ -56,15 +63,13 @@ public:
   inline double getlambdaFactor() const { return lambdaFactor; }
   inline double getlambdaUpperBound() const { return lambdaUpperBound; }
   inline std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM); }
+  inline std::string getLogFile() const { return logFile; }
 
   inline void setlambdaInitial(double value) { lambdaInitial = value; }
   inline void setlambdaFactor(double value) { lambdaFactor = value; }
   inline void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
   inline void setVerbosityLM(const std::string &s) { verbosityLM = verbosityLMTranslator(s); }
-
-private:
-  VerbosityLM verbosityLMTranslator(const std::string &s) const;
-  std::string verbosityLMTranslator(VerbosityLM value) const;
+  inline void setLogFile(const std::string &s) { logFile = s;}
 };
 
 /**
