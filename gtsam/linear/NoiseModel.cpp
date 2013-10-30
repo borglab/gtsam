@@ -121,8 +121,8 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
   // get size(A) and maxRank
   // TODO: really no rank problems ?
-  size_t m = Ab.rows(), n = Ab.cols()-1;
-//  size_t maxRank = min(m,n);
+  // size_t m = Ab.rows(), n = Ab.cols()-1;
+  // size_t maxRank = min(m,n);
 
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
@@ -134,7 +134,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
   // hand-coded householder implementation
   // TODO: necessary to isolate last column?
-//  householder(Ab, maxRank);
+  // householder(Ab, maxRank);
 
   return SharedDiagonal();
 }
@@ -270,10 +270,8 @@ Vector Constrained::whiten(const Vector& v) const {
   // a hard constraint, we don't do anything.
   const Vector& a = v;
   const Vector& b = sigmas_;
-  DenseIndex n = a.size();
-  // Now allow for whiten augmented vector with a new additional part coming
+  // Now allows for whiten augmented vector with a new additional part coming
   // from the Lagrange multiplier. So a.size() >= b.size()
-//  assert (b.size()==a.size());
   Vector c = a;
   for( DenseIndex i = 0; i < b.size(); i++ ) {
     const double& ai = a(i), &bi = b(i);
@@ -781,7 +779,6 @@ Robust::shared_ptr Robust::Create(
   const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
   return shared_ptr(new Robust(robust,noise));
 }
-
 
 /* ************************************************************************* */
 
