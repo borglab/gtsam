@@ -1299,9 +1299,13 @@ class GaussianFactorGraph {
   // Conversion to matrices
   Matrix sparseJacobian_() const;
   Matrix augmentedJacobian() const;
+  Matrix augmentedJacobian(const gtsam::Ordering& ordering) const;
   pair<Matrix,Vector> jacobian() const;
+  pair<Matrix,Vector> jacobian(const gtsam::Ordering& ordering) const;
   Matrix augmentedHessian() const;
+  Matrix augmentedHessian(const gtsam::Ordering& ordering) const;
   pair<Matrix,Vector> hessian() const;
+  pair<Matrix,Vector> hessian(const gtsam::Ordering& ordering) const;
 
   // enabling serialization functionality
   void serialize() const;
