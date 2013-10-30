@@ -1252,7 +1252,8 @@ class GaussianFactorGraph {
   bool exists(size_t idx) const;
 
   // Building the graph
-  void push_back(gtsam::GaussianFactor* factor);
+  void push_back(const gtsam::GaussianFactor* factor);
+  void push_back(const gtsam::GaussianConditional* factor);
   void push_back(const gtsam::GaussianFactorGraph& graph);
   void push_back(const gtsam::GaussianBayesNet& bayesNet);
   void push_back(const gtsam::GaussianBayesTree& bayesTree);
@@ -1355,9 +1356,14 @@ virtual class GaussianBayesNet {
   // Testable
   void print(string s) const;
   bool equals(const gtsam::GaussianBayesNet& other, double tol) const;
-
-  // Standard interface
   size_t size() const;
+
+  // FactorGraph derived interface
+  size_t size() const;
+  gtsam::GaussianConditional* at(size_t idx) const;
+  gtsam::KeySet keys() const;
+  bool exists(size_t idx) const;
+
   gtsam::GaussianConditional* front() const;
   gtsam::GaussianConditional* back() const;
   void push_back(gtsam::GaussianConditional* conditional);
