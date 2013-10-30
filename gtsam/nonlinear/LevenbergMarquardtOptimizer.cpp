@@ -175,11 +175,14 @@ void LevenbergMarquardtOptimizer::iterate() {
 
   if (!params_.logFile.empty()) {
     ofstream os(params_.logFile.c_str(), ios::app);
-    time_t rawtime;
-    time (&rawtime);
-    os << state_.iterations << "," << rawtime << "," << state_.error << "," << state_.lambda << endl;
-  }
 
+    timeval rawtime;
+    gettimeofday(&rawtime, NULL);
+    double currentTime = rawtime.tv_sec + rawtime.tv_usec / 1000000.0;
+
+    os << state_.iterations << "," << currentTime-state_.startTime << ","
+        << state_.error << "," << state_.lambda << endl;
+  }
 
   // Increment the iteration counter
   ++state_.iterations;

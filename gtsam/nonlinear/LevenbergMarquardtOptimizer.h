@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <ctime>
 
 namespace gtsam {
 
@@ -29,17 +30,12 @@ class LevenbergMarquardtOptimizer;
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class GTSAM_EXPORT LevenbergMarquardtParams : public NonlinearOptimizerParams {
+class GTSAM_EXPORT LevenbergMarquardtParams: public NonlinearOptimizerParams {
 
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
   enum VerbosityLM {
-    SILENT = 0,
-    LAMBDA,
-    TRYLAMBDA,
-    TRYCONFIG,
-    TRYDELTA,
-    DAMPED
+    SILENT = 0, LAMBDA, TRYLAMBDA, TRYCONFIG, TRYDELTA, DAMPED
   };
 
 private:
@@ -54,40 +50,79 @@ public:
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
 
-  LevenbergMarquardtParams() : lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(SILENT) {}
-  virtual ~LevenbergMarquardtParams() {}
+  LevenbergMarquardtParams() :
+      lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(
+          SILENT) {
+  }
+  virtual ~LevenbergMarquardtParams() {
+  }
 
   virtual void print(const std::string& str = "") const;
 
-  inline double getlambdaInitial() const { return lambdaInitial; }
-  inline double getlambdaFactor() const { return lambdaFactor; }
-  inline double getlambdaUpperBound() const { return lambdaUpperBound; }
-  inline std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM); }
-  inline std::string getLogFile() const { return logFile; }
+  inline double getlambdaInitial() const {
+    return lambdaInitial;
+  }
+  inline double getlambdaFactor() const {
+    return lambdaFactor;
+  }
+  inline double getlambdaUpperBound() const {
+    return lambdaUpperBound;
+  }
+  inline std::string getVerbosityLM() const {
+    return verbosityLMTranslator(verbosityLM);
+  }
+  inline std::string getLogFile() const {
+    return logFile;
+  }
 
-  inline void setlambdaInitial(double value) { lambdaInitial = value; }
-  inline void setlambdaFactor(double value) { lambdaFactor = value; }
-  inline void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
-  inline void setVerbosityLM(const std::string &s) { verbosityLM = verbosityLMTranslator(s); }
-  inline void setLogFile(const std::string &s) { logFile = s;}
+  inline void setlambdaInitial(double value) {
+    lambdaInitial = value;
+  }
+  inline void setlambdaFactor(double value) {
+    lambdaFactor = value;
+  }
+  inline void setlambdaUpperBound(double value) {
+    lambdaUpperBound = value;
+  }
+  inline void setVerbosityLM(const std::string &s) {
+    verbosityLM = verbosityLMTranslator(s);
+  }
+  inline void setLogFile(const std::string &s) {
+    logFile = s;
+  }
 };
 
 /**
  * State for LevenbergMarquardtOptimizer
  */
-class GTSAM_EXPORT LevenbergMarquardtState : public NonlinearOptimizerState {
+class GTSAM_EXPORT LevenbergMarquardtState: public NonlinearOptimizerState {
 
 public:
   double lambda;
   int totalNumberInnerIterations; // The total number of inner iterations in the optimization (for each iteration, LM may try multiple iterations with different lambdas)
+  double startTime;
 
-  LevenbergMarquardtState() {}
+  LevenbergMarquardtState() {
+    initTime();
+  }
 
-  virtual ~LevenbergMarquardtState() {}
+  void initTime() {
+    timeval tod;
+    gettimeofday(&tod, NULL);
+    startTime = tod.tv_sec + tod.tv_usec / 1000000.0;
+  }
+
+  virtual ~LevenbergMarquardtState() {
+  }
 
 protected:
-  LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
-    NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial), totalNumberInnerIterations(0) {}
+  LevenbergMarquardtState(const NonlinearFactorGraph& graph,
+      const Values& initialValues, const LevenbergMarquardtParams& params,
+      unsigned int iterations = 0) :
+      NonlinearOptimizerState(graph, initialValues, iterations), lambda(
+          params.lambdaInitial), totalNumberInnerIterations(0) {
+    initTime();
+  }
 
   friend class LevenbergMarquardtOptimizer;
 };
@@ -95,12 +130,11 @@ protected:
 /**
  * This class performs Levenberg-Marquardt nonlinear optimization
  */
-class GTSAM_EXPORT LevenbergMarquardtOptimizer : public NonlinearOptimizer {
+class GTSAM_EXPORT LevenbergMarquardtOptimizer: public NonlinearOptimizer {
 
 protected:
   LevenbergMarquardtParams params_; ///< LM parameters
-  LevenbergMarquardtState state_;   ///< optimization state
-
+  LevenbergMarquardtState state_; ///< optimization state
 
 public:
   typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
@@ -116,10 +150,12 @@ public:
    * @param initialValues The initial variable assignments
    * @param params The optimization parameters
    */
-  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
-        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph)),
-        state_(graph, initialValues, params_) {}
+  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
+      const Values& initialValues, const LevenbergMarquardtParams& params =
+          LevenbergMarquardtParams()) :
+      NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph)), state_(
+          graph, initialValues, params_) {
+  }
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -128,16 +164,22 @@ public:
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
    */
-  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
-        NonlinearOptimizer(graph) {
+  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
+      const Values& initialValues, const Ordering& ordering) :
+      NonlinearOptimizer(graph) {
     params_.ordering = ordering;
-    state_ = LevenbergMarquardtState(graph, initialValues, params_); }
+    state_ = LevenbergMarquardtState(graph, initialValues, params_);
+  }
 
   /// Access the current damping value
-  double lambda() const { return state_.lambda; }
+  double lambda() const {
+    return state_.lambda;
+  }
 
   /// Access the current number of inner iterations
-  int getInnerIterations() const { return state_.totalNumberInnerIterations; }
+  int getInnerIterations() const {
+    return state_.totalNumberInnerIterations;
+  }
 
   /// print
   virtual void print(const std::string& str = "") const {
@@ -151,7 +193,8 @@ public:
   /// @{
 
   /** Virtual destructor */
-  virtual ~LevenbergMarquardtOptimizer() {}
+  virtual ~LevenbergMarquardtOptimizer() {
+  }
 
   /** Perform a single iteration, returning a new NonlinearOptimizer class
    * containing the updated variable assignments, which may be retrieved with
@@ -160,28 +203,41 @@ public:
   virtual void iterate();
 
   /** Read-only access the parameters */
-  const LevenbergMarquardtParams& params() const { return params_; }
+  const LevenbergMarquardtParams& params() const {
+    return params_;
+  }
 
   /** Read/write access the parameters */
-  LevenbergMarquardtParams& params() { return params_; }
+  LevenbergMarquardtParams& params() {
+    return params_;
+  }
 
   /** Read-only access the last state */
-  const LevenbergMarquardtState& state() const { return state_; }
+  const LevenbergMarquardtState& state() const {
+    return state_;
+  }
 
   /** Read/write access the last state. When modifying the state, the error, etc. must be consistent before calling iterate() */
-  LevenbergMarquardtState& state() { return state_; }
+  LevenbergMarquardtState& state() {
+    return state_;
+  }
 
   /// @}
 
 protected:
   /** Access the parameters (base class version) */
-  virtual const NonlinearOptimizerParams& _params() const { return params_; }
+  virtual const NonlinearOptimizerParams& _params() const {
+    return params_;
+  }
 
   /** Access the state (base class version) */
-  virtual const NonlinearOptimizerState& _state() const { return state_; }
+  virtual const NonlinearOptimizerState& _state() const {
+    return state_;
+  }
 
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
-  LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph) const;
+  LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params,
+      const NonlinearFactorGraph& graph) const;
 
   /** linearize, can  be overwritten */
   virtual GaussianFactorGraph::shared_ptr linearize() const;
