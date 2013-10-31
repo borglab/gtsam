@@ -78,6 +78,18 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::linearize() const {
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
+  // Log current error/lambda to file
+  if (!params_.logFile.empty()) {
+    ofstream os(params_.logFile.c_str(), ios::app);
+
+    timeval rawtime;
+    gettimeofday(&rawtime, NULL);
+    double currentTime = rawtime.tv_sec + rawtime.tv_usec / 1000000.0;
+
+    os << state_.iterations << "," << currentTime-state_.startTime << ","
+        << state_.error << "," << state_.lambda << endl;
+  }
+
   gttic(LM_iterate);
 
   // Linearize graph
@@ -172,17 +184,6 @@ void LevenbergMarquardtOptimizer::iterate() {
 
   if (lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
     cout << "using lambda = " << state_.lambda << endl;
-
-  if (!params_.logFile.empty()) {
-    ofstream os(params_.logFile.c_str(), ios::app);
-
-    timeval rawtime;
-    gettimeofday(&rawtime, NULL);
-    double currentTime = rawtime.tv_sec + rawtime.tv_usec / 1000000.0;
-
-    os << state_.iterations << "," << currentTime-state_.startTime << ","
-        << state_.error << "," << state_.lambda << endl;
-  }
 
   // Increment the iteration counter
   ++state_.iterations;
