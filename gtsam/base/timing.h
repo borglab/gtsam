@@ -228,26 +228,26 @@ namespace gtsam {
 
 // indicate iteration is finished
 inline void tictoc_finishedIteration_() {
-  internal::timingRoot->finishedIteration(); }
+  ::gtsam::internal::timingRoot->finishedIteration(); }
 
 // print
 inline void tictoc_print_() {
-  internal::timingRoot->print(); }
+  ::gtsam::internal::timingRoot->print(); }
 
 // print mean and standard deviation
 inline void tictoc_print2_() {
-  internal::timingRoot->print2(); }
+  ::gtsam::internal::timingRoot->print2(); }
 
 // get a node by label and assign it to variable
 #define tictoc_getNode(variable, label) \
   static const size_t label##_id_getnode = ::gtsam::internal::getTicTocID(#label); \
-  const boost::shared_ptr<const internal::TimingOutline> variable = \
-  internal::timingCurrent.lock()->child(label##_id_getnode, #label, internal::timingCurrent);
+  const boost::shared_ptr<const ::gtsam::internal::TimingOutline> variable = \
+  ::gtsam::internal::timingCurrent.lock()->child(label##_id_getnode, #label, ::gtsam::internal::timingCurrent);
 
 // reset
 inline void tictoc_reset_() {
-  internal::timingRoot.reset(new internal::TimingOutline("Total", internal::getTicTocID("Total")));
-  internal::timingCurrent = internal::timingRoot; }
+  ::gtsam::internal::timingRoot.reset(new ::gtsam::internal::TimingOutline("Total", ::gtsam::internal::getTicTocID("Total")));
+  ::gtsam::internal::timingCurrent = ::gtsam::internal::timingRoot; }
 
 #ifdef ENABLE_TIMING
 #define gttic(label) gttic_(label)
