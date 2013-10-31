@@ -78,19 +78,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::linearize() const {
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
-  // Log current error/lambda to file
-  if (!params_.logFile.empty()) {
-    ofstream os(params_.logFile.c_str(), ios::app);
-
-    timeval rawtime;
-    gettimeofday(&rawtime, NULL);
-    double currentTime = rawtime.tv_sec + rawtime.tv_usec / 1000000.0;
-
-    os << state_.iterations << "," << currentTime-state_.startTime << ","
-        << state_.error << "," << state_.lambda << endl;
-  }
-
-  gttic(LM_iterate);
+  gttic (LM_iterate);
 
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = linearize();
@@ -100,11 +88,11 @@ void LevenbergMarquardtOptimizer::iterate() {
   const LevenbergMarquardtParams::VerbosityLM lmVerbosity = params_.verbosityLM;
 
   // Keep increasing lambda until we make make progress
-  while(true) {
+  while (true) {
     if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
       cout << "trying lambda = " << state_.lambda << endl;
-      ++state_.totalNumberInnerIterations;
-      // cout << "state_.totalNumberInnerIterations = " << state_.totalNumberInnerIterations << endl;
+    ++state_.totalNumberInnerIterations;
+    // cout << "state_.totalNumberInnerIterations = " << state_.totalNumberInnerIterations << endl;
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
     gttic(damp);
@@ -126,6 +114,18 @@ void LevenbergMarquardtOptimizer::iterate() {
 
     // Try solving
     try {
+      // Log current error/lambda to file
+      if (!params_.logFile.empty()) {
+        ofstream os(params_.logFile.c_str(), ios::app);
+
+        timeval rawtime;
+        gettimeofday(&rawtime, NULL);
+        double currentTime = rawtime.tv_sec + rawtime.tv_usec / 1000000.0;
+
+        os << state_.iterations << "," << currentTime - state_.startTime << ","
+            << state_.error << "," << state_.lambda << endl;
+      }
+
       // Solve Damped Gaussian Factor Graph
       const VectorValues delta = solve(dampedSystem, state_.values, params_);
 
@@ -133,18 +133,18 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");
 
       // update values
-      gttic(retract);
+      gttic (retract);
       Values newValues = state_.values.retract(delta);
       gttoc(retract);
 
       // create new optimization state with more adventurous lambda
-      gttic(compute_error);
+      gttic (compute_error);
       double error = graph_.error(newValues);
       gttoc(compute_error);
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "next error = " << error << endl;
 
-      if(error <= state_.error) {
+      if (error <= state_.error) {
         state_.values.swap(newValues);
         state_.error = error;
         state_.lambda /= params_.lambdaFactor;
@@ -161,7 +161,7 @@ void LevenbergMarquardtOptimizer::iterate() {
           state_.lambda *= params_.lambdaFactor;
         }
       }
-    } catch(IndeterminantLinearSystemException& e) {
+    } catch (IndeterminantLinearSystemException& e) {
       (void) e; // Prevent unused variable warning
       if(lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
         cout << "Negative matrix, increasing lambda" << endl;
