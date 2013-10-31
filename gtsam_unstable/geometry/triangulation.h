@@ -181,15 +181,14 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 
   Point3 triangulated_point = triangulateDLT(poses, projection_matrices, measurements, Ks, rank_tol, optimize);
 
+  #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies infront of all cameras
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(triangulated_point);
-
-  #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
       if(p_local.z() <= 0)
         throw(TriangulationCheiralityException());
-  #endif
   }
+  #endif
 
   return triangulated_point;
 }
