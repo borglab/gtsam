@@ -505,26 +505,39 @@ GaussianFactor::shared_ptr HessianFactor::negate() const
 
 /* ************************************************************************* */
 void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
-    VectorValues& y) const {
+    VectorValues& yvalues) const {
 
-  for (size_t i = 0; i < size(); ++i) {
-    pair<VectorValues::iterator, bool> it = y.tryInsert(keys_[i], Vector());
-    Vector& yi = it.first->second;
-    if (it.second) {
-      // if the value does not exist we initialize it
-      yi = Vector::Zero(getDim(begin() + i));
-    }
+  // Create a vector of temporary y values, corresponding to rows i
+  vector<Vector> y;
+  y.reserve(size());
+  for (const_iterator it = begin(); it != end(); it++)
+    y.push_back(zero(getDim(it)));
 
-    for (size_t j = 0; j < size(); ++j) { // loops over the columns
-      Vector xj = x.at(keys_[j]);
-      // yi.at(keys_[i])// this is what we have to update
-      // xj is the input vector
-      // we should select the blocks we need in (A'A)
-      if (i <= j)
-        yi += alpha * info(begin() + i, begin() + j) * xj;
-      else
-        yi += alpha * info(begin() + j, begin() + i).transpose() * xj;
-    }
+  // Accessing the VectorValues one by one is expensive
+  // So we will loop over columns to access x only once per column
+  // And fill the above temporary y values, to be added into yvalues after
+  for (DenseIndex j = 0; j < size(); ++j) {
+    // xj is the input vector
+    Vector xj = x.at(keys_[j]);
+    DenseIndex i = 0;
+    for (; i < j; ++i)
+      y[i] += info_(i, j) * xj;
+    // blocks on the diagonal are only half
+    y[i] += info_(j, j).selfadjointView<Eigen::Upper>() * xj;
+    // for below diagonal, we take transpose block from upper triangular part
+    for (i=j+1; i < size(); ++i)
+      y[i] += info_(j, i).transpose() * xj;
+  }
+
+  // copy to yvalues
+  for (DenseIndex i = 0; i < size(); ++i) {
+    bool didNotExist;
+    VectorValues::iterator it;
+    boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
+    if (didNotExist)
+      it->second = alpha * y[i]; // init
+    else
+      it->second += alpha * y[i]; // add
   }
 }
 

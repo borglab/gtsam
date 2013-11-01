@@ -271,6 +271,12 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
 {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
 
+  // brute force
+  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
+  Vector X(6); X<<1,2,3,4,5,6;
+  Vector Y(6); Y<<-450, -450, 300, 400, 2950, 3450;
+  EXPECT(assert_equal(Y,AtA*X));
+
   VectorValues x = map_list_of
     (0, (Vec(2) << 1,2))
     (1, (Vec(2) << 3,4))
