@@ -47,6 +47,9 @@ namespace gtsam {
     template<typename CONTAINER>
     GaussianFactor(const CONTAINER& keys) : Base(keys) {}
 
+    /** Destructor */
+    virtual ~GaussianFactor() {}
+
     // Implementing Testable interface
     virtual void print(const std::string& s = "",
         const KeyFormatter& formatter = DefaultKeyFormatter) const = 0;
