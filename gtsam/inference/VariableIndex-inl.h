@@ -75,8 +75,10 @@ void VariableIndex::remove(ITERATOR firstFactor, ITERATOR lastFactor, const FG& 
 template<typename ITERATOR>
 void VariableIndex::removeUnusedVariables(ITERATOR firstKey, ITERATOR lastKey) {
   for(ITERATOR key = firstKey; key != lastKey; ++key) {
-    assert(internalAt(*key).empty());
-    index_.erase(*key);
+    KeyMap::iterator entry = index_.find(*key);
+    if(!entry->second.empty())
+      throw std::invalid_argument("Asking to remove variables from the variable index that are not unused");
+    index_.erase(entry);
   }
 }
 

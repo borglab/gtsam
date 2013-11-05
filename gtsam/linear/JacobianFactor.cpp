@@ -134,6 +134,8 @@ namespace gtsam {
     model_ = noiseModel::Unit::Create(maxrank);
   }
 
+#undef GTSAM_EXTRA_CONSISTENCY_CHECKS
+
   /* ************************************************************************* */
   // Helper functions for combine constructor
   namespace {
@@ -144,43 +146,62 @@ namespace gtsam {
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
       FastVector<DenseIndex> varDims(variableSlots.size(), numeric_limits<DenseIndex>::max());
 #else
-      FastVector<DenseIndex> varDims(variableSlots.size());
+      FastVector<DenseIndex> varDims(variableSlots.size(), numeric_limits<DenseIndex>::max());
 #endif
       DenseIndex m = 0;
       DenseIndex n = 0;
+      for(size_t jointVarpos = 0; jointVarpos < variableSlots.size(); ++jointVarpos)
       {
-        size_t jointVarpos = 0;
-        BOOST_FOREACH(VariableSlots::const_iterator slots, variableSlots)
-        {
-          assert(slots->second.size() == factors.size());
+        const VariableSlots::const_iterator& slots = variableSlots[jointVarpos];
 
-          size_t sourceFactorI = 0;
-          BOOST_FOREACH(const size_t sourceVarpos, slots->second) {
-            if(sourceVarpos < numeric_limits<size_t>::max()) {
-              const JacobianFactor& sourceFactor = *factors[sourceFactorI];
-              if(sourceFactor.rows() > 0) {
-                DenseIndex vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
+        assert(slots->second.size() == factors.size());
+
+        bool foundVariable = false;
+        for(size_t sourceFactorI = 0; sourceFactorI < slots->second.size(); ++sourceFactorI)
+        {
+          const size_t sourceVarpos = slots->second[sourceFactorI];
+          if(sourceVarpos < numeric_limits<size_t>::max()) {
+            const JacobianFactor& sourceFactor = *factors[sourceFactorI];
+            if(sourceFactor.cols() > 0) {
+              foundVariable = true;
+              DenseIndex vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
+
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-                if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
-                  varDims[jointVarpos] = vardim;
-                  n += vardim;
-                } else
-                  assert(varDims[jointVarpos] == vardim);
-#else
+              if(varDims[jointVarpos] == numeric_limits<DenseIndex>::max()) {
                 varDims[jointVarpos] = vardim;
                 n += vardim;
-                break;
-#endif
+              } else {
+                if(!(varDims[jointVarpos] == vardim)) {
+                  cout << "Factor " << sourceFactorI << " variable " << DefaultKeyFormatter(sourceFactor.keys()[sourceVarpos]) <<
+                      " has different dimensionality of " << vardim << " instead of " << varDims[jointVarpos] << endl;
+                  exit(1);
+                }
               }
+#else
+
+              varDims[jointVarpos] = vardim;
+              n += vardim;
+              break;
+#endif
             }
-            ++ sourceFactorI;
           }
-          ++ jointVarpos;
         }
-        BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
-          m += factor->rows();
-        }
+
+        if(!foundVariable)
+          GaussianFactorGraph(factors).print("factors: ");
+        assert(foundVariable);
       }
+
+      BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
+        m += factor->rows();
+      }
+
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+      BOOST_FOREACH(DenseIndex d, varDims) {
+        assert(d != numeric_limits<DenseIndex>::max());
+      }
+#endif
+
       return boost::make_tuple(varDims, m, n);
     }
 

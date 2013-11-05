@@ -204,6 +204,9 @@ namespace gtsam {
     /** Return the full augmented Jacobian matrix of this factor as a VerticalBlockMatrix object. */
     const VerticalBlockMatrix& matrixObject() const { return Ab_; }
 
+    /** Mutable access to the full augmented Jacobian matrix of this factor as a VerticalBlockMatrix object. */
+    VerticalBlockMatrix& matrixObject() { return Ab_; }
+
     /**
      * Construct the corresponding anti-factor to negate information
      * stored stored in this factor.

@@ -116,6 +116,9 @@ namespace gtsam {
     /// @name Advanced Interface
     /// @{
 
+    /** Mutable version of nrFrontals */
+    size_t& nrFrontals() { return nrFrontals_; }
+
     /** Mutable iterator pointing to first frontal key. */
     typename FACTOR::iterator beginFrontals() { return asFactor().begin(); }
 
