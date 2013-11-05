@@ -37,7 +37,7 @@
 namespace gtsam {
 
 /// Exception thrown by triangulateDLT when SVD returns rank < 3
-class GTSAM_UNSTABLE_EXPORT TriangulationUnderconstrainedException: public std::runtime_error {
+class TriangulationUnderconstrainedException: public std::runtime_error {
 public:
   TriangulationUnderconstrainedException() :
       std::runtime_error("Triangulation Underconstrained Exception.") {
@@ -45,7 +45,7 @@ public:
 };
 
 /// Exception thrown by triangulateDLT when landmark is behind one or more of the cameras
-class GTSAM_UNSTABLE_EXPORT TriangulationCheiralityException: public std::runtime_error {
+class TriangulationCheiralityException: public std::runtime_error {
 public:
   TriangulationCheiralityException() :
       std::runtime_error(

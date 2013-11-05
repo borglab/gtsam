@@ -93,26 +93,12 @@ void ConcurrentBatchFilter::PrintLinearFactorGraph(const GaussianFactorGraph& fa
 }
 
 /* ************************************************************************* */
-template<>
-void ConcurrentBatchFilter::PrintKeys<Values>(const Values& values, const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter) {
-  FastList<Key> keys = values.keys();
-  PrintKeys(keys, indent, title, keyFormatter);
-}
-
-/* ************************************************************************* */
-template<>
-void ConcurrentBatchFilter::PrintKeys<NonlinearFactorGraph>(const NonlinearFactorGraph& graph, const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter) {
-  FastSet<Key> keys = graph.keys();
-  PrintKeys(keys, indent, title, keyFormatter);
-}
-
-/* ************************************************************************* */
 void ConcurrentBatchFilter::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   std::cout << s;
   PrintNonlinearFactorGraph(factors_, "  ", "Factors:");
-  PrintKeys(theta_, "  ", "Values:");
+  PrintKeys(theta_.keys(), "  ", "Values:");
   PrintNonlinearFactorGraph(smootherFactors_, "  ", "Cached Smoother Factors:");
-  PrintKeys(smootherValues_, "  ", "Cached Smoother Values:");
+  PrintKeys(smootherValues_.keys(), "  ", "Cached Smoother Values:");
 }
 
 /* ************************************************************************* */
@@ -586,8 +572,8 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   if(debug) {
     PrintNonlinearFactorGraph(removedFactors, "ConcurrentBatchFilter::synchronize  ", "Removed Factors:", DefaultKeyFormatter);
     PrintNonlinearFactorGraph(smootherShortcut_, "ConcurrentBatchFilter::synchronize  ", "Old Shortcut:", DefaultKeyFormatter);
-    PrintKeys(smootherShortcut_, "ConcurrentBatchFilter::moveSeparator  ", "Old Shortcut Keys:", DefaultKeyFormatter);
-    PrintKeys(separatorValues_, "ConcurrentBatchFilter::moveSeparator  ", "Previous Separator Keys:", DefaultKeyFormatter);
+    PrintKeys(smootherShortcut_.keys(), "ConcurrentBatchFilter::moveSeparator  ", "Old Shortcut Keys:", DefaultKeyFormatter);
+    PrintKeys(separatorValues_.keys(), "ConcurrentBatchFilter::moveSeparator  ", "Previous Separator Keys:", DefaultKeyFormatter);
   }
 
   // Calculate the set of new separator keys: AffectedKeys + PreviousSeparatorKeys - KeysToMove

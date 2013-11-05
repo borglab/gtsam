@@ -70,8 +70,8 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   // Calculate Omega_T, formula 2.80 in Farrell08book
   double cp = cos(mech0_.bRn().inverse().pitch());
   double sp = sin(mech0_.bRn().inverse().pitch());
-  double cy = cos(0);
-  double sy = sin(0);
+  double cy = cos(0.0);
+  double sy = sin(0.0);
   Matrix Omega_T = Matrix_(3, 3, cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0);
 
   // Calculate Jacobian of roll/pitch/yaw wrpt (g1,g2,g3), see doc/ypr.nb

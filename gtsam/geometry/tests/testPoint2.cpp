@@ -105,7 +105,7 @@ TEST( Point2, norm ) {
   EXPECT(assert_equal(expectedH,actualH));
 
   actual = x2.norm(actualH);
-  EXPECT_DOUBLES_EQUAL(sqrt(2), actual, 1e-9);
+  EXPECT_DOUBLES_EQUAL(sqrt(2.0), actual, 1e-9);
   expectedH = numericalDerivative11(norm_proxy, x2);
   EXPECT(assert_equal(expectedH,actualH));
 }

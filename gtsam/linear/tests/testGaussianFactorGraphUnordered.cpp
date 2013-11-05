@@ -165,7 +165,7 @@ TEST( GaussianFactorGraph, gradient )
   // Construct expected gradient
   // 2*f(x) = 100*(x1+c[X(1)])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
   // worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
-  VectorValues expected = map_list_of
+  VectorValues expected = map_list_of<Key, Vector>
     (1, (Vec(2) << 5.0, -12.5))
     (2, (Vec(2) << 30.0, 5.0))
     (0, (Vec(2) << -25.0, 17.5));
@@ -239,7 +239,7 @@ TEST( GaussianFactorGraph, multiplyHessianAdd )
 {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
-  VectorValues x = map_list_of
+  VectorValues x = map_list_of<Key, Vector>
     (0, (Vec(2) << 1,2))
     (1, (Vec(2) << 3,4))
     (2, (Vec(2) << 5,6));
@@ -277,7 +277,7 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
   Vector Y(6); Y<<-450, -450, 300, 400, 2950, 3450;
   EXPECT(assert_equal(Y,AtA*X));
 
-  VectorValues x = map_list_of
+  VectorValues x = map_list_of<Key, Vector>
     (0, (Vec(2) << 1,2))
     (1, (Vec(2) << 3,4))
     (2, (Vec(2) << 5,6));

@@ -112,13 +112,13 @@ public:
               message);
         else
           beliefAtKey =
-              make_shared<DecisionTreeFactor>(
+              boost::make_shared<DecisionTreeFactor>(
                   (*beliefAtKey)
                       * (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
                           message)));
       }
       if (starGraphs_.at(key).unary)
-        beliefAtKey = make_shared<DecisionTreeFactor>(
+        beliefAtKey = boost::make_shared<DecisionTreeFactor>(
             (*beliefAtKey) * (*starGraphs_.at(key).unary));
       if (debug) beliefAtKey->print("New belief at key: ");
       // normalize belief
@@ -133,7 +133,7 @@ public:
         sumFactorTable = (boost::format("%s %f") % sumFactorTable % sum).str();
       DecisionTreeFactor sumFactor(allDiscreteKeys.at(key), sumFactorTable);
       if (debug) sumFactor.print("denomFactor: ");
-      beliefAtKey = make_shared<DecisionTreeFactor>((*beliefAtKey) / sumFactor);
+      beliefAtKey = boost::make_shared<DecisionTreeFactor>((*beliefAtKey) / sumFactor);
       if (debug) beliefAtKey->print("New belief at key normalized: ");
       beliefs->push_back(beliefAtKey);
       allMessages[key] = messages;
@@ -184,7 +184,7 @@ private:
             prodOfUnaries = boost::dynamic_pointer_cast<DecisionTreeFactor>(
                 graph.at(factorIdx));
           else
-            prodOfUnaries = make_shared<DecisionTreeFactor>(
+            prodOfUnaries = boost::make_shared<DecisionTreeFactor>(
                 *prodOfUnaries
                     * (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
                         graph.at(factorIdx))));

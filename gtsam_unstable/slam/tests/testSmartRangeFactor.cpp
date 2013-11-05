@@ -53,8 +53,8 @@ TEST( SmartRangeFactor, addRange ) {
 
 TEST( SmartRangeFactor, scenario ) {
   DOUBLES_EQUAL(10, r1, 1e-9);
-  DOUBLES_EQUAL(sqrt(100+25), r2, 1e-9);
-  DOUBLES_EQUAL(sqrt(50), r3, 1e-9);
+  DOUBLES_EQUAL(sqrt(100.0+25.0), r2, 1e-9);
+  DOUBLES_EQUAL(sqrt(50.0), r3, 1e-9);
 }
 /* ************************************************************************* */
 
@@ -89,7 +89,7 @@ TEST( SmartRangeFactor, unwhitenedError ) {
   Vector actual4 = f.unwhitenedError(values, H); // with H now !
   EXPECT(assert_equal((Vec(1) << 0.0), actual4));
   CHECK(assert_equal(Matrix_(1,3, 0.0,-1.0,0.0), H.front()));
-  CHECK(assert_equal(Matrix_(1,3, sqrt(2)/2,-sqrt(2)/2,0.0), H.back()));
+  CHECK(assert_equal(Matrix_(1,3, sqrt(2.0)/2,-sqrt(2.0)/2,0.0), H.back()));
 
   // Test clone
   NonlinearFactor::shared_ptr clone = f.clone();
@@ -109,7 +109,7 @@ TEST( SmartRangeFactor, optimization ) {
   initial.insert(2, pose2);
   initial.insert(3, Pose2(5, 6, 0)); // does not satisfy range measurement
   Vector actual5 = f.unwhitenedError(initial);
-  EXPECT(assert_equal(Vector_(1,sqrt(25+16)-sqrt(50)), actual5));
+  EXPECT(assert_equal(Vector_(1,sqrt(25.0+16.0)-sqrt(50.0)), actual5));
 
   // Create Factor graph
   NonlinearFactorGraph graph;

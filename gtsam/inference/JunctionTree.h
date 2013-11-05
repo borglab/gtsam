@@ -24,6 +24,9 @@
 
 namespace gtsam {
 
+  // Forward declarations
+  template<class BAYESNET, class GRAPH> class EliminationTree;
+
   /**
    * A JunctionTree is a ClusterTree, i.e., a set of variable clusters with factors, arranged
    * in a tree, with the additional property that it represents the clique tree associated
@@ -64,8 +67,8 @@ namespace gtsam {
       static This FromEliminationTree(const ETREE& eliminationTree) { return This(eliminationTree); }
       
     /** Build the junction tree from an elimination tree. */
-    template<class ETREE>
-    JunctionTree(const ETREE& eliminationTree);
+    template<class ETREE_BAYESNET, class ETREE_GRAPH>
+    JunctionTree(const EliminationTree<ETREE_BAYESNET, ETREE_GRAPH>& eliminationTree);
 
     /// @}
 

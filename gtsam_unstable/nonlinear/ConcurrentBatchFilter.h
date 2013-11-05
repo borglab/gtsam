@@ -236,8 +236,7 @@ private:
 
   /** Print just the nonlinear keys contained inside a container */
   template<class Container>
-  static void PrintKeys(const Container& keys, const std::string& indent = "",
-      const std::string& title = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+  static void PrintKeys(const Container& keys, const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
 }; // ConcurrentBatchFilter
 

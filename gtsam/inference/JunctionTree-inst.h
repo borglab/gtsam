@@ -118,8 +118,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class BAYESTREE, class GRAPH>
-  template<class ETREE>
-  JunctionTree<BAYESTREE,GRAPH>::JunctionTree(const ETREE& eliminationTree)
+  template<class ETREE_BAYESNET, class ETREE_GRAPH>
+  JunctionTree<BAYESTREE,GRAPH>::JunctionTree(const EliminationTree<ETREE_BAYESNET, ETREE_GRAPH>& eliminationTree)
   {
     gttic(JunctionTree_FromEliminationTree);
     // Here we rely on the BayesNet having been produced by this elimination tree, such that the
@@ -130,7 +130,7 @@ namespace gtsam {
 
     // Traverse the elimination tree, doing symbolic elimination and merging nodes as we go.  Gather
     // the created junction tree roots in a dummy Node.
-    typedef typename ETREE::Node ETreeNode;
+    typedef typename EliminationTree<ETREE_BAYESNET, ETREE_GRAPH>::Node ETreeNode;
     ConstructorTraversalData<BAYESTREE, GRAPH> rootData(0);
     rootData.myJTNode = boost::make_shared<typename Base::Node>(); // Make a dummy node to gather the junction tree roots
     treeTraversal::DepthFirstForest(eliminationTree, rootData,

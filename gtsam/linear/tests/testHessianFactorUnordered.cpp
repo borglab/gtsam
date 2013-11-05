@@ -441,7 +441,7 @@ TEST(HessianFactor, gradientAtZero)
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
 
   // test gradient at zero
-  VectorValues expectedG = pair_list_of(0, -g1) (1, -g2);
+  VectorValues expectedG = pair_list_of<Key, Vector>(0, -g1) (1, -g2);
   Matrix A; Vector b; boost::tie(A,b) = factor.jacobian();
   FastVector<Key> keys; keys += 0,1;
   EXPECT(assert_equal(-A.transpose()*b, expectedG.vector(keys)));
