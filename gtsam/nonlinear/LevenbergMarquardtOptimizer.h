@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <ctime>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace gtsam {
 
@@ -100,16 +100,14 @@ class GTSAM_EXPORT LevenbergMarquardtState: public NonlinearOptimizerState {
 public:
   double lambda;
   int totalNumberInnerIterations; // The total number of inner iterations in the optimization (for each iteration, LM may try multiple iterations with different lambdas)
-  double startTime;
+  boost::posix_time::ptime startTime;
 
   LevenbergMarquardtState() {
     initTime();
   }
 
   void initTime() {
-    timeval tod;
-    gettimeofday(&tod, NULL);
-    startTime = tod.tv_sec + tod.tv_usec / 1000000.0;
+    startTime = boost::posix_time::microsec_clock::universal_time();
   }
 
   virtual ~LevenbergMarquardtState() {

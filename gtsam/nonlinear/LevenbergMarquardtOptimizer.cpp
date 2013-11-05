@@ -24,7 +24,6 @@
 #include <boost/algorithm/string.hpp>
 #include <string>
 #include <cmath>
-#include <ctime>
 #include <fstream>
 
 using namespace std;
@@ -118,11 +117,9 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (!params_.logFile.empty()) {
         ofstream os(params_.logFile.c_str(), ios::app);
 
-        timeval rawtime;
-        gettimeofday(&rawtime, NULL);
-        double currentTime = rawtime.tv_sec + rawtime.tv_usec / 1000000.0;
+        boost::posix_time::ptime currentTime = boost::posix_time::microsec_clock::universal_time();
 
-        os << state_.iterations << "," << currentTime - state_.startTime << ","
+        os << state_.iterations << "," << 1e-6 * (currentTime - state_.startTime).total_microseconds() << ","
             << state_.error << "," << state_.lambda << endl;
       }
 
