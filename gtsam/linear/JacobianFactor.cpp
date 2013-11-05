@@ -162,7 +162,7 @@ namespace gtsam {
           const size_t sourceVarpos = slots->second[sourceFactorI];
           if(sourceVarpos < numeric_limits<size_t>::max()) {
             const JacobianFactor& sourceFactor = *factors[sourceFactorI];
-            if(sourceFactor.cols() > 0) {
+            if(sourceFactor.cols() > 1) {
               foundVariable = true;
               DenseIndex vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
 
