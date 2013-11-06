@@ -79,22 +79,22 @@ void LevenbergMarquardtOptimizer::iterate() {
 
   gttic (LM_iterate);
 
-  // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = linearize();
-
   // Pull out parameters we'll use
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_.verbosity;
   const LevenbergMarquardtParams::VerbosityLM lmVerbosity = params_.verbosityLM;
 
+  // Linearize graph
+  if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
+    cout << "linearizing = " << endl;
+  GaussianFactorGraph::shared_ptr linear = linearize();
+
   // Keep increasing lambda until we make make progress
   while (true) {
-    if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
-      cout << "trying lambda = " << state_.lambda << endl;
     ++state_.totalNumberInnerIterations;
-    // cout << "state_.totalNumberInnerIterations = " << state_.totalNumberInnerIterations << endl;
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
     gttic(damp);
+    if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) cout << "building damped system" << endl;
     GaussianFactorGraph dampedSystem = *linear;
     {
       double sigma = 1.0 / std::sqrt(state_.lambda);
@@ -109,10 +109,11 @@ void LevenbergMarquardtOptimizer::iterate() {
       }
     }
     gttoc(damp);
-    if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) dampedSystem.print("damped");
 
     // Try solving
     try {
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+        cout << "trying lambda = " << state_.lambda << endl;
       // Log current error/lambda to file
       if (!params_.logFile.empty()) {
         ofstream os(params_.logFile.c_str(), ios::app);
@@ -136,6 +137,7 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       // create new optimization state with more adventurous lambda
       gttic (compute_error);
+      if(nloVerbosity >= NonlinearOptimizerParams::ERROR) cout << "calculating error" << endl;
       double error = graph_.error(newValues);
       gttoc(compute_error);
 
