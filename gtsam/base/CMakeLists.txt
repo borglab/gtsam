@@ -1,5 +1,5 @@
 # Install headers
-file(GLOB base_headers "*.h")
+file(GLOB base_headers "*.h" "treeTraversal/*.h")
 install(FILES ${base_headers} DESTINATION include/gtsam/base)
 
 # Files to exclude from compilation of tests and timing scripts
