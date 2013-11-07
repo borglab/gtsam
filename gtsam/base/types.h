@@ -109,6 +109,9 @@ namespace gtsam {
     /** Operator to access the value */
     T& operator*() { return value; }
 
+    /** Operator to access the value */
+    const T& operator*() const { return value; }
+
     /** Implicit conversion allows use in if statements for bool type, etc. */
     operator T() const { return value; }
   };
