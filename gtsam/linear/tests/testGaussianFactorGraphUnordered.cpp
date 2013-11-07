@@ -322,6 +322,37 @@ TEST( GaussianFactorGraph, gradientAtZero )
   EXPECT(assert_equal(expected, actual));
 }
 
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, clone ) {
+  GaussianFactorGraph init_graph = createGaussianFactorGraphWithHessianFactor();
+  init_graph.push_back(GaussianFactor::shared_ptr()); /// Add null factor
+  GaussianFactorGraph exp_graph = createGaussianFactorGraphWithHessianFactor(); // Created separately
+  exp_graph.push_back(GaussianFactor::shared_ptr()); /// Add null factor
+  GaussianFactorGraph actCloned = init_graph.clone();
+  EXPECT(assert_equal(init_graph, actCloned)); // Same as the original version
+
+  // Apply an in-place change to init_graph and compare
+  JacobianFactor::shared_ptr jacFactor0 = boost::dynamic_pointer_cast<JacobianFactor>(init_graph.at(0));
+  CHECK(jacFactor0);
+  jacFactor0->getA(jacFactor0->begin()) *= 7.;
+  EXPECT(assert_inequal(init_graph, exp_graph));
+  EXPECT(assert_equal(exp_graph, actCloned));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, negate ) {
+  GaussianFactorGraph init_graph = createGaussianFactorGraphWithHessianFactor();
+  init_graph.push_back(GaussianFactor::shared_ptr()); /// Add null factor
+  GaussianFactorGraph actNegation = init_graph.negate();
+  GaussianFactorGraph expNegation;
+  expNegation.push_back(init_graph.at(0)->negate());
+  expNegation.push_back(init_graph.at(1)->negate());
+  expNegation.push_back(init_graph.at(2)->negate());
+  expNegation.push_back(init_graph.at(3)->negate());
+  expNegation.push_back(init_graph.at(4)->negate());
+  expNegation.push_back(GaussianFactor::shared_ptr());
+  EXPECT(assert_equal(expNegation, actNegation));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

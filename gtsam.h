@@ -1269,6 +1269,9 @@ class GaussianFactorGraph {
   double error(const gtsam::VectorValues& c) const;
   double probPrime(const gtsam::VectorValues& c) const;
 
+  gtsam::GaussianFactorGraph clone() const;
+  gtsam::GaussianFactorGraph negate() const;
+
   // Optimizing and linear algebra  
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimize(const gtsam::Ordering& ordering) const;

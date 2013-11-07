@@ -148,6 +148,21 @@ namespace gtsam {
       return exp(-0.5 * error(c));
     }
 
+    /**
+     * Clone() performs a deep-copy of the graph, including all of the factors.
+     * Cloning preserves null factors so indices for the original graph are still
+     * valid for the cloned graph.
+     */
+    GaussianFactorGraph clone() const;
+
+    /**
+     * Returns the negation of all factors in this graph - corresponds to antifactors.
+     * Will convert all factors to HessianFactors due to negation of information.
+     * Cloning preserves null factors so indices for the original graph are still
+     * valid for the cloned graph.
+     */
+    GaussianFactorGraph negate() const;
+
     ///@name Linear Algebra
     ///@{
 

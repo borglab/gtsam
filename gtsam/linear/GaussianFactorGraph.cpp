@@ -55,6 +55,30 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  GaussianFactorGraph GaussianFactorGraph::clone() const {
+    GaussianFactorGraph result;
+    BOOST_FOREACH(const sharedFactor& f, *this) {
+      if (f)
+        result.push_back(f->clone());
+      else
+        result.push_back(sharedFactor()); // Passes on null factors so indices remain valid
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
+  GaussianFactorGraph GaussianFactorGraph::negate() const {
+    GaussianFactorGraph result;
+    BOOST_FOREACH(const sharedFactor& f, *this) {
+      if (f)
+        result.push_back(f->negate());
+      else
+        result.push_back(sharedFactor()); // Passes on null factors so indices remain valid
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
   std::vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
     // First find dimensions of each variable
     vector<size_t> dims;
