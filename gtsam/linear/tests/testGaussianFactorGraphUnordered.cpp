@@ -34,9 +34,9 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-static SharedDiagonal
-  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
-  constraintModel = noiseModel::Constrained::All(2);
+//static SharedDiagonal
+//  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
+//  constraintModel = noiseModel::Constrained::All(2);
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, initialization) {
@@ -324,10 +324,23 @@ TEST( GaussianFactorGraph, gradientAtZero )
 
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, clone ) {
+  // 2 variables, frontal has dim=4
+  VerticalBlockMatrix blockMatrix(list_of(4)(2)(1), 4);
+  blockMatrix.matrix() <<
+      1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
+      0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
+      0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
+      0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
+  GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
+
   GaussianFactorGraph init_graph = createGaussianFactorGraphWithHessianFactor();
   init_graph.push_back(GaussianFactor::shared_ptr()); /// Add null factor
+  init_graph.push_back(GaussianConditional(cg));
+
   GaussianFactorGraph exp_graph = createGaussianFactorGraphWithHessianFactor(); // Created separately
   exp_graph.push_back(GaussianFactor::shared_ptr()); /// Add null factor
+  exp_graph.push_back(GaussianConditional(cg));
+
   GaussianFactorGraph actCloned = init_graph.clone();
   EXPECT(assert_equal(init_graph, actCloned)); // Same as the original version
 
