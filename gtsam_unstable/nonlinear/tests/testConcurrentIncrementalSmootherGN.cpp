@@ -581,10 +581,10 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
 //  GaussianSequentialSolver GSS = GaussianSequentialSolver(*LinFactorGraph);
 //  GaussianBayesNet::shared_ptr GBNsptr = GSS.eliminate();
 
-  FastSet<Index> allkeys = LinFactorGraph->keys();
+  FastSet<Key> allkeys = LinFactorGraph->keys();
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues)
     allkeys.erase(key_value.key);
-  std::vector<Index> variables(allkeys.begin(), allkeys.end());
+  std::vector<Key> variables(allkeys.begin(), allkeys.end());
   std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);

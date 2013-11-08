@@ -62,10 +62,10 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const FastVect
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
+FastSet<Key> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
     const ISAM2Params::RelinearizationThreshold& relinearizeThreshold)
 {
-  FastSet<Index> relinKeys;
+  FastSet<Key> relinKeys;
 
   if(const double* threshold = boost::get<double>(&relinearizeThreshold))
   {
@@ -90,7 +90,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double threshold,
+void CheckRelinearizationRecursiveDouble(FastSet<Key>& relinKeys, double threshold,
                                          const VectorValues& delta, const ISAM2Clique::shared_ptr& clique)
 {
   // Check the current clique for relinearization
@@ -112,7 +112,7 @@ void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double thres
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<char,Vector>& thresholds,
+void CheckRelinearizationRecursiveMap(FastSet<Key>& relinKeys, const FastMap<char,Vector>& thresholds,
                                       const VectorValues& delta,
                                       const ISAM2Clique::shared_ptr& clique)
 {
@@ -144,11 +144,11 @@ void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<c
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
+FastSet<Key> ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
                                                         const VectorValues& delta,
                                                         const ISAM2Params::RelinearizationThreshold& relinearizeThreshold)
 {
-  FastSet<Index> relinKeys;
+  FastSet<Key> relinKeys;
   BOOST_FOREACH(const ISAM2::sharedClique& root, roots) {
     if(relinearizeThreshold.type() == typeid(double))
       CheckRelinearizationRecursiveDouble(relinKeys, boost::get<double>(relinearizeThreshold), delta, root);
@@ -159,7 +159,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::
 }
 
 /* ************************************************************************* */
-void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const FastSet<Key>& markedMask)
+void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, FastSet<Key>& keys, const FastSet<Key>& markedMask)
 {
   static const bool debug = false;
   // does the separator contain any of the variables?

@@ -74,7 +74,7 @@ namespace gtsam {
 
     // print
     virtual void print(const std::string& s = "DecisionTreeFactor:\n",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /// @}
     /// @name Standard Interface

@@ -16,15 +16,15 @@ namespace gtsam {
    * General AllDiff constraint
    * Returns 1 if values for all keys are different, 0 otherwise
    * DiscreteFactors are all awkward in that they have to store two types of keys:
-   * for each variable we have a Index and an Index. In this factor, we
+   * for each variable we have a Key and an Key. In this factor, we
    * keep the Indices locally, and the Indices are stored in IndexFactor.
    */
   class GTSAM_UNSTABLE_EXPORT AllDiff: public Constraint {
 
-    std::map<Index,size_t> cardinalities_;
+    std::map<Key,size_t> cardinalities_;
 
     DiscreteKey discreteKey(size_t i) const {
-      Index j = keys_[i];
+      Key j = keys_[i];
       return DiscreteKey(j,cardinalities_.at(j));
     }
 
@@ -35,7 +35,7 @@ namespace gtsam {
 
     // print
     virtual void print(const std::string& s = "",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /// equals
     bool equals(const DiscreteFactor& other, double tol) const {

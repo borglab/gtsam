@@ -45,7 +45,7 @@ namespace gtsam {
   }
 
   /** Compute the marginal of a single variable */
-  DiscreteFactor::shared_ptr operator()(Index variable) const {
+  DiscreteFactor::shared_ptr operator()(Key variable) const {
     // Compute marginal
     DiscreteFactor::shared_ptr marginalFactor;
     marginalFactor = bayesTree_->marginalFactor(variable, &EliminateDiscrete);

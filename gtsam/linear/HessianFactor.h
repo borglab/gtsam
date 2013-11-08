@@ -142,12 +142,12 @@ namespace gtsam {
      * error is:
      * 0.5*(f - 2*x'*g + x'*G*x)
      */
-    HessianFactor(Index j, const Matrix& G, const Vector& g, double f);
+    HessianFactor(Key j, const Matrix& G, const Vector& g, double f);
 
     /** Construct a unary factor, given a mean and covariance matrix.
      * error is 0.5*(x-mu)'*inv(Sigma)*(x-mu)
     */
-    HessianFactor(Index j, const Vector& mu, const Matrix& Sigma);
+    HessianFactor(Key j, const Vector& mu, const Matrix& Sigma);
 
     /** Construct a binary factor.  Gxx are the upper-triangle blocks of the
      * quadratic term (the Hessian matrix), gx the pieces of the linear vector
@@ -164,7 +164,7 @@ namespace gtsam {
        1*1    f =  b'*M*b
      \endcode
      */
-    HessianFactor(Index j1, Index j2,
+    HessianFactor(Key j1, Key j2,
         const Matrix& G11, const Matrix& G12, const Vector& g1,
         const Matrix& G22, const Vector& g2, double f);
 
@@ -172,7 +172,7 @@ namespace gtsam {
      * quadratic term (the Hessian matrix), gx the pieces of the linear vector
      * term, and f the constant term.
      */
-    HessianFactor(Index j1, Index j2, Index j3,
+    HessianFactor(Key j1, Key j2, Key j3,
         const Matrix& G11, const Matrix& G12, const Matrix& G13, const Vector& g1,
         const Matrix& G22, const Matrix& G23, const Vector& g2,
         const Matrix& G33, const Vector& g3, double f);

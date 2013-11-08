@@ -51,16 +51,16 @@ namespace gtsam {
     SymbolicConditional() {}
 
     /** No parents */
-    SymbolicConditional(Index j) : BaseFactor(j), BaseConditional(1) {}
+    SymbolicConditional(Key j) : BaseFactor(j), BaseConditional(1) {}
 
     /** Single parent */
-    SymbolicConditional(Index j, Index parent) : BaseFactor(j, parent), BaseConditional(1) {}
+    SymbolicConditional(Key j, Key parent) : BaseFactor(j, parent), BaseConditional(1) {}
 
     /** Two parents */
-    SymbolicConditional(Index j, Index parent1, Index parent2) : BaseFactor(j, parent1, parent2), BaseConditional(1) {}
+    SymbolicConditional(Key j, Key parent1, Key parent2) : BaseFactor(j, parent1, parent2), BaseConditional(1) {}
 
     /** Three parents */
-    SymbolicConditional(Index j, Index parent1, Index parent2, Index parent3) : BaseFactor(j, parent1, parent2, parent3), BaseConditional(1) {}
+    SymbolicConditional(Key j, Key parent1, Key parent2, Key parent3) : BaseFactor(j, parent1, parent2, parent3), BaseConditional(1) {}
 
     /** Named constructor from an arbitrary number of keys and frontals */
     template<typename ITERATOR>

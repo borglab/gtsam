@@ -129,7 +129,7 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
     /* check whether this factor should be augmented to the "tree" graph */
     if ( gf->keys().size() == 1 ) augment = true;
     else {
-      const Index u = gf->keys()[0], v = gf->keys()[1],
+      const Key u = gf->keys()[0], v = gf->keys()[1],
                   u_root = D.findSet(u), v_root = D.findSet(v);
       if ( u_root != v_root ) {
         t++; augment = true ;

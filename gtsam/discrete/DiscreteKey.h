@@ -30,7 +30,7 @@ namespace gtsam {
    * Key type for discrete conditionals
    * Includes name and cardinality
    */
-  typedef std::pair<Index,size_t> DiscreteKey;
+  typedef std::pair<Key,size_t> DiscreteKey;
 
   /// DiscreteKeys is a set of keys that can be assembled using the & operator
   struct DiscreteKeys: public std::vector<DiscreteKey> {
@@ -53,10 +53,10 @@ namespace gtsam {
     GTSAM_EXPORT DiscreteKeys(const std::vector<int>& cs);
 
     /// Return a vector of indices
-    GTSAM_EXPORT std::vector<Index> indices() const;
+    GTSAM_EXPORT std::vector<Key> indices() const;
 
     /// Return a map from index to cardinality
-    GTSAM_EXPORT std::map<Index,size_t> cardinalities() const;
+    GTSAM_EXPORT std::map<Key,size_t> cardinalities() const;
 
     /// Add a key (non-const!)
     DiscreteKeys& operator&(const DiscreteKey& key) {

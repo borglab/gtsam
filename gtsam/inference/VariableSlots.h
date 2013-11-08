@@ -38,7 +38,7 @@ namespace gtsam {
 *   interleaved.
 *  
 *   VariableSlots describes the 2D block structure of the combined factor.  It
-*   is a map<Index, vector<size_t> >.  The Index is the real
+*   is a map<Key, vector<size_t> >.  The Key is the real
 *   variable index of the combined factor slot.  The vector<size_t> tells, for
 *   each row-block (factor), which column-block (variable slot) from the
 *   component factor appears in this block of the combined factor.
@@ -50,11 +50,11 @@ namespace gtsam {
 *  
 *   \nosubgrouping */
 
-class VariableSlots : public FastMap<Index, FastVector<size_t> > {
+class VariableSlots : public FastMap<Key, FastVector<size_t> > {
 
 public:
 
-  typedef FastMap<Index, FastVector<size_t> > Base;
+  typedef FastMap<Key, FastVector<size_t> > Base;
 
   /// @name Standard Constructors
   /// @{
@@ -98,7 +98,7 @@ VariableSlots::VariableSlots(const FG& factorGraph)
   BOOST_FOREACH(const typename FG::sharedFactor& factor, factorGraph) {
     assert(factor);
     size_t factorVarSlot = 0;
-    BOOST_FOREACH(const Index involvedVariable, *factor) {
+    BOOST_FOREACH(const Key involvedVariable, *factor) {
       // Set the slot in this factor for this variable.  If the
       // variable was not already discovered, create an array for it
       // that we'll fill with the slot indices for each factor that

@@ -104,7 +104,7 @@ boost::shared_ptr<GaussianFactor>
 LinearizedJacobianFactor::linearize(const Values& c) const {
 
   // Create the 'terms' data structure for the Jacobian constructor
-  std::vector<std::pair<Index, Matrix> > terms;
+  std::vector<std::pair<Key, Matrix> > terms;
   BOOST_FOREACH(Key key, keys()) {
     terms.push_back(std::make_pair(key, this->A(key)));
   }

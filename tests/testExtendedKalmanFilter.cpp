@@ -197,7 +197,7 @@ public:
     const X2& x2 = c.at<X2>(key2());
     Matrix A1, A2;
     Vector b = -evaluateError(x1, x2, A1, A2);
-    const Index var1 = ordering[key1()], var2 = ordering[key2()];
+    const Key var1 = ordering[key1()], var2 = ordering[key2()];
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
@@ -333,7 +333,7 @@ public:
     const X& x1 = c.at<X>(key());
     Matrix A1;
     Vector b = -evaluateError(x1, A1);
-    const Index var1 = ordering[key()];
+    const Key var1 = ordering[key()];
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {

@@ -17,7 +17,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void SingleValue::print(const string& s,
-      const IndexFormatter& formatter) const {
+      const KeyFormatter& formatter) const {
     cout << s << "SingleValue on " << "j=" << formatter(keys_[0])
         << " with value " << value_ << endl;
   }

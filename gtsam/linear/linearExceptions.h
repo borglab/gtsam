@@ -93,11 +93,11 @@ namespace gtsam {
      described for Jacobian columns in the previous bullet.
    */
   class GTSAM_EXPORT IndeterminantLinearSystemException : public ThreadsafeException<IndeterminantLinearSystemException> {
-    Index j_;
+    Key j_;
   public:
-    IndeterminantLinearSystemException(Index j) throw() : j_(j) {}
+    IndeterminantLinearSystemException(Key j) throw() : j_(j) {}
     virtual ~IndeterminantLinearSystemException() throw() {}
-    Index nearbyVariable() const { return j_; }
+    Key nearbyVariable() const { return j_; }
     virtual const char* what() const throw();
   };
 

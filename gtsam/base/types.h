@@ -36,19 +36,6 @@
 
 namespace gtsam {
 
-  /// Integer variable index type
-  typedef size_t Index;
-
-  /** A function to convert indices to strings, for example by translating back
-   * to a nonlinear key and then to a Symbol. */
-  typedef boost::function<std::string(Index)> IndexFormatter;
-
-  GTSAM_EXPORT std::string _defaultIndexFormatter(Index j);
-
-  /** The default IndexFormatter outputs the index */
-  static const IndexFormatter DefaultIndexFormatter = &_defaultIndexFormatter;
-
-
   /// Integer nonlinear key type
   typedef size_t Key;
 

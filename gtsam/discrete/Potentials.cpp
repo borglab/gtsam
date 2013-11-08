@@ -24,8 +24,8 @@ using namespace std;
 namespace gtsam {
 
   // explicit instantiation
-  template class DecisionTree<Index, double> ;
-  template class AlgebraicDecisionTree<Index> ;
+  template class DecisionTree<Key, double> ;
+  template class AlgebraicDecisionTree<Key> ;
 
   /* ************************************************************************* */
   double Potentials::safe_div(const double& a, const double& b) {
@@ -52,7 +52,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Potentials::print(const string& s,
-      const IndexFormatter& formatter) const {
+      const KeyFormatter& formatter) const {
     cout << s << "\n  Cardinalities: ";
     BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
       cout << formatter(key.first) << "=" << formatter(key.second) << " ";
@@ -65,7 +65,7 @@ namespace gtsam {
 //  void Potentials::remapIndices(const P& remapping) {
 //    // Permute the _cardinalities (TODO: Inefficient Consider Improving)
 //    DiscreteKeys keys;
-//    map<Index, Index> ordering;
+//    map<Key, Key> ordering;
 //
 //    // Get the original keys from cardinalities_
 //    BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
@@ -78,7 +78,7 @@ namespace gtsam {
 //    }
 //
 //    // Change *this
-//    AlgebraicDecisionTree<Index> permuted((*this), ordering);
+//    AlgebraicDecisionTree<Key> permuted((*this), ordering);
 //    *this = permuted;
 //    cardinalities_ = keys.cardinalities();
 //  }

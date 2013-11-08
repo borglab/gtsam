@@ -81,7 +81,7 @@ public:
    * The number of variable entries.  This is one greater than the variable
    * with the highest index.
    */
-  Index size() const { return index_.size(); }
+  Key size() const { return index_.size(); }
 
   /** The number of factors in the original factor graph */
   size_t nFactors() const { return nFactors_; }
@@ -154,11 +154,11 @@ public:
   const_iterator find(Key key) const { return index_.find(key); }
 
 protected:
-  Factor_iterator factorsBegin(Index variable) { return internalAt(variable).begin(); }
-  Factor_iterator factorsEnd(Index variable) { return internalAt(variable).end(); }
+  Factor_iterator factorsBegin(Key variable) { return internalAt(variable).begin(); }
+  Factor_iterator factorsEnd(Key variable) { return internalAt(variable).end(); }
 
-  Factor_const_iterator factorsBegin(Index variable) const { return internalAt(variable).begin(); }
-  Factor_const_iterator factorsEnd(Index variable) const { return internalAt(variable).end(); }
+  Factor_const_iterator factorsBegin(Key variable) const { return internalAt(variable).begin(); }
+  Factor_const_iterator factorsEnd(Key variable) const { return internalAt(variable).end(); }
 
   /// Internal version of 'at' that asserts existence
   const Factors& internalAt(Key variable) const {

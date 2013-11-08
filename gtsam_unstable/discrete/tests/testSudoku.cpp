@@ -34,8 +34,8 @@ public:
     return dkeys_.at(IJ(i, j));
   }
 
-  /// return Index for cell(i,j)
-  Index key(size_t i, size_t j) const {
+  /// return Key for cell(i,j)
+  Key key(size_t i, size_t j) const {
     return dkey(i, j).first;
   }
 
@@ -45,7 +45,7 @@ public:
     // Create variables, ordering, and unary constraints
     va_list ap;
     va_start(ap, n);
-    Index k=0;
+    Key k=0;
     for (size_t i = 0; i < n; ++i) {
       for (size_t j = 0; j < n; ++j, ++k) {
         // create the key
@@ -97,7 +97,7 @@ public:
   void printAssignment(DiscreteFactor::sharedValues assignment) const {
     for (size_t i = 0; i < n_; i++) {
       for (size_t j = 0; j < n_; j++) {
-        Index k = key(i, j);
+        Key k = key(i, j);
         cout << 1 + assignment->at(k) << " ";
       }
       cout << endl;

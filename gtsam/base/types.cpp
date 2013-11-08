@@ -25,11 +25,6 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  std::string _defaultIndexFormatter(Index j) {
-    return boost::lexical_cast<std::string>(j);
-  }
-
-  /* ************************************************************************* */
   std::string _defaultKeyFormatter(Key key) {
     const Symbol asSymbol(key);
     if(asSymbol.chr() > 0)

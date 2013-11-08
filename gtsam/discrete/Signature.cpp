@@ -131,8 +131,8 @@ namespace gtsam {
     return keys;
   }
 
-  vector<Index> Signature::indices() const {
-    vector<Index> js;
+  vector<Key> Signature::indices() const {
+    vector<Key> js;
     js.push_back(key_.first);
     BOOST_FOREACH(const DiscreteKey& key, parents_)
       js.push_back(key.first);

@@ -33,7 +33,7 @@ using namespace boost::assign;
 /* ************************************************************************* */
 #ifdef TRACK_ELIMINATE
 TEST(SymbolicFactor, eliminate) {
-  vector<Index> keys; keys += 2, 3, 4, 6, 7, 9, 10, 11;
+  vector<Key> keys; keys += 2, 3, 4, 6, 7, 9, 10, 11;
   IndexFactor actual(keys.begin(), keys.end());
   BayesNet<IndexConditional> fragment = *actual.eliminate(3);
 

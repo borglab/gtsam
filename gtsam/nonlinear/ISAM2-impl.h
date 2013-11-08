@@ -32,7 +32,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
     size_t nFullSystemVars;
     enum { /*AS_ADDED,*/ COLAMD } algorithm;
     enum { NO_CONSTRAINT, CONSTRAIN_LAST } constrain;
-    boost::optional<FastMap<Index,int> > constrainedKeys;
+    boost::optional<FastMap<Key,int> > constrainedKeys;
   };
 
   /**
@@ -65,7 +65,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearizationFull(const VectorValues& delta,
+  static FastSet<Key> CheckRelinearizationFull(const VectorValues& delta,
       const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
 
   /**
@@ -79,7 +79,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
+  static FastSet<Key> CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
     const VectorValues& delta, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
 
   /**
@@ -97,7 +97,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const FastSet<Key>& markedMask);
+  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Key>& keys, const FastSet<Key>& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in

@@ -141,7 +141,7 @@ TEST (Serialization, linear_factors) {
   EXPECT(equalsXML<VectorValues>(values));
   EXPECT(equalsBinary<VectorValues>(values));
 
-  Index i1 = 4, i2 = 7;
+  Key i1 = 4, i2 = 7;
   Matrix A1 = eye(3), A2 = -1.0 * eye(3);
   Vector b = ones(3);
   SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vec(3) << 1.0, 2.0, 3.0));

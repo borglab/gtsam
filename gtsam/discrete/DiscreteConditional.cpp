@@ -66,7 +66,7 @@ DiscreteConditional::DiscreteConditional(const Signature& signature) :
 
 /* ******************************************************************************** */
 void DiscreteConditional::print(const std::string& s,
-    const IndexFormatter& formatter) const {
+    const KeyFormatter& formatter) const {
   std::cout << s << std::endl;
   Potentials::print(s);
 }
@@ -86,8 +86,8 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
 /* ******************************************************************************** */
 Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
   ADT pFS(*this);
-  Index j; size_t value;
-  BOOST_FOREACH(Index key, parents())
+  Key j; size_t value;
+  BOOST_FOREACH(Key key, parents())
   try {
     j = (key);
     value = parentsValues.at(j);
@@ -111,7 +111,7 @@ void DiscreteConditional::solveInPlace(Values& values) const {
   double maxP = 0;
 
   DiscreteKeys keys;
-  BOOST_FOREACH(Index idx, frontals()) {
+  BOOST_FOREACH(Key idx, frontals()) {
     DiscreteKey dk(idx, cardinality(idx));
     keys & dk;
   }
@@ -129,7 +129,7 @@ void DiscreteConditional::solveInPlace(Values& values) const {
   }
 
   //set values (inPlace) to mpe
-  BOOST_FOREACH(Index j, frontals()) {
+  BOOST_FOREACH(Key j, frontals()) {
     values[j] = mpe[j];
   }
 }
@@ -137,7 +137,7 @@ void DiscreteConditional::solveInPlace(Values& values) const {
 /* ******************************************************************************** */
 void DiscreteConditional::sampleInPlace(Values& values) const {
   assert(nrFrontals() == 1);
-  Index j = (firstFrontalKey());
+  Key j = (firstFrontalKey());
   size_t sampled = sample(values); // Sample variable
   values[j] = sampled; // store result in partial solution
 }
@@ -154,7 +154,7 @@ size_t DiscreteConditional::solve(const Values& parentsValues) const {
   Values frontals;
   double maxP = 0;
   assert(nrFrontals() == 1);
-  Index j = (firstFrontalKey());
+  Key j = (firstFrontalKey());
   for (size_t value = 0; value < cardinality(j); value++) {
     frontals[j] = value;
     double pValueS = pFS(frontals); // P(F=value|S=parentsValues)
@@ -183,7 +183,7 @@ size_t DiscreteConditional::sample(const Values& parentsValues) const {
   // get cumulative distribution function (cdf)
   // TODO, only works for one key now, seems horribly slow this way
   assert(nrFrontals() == 1);
-  Index j = (firstFrontalKey());
+  Key j = (firstFrontalKey());
   size_t nj = cardinality(j);
   vector<double> cdf(nj);
   Values frontals;

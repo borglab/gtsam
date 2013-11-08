@@ -42,7 +42,7 @@ public:
 
   /** A map from keys to values..
    * TODO: Again, do we need this??? */
-  typedef Assignment<Index> Values;
+  typedef Assignment<Key> Values;
   typedef boost::shared_ptr<Values> sharedValues;
 
   /// @name Standard Constructors
@@ -79,7 +79,7 @@ public:
 
   /// GTSAM-style print
   void print(const std::string& s = "Discrete Conditional: ",
-      const IndexFormatter& formatter = DefaultIndexFormatter) const;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
   /// GTSAM-style equals
   bool equals(const DiscreteFactor& other, double tol = 1e-9) const;
@@ -99,7 +99,7 @@ public:
   }
 
   /** Restrict to given parent values, returns AlgebraicDecisionDiagram */
-  ADT choose(const Assignment<Index>& parentsValues) const;
+  ADT choose(const Assignment<Key>& parentsValues) const;
 
   /**
    * solve a conditional

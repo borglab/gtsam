@@ -186,12 +186,12 @@ done:
 //  Permuted<VectorValues> permuted(permutation, values);
 //
 //  // After permutation, the indices above the threshold are 2 and 2
-//  FastSet<Index> expected;
+//  FastSet<Key> expected;
 //  expected.insert(2);
 //  expected.insert(3);
 //
 //  // Indices checked by CheckRelinearization
-//  FastSet<Index> actual = Impl::CheckRelinearization(permuted, 0.1);
+//  FastSet<Key> actual = Impl::CheckRelinearization(permuted, 0.1);
 //
 //  EXPECT(assert_equal(expected, actual));
 //}
@@ -624,7 +624,7 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 namespace {
   bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
     Matrix expectedAugmentedHessian, expected3AugmentedHessian;
-    vector<Index> toKeep;
+    vector<Key> toKeep;
     BOOST_FOREACH(Key j, isam.getDelta() | br::map_keys)
       if(find(leafKeys.begin(), leafKeys.end(), j) == leafKeys.end())
         toKeep.push_back(j);

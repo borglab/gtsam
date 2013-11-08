@@ -143,7 +143,7 @@ namespace gtsam {
     /** return root cliques */
     const FastVector<sharedClique>& roots() const { return roots_;  }
 
-    /** alternate syntax for matlab: find the clique that contains the variable with Index j */
+    /** alternate syntax for matlab: find the clique that contains the variable with Key j */
     const sharedClique& clique(Key j) const {
       typename Nodes::const_iterator c = nodes_.find(j);
       if(c == nodes_.end())
@@ -169,13 +169,13 @@ namespace gtsam {
      * return joint on two variables
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
-    sharedFactorGraph joint(Index j1, Index j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+    sharedFactorGraph joint(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
      * return joint on two variables as a BayesNet
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
-    sharedBayesNet jointBayesNet(Index j1, Index j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+    sharedBayesNet jointBayesNet(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
      * Read only with side effects
@@ -193,7 +193,7 @@ namespace gtsam {
      * return the one with the lowest index in the ordering.
      */
     template<class CONTAINER>
-    Index findParentClique(const CONTAINER& parents) const;
+    Key findParentClique(const CONTAINER& parents) const;
 
     /** Remove all nodes */
     void clear();

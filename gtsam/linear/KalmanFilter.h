@@ -86,7 +86,7 @@ namespace gtsam {
     void print(const std::string& s = "") const;
 
     /** Return step index k, starts at 0, incremented at each predict. */
-    static Index step(const State& p) {
+    static Key step(const State& p) {
       return p->firstFrontalKey();
     }
 

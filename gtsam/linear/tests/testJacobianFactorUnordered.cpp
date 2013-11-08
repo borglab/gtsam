@@ -371,7 +371,7 @@ TEST(JacobianFactor, eliminate2 )
   b2(2) =  0.2;
   b2(3) = -0.1;
 
-  vector<pair<Index, Matrix> > meas;
+  vector<pair<Key, Matrix> > meas;
   meas.push_back(make_pair(2, Ax2));
   meas.push_back(make_pair(11, Al1x1));
   JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));

@@ -70,9 +70,9 @@ namespace gtsam {
     student.name_ = studentName;
     // We fix the ordering by assigning a higher index to the student
     // and numbering the areas lower
-    Index j = 3*maxNrStudents_ + nrStudents();
+    Key j = 3*maxNrStudents_ + nrStudents();
     student.key_ = DiscreteKey(j, nrTimeSlots());
-    Index base = 3*nrStudents();
+    Key base = 3*nrStudents();
     student.keys_[0] = DiscreteKey(base+0, nrFaculty());
     student.keys_[1] = DiscreteKey(base+1, nrFaculty());
     student.keys_[2] = DiscreteKey(base+2, nrFaculty());
@@ -218,10 +218,10 @@ namespace gtsam {
     // Not intended to be general! Assumes very particular ordering !
     cout << endl;
     for (size_t s = 0; s < nrStudents(); s++) {
-      Index j = 3*maxNrStudents_ + s;
+      Key j = 3*maxNrStudents_ + s;
       size_t slot = assignment->at(j);
       cout << studentName(s) << " slot: " << slotName_[slot] << endl;
-      Index base = 3*s;
+      Key base = 3*s;
       for (size_t area = 0; area < 3; area++) {
         size_t faculty = assignment->at(base+area);
         cout << setw(12) << studentArea(s,area) << ": " << facultyName_[faculty]
@@ -245,7 +245,7 @@ namespace gtsam {
   void Scheduler::accumulateStats(sharedValues assignment, vector<
       size_t>& stats) const {
     for (size_t s = 0; s < nrStudents(); s++) {
-      Index base = 3*s;
+      Key base = 3*s;
       for (size_t area = 0; area < 3; area++) {
         size_t f = assignment->at(base+area);
         assert(f<stats.size());

@@ -242,7 +242,7 @@ TEST(HessianFactor, ConstructorNWay)
     (1, dx1)
     (2, dx2);
 
-  std::vector<Index> js;
+  std::vector<Key> js;
   js.push_back(0); js.push_back(1); js.push_back(2);
   std::vector<Matrix> Gs;
   Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G13); Gs.push_back(G22); Gs.push_back(G23); Gs.push_back(G33);
@@ -356,7 +356,7 @@ TEST(HessianFactor, eliminate2 )
   b2(2) =  0.2;
   b2(3) = -0.1;
 
-  vector<pair<Index, Matrix> > meas;
+  vector<pair<Key, Matrix> > meas;
   meas.push_back(make_pair(0, Ax2));
   meas.push_back(make_pair(1, Al1x1));
   JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));

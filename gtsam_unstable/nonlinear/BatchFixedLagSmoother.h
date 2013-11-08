@@ -103,7 +103,7 @@ public:
 protected:
 
   /** A typedef defining an Key-Factor mapping **/
-  typedef std::map<Key, std::set<Index> > FactorIndex;
+  typedef std::map<Key, std::set<Key> > FactorIndex;
 
   /** The L-M optimization parameters **/
   LevenbergMarquardtParams parameters_;

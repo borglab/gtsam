@@ -49,7 +49,7 @@ namespace gtsam {
     }
 
     /// constructor using d, R
-    GaussianDensity(Index key, const Vector& d, const Matrix& R, const SharedDiagonal& noiseModel = SharedDiagonal()) :
+    GaussianDensity(Key key, const Vector& d, const Matrix& R, const SharedDiagonal& noiseModel = SharedDiagonal()) :
       GaussianConditional(key, d, R, noiseModel) {}
 
     /// Construct using a mean and variance

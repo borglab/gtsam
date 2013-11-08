@@ -54,7 +54,7 @@ namespace gtsam {
   BaseFactor(key, R, name1, S, name2, T, d, sigmas), BaseConditional(1) {}
 
   /* ************************************************************************* */
-  void GaussianConditional::print(const string &s, const IndexFormatter& formatter) const
+  void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const
   {
     cout << s << "  Conditional density ";
     for(const_iterator it = beginFrontals(); it != endFrontals(); ++it) {

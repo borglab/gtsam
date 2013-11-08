@@ -83,7 +83,7 @@ namespace gtsam {
   void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) const {
 
     Errors::iterator ei = e.begin();
-    for ( Index i = 0 ; i < y.size() ; ++i, ++ei ) {
+    for ( Key i = 0 ; i < y.size() ; ++i, ++ei ) {
       *ei = y[i];
     }
 
@@ -98,7 +98,7 @@ namespace gtsam {
 
     Errors::const_iterator it = e.begin();
     VectorValues y = zero();
-    for ( Index i = 0 ; i < y.size() ; ++i, ++it )
+    for ( Key i = 0 ; i < y.size() ; ++i, ++it )
       y[i] = *it ;
     transposeMultiplyAdd2(1.0,it,e.end(),y);
     return y;
@@ -110,7 +110,7 @@ namespace gtsam {
     (double alpha, const Errors& e, VectorValues& y) const {
 
     Errors::const_iterator it = e.begin();
-    for ( Index i = 0 ; i < y.size() ; ++i, ++it ) {
+    for ( Key i = 0 ; i < y.size() ; ++i, ++it ) {
       const Vector& ei = *it;
       axpy(alpha, ei, y[i]);
     }

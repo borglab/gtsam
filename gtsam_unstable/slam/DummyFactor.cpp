@@ -47,7 +47,7 @@ DummyFactor::linearize(const Values& c) const {
     return boost::shared_ptr<JacobianFactor>();
 
    // Fill in terms with zero matrices
-  std::vector<std::pair<Index, Matrix> > terms(this->size());
+  std::vector<std::pair<Key, Matrix> > terms(this->size());
   for(size_t j=0; j<this->size(); ++j) {
     terms[j].first = keys()[j];
     terms[j].second = zeros(rowDim_, dims_[j]);

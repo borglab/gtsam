@@ -39,8 +39,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  FastSet<Index> DiscreteFactorGraph::keys() const {
-    FastSet<Index> keys;
+  FastSet<Key> DiscreteFactorGraph::keys() const {
+    FastSet<Key> keys;
     BOOST_FOREACH(const sharedFactor& factor, *this)
     if (factor) keys.insert(factor->begin(), factor->end());
     return keys;
@@ -65,7 +65,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void DiscreteFactorGraph::print(const std::string& s,
-      const IndexFormatter& formatter) const {
+      const KeyFormatter& formatter) const {
     std::cout << s << std::endl;
     std::cout << "size: " << size() << std::endl;
     for (size_t i = 0; i < factors_.size(); i++) {

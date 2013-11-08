@@ -38,17 +38,17 @@ namespace gtsam {
   protected:
 
     /// Construct n-way factor
-    Constraint(const std::vector<Index>& js) :
+    Constraint(const std::vector<Key>& js) :
       DiscreteFactor(js) {
     }
 
     /// Construct unary factor
-    Constraint(Index j) :
+    Constraint(Key j) :
       DiscreteFactor(boost::assign::cref_list_of<1>(j)) {
     }
 
     /// Construct binary factor
-    Constraint(Index j1, Index j2) :
+    Constraint(Key j1, Key j2) :
       DiscreteFactor(boost::assign::cref_list_of<2>(j1)(j2)) {
     }
 

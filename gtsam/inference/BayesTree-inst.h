@@ -121,7 +121,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CLIQUE>
   void BayesTree<CLIQUE>::addClique(const sharedClique& clique, const sharedClique& parent_clique) {
-    BOOST_FOREACH(Index j, clique->conditional()->frontals())
+    BOOST_FOREACH(Key j, clique->conditional()->frontals())
       nodes_[j] = clique;
     if (parent_clique != NULL) {
       clique->parent_ = parent_clique;
@@ -260,7 +260,7 @@ namespace gtsam {
   {
     gttic(BayesTree_marginalFactor);
 
-    // get clique containing Index j
+    // get clique containing Key j
     sharedClique clique = this->clique(j);
 
     // calculate or retrieve its marginal P(C) = P(F,S)
@@ -343,9 +343,9 @@ namespace gtsam {
       // Get the set of variables to eliminate, which is C1\B.
       gttic(Full_root_factoring);
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
-        FastVector<Index> C1_minus_B; {
-          FastSet<Index> C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
-          BOOST_FOREACH(const Index j, *B->conditional()) {
+        FastVector<Key> C1_minus_B; {
+          FastSet<Key> C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
+          BOOST_FOREACH(const Key j, *B->conditional()) {
             C1_minus_B_set.erase(j); }
           C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
         }
@@ -355,9 +355,9 @@ namespace gtsam {
           FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
       }
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
-        FastVector<Index> C2_minus_B; {
-          FastSet<Index> C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
-          BOOST_FOREACH(const Index j, *B->conditional()) {
+        FastVector<Key> C2_minus_B; {
+          FastSet<Key> C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
+          BOOST_FOREACH(const Key j, *B->conditional()) {
             C2_minus_B_set.erase(j); }
           C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());
         }

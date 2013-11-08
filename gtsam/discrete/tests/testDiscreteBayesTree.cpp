@@ -55,7 +55,7 @@
 ////
 ////  /// print index signature only
 ////  void printSignature(const std::string& s = "Clique: ",
-////      const IndexFormatter& indexFormatter = DefaultIndexFormatter) const {
+////      const KeyFormatter& indexFormatter = DefaultKeyFormatter) const {
 ////    ((IndexConditionalOrdered::shared_ptr) conditional_)->print(s, indexFormatter);
 ////  }
 ////

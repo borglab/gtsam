@@ -32,7 +32,7 @@ namespace gtsam {
     typedef boost::shared_ptr<SingleValue> shared_ptr;
 
     /// Constructor
-    SingleValue(Index key, size_t n, size_t value) :
+    SingleValue(Key key, size_t n, size_t value) :
       Constraint(key), cardinality_(n), value_(value) {
     }
 
@@ -43,7 +43,7 @@ namespace gtsam {
 
     // print
     virtual void print(const std::string& s = "",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /// equals
     bool equals(const DiscreteFactor& other, double tol) const {

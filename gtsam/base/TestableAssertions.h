@@ -30,7 +30,7 @@ namespace gtsam {
 /**
  * Equals testing for basic types
  */
-inline bool assert_equal(const Index& expected, const Index& actual, double tol = 0.0) {
+inline bool assert_equal(const Key& expected, const Key& actual, double tol = 0.0) {
   if(expected != actual) {
     std::cout << "Not equal:\nexpected: " << expected << "\nactual: " << actual << std::endl;
     return false;

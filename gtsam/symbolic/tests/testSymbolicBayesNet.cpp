@@ -82,7 +82,7 @@ TEST( SymbolicBayesNet, combine )
 TEST(SymbolicBayesNet, saveGraph) {
   SymbolicBayesNet bn;
   bn += SymbolicConditional(_A_, _B_);
-  std::vector<Index> keys;
+  std::vector<Key> keys;
   keys.push_back(_B_);
   keys.push_back(_C_);
   keys.push_back(_D_);

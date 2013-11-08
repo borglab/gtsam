@@ -28,16 +28,16 @@ namespace gtsam {
   /**
    * A base class for both DiscreteFactor and DiscreteConditional
    */
-  class Potentials: public AlgebraicDecisionTree<Index> {
+  class Potentials: public AlgebraicDecisionTree<Key> {
 
   public:
 
-    typedef AlgebraicDecisionTree<Index> ADT;
+    typedef AlgebraicDecisionTree<Key> ADT;
 
   protected:
 
     /// Cardinality for each key, used in combine
-    std::map<Index,size_t> cardinalities_;
+    std::map<Key,size_t> cardinalities_;
 
     /** Constructor from ColumnIndex, and ADT */
     Potentials(const ADT& potentials) :
@@ -68,9 +68,9 @@ namespace gtsam {
     // Testable
     GTSAM_EXPORT bool equals(const Potentials& other, double tol = 1e-9) const;
     GTSAM_EXPORT void print(const std::string& s = "Potentials: ",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-    size_t cardinality(Index j) const { return cardinalities_.at(j);}
+    size_t cardinality(Key j) const { return cardinalities_.at(j);}
 
 //    /**
 //     * @brief Permutes the keys in Potentials

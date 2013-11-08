@@ -72,8 +72,8 @@ public:
   typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
   /** A map from keys to values */
-  typedef std::vector<Index> Indices;
-  typedef Assignment<Index> Values;
+  typedef std::vector<Key> Indices;
+  typedef Assignment<Key> Values;
   typedef boost::shared_ptr<Values> sharedValues;
 
   /** Default constructor */
@@ -120,7 +120,7 @@ public:
   }
 
   /** Return the set of variables involved in the factors (set union) */
-  FastSet<Index> keys() const;
+  FastSet<Key> keys() const;
 
   /** return product of all factors as a single factor */
   DecisionTreeFactor product() const;
@@ -130,7 +130,7 @@ public:
 
   /// print
   void print(const std::string& s = "DiscreteFactorGraph",
-      const IndexFormatter& formatter =DefaultIndexFormatter) const;
+      const KeyFormatter& formatter =DefaultKeyFormatter) const;
 
   /** Solve the factor graph by performing variable elimination in COLAMD order using
    *  the dense elimination function specified in \c function,

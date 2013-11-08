@@ -125,7 +125,7 @@ boost::tuple<V, size_t> nonlinearConjugateGradient(const S &system, const V &ini
 
   // GTSAM_CONCEPT_MANIFOLD_TYPE(V);
 
-  Index iteration = 0;
+  Key iteration = 0;
 
   // check if we're already close enough
   double currentError = system.error(initial);

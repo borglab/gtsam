@@ -49,7 +49,7 @@ public:
    * cardinality of a Discrete variable. It should be handled naturally in
    * the new class DiscreteValue, as the varible's type (domain)
    */
-  typedef Assignment<Index> Values;
+  typedef Assignment<Key> Values;
   typedef boost::shared_ptr<Values> sharedValues;
 
 public:
@@ -78,7 +78,7 @@ public:
 
   // print
   virtual void print(const std::string& s = "DiscreteFactor\n",
-      const IndexFormatter& formatter = DefaultIndexFormatter) const {
+      const KeyFormatter& formatter = DefaultKeyFormatter) const {
     Factor::print(s, formatter);
   }
 
