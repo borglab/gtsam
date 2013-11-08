@@ -130,6 +130,7 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 /* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
 BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::GaussianConditional , "gtsam::GaussianConditional");
 
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
@@ -167,6 +168,33 @@ TEST (Serialization, gaussian_conditional) {
   EXPECT(equalsObj(cg));
   EXPECT(equalsXML(cg));
   EXPECT(equalsBinary(cg));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, gaussian_factor_graph) {
+  GaussianFactorGraph graph;
+  {
+    Matrix A1 = Matrix_(2,2, 1., 2., 3., 4.);
+    Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
+    Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
+    Vector d(2); d << 0.2, 0.5;
+    GaussianConditional cg(0, d, R, 1, A1, 2, A2);
+    graph.push_back(cg);
+  }
+
+  {
+    Key i1 = 4, i2 = 7;
+    Matrix A1 = eye(3), A2 = -1.0 * eye(3);
+    Vector b = ones(3);
+    SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vec(3) << 1.0, 2.0, 3.0));
+    JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
+    HessianFactor hessianfactor(jacobianfactor);
+    graph.push_back(jacobianfactor);
+    graph.push_back(hessianfactor);
+  }
+  EXPECT(equalsObj(graph));
+  EXPECT(equalsXML(graph));
+  EXPECT(equalsBinary(graph));
 }
 
 /* ************************************************************************* */
