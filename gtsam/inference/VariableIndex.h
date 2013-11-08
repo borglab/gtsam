@@ -106,7 +106,8 @@ public:
   bool equals(const VariableIndex& other, double tol=0.0) const;
 
   /** Print the variable index (for unit tests and debugging). */
-  void print(const std::string& str = "VariableIndex: ") const;
+  void print(const std::string& str = "VariableIndex: ",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /**
    * Output dual hypergraph to Metis file format for use with hmetis

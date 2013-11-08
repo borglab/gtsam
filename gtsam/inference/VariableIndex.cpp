@@ -30,11 +30,11 @@ bool VariableIndex::equals(const VariableIndex& other, double tol) const {
 }
 
 /* ************************************************************************* */
-void VariableIndex::print(const string& str) const {
+void VariableIndex::print(const string& str, const KeyFormatter& keyFormatter) const {
   cout << str;
   cout << "nEntries = " << nEntries() << ", nFactors = " << nFactors() << "\n";
   BOOST_FOREACH(KeyMap::value_type key_factors, index_) {
-    cout << "var " << key_factors.first << ":";
+    cout << "var " << keyFormatter(key_factors.first) << ":";
     BOOST_FOREACH(const size_t factor, key_factors.second)
       cout << " " << factor;
     cout << "\n";
