@@ -1651,6 +1651,8 @@ class KeyList {
   void pop_front();
   void sort();
   void remove(size_t key);
+
+  void serialize() const;
 };
 
 // Actually a FastSet<Key>
@@ -1673,6 +1675,8 @@ class KeySet {
   void insert(size_t key);
   bool erase(size_t key); // returns true if value was removed
   bool count(size_t key) const; // returns true if value exists
+
+  void serialize() const;
 };
 
 // Actually a vector<Key>
@@ -1694,6 +1698,8 @@ class KeyVector {
   size_t front() const;
   size_t back() const;
   void push_back(size_t key) const;
+
+  void serialize() const;
 };
 
 #include <gtsam/nonlinear/Marginals.h>
