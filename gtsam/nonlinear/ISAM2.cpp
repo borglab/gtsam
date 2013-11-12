@@ -710,15 +710,13 @@ ISAM2Result ISAM2::update(
     linearFactors_.push_back(*linearFactors);
     assert(nonlinearFactors_.size() == linearFactors_.size());
     gttoc(linearize);
-
-    gttic(augment_VI);
-    // Augment the variable index with the new factors
-    variableIndex_.augment(*linearFactors); // TODO: move this to a better place now
-    gttoc(augment_VI);
-  } else {
-    variableIndex_.augment(newFactors);
   }
   gttoc(linearize_new);
+
+  gttic(augment_VI);
+  // Augment the variable index with the new factors
+  variableIndex_.augment(newFactors);
+  gttoc(augment_VI);
 
   gttic(recalculate);
   // 8. Redo top of Bayes tree
