@@ -47,26 +47,28 @@ struct ResultWithThreads
 typedef map<int, ResultWithThreads> Results;
 
 /* ************************************************************************* */
+struct WorkerWithoutAllocation
+{
+  vector<double>& results;
+
+  WorkerWithoutAllocation(vector<double>& results) : results(results) {}
+
+  void operator()(const tbb::blocked_range<size_t>& r) const
+  {
+    for(size_t i = r.begin(); i != r.end(); ++i)
+    {
+      FixedMatrix m1 = FixedMatrix::Random();
+      FixedMatrix m2 = FixedMatrix::Random();
+      FixedMatrix prod = m1 * m2;
+      results[i] = prod.norm();
+    }
+  }
+};
+
+/* ************************************************************************* */
 map<int, double> testWithoutMemoryAllocation()
 {
   // A function to do some matrix operations without allocating any memory
-  struct Worker
-  {
-    vector<double>& results;
-
-    Worker(vector<double>& results) : results(results) {}
-
-    void operator()(const tbb::blocked_range<size_t>& r) const
-    {
-      for(size_t i = r.begin(); i != r.end(); ++i)
-      {
-        FixedMatrix m1 = FixedMatrix::Random();
-        FixedMatrix m2 = FixedMatrix::Random();
-        FixedMatrix prod = m1 * m2;
-        results[i] = prod.norm();
-      }
-    }
-  };
 
   // Now call it
   vector<double> results(numberOfProblems);
@@ -76,7 +78,7 @@ map<int, double> testWithoutMemoryAllocation()
   BOOST_FOREACH(size_t grainSize, grainSizes)
   {
     tbb::tick_count t0 = tbb::tick_count::now();
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), Worker(results));
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithoutAllocation(results));
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "Without memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
     timingResults[grainSize] = (t1 - t0).seconds();
@@ -86,38 +88,40 @@ map<int, double> testWithoutMemoryAllocation()
 }
 
 /* ************************************************************************* */
+struct WorkerWithAllocation
+{
+  vector<double>& results;
+
+  WorkerWithAllocation(vector<double>& results) : results(results) {}
+
+  void operator()(const tbb::blocked_range<size_t>& r) const
+  {
+    tbb::cache_aligned_allocator<double> allocator;
+    for(size_t i = r.begin(); i != r.end(); ++i)
+    {
+      double *m1data = allocator.allocate(problemSize * problemSize);
+      Eigen::Map<Matrix> m1(m1data, problemSize, problemSize);
+      double *m2data = allocator.allocate(problemSize * problemSize);
+      Eigen::Map<Matrix> m2(m2data, problemSize, problemSize);
+      double *proddata = allocator.allocate(problemSize * problemSize);
+      Eigen::Map<Matrix> prod(proddata, problemSize, problemSize);
+
+      m1 = Eigen::Matrix4d::Random(problemSize, problemSize);
+      m2 = Eigen::Matrix4d::Random(problemSize, problemSize);
+      prod = m1 * m2;
+      results[i] = prod.norm();
+
+      allocator.deallocate(m1data, problemSize * problemSize);
+      allocator.deallocate(m2data, problemSize * problemSize);
+      allocator.deallocate(proddata, problemSize * problemSize);
+    }
+  }
+};
+
+/* ************************************************************************* */
 map<int, double> testWithMemoryAllocation()
 {
   // A function to do some matrix operations with allocating memory
-  struct Worker
-  {
-    vector<double>& results;
-
-    Worker(vector<double>& results) : results(results) {}
-
-    void operator()(const tbb::blocked_range<size_t>& r) const
-    {
-      tbb::cache_aligned_allocator<double> allocator;
-      for(size_t i = r.begin(); i != r.end(); ++i)
-      {
-        double *m1data = allocator.allocate(problemSize * problemSize);
-        Eigen::Map<Matrix> m1(m1data, problemSize, problemSize);
-        double *m2data = allocator.allocate(problemSize * problemSize);
-        Eigen::Map<Matrix> m2(m2data, problemSize, problemSize);
-        double *proddata = allocator.allocate(problemSize * problemSize);
-        Eigen::Map<Matrix> prod(proddata, problemSize, problemSize);
-
-        m1 = Eigen::Matrix4d::Random(problemSize, problemSize);
-        m2 = Eigen::Matrix4d::Random(problemSize, problemSize);
-        prod = m1 * m2;
-        results[i] = prod.norm();
-
-        allocator.deallocate(m1data, problemSize * problemSize);
-        allocator.deallocate(m2data, problemSize * problemSize);
-        allocator.deallocate(proddata, problemSize * problemSize);
-      }
-    }
-  };
 
   // Now call it
   vector<double> results(numberOfProblems);
@@ -127,7 +131,7 @@ map<int, double> testWithMemoryAllocation()
   BOOST_FOREACH(size_t grainSize, grainSizes)
   {
     tbb::tick_count t0 = tbb::tick_count::now();
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), Worker(results));
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithAllocation(results));
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "With memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
     timingResults[grainSize] = (t1 - t0).seconds();
