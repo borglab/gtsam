@@ -238,7 +238,9 @@ public:
   /** Check if two factors are equal */
   virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
     const NoiseModelFactor* e = dynamic_cast<const NoiseModelFactor*>(&f);
-    return e && Base::equals(f, tol) && noiseModel_->equals(*e->noiseModel_, tol);
+    return e && Base::equals(f, tol) &&
+      ((!noiseModel_ && !e->noiseModel_) ||
+      (noiseModel_ && e->noiseModel_ && noiseModel_->equals(*e->noiseModel_, tol)));
   }
 
   /** get the dimension of the factor (number of rows on linearization) */
