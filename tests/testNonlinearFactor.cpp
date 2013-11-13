@@ -209,7 +209,7 @@ TEST( NonlinearFactor, linearize_constraint1 )
 
   // create expected
   Vector b = (Vec(2) << 0., -3.);
-  JacobianFactor expected(X(1), Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b,
+  JacobianFactor expected(X(1), (Mat(2, 2) << 5.0, 0.0, 0.0, 1.0), b,
     noiseModel::Constrained::MixedSigmas((Vec(2) << 1.0, 0.0)));
   CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
@@ -229,7 +229,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
   GaussianFactor::shared_ptr actual = f0.linearize(config);
 
   // create expected
-  Matrix A = Matrix_(2,2, 5.0, 0.0, 0.0, 1.0);
+  Matrix A = (Mat(2, 2) << 5.0, 0.0, 0.0, 1.0);
   Vector b = (Vec(2) << -15., -3.);
   JacobianFactor expected(X(1), -1*A, L(1), A, b,
     noiseModel::Constrained::MixedSigmas((Vec(2) << 1.0, 0.0)));
@@ -249,10 +249,10 @@ public:
         boost::optional<Matrix&> H3 = boost::none,
         boost::optional<Matrix&> H4 = boost::none) const {
     if(H1) {
-      *H1 = Matrix_(1,1, 1.0);
-      *H2 = Matrix_(1,1, 2.0);
-      *H3 = Matrix_(1,1, 3.0);
-      *H4 = Matrix_(1,1, 4.0);
+      *H1 = (Mat(1, 1) << 1.0);
+      *H2 = (Mat(1, 1) << 2.0);
+      *H3 = (Mat(1, 1) << 3.0);
+      *H4 = (Mat(1, 1) << 4.0);
     }
     return (Vector(1) << x1 + x2 + x3 + x4).finished();
   }
@@ -277,10 +277,10 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   LONGS_EQUAL((long)X(2), (long)jf.keys()[1]);
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
   LONGS_EQUAL((long)X(4), (long)jf.keys()[3]);
-  EXPECT(assert_equal(Matrix_(1,1, 0.5), jf.getA(jf.begin())));
-  EXPECT(assert_equal(Matrix_(1,1, 1.0), jf.getA(jf.begin()+1)));
-  EXPECT(assert_equal(Matrix_(1,1, 1.5), jf.getA(jf.begin()+2)));
-  EXPECT(assert_equal(Matrix_(1,1, 2.0), jf.getA(jf.begin()+3)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 0.5), jf.getA(jf.begin())));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 1.0), jf.getA(jf.begin()+1)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 1.5), jf.getA(jf.begin()+2)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 2.0), jf.getA(jf.begin()+3)));
   EXPECT(assert_equal((Vector)(Vec(1) << -5.0), jf.getb()));
 }
 
@@ -298,11 +298,11 @@ public:
         boost::optional<Matrix&> H4 = boost::none,
         boost::optional<Matrix&> H5 = boost::none) const {
     if(H1) {
-      *H1 = Matrix_(1,1, 1.0);
-      *H2 = Matrix_(1,1, 2.0);
-      *H3 = Matrix_(1,1, 3.0);
-      *H4 = Matrix_(1,1, 4.0);
-      *H5 = Matrix_(1,1, 5.0);
+      *H1 = (Mat(1, 1) << 1.0);
+      *H2 = (Mat(1, 1) << 2.0);
+      *H3 = (Mat(1, 1) << 3.0);
+      *H4 = (Mat(1, 1) << 4.0);
+      *H5 = (Mat(1, 1) << 5.0);
     }
     return (Vector(1) << x1 + x2 + x3 + x4 + x5).finished();
   }
@@ -325,11 +325,11 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
   LONGS_EQUAL((long)X(4), (long)jf.keys()[3]);
   LONGS_EQUAL((long)X(5), (long)jf.keys()[4]);
-  EXPECT(assert_equal(Matrix_(1,1, 0.5), jf.getA(jf.begin())));
-  EXPECT(assert_equal(Matrix_(1,1, 1.0), jf.getA(jf.begin()+1)));
-  EXPECT(assert_equal(Matrix_(1,1, 1.5), jf.getA(jf.begin()+2)));
-  EXPECT(assert_equal(Matrix_(1,1, 2.0), jf.getA(jf.begin()+3)));
-  EXPECT(assert_equal(Matrix_(1,1, 2.5), jf.getA(jf.begin()+4)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 0.5), jf.getA(jf.begin())));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 1.0), jf.getA(jf.begin()+1)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 1.5), jf.getA(jf.begin()+2)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 2.0), jf.getA(jf.begin()+3)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 2.5), jf.getA(jf.begin()+4)));
   EXPECT(assert_equal((Vector)(Vec(1) << -7.5), jf.getb()));
 }
 
@@ -348,12 +348,12 @@ public:
         boost::optional<Matrix&> H5 = boost::none,
         boost::optional<Matrix&> H6 = boost::none) const {
     if(H1) {
-      *H1 = Matrix_(1,1, 1.0);
-      *H2 = Matrix_(1,1, 2.0);
-      *H3 = Matrix_(1,1, 3.0);
-      *H4 = Matrix_(1,1, 4.0);
-      *H5 = Matrix_(1,1, 5.0);
-      *H6 = Matrix_(1,1, 6.0);
+      *H1 = (Mat(1, 1) << 1.0);
+      *H2 = (Mat(1, 1) << 2.0);
+      *H3 = (Mat(1, 1) << 3.0);
+      *H4 = (Mat(1, 1) << 4.0);
+      *H5 = (Mat(1, 1) << 5.0);
+      *H6 = (Mat(1, 1) << 6.0);
     }
     return (Vector(1) << x1 + x2 + x3 + x4 + x5 + x6).finished();
   }
@@ -379,12 +379,12 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
   LONGS_EQUAL((long)X(4), (long)jf.keys()[3]);
   LONGS_EQUAL((long)X(5), (long)jf.keys()[4]);
   LONGS_EQUAL((long)X(6), (long)jf.keys()[5]);
-  EXPECT(assert_equal(Matrix_(1,1, 0.5), jf.getA(jf.begin())));
-  EXPECT(assert_equal(Matrix_(1,1, 1.0), jf.getA(jf.begin()+1)));
-  EXPECT(assert_equal(Matrix_(1,1, 1.5), jf.getA(jf.begin()+2)));
-  EXPECT(assert_equal(Matrix_(1,1, 2.0), jf.getA(jf.begin()+3)));
-  EXPECT(assert_equal(Matrix_(1,1, 2.5), jf.getA(jf.begin()+4)));
-  EXPECT(assert_equal(Matrix_(1,1, 3.0), jf.getA(jf.begin()+5)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 0.5), jf.getA(jf.begin())));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 1.0), jf.getA(jf.begin()+1)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 1.5), jf.getA(jf.begin()+2)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 2.0), jf.getA(jf.begin()+3)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 2.5), jf.getA(jf.begin()+4)));
+  EXPECT(assert_equal((Matrix)(Mat(1, 1) << 3.0), jf.getA(jf.begin()+5)));
   EXPECT(assert_equal((Vector)(Vec(1) << -10.5), jf.getb()));
 
 }

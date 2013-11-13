@@ -297,8 +297,8 @@ GaussianFactorGraph createGaussianFactorGraph() {
  */
 GaussianBayesNet createSmallGaussianBayesNet() {
   using namespace impl;
-  Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
-  Matrix R22 = Matrix_(1, 1, 1.0);
+  Matrix R11 = (Mat(1, 1) << 1.0), S12 = (Mat(1, 1) << 1.0);
+  Matrix R22 = (Mat(1, 1) << 1.0);
   Vector d1(1), d2(1);
   d1(0) = 9;
   d2(0) = 5;
@@ -323,7 +323,7 @@ Point2 h(const Point2& v) {
 }
 
 Matrix H(const Point2& v) {
-  return Matrix_(2, 2,
+  return (Mat(2, 2) <<
       -sin(v.x()), 0.0,
       0.0, cos(v.y()));
 }

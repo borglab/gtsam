@@ -129,8 +129,8 @@ TEST( testBoundingConstraint, unary_linearization_active) {
   config2.insert(key, pt2);
   GaussianFactor::shared_ptr actual1 = constraint1.linearize(config2);
   GaussianFactor::shared_ptr actual2 = constraint2.linearize(config2);
-  JacobianFactor expected1(key, Matrix_(1, 2, 1.0, 0.0), repeat(1, 3.0), hard_model1);
-  JacobianFactor expected2(key, Matrix_(1, 2, 0.0, 1.0), repeat(1, 5.0), hard_model1);
+  JacobianFactor expected1(key, (Mat(1, 2) << 1.0, 0.0), repeat(1, 3.0), hard_model1);
+  JacobianFactor expected2(key, (Mat(1, 2) << 0.0, 1.0), repeat(1, 5.0), hard_model1);
   EXPECT(assert_equal((const GaussianFactor&)expected1, *actual1, tol));
   EXPECT(assert_equal((const GaussianFactor&)expected2, *actual2, tol));
 }

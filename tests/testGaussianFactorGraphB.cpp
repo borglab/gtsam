@@ -134,12 +134,12 @@ TEST( GaussianFactorGraph, eliminateOne_x1_fast )
   GaussianConditional expected(ordering[X(1)],15*d,R11,ordering[L(1)],S12,ordering[X(2)],S13,sigma);
 
   // Create expected remaining new factor
-  JacobianFactor expectedFactor(1, Matrix_(4,2,
+  JacobianFactor expectedFactor(1, (Mat(4,2) <<
              4.714045207910318,                   0.,
                              0.,   4.714045207910318,
                              0.,                   0.,
                              0.,                   0.),
-     2, Matrix_(4,2,
+     2, (Mat(4,2) <<
            -2.357022603955159,                   0.,
                             0.,  -2.357022603955159,
             7.071067811865475,                   0.,
@@ -405,10 +405,10 @@ TEST( GaussianFactorGraph, elimination )
   // Check matrix
   Matrix R;Vector d;
   boost::tie(R,d) = matrix(bayesNet);
-  Matrix expected = Matrix_(2,2,
+  Matrix expected = (Mat(2, 2) <<
       0.707107,  -0.353553,
       0.0,   0.612372);
-  Matrix expected2 = Matrix_(2,2,
+  Matrix expected2 = (Mat(2, 2) <<
       0.707107,  -0.353553,
       0.0,   -0.612372);
   EXPECT(equal_with_abs_tol(expected, R, 1e-6) || equal_with_abs_tol(expected2, R, 1e-6));
