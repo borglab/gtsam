@@ -154,8 +154,8 @@ TEST( ProjectionFactor, Jacobian ) {
   factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = Matrix_(2, 6, 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.);
-  Matrix H2Expected = Matrix_(2, 3, 92.376, 0., 0., 0., 92.376, 0.);
+  Matrix H1Expected = (Mat(2, 6) << 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.);
+  Matrix H2Expected = (Mat(2, 3) << 92.376, 0., 0., 0., 92.376, 0.);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -180,8 +180,8 @@ TEST( ProjectionFactor, JacobianWithTransform ) {
   factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = Matrix_(2, 6, -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376);
-  Matrix H2Expected = Matrix_(2, 3, 0., -92.376, 0., 0., 0., -92.376);
+  Matrix H1Expected = (Mat(2, 6) << -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376);
+  Matrix H2Expected = (Mat(2, 3) << 0., -92.376, 0., 0., 0., -92.376);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
