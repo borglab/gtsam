@@ -72,7 +72,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double sp = sin(mech0_.bRn().inverse().pitch());
   double cy = cos(0.0);
   double sy = sin(0.0);
-  Matrix Omega_T = Matrix_(3, 3, cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0);
+  Matrix Omega_T = (Mat(3, 3) << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0);
 
   // Calculate Jacobian of roll/pitch/yaw wrpt (g1,g2,g3), see doc/ypr.nb
   Vector b_g = mech0_.b_g(g_e);
@@ -82,7 +82,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double g23 = g2 * g2 + g3 * g3;
   double g123 = g1 * g1 + g23;
   double f = 1 / (std::sqrt(g23) * g123);
-  Matrix H_g = Matrix_(3, 3,
+  Matrix H_g = (Mat(3, 3) <<
       0.0, g3 / g23, -(g2 / g23),                       // roll
       std::sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3), // pitch
       0.0, 0.0, 0.0);                                   // we don't know anything on yaw

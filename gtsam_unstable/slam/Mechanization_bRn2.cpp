@@ -13,8 +13,8 @@ namespace gtsam {
 /* ************************************************************************* */
 Mechanization_bRn2 Mechanization_bRn2::initializeVector(const std::list<Vector>& U,
     const std::list<Vector>& F, const double g_e, bool flat) {
-  Matrix Umat = Matrix_(3,U.size(), concatVectors(U));
-  Matrix Fmat = Matrix_(3,F.size(), concatVectors(F));
+  Matrix Umat = (Mat(3, U.size()) << concatVectors(U));
+  Matrix Fmat = (Mat(3, F.size()) << concatVectors(F));
 
   return initialize(Umat, Fmat, g_e, flat);
 }

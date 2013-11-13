@@ -481,12 +481,12 @@ public:
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,
       Vector& g_NED, Vector& rho_NED, Vector& omega_earth_NED) {
 
-    Matrix ENU_to_NED = Matrix_(3, 3,
+    Matrix ENU_to_NED = (Mat(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
         0.0,  0.0, -1.0);
 
-    Matrix NED_to_ENU = Matrix_(3, 3,
+    Matrix NED_to_ENU = (Mat(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
         0.0,  0.0, -1.0);
