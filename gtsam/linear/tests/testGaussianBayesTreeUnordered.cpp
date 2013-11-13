@@ -38,10 +38,10 @@ namespace {
   const Key x1=1, x2=2, x3=3, x4=4;
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
   const GaussianFactorGraph chain = list_of
-    (JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
-    (JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
-    (JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
-    (JacobianFactor(x4, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise));
+    (JacobianFactor(x2, (Mat(1, 1) << 1.), x1, (Mat(1, 1) << 1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x2, (Mat(1, 1) << 1.), x3, (Mat(1, 1) << 1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x3, (Mat(1, 1) << 1.), x4, (Mat(1, 1) << 1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x4, (Mat(1, 1) << 1.), (Vec(1) << 1.),  chainNoise));
   const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
 
   /* ************************************************************************* */
@@ -84,13 +84,13 @@ TEST( GaussianBayesTree, eliminate )
 {
   GaussianBayesTree bt = *chain.eliminateMultifrontal(chainOrdering);
 
-  Matrix two = Matrix_(1,1,2.);
-  Matrix one = Matrix_(1,1,1.);
+  Matrix two = (Mat(1, 1) << 2.);
+  Matrix one = (Mat(1, 1) << 1.);
 
   GaussianBayesTree bayesTree_expected;
   bayesTree_expected.insertRoot(
-    MakeClique(GaussianConditional(pair_list_of (x3, Matrix_(2,1, 2., 0.)) (x4, Matrix_(2,1, 2., 2.)), 2, (Vec(2) << 2., 2.)), list_of
-      (MakeClique(GaussianConditional(pair_list_of (x2, Matrix_(2,1, -2.*sqrt(2.), 0.)) (x1, Matrix_(2,1, -sqrt(2.), -sqrt(2.))) (x3, Matrix_(2,1, -sqrt(2.), sqrt(2.))), 2, (Vec(2) << -2.*sqrt(2.), 0.))))));
+    MakeClique(GaussianConditional(pair_list_of (x3, (Mat(2, 1) << 2., 0.)) (x4, (Mat(2, 1) << 2., 2.)), 2, (Vec(2) << 2., 2.)), list_of
+      (MakeClique(GaussianConditional(pair_list_of (x2, (Mat(2, 1) << -2.*sqrt(2.), 0.)) (x1, (Mat(2, 1) << -sqrt(2.), -sqrt(2.))) (x3, (Mat(2, 1) << -sqrt(2.), sqrt(2.))), 2, (Vec(2) << -2.*sqrt(2.), 0.))))));
 
   EXPECT(assert_equal(bayesTree_expected, bt));
 }
@@ -191,21 +191,21 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
   GaussianBayesTree bt;
   bt.insertRoot(MakeClique(GaussianConditional(
     pair_list_of
-    (2, Matrix_(6,2,
+    (2, (Mat(6, 2) <<
     31.0,32.0,
     0.0,34.0,
     0.0,0.0,
     0.0,0.0,
     0.0,0.0,
     0.0,0.0))
-    (3, Matrix_(6,2,
+    (3, (Mat(6, 2) <<
     35.0,36.0,
     37.0,38.0,
     41.0,42.0,
     0.0,44.0,
     0.0,0.0,
     0.0,0.0))
-    (4, Matrix_(6,2,
+    (4, (Mat(6, 2) <<
     0.0,0.0,
     0.0,0.0,
     45.0,46.0,
@@ -215,27 +215,27 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
     3, (Vec(6) << 29.0,30.0,39.0,40.0,49.0,50.0)), list_of
       (MakeClique(GaussianConditional(
       pair_list_of
-      (0, Matrix_(4,2,
+      (0, (Mat(4, 2) <<
       3.0,4.0,
       0.0,6.0,
       0.0,0.0,
       0.0,0.0))
-      (1, Matrix_(4,2,
+      (1, (Mat(4, 2) <<
       0.0,0.0,
       0.0,0.0,
       17.0,18.0,
       0.0,20.0))
-      (2, Matrix_(4,2,
+      (2, (Mat(4, 2) <<
       0.0,0.0,
       0.0,0.0,
       21.0,22.0,
       23.0,24.0))
-      (3, Matrix_(4,2,
+      (3, (Mat(4, 2) <<
       7.0,8.0,
       9.0,10.0,
       0.0,0.0,
       0.0,0.0))
-      (4, Matrix_(4,2,
+      (4, (Mat(4, 2) <<
       11.0,12.0,
       13.0,14.0,
       25.0,26.0,

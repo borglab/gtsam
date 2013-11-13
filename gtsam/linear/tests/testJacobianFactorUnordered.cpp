@@ -290,25 +290,25 @@ TEST(JacobianFactor, empty )
 /* ************************************************************************* */
 TEST(JacobianFactor, eliminate)
 {
-  Matrix A01 = Matrix_(3,3,
+  Matrix A01 = (Mat(3, 3) <<
     1.0, 0.0, 0.0,
     0.0, 1.0, 0.0,
     0.0, 0.0, 1.0);
   Vector b0 = (Vec(3) << 1.5, 1.5, 1.5);
   Vector s0 = (Vec(3) << 1.6, 1.6, 1.6);
 
-  Matrix A10 = Matrix_(3,3,
+  Matrix A10 = (Mat(3, 3) <<
     2.0, 0.0, 0.0,
     0.0, 2.0, 0.0,
     0.0, 0.0, 2.0);
-  Matrix A11 = Matrix_(3,3,
+  Matrix A11 = (Mat(3, 3) <<
     -2.0, 0.0, 0.0,
     0.0, -2.0, 0.0,
     0.0, 0.0, -2.0);
   Vector b1 = (Vec(3) << 2.5, 2.5, 2.5);
   Vector s1 = (Vec(3) << 2.6, 2.6, 2.6);
 
-  Matrix A21 = Matrix_(3,3,
+  Matrix A21 = (Mat(3, 3) <<
     3.0, 0.0, 0.0,
     0.0, 3.0, 0.0,
     0.0, 0.0, 3.0);
@@ -348,7 +348,7 @@ TEST(JacobianFactor, eliminate2 )
   Vector sigmas = (Vec(4) << sigma1, sigma1, sigma2, sigma2);
 
   // the combined linear factor
-  Matrix Ax2 = Matrix_(4,2,
+  Matrix Ax2 = (Mat(4, 2) <<
     // x2
     -1., 0.,
     +0.,-1.,
@@ -356,7 +356,7 @@ TEST(JacobianFactor, eliminate2 )
     +0.,1.
     );
 
-  Matrix Al1x1 = Matrix_(4,4,
+  Matrix Al1x1 = (Mat(4, 4) <<
     // l1   x1
     1., 0., 0.00,  0., // f4
     0., 1., 0.00,  0., // f4
@@ -382,11 +382,11 @@ TEST(JacobianFactor, eliminate2 )
 
   // create expected Conditional Gaussian
   double oldSigma = 0.0894427; // from when R was made unit
-  Matrix R11 = Matrix_(2,2,
+  Matrix R11 = (Mat(2, 2) <<
     1.00,  0.00,
     0.00,  1.00
     )/oldSigma;
-  Matrix S12 = Matrix_(2,4,
+  Matrix S12 = (Mat(2, 4) <<
     -0.20, 0.00,-0.80, 0.00,
     +0.00,-0.20,+0.00,-0.80
     )/oldSigma;
@@ -397,7 +397,7 @@ TEST(JacobianFactor, eliminate2 )
 
   // the expected linear factor
   double sigma = 0.2236;
-  Matrix Bl1x1 = Matrix_(2,4,
+  Matrix Bl1x1 = (Mat(2, 4) <<
     // l1          x1
     1.00, 0.00, -1.00,  0.00,
     0.00, 1.00, +0.00, -1.00
@@ -411,7 +411,7 @@ TEST(JacobianFactor, eliminate2 )
 TEST(JacobianFactor, EliminateQR)
 {
   // Augmented Ab test case for whole factor graph
-  Matrix Ab = Matrix_(14,11,
+  Matrix Ab = (Mat(14, 11) <<
     4.,     0.,     1.,     4.,     1.,     0.,     3.,     6.,     8.,     8.,     1.,
     9.,     2.,     0.,     1.,     6.,     3.,     9.,     6.,     6.,     9.,     4.,
     5.,     3.,     7.,     9.,     5.,     5.,     9.,     1.,     3.,     7.,     0.,
@@ -441,7 +441,7 @@ TEST(JacobianFactor, EliminateQR)
   EXPECT(assert_equal(2.0 * Ab, actualDense));
 
   // Expected augmented matrix, both GaussianConditional (first 6 rows) and remaining factor (next 4 rows)
-  Matrix R = 2.0*Matrix_(11,11,
+  Matrix R = 2.0 * (Mat(11, 11) <<
     -12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611,
     0.,   4.6904,   5.0254,   5.5432,   5.5737,   3.0153,  -3.0153,  -3.5635,  -3.9290,  -2.7412,   2.1625,
     0.,       0., -13.8160,  -8.7166, -10.2245,  -8.8666,  -8.7632,  -5.2544,  -6.9192, -10.5537,  -9.3250,
@@ -523,10 +523,10 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   EXPECT(assert_equal(expectedLF, *actual.second));
 
   // verify CG
-  Matrix R = Matrix_(2, 2,
+  Matrix R = (Mat(2, 2) <<
       1.0,    2.0,
       0.0,    1.0);
-  Matrix S = Matrix_(2,2,
+  Matrix S = (Mat(2, 2) <<
       1.0,    2.0,
       0.0,    0.0);
   Vector d = (Vec(2) << 3.0, 0.6666);

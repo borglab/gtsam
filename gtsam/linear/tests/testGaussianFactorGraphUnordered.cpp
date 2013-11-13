@@ -54,7 +54,7 @@ TEST(GaussianFactorGraph, initialization) {
 
   // Test sparse, which takes a vector and returns a matrix, used in MATLAB
   // Note that this the augmented vector and the RHS is in column 7
-  Matrix expectedIJS = Matrix_(3,22,
+  Matrix expectedIJS = (Mat(3, 22) <<
           1.,   2.,  1.,  2.,     3.,   4.,   3.,   4.,  3.,  4.,    5.,  6., 5., 6., 5., 6.,    7.,  8., 7., 8.,  7., 8.,
           1.,   2.,  7.,  7.,     1.,   2.,   3.,   4.,  7.,  7.,    1.,  2., 5., 6., 7., 7.,    3.,  4., 5., 6.,  7., 7.,
           10., 10., -1., -1.,   -10., -10.,  10.,  10.,  2., -1.,   -5., -5., 5., 5., 0., 1.,   -5., -5., 5., 5., -1., 1.5
@@ -73,7 +73,7 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   //  0  0  0 14 15 16
 
   // Expected - NOTE that we transpose this!
-  Matrix expected = Matrix_(16,3,
+  Matrix expectedT = (Mat(16, 3) <<
       1., 1., 2.,
       1., 2., 4.,
       1., 3., 6.,
@@ -89,12 +89,14 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       4., 4.,28.,
       4., 5.,30.,
       3., 6.,26.,
-      4., 6.,32.).transpose();
+      4., 6.,32.);
+
+  Matrix expected = expectedT.transpose();
 
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
-  gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), (Vec(2) << 4., 8.), model);
-  gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
+  gfg.add(0, (Mat(2, 3) << 1., 2., 3., 5., 6., 7.), (Vec(2) << 4., 8.), model);
+  gfg.add(0, (Mat(2, 3) << 9.,10., 0., 0., 0., 0.), 1, (Mat(2, 2) << 11., 12., 14., 15.), (Vec(2) << 13.,16.), model);
 
   Matrix actual = gfg.sparseJacobian_();
 
@@ -112,8 +114,8 @@ TEST(GaussianFactorGraph, matrices) {
 
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Unit::Create(2);
-  gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), (Vec(2) << 4., 8.), model);
-  gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
+  gfg.add(0, (Mat(2, 3) << 1., 2., 3., 5., 6., 7.), (Vec(2) << 4., 8.), model);
+  gfg.add(0, (Mat(2, 3) << 9.,10., 0., 0., 0., 0.), 1, (Mat(2, 2) << 11., 12., 14., 15.), (Vec(2) << 13.,16.), model);
 
   Matrix jacobian(4,6);
   jacobian <<

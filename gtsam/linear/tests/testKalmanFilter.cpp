@@ -49,7 +49,7 @@ TEST( KalmanFilter, constructor ) {
 
   // Assert it has the correct mean, covariance and information
   EXPECT(assert_equal(x_initial, p1->mean()));
-  Matrix Sigma = Matrix_(2, 2, 0.01, 0.0, 0.0, 0.01);
+  Matrix Sigma = (Mat(2, 2) << 0.01, 0.0, 0.0, 0.01);
   EXPECT(assert_equal(Sigma, p1->covariance()));
   EXPECT(assert_equal(inverse(Sigma), p1->information()));
 
@@ -135,10 +135,10 @@ TEST( KalmanFilter, linear1 ) {
 TEST( KalmanFilter, predict ) {
 
   // Create dynamics model
-  Matrix F = Matrix_(2, 2, 1.0, 0.1, 0.2, 1.1);
-  Matrix B = Matrix_(2, 3, 1.0, 0.1, 0.2, 1.1, 1.2, 0.8);
+  Matrix F = (Mat(2, 2) << 1.0, 0.1, 0.2, 1.1);
+  Matrix B = (Mat(2, 3) << 1.0, 0.1, 0.2, 1.1, 1.2, 0.8);
   Vector u = (Vec(3) << 1.0, 0.0, 2.0);
-  Matrix R = Matrix_(2, 2, 1.0, 0.5, 0.0, 3.0);
+  Matrix R = (Mat(2, 2) << 1.0, 0.5, 0.0, 3.0);
   Matrix M = trans(R)*R;
   Matrix Q = inverse(M);
 
@@ -168,7 +168,7 @@ TEST( KalmanFilter, predict ) {
 TEST( KalmanFilter, QRvsCholesky ) {
 
   Vector mean = ones(9);
-  Matrix covariance = 1e-6*Matrix_(9, 9,
+  Matrix covariance = 1e-6 * (Mat(9, 9) <<
       15.0, -6.2, 0.0, 0.0, 0.0, 0.0, 0.0, 63.8, -0.6,
       -6.2, 21.9, -0.0, 0.0, 0.0, 0.0, -63.8, -0.0, -0.1,
       0.0, -0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.1, -0.0,
@@ -187,7 +187,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   KalmanFilter::State p0b = kfb.init(mean, covariance);
 
   // Set up dynamics update
-  Matrix Psi_k = 1e-6*Matrix_(9, 9,
+  Matrix Psi_k = 1e-6 * (Mat(9, 9) <<
       1000000.0, 0.0, 0.0, -19200.0, 600.0, -0.0, 0.0, 0.0, 0.0,
       0.0, 1000000.0, 0.0, 600.0, 19200.0, 200.0, 0.0, 0.0, 0.0,
       0.0, 0.0, 1000000.0, -0.0, -200.0, 19200.0, 0.0, 0.0, 0.0,
@@ -199,7 +199,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0);
   Matrix B = zeros(9, 1);
   Vector u = zero(1);
-  Matrix dt_Q_k = 1e-6*Matrix_(9, 9,
+  Matrix dt_Q_k = 1e-6 * (Mat(9, 9) <<
       33.7, 3.1, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       3.1, 126.4, -0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       -0.0, -0.3, 88.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -222,7 +222,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   Vector expectedMean = (Vec(9) << 0.9814, 1.0200, 1.0190, 1., 1., 1., 1., 1., 1.);
   EXPECT(assert_equal(expectedMean, pa->mean(), 1e-7));
   EXPECT(assert_equal(expectedMean, pb->mean(), 1e-7));
-  Matrix expected = 1e-6*Matrix_(9, 9,
+  Matrix expected = 1e-6 * (Mat(9, 9) <<
       48.8, -3.1, -0.0, -0.4, -0.4, 0.0, 0.0, 63.8, -0.6,
       -3.1, 148.4, -0.3, 0.5, 1.7, 0.2, -63.8, 0.0, -0.1,
       -0.0, -0.3, 188.0, -0.0, 0.2, 1.2, 0.0, 0.1, 0.0,
@@ -236,7 +236,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   EXPECT(assert_equal(expected, pb->covariance(), 1e-7));
 
   // prepare update
-  Matrix H = 1e-3*Matrix_(3, 9,
+  Matrix H = 1e-3 * (Mat(3, 9) <<
       0.0, 9795.9, 83.6, 0.0, 0.0, 0.0, 1000.0, 0.0, 0.0,
       -9795.9, 0.0, -5.2, 0.0, 0.0, 0.0, 0.0, 1000.0, 0.0,
       -83.6, 5.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000.);
@@ -256,7 +256,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   Vector expectedMean2 = (Vec(9) << 0.9207, 0.9030, 1.0178, 1.0002, 0.9992, 0.9998, 0.9981, 1.0035, 0.9882);
   EXPECT(assert_equal(expectedMean2, pa2->mean(), 1e-4));// not happy with tolerance here !
   EXPECT(assert_equal(expectedMean2, pb2->mean(), 1e-4));// is something still amiss?
-  Matrix expected2 = 1e-6*Matrix_(9, 9,
+  Matrix expected2 = 1e-6 * (Mat(9, 9) <<
       46.1, -2.6, -0.0, -0.4, -0.4, 0.0, 0.0, 63.9, -0.5,
       -2.6, 132.8, -0.5, 0.4, 1.5, 0.2, -64.0, -0.0, -0.1,
       -0.0, -0.5, 188.0, -0.0, 0.2, 1.2, -0.0, 0.1, 0.0,

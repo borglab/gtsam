@@ -31,11 +31,11 @@ using namespace gtsam;
 using namespace noiseModel;
 
 static double sigma = 2, s_1=1.0/sigma, var = sigma*sigma, prc = 1.0/var;
-static Matrix R = Matrix_(3, 3,
+static Matrix R = (Mat(3, 3) <<
     s_1, 0.0, 0.0,
     0.0, s_1, 0.0,
     0.0, 0.0, s_1);
-static Matrix Sigma = Matrix_(3, 3,
+static Matrix Sigma = (Mat(3, 3) <<
     var, 0.0, 0.0,
     0.0, var, 0.0,
     0.0, 0.0, var);
@@ -74,7 +74,7 @@ TEST(NoiseModel, constructors)
     DOUBLES_EQUAL(distance,mi->Mahalanobis(unwhitened),1e-9);
 
   // test R matrix
-  Matrix expectedR(Matrix_(3, 3,
+  Matrix expectedR((Mat(3, 3) <<
       s_1, 0.0, 0.0,
       0.0, s_1, 0.0,
       0.0, 0.0, s_1));
@@ -83,12 +83,12 @@ TEST(NoiseModel, constructors)
     EXPECT(assert_equal(expectedR,mi->R()));
 
   // test Whiten operator
-  Matrix H(Matrix_(3, 4,
+  Matrix H((Mat(3, 4) <<
       0.0, 0.0, 1.0, 1.0,
       0.0, 1.0, 0.0, 1.0,
       1.0, 0.0, 0.0, 1.0));
 
-  Matrix expected(Matrix_(3, 4,
+  Matrix expected((Mat(3, 4) <<
       0.0, 0.0, s_1, s_1,
       0.0, s_1, 0.0, s_1,
       s_1, 0.0, 0.0, s_1));
@@ -202,7 +202,7 @@ TEST(NoiseModel, ConstrainedAll )
 /* ************************************************************************* */
 namespace exampleQR {
   // create a matrix to eliminate
-  Matrix Ab = Matrix_(4, 6+1,
+  Matrix Ab = (Mat(4, 7) <<
       -1.,  0.,  1.,  0.,  0.,  0., -0.2,
       0., -1.,  0.,  1.,  0.,  0.,  0.3,
       1.,  0.,  0.,  0., -1.,  0.,  0.2,
@@ -210,7 +210,7 @@ namespace exampleQR {
   Vector sigmas = (Vec(4) << 0.2, 0.2, 0.1, 0.1);
 
   // the matrix AB yields the following factorized version:
-  Matrix Rd = Matrix_(4, 6+1,
+  Matrix Rd = (Mat(4, 7) <<
       11.1803,   0.0,   -2.23607, 0.0,    -8.94427, 0.0,     2.23607,
       0.0,   11.1803,    0.0,    -2.23607, 0.0,    -8.94427,-1.56525,
       0.0,       0.0,    4.47214, 0.0,    -4.47214, 0.0,     0.0,
@@ -238,7 +238,7 @@ TEST( NoiseModel, QR )
   SharedDiagonal actual2 = constrained->QR(Ab2);
   SharedDiagonal expectedModel2 = noiseModel::Diagonal::Sigmas(expectedSigmas);
   EXPECT(assert_equal(*expectedModel2,*actual2,1e-6));
-  Matrix expectedRd2 = Matrix_(4, 6+1,
+  Matrix expectedRd2 = (Mat(4, 7) <<
       1.,  0., -0.2,  0., -0.8, 0.,  0.2,
       0.,  1.,  0.,-0.2,   0., -0.8,-0.14,
       0.,  0.,  1.,   0., -1.,  0.,  0.0,
@@ -250,10 +250,10 @@ TEST( NoiseModel, QR )
 TEST(NoiseModel, QRNan )
 {
   SharedDiagonal constrained = noiseModel::Constrained::All(2);
-  Matrix Ab = Matrix_(2, 5, 1., 2., 1., 2., 3., 2., 1., 2., 4., 4.);
+  Matrix Ab = (Mat(2, 5) << 1., 2., 1., 2., 3., 2., 1., 2., 4., 4.);
 
   SharedDiagonal expected = noiseModel::Constrained::All(2);
-  Matrix expectedAb = Matrix_(2, 5, 1., 2., 1., 2., 3., 0., 1., 0., 0., 2.0/3);
+  Matrix expectedAb = (Mat(2, 5) << 1., 2., 1., 2., 3., 0., 1., 0., 0., 2.0/3);
 
   SharedDiagonal actual = constrained->QR(Ab);
   EXPECT(assert_equal(*expected,*actual));
@@ -304,7 +304,7 @@ TEST(NoiseModel, robustFunction)
 TEST(NoiseModel, robustNoise)
 {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
-  Matrix A = Matrix_(2, 2, 1.0, 10.0, 100.0, 1000.0);
+  Matrix A = (Mat(2, 2) << 1.0, 10.0, 100.0, 1000.0);
   Vector b = (Vec(2) <<  error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::Huber::Create(k, mEstimator::Huber::Scalar),

@@ -39,20 +39,20 @@ using namespace boost::assign;
 
 static const double tol = 1e-5;
 
-static Matrix R = Matrix_(2,2,
+static Matrix R = (Mat(2, 2) <<
     -12.1244,  -5.1962,
           0.,   4.6904);
 
 /* ************************************************************************* */
 TEST(GaussianConditional, constructor)
 {
-  Matrix S1 = Matrix_(2,2,
+  Matrix S1 = (Mat(2, 2) <<
       -5.2786,  -8.6603,
       5.0254,   5.5432);
-  Matrix S2 = Matrix_(2,2,
+  Matrix S2 = (Mat(2, 2) <<
       -10.5573,  -5.9385,
       5.5737,   3.0153);
-  Matrix S3 = Matrix_(2,2,
+  Matrix S3 = (Mat(2, 2) <<
       -11.3820,  -7.2581,
       -3.0153,  -3.5635);
 
@@ -133,13 +133,13 @@ TEST( GaussianConditional, solve )
   expectedX(0) = 20-3-11 ; expectedX(1) = 40-7-15;
 
   // create a conditional Gaussian node
-  Matrix R = Matrix_(2,2,   1., 0.,
+  Matrix R = (Mat(2, 2) <<  1., 0.,
                             0., 1.);
 
-  Matrix A1 = Matrix_(2,2,  1., 2.,
+  Matrix A1 = (Mat(2, 2) << 1., 2.,
                             3., 4.);
 
-  Matrix A2 = Matrix_(2,2,  5., 6.,
+  Matrix A2 = (Mat(2, 2) << 5., 6.,
                             7., 8.);
 
   Vector d(2); d << 20.0, 40.0;
@@ -241,8 +241,8 @@ TEST( GaussianConditional, solveTranspose ) {
    * 1 1 9
    *   1 5
    */
-  Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
-  Matrix R22 = Matrix_(1, 1, 1.0);
+  Matrix R11 = (Mat(1, 1) << 1.0), S12 = (Mat(1, 1) << 1.0);
+  Matrix R22 = (Mat(1, 1) << 1.0);
   Vector d1(1), d2(1);
   d1(0) = 9;
   d2(0) = 5;

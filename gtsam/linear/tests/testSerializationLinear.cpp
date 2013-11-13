@@ -159,9 +159,9 @@ TEST (Serialization, linear_factors) {
 
 /* ************************************************************************* */
 TEST (Serialization, gaussian_conditional) {
-  Matrix A1 = Matrix_(2,2, 1., 2., 3., 4.);
-  Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
-  Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
+  Matrix A1 = (Mat(2, 2) << 1., 2., 3., 4.);
+  Matrix A2 = (Mat(2, 2) << 6., 0.2, 8., 0.4);
+  Matrix R = (Mat(2, 2) << 0.1, 0.3, 0.0, 0.34);
   Vector d(2); d << 0.2, 0.5;
   GaussianConditional cg(0, d, R, 1, A1, 2, A2);
 
@@ -174,9 +174,9 @@ TEST (Serialization, gaussian_conditional) {
 TEST (Serialization, gaussian_factor_graph) {
   GaussianFactorGraph graph;
   {
-    Matrix A1 = Matrix_(2,2, 1., 2., 3., 4.);
-    Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
-    Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
+    Matrix A1 = (Mat(2, 2) << 1., 2., 3., 4.);
+    Matrix A2 = (Mat(2, 2) << 6., 0.2, 8., 0.4);
+    Matrix R = (Mat(2, 2) << 0.1, 0.3, 0.0, 0.34);
     Vector d(2); d << 0.2, 0.5;
     GaussianConditional cg(0, d, R, 1, A1, 2, A2);
     graph.push_back(cg);
@@ -203,10 +203,10 @@ TEST (Serialization, gaussian_bayes_tree) {
   const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
   const GaussianFactorGraph chain = list_of
-    (JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
-    (JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
-    (JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise))
-    (JacobianFactor(x4, Matrix_(1,1,1.), (Vec(1) << 1.),  chainNoise));
+    (JacobianFactor(x2, (Mat(1, 1) << 1.), x1, (Mat(1, 1) << 1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x2, (Mat(1, 1) << 1.), x3, (Mat(1, 1) << 1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x3, (Mat(1, 1) << 1.), x4, (Mat(1, 1) << 1.), (Vec(1) << 1.),  chainNoise))
+    (JacobianFactor(x4, (Mat(1, 1) << 1.), (Vec(1) << 1.),  chainNoise));
 
   GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
   GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);
