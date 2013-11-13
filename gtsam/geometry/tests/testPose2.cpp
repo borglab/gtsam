@@ -92,7 +92,7 @@ TEST(Pose2, expmap2) {
 TEST(Pose2, expmap3) {
   // do an actual series exponential map
   // see e.g. http://www.cis.upenn.edu/~cis610/cis610lie1.ps
-  Matrix A = Matrix_(3,3,
+  Matrix A = (Mat(3,3) <<
       0.0, -0.99,  0.01,
       0.99,  0.0, -0.015,
       0.0,   0.0,  0.0);
@@ -204,8 +204,8 @@ TEST( Pose2, transform_to )
 
   // expected
   Point2 expected(2,2);
-  Matrix expectedH1 = Matrix_(2,3, -1.0, 0.0, 2.0,  0.0, -1.0, -2.0);
-  Matrix expectedH2 = Matrix_(2,2, 0.0, 1.0,  -1.0, 0.0);
+  Matrix expectedH1 = (Mat(2,3) << -1.0, 0.0, 2.0,  0.0, -1.0, -2.0);
+  Matrix expectedH2 = (Mat(2,2) << 0.0, 1.0,  -1.0, 0.0);
 
   // actual
   Matrix actualH1, actualH2;
@@ -236,8 +236,8 @@ TEST (Pose2, transform_from)
   Point2 expected(0., 2.);
   EXPECT(assert_equal(expected, actual));
 
-  Matrix H1_expected = Matrix_(2, 3, 0., -1., -2., 1., 0., -1.);
-  Matrix H2_expected = Matrix_(2, 2, 0., -1., 1., 0.);
+  Matrix H1_expected = (Mat(2, 3) << 0., -1., -2., 1., 0., -1.);
+  Matrix H2_expected = (Mat(2, 2) << 0., -1., 1., 0.);
 
   Matrix numericalH1 = numericalDerivative21(transform_from_proxy, pose, pt);
   EXPECT(assert_equal(H1_expected, H1));
@@ -261,7 +261,7 @@ TEST(Pose2, compose_a)
   Pose2 expected(3.0*M_PI/4.0, Point2(-sqrt(0.5), 3.0*sqrt(0.5)));
   EXPECT(assert_equal(expected, actual));
 
-  Matrix expectedH1 = Matrix_(3,3,
+  Matrix expectedH1 = (Mat(3,3) <<
       0.0, 1.0, 0.0,
        -1.0, 0.0, 2.0,
       0.0, 0.0, 1.0
@@ -355,7 +355,7 @@ namespace {
   Matrix matrix(const Pose2& gTl) {
     Matrix gRl = gTl.r().matrix();
     Point2 gt = gTl.t();
-    return Matrix_(3, 3,
+    return (Mat(3, 3) <<
       gRl(0, 0), gRl(0, 1), gt.x(),
       gRl(1, 0), gRl(1, 1), gt.y(),
       0.0,       0.0,   1.0);
@@ -368,7 +368,7 @@ TEST( Pose2, matrix )
   Point2 origin, t(1,2);
   Pose2 gTl(M_PI/2.0, t); // robot at (1,2) looking towards y
   Matrix gMl = matrix(gTl);
-  EXPECT(assert_equal(Matrix_(3,3,
+  EXPECT(assert_equal((Mat(3,3) <<
       0.0, -1.0, 1.0,
       1.0,  0.0, 2.0,
       0.0,  0.0, 1.0),
@@ -376,7 +376,7 @@ TEST( Pose2, matrix )
   Rot2 gR1 = gTl.r();
   EXPECT(assert_equal(homogeneous(t),gMl*homogeneous(origin)));
   Point2 x_axis(1,0), y_axis(0,1);
-  EXPECT(assert_equal(Matrix_(2,2,
+  EXPECT(assert_equal((Mat(2,2) <<
       0.0, -1.0,
       1.0,  0.0),
       gR1.matrix()));
@@ -387,7 +387,7 @@ TEST( Pose2, matrix )
 
   // check inverse pose
   Matrix lMg = matrix(gTl.inverse());
-  EXPECT(assert_equal(Matrix_(3,3,
+  EXPECT(assert_equal((Mat(3,3) <<
       0.0,  1.0,-2.0,
      -1.0,  0.0, 1.0,
       0.0,  0.0, 1.0),
@@ -421,7 +421,7 @@ TEST( Pose2, between )
   EXPECT(assert_equal(expected,actual1));
   EXPECT(assert_equal(expected,actual2));
 
-  Matrix expectedH1 = Matrix_(3,3,
+  Matrix expectedH1 = (Mat(3,3) <<
       0.0,-1.0,-2.0,
       1.0, 0.0,-2.0,
       0.0, 0.0,-1.0
@@ -432,7 +432,7 @@ TEST( Pose2, between )
   // Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
   EXPECT(assert_equal(-gT2.between(gT1).AdjointMap(),actualH1));
 
-  Matrix expectedH2 = Matrix_(3,3,
+  Matrix expectedH2 = (Mat(3,3) <<
        1.0, 0.0, 0.0,
        0.0, 1.0, 0.0,
        0.0, 0.0, 1.0

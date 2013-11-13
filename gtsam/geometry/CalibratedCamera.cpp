@@ -36,7 +36,7 @@ Point2 CalibratedCamera::project_to_camera(const Point3& P,
     boost::optional<Matrix&> H1) {
   if (H1) {
     double d = 1.0 / P.z(), d2 = d * d;
-    *H1 = Matrix_(2, 3, d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
+    *H1 = (Mat(2, 3) <<  d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
   }
   return Point2(P.x() / P.z(), P.y() / P.z());
 }
@@ -84,12 +84,12 @@ Point2 CalibratedCamera::project(const Point3& point,
     const double z = q.z(), d = 1.0 / z;
     const double u = intrinsic.x(), v = intrinsic.y(), uv = u * v;
     if (Dpose)
-      *Dpose = Matrix_(2, 6, uv, -(1. + u * u), v, -d, 0., d * u, (1. + v * v),
+      *Dpose = (Mat(2, 6) <<  uv, -(1. + u * u), v, -d, 0., d * u, (1. + v * v),
           -uv, -u, 0., -d, d * v);
     if (Dpoint) {
       const Matrix R(pose_.rotation().matrix());
       *Dpoint = d
-          * Matrix_(2, 3, R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2),
+          * (Mat(2, 3) <<  R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2),
               R(2, 0) - u * R(2, 2), R(0, 1) - v * R(0, 2),
               R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2));
     }

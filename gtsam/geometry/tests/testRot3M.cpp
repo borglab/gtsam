@@ -57,7 +57,7 @@ TEST( Rot3, constructor)
 /* ************************************************************************* */
 TEST( Rot3, constructor2)
 {
-  Matrix R = Matrix_(3, 3, 11., 12., 13., 21., 22., 23., 31., 32., 33.);
+  Matrix R = (Mat(3, 3) << 11., 12., 13., 21., 22., 23., 31., 32., 33.);
   Rot3 actual(R);
   Rot3 expected(11, 12, 13, 21, 22, 23, 31, 32, 33);
   CHECK(assert_equal(actual,expected));
@@ -501,7 +501,7 @@ TEST( Rot3, RQ)
   CHECK(assert_equal((Vector)(Vec(3) << 0.0,0.0,0.1),Rot3::roll (0.1).ypr()));
 
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
-  Matrix K = Matrix_(3, 3, 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0);
+  Matrix K = (Mat(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0);
   Matrix A = K * R.matrix();
   boost::tie(actualK, actual) = RQ(A);
   CHECK(assert_equal(K,actualK));
@@ -514,7 +514,7 @@ TEST( Rot3, expmapStability ) {
   double theta = w.norm();
   double theta2 = theta*theta;
   Rot3 actualR = Rot3::Expmap(w);
-  Matrix W = Matrix_(3,3, 0.0, -w(2), w(1),
+  Matrix W = (Mat(3, 3) << 0.0, -w(2), w(1),
                           w(2), 0.0, -w(0),
                           -w(1), w(0), 0.0 );
   Matrix W2 = W*W;
@@ -541,13 +541,13 @@ TEST( Rot3, logmapStability ) {
 TEST(Rot3, quaternion) {
   // NOTE: This is also verifying the ability to convert Vector to Quaternion
   Quaternion q1(0.710997408193224, 0.360544029310185, 0.594459869568306, 0.105395217842782);
-  Rot3 R1 = Rot3(Matrix_(3,3,
+  Rot3 R1 = Rot3((Matrix)(Mat(3, 3) <<
       0.271018623057411,   0.278786459830371,   0.921318086098018,
       0.578529366719085,   0.717799701969298,  -0.387385285854279,
      -0.769319620053772,   0.637998195662053,   0.033250932803219));
 
   Quaternion q2(0.263360579192421, 0.571813128030932, 0.494678363680335, 0.599136268678053);
-  Rot3 R2 = Rot3(Matrix_(3,3,
+  Rot3 R2 = Rot3((Matrix)(Mat(3, 3) <<
       -0.207341903877828,   0.250149415542075,   0.945745528564780,
        0.881304914479026,  -0.371869043667957,   0.291573424846290,
        0.424630407073532,   0.893945571198514,  -0.143353873763946));
