@@ -27,7 +27,7 @@ GTSAM_CONCEPT_LIE_INST(LieMatrix)
 
 /* ************************************************************************* */
 TEST( LieMatrix, construction ) {
-  Matrix m = Matrix_(2,2, 1.0, 2.0, 3.0, 4.0);
+  Matrix m = (Mat(2,2) << 1.0,2.0, 3.0,4.0);
   LieMatrix lie1(m), lie2(m);
 
   EXPECT(lie1.dim() == 4);
@@ -37,7 +37,7 @@ TEST( LieMatrix, construction ) {
 
 /* ************************************************************************* */
 TEST( LieMatrix, other_constructors ) {
-  Matrix init = Matrix_(2,2, 10.0, 20.0, 30.0, 40.0);
+  Matrix init = (Mat(2,2) << 10.0,20.0, 30.0,40.0);
   LieMatrix exp(init);
   LieMatrix a(2,2,10.0,20.0,30.0,40.0);
   double data[] = {10,30,20,40};
