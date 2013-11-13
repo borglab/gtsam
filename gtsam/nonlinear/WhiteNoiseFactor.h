@@ -77,9 +77,9 @@ namespace gtsam {
       double c = 2 * logSqrt2PI - log(p) + e2 * p;
       Vector g1 = (Vec(1) << -e * p);
       Vector g2 = (Vec(1) <<  0.5 / p - 0.5 * e2);
-      Matrix G11 = Matrix_(1, 1, p);
-      Matrix G12 = Matrix_(1, 1, e);
-      Matrix G22 = Matrix_(1, 1, 0.5 / (p * p));
+      Matrix G11 = (Mat(1, 1) << p);
+      Matrix G12 = (Mat(1, 1) << e);
+      Matrix G22 = (Mat(1, 1) << 0.5 / (p * p));
       return HessianFactor::shared_ptr(
           new HessianFactor(j1, j2, G11, G12, g1, G22, g2, c));
     }

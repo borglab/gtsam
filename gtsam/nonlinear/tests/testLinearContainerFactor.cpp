@@ -30,10 +30,10 @@ Pose2 poseA1(0.0, 0.0, 0.0), poseA2(2.0, 0.0, 0.0);
 /* ************************************************************************* */
 TEST( testLinearContainerFactor, generic_jacobian_factor ) {
 
-  Matrix A1 = Matrix_(2,2,
+  Matrix A1 = (Mat(2, 2) <<
       2.74222, -0.0067457,
       0.0,  2.63624);
-  Matrix A2 = Matrix_(2,2,
+  Matrix A2 = (Mat(2, 2) <<
       -0.0455167, -0.0443573,
       -0.0222154, -0.102489);
   Vector b = (Vec(2) << 0.0277052,
@@ -64,10 +64,10 @@ TEST( testLinearContainerFactor, generic_jacobian_factor ) {
 /* ************************************************************************* */
 TEST( testLinearContainerFactor, jacobian_factor_withlinpoints ) {
 
-  Matrix A1 = Matrix_(2,2,
+  Matrix A1 = (Mat(2, 2) <<
       2.74222, -0.0067457,
       0.0,  2.63624);
-  Matrix A2 = Matrix_(2,2,
+  Matrix A2 = (Mat(2, 2) <<
       -0.0455167, -0.0443573,
       -0.0222154, -0.102489);
   Vector b = (Vec(2) << 0.0277052,
@@ -117,16 +117,16 @@ TEST( testLinearContainerFactor, jacobian_factor_withlinpoints ) {
 
 /* ************************************************************************* */
 TEST( testLinearContainerFactor, generic_hessian_factor ) {
-  Matrix G11 = Matrix_(1,1, 1.0);
-  Matrix G12 = Matrix_(1,2, 2.0, 4.0);
-  Matrix G13 = Matrix_(1,3, 3.0, 6.0, 9.0);
+  Matrix G11 = (Mat(1, 1) << 1.0);
+  Matrix G12 = (Mat(1, 2) << 2.0, 4.0);
+  Matrix G13 = (Mat(1, 3) << 3.0, 6.0, 9.0);
 
-  Matrix G22 = Matrix_(2,2, 3.0, 5.0,
+  Matrix G22 = (Mat(2, 2) << 3.0, 5.0,
                             0.0, 6.0);
-  Matrix G23 = Matrix_(2,3, 4.0, 6.0, 8.0,
+  Matrix G23 = (Mat(2, 3) << 4.0, 6.0, 8.0,
                             1.0, 2.0, 4.0);
 
-  Matrix G33 = Matrix_(3,3, 1.0, 2.0, 3.0,
+  Matrix G33 = (Mat(3, 3) << 1.0, 2.0, 3.0,
                             0.0, 5.0, 6.0,
                             0.0, 0.0, 9.0);
 
@@ -158,17 +158,17 @@ TEST( testLinearContainerFactor, hessian_factor_withlinpoints ) {
   // 2 variable example, one pose, one landmark (planar)
   // Initial ordering: x1, l1
 
-  Matrix G11 = Matrix_(3,3,
+  Matrix G11 = (Mat(3, 3) <<
       1.0, 2.0, 3.0,
       0.0, 5.0, 6.0,
       0.0, 0.0, 9.0);
-  Matrix G12 = Matrix_(3,2,
+  Matrix G12 = (Mat(3, 2) <<
       1.0, 2.0,
       3.0, 5.0,
       4.0, 6.0);
   Vector g1 = (Vec(3) << 1.0,  2.0,  3.0);
 
-  Matrix G22 = Matrix_(2,2,
+  Matrix G22 = (Mat(2, 2) <<
         0.5, 0.2,
         0.0, 0.6);
 
