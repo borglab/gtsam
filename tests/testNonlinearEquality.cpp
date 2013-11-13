@@ -520,7 +520,7 @@ typedef NonlinearEquality2<Point3> Point3Equality;
 TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 
   // create initial estimates
-  Rot3 faceDownY(Matrix_(3,3,
+  Rot3 faceDownY((Matrix)(Mat(3,3) <<
       1.0, 0.0, 0.0,
       0.0, 0.0, 1.0,
       0.0, -1.0, 0.0));

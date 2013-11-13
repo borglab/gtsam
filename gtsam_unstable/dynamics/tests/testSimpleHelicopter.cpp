@@ -35,7 +35,7 @@ Matrix Inertia = diag((Vec(6) << 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*di
 Vector computeFu(const Vector& gamma, const Vector& control) {
   double gamma_r = gamma(0), gamma_p = gamma(1);
 
-  Matrix F = Matrix_(6, 2, distT*sin(gamma_r), 0.0,
+  Matrix F = (Mat(6, 2) << distT*sin(gamma_r), 0.0,
                            distT*sin(gamma_p*cos(gamma_r)), 0.0,
                            0.0, distR,
                            sin(gamma_p)*cos(gamma_r), 0.0,
