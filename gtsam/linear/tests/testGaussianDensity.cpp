@@ -25,7 +25,7 @@ using namespace std;
 /* ************************************************************************* */
 TEST(GaussianDensity, constructor)
 {
-  Matrix R = Matrix_(2,2,
+  Matrix R = (Mat(2,2) <<
       -12.1244,  -5.1962,
             0.,   4.6904);
 

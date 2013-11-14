@@ -29,7 +29,7 @@ using namespace gtsam;
 
 static const Cal3_S2 K(625, 625, 0, 0, 0);
 
-static const Pose3 pose1(Matrix_(3,3,
+static const Pose3 pose1((Matrix)(Mat(3,3) <<
               1., 0., 0.,
               0.,-1., 0.,
               0., 0.,-1.

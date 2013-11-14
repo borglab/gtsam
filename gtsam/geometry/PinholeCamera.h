@@ -273,7 +273,7 @@ public:
       boost::optional<Matrix&> Dpoint = boost::none) {
     if (Dpoint) {
       double d = 1.0 / P.z(), d2 = d * d;
-      *Dpoint = Matrix_(2, 3, d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
+      *Dpoint = (Mat(2, 3) << d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
     }
     return Point2(P.x() / P.z(), P.y() / P.z());
   }

@@ -27,7 +27,7 @@ int main()
 {
   int n = 100000;
 
-  const Pose3 pose1(Matrix_(3,3,
+  const Pose3 pose1((Matrix)(Mat(3,3) <<
       1., 0., 0.,
       0.,-1., 0.,
       0., 0.,-1.

@@ -101,7 +101,7 @@ TEST( Point2, norm ) {
   // exception, for (0,0) derivative is [Inf,Inf] but we return [1,1]
   actual = x1.norm(actualH);
   EXPECT_DOUBLES_EQUAL(0, actual, 1e-9);
-  expectedH = Matrix_(1, 2, 1.0, 1.0);
+  expectedH = (Mat(1, 2) << 1.0, 1.0);
   EXPECT(assert_equal(expectedH,actualH));
 
   actual = x2.norm(actualH);
