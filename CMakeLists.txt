@@ -30,6 +30,7 @@ message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
 
 # Load build type flags and default to Debug mode
 include(GtsamBuildTypes)
+include(GtsamPythonWrap)
 
 # Use macros for creating tests/timing scripts
 include(GtsamTesting)
@@ -342,6 +343,10 @@ add_subdirectory(timing)
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
+endif()
+
+if(GTSAM_BUILD_PYTHON)
+  add_subdirectory(python)
 endif()
 
 # Build gtsam_unstable
