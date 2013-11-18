@@ -59,7 +59,7 @@ namespace gtsam
       std::set_difference(allKeys.begin(), allKeys.end(), frontals.begin(), frontals.end(), orderedKeys.begin() + nFrontals);
 
       // Return resulting conditional and factor
-      return make_pair(
+      return std::make_pair(
         boost::make_shared<SymbolicConditional>(
         SymbolicConditional::FromKeys(orderedKeys, nFrontals)),
         boost::make_shared<SymbolicFactor>(

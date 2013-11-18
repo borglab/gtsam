@@ -23,7 +23,7 @@
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/ClusterTree-inst.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
-#include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/symbolic/SymbolicFactor-inst.h>
 
 namespace gtsam {
   
@@ -130,18 +130,16 @@ namespace gtsam {
       // current node did not introduce any parents beyond those already in the child.
 
       // Do symbolic elimination for this node
-      SymbolicFactorGraph symbolicFactors;
+      class : public FactorGraph<Factor> {} symbolicFactors;
       symbolicFactors.reserve(ETreeNode->factors.size() + myData.childSymbolicFactors.size());
-      // Add symbolic versions of the ETree node factors
-      BOOST_FOREACH(const typename GRAPH::sharedFactor& factor, ETreeNode->factors) {
-        symbolicFactors.push_back(boost::make_shared<SymbolicFactor>(
-          SymbolicFactor::FromKeys(*factor)));
-      }
+      // Add ETree node factors
+      symbolicFactors += ETreeNode->factors;
       // Add symbolic factors passed up from children
-      symbolicFactors.push_back(myData.childSymbolicFactors.begin(), myData.childSymbolicFactors.end());
+      symbolicFactors += myData.childSymbolicFactors;
+
       Ordering keyAsOrdering; keyAsOrdering.push_back(ETreeNode->key);
       std::pair<SymbolicConditional::shared_ptr, SymbolicFactor::shared_ptr> symbolicElimResult =
-        EliminateSymbolic(symbolicFactors, keyAsOrdering);
+        internal::EliminateSymbolic(symbolicFactors, keyAsOrdering);
 
       // Store symbolic elimination results in the parent
       myData.parentData->childSymbolicConditionals.push_back(symbolicElimResult.first);
