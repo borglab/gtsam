@@ -56,6 +56,13 @@ GTSAM requires the following libraries to be installed on your system:
  - Cmake version 2.6 or higher
  - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
 
+Optional dependent libraries:
+ - If TBB is installed and detectable by CMake GTSAM will use it automatically.
+   Ensure that CMake prints "Use Intel TBB : Yes".  To disable the use of TBB,
+   disable the CMake flag GTSAM_WITH_TBB (enabled by default).  On Ubuntu, TBB
+   may be installed from the Ubuntu repositories, and for other platforms it
+   may be downloaded from https://www.threadingbuildingblocks.org/
+
 Tested compilers
  - GCC 4.2-4.7
  - Clang 2.9-3.2
