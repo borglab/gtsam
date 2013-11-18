@@ -148,6 +148,7 @@ find_package(TBB)
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
 	set(GTSAM_USE_TBB 1)  # This will go into config.h
+	include_directories(BEFORE ${TBB_INCLUDE_DIRS})
 	set(GTSAM_TBB_LIBRARIES "")
 	if(TBB_DEBUG_LIBRARIES)
 		foreach(lib ${TBB_LIBRARIES})
@@ -260,7 +261,7 @@ endif()
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
 # takes precedence over a system-installed one.
-include_directories(BEFORE ${TBB_INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
+include_directories(BEFORE ${Boost_INCLUDE_DIR})
 
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead

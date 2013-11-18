@@ -8,3 +8,11 @@ set (GTSAM_VERSION_STRING "@GTSAM_VERSION_STRING@")
 
 set (GTSAM_USE_TBB @GTSAM_USE_TBB@)
 set (GTSAM_DEFAULT_ALLOCATOR @GTSAM_DEFAULT_ALLOCATOR@)
+
+if("@GTSAM_USE_TBB@")
+  list(INSERT GTSAM_INCLUDE_DIR 0 "@TBB_INCLUDE_DIRS@") # Insert at beginning of list so that GTSAM still comes last
+endif()
+
+if("@GTSAM_USE_EIGEN_MKL@")
+  list(INSERT GTSAM_INCLUDE_DIR 0 "@MKL_INCLUDE_DIR@") # Insert at beginning of list so that GTSAM still comes last
+endif()
