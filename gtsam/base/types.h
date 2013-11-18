@@ -245,7 +245,7 @@ namespace gtsam {
     TbbOpenMPMixedScope() :
       previousOpenMPThreads(omp_get_num_threads())
     {
-      omp_set_num_threads(omp_get_num_procs() / 2);
+      omp_set_num_threads(omp_get_num_procs() / 4);
     }
 
     ~TbbOpenMPMixedScope()
