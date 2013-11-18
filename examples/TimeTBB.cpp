@@ -81,7 +81,7 @@ map<int, double> testWithoutMemoryAllocation()
     tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithoutAllocation(results));
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "Without memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
-    timingResults[grainSize] = (t1 - t0).seconds();
+    timingResults[(int)grainSize] = (t1 - t0).seconds();
   }
 
   return timingResults;

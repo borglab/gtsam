@@ -120,7 +120,7 @@ namespace gtsam {
 
                 // If we have child tasks, start subtasks and wait for them to complete
                 //postOrderTask.set_ref_count((int) treeNode->children.size());
-                set_ref_count(treeNode->children.size());
+                set_ref_count((int)treeNode->children.size());
                 spawn(childTasks);
                 return firstChild;
               }
