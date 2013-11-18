@@ -125,7 +125,7 @@ public:
    * solving problems incrementally.
    */
   template<class FG>
-  void augment(const FG& factors);
+  void augment(const FG& factors, boost::optional<const FastVector<size_t>&> newFactorIndices = boost::none);
 
   /**
    * Remove entries corresponding to the specified factors. NOTE: We intentionally do not decrement

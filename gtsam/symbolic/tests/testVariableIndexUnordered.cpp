@@ -17,6 +17,7 @@
  */
 
 #include <boost/assign/std/list.hpp>
+#include <boost/assign/list_of.hpp>
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
@@ -49,6 +50,35 @@ TEST(VariableIndex, augment) {
 
   LONGS_EQUAL(16, (long)actual.nEntries());
   LONGS_EQUAL(8, (long)actual.nFactors());
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(VariableIndex, augment2) {
+
+  SymbolicFactorGraph fg1, fg2;
+  fg1.push_factor(0, 1);
+  fg1.push_factor(0, 2);
+  fg1.push_factor(5, 9);
+  fg1.push_factor(2, 3);
+  fg2.push_factor(1, 3);
+  fg2.push_factor(2, 4);
+  fg2.push_factor(3, 5);
+  fg2.push_factor(5, 6);
+
+  SymbolicFactorGraph fgCombined;
+  fgCombined.push_back(fg1);
+  fgCombined.push_back(SymbolicFactor::shared_ptr()); // Add an extra empty factor
+  fgCombined.push_back(fg2);
+
+  VariableIndex expected(fgCombined);
+
+  FastVector<size_t> newIndices = list_of(5)(6)(7)(8);
+  VariableIndex actual(fg1);
+  actual.augment(fg2, newIndices);
+
+  LONGS_EQUAL(16, (long) actual.nEntries());
+  LONGS_EQUAL(9, (long) actual.nFactors());
   EXPECT(assert_equal(expected, actual));
 }
 
