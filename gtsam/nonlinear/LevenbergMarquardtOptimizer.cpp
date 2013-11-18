@@ -102,8 +102,8 @@ void LevenbergMarquardtOptimizer::iterate() {
       // for each of the variables, add a prior
       BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
         size_t dim = key_value.value.dim();
-        Matrix A = eye(dim);
-        Vector b = zero(dim);
+        Matrix A = Matrix::Identity(dim, dim);
+        Vector b = Vector::Zero(dim);
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
         dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
       }
