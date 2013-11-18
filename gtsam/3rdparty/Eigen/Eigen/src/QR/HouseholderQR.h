@@ -251,6 +251,7 @@ void householder_qr_inplace_unblocked(MatrixQR& mat, HCoeffs& hCoeffs, typename 
 }
 
 /** \internal */
+#ifndef EIGEN_USE_LAPACKE
 template<typename MatrixQR, typename HCoeffs>
 void householder_qr_inplace_blocked(MatrixQR& mat, HCoeffs& hCoeffs,
                                        typename MatrixQR::Index maxBlockSize=32,
@@ -301,6 +302,7 @@ void householder_qr_inplace_blocked(MatrixQR& mat, HCoeffs& hCoeffs,
     }
   }
 }
+#endif
 
 template<typename _MatrixType, typename Rhs>
 struct solve_retval<HouseholderQR<_MatrixType>, Rhs>

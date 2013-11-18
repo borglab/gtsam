@@ -162,8 +162,11 @@ namespace gtsam
     boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
     EliminationData<This> rootsContainer(0, roots_.size());
     EliminationPostOrderVisitor<This> visitorPost(function, result->nodes_);
-    treeTraversal::DepthFirstForestParallel(*this, rootsContainer,
-      eliminationPreOrderVisitor<This>, visitorPost, 10);
+    {
+      TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
+      treeTraversal::DepthFirstForestParallel(*this, rootsContainer,
+        eliminationPreOrderVisitor<This>, visitorPost, 10);
+    }
 
     // Create BayesTree from roots stored in the dummy BayesTree node.
     result->roots_.insert(result->roots_.end(), rootsContainer.bayesTreeNode->children.begin(), rootsContainer.bayesTreeNode->children.end());

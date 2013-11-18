@@ -34,7 +34,7 @@
 #ifndef EIGEN_QR_MKL_H
 #define EIGEN_QR_MKL_H
 
-#include "Eigen/src/Core/util/MKL_support.h"
+#include "../Core/util/MKL_support.h"
 
 namespace Eigen { 
 
@@ -48,9 +48,9 @@ void householder_qr_inplace_blocked(MatrixQR& mat, HCoeffs& hCoeffs, \
                                        typename MatrixQR::Index maxBlockSize=32, \
                                        EIGTYPE* tempData = 0) \
 { \
-  lapack_int m = mat.rows(); \
-  lapack_int n = mat.cols(); \
-  lapack_int lda = mat.outerStride(); \
+  lapack_int m = (lapack_int) mat.rows(); \
+  lapack_int n = (lapack_int) mat.cols(); \
+  lapack_int lda = (lapack_int) mat.outerStride(); \
   lapack_int matrix_order = (MatrixQR::IsRowMajor) ? LAPACK_ROW_MAJOR : LAPACK_COL_MAJOR; \
   LAPACKE_##MKLPREFIX##geqrf( matrix_order, m, n, (MKLTYPE*)mat.data(), lda, (MKLTYPE*)hCoeffs.data()); \
   hCoeffs.adjointInPlace(); \

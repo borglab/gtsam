@@ -42,6 +42,13 @@
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
 
+// Whether Eigen will use MKL (if MKL was found and GTSAM_WITH_EIGEN_MKL is enabled in CMake)
+#cmakedefine GTSAM_USE_EIGEN_MKL
+#cmakedefine EIGEN_USE_MKL_ALL // This is also defined in gtsam_eigen_includes.h
+
+// Whether Eigen with MKL will use OpenMP (if OpenMP was found, Eigen uses MKL, and GTSAM_WITH_EIGEN_MKL_OPENMP is enabled in CMake)
+#cmakedefine GTSAM_USE_EIGEN_MKL_OPENMP
+
 // The default allocator to use
 #cmakedefine GTSAM_ALLOCATOR_BOOSTPOOL
 #cmakedefine GTSAM_ALLOCATOR_TBB

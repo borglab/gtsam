@@ -30,8 +30,13 @@
 #include <boost/optional.hpp>
 
 #ifdef GTSAM_USE_TBB
+#include <tbb/task_scheduler_init.h>
 #include <tbb/tbb_exception.h>
 #include <tbb/scalable_allocator.h>
+#endif
+
+#ifdef GTSAM_USE_EIGEN_MKL_OPENMP
+#include <omp.h>
 #endif
 
 namespace gtsam {
@@ -225,6 +230,32 @@ namespace gtsam {
   public:
     /// Construct with a string describing the exception
     InvalidArgumentThreadsafe(const std::string& description) : ThreadsafeException<InvalidArgumentThreadsafe>(description) {}
+  };
+
+  /* ************************************************************************* */
+  /// An object whose scope defines a block where TBB and OpenMP parallelism are mixed.  In such a
+  /// block, we use default threads for TBB, and p/2 threads for OpenMP.  If GTSAM is not compiled to
+  /// use both TBB and OpenMP, this has no effect.
+  class TbbOpenMPMixedScope
+  {
+    int previousOpenMPThreads;
+
+  public:
+#if defined GTSAM_USE_TBB && defined GTSAM_USE_EIGEN_MKL_OPENMP
+    TbbOpenMPMixedScope() :
+      previousOpenMPThreads(omp_get_num_threads())
+    {
+      omp_set_num_threads(omp_get_num_procs() / 2);
+    }
+
+    ~TbbOpenMPMixedScope()
+    {
+      omp_set_num_threads(previousOpenMPThreads);
+    }
+#else
+    TbbOpenMPMixedScope() : previousOpenMPThreads(-1) {}
+    ~TbbOpenMPMixedScope() {}
+#endif
   };
 
 }

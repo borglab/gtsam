@@ -59,6 +59,8 @@ option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the defau
 option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
 option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF) 
 option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TBB) if available" ON)
+option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" ON)
+option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
 
 # Options relating to MATLAB wrapper
@@ -157,6 +159,7 @@ if(TBB_FOUND AND GTSAM_WITH_TBB)
 	else()
 		set(GTSAM_TBB_LIBRARIES ${TBB_LIBRARIES})
 	endif()
+	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${GTSAM_TBB_LIBRARIES})
 else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
@@ -165,6 +168,28 @@ endif()
 ###############################################################################
 # Find Google perftools
 find_package(GooglePerfTools)
+
+
+###############################################################################
+# Find MKL
+find_package(MKL)
+
+if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
+	set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
+	set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
+	include_directories(${MKL_INCLUDE_DIR})
+	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+endif()
+
+
+###############################################################################
+# Find OpenMP
+find_package(OpenMP)
+
+if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
+	set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
 
 
 ###############################################################################
@@ -205,7 +230,7 @@ if(GTSAM_USE_TBB)
 	set(preferred_allocator TBB)
 else()
 	list(APPEND possible_allocators BoostPool STL)
-	set(preferred_allocator BoostPool)
+	set(preferred_allocator STL)
 endif()
 if(GOOGLE_PERFTOOLS_FOUND)
 	list(APPEND possible_allocators tcmalloc)
@@ -368,6 +393,20 @@ elseif(TBB_FOUND)
 else()
 	message(STATUS "  Use Intel TBB                  : TBB not found")
 endif()
+if(GTSAM_USE_EIGEN_MKL)
+	message(STATUS "  Eigen will use MKL             : Yes")
+elseif(MKL_FOUND)
+	message(STATUS "  Eigen will use MKL             : MKL found but GTSAM_WITH_EIGEN_MKL is disabled")
+else()
+	message(STATUS "  Eigen will use MKL             : MKL not found")
+endif()
+if(GTSAM_USE_EIGEN_MKL_OPENMP)
+	message(STATUS "  Eigen will use MKL and OpenMP  : Yes")
+elseif(OPENMP_FOUND)
+	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP found but Eigen using MKL is disabled")
+else()
+	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP not found")
+endif()
 message(STATUS "  Default allocator              : ${GTSAM_DEFAULT_ALLOCATOR}")
 
 
@@ -386,8 +425,15 @@ print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap              
 print_config_flag(${GTSAM_INSTALL_WRAP}                "Install wrap utility           ")
 message(STATUS "===============================================================")
 
+# Print warnings at the end
 if(GTSAM_WITH_TBB AND NOT TBB_FOUND)
-	message(WARNING "GTSAM_USE_TBB is set to 'On' but TBB was not found.  This is ok, but GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
+	message(WARNING "GTSAM_WITH_TBB is set to 'On' but TBB was not found.  This is ok, but note that GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
+endif()
+if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
+	message(WARNING "GTSAM_WITH_EIGEN_MKL is set to 'On' but MKL was not found.  This is ok, but note that MKL yields better performance.  Set GTSAM_WITH_EIGEN_MKL to 'Off' to avoid this warning.")
+endif()
+if(GTSAM_WITH_EIGEN_MKL_OPENMP AND NOT OPENMP_FOUND AND MKL_FOUND)
+	message(WARNING "GTSAM_WITH_EIGEN_MKL_OPENMP is set to 'On' but your compiler does not support OpenMP.  This is ok, but performance may be improved with OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning.")
 endif()
 
 # Include CPack *after* all flags

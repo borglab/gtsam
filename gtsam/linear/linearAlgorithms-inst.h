@@ -134,6 +134,7 @@ namespace gtsam
         OptimizeData rootData;
         OptimizeClique<typename BAYESTREE::Clique> preVisitor;
         treeTraversal::no_op postVisitor;
+        TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
         treeTraversal::DepthFirstForestParallel(bayesTree, rootData, preVisitor, postVisitor);
         return preVisitor.collectedResult;
       }

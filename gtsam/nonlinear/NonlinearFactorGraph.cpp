@@ -286,6 +286,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
 #ifdef GTSAM_USE_TBB
 
   linearFG->resize(this->size());
+  TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
   tbb::parallel_for(tbb::blocked_range<size_t>(0, this->size()),
     _LinearizeOneFactor(*this, linearizationPoint, *linearFG));
 

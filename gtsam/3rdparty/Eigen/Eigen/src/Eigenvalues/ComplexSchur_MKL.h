@@ -33,7 +33,7 @@
 #ifndef EIGEN_COMPLEX_SCHUR_MKL_H
 #define EIGEN_COMPLEX_SCHUR_MKL_H
 
-#include "Eigen/src/Core/util/MKL_support.h"
+#include "../Core/util/MKL_support.h"
 
 namespace Eigen { 
 
