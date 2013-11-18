@@ -428,13 +428,13 @@ message(STATUS "==============================================================="
 
 # Print warnings at the end
 if(GTSAM_WITH_TBB AND NOT TBB_FOUND)
-	message(WARNING "GTSAM_WITH_TBB is set to 'On' but TBB was not found.  This is ok, but note that GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
+	message(WARNING "TBB was not found - this is ok, but note that GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
 endif()
 if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
-	message(WARNING "GTSAM_WITH_EIGEN_MKL is set to 'On' but MKL was not found.  This is ok, but note that MKL yields better performance.  Set GTSAM_WITH_EIGEN_MKL to 'Off' to avoid this warning.")
+	message(WARNING "MKL was not found - this is ok, but note that MKL yields better performance.  Set GTSAM_WITH_EIGEN_MKL to 'Off' to disable this warning.")
 endif()
 if(GTSAM_WITH_EIGEN_MKL_OPENMP AND NOT OPENMP_FOUND AND MKL_FOUND)
-	message(WARNING "GTSAM_WITH_EIGEN_MKL_OPENMP is set to 'On' but your compiler does not support OpenMP.  This is ok, but performance may be improved with OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning.")
+	message(WARNING "Your compiler does not support OpenMP - this is ok, but performance may be improved with OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning.")
 endif()
 
 # Include CPack *after* all flags
