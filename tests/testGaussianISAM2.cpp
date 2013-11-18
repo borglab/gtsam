@@ -285,6 +285,34 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, AddFactorsStep1)
+{
+  NonlinearFactorGraph nonlinearFactors;
+  nonlinearFactors += PriorFactor<LieVector>(10, LieVector(), gtsam::SharedNoiseModel());
+  nonlinearFactors += NonlinearFactor::shared_ptr();
+  nonlinearFactors += PriorFactor<LieVector>(11, LieVector(), gtsam::SharedNoiseModel());
+
+  NonlinearFactorGraph newFactors;
+  newFactors += PriorFactor<LieVector>(1, LieVector(), gtsam::SharedNoiseModel());
+  newFactors += PriorFactor<LieVector>(2, LieVector(), gtsam::SharedNoiseModel());
+
+  NonlinearFactorGraph expectedNonlinearFactors;
+  expectedNonlinearFactors += PriorFactor<LieVector>(10, LieVector(), gtsam::SharedNoiseModel());
+  expectedNonlinearFactors += PriorFactor<LieVector>(1, LieVector(), gtsam::SharedNoiseModel());
+  expectedNonlinearFactors += PriorFactor<LieVector>(11, LieVector(), gtsam::SharedNoiseModel());
+  expectedNonlinearFactors += PriorFactor<LieVector>(2, LieVector(), gtsam::SharedNoiseModel());
+
+  const FastVector<size_t> expectedNewFactorIndices = list_of(1)(3);
+
+  FastVector<size_t> actualNewFactorIndices;
+
+  ISAM2::Impl::AddFactorsStep1(newFactors, true, nonlinearFactors, actualNewFactorIndices);
+
+  EXPECT(assert_equal(expectedNonlinearFactors, nonlinearFactors));
+  EXPECT(assert_container_equality(expectedNewFactorIndices, actualNewFactorIndices));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, simple)
 {
   for(size_t i = 0; i < 10; ++i) {

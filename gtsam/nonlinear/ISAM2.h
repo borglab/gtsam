@@ -164,6 +164,11 @@ struct GTSAM_EXPORT ISAM2Params {
    */
   bool enablePartialRelinearizationCheck;
 
+  /// When you will be removing many factors, e.g. when using ISAM2 as a fixed-lag smoother, enable this option to
+  /// add factors in the first available factor slots, to avoid accumulating NULL factor slots, at the cost of
+  /// having to search for slots every time a factor is added.
+  bool findUnusedFactorSlots;
+
   /** Specify parameters as constructor arguments */
   ISAM2Params(
       OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params::optimizationParams
@@ -178,7 +183,8 @@ struct GTSAM_EXPORT ISAM2Params {
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
       evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
       cacheLinearizedFactors(_cacheLinearizedFactors), keyFormatter(_keyFormatter),
-      enableDetailedResults(false), enablePartialRelinearizationCheck(false) {}
+      enableDetailedResults(false), enablePartialRelinearizationCheck(false),
+      findUnusedFactorSlots(false) {}
 
   void print(const std::string& str = "") const {
     std::cout << str << "\n";
@@ -204,6 +210,7 @@ struct GTSAM_EXPORT ISAM2Params {
     std::cout << "cacheLinearizedFactors:            " << cacheLinearizedFactors << "\n";
     std::cout << "enableDetailedResults:             " << enableDetailedResults << "\n";
     std::cout << "enablePartialRelinearizationCheck: " << enablePartialRelinearizationCheck << "\n";
+    std::cout << "findUnusedFactorSlots:             " << findUnusedFactorSlots << "\n";
     std::cout.flush();
   }
 
@@ -301,7 +308,7 @@ struct GTSAM_EXPORT ISAM2Result {
    * factors passed as \c newFactors to ISAM2::update().  These indices may be
    * used later to refer to the factors in order to remove them.
    */
-  std::vector<size_t> newFactorsIndices;
+  FastVector<size_t> newFactorsIndices;
 
   /** A struct holding detailed results, which must be enabled with
    * ISAM2Params::enableDetailedResults.

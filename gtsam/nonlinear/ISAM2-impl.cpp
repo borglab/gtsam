@@ -43,6 +43,47 @@ void ISAM2::Impl::AddVariables(
 }
 
 /* ************************************************************************* */
+void ISAM2::Impl::AddFactorsStep1(const NonlinearFactorGraph& newFactors, bool useUnusedSlots,
+  NonlinearFactorGraph& nonlinearFactors, FastVector<size_t>& newFactorIndices)
+{
+  newFactorIndices.resize(newFactors.size());
+
+  if(useUnusedSlots)
+  {
+    size_t globalFactorIndex = 0;
+    for(size_t newFactorIndex = 0; newFactorIndex < newFactors.size(); ++newFactorIndex)
+    {
+      // Loop to find the next available factor slot
+      do 
+      {
+        // If we need to add more factors than we have room for, resize nonlinearFactors,
+        // filling the new slots with NULL factors.  Otherwise, check if the current
+        // factor in nonlinearFactors is already used, and if so, increase
+        // globalFactorIndex.  If the current factor in nonlinearFactors is unused, break
+        // out of the loop and use the current slot.
+        if(globalFactorIndex >= nonlinearFactors.size())
+          nonlinearFactors.resize(nonlinearFactors.size() + newFactors.size() - newFactorIndex);
+        else if(nonlinearFactors[globalFactorIndex])
+          ++ globalFactorIndex;
+        else
+          break;
+      } while(true);
+
+      // Use the current slot, updating nonlinearFactors and newFactorSlots.
+      nonlinearFactors[globalFactorIndex] = newFactors[newFactorIndex];
+      newFactorIndices[newFactorIndex] = globalFactorIndex;
+    }
+  }
+  else
+  {
+    // We're not looking for unused slots, so just add the factors at the end.
+    for(size_t i = 0; i < newFactors.size(); ++i)
+      newFactorIndices[i] = i + nonlinearFactors.size();
+    nonlinearFactors.push_back(newFactors);
+  }
+}
+
+/* ************************************************************************* */
 void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const FastVector<ISAM2::sharedClique>& roots,
                                   Values& theta, VariableIndex& variableIndex,
                                   VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,

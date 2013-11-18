@@ -47,6 +47,12 @@ struct GTSAM_EXPORT ISAM2::Impl {
   static void AddVariables(const Values& newTheta, Values& theta, VectorValues& delta,
       VectorValues& deltaNewton, VectorValues& RgProd,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+
+  /// Perform the first part of the bookkeeping updates for adding new factors.  Adds them to the
+  /// complete list of nonlinear factors, and populates the list of new factor indices, both
+  /// optionally finding and reusing empty factor slots.
+  static void AddFactorsStep1(const NonlinearFactorGraph& newFactors, bool useUnusedSlots,
+    NonlinearFactorGraph& nonlinearFactors, FastVector<size_t>& newFactorIndices);
     
   /**
    * Remove variables from the ISAM2 system.

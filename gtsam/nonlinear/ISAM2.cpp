@@ -550,14 +550,10 @@ ISAM2Result ISAM2::update(
   }
 
   gttic(push_back_factors);
-  // Add the new factor indices to the result struct
-  result.newFactorsIndices.resize(newFactors.size());
-  for(size_t i=0; i<newFactors.size(); ++i)
-    result.newFactorsIndices[i] = i + nonlinearFactors_.size();
-
   // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
+  // Add the new factor indices to the result struct
   if(debug || verbose) newFactors.print("The new factors are: ");
-  nonlinearFactors_.push_back(newFactors);
+  Impl::AddFactorsStep1(newFactors, params_.findUnusedFactorSlots, nonlinearFactors_, result.newFactorsIndices);
 
   // Remove the removed factors
   NonlinearFactorGraph removeFactors; removeFactors.reserve(removeFactorIndices.size());
@@ -707,7 +703,16 @@ ISAM2Result ISAM2::update(
   if(params_.cacheLinearizedFactors) {
     gttic(linearize);
     GaussianFactorGraph::shared_ptr linearFactors = newFactors.linearize(theta_);
-    linearFactors_.push_back(*linearFactors);
+    if(params_.findUnusedFactorSlots)
+    {
+      linearFactors_.resize(nonlinearFactors_.size());
+      for(size_t newFactorI = 0; newFactorI < newFactors.size(); ++newFactorI)
+        linearFactors_[result.newFactorsIndices[newFactorI]] = (*linearFactors)[newFactorI];
+    }
+    else
+    {
+      linearFactors_.push_back(*linearFactors);
+    }
     assert(nonlinearFactors_.size() == linearFactors_.size());
     gttoc(linearize);
   }
@@ -715,7 +720,10 @@ ISAM2Result ISAM2::update(
 
   gttic(augment_VI);
   // Augment the variable index with the new factors
-  variableIndex_.augment(newFactors);
+  if(params_.findUnusedFactorSlots)
+    variableIndex_.augment(newFactors, result.newFactorsIndices);
+  else
+    variableIndex_.augment(newFactors);
   gttoc(augment_VI);
 
   gttic(recalculate);
@@ -729,9 +737,7 @@ ISAM2Result ISAM2::update(
     deltaReplacedMask_.insert(replacedKeys->begin(), replacedKeys->end());
   gttoc(recalculate);
 
-  // After the top of the tree has been redone and may have index gaps from
-  // unused keys, condense the indices to remove gaps by rearranging indices
-  // in all data structures.
+  // Update data structures to remove unused keys
   if(!unusedKeys.empty()) {
     gttic(remove_variables);
     Impl::RemoveVariables(unusedKeys, roots_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
