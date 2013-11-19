@@ -106,10 +106,11 @@ namespace gtsam {
           myData.myJTNode->children.insert(myData.myJTNode->children.end(), childToMerge.children.begin(), childToMerge.children.end());
           // Increment problem size
           combinedProblemSize = std::max(combinedProblemSize, childToMerge.problemSize_);
+          // Increment number of frontal variables
+          myNrFrontals += childToMerge.keys.size();
           // Remove child from list.
           myData.myJTNode->children.erase(myData.myJTNode->children.begin() + (child - nrMergedChildren));
           // Increment number of merged children
-          myNrFrontals += childToMerge.keys.size();
           ++ nrMergedChildren;
         }
       }
