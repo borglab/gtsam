@@ -39,6 +39,20 @@
 #include <omp.h>
 #endif
 
+#ifdef __clang__
+#  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag) \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"" diag "\"")
+#else
+#  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag)
+#endif
+
+#ifdef __clang__
+#  define CLANG_DIAGNOSTIC_POP() _Pragma("clang diagnostic pop")
+#else
+#  define CLANG_DIAGNOSTIC_POP()
+#endif
+
 namespace gtsam {
 
   /// Integer nonlinear key type
@@ -236,6 +250,7 @@ namespace gtsam {
   /// An object whose scope defines a block where TBB and OpenMP parallelism are mixed.  In such a
   /// block, we use default threads for TBB, and p/2 threads for OpenMP.  If GTSAM is not compiled to
   /// use both TBB and OpenMP, this has no effect.
+  CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wunused-private-field") // Clang complains that previousOpenMPThreads is unused in the #else case below
   class TbbOpenMPMixedScope
   {
     int previousOpenMPThreads;
@@ -253,14 +268,11 @@ namespace gtsam {
       omp_set_num_threads(previousOpenMPThreads);
     }
 #else
-    TbbOpenMPMixedScope() : previousOpenMPThreads(-1)
-    {
-      (void) previousOpenMPThreads; // Avoid clang unused variable warning
-    }
-
+    TbbOpenMPMixedScope() : previousOpenMPThreads(-1) {}
     ~TbbOpenMPMixedScope() {}
 #endif
   };
+  CLANG_DIAGNOSTIC_POP()
 
 }
 
