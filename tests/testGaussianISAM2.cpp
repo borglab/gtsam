@@ -847,7 +847,7 @@ TEST(ISAM2, marginalCovariance)
 TEST(ISAM2, calculate_nnz)
 {
   ISAM2 isam = createSlamlikeISAM2();
-  int expected = 262;
+  int expected = 241;
   int actual = calculate_nnz(isam.roots().front());
 
   EXPECT_LONGS_EQUAL(expected, actual);

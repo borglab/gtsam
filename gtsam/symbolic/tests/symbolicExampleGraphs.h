@@ -105,7 +105,11 @@ namespace gtsam {
       SymbolicBayesTree result;
       result.insertRoot(boost::make_shared<SymbolicBayesTreeClique>(
         boost::make_shared<SymbolicConditional>(
-        SymbolicConditional::FromKeys(boost::assign::list_of(_S_)(_E_)(_L_)(_B_), 4))));
+        SymbolicConditional::FromKeys(boost::assign::list_of(_E_)(_L_)(_B_), 3))));
+      result.addClique(boost::make_shared<SymbolicBayesTreeClique>(
+        boost::make_shared<SymbolicConditional>(
+        SymbolicConditional::FromKeys(boost::assign::list_of(_S_)(_B_) (_L_), 1))),
+        result.roots().front());
       result.addClique(boost::make_shared<SymbolicBayesTreeClique>(
         boost::make_shared<SymbolicConditional>(
         SymbolicConditional::FromKeys(boost::assign::list_of(_T_)(_E_)(_L_), 1))),

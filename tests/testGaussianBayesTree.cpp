@@ -127,7 +127,7 @@ TEST( GaussianBayesTree, balanced_smoother_marginals )
   VectorValues expectedSolution = VectorValues::Zero(actualSolution);
   EXPECT(assert_equal(expectedSolution,actualSolution,tol));
 
-  LONGS_EQUAL(3, (long)bayesTree.size());
+  LONGS_EQUAL(4, (long)bayesTree.size());
 
   double tol=1e-5;
 

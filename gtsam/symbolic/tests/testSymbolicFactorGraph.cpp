@@ -270,7 +270,8 @@ TEST( SymbolicFactorGraph, constructFromBayesTree )
 {
   // create expected factor graph
   SymbolicFactorGraph expected;
-  expected.push_factor(_S_, _E_, _L_, _B_);
+  expected.push_factor(_E_, _L_, _B_);
+  expected.push_factor(_S_, _B_, _L_);
   expected.push_factor(_T_, _E_, _L_);
   expected.push_factor(_X_, _E_);
 
