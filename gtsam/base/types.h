@@ -247,10 +247,14 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
+#ifdef __clang__
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wunused-private-field" // Clang complains that previousOpenMPThreads is unused in the #else case below
+#endif
+
   /// An object whose scope defines a block where TBB and OpenMP parallelism are mixed.  In such a
   /// block, we use default threads for TBB, and p/2 threads for OpenMP.  If GTSAM is not compiled to
   /// use both TBB and OpenMP, this has no effect.
-  CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wunused-private-field") // Clang complains that previousOpenMPThreads is unused in the #else case below
   class TbbOpenMPMixedScope
   {
     int previousOpenMPThreads;
@@ -272,7 +276,10 @@ namespace gtsam {
     ~TbbOpenMPMixedScope() {}
 #endif
   };
-  CLANG_DIAGNOSTIC_POP()
+
+#ifdef __clang__
+#  pragma clang diagnostic pop
+#endif
 
 }
 
