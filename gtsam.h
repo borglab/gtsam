@@ -1445,15 +1445,15 @@ virtual class IterativeOptimizationParameters {
 #include <gtsam/linear/ConjugateGradientSolver.h>
 virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParameters {
   ConjugateGradientParameters();
-  size_t getMinIterations() const ;
-  size_t getMaxIterations() const ;
-  size_t getReset() const;
+  int getMinIterations() const ;
+  int getMaxIterations() const ;
+  int getReset() const;
   double getEpsilon_rel() const;
   double getEpsilon_abs() const;
 
-  void setMinIterations(size_t value);
-  void setMaxIterations(size_t value);
-  void setReset(size_t value);
+  void setMinIterations(int value);
+  void setMaxIterations(int value);
+  void setReset(int value);
   void setEpsilon_rel(double value);
   void setEpsilon_abs(double value);
   void print();
@@ -1764,13 +1764,13 @@ virtual class NonlinearOptimizerParams {
   NonlinearOptimizerParams();
   void print(string s) const;
 
-  size_t getMaxIterations() const;
+  int getMaxIterations() const;
   double getRelativeErrorTol() const;
   double getAbsoluteErrorTol() const;
   double getErrorTol() const;
   string getVerbosity() const;
 
-  void setMaxIterations(size_t value);
+  void setMaxIterations(int value);
   void setRelativeErrorTol(double value);
   void setAbsoluteErrorTol(double value);
   void setErrorTol(double value);

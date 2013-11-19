@@ -172,7 +172,7 @@ TEST(ADT, joint)
   dot(joint, "Asia-ASTLBEX");
   joint = apply(joint, pD, &mul);
   dot(joint, "Asia-ASTLBEXD");
-  EXPECT_LONGS_EQUAL(346, muls);
+  EXPECT_LONGS_EQUAL(346, (long)muls);
   printCounts("Asia joint");
 
   ADT pASTL = pA;
@@ -223,7 +223,7 @@ TEST(ADT, inference)
   dot(joint, "Joint-Product-ASTLBEX");
   joint = apply(joint, pD, &mul);
   dot(joint, "Joint-Product-ASTLBEXD");
-  EXPECT_LONGS_EQUAL(370, muls); // different ordering
+  EXPECT_LONGS_EQUAL(370, (long)muls); // different ordering
   printCounts("Asia product");
 
   ADT marginal = joint;
@@ -235,7 +235,7 @@ TEST(ADT, inference)
   dot(marginal, "Joint-Sum-ADBLE");
   marginal = marginal.combine(E, &add_);
   dot(marginal, "Joint-Sum-ADBL");
-  EXPECT_LONGS_EQUAL(161, adds);
+  EXPECT_LONGS_EQUAL(161, (long)adds);
   printCounts("Asia sum");
 }
 
@@ -264,7 +264,7 @@ TEST(ADT, factor_graph)
   fg = apply(fg, pX, &mul);
   fg = apply(fg, pD, &mul);
   dot(fg, "FactorGraph");
-  EXPECT_LONGS_EQUAL(158, muls);
+  EXPECT_LONGS_EQUAL(158, (long)muls);
   printCounts("Asia FG");
 
   fg = fg.combine(X, &add_);

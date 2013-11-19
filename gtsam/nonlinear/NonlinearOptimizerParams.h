@@ -37,7 +37,7 @@ public:
     SILENT, ERROR, VALUES, DELTA, LINEAR
   };
 
-  size_t maxIterations; ///< The maximum iterations to stop iterating (default 100)
+  int maxIterations; ///< The maximum iterations to stop iterating (default 100)
   double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
   double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
   double errorTol; ///< The maximum total error to stop iterating (default 0.0)
@@ -52,7 +52,7 @@ public:
   }
   virtual void print(const std::string& str = "") const;
 
-  size_t getMaxIterations() const {
+  int getMaxIterations() const {
     return maxIterations;
   }
   double getRelativeErrorTol() const {
@@ -68,7 +68,7 @@ public:
     return verbosityTranslator(verbosity);
   }
 
-  void setMaxIterations(size_t value) {
+  void setMaxIterations(int value) {
     maxIterations = value;
   }
   void setRelativeErrorTol(double value) {

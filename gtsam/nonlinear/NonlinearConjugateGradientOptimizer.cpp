@@ -38,7 +38,7 @@ NonlinearConjugateGradientOptimizer::System::State NonlinearConjugateGradientOpt
 }
 
 void NonlinearConjugateGradientOptimizer::iterate() {
-  size_t dummy ;
+  int dummy ;
   boost::tie(state_.values, dummy) = nonlinearConjugateGradient<System, Values>(System(graph_), state_.values, params_, true /* single iterations */);
   ++state_.iterations;
   state_.error = graph_.error(state_.values);

@@ -121,11 +121,11 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
  * The last parameter is a switch between gradient-descent and conjugate gradient
  */
 template <class S, class V>
-boost::tuple<V, size_t> nonlinearConjugateGradient(const S &system, const V &initial, const NonlinearOptimizerParams &params, const bool singleIteration, const bool gradientDescent = false) {
+boost::tuple<V, int> nonlinearConjugateGradient(const S &system, const V &initial, const NonlinearOptimizerParams &params, const bool singleIteration, const bool gradientDescent = false) {
 
   // GTSAM_CONCEPT_MANIFOLD_TYPE(V);
 
-  Key iteration = 0;
+  int iteration = 0;
 
   // check if we're already close enough
   double currentError = system.error(initial);

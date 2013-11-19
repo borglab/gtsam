@@ -32,15 +32,15 @@ DiscreteKey X(0,2), Y(1,3), Z(2,2);
 TEST(testSignature, simple_conditional) {
   Signature sig(X | Y = "1/1 2/3 1/4");
   DiscreteKey actKey = sig.key();
-  LONGS_EQUAL(X.first, actKey.first);
+  LONGS_EQUAL((long)X.first, (long)actKey.first);
 
   DiscreteKeys actKeys = sig.discreteKeysParentsFirst();
-  LONGS_EQUAL(2, actKeys.size());
-  LONGS_EQUAL(Y.first, actKeys.front().first);
-  LONGS_EQUAL(X.first, actKeys.back().first);
+  LONGS_EQUAL(2, (long)actKeys.size());
+  LONGS_EQUAL((long)Y.first, (long)actKeys.front().first);
+  LONGS_EQUAL((long)X.first, (long)actKeys.back().first);
 
   vector<double> actCpt = sig.cpt();
-  EXPECT_LONGS_EQUAL(6, actCpt.size());
+  EXPECT_LONGS_EQUAL(6, (long)actCpt.size());
 }
 
 /* ************************************************************************* */
@@ -54,15 +54,15 @@ TEST(testSignature, simple_conditional_nonparser) {
 
   Signature sig(X | Y = table);
   DiscreteKey actKey = sig.key();
-  EXPECT_LONGS_EQUAL(X.first, actKey.first);
+  EXPECT_LONGS_EQUAL((long)X.first, (long)actKey.first);
 
   DiscreteKeys actKeys = sig.discreteKeysParentsFirst();
-  LONGS_EQUAL(2, actKeys.size());
-  LONGS_EQUAL(Y.first, actKeys.front().first);
-  LONGS_EQUAL(X.first, actKeys.back().first);
+  LONGS_EQUAL(2, (long)actKeys.size());
+  LONGS_EQUAL((long)Y.first, (long)actKeys.front().first);
+  LONGS_EQUAL((long)X.first, (long)actKeys.back().first);
 
   vector<double> actCpt = sig.cpt();
-  EXPECT_LONGS_EQUAL(6, actCpt.size());
+  EXPECT_LONGS_EQUAL(6, (long)actCpt.size());
 }
 
 /* ************************************************************************* */

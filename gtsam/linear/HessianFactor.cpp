@@ -451,13 +451,13 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 
     // Apply updates to the upper triangle
     gttic(update);
-    size_t nrInfoBlocks = this->info_.nBlocks(), nrUpdateBlocks = updateBlocks.nBlocks();
-    for(DenseIndex j2=0; j2<nrUpdateBlocks; ++j2) { // Horizontal block of Hessian
+    DenseIndex nrInfoBlocks = this->info_.nBlocks(), nrUpdateBlocks = updateBlocks.nBlocks();
+    for(DenseIndex j2 = 0; j2 < nrUpdateBlocks; ++j2) { // Horizontal block of Hessian
       DenseIndex slot2 = (j2 == update.size()) ? nrInfoBlocks-1 : slots[j2];
-      assert(slot2>=0 && slot2<=nrInfoBlocks);
-      for(DenseIndex j1=0; j1<=j2; ++j1) { // Vertical block of Hessian
+      assert(slot2 >= 0 && slot2 <= nrInfoBlocks);
+      for(DenseIndex j1 = 0; j1 <= j2; ++j1) { // Vertical block of Hessian
         DenseIndex slot1 = (j1 == update.size()) ? nrInfoBlocks-1 : slots[j1];
-        assert(slot1>=0 && slot1<nrInfoBlocks);
+        assert(slot1 >= 0 && slot1 < nrInfoBlocks);
         updateBlocks.offset(0);
         if(slot2 > slot1)
           info_(slot1, slot2).noalias() += updateBlocks(j1).transpose() * updateBlocks(j2);
@@ -516,7 +516,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
   // Accessing the VectorValues one by one is expensive
   // So we will loop over columns to access x only once per column
   // And fill the above temporary y values, to be added into yvalues after
-  for (DenseIndex j = 0; j < size(); ++j) {
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
     // xj is the input vector
     Vector xj = x.at(keys_[j]);
     DenseIndex i = 0;
@@ -525,12 +525,12 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
     // blocks on the diagonal are only half
     y[i] += info_(j, j).selfadjointView<Eigen::Upper>() * xj;
     // for below diagonal, we take transpose block from upper triangular part
-    for (i=j+1; i < size(); ++i)
+    for (i = j + 1; i < (DenseIndex)size(); ++i)
       y[i] += info_(j, i).transpose() * xj;
   }
 
   // copy to yvalues
-  for (DenseIndex i = 0; i < size(); ++i) {
+  for(DenseIndex i = 0; i < (DenseIndex)size(); ++i) {
     bool didNotExist;
     VectorValues::iterator it;
     boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());

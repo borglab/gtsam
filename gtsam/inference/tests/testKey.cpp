@@ -46,7 +46,7 @@ TEST(Key, KeySymbolEncoding) {
     Key key = 0x6100000000000005;
     string str = "a5";
 
-    EXPECT_LONGS_EQUAL(key, (Key)symbol);
+    EXPECT_LONGS_EQUAL((long)key, (long)(Key)symbol);
     EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
     EXPECT(assert_equal(symbol, Symbol(key)));
   } else if(sizeof(Key) == 4) {
@@ -54,7 +54,7 @@ TEST(Key, KeySymbolEncoding) {
     Key key = 0x61000005;
     string str = "a5";
 
-    EXPECT_LONGS_EQUAL(key, (Key)symbol);
+    EXPECT_LONGS_EQUAL((long)key, (long)(Key)symbol);
     EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
     EXPECT(assert_equal(symbol, Symbol(key)));
   }

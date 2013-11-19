@@ -61,8 +61,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  namespace {
-    DenseIndex _getColsJF(const std::pair<Key,Matrix>& p) {
+  namespace internal {
+    static DenseIndex getColsJF(const std::pair<Key,Matrix>& p) {
       return p.second.cols();
     }
 
@@ -71,11 +71,11 @@ namespace gtsam {
     // assignment from boost::cref_list_of, where the term ends up wrapped in a assign_reference<T>
     // that is implicitly convertible to T&.  This was introduced to work around a problem where
     // BOOST_FOREACH over terms did not work on GCC.
-    struct _fillTerm {
+    struct fillTerm {
       FastVector<Key>& keys;
       VerticalBlockMatrix& Ab;
       DenseIndex& i;
-      _fillTerm(FastVector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
+      fillTerm(FastVector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
         : keys(keys), Ab(Ab), i(i) {}
 
       template<class MATRIX>
@@ -123,12 +123,12 @@ namespace gtsam {
     // matrices, then extract the number of columns e.g. dimensions in each matrix.  Then joins with
     // a single '1' to add a dimension for the b vector.
     {
-      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&_getColsJF), ListOfOne((DenseIndex)1)), b.size());
+      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&internal::getColsJF), ListOfOne((DenseIndex)1)), b.size());
     }
 
     // Check and add terms
     DenseIndex i = 0; // For block index
-    br::for_each(terms, _fillTerm(Base::keys_, Ab_, i));
+    br::for_each(terms, internal::fillTerm(Base::keys_, Ab_, i));
 
     // Assign RHS vector
     getb() = b;

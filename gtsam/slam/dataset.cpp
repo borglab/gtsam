@@ -514,9 +514,9 @@ bool readBundler(const string& filename, SfM_data &data)
     // Get the color information
     float r, g, b;
     is >> r >> g >> b;
-    track.r = r/255.0;
-    track.g = g/255.0;
-    track.b = b/255.0;
+    track.r = r/255.f;
+    track.g = g/255.f;
+    track.b = b/255.f;
 
     // Now get the visibility information
     size_t nvisible = 0;
@@ -593,9 +593,9 @@ bool readBAL(const string& filename, SfM_data &data)
     is >> x >> y >> z;
     SfM_Track& track = data.tracks[j];
     track.p = Point3(x,y,z);
-    track.r = 0.4;
-    track.g = 0.4;
-    track.b = 0.4;
+    track.r = 0.4f;
+    track.g = 0.4f;
+    track.b = 0.4f;
   }
 
   is.close();
@@ -615,7 +615,7 @@ bool writeBAL(const string& filename, SfM_data &data)
   }
 
   // Write the number of camera poses and 3D points
-  int nrObservations=0;
+  size_t nrObservations=0;
   for (size_t j = 0; j < data.number_tracks(); j++){
     nrObservations += data.tracks[j].number_measurements();
   }
@@ -628,7 +628,7 @@ bool writeBAL(const string& filename, SfM_data &data)
     SfM_Track track = data.tracks[j];
 
     for(size_t k = 0; k < track.number_measurements(); k++){ // for each observation of the 3D point j
-      int i = track.measurements[k].first; // camera id
+      size_t i = track.measurements[k].first; // camera id
       double u0 = data.cameras[i].calibration().u0();
       double v0 = data.cameras[i].calibration().v0();
 

@@ -42,7 +42,7 @@ public:
   double error;
 
   /** The number of optimization iterations performed. */
-  unsigned int iterations;
+  int iterations;
 
   NonlinearOptimizerState() {}
 
@@ -166,7 +166,7 @@ public:
   double error() const { return _state().error; }
 
   /// return number of iterations
-  unsigned int iterations() const { return _state().iterations; }
+  int iterations() const { return _state().iterations; }
 
   /// return values
   const Values& values() const { return _state().values; }
