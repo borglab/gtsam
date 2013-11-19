@@ -253,7 +253,11 @@ namespace gtsam {
       omp_set_num_threads(previousOpenMPThreads);
     }
 #else
-    TbbOpenMPMixedScope() : previousOpenMPThreads(-1) {}
+    TbbOpenMPMixedScope() : previousOpenMPThreads(-1)
+    {
+      (void) previousOpenMPThreads; // Avoid clang unused variable warning
+    }
+
     ~TbbOpenMPMixedScope() {}
 #endif
   };
