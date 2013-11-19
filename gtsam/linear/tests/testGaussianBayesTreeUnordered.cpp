@@ -89,8 +89,8 @@ TEST( GaussianBayesTree, eliminate )
 
   GaussianBayesTree bayesTree_expected;
   bayesTree_expected.insertRoot(
-    MakeClique(GaussianConditional(pair_list_of (x3, (Mat(2, 1) << 2., 0.)) (x4, (Mat(2, 1) << 2., 2.)), 2, (Vec(2) << 2., 2.)), list_of
-      (MakeClique(GaussianConditional(pair_list_of (x2, (Mat(2, 1) << -2.*sqrt(2.), 0.)) (x1, (Mat(2, 1) << -sqrt(2.), -sqrt(2.))) (x3, (Mat(2, 1) << -sqrt(2.), sqrt(2.))), 2, (Vec(2) << -2.*sqrt(2.), 0.))))));
+    MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x3, (Mat(2, 1) << 2., 0.)) (x4, (Mat(2, 1) << 2., 2.)), 2, (Vec(2) << 2., 2.)), list_of
+      (MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x2, (Mat(2, 1) << -2.*sqrt(2.), 0.)) (x1, (Mat(2, 1) << -sqrt(2.), -sqrt(2.))) (x3, (Mat(2, 1) << -sqrt(2.), sqrt(2.))), 2, (Vec(2) << -2.*sqrt(2.), 0.))))));
 
   EXPECT(assert_equal(bayesTree_expected, bt));
 }
@@ -190,7 +190,7 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
   // Create an arbitrary Bayes Tree
   GaussianBayesTree bt;
   bt.insertRoot(MakeClique(GaussianConditional(
-    pair_list_of
+    pair_list_of<Key, Matrix>
     (2, (Mat(6, 2) <<
     31.0,32.0,
     0.0,34.0,
@@ -214,7 +214,7 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
     0.0,54.0)),
     3, (Vec(6) << 29.0,30.0,39.0,40.0,49.0,50.0)), list_of
       (MakeClique(GaussianConditional(
-      pair_list_of
+      pair_list_of<Key, Matrix>
       (0, (Mat(4, 2) <<
       3.0,4.0,
       0.0,6.0,
