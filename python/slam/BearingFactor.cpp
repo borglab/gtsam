@@ -7,7 +7,7 @@ using namespace gtsam;
 using namespace std;
 
 template<class VALUE>
-void exposeBearingFactor(const std::string& name){
+void exportBearingFactor(const std::string& name){
   class_<VALUE>(name, init<>())
   ;
 }

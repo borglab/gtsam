@@ -18,8 +18,10 @@ file(GLOB slam_src "slam/*.cpp")
 file(GLOB symbolic_src "symbolic/*.cpp")
 
 #wrap_python("base" ${PROJECT_SOURCE_DIR}/python/${PROJECT_NAME} ${base_src})
-wrap_python("geometry" ${PROJECT_SOURCE_DIR}/python/gtsam ${geometry_src})
-wrap_python("slam" ${PROJECT_SOURCE_DIR}/python/gtsam ${slam_src})
+wrap_python("gtsam" ${PROJECT_SOURCE_DIR}/python/gtsam exportgtsam.cpp 
+  ${geometry_src} ${linear_src} ${nonlinear_src} ${slam_src})
+#wrap_python("nonlinear" ${PROJECT_SOURCE_DIR}/python/gtsam ${nonlinear_src})
+#wrap_python("slam" ${PROJECT_SOURCE_DIR}/python/gtsam ${slam_src})
 #add_python_export_library(${PROJECT_NAME}_test ${PROJECT_SOURCE_DIR}/python/${PROJECT_NAME}
 #  ${AUTOGEN_TEST_FILES}
 #)

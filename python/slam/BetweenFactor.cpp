@@ -7,7 +7,7 @@ using namespace gtsam;
 using namespace std;
 
 template<class VALUE>
-void exposeBetweenFactor(const std::string& name){
+void exportBetweenFactor(const std::string& name){
   class_<VALUE>(name, init<>())
   .def(init<Key, Key, VALUE, SharedNoiseModel>())
   ;

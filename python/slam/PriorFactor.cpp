@@ -6,9 +6,9 @@ using namespace gtsam;
 
 using namespace std;
 
-template<class VALUE>
-void exposePriorFactor(const std::string& name){
-  class_<VALUE>(name, init<>())
-  .def(init<Key, VALUE, SharedNoiseModel>())
+template< class FACTOR, class VALUE >
+void exportPriorFactor(const std::string& name){
+  class_< FACTOR >(name.c_str(), init<>())
+  .def(init< Key, VALUE&, SharedNoiseModel >())
   ;
 }
