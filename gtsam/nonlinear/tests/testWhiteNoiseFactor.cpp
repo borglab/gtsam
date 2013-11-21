@@ -30,7 +30,7 @@ TEST( WhiteNoiseFactor, constructor )
   double z = 0.1;
   Key meanKey=1, precisionKey=2;
   WhiteNoiseFactor factor(z,meanKey, precisionKey);
-  LONGS_EQUAL(2,factor.dim());
+  LONGS_EQUAL(2, (long)factor.dim());
 }
 
 /* ************************************************************************* */

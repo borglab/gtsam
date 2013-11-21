@@ -316,14 +316,14 @@ TEST(Values, filter) {
   // Filter by key
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
-  EXPECT_LONGS_EQUAL(2, filtered.size());
+  EXPECT_LONGS_EQUAL(2, (long)filtered.size());
   BOOST_FOREACH(const Values::Filtered<>::KeyValuePair& key_value, filtered) {
     if(i == 0) {
-      LONGS_EQUAL(2, key_value.key);
+      LONGS_EQUAL(2, (long)key_value.key);
       EXPECT(typeid(Pose2) == typeid(key_value.value));
       EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(key_value.value)));
     } else if(i == 1) {
-      LONGS_EQUAL(3, key_value.key);
+      LONGS_EQUAL(3, (long)key_value.key);
       EXPECT(typeid(Pose3) == typeid(key_value.value));
       EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.value)));
     } else {
@@ -331,7 +331,7 @@ TEST(Values, filter) {
     }
     ++ i;
   }
-  EXPECT_LONGS_EQUAL(2, i);
+  EXPECT_LONGS_EQUAL(2, (long)i);
 
   // construct a values with the view
   Values actualSubValues1(filtered);
@@ -343,20 +343,20 @@ TEST(Values, filter) {
   // Filter by type
   i = 0;
   Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
-  EXPECT_LONGS_EQUAL(2, pose_filtered.size());
+  EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
   BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, pose_filtered) {
     if(i == 0) {
-      EXPECT_LONGS_EQUAL(1, key_value.key);
+      EXPECT_LONGS_EQUAL(1, (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
     } else if(i == 1) {
-      EXPECT_LONGS_EQUAL(3, key_value.key);
+      EXPECT_LONGS_EQUAL(3, (long)key_value.key);
       EXPECT(assert_equal(pose3, key_value.value));
     } else {
       EXPECT(false);
     }
     ++ i;
   }
-  EXPECT_LONGS_EQUAL(2, i);
+  EXPECT_LONGS_EQUAL(2, (long)i);
 
   // construct a values with the view
   Values actualSubValues2(pose_filtered);
@@ -382,17 +382,17 @@ TEST(Values, Symbol_filter) {
   int i = 0;
   BOOST_FOREACH(const Values::Filtered<Value>::KeyValuePair& key_value, values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
-      LONGS_EQUAL(Symbol('y',1), key_value.key);
+      LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
       EXPECT(assert_equal(pose1, dynamic_cast<const Pose3&>(key_value.value)));
     } else if(i == 1) {
-      LONGS_EQUAL(Symbol('y',3), key_value.key);
+      LONGS_EQUAL(Symbol('y', 3), (long)key_value.key);
       EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.value)));
     } else {
       EXPECT(false);
     }
     ++ i;
   }
-  LONGS_EQUAL(2, i);
+  LONGS_EQUAL(2, (long)i);
 }
 
 /* ************************************************************************* */
@@ -403,16 +403,16 @@ TEST(Values, Destructors) {
     {
       TestValue value1;
       TestValue value2;
-      LONGS_EQUAL(2, TestValueData::ConstructorCount);
-      LONGS_EQUAL(0, TestValueData::DestructorCount);
+      LONGS_EQUAL(2, (long)TestValueData::ConstructorCount);
+      LONGS_EQUAL(0, (long)TestValueData::DestructorCount);
       values.insert(0, value1);
       values.insert(1, value2);
     }
-    LONGS_EQUAL(4, TestValueData::ConstructorCount);
-    LONGS_EQUAL(2, TestValueData::DestructorCount);
+    LONGS_EQUAL(4, (long)TestValueData::ConstructorCount);
+    LONGS_EQUAL(2, (long)TestValueData::DestructorCount);
   }
-  LONGS_EQUAL(4, TestValueData::ConstructorCount);
-  LONGS_EQUAL(4, TestValueData::DestructorCount);
+  LONGS_EQUAL(4, (long)TestValueData::ConstructorCount);
+  LONGS_EQUAL(4, (long)TestValueData::DestructorCount);
 }
 
 /* ************************************************************************* */
