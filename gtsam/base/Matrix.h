@@ -353,7 +353,7 @@ GTSAM_EXPORT std::list<boost::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
 
 /**
- * Householder tranformation, Householder vectors below diagonal
+ * Householder transformation, Householder vectors below diagonal
  * @param k number of columns to zero out below diagonal
  * @param A matrix
  * @param copy_vectors - true to copy Householder vectors below diagonal
