@@ -1516,6 +1516,8 @@ class LabeledSymbol {
 
   gtsam::LabeledSymbol upper() const;
   gtsam::LabeledSymbol lower() const;
+  gtsam::LabeledSymbol newChr(unsigned char c) const;
+  gtsam::LabeledSymbol newLabel(unsigned char label) const;
 
   void print(string s) const;
 };

@@ -50,6 +50,9 @@ TEST( testLabeledSymbol, KeyLabeledSymbolEncoding ) {
     string str = "xA5";
 
     EXPECT_LONGS_EQUAL((long)key, (long)(Key)symbol);
+    EXPECT_LONGS_EQUAL(5, symbol.index());
+    EXPECT_LONGS_EQUAL(0x78, symbol.chr());
+    EXPECT_LONGS_EQUAL(0x41, symbol.label());
     EXPECT(assert_equal(str, MultiRobotKeyFormatter(symbol)));
     EXPECT(assert_equal(symbol, LabeledSymbol(key)));
   } else if(sizeof(Key) == 4) {
@@ -58,6 +61,9 @@ TEST( testLabeledSymbol, KeyLabeledSymbolEncoding ) {
     string str = "xA5";
 
     EXPECT_LONGS_EQUAL((long)key, (long)(Key) symbol);
+    EXPECT_LONGS_EQUAL(5, symbol.index());
+    EXPECT_LONGS_EQUAL(0x78, symbol.chr());
+    EXPECT_LONGS_EQUAL(0x41, symbol.label());
     EXPECT(assert_equal(str, MultiRobotKeyFormatter(symbol)));
     EXPECT(assert_equal(symbol, LabeledSymbol(key)));
   }
