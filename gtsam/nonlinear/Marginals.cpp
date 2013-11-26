@@ -76,7 +76,9 @@ Matrix Marginals::marginalInformation(Key variable) const {
 /* ************************************************************************* */
 JointMarginal Marginals::jointMarginalCovariance(const std::vector<Key>& variables) const {
   JointMarginal info = jointMarginalInformation(variables);
-  info.blockMatrix_.full() = info.blockMatrix_.full().inverse();
+  info.blockMatrix_.full().triangularView() =
+    info.blockMatrix_.full().selfadjointView().llt().solve(
+    Matrix::Identity(info.blockMatrix_.full().rows(), info.blockMatrix_.full().rows())).triangularView<Eigen::Upper>();
   return info;
 }
 

@@ -18,6 +18,8 @@
 
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
+#include <gtsam/base/cholesky.h>
+#include <gtsam/base/timing.h>
 
 namespace gtsam {
 
@@ -47,4 +49,30 @@ namespace gtsam {
     return result;
   }
 
+  /* ************************************************************************* */
+  VerticalBlockMatrix SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals)
+  {
+    // Do dense elimination
+    if(!blockStart() == 0)
+      throw std::invalid_argument("Can only do Cholesky when the SymmetricBlockMatrix is not a restricted view, i.e. when blockStart == 0.");
+    if(!gtsam::choleskyPartial(matrix_, offset(nFrontals)))
+      throw CholeskyFailed();
+
+    // Split conditional
+
+    // Create one big conditionals with many frontal variables.
+    gttic(Construct_eliminated);
+    const size_t varDim = offset(nFrontals);
+    VerticalBlockMatrix Ab = VerticalBlockMatrix::LikeActiveViewOf(*this, varDim);
+    Ab.full() = matrix_.topRows(varDim);
+    Ab.full().triangularView<Eigen::StrictlyLower>().setZero();
+    gttoc(Construct_conditional);
+
+    gttic(Remaining_factor);
+    // Take lower-right block of Ab_ to get the remaining factor
+    blockStart() = nFrontals;
+    gttoc(Remaining_factor);
+
+    return Ab;
+  }
 }

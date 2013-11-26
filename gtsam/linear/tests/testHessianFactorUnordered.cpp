@@ -86,7 +86,7 @@ TEST(HessianFactor, ConversionConstructor)
 /* ************************************************************************* */
 TEST(HessianFactor, Constructor1)
 {
-  Matrix G = (Mat(2,2) << 3.0, 5.0, 0.0, 6.0);
+  Matrix G = (Mat(2,2) << 3.0, 5.0, 5.0, 6.0);
   Vector g = (Vec(2) << -8.0, -9.0);
   double f = 10.0;
   HessianFactor factor(0, G, g, f);
@@ -132,7 +132,7 @@ TEST(HessianFactor, Constructor2)
 {
   Matrix G11 = (Mat(1,1) << 1.0);
   Matrix G12 = (Mat(1,2) << 2.0, 4.0);
-  Matrix G22 = (Mat(2,2) << 3.0, 5.0, 0.0, 6.0);
+  Matrix G22 = (Mat(2,2) << 3.0, 5.0, 5.0, 6.0);
   Vector g1 = (Vec(1) << -7.0);
   Vector g2 = (Vec(2) << -8.0, -9.0);
   double f = 10.0;
@@ -175,10 +175,10 @@ TEST(HessianFactor, Constructor3)
   Matrix G12 = (Mat(1,2) << 2.0, 4.0);
   Matrix G13 = (Mat(1,3) << 3.0, 6.0, 9.0);
 
-  Matrix G22 = (Mat(2,2) << 3.0, 5.0, 0.0, 6.0);
+  Matrix G22 = (Mat(2,2) << 3.0, 5.0, 5.0, 6.0);
   Matrix G23 = (Mat(2,3) << 4.0, 6.0, 8.0, 1.0, 2.0, 4.0);
 
-  Matrix G33 = (Mat(3,3) << 1.0, 2.0, 3.0, 0.0, 5.0, 6.0, 0.0, 0.0, 9.0);
+  Matrix G33 = (Mat(3,3) << 1.0, 2.0, 3.0, 2.0, 5.0, 6.0, 3.0, 6.0, 9.0);
 
   Vector g1 = (Vec(1) << -7.0);
   Vector g2 = (Vec(2) << -8.0, -9.0);
@@ -222,10 +222,10 @@ TEST(HessianFactor, ConstructorNWay)
   Matrix G12 = (Mat(1,2) << 2.0, 4.0);
   Matrix G13 = (Mat(1,3) << 3.0, 6.0, 9.0);
 
-  Matrix G22 = (Mat(2,2) << 3.0, 5.0, 0.0, 6.0);
+  Matrix G22 = (Mat(2,2) << 3.0, 5.0, 5.0, 6.0);
   Matrix G23 = (Mat(2,3) << 4.0, 6.0, 8.0, 1.0, 2.0, 4.0);
 
-  Matrix G33 = (Mat(3,3) << 1.0, 2.0, 3.0, 0.0, 5.0, 6.0, 0.0, 0.0, 9.0);
+  Matrix G33 = (Mat(3,3) << 1.0, 2.0, 3.0, 2.0, 5.0, 6.0, 3.0, 6.0, 9.0);
 
   Vector g1 = (Vec(1) << -7.0);
   Vector g2 = (Vec(2) << -8.0, -9.0);
@@ -423,8 +423,7 @@ TEST(HessianFactor, combine) {
  -100.0000,       0.0,   20.0000,       0.0,   80.0000,       0.0,  -20.0000,
        0.0, -100.0000,       0.0,   20.0000,       0.0,   80.0000,   14.0000,
    25.0000,  -17.5000,   -5.0000,    3.5000,  -20.0000,   14.0000,    7.4500);
-  EXPECT(assert_equal(Matrix(expected.triangularView<Eigen::Upper>()),
-      Matrix(actual.matrixObject().full().triangularView<Eigen::Upper>()), tol));
+  EXPECT(assert_equal(expected, Matrix(actual.matrixObject().full()), tol));
 
 }
 

@@ -116,7 +116,7 @@ public:
    * in scope while this view is needed. Otherwise assign this block object to a Matrix
    * to store it.
    */
-  const Matrix& fullMatrix() const { return blockMatrix_.matrix(); }
+  Eigen::SelfAdjointView<const Matrix, Eigen::Upper> fullMatrix() const { return blockMatrix_.matrix(); }
 
   /** Print */
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;

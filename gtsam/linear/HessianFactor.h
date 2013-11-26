@@ -265,13 +265,13 @@ namespace gtsam {
      * as described above.  See HessianFactor class documentation above to explain that only the
      * upper-triangular part of the information matrix is stored and returned by this function.
      */
-    constBlock info() const { return info_.full(); }
+    SymmetricBlockMatrix::constBlock info() const { return info_.full(); }
 
     /** Return the <em>upper-triangular part</em> of the full *augmented* information matrix,
      * as described above.  See HessianFactor class documentation above to explain that only the
      * upper-triangular part of the information matrix is stored and returned by this function.
      */
-    Block info() { return info_.full(); }
+    SymmetricBlockMatrix::Block info() { return info_.full(); }
 
     /** Return the constant term \f$ f \f$ as described above
      * @return The constant term \f$ f \f$
@@ -287,21 +287,25 @@ namespace gtsam {
      * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      * @return The linear term \f$ g \f$ */
-    constBlock::ColXpr linearTerm(const_iterator j) const { return info_(j-begin(), size()).col(0); }
+    constBlock::OffDiagonal::ColXpr linearTerm(const_iterator j) const {
+      return info_(j-begin(), size()).knownOffDiagonal().col(0); }
 
     /** Return the part of linear term \f$ g \f$ as described above corresponding to the requested variable.
      * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      * @return The linear term \f$ g \f$ */
-    Block::ColXpr linearTerm(iterator j) { return info_(j-begin(), size()).col(0); }
+    Block::OffDiagonal::ColXpr linearTerm(iterator j) {
+      return info_(j-begin(), size()).knownOffDiagonal().col(0); }
 
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
-    constBlock::ColXpr linearTerm() const { return info_.range(0, this->size(), this->size(), this->size() + 1).col(0); }
+    constBlock::OffDiagonal::ColXpr linearTerm() const {
+      return info_.range(0, this->size(), this->size(), this->size() + 1).knownOffDiagonal().col(0); }
 
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
-    Block::ColXpr linearTerm() { return info_.range(0, this->size(), this->size(), this->size() + 1).col(0); }
+    Block::OffDiagonal::ColXpr linearTerm() {
+      return info_.range(0, this->size(), this->size(), this->size() + 1).knownOffDiagonal().col(0); }
     
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an
@@ -400,9 +404,6 @@ namespace gtsam {
       EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
   private:
-
-    /** split partially eliminated factor */
-    boost::shared_ptr<GaussianConditional> splitEliminatedFactor(size_t nrFrontals);
 
     /** Serialization function */
     friend class boost::serialization::access;

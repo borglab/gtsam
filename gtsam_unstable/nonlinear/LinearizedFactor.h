@@ -176,8 +176,8 @@ public:
   /** hessian block data types */
   typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
   typedef SymmetricBlockMatrix::constBlock constBlock; ///< A block from the Hessian matrix (const version)
-  typedef SymmetricBlockMatrix::Block::ColXpr Column; ///< A column containing the linear term h
-  typedef SymmetricBlockMatrix::constBlock::ColXpr constColumn; ///< A column containing the linear term h (const version)
+  typedef SymmetricBlockMatrix::Block::OffDiagonal::ColXpr Column; ///< A column containing the linear term h
+  typedef SymmetricBlockMatrix::constBlock::OffDiagonal::ColXpr constColumn; ///< A column containing the linear term h (const version)
 
 protected:
 
@@ -220,11 +220,11 @@ public:
    * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
    * use, for example, begin() + 2 to get the 3rd variable in this factor.
    * @return The linear term \f$ g \f$ */
-  constColumn linearTerm(const_iterator j) const { return info_(j - this->begin(), this->size()).col(0); }
+  constColumn linearTerm(const_iterator j) const { return info_(j - this->begin(), this->size()).knownOffDiagonal().col(0); }
 
   /** Return the complete linear term \f$ g \f$ as described above.
    * @return The linear term \f$ g \f$ */
-  constColumn linearTerm() const { return info_.range(0, this->size(), this->size(), this->size() + 1).col(0); };
+  constColumn linearTerm() const { return info_.range(0, this->size(), this->size(), this->size() + 1).knownOffDiagonal().col(0); };
 
   /** Return a view of the block at (j1,j2) of the <emph>upper-triangular part</emph> of the
    * squared term \f$ H \f$, no data is copied.  See HessianFactor class documentation
@@ -242,7 +242,7 @@ public:
    * See HessianFactor class documentation above to explain that only the
    * upper-triangular part of the information matrix is stored and returned by this function.
    */
-  constBlock squaredTerm() const { return info_.range(0, this->size(), 0, this->size()); }
+  constBlock::SelfAdjointView squaredTerm() const { return info_.range(0, this->size(), 0, this->size()).selfadjointView(); }
 
 
   /** get the dimension of the factor (number of rows on linearization) */

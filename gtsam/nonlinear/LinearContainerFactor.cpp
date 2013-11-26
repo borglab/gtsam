@@ -123,10 +123,9 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
     jacFactor->getb() = -jacFactor->unweighted_error(delta);
   } else {
     HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
-    size_t dim = hesFactor->linearTerm().size();
-    Eigen::Block<HessianFactor::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
+    SymmetricBlockMatrix::constBlock Gview = hesFactor->matrixObject().range(0, hesFactor->size(), 0, hesFactor->size());
     Vector deltaVector = delta.vector(keys());
-    Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * deltaVector;
+    Vector G_delta = Gview.selfadjointView() * deltaVector;
     hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm());
     hesFactor->linearTerm() -= G_delta;
   }

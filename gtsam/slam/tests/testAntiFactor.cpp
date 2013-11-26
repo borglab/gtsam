@@ -69,7 +69,7 @@ TEST( AntiFactor, NegativeHessian)
   size_t variable_count = originalFactor->size();
   for(size_t i = 0; i < variable_count; ++i){
     for(size_t j = i; j < variable_count; ++j){
-      Matrix expected_G = -originalHessian->info(originalHessian->begin()+i, originalHessian->begin()+j);
+      Matrix expected_G = -Matrix(originalHessian->info(originalHessian->begin()+i, originalHessian->begin()+j));
       Matrix actual_G = antiHessian->info(antiHessian->begin()+i, antiHessian->begin()+j);
       CHECK(assert_equal(expected_G, actual_G, 1e-5));
     }
