@@ -283,8 +283,8 @@ size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root, doubl
 /* ************************************************************************* */
 template<class CLIQUE>
 void nnz_internal(const boost::shared_ptr<CLIQUE>& clique, int& result) {
-  int dimR = clique->conditional()->rows();
-  int dimSep = clique->conditional()->get_S().cols();
+  int dimR = (int)clique->conditional()->rows();
+  int dimSep = (int)clique->conditional()->get_S().cols();
   result += ((dimR+1)*dimR)/2 + dimSep*dimR;
   // traverse the children
   BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children) {
