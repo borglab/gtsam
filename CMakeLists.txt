@@ -106,8 +106,6 @@ endif()
 # BOOST_ROOT: path to install prefix for boost
 # Boost_NO_SYSTEM_PATHS: set to true to keep the find script from ignoring BOOST_ROOT
 
-set(BOOST_ROOT /usr/local/lib/boost_1_54_0)
-
 # If using Boost shared libs, disable auto linking
 if(MSVC)
 	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols
