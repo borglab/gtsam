@@ -27,9 +27,6 @@ void VariableIndex::augment(const FG& factors, boost::optional<const FastVector<
 {
   gttic(VariableIndex_augment);
 
-  // Save original number of factors for keeping track of indices
-//  const size_t originalNFactors = nFactors_;
-
   // Augment index for each factor
   for(size_t i = 0; i < factors.size(); ++i)
   {
