@@ -45,13 +45,16 @@ namespace gtsam {
     double figureHeightInches; ///< The figure height on paper in inches
     double scale; ///< Scale all positions to reduce / increase density
     bool mergeSimilarFactors; ///< Merge multiple factors that have the same connectivity
+    bool plotFactorPoints; ///< Plots each factor as a dot between the variables
+    bool connectKeysToFactor; ///< Draw a line from each key within a factor to the dot of the factor
     std::map<size_t, Point2> factorPositions; ///< (optional for each factor) Manually specify factor "dot" positions.
     /// Default constructor sets up robot coordinates.  Paper horizontal is robot Y,
     /// paper vertical is robot X.  Default figure size of 5x5 in.
     GraphvizFormatting() :
       paperHorizontalAxis(Y), paperVerticalAxis(X),
       figureWidthInches(5), figureHeightInches(5), scale(1),
-      mergeSimilarFactors(false) {}
+      mergeSimilarFactors(false), plotFactorPoints(true),
+      connectKeysToFactor(true) {}
   };
 
 

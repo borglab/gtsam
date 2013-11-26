@@ -117,6 +117,27 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
       default: throw std::runtime_error("Invalid enum value");
       }
      return Point2(x,y);
+    } else if(const Point3* p = dynamic_cast<const Point3*>(&value)) {
+      double x, y;
+      switch (graphvizFormatting.paperHorizontalAxis) {
+      case GraphvizFormatting::X: x = p->x(); break;
+      case GraphvizFormatting::Y: x = p->y(); break;
+      case GraphvizFormatting::Z: x = p->z(); break;
+      case GraphvizFormatting::NEGX: x = -p->x(); break;
+      case GraphvizFormatting::NEGY: x = -p->y(); break;
+      case GraphvizFormatting::NEGZ: x = -p->z(); break;
+      default: throw std::runtime_error("Invalid enum value");
+      }
+      switch (graphvizFormatting.paperVerticalAxis) {
+      case GraphvizFormatting::X: y = p->x(); break;
+      case GraphvizFormatting::Y: y = p->y(); break;
+      case GraphvizFormatting::Z: y = p->z(); break;
+      case GraphvizFormatting::NEGX: y = -p->x(); break;
+      case GraphvizFormatting::NEGY: y = -p->y(); break;
+      case GraphvizFormatting::NEGZ: y = -p->z(); break;
+      default: throw std::runtime_error("Invalid enum value");
+      }
+      return Point2(x,y);
     } else {
       return boost::none;
     }
@@ -142,6 +163,8 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   }
 
   // Create nodes for each variable in the graph
+  bool firstTimePoses = true;
+  Key lastKey;
   BOOST_FOREACH(Key key, keys) {
     // Label the node with the label from the KeyFormatter
     stm << "  var" << key << "[label=\"" << keyFormatter(key) << "\"";
@@ -151,8 +174,17 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
         stm << ", pos=\"" << graphvizFormatting.scale*(xy->x() - minX) << "," << graphvizFormatting.scale*(xy->y() - minY) << "!\"";
     }
     stm << "];\n";
+
+    if (firstTimePoses) {
+    	lastKey = key;
+    	firstTimePoses = false;
+    } else {
+    	stm << "  var" << key << "--" << "var" << lastKey << ";\n";
+    	lastKey = key;
+    }
   }
   stm << "\n";
+
 
   if(graphvizFormatting.mergeSimilarFactors) {
     // Remove duplicate factors
@@ -186,13 +218,39 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   } else {
     // Create factors and variable connections
     for(size_t i = 0; i < this->size(); ++i) {
-      // Make each factor a dot
-      stm << "  factor" << i << "[label=\"\", shape=point];\n";
+      if(graphvizFormatting.plotFactorPoints){
+		// Make each factor a dot
+		stm << "  factor" << i << "[label=\"\", shape=point";
+		{
+		map<size_t, Point2>::const_iterator pos = graphvizFormatting.factorPositions.find(i);
+		if(pos != graphvizFormatting.factorPositions.end())
+		  stm << ", pos=\"" << graphvizFormatting.scale*(pos->second.x() - minX) << "," << graphvizFormatting.scale*(pos->second.y() - minY) << "!\"";
+		}
+		stm << "];\n";
 
-      // Make factor-variable connections
-      if(this->at(i)) {
-        BOOST_FOREACH(Key key, *this->at(i)) {
-          stm << "  var" << key << "--" << "factor" << i << ";\n"; } }
+		// Make factor-variable connections
+		if(graphvizFormatting.connectKeysToFactor && this->at(i)) {
+		  BOOST_FOREACH(Key key, *this->at(i)) {
+		  stm << "  var" << key << "--" << "factor" << i << ";\n";
+		  }
+		}
+
+	  }
+      else {
+    	if(this->at(i)) {
+    	  Key k;
+    	  bool firstTime = true;
+    	  BOOST_FOREACH(Key key, *this->at(i)) {
+    		if(firstTime){
+    		  k = key;
+    		  firstTime = false;
+    		  continue;
+    		}
+    		stm << "  var" << key << "--" << "var" << k << ";\n";
+    		k = key;
+    	  }
+    	}
+      }
     }
   }
 
