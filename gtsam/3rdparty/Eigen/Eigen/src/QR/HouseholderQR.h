@@ -261,13 +261,13 @@ struct householder_qr_inplace_blocked
   {
     typedef typename MatrixQR::Index Index;
     typedef typename MatrixQR::Scalar Scalar;
-    typedef Block<MatrixQR, Dynamic, Dynamic> BlockType;
+    typedef Block<MatrixQR,Dynamic,Dynamic> BlockType;
 
     Index rows = mat.rows();
     Index cols = mat.cols();
     Index size = (std::min)(rows, cols);
 
-    typedef Matrix<Scalar, Dynamic, 1, ColMajor, MatrixQR::MaxColsAtCompileTime, 1> TempType;
+    typedef Matrix<Scalar,Dynamic,1,ColMajor,MatrixQR::MaxColsAtCompileTime,1> TempType;
     TempType tempVector;
     if(tempData==0)
     {
@@ -275,12 +275,12 @@ struct householder_qr_inplace_blocked
       tempData = tempVector.data();
     }
 
-    Index blockSize = (std::min)(maxBlockSize, size);
+    Index blockSize = (std::min)(maxBlockSize,size);
 
     Index k = 0;
-    for(k = 0; k < size; k += blockSize)
+    for (k = 0; k < size; k += blockSize)
     {
-      Index bs = (std::min)(size-k, blockSize);  // actual size of the block
+      Index bs = (std::min)(size-k,blockSize);  // actual size of the block
       Index tcols = cols - k - bs;            // trailing columns
       Index brows = rows-k;                   // rows of the block
 
@@ -292,15 +292,15 @@ struct householder_qr_inplace_blocked
       // and update [A21^T A22^T]^T using level 3 operations.
       // Finally, the algorithm continue on A22
 
-      BlockType A11_21 = mat.block(k, k, brows, bs);
-      Block<HCoeffs, Dynamic, 1> hCoeffsSegment = hCoeffs.segment(k, bs);
+      BlockType A11_21 = mat.block(k,k,brows,bs);
+      Block<HCoeffs,Dynamic,1> hCoeffsSegment = hCoeffs.segment(k,bs);
 
       householder_qr_inplace_unblocked(A11_21, hCoeffsSegment, tempData);
 
       if(tcols)
       {
-        BlockType A21_22 = mat.block(k, k+bs, brows, tcols);
-        apply_block_householder_on_the_left(A21_22, A11_21, hCoeffsSegment.adjoint());
+        BlockType A21_22 = mat.block(k,k+bs,brows,tcols);
+        apply_block_householder_on_the_left(A21_22,A11_21,hCoeffsSegment.adjoint());
       }
     }
   }
