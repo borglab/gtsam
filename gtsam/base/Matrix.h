@@ -336,7 +336,7 @@ void inplace_QR(MATRIX& A) {
   HCoeffsType hCoeffs(size);
   RowVectorType temp(cols);
 
-  Eigen::internal::householder_qr_inplace_blocked(A, hCoeffs, 48, temp.data());
+  Eigen::internal::householder_qr_inplace_blocked<MATRIX, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
 
   zeroBelowDiagonal(A);
 }
