@@ -100,13 +100,13 @@ TEST(SymbolicJunctionTree, clique_structure)
 
   SymbolicBayesTree expected;
   expected.insertRoot(
-    MakeClique(list_of(X(3)) (X(4)), 2, list_of
-      (MakeClique(list_of(L(2)) (X(5)) (X(4)), 2, list_of
-        (MakeClique(list_of(L(3)) (X(4)) (X(5)), 1))))
-      (MakeClique(list_of(X(2)) (X(3)), 1, list_of
-        (MakeClique(list_of(L(1)) (X(1)) (X(2)), 2))))));
+    MakeClique(list_of(X(2)) (X(3)), 2, list_of
+      (MakeClique(list_of(X(4)) (X(3)), 1, list_of
+        (MakeClique(list_of(X(5)) (L(2)) (X(4)), 2, list_of
+          (MakeClique(list_of(L(3)) (X(4)) (X(5)), 1))))))
+      (MakeClique(list_of(X(1)) (L(1)) (X(2)), 2))));
 
-  Ordering order = list_of(L(1)) (X(1)) (X(2)) (L(2)) (L(3)) (X(5)) (X(3)) (X(4));
+  Ordering order = list_of(X(1)) (L(3)) (L(1)) (X(5)) (X(2)) (L(2)) (X(4)) (X(3));
 
   SymbolicBayesTree actual = *graph.eliminateMultifrontal(order);
 

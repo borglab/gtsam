@@ -133,16 +133,16 @@ TEST(EliminationTree, Create2)
   graph += SymbolicFactor(X(5), L(3));
 
   SymbolicEliminationTree expected = EliminationTreeTester::MakeTree(list_of
-    (MakeNode(X(4), SymbolicFactorGraph(), list_of
-      (MakeNode(X(3), list_of(SymbolicFactor(X(3), X(4))), list_of
-        (MakeNode(X(2), list_of(SymbolicFactor(X(2), X(3))), list_of
-          (MakeNode(X(1), list_of(SymbolicFactor(X(1), X(2))), list_of
-            (MakeNode(L(1), list_of(SymbolicFactor(X(1), L(1))) (SymbolicFactor(X(2), L(1)))))))))))
-      (MakeNode(X(5), list_of(SymbolicFactor(X(4), X(5))), list_of
-        (MakeNode(L(2), list_of(SymbolicFactor(X(4), L(2))) (SymbolicFactor(L(2), X(5)))))
-        (MakeNode(L(3), list_of(SymbolicFactor(X(4), L(3))) (SymbolicFactor(X(5), L(3))))))))));
+    (MakeNode(X(3), SymbolicFactorGraph(), list_of
+      (MakeNode(X(2), list_of(SymbolicFactor(X(2), X(3))), list_of
+        (MakeNode(L(1), list_of(SymbolicFactor(X(2), L(1))), list_of
+          (MakeNode(X(1), list_of(SymbolicFactor(X(1), L(1))) (SymbolicFactor(X(1), X(2)))))))))
+      (MakeNode(X(4), list_of(SymbolicFactor(X(3), X(4))), list_of
+        (MakeNode(L(2), list_of(SymbolicFactor(X(4), L(2))), list_of
+          (MakeNode(X(5), list_of(SymbolicFactor(X(4), X(5))) (SymbolicFactor(L(2), X(5))), list_of
+            (MakeNode(L(3), list_of(SymbolicFactor(X(4), L(3))) (SymbolicFactor(X(5), L(3))))))))))))));
 
-  Ordering order = list_of(L(1)) (X(1)) (X(2)) (L(2)) (L(3)) (X(5)) (X(3)) (X(4));
+  Ordering order = list_of(X(1)) (L(3)) (L(1)) (X(5)) (X(2)) (L(2)) (X(4)) (X(3));
 
   SymbolicEliminationTree actual(graph, order);
   
