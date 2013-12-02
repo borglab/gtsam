@@ -78,6 +78,41 @@ TEST(SymbolicBayesTree, clear)
   CHECK(assert_equal(expected, bayesTree));
 }
 
+/* ************************************************************************* */
+TEST(SymbolicJunctionTree, clique_structure)
+{
+  //        l1                  l2
+  //    /    |                /  |
+  // x1 --- x2 --- x3 --- x4 --- x5
+  //                          \  |
+  //                            l3
+  SymbolicFactorGraph graph;
+  graph += SymbolicFactor(X(1), L(1));
+  graph += SymbolicFactor(X(1), X(2));
+  graph += SymbolicFactor(X(2), L(1));
+  graph += SymbolicFactor(X(2), X(3));
+  graph += SymbolicFactor(X(3), X(4));
+  graph += SymbolicFactor(X(4), L(2));
+  graph += SymbolicFactor(X(4), X(5));
+  graph += SymbolicFactor(L(2), X(5));
+  graph += SymbolicFactor(X(4), L(3));
+  graph += SymbolicFactor(X(5), L(3));
+
+  SymbolicBayesTree expected;
+  expected.insertRoot(
+    MakeClique(list_of(X(3)) (X(4)), 2, list_of
+      (MakeClique(list_of(L(2)) (X(5)) (X(4)), 2, list_of
+        (MakeClique(list_of(L(3)) (X(4)) (X(5)), 1))))
+      (MakeClique(list_of(X(2)) (X(3)), 1, list_of
+        (MakeClique(list_of(L(1)) (X(1)) (X(2)), 2))))));
+
+  Ordering order = list_of(L(1)) (X(1)) (X(2)) (L(2)) (L(3)) (X(5)) (X(3)) (X(4));
+
+  SymbolicBayesTree actual = *graph.eliminateMultifrontal(order);
+
+  EXPECT(assert_equal(expected, actual));
+}
+
 /* ************************************************************************* *
 Bayes Tree for testing conversion to a forest of orphans needed for incremental.
        A,B

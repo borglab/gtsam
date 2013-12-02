@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <boost/make_shared.hpp>
+#include <boost/assign/list_of.hpp>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/symbolic/SymbolicEliminationTree.h>
@@ -30,6 +31,7 @@
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace std;
+using boost::assign::list_of;
 
 class EliminationTreeTester {
 public:
@@ -64,7 +66,36 @@ public:
     tree.roots_.push_back(root);
     return tree;
   }
+
+  template<typename ROOTS>
+  static SymbolicEliminationTree MakeTree(const ROOTS& roots)
+  {
+    SymbolicEliminationTree et;
+    et.roots_.assign(roots.begin(), roots.end());
+    return et;
+  }
 };
+
+template<typename FACTORS>
+static SymbolicEliminationTree::sharedNode MakeNode(Key key, const FACTORS& factors)
+{
+  SymbolicEliminationTree::sharedNode node = boost::make_shared<SymbolicEliminationTree::Node>();
+  node->key = key;
+  SymbolicFactorGraph factorsAsGraph = factors;
+  node->factors.assign(factorsAsGraph.begin(), factorsAsGraph.end());
+  return node;
+}
+
+template<typename FACTORS, typename CHILDREN>
+static SymbolicEliminationTree::sharedNode MakeNode(Key key, const FACTORS& factors, const CHILDREN& children)
+{
+  SymbolicEliminationTree::sharedNode node = boost::make_shared<SymbolicEliminationTree::Node>();
+  node->key = key;
+  SymbolicFactorGraph factorsAsGraph = factors;
+  node->factors.assign(factorsAsGraph.begin(), factorsAsGraph.end());
+  node->children.assign(children.begin(), children.end());
+  return node;
+}
 
 
 /* ************************************************************************* */
@@ -79,6 +110,43 @@ TEST(EliminationTree, Create)
   SymbolicEliminationTree actual(simpleTestGraph1, order);
 
   CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(EliminationTree, Create2)
+{
+  //        l1                  l2
+  //    /    |                /  |
+  // x1 --- x2 --- x3 --- x4 --- x5
+  //                          \  |
+  //                            l3
+  SymbolicFactorGraph graph;
+  graph += SymbolicFactor(X(1), L(1));
+  graph += SymbolicFactor(X(1), X(2));
+  graph += SymbolicFactor(X(2), L(1));
+  graph += SymbolicFactor(X(2), X(3));
+  graph += SymbolicFactor(X(3), X(4));
+  graph += SymbolicFactor(X(4), L(2));
+  graph += SymbolicFactor(X(4), X(5));
+  graph += SymbolicFactor(L(2), X(5));
+  graph += SymbolicFactor(X(4), L(3));
+  graph += SymbolicFactor(X(5), L(3));
+
+  SymbolicEliminationTree expected = EliminationTreeTester::MakeTree(list_of
+    (MakeNode(X(4), SymbolicFactorGraph(), list_of
+      (MakeNode(X(3), list_of(SymbolicFactor(X(3), X(4))), list_of
+        (MakeNode(X(2), list_of(SymbolicFactor(X(2), X(3))), list_of
+          (MakeNode(X(1), list_of(SymbolicFactor(X(1), X(2))), list_of
+            (MakeNode(L(1), list_of(SymbolicFactor(X(1), L(1))) (SymbolicFactor(X(2), L(1)))))))))))
+      (MakeNode(X(5), list_of(SymbolicFactor(X(4), X(5))), list_of
+        (MakeNode(L(2), list_of(SymbolicFactor(X(4), L(2))) (SymbolicFactor(L(2), X(5)))))
+        (MakeNode(L(3), list_of(SymbolicFactor(X(4), L(3))) (SymbolicFactor(X(5), L(3))))))))));
+
+  Ordering order = list_of(L(1)) (X(1)) (X(2)) (L(2)) (L(3)) (X(5)) (X(3)) (X(4));
+
+  SymbolicEliminationTree actual(graph, order);
+  
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
