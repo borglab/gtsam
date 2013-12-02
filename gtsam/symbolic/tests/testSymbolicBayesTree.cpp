@@ -79,7 +79,7 @@ TEST(SymbolicBayesTree, clear)
 }
 
 /* ************************************************************************* */
-TEST(SymbolicJunctionTree, clique_structure)
+TEST(SymbolicBayesTree, clique_structure)
 {
   //        l1                  l2
   //    /    |                /  |
