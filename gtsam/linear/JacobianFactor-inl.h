@@ -62,7 +62,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   namespace internal {
-    static DenseIndex getColsJF(const std::pair<Key,Matrix>& p) {
+    static inline DenseIndex getColsJF(const std::pair<Key,Matrix>& p) {
       return p.second.cols();
     }
 
