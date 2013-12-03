@@ -448,10 +448,10 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
     gttic(update);
     DenseIndex nrInfoBlocks = this->info_.nBlocks(), nrUpdateBlocks = updateBlocks.nBlocks();
     for(DenseIndex j2 = 0; j2 < nrUpdateBlocks; ++j2) { // Horizontal block of Hessian
-      DenseIndex slot2 = (j2 == update.size()) ? nrInfoBlocks-1 : slots[j2];
+      DenseIndex slot2 = (j2 == (DenseIndex)update.size()) ? nrInfoBlocks-1 : slots[j2];
       assert(slot2 >= 0 && slot2 <= nrInfoBlocks);
       for(DenseIndex j1 = 0; j1 <= j2; ++j1) { // Vertical block of Hessian
-        DenseIndex slot1 = (j1 == update.size()) ? nrInfoBlocks-1 : slots[j1];
+        DenseIndex slot1 = (j1 == (DenseIndex)update.size()) ? nrInfoBlocks-1 : slots[j1];
         assert(slot1 >= 0 && slot1 < nrInfoBlocks);
         if(slot1 != slot2)
           info_(slot1, slot2).knownOffDiagonal() += updateBlocks(j1).transpose() * updateBlocks(j2);

@@ -211,21 +211,21 @@ namespace gtsam
     {
       if(blockType_ == SelfAdjoint)
       {
-        assert(other.blockType() == SelfAdjoint);
+        assert((BlockType)other.blockType() == SelfAdjoint);
         triangularView() += other.triangularView().nestedExpression();
       }
       else if(blockType_ == Plain)
       {
-        assert(other.blockType() == Plain || other.blockType() == Transposed);
-        if(other.blockType() == Transposed)
+        assert((BlockType)other.blockType() == Plain || (BlockType)other.blockType() == Transposed);
+        if((BlockType)other.blockType() == Transposed)
           myBlock_ += other.myBlock_.transpose();
         else
           myBlock_ += other.myBlock_;
       }
       else
       {
-        assert(other.blockType() == Plain || other.blockType() == Transposed);
-        if(other.blockType() == Transposed)
+        assert((BlockType)other.blockType() == Plain || (BlockType)other.blockType() == Transposed);
+        if((BlockType)other.blockType() == Transposed)
           myBlock_.transpose() += other.myBlock_.transpose();
         else
           myBlock_.transpose() += other.myBlock_;
@@ -310,21 +310,21 @@ namespace gtsam
     {
       if(blockType_ == SelfAdjoint)
       {
-        assert(other.blockType() == SelfAdjoint);
+        assert((BlockType)other.blockType() == SelfAdjoint);
         triangularView() = other.triangularView().nestedExpression();
       }
       else if(blockType_ == Plain)
       {
-        assert(other.blockType() == Plain || other.blockType() == Transposed);
-        if(other.blockType() == Transposed)
+        assert((BlockType)other.blockType() == Plain || (BlockType)other.blockType() == Transposed);
+        if((BlockType)other.blockType() == Transposed)
           myBlock_ = other.myBlock_.transpose();
         else
           myBlock_ = other.myBlock_;
       }
       else
       {
-        assert(other.blockType() == Plain || other.blockType() == Transposed);
-        if(other.blockType() == Transposed)
+        assert((BlockType)other.blockType() == Plain || (BlockType)other.blockType() == Transposed);
+        if((BlockType)other.blockType() == Transposed)
           myBlock_.transpose() = other.myBlock_.transpose();
         else
           myBlock_.transpose() = other.myBlock_;
