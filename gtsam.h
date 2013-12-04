@@ -896,6 +896,7 @@ class SymbolicBayesNet {
   // Standard interface
   size_t size() const;
   void saveGraph(string s) const;
+  gtsam::SymbolicConditional* at(size_t idx) const;
   gtsam::SymbolicConditional* front() const;
   gtsam::SymbolicConditional* back() const;
   void push_back(gtsam::SymbolicConditional* conditional);
@@ -947,7 +948,7 @@ class SymbolicBayesTree {
 // //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
 // //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 // //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
-// 
+//
 //   void deleteCachedShortcuts();
 // };
 
@@ -1317,12 +1318,18 @@ class GaussianFactorGraph {
 
 #include <gtsam/linear/GaussianConditional.h>
 virtual class GaussianConditional : gtsam::GaussianFactor {
-    //Constructors
+  //Constructors
   GaussianConditional(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
       const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
       size_t name2, Matrix T, const gtsam::noiseModel::Diagonal* sigmas);
+
+  //Constructors with no noise model
+  GaussianConditional(size_t key, Vector d, Matrix R);
+    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S);
+    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+        size_t name2, Matrix T);
 
   //Standard Interface
   void print(string s) const;
@@ -1704,6 +1711,23 @@ class KeyVector {
   void serialize() const;
 };
 
+// Actually a FastMap<Key,int>
+class KeyGroupMap {
+  KeyGroupMap();
+
+  // Note: no print function
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  size_t at(size_t key) const;
+  int erase(size_t key);
+  bool insert2(size_t key, int val);
+};
+
 #include <gtsam/nonlinear/Marginals.h>
 class Marginals {
   Marginals(const gtsam::NonlinearFactorGraph& graph,
@@ -1959,6 +1983,7 @@ class ISAM2 {
   gtsam::ISAM2Result update();
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices);
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, const gtsam::KeyGroupMap& constrainedKeys);
   // TODO: wrap the full version of update
  //void update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, FastMap<Key,int>& constrainedKeys);
   //void update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, FastMap<Key,int>& constrainedKeys, bool force_relinearize);

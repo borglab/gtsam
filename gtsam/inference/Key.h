@@ -24,6 +24,7 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/FastSet.h>
+#include <gtsam/base/FastMap.h>
 
 namespace gtsam {
 
@@ -43,6 +44,7 @@ namespace gtsam {
   typedef FastList<Key> KeyList;
   typedef FastVector<Key> KeyVector;
   typedef FastSet<Key> KeySet;
+  typedef FastMap<Key,int> KeyGroupMap;
 
   /// Utility function to print sets of keys with optional prefix
   GTSAM_EXPORT void printKeySet(const KeySet& keys, const std::string& s = "",

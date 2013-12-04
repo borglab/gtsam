@@ -60,6 +60,8 @@ public:
     return std::map<KEY,VALUE>(this->begin(), this->end());
   }
 
+  /** Handy 'insert' function for Matlab wrapper */
+  bool insert2(const KEY& key, const VALUE& val) { return Base::insert(std::make_pair<KEY,VALUE>(key, val)).second; }
   /** Handy 'exists' function */
   bool exists(const KEY& e) const { return this->find(e) != this->end(); }
 
