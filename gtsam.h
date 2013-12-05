@@ -2189,6 +2189,7 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename,
     gtsam::noiseModel::Base* model);
 
