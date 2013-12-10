@@ -59,16 +59,19 @@ private:
 
   const size_t n_; /** dimensionality of state */
   const Matrix I_; /** identity matrix of size n*n */
-  const Factorization method_; /** algorithm */
+  const GaussianFactorGraph::Eliminate function_; /** algorithm */
 
-  GaussianFactorGraph::Eliminate factorization() const;
+  State solve(const GaussianFactorGraph& factorGraph) const;
+  State fuse(const State& p, GaussianFactor::shared_ptr newFactor);
 
 public:
 
   // Constructor
   KalmanFilter(size_t n, Factorization method =
       KALMANFILTER_DEFAULT_FACTORIZATION) :
-      n_(n), I_(eye(n_, n_)), method_(method) {
+      n_(n), I_(eye(n_, n_)), function_(
+          method == QR ? GaussianFactorGraph::Eliminate(EliminateQR) :
+              GaussianFactorGraph::Eliminate(EliminateCholesky)) {
   }
 
   /**
