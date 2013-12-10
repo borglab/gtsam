@@ -38,26 +38,15 @@ namespace gtsam {
 static KalmanFilter::State solve(const GaussianFactorGraph& factorGraph,
     const GaussianFactorGraph::Eliminate& function) {
 
-  // We will eliminate the keys in increasing order, except the last key
-  Ordering ordering1(factorGraph.keys());
-  Key lastKey = ordering1.back();
-  ordering1.pop_back();
-
   // Eliminate the graph using the provided Eliminate function
-  GaussianConditional::shared_ptr conditional;
-  GaussianFactor::shared_ptr factor;
-  boost::tie(conditional, factor) = function(factorGraph, ordering1);
+  Ordering ordering(factorGraph.keys());
+  GaussianBayesNet::shared_ptr bayesNet = //
+      factorGraph.eliminateSequential(ordering, function);
 
   // As this is a filter, all we need is the posterior P(x_t).
-  GaussianFactorGraph graphOfRemainingFactor;
-  graphOfRemainingFactor += factor;
-
-  // Eliminate it to be upper-triangular.
-  Ordering ordering2;
-  ordering2 += lastKey;
-  boost::tie(conditional, factor) = function(graphOfRemainingFactor, ordering2);
-
-  return boost::make_shared<GaussianDensity>(*conditional);
+  // This is the last GaussianConditional in the resulting BayesNet
+  GaussianConditional::shared_ptr posterior = *(--bayesNet->end());
+  return boost::make_shared<GaussianDensity>(*posterior);
 }
 
 /* ************************************************************************* */
