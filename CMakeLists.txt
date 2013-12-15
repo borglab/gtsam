@@ -216,7 +216,7 @@ endif()
 configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eigen_includes.h)
 
 # Install the configuration file for Eigen
-install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
+install(FILES ${PROJECT_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
 
 
 ###############################################################################
@@ -270,8 +270,8 @@ include_directories(BEFORE
   gtsam/3rdparty/metis-5.1.0/include
   gtsam/3rdparty/metis-5.1.0/libmetis
   gtsam/3rdparty/metis-5.1.0/GKlib
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_BINARY_DIR} # So we can include generated config header files
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_BINARY_DIR} # So we can include generated config header files
   CppUnitLite)
 
 if(MSVC)

@@ -83,8 +83,8 @@ set(gtsam_srcs
 configure_file(config.h.in config.h)
 set(library_name GTSAM) # For substitution in dllexport.h.in
 configure_file("${PROJECT_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
-list(APPEND gtsam_srcs "${CMAKE_BINARY_DIR}/gtsam/config.h" "${CMAKE_BINARY_DIR}/gtsam/dllexport.h")
-install(FILES "${CMAKE_BINARY_DIR}/gtsam/config.h" "${CMAKE_BINARY_DIR}/gtsam/dllexport.h" DESTINATION include/gtsam)
+list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h")
+install(FILES "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h" DESTINATION include/gtsam)
 
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
@@ -135,7 +135,7 @@ endif(GTSAM_BUILD_SHARED_LIBRARY)
 # Set dataset paths
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
     APPEND PROPERTY COMPILE_DEFINITIONS
-	"SOURCE_TREE_DATASET_DIR=\"${CMAKE_SOURCE_DIR}/examples/Data\""
+	"SOURCE_TREE_DATASET_DIR=\"${PROJECT_SOURCE_DIR}/examples/Data\""
 	"INSTALLED_DATASET_DIR=\"${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data\"")
 	
 # Special cases
