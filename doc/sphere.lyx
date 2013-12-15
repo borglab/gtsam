@@ -65,7 +65,11 @@
 \begin_body
 
 \begin_layout Title
-Retraction on a Sphere
+Manifold Geometry of the Sphere 
+\begin_inset Formula $S^{2}$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Author
@@ -74,8 +78,8 @@ Frank, Can, and Manohar
 
 \begin_layout Standard
 \begin_inset FormulaMacro
-\newcommand{\xihat}{\hat{\xi}}
-{\hat{\xi}}
+\newcommand{\xihat}{z}
+{z}
 \end_inset
 
 
@@ -147,7 +151,7 @@ retraction
  
 \begin_inset Formula 
 \[
-q=R_{p}(\xihat)=\frac{p+\xihat}{\left|p+\xihat\right|}=\frac{p+\xihat}{\alpha}
+q=R_{p}(\xihat)=\frac{p+\xihat}{\left\Vert p+z\right\Vert }=\frac{p+\xihat}{\alpha}
 \]
 
 \end_inset
@@ -405,6 +409,55 @@ and because
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsubsection*
+Exponential Map
+\end_layout
+
+\begin_layout Standard
+The exponential map itself is not so difficult, and is given in Ma01ijcv,
+ as well as in this CVPR tutorial by Anuj Srivastava: 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://stat.fsu.edu/~anuj/CVPR_Tutorial/Part2.pdf"
+
+\end_inset
+
+.
+ 
+\begin_inset Formula 
+\[
+\exp_{p}\xihat=\cos\left(\left\Vert \xihat\right\Vert \right)p+\sin\left(\left\Vert \xihat\right\Vert \right)\frac{\xihat}{\left\Vert \xihat\right\Vert }
+\]
+
+\end_inset
+
+The latter also gives the inverse, i.e., get the tangent vector 
+\begin_inset Formula $z$
+\end_inset
+
+ to go from 
+\begin_inset Formula $p$
+\end_inset
+
+ to 
+\begin_inset Formula $q$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+z=\log_{p}q=\frac{\theta}{\sin\theta}\left(q-p\cos\theta\right)p
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $\theta=\cos^{-1}\left(p^{T}q\right)$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
