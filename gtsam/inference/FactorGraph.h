@@ -226,8 +226,7 @@ namespace gtsam {
 
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
-    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR>,
-      boost::assign::list_inserter<RefCallPushBack<This> > >::type
+    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR> >::type
       add(boost::shared_ptr<DERIVEDFACTOR> factor) {
         push_back(factor);
     }
