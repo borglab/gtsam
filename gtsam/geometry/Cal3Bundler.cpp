@@ -42,17 +42,17 @@ Matrix Cal3Bundler::K() const {
 
 /* ************************************************************************* */
 Vector Cal3Bundler::k() const {
-  return (Vec(4) << k1_, k2_, 0, 0);
+  return (Vector(4) << k1_, k2_, 0, 0);
 }
 
 /* ************************************************************************* */
 Vector Cal3Bundler::vector() const {
-  return (Vec(3) << f_, k1_, k2_);
+  return (Vector(3) << f_, k1_, k2_);
 }
 
 /* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const {
-  gtsam::print((Vector)(Vec(5) << f_, k1_, k2_, u0_, v0_), s + ".K");
+  gtsam::print((Vector)(Vector(5) << f_, k1_, k2_, u0_, v0_), s + ".K");
 }
 
 /* ************************************************************************* */

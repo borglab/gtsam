@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
   NonlinearFactorGraph graph;
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vec(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise)); // add directly to graph
 
   // Simulated measurements from each camera pose, adding them to the factor graph

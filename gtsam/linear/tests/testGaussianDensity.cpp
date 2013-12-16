@@ -25,11 +25,11 @@ using namespace std;
 /* ************************************************************************* */
 TEST(GaussianDensity, constructor)
 {
-  Matrix R = (Mat(2,2) <<
+  Matrix R = (Matrix(2,2) <<
       -12.1244,  -5.1962,
             0.,   4.6904);
 
-  Vector d = (Vec(2) << 1.0, 2.0), s = (Vec(2) << 3.0, 4.0);
+  Vector d = (Vector(2) << 1.0, 2.0), s = (Vector(2) << 3.0, 4.0);
   GaussianConditional conditional(1, d, R, noiseModel::Diagonal::Sigmas(s));
 
   GaussianDensity copied(conditional);

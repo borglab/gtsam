@@ -29,12 +29,12 @@ using namespace gtsam;
 TEST( Errors, arithmetic )
 {
   Errors e;
-  e += (Vec(2) << 1.0,2.0), (Vec(3) << 3.0,4.0,5.0);
+  e += (Vector(2) << 1.0,2.0), (Vector(3) << 3.0,4.0,5.0);
   DOUBLES_EQUAL(1+4+9+16+25,dot(e,e),1e-9);
 
   axpy(2.0,e,e);
   Errors expected;
-  expected += (Vec(2) << 3.0,6.0), (Vec(3) << 9.0,12.0,15.0);
+  expected += (Vector(2) << 3.0,6.0), (Vector(3) << 9.0,12.0,15.0);
   CHECK(assert_equal(expected,e));
 }
 

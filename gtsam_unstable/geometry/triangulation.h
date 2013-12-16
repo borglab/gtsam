@@ -60,7 +60,7 @@ public:
  * @param rank_tol SVD rank tolerance
  * @return Triangulated Point3
  */
-Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices, const std::vector<Point2>& measurements, double rank_tol);
+GTSAM_UNSTABLE_EXPORT Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices, const std::vector<Point2>& measurements, double rank_tol);
 
 // Frank says: putting priors on poses and then optimizing is a terrible idea: we turn a 3dof problem into a much more difficult problem
 // We should have a projectionfactor that knows pose is fixed
@@ -135,7 +135,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
  * @param landmarkKey to refer to landmark
  * @return refined Point3
  */
-Point3 optimize(const NonlinearFactorGraph& graph, const Values& values, Key landmarkKey);
+GTSAM_UNSTABLE_EXPORT Point3 optimize(const NonlinearFactorGraph& graph, const Values& values, Key landmarkKey);
 
 /**
  * Given an initial estimate , refine a point using measurements in several cameras

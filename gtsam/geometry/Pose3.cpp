@@ -306,7 +306,7 @@ double Pose3::range(const Point3& point, boost::optional<Matrix&> H1,
   Point3 d = transform_to(point, H1, H2);
   double x = d.x(), y = d.y(), z = d.z(), d2 = x * x + y * y + z * z, n = sqrt(
       d2);
-  Matrix D_result_d = (Mat(1, 3) << x / n, y / n, z / n);
+  Matrix D_result_d = (Matrix(1, 3) << x / n, y / n, z / n);
   if (H1)
     *H1 = D_result_d * (*H1);
   if (H2)

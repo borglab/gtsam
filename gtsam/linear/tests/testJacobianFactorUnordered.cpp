@@ -42,8 +42,8 @@ namespace {
       (make_pair(15, 3*Matrix3::Identity()));
 
     // RHS and sigmas
-    const Vector b = (Vec(3) << 1., 2., 3.);
-    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vec(3) << 0.5, 0.5, 0.5));
+    const Vector b = (Vector(3) << 1., 2., 3.);
+    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.5));
   }
 }
 
@@ -240,22 +240,22 @@ TEST(JacobianFactor, operators )
   SharedDiagonal  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
 
   Matrix I = eye(2);
-  Vector b = (Vec(2) << 0.2,-0.1);
+  Vector b = (Vector(2) << 0.2,-0.1);
   JacobianFactor lf(1, -I, 2, I, b, sigma0_1);
 
   VectorValues c;
-  c.insert(1, (Vec(2) << 10.,20.));
-  c.insert(2, (Vec(2) << 30.,60.));
+  c.insert(1, (Vector(2) << 10.,20.));
+  c.insert(2, (Vector(2) << 30.,60.));
 
   // test A*x
-  Vector expectedE = (Vec(2) << 200.,400.);
+  Vector expectedE = (Vector(2) << 200.,400.);
   Vector actualE = lf * c;
   EXPECT(assert_equal(expectedE, actualE));
 
   // test A^e
   VectorValues expectedX;
-  expectedX.insert(1, (Vec(2) << -2000.,-4000.));
-  expectedX.insert(2, (Vec(2) << 2000., 4000.));
+  expectedX.insert(1, (Vector(2) << -2000.,-4000.));
+  expectedX.insert(2, (Vector(2) << 2000., 4000.));
   VectorValues actualX = VectorValues::Zero(expectedX);
   lf.transposeMultiplyAdd(1.0, actualE, actualX);
   EXPECT(assert_equal(expectedX, actualX));
@@ -263,8 +263,8 @@ TEST(JacobianFactor, operators )
   // test gradient at zero
   Matrix A; Vector b2; boost::tie(A,b2) = lf.jacobian();
   VectorValues expectedG;
-  expectedG.insert(1, (Vec(2) << 20,-10));
-  expectedG.insert(2, (Vec(2) << -20, 10));
+  expectedG.insert(1, (Vector(2) << 20,-10));
+  expectedG.insert(2, (Vector(2) << -20, 10));
   FastVector<Key> keys; keys += 1,2;
   EXPECT(assert_equal(-A.transpose()*b2, expectedG.vector(keys)));
   VectorValues actualG = lf.gradientAtZero();
@@ -290,30 +290,30 @@ TEST(JacobianFactor, empty )
 /* ************************************************************************* */
 TEST(JacobianFactor, eliminate)
 {
-  Matrix A01 = (Mat(3, 3) <<
+  Matrix A01 = (Matrix(3, 3) <<
     1.0, 0.0, 0.0,
     0.0, 1.0, 0.0,
     0.0, 0.0, 1.0);
-  Vector b0 = (Vec(3) << 1.5, 1.5, 1.5);
-  Vector s0 = (Vec(3) << 1.6, 1.6, 1.6);
+  Vector b0 = (Vector(3) << 1.5, 1.5, 1.5);
+  Vector s0 = (Vector(3) << 1.6, 1.6, 1.6);
 
-  Matrix A10 = (Mat(3, 3) <<
+  Matrix A10 = (Matrix(3, 3) <<
     2.0, 0.0, 0.0,
     0.0, 2.0, 0.0,
     0.0, 0.0, 2.0);
-  Matrix A11 = (Mat(3, 3) <<
+  Matrix A11 = (Matrix(3, 3) <<
     -2.0, 0.0, 0.0,
     0.0, -2.0, 0.0,
     0.0, 0.0, -2.0);
-  Vector b1 = (Vec(3) << 2.5, 2.5, 2.5);
-  Vector s1 = (Vec(3) << 2.6, 2.6, 2.6);
+  Vector b1 = (Vector(3) << 2.5, 2.5, 2.5);
+  Vector s1 = (Vector(3) << 2.6, 2.6, 2.6);
 
-  Matrix A21 = (Mat(3, 3) <<
+  Matrix A21 = (Matrix(3, 3) <<
     3.0, 0.0, 0.0,
     0.0, 3.0, 0.0,
     0.0, 0.0, 3.0);
-  Vector b2 = (Vec(3) << 3.5, 3.5, 3.5);
-  Vector s2 = (Vec(3) << 3.6, 3.6, 3.6);
+  Vector b2 = (Vector(3) << 3.5, 3.5, 3.5);
+  Vector s2 = (Vector(3) << 3.6, 3.6, 3.6);
 
   GaussianFactorGraph gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
@@ -345,10 +345,10 @@ TEST(JacobianFactor, eliminate2 )
   // sigmas
   double sigma1 = 0.2;
   double sigma2 = 0.1;
-  Vector sigmas = (Vec(4) << sigma1, sigma1, sigma2, sigma2);
+  Vector sigmas = (Vector(4) << sigma1, sigma1, sigma2, sigma2);
 
   // the combined linear factor
-  Matrix Ax2 = (Mat(4, 2) <<
+  Matrix Ax2 = (Matrix(4, 2) <<
     // x2
     -1., 0.,
     +0.,-1.,
@@ -356,7 +356,7 @@ TEST(JacobianFactor, eliminate2 )
     +0.,1.
     );
 
-  Matrix Al1x1 = (Mat(4, 4) <<
+  Matrix Al1x1 = (Matrix(4, 4) <<
     // l1   x1
     1., 0., 0.00,  0., // f4
     0., 1., 0.00,  0., // f4
@@ -382,27 +382,27 @@ TEST(JacobianFactor, eliminate2 )
 
   // create expected Conditional Gaussian
   double oldSigma = 0.0894427; // from when R was made unit
-  Matrix R11 = (Mat(2, 2) <<
+  Matrix R11 = (Matrix(2, 2) <<
     1.00,  0.00,
     0.00,  1.00
     )/oldSigma;
-  Matrix S12 = (Mat(2, 4) <<
+  Matrix S12 = (Matrix(2, 4) <<
     -0.20, 0.00,-0.80, 0.00,
     +0.00,-0.20,+0.00,-0.80
     )/oldSigma;
-  Vector d = (Vec(2) << 0.2,-0.14)/oldSigma;
+  Vector d = (Vector(2) << 0.2,-0.14)/oldSigma;
   GaussianConditional expectedCG(2, d, R11, 11, S12);
 
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
 
   // the expected linear factor
   double sigma = 0.2236;
-  Matrix Bl1x1 = (Mat(2, 4) <<
+  Matrix Bl1x1 = (Matrix(2, 4) <<
     // l1          x1
     1.00, 0.00, -1.00,  0.00,
     0.00, 1.00, +0.00, -1.00
     )/sigma;
-  Vector b1 = (Vec(2) << 0.0, 0.894427);
+  Vector b1 = (Vector(2) << 0.0, 0.894427);
   JacobianFactor expectedLF(11, Bl1x1, b1);
   EXPECT(assert_equal(expectedLF, *actual.second,1e-3));
 }
@@ -411,7 +411,7 @@ TEST(JacobianFactor, eliminate2 )
 TEST(JacobianFactor, EliminateQR)
 {
   // Augmented Ab test case for whole factor graph
-  Matrix Ab = (Mat(14, 11) <<
+  Matrix Ab = (Matrix(14, 11) <<
     4.,     0.,     1.,     4.,     1.,     0.,     3.,     6.,     8.,     8.,     1.,
     9.,     2.,     0.,     1.,     6.,     3.,     9.,     6.,     6.,     9.,     4.,
     5.,     3.,     7.,     9.,     5.,     5.,     9.,     1.,     3.,     7.,     0.,
@@ -441,7 +441,7 @@ TEST(JacobianFactor, EliminateQR)
   EXPECT(assert_equal(2.0 * Ab, actualDense));
 
   // Expected augmented matrix, both GaussianConditional (first 6 rows) and remaining factor (next 4 rows)
-  Matrix R = 2.0 * (Mat(11, 11) <<
+  Matrix R = 2.0 * (Matrix(11, 11) <<
     -12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611,
     0.,   4.6904,   5.0254,   5.5432,   5.5737,   3.0153,  -3.0153,  -3.5635,  -3.9290,  -2.7412,   2.1625,
     0.,       0., -13.8160,  -8.7166, -10.2245,  -8.8666,  -8.7632,  -5.2544,  -6.9192, -10.5537,  -9.3250,
@@ -486,7 +486,7 @@ TEST ( JacobianFactor, constraint_eliminate1 )
   EXPECT(actual.second->size() == 0);
 
   // verify conditional Gaussian
-  Vector sigmas = (Vec(2) << 0.0, 0.0);
+  Vector sigmas = (Vector(2) << 0.0, 0.0);
   GaussianConditional expCG(1, v, eye(2), noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expCG, *actual.first));
 }
@@ -523,14 +523,14 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   EXPECT(assert_equal(expectedLF, *actual.second));
 
   // verify CG
-  Matrix R = (Mat(2, 2) <<
+  Matrix R = (Matrix(2, 2) <<
       1.0,    2.0,
       0.0,    1.0);
-  Matrix S = (Mat(2, 2) <<
+  Matrix S = (Matrix(2, 2) <<
       1.0,    2.0,
       0.0,    0.0);
-  Vector d = (Vec(2) << 3.0, 0.6666);
-  Vector sigmas = (Vec(2) << 0.0, 0.0);
+  Vector d = (Vector(2) << 3.0, 0.6666);
+  Vector sigmas = (Vector(2) << 0.0, 0.0);
   GaussianConditional expectedCG(1, d, R, 2, S, noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
 }

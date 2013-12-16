@@ -18,24 +18,24 @@ const double deg2rad = M_PI/180.0;
 
 //Pose3 g1(Rot3::ypr(deg2rad*10.0, deg2rad*20.0, deg2rad*30.0), Point3(100.0, 200.0, 300.0));
 Pose3 g1(Rot3(), Point3(100.0, 0.0, 300.0));
-//LieVector v1((Vec(6) << 0.1, 0.05, 0.02, 10.0, 20.0, 30.0));
-LieVector V1_w((Vec(6) << 0.0, 0.0, M_PI/3, 0.0, 0.0, 30.0));
+//LieVector v1((Vector(6) << 0.1, 0.05, 0.02, 10.0, 20.0, 30.0));
+LieVector V1_w((Vector(6) << 0.0, 0.0, M_PI/3, 0.0, 0.0, 30.0));
 LieVector V1_g1 = g1.inverse().Adjoint(V1_w);
 Pose3 g2(g1.retract(h*V1_g1, Pose3::EXPMAP));
 //LieVector v2 = Pose3::Logmap(g1.between(g2));
 
 double mass = 100.0;
-Vector gamma2 = (Vec(2) << 0.0, 0.0);  // no shape
-Vector u2 = (Vec(2) << 0.0, 0.0); // no control at time 2
+Vector gamma2 = (Vector(2) << 0.0, 0.0);  // no shape
+Vector u2 = (Vector(2) << 0.0, 0.0); // no control at time 2
 double distT = 1.0; // distance from the body-centered x axis to the big top motor
 double distR = 5.0; // distance from the body-centered z axis to the small motor
-Matrix Mass = diag((Vec(3) << mass, mass, mass));
-Matrix Inertia = diag((Vec(6) << 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, mass, mass, mass));
+Matrix Mass = diag((Vector(3) << mass, mass, mass));
+Matrix Inertia = diag((Vector(6) << 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, mass, mass, mass));
 
 Vector computeFu(const Vector& gamma, const Vector& control) {
   double gamma_r = gamma(0), gamma_p = gamma(1);
 
-  Matrix F = (Mat(6, 2) << distT*sin(gamma_r), 0.0,
+  Matrix F = (Matrix(6, 2) << distT*sin(gamma_r), 0.0,
                            distT*sin(gamma_p*cos(gamma_r)), 0.0,
                            0.0, distR,
                            sin(gamma_p)*cos(gamma_r), 0.0,
@@ -100,7 +100,7 @@ TEST( Reconstruction, evaluateError) {
 /* ************************************************************************* */
 // Implement Newton-Euler equation for rigid body dynamics
 Vector newtonEuler(const Vector& Vb, const Vector& Fb, const Matrix& Inertia) {
-  Matrix W = Pose3::adjointMap((Vec(6) << Vb(0), Vb(1), Vb(2), 0., 0., 0.));
+  Matrix W = Pose3::adjointMap((Vector(6) << Vb(0), Vb(1), Vb(2), 0., 0., 0.));
   Vector dV = Inertia.inverse()*(Fb - W*Inertia*Vb);
   return dV;
 }

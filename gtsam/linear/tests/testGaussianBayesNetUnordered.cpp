@@ -38,8 +38,8 @@ using namespace gtsam;
 static const Key _x_=0, _y_=1, _z_=2;
 
 static GaussianBayesNet smallBayesNet = list_of
-  (GaussianConditional(_x_, (Vec(1) << 9.0), (Mat(1, 1) << 1.0), _y_, (Mat(1, 1) << 1.0)))
-  (GaussianConditional(_y_, (Vec(1) << 5.0), (Mat(1, 1) << 1.0)));
+  (GaussianConditional(_x_, (Vector(1) << 9.0), (Matrix(1, 1) << 1.0), _y_, (Matrix(1, 1) << 1.0)))
+  (GaussianConditional(_y_, (Vector(1) << 5.0), (Matrix(1, 1) << 1.0)));
 
 /* ************************************************************************* */
 TEST( GaussianBayesNet, matrix )
@@ -47,11 +47,11 @@ TEST( GaussianBayesNet, matrix )
   Matrix R; Vector d;
   boost::tie(R,d) = smallBayesNet.matrix(); // find matrix and RHS
 
-  Matrix R1 = (Mat(2, 2) <<
+  Matrix R1 = (Matrix(2, 2) <<
           1.0, 1.0,
           0.0, 1.0
     );
-  Vector d1 = (Vec(2) << 9.0, 5.0);
+  Vector d1 = (Vector(2) << 9.0, 5.0);
 
   EXPECT(assert_equal(R,R1));
   EXPECT(assert_equal(d,d1));
@@ -63,8 +63,8 @@ TEST( GaussianBayesNet, optimize )
   VectorValues actual = smallBayesNet.optimize();
 
   VectorValues expected = map_list_of<Key, Vector>
-    (_x_, (Vec(1) << 4.0))
-    (_y_, (Vec(1) << 5.0));
+    (_x_, (Vector(1) << 4.0))
+    (_y_, (Vector(1) << 5.0));
 
   EXPECT(assert_equal(expected,actual));
 }
@@ -78,13 +78,13 @@ TEST( GaussianBayesNet, optimize3 )
   // NOTE: we are supplying a new RHS here
 
   VectorValues expected = map_list_of<Key, Vector>
-    (_x_, (Vec(1) << -1.0))
-    (_y_, (Vec(1) <<  5.0));
+    (_x_, (Vector(1) << -1.0))
+    (_y_, (Vector(1) <<  5.0));
 
   // Test different RHS version
   VectorValues gx = map_list_of<Key, Vector>
-    (_x_, (Vec(1) << 4.0))
-    (_y_, (Vec(1) << 5.0));
+    (_x_, (Vector(1) << 4.0))
+    (_y_, (Vector(1) << 5.0));
   VectorValues actual = smallBayesNet.backSubstitute(gx);
   EXPECT(assert_equal(expected, actual));
 }
@@ -97,11 +97,11 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
   // 5   1 1  3
   VectorValues
     x = map_list_of<Key, Vector>
-      (_x_, (Vec(1) << 2.0))
-      (_y_, (Vec(1) << 5.0)),
+      (_x_, (Vector(1) << 2.0))
+      (_y_, (Vector(1) << 5.0)),
     expected = map_list_of<Key, Vector>
-      (_x_, (Vec(1) << 2.0))
-      (_y_, (Vec(1) << 3.0));
+      (_x_, (Vector(1) << 2.0))
+      (_y_, (Vector(1) << 3.0));
 
   VectorValues actual = smallBayesNet.backSubstituteTranspose(x);
   EXPECT(assert_equal(expected, actual));
@@ -113,15 +113,15 @@ TEST( GaussianBayesNet, DeterminantTest )
 {
   GaussianBayesNet cbn;
   cbn += GaussianConditional(
-          0, (Vec(2) << 3.0, 4.0 ), (Mat(2, 2) << 1.0, 3.0, 0.0, 4.0 ),
-          1, (Mat(2, 2) << 2.0, 1.0, 2.0, 3.0), noiseModel::Isotropic::Sigma(2, 2.0));
+          0, (Vector(2) << 3.0, 4.0 ), (Matrix(2, 2) << 1.0, 3.0, 0.0, 4.0 ),
+          1, (Matrix(2, 2) << 2.0, 1.0, 2.0, 3.0), noiseModel::Isotropic::Sigma(2, 2.0));
 
   cbn += GaussianConditional(
-          1, (Vec(2) << 5.0, 6.0 ), (Mat(2, 2) << 1.0, 1.0, 0.0, 3.0 ),
-          2, (Mat(2, 2) << 1.0, 0.0, 5.0, 2.0), noiseModel::Isotropic::Sigma(2, 2.0));
+          1, (Vector(2) << 5.0, 6.0 ), (Matrix(2, 2) << 1.0, 1.0, 0.0, 3.0 ),
+          2, (Matrix(2, 2) << 1.0, 0.0, 5.0, 2.0), noiseModel::Isotropic::Sigma(2, 2.0));
 
   cbn += GaussianConditional(
-      3, (Vec(2) << 7.0, 8.0 ), (Mat(2, 2) << 1.0, 1.0, 0.0, 5.0 ), noiseModel::Isotropic::Sigma(2, 2.0));
+      3, (Vector(2) << 7.0, 8.0 ), (Matrix(2, 2) << 1.0, 1.0, 0.0, 5.0 ), noiseModel::Isotropic::Sigma(2, 2.0));
 
   double expectedDeterminant = 60.0 / 64.0;
   double actualDeterminant = cbn.determinant();
@@ -144,21 +144,21 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    0, (Vec(2) << 1.0,2.0), (Mat(2, 2) << 3.0,4.0,0.0,6.0),
-    3, (Mat(2, 2) << 7.0,8.0,9.0,10.0),
-    4, (Mat(2, 2) << 11.0,12.0,13.0,14.0)));
+    0, (Vector(2) << 1.0,2.0), (Matrix(2, 2) << 3.0,4.0,0.0,6.0),
+    3, (Matrix(2, 2) << 7.0,8.0,9.0,10.0),
+    4, (Matrix(2, 2) << 11.0,12.0,13.0,14.0)));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    1, (Vec(2) << 15.0,16.0), (Mat(2, 2) << 17.0,18.0,0.0,20.0),
-    2, (Mat(2, 2) << 21.0,22.0,23.0,24.0),
-    4, (Mat(2, 2) << 25.0,26.0,27.0,28.0)));
+    1, (Vector(2) << 15.0,16.0), (Matrix(2, 2) << 17.0,18.0,0.0,20.0),
+    2, (Matrix(2, 2) << 21.0,22.0,23.0,24.0),
+    4, (Matrix(2, 2) << 25.0,26.0,27.0,28.0)));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    2, (Vec(2) << 29.0,30.0), (Mat(2, 2) << 31.0,32.0,0.0,34.0),
-    3, (Mat(2, 2) << 35.0,36.0,37.0,38.0)));
+    2, (Vector(2) << 29.0,30.0), (Matrix(2, 2) << 31.0,32.0,0.0,34.0),
+    3, (Matrix(2, 2) << 35.0,36.0,37.0,38.0)));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    3, (Vec(2) << 39.0,40.0), (Mat(2, 2) << 41.0,42.0,0.0,44.0),
-    4, (Mat(2, 2) << 45.0,46.0,47.0,48.0)));
+    3, (Vector(2) << 39.0,40.0), (Matrix(2, 2) << 41.0,42.0,0.0,44.0),
+    4, (Matrix(2, 2) << 45.0,46.0,47.0,48.0)));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    4, (Vec(2) << 49.0,50.0), (Mat(2, 2) << 51.0,52.0,0.0,54.0)));
+    4, (Vector(2) << 49.0,50.0), (Matrix(2, 2) << 51.0,52.0,0.0,54.0)));
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian(

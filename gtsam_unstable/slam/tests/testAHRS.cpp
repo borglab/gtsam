@@ -16,22 +16,22 @@ using namespace std;
 using namespace gtsam;
 
 // stationary interval of gyro U and acc F
-Matrix stationaryU = trans((Mat(3, 3) << -0.0004,-0.0002,-0.0014,0.0006,-0.0003,0.0007,0.0006,-0.0002,-0.0003));
-Matrix stationaryF = trans((Mat(3, 3) << 0.1152,-0.0188,9.7419,-0.0163,0.0146,9.7753,-0.0283,-0.0428,9.9021));
+Matrix stationaryU = trans((Matrix(3, 3) << -0.0004,-0.0002,-0.0014,0.0006,-0.0003,0.0007,0.0006,-0.0002,-0.0003));
+Matrix stationaryF = trans((Matrix(3, 3) << 0.1152,-0.0188,9.7419,-0.0163,0.0146,9.7753,-0.0283,-0.0428,9.9021));
 double g_e = 9.7963; // Atlanta
 
 /* ************************************************************************* */
 TEST (AHRS, cov) {
 
   // samples stored by row
-  Matrix A = (Mat(4, 3) <<
+  Matrix A = (Matrix(4, 3) <<
       1.0, 2.0, 3.0,
       5.0, 7.0, 0.0,
       9.0, 4.0, 7.0,
       6.0, 3.0, 2.0);
 
   Matrix actual = cov(trans(A));
-  Matrix expected = (Mat(3, 3) <<
+  Matrix expected = (Matrix(3, 3) <<
       10.9167,    2.3333,    5.0000,
           2.3333,    4.6667,   -2.6667,
           5.0000,   -2.6667,    8.6667);
@@ -43,7 +43,7 @@ TEST (AHRS, cov) {
 TEST (AHRS, covU) {
 
   Matrix actual = cov(10000*stationaryU);
-  Matrix expected = (Mat(3, 3) <<
+  Matrix expected = (Matrix(3, 3) <<
       33.3333333,    -1.66666667,    53.3333333,
       -1.66666667,    0.333333333,   -5.16666667,
       53.3333333,  -5.16666667,    110.333333);
@@ -55,7 +55,7 @@ TEST (AHRS, covU) {
 TEST (AHRS, covF) {
 
   Matrix actual = cov(100*stationaryF);
-  Matrix expected = (Mat(3, 3) <<
+  Matrix expected = (Matrix(3, 3) <<
       63.3808333, -0.432166667,  -48.1706667,
     -0.432166667,   8.31053333,  -16.6792667,
      -48.1706667,  -16.6792667,   71.4297333);

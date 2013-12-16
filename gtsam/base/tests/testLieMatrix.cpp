@@ -27,7 +27,7 @@ GTSAM_CONCEPT_LIE_INST(LieMatrix)
 
 /* ************************************************************************* */
 TEST( LieMatrix, construction ) {
-  Matrix m = (Mat(2,2) << 1.0,2.0, 3.0,4.0);
+  Matrix m = (Matrix(2,2) << 1.0,2.0, 3.0,4.0);
   LieMatrix lie1(m), lie2(m);
 
   EXPECT(lie1.dim() == 4);
@@ -37,7 +37,7 @@ TEST( LieMatrix, construction ) {
 
 /* ************************************************************************* */
 TEST( LieMatrix, other_constructors ) {
-  Matrix init = (Mat(2,2) << 10.0,20.0, 30.0,40.0);
+  Matrix init = (Matrix(2,2) << 10.0,20.0, 30.0,40.0);
   LieMatrix exp(init);
   LieMatrix a(2,2,10.0,20.0,30.0,40.0);
   double data[] = {10,30,20,40};
@@ -62,7 +62,7 @@ TEST(LieMatrix, retract) {
 
   EXPECT(assert_equal(expectedUpdate, actualUpdate));
 
-  Vector expectedLogmap = (Vec() << 1, 2, 3, 4);
+  Vector expectedLogmap = (Vector() << 1, 2, 3, 4);
   Vector actualLogmap = LieMatrix::Logmap(LieMatrix(2,2, 1.0, 2.0, 3.0, 4.0));
   EXPECT(assert_equal(expectedLogmap, actualLogmap));
 }

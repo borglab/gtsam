@@ -126,7 +126,7 @@ PoseRTV PoseRTV::planarDynamics(double vel_rate, double heading_rate,
   const Velocity3& v1 = v();
 
   // Update vehicle heading
-  Rot3 r2 = r1.retract((Vec(3) << 0.0, 0.0, heading_rate * dt));
+  Rot3 r2 = r1.retract((Vector(3) << 0.0, 0.0, heading_rate * dt));
   const double yaw2 = r2.ypr()(0);
 
   // Update vehicle position
@@ -150,7 +150,7 @@ PoseRTV PoseRTV::flyingDynamics(
   const Velocity3& v1 = v();
 
   // Update vehicle heading (and normalise yaw)
-  Vector rot_rates = (Vec(3) << 0.0, pitch_rate, heading_rate);
+  Vector rot_rates = (Vector(3) << 0.0, pitch_rate, heading_rate);
   Rot3 r2 = r1.retract(rot_rates*dt);
 
   // Work out dynamics on platform
@@ -165,7 +165,7 @@ PoseRTV PoseRTV::flyingDynamics(
   Point3 forward(forward_accel, 0.0, 0.0);
   Vector Acc_n =
       yaw_correction_bn.rotate(forward).vector()   // applies locally forward force in the global frame
-      - drag * (Vec(3) << v1.x(), v1.y(), 0.0)     // drag term dependent on v1
+      - drag * (Vector(3) << v1.x(), v1.y(), 0.0)     // drag term dependent on v1
       + delta(3, 2, loss_lift - lift_control);     // falling due to lift lost from pitch
 
   // Update Vehicle Position and Velocity

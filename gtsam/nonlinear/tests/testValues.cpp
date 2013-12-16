@@ -171,8 +171,8 @@ TEST(Values, expmap_a)
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
   VectorValues increment = pair_list_of<Key, Vector>
-    (key1, (Vec(3) << 1.0, 1.1, 1.2))
-    (key2, (Vec(3) << 1.3, 1.4, 1.5));
+    (key1, (Vector(3) << 1.0, 1.1, 1.2))
+    (key2, (Vector(3) << 1.3, 1.4, 1.5));
 
   Values expected;
   expected.insert(key1, LieVector(3, 2.0, 3.1, 4.2));
@@ -189,7 +189,7 @@ TEST(Values, expmap_b)
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
   VectorValues increment = pair_list_of<Key, Vector>
-    (key2, (Vec(3) << 1.3, 1.4, 1.5));
+    (key2, (Vector(3) << 1.3, 1.4, 1.5));
 
   Values expected;
   expected.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
@@ -242,8 +242,8 @@ TEST(Values, localCoordinates)
   valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
   VectorValues expDelta = pair_list_of<Key, Vector>
-    (key1, (Vec(3) << 0.1, 0.2, 0.3))
-    (key2, (Vec(3) << 0.4, 0.5, 0.6));
+    (key1, (Vector(3) << 0.1, 0.2, 0.3))
+    (key2, (Vector(3) << 0.4, 0.5, 0.6));
 
   Values valuesB = valuesA.retract(expDelta);
 
@@ -275,11 +275,11 @@ TEST(Values, extract_keys)
 TEST(Values, exists_)
 {
   Values config0;
-  config0.insert(key1, LieVector((Vec(1) << 1.)));
-  config0.insert(key2, LieVector((Vec(1) << 2.)));
+  config0.insert(key1, LieVector((Vector(1) << 1.)));
+  config0.insert(key2, LieVector((Vector(1) << 2.)));
 
   boost::optional<const LieVector&> v = config0.exists<LieVector>(key1);
-  CHECK(assert_equal((Vec(1) << 1.),*v));
+  CHECK(assert_equal((Vector(1) << 1.),*v));
 }
 
 /* ************************************************************************* */

@@ -59,8 +59,8 @@ TEST( BetweenFactorEM, ConstructorAndEquals)
   gtsam::Pose2 rel_pose_ideal = p1.between(p2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 0.5, 0.5, 0.05)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 5, 5, 1.0)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.5, 0.5, 0.05)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 5, 5, 1.0)));
 
   double prior_outlier = 0.5;
   double prior_inlier = 0.5;
@@ -88,8 +88,8 @@ TEST( BetweenFactorEM, EvaluateError)
   gtsam::Pose2 rel_pose_ideal = p1.between(p2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 0.5, 0.5, 0.05)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 50.0, 50.0, 10.0)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.5, 0.5, 0.05)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 50.0, 50.0, 10.0)));
 
   gtsam::Values values;
   values.insert(key1, p1);
@@ -103,8 +103,8 @@ TEST( BetweenFactorEM, EvaluateError)
 
   Vector actual_err_wh = f.whitenedError(values);
 
-  Vector actual_err_wh_inlier  = (Vec(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
-  Vector actual_err_wh_outlier = (Vec(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
+  Vector actual_err_wh_inlier  = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  Vector actual_err_wh_outlier = (Vector(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
 
   //  cout << "Inlier test. norm of actual_err_wh_inlier, actual_err_wh_outlier: "<<actual_err_wh_inlier.norm()<<","<<actual_err_wh_outlier.norm()<<endl;
   //  cout<<actual_err_wh[0]<<" "<<actual_err_wh[1]<<" "<<actual_err_wh[2]<<actual_err_wh[3]<<" "<<actual_err_wh[4]<<" "<<actual_err_wh[5]<<endl;
@@ -121,8 +121,8 @@ TEST( BetweenFactorEM, EvaluateError)
 
   actual_err_wh = g.whitenedError(values);
 
-  actual_err_wh_inlier = (Vec(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
-  actual_err_wh_outlier = (Vec(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
+  actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  actual_err_wh_outlier = (Vector(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
 
   // in case of outlier, outlier-mode whitented error should be dominant
   //  CHECK(actual_err_wh_inlier.norm() < 1000.0*actual_err_wh_outlier.norm());
@@ -136,7 +136,7 @@ TEST( BetweenFactorEM, EvaluateError)
   BetweenFactorEM<gtsam::Pose2> h_EM(key1, key2, rel_pose_msr, model_inlier, model_outlier,
         prior_inlier, prior_outlier);
   actual_err_wh = h_EM.whitenedError(values);
-  actual_err_wh_inlier = (Vec(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
 
   BetweenFactor<gtsam::Pose2> h(key1, key2, rel_pose_msr, model_inlier );
   Vector actual_err_wh_stnd = h.whitenedError(values);
@@ -160,8 +160,8 @@ TEST (BetweenFactorEM, jacobian ) {
   gtsam::Pose2 rel_pose_ideal = p1.between(p2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 0.5, 0.5, 0.05)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 50.0, 50.0, 10.0)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.5, 0.5, 0.05)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 50.0, 50.0, 10.0)));
 
   gtsam::Values values;
   values.insert(key1, p1);
@@ -182,7 +182,7 @@ TEST (BetweenFactorEM, jacobian ) {
   // compare to standard between factor
   BetweenFactor<gtsam::Pose2> h(key1, key2, rel_pose_msr, model_inlier );
   Vector actual_err_wh_stnd = h.whitenedError(values);
-  Vector actual_err_wh_inlier = (Vec(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  Vector actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
 //  CHECK( assert_equal(actual_err_wh_stnd, actual_err_wh_inlier, 1e-8));
   std::vector<gtsam::Matrix> H_actual_stnd_unwh(2);
   (void)h.unwhitenedError(values, H_actual_stnd_unwh);
@@ -223,8 +223,8 @@ TEST( BetweenFactorEM, CaseStudy)
   gtsam::Pose2 p2(-0.0491752554, -0.289649075, -0.328993962);
   gtsam::Pose2 rel_pose_msr(0.0316191379, 0.0247539161, 0.004102182);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 0.4021, 0.286, 0.428)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 4.9821, 4.614, 1.8387)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.4021, 0.286, 0.428)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 4.9821, 4.614, 1.8387)));
 
   gtsam::Values values;
     values.insert(key1, p1);
@@ -244,8 +244,8 @@ TEST( BetweenFactorEM, CaseStudy)
   Vector actual_err_unw = f.unwhitenedError(values);
   Vector actual_err_wh  = f.whitenedError(values);
 
-  Vector actual_err_wh_inlier = (Vec(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
-  Vector actual_err_wh_outlier = (Vec(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
+  Vector actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  Vector actual_err_wh_outlier = (Vector(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
 
   if (debug){
     cout << "p_inlier_outler: "<<p_inlier_outler[0]<<", "<<p_inlier_outler[1]<<endl;

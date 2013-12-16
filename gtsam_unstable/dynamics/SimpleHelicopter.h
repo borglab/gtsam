@@ -126,7 +126,7 @@ public:
 
     Matrix D_gravityBody_gk;
     Point3 gravityBody = gk.rotation().unrotate(Point3(0.0, 0.0, -9.81*m_), D_gravityBody_gk);
-    Vector f_ext = (Vec(6) << 0.0, 0.0, 0.0, gravityBody.x(), gravityBody.y(), gravityBody.z());
+    Vector f_ext = (Vector(6) << 0.0, 0.0, 0.0, gravityBody.x(), gravityBody.y(), gravityBody.z());
 
     Vector hx = pk - pk_1 - h_*Fu_ - h_*f_ext;
 
@@ -154,7 +154,7 @@ public:
     Vector pk_1 = Pose3::dExpInv_exp(-h_*xik_1).transpose()*Inertia_*xik_1;
 
     Point3 gravityBody = gk.rotation().unrotate(Point3(0.0, 0.0, -9.81*m_));
-    Vector f_ext = (Vec(6) << 0.0, 0.0, 0.0, gravityBody.x(), gravityBody.y(), gravityBody.z());
+    Vector f_ext = (Vector(6) << 0.0, 0.0, 0.0, gravityBody.x(), gravityBody.y(), gravityBody.z());
 
     Vector hx = pk - pk_1 - h_*Fu_ - h_*f_ext;
 

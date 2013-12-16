@@ -218,7 +218,7 @@ public:
      * @return xihat, 4*4 element of Lie algebra that can be exponentiated
      */
     static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz) {
-      return (Mat(4,4) <<
+      return (Matrix(4,4) <<
           0.,-wz,  wy,  vx,
           wz,  0.,-wx,  vy,
           -wy, wx,   0., vz,

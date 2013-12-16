@@ -25,7 +25,7 @@ using boost::assign::list_of;
 
 static SymmetricBlockMatrix testBlockMatrix(
   list_of(3)(2)(1),
-  (Mat(6, 6) <<
+  (Matrix(6, 6) <<
   1, 2, 3, 4, 5, 6,
   2, 8, 9, 10, 11, 12,
   3, 9, 15, 16, 17, 18,
@@ -37,7 +37,7 @@ static SymmetricBlockMatrix testBlockMatrix(
 TEST(SymmetricBlockMatrix, ReadBlocks)
 {
   // On the diagonal
-  Matrix expected1 = (Mat(2, 2) <<
+  Matrix expected1 = (Matrix(2, 2) <<
     22, 23,
     23, 29);
   Matrix actual1 = testBlockMatrix(1, 1);
@@ -48,7 +48,7 @@ TEST(SymmetricBlockMatrix, ReadBlocks)
   EXPECT(assert_equal(Matrix(expected1.triangularView<Eigen::Upper>()), actual1t));
 
   // Above the diagonal
-  Matrix expected2 = (Mat(3, 2) <<
+  Matrix expected2 = (Matrix(3, 2) <<
     4, 5,
     10, 11,
     16, 17);
@@ -56,7 +56,7 @@ TEST(SymmetricBlockMatrix, ReadBlocks)
   EXPECT(assert_equal(expected2, actual2));
 
   // Below the diagonal
-  Matrix expected3 = (Mat(2, 3) <<
+  Matrix expected3 = (Matrix(2, 3) <<
     4, 10, 16,
     5, 11, 17);
   Matrix actual3 = testBlockMatrix(1, 0);
@@ -99,7 +99,7 @@ TEST(SymmetricBlockMatrix, WriteBlocks)
 TEST(SymmetricBlockMatrix, Ranges)
 {
   // On the diagonal
-  Matrix expected1 = (Mat(3, 3) <<
+  Matrix expected1 = (Matrix(3, 3) <<
     22, 23, 24,
     23, 29, 30,
     24, 30, 36);
@@ -109,7 +109,7 @@ TEST(SymmetricBlockMatrix, Ranges)
   EXPECT(assert_equal(expected1, actual1a));
 
   // Above the diagonal
-  Matrix expected2 = (Mat(3, 1) <<
+  Matrix expected2 = (Matrix(3, 1) <<
     24,
     30,
     36);
@@ -119,7 +119,7 @@ TEST(SymmetricBlockMatrix, Ranges)
   EXPECT(assert_equal(expected2, actual2a));
 
   // Below the diagonal
-  Matrix expected3 = (Mat(3, 3) <<
+  Matrix expected3 = (Matrix(3, 3) <<
     4, 10, 16,
     5, 11, 17,
     6, 12, 18);
@@ -132,7 +132,7 @@ TEST(SymmetricBlockMatrix, Ranges)
 /* ************************************************************************* */
 TEST(SymmetricBlockMatrix, expressions)
 {
-  SymmetricBlockMatrix expected1(list_of(2)(3)(1), (Mat(6, 6) <<
+  SymmetricBlockMatrix expected1(list_of(2)(3)(1), (Matrix(6, 6) <<
     0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
     0, 0, 4, 6, 8, 0,
@@ -140,7 +140,7 @@ TEST(SymmetricBlockMatrix, expressions)
     0, 0, 0, 0, 16, 0,
     0, 0, 0, 0, 0, 0));
 
-  SymmetricBlockMatrix expected2(list_of(2)(3)(1), (Mat(6, 6) <<
+  SymmetricBlockMatrix expected2(list_of(2)(3)(1), (Matrix(6, 6) <<
     0, 0, 10, 15, 20, 0,
     0, 0, 12, 18, 24, 0,
     0, 0, 0, 0, 0, 0,
@@ -148,8 +148,8 @@ TEST(SymmetricBlockMatrix, expressions)
     0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0));
 
-  Matrix a = (Mat(1, 3) << 2, 3, 4);
-  Matrix b = (Mat(1, 2) << 5, 6);
+  Matrix a = (Matrix(1, 3) << 2, 3, 4);
+  Matrix b = (Matrix(1, 2) << 5, 6);
 
   SymmetricBlockMatrix bm1(list_of(2)(3)(1));
   bm1.full().triangularView().setZero();

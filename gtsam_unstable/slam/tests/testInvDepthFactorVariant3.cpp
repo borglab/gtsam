@@ -64,9 +64,9 @@ TEST( InvDepthFactorVariant3, optimize) {
 
   // Create a values with slightly incorrect initial conditions
   Values values;
-  values.insert(poseKey1, pose1.retract((Vec(6) << +0.01, -0.02, +0.03, -0.10, +0.20, -0.30)));
-  values.insert(poseKey2, pose2.retract((Vec(6) << +0.01, +0.02, -0.03, -0.10, +0.20, +0.30)));
-  values.insert(landmarkKey, expected.retract((Vec(3) <<  +0.02, -0.04, +0.05)));
+  values.insert(poseKey1, pose1.retract((Vector(6) << +0.01, -0.02, +0.03, -0.10, +0.20, -0.30)));
+  values.insert(poseKey2, pose2.retract((Vector(6) << +0.01, +0.02, -0.03, -0.10, +0.20, +0.30)));
+  values.insert(landmarkKey, expected.retract((Vector(3) <<  +0.02, -0.04, +0.05)));
 
   // Optimize the graph to recover the actual landmark position
   LevenbergMarquardtParams params;

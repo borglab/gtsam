@@ -39,25 +39,25 @@ using namespace boost::assign;
 
 static const double tol = 1e-5;
 
-static Matrix R = (Mat(2, 2) <<
+static Matrix R = (Matrix(2, 2) <<
     -12.1244,  -5.1962,
           0.,   4.6904);
 
 /* ************************************************************************* */
 TEST(GaussianConditional, constructor)
 {
-  Matrix S1 = (Mat(2, 2) <<
+  Matrix S1 = (Matrix(2, 2) <<
       -5.2786,  -8.6603,
       5.0254,   5.5432);
-  Matrix S2 = (Mat(2, 2) <<
+  Matrix S2 = (Matrix(2, 2) <<
       -10.5573,  -5.9385,
       5.5737,   3.0153);
-  Matrix S3 = (Mat(2, 2) <<
+  Matrix S3 = (Matrix(2, 2) <<
       -11.3820,  -7.2581,
       -3.0153,  -3.5635);
 
-  Vector d = (Vec(2) << 1.0, 2.0);
-  SharedDiagonal s = noiseModel::Diagonal::Sigmas((Vec(2) << 3.0, 4.0));
+  Vector d = (Vector(2) << 1.0, 2.0);
+  SharedDiagonal s = noiseModel::Diagonal::Sigmas((Vector(2) << 3.0, 4.0));
 
   vector<pair<Key, Matrix> > terms = pair_list_of
       (1, R)
@@ -114,9 +114,9 @@ TEST( GaussianConditional, equals )
   R(0,0) = 0.1 ; R(1,0) = 0.3;
   R(0,1) = 0.0 ; R(1,1) = 0.34;
 
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vec(2) << 1.0, 0.34));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(2) << 1.0, 0.34));
 
-  Vector d = (Vec(2) << 0.2, 0.5);
+  Vector d = (Vector(2) << 0.2, 0.5);
 
   GaussianConditional
     expected(1, d, R, 2, A1, 10, A2, model),
@@ -133,13 +133,13 @@ TEST( GaussianConditional, solve )
   expectedX(0) = 20-3-11 ; expectedX(1) = 40-7-15;
 
   // create a conditional Gaussian node
-  Matrix R = (Mat(2, 2) <<  1., 0.,
+  Matrix R = (Matrix(2, 2) <<  1., 0.,
                             0., 1.);
 
-  Matrix A1 = (Mat(2, 2) << 1., 2.,
+  Matrix A1 = (Matrix(2, 2) << 1., 2.,
                             3., 4.);
 
-  Matrix A2 = (Mat(2, 2) << 5., 6.,
+  Matrix A2 = (Matrix(2, 2) << 5., 6.,
                             7., 8.);
 
   Vector d(2); d << 20.0, 40.0;
@@ -177,7 +177,7 @@ TEST( GaussianConditional, solve_simple )
   GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
 
   // partial solution
-  Vector sx1 = (Vec(2) << 9.0, 10.0);
+  Vector sx1 = (Vector(2) << 9.0, 10.0);
 
   // elimination order: 1, 2
   VectorValues actual = map_list_of
@@ -185,7 +185,7 @@ TEST( GaussianConditional, solve_simple )
 
   VectorValues expected = map_list_of<Key, Vector>
     (2, sx1)
-    (1, (Vec(4) << -3.1,-3.4,-11.9,-13.2));
+    (1, (Vector(4) << -3.1,-3.4,-11.9,-13.2));
 
   // verify indices/size
   EXPECT_LONGS_EQUAL(2, (long)cg.size());
@@ -213,15 +213,15 @@ TEST( GaussianConditional, solve_multifrontal )
   EXPECT(assert_equal(Vector(blockMatrix.full().rightCols(1)), cg.get_d()));
 
   // partial solution
-  Vector sl1 = (Vec(2) << 9.0, 10.0);
+  Vector sl1 = (Vector(2) << 9.0, 10.0);
 
   // elimination order; _x_, _x1_, _l1_
   VectorValues actual = map_list_of
     (10, sl1); // parent
 
   VectorValues expected = map_list_of<Key, Vector>
-    (1, (Vector)(Vec(2) << -3.1,-3.4))
-    (2, (Vector)(Vec(2) << -11.9,-13.2))
+    (1, (Vector)(Vector(2) << -3.1,-3.4))
+    (2, (Vector)(Vector(2) << -11.9,-13.2))
     (10, sl1);
 
   // verify indices/size
@@ -241,8 +241,8 @@ TEST( GaussianConditional, solveTranspose ) {
    * 1 1 9
    *   1 5
    */
-  Matrix R11 = (Mat(1, 1) << 1.0), S12 = (Mat(1, 1) << 1.0);
-  Matrix R22 = (Mat(1, 1) << 1.0);
+  Matrix R11 = (Matrix(1, 1) << 1.0), S12 = (Matrix(1, 1) << 1.0);
+  Matrix R22 = (Matrix(1, 1) << 1.0);
   Vector d1(1), d2(1);
   d1(0) = 9;
   d2(0) = 5;
@@ -258,11 +258,11 @@ TEST( GaussianConditional, solveTranspose ) {
 
   VectorValues
     x = map_list_of<Key, Vector>
-      (1, (Vec(1) << 2.))
-      (2, (Vec(1) << 5.)),
+      (1, (Vector(1) << 2.))
+      (2, (Vector(1) << 5.)),
     y = map_list_of<Key, Vector>
-      (1, (Vec(1) << 2.))
-      (2, (Vec(1) << 3.));
+      (1, (Vector(1) << 2.))
+      (2, (Vector(1) << 3.));
 
   // test functional version
   VectorValues actual = cbn.backSubstituteTranspose(x);

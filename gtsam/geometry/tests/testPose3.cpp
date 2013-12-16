@@ -104,7 +104,7 @@ TEST( Pose3, expmap_a_full2)
 TEST(Pose3, expmap_b)
 {
   Pose3 p1(Rot3(), Point3(100, 0, 0));
-  Pose3 p2 = p1.retract((Vec(6) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0));
+  Pose3 p2 = p1.retract((Vector(6) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0));
   Pose3 expected(Rot3::rodriguez(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
   EXPECT(assert_equal(expected, p2,1e-2));
 }
@@ -113,7 +113,7 @@ TEST(Pose3, expmap_b)
 // test case for screw motion in the plane
 namespace screw {
   double a=0.3, c=cos(a), s=sin(a), w=0.3;
-  Vector xi = (Vec(6) << 0.0, 0.0, w, w, 0.0, 1.0);
+  Vector xi = (Vector(6) << 0.0, 0.0, w, w, 0.0, 1.0);
   Rot3 expectedR(c, -s, 0, s, c, 0, 0, 0, 1);
   Point3 expectedT(0.29552, 0.0446635, 1);
   Pose3 expected(expectedR, expectedT);
@@ -163,13 +163,13 @@ Pose3 Agrawal06iros(const Vector& xi) {
 TEST(Pose3, expmaps_galore_full)
 {
   Vector xi; Pose3 actual;
-  xi = (Vec(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
+  xi = (Vector(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
   actual = Pose3::Expmap(xi);
   EXPECT(assert_equal(expm<Pose3>(xi), actual,1e-6));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
   EXPECT(assert_equal(xi, Pose3::Logmap(actual),1e-6));
 
-  xi = (Vec(6) << 0.1, -0.2, 0.3, -0.4, 0.5, -0.6);
+  xi = (Vector(6) << 0.1, -0.2, 0.3, -0.4, 0.5, -0.6);
   for (double theta=1.0;0.3*theta<=M_PI;theta*=2) {
     Vector txi = xi*theta;
     actual = Pose3::Expmap(txi);
@@ -181,7 +181,7 @@ TEST(Pose3, expmaps_galore_full)
   }
 
   // Works with large v as well, but expm needs 10 iterations!
-  xi = (Vec(6) << 0.2, 0.3, -0.8, 100.0, 120.0, -60.0);
+  xi = (Vector(6) << 0.2, 0.3, -0.8, 100.0, 120.0, -60.0);
   actual = Pose3::Expmap(xi);
   EXPECT(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
@@ -194,7 +194,7 @@ TEST(Pose3, Adjoint_compose_full)
   // To debug derivatives of compose, assert that
   // T1*T2*exp(Adjoint(inv(T2),x) = T1*exp(x)*T2
   const Pose3& T1 = T;
-  Vector x = (Vec(6) << 0.1, 0.1, 0.1, 0.4, 0.2, 0.8);
+  Vector x = (Vector(6) << 0.1, 0.1, 0.1, 0.4, 0.2, 0.8);
   Pose3 expected = T1 * Pose3::Expmap(x) * T2;
   Vector y = T2.inverse().Adjoint(x);
   Pose3 actual = T1 * T2 * Pose3::Expmap(y);
@@ -510,7 +510,7 @@ TEST(Pose3, subgroups)
 {
   // Frank - Below only works for correct "Agrawal06iros style expmap
   // lines in canonical coordinates correspond to Abelian subgroups in SE(3)
-   Vector d = (Vec(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
+   Vector d = (Vector(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
   // exp(-d)=inverse(exp(d))
    EXPECT(assert_equal(Pose3::Expmap(-d),Pose3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -675,7 +675,7 @@ TEST(Pose3, align_2) {
 /// exp(xi) exp(y) = exp(xi + x)
 /// Hence, y = log (exp(-xi)*exp(xi+x))
 
-Vector xi = (Vec(6) << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0);
+Vector xi = (Vector(6) << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0);
 
 Vector testDerivExpmapInv(const LieVector& dxi) {
   Vector y = Pose3::Logmap(Pose3::Expmap(-xi)*Pose3::Expmap(xi+dxi));
@@ -723,8 +723,8 @@ Vector testDerivAdjointTranspose(const LieVector& xi, const LieVector& v) {
 }
 
 TEST( Pose3, adjointTranspose) {
-  Vector xi = (Vec(6) << 0.01, 0.02, 0.03, 1.0, 2.0, 3.0);
-  Vector v = (Vec(6) << 0.04, 0.05, 0.06, 4.0, 5.0, 6.0);
+  Vector xi = (Vector(6) << 0.01, 0.02, 0.03, 1.0, 2.0, 3.0);
+  Vector v = (Vector(6) << 0.04, 0.05, 0.06, 4.0, 5.0, 6.0);
   Vector expected = testDerivAdjointTranspose(xi, v);
 
   Matrix actualH;

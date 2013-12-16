@@ -58,7 +58,7 @@ namespace gtsam {
     LieScalar retract(const Vector& v) const { return LieScalar(value() + v(0)); }
 
     /** @return the local coordinates of another object */
-    Vector localCoordinates(const LieScalar& t2) const { return (Vec(1) << (t2.value() - value())); }
+    Vector localCoordinates(const LieScalar& t2) const { return (Vector(1) << (t2.value() - value())); }
 
     // Group requirements
 
@@ -96,7 +96,7 @@ namespace gtsam {
     static LieScalar Expmap(const Vector& v) { return LieScalar(v(0)); }
 
     /** Logmap around identity - just returns with default cast back */
-    static Vector Logmap(const LieScalar& p) { return (Vec(1) << p.value()); }
+    static Vector Logmap(const LieScalar& p) { return (Vector(1) << p.value()); }
 
     /// Left-trivialized derivative of the exponential map
     static Matrix dexpL(const Vector& v) {

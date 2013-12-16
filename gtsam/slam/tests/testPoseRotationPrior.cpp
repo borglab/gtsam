@@ -18,8 +18,8 @@
 
 using namespace gtsam;
 
-const SharedNoiseModel model1 = noiseModel::Diagonal::Sigmas((Vec(1) << 0.1));
-const SharedNoiseModel model3 = noiseModel::Diagonal::Sigmas((Vec(3) << 0.1, 0.2, 0.3));
+const SharedNoiseModel model1 = noiseModel::Diagonal::Sigmas((Vector(1) << 0.1));
+const SharedNoiseModel model3 = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.2, 0.3));
 
 typedef PoseRotationPrior<Pose2> Pose2RotationPrior;
 typedef PoseRotationPrior<Pose3> Pose3RotationPrior;
@@ -30,7 +30,7 @@ const gtsam::Key poseKey = 1;
 
 // Pose3 examples
 const Point3 point3A(1.0, 2.0, 3.0), point3B(4.0, 6.0, 8.0);
-const Rot3 rot3A, rot3B = Rot3::pitch(-M_PI_2), rot3C = Rot3::Expmap((Vec(3) << 0.1, 0.2, 0.3));
+const Rot3 rot3A, rot3B = Rot3::pitch(-M_PI_2), rot3C = Rot3::Expmap((Vector(3) << 0.1, 0.2, 0.3));
 
 // Pose2 examples
 const Point2 point2A(1.0, 2.0), point2B(4.0, 6.0);
@@ -62,7 +62,7 @@ TEST( testPoseRotationFactor, level3_error ) {
   Pose3 pose1(rot3A, point3A);
   Pose3RotationPrior factor(poseKey, rot3C, model3);
   Matrix actH1;
-  EXPECT(assert_equal((Vec(3) << -0.1,-0.2,-0.3), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal((Vector(3) << -0.1,-0.2,-0.3), factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
       boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
@@ -84,7 +84,7 @@ TEST( testPoseRotationFactor, level2_error ) {
   Pose2 pose1(rot2A, point2A);
   Pose2RotationPrior factor(poseKey, rot2B, model1);
   Matrix actH1;
-  EXPECT(assert_equal((Vec(1) << -M_PI_2), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal((Vector(1) << -M_PI_2), factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
       boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));

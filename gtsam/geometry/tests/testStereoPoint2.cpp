@@ -44,8 +44,8 @@ TEST(StereoPoint2, Lie) {
 
   EXPECT(assert_equal(StereoPoint2(3,3,3), p1.between(p2)));
 
-  EXPECT(assert_equal(StereoPoint2(5,7,9), p1.retract((Vec(3) << 4., 5., 6.))));
-  EXPECT(assert_equal((Vec(3) << 3., 3., 3.), p1.localCoordinates(p2)));
+  EXPECT(assert_equal(StereoPoint2(5,7,9), p1.retract((Vector(3) << 4., 5., 6.))));
+  EXPECT(assert_equal((Vector(3) << 3., 3., 3.), p1.localCoordinates(p2)));
 }
 
 /* ************************************************************************* */

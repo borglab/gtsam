@@ -25,7 +25,6 @@
 #include <iostream>
 #include <gtsam/global_includes.h>
 #include <gtsam/3rdparty/gtsam_eigen_includes.h>
-#include <gtsam/base/SpecialCommaInitializer.h>
 
 namespace gtsam {
 

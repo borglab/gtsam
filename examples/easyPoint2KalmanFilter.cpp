@@ -37,7 +37,7 @@ int main() {
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.0, 0.0);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vec(2) << 0.1, 0.1));
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
 
   // Create Key for initial pose
   Symbol x0('x',0);
@@ -57,8 +57,8 @@ int main() {
   // For the purposes of this example, let us assume we are using a constant-position model and
   // the controls are driving the point to the right at 1 m/s. Then, F = [1 0 ; 0 1], B = [1 0 ; 0 1]
   // and u = [1 ; 0]. Let us also assume that the process noise Q = [0.1 0 ; 0 0.1].
-  Vector u = (Vec(2) << 1.0, 0.0);
-  SharedDiagonal Q = noiseModel::Diagonal::Sigmas((Vec(2) << 0.1, 0.1), true);
+  Vector u = (Vector(2) << 1.0, 0.0);
+  SharedDiagonal Q = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1), true);
 
   // This simple motion can be modeled with a BetweenFactor
   // Create Key for next pose
@@ -83,7 +83,7 @@ int main() {
   // For the purposes of this example, let us assume we have something like a GPS that returns
   // the current position of the robot. Then H = [1 0 ; 0 1]. Let us also assume that the measurement noise
   // R = [0.25 0 ; 0 0.25].
-  SharedDiagonal R = noiseModel::Diagonal::Sigmas((Vec(2) << 0.25, 0.25), true);
+  SharedDiagonal R = noiseModel::Diagonal::Sigmas((Vector(2) << 0.25, 0.25), true);
 
   // This simple measurement can be modeled with a PriorFactor
   Point2 z1(1.0, 0.0);

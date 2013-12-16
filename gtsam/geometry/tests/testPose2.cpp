@@ -68,7 +68,7 @@ TEST(Pose2, retract) {
 #else
   Pose2 expected(M_PI/2.0+0.99, Point2(1.015, 2.01));
 #endif
-  Pose2 actual = pose.retract((Vec(3) << 0.01, -0.015, 0.99));
+  Pose2 actual = pose.retract((Vector(3) << 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -76,7 +76,7 @@ TEST(Pose2, retract) {
 TEST(Pose2, expmap) {
   Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
-  Pose2 actual = expmap_default<Pose2>(pose, (Vec(3) << 0.01, -0.015, 0.99));
+  Pose2 actual = expmap_default<Pose2>(pose, (Vector(3) << 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -84,7 +84,7 @@ TEST(Pose2, expmap) {
 TEST(Pose2, expmap2) {
   Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
-  Pose2 actual = expmap_default<Pose2>(pose, (Vec(3) << 0.01, -0.015, 0.99));
+  Pose2 actual = expmap_default<Pose2>(pose, (Vector(3) << 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -92,14 +92,14 @@ TEST(Pose2, expmap2) {
 TEST(Pose2, expmap3) {
   // do an actual series exponential map
   // see e.g. http://www.cis.upenn.edu/~cis610/cis610lie1.ps
-  Matrix A = (Mat(3,3) <<
+  Matrix A = (Matrix(3,3) <<
       0.0, -0.99,  0.01,
       0.99,  0.0, -0.015,
       0.0,   0.0,  0.0);
   Matrix A2 = A*A/2.0, A3 = A2*A/3.0, A4=A3*A/4.0;
   Matrix expected = eye(3) + A + A2 + A3 + A4;
 
-  Vector v = (Vec(3) << 0.01, -0.015, 0.99);
+  Vector v = (Vector(3) << 0.01, -0.015, 0.99);
   Pose2 pose = Pose2::Expmap(v);
   Pose2 pose2(v);
   EXPECT(assert_equal(pose, pose2));
@@ -110,7 +110,7 @@ TEST(Pose2, expmap3) {
 /* ************************************************************************* */
 TEST(Pose2, expmap0a) {
   Pose2 expected(0.0101345, -0.0149092, 0.018);
-  Pose2 actual = Pose2::Expmap((Vec(3) << 0.01, -0.015, 0.018));
+  Pose2 actual = Pose2::Expmap((Vector(3) << 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -118,7 +118,7 @@ TEST(Pose2, expmap0a) {
 TEST(Pose2, expmap0b) {
   // a quarter turn
   Pose2 expected(1.0, 1.0, M_PI/2);
-  Pose2 actual = Pose2::Expmap((Vec(3) << M_PI/2, 0.0, M_PI/2));
+  Pose2 actual = Pose2::Expmap((Vector(3) << M_PI/2, 0.0, M_PI/2));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -126,7 +126,7 @@ TEST(Pose2, expmap0b) {
 TEST(Pose2, expmap0c) {
   // a half turn
   Pose2 expected(0.0, 2.0, M_PI);
-  Pose2 actual = Pose2::Expmap((Vec(3) << M_PI, 0.0, M_PI));
+  Pose2 actual = Pose2::Expmap((Vector(3) << M_PI, 0.0, M_PI));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -134,7 +134,7 @@ TEST(Pose2, expmap0c) {
 TEST(Pose2, expmap0d) {
   // a full turn
   Pose2 expected(0, 0, 0);
-  Pose2 actual = Pose2::Expmap((Vec(3) << 2*M_PI, 0.0, 2*M_PI));
+  Pose2 actual = Pose2::Expmap((Vector(3) << 2*M_PI, 0.0, 2*M_PI));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -143,7 +143,7 @@ TEST(Pose2, expmap0d) {
 // test case for screw motion in the plane
 namespace screw {
   double w=0.3;
-  Vector xi = (Vec(3) << 0.0, w, w);
+  Vector xi = (Vector(3) << 0.0, w, w);
   Rot2 expectedR = Rot2::fromAngle(w);
   Point2 expectedT(-0.0446635, 0.29552);
   Pose2 expected(expectedR, expectedT);
@@ -161,7 +161,7 @@ TEST(Pose3, expmap_c)
 TEST(Pose2, expmap_c_full)
 {
   double w=0.3;
-  Vector xi = (Vec(3) << 0.0, w, w);
+  Vector xi = (Vector(3) << 0.0, w, w);
   Rot2 expectedR = Rot2::fromAngle(w);
   Point2 expectedT(-0.0446635, 0.29552);
   Pose2 expected(expectedR, expectedT);
@@ -175,9 +175,9 @@ TEST(Pose2, logmap) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
-  Vector expected = (Vec(3) << 0.00986473, -0.0150896, 0.018);
+  Vector expected = (Vector(3) << 0.00986473, -0.0150896, 0.018);
 #else
-  Vector expected = (Vec(3) << 0.01, -0.015, 0.018);
+  Vector expected = (Vector(3) << 0.01, -0.015, 0.018);
 #endif
   Vector actual = pose0.localCoordinates(pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -187,7 +187,7 @@ TEST(Pose2, logmap) {
 TEST(Pose2, logmap_full) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
-  Vector expected = (Vec(3) << 0.00986473, -0.0150896, 0.018);
+  Vector expected = (Vector(3) << 0.00986473, -0.0150896, 0.018);
   Vector actual = logmap_default<Pose2>(pose0, pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
@@ -204,8 +204,8 @@ TEST( Pose2, transform_to )
 
   // expected
   Point2 expected(2,2);
-  Matrix expectedH1 = (Mat(2,3) << -1.0, 0.0, 2.0,  0.0, -1.0, -2.0);
-  Matrix expectedH2 = (Mat(2,2) << 0.0, 1.0,  -1.0, 0.0);
+  Matrix expectedH1 = (Matrix(2,3) << -1.0, 0.0, 2.0,  0.0, -1.0, -2.0);
+  Matrix expectedH2 = (Matrix(2,2) << 0.0, 1.0,  -1.0, 0.0);
 
   // actual
   Matrix actualH1, actualH2;
@@ -236,8 +236,8 @@ TEST (Pose2, transform_from)
   Point2 expected(0., 2.);
   EXPECT(assert_equal(expected, actual));
 
-  Matrix H1_expected = (Mat(2, 3) << 0., -1., -2., 1., 0., -1.);
-  Matrix H2_expected = (Mat(2, 2) << 0., -1., 1., 0.);
+  Matrix H1_expected = (Matrix(2, 3) << 0., -1., -2., 1., 0., -1.);
+  Matrix H2_expected = (Matrix(2, 2) << 0., -1., 1., 0.);
 
   Matrix numericalH1 = numericalDerivative21(transform_from_proxy, pose, pt);
   EXPECT(assert_equal(H1_expected, H1));
@@ -261,7 +261,7 @@ TEST(Pose2, compose_a)
   Pose2 expected(3.0*M_PI/4.0, Point2(-sqrt(0.5), 3.0*sqrt(0.5)));
   EXPECT(assert_equal(expected, actual));
 
-  Matrix expectedH1 = (Mat(3,3) <<
+  Matrix expectedH1 = (Matrix(3,3) <<
       0.0, 1.0, 0.0,
        -1.0, 0.0, 2.0,
       0.0, 0.0, 1.0
@@ -348,14 +348,14 @@ TEST(Pose2, inverse )
 namespace {
   /* ************************************************************************* */
   Vector homogeneous(const Point2& p) {
-    return (Vec(3) << p.x(), p.y(), 1.0);
+    return (Vector(3) << p.x(), p.y(), 1.0);
   }
 
   /* ************************************************************************* */
   Matrix matrix(const Pose2& gTl) {
     Matrix gRl = gTl.r().matrix();
     Point2 gt = gTl.t();
-    return (Mat(3, 3) <<
+    return (Matrix(3, 3) <<
       gRl(0, 0), gRl(0, 1), gt.x(),
       gRl(1, 0), gRl(1, 1), gt.y(),
       0.0,       0.0,   1.0);
@@ -368,7 +368,7 @@ TEST( Pose2, matrix )
   Point2 origin, t(1,2);
   Pose2 gTl(M_PI/2.0, t); // robot at (1,2) looking towards y
   Matrix gMl = matrix(gTl);
-  EXPECT(assert_equal((Mat(3,3) <<
+  EXPECT(assert_equal((Matrix(3,3) <<
       0.0, -1.0, 1.0,
       1.0,  0.0, 2.0,
       0.0,  0.0, 1.0),
@@ -376,7 +376,7 @@ TEST( Pose2, matrix )
   Rot2 gR1 = gTl.r();
   EXPECT(assert_equal(homogeneous(t),gMl*homogeneous(origin)));
   Point2 x_axis(1,0), y_axis(0,1);
-  EXPECT(assert_equal((Mat(2,2) <<
+  EXPECT(assert_equal((Matrix(2,2) <<
       0.0, -1.0,
       1.0,  0.0),
       gR1.matrix()));
@@ -387,7 +387,7 @@ TEST( Pose2, matrix )
 
   // check inverse pose
   Matrix lMg = matrix(gTl.inverse());
-  EXPECT(assert_equal((Mat(3,3) <<
+  EXPECT(assert_equal((Matrix(3,3) <<
       0.0,  1.0,-2.0,
      -1.0,  0.0, 1.0,
       0.0,  0.0, 1.0),
@@ -421,7 +421,7 @@ TEST( Pose2, between )
   EXPECT(assert_equal(expected,actual1));
   EXPECT(assert_equal(expected,actual2));
 
-  Matrix expectedH1 = (Mat(3,3) <<
+  Matrix expectedH1 = (Matrix(3,3) <<
       0.0,-1.0,-2.0,
       1.0, 0.0,-2.0,
       0.0, 0.0,-1.0
@@ -432,7 +432,7 @@ TEST( Pose2, between )
   // Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
   EXPECT(assert_equal(-gT2.between(gT1).AdjointMap(),actualH1));
 
-  Matrix expectedH2 = (Mat(3,3) <<
+  Matrix expectedH2 = (Matrix(3,3) <<
        1.0, 0.0, 0.0,
        0.0, 1.0, 0.0,
        0.0, 0.0, 1.0

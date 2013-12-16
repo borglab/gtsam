@@ -32,7 +32,7 @@ static const double tol = 1e-9;
 /* ************************************************************************* */
 TEST( matrix, constructor_data )
 {
-  Matrix A = (Mat(2, 2) << -5, 3, 0, -5);
+  Matrix A = (Matrix(2, 2) << -5, 3, 0, -5);
 
   Matrix B(2, 2);
   B(0, 0) = -5;
@@ -58,7 +58,7 @@ TEST( matrix, constructor_vector )
 /* ************************************************************************* */
 TEST( matrix, Matrix_ )
 {
-  Matrix A = (Mat(2, 2) << -5.0, 3.0, 00.0, -5.0);
+  Matrix A = (Matrix(2, 2) << -5.0, 3.0, 00.0, -5.0);
   Matrix B(2, 2);
   B(0, 0) = -5;
   B(0, 1) = 3;
@@ -94,17 +94,17 @@ TEST( matrix, special_comma_initializer)
   expected(1,0) = 3;
   expected(1,1) = 4;
 
-  Matrix actual1 = (Mat(2,2) << 1, 2, 3, 4);
-  Matrix actual2((Mat(2,2) << 1, 2, 3, 4));
+  Matrix actual1 = (Matrix(2,2) << 1, 2, 3, 4);
+  Matrix actual2((Matrix(2,2) << 1, 2, 3, 4));
 
-  Matrix submat1 = (Mat(1,2) << 3, 4);
-  Matrix actual3 = (Mat(2,2) << 1, 2, submat1);
+  Matrix submat1 = (Matrix(1,2) << 3, 4);
+  Matrix actual3 = (Matrix(2,2) << 1, 2, submat1);
 
-  Matrix submat2 = (Mat(1,2) << 1, 2);
-  Matrix actual4 = (Mat(2,2) << submat2, 3, 4);
+  Matrix submat2 = (Matrix(1,2) << 1, 2);
+  Matrix actual4 = (Matrix(2,2) << submat2, 3, 4);
 
-  Matrix actual5 = testFcn1((Mat(2,2) << 1, 2, 3, 4));
-  Matrix actual6 = testFcn2((Mat(2,2) << 1, 2, 3, 4));
+  Matrix actual5 = testFcn1((Matrix(2,2) << 1, 2, 3, 4));
+  Matrix actual6 = testFcn2((Matrix(2,2) << 1, 2, 3, 4));
 
   EXPECT(assert_equal(expected, actual1));
   EXPECT(assert_equal(expected, actual2));
@@ -117,7 +117,7 @@ TEST( matrix, special_comma_initializer)
 /* ************************************************************************* */
 TEST( matrix, col_major )
 {
-  Matrix A = (Mat(2, 2) << 1.0, 2.0, 3.0, 4.0);
+  Matrix A = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0);
   const double * const a = &A(0, 0);
   EXPECT_DOUBLES_EQUAL(1, a[0], tol);
   EXPECT_DOUBLES_EQUAL(3, a[1], tol);
@@ -128,8 +128,8 @@ TEST( matrix, col_major )
 /* ************************************************************************* */
 TEST( matrix, collect1 )
 {
-  Matrix A = (Mat(2, 2) << -5.0, 3.0, 00.0, -5.0);
-  Matrix B = (Mat(2, 3) << -0.5, 2.1, 1.1, 3.4, 2.6, 7.1);
+  Matrix A = (Matrix(2, 2) << -5.0, 3.0, 00.0, -5.0);
+  Matrix B = (Matrix(2, 3) << -0.5, 2.1, 1.1, 3.4, 2.6, 7.1);
   Matrix AB = collect(2, &A, &B);
   Matrix C(2, 5);
   for (int i = 0; i < 2; i++)
@@ -145,8 +145,8 @@ TEST( matrix, collect1 )
 /* ************************************************************************* */
 TEST( matrix, collect2 )
 {
-  Matrix A = (Mat(2, 2) << -5.0, 3.0, 00.0, -5.0);
-  Matrix B = (Mat(2, 3) << -0.5, 2.1, 1.1, 3.4, 2.6, 7.1);
+  Matrix A = (Matrix(2, 2) << -5.0, 3.0, 00.0, -5.0);
+  Matrix B = (Matrix(2, 3) << -0.5, 2.1, 1.1, 3.4, 2.6, 7.1);
   vector<const Matrix*> matrices;
   matrices.push_back(&A);
   matrices.push_back(&B);
@@ -172,7 +172,7 @@ TEST( matrix, collect3 )
   matrices.push_back(&A);
   matrices.push_back(&B);
   Matrix AB = collect(matrices, 2, 3);
-  Matrix exp = (Mat(2, 6) <<
+  Matrix exp = (Matrix(2, 6) <<
       1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
       0.0, 1.0, 0.0, 0.0, 1.0, 0.0);
 
@@ -182,8 +182,8 @@ TEST( matrix, collect3 )
 /* ************************************************************************* */
 TEST( matrix, stack )
 {
-  Matrix A = (Mat(2, 2) << -5.0, 3.0, 00.0, -5.0);
-  Matrix B = (Mat(3, 2) << -0.5, 2.1, 1.1, 3.4, 2.6, 7.1);
+  Matrix A = (Matrix(2, 2) << -5.0, 3.0, 00.0, -5.0);
+  Matrix B = (Matrix(3, 2) << -0.5, 2.1, 1.1, 3.4, 2.6, 7.1);
   Matrix AB = stack(2, &A, &B);
   Matrix C(5, 2);
   for (int i = 0; i < 2; i++)
@@ -205,19 +205,19 @@ TEST( matrix, stack )
 /* ************************************************************************* */
 TEST( matrix, column )
 {
-  Matrix A = (Mat(4, 7) << -1., 0., 1., 0., 0., 0., -0.2, 0., -1., 0., 1.,
+  Matrix A = (Matrix(4, 7) << -1., 0., 1., 0., 0., 0., -0.2, 0., -1., 0., 1.,
       0., 0., 0.3, 1., 0., 0., 0., -1., 0., 0.2, 0., 1., 0., 0., 0., -1.,
       -0.1);
   Vector a1 = column(A, 0);
-  Vector exp1 = (Vec(4) << -1., 0., 1., 0.);
+  Vector exp1 = (Vector(4) << -1., 0., 1., 0.);
   EXPECT(assert_equal(a1, exp1));
 
   Vector a2 = column(A, 3);
-  Vector exp2 = (Vec(4) << 0., 1., 0., 0.);
+  Vector exp2 = (Vector(4) << 0., 1., 0., 0.);
   EXPECT(assert_equal(a2, exp2));
 
   Vector a3 = column(A, 6);
-  Vector exp3 = (Vec(4) << -0.2, 0.3, 0.2, -0.1);
+  Vector exp3 = (Vector(4) << -0.2, 0.3, 0.2, -0.1);
   EXPECT(assert_equal(a3, exp3));
 }
 
@@ -230,7 +230,7 @@ TEST( matrix, insert_column )
 
   insertColumn(big, col, j);
 
-  Matrix expected = (Mat(5, 6) <<
+  Matrix expected = (Matrix(5, 6) <<
       0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
@@ -253,7 +253,7 @@ TEST( matrix, insert_subcolumn )
   Vector col2 = ones(1);
   insertColumn(big, col2, 4, 5); // check 2
 
-  Matrix expected = (Mat(5, 6) <<
+  Matrix expected = (Matrix(5, 6) <<
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
@@ -266,19 +266,19 @@ TEST( matrix, insert_subcolumn )
 /* ************************************************************************* */
 TEST( matrix, row )
 {
-  Matrix A = (Mat(4, 7) << -1., 0., 1., 0., 0., 0., -0.2, 0., -1., 0., 1.,
+  Matrix A = (Matrix(4, 7) << -1., 0., 1., 0., 0., 0., -0.2, 0., -1., 0., 1.,
       0., 0., 0.3, 1., 0., 0., 0., -1., 0., 0.2, 0., 1., 0., 0., 0., -1.,
       -0.1);
   Vector a1 = row(A, 0);
-  Vector exp1 = (Vec(7) << -1., 0., 1., 0., 0., 0., -0.2);
+  Vector exp1 = (Vector(7) << -1., 0., 1., 0., 0., 0., -0.2);
   EXPECT(assert_equal(a1, exp1));
 
   Vector a2 = row(A, 2);
-  Vector exp2 = (Vec(7) << 1., 0., 0., 0., -1., 0., 0.2);
+  Vector exp2 = (Vector(7) << 1., 0., 0., 0., -1., 0., 0.2);
   EXPECT(assert_equal(a2, exp2));
 
   Vector a3 = row(A, 3);
-  Vector exp3 = (Vec(7) << 0., 1., 0., 0., 0., -1., -0.1);
+  Vector exp3 = (Vector(7) << 0., 1., 0., 0., 0., -1., -0.1);
   EXPECT(assert_equal(a3, exp3));
 }
 
@@ -301,12 +301,12 @@ TEST( matrix, zeros )
 /* ************************************************************************* */
 TEST( matrix, insert_sub )
 {
-  Matrix big = zeros(5, 6), small = (Mat(2, 3) << 1.0, 1.0, 1.0, 1.0, 1.0,
+  Matrix big = zeros(5, 6), small = (Matrix(2, 3) << 1.0, 1.0, 1.0, 1.0, 1.0,
       1.0);
 
   insertSub(big, small, 1, 2);
 
-  Matrix expected = (Mat(5, 6) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+  Matrix expected = (Matrix(5, 6) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
@@ -323,7 +323,7 @@ TEST( matrix, diagMatrices )
 
   Matrix actual = diag(Hs);
 
-  Matrix expected = (Mat(9, 9) <<
+  Matrix expected = (Matrix(9, 9) <<
       1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -339,7 +339,7 @@ TEST( matrix, diagMatrices )
 
 /* ************************************************************************* */
 TEST( matrix, stream_read ) {
-  Matrix expected = (Mat(3,4) <<
+  Matrix expected = (Matrix(3,4) <<
     1.1, 2.3, 4.2, 7.6,
     -0.3, -8e-2, 5.1, 9.0,
     1.2, 3.4, 4.5, 6.7);
@@ -374,7 +374,7 @@ TEST( matrix, scale_columns )
   A(2, 2) = 1.;
   A(2, 3) = 1.;
 
-  Vector v = (Vec(4) << 2., 3., 4., 5.);
+  Vector v = (Vector(4) << 2., 3., 4., 5.);
 
   Matrix actual = vector_scale(A, v);
 
@@ -412,7 +412,7 @@ TEST( matrix, scale_rows )
   A(2, 2) = 1.;
   A(2, 3) = 1.;
 
-  Vector v = (Vec(3) << 2., 3., 4.);
+  Vector v = (Vector(3) << 2., 3., 4.);
 
   Matrix actual = vector_scale(v, A);
 
@@ -450,7 +450,7 @@ TEST( matrix, scale_rows_mask )
   A(2, 2) = 1.;
   A(2, 3) = 1.;
 
-  Vector v = (Vec(3) << 2., std::numeric_limits<double>::infinity(), 4.);
+  Vector v = (Vector(3) << 2., std::numeric_limits<double>::infinity(), 4.);
 
   Matrix actual = vector_scale(v, A, true);
 
@@ -533,18 +533,18 @@ TEST( matrix, equal_nan )
 /* ************************************************************************* */
 TEST( matrix, addition )
 {
-  Matrix A = (Mat(2, 2) << 1.0, 2.0, 3.0, 4.0);
-  Matrix B = (Mat(2, 2) << 4.0, 3.0, 2.0, 1.0);
-  Matrix C = (Mat(2, 2) << 5.0, 5.0, 5.0, 5.0);
+  Matrix A = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0);
+  Matrix B = (Matrix(2, 2) << 4.0, 3.0, 2.0, 1.0);
+  Matrix C = (Matrix(2, 2) << 5.0, 5.0, 5.0, 5.0);
   EQUALITY(A+B,C);
 }
 
 /* ************************************************************************* */
 TEST( matrix, addition_in_place )
 {
-  Matrix A = (Mat(2, 2) << 1.0, 2.0, 3.0, 4.0);
-  Matrix B = (Mat(2, 2) << 4.0, 3.0, 2.0, 1.0);
-  Matrix C = (Mat(2, 2) << 5.0, 5.0, 5.0, 5.0);
+  Matrix A = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0);
+  Matrix B = (Matrix(2, 2) << 4.0, 3.0, 2.0, 1.0);
+  Matrix C = (Matrix(2, 2) << 5.0, 5.0, 5.0, 5.0);
   A += B;
   EQUALITY(A,C);
 }
@@ -552,18 +552,18 @@ TEST( matrix, addition_in_place )
 /* ************************************************************************* */
 TEST( matrix, subtraction )
 {
-  Matrix A = (Mat(2, 2) << 1.0, 2.0, 3.0, 4.0);
-  Matrix B = (Mat(2, 2) << 4.0, 3.0, 2.0, 1.0);
-  Matrix C = (Mat(2, 2) << -3.0, -1.0, 1.0, 3.0);
+  Matrix A = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0);
+  Matrix B = (Matrix(2, 2) << 4.0, 3.0, 2.0, 1.0);
+  Matrix C = (Matrix(2, 2) << -3.0, -1.0, 1.0, 3.0);
   EQUALITY(A-B,C);
 }
 
 /* ************************************************************************* */
 TEST( matrix, subtraction_in_place )
 {
-  Matrix A = (Mat(2, 2) << 1.0, 2.0, 3.0, 4.0);
-  Matrix B = (Mat(2, 2) << 4.0, 3.0, 2.0, 1.0);
-  Matrix C = (Mat(2, 2) << -3.0, -1.0, 1.0, 3.0);
+  Matrix A = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0);
+  Matrix B = (Matrix(2, 2) << 4.0, 3.0, 2.0, 1.0);
+  Matrix C = (Matrix(2, 2) << -3.0, -1.0, 1.0, 3.0);
   A -= B;
   EQUALITY(A,C);
 }
@@ -613,10 +613,10 @@ TEST( matrix, matrix_vector_multiplication )
 {
   Vector result(2);
 
-  Matrix A = (Mat(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-  Vector v = (Vec(3) << 1., 2., 3.);
-  Vector Av = (Vec(2) << 14., 32.);
-  Vector AtAv = (Vec(3) << 142., 188., 234.);
+  Matrix A = (Matrix(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+  Vector v = (Vector(3) << 1., 2., 3.);
+  Vector Av = (Vector(2) << 14., 32.);
+  Vector AtAv = (Vector(3) << 142., 188., 234.);
 
   EQUALITY(A*v,Av);
   EQUALITY(A^Av,AtAv);
@@ -650,12 +650,12 @@ TEST( matrix, scalar_divide )
 
 /* ************************************************************************* */
 TEST( matrix, zero_below_diagonal ) {
-  Matrix A1 = (Mat(3, 4) <<
+  Matrix A1 = (Matrix(3, 4) <<
       1.0, 2.0, 3.0, 4.0,
       1.0, 2.0, 3.0, 4.0,
       1.0, 2.0, 3.0, 4.0);
 
-  Matrix expected1 = (Mat(3, 4) <<
+  Matrix expected1 = (Matrix(3, 4) <<
       1.0, 2.0, 3.0, 4.0,
       0.0, 2.0, 3.0, 4.0,
       0.0, 0.0, 3.0, 4.0);
@@ -671,13 +671,13 @@ TEST( matrix, zero_below_diagonal ) {
   zeroBelowDiagonal(actual1c, 4);
   EXPECT(assert_equal(Matrix(expected1), actual1c, 1e-10));
 
-  Matrix A2 = (Mat(5, 3) <<
+  Matrix A2 = (Matrix(5, 3) <<
         1.0, 2.0, 3.0,
         1.0, 2.0, 3.0,
         1.0, 2.0, 3.0,
         1.0, 2.0, 3.0,
         1.0, 2.0, 3.0);
-  Matrix expected2 = (Mat(5, 3) <<
+  Matrix expected2 = (Matrix(5, 3) <<
       1.0, 2.0, 3.0,
       0.0, 2.0, 3.0,
       0.0, 0.0, 3.0,
@@ -692,7 +692,7 @@ TEST( matrix, zero_below_diagonal ) {
   zeroBelowDiagonal(actual2c);
   EXPECT(assert_equal(Matrix(expected2), actual2c, 1e-10));
 
-  Matrix expected2_partial = (Mat(5, 3) <<
+  Matrix expected2_partial = (Matrix(5, 3) <<
         1.0, 2.0, 3.0,
         0.0, 2.0, 3.0,
         0.0, 2.0, 3.0,
@@ -735,14 +735,14 @@ TEST( matrix, inverse )
   EXPECT(assert_equal(expected, Ainv, 1e-4));
 
   // These two matrices failed before version 2003 because we called LU incorrectly
-  Matrix lMg((Mat(3, 3) << 0.0, 1.0, -2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0));
-  EXPECT(assert_equal((Mat(3, 3) <<
+  Matrix lMg((Matrix(3, 3) << 0.0, 1.0, -2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0));
+  EXPECT(assert_equal((Matrix(3, 3) <<
       0.0, -1.0, 1.0,
       1.0, 0.0, 2.0,
       0.0, 0.0, 1.0),
       inverse(lMg)));
-  Matrix gMl((Mat(3, 3) << 0.0, -1.0, 1.0, 1.0, 0.0, 2.0, 0.0, 0.0, 1.0));
-  EXPECT(assert_equal((Mat(3, 3) <<
+  Matrix gMl((Matrix(3, 3) << 0.0, -1.0, 1.0, 1.0, 0.0, 2.0, 0.0, 0.0, 1.0));
+  EXPECT(assert_equal((Matrix(3, 3) <<
       0.0, 1.0,-2.0,
       -1.0, 0.0, 1.0,
       0.0, 0.0, 1.0),
@@ -783,19 +783,19 @@ TEST( matrix, inverse2 )
 TEST( matrix, backsubtitution )
 {
   // TEST ONE  2x2 matrix U1*x=b1
-  Vector expected1 = (Vec(2) << 3.6250, -0.75);
-  Matrix U22 = (Mat(2, 2) << 2., 3., 0., 4.);
+  Vector expected1 = (Vector(2) << 3.6250, -0.75);
+  Matrix U22 = (Matrix(2, 2) << 2., 3., 0., 4.);
   Vector b1 = U22 * expected1;
   EXPECT( assert_equal(expected1 , backSubstituteUpper(U22, b1), 0.000001));
 
   // TEST TWO  3x3 matrix U2*x=b2
-  Vector expected2 = (Vec(3) << 5.5, -8.5, 5.);
-  Matrix U33 = (Mat(3, 3) << 3., 5., 6., 0., 2., 3., 0., 0., 1.);
+  Vector expected2 = (Vector(3) << 5.5, -8.5, 5.);
+  Matrix U33 = (Matrix(3, 3) << 3., 5., 6., 0., 2., 3., 0., 0., 1.);
   Vector b2 = U33 * expected2;
   EXPECT( assert_equal(expected2 , backSubstituteUpper(U33, b2), 0.000001));
 
   // TEST THREE  Lower triangular 3x3 matrix L3*x=b3
-  Vector expected3 = (Vec(3) << 1., 1., 1.);
+  Vector expected3 = (Vector(3) << 1., 1., 1.);
   Matrix L3 = trans(U33);
   Vector b3 = L3 * expected3;
   EXPECT( assert_equal(expected3 , backSubstituteLower(L3, b3), 0.000001));
@@ -809,11 +809,11 @@ TEST( matrix, householder )
 {
   // check in-place householder, with v vectors below diagonal
 
-  Matrix expected1 = (Mat(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
+  Matrix expected1 = (Matrix(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
       0, 11.1803,  0, -2.2361, 0, -8.9443, -1.565,
       -0.618034, 0, 4.4721, 0, -4.4721,  0, 0,
       0, -0.618034, 0, 4.4721, 0, -4.4721, 0.894);
-  Matrix A1 = (Mat(4, 7) << -5, 0, 5, 0, 0, 0, -1,
+  Matrix A1 = (Matrix(4, 7) << -5, 0, 5, 0, 0, 0, -1,
       00,-5, 0, 5, 0, 0, 1.5,
       10, 0, 0,  0,-10,0,   2,
       00, 10,0, 0, 0, -10, -1 );
@@ -822,10 +822,10 @@ TEST( matrix, householder )
 
   // in-place, with zeros below diagonal
 
-  Matrix expected = (Mat(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
+  Matrix expected = (Matrix(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
       0, -2.2361, 0, -8.9443, -1.565, 0, 0, 4.4721, 0, -4.4721, 0, 0, 0,
       0, 0, 4.4721, 0, -4.4721, 0.894);
-  Matrix A2 = (Mat(4, 7) << -5, 0, 5, 0, 0, 0, -1,
+  Matrix A2 = (Matrix(4, 7) << -5, 0, 5, 0, 0, 0, -1,
       00,-5, 0, 5, 0, 0, 1.5,
       10, 0, 0,  0,-10,0,   2,
       00, 10,0, 0, 0, -10, -1);
@@ -838,11 +838,11 @@ TEST( matrix, householder_colMajor )
 {
   // check in-place householder, with v vectors below diagonal
 
-  Matrix expected1((Mat(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
+  Matrix expected1((Matrix(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
       0, 11.1803,  0, -2.2361, 0, -8.9443, -1.565,
       -0.618034, 0, 4.4721, 0, -4.4721,  0, 0,
       0, -0.618034, 0, 4.4721, 0, -4.4721, 0.894));
-  Matrix A1((Mat(4, 7) << -5, 0, 5, 0, 0, 0, -1,
+  Matrix A1((Matrix(4, 7) << -5, 0, 5, 0, 0, 0, -1,
       00,-5, 0, 5, 0, 0, 1.5,
       10, 0, 0,  0,-10,0,   2,
       00, 10,0, 0, 0, -10, -1));
@@ -851,10 +851,10 @@ TEST( matrix, householder_colMajor )
 
   // in-place, with zeros below diagonal
 
-  Matrix expected((Mat(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
+  Matrix expected((Matrix(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
       0, -2.2361, 0, -8.9443, -1.565, 0, 0, 4.4721, 0, -4.4721, 0, 0, 0,
       0, 0, 4.4721, 0, -4.4721, 0.894));
-  Matrix A2((Mat(4, 7) << -5, 0, 5, 0, 0, 0, -1,
+  Matrix A2((Matrix(4, 7) << -5, 0, 5, 0, 0, 0, -1,
       00,-5, 0, 5, 0, 0, 1.5,
       10, 0, 0,  0,-10,0,   2,
       00, 10,0, 0, 0, -10, -1));
@@ -869,10 +869,10 @@ TEST( matrix, eigen_QR )
 
   // in-place, with zeros below diagonal
 
-  Matrix expected((Mat(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
+  Matrix expected((Matrix(4, 7) << 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
       0, -2.2361, 0, -8.9443, -1.565, 0, 0, 4.4721, 0, -4.4721, 0, 0, 0,
       0, 0, 4.4721, 0, -4.4721, 0.894));
-  Matrix A((Mat(4, 7) << -5, 0, 5, 0, 0, 0, -1,
+  Matrix A((Matrix(4, 7) << -5, 0, 5, 0, 0, 0, -1,
       00,-5, 0, 5, 0, 0, 1.5,
       10, 0, 0,  0,-10,0,   2,
       00, 10,0, 0, 0, -10, -1));
@@ -882,7 +882,7 @@ TEST( matrix, eigen_QR )
   EXPECT(assert_equal(expected, actual, 1e-3));
 
   // use shiny new in place QR inside gtsam
-  A = Matrix((Mat(4, 7) << -5, 0, 5, 0, 0, 0, -1,
+  A = Matrix((Matrix(4, 7) << -5, 0, 5, 0, 0, 0, -1,
       00,-5, 0, 5, 0, 0, 1.5,
       10, 0, 0,  0,-10,0,   2,
       00, 10,0, 0, 0, -10, -1));
@@ -897,16 +897,16 @@ TEST( matrix, eigen_QR )
 TEST( matrix, qr )
 {
 
-  Matrix A = (Mat(6, 4) << -5, 0, 5, 0, 00, -5, 0, 5, 10, 0, 0, 0, 00, 10, 0, 0, 00,
+  Matrix A = (Matrix(6, 4) << -5, 0, 5, 0, 00, -5, 0, 5, 10, 0, 0, 0, 00, 10, 0, 0, 00,
       0, 0, -10, 10, 0, -10, 0);
 
 
-  Matrix expectedQ = (Mat(6, 6) << -0.3333, 0, 0.2981, 0, 0, -0.8944, 0000000, -0.4472, 0,
+  Matrix expectedQ = (Matrix(6, 6) << -0.3333, 0, 0.2981, 0, 0, -0.8944, 0000000, -0.4472, 0,
       0.3651, -0.8165, 0, 00.6667, 0, 0.7454, 0, 0, 0, 0000000, 0.8944,
       0, 0.1826, -0.4082, 0, 0000000, 0, 0, -0.9129, -0.4082, 0, 00.6667,
       0, -0.5963, 0, 0, -0.4472);
 
-  Matrix expectedR = (Mat(6, 4) << 15, 0, -8.3333, 0, 00, 11.1803, 0, -2.2361, 00, 0,
+  Matrix expectedR = (Matrix(6, 4) << 15, 0, -8.3333, 0, 00, 11.1803, 0, -2.2361, 00, 0,
       7.4536, 0, 00, 0, 0, 10.9545, 00, 0, 0, 0, 00, 0, 0, 0);
 
   Matrix Q, R;
@@ -919,11 +919,11 @@ TEST( matrix, qr )
 /* ************************************************************************* */
 TEST( matrix, sub )
 {
-  Matrix A = (Mat(4, 6) << -5, 0, 5, 0, 0, 0, 00, -5, 0, 5, 0, 0, 10, 0, 0, 0, -10,
+  Matrix A = (Matrix(4, 6) << -5, 0, 5, 0, 0, 0, 00, -5, 0, 5, 0, 0, 10, 0, 0, 0, -10,
       0, 00, 10, 0, 0, 0, -10);
   Matrix actual = sub(A, 1, 3, 1, 5);
 
-  Matrix expected = (Mat(2, 4) << -5, 0, 5, 0, 00, 0, 0, -10);
+  Matrix expected = (Matrix(2, 4) << -5, 0, 5, 0, 00, 0, 0, -10);
 
   EQUALITY(actual,expected);
 }
@@ -931,15 +931,15 @@ TEST( matrix, sub )
 /* ************************************************************************* */
 TEST( matrix, trans )
 {
-  Matrix A = (Mat(2, 2) << 1.0, 3.0, 2.0, 4.0);
-  Matrix B = (Mat(2, 2) << 1.0, 2.0, 3.0, 4.0);
+  Matrix A = (Matrix(2, 2) << 1.0, 3.0, 2.0, 4.0);
+  Matrix B = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0);
   EQUALITY(trans(A),B);
 }
 
 /* ************************************************************************* */
 TEST( matrix, col_major_access )
 {
-  Matrix A = (Mat(2, 2) << 1.0, 2.0, 3.0, 4.0);
+  Matrix A = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0);
   const double* a = &A(0, 0);
   DOUBLES_EQUAL(2.0,a[2],1e-9);
 }
@@ -948,16 +948,16 @@ TEST( matrix, col_major_access )
 TEST( matrix, weighted_elimination )
 {
   // create a matrix to eliminate
-  Matrix A = (Mat(4, 6) << -1., 0., 1., 0., 0., 0., 0., -1., 0., 1., 0., 0.,
+  Matrix A = (Matrix(4, 6) << -1., 0., 1., 0., 0., 0., 0., -1., 0., 1., 0., 0.,
       1., 0., 0., 0., -1., 0., 0., 1., 0., 0., 0., -1.);
-  Vector b = (Vec(4) << -0.2, 0.3, 0.2, -0.1);
-  Vector sigmas = (Vec(4) << 0.2, 0.2, 0.1, 0.1);
+  Vector b = (Vector(4) << -0.2, 0.3, 0.2, -0.1);
+  Vector sigmas = (Vector(4) << 0.2, 0.2, 0.1, 0.1);
 
   //   expected values
-  Matrix expectedR = (Mat(4, 6) << 1., 0., -0.2, 0., -0.8, 0., 0., 1., 0.,
+  Matrix expectedR = (Matrix(4, 6) << 1., 0., -0.2, 0., -0.8, 0., 0., 1., 0.,
       -0.2, 0., -0.8, 0., 0., 1., 0., -1., 0., 0., 0., 0., 1., 0., -1.);
-  Vector d = (Vec(4) << 0.2, -0.14, 0.0, 0.2);
-  Vector newSigmas = (Vec(4) << 0.0894427, 0.0894427, 0.223607, 0.223607);
+  Vector d = (Vector(4) << 0.2, -0.14, 0.0, 0.2);
+  Vector newSigmas = (Vector(4) << 0.0894427, 0.0894427, 0.223607, 0.223607);
 
   Vector r;
   double di, sigma;
@@ -982,11 +982,11 @@ TEST( matrix, weighted_elimination )
 /* ************************************************************************* */
 TEST( matrix, inverse_square_root )
 {
-  Matrix measurement_covariance = (Mat(3, 3) << 0.25, 0.0, 0.0, 0.0, 0.25,
+  Matrix measurement_covariance = (Matrix(3, 3) << 0.25, 0.0, 0.0, 0.0, 0.25,
       0.0, 0.0, 0.0, 0.01);
   Matrix actual = inverse_square_root(measurement_covariance);
 
-  Matrix expected = (Mat(3, 3) << 2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
+  Matrix expected = (Matrix(3, 3) << 2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
       10.0);
 
   EQUALITY(expected,actual);
@@ -998,14 +998,14 @@ TEST( matrix, inverse_square_root )
   // use the same inverse routing inside inverse_square_root()
   // as we use here to check it.
 
-  Matrix M = (Mat(5, 5) <<
+  Matrix M = (Matrix(5, 5) <<
       0.0785892, 0.0137923, -0.0142219, -0.0171880, 0.0028726,
       0.0137923, 0.0908911, 0.0020775, -0.0101952, 0.0175868,
       -0.0142219, 0.0020775, 0.0973051, 0.0054906, 0.0047064,
       -0.0171880,-0.0101952, 0.0054906, 0.0892453, -0.0059468,
       0.0028726, 0.0175868, 0.0047064, -0.0059468, 0.0816517);
 
-  expected = (Mat(5, 5) <<
+  expected = (Matrix(5, 5) <<
       3.567126953241796, 0.000000000000000, 0.000000000000000, 0.000000000000000, 0.000000000000000,
       -0.590030436566913, 3.362022286742925, 0.000000000000000, 0.000000000000000, 0.000000000000000,
       0.618207860252376, -0.168166020746503, 3.253086082942785, 0.000000000000000, 0.000000000000000,
@@ -1020,13 +1020,13 @@ TEST( matrix, inverse_square_root )
 // we are checking against was generated via chol(M)' on octave
 TEST( matrix, LLt )
 {
-  Matrix M = (Mat(5, 5) << 0.0874197, -0.0030860, 0.0116969, 0.0081463,
+  Matrix M = (Matrix(5, 5) << 0.0874197, -0.0030860, 0.0116969, 0.0081463,
       0.0048741, -0.0030860, 0.0872727, 0.0183073, 0.0125325, -0.0037363,
       0.0116969, 0.0183073, 0.0966217, 0.0103894, -0.0021113, 0.0081463,
       0.0125325, 0.0103894, 0.0747324, 0.0036415, 0.0048741, -0.0037363,
       -0.0021113, 0.0036415, 0.0909464);
 
-  Matrix expected = (Mat(5, 5) <<
+  Matrix expected = (Matrix(5, 5) <<
       0.295668226226627, 0.000000000000000, 0.000000000000000, 0.000000000000000, 0.000000000000000,
       -0.010437374483502, 0.295235094820875, 0.000000000000000, 0.000000000000000, 0.000000000000000,
       0.039560896175007, 0.063407813693827, 0.301721866387571, 0.000000000000000, 0.000000000000000,
@@ -1039,8 +1039,8 @@ TEST( matrix, LLt )
 /* ************************************************************************* */
 TEST( matrix, multiplyAdd )
 {
-  Matrix A = (Mat(3, 4) << 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.);
-  Vector x = (Vec(4) << 1., 2., 3., 4.), e = (Vec(3) << 5., 6., 7.),
+  Matrix A = (Matrix(3, 4) << 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.);
+  Vector x = (Vector(4) << 1., 2., 3., 4.), e = (Vector(3) << 5., 6., 7.),
       expected = e + A * x;
 
   multiplyAdd(1, A, x, e);
@@ -1050,8 +1050,8 @@ TEST( matrix, multiplyAdd )
 /* ************************************************************************* */
 TEST( matrix, transposeMultiplyAdd )
 {
-  Matrix A = (Mat(3, 4) << 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.);
-  Vector x = (Vec(4) << 1., 2., 3., 4.), e = (Vec(3) << 5., 6., 7.),
+  Matrix A = (Matrix(3, 4) << 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.);
+  Vector x = (Vector(4) << 1., 2., 3., 4.), e = (Vector(3) << 5., 6., 7.),
       expected = x + trans(A) * e;
 
   transposeMultiplyAdd(1, A, e, x);
@@ -1061,31 +1061,31 @@ TEST( matrix, transposeMultiplyAdd )
 /* ************************************************************************* */
 TEST( matrix, linear_dependent )
 {
-  Matrix A = (Mat(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-  Matrix B = (Mat(2, 3) << -1.0, -2.0, -3.0, 8.0, 10.0, 12.0);
+  Matrix A = (Matrix(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+  Matrix B = (Matrix(2, 3) << -1.0, -2.0, -3.0, 8.0, 10.0, 12.0);
   EXPECT(linear_dependent(A, B));
 }
 
 /* ************************************************************************* */
 TEST( matrix, linear_dependent2 )
 {
-  Matrix A = (Mat(2, 3) << 0.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-  Matrix B = (Mat(2, 3) << 0.0, -2.0, -3.0, 8.0, 10.0, 12.0);
+  Matrix A = (Matrix(2, 3) << 0.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+  Matrix B = (Matrix(2, 3) << 0.0, -2.0, -3.0, 8.0, 10.0, 12.0);
   EXPECT(linear_dependent(A, B));
 }
 
 /* ************************************************************************* */
 TEST( matrix, linear_dependent3 )
 {
-  Matrix A = (Mat(2, 3) << 0.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-  Matrix B = (Mat(2, 3) << 0.0, -2.0, -3.0, 8.1, 10.0, 12.0);
+  Matrix A = (Matrix(2, 3) << 0.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+  Matrix B = (Matrix(2, 3) << 0.0, -2.0, -3.0, 8.1, 10.0, 12.0);
   EXPECT(linear_independent(A, B));
 }
 
 /* ************************************************************************* */
 TEST( matrix, svd1 )
 {
-  Vector v = (Vec(3) << 2., 1., 0.);
+  Vector v = (Vector(3) << 2., 1., 0.);
   Matrix U1 = eye(4, 3), S1 = diag(v), V1 = eye(3, 3), A = (U1 * S1)
       * Matrix(trans(V1));
   Matrix U, V;
@@ -1098,7 +1098,7 @@ TEST( matrix, svd1 )
 
 /* ************************************************************************* */
 /// Sample A matrix for SVD
-static Matrix sampleA = (Mat(3, 2) << 0.,-2., 0., 0., 3., 0.);
+static Matrix sampleA = (Matrix(3, 2) << 0.,-2., 0., 0., 3., 0.);
 static Matrix sampleAt = trans(sampleA);
 
 /* ************************************************************************* */
@@ -1107,9 +1107,9 @@ TEST( matrix, svd2 )
   Matrix U, V;
   Vector s;
 
-  Matrix expectedU = (Mat(3, 2) << 0.,-1.,0.,0.,1.,0.);
-  Vector expected_s = (Vec(2) << 3.,2.);
-  Matrix expectedV = (Mat(2, 2) << 1.,0.,0.,1.);
+  Matrix expectedU = (Matrix(3, 2) << 0.,-1.,0.,0.,1.,0.);
+  Vector expected_s = (Vector(2) << 3.,2.);
+  Matrix expectedV = (Matrix(2, 2) << 1.,0.,0.,1.);
 
   svd(sampleA, U, s, V);
 
@@ -1124,9 +1124,9 @@ TEST( matrix, svd3 )
   Matrix U, V;
   Vector s;
 
-  Matrix expectedU = (Mat(2, 2) << -1.,0.,0.,-1.);
-  Vector expected_s = (Vec(2) << 3.0, 2.0);
-  Matrix expectedV = (Mat(3, 2) << 0.,1.,0.,0.,-1.,0.);
+  Matrix expectedU = (Matrix(2, 2) << -1.,0.,0.,-1.);
+  Vector expected_s = (Vector(2) << 3.0, 2.0);
+  Matrix expectedV = (Matrix(3, 2) << 0.,1.,0.,0.,-1.,0.);
 
   svd(sampleAt, U, s, V);
   Matrix S = diag(s);
@@ -1145,19 +1145,19 @@ TEST( matrix, svd4 )
   Matrix U, V;
   Vector s;
 
-  Matrix A = (Mat(3, 2) <<
+  Matrix A = (Matrix(3, 2) <<
       0.8147,    0.9134,
       0.9058,    0.6324,
       0.1270,    0.0975);
 
-  Matrix expectedU = (Mat(3, 2) <<
+  Matrix expectedU = (Matrix(3, 2) <<
      0.7397,   0.6724,
      0.6659,   -0.7370,
      0.0970,   -0.0689);
 
-  Vector expected_s = (Vec(2) << 1.6455, 0.1910);
+  Vector expected_s = (Vector(2) << 1.6455, 0.1910);
 
-  Matrix expectedV = (Mat(2, 2) <<
+  Matrix expectedV = (Matrix(2, 2) <<
      0.7403,   -0.6723,
      0.6723,   0.7403);
 
@@ -1173,7 +1173,7 @@ TEST( matrix, svd4 )
 /* ************************************************************************* */
 TEST( matrix, DLT )
 {
-  Matrix A = (Mat(8, 9) <<
+  Matrix A = (Matrix(8, 9) <<
       0.21,        -0.42,       -10.71,         0.18,        -0.36,        -9.18,        -0.61,         1.22,        31.11,
       0.44,        -0.66,       -15.84,         0.34,        -0.51,       -12.24,        -1.64,         2.46,        59.04,
       0.69,        -8.28,       -12.19,        -0.48,         5.76,         8.48,        -1.89,        22.68,        33.39,
@@ -1187,7 +1187,7 @@ TEST( matrix, DLT )
   double error;
   Vector actual;
   boost::tie(rank,error,actual) = DLT(A);
-  Vector expected = (Vec(9) << -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0);
+  Vector expected = (Vector(9) << -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0);
   EXPECT_LONGS_EQUAL(8,rank);
   EXPECT_DOUBLES_EQUAL(0,error,1e-8);
   EXPECT(assert_equal(expected, actual, 1e-4));

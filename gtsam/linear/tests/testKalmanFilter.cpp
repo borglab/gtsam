@@ -30,7 +30,7 @@ using namespace gtsam;
 /** Small 2D point class implemented as a Vector */
 struct State: Vector {
   State(double x, double y) :
-      Vector((Vec(2) << x, y)) {
+      Vector((Vector(2) << x, y)) {
   }
 };
 
@@ -49,7 +49,7 @@ TEST( KalmanFilter, constructor ) {
 
   // Assert it has the correct mean, covariance and information
   EXPECT(assert_equal(x_initial, p1->mean()));
-  Matrix Sigma = (Mat(2, 2) << 0.01, 0.0, 0.0, 0.01);
+  Matrix Sigma = (Matrix(2, 2) << 0.01, 0.0, 0.0, 0.01);
   EXPECT(assert_equal(Sigma, p1->covariance()));
   EXPECT(assert_equal(inverse(Sigma), p1->information()));
 
@@ -67,7 +67,7 @@ TEST( KalmanFilter, linear1 ) {
   // Create the controls and measurement properties for our example
   Matrix F = eye(2, 2);
   Matrix B = eye(2, 2);
-  Vector u = (Vec(2) << 1.0, 0.0);
+  Vector u = (Vector(2) << 1.0, 0.0);
   SharedDiagonal modelQ = noiseModel::Isotropic::Sigma(2, 0.1);
   Matrix Q = 0.01*eye(2, 2);
   Matrix H = eye(2, 2);
@@ -135,10 +135,10 @@ TEST( KalmanFilter, linear1 ) {
 TEST( KalmanFilter, predict ) {
 
   // Create dynamics model
-  Matrix F = (Mat(2, 2) << 1.0, 0.1, 0.2, 1.1);
-  Matrix B = (Mat(2, 3) << 1.0, 0.1, 0.2, 1.1, 1.2, 0.8);
-  Vector u = (Vec(3) << 1.0, 0.0, 2.0);
-  Matrix R = (Mat(2, 2) << 1.0, 0.5, 0.0, 3.0);
+  Matrix F = (Matrix(2, 2) << 1.0, 0.1, 0.2, 1.1);
+  Matrix B = (Matrix(2, 3) << 1.0, 0.1, 0.2, 1.1, 1.2, 0.8);
+  Vector u = (Vector(3) << 1.0, 0.0, 2.0);
+  Matrix R = (Matrix(2, 2) << 1.0, 0.5, 0.0, 3.0);
   Matrix M = trans(R)*R;
   Matrix Q = inverse(M);
 
@@ -168,7 +168,7 @@ TEST( KalmanFilter, predict ) {
 TEST( KalmanFilter, QRvsCholesky ) {
 
   Vector mean = ones(9);
-  Matrix covariance = 1e-6 * (Mat(9, 9) <<
+  Matrix covariance = 1e-6 * (Matrix(9, 9) <<
       15.0, -6.2, 0.0, 0.0, 0.0, 0.0, 0.0, 63.8, -0.6,
       -6.2, 21.9, -0.0, 0.0, 0.0, 0.0, -63.8, -0.0, -0.1,
       0.0, -0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.1, -0.0,
@@ -187,7 +187,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   KalmanFilter::State p0b = kfb.init(mean, covariance);
 
   // Set up dynamics update
-  Matrix Psi_k = 1e-6 * (Mat(9, 9) <<
+  Matrix Psi_k = 1e-6 * (Matrix(9, 9) <<
       1000000.0, 0.0, 0.0, -19200.0, 600.0, -0.0, 0.0, 0.0, 0.0,
       0.0, 1000000.0, 0.0, 600.0, 19200.0, 200.0, 0.0, 0.0, 0.0,
       0.0, 0.0, 1000000.0, -0.0, -200.0, 19200.0, 0.0, 0.0, 0.0,
@@ -199,7 +199,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0);
   Matrix B = zeros(9, 1);
   Vector u = zero(1);
-  Matrix dt_Q_k = 1e-6 * (Mat(9, 9) <<
+  Matrix dt_Q_k = 1e-6 * (Matrix(9, 9) <<
       33.7, 3.1, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       3.1, 126.4, -0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       -0.0, -0.3, 88.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -219,10 +219,10 @@ TEST( KalmanFilter, QRvsCholesky ) {
   EXPECT(assert_equal(pa->information(), pb->information(), 1e-7));
 
   // and in addition attain the correct covariance
-  Vector expectedMean = (Vec(9) << 0.9814, 1.0200, 1.0190, 1., 1., 1., 1., 1., 1.);
+  Vector expectedMean = (Vector(9) << 0.9814, 1.0200, 1.0190, 1., 1., 1., 1., 1., 1.);
   EXPECT(assert_equal(expectedMean, pa->mean(), 1e-7));
   EXPECT(assert_equal(expectedMean, pb->mean(), 1e-7));
-  Matrix expected = 1e-6 * (Mat(9, 9) <<
+  Matrix expected = 1e-6 * (Matrix(9, 9) <<
       48.8, -3.1, -0.0, -0.4, -0.4, 0.0, 0.0, 63.8, -0.6,
       -3.1, 148.4, -0.3, 0.5, 1.7, 0.2, -63.8, 0.0, -0.1,
       -0.0, -0.3, 188.0, -0.0, 0.2, 1.2, 0.0, 0.1, 0.0,
@@ -236,12 +236,12 @@ TEST( KalmanFilter, QRvsCholesky ) {
   EXPECT(assert_equal(expected, pb->covariance(), 1e-7));
 
   // prepare update
-  Matrix H = 1e-3 * (Mat(3, 9) <<
+  Matrix H = 1e-3 * (Matrix(3, 9) <<
       0.0, 9795.9, 83.6, 0.0, 0.0, 0.0, 1000.0, 0.0, 0.0,
       -9795.9, 0.0, -5.2, 0.0, 0.0, 0.0, 0.0, 1000.0, 0.0,
       -83.6, 5.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000.);
-  Vector z = (Vec(3) << 0.2599 , 1.3327 , 0.2007);
-  Vector sigmas = (Vec(3) << 0.3323 , 0.2470 , 0.1904);
+  Vector z = (Vector(3) << 0.2599 , 1.3327 , 0.2007);
+  Vector sigmas = (Vector(3) << 0.3323 , 0.2470 , 0.1904);
   SharedDiagonal modelR = noiseModel::Diagonal::Sigmas(sigmas);
 
   // do update
@@ -253,10 +253,10 @@ TEST( KalmanFilter, QRvsCholesky ) {
   EXPECT(assert_equal(pa2->information(), pb2->information(), 1e-7));
 
   // and in addition attain the correct mean and covariance
-  Vector expectedMean2 = (Vec(9) << 0.9207, 0.9030, 1.0178, 1.0002, 0.9992, 0.9998, 0.9981, 1.0035, 0.9882);
+  Vector expectedMean2 = (Vector(9) << 0.9207, 0.9030, 1.0178, 1.0002, 0.9992, 0.9998, 0.9981, 1.0035, 0.9882);
   EXPECT(assert_equal(expectedMean2, pa2->mean(), 1e-4));// not happy with tolerance here !
   EXPECT(assert_equal(expectedMean2, pb2->mean(), 1e-4));// is something still amiss?
-  Matrix expected2 = 1e-6 * (Mat(9, 9) <<
+  Matrix expected2 = 1e-6 * (Matrix(9, 9) <<
       46.1, -2.6, -0.0, -0.4, -0.4, 0.0, 0.0, 63.9, -0.5,
       -2.6, 132.8, -0.5, 0.4, 1.5, 0.2, -64.0, -0.0, -0.1,
       -0.0, -0.5, 188.0, -0.0, 0.2, 1.2, -0.0, 0.1, 0.0,

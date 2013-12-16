@@ -52,7 +52,7 @@ TEST( Rot3, constructor)
 /* ************************************************************************* */
 TEST( Rot3, constructor2)
 {
-  Matrix R = (Mat(3, 3) << 11., 12., 13., 21., 22., 23., 31., 32., 33.);
+  Matrix R = (Matrix(3, 3) << 11., 12., 13., 21., 22., 23., 31., 32., 33.);
   Rot3 actual(R);
   Rot3 expected(11, 12, 13, 21, 22, 23, 31, 32, 33);
   CHECK(assert_equal(actual,expected));
@@ -88,7 +88,7 @@ Rot3 slow_but_correct_rodriguez(const Vector& w) {
 TEST( Rot3, rodriguez)
 {
   Rot3 R1 = Rot3::rodriguez(epsilon, 0, 0);
-  Vector w = (Vec(3) << epsilon, 0., 0.);
+  Vector w = (Vector(3) << epsilon, 0., 0.);
   Rot3 R2 = slow_but_correct_rodriguez(w);
   CHECK(assert_equal(R2,R1));
 }
@@ -96,7 +96,7 @@ TEST( Rot3, rodriguez)
 /* ************************************************************************* */
 TEST( Rot3, rodriguez2)
 {
-  Vector axis = (Vec(3) << 0.,1.,0.); // rotation around Y
+  Vector axis = (Vector(3) << 0.,1.,0.); // rotation around Y
   double angle = 3.14 / 4.0;
   Rot3 actual = Rot3::rodriguez(axis, angle);
   Rot3 expected(0.707388, 0, 0.706825,
@@ -108,7 +108,7 @@ TEST( Rot3, rodriguez2)
 /* ************************************************************************* */
 TEST( Rot3, rodriguez3)
 {
-  Vector w = (Vec(3) << 0.1, 0.2, 0.3);
+  Vector w = (Vector(3) << 0.1, 0.2, 0.3);
   Rot3 R1 = Rot3::rodriguez(w / norm_2(w), norm_2(w));
   Rot3 R2 = slow_but_correct_rodriguez(w);
   CHECK(assert_equal(R2,R1));
@@ -117,7 +117,7 @@ TEST( Rot3, rodriguez3)
 /* ************************************************************************* */
 TEST( Rot3, rodriguez4)
 {
-  Vector axis = (Vec(3) << 0., 0., 1.); // rotation around Z
+  Vector axis = (Vector(3) << 0., 0., 1.); // rotation around Z
   double angle = M_PI_2;
   Rot3 actual = Rot3::rodriguez(axis, angle);
   double c=cos(angle),s=sin(angle);
@@ -138,35 +138,35 @@ TEST( Rot3, expmap)
 /* ************************************************************************* */
 TEST(Rot3, log)
 {
-  Vector w1 = (Vec(3) << 0.1, 0.0, 0.0);
+  Vector w1 = (Vector(3) << 0.1, 0.0, 0.0);
   Rot3 R1 = Rot3::rodriguez(w1);
   CHECK(assert_equal(w1, Rot3::Logmap(R1)));
 
-  Vector w2 = (Vec(3) << 0.0, 0.1, 0.0);
+  Vector w2 = (Vector(3) << 0.0, 0.1, 0.0);
   Rot3 R2 = Rot3::rodriguez(w2);
   CHECK(assert_equal(w2, Rot3::Logmap(R2)));
 
-  Vector w3 = (Vec(3) << 0.0, 0.0, 0.1);
+  Vector w3 = (Vector(3) << 0.0, 0.0, 0.1);
   Rot3 R3 = Rot3::rodriguez(w3);
   CHECK(assert_equal(w3, Rot3::Logmap(R3)));
 
-  Vector w = (Vec(3) << 0.1, 0.4, 0.2);
+  Vector w = (Vector(3) << 0.1, 0.4, 0.2);
   Rot3 R = Rot3::rodriguez(w);
   CHECK(assert_equal(w, Rot3::Logmap(R)));
 
-  Vector w5 = (Vec(3) << 0.0, 0.0, 0.0);
+  Vector w5 = (Vector(3) << 0.0, 0.0, 0.0);
   Rot3 R5 = Rot3::rodriguez(w5);
   CHECK(assert_equal(w5, Rot3::Logmap(R5)));
 
-  Vector w6 = (Vec(3) << boost::math::constants::pi<double>(), 0.0, 0.0);
+  Vector w6 = (Vector(3) << boost::math::constants::pi<double>(), 0.0, 0.0);
   Rot3 R6 = Rot3::rodriguez(w6);
   CHECK(assert_equal(w6, Rot3::Logmap(R6)));
 
-  Vector w7 = (Vec(3) << 0.0, boost::math::constants::pi<double>(), 0.0);
+  Vector w7 = (Vector(3) << 0.0, boost::math::constants::pi<double>(), 0.0);
   Rot3 R7 = Rot3::rodriguez(w7);
   CHECK(assert_equal(w7, Rot3::Logmap(R7)));
 
-  Vector w8 = (Vec(3) << 0.0, 0.0, boost::math::constants::pi<double>());
+  Vector w8 = (Vector(3) << 0.0, 0.0, boost::math::constants::pi<double>());
   Rot3 R8 = Rot3::rodriguez(w8);
   CHECK(assert_equal(w8, Rot3::Logmap(R8)));
 }
@@ -190,7 +190,7 @@ TEST(Rot3, manifold)
   CHECK(assert_equal(d12,-d21));
 
   // lines in canonical coordinates correspond to Abelian subgroups in SO(3)
-  Vector d = (Vec(3) << 0.1, 0.2, 0.3);
+  Vector d = (Vector(3) << 0.1, 0.2, 0.3);
   // exp(-d)=inverse(exp(d))
   CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -298,7 +298,7 @@ TEST( Rot3, between )
   Rot3 r1 = Rot3::Rz(M_PI/3.0);
   Rot3 r2 = Rot3::Rz(2.0*M_PI/3.0);
 
-  Matrix expectedr1 = (Mat(3, 3) <<
+  Matrix expectedr1 = (Matrix(3, 3) <<
       0.5, -sqrt(3.0)/2.0, 0.0,
       sqrt(3.0)/2.0, 0.5, 0.0,
       0.0, 0.0, 1.0);
@@ -381,25 +381,25 @@ TEST( Rot3, RQ)
   Matrix actualK;
   Vector actual;
   boost::tie(actualK, actual) = RQ(R.matrix());
-  Vector expected = (Vec(3) << 0.14715, 0.385821, 0.231671);
+  Vector expected = (Vector(3) << 0.14715, 0.385821, 0.231671);
   CHECK(assert_equal(eye(3),actualK));
   CHECK(assert_equal(expected,actual,1e-6));
 
   // Try using xyz call, asserting that Rot3::RzRyRx(x,y,z).xyz()==[x;y;z]
   CHECK(assert_equal(expected,R.xyz(),1e-6));
-  CHECK(assert_equal((Vector)(Vec(3) <<0.1,0.2,0.3),Rot3::RzRyRx(0.1,0.2,0.3).xyz()));
+  CHECK(assert_equal((Vector)(Vector(3) <<0.1,0.2,0.3),Rot3::RzRyRx(0.1,0.2,0.3).xyz()));
 
   // Try using ypr call, asserting that Rot3::ypr(y,p,r).ypr()==[y;p;r]
-  CHECK(assert_equal((Vector)(Vec(3) <<0.1,0.2,0.3),Rot3::ypr(0.1,0.2,0.3).ypr()));
-  CHECK(assert_equal((Vector)(Vec(3) <<0.3,0.2,0.1),Rot3::ypr(0.1,0.2,0.3).rpy()));
+  CHECK(assert_equal((Vector)(Vector(3) <<0.1,0.2,0.3),Rot3::ypr(0.1,0.2,0.3).ypr()));
+  CHECK(assert_equal((Vector)(Vector(3) <<0.3,0.2,0.1),Rot3::ypr(0.1,0.2,0.3).rpy()));
 
   // Try ypr for pure yaw-pitch-roll matrices
-  CHECK(assert_equal((Vector)(Vec(3) <<0.1,0.0,0.0),Rot3::yaw (0.1).ypr()));
-  CHECK(assert_equal((Vector)(Vec(3) <<0.0,0.1,0.0),Rot3::pitch(0.1).ypr()));
-  CHECK(assert_equal((Vector)(Vec(3) <<0.0,0.0,0.1),Rot3::roll (0.1).ypr()));
+  CHECK(assert_equal((Vector)(Vector(3) <<0.1,0.0,0.0),Rot3::yaw (0.1).ypr()));
+  CHECK(assert_equal((Vector)(Vector(3) <<0.0,0.1,0.0),Rot3::pitch(0.1).ypr()));
+  CHECK(assert_equal((Vector)(Vector(3) <<0.0,0.0,0.1),Rot3::roll (0.1).ypr()));
 
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
-  Matrix K = (Mat(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0);
+  Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0);
   Matrix A = K * R.matrix();
   boost::tie(actualK, actual) = RQ(A);
   CHECK(assert_equal(K,actualK));
@@ -408,11 +408,11 @@ TEST( Rot3, RQ)
 
 /* ************************************************************************* */
 TEST( Rot3, expmapStability ) {
-  Vector w = (Vec(3) << 78e-9, 5e-8, 97e-7);
+  Vector w = (Vector(3) << 78e-9, 5e-8, 97e-7);
   double theta = w.norm();
   double theta2 = theta*theta;
   Rot3 actualR = Rot3::Expmap(w);
-  Matrix W = (Mat(3, 3) << 0.0, -w(2), w(1),
+  Matrix W = (Matrix(3, 3) << 0.0, -w(2), w(1),
                           w(2), 0.0, -w(0),
                           -w(1), w(0), 0.0 );
   Matrix W2 = W*W;
@@ -425,7 +425,7 @@ TEST( Rot3, expmapStability ) {
 // Does not work with Quaternions
 ///* ************************************************************************* */
 //TEST( Rot3, logmapStability ) {
-//  Vector w = (Vec(3) << 1e-8, 0.0, 0.0);
+//  Vector w = (Vector(3) << 1e-8, 0.0, 0.0);
 //  Rot3 R = Rot3::Expmap(w);
 ////  double tr = R.r1().x()+R.r2().y()+R.r3().z();
 ////  std::cout.precision(5000);
@@ -440,13 +440,13 @@ TEST( Rot3, expmapStability ) {
 TEST(Rot3, quaternion) {
   // NOTE: This is also verifying the ability to convert Vector to Quaternion
   Quaternion q1(0.710997408193224, 0.360544029310185, 0.594459869568306, 0.105395217842782);
-  Rot3 R1 = Rot3((Mat(3, 3) <<
+  Rot3 R1 = Rot3((Matrix(3, 3) <<
       0.271018623057411,   0.278786459830371,   0.921318086098018,
       0.578529366719085,   0.717799701969298,  -0.387385285854279,
      -0.769319620053772,   0.637998195662053,   0.033250932803219));
 
   Quaternion q2(0.263360579192421, 0.571813128030932, 0.494678363680335, 0.599136268678053);
-  Rot3 R2 = Rot3((Mat(3, 3) <<
+  Rot3 R2 = Rot3((Matrix(3, 3) <<
       -0.207341903877828,   0.250149415542075,   0.945745528564780,
        0.881304914479026,  -0.371869043667957,   0.291573424846290,
        0.424630407073532,   0.893945571198514,  -0.143353873763946));

@@ -60,8 +60,8 @@ TEST( BatchFixedLagSmoother, Example )
 //  SETDEBUG("BatchFixedLagSmoother calculateMarginalFactors", true);
 
   // Set up parameters
-  SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas((Vec(2) << 0.1, 0.1));
-  SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas((Vec(2) << 0.1, 0.1));
+  SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
 
   // Create a Fixed-Lag Smoother
   typedef BatchFixedLagSmoother::KeyTimestampMap Timestamps;

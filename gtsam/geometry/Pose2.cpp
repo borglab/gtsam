@@ -40,7 +40,7 @@ static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 Matrix Pose2::matrix() const {
   Matrix R = r_.matrix();
   R = stack(2, &R, &Z12);
-  Matrix T = (Mat(3, 1) <<  t_.x(), t_.y(), 1.0);
+  Matrix T = (Matrix(3, 1) <<  t_.x(), t_.y(), 1.0);
   return collect(2, &R, &T);
 }
 
@@ -75,13 +75,13 @@ Vector Pose2::Logmap(const Pose2& p) {
   const Point2& t = p.t();
   double w = R.theta();
   if (std::abs(w) < 1e-10)
-    return (Vec(3) << t.x(), t.y(), w);
+    return (Vector(3) << t.x(), t.y(), w);
   else {
     double c_1 = R.c()-1.0, s = R.s();
     double det = c_1*c_1 + s*s;
     Point2 p = R_PI_2 * (R.unrotate(t) - t);
     Point2 v = (w/det) * p;
-    return (Vec(3) << v.x(), v.y(), w);
+    return (Vector(3) << v.x(), v.y(), w);
   }
 }
 
@@ -101,7 +101,7 @@ Vector Pose2::localCoordinates(const Pose2& p2) const {
   return Logmap(between(p2));
 #else
   Pose2 r = between(p2);
-  return (Vec(3) << r.x(), r.y(), r.theta());
+  return (Vector(3) << r.x(), r.y(), r.theta());
 #endif
 }
 
@@ -110,7 +110,7 @@ Vector Pose2::localCoordinates(const Pose2& p2) const {
 // Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
 Matrix Pose2::AdjointMap() const {
   double c = r_.c(), s = r_.s(), x = t_.x(), y = t_.y();
-  return (Mat(3, 3) <<
+  return (Matrix(3, 3) <<
       c,  -s,   y,
       s,   c,  -x,
       0.0, 0.0, 1.0
@@ -130,7 +130,7 @@ Point2 Pose2::transform_to(const Point2& point,
   Point2 d = point - t_;
   Point2 q = r_.unrotate(d);
   if (!H1 && !H2) return q;
-  if (H1) *H1 = (Mat(2, 3) <<
+  if (H1) *H1 = (Matrix(2, 3) <<
       -1.0, 0.0,  q.y(),
       0.0, -1.0, -q.x());
   if (H2) *H2 = r_.transpose();
@@ -154,7 +154,7 @@ Point2 Pose2::transform_from(const Point2& p,
   const Point2 q = r_ * p;
   if (H1 || H2) {
     const Matrix R = r_.matrix();
-    const Matrix Drotate1 = (Mat(2, 1) <<  -q.y(), q.x());
+    const Matrix Drotate1 = (Matrix(2, 1) <<  -q.y(), q.x());
     if (H1) *H1 = collect(2, &R, &Drotate1); // [R R_{pi/2}q]
     if (H2) *H2 = R;                         // R
   }
@@ -184,7 +184,7 @@ Pose2 Pose2::between(const Pose2& p2, boost::optional<Matrix&> H1,
   if (H1) {
     double dt1 = -s2 * x + c2 * y;
     double dt2 = -c2 * x - s2 * y;
-    *H1 = (Mat(3, 3) <<
+    *H1 = (Matrix(3, 3) <<
         -c,  -s,  dt1,
         s,  -c,  dt2,
         0.0, 0.0,-1.0);
@@ -225,7 +225,7 @@ double Pose2::range(const Point2& point,
   if (!H1 && !H2) return d.norm();
   Matrix H;
   double r = d.norm(H);
-  if (H1) *H1 = H * (Mat(2, 3) <<
+  if (H1) *H1 = H * (Matrix(2, 3) <<
       -r_.c(),  r_.s(),  0.0,
       -r_.s(), -r_.c(),  0.0);
   if (H2) *H2 = H;
@@ -240,10 +240,10 @@ double Pose2::range(const Pose2& pose2,
   if (!H1 && !H2) return d.norm();
   Matrix H;
   double r = d.norm(H);
-  if (H1) *H1 = H * (Mat(2, 3) <<
+  if (H1) *H1 = H * (Matrix(2, 3) <<
       -r_.c(),  r_.s(),  0.0,
       -r_.s(), -r_.c(),  0.0);
-  if (H2) *H2 = H * (Mat(2, 3) <<
+  if (H2) *H2 = H * (Matrix(2, 3) <<
       pose2.r_.c(), -pose2.r_.s(),  0.0,
       pose2.r_.s(),  pose2.r_.c(),  0.0);
   return r;

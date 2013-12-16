@@ -29,7 +29,7 @@ BearingS2 BearingS2::fromDownwardsObservation(const Pose3& A, const Point3& B) {
   Matrix Cnb = A.rotation().matrix().transpose();
 
   //  Cbc = [0,0,1;0,1,0;-1,0,0];
-  Matrix Cbc = (Mat(3,3) <<
+  Matrix Cbc = (Matrix(3,3) <<
       0.,0.,1.,
       0.,1.,0.,
       -1.,0.,0.);
