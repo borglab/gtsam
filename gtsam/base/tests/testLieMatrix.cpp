@@ -62,7 +62,7 @@ TEST(LieMatrix, retract) {
 
   EXPECT(assert_equal(expectedUpdate, actualUpdate));
 
-  Vector expectedLogmap = (Vector() << 1, 2, 3, 4);
+  Vector expectedLogmap = (Vector(4) << 1, 2, 3, 4);
   Vector actualLogmap = LieMatrix::Logmap(LieMatrix(2,2, 1.0, 2.0, 3.0, 4.0));
   EXPECT(assert_equal(expectedLogmap, actualLogmap));
 }

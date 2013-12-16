@@ -58,20 +58,18 @@ TEST( TestVector, special_comma_initializer)
 
   Vector actual1 = (Vector(3) << 1, 2, 3);
   Vector actual2((Vector(3) << 1, 2, 3));
-  Vector actual3 = (Vector() << 1, 2, 3);
 
-  Vector subvec1 = (Vector() << 2, 3);
-  Vector actual4 = (Vector() << 1, subvec1);
+  Vector subvec1 = (Vector(2) << 2, 3);
+  Vector actual4 = (Vector(3) << 1, subvec1);
 
-  Vector subvec2 = (Vector() << 1, 2);
-  Vector actual5 = (Vector() << subvec2, 3);
+  Vector subvec2 = (Vector(2) << 1, 2);
+  Vector actual5 = (Vector(3) << subvec2, 3);
 
-  Vector actual6 = testFcn1((Vector() << 1, 2, 3));
-  Vector actual7 = testFcn2((Vector() << 1, 2, 3));
+  Vector actual6 = testFcn1((Vector(3) << 1, 2, 3));
+  Vector actual7 = testFcn2((Vector(3) << 1, 2, 3));
 
   EXPECT(assert_equal(expected, actual1));
   EXPECT(assert_equal(expected, actual2));
-  EXPECT(assert_equal(expected, actual3));
   EXPECT(assert_equal(expected, actual4));
   EXPECT(assert_equal(expected, actual5));
   EXPECT(assert_equal(expected, actual6));
