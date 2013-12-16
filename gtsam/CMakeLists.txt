@@ -151,18 +151,12 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Set up codegen
     include(GtsamMatlabWrap)
     
-    # Choose include flags depending on build process
-	set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
-	set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})    # FIXME: is this used?
-	set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam) # FIXME: is this used?
-    
     # Generate, build and install toolbox
     set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
 	if("${gtsam-default}" STREQUAL "gtsam-static")
 		list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 	endif()
 
-    # Macro to handle details of setting up targets
-    # FIXME: issue with dependency between wrap_gtsam and wrap_gtsam_build, only shows up on CMake 2.8.3
-    wrap_library(gtsam "${mexFlags}" "../" "${GTSAM_ADDITIONAL_LIBRARIES}")
+    # Wrap
+    wrap_and_install_library(../gtsam.h "${gtsam-default};${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
 endif ()
