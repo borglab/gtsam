@@ -10,6 +10,7 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Sphere2.h>
 #include <gtsam/geometry/Point2.h>
+#include <iostream>
 
 namespace gtsam {
 
