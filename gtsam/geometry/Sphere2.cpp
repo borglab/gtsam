@@ -25,7 +25,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Matrix Sphere2::getBasis(Vector* axisOutput) const {
+Matrix Sphere2::getBasis() const {
 
   // Get the axis of rotation with the minimum projected length of the point
   Point3 axis;
@@ -46,19 +46,16 @@ Matrix Sphere2::getBasis(Vector* axisOutput) const {
   b2 = b2 / b2.norm();
 
   // Create the basis matrix
-  Matrix basis = Matrix_(3, 2, b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z());
-
-  // Return the axis if requested
-  if (axisOutput != NULL)
-    *axisOutput = Point3::Logmap(axis);
-  return basis;
+  Matrix B(3,2);
+  B << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+  return B;
 }
 
 /* ************************************************************************* */
 /// The print fuction
 void Sphere2::print(const std::string& s) const {
-  printf("%s(x, y, z): (%.3lf, %.3lf, %.3lf)\n", s.c_str(), p_.x(), p_.y(),
-      p_.z());
+  printf("%s(x, y, z): (%.3lf, %.3lf, %.3lf)\n", //
+      s.c_str(), p_.x(), p_.y(), p_.z());
 }
 
 /* ************************************************************************* */
@@ -66,8 +63,7 @@ Sphere2 Sphere2::retract(const Vector& v) const {
 
   // Get the vector form of the point and the basis matrix
   Vector p = Point3::Logmap(p_);
-  Vector axis;
-  Matrix B = getBasis(&axis);
+  Matrix B = getBasis();
 
   // Compute the 3D xi_hat vector
   Vector xi_hat = v(0) * B.col(0) + v(1) * B.col(1);

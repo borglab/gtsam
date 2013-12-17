@@ -30,7 +30,7 @@ private:
   Point3 p_; ///< The location of the point on the unit sphere
 
   /// Returns the axis of rotations
-  Matrix getBasis(Vector* axisOutput = NULL) const;
+  Matrix getBasis() const;
 
 public:
 
