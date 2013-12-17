@@ -14,6 +14,9 @@
 using namespace std;
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(EssentialMatrix)
+GTSAM_CONCEPT_MANIFOLD_INST(EssentialMatrix)
+
 //*************************************************************************
 // Create two cameras and corresponding essential matrix E
 Rot3 aRb = Rot3::yaw(M_PI_2);

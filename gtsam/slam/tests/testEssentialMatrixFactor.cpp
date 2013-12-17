@@ -42,7 +42,7 @@ it1 = std::transform(P, P + 5, pA.begin(),
 it2 = std::transform(P, P + 5, pB.begin(),
     boost::bind(&Cam::project, &cameraB, _1, boost::none, boost::none));
 
-// Converto to homogenous coordinates
+// Convert to homogeneous coordinates
 vector<Vector> vA(5), vB(5);
 vector<Vector>::iterator //
 it3 = std::transform(pA.begin(), pA.end(), vA.begin(),

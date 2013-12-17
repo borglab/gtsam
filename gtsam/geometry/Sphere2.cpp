@@ -13,12 +13,13 @@
  * @file Sphere2.h
  * @date Feb 02, 2011
  * @author Can Erdogan
+ * @author Frank Dellaert
  * @brief Develop a Sphere2 class - basically a point on a unit sphere
  */
 
 #include <gtsam/geometry/Sphere2.h>
 #include <gtsam/geometry/Point2.h>
-#include <cstdio>
+#include <iostream>
 
 using namespace std;
 
@@ -54,7 +55,7 @@ Matrix Sphere2::getBasis() const {
 /* ************************************************************************* */
 /// The print fuction
 void Sphere2::print(const std::string& s) const {
-  printf("(%.3lf, %.3lf, %.3lf)\n", s.c_str(), p_.x(), p_.y(), p_.z());
+  cout << s << ":" << p_ << endl;
 }
 
 /* ************************************************************************* */

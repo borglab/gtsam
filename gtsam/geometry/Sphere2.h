@@ -13,17 +13,19 @@
  * @file Sphere2.h
  * @date Feb 02, 2011
  * @author Can Erdogan
+ * @author Frank Dellaert
  * @brief Develop a Sphere2 class - basically a point on a unit sphere
  */
 
 #pragma once
 
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class Sphere2 {
+class Sphere2 : public DerivedValue<Sphere2> {
 
 private:
 

@@ -45,8 +45,30 @@ public:
 
   /// @}
 
-  /// @name Value
+  /// @name Testable
   /// @{
+
+  /// print with optional string
+  void print(const std::string& s = "") const {
+    std::cout << s;
+    aRb_.print("R:\n");
+    aTb_.print("d: ");
+  }
+
+  /// assert equality up to a tolerance
+  bool equals(const EssentialMatrix& other, double tol=1e-8) const {
+    return aRb_.equals(other.aRb_, tol) && aTb_.equals(other.aTb_, tol);
+  }
+
+  /// @}
+
+  /// @name Manifold
+  /// @{
+
+  /// Dimensionality of tangent space = 5 DOF
+  inline static size_t Dim() {
+    return 5;
+  }
 
   /// Return the dimensionality of the tangent space
   virtual size_t dim() const {
@@ -66,23 +88,6 @@ public:
   /// Compute the coordinates in the tangent space
   virtual Vector localCoordinates(const EssentialMatrix& value) const {
     return Vector(5) << 0, 0, 0, 0, 0;
-  }
-
-  /// @}
-
-  /// @name Testable
-  /// @{
-
-  /// print with optional string
-  void print(const std::string& s) const {
-    std::cout << s;
-    aRb_.print("R:\n");
-    aTb_.print("d: ");
-  }
-
-  /// assert equality up to a tolerance
-  bool equals(const EssentialMatrix& other, double tol) const {
-    return aRb_.equals(other.aRb_, tol) && aTb_.equals(other.aTb_, tol);
   }
 
   /// @}
@@ -110,6 +115,7 @@ public:
       boost::optional<Matrix&> H = boost::none) const {
     if (H) {
       H->resize(1, 5);
+      // See math.lyx
       Matrix HR = vA.transpose() * E_ * skewSymmetric(-vB);
       Matrix HD = vA.transpose() * skewSymmetric(-aRb_.matrix() * vB)
           * aTb_.getBasis();

@@ -72,6 +72,46 @@ TEST(Sphere2, localCoordinates_retract) {
   }
 }
 
+///* ************************************************************************* */
+//TEST( Pose2, between )
+//{
+//  // <
+//  //
+//  //       ^
+//  //
+//  // *--0--*--*
+//  Pose2 gT1(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
+//  Pose2 gT2(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
+//
+//  Matrix actualH1,actualH2;
+//  Pose2 expected(M_PI/2.0, Point2(2,2));
+//  Pose2 actual1 = gT1.between(gT2);
+//  Pose2 actual2 = gT1.between(gT2,actualH1,actualH2);
+//  EXPECT(assert_equal(expected,actual1));
+//  EXPECT(assert_equal(expected,actual2));
+//
+//  Matrix expectedH1 = Matrix_(3,3,
+//      0.0,-1.0,-2.0,
+//      1.0, 0.0,-2.0,
+//      0.0, 0.0,-1.0
+//  );
+//  Matrix numericalH1 = numericalDerivative21<Pose2,Pose2,Pose2>(testing::between, gT1, gT2);
+//  EXPECT(assert_equal(expectedH1,actualH1));
+//  EXPECT(assert_equal(numericalH1,actualH1));
+//  // Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
+//  EXPECT(assert_equal(-gT2.between(gT1).AdjointMap(),actualH1));
+//
+//  Matrix expectedH2 = Matrix_(3,3,
+//       1.0, 0.0, 0.0,
+//       0.0, 1.0, 0.0,
+//       0.0, 0.0, 1.0
+//  );
+//  Matrix numericalH2 = numericalDerivative22<Pose2,Pose2,Pose2>(testing::between, gT1, gT2);
+//  EXPECT(assert_equal(expectedH2,actualH2));
+//  EXPECT(assert_equal(numericalH2,actualH2));
+//
+//}
+//
 /* ************************************************************************* */
 int main() {
   srand(time(NULL));
