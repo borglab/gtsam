@@ -37,27 +37,32 @@ TEST(Key, KeySymbolConversion) {
 }
 
 /* ************************************************************************* */
+template<int KeySize>
+Key KeyTestValue();
+
+template<>
+Key KeyTestValue<8>()
+{
+  return 0x6100000000000005;
+};
+
+template<>
+Key KeyTestValue<4>()
+{
+  return 0x61000005;
+};
+
+/* ************************************************************************* */
 TEST(Key, KeySymbolEncoding) {
 
   // Test encoding of Symbol <-> size_t <-> string
+  Symbol symbol(0x61, 5);
+  Key key = KeyTestValue<sizeof(Key)>();
+  string str = "a5";
 
-  if(sizeof(Key) == 8) {
-    Symbol symbol(0x61, 5);
-    Key key = 0x6100000000000005;
-    string str = "a5";
-
-    EXPECT_LONGS_EQUAL((long)key, (long)(Key)symbol);
-    EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
-    EXPECT(assert_equal(symbol, Symbol(key)));
-  } else if(sizeof(Key) == 4) {
-    Symbol symbol(0x61, 5);
-    Key key = 0x61000005;
-    string str = "a5";
-
-    EXPECT_LONGS_EQUAL((long)key, (long)(Key)symbol);
-    EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
-    EXPECT(assert_equal(symbol, Symbol(key)));
-  }
+  EXPECT_LONGS_EQUAL((long)key, (long)(Key)symbol);
+  EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
+  EXPECT(assert_equal(symbol, Symbol(key)));
 }
 
 /* ************************************************************************* */
