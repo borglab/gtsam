@@ -29,29 +29,21 @@ private:
 
   Point3 p_; ///< The location of the point on the unit sphere
 
-  /// Returns the axis of rotations
-  Matrix getBasis() const;
-
 public:
 
-  /// The constructors
+  /// @name Constructors
+  /// @{
+
+  /// Default constructor
   Sphere2() :
-      p_(Point3(1.0, 0.0, 0.0)) {
+      p_(1.0, 0.0, 0.0) {
   }
 
-  /// Copy constructor
-  Sphere2(const Sphere2& s) {
-    p_ = s.p_ / s.p_.norm();
+  /// Construct from point
+  Sphere2(const Point3& p) :
+      p_(p / p.norm()) {
   }
-
-  /// Destructor
-  ~Sphere2() {
-  }
-
-  /// Field constructor
-  Sphere2(const Point3& p) {
-    p_ = p / p.norm();
-  }
+  /// @}
 
   /// @name Testable
   /// @{
@@ -63,6 +55,17 @@ public:
   bool equals(const Sphere2& s, double tol = 1e-9) const {
     return p_.equals(s.p_, tol);
   }
+  /// @}
+
+  /// @name Other functionality
+  /// @{
+
+  /// Returns the local coordinate frame to tangent plane
+  Matrix getBasis() const;
+
+  /// Return skew-symmetric associated with 3D point on unit sphere
+  Matrix skew() const;
+
   /// @}
 
   /// @name Manifold
@@ -85,7 +88,6 @@ public:
   Vector localCoordinates(const Sphere2& s) const;
 
   /// @}
-
 };
 
 } // namespace gtsam

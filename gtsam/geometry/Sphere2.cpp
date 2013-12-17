@@ -46,7 +46,7 @@ Matrix Sphere2::getBasis() const {
   b2 = b2 / b2.norm();
 
   // Create the basis matrix
-  Matrix B(3,2);
+  Matrix B(3, 2);
   B << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
   return B;
 }
@@ -54,8 +54,12 @@ Matrix Sphere2::getBasis() const {
 /* ************************************************************************* */
 /// The print fuction
 void Sphere2::print(const std::string& s) const {
-  printf("%s(x, y, z): (%.3lf, %.3lf, %.3lf)\n", //
-      s.c_str(), p_.x(), p_.y(), p_.z());
+  printf("(%.3lf, %.3lf, %.3lf)\n", s.c_str(), p_.x(), p_.y(), p_.z());
+}
+
+/* ************************************************************************* */
+Matrix Sphere2::skew() const {
+  return skewSymmetric(p_.x(), p_.y(), p_.z());
 }
 
 /* ************************************************************************* */
