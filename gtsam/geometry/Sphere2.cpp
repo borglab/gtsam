@@ -64,20 +64,17 @@ void Sphere2::print(const std::string& s) const {
 /* ************************************************************************* */
 Sphere2 Sphere2::retract(const Vector& v) const {
 
-  // If we had a 3D point, we could just add and normalize, as in Absil
-  // Point3 newPoint = p_ + z;
-
   // Get the vector form of the point and the basis matrix
   Vector p = Point3::Logmap(p_);
   Vector axis;
   Matrix B = getBasis(&axis);
 
-  // Compute the 3D ξ^ vector
+  // Compute the 3D xi_hat vector
   Vector xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
   Vector newPoint = p + xi_hat;
 
-  // Project onto the manifold, i.e. the closest point on the circle to the new location; same as
-  // putting it onto the unit circle
+  // Project onto the manifold, i.e. the closest point on the circle to the new location;
+  // same as putting it onto the unit circle
   Vector projected = newPoint / newPoint.norm();
 
   return Sphere2(Point3::Expmap(projected));
@@ -87,9 +84,9 @@ Sphere2 Sphere2::retract(const Vector& v) const {
 Vector Sphere2::localCoordinates(const Sphere2& y) const {
 
   // Make sure that the angle different between x and y is less than 90. Otherwise,
-  // we can project x + ξ^ from the tangent space at x to y.
+  // we can project x + xi_hat from the tangent space at x to y.
   double cosAngle = y.p_.dot(p_);
-  assert(cosAngle > 0.0 && "Can not retract from x to y in the first place.");
+  assert(cosAngle > 0.0 && "Can not retract from x to y.");
 
   // Get the basis matrix
   Matrix B = getBasis();
@@ -98,7 +95,7 @@ Vector Sphere2::localCoordinates(const Sphere2& y) const {
   Vector p = Point3::Logmap(p_);
   Vector q = Point3::Logmap(y.p_);
 
-  // Compute the basis coefficients [ξ1,ξ2] = (B'q)/(p'q).
+  // Compute the basis coefficients [v0,v1] = (B'q)/(p'q).
   double alpha = p.transpose() * q;
   assert(alpha != 0.0);
   Matrix coeffs = (B.transpose() * q) / alpha;

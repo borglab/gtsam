@@ -22,8 +22,7 @@
 
 namespace gtsam {
 
-/// Represents a 3D point on a unit sphere. The Sphere2 with the 3D ξ^ variable and two
-/// coefficients ξ_1 and ξ_2 that scale the 3D basis vectors of the tangent space.
+/// Represents a 3D point on a unit sphere.
 class Sphere2 {
 
 private:
