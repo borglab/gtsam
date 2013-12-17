@@ -251,7 +251,9 @@ void householder_qr_inplace_unblocked(MatrixQR& mat, HCoeffs& hCoeffs, typename 
 }
 
 /** \internal */
-template<typename MatrixQR, typename HCoeffs, typename MatrixQRScalar = typename MatrixQR::Scalar>
+template<typename MatrixQR, typename HCoeffs,
+  typename MatrixQRScalar = typename MatrixQR::Scalar,
+  bool InnerStrideIsOne = (MatrixQR::InnerStrideAtCompileTime == 1 && HCoeffs::InnerStrideAtCompileTime == 1)>
 struct householder_qr_inplace_blocked
 {
   // This is specialized for MKL-supported Scalar types in HouseholderQR_MKL.h

@@ -44,7 +44,7 @@ namespace Eigen {
 
 #define EIGEN_MKL_QR_NOPIV(EIGTYPE, MKLTYPE, MKLPREFIX) \
 template<typename MatrixQR, typename HCoeffs> \
-struct householder_qr_inplace_blocked<MatrixQR, HCoeffs, EIGTYPE> \
+struct householder_qr_inplace_blocked<MatrixQR, HCoeffs, EIGTYPE, true> \
 { \
   static void run(MatrixQR& mat, HCoeffs& hCoeffs, \
       typename MatrixQR::Index = 32, \
