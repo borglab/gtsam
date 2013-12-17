@@ -55,6 +55,7 @@ class VariableSlots : public FastMap<Key, FastVector<size_t> > {
 public:
 
   typedef FastMap<Key, FastVector<size_t> > Base;
+  static const size_t Empty;
 
   /// @name Standard Constructors
   /// @{
@@ -108,7 +109,7 @@ VariableSlots::VariableSlots(const FG& factorGraph)
       iterator thisVarSlots; bool inserted;
         boost::tie(thisVarSlots, inserted) = this->insert(std::make_pair(involvedVariable, FastVector<size_t>()));
       if(inserted)
-        thisVarSlots->second.resize(factorGraph.size(), std::numeric_limits<size_t>::max());
+        thisVarSlots->second.resize(factorGraph.size(), Empty);
       thisVarSlots->second[jointFactorPos] = factorVarSlot;
       if(debug) std::cout << "  var " << involvedVariable << " rowblock " << jointFactorPos << " comes from factor's slot " << factorVarSlot << std::endl;
       ++ factorVarSlot;

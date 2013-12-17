@@ -158,7 +158,7 @@ namespace gtsam {
         for(size_t sourceFactorI = 0; sourceFactorI < slots->second.size(); ++sourceFactorI)
         {
           const size_t sourceVarpos = slots->second[sourceFactorI];
-          if(sourceVarpos < numeric_limits<size_t>::max()) {
+          if(sourceVarpos != VariableSlots::Empty) {
             const JacobianFactor& sourceFactor = *factors[sourceFactorI];
             if(sourceFactor.cols() > 1) {
               foundVariable = true;
@@ -303,7 +303,7 @@ namespace gtsam {
         if(sourceRows > 0) {
           JacobianFactor::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
           // Copy if exists in source factor, otherwise set zero
-          if(sourceSlot != numeric_limits<size_t>::max())
+          if(sourceSlot != VariableSlots::Empty)
             destBlock = jacobians[factorI]->getA(jacobians[factorI]->begin()+sourceSlot);
           else
             destBlock.setZero();
