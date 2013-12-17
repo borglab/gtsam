@@ -134,8 +134,6 @@ namespace gtsam {
     model_ = noiseModel::Unit::Create(maxrank);
   }
 
-#undef GTSAM_EXTRA_CONSISTENCY_CHECKS
-
   /* ************************************************************************* */
   // Helper functions for combine constructor
   namespace {
@@ -188,8 +186,7 @@ namespace gtsam {
         }
 
         if(!foundVariable)
-          GaussianFactorGraph(factors).print("factors: ");
-        assert(foundVariable);
+          throw std::invalid_argument("Unable to determine dimensionality for all variables");
       }
 
       BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
