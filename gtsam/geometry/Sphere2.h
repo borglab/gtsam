@@ -24,13 +24,20 @@ namespace gtsam {
 
 /// Represents a 3D point on a unit sphere. The Sphere2 with the 3D ξ^ variable and two
 /// coefficients ξ_1 and ξ_2 that scale the 3D basis vectors of the tangent space.
-struct Sphere2 {
+class Sphere2 {
 
-  gtsam::Point3 p_; ///< The location of the point on the unit sphere
+private:
+
+  Point3 p_; ///< The location of the point on the unit sphere
+
+  /// Returns the axis of rotations
+  Matrix getBasis(Vector* axisOutput = NULL) const;
+
+public:
 
   /// The constructors
   Sphere2() :
-      p_(gtsam::Point3(1.0, 0.0, 0.0)) {
+      p_(Point3(1.0, 0.0, 0.0)) {
   }
 
   /// Copy constructor
@@ -39,10 +46,11 @@ struct Sphere2 {
   }
 
   /// Destructor
-  ~Sphere2();
+  ~Sphere2() {
+  }
 
   /// Field constructor
-  Sphere2(const gtsam::Point3& p) {
+  Sphere2(const Point3& p) {
     p_ = p / p.norm();
   }
 
@@ -50,10 +58,7 @@ struct Sphere2 {
   /// @{
 
   /// The print fuction
-  void print(const std::string& s = std::string()) const {
-    printf("%s(x, y, z): (%.3lf, %.3lf, %.3lf)\n", s.c_str(), p_.x(), p_.y(),
-        p_.z());
-  }
+  void print(const std::string& s = std::string()) const;
 
   /// The equals function with tolerance
   bool equals(const Sphere2& s, double tol = 1e-9) const {
@@ -75,15 +80,13 @@ struct Sphere2 {
   }
 
   /// The retract function
-  Sphere2 retract(const gtsam::Vector& v) const;
+  Sphere2 retract(const Vector& v) const;
 
   /// The local coordinates function
-  gtsam::Vector localCoordinates(const Sphere2& s) const;
+  Vector localCoordinates(const Sphere2& s) const;
 
   /// @}
 
-  /// Returns the axis of rotations
-  gtsam::Matrix getBasis(gtsam::Vector* axisOutput = NULL) const;
 };
 
 } // namespace gtsam
