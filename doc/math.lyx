@@ -5385,33 +5385,12 @@ We can also define a retraction from local coordinates
 : 
 \begin_inset Formula 
 \[
-q=\retract_{p}(\xi)=\frac{p+B_{p}\xi}{\left\Vert p+B_{p}\xi\right\Vert }=\frac{p+B_{p}\xi}{\alpha}
+q=\retract_{p}(\xi)=\frac{p+B_{p}\xi}{\left\Vert p+B_{p}\xi\right\Vert }
 \]
 
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
-Since 
-\begin_inset Formula $\xihat$
-\end_inset
-
- is in the tangent space 
-\begin_inset Formula $T_{p}S^{2}$
-\end_inset
-
- at 
-\begin_inset Formula $p$
-\end_inset
-
-, we have 
-\begin_inset Formula $p^{T}\xihat=0$
-\end_inset
-
-.
- 
 \end_layout
 
 \begin_layout Subsubsection*
@@ -5434,7 +5413,7 @@ If
 , we have
 \begin_inset Formula 
 \[
-\xi=\frac{B^{T}q}{p^{T}q}
+\xi=\frac{B_{p}^{T}q}{p^{T}q}
 \]
 
 \end_inset
@@ -5480,13 +5459,13 @@ and because
 \end_inset
 
  as the scaled projection 
-\begin_inset Formula $B^{T}q$
+\begin_inset Formula $B_{p}^{T}q$
 \end_inset
 
 :
 \begin_inset Formula 
 \[
-\xi=\alpha B^{T}q
+\xi=\alpha B_{p}^{T}q
 \]
 
 \end_inset
@@ -5499,7 +5478,7 @@ To recover the scale factor
 \begin_inset Formula $p^{T}$
 \end_inset
 
- on both sides we have
+ on both sides, and we get
 \begin_inset Formula 
 \[
 \alpha p^{T}q=p^{T}p+p^{T}B_{p}\xi
@@ -5507,7 +5486,7 @@ To recover the scale factor
 
 \end_inset
 
-and (since 
+Since 
 \begin_inset Formula $p^{T}p=1$
 \end_inset
 
@@ -5515,11 +5494,340 @@ and (since
 \begin_inset Formula $p^{T}B_{p}\xi=0$
 \end_inset
 
-) we have 
+, we then obtain 
 \begin_inset Formula $\alpha=1/(p^{T}q)$
 \end_inset
 
+, which completes the proof.
+\end_layout
+
+\begin_layout Subsection
+Rotation acting on a 3D Direction
+\end_layout
+
+\begin_layout Standard
+Rotating a point 
+\begin_inset Formula $p\in S^{2}$
+\end_inset
+
+ on the sphere obviously yields another point 
+\begin_inset Formula $q=Rp\in S^{2}$
+\end_inset
+
+, as rotation preserves the norm.
+ The derivative of 
+\begin_inset Formula $f(R,p)$
+\end_inset
+
+ with respect to 
+\begin_inset Formula $R$
+\end_inset
+
+ can be found by equating
+\begin_inset Formula 
+\[
+Rp+B_{Rp}\xi=R(I+\Skew{\omega})p=Rp+R\Skew{\omega}p
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+B_{Rp}\xi=-R\Skew p\omega
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\xi=-B_{Rp}^{T}R\Skew p\omega
+\]
+
+\end_inset
+
+whereas with respect to 
+\begin_inset Formula $p$
+\end_inset
+
+ we have
+\begin_inset Formula 
+\[
+Rp+B_{Rp}\xi_{q}=R(p+B_{p}\xi_{p})
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\xi_{q}=B_{Rp}^{T}RB_{p}\xi_{p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In other words, the Jacobian matrix is given by
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+f'(R,p)=\left[\begin{array}{cc}
+-B_{Rp}^{T}R\Skew p & B_{Rp}^{T}RB_{p}\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Error between 3D Directions
+\end_layout
+
+\begin_layout Standard
+We would like to define a distance metric 
+\begin_inset Formula $e(p,q)$
+\end_inset
+
+ between two directions 
+\begin_inset Formula $p,q\in S^{2}$
+\end_inset
+
 .
+ An obvious choice is
+\begin_inset Formula 
+\[
+\theta=\cos^{-1}\left(p^{T}q\right)
+\]
+
+\end_inset
+
+which is exactly the distance along the shortest path (geodesic) on the
+ sphere, i.e., this is the distance metric associated with the exponential.
+ The advantage is that it is defined everywhere, but it involves 
+\begin_inset Formula $\cos^{-1}$
+\end_inset
+
+.
+ The derivative with respect to a change in 
+\begin_inset Formula $q$
+\end_inset
+
+, via 
+\begin_inset Formula $\xi$
+\end_inset
+
+, is then
+\begin_inset Formula 
+\[
+\frac{\partial\theta(p,q)}{\partial\xi}=\frac{\partial\cos^{-1}\left(p^{T}q\right)}{\partial\xi}=\frac{p^{T}B_{q}}{\sqrt{1-\left(p^{T}q\right)^{2}}}
+\]
+
+\end_inset
+
+which is also undefined for 
+\begin_inset Formula $p=q$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+A simpler metric is derived from the retraction but only holds when 
+\begin_inset Formula $q\approx p$
+\end_inset
+
+.
+ It simply projects 
+\begin_inset Formula $q$
+\end_inset
+
+ onto the local coordinate basis 
+\begin_inset Formula $B_{p}$
+\end_inset
+
+ defined by 
+\begin_inset Formula $p$
+\end_inset
+
+, and takes the norm:
+\begin_inset Formula 
+\[
+\theta(p,q)=\left\Vert B_{p}^{T}q\right\Vert 
+\]
+
+\end_inset
+
+The derivative with respect to a change in 
+\begin_inset Formula $q$
+\end_inset
+
+, via 
+\begin_inset Formula $\xi$
+\end_inset
+
+, is then
+\begin_inset Formula 
+\[
+\frac{\partial\theta(p,q)}{\partial\xi_{q}}=\frac{\partial}{\partial\xi_{q}}\sqrt{\left(B_{p}^{T}q\right)^{2}}=\frac{1}{\sqrt{\left(B_{p}^{T}q\right)^{2}}}\left(B_{p}^{T}q\right)B_{p}^{T}B_{q}=\frac{B_{p}^{T}q}{\theta(q;p)}B_{p}^{T}B_{q}
+\]
+
+\end_inset
+
+Note that this again is undefined for 
+\begin_inset Formula $\theta=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+For use in a probabilistic factor, a signed, vector-valued error will not
+ have the discontinuity:
+\begin_inset Formula 
+\[
+\theta(p,q)=B_{p}^{T}q
+\]
+
+\end_inset
+
+Note this is the inverse retraction up to a scale.
+ The derivative with respect to a change in 
+\begin_inset Formula $q$
+\end_inset
+
+, via 
+\begin_inset Formula $\xi$
+\end_inset
+
+, is found by 
+\begin_inset Formula 
+\[
+\frac{\partial\theta(p,q)}{\partial\xi_{q}}=B_{p}^{T}\frac{\partial q}{\partial\xi_{q}}=B_{p}^{T}B_{q}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Application
+\end_layout
+
+\begin_layout Standard
+We can use the above to find the unknown rotation between a camera and an
+ IMU.
+ If we measure the rotation between two frames as 
+\begin_inset Formula $c_{1}Zc_{2}$
+\end_inset
+
+, and the predicted rotation from the IMU is 
+\begin_inset Formula $i_{1}Ri_{2}$
+\end_inset
+
+, then we can predict
+\begin_inset Formula 
+\[
+c_{1}Zc_{2}=iRc^{T}\cdot i_{1}Ri_{2}\cdot iRc
+\]
+
+\end_inset
+
+and the axis of the incremental rotations will relate as
+\begin_inset Formula 
+\[
+p=iRc\cdot z
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $p$
+\end_inset
+
+ the angular velocity axis in the IMU frame, and 
+\begin_inset Formula $z$
+\end_inset
+
+ the measured axis of rotation between the two cameras.
+ Note this only makes sense if the rotation is non-zero.
+ So, given an initial estimate 
+\begin_inset Formula $R$
+\end_inset
+
+ for the unknown rotation 
+\begin_inset Formula $iRc$
+\end_inset
+
+ between IMU and camera, the derivative of the error is (using 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Rot3action"
+
+\end_inset
+
+)
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+\frac{\partial\theta(Rz;p)}{\partial\omega}=B_{p}^{T}\left(Rz\right)B_{p}^{T}B_{Rz}\frac{\partial\left(Rz\right)}{\partial\omega}=B_{p}^{T}\left(Rz\right)B_{p}^{T}R\Skew z
+\]
+
+\end_inset
+
+Here the 
+\begin_inset Formula $2\times3$
+\end_inset
+
+ matrix 
+\begin_inset Formula $B_{Rz}^{T}\Skew z$
+\end_inset
+
+ translates changes in 
+\begin_inset Formula $R$
+\end_inset
+
+ to changes in 
+\begin_inset Formula $Rz$
+\end_inset
+
+, and the 
+\begin_inset Formula $1\times2$
+\end_inset
+
+ matrix 
+\begin_inset Formula $B_{p}^{T}\left(Rz\right)$
+\end_inset
+
+ describes the downstream effect on the error metric.
 \end_layout
 
 \begin_layout Section
