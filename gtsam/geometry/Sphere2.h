@@ -19,17 +19,18 @@
 
 #pragma once
 
-#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class Sphere2 : public DerivedValue<Sphere2> {
+class Sphere2: public DerivedValue<Sphere2> {
 
 private:
 
   Point3 p_; ///< The location of the point on the unit sphere
+  mutable Matrix B_; ///< Cached basis
 
 public:
 
@@ -45,6 +46,13 @@ public:
   Sphere2(const Point3& p) :
       p_(p / p.norm()) {
   }
+
+  /// Construct from x,y,z
+  Sphere2(double x, double y, double z) :
+      p_(x, y, z) {
+    p_ = p_ / p_.norm();
+  }
+
   /// @}
 
   /// @name Testable
@@ -63,10 +71,22 @@ public:
   /// @{
 
   /// Returns the local coordinate frame to tangent plane
-  Matrix getBasis() const;
+  Matrix basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
   Matrix skew() const;
+
+  /// Rotate
+  static Sphere2 Rotate(const Rot3& R, const Sphere2& p,
+      boost::optional<Matrix&> HR = boost::none, boost::optional<Matrix&> Hp =
+          boost::none);
+
+  /// Rotate sugar
+  friend Sphere2 operator*(const Rot3& R, const Sphere2& p);
+
+  /// Distance between two directions
+  double distance(const Sphere2& other,
+      boost::optional<Matrix&> H = boost::none) const;
 
   /// @}
 

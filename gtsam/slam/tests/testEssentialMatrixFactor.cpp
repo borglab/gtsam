@@ -98,7 +98,7 @@ TEST (EssentialMatrix, factor) {
             boost::none), trueE);
 
     // Verify the Jacobian is correct
-    CHECK(assert_equal(HExpected, HActual, 1e-9));
+    EXPECT(assert_equal(HExpected, HActual, 1e-9));
   }
 }
 

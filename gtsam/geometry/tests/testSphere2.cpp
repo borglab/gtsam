@@ -19,6 +19,8 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Sphere2.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <boost/bind.hpp>
 
 using namespace gtsam;
 using namespace std;
@@ -26,6 +28,82 @@ using namespace std;
 GTSAM_CONCEPT_TESTABLE_INST(Sphere2)
 GTSAM_CONCEPT_MANIFOLD_INST(Sphere2)
 
+//*******************************************************************************
+TEST(Sphere2, rotate) {
+  Rot3 R = Rot3::yaw(0.5);
+  Sphere2 p(1, 0, 0);
+  Sphere2 expected = Sphere2(R.column(0));
+  Sphere2 actual = R * p;
+  EXPECT(assert_equal(expected, actual, 1e-8));
+  Matrix actualH, expectedH;
+  // Use numerical derivatives to calculate the expected Jacobian
+  {
+    expectedH = numericalDerivative11<Sphere2, Rot3>(
+        boost::bind(&Sphere2::Rotate, _1, p, boost::none, boost::none), R);
+    Sphere2::Rotate(R, p, actualH, boost::none);
+    EXPECT(assert_equal(expectedH, actualH, 1e-9));
+  }
+  {
+    expectedH = numericalDerivative11<Sphere2, Sphere2>(
+        boost::bind(&Sphere2::Rotate, R, _1, boost::none, boost::none), p);
+    Sphere2::Rotate(R, p, boost::none, actualH);
+    EXPECT(assert_equal(expectedH, actualH, 1e-9));
+  }
+}
+
+//*******************************************************************************
+TEST(Sphere2, distance) {
+  Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
+  r = p.retract((Vector(2) << 0.8, 0));
+  EXPECT_DOUBLES_EQUAL(0, p.distance(p), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0.44721359549995798, p.distance(q), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0.6246950475544244, p.distance(r), 1e-8);
+
+  Matrix actual, expected;
+  // Use numerical derivatives to calculate the expected Jacobian
+  {
+    expected = numericalGradient<Sphere2>(
+        boost::bind(&Sphere2::distance, &p, _1, boost::none), q);
+    p.distance(q, actual);
+    EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
+  }
+  {
+    expected = numericalGradient<Sphere2>(
+        boost::bind(&Sphere2::distance, &p, _1, boost::none), r);
+    p.distance(r, actual);
+    EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
+  }
+}
+
+//*******************************************************************************
+TEST(Sphere2, localCoordinates0) {
+  Sphere2 p;
+  Vector expected = zero(2);
+  Vector actual = p.localCoordinates(p);
+  EXPECT(assert_equal(expected, actual, 1e-8));
+}
+
+//*******************************************************************************
+TEST(Sphere2, basis) {
+  Sphere2 p;
+  Matrix expected(3, 2);
+  expected << 0, 0, 0, -1, 1, 0;
+  Matrix actual = p.basis();
+  EXPECT(assert_equal(expected, actual, 1e-8));
+}
+
+//*******************************************************************************
+TEST(Sphere2, retract) {
+  Sphere2 p;
+  Vector v(2);
+  v << 0.5, 0;
+  Sphere2 expected(Point3(1, 0, 0.5));
+  Sphere2 actual = p.retract(v);
+  EXPECT(assert_equal(expected, actual, 1e-8));
+  EXPECT(assert_equal(v, p.localCoordinates(actual), 1e-8));
+}
+
+//*******************************************************************************
 /// Returns a random vector
 inline static Vector randomVector(const Vector& minLimits,
     const Vector& maxLimits) {
@@ -42,7 +120,7 @@ inline static Vector randomVector(const Vector& minLimits,
   return vector;
 }
 
-/* ************************************************************************* */
+//*******************************************************************************
 // Let x and y be two Sphere2's.
 // The equality x.localCoordinates(x.retract(v)) == v should hold.
 TEST(Sphere2, localCoordinates_retract) {
@@ -60,7 +138,7 @@ TEST(Sphere2, localCoordinates_retract) {
     // NOTE: You can not create two totally random Sphere2's because you cannot always compute
     // between two any Sphere2's. (For instance, they might be at the different sides of the circle).
     Sphere2 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
-//		Sphere2 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
+//      Sphere2 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
     Sphere2 s2 = s1.retract(v12);
 
@@ -72,7 +150,7 @@ TEST(Sphere2, localCoordinates_retract) {
   }
 }
 
-///* ************************************************************************* */
+//*******************************************************************************
 //TEST( Pose2, between )
 //{
 //  // <
@@ -111,7 +189,7 @@ TEST(Sphere2, localCoordinates_retract) {
 //  EXPECT(assert_equal(numericalH2,actualH2));
 //
 //}
-//
+
 /* ************************************************************************* */
 int main() {
   srand(time(NULL));

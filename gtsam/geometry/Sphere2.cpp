@@ -14,7 +14,7 @@
  * @date Feb 02, 2011
  * @author Can Erdogan
  * @author Frank Dellaert
- * @brief Develop a Sphere2 class - basically a point on a unit sphere
+ * @brief The Sphere2 class - basically a point on a unit sphere
  */
 
 #include <gtsam/geometry/Sphere2.h>
@@ -26,7 +26,11 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Matrix Sphere2::getBasis() const {
+Matrix Sphere2::basis() const {
+
+  // Return cached version if exists
+  if (B_.rows() == 3)
+    return B_;
 
   // Get the axis of rotation with the minimum projected length of the point
   Point3 axis;
@@ -47,9 +51,9 @@ Matrix Sphere2::getBasis() const {
   b2 = b2 / b2.norm();
 
   // Create the basis matrix
-  Matrix B(3, 2);
-  B << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
-  return B;
+  B_ = Matrix(3, 2);
+  B_ << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+  return B_;
 }
 
 /* ************************************************************************* */
@@ -64,11 +68,38 @@ Matrix Sphere2::skew() const {
 }
 
 /* ************************************************************************* */
+Sphere2 Sphere2::Rotate(const Rot3& R, const Sphere2& p,
+    boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) {
+  Sphere2 q(R * p.p_);
+  if (Hp)
+    (*Hp) = q.basis().transpose() * R.matrix() * p.basis();
+  if (HR)
+    (*HR) = -q.basis().transpose() * R.matrix() * p.skew();
+  return q;
+}
+
+/* ************************************************************************* */
+Sphere2 operator*(const Rot3& R, const Sphere2& p) {
+  return Sphere2::Rotate(R,p);
+}
+
+/* ************************************************************************* */
+double Sphere2::distance(const Sphere2& other,
+    boost::optional<Matrix&> H) const {
+  Matrix Bt = basis().transpose();
+  Vector xi = Bt * other.p_.vector();
+  double theta = xi.norm();
+  if (H)
+    *H = (xi.transpose() / theta) * Bt * other.basis();
+  return theta;
+}
+
+/* ************************************************************************* */
 Sphere2 Sphere2::retract(const Vector& v) const {
 
   // Get the vector form of the point and the basis matrix
   Vector p = Point3::Logmap(p_);
-  Matrix B = getBasis();
+  Matrix B = basis();
 
   // Compute the 3D xi_hat vector
   Vector xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
@@ -90,7 +121,7 @@ Vector Sphere2::localCoordinates(const Sphere2& y) const {
   assert(cosAngle > 0.0 && "Can not retract from x to y.");
 
   // Get the basis matrix
-  Matrix B = getBasis();
+  Matrix B = basis();
 
   // Create the vector forms of p and q (the Point3 of y).
   Vector p = Point3::Logmap(p_);

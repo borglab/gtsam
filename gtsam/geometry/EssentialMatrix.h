@@ -118,7 +118,7 @@ public:
       // See math.lyx
       Matrix HR = vA.transpose() * E_ * skewSymmetric(-vB);
       Matrix HD = vA.transpose() * skewSymmetric(-aRb_.matrix() * vB)
-          * aTb_.getBasis();
+          * aTb_.basis();
       *H << HR, HD;
     }
     return dot(vA, E_ * vB);

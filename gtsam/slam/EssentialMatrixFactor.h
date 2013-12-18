@@ -34,8 +34,8 @@ public:
   }
 
   /// print
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+  virtual void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor with measurements\n  ("
         << pA_.vector().transpose() << ")' and (" << pB_.vector().transpose()

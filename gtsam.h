@@ -574,7 +574,7 @@ virtual class Sphere2 : gtsam::Value {
   bool equals(const gtsam::Sphere2& pose, double tol) const;
 
   // Other functionality
-  Matrix getBasis() const;
+  Matrix basis() const;
   Matrix skew() const;
 
   // Manifold
