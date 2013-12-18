@@ -15,12 +15,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <vector>
-
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 const string filename = findExampleDataFile("5pointExample1.txt");
