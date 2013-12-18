@@ -52,6 +52,30 @@ TEST(Sphere2, rotate) {
 }
 
 //*******************************************************************************
+TEST(Sphere2, error) {
+  Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
+  r = p.retract((Vector(2) << 0.8, 0));
+  EXPECT(assert_equal((Vector(2) << 0, 0), p.error(p), 1e-8));
+  EXPECT(assert_equal((Vector(2) << 0.447214, 0), p.error(q), 1e-5));
+  EXPECT(assert_equal((Vector(2) << 0.624695, 0), p.error(r), 1e-5));
+
+  Matrix actual, expected;
+  // Use numerical derivatives to calculate the expected Jacobian
+  {
+    expected = numericalDerivative11<Sphere2>(
+        boost::bind(&Sphere2::error, &p, _1, boost::none), q);
+    p.error(q, actual);
+    EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
+  }
+  {
+    expected = numericalDerivative11<Sphere2>(
+        boost::bind(&Sphere2::error, &p, _1, boost::none), r);
+    p.error(r, actual);
+    EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
+  }
+}
+
+//*******************************************************************************
 TEST(Sphere2, distance) {
   Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
   r = p.retract((Vector(2) << 0.8, 0));

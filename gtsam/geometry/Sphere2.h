@@ -84,8 +84,12 @@ public:
   /// Rotate sugar
   friend Sphere2 operator*(const Rot3& R, const Sphere2& p);
 
+  /// Signed, vector-valued error between two directions
+  Vector error(const Sphere2& q,
+      boost::optional<Matrix&> H = boost::none) const;
+
   /// Distance between two directions
-  double distance(const Sphere2& other,
+  double distance(const Sphere2& q,
       boost::optional<Matrix&> H = boost::none) const;
 
   /// @}

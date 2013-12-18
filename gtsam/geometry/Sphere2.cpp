@@ -80,17 +80,24 @@ Sphere2 Sphere2::Rotate(const Rot3& R, const Sphere2& p,
 
 /* ************************************************************************* */
 Sphere2 operator*(const Rot3& R, const Sphere2& p) {
-  return Sphere2::Rotate(R,p);
+  return Sphere2::Rotate(R, p);
 }
 
 /* ************************************************************************* */
-double Sphere2::distance(const Sphere2& other,
-    boost::optional<Matrix&> H) const {
+Vector Sphere2::error(const Sphere2& q, boost::optional<Matrix&> H) const {
   Matrix Bt = basis().transpose();
-  Vector xi = Bt * other.p_.vector();
+  Vector xi = Bt * q.p_.vector();
+  if (H)
+    *H = Bt * q.basis();
+  return xi;
+}
+
+/* ************************************************************************* */
+double Sphere2::distance(const Sphere2& q, boost::optional<Matrix&> H) const {
+  Vector xi = error(q,H);
   double theta = xi.norm();
   if (H)
-    *H = (xi.transpose() / theta) * Bt * other.basis();
+    *H = (xi.transpose() / theta) * (*H);
   return theta;
 }
 
