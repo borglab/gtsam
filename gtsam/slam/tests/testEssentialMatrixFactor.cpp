@@ -6,11 +6,13 @@
  */
 
 #include <gtsam/slam/EssentialMatrixFactor.h>
-#include <gtsam/geometry/CalibratedCamera.h>
-#include <gtsam/base/Testable.h>
+#include <gtsam/slam/dataset.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
@@ -21,75 +23,68 @@ using namespace std;
 using namespace boost::assign;
 using namespace gtsam;
 
-//*************************************************************************
-// Create two cameras and corresponding essential matrix E
-Rot3 aRb = Rot3::yaw(M_PI_2);
-Point3 aTb(0.1, 0, 0);
-Pose3 identity, aPb(aRb, aTb);
-typedef CalibratedCamera Cam;
-Cam cameraA(identity), cameraB(aPb);
-Matrix aEb_matrix = skewSymmetric(aTb.x(), aTb.y(), aTb.z()) * aRb.matrix();
+const string filename = findExampleDataFile("5pointExample1.txt");
+SfM_data data;
+bool readOK = readBAL(filename, data);
+Rot3 aRb = data.cameras[1].pose().rotation();
+Point3 aTb  = data.cameras[1].pose().translation();
 
-// Create test data, we need at least 5 points
-Point3 P[5] = { Point3(0, 0, 1), Point3(-0.1, 0, 1), Point3(0.1, 0, 1), //
-Point3(0, 0.5, 0.5), Point3(0, -0.5, 0.5) };
-
-// Project points in both cameras
-vector<Point2> pA(5), pB(5);
-vector<Point2>::iterator //
-it1 = std::transform(P, P + 5, pA.begin(),
-    boost::bind(&Cam::project, &cameraA, _1, boost::none, boost::none)), //
-it2 = std::transform(P, P + 5, pB.begin(),
-    boost::bind(&Cam::project, &cameraB, _1, boost::none, boost::none));
-
-// Convert to homogeneous coordinates
-vector<Vector> vA(5), vB(5);
-vector<Vector>::iterator //
-it3 = std::transform(pA.begin(), pA.end(), vA.begin(),
-    &EssentialMatrix::Homogeneous), //
-it4 = std::transform(pB.begin(), pB.end(), vB.begin(),
-    &EssentialMatrix::Homogeneous);
+Point2 pA(size_t i) {
+  return data.tracks[i].measurements[0].second;
+}
+Point2 pB(size_t i) {
+  return data.tracks[i].measurements[1].second;
+}
+Vector vA(size_t i) {
+  return EssentialMatrix::Homogeneous(pA(i));
+}
+Vector vB(size_t i) {
+  return EssentialMatrix::Homogeneous(pB(i));
+}
 
 //*************************************************************************
-TEST (EssentialMatrix, testData) {
+TEST (EssentialMatrixFactor, testData) {
+  CHECK(readOK);
+
   // Check E matrix
   Matrix expected(3, 3);
   expected << 0, 0, 0, 0, 0, -0.1, 0.1, 0, 0;
-  EXPECT(assert_equal(expected, aEb_matrix));
+  Matrix aEb_matrix = skewSymmetric(aTb.x(), aTb.y(), aTb.z()) * aRb.matrix();
+  EXPECT(assert_equal(expected, aEb_matrix,1e-8));
 
   // Check some projections
-  EXPECT(assert_equal(Point2(0,0),pA[0]));
-  EXPECT(assert_equal(Point2(0,0.1),pB[0]));
-  EXPECT(assert_equal(Point2(0,-1),pA[4]));
-  EXPECT(assert_equal(Point2(-1,0.2),pB[4]));
+  EXPECT(assert_equal(Point2(0,0),pA(0),1e-8));
+  EXPECT(assert_equal(Point2(0,0.1),pB(0),1e-8));
+  EXPECT(assert_equal(Point2(0,-1),pA(4),1e-8));
+  EXPECT(assert_equal(Point2(-1,0.2),pB(4),1e-8));
 
   // Check homogeneous version
-  EXPECT(assert_equal((Vector(3) << -1,0.2,1),vB[4]));
+  EXPECT(assert_equal((Vector(3) << -1,0.2,1),vB(4),1e-8));
 
   // Check epipolar constraint
   for (size_t i = 0; i < 5; i++)
-    EXPECT_DOUBLES_EQUAL(0, vA[i].transpose() * aEb_matrix * vB[i], 1e-8);
+    EXPECT_DOUBLES_EQUAL(0, vA(i).transpose() * aEb_matrix * vB(i), 1e-8);
 
   // Check epipolar constraint
   EssentialMatrix trueE(aRb, aTb);
   for (size_t i = 0; i < 5; i++)
-    EXPECT_DOUBLES_EQUAL(0, trueE.error(vA[i],vB[i]), 1e-8);
+    EXPECT_DOUBLES_EQUAL(0, trueE.error(vA(i),vB(i)), 1e-7);
 }
 
 //*************************************************************************
-TEST (EssentialMatrix, factor) {
+TEST (EssentialMatrixFactor, factor) {
   EssentialMatrix trueE(aRb, aTb);
   noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(1);
 
   for (size_t i = 0; i < 5; i++) {
-    EssentialMatrixFactor factor(1, pA[i], pB[i], model);
+    EssentialMatrixFactor factor(1, pA(i), pB(i), model);
 
     // Check evaluation
     Vector expected(1);
     expected << 0;
     Matrix HActual;
     Vector actual = factor.evaluateError(trueE, HActual);
-    EXPECT(assert_equal(expected, actual, 1e-8));
+    EXPECT(assert_equal(expected, actual, 1e-7));
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix HExpected;
@@ -98,12 +93,12 @@ TEST (EssentialMatrix, factor) {
             boost::none), trueE);
 
     // Verify the Jacobian is correct
-    EXPECT(assert_equal(HExpected, HActual, 1e-9));
+    EXPECT(assert_equal(HExpected, HActual, 1e-8));
   }
 }
 
 //*************************************************************************
-TEST (EssentialMatrix, fromConstraints) {
+TEST (EssentialMatrixFactor, fromConstraints) {
   // Here we want to optimize directly on essential matrix constraints
   // Yi Ma's algorithm (Ma01ijcv) is a bit cumbersome to implement,
   // but GTSAM does the equivalent anyway, provided we give the right
@@ -112,9 +107,10 @@ TEST (EssentialMatrix, fromConstraints) {
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1cm, assuming metric measurements
   NonlinearFactorGraph graph;
-  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(1,0.01);
+  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(1,
+      0.01);
   for (size_t i = 0; i < 5; i++)
-    graph.add(EssentialMatrixFactor(1, pA[i], pB[i], model));
+    graph.add(EssentialMatrixFactor(1, pA(i), pB(i), model));
 
   // Check error at ground truth
   Values truth;
@@ -124,7 +120,8 @@ TEST (EssentialMatrix, fromConstraints) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE = trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
+  EssentialMatrix initialE = trueE.retract(
+      (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
   initial.insert(1, initialE);
   EXPECT_DOUBLES_EQUAL(640, graph.error(initial), 1e-2);
 
@@ -142,7 +139,7 @@ TEST (EssentialMatrix, fromConstraints) {
 
   // Check errors individually
   for (size_t i = 0; i < 5; i++)
-    EXPECT_DOUBLES_EQUAL(0, actual.error(vA[i],vB[i]), 1e-6);
+    EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i),vB(i)), 1e-6);
 
 }
 
