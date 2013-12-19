@@ -7,8 +7,8 @@
 
 #include <gtsam/geometry/EssentialMatrix.h>
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Testable.h>
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -42,6 +42,20 @@ TEST (EssentialMatrix, retract2) {
   EssentialMatrix trueE(aRb, aTb);
   EssentialMatrix actual = trueE.retract((Vector(5) << 0, 0, 0, 0.1, 0));
   EXPECT(assert_equal(expected, actual));
+}
+
+//*************************************************************************
+Point3 transform_to_(const EssentialMatrix& E, const Point3& point) { return E.transform_to(point); }
+TEST (EssentialMatrix, transform_to) {
+  EssentialMatrix E(aRb, aTb);
+  //EssentialMatrix E(aRb, Sphere2(aTb).retract((Vector(2) << 0.1, 0)));
+  static Point3 P(0.2,0.7,-2);
+  Matrix actH1, actH2;
+  E.transform_to(P,actH1,actH2);
+  Matrix expH1 = numericalDerivative21(transform_to_, E,P),
+       expH2 = numericalDerivative22(transform_to_, E,P);
+  EXPECT(assert_equal(expH1, actH1, 1e-8));
+  EXPECT(assert_equal(expH2, actH2, 1e-8));
 }
 
 /* ************************************************************************* */

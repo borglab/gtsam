@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Sphere2.h>
 #include <gtsam/geometry/Point2.h>
 #include <iostream>
@@ -56,7 +56,7 @@ public:
   }
 
   /// assert equality up to a tolerance
-  bool equals(const EssentialMatrix& other, double tol=1e-8) const {
+  bool equals(const EssentialMatrix& other, double tol = 1e-8) const {
     return aRb_.equals(other.aRb_, tol) && aTb_.equals(other.aTb_, tol);
   }
 
@@ -108,6 +108,32 @@ public:
   /// Return 3*3 matrix representation
   const Matrix& matrix() const {
     return E_;
+  }
+
+  /**
+   * @brief takes point in world coordinates and transforms it to pose with |t|==1
+   * @param p point in world coordinates
+   * @param DE optional 3*5 Jacobian wrpt to E
+   * @param Dpoint optional 3*3 Jacobian wrpt point
+   * @return point in pose coordinates
+   */
+  Point3 transform_to(const Point3& p,
+      boost::optional<Matrix&> DE = boost::none,
+      boost::optional<Matrix&> Dpoint = boost::none) const {
+    Pose3 pose(aRb_, aTb_.point3());
+    Point3 q = pose.transform_to(p, DE, Dpoint);
+    if (DE) {
+      // DE returned by pose.transform_to is 3*6, but we need it to be 3*5
+      // The last 3 columns are derivative with respect to change in translation
+      // The derivative of translation with respect to a 2D sphere delta is 3*2 aTb_.basis()
+      Matrix H(3, 5);
+      std::cout << *DE << std::endl << std::endl;
+      std::cout << aTb_.basis() << std::endl << std::endl;
+      H << DE->block < 3, 3 > (0, 0), DE->block < 3, 3 > (0, 3) * aTb_.basis();
+      std::cout << H << std::endl << std::endl;
+      *DE = H;
+    }
+    return q;
   }
 
   /// epipolar error, algebraic
