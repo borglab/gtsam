@@ -76,6 +76,13 @@ public:
   /// Return skew-symmetric associated with 3D point on unit sphere
   Matrix skew() const;
 
+  /// Return unit-norm Point3
+  Point3 point3(boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = basis();
+    return p_;
+  }
+
   /// Rotate
   static Sphere2 Rotate(const Rot3& R, const Sphere2& p,
       boost::optional<Matrix&> HR = boost::none, boost::optional<Matrix&> Hp =

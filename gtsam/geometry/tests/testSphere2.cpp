@@ -16,17 +16,36 @@
  * @brief Tests the Sphere2 class
  */
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Sphere2.h>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#include <boost/assign/std/vector.hpp>
 
+using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
 GTSAM_CONCEPT_TESTABLE_INST(Sphere2)
 GTSAM_CONCEPT_MANIFOLD_INST(Sphere2)
+
+//*******************************************************************************
+Point3 point3_(const Sphere2& p) {
+  return p.point3();
+}
+TEST(Sphere2, point3) {
+  vector < Point3 > ps;
+  ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)/sqrt(2);
+  Matrix actualH, expectedH;
+  BOOST_FOREACH(Point3 p,ps) {
+    Sphere2 s(p);
+    expectedH = numericalDerivative11<Point3, Sphere2>(point3_, s);
+    EXPECT(assert_equal(p, s.point3(actualH), 1e-8));
+    EXPECT(assert_equal(expectedH, actualH, 1e-9));
+  }
+}
 
 //*******************************************************************************
 TEST(Sphere2, rotate) {
