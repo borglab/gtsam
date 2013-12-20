@@ -129,7 +129,7 @@ public:
       Matrix H(3, 5);
       std::cout << *DE << std::endl << std::endl;
       std::cout << aTb_.basis() << std::endl << std::endl;
-      H << DE->block < 3, 3 > (0, 0), DE->block < 3, 3 > (0, 3) * aTb_.basis();
+      H << DE->block < 3, 3 > (0, 0), -aRb_.inverse().matrix() * aTb_.basis();
       std::cout << H << std::endl << std::endl;
       *DE = H;
     }

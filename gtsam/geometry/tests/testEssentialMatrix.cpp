@@ -47,7 +47,10 @@ TEST (EssentialMatrix, retract2) {
 //*************************************************************************
 Point3 transform_to_(const EssentialMatrix& E, const Point3& point) { return E.transform_to(point); }
 TEST (EssentialMatrix, transform_to) {
-  EssentialMatrix E(aRb, aTb);
+  // test with a more complicated EssentialMatrix
+  Rot3 aRb2 = Rot3::yaw(M_PI/3.0)*Rot3::pitch(M_PI_4)*Rot3::roll(M_PI/6.0);
+  Point3 aTb2(19.2, 3.7, 5.9);
+  EssentialMatrix E(aRb2, aTb2);
   //EssentialMatrix E(aRb, Sphere2(aTb).retract((Vector(2) << 0.1, 0)));
   static Point3 P(0.2,0.7,-2);
   Matrix actH1, actH2;
