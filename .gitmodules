@@ -1,3 +1,4 @@
 [submodule "cmake"]
 	path = cmake
 	url = git@bitbucket.org:gtborg/cmake
+	branch = 2.4.0
