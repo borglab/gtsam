@@ -126,11 +126,9 @@ public:
       // DE returned by pose.transform_to is 3*6, but we need it to be 3*5
       // The last 3 columns are derivative with respect to change in translation
       // The derivative of translation with respect to a 2D sphere delta is 3*2 aTb_.basis()
+      // Duy made an educated guess that this needs to be rotated to the local frame
       Matrix H(3, 5);
-      std::cout << *DE << std::endl << std::endl;
-      std::cout << aTb_.basis() << std::endl << std::endl;
-      H << DE->block < 3, 3 > (0, 0), -aRb_.inverse().matrix() * aTb_.basis();
-      std::cout << H << std::endl << std::endl;
+      H << DE->block < 3, 3 > (0, 0), -aRb_.transpose() * aTb_.basis();
       *DE = H;
     }
     return q;
