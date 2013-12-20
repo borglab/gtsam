@@ -1,0 +1,3 @@
+[submodule "cmake"]
+	path = cmake
+	url = git@bitbucket.org:gtborg/cmake
