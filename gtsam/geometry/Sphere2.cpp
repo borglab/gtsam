@@ -68,22 +68,6 @@ Matrix Sphere2::skew() const {
 }
 
 /* ************************************************************************* */
-Sphere2 Sphere2::Rotate(const Rot3& R, const Sphere2& p,
-    boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) {
-  Sphere2 q(R * p.p_);
-  if (Hp)
-    (*Hp) = q.basis().transpose() * R.matrix() * p.basis();
-  if (HR)
-    (*HR) = -q.basis().transpose() * R.matrix() * p.skew();
-  return q;
-}
-
-/* ************************************************************************* */
-Sphere2 operator*(const Rot3& R, const Sphere2& p) {
-  return Sphere2::Rotate(R, p);
-}
-
-/* ************************************************************************* */
 Vector Sphere2::error(const Sphere2& q, boost::optional<Matrix&> H) const {
   Matrix Bt = basis().transpose();
   Vector xi = Bt * q.p_.vector();

@@ -8,7 +8,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Rot3.h>
 
 namespace gtsam {
 
@@ -44,7 +44,7 @@ public:
     Vector e = p_.error(q, H);
     if (H) {
       Matrix DR;
-      Sphere2::Rotate(R, z_, DR);
+      R.rotate(z_, DR);
       *H = (*H) * DR;
     }
     return e;
@@ -57,7 +57,7 @@ public:
     double e = p_.distance(q, H);
     if (H) {
       Matrix DR;
-      Sphere2::Rotate(R, z_, DR);
+      R.rotate(z_, DR);
       *H = (*H) * DR;
     }
     return (Vector(1) << e);

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
@@ -82,14 +82,6 @@ public:
       *H = basis();
     return p_;
   }
-
-  /// Rotate
-  static Sphere2 Rotate(const Rot3& R, const Sphere2& p,
-      boost::optional<Matrix&> HR = boost::none, boost::optional<Matrix&> Hp =
-          boost::none);
-
-  /// Rotate sugar
-  friend Sphere2 operator*(const Rot3& R, const Sphere2& p);
 
   /// Signed, vector-valued error between two directions
   Vector error(const Sphere2& q,

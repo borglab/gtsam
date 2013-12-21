@@ -202,6 +202,22 @@ Point3 Rot3::rotate(const Point3& p,
 }
 
 /* ************************************************************************* */
+Sphere2 Rot3::rotate(const Sphere2& p,
+    boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
+  Sphere2 q(rotate(p.point3(Hp)));
+  if (Hp)
+    (*Hp) = q.basis().transpose() * matrix() * (*Hp);
+  if (HR)
+    (*HR) = -q.basis().transpose() * matrix() * p.skew();
+  return q;
+}
+
+/* ************************************************************************* */
+Sphere2 Rot3::operator*(const Sphere2& p) const {
+  return rotate(p);
+}
+
+/* ************************************************************************* */
 // see doc/math.lyx, SO(3) section
 Point3 Rot3::unrotate(const Point3& p,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
@@ -346,7 +362,14 @@ Matrix3 Rot3::transpose() const {
 
 /* ************************************************************************* */
 Point3 Rot3::column(int index) const{
-  return Point3(rot_.col(index));
+  if(index == 3)
+    return r3();
+  else if(index == 2)
+    return r2();
+  else if(index == 1)
+    return r1(); // default returns r1
+  else
+    throw invalid_argument("Argument to Rot3::column must be 1, 2, or 3");
 }
 
 /* ************************************************************************* */

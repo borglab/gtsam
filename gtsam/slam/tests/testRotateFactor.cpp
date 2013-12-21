@@ -28,6 +28,7 @@ Point3 cameraX(0, 1, 0), cameraY(0, 0, 1), cameraZ(1, 0, 0);
 Rot3 iRc(cameraX, cameraY, cameraZ);
 // Now, let's create some rotations around IMU frame
 Sphere2 p1(1, 0, 0), p2(0, 1, 0), p3(0, 0, 1);
+Rot3 gRi1 = Rot3::Expmap(Vector3(1, 0, 0));
 // The corresponding rotations in the camera frame
 Sphere2 z1 = iRc.inverse() * p1, z2 = iRc.inverse() * p2, //
 z3 = iRc.inverse() * p3;

@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
@@ -36,8 +37,9 @@ Point3 point3_(const Sphere2& p) {
   return p.point3();
 }
 TEST(Sphere2, point3) {
-  vector < Point3 > ps;
-  ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)/sqrt(2);
+  vector<Point3> ps;
+  ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
+      / sqrt(2);
   Matrix actualH, expectedH;
   BOOST_FOREACH(Point3 p,ps) {
     Sphere2 s(p);
@@ -48,6 +50,10 @@ TEST(Sphere2, point3) {
 }
 
 //*******************************************************************************
+static Sphere2 rotate_(const Rot3& R, const Sphere2& p) {
+  return R * p;
+}
+
 TEST(Sphere2, rotate) {
   Rot3 R = Rot3::yaw(0.5);
   Sphere2 p(1, 0, 0);
@@ -57,15 +63,13 @@ TEST(Sphere2, rotate) {
   Matrix actualH, expectedH;
   // Use numerical derivatives to calculate the expected Jacobian
   {
-    expectedH = numericalDerivative11<Sphere2, Rot3>(
-        boost::bind(&Sphere2::Rotate, _1, p, boost::none, boost::none), R);
-    Sphere2::Rotate(R, p, actualH, boost::none);
+    expectedH = numericalDerivative21(rotate_,R,p);
+    R.rotate(p, actualH, boost::none);
     EXPECT(assert_equal(expectedH, actualH, 1e-9));
   }
   {
-    expectedH = numericalDerivative11<Sphere2, Sphere2>(
-        boost::bind(&Sphere2::Rotate, R, _1, boost::none, boost::none), p);
-    Sphere2::Rotate(R, p, boost::none, actualH);
+    expectedH = numericalDerivative22(rotate_,R,p);
+    R.rotate(p, boost::none, actualH);
     EXPECT(assert_equal(expectedH, actualH, 1e-9));
   }
 }
