@@ -42,6 +42,7 @@
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Sphere2.h>
 
 namespace gtsam {
 
@@ -149,7 +150,10 @@ namespace gtsam {
     static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
-    static Rot3 quaternion(double w, double x, double y, double z) { Quaternion q(w, x, y, z); return Rot3(q); }
+    static Rot3 quaternion(double w, double x, double y, double z) {
+      Quaternion q(w, x, y, z);
+      return Rot3(q);
+    }
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -158,6 +162,22 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(const Vector& w, double theta);
+
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param   w is the rotation axis, unit length
+     * @param   theta rotation angle
+     * @return incremental rotation matrix
+     */
+    static Rot3 rodriguez(const Point3& w, double theta);
+
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param   w is the rotation axis
+     * @param   theta rotation angle
+     * @return incremental rotation matrix
+     */
+    static Rot3 rodriguez(const Sphere2& w, double theta);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -294,6 +314,17 @@ namespace gtsam {
         boost::optional<Matrix&> H2 = boost::none) const;
 
     /// @}
+    /// @name Group Action on Sphere2
+    /// @{
+
+    /// rotate 3D direction from rotated coordinate frame to world frame
+    Sphere2 rotate(const Sphere2& p, boost::optional<Matrix&> HR = boost::none,
+        boost::optional<Matrix&> Hp = boost::none) const;
+
+    /// rotate 3D direction from rotated coordinate frame to world frame
+    Sphere2 operator*(const Sphere2& p) const;
+
+    /// @}
     /// @name Standard Interface
     /// @{
 
@@ -303,11 +334,12 @@ namespace gtsam {
     /** return 3*3 transpose (inverse) rotation matrix   */
     Matrix3 transpose() const;
 
-    /** returns column vector specified by index */
+    /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
-    Point3 r1() const;
-    Point3 r2() const;
-    Point3 r3() const;
+
+    Point3 r1() const; ///< first column
+    Point3 r2() const; ///< second column
+    Point3 r3() const; ///< third column
 
     /**
      * Use RQ to calculate xyz angle representation

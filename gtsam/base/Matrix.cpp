@@ -583,15 +583,16 @@ Matrix collect(size_t nrMatrices, ...)
 /* ************************************************************************* */
 // row scaling, in-place
 void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask) {
-  const size_t m = A.rows();
+  const int m = A.rows();
   if (inf_mask) {
-    for (size_t i=0; i<m; ++i) {
+    // only scale the first v.size() rows of A to support augmented Matrix
+    for (size_t i=0; i<v.size(); ++i) {
       const double& vi = v(i);
       if (!isnan(vi) && !isinf(vi))
         A.row(i) *= vi;
     }
   } else {
-    for (size_t i=0; i<m; ++i)
+    for (int i=0; i<m; ++i)
       A.row(i) *= v(i);
   }
 }

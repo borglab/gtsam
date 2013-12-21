@@ -33,7 +33,7 @@
 #ifndef EIGEN_LLT_MKL_H
 #define EIGEN_LLT_MKL_H
 
-#include "Eigen/src/Core/util/MKL_support.h"
+#include "../Core/util/MKL_support.h"
 #include <iostream>
 
 namespace Eigen { 
@@ -60,7 +60,7 @@ template<> struct mkl_llt<EIGTYPE> \
     lda = m.outerStride(); \
 \
     info = LAPACKE_##MKLPREFIX##potrf( matrix_order, uplo, size, (MKLTYPE*)a, lda ); \
-    info = (info==0) ? Success : NumericalIssue; \
+    info = (info==0) ? -1 : 1; \
     return info; \
   } \
 }; \

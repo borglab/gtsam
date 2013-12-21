@@ -172,7 +172,7 @@ public:
    * @return xihat, 3*3 element of Lie algebra that can be exponentiated
    */
   static inline Matrix wedge(double vx, double vy, double w) {
-    return Matrix_(3,3,
+    return (Matrix(3,3) <<
         0.,-w,  vx,
         w,  0., vy,
         0., 0.,  0.);

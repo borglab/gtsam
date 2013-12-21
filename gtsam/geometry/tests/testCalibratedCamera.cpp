@@ -27,7 +27,7 @@ using namespace gtsam;
 
 GTSAM_CONCEPT_MANIFOLD_INST(CalibratedCamera)
 
-static const Pose3 pose1(Matrix_(3,3,
+static const Pose3 pose1((Matrix)(Matrix(3,3) <<
               1., 0., 0.,
               0.,-1., 0.,
               0., 0.,-1.
