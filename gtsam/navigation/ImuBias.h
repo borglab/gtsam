@@ -26,12 +26,12 @@
 /*
  * NOTES:
  * - Earth-rate correction:
- * 		+ Currently the user should supply R_ECEF_to_G, which is the rotation from ECEF to Local-Level system (NED or ENU as defined by the user).
- * 		+ R_ECEF_to_G can be calculated by approximated values of latitude and longitude of the system.
- *		+ A relatively small distance is traveled w.r.t. to initial pose is assumed, since R_ECEF_to_G is constant.
- *		    Otherwise, R_ECEF_to_G should be updated each time using the current lat-lon.
+ *     + Currently the user should supply R_ECEF_to_G, which is the rotation from ECEF to Local-Level system (NED or ENU as defined by the user).
+ *     + R_ECEF_to_G can be calculated by approximated values of latitude and longitude of the system.
+ *     + A relatively small distance is traveled w.r.t. to initial pose is assumed, since R_ECEF_to_G is constant.
+ *        Otherwise, R_ECEF_to_G should be updated each time using the current lat-lon.
  *
- *	- Currently, an empty constructed is not enabled so that the user is forced to specify R_ECEF_to_G.
+ *  - Currently, an empty constructed is not enabled so that the user is forced to specify R_ECEF_to_G.
  */
 
 namespace gtsam {
@@ -40,11 +40,11 @@ namespace gtsam {
 namespace imuBias {
 
   class ConstantBias : public DerivedValue<ConstantBias> {
-	private:
+  private:
     Vector3 biasAcc_;
     Vector3 biasGyro_;
 
-	public:
+  public:
     /// dimension of the variable - used to autodetect sizes
     static const size_t dimension = 6;
 
@@ -144,17 +144,17 @@ namespace imuBias {
     /// return dimensionality of tangent space
     inline size_t dim() const { return dimension; }
 
-		/** Update the LieVector with a tangent space update */
-		inline ConstantBias retract(const Vector& v) const { return ConstantBias(biasAcc_ + v.head(3), biasGyro_ + v.tail(3)); }
+    /** Update the LieVector with a tangent space update */
+    inline ConstantBias retract(const Vector& v) const { return ConstantBias(biasAcc_ + v.head(3), biasGyro_ + v.tail(3)); }
 
-		/** @return the local coordinates of another object */
-		inline Vector localCoordinates(const ConstantBias& b) const { return b.vector() - vector(); }
+    /** @return the local coordinates of another object */
+    inline Vector localCoordinates(const ConstantBias& b) const { return b.vector() - vector(); }
 
     /// @}
     /// @name Group
     /// @{
 
-		/** identity for group operation */
+    /** identity for group operation */
     static ConstantBias identity() { return ConstantBias(); }
 
     /** invert the object and yield a new one */
@@ -213,7 +213,7 @@ namespace imuBias {
 
     /// @}
 
-	}; // ConstantBias class
+  }; // ConstantBias class
 
 
 } // namespace ImuBias

@@ -1,8 +1,8 @@
 /**
- * @file 	 testBetweenFactor.cpp
+ * @file    testBetweenFactor.cpp
  * @brief  
  * @author Duy-Nguyen Ta
- * @date 	 Aug 2, 2013
+ * @date    Aug 2, 2013
  */
 
 #include <gtsam/base/numericalDerivative.h>

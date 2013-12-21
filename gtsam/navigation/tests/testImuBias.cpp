@@ -25,8 +25,8 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST( ImuBias, Constructor)
 {
-  Vector bias_acc(Vector_(3,0.1,0.2,0.4));
-  Vector bias_gyro(Vector_(3, -0.2, 0.5, 0.03));
+  Vector bias_acc((Vector(3) << 0.1,0.2,0.4));
+  Vector bias_gyro((Vector(3) << -0.2, 0.5, 0.03));
 
   // Default Constructor
   gtsam::imuBias::ConstantBias bias1;
@@ -39,5 +39,5 @@ TEST( ImuBias, Constructor)
 }
 
 /* ************************************************************************* */
-	int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+  int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
