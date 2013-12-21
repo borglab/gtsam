@@ -16,11 +16,7 @@
  * @author Chris Beall
  */
 
-#pragma once
-
 #include <gtsam_unstable/geometry/triangulation.h>
-
-
 
 namespace gtsam {
 
