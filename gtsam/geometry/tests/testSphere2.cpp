@@ -51,7 +51,7 @@ TEST(Sphere2, point3) {
 TEST(Sphere2, rotate) {
   Rot3 R = Rot3::yaw(0.5);
   Sphere2 p(1, 0, 0);
-  Sphere2 expected = Sphere2(R.column(0));
+  Sphere2 expected = Sphere2(R.column(1));
   Sphere2 actual = R * p;
   EXPECT(assert_equal(expected, actual, 1e-8));
   Matrix actualH, expectedH;
