@@ -34,6 +34,16 @@ void Rot3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
+Rot3 Rot3::rodriguez(const Point3& w, double theta) {
+  return rodriguez((Vector)w.vector(),theta);
+}
+
+/* ************************************************************************* */
+Rot3 Rot3::rodriguez(const Sphere2& w, double theta) {
+  return rodriguez(w.point3(),theta);
+}
+
+/* ************************************************************************* */
 Rot3 Rot3::rodriguez(const Vector& w) {
   double t = w.norm();
   if (t < 1e-10) return Rot3();

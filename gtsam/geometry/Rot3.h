@@ -150,7 +150,10 @@ namespace gtsam {
     static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
-    static Rot3 quaternion(double w, double x, double y, double z) { Quaternion q(w, x, y, z); return Rot3(q); }
+    static Rot3 quaternion(double w, double x, double y, double z) {
+      Quaternion q(w, x, y, z);
+      return Rot3(q);
+    }
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -159,6 +162,22 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(const Vector& w, double theta);
+
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param   w is the rotation axis, unit length
+     * @param   theta rotation angle
+     * @return incremental rotation matrix
+     */
+    static Rot3 rodriguez(const Point3& w, double theta);
+
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param   w is the rotation axis
+     * @param   theta rotation angle
+     * @return incremental rotation matrix
+     */
+    static Rot3 rodriguez(const Sphere2& w, double theta);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
