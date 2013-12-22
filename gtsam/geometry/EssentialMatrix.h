@@ -38,6 +38,11 @@ public:
   /// @name Constructors and named constructors
   /// @{
 
+  /// Default constructor
+  EssentialMatrix() :
+      aTb_(1, 0, 0), E_(aTb_.skew()) {
+  }
+
   /// Construct from rotation and translation
   EssentialMatrix(const Rot3& aRb, const Sphere2& aTb) :
       aRb_(aRb), aTb_(aTb), E_(aTb_.skew() * aRb_.matrix()) {

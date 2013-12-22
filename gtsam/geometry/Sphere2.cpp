@@ -108,8 +108,7 @@ Vector Sphere2::localCoordinates(const Sphere2& y) const {
 
   // Make sure that the angle different between x and y is less than 90. Otherwise,
   // we can project x + xi_hat from the tangent space at x to y.
-  double cosAngle = y.p_.dot(p_);
-  assert(cosAngle > 0.0 && "Can not retract from x to y.");
+  assert(y.p_.dot(p_) > 0.0 && "Can not retract from x to y.");
 
   // Get the basis matrix
   Matrix B = basis();
