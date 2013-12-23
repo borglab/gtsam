@@ -10,9 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    VisualISAMExample.cpp
- * @brief   A visualSLAM example for the structure-from-motion problem on a simulated dataset
- * This version uses iSAM to solve the problem incrementally
+ * @file    SFMExample.cpp
+ * @brief   A structure-from-motion problem on a simulated dataset
  * @author  Duy-Nguyen Ta
  */
 
@@ -40,13 +39,21 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
-// We want to use iSAM to solve the structure-from-motion problem incrementally, so
-// include iSAM here
-#include <gtsam/nonlinear/NonlinearISAM.h>
-
-// iSAM requires as input a set set of new factors to be added stored in a factor graph,
-// and initial guesses for any new variables used in the added factors
+// When the factors are created, we will add them to a Factor Graph. As the factors we are using
+// are nonlinear factors, we will need a Nonlinear Factor Graph.
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+
+// Finally, once all of the factors have been added to our factor graph, we will want to
+// solve/optimize to graph to find the best (Maximum A Posteriori) set of variable values.
+// GTSAM includes several nonlinear optimizers to perform this step. Here we will use a
+// trust-region method known as Powell's Degleg
+#include <gtsam/nonlinear/DoglegOptimizer.h>
+
+// The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
+// nonlinear functions around an initial linearization point, then solve the linear system
+// to update the linearization point. This happens repeatedly until the solver converges
+// to a consistent set of variable values. This requires us to specify an initial guess
+// for each variable, held in a Values container.
 #include <gtsam/nonlinear/Values.h>
 
 #include <vector>
@@ -69,60 +76,43 @@ int main(int argc, char* argv[]) {
   // Create the set of ground-truth poses
   vector<Pose3> poses = createPoses();
 
-  // Create a NonlinearISAM object which will relinearize and reorder the variables every "relinearizeInterval" updates
-  int relinearizeInterval = 3;
-  NonlinearISAM isam(relinearizeInterval);
-
-  // Create a Factor Graph and Values to hold the new data
+  // Create a factor graph
   NonlinearFactorGraph graph;
-  Values initialEstimate;
 
-  // Loop over the different poses, adding the observations to iSAM incrementally
+  // Add a prior on pose x1. This indirectly specifies where the origin is.
+  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  graph.add(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise)); // add directly to graph
+
+  // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t i = 0; i < poses.size(); ++i) {
-
-    // Add factors for each landmark observation
     for (size_t j = 0; j < points.size(); ++j) {
       SimpleCamera camera(poses[i], *K);
       Point2 measurement = camera.project(points[j]);
       graph.add(GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K));
     }
-
-    // Add an initial guess for the current pose
-    // Intentionally initialize the variables off from the ground truth
-    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
-
-    // If this is the first iteration, add a prior on the first pose to set the coordinate frame
-    // and a prior on the first landmark to set the scale
-    // Also, as iSAM solves incrementally, we must wait until each is observed at least twice before
-    // adding it to iSAM.
-    if( i == 0) {
-      // Add a prior on pose x0
-      noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-      graph.add(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
-
-      // Add a prior on landmark l0
-      noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-      graph.add(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
-
-      // Add initial guesses to all observed landmarks
-      // Intentionally initialize the variables off from the ground truth
-      for (size_t j = 0; j < points.size(); ++j)
-        initialEstimate.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
-
-    } else {
-      // Update iSAM with the new factors
-      isam.update(graph, initialEstimate);
-      Values currentEstimate = isam.estimate();
-      cout << "****************************************************" << endl;
-      cout << "Frame " << i << ": " << endl;
-      currentEstimate.print("Current estimate: ");
-
-      // Clear the factor graph and values for the next iteration
-      graph.resize(0);
-      initialEstimate.clear();
-    }
   }
+
+  // Because the structure-from-motion problem has a scale ambiguity, the problem is still under-constrained
+  // Here we add a prior on the position of the first landmark. This fixes the scale by indicating the distance
+  // between the first camera and the first landmark. All other landmark positions are interpreted using this scale.
+  noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
+  graph.add(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
+  graph.print("Factor Graph:\n");
+
+  // Create the data structure to hold the initial estimate to the solution
+  // Intentionally initialize the variables off from the ground truth
+  Values initialEstimate;
+  for (size_t i = 0; i < poses.size(); ++i)
+    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
+  for (size_t j = 0; j < points.size(); ++j)
+    initialEstimate.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
+  initialEstimate.print("Initial Estimates:\n");
+
+  /* Optimize the graph and print results */
+  Values result = DoglegOptimizer(graph, initialEstimate).optimize();
+  result.print("Final results:\n");
 
   return 0;
 }
 /* ************************************************************************* */
+
