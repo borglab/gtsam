@@ -103,7 +103,7 @@ public:
       boost::optional<Matrix&> Dcal = boost::none,
       boost::optional<Matrix&> Dp = boost::none) const ;
 
-  /// Conver a pixel coordinate to ideal coordinate
+  /// Convert pixel coordinates to ideal coordinates
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;
 
   /// Derivative of uncalibrate wrpt intrinsic coordinates
