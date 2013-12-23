@@ -42,12 +42,18 @@ TEST( Cal3_S2, easy_constructor)
 /* ************************************************************************* */
 TEST( Cal3_S2, calibrate)
 {
-  Cal3_S2 K1(500, 500, 0.1, 640 / 2, 480 / 2);
   Point2 intrinsic(2,3);
   Point2 expectedimage(1320.3, 1740);
-  Point2 imagecoordinates = K1.uncalibrate(intrinsic);
+  Point2 imagecoordinates = K.uncalibrate(intrinsic);
   CHECK(assert_equal(expectedimage,imagecoordinates));
-  CHECK(assert_equal(intrinsic,K1.calibrate(imagecoordinates)));
+  CHECK(assert_equal(intrinsic,K.calibrate(imagecoordinates)));
+}
+
+/* ************************************************************************* */
+TEST( Cal3_S2, calibrate_homogeneous) {
+  Vector3 intrinsic(2, 3, 1);
+  Vector3 image(1320.3, 1740, 1);
+  CHECK(assert_equal((Vector)intrinsic,(Vector)K.calibrate(image)));
 }
 
 /* ************************************************************************* */

@@ -158,6 +158,13 @@ public:
    */
   Point2 calibrate(const Point2& p) const;
 
+  /**
+   * convert homogeneous image coordinates to intrinsic coordinates
+   * @param p point in image coordinates
+   * @return point in intrinsic coordinates
+   */
+  Vector3 calibrate(const Vector3& p) const;
+
   /// @}
   /// @name Manifold
   /// @{

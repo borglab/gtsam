@@ -90,5 +90,10 @@ Point2 Cal3_S2::calibrate(const Point2& p) const {
 }
 
 /* ************************************************************************* */
+Vector3 Cal3_S2::calibrate(const Vector3& p) const {
+  return matrix_inverse() * p;
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam
