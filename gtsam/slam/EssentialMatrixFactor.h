@@ -120,20 +120,14 @@ public:
 
     } else {
 
-      // TODO, clean up this expensive mess w Mathematica
+      // Calculate derivatives. TODO if slow: optimize with Mathematica
+      //     3*2        3*3       3*3        2*3      2*2
+      Matrix D_1T2_dir, DdP2_rot, DP2_point, Dpn_dP2, Dpi_pn;
 
-      Matrix D_1T2_dir; // 3*2
       Point3 _1T2 = E.direction().point3(D_1T2_dir);
-
       Point3 d1T2 = d * _1T2;
-
-      Matrix DdP2_rot, DP2_point;
       Point3 dP2 = E.rotation().unrotate(dP1 - d1T2, DdP2_rot, DP2_point);
-
-      Matrix Dpn_dP2; // 2*3
       Point2 pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
-
-      Matrix Dpi_pn; // 2*2
       pi = K_.uncalibrate(pn, boost::none, Dpi_pn);
 
       if (DE) {
@@ -142,8 +136,8 @@ public:
         *DE = Dpi_pn * (Dpn_dP2 * DdP2_E); // (2*2) * (2*3) * (3*5)
       }
 
-      if (Dd)
-        // (2*2) * (2*3) * (3*3) * (3*1)
+      if (Dd) // efficient backwards computation:
+        //     (2*2)   * (2*3)    * (3*3)      * (3*1)
         *Dd = -(Dpi_pn * (Dpn_dP2 * (DP2_point * _1T2.vector())));
 
     }
