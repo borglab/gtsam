@@ -66,7 +66,8 @@ public:
 class EssentialMatrixFactor2: public NoiseModelFactor2<EssentialMatrix,
     LieScalar> {
 
-  Point2 pA_, pB_; ///< Measurements in image A and B
+  Point3 dP1_; ///< 3D point corresponding to measurement in image 1
+  Point2 p1_, p2_; ///< Measurements in image 1 and image 2
   Cal3_S2 K_; ///< Calibration
 
   typedef NoiseModelFactor2<EssentialMatrix, LieScalar> Base;
@@ -77,7 +78,9 @@ public:
   /// Constructor
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
       const Cal3_S2& K, const SharedNoiseModel& model) :
-      Base(model, key1, key2), pA_(pA), pB_(pB), K_(K) {
+      Base(model, key1, key2), p1_(pA), p2_(pB), K_(K) {
+    Point2 xy = K_.calibrate(p1_);
+    dP1_ = Point3(xy.x(), xy.y(), 1);
   }
 
   /// @return a deep copy of this factor
@@ -91,7 +94,7 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor2 with measurements\n  ("
-        << pA_.vector().transpose() << ")' and (" << pB_.vector().transpose()
+        << p1_.vector().transpose() << ")' and (" << p2_.vector().transpose()
         << ")'" << std::endl;
   }
 
@@ -106,8 +109,7 @@ public:
     // The homogeneous coordinates of can be written as
     //   2R1*(P1-1T2) ==  2R1*d*(P1-1T2) == 2R1*((x,y,1)-d*1T2)
     // Note that this is just a homography for d==0
-    Point2 xy = K_.calibrate(pA_);
-    Point3 dP1(xy.x(), xy.y(), 1);
+    // The point d*P1 = (x,y,1) is computed in constructor as dP1_
 
     // Project to normalized image coordinates, then uncalibrate
     Point2 pi;
@@ -115,7 +117,7 @@ public:
 
       Point3 _1T2 = E.direction().point3();
       Point3 d1T2 = d * _1T2;
-      Point3 dP2 = E.rotation().unrotate(dP1 - d1T2);
+      Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2);
       Point2 pn = SimpleCamera::project_to_camera(dP2);
       pi = K_.uncalibrate(pn);
 
@@ -127,7 +129,7 @@ public:
 
       Point3 _1T2 = E.direction().point3(D_1T2_dir);
       Point3 d1T2 = d * _1T2;
-      Point3 dP2 = E.rotation().unrotate(dP1 - d1T2, DdP2_rot, DP2_point);
+      Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2, DdP2_rot, DP2_point);
       Point2 pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
       pi = K_.uncalibrate(pn, boost::none, Dpi_pn);
 
@@ -142,7 +144,7 @@ public:
         *Dd = -(Dpi_pn * (Dpn_dP2 * (DP2_point * _1T2.vector())));
 
     }
-    Point2 reprojectionError = pi - pB_;
+    Point2 reprojectionError = pi - p2_;
     return reprojectionError.vector();
   }
 
