@@ -32,6 +32,12 @@ public:
       Base(model, key1, key2), pA_(pA), pB_(pB), K_(K) {
   }
 
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast < gtsam::NonlinearFactor
+        > (gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
   /// print
   virtual void print(const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
@@ -84,13 +90,13 @@ public:
 
       if (DE) {
         Matrix DdP2_E(3, 5);
-        DdP2_E << DdP2_rot, - DP2_point * d * D_1T2_dir; // (3*3), (3*3) * (3*2)
+        DdP2_E << DdP2_rot, -DP2_point * d * D_1T2_dir; // (3*3), (3*3) * (3*2)
         *DE = Dpi_pn * (Dpn_dP2 * DdP2_E); // (2*2) * (2*3) * (3*5)
       }
 
       if (Dd)
         // (2*2) * (2*3) * (3*3) * (3*1)
-        *Dd = - (Dpi_pn * (Dpn_dP2 * (DP2_point * _1T2.vector())));
+        *Dd = -(Dpi_pn * (Dpn_dP2 * (DP2_point * _1T2.vector())));
 
     }
     Point2 reprojectionError = pi - pB_;
@@ -114,6 +120,8 @@ public:
 using namespace std;
 using namespace gtsam;
 
+typedef noiseModel::Isotropic::shared_ptr Model;
+
 const string filename = findExampleDataFile("5pointExample1.txt");
 SfM_data data;
 bool readOK = readBAL(filename, data);
@@ -132,6 +140,8 @@ Vector vA(size_t i) {
 Vector vB(size_t i) {
   return EssentialMatrix::Homogeneous(pB(i));
 }
+
+Cal3_S2 K;
 
 //*************************************************************************
 TEST (EssentialMatrixFactor, testData) {
@@ -198,8 +208,7 @@ TEST (EssentialMatrixFactor, fromConstraints) {
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1cm, assuming metric measurements
   NonlinearFactorGraph graph;
-  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(1,
-      0.01);
+  Model model = noiseModel::Isotropic::Sigma(1, 0.01);
   for (size_t i = 0; i < 5; i++)
     graph.add(EssentialMatrixFactor(1, pA(i), pB(i), model));
 
@@ -240,7 +249,6 @@ TEST (EssentialMatrixFactor2, factor) {
   noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(1);
 
   for (size_t i = 0; i < 5; i++) {
-    Cal3_S2 K;
     EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), K, model);
 
     // Check evaluation
@@ -278,6 +286,43 @@ TEST (EssentialMatrixFactor2, factor) {
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
     EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
   }
+}
+
+//*************************************************************************
+TEST (EssentialMatrixFactor2, minimization) {
+  // Here we want to optimize for E and inverse depths at the same time
+
+  // We start with a factor graph and add constraints to it
+  // Noise sigma is 1cm, assuming metric measurements
+  NonlinearFactorGraph graph;
+  Model model = noiseModel::Isotropic::Sigma(2, 0.01);
+  for (size_t i = 0; i < 5; i++)
+    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), K, model));
+
+  // Check error at ground truth
+  Values truth;
+  EssentialMatrix trueE(aRb, aTb);
+  truth.insert(100, trueE);
+  for (size_t i = 0; i < 5; i++) {
+    Point3 P1 = data.tracks[i].p;
+    truth.insert(i, LieScalar(1.0 / P1.z()));
+  }
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+
+  // Optimize
+  LevenbergMarquardtParams parameters;
+  // parameters.setVerbosity("ERROR");
+  LevenbergMarquardtOptimizer optimizer(graph, truth, parameters);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EssentialMatrix actual = result.at<EssentialMatrix>(100);
+  EXPECT(assert_equal(trueE, actual,1e-1));
+  for (size_t i = 0; i < 5; i++)
+    EXPECT(assert_equal(result.at<LieScalar>(i), truth.at<LieScalar>(i),1e-1));
+
+  // Check error at result
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
 }
 
 /* ************************************************************************* */
