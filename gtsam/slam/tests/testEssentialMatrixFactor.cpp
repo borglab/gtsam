@@ -43,8 +43,9 @@ public:
 
   /// vector of errors returns 1D vector
   Vector evaluateError(const EssentialMatrix& E, const LieScalar& d,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+      boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
           boost::none) const {
+
     // We have point x,y in image 1
     // Given a depth Z, the corresponding 3D point P1 = Z*(x,y,1) = (x,y,1)/d
     // We then convert to first camera by 2P = 1R2Õ*(P1-1T2)
@@ -52,18 +53,46 @@ public:
     //   2R1*(P1-1T2) ==  2R1*d*(P1-1T2) == 2R1*((x,y,1)-d*1T2)
     // Note that this is just a homography for d==0
     Point3 dP1(pA_.x(), pA_.y(), 1);
-    Point3 P2 = E.rotation().unrotate(dP1 - d * E.direction().point3());
 
     // Project to normalized image coordinates, then uncalibrate
-    const Point2 pn = SimpleCamera::project_to_camera(P2);
-    const Point2 pi = K_.uncalibrate(pn);
-    Point2 reprojectionError(pi - pB_);
+    Point2 pi;
+    if (!DE && !Dd) {
+      Point3 d1T2 = d * E.direction().point3();
+      Point3 dP2 = E.rotation().unrotate(dP1 - d1T2);
+      Point2 pn = SimpleCamera::project_to_camera(dP2);
+      pi = K_.uncalibrate(pn);
+    } else {
+      // TODO, clean up this expensive mess w Mathematica
+      Matrix D_1T2_dir; // 3*2
+      Point3 _1T2 = E.direction().point3(D_1T2_dir);
 
-    if (H1)
-      *H1 = zeros(2, 5);
-    if (H2)
-      *H2 = zeros(2, 1);
+      Matrix Dd1T2_dir = d * D_1T2_dir; // 3*2
+      Matrix Dd1T2_d = _1T2.vector(); // 3*1
+      Point3 d1T2 = d * _1T2;
 
+      Matrix Dpoint_dir = -Dd1T2_dir; // 3*2
+      Matrix Dpoint_d = -Dd1T2_d; // 3*1
+      Point3 point = dP1 - d1T2;
+
+      Matrix DdP2_rot, DP2_point;
+      Point3 dP2 = E.rotation().unrotate(point, DdP2_rot, DP2_point);
+      Matrix DdP2_E(3, 5);
+      DdP2_E << DdP2_rot, DP2_point * Dpoint_dir; // (3*3), (3*3) * (3*2)
+      Matrix DdP2_d = DP2_point * Dpoint_d; // (3*3) * (3*1)
+
+      Matrix Dpn_dP2; // 2*3
+      Point2 pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
+      Matrix Dpn_E = Dpn_dP2 * DdP2_E; // (2*3) * (3*5)
+      Matrix Dpn_d = Dpn_dP2 * DdP2_d; // (2*3) * (3*1)
+      
+      Matrix Dpi_pn; // 2*2
+      pi = K_.uncalibrate(pn, boost::none, Dpi_pn);
+      if (DE)
+        *DE = Dpi_pn * Dpn_E; // (2*2) * (2*5)
+      if (Dd)
+        *Dd = Dpi_pn * Dpn_d; // (2*2) * (2*1)
+    }
+    Point2 reprojectionError = pi - pB_;
     return reprojectionError.vector();
   }
 
@@ -236,17 +265,17 @@ TEST (EssentialMatrixFactor2, factor) {
     Vector actual = factor.evaluateError(E, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
-//    // Use numerical derivatives to calculate the expected Jacobian
-//    Matrix Hexpected1, Hexpected2;
-//    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
-//        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
-//            boost::none, boost::none);
-//    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, E, d);
-//    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, E, d);
-//
-//    // Verify the Jacobian is correct
-//    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
-//    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    // Use numerical derivatives to calculate the expected Jacobian
+    Matrix Hexpected1, Hexpected2;
+    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
+        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
+            boost::none, boost::none);
+    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, E, d);
+    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, E, d);
+
+    // Verify the Jacobian is correct
+    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
+    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
   }
 }
 
