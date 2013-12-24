@@ -106,7 +106,8 @@ public:
     // The homogeneous coordinates of can be written as
     //   2R1*(P1-1T2) ==  2R1*d*(P1-1T2) == 2R1*((x,y,1)-d*1T2)
     // Note that this is just a homography for d==0
-    Point3 dP1(pA_.x(), pA_.y(), 1);
+    Point2 xy = K_.calibrate(pA_);
+    Point3 dP1(xy.x(), xy.y(), 1);
 
     // Project to normalized image coordinates, then uncalibrate
     Point2 pi;
