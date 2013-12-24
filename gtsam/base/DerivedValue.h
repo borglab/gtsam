@@ -17,8 +17,25 @@
 
 #pragma once
 #include <boost/make_shared.hpp>
-#include <boost/pool/singleton_pool.hpp>
 #include <gtsam/base/Value.h>
+
+//////////////////
+// The following includes windows.h in some MSVC versions, so we undef min, max, and ERROR
+#include <boost/pool/singleton_pool.hpp>
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
+#ifdef ERROR
+#undef ERROR
+#endif
+//////////////////
+
 
 namespace gtsam {
 
