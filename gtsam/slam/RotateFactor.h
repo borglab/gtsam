@@ -25,6 +25,7 @@ class RotateFactor: public NoiseModelFactor1<Rot3> {
   Point3 p_, z_; ///< Predicted and measured directions, p = iRc * z
 
   typedef NoiseModelFactor1<Rot3> Base;
+  typedef RotateFactor This;
 
 public:
 
@@ -33,6 +34,11 @@ public:
       const SharedNoiseModel& model) :
       Base(model, key), p_(Rot3::Logmap(P)), z_(Rot3::Logmap(Z)) {
   }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /// print
   virtual void print(const std::string& s = "",
@@ -63,6 +69,7 @@ class RotateDirectionsFactor: public NoiseModelFactor1<Rot3> {
   Sphere2 p_, z_; ///< Predicted and measured directions, p = iRc * z
 
   typedef NoiseModelFactor1<Rot3> Base;
+  typedef RotateDirectionsFactor This;
 
 public:
 
@@ -71,6 +78,11 @@ public:
       const SharedNoiseModel& model) :
       Base(model, key), p_(p), z_(z) {
   }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /// print
   virtual void print(const std::string& s = "",

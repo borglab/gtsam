@@ -18,11 +18,14 @@
 using namespace std;
 using namespace gtsam;
 
+typedef noiseModel::Isotropic::shared_ptr Model;
+
 const string filename = findExampleDataFile("5pointExample1.txt");
 SfM_data data;
 bool readOK = readBAL(filename, data);
 Rot3 aRb = data.cameras[1].pose().rotation();
-Point3 aTb  = data.cameras[1].pose().translation();
+Point3 aTb = data.cameras[1].pose().translation();
+double baseline = 0.1; // actual baseline of the camera
 
 Point2 pA(size_t i) {
   return data.tracks[i].measurements[0].second;
@@ -36,6 +39,8 @@ Vector vA(size_t i) {
 Vector vB(size_t i) {
   return EssentialMatrix::Homogeneous(pB(i));
 }
+
+Cal3_S2 K;
 
 //*************************************************************************
 TEST (EssentialMatrixFactor, testData) {
@@ -77,18 +82,18 @@ TEST (EssentialMatrixFactor, factor) {
     // Check evaluation
     Vector expected(1);
     expected << 0;
-    Matrix HActual;
-    Vector actual = factor.evaluateError(trueE, HActual);
+    Matrix Hactual;
+    Vector actual = factor.evaluateError(trueE, Hactual);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
     // Use numerical derivatives to calculate the expected Jacobian
-    Matrix HExpected;
-    HExpected = numericalDerivative11<EssentialMatrix>(
+    Matrix Hexpected;
+    Hexpected = numericalDerivative11<EssentialMatrix>(
         boost::bind(&EssentialMatrixFactor::evaluateError, &factor, _1,
             boost::none), trueE);
 
     // Verify the Jacobian is correct
-    EXPECT(assert_equal(HExpected, HActual, 1e-8));
+    EXPECT(assert_equal(Hexpected, Hactual, 1e-8));
   }
 }
 
@@ -102,8 +107,7 @@ TEST (EssentialMatrixFactor, fromConstraints) {
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1cm, assuming metric measurements
   NonlinearFactorGraph graph;
-  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(1,
-      0.01);
+  Model model = noiseModel::Isotropic::Sigma(1, 0.01);
   for (size_t i = 0; i < 5; i++)
     graph.add(EssentialMatrixFactor(1, pA(i), pB(i), model));
 
@@ -136,6 +140,77 @@ TEST (EssentialMatrixFactor, fromConstraints) {
   for (size_t i = 0; i < 5; i++)
     EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i),vB(i)), 1e-6);
 
+}
+
+//*************************************************************************
+TEST (EssentialMatrixFactor2, factor) {
+  EssentialMatrix E(aRb, aTb);
+  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(1);
+
+  for (size_t i = 0; i < 5; i++) {
+    EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), K, model);
+
+    // Check evaluation
+    Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
+    const Point2 pn = SimpleCamera::project_to_camera(P2);
+    const Point2 pi = K.uncalibrate(pn);
+    Point2 reprojectionError(pi - pB(i));
+    Vector expected = reprojectionError.vector();
+
+    Matrix Hactual1, Hactual2;
+    LieScalar d(baseline / P1.z());
+    Vector actual = factor.evaluateError(E, d, Hactual1, Hactual2);
+    EXPECT(assert_equal(expected, actual, 1e-7));
+
+    // Use numerical derivatives to calculate the expected Jacobian
+    Matrix Hexpected1, Hexpected2;
+    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
+        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
+            boost::none, boost::none);
+    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, E, d);
+    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, E, d);
+
+    // Verify the Jacobian is correct
+    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
+    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+  }
+}
+
+//*************************************************************************
+TEST (EssentialMatrixFactor2, minimization) {
+  // Here we want to optimize for E and inverse depths at the same time
+
+  // We start with a factor graph and add constraints to it
+  // Noise sigma is 1cm, assuming metric measurements
+  NonlinearFactorGraph graph;
+  Model model = noiseModel::Isotropic::Sigma(2, 0.01);
+  for (size_t i = 0; i < 5; i++)
+    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), K, model));
+
+  // Check error at ground truth
+  Values truth;
+  EssentialMatrix trueE(aRb, aTb);
+  truth.insert(100, trueE);
+  for (size_t i = 0; i < 5; i++) {
+    Point3 P1 = data.tracks[i].p;
+    truth.insert(i, LieScalar(baseline / P1.z()));
+  }
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+
+  // Optimize
+  LevenbergMarquardtParams parameters;
+  // parameters.setVerbosity("ERROR");
+  LevenbergMarquardtOptimizer optimizer(graph, truth, parameters);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EssentialMatrix actual = result.at<EssentialMatrix>(100);
+  EXPECT(assert_equal(trueE, actual,1e-1));
+  for (size_t i = 0; i < 5; i++)
+    EXPECT(assert_equal(result.at<LieScalar>(i), truth.at<LieScalar>(i),1e-1));
+
+  // Check error at result
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
 }
 
 /* ************************************************************************* */
