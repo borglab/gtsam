@@ -25,6 +25,7 @@ SfM_data data;
 bool readOK = readBAL(filename, data);
 Rot3 aRb = data.cameras[1].pose().rotation();
 Point3 aTb = data.cameras[1].pose().translation();
+double baseline = 0.1; // actual baseline of the camera
 
 Point2 pA(size_t i) {
   return data.tracks[i].measurements[0].second;
@@ -150,25 +151,14 @@ TEST (EssentialMatrixFactor2, factor) {
     EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), K, model);
 
     // Check evaluation
-    Point3 P1 = data.tracks[i].p, P2 = E.transform_to(P1);
-    LieScalar d(1.0 / P1.z());
+    Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
     const Point2 pn = SimpleCamera::project_to_camera(P2);
     const Point2 pi = K.uncalibrate(pn);
     Point2 reprojectionError(pi - pB(i));
     Vector expected = reprojectionError.vector();
 
-    {
-      // Check calculations
-      Point3 dP1(pA(i).x(), pA(i).y(), 1);
-      EXPECT_DOUBLES_EQUAL(pA(i).x(), P1.x()/P1.z(), 1e-8);
-      EXPECT_DOUBLES_EQUAL(pA(i).y(), P1.y()/P1.z(), 1e-8);
-      EXPECT(assert_equal(P1,dP1/d));
-      Point3 otherP2 = E.rotation().unrotate(
-          d * P1 - d * E.direction().point3());
-      EXPECT(assert_equal(P2,otherP2/d));
-    }
-
     Matrix Hactual1, Hactual2;
+    LieScalar d(baseline / P1.z());
     Vector actual = factor.evaluateError(E, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
@@ -203,7 +193,7 @@ TEST (EssentialMatrixFactor2, minimization) {
   truth.insert(100, trueE);
   for (size_t i = 0; i < 5; i++) {
     Point3 P1 = data.tracks[i].p;
-    truth.insert(i, LieScalar(1.0 / P1.z()));
+    truth.insert(i, LieScalar(baseline / P1.z()));
   }
   EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
 
