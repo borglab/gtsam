@@ -57,40 +57,41 @@ public:
     // Project to normalized image coordinates, then uncalibrate
     Point2 pi;
     if (!DE && !Dd) {
-      Point3 d1T2 = d * E.direction().point3();
+
+      Point3 _1T2 = E.direction().point3();
+      Point3 d1T2 = d * _1T2;
       Point3 dP2 = E.rotation().unrotate(dP1 - d1T2);
       Point2 pn = SimpleCamera::project_to_camera(dP2);
       pi = K_.uncalibrate(pn);
+
     } else {
+
       // TODO, clean up this expensive mess w Mathematica
+
       Matrix D_1T2_dir; // 3*2
       Point3 _1T2 = E.direction().point3(D_1T2_dir);
 
-      Matrix Dd1T2_dir = d * D_1T2_dir; // 3*2
-      Matrix Dd1T2_d = _1T2.vector(); // 3*1
       Point3 d1T2 = d * _1T2;
 
-      Matrix Dpoint_dir = -Dd1T2_dir; // 3*2
-      Matrix Dpoint_d = -Dd1T2_d; // 3*1
-      Point3 point = dP1 - d1T2;
-
       Matrix DdP2_rot, DP2_point;
-      Point3 dP2 = E.rotation().unrotate(point, DdP2_rot, DP2_point);
-      Matrix DdP2_E(3, 5);
-      DdP2_E << DdP2_rot, DP2_point * Dpoint_dir; // (3*3), (3*3) * (3*2)
-      Matrix DdP2_d = DP2_point * Dpoint_d; // (3*3) * (3*1)
+      Point3 dP2 = E.rotation().unrotate(dP1 - d1T2, DdP2_rot, DP2_point);
 
       Matrix Dpn_dP2; // 2*3
       Point2 pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
-      Matrix Dpn_E = Dpn_dP2 * DdP2_E; // (2*3) * (3*5)
-      Matrix Dpn_d = Dpn_dP2 * DdP2_d; // (2*3) * (3*1)
-      
+
       Matrix Dpi_pn; // 2*2
       pi = K_.uncalibrate(pn, boost::none, Dpi_pn);
-      if (DE)
-        *DE = Dpi_pn * Dpn_E; // (2*2) * (2*5)
+
+      if (DE) {
+        Matrix DdP2_E(3, 5);
+        DdP2_E << DdP2_rot, - DP2_point * d * D_1T2_dir; // (3*3), (3*3) * (3*2)
+        *DE = Dpi_pn * (Dpn_dP2 * DdP2_E); // (2*2) * (2*3) * (3*5)
+      }
+
       if (Dd)
-        *Dd = Dpi_pn * Dpn_d; // (2*2) * (2*1)
+        // (2*2) * (2*3) * (3*3) * (3*1)
+        *Dd = - (Dpi_pn * (Dpn_dP2 * (DP2_point * _1T2.vector())));
+
     }
     Point2 reprojectionError = pi - pB_;
     return reprojectionError.vector();
