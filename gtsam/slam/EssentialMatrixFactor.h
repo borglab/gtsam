@@ -22,6 +22,7 @@ class EssentialMatrixFactor: public NoiseModelFactor1<EssentialMatrix> {
   Vector vA_, vB_; ///< Homogeneous versions
 
   typedef NoiseModelFactor1<EssentialMatrix> Base;
+  typedef EssentialMatrixFactor This;
 
 public:
 
@@ -32,6 +33,11 @@ public:
       vA_(EssentialMatrix::Homogeneous(pA)), //
       vB_(EssentialMatrix::Homogeneous(pB)) {
   }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /// print
   virtual void print(const std::string& s = "",
