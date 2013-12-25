@@ -20,6 +20,8 @@ using namespace gtsam;
 
 typedef noiseModel::Isotropic::shared_ptr Model;
 
+namespace example1 {
+
 const string filename = findExampleDataFile("5pointExample1.txt");
 SfM_data data;
 bool readOK = readBAL(filename, data);
@@ -207,10 +209,72 @@ TEST (EssentialMatrixFactor2, minimization) {
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(trueE, actual,1e-1));
   for (size_t i = 0; i < 5; i++)
-    EXPECT(assert_equal(result.at<LieScalar>(i), truth.at<LieScalar>(i),1e-1));
+    EXPECT(assert_equal(truth.at<LieScalar>(i),result.at<LieScalar>(i),1e-1));
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
+}
+
+} // namespace example1
+
+//*************************************************************************
+
+namespace example2 {
+
+const string filename = findExampleDataFile("5pointExample2.txt");
+SfM_data data;
+bool readOK = readBAL(filename, data);
+Rot3 aRb = data.cameras[1].pose().rotation();
+Point3 aTb = data.cameras[1].pose().translation();
+double baseline = 10; // actual baseline of the camera
+
+Point2 pA(size_t i) {
+  return data.tracks[i].measurements[0].second;
+}
+Point2 pB(size_t i) {
+  return data.tracks[i].measurements[1].second;
+}
+
+// Matches Cal3Bundler K(500, 0, 0);
+Cal3_S2 K(500, 500, 0, 0, 0);
+
+//*************************************************************************
+TEST (EssentialMatrixFactor2, extraTest) {
+  // Additional test with camera moving in positive X direction
+
+  // We start with a factor graph and add constraints to it
+  // Noise sigma is 1, assuming pixel measurements
+  NonlinearFactorGraph graph;
+  Model model = noiseModel::Isotropic::Sigma(2, 1);
+  for (size_t i = 0; i < data.number_tracks(); i++)
+    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), K, model));
+
+  // Check error at ground truth
+  Values truth;
+  EssentialMatrix trueE(aRb, aTb);
+  truth.insert(100, trueE);
+  for (size_t i = 0; i < data.number_tracks(); i++) {
+    Point3 P1 = data.tracks[i].p;
+    truth.insert(i, LieScalar(baseline / P1.z()));
+  }
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+
+  // Optimize
+  LevenbergMarquardtParams parameters;
+  // parameters.setVerbosity("ERROR");
+  LevenbergMarquardtOptimizer optimizer(graph, truth, parameters);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EssentialMatrix actual = result.at<EssentialMatrix>(100);
+  EXPECT(assert_equal(trueE, actual,1e-1));
+  for (size_t i = 0; i < data.number_tracks(); i++)
+    EXPECT(assert_equal(truth.at<LieScalar>(i),result.at<LieScalar>(i),1e-1));
+
+  // Check error at result
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
+}
+
 }
 
 /* ************************************************************************* */
