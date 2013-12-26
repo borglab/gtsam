@@ -19,11 +19,23 @@
 
 #include <gtsam/geometry/Sphere2.h>
 #include <gtsam/geometry/Point2.h>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_on_sphere.hpp>
 #include <iostream>
 
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+Sphere2 Sphere2::Random(boost::random::mt19937 & rng) {
+  // TODO allow any engine without including all of boost :-(
+  boost::random::uniform_on_sphere<double> randomDirection(3);
+  vector<double> d = randomDirection(rng);
+  Sphere2 result;
+  result.p_ = Point3(d[0], d[1], d[2]);
+  return result;
+}
 
 /* ************************************************************************* */
 Matrix Sphere2::basis() const {
@@ -78,7 +90,7 @@ Vector Sphere2::error(const Sphere2& q, boost::optional<Matrix&> H) const {
 
 /* ************************************************************************* */
 double Sphere2::distance(const Sphere2& q, boost::optional<Matrix&> H) const {
-  Vector xi = error(q,H);
+  Vector xi = error(q, H);
   double theta = xi.norm();
   if (H)
     *H = (xi.transpose() / theta) * (*H);

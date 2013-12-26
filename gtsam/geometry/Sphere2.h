@@ -22,6 +22,18 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 
+// (Cumbersome) forward declaration for random generator
+namespace boost {
+namespace random {
+template<class UIntType, std::size_t w, std::size_t n, std::size_t m,
+    std::size_t r, UIntType a, std::size_t u, UIntType d, std::size_t s,
+    UIntType b, std::size_t t, UIntType c, std::size_t l, UIntType f>
+class mersenne_twister_engine;
+typedef mersenne_twister_engine<uint32_t, 32, 624, 397, 31, 0x9908b0df, 11,
+    0xffffffff, 7, 0x9d2c5680, 15, 0xefc60000, 18, 1812433253> mt19937;
+}
+}
+
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
@@ -52,6 +64,9 @@ public:
       p_(x, y, z) {
     p_ = p_ / p_.norm();
   }
+
+  /// Random direction, using boost::uniform_on_sphere
+  static Sphere2 Random(boost::random::mt19937 & rng);
 
   /// @}
 
