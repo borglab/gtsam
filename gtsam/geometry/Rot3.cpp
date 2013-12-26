@@ -20,6 +20,7 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <boost/math/constants/constants.hpp>
+#include <boost/random.hpp>
 #include <cmath>
 
 using namespace std;
@@ -41,6 +42,15 @@ Rot3 Rot3::rodriguez(const Point3& w, double theta) {
 /* ************************************************************************* */
 Rot3 Rot3::rodriguez(const Sphere2& w, double theta) {
   return rodriguez(w.point3(),theta);
+}
+
+/* ************************************************************************* */
+Rot3 Rot3::Random(boost::random::mt19937 & rng) {
+  // TODO allow any engine without including all of boost :-(
+  Sphere2 w = Sphere2::Random(rng);
+  boost::random::uniform_real_distribution<double> randomAngle(-M_PI,M_PI);
+  double angle = randomAngle(rng);
+  return rodriguez(w,angle);
 }
 
 /* ************************************************************************* */

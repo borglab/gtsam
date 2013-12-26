@@ -106,6 +106,9 @@ namespace gtsam {
      */
     Rot3(const Quaternion& q);
 
+    /// Random, generates a random axis, then random angle \in [-p,pi]
+    static Rot3 Random(boost::random::mt19937 & rng);
+
     /** Virtual destructor */
     virtual ~Rot3() {}
 
