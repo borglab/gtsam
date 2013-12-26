@@ -48,6 +48,12 @@ public:
       aRb_(aRb), aTb_(aTb), E_(aTb_.skew() * aRb_.matrix()) {
   }
 
+  /// Random, using Rot3::Random and Sphere2::Random
+  template<typename Engine>
+  static EssentialMatrix Random(Engine & rng) {
+    return EssentialMatrix(Rot3::Random(rng), Sphere2::Random(rng));
+  }
+
   /// @}
 
   /// @name Testable
