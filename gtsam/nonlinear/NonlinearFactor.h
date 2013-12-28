@@ -304,10 +304,13 @@ public:
     // Call evaluate error to get Jacobians and b vector
     std::vector<Matrix> A(this->size());
     b = -unwhitenedError(x, A);
-    if((size_t) b.size() != noiseModel_->dim())
-      throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
+    if(noiseModel_)
+    {
+      if((size_t) b.size() != noiseModel_->dim())
+        throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
 
-    this->noiseModel_->WhitenSystem(A,b);
+      this->noiseModel_->WhitenSystem(A,b);
+    }
 
     std::vector<std::pair<Key, Matrix> > terms(this->size());
     // Fill in terms
@@ -318,13 +321,18 @@ public:
 
     // TODO pass unwhitened + noise model to Gaussian factor
     // For now, only linearized constrained factors have noise model at linear level!!!
-    noiseModel::Constrained::shared_ptr constrained =
+    if(noiseModel_)
+    {
+      noiseModel::Constrained::shared_ptr constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if(constrained) {
-      size_t augmentedDim = terms[0].second.rows() - constrained->dim();
-      Vector augmentedZero = zero(augmentedDim);
-      Vector augmentedb = concatVectors(2, &b, &augmentedZero);
-      return GaussianFactor::shared_ptr(new JacobianFactor(terms, augmentedb, constrained->unit(augmentedDim)));
+      if(constrained) {
+        size_t augmentedDim = terms[0].second.rows() - constrained->dim();
+        Vector augmentedZero = zero(augmentedDim);
+        Vector augmentedb = concatVectors(2, &b, &augmentedZero);
+        return GaussianFactor::shared_ptr(new JacobianFactor(terms, augmentedb, constrained->unit(augmentedDim)));
+      }
+      else
+        return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
     }
     else
       return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
