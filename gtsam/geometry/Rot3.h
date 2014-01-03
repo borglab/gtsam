@@ -79,12 +79,12 @@ namespace gtsam {
     Rot3();
 
     /**
-     * Constructor from columns
+     * Constructor from *columns*
      * @param r1 X-axis of rotated frame
      * @param r2 Y-axis of rotated frame
      * @param r3 Z-axis of rotated frame
      */
-    Rot3(const Point3& r1, const Point3& r2, const Point3& r3);
+    Rot3(const Point3& col1, const Point3& col2, const Point3& col3);
 
     /** constructor from a rotation matrix, as doubles in *row-major* order !!! */
     Rot3(double R11, double R12, double R13,
@@ -96,9 +96,6 @@ namespace gtsam {
 
     /** constructor from a rotation matrix */
     Rot3(const Matrix& R);
-
-//    /** constructor from a fixed size rotation matrix */
-//    Rot3(const Matrix3& R);
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion

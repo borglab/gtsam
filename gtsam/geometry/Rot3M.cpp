@@ -36,10 +36,10 @@ static const Matrix3 I3 = Matrix3::Identity();
 Rot3::Rot3() : rot_(Matrix3::Identity()) {}
 
 /* ************************************************************************* */
-Rot3::Rot3(const Point3& r1, const Point3& r2, const Point3& r3) {
-  rot_.col(0) = r1.vector();
-  rot_.col(1) = r2.vector();
-  rot_.col(2) = r3.vector();
+Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
+  rot_.col(0) = col1.vector();
+  rot_.col(1) = col2.vector();
+  rot_.col(2) = col3.vector();
 }
 
 /* ************************************************************************* */

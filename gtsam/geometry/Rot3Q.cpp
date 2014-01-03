@@ -32,11 +32,11 @@ namespace gtsam {
   Rot3::Rot3() : quaternion_(Quaternion::Identity()) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
+  Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) :
       quaternion_((Eigen::Matrix3d() <<
-          r1.x(), r2.x(), r3.x(),
-          r1.y(), r2.y(), r3.y(),
-          r1.z(), r2.z(), r3.z()).finished()) {}
+          col1.x(), col2.x(), col3.x(),
+          col1.y(), col2.y(), col3.y(),
+          col1.z(), col2.z(), col3.z()).finished()) {}
 
   /* ************************************************************************* */
   Rot3::Rot3(double R11, double R12, double R13,
