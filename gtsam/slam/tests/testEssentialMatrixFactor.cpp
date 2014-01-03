@@ -6,6 +6,56 @@
  */
 
 #include <gtsam/slam/EssentialMatrixFactor.h>
+
+namespace gtsam {
+
+/**
+ * Binary factor that optimizes for E and inverse depth d: assumes measurement
+ * in image 2 is perfect, and returns re-projection error in image 1
+ * This version takes an extrinsic rotation to allow for omnidirectional rigs
+ */
+class EssentialMatrixFactor3: public EssentialMatrixFactor2 {
+
+  typedef EssentialMatrixFactor3 Base;
+  typedef EssentialMatrixFactor3 This;
+
+  Rot3 cRb_; ///< Rotation from body to camera frame
+
+public:
+
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in calibrated coordinates
+   *  @param pB point in second camera, in calibrated coordinates
+   *  @param bRc extra rotation between "body" and "camera" frame
+   *  @param model noise model should be in calibrated coordinates, as well
+   */
+  EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
+      const Rot3& cRb, const SharedNoiseModel& model):
+      EssentialMatrixFactor2(key1, key2, pA, pB, model), cRb_(cRb) {
+  }
+
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  virtual void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  }
+
+  Vector evaluateError(const EssentialMatrix& E, const LieScalar& d,
+      boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
+          boost::none) const {
+    EssentialMatrix cameraE = cRb_ * E;
+    return EssentialMatrixFactor2::evaluateError(cameraE, d, DE, Dd);
+  }
+
+};
+// EssentialMatrixFactor3
+
+}
+
 #include <gtsam/slam/dataset.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -29,8 +79,9 @@ namespace example1 {
 const string filename = findExampleDataFile("5pointExample1.txt");
 SfM_data data;
 bool readOK = readBAL(filename, data);
-Rot3 aRb = data.cameras[1].pose().rotation();
-Point3 aTb = data.cameras[1].pose().translation();
+Rot3 c1Rc2 = data.cameras[1].pose().rotation();
+Point3 c1Tc2 = data.cameras[1].pose().translation();
+EssentialMatrix trueE(c1Rc2, c1Tc2);
 double baseline = 0.1; // actual baseline of the camera
 
 Point2 pA(size_t i) {
@@ -53,32 +104,30 @@ TEST (EssentialMatrixFactor, testData) {
   // Check E matrix
   Matrix expected(3, 3);
   expected << 0, 0, 0, 0, 0, -0.1, 0.1, 0, 0;
-  Matrix aEb_matrix = skewSymmetric(aTb.x(), aTb.y(), aTb.z()) * aRb.matrix();
-  EXPECT(assert_equal(expected, aEb_matrix,1e-8));
+  Matrix aEb_matrix = skewSymmetric(c1Tc2.x(), c1Tc2.y(), c1Tc2.z())
+      * c1Rc2.matrix();
+  EXPECT(assert_equal(expected, aEb_matrix, 1e-8));
 
   // Check some projections
-  EXPECT(assert_equal(Point2(0,0),pA(0),1e-8));
-  EXPECT(assert_equal(Point2(0,0.1),pB(0),1e-8));
-  EXPECT(assert_equal(Point2(0,-1),pA(4),1e-8));
-  EXPECT(assert_equal(Point2(-1,0.2),pB(4),1e-8));
+  EXPECT(assert_equal(Point2(0, 0), pA(0), 1e-8));
+  EXPECT(assert_equal(Point2(0, 0.1), pB(0), 1e-8));
+  EXPECT(assert_equal(Point2(0, -1), pA(4), 1e-8));
+  EXPECT(assert_equal(Point2(-1, 0.2), pB(4), 1e-8));
 
   // Check homogeneous version
-  EXPECT(assert_equal((Vector(3) << -1,0.2,1),vB(4),1e-8));
+  EXPECT(assert_equal((Vector(3) << -1, 0.2, 1), vB(4), 1e-8));
 
   // Check epipolar constraint
   for (size_t i = 0; i < 5; i++)
     EXPECT_DOUBLES_EQUAL(0, vA(i).transpose() * aEb_matrix * vB(i), 1e-8);
 
   // Check epipolar constraint
-  EssentialMatrix trueE(aRb, aTb);
   for (size_t i = 0; i < 5; i++)
-    EXPECT_DOUBLES_EQUAL(0, trueE.error(vA(i),vB(i)), 1e-7);
+    EXPECT_DOUBLES_EQUAL(0, trueE.error(vA(i), vB(i)), 1e-7);
 }
 
 //*************************************************************************
 TEST (EssentialMatrixFactor, factor) {
-  EssentialMatrix trueE(aRb, aTb);
-
   for (size_t i = 0; i < 5; i++) {
     EssentialMatrixFactor factor(1, pA(i), pB(i), model1);
 
@@ -115,7 +164,6 @@ TEST (EssentialMatrixFactor, minimization) {
 
   // Check error at ground truth
   Values truth;
-  EssentialMatrix trueE(aRb, aTb);
   truth.insert(1, trueE);
   EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
 
@@ -133,21 +181,19 @@ TEST (EssentialMatrixFactor, minimization) {
 
   // Check result
   EssentialMatrix actual = result.at<EssentialMatrix>(1);
-  EXPECT(assert_equal(trueE, actual,1e-1));
+  EXPECT(assert_equal(trueE, actual, 1e-1));
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
 
   // Check errors individually
   for (size_t i = 0; i < 5; i++)
-    EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i),vB(i)), 1e-6);
+    EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i), vB(i)), 1e-6);
 
 }
 
 //*************************************************************************
 TEST (EssentialMatrixFactor2, factor) {
-  EssentialMatrix E(aRb, aTb);
-
   for (size_t i = 0; i < 5; i++) {
     EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), model2);
 
@@ -159,7 +205,7 @@ TEST (EssentialMatrixFactor2, factor) {
 
     Matrix Hactual1, Hactual2;
     LieScalar d(baseline / P1.z());
-    Vector actual = factor.evaluateError(E, d, Hactual1, Hactual2);
+    Vector actual = factor.evaluateError(trueE, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
     // Use numerical derivatives to calculate the expected Jacobian
@@ -167,8 +213,8 @@ TEST (EssentialMatrixFactor2, factor) {
     boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
         boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
             boost::none, boost::none);
-    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, E, d);
-    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, E, d);
+    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, trueE, d);
+    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, trueE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
@@ -188,7 +234,6 @@ TEST (EssentialMatrixFactor2, minimization) {
 
   // Check error at ground truth
   Values truth;
-  EssentialMatrix trueE(aRb, aTb);
   truth.insert(100, trueE);
   for (size_t i = 0; i < 5; i++) {
     Point3 P1 = data.tracks[i].p;
@@ -204,16 +249,65 @@ TEST (EssentialMatrixFactor2, minimization) {
 
   // Check result
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
-  EXPECT(assert_equal(trueE, actual,1e-1));
+  EXPECT(assert_equal(trueE, actual, 1e-1));
   for (size_t i = 0; i < 5; i++)
-    EXPECT(assert_equal(truth.at<LieScalar>(i),result.at<LieScalar>(i),1e-1));
+    EXPECT(assert_equal(truth.at<LieScalar>(i), result.at<LieScalar>(i), 1e-1));
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
 }
 
 //*************************************************************************
+// Below we want to optimize for an essential matrix specified in a
+// body coordinate frame B which is rotated with respect to the camera
+// frame C, via the rotation bRc.
+
+// The rotation between body and camera is:
+gtsam::Point3 bX(1, 0, 0), bY(0, 1, 0), bZ(0, 0, 1);
+gtsam::Rot3 bRc(bX, bZ, -bY), cRb = bRc.inverse();
+
+// The "true E" in the body frame is then
+EssentialMatrix bodyE = bRc * trueE;
+
+//*************************************************************************
+TEST (EssentialMatrixFactor3, factor) {
+
+  for (size_t i = 0; i < 5; i++) {
+    EssentialMatrixFactor3 factor(100, i, pA(i), pB(i), cRb, model2);
+
+    // Check evaluation
+    Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
+    const Point2 pi = SimpleCamera::project_to_camera(P2);
+    Point2 reprojectionError(pi - pB(i));
+    Vector expected = reprojectionError.vector();
+
+    Matrix Hactual1, Hactual2;
+    LieScalar d(baseline / P1.z());
+    Vector actual = factor.evaluateError(bodyE, d, Hactual1, Hactual2);
+    EXPECT(assert_equal(expected, actual, 1e-7));
+
+//    // Use numerical derivatives to calculate the expected Jacobian
+//    Matrix Hexpected1, Hexpected2;
+//    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
+//        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
+//            boost::none, boost::none);
+//    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, trueE, d);
+//    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, trueE, d);
+//
+//    // Verify the Jacobian is correct
+//    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
+//    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+  }
+}
+
+//*************************************************************************
 TEST (EssentialMatrixFactor3, minimization) {
+
+  // As before, we start with a factor graph and add constraints to it
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < 5; i++)
+    // but now we specify the rotation bRc
+    graph.add(EssentialMatrixFactor3(100, i, pA(i), pB(i), bRc, model2));
 }
 
 } // namespace example1
@@ -237,7 +331,7 @@ Point2 pB(size_t i) {
 }
 
 boost::shared_ptr<Cal3Bundler> //
-K = boost::make_shared < Cal3Bundler > (500, 0, 0);
+K = boost::make_shared<Cal3Bundler>(500, 0, 0);
 
 Vector vA(size_t i) {
   Point2 xy = K->calibrate(pA(i));
@@ -276,14 +370,14 @@ TEST (EssentialMatrixFactor, extraTest) {
 
   // Check result
   EssentialMatrix actual = result.at<EssentialMatrix>(1);
-  EXPECT(assert_equal(trueE, actual,1e-1));
+  EXPECT(assert_equal(trueE, actual, 1e-1));
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
 
   // Check errors individually
   for (size_t i = 0; i < 5; i++)
-    EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i),vB(i)), 1e-6);
+    EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i), vB(i)), 1e-6);
 
 }
 
@@ -315,9 +409,9 @@ TEST (EssentialMatrixFactor2, extraTest) {
 
   // Check result
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
-  EXPECT(assert_equal(trueE, actual,1e-1));
+  EXPECT(assert_equal(trueE, actual, 1e-1));
   for (size_t i = 0; i < data.number_tracks(); i++)
-    EXPECT(assert_equal(truth.at<LieScalar>(i),result.at<LieScalar>(i),1e-1));
+    EXPECT(assert_equal(truth.at<LieScalar>(i), result.at<LieScalar>(i), 1e-1));
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
