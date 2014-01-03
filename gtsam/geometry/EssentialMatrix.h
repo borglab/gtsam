@@ -145,6 +145,17 @@ public:
     return q;
   }
 
+  /**
+   * Given essential matrix E in camera frame B, convert to body frame C
+   * @param cRb rotation from body frame to camera frame
+   * @param E essential matrix E in camera frame C
+   */
+  friend EssentialMatrix operator*(const Rot3& cRb, const EssentialMatrix& E) {
+    Rot3  c1Rc2 = E.aRb_.conjugate(cRb);
+    Sphere2 c1Tc2 = cRb * E.aTb_;
+    return EssentialMatrix(c1Rc2, c1Tc2);
+  }
+
   /// epipolar error, algebraic
   double error(const Vector& vA, const Vector& vB, //
       boost::optional<Matrix&> H = boost::none) const {

@@ -66,19 +66,6 @@ TEST (EssentialMatrix, transform_to) {
 
 //*************************************************************************
 
-/**
- * Given essential matrix E in camera frame B, convert to body frame C
- * @param cRb rotation from body frame to camera frame
- * @param E essential matrix E in camera frame C
- */
-EssentialMatrix operator*(const Rot3& cRb, const EssentialMatrix& E) {
-  Rot3 b1Rb2 = E.rotation();
-  Sphere2 b1Tb2 = E.direction();
-  Rot3  c1Rc2 = b1Rb2.conjugate(cRb);
-  Sphere2 c1Tc2 = cRb * b1Tb2;
-  return EssentialMatrix(c1Rc2, c1Tc2);
-}
-
 TEST (EssentialMatrix, rotate) {
   // Suppose the essential matrix is specified in a body coordinate frame B
   // which is rotated with respect to the camera frame C, via rotation bRc.
