@@ -458,8 +458,8 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
   } else {
     noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
     if(diagonal) {
-      Vector invsigmas2 = update.model_->invsigmas().cwiseProduct(update.model_->invsigmas());
-      updateInform.noalias() = updateA.transpose() * invsigmas2.asDiagonal() * updateA;
+      const Vector& precisions = diagonal->precisions();
+      updateInform.noalias() = updateA.transpose() * precisions.asDiagonal() * updateA;
     } else
       throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
   }

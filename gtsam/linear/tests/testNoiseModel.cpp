@@ -17,18 +17,21 @@
  */
 
 
-#include <iostream>
-#include <boost/foreach.hpp>
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/linear/NoiseModel.h>
+
+#include <boost/foreach.hpp>
+#include <boost/assign/std/vector.hpp>
+
+#include <iostream>
+#include <limits>
 
 using namespace std;
 using namespace gtsam;
 using namespace noiseModel;
+using namespace boost::assign;
 
 static double sigma = 2, s_1=1.0/sigma, var = sigma*sigma, prc = 1.0/var;
 static Matrix R = Matrix_(3, 3,
@@ -40,7 +43,7 @@ static Matrix Sigma = Matrix_(3, 3,
     0.0, var, 0.0,
     0.0, 0.0, var);
 
-//static double inf = std::numeric_limits<double>::infinity();
+//static double inf = numeric_limits<double>::infinity();
 
 /* ************************************************************************* */
 TEST(NoiseModel, constructors)
@@ -155,7 +158,12 @@ TEST(NoiseModel, ConstrainedConstructors )
   Vector sigmas = Vector_(3, sigma, 0.0, 0.0);
   Vector mu = Vector_(3, 200.0, 300.0, 400.0);
   actual = Constrained::All(d);
+  // TODO: why should this be a thousand ??? Dummy variable?
   EXPECT(assert_equal(gtsam::repeat(d, 1000.0), actual->mu()));
+  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->sigmas()));
+  double Inf = numeric_limits<double>::infinity();
+  EXPECT(assert_equal(gtsam::repeat(d, Inf), actual->invsigmas()));
+  EXPECT(assert_equal(gtsam::repeat(d, Inf), actual->precisions()));
 
   actual = Constrained::All(d, m);
   EXPECT(assert_equal(gtsam::repeat(d, m), actual->mu()));
