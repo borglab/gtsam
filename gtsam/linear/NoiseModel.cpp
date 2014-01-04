@@ -308,8 +308,6 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   list<Triple> Rd;
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
-  Vector invsigmas = reciprocal(sigmas_);
-  Vector weights = emul(invsigmas,invsigmas); // calculate weights once
 
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
@@ -321,7 +319,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 
     // Calculate weighted pseudo-inverse and corresponding precision
     gttic(constrained_QR_weightedPseudoinverse);
-    double precision = weightedPseudoinverse(a, weights, pseudo);
+    double precision = weightedPseudoinverse(a, precisions_, pseudo);
     gttoc(constrained_QR_weightedPseudoinverse);
 
     // If precision is zero, no information on this column

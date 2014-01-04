@@ -342,11 +342,9 @@ namespace gtsam {
       Vector mu_;
 
       /** protected constructor takes sigmas */
-      // Keeps only sigmas and calculates invsigmas when necessary
       Constrained(const Vector& sigmas = zero(1)) :
         Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {}
 
-      // Keeps only sigmas and calculates invsigmas when necessary
       // allows for specifying mu
       Constrained(const Vector& mu, const Vector& sigmas) :
         Diagonal(sigmas), mu_(mu) {}

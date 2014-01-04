@@ -254,10 +254,10 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) : info_(matrix_) {
     if(jf.model_->isConstrained())
       throw invalid_argument("Cannot construct HessianFactor from JacobianFactor with constrained noise model");
     else {
-      Vector invsigmas = jf.model_->invsigmas().cwiseProduct(jf.model_->invsigmas());
+      const Vector& precisions = jf.model_->precisions();
       info_.copyStructureFrom(jf.Ab_);
       BlockInfo::constBlock A = jf.Ab_.full();
-      matrix_.noalias() = A.transpose() * invsigmas.asDiagonal() * A;
+      matrix_.noalias() = A.transpose() * precisions.asDiagonal() * A;
     }
   } else if(dynamic_cast<const HessianFactor*>(&gf)) {
     const HessianFactor& hf(static_cast<const HessianFactor&>(gf));
