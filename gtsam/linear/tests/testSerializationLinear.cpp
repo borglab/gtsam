@@ -70,13 +70,13 @@ TEST (Serialization, noiseModels) {
   EXPECT(equalsDereferencedXML<noiseModel::Isotropic::shared_ptr>(iso3));
   EXPECT(equalsDereferencedBinary<noiseModel::Isotropic::shared_ptr>(iso3));
 
-  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
-  EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3));
-  EXPECT(equalsDereferencedBinary<noiseModel::Constrained::shared_ptr>(constrained3));
-
   EXPECT(equalsDereferenced<noiseModel::Unit::shared_ptr>(unit3));
   EXPECT(equalsDereferencedXML<noiseModel::Unit::shared_ptr>(unit3));
   EXPECT(equalsDereferencedBinary<noiseModel::Unit::shared_ptr>(unit3));
+
+  EXPECT(equalsDereferencedBinary<noiseModel::Constrained::shared_ptr>(constrained3));
+  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3)); // FAILS: "Exception: input stream error"
+  EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3)); // FAILS: "Exception: input stream error"
 }
 
 /* ************************************************************************* */
@@ -102,9 +102,9 @@ TEST (Serialization, SharedNoiseModel_noiseModels) {
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(unit3));
   EXPECT(equalsDereferencedBinary<SharedNoiseModel>(unit3));
 
-  EXPECT(equalsDereferenced<SharedNoiseModel>(constrained3));
-  EXPECT(equalsDereferencedXML<SharedNoiseModel>(constrained3));
   EXPECT(equalsDereferencedBinary<SharedNoiseModel>(constrained3));
+  EXPECT(equalsDereferenced<SharedNoiseModel>(constrained3)); // FAILS: "Exception: input stream error"
+  EXPECT(equalsDereferencedXML<SharedNoiseModel>(constrained3)); // FAILS: "Exception: input stream error"
 }
 
 /* ************************************************************************* */
@@ -121,9 +121,9 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
   EXPECT(equalsDereferencedXML<SharedDiagonal>(unit3));
   EXPECT(equalsDereferencedBinary<SharedDiagonal>(unit3));
 
-  EXPECT(equalsDereferenced<SharedDiagonal>(constrained3));
-  EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3));
   EXPECT(equalsDereferencedBinary<SharedDiagonal>(constrained3));
+  EXPECT(equalsDereferenced<SharedDiagonal>(constrained3)); // FAILS: "Exception: input stream error"
+  EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3)); // FAILS: "Exception: input stream error"
 }
 
 /* Create GUIDs for factors */
