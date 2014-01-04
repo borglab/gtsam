@@ -266,7 +266,6 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
   result.linearVariables = separatorValues_.size();
 
   // Pull out parameters we'll use
-  const NonlinearOptimizerParams::Verbosity nloVerbosity = parameters_.verbosity;
   const LevenbergMarquardtParams::VerbosityLM lmVerbosity = parameters_.verbosityLM;
   double lambda = parameters_.lambdaInitial;
 

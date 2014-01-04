@@ -116,7 +116,10 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
      // Reorder and remove from ordering, solution, and fixed keys
      ordering.permuteInPlace(unusedToEnd);
      BOOST_REVERSE_FOREACH(Key key, unusedKeys) {
-       Ordering::value_type removed = ordering.pop_back();
+#ifndef NDEBUG
+       Ordering::value_type removed =
+#endif
+           ordering.pop_back();
        assert(removed.first == key);
        theta.erase(key);
        fixedVariables.erase(key);
