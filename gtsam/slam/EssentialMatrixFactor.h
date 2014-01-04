@@ -218,7 +218,7 @@ public:
    *  Constructor
    *  @param pA point in first camera, in calibrated coordinates
    *  @param pB point in second camera, in calibrated coordinates
-   *  @param bRc extra rotation between "body" and "camera" frame
+   *  @param cRb extra rotation from "body" to "camera" frame
    *  @param model noise model should be in calibrated coordinates, as well
    */
   EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
