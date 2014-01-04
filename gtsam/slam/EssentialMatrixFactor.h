@@ -226,6 +226,19 @@ public:
       EssentialMatrixFactor2(key1, key2, pA, pB, model), cRb_(cRb) {
   }
 
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in pixel coordinates
+   *  @param pB point in second camera, in pixel coordinates
+   *  @param K calibration object, will be used only in constructor
+   *  @param model noise model should be in pixels, as well
+   */
+  template<class CALIBRATION>
+  EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
+      const Rot3& cRb, const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
+      EssentialMatrixFactor2(key1, key2, pA, pB, model, K), cRb_(cRb) {
+  }
+
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(

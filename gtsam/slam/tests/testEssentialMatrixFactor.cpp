@@ -25,6 +25,10 @@ noiseModel::Isotropic::shared_ptr model1 = noiseModel::Isotropic::Sigma(1,
 // Noise model for second type of factor is evaluating pixel coordinates
 noiseModel::Unit::shared_ptr model2 = noiseModel::Unit::Create(2);
 
+// The rotation between body and camera is:
+gtsam::Point3 bX(1, 0, 0), bY(0, 1, 0), bZ(0, 0, 1);
+gtsam::Rot3 cRb = gtsam::Rot3(bX, bZ, -bY).inverse();
+
 namespace example1 {
 
 const string filename = findExampleDataFile("5pointExample1.txt");
@@ -32,6 +36,7 @@ SfM_data data;
 bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
+PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(),Cal3_S2());
 EssentialMatrix trueE(c1Rc2, c1Tc2);
 double baseline = 0.1; // actual baseline of the camera
 
@@ -149,8 +154,8 @@ TEST (EssentialMatrixFactor2, factor) {
     EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), model2);
 
     // Check evaluation
-    Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
-    const Point2 pi = SimpleCamera::project_to_camera(P2);
+    Point3 P1 = data.tracks[i].p;
+    const Point2 pi = camera2.project(P1);
     Point2 reprojectionError(pi - pB(i));
     Vector expected = reprojectionError.vector();
 
@@ -213,12 +218,8 @@ TEST (EssentialMatrixFactor2, minimization) {
 // body coordinate frame B which is rotated with respect to the camera
 // frame C, via the rotation bRc.
 
-// The rotation between body and camera is:
-gtsam::Point3 bX(1, 0, 0), bY(0, 1, 0), bZ(0, 0, 1);
-gtsam::Rot3 bRc(bX, bZ, -bY), cRb = bRc.inverse();
-
 // The "true E" in the body frame is then
-EssentialMatrix bodyE = bRc * trueE;
+EssentialMatrix bodyE = cRb.inverse() * trueE;
 
 //*************************************************************************
 TEST (EssentialMatrixFactor3, factor) {
@@ -227,8 +228,8 @@ TEST (EssentialMatrixFactor3, factor) {
     EssentialMatrixFactor3 factor(100, i, pA(i), pB(i), cRb, model2);
 
     // Check evaluation
-    Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
-    const Point2 pi = SimpleCamera::project_to_camera(P2);
+    Point3 P1 = data.tracks[i].p;
+    const Point2 pi = camera2.project(P1);
     Point2 reprojectionError(pi - pB(i));
     Vector expected = reprojectionError.vector();
 
@@ -258,7 +259,16 @@ TEST (EssentialMatrixFactor3, minimization) {
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < 5; i++)
     // but now we specify the rotation bRc
-    graph.add(EssentialMatrixFactor3(100, i, pA(i), pB(i), bRc, model2));
+    graph.add(EssentialMatrixFactor3(100, i, pA(i), pB(i), cRb, model2));
+
+  // Check error at ground truth
+  Values truth;
+  truth.insert(100, bodyE);
+  for (size_t i = 0; i < 5; i++) {
+    Point3 P1 = data.tracks[i].p;
+    truth.insert(i, LieScalar(baseline / P1.z()));
+  }
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
 }
 
 } // namespace example1
@@ -272,6 +282,8 @@ SfM_data data;
 bool readOK = readBAL(filename, data);
 Rot3 aRb = data.cameras[1].pose().rotation();
 Point3 aTb = data.cameras[1].pose().translation();
+EssentialMatrix trueE(aRb, aTb);
+
 double baseline = 10; // actual baseline of the camera
 
 Point2 pA(size_t i) {
@@ -283,6 +295,7 @@ Point2 pB(size_t i) {
 
 boost::shared_ptr<Cal3Bundler> //
 K = boost::make_shared<Cal3Bundler>(500, 0, 0);
+PinholeCamera<Cal3Bundler> camera2(data.cameras[1].pose(),*K);
 
 Vector vA(size_t i) {
   Point2 xy = K->calibrate(pA(i));
@@ -294,7 +307,7 @@ Vector vB(size_t i) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor, extraTest) {
+TEST (EssentialMatrixFactor, extraMinimization) {
   // Additional test with camera moving in positive X direction
 
   NonlinearFactorGraph graph;
@@ -303,7 +316,6 @@ TEST (EssentialMatrixFactor, extraTest) {
 
   // Check error at ground truth
   Values truth;
-  EssentialMatrix trueE(aRb, aTb);
   truth.insert(1, trueE);
   EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
 
@@ -334,6 +346,36 @@ TEST (EssentialMatrixFactor, extraTest) {
 
 //*************************************************************************
 TEST (EssentialMatrixFactor2, extraTest) {
+  for (size_t i = 0; i < 5; i++) {
+    EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), model2, K);
+
+    // Check evaluation
+    Point3 P1 = data.tracks[i].p;
+    const Point2 pi = camera2.project(P1);
+    Point2 reprojectionError(pi - pB(i));
+    Vector expected = reprojectionError.vector();
+
+    Matrix Hactual1, Hactual2;
+    LieScalar d(baseline / P1.z());
+    Vector actual = factor.evaluateError(trueE, d, Hactual1, Hactual2);
+    EXPECT(assert_equal(expected, actual, 1e-7));
+
+    // Use numerical derivatives to calculate the expected Jacobian
+    Matrix Hexpected1, Hexpected2;
+    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
+        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
+            boost::none, boost::none);
+    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, trueE, d);
+    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, trueE, d);
+
+    // Verify the Jacobian is correct
+    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
+    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+  }
+}
+
+//*************************************************************************
+TEST (EssentialMatrixFactor2, extraMinimization) {
   // Additional test with camera moving in positive X direction
 
   // We start with a factor graph and add constraints to it
@@ -344,7 +386,6 @@ TEST (EssentialMatrixFactor2, extraTest) {
 
   // Check error at ground truth
   Values truth;
-  EssentialMatrix trueE(aRb, aTb);
   truth.insert(100, trueE);
   for (size_t i = 0; i < data.number_tracks(); i++) {
     Point3 P1 = data.tracks[i].p;
@@ -366,6 +407,40 @@ TEST (EssentialMatrixFactor2, extraTest) {
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
+}
+
+//*************************************************************************
+TEST (EssentialMatrixFactor3, extraTest) {
+
+  // The "true E" in the body frame is
+  EssentialMatrix bodyE = cRb.inverse() * trueE;
+
+  for (size_t i = 0; i < 5; i++) {
+    EssentialMatrixFactor3 factor(100, i, pA(i), pB(i), cRb, model2, K);
+
+    // Check evaluation
+    Point3 P1 = data.tracks[i].p;
+    const Point2 pi = camera2.project(P1);
+    Point2 reprojectionError(pi - pB(i));
+    Vector expected = reprojectionError.vector();
+
+    Matrix Hactual1, Hactual2;
+    LieScalar d(baseline / P1.z());
+    Vector actual = factor.evaluateError(bodyE, d, Hactual1, Hactual2);
+    EXPECT(assert_equal(expected, actual, 1e-7));
+
+    // Use numerical derivatives to calculate the expected Jacobian
+    Matrix Hexpected1, Hexpected2;
+    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
+        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
+            boost::none, boost::none);
+    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, bodyE, d);
+    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, bodyE, d);
+
+    // Verify the Jacobian is correct
+    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
+    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+  }
 }
 
 } // namespace example2
