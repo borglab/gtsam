@@ -269,6 +269,21 @@ TEST (EssentialMatrixFactor3, minimization) {
     truth.insert(i, LieScalar(baseline / P1.z()));
   }
   EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+
+  // Optimize
+  LevenbergMarquardtParams parameters;
+  // parameters.setVerbosity("ERROR");
+  LevenbergMarquardtOptimizer optimizer(graph, truth, parameters);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EssentialMatrix actual = result.at<EssentialMatrix>(100);
+  EXPECT(assert_equal(bodyE, actual, 1e-1));
+  for (size_t i = 0; i < 5; i++)
+    EXPECT(assert_equal(truth.at<LieScalar>(i), result.at<LieScalar>(i), 1e-1));
+
+  // Check error at result
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
 }
 
 } // namespace example1
