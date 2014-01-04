@@ -79,12 +79,12 @@ namespace gtsam {
     Rot3();
 
     /**
-     * Constructor from columns
+     * Constructor from *columns*
      * @param r1 X-axis of rotated frame
      * @param r2 Y-axis of rotated frame
      * @param r3 Z-axis of rotated frame
      */
-    Rot3(const Point3& r1, const Point3& r2, const Point3& r3);
+    Rot3(const Point3& col1, const Point3& col2, const Point3& col3);
 
     /** constructor from a rotation matrix, as doubles in *row-major* order !!! */
     Rot3(double R11, double R12, double R13,
@@ -97,14 +97,14 @@ namespace gtsam {
     /** constructor from a rotation matrix */
     Rot3(const Matrix& R);
 
-//    /** constructor from a fixed size rotation matrix */
-//    Rot3(const Matrix3& R);
-
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
      * @param q The quaternion
      */
     Rot3(const Quaternion& q);
+
+    /// Random, generates a random axis, then random angle \in [-p,pi]
+    static Rot3 Random(boost::random::mt19937 & rng);
 
     /** Virtual destructor */
     virtual ~Rot3() {}
@@ -224,6 +224,16 @@ namespace gtsam {
 
     /** compose two rotations */
     Rot3 operator*(const Rot3& R2) const;
+
+    /**
+     * Conjugation: given a rotation acting in frame B, compute rotation c1Rc2 acting in a frame C
+     * @param cRb rotation from B frame to C frame
+     * @return c1Rc2 = cRb * b1Rb2 * cRb'
+     */
+    Rot3 conjugate(const Rot3& cRb) const {
+      // TODO: do more efficiently by using Eigen or quaternion properties
+      return cRb * (*this) * cRb.inverse();
+    }
 
     /**
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'

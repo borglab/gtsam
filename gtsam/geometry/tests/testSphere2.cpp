@@ -23,6 +23,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/random.hpp>
 #include <boost/assign/std/vector.hpp>
 
 using namespace boost::assign;
@@ -63,12 +64,12 @@ TEST(Sphere2, rotate) {
   Matrix actualH, expectedH;
   // Use numerical derivatives to calculate the expected Jacobian
   {
-    expectedH = numericalDerivative21(rotate_,R,p);
+    expectedH = numericalDerivative21(rotate_, R, p);
     R.rotate(p, actualH, boost::none);
     EXPECT(assert_equal(expectedH, actualH, 1e-9));
   }
   {
-    expectedH = numericalDerivative22(rotate_,R,p);
+    expectedH = numericalDerivative22(rotate_, R, p);
     R.rotate(p, boost::none, actualH);
     EXPECT(assert_equal(expectedH, actualH, 1e-9));
   }
@@ -236,6 +237,21 @@ TEST(Sphere2, localCoordinates_retract) {
 //  EXPECT(assert_equal(numericalH2,actualH2));
 //
 //}
+
+//*******************************************************************************
+TEST(Sphere2, Random) {
+  boost::random::mt19937 rng(42);
+  // Check that is deterministic given same random seed
+  Point3 expected(-0.667578, 0.671447, 0.321713);
+  Point3 actual = Sphere2::Random(rng).point3();
+  EXPECT(assert_equal(expected,actual,1e-5));
+  // Check that means are all zero at least
+  Point3 expectedMean, actualMean;
+  for (size_t i = 0; i < 100; i++)
+    actualMean = actualMean + Sphere2::Random(rng).point3();
+  actualMean = actualMean/100;
+  EXPECT(assert_equal(expectedMean,actualMean,0.1));
+}
 
 /* ************************************************************************* */
 int main() {
