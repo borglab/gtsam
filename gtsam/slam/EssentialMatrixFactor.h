@@ -20,26 +20,46 @@ namespace gtsam {
  */
 class EssentialMatrixFactor: public NoiseModelFactor1<EssentialMatrix> {
 
-  Point2 pA_, pB_; ///< Measurements in image A and B
-  Vector vA_, vB_; ///< Homogeneous versions
+  Vector vA_, vB_; ///< Homogeneous versions, in ideal coordinates
 
   typedef NoiseModelFactor1<EssentialMatrix> Base;
   typedef EssentialMatrixFactor This;
 
 public:
 
-  /// Constructor
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in calibrated coordinates
+   *  @param pB point in second camera, in calibrated coordinates
+   *  @param model noise model is about dot product in ideal, homogeneous coordinates
+   */
   EssentialMatrixFactor(Key key, const Point2& pA, const Point2& pB,
       const SharedNoiseModel& model) :
-      Base(model, key), pA_(pA), pB_(pB), //
-      vA_(EssentialMatrix::Homogeneous(pA)), //
-      vB_(EssentialMatrix::Homogeneous(pB)) {
+      Base(model, key) {
+    vA_ = EssentialMatrix::Homogeneous(pA);
+    vB_ = EssentialMatrix::Homogeneous(pB);
+  }
+
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in pixel coordinates
+   *  @param pB point in second camera, in pixel coordinates
+   *  @param model noise model is about dot product in ideal, homogeneous coordinates
+   *  @param K calibration object, will be used only in constructor
+   */
+  template<class CALIBRATION>
+  EssentialMatrixFactor(Key key, const Point2& pA, const Point2& pB,
+      const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
+      Base(model, key) {
+    assert(K);
+    vA_ = EssentialMatrix::Homogeneous(K->calibrate(pA));
+    vB_ = EssentialMatrix::Homogeneous(K->calibrate(pB));
   }
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast < gtsam::NonlinearFactor
-        > (gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// print
@@ -47,46 +67,72 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor with measurements\n  ("
-        << pA_.vector().transpose() << ")' and (" << pB_.vector().transpose()
-        << ")'" << std::endl;
+        << vA_.transpose() << ")' and (" << vB_.transpose() << ")'"
+        << std::endl;
   }
 
   /// vector of errors returns 1D vector
   Vector evaluateError(const EssentialMatrix& E, boost::optional<Matrix&> H =
       boost::none) const {
-    return (Vector(1) << E.error(vA_, vB_, H));
+    Vector error(1);
+    error << E.error(vA_, vB_, H);
+    return error;
   }
 
 };
 
 /**
- * Binary factor that optimizes for E and inverse depth: assumes measurement
+ * Binary factor that optimizes for E and inverse depth d: assumes measurement
  * in image 2 is perfect, and returns re-projection error in image 1
  */
 class EssentialMatrixFactor2: public NoiseModelFactor2<EssentialMatrix,
     LieScalar> {
 
   Point3 dP1_; ///< 3D point corresponding to measurement in image 1
-  Point2 p1_, p2_; ///< Measurements in image 1 and image 2
-  Cal3_S2 K_; ///< Calibration
+  Point2 pn_; ///< Measurement in image 2, in ideal coordinates
+  double f_; ///< approximate conversion factor for error scaling
 
   typedef NoiseModelFactor2<EssentialMatrix, LieScalar> Base;
   typedef EssentialMatrixFactor2 This;
 
 public:
 
-  /// Constructor
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in calibrated coordinates
+   *  @param pB point in second camera, in calibrated coordinates
+   *  @param model noise model should be in pixels, as well
+   */
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
-      const Cal3_S2& K, const SharedNoiseModel& model) :
-      Base(model, key1, key2), p1_(pA), p2_(pB), K_(K) {
-    Point2 xy = K_.calibrate(p1_);
-    dP1_ = Point3(xy.x(), xy.y(), 1);
+      const SharedNoiseModel& model) :
+      Base(model, key1, key2) {
+    dP1_ = Point3(pA.x(), pA.y(), 1);
+    pn_ = pB;
+    f_ = 1.0;
+  }
+
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in pixel coordinates
+   *  @param pB point in second camera, in pixel coordinates
+   *  @param K calibration object, will be used only in constructor
+   *  @param model noise model should be in pixels, as well
+   */
+  template<class CALIBRATION>
+  EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
+      const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
+      Base(model, key1, key2) {
+    assert(K);
+    Point2 p1 = K->calibrate(pA);
+    dP1_ = Point3(p1.x(), p1.y(), 1); // d*P1 = (x,y,1)
+    pn_ = K->calibrate(pB);
+    f_ = 0.5 * (K->fx() + K->fy());
   }
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast < gtsam::NonlinearFactor
-        > (gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// print
@@ -94,62 +140,143 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor2 with measurements\n  ("
-        << p1_.vector().transpose() << ")' and (" << p2_.vector().transpose()
+        << dP1_.vector().transpose() << ")' and (" << pn_.vector().transpose()
         << ")'" << std::endl;
   }
 
-  /// vector of errors returns 1D vector
+  /*
+   * Vector of errors returns 2D vector
+   * @param E essential matrix
+   * @param d inverse depth d
+   */
   Vector evaluateError(const EssentialMatrix& E, const LieScalar& d,
       boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
           boost::none) const {
 
     // We have point x,y in image 1
     // Given a depth Z, the corresponding 3D point P1 = Z*(x,y,1) = (x,y,1)/d
-    // We then convert to first camera by 2P = 1R2Õ*(P1-1T2)
+    // We then convert to second camera by P2 = 1R2Õ*(P1-1T2)
     // The homogeneous coordinates of can be written as
     //   2R1*(P1-1T2) ==  2R1*d*(P1-1T2) == 2R1*((x,y,1)-d*1T2)
-    // Note that this is just a homography for d==0
+    // where we multiplied with d which yields equivalent homogeneous coordinates.
+    // Note that this is just the homography 2R1 for d==0
     // The point d*P1 = (x,y,1) is computed in constructor as dP1_
 
     // Project to normalized image coordinates, then uncalibrate
-    Point2 pi;
+    Point2 pn;
     if (!DE && !Dd) {
 
       Point3 _1T2 = E.direction().point3();
       Point3 d1T2 = d * _1T2;
-      Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2);
-      Point2 pn = SimpleCamera::project_to_camera(dP2);
-      pi = K_.uncalibrate(pn);
+      Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2); // 2R1*((x,y,1)-d*1T2)
+      pn = SimpleCamera::project_to_camera(dP2);
 
     } else {
 
       // Calculate derivatives. TODO if slow: optimize with Mathematica
-      //     3*2        3*3       3*3        2*3      2*2
-      Matrix D_1T2_dir, DdP2_rot, DP2_point, Dpn_dP2, Dpi_pn;
+      //     3*2        3*3       3*3        2*3
+      Matrix D_1T2_dir, DdP2_rot, DP2_point, Dpn_dP2;
 
       Point3 _1T2 = E.direction().point3(D_1T2_dir);
       Point3 d1T2 = d * _1T2;
       Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2, DdP2_rot, DP2_point);
-      Point2 pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
-      pi = K_.uncalibrate(pn, boost::none, Dpi_pn);
+      pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
 
       if (DE) {
         Matrix DdP2_E(3, 5);
         DdP2_E << DdP2_rot, -DP2_point * d * D_1T2_dir; // (3*3), (3*3) * (3*2)
-        *DE = Dpi_pn * (Dpn_dP2 * DdP2_E); // (2*2) * (2*3) * (3*5)
+        *DE = f_ * Dpn_dP2 * DdP2_E; // (2*3) * (3*5)
       }
 
       if (Dd) // efficient backwards computation:
-        //     (2*2)   * (2*3)    * (3*3)      * (3*1)
-        *Dd = -(Dpi_pn * (Dpn_dP2 * (DP2_point * _1T2.vector())));
+        //      (2*3)    * (3*3)      * (3*1)
+        *Dd = -f_ * (Dpn_dP2 * (DP2_point * _1T2.vector()));
 
     }
-    Point2 reprojectionError = pi - p2_;
-    return reprojectionError.vector();
+    Point2 reprojectionError = pn - pn_;
+    return f_ * reprojectionError.vector();
   }
 
 };
 // EssentialMatrixFactor2
+
+/**
+ * Binary factor that optimizes for E and inverse depth d: assumes measurement
+ * in image 2 is perfect, and returns re-projection error in image 1
+ * This version takes an extrinsic rotation to allow for omni-directional rigs
+ */
+class EssentialMatrixFactor3: public EssentialMatrixFactor2 {
+
+  typedef EssentialMatrixFactor2 Base;
+  typedef EssentialMatrixFactor3 This;
+
+  Rot3 cRb_; ///< Rotation from body to camera frame
+
+public:
+
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in calibrated coordinates
+   *  @param pB point in second camera, in calibrated coordinates
+   *  @param bRc extra rotation between "body" and "camera" frame
+   *  @param model noise model should be in calibrated coordinates, as well
+   */
+  EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
+      const Rot3& cRb, const SharedNoiseModel& model) :
+      EssentialMatrixFactor2(key1, key2, pA, pB, model), cRb_(cRb) {
+  }
+
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in pixel coordinates
+   *  @param pB point in second camera, in pixel coordinates
+   *  @param K calibration object, will be used only in constructor
+   *  @param model noise model should be in pixels, as well
+   */
+  template<class CALIBRATION>
+  EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
+      const Rot3& cRb, const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
+      EssentialMatrixFactor2(key1, key2, pA, pB, model, K), cRb_(cRb) {
+  }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  /// print
+  virtual void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    Base::print(s);
+    std::cout << "  EssentialMatrixFactor3 with rotation " << cRb_ << std::endl;
+  }
+
+  /*
+   * Vector of errors returns 2D vector
+   * @param E essential matrix
+   * @param d inverse depth d
+   */
+  Vector evaluateError(const EssentialMatrix& E, const LieScalar& d,
+      boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
+          boost::none) const {
+    if (!DE) {
+      // Convert E from body to camera frame
+      EssentialMatrix cameraE = cRb_ * E;
+      // Evaluate error
+      return Base::evaluateError(cameraE, d, boost::none, Dd);
+    } else {
+      // Version with derivatives
+      Matrix D_e_cameraE, D_cameraE_E; // 2*5, 5*5
+      EssentialMatrix cameraE = E.rotate(cRb_, D_cameraE_E);
+      Vector e = Base::evaluateError(cameraE, d, D_e_cameraE, Dd);
+      *DE = D_e_cameraE * D_cameraE_E; // (2*5) * (5*5)
+      return e;
+    }
+  }
+
+};
+// EssentialMatrixFactor3
 
 }// gtsam
 

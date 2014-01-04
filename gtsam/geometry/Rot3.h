@@ -226,6 +226,16 @@ namespace gtsam {
     Rot3 operator*(const Rot3& R2) const;
 
     /**
+     * Conjugation: given a rotation acting in frame B, compute rotation c1Rc2 acting in a frame C
+     * @param cRb rotation from B frame to C frame
+     * @return c1Rc2 = cRb * b1Rb2 * cRb'
+     */
+    Rot3 conjugate(const Rot3& cRb) const {
+      // TODO: do more efficiently by using Eigen or quaternion properties
+      return cRb * (*this) * cRb.inverse();
+    }
+
+    /**
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
      */
     Rot3 between(const Rot3& R2,
