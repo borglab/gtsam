@@ -27,7 +27,7 @@ Optional prerequisites - used automatically if findable by CMake:
 Tested compilers
 
 - GCC 4.2-4.7
-- OSX Clang 2.9-3.2
+- OSX Clang 2.9-5.0
 - OSX GCC 4.2
 - MSVC 2010, 2012
 
@@ -37,7 +37,7 @@ Tested systems:
 - MacOS 10.6 - 10.9
 - Windows 7, 8
 
-See INSTALL for more detailed installation instructions.
+See the `INSTALL` file for more detailed installation instructions.
 
 What is GTSAM?
 ==============
@@ -47,9 +47,9 @@ mapping (SAM) in robotics and vision, using factor graphs and Bayes
 networks as the underlying computing paradigm rather than sparse
 matrices. 
 
-GTSAM is not (yet) open source: See COPYING & LICENSE
+GTSAM is open source under the BSD license, see the `LICENSE` file.
 
-Please see the `examples/` directory and the USAGE file for examples on how to use GTSAM.
+Please see the `examples/` directory and the `USAGE` file for examples on how to use GTSAM.
 
 The library is organized according to the following directory structure:
 
