@@ -16,7 +16,7 @@ namespace gtsam {
  */
 class EssentialMatrixFactor3: public EssentialMatrixFactor2 {
 
-  typedef EssentialMatrixFactor3 Base;
+  typedef EssentialMatrixFactor2 Base;
   typedef EssentialMatrixFactor3 This;
 
   Rot3 cRb_; ///< Rotation from body to camera frame
@@ -31,7 +31,7 @@ public:
    *  @param model noise model should be in calibrated coordinates, as well
    */
   EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
-      const Rot3& cRb, const SharedNoiseModel& model):
+      const Rot3& cRb, const SharedNoiseModel& model) :
       EssentialMatrixFactor2(key1, key2, pA, pB, model), cRb_(cRb) {
   }
 
@@ -47,8 +47,19 @@ public:
   Vector evaluateError(const EssentialMatrix& E, const LieScalar& d,
       boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
           boost::none) const {
-    EssentialMatrix cameraE = cRb_ * E;
-    return EssentialMatrixFactor2::evaluateError(cameraE, d, DE, Dd);
+    if (!DE) {
+      // Convert E from body to camera frame
+      EssentialMatrix cameraE = cRb_ * E;
+      // Evaluate error
+      return Base::evaluateError(cameraE, d, boost::none, Dd);
+    } else {
+      // Version with derivatives
+      Matrix D_e_cameraE, D_cameraE_E; // 2*5, 5*5
+      EssentialMatrix cameraE = E.rotate(cRb_, D_cameraE_E);
+      Vector e = Base::evaluateError(cameraE, d, D_e_cameraE, Dd);
+      *DE = D_e_cameraE * D_cameraE_E; // (2*5) * (5*5)
+      return e;
+    }
   }
 
 };
@@ -286,17 +297,17 @@ TEST (EssentialMatrixFactor3, factor) {
     Vector actual = factor.evaluateError(bodyE, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
-//    // Use numerical derivatives to calculate the expected Jacobian
-//    Matrix Hexpected1, Hexpected2;
-//    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
-//        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
-//            boost::none, boost::none);
-//    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, trueE, d);
-//    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, trueE, d);
-//
-//    // Verify the Jacobian is correct
-//    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
-//    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    // Use numerical derivatives to calculate the expected Jacobian
+    Matrix Hexpected1, Hexpected2;
+    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
+        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
+            boost::none, boost::none);
+    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, bodyE, d);
+    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, bodyE, d);
+
+    // Verify the Jacobian is correct
+    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
+    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
   }
 }
 
