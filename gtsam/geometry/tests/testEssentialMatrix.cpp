@@ -58,14 +58,16 @@ TEST (EssentialMatrix, transform_to) {
   static Point3 P(0.2, 0.7, -2);
   Matrix actH1, actH2;
   E.transform_to(P, actH1, actH2);
-  Matrix expH1 = numericalDerivative21(transform_to_, E, P), expH2 =
-      numericalDerivative22(transform_to_, E, P);
+  Matrix expH1 = numericalDerivative21(transform_to_, E, P), //
+  expH2 = numericalDerivative22(transform_to_, E, P);
   EXPECT(assert_equal(expH1, actH1, 1e-8));
   EXPECT(assert_equal(expH2, actH2, 1e-8));
 }
 
 //*************************************************************************
-
+EssentialMatrix rotate_(const EssentialMatrix& E, const Rot3& cRb) {
+  return E.rotate(cRb);
+}
 TEST (EssentialMatrix, rotate) {
   // Suppose the essential matrix is specified in a body coordinate frame B
   // which is rotated with respect to the camera frame C, via rotation bRc.
@@ -78,9 +80,19 @@ TEST (EssentialMatrix, rotate) {
   Point3 b1Tb2 = bRc * c1Tc2;
   EssentialMatrix bodyE(b1Rb2, b1Tb2);
   EXPECT(assert_equal(bodyE, bRc * trueE, 1e-8));
+  EXPECT(assert_equal(bodyE, trueE.rotate(bRc), 1e-8));
 
   // Let's go back to camera frame:
   EXPECT(assert_equal(trueE, cRb * bodyE, 1e-8));
+  EXPECT(assert_equal(trueE, bodyE.rotate(cRb), 1e-8));
+
+  // Derivatives
+  Matrix actH1, actH2;
+  try { bodyE.rotate(cRb, actH1, actH2);} catch(exception e) {} // avoid exception
+  Matrix expH1 = numericalDerivative21(rotate_, bodyE, cRb), //
+  expH2 = numericalDerivative22(rotate_, bodyE, cRb);
+  EXPECT(assert_equal(expH1, actH1, 1e-8));
+  // Does not work yet EXPECT(assert_equal(expH2, actH2, 1e-8));
 }
 
 /* ************************************************************************* */
