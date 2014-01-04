@@ -200,5 +200,70 @@ public:
 };
 // EssentialMatrixFactor2
 
+/**
+ * Binary factor that optimizes for E and inverse depth d: assumes measurement
+ * in image 2 is perfect, and returns re-projection error in image 1
+ * This version takes an extrinsic rotation to allow for omni-directional rigs
+ */
+class EssentialMatrixFactor3: public EssentialMatrixFactor2 {
+
+  typedef EssentialMatrixFactor2 Base;
+  typedef EssentialMatrixFactor3 This;
+
+  Rot3 cRb_; ///< Rotation from body to camera frame
+
+public:
+
+  /**
+   *  Constructor
+   *  @param pA point in first camera, in calibrated coordinates
+   *  @param pB point in second camera, in calibrated coordinates
+   *  @param bRc extra rotation between "body" and "camera" frame
+   *  @param model noise model should be in calibrated coordinates, as well
+   */
+  EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
+      const Rot3& cRb, const SharedNoiseModel& model) :
+      EssentialMatrixFactor2(key1, key2, pA, pB, model), cRb_(cRb) {
+  }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  /// print
+  virtual void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    Base::print(s);
+    std::cout << "  EssentialMatrixFactor3 with rotation " << cRb_ << std::endl;
+  }
+
+  /*
+   * Vector of errors returns 2D vector
+   * @param E essential matrix
+   * @param d inverse depth d
+   */
+  Vector evaluateError(const EssentialMatrix& E, const LieScalar& d,
+      boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
+          boost::none) const {
+    if (!DE) {
+      // Convert E from body to camera frame
+      EssentialMatrix cameraE = cRb_ * E;
+      // Evaluate error
+      return Base::evaluateError(cameraE, d, boost::none, Dd);
+    } else {
+      // Version with derivatives
+      Matrix D_e_cameraE, D_cameraE_E; // 2*5, 5*5
+      EssentialMatrix cameraE = E.rotate(cRb_, D_cameraE_E);
+      Vector e = Base::evaluateError(cameraE, d, D_e_cameraE, Dd);
+      *DE = D_e_cameraE * D_cameraE_E; // (2*5) * (5*5)
+      return e;
+    }
+  }
+
+};
+// EssentialMatrixFactor3
+
 }// gtsam
 
