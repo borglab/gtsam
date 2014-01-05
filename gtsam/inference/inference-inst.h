@@ -75,10 +75,6 @@ namespace gtsam {
     FastVector<typename TREE::sharedFactor>
     EliminateTree(RESULT& result, const TREE& tree, const typename TREE::Eliminate& function)
     {
-      // Typedefs
-      typedef typename TREE::sharedNode sharedNode;
-      typedef typename TREE::sharedFactor sharedFactor;
-
       // Do elimination using a depth-first traversal.  During the pre-order visit (see
       // eliminationPreOrderVisitor), we store a pointer to the parent data (where we'll put the
       // remaining factor) and reserve a vector of factors to store the children elimination

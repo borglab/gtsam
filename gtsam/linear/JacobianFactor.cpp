@@ -620,7 +620,7 @@ namespace gtsam {
         model_ = noiseModel::Constrained::MixedSigmas(model_->sigmas().tail(remainingRows));
       else
         model_ = noiseModel::Diagonal::Sigmas(model_->sigmas().tail(remainingRows));
-      assert(model_->dim() == Ab_.rows());
+      assert(model_->dim() == (size_t)Ab_.rows());
     }
     gttoc(remaining_factor);
 

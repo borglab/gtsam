@@ -216,7 +216,6 @@ namespace gtsam {
      *  To print each node, this function calls the \c print function of the tree nodes. */
     template<class FOREST>
     void PrintForest(const FOREST& forest, std::string str, const KeyFormatter& keyFormatter) {
-      typedef typename FOREST::Node Node;
       PrintForestVisitorPre visitor(keyFormatter);
       DepthFirstForest(forest, str, visitor);
     }
