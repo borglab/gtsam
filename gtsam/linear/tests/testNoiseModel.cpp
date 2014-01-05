@@ -161,9 +161,8 @@ TEST(NoiseModel, ConstrainedConstructors )
   // TODO: why should this be a thousand ??? Dummy variable?
   EXPECT(assert_equal(gtsam::repeat(d, 1000.0), actual->mu()));
   EXPECT(assert_equal(gtsam::repeat(d, 0), actual->sigmas()));
-  double Inf = numeric_limits<double>::infinity();
-  EXPECT(assert_equal(gtsam::repeat(d, Inf), actual->invsigmas()));
-  EXPECT(assert_equal(gtsam::repeat(d, Inf), actual->precisions()));
+  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->invsigmas())); // Actually zero as dummy value
+  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->precisions())); // Actually zero as dummy value
 
   actual = Constrained::All(d, m);
   EXPECT(assert_equal(gtsam::repeat(d, m), actual->mu()));

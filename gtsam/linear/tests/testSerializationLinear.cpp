@@ -75,8 +75,8 @@ TEST (Serialization, noiseModels) {
   EXPECT(equalsDereferencedBinary<noiseModel::Unit::shared_ptr>(unit3));
 
   EXPECT(equalsDereferencedBinary<noiseModel::Constrained::shared_ptr>(constrained3));
-  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3)); // FAILS: "Exception: input stream error" - there are inf's that cannot be deserialized
-  EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3)); // FAILS: "Exception: input stream error"
+  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
+  EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3));
 }
 
 /* ************************************************************************* */
@@ -103,8 +103,8 @@ TEST (Serialization, SharedNoiseModel_noiseModels) {
   EXPECT(equalsDereferencedBinary<SharedNoiseModel>(unit3));
 
   EXPECT(equalsDereferencedBinary<SharedNoiseModel>(constrained3));
-  EXPECT(equalsDereferenced<SharedNoiseModel>(constrained3)); // FAILS: "Exception: input stream error"
-  EXPECT(equalsDereferencedXML<SharedNoiseModel>(constrained3)); // FAILS: "Exception: input stream error"
+  EXPECT(equalsDereferenced<SharedNoiseModel>(constrained3));
+  EXPECT(equalsDereferencedXML<SharedNoiseModel>(constrained3));
 }
 
 /* ************************************************************************* */
@@ -122,8 +122,8 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
   EXPECT(equalsDereferencedBinary<SharedDiagonal>(unit3));
 
   EXPECT(equalsDereferencedBinary<SharedDiagonal>(constrained3));
-  EXPECT(equalsDereferenced<SharedDiagonal>(constrained3)); // FAILS: "Exception: input stream error"
-  EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3)); // FAILS: "Exception: input stream error"
+  EXPECT(equalsDereferenced<SharedDiagonal>(constrained3));
+  EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3));
 }
 
 /* Create GUIDs for factors */
