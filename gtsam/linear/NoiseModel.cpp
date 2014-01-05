@@ -247,7 +247,7 @@ Constrained::Constrained(const Vector& sigmas)
 /* ************************************************************************* */
 Constrained::Constrained(const Vector& mu, const Vector& sigmas)
   : Diagonal(sigmas), mu_(mu) {
-  assert(sigmas.size() == mu.size());
+//  assert(sigmas.size() == mu.size());
   for (int i=0; i<sigmas.size(); ++i) {
     if (!std::isfinite(1./sigmas(i))) {
       precisions_(i) = 0.0; // Set to finite value
