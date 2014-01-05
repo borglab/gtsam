@@ -28,6 +28,21 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+Sphere2 Sphere2::FromPoint3(const Point3& point,
+    boost::optional<Matrix&> H) {
+  Sphere2 direction(point);
+  if (H) {
+    // 3*3 Derivative of representation with respect to point is 3*3:
+    Matrix D_p_point;
+    point.normalize(D_p_point); // TODO, this calculates norm a second time :-(
+    // Calculate the 2*3 Jacobian
+    H->resize(2, 3);
+    *H << direction.basis().transpose() * D_p_point;
+  }
+  return direction;
+}
+
+/* ************************************************************************* */
 Sphere2 Sphere2::Random(boost::random::mt19937 & rng) {
   // TODO allow any engine without including all of boost :-(
   boost::random::uniform_on_sphere<double> randomDirection(3);

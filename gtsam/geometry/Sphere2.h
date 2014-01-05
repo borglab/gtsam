@@ -65,6 +65,10 @@ public:
     p_ = p_ / p_.norm();
   }
 
+  /// Named constructor from Point3 with optional Jacobian
+  static Sphere2 FromPoint3(const Point3& point,
+      boost::optional<Matrix&> H = boost::none);
+
   /// Random direction, using boost::uniform_on_sphere
   static Sphere2 Random(boost::random::mt19937 & rng);
 
@@ -85,7 +89,11 @@ public:
   /// @name Other functionality
   /// @{
 
-  /// Returns the local coordinate frame to tangent plane
+  /**
+   * Returns the local coordinate frame to tangent plane
+   * It is a 3*2 matrix [b1 b2] composed of two orthogonal directions
+   * tangent to the sphere at the current direction.
+   */
   Matrix basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
