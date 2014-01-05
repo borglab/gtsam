@@ -176,6 +176,9 @@ namespace gtsam {
     /** Distance of the point from the origin */
     double norm() const;
 
+    /** normalize, with optional Jacobian */
+    Point3 normalize(boost::optional<Matrix&> H = boost::none) const;
+
     /** cross product @return this x q */
     Point3 cross(const Point3 &q) const;
 
