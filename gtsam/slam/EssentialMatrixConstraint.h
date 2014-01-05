@@ -19,11 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/geometry/EssentialMatrix.h>
-#include <gtsam/base/Testable.h>
-
-#include <ostream>
 
 namespace gtsam {
 
@@ -73,50 +69,18 @@ public:
   /** implement functions needed for Testable */
 
   /** print */
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
-    std::cout << s << "EssentialMatrixConstraint(" << keyFormatter(this->key1())
-        << "," << keyFormatter(this->key2()) << ")\n";
-    measuredE_.print("  measured: ");
-    this->noiseModel_->print("  noise model: ");
-  }
+  virtual void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& expected,
-      double tol = 1e-9) const {
-    const This *e = dynamic_cast<const This*>(&expected);
-    return e != NULL && Base::equals(*e, tol)
-        && this->measuredE_.equals(e->measuredE_, tol);
-  }
+  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
 
   /** implement functions needed to derive from Factor */
 
   /** vector of errors */
-  Vector evaluateError(const Pose3& p1, const Pose3& p2,
+  virtual Vector evaluateError(const Pose3& p1, const Pose3& p2,
       boost::optional<Matrix&> Hp1 = boost::none, //
-      boost::optional<Matrix&> Hp2 = boost::none) const {
-    // compute relative Pose3 between p1 and p2
-    Pose3 _1P2_ = p1.between(p2, Hp1, Hp2);
-    // convert to EssentialMatrix
-    Matrix D_hx_1P2;
-    EssentialMatrix hx = EssentialMatrix::FromPose3(_1P2_,
-        (Hp1 || Hp2) ? boost::optional<Matrix&>(D_hx_1P2) : boost::none);
-    // Calculate derivatives if needed
-    if (Hp1) {
-      // Hp1 will already contain the 6*6 derivative D_1P2_p1
-      const Matrix& D_1P2_p1 = *Hp1;
-      // The 5*6 derivative is obtained by chaining with 5*6 D_hx_1P2:
-      *Hp1 = D_hx_1P2 * D_1P2_p1;
-    }
-    if (Hp2) {
-      // Hp2 will already contain the 6*6 derivative D_1P2_p1
-      const Matrix& D_1P2_p2 = *Hp2;
-      // The 5*6 derivative is obtained by chaining with 5*6 D_hx_1P2:
-      *Hp2 = D_hx_1P2 * D_1P2_p2;
-    }
-    // manifold equivalent of h(x)-z -> log(z,h(x))
-    return measuredE_.localCoordinates(hx); // 5D error
-  }
+      boost::optional<Matrix&> Hp2 = boost::none) const;
 
   /** return the measured */
   const EssentialMatrix& measured() const {
