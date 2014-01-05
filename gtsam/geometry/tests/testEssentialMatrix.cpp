@@ -88,11 +88,37 @@ TEST (EssentialMatrix, rotate) {
 
   // Derivatives
   Matrix actH1, actH2;
-  try { bodyE.rotate(cRb, actH1, actH2);} catch(exception e) {} // avoid exception
+  try {
+    bodyE.rotate(cRb, actH1, actH2);
+  } catch (exception e) {
+  } // avoid exception
   Matrix expH1 = numericalDerivative21(rotate_, bodyE, cRb), //
   expH2 = numericalDerivative22(rotate_, bodyE, cRb);
   EXPECT(assert_equal(expH1, actH1, 1e-8));
   // Does not work yet EXPECT(assert_equal(expH2, actH2, 1e-8));
+}
+
+//*************************************************************************
+TEST (EssentialMatrix, FromPose3_a) {
+  Matrix actualH;
+  Pose3 pose(c1Rc2, c1Tc2); // Pose between two cameras
+  EXPECT(assert_equal(trueE, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
+  Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(
+      boost::bind(EssentialMatrix::FromPose3, _1, boost::none), pose);
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+//*************************************************************************
+TEST (EssentialMatrix, FromPose3_b) {
+  Matrix actualH;
+  Rot3 c1Rc2 = Rot3::ypr(0.1, -0.2, 0.3);
+  Point3 c1Tc2(0.4, 0.5, 0.6);
+  EssentialMatrix trueE(c1Rc2, c1Tc2);
+  Pose3 pose(c1Rc2, c1Tc2); // Pose between two cameras
+  EXPECT(assert_equal(trueE, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
+  Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(
+      boost::bind(EssentialMatrix::FromPose3, _1, boost::none), pose);
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
 /* ************************************************************************* */
