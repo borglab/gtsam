@@ -258,10 +258,10 @@ namespace gtsam {
       Vector sigmas_, invsigmas_, precisions_;
 
     protected:
-      /** protected constructor takes sigmas */
+      /** protected constructor - no initializations */
       Diagonal();
 
-      /** constructor to allow for disabling initializaion of invsigmas */
+      /** constructor to allow for disabling initialization of invsigmas */
       Diagonal(const Vector& sigmas);
 
     public:
@@ -272,7 +272,7 @@ namespace gtsam {
 
       /**
        * A diagonal noise model created by specifying a Vector of sigmas, i.e.
-       * standard devations, the diagonal of the square root covariance matrix.
+       * standard deviations, the diagonal of the square root covariance matrix.
        */
       static shared_ptr Sigmas(const Vector& sigmas, bool smart = true);
 
@@ -353,19 +353,22 @@ namespace gtsam {
     protected:
 
       // Sigmas are contained in the base class
+      Vector mu_; ///< Penalty function weight - needs to be large enough to dominate soft constraints
 
-      // Penalty function parameters
-      Vector mu_;
+      /**
+       * protected constructor takes sigmas.
+       * prevents any inf values
+       * from appearing in invsigmas or precisions.
+       * mu set to large default value (1000.0)
+       */
+      Constrained(const Vector& sigmas = zero(1));
 
-      /** protected constructor takes sigmas */
-      // Keeps only sigmas and calculates invsigmas when necessary
-      Constrained(const Vector& sigmas = zero(1)) :
-        Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {}
-
-      // Keeps only sigmas and calculates invsigmas when necessary
-      // allows for specifying mu
-      Constrained(const Vector& mu, const Vector& sigmas) :
-        Diagonal(sigmas), mu_(mu) {}
+      /**
+       * Constructor that prevents any inf values
+       * from appearing in invsigmas or precisions.
+       * Allows for specifying mu.
+       */
+      Constrained(const Vector& mu, const Vector& sigmas);
 
     public:
 
