@@ -75,7 +75,7 @@ TEST (Serialization, noiseModels) {
   EXPECT(equalsDereferencedBinary<noiseModel::Unit::shared_ptr>(unit3));
 
   EXPECT(equalsDereferencedBinary<noiseModel::Constrained::shared_ptr>(constrained3));
-  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3)); // FAILS: "Exception: input stream error"
+  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3)); // FAILS: "Exception: input stream error" - there are inf's that cannot be deserialized
   EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3)); // FAILS: "Exception: input stream error"
 }
 
