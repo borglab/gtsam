@@ -76,6 +76,31 @@ TEST(Sphere2, rotate) {
 }
 
 //*******************************************************************************
+static Sphere2 unrotate_(const Rot3& R, const Sphere2& p) {
+  return R.unrotate (p);
+}
+
+TEST(Sphere2, unrotate) {
+  Rot3 R = Rot3::yaw(-M_PI/2.0);
+  Sphere2 p(1, 0, 0);
+  Sphere2 expected = Sphere2(0, 1, 0);
+  Sphere2 actual = R.unrotate (p);
+  EXPECT(assert_equal(expected, actual, 1e-8));
+  Matrix actualH, expectedH;
+  // Use numerical derivatives to calculate the expected Jacobian
+  {
+    expectedH = numericalDerivative21(unrotate_, R, p);
+    R.unrotate(p, actualH, boost::none);
+    EXPECT(assert_equal(expectedH, actualH, 1e-9));
+  }
+  {
+    expectedH = numericalDerivative22(unrotate_, R, p);
+    R.unrotate(p, boost::none, actualH);
+    EXPECT(assert_equal(expectedH, actualH, 1e-9));
+  }
+}
+
+//*******************************************************************************
 TEST(Sphere2, error) {
   Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
   r = p.retract((Vector(2) << 0.8, 0));

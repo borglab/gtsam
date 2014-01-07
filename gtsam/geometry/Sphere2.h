@@ -22,6 +22,10 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 
+#ifndef SPHERE2_DEFAULT_COORDINATES_MODE
+  #define SPHERE2_DEFAULT_COORDINATES_MODE Sphere2::EXPMAP
+#endif
+
 // (Cumbersome) forward declaration for random generator
 namespace boost {
 namespace random {
@@ -121,11 +125,16 @@ public:
     return 2;
   }
 
+  enum CoordinatesMode {
+    EXPMAP, ///< Use the exponential map to retract
+    RENORM ///< Retract with vector addtion and renormalize.
+  };
+
   /// The retract function
-  Sphere2 retract(const Vector& v) const;
+  Sphere2 retract(const Vector& v, Sphere2::CoordinatesMode mode = SPHERE2_DEFAULT_COORDINATES_MODE) const;
 
   /// The local coordinates function
-  Vector localCoordinates(const Sphere2& s) const;
+  Vector localCoordinates(const Sphere2& s, Sphere2::CoordinatesMode mode = SPHERE2_DEFAULT_COORDINATES_MODE) const;
 
   /// @}
 };
