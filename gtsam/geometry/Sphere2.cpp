@@ -110,6 +110,11 @@ Sphere2 Sphere2::retract(const Vector& v, Sphere2::CoordinatesMode mode) const {
   if (mode == Sphere2::EXPMAP) {
     double xi_hat_norm = xi_hat.norm();
     Vector exp_p_xi_hat = cos (xi_hat_norm) * p + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
+
+    // Avoid nan
+    if (xi_hat_norm == 0.0)
+      return Sphere2 (point3 ());
+
     return Sphere2(exp_p_xi_hat);
   } else if (mode == Sphere2::RENORM) {
     // Project onto the manifold, i.e. the closest point on the circle to the new location;
