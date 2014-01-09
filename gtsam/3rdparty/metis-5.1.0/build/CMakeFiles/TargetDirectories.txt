@@ -1,7 +1,0 @@
-/home/borg/borg/gtsam/gtsam/3rdparty/metis-5.1.0/build/programs/CMakeFiles/cmpfillin.dir
-/home/borg/borg/gtsam/gtsam/3rdparty/metis-5.1.0/build/programs/CMakeFiles/gpmetis.dir
-/home/borg/borg/gtsam/gtsam/3rdparty/metis-5.1.0/build/programs/CMakeFiles/graphchk.dir
-/home/borg/borg/gtsam/gtsam/3rdparty/metis-5.1.0/build/programs/CMakeFiles/m2gmetis.dir
-/home/borg/borg/gtsam/gtsam/3rdparty/metis-5.1.0/build/libmetis/CMakeFiles/metis.dir
-/home/borg/borg/gtsam/gtsam/3rdparty/metis-5.1.0/build/programs/CMakeFiles/mpmetis.dir
-/home/borg/borg/gtsam/gtsam/3rdparty/metis-5.1.0/build/programs/CMakeFiles/ndmetis.dir
