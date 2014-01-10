@@ -102,6 +102,13 @@ public:
     return p_;
   }
 
+  /// Return unit-norm Vector
+  Vector unitVector(boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = basis();
+    return (p_.vector ());
+  }
+
   /// Signed, vector-valued error between two directions
   Vector error(const Sphere2& q,
       boost::optional<Matrix&> H = boost::none) const;

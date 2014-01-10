@@ -109,12 +109,16 @@ Sphere2 Sphere2::retract(const Vector& v, Sphere2::CoordinatesMode mode) const {
   
   if (mode == Sphere2::EXPMAP) {
     double xi_hat_norm = xi_hat.norm();
-    Vector exp_p_xi_hat = cos (xi_hat_norm) * p + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
 
     // Avoid nan
-    if (xi_hat_norm == 0.0)
-      return Sphere2 (point3 ());
-
+    if ((xi_hat_norm == 0.0)) {
+      if (v.norm () == 0.0)
+        return Sphere2 (point3 ());
+      else
+        return Sphere2 (-point3 ());
+    }
+    
+    Vector exp_p_xi_hat = cos (xi_hat_norm) * p + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
     return Sphere2(exp_p_xi_hat);
   } else if (mode == Sphere2::RENORM) {
     // Project onto the manifold, i.e. the closest point on the circle to the new location;
@@ -140,8 +144,10 @@ Sphere2 Sphere2::retract(const Vector& v, Sphere2::CoordinatesMode mode) const {
     double theta = acos(p.transpose() * q);
 
     // the below will be nan if theta == 0.0
-    if (theta == 0.0)
+    if (p == q)
       return (Vector (2) << 0, 0);
+    else if (p == -q)
+      return (Vector (2) << M_PI, 0);
     
     Vector result_hat = (theta / sin(theta)) * (q - p * cos(theta));
     Vector result = B.transpose() * result_hat;
