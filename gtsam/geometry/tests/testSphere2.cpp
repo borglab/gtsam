@@ -13,6 +13,8 @@
  * @file testSphere2.cpp
  * @date Feb 03, 2012
  * @author Can Erdogan
+ * @author Frank Dellaert
+ * @author Alex Trevor
  * @brief Tests the Sphere2 class
  */
 

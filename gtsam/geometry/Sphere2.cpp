@@ -14,6 +14,7 @@
  * @date Feb 02, 2011
  * @author Can Erdogan
  * @author Frank Dellaert
+ * @author Alex Trevor
  * @brief The Sphere2 class - basically a point on a unit sphere
  */
 

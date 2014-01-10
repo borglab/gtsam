@@ -14,6 +14,7 @@
  * @date Feb 02, 2011
  * @author Can Erdogan
  * @author Frank Dellaert
+ * @author Alex Trevor
  * @brief Develop a Sphere2 class - basically a point on a unit sphere
  */
 
@@ -23,7 +24,7 @@
 #include <gtsam/base/DerivedValue.h>
 
 #ifndef SPHERE2_DEFAULT_COORDINATES_MODE
-  #define SPHERE2_DEFAULT_COORDINATES_MODE Sphere2::EXPMAP
+  #define SPHERE2_DEFAULT_COORDINATES_MODE Sphere2::RENORM
 #endif
 
 // (Cumbersome) forward declaration for random generator
