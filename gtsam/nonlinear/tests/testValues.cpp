@@ -149,6 +149,34 @@ TEST( Values, update_element )
   CHECK(assert_equal(v2, cfg.at<LieVector>(key1)));
 }
 
+/* ************************************************************************* */
+TEST(Values, basic_functions)
+{
+  Values values;
+  const Values& values_c = values;
+  values.insert(2, LieVector());
+  values.insert(4, LieVector());
+  values.insert(6, LieVector());
+  values.insert(8, LieVector());
+
+  // find
+  EXPECT_LONGS_EQUAL(4, values.find(4)->key);
+  EXPECT_LONGS_EQUAL(4, values_c.find(4)->key);
+
+  // lower_bound
+  EXPECT_LONGS_EQUAL(4, values.lower_bound(4)->key);
+  EXPECT_LONGS_EQUAL(4, values_c.lower_bound(4)->key);
+  EXPECT_LONGS_EQUAL(4, values.lower_bound(3)->key);
+  EXPECT_LONGS_EQUAL(4, values_c.lower_bound(3)->key);
+
+  // upper_bound
+  EXPECT_LONGS_EQUAL(6, values.upper_bound(4)->key);
+  EXPECT_LONGS_EQUAL(6, values_c.upper_bound(4)->key);
+  EXPECT_LONGS_EQUAL(4, values.upper_bound(3)->key);
+  EXPECT_LONGS_EQUAL(4, values_c.upper_bound(3)->key);
+
+}
+
 ///* ************************************************************************* */
 //TEST(Values, dim_zero)
 //{

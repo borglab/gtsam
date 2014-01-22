@@ -200,6 +200,18 @@ namespace gtsam {
      * not found. */
     const_iterator find(Key j) const { return boost::make_transform_iterator(values_.find(j), &make_const_deref_pair); }
 
+    /** Find the element greater than or equal to the specified key. */
+    iterator lower_bound(Key j) { return boost::make_transform_iterator(values_.lower_bound(j), &make_deref_pair); }
+
+    /** Find the element greater than or equal to the specified key. */
+    const_iterator lower_bound(Key j) const { return boost::make_transform_iterator(values_.lower_bound(j), &make_const_deref_pair); }
+
+    /** Find the lowest-ordered element greater than the specified key. */
+    iterator upper_bound(Key j) { return boost::make_transform_iterator(values_.upper_bound(j), &make_deref_pair); }
+
+    /** Find the lowest-ordered element greater than the specified key. */
+    const_iterator upper_bound(Key j) const { return boost::make_transform_iterator(values_.upper_bound(j), &make_const_deref_pair); }
+
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
 
