@@ -18,7 +18,11 @@
 using namespace std;
 using namespace gtsam;
 
-typedef noiseModel::Isotropic::shared_ptr Model;
+// Noise model for first type of factor is evaluating algebraic error
+noiseModel::Isotropic::shared_ptr model1 = noiseModel::Isotropic::Sigma(1,
+    0.01);
+// Noise model for second type of factor is evaluating pixel coordinates
+noiseModel::Unit::shared_ptr model2 = noiseModel::Unit::Create(2);
 
 namespace example1 {
 
@@ -41,8 +45,6 @@ Vector vA(size_t i) {
 Vector vB(size_t i) {
   return EssentialMatrix::Homogeneous(pB(i));
 }
-
-Cal3_S2 K;
 
 //*************************************************************************
 TEST (EssentialMatrixFactor, testData) {
@@ -76,10 +78,9 @@ TEST (EssentialMatrixFactor, testData) {
 //*************************************************************************
 TEST (EssentialMatrixFactor, factor) {
   EssentialMatrix trueE(aRb, aTb);
-  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(1);
 
   for (size_t i = 0; i < 5; i++) {
-    EssentialMatrixFactor factor(1, pA(i), pB(i), model);
+    EssentialMatrixFactor factor(1, pA(i), pB(i), model1);
 
     // Check evaluation
     Vector expected(1);
@@ -100,7 +101,7 @@ TEST (EssentialMatrixFactor, factor) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor, fromConstraints) {
+TEST (EssentialMatrixFactor, minimization) {
   // Here we want to optimize directly on essential matrix constraints
   // Yi Ma's algorithm (Ma01ijcv) is a bit cumbersome to implement,
   // but GTSAM does the equivalent anyway, provided we give the right
@@ -109,9 +110,8 @@ TEST (EssentialMatrixFactor, fromConstraints) {
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1cm, assuming metric measurements
   NonlinearFactorGraph graph;
-  Model model = noiseModel::Isotropic::Sigma(1, 0.01);
   for (size_t i = 0; i < 5; i++)
-    graph.add(EssentialMatrixFactor(1, pA(i), pB(i), model));
+    graph.add(EssentialMatrixFactor(1, pA(i), pB(i), model1));
 
   // Check error at ground truth
   Values truth;
@@ -147,15 +147,13 @@ TEST (EssentialMatrixFactor, fromConstraints) {
 //*************************************************************************
 TEST (EssentialMatrixFactor2, factor) {
   EssentialMatrix E(aRb, aTb);
-  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(1);
 
   for (size_t i = 0; i < 5; i++) {
-    EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), K, model);
+    EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), model2);
 
     // Check evaluation
     Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
-    const Point2 pn = SimpleCamera::project_to_camera(P2);
-    const Point2 pi = K.uncalibrate(pn);
+    const Point2 pi = SimpleCamera::project_to_camera(P2);
     Point2 reprojectionError(pi - pB(i));
     Vector expected = reprojectionError.vector();
 
@@ -185,9 +183,8 @@ TEST (EssentialMatrixFactor2, minimization) {
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1cm, assuming metric measurements
   NonlinearFactorGraph graph;
-  Model model = noiseModel::Isotropic::Sigma(2, 0.01);
   for (size_t i = 0; i < 5; i++)
-    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), K, model));
+    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), model2));
 
   // Check error at ground truth
   Values truth;
@@ -235,8 +232,56 @@ Point2 pB(size_t i) {
   return data.tracks[i].measurements[1].second;
 }
 
-// Matches Cal3Bundler K(500, 0, 0);
-Cal3_S2 K(500, 500, 0, 0, 0);
+boost::shared_ptr<Cal3Bundler> //
+K = boost::make_shared < Cal3Bundler > (500, 0, 0);
+
+Vector vA(size_t i) {
+  Point2 xy = K->calibrate(pA(i));
+  return EssentialMatrix::Homogeneous(xy);
+}
+Vector vB(size_t i) {
+  Point2 xy = K->calibrate(pB(i));
+  return EssentialMatrix::Homogeneous(xy);
+}
+
+//*************************************************************************
+TEST (EssentialMatrixFactor, extraTest) {
+  // Additional test with camera moving in positive X direction
+
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < 5; i++)
+    graph.add(EssentialMatrixFactor(1, pA(i), pB(i), model1, K));
+
+  // Check error at ground truth
+  Values truth;
+  EssentialMatrix trueE(aRb, aTb);
+  truth.insert(1, trueE);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+
+  // Check error at initial estimate
+  Values initial;
+  EssentialMatrix initialE = trueE.retract(
+      (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
+  initial.insert(1, initialE);
+  EXPECT_DOUBLES_EQUAL(640, graph.error(initial), 1e-2);
+
+  // Optimize
+  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtOptimizer optimizer(graph, initial, parameters);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EssentialMatrix actual = result.at<EssentialMatrix>(1);
+  EXPECT(assert_equal(trueE, actual,1e-1));
+
+  // Check error at result
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
+
+  // Check errors individually
+  for (size_t i = 0; i < 5; i++)
+    EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i),vB(i)), 1e-6);
+
+}
 
 //*************************************************************************
 TEST (EssentialMatrixFactor2, extraTest) {
@@ -245,9 +290,8 @@ TEST (EssentialMatrixFactor2, extraTest) {
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1, assuming pixel measurements
   NonlinearFactorGraph graph;
-  Model model = noiseModel::Isotropic::Sigma(2, 1);
   for (size_t i = 0; i < data.number_tracks(); i++)
-    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), K, model));
+    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), model2, K));
 
   // Check error at ground truth
   Values truth;
