@@ -112,7 +112,7 @@ Sphere2 Sphere2::retract(const Vector& v, Sphere2::CoordinatesMode mode) const {
     double xi_hat_norm = xi_hat.norm();
 
     // Avoid nan
-    if ((xi_hat_norm == 0.0)) {
+    if (xi_hat_norm == 0.0) {
       if (v.norm () == 0.0)
         return Sphere2 (point3 ());
       else
@@ -147,7 +147,7 @@ Sphere2 Sphere2::retract(const Vector& v, Sphere2::CoordinatesMode mode) const {
     // the below will be nan if theta == 0.0
     if (p == q)
       return (Vector (2) << 0, 0);
-    else if (p == -q)
+    else if (p == (Vector)-q)
       return (Vector (2) << M_PI, 0);
     
     Vector result_hat = (theta / sin(theta)) * (q - p * cos(theta));
