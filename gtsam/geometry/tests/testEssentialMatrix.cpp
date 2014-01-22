@@ -122,32 +122,6 @@ TEST (EssentialMatrix, FromPose3_b) {
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
-/* ************************************************************************* */
-ostream& operator <<(ostream& os, const gtsam::EssentialMatrix& E) {
-  gtsam::Rot3 R = E.rotation();
-  gtsam::Sphere2 d = E.direction();
-  os.precision(10);
-  os << R.xyz().transpose() << " " << d.point3().vector().transpose() << " ";
-  return os;
-}
-
-/* ************************************************************************* */
-istream& operator >>(istream& fs, gtsam::EssentialMatrix& E) {
-  double rx, ry, rz, dx, dy, dz;
-
-  // Read the rotation rxyz
-  fs >> rx >> ry >> rz;
-
-  // Read the translation dxyz
-  fs >> dx >> dy >> dz;
-
-  // Create EssentialMatrix: Construct from rotation and translation
-  gtsam::Rot3 rot = gtsam::Rot3::RzRyRx(rx, ry, rz);
-  gtsam::Sphere2 dt = gtsam::Sphere2(dx, dy, dz);
-  E = gtsam::EssentialMatrix(rot, dt);
-  return fs;
-}
-
 //*************************************************************************
 TEST (EssentialMatrix, streaming) {
   EssentialMatrix expected(c1Rc2, c1Tc2), actual;

@@ -10,6 +10,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Sphere2.h>
 #include <gtsam/geometry/Point2.h>
+#include <iostream>
 
 namespace gtsam {
 
@@ -142,6 +143,34 @@ public:
   /// epipolar error, algebraic
   double error(const Vector& vA, const Vector& vB, //
       boost::optional<Matrix&> H = boost::none) const;
+
+  /// @}
+
+  /// @name Streaming operators
+  /// @{
+
+  // stream to stream
+  friend std::ostream& operator <<(std::ostream& os, const EssentialMatrix& E) {
+    Rot3 R = E.rotation();
+    Sphere2 d = E.direction();
+    os.precision(10);
+    os << R.xyz().transpose() << " " << d.point3().vector().transpose() << " ";
+    return os;
+  }
+
+  /// stream from stream
+  friend std::istream& operator >>(std::istream& is, EssentialMatrix& E) {
+    double rx, ry, rz, dx, dy, dz;
+    is >> rx >> ry >> rz; // Read the rotation rxyz
+    is >> dx >> dy >> dz; // Read the translation dxyz
+
+    // Create EssentialMatrix from rotation and translation
+    Rot3 rot = Rot3::RzRyRx(rx, ry, rz);
+    Sphere2 dt = Sphere2(dx, dy, dz);
+    E = EssentialMatrix(rot, dt);
+
+    return is;
+  }
 
   /// @}
 
