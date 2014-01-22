@@ -8,6 +8,8 @@
 #include <gtsam/geometry/EssentialMatrix.h>
 #include <iostream>
 
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -35,8 +37,8 @@ EssentialMatrix EssentialMatrix::FromPose3(const Pose3& _1P2_,
 }
 
 /* ************************************************************************* */
-void EssentialMatrix::print(const std::string& s) const {
-  std::cout << s;
+void EssentialMatrix::print(const string& s) const {
+  cout << s;
   aRb_.print("R:\n");
   aTb_.print("d: ");
 }
@@ -95,7 +97,7 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
       HE->block<2, 2>(3, 3) << D_c1Tc2_aTb; // (2*2)
     }
     if (HR) {
-      throw std::runtime_error(
+      throw runtime_error(
           "EssentialMatrix::rotate: derivative HR not implemented yet");
       /*
        HR->resize(5, 3);
@@ -119,6 +121,29 @@ double EssentialMatrix::error(const Vector& vA, const Vector& vB, //
     *H << HR, HD;
   }
   return dot(vA, E_ * vB);
+}
+
+/* ************************************************************************* */
+ostream& operator <<(ostream& os, const EssentialMatrix& E) {
+  Rot3 R = E.rotation();
+  Sphere2 d = E.direction();
+  os.precision(10);
+  os << R.xyz().transpose() << " " << d.point3().vector().transpose() << " ";
+  return os;
+}
+
+/* ************************************************************************* */
+istream& operator >>(istream& is, EssentialMatrix& E) {
+  double rx, ry, rz, dx, dy, dz;
+  is >> rx >> ry >> rz; // Read the rotation rxyz
+  is >> dx >> dy >> dz; // Read the translation dxyz
+
+  // Create EssentialMatrix from rotation and translation
+  Rot3 rot = Rot3::RzRyRx(rx, ry, rz);
+  Sphere2 dt = Sphere2(dx, dy, dz);
+  E = EssentialMatrix(rot, dt);
+
+  return is;
 }
 
 /* ************************************************************************* */
