@@ -45,27 +45,6 @@ typedef Eigen::Matrix<double,6,6> Matrix6;
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
-/**
- *  constructor with size and initial data, row order !
- */
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, const double* const data);
-
-/**
- *  constructor with size and vector data, column order !!!
- */
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, const Vector& v);
-
-/**
- *  constructor from Vector yielding v.size()*1 vector
- */
-inline Matrix Matrix_(const Vector& v) { return Matrix_(v.size(),1,v);}
-
-/**
- *  nice constructor, dangerous as number of arguments must be exactly right
- *  and you have to pass doubles !!! always use 0.0 never 0
-*/
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, ...);
-
 // Matlab-like syntax
 
 /**
