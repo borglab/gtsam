@@ -287,7 +287,7 @@ TEST(Sphere2, localCoordinates_retract_expmap) {
 //  EXPECT(assert_equal(expected,actual1));
 //  EXPECT(assert_equal(expected,actual2));
 //
-//  Matrix expectedH1 = Matrix_(3,3,
+//  Matrix expectedH1 = (Matrix(3,3) <<
 //      0.0,-1.0,-2.0,
 //      1.0, 0.0,-2.0,
 //      0.0, 0.0,-1.0
@@ -298,7 +298,7 @@ TEST(Sphere2, localCoordinates_retract_expmap) {
 //  // Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
 //  EXPECT(assert_equal(-gT2.between(gT1).AdjointMap(),actualH1));
 //
-//  Matrix expectedH2 = Matrix_(3,3,
+//  Matrix expectedH2 = (Matrix(3,3) <<
 //       1.0, 0.0, 0.0,
 //       0.0, 1.0, 0.0,
 //       0.0, 0.0, 1.0
