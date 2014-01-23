@@ -197,11 +197,6 @@ inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
 }
 
 /**
- * convert to column vector, column order !!!
- */
-GTSAM_EXPORT Vector Vector_(const Matrix& A);
-
-/**
  * print a matrix
  */
 GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);

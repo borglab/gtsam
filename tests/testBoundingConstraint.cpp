@@ -187,7 +187,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
   EXPECT(!rangeBound.isGreaterThan());
   EXPECT(rangeBound.dim() == 1);
 
-  EXPECT(assert_equal(Vector(1) << 2.0), rangeBound.evaluateError(pt1, pt1)));
+  EXPECT(assert_equal(((Vector)Vector(1) << 2.0), rangeBound.evaluateError(pt1, pt1)));
   EXPECT(assert_equal(ones(1), rangeBound.evaluateError(pt1, pt2)));
   EXPECT(assert_equal(zero(1), rangeBound.evaluateError(pt1, pt3)));
   EXPECT(assert_equal(-1.0*ones(1), rangeBound.evaluateError(pt1, pt4)));

@@ -212,17 +212,6 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVec
 }
 
 /* ************************************************************************* */
-Vector Vector_(const Matrix& A)
-{
-  size_t m = A.rows(), n = A.cols();
-  Vector v(m*n);
-  for( size_t j = 0, k=0  ; j < n ; j++)
-    for( size_t i = 0; i < m ; i++,k++)
-      v(k) = A(i,j);
-  return v;
-}
-
-/* ************************************************************************* */
 void print(const Matrix& A, const string &s, ostream& stream) {
   size_t m = A.rows(), n = A.cols();
 

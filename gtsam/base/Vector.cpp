@@ -80,33 +80,6 @@ void odprintf(const char *format, ...) {
 }
 
 /* ************************************************************************* */
-Vector Vector_( size_t m, const double* const data) {
-  Vector A(m);
-  copy(data, data+m, A.data());
-  return A;
-}
-
-/* ************************************************************************* */
-Vector Vector_(size_t m, ...) {
-  Vector v(m);
-  va_list ap;
-  va_start(ap, m);
-  for( size_t i = 0 ; i < m ; i++) {
-    double value = va_arg(ap, double);
-    v(i) = value;
-  }
-  va_end(ap);
-  return v;
-}
-
-/* ************************************************************************* */
-Vector Vector_(const std::vector<double>& d) {
-  Vector v(d.size());
-  copy(d.begin(), d.end(), v.data());
-  return v;
-}
-
-/* ************************************************************************* */
 bool zero(const Vector& v) {
   bool result = true;
   size_t n = v.size();
