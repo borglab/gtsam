@@ -31,19 +31,6 @@ LieVector::LieVector(size_t m, const double* const data)
 }
 
 /* ************************************************************************* */
-LieVector::LieVector(size_t m, ...)
-: Vector(m)
-{
-  va_list ap;
-  va_start(ap, m);
-  for( size_t i = 0 ; i < m ; i++) {
-    double value = va_arg(ap, double);
-    (*this)(i) = value;
-  }
-  va_end(ap);
-}
-
-/* ************************************************************************* */
 void LieVector::print(const std::string& name) const {
   gtsam::print(vector(), name);
 }

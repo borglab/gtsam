@@ -166,7 +166,7 @@ public:
     gtsam::Point3 ray = pw - pt;
     double theta = atan2(ray.y(), ray.x()); // longitude
     double phi = atan2(ray.z(), sqrt(ray.x()*ray.x()+ray.y()*ray.y()));
-    return std::make_pair(gtsam::LieVector(5, pt.x(),pt.y(),pt.z(), theta, phi),
+    return std::make_pair(gtsam::LieVector((Vector(5) << pt.x(),pt.y(),pt.z(), theta, phi)),
         gtsam::LieScalar(1./depth));
   }
 

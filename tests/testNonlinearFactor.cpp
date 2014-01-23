@@ -266,10 +266,10 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor4) {
   TestFactor4 tf;
   Values tv;
-  tv.insert(X(1), LieVector(1, 1.0));
-  tv.insert(X(2), LieVector(1, 2.0));
-  tv.insert(X(3), LieVector(1, 3.0));
-  tv.insert(X(4), LieVector(1, 4.0));
+  tv.insert(X(1), LieVector((Vector(1) << 1.0)));
+  tv.insert(X(2), LieVector((Vector(1) << 2.0)));
+  tv.insert(X(3), LieVector((Vector(1) << 3.0)));
+  tv.insert(X(4), LieVector((Vector(1) << 4.0)));
   EXPECT(assert_equal((Vector(1) << 10.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(25.0/2.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
@@ -312,11 +312,11 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor5) {
   TestFactor5 tf;
   Values tv;
-  tv.insert(X(1), LieVector(1, 1.0));
-  tv.insert(X(2), LieVector(1, 2.0));
-  tv.insert(X(3), LieVector(1, 3.0));
-  tv.insert(X(4), LieVector(1, 4.0));
-  tv.insert(X(5), LieVector(1, 5.0));
+  tv.insert(X(1), LieVector((Vector(1) << 1.0)));
+  tv.insert(X(2), LieVector((Vector(1) << 2.0)));
+  tv.insert(X(3), LieVector((Vector(1) << 3.0)));
+  tv.insert(X(4), LieVector((Vector(1) << 4.0)));
+  tv.insert(X(5), LieVector((Vector(1) << 5.0)));
   EXPECT(assert_equal((Vector(1) << 15.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(56.25/2.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
@@ -364,12 +364,12 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor6) {
   TestFactor6 tf;
   Values tv;
-  tv.insert(X(1), LieVector(1, 1.0));
-  tv.insert(X(2), LieVector(1, 2.0));
-  tv.insert(X(3), LieVector(1, 3.0));
-  tv.insert(X(4), LieVector(1, 4.0));
-  tv.insert(X(5), LieVector(1, 5.0));
-  tv.insert(X(6), LieVector(1, 6.0));
+  tv.insert(X(1), LieVector((Vector(1) << 1.0)));
+  tv.insert(X(2), LieVector((Vector(1) << 2.0)));
+  tv.insert(X(3), LieVector((Vector(1) << 3.0)));
+  tv.insert(X(4), LieVector((Vector(1) << 4.0)));
+  tv.insert(X(5), LieVector((Vector(1) << 5.0)));
+  tv.insert(X(6), LieVector((Vector(1) << 6.0)));
   EXPECT(assert_equal((Vector(1) << 21.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(110.25/2.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));

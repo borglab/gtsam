@@ -43,7 +43,7 @@ TEST( InvDepthFactorVariant2, optimize) {
   double theta = atan2(ray.y(), ray.x());
   double phi = atan2(ray.z(), sqrt(ray.x()*ray.x()+ray.y()*ray.y()));
   double rho = 1./ray.norm();
-  LieVector expected(3, theta, phi, rho);
+  LieVector expected((Vector(3) << theta, phi, rho));
 
 
   

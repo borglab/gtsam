@@ -29,7 +29,7 @@ TEST( InvDepthFactor, Project1) {
   Point2 expected_uv = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector inv_landmark(5, 1., 0., 1., 0., 0.);
+  LieVector inv_landmark((Vector(5) << 1., 0., 1., 0., 0.));
   LieScalar inv_depth(1./4);
   Point2 actual_uv = inv_camera.project(inv_landmark, inv_depth);
   EXPECT(assert_equal(expected_uv, actual_uv));
@@ -45,7 +45,7 @@ TEST( InvDepthFactor, Project2) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector diag_landmark(5, 0., 0., 1., M_PI/4., atan(1.0/sqrt(2.0)));
+  LieVector diag_landmark((Vector(5) << 0., 0., 1., M_PI/4., atan(1.0/sqrt(2.0))));
   LieScalar inv_depth(1/sqrt(3.0));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
@@ -60,7 +60,7 @@ TEST( InvDepthFactor, Project3) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector diag_landmark(5, 0., 0., 0., M_PI/4., atan(2./sqrt(2.0)));
+  LieVector diag_landmark((Vector(5) << 0., 0., 0., M_PI/4., atan(2./sqrt(2.0))));
   LieScalar inv_depth( 1./sqrt(1.0+1+4));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
@@ -75,7 +75,7 @@ TEST( InvDepthFactor, Project4) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector diag_landmark(5, 0., 0., 0., atan(4.0/1), atan(2./sqrt(1.+16.)));
+  LieVector diag_landmark((Vector(5) << 0., 0., 0., atan(4.0/1), atan(2./sqrt(1.+16.))));
   LieScalar inv_depth(1./sqrt(1.+16.+4.));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
@@ -88,7 +88,7 @@ Point2 project_(const Pose3& pose, const LieVector& landmark, const LieScalar& i
 
 TEST( InvDepthFactor, Dproject_pose)
 {
-  LieVector landmark(6,0.1,0.2,0.3, 0.1,0.2);
+  LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
   LieScalar inv_depth(1./4);
   Matrix expected = numericalDerivative31<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
@@ -100,7 +100,7 @@ TEST( InvDepthFactor, Dproject_pose)
 /* ************************************************************************* */
 TEST( InvDepthFactor, Dproject_landmark)
 {
-  LieVector landmark(5,0.1,0.2,0.3, 0.1,0.2);
+  LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
   LieScalar inv_depth(1./4);
   Matrix expected = numericalDerivative32<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
@@ -112,7 +112,7 @@ TEST( InvDepthFactor, Dproject_landmark)
 /* ************************************************************************* */
 TEST( InvDepthFactor, Dproject_inv_depth)
 {
-  LieVector landmark(5,0.1,0.2,0.3, 0.1,0.2);
+  LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
   LieScalar inv_depth(1./4);
   Matrix expected = numericalDerivative33<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
@@ -124,7 +124,7 @@ TEST( InvDepthFactor, Dproject_inv_depth)
 /* ************************************************************************* */
 TEST(InvDepthFactor, backproject)
 {
-  LieVector expected(5,0.,0.,1., 0.1,0.2);
+  LieVector expected((Vector(5) << 0.,0.,1., 0.1,0.2));
   LieScalar inv_depth(1./4);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Point2 z = inv_camera.project(expected, inv_depth);
@@ -140,7 +140,7 @@ TEST(InvDepthFactor, backproject)
 TEST(InvDepthFactor, backproject2)
 {
   // backwards facing camera
-  LieVector expected(5,-5.,-5.,2., 3., -0.1);
+  LieVector expected((Vector(5) << -5.,-5.,2., 3., -0.1));
   LieScalar inv_depth(1./10);
   InvDepthCamera3<Cal3_S2> inv_camera(Pose3(Rot3::ypr(1.5,0.1, -1.5), Point3(-5, -5, 2)),K);
   Point2 z = inv_camera.project(expected, inv_depth);
