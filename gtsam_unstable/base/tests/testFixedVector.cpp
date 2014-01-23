@@ -28,7 +28,7 @@ static const double tol = 1e-9;
 /* ************************************************************************* */
 TEST( testFixedVector, conversions ) {
   double data1[] = {1.0, 2.0, 3.0};
-  Vector v1  = Vector_(3, data1);
+  Vector v1  = (Vector(3) << data1[0], data1[1], data1[2]);
   TestVector3 fv1(v1), fv2(data1);
 
   Vector actFv2(fv2);

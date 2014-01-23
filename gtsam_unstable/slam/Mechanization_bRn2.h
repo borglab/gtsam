@@ -35,7 +35,7 @@ public:
   }
 
   Vector b_g(double g_e) {
-    Vector n_g = Vector_(3, 0.0, 0.0, g_e);
+    Vector n_g = (Vector_(3) << 0.0, 0.0, g_e);
     return (bRn_ * n_g).vector();
   }
 
