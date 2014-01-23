@@ -170,7 +170,7 @@ Sphere2 Sphere2::retract(const Vector& v, Sphere2::CoordinatesMode mode) const {
     double alpha = p.transpose() * q;
     assert(alpha != 0.0);
     Matrix coeffs = (B.transpose() * q) / alpha;
-    Vector result = Vector_(2, coeffs(0, 0), coeffs(1, 0));
+    Vector result = (Vector(2) << coeffs(0, 0), coeffs(1, 0));
     return result;
   } else {
     assert (false);

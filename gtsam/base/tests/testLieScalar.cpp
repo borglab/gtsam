@@ -42,7 +42,7 @@ TEST( testLieScalar, construction ) {
 TEST( testLieScalar, localCoordinates ) {
   LieScalar lie1(1.), lie2(3.);
 
-  EXPECT(assert_equal(Vector_(1, 2.), lie1.localCoordinates(lie2)));
+  EXPECT(assert_equal((Vector)(Vector(1) << 2), lie1.localCoordinates(lie2)));
 }
 
 /* ************************************************************************* */

@@ -50,7 +50,7 @@ TEST( LieMatrix, other_constructors ) {
 /* ************************************************************************* */
 TEST(LieMatrix, retract) {
   LieMatrix init(2,2, 1.0,2.0,3.0,4.0);
-  Vector update = Vector_(4, 3.0, 4.0, 6.0, 7.0);
+  Vector update = (Vector(4) << 3.0, 4.0, 6.0, 7.0);
 
   LieMatrix expected(2,2, 4.0, 6.0, 9.0, 11.0);
   LieMatrix actual = init.retract(update);

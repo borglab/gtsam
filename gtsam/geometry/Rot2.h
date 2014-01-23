@@ -170,7 +170,7 @@ namespace gtsam {
 
     ///Log map at identity - return the canonical coordinates of this rotation
     static inline Vector Logmap(const Rot2& r) {
-      return Vector_(1, r.theta());
+      return (Vector(1) << r.theta());
     }
 
     /// @}

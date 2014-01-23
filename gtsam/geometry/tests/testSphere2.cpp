@@ -212,9 +212,9 @@ inline static Vector randomVector(const Vector& minLimits,
 TEST(Sphere2, localCoordinates_retract) {
 
   size_t numIterations = 10000;
-  Vector minSphereLimit = Vector_(3, -1.0, -1.0, -1.0), maxSphereLimit =
-      Vector_(3, 1.0, 1.0, 1.0);
-  Vector minXiLimit = Vector_(2, -1.0, -1.0), maxXiLimit = Vector_(2, 1.0, 1.0);
+  Vector minSphereLimit = (Vector(3) << -1.0, -1.0, -1.0), maxSphereLimit =
+      (Vector(3) << 1.0, 1.0, 1.0);
+  Vector minXiLimit = (Vector(2) << -1.0, -1.0), maxXiLimit = (Vector(2) << 1.0, 1.0);
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
@@ -242,9 +242,9 @@ TEST(Sphere2, localCoordinates_retract) {
 TEST(Sphere2, localCoordinates_retract_expmap) {
   
   size_t numIterations = 10000;
-  Vector minSphereLimit = Vector_(3, -1.0, -1.0, -1.0), maxSphereLimit =
-      Vector_(3, 1.0, 1.0, 1.0);
-  Vector minXiLimit = Vector_(2, -M_PI, -M_PI), maxXiLimit = Vector_(2, M_PI, M_PI);
+  Vector minSphereLimit = (Vector(3) << -1.0, -1.0, -1.0), maxSphereLimit =
+      (Vector(3) << 1.0, 1.0, 1.0);
+  Vector minXiLimit = (Vector(2) << -M_PI, -M_PI), maxXiLimit = (Vector(2) << M_PI, M_PI);
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
