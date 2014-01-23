@@ -24,8 +24,10 @@ namespace gtsam {
 
 /* ************************************************************************* */
 LieVector::LieVector(size_t m, const double* const data)
-: Vector(Vector_(m,data))
+: Vector(m)
 {
+  for(size_t i = 0; i < m; i++)
+    (*this)(i) = data[i];
 }
 
 /* ************************************************************************* */
