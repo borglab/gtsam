@@ -52,6 +52,7 @@ public:
    *  NOTE: this will throw warnings/explode if there is no argument
    *  before the variadic section, so there is a meaningless size argument.
    */
+  /*
   FixedVector(size_t n, ...) {
       va_list ap;
       va_start(ap, n);
@@ -61,7 +62,7 @@ public:
       }
       va_end(ap);
   }
-
+  */
   /**
    * Create vector initialized to a constant value
    * @param value constant value
