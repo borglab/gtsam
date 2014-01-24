@@ -167,7 +167,9 @@ void LevenbergMarquardtOptimizer::iterate() {
             cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
           break;
         } else {
-          cout << "increasing lambda: old error (" << state_.error << ") new error (" << error << ")"  << endl;
+          if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+            cout << "increasing lambda: old error (" << state_.error << ") new error (" << error << ")"  << endl;
+
           increaseLambda();
         }
       }
