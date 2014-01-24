@@ -44,18 +44,6 @@ TEST( matrix, constructor_data )
 }
 
 /* ************************************************************************* */
-/*
-TEST( matrix, constructor_vector )
-{
-  double data[] = { -5, 3, 0, -5 };
-  Matrix A = Matrix_(2, 2, -5, 3, 0, -5);
-  Vector v(4);
-  copy(data, data + 4, v.data());
-  Matrix B = Matrix_(2, 2, v); // this one is column order !
-  EQUALITY(A,trans(B));
-}
-*/
-/* ************************************************************************* */
 TEST( matrix, Matrix_ )
 {
   Matrix A = (Matrix(2, 2) << -5.0, 3.0, 0.0, -5.0);
