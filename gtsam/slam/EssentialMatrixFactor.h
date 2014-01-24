@@ -155,7 +155,7 @@ public:
 
     // We have point x,y in image 1
     // Given a depth Z, the corresponding 3D point P1 = Z*(x,y,1) = (x,y,1)/d
-    // We then convert to second camera by P2 = 1R2Õ*(P1-1T2)
+    // We then convert to second camera by P2 = 1R2ï¿½*(P1-1T2)
     // The homogeneous coordinates of can be written as
     //   2R1*(P1-1T2) ==  2R1*d*(P1-1T2) == 2R1*((x,y,1)-d*1T2)
     // where we multiplied with d which yields equivalent homogeneous coordinates.
