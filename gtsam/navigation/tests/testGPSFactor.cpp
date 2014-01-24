@@ -27,10 +27,9 @@ using namespace gtsam;
 TEST( GPSFactor, Constructors ) {
   Key key(1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  // TODO: convert from GPS to NED
   Point3 gpsInNED;
-  GPSFactor::Geodetic gps, originNED;
   GPSFactor factor1(key, gpsInNED, model);
-  GPSFactor factor2(key, gps, originNED, model);
 }
 
 // *************************************************************************

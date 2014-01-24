@@ -22,20 +22,8 @@
 
 namespace gtsam {
 
-/// Geodetic coordinates
-class Geodetic {
-private:
-  double latitude_, longitude_, altitude_;
-  Geodetic(double latitude, double longitude, double altitude);
-public:
-  Point3 toNED(const Geodetic& originNED) const {
-    return Point3();
-  }
-};
-
-
 /**
- * Prior on position in a local North-East-Down (NED) navigation frame
+ * Prior on position in a local North-East-Down () navigation frame
  * @addtogroup Navigation
  */
 class GPSFactor: public NoiseModelFactor1<Pose3> {
@@ -44,7 +32,7 @@ private:
 
   typedef NoiseModelFactor1<Pose3> Base;
 
-  Point3 nT_; ///< Position measurement in NED
+  Point3 nT_; ///< Position measurement in
 
 public:
 
@@ -62,25 +50,14 @@ public:
   }
 
   /**
-   * Constructor from a measurement already in local NED
+   * @brief Constructor from a measurement in a Cartesian frame.
+   * Use GeographicLib to convert from geographic (latitude and longitude) coordinates
    * @param key of the Pose3 variable that will be constrained
-   * @param gpsInNED measurement already in NED coordinates
+   * @param gpsIn measurement already in  coordinates
    * @param model Gaussian noise model
    */
-  GPSFactor(Key key, const Point3& gpsInNED, const SharedNoiseModel& model) :
-      Base(model, key), nT_(gpsInNED) {
-  }
-
-  /**
-   * Constructor that converts geodetic to local NED
-   * @param key of the Pose3 variable that will be constrained
-   * @param gps measurement
-   * @param originNED the origin of the NED frame
-   * @param model Gaussian noise model
-   */
-  GPSFactor(Key key, const Geodetic& gps, const Geodetic& originNED,
-      const SharedNoiseModel& model) :
-      Base(model, key), nT_(gps.toNED(originNED)) {
+  GPSFactor(Key key, const Point3& gpsIn, const SharedNoiseModel& model) :
+      Base(model, key), nT_(gpsIn) {
   }
 
   /// @return a deep copy of this factor
@@ -119,7 +96,7 @@ public:
     return nT_.localCoordinates(p.translation());
   }
 
-  const Point3 & measurementInNED() const {
+  const Point3 & measurementIn() const {
     return nT_;
   }
 
