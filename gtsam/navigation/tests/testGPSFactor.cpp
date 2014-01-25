@@ -27,9 +27,12 @@ using namespace gtsam;
 TEST( GPSFactor, Constructors ) {
   Key key(1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
-  // TODO: convert from GPS to NED
-  Point3 gpsInNED;
-  GPSFactor factor1(key, gpsInNED, model);
+  // TODO: convert from GPS to UTM
+  // GPS: -84.30482,33.87071,274
+  // UTM: 45N 250694.42 3751090.08 (Eastings, Northings)
+  // We choose ENU coordinate system with origin 250000 3751000
+  Point3 enu(694.42, 90.08, 274);
+  GPSFactor factor1(key, enu, model);
 }
 
 // *************************************************************************
