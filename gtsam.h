@@ -563,6 +563,49 @@ virtual class Pose3 : gtsam::Value {
   void serialize() const;
 };
 
+#include <gtsam/geometry/Sphere2.h>
+virtual class Sphere2 : gtsam::Value {
+  // Standard Constructors
+  Sphere2();
+  Sphere2(const gtsam::Point3& pose);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Sphere2& pose, double tol) const;
+
+  // Other functionality
+  Matrix basis() const;
+  Matrix skew() const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Sphere2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Sphere2& s) const;
+};
+
+#include <gtsam/geometry/EssentialMatrix.h>
+virtual class EssentialMatrix : gtsam::Value {
+  // Standard Constructors
+  EssentialMatrix(const gtsam::Rot3& aRb, const gtsam::Sphere2& aTb);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::EssentialMatrix& pose, double tol) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::EssentialMatrix retract(Vector v) const;
+  Vector localCoordinates(const gtsam::EssentialMatrix& s) const;
+
+  // Other methods:
+  gtsam::Rot3 rotation() const;
+  gtsam::Sphere2 direction() const;
+  Matrix matrix() const;
+  double error(Vector vA, Vector vB);
+};
+
 virtual class Cal3_S2 : gtsam::Value {
   // Standard Constructors
   Cal3_S2();
