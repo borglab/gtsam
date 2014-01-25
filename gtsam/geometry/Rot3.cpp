@@ -82,6 +82,17 @@ Sphere2 Rot3::rotate(const Sphere2& p,
 }
 
 /* ************************************************************************* */
+Sphere2 Rot3::unrotate(const Sphere2& p,
+    boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
+  Sphere2 q = unrotate(p.point3(Hp));
+  if (Hp)
+    (*Hp) = q.basis().transpose() * matrix().transpose () * (*Hp);
+  if (HR)
+    (*HR) = q.basis().transpose() * q.skew();
+  return q;
+}
+
+/* ************************************************************************* */
 Sphere2 Rot3::operator*(const Sphere2& p) const {
   return rotate(p);
 }

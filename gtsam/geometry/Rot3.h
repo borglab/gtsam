@@ -331,6 +331,10 @@ namespace gtsam {
     Sphere2 rotate(const Sphere2& p, boost::optional<Matrix&> HR = boost::none,
         boost::optional<Matrix&> Hp = boost::none) const;
 
+    /// unrotate 3D direction from world frame to rotated coordinate frame
+    Sphere2 unrotate(const Sphere2& p, boost::optional<Matrix&> HR = boost::none,
+        boost::optional<Matrix&> Hp = boost::none) const;
+
     /// rotate 3D direction from rotated coordinate frame to world frame
     Sphere2 operator*(const Sphere2& p) const;
 

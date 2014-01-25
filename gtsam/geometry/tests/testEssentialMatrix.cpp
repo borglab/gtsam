@@ -89,10 +89,7 @@ TEST (EssentialMatrix, rotate) {
 
   // Derivatives
   Matrix actH1, actH2;
-  try {
-    bodyE.rotate(cRb, actH1, actH2);
-  } catch (exception e) {
-  } // avoid exception
+  try { bodyE.rotate(cRb, actH1, actH2);} catch(exception e) {} // avoid exception
   Matrix expH1 = numericalDerivative21(rotate_, bodyE, cRb), //
   expH2 = numericalDerivative22(rotate_, bodyE, cRb);
   EXPECT(assert_equal(expH1, actH1, 1e-8));

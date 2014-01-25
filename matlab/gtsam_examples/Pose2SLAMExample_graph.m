@@ -13,7 +13,7 @@
 import gtsam.*
 
 %% Find data file
-datafile = findExampleDataFile('w100-odom.graph');
+datafile = findExampleDataFile('w100.graph');
 
 %% Initialize graph, initial estimate, and odometry noise
 model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 5*pi/180]);

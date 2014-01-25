@@ -33,7 +33,7 @@ graph.add(NonlinearEqualityPose3(x1, first_pose));
 %% Create realistic calibration and measurement noise model
 % format: fx fy skew cx cy baseline
 K = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2);
-stereo_model = noiseModel.Diagonal.Sigmas([1.0; 1.0; 1.0]);
+stereo_model = noiseModel.Isotropic.Sigma(3,1);
 
 %% Add measurements
 % pose 1
