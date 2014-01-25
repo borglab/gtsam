@@ -31,6 +31,9 @@ TEST( GeographicLib, Geocentric) {
   // Dekalb-Peachtree Airport runway 2L
   double lat = 33.87071, lon = -84.30482000000001, h = 274;
 
+  // UTM is 45N 250694.42 3751090.08
+  // Obtained by
+  // http://geographiclib.sourceforge.net/cgi-bin/GeoConvert?input=33.87071+84.30482000000001&zone=-3&prec=2&option=Submit
 
 }
 
