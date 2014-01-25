@@ -2316,6 +2316,12 @@ virtual class PoseRotationPrior : gtsam::NoiseModelFactor {
 typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
 typedef gtsam::PoseRotationPrior<gtsam::Pose3> PoseRotationPrior3D;
 
+#include <gtsam/slam/EssentialMatrixFactor.h>
+virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
+  EssentialMatrixFactor(size_t key, const gtsam::Point2& pA, const gtsam::Point2& pB,
+      const gtsam::noiseModel::Base* noiseModel);
+};
+
 #include <gtsam/slam/dataset.h>
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
