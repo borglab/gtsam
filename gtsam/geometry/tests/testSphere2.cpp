@@ -13,6 +13,8 @@
  * @file testSphere2.cpp
  * @date Feb 03, 2012
  * @author Can Erdogan
+ * @author Frank Dellaert
+ * @author Alex Trevor
  * @brief Tests the Sphere2 class
  */
 
@@ -77,9 +79,34 @@ TEST(Sphere2, rotate) {
 }
 
 //*******************************************************************************
+static Sphere2 unrotate_(const Rot3& R, const Sphere2& p) {
+  return R.unrotate (p);
+}
+
+TEST(Sphere2, unrotate) {
+  Rot3 R = Rot3::yaw(-M_PI/4.0);
+  Sphere2 p(1, 0, 0);
+  Sphere2 expected = Sphere2(1, 1, 0);
+  Sphere2 actual = R.unrotate (p);
+  EXPECT(assert_equal(expected, actual, 1e-8));
+  Matrix actualH, expectedH;
+  // Use numerical derivatives to calculate the expected Jacobian
+  {
+    expectedH = numericalDerivative21(unrotate_, R, p);
+    R.unrotate(p, actualH, boost::none);
+    EXPECT(assert_equal(expectedH, actualH, 1e-9));
+  }
+  {
+    expectedH = numericalDerivative22(unrotate_, R, p);
+    R.unrotate(p, boost::none, actualH);
+    EXPECT(assert_equal(expectedH, actualH, 1e-9));
+  }
+}
+
+//*******************************************************************************
 TEST(Sphere2, error) {
-  Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
-  r = p.retract((Vector(2) << 0.8, 0));
+  Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0), Sphere2::RENORM), //
+  r = p.retract((Vector(2) << 0.8, 0), Sphere2::RENORM);
   EXPECT(assert_equal((Vector(2) << 0, 0), p.error(p), 1e-8));
   EXPECT(assert_equal((Vector(2) << 0.447214, 0), p.error(q), 1e-5));
   EXPECT(assert_equal((Vector(2) << 0.624695, 0), p.error(r), 1e-5));
@@ -102,8 +129,8 @@ TEST(Sphere2, error) {
 
 //*******************************************************************************
 TEST(Sphere2, distance) {
-  Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
-  r = p.retract((Vector(2) << 0.8, 0));
+  Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0), Sphere2::RENORM), //
+  r = p.retract((Vector(2) << 0.8, 0), Sphere2::RENORM);
   EXPECT_DOUBLES_EQUAL(0, p.distance(p), 1e-8);
   EXPECT_DOUBLES_EQUAL(0.44721359549995798, p.distance(q), 1e-8);
   EXPECT_DOUBLES_EQUAL(0.6246950475544244, p.distance(r), 1e-8);
@@ -147,9 +174,20 @@ TEST(Sphere2, retract) {
   Vector v(2);
   v << 0.5, 0;
   Sphere2 expected(Point3(1, 0, 0.5));
-  Sphere2 actual = p.retract(v);
+  Sphere2 actual = p.retract(v, Sphere2::RENORM);
   EXPECT(assert_equal(expected, actual, 1e-8));
-  EXPECT(assert_equal(v, p.localCoordinates(actual), 1e-8));
+  EXPECT(assert_equal(v, p.localCoordinates(actual, Sphere2::RENORM), 1e-8));
+}
+
+//*******************************************************************************
+TEST(Sphere2, retract_expmap) {
+  Sphere2 p;
+  Vector v(2);
+  v << (M_PI/2.0), 0;
+  Sphere2 expected(Point3(0, 0, 1));
+  Sphere2 actual = p.retract(v, Sphere2::EXPMAP);
+  EXPECT(assert_equal(expected, actual, 1e-8));
+  EXPECT(assert_equal(v, p.localCoordinates(actual, Sphere2::EXPMAP), 1e-8));
 }
 
 //*******************************************************************************
@@ -189,6 +227,39 @@ TEST(Sphere2, localCoordinates_retract) {
     Sphere2 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
 //      Sphere2 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
+    Sphere2 s2 = s1.retract(v12);
+
+    // Check if the local coordinates and retract return the same results.
+    Vector actual_v12 = s1.localCoordinates(s2);
+    EXPECT(assert_equal(v12, actual_v12, 1e-3));
+    Sphere2 actual_s2 = s1.retract(actual_v12);
+    EXPECT(assert_equal(s2, actual_s2, 1e-3));
+  }
+}
+
+//*******************************************************************************
+// Let x and y be two Sphere2's.
+// The equality x.localCoordinates(x.retract(v)) == v should hold.
+TEST(Sphere2, localCoordinates_retract_expmap) {
+  
+  size_t numIterations = 10000;
+  Vector minSphereLimit = Vector_(3, -1.0, -1.0, -1.0), maxSphereLimit =
+      Vector_(3, 1.0, 1.0, 1.0);
+  Vector minXiLimit = Vector_(2, -M_PI, -M_PI), maxXiLimit = Vector_(2, M_PI, M_PI);
+  for (size_t i = 0; i < numIterations; i++) {
+
+    // Sleep for the random number generator (TODO?: Better create all of them first).
+    sleep(0);
+
+    // Create the two Sphere2s.
+    // Unlike the above case, we can use any two sphers.
+    Sphere2 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
+//      Sphere2 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
+    Vector v12 = randomVector(minXiLimit, maxXiLimit);
+    
+    // Magnitude of the rotation can be at most pi
+    if (v12.norm () > M_PI)
+      v12 = v12 / M_PI;
     Sphere2 s2 = s1.retract(v12);
 
     // Check if the local coordinates and retract return the same results.
@@ -245,13 +316,13 @@ TEST(Sphere2, Random) {
   // Check that is deterministic given same random seed
   Point3 expected(-0.667578, 0.671447, 0.321713);
   Point3 actual = Sphere2::Random(rng).point3();
-  EXPECT(assert_equal(expected, actual, 1e-5));
+  EXPECT(assert_equal(expected,actual,1e-5));
   // Check that means are all zero at least
   Point3 expectedMean, actualMean;
   for (size_t i = 0; i < 100; i++)
     actualMean = actualMean + Sphere2::Random(rng).point3();
-  actualMean = actualMean / 100;
-  EXPECT(assert_equal(expectedMean, actualMean, 0.1));
+  actualMean = actualMean/100;
+  EXPECT(assert_equal(expectedMean,actualMean,0.1));
 }
 
 //*************************************************************************
