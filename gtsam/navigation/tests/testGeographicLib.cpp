@@ -18,6 +18,8 @@
 #include <GeographicLib/Geocentric.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+#include <iostream>
+
 using namespace std;
 //using namespace gtsam;
 using namespace GeographicLib;
@@ -30,6 +32,12 @@ TEST( GeographicLib, Geocentric) {
 
   // Dekalb-Peachtree Airport runway 2L
   double lat = 33.87071, lon = -84.30482000000001, h = 274;
+
+  double X, Y, Z;
+  earth.Forward(lat, lon, h, X, Y, Z);
+  EXPECT_DOUBLES_EQUAL(526, X/1000, 1);
+  EXPECT_DOUBLES_EQUAL(-5275, Y/1000, 1);
+  EXPECT_DOUBLES_EQUAL(3535, Z/1000, 1);
 
   // UTM is 45N 250694.42 3751090.08
   // Obtained by
