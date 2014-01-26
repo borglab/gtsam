@@ -10,6 +10,7 @@ set(navigation_local_libs
    geometry
    base
    ccolamd
+   GeographicLib
 )
 
 # Exclude tests that don't work
@@ -21,7 +22,7 @@ include_directories(
 
 # Add all tests
 if (GTSAM_BUILD_TESTS)
-	gtsam_add_subdir_tests(navigation "${navigation_local_libs}" "${gtsam-default}" "${navigation_excluded_tests}") 
+	gtsam_add_subdir_tests(navigation "${navigation_local_libs}" "${gtsam-default};GeographicLib" "${navigation_excluded_tests}") 
 endif()
 
 # Build timing scripts
