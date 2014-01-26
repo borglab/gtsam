@@ -90,7 +90,8 @@ public:
       boost::optional<Matrix&> H = boost::none) const {
     if (H) {
       H->resize(3, 6);
-      *H << zeros(3, 3) << eye(3); // TODO make static
+      H->block < 3, 3 > (0, 0) << zeros(3, 3);
+      H->block < 3, 3 > (0, 3) << p.rotation().matrix();
     }
     // manifold equivalent of h(x)-z -> log(z,h(x))
     return nT_.localCoordinates(p.translation());

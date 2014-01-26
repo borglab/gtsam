@@ -54,15 +54,15 @@ TEST( GPSFactor, Constructors ) {
   Pose3 pose(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(-5.0, 8.0, -11.0));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Pose3>(
+  Matrix expectedH = numericalDerivative11<Pose3>(
       boost::bind(&GPSFactor::evaluateError, &factor, _1, boost::none), pose);
 
   // Use the factor to calculate the derivative
-  Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
+  Matrix actualH;
+  factor.evaluateError(pose, actualH);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH1, actualH1, 1e-9));
+  CHECK(assert_equal(expectedH, actualH, 1e-8));
 }
 
 // *************************************************************************
