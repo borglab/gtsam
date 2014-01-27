@@ -236,7 +236,7 @@ namespace gtsam {
         // overall Jacobian wrt preintegrated measurements (df/dx)
         Matrix F(15,15);
         F << H_pos_pos,    H_pos_vel,     H_pos_angles,          Z_3x3,                     Z_3x3,
-                H_vel_pos,     H_vel_vel,     H_vel_angles,      H_vel_biasacc,                         Z_3x3,
+                H_vel_pos,     H_vel_vel,     H_vel_angles,      H_vel_biasacc,              Z_3x3,
                 H_angles_pos,  H_angles_vel,  H_angles_angles,   Z_3x3,                         H_angles_biasomega,
                 Z_3x3,         Z_3x3,         Z_3x3,             I_3x3,                         Z_3x3,
                 Z_3x3,         Z_3x3,         Z_3x3,             Z_3x3,                         I_3x3;
@@ -274,6 +274,7 @@ namespace gtsam {
 
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
+        // deltaPij += deltaVij * deltaT;
         deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
         deltaVij += deltaRij.matrix() * correctedAcc * deltaT;
         deltaRij = deltaRij * Rincr;
@@ -341,8 +342,11 @@ namespace gtsam {
   public:
 
     /** Shorthand for a smart pointer to a factor */
-    typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
-
+#ifndef _MSC_VER
+    typedef typename boost::shared_ptr<CombinedImuFactor> shared_ptr;
+#else
+      typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
+#endif
     /** Default constructor - only use for serialization */
     CombinedImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix::Zero(6,6)) {}
 
