@@ -27,6 +27,7 @@
 #include <boost/foreach.hpp>
 #include <boost/random.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <cmath>
 
 using namespace boost::assign;
 using namespace gtsam;
@@ -322,6 +323,17 @@ TEST(Sphere2, Random) {
     actualMean = actualMean + Sphere2::Random(rng).point3();
   actualMean = actualMean/100;
   EXPECT(assert_equal(expectedMean,actualMean,0.1));
+}
+
+//*************************************************************************
+TEST (Sphere2, FromPoint3) {
+  Matrix actualH;
+  Point3 point(1, -2, 3); // arbitrary point
+  Sphere2 expected(point);
+  EXPECT(assert_equal(expected, Sphere2::FromPoint3(point, actualH), 1e-8));
+  Matrix expectedH = numericalDerivative11<Sphere2, Point3>(
+      boost::bind(Sphere2::FromPoint3, _1, boost::none), point);
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
 /* ************************************************************************* */
