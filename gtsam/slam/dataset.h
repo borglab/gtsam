@@ -141,7 +141,9 @@ GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
  * while camera poses and values are read from Values)
  * @param filename The name of the BAL file to write
  * @param data SfM structure where the data is stored
- * @param values structure where the graph values are stored
+ * @param values structure where the graph values are stored (values can be either Pose3 or PinholeCamera<Cal3Bundler> for the
+ * cameras, and should be Point3 for the 3D points). Note that the current version
+ * assumes that the keys are "x1" for pose 1 (or "c1" for camera 1) and "l1" for landmark 1
  * @return true if the parsing was successful, false otherwise
  */
 GTSAM_EXPORT bool writeBALfromValues(const std::string& filename, SfM_data &data, Values& values);

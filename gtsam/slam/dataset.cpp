@@ -229,7 +229,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-                    << " vertices and " << graph->nrFactors() << " factors" << endl;
+                        << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
@@ -403,7 +403,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-                    << " vertices and " << graph->nrFactors() << " factors" << endl;
+                        << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
@@ -671,33 +671,36 @@ bool writeBAL(const string& filename, SfM_data &data)
 
 bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
 
-  // CHECKS
+  // Store poses or cameras in SfM_data
   Values valuesPoses = values.filter<Pose3>();
-  if( valuesPoses.size() != data.number_cameras()){
-    cout << "writeBALfromValues: different number of cameras in SfM_data (#cameras= " << data.number_cameras()
-        <<") and values (#cameras " << valuesPoses.size() << ")!!" << endl;
-    return false;
+  if( valuesPoses.size() == data.number_cameras() ){ // we only estimated camera poses
+    for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
+      Key poseKey = symbol('x',i);
+      Pose3 pose = values.at<Pose3>(poseKey);
+      Cal3Bundler K = data.cameras[i].calibration();
+      PinholeCamera<Cal3Bundler> camera(pose, K);
+      data.cameras[i] = camera;
+    }
+  } else {
+    Values valuesCameras = values.filter< PinholeCamera<Cal3Bundler> >();
+    if ( valuesCameras.size() == data.number_cameras() ){  // we only estimated camera poses and calibration
+      for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
+        Key cameraKey = symbol('c',i);
+        PinholeCamera<Cal3Bundler> camera = values.at<PinholeCamera<Cal3Bundler> >(cameraKey);
+        data.cameras[i] = camera;
+      }
+    }else{
+      cout << "writeBALfromValues: different number of cameras in SfM_data (#cameras= " << data.number_cameras()
+              <<") and values (#cameras " << valuesPoses.size() << ", #poses " << valuesCameras.size() << ")!!" << endl;
+      return false;
+    }
   }
+
+  // Store 3D points in SfM_data
   Values valuesPoints = values.filter<Point3>();
   if( valuesPoints.size() != data.number_tracks()){
     cout << "writeBALfromValues: different number of points in SfM_data (#points= " << data.number_tracks()
-        <<") and values (#points " << valuesPoints.size() << ")!!" << endl;
-  }
-  if(valuesPoints.size() + valuesPoses.size() != values.size()){
-    cout << "writeBALfromValues write only poses and points values!!" << endl;
-    return false;
-  }
-  if(valuesPoints.size()==0 || valuesPoses.size()==0){
-    cout << "writeBALfromValues: No point or pose in values!!" << endl;
-    return false;
-  }
-
-  for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
-    Key poseKey = symbol('x',i);
-    Pose3 pose = values.at<Pose3>(poseKey);
-    Cal3Bundler K = data.cameras[i].calibration();
-    PinholeCamera<Cal3Bundler> camera(pose, K);
-    data.cameras[i] = camera;
+            <<") and values (#points " << valuesPoints.size() << ")!!" << endl;
   }
 
   for (size_t j = 0; j < data.number_tracks(); j++){ // for each point
@@ -713,8 +716,8 @@ bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
     }
   }
 
+  // Write SfM_data to file
   return writeBAL(filename, data);
 }
-
 
 } // \namespace gtsam
