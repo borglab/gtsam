@@ -37,38 +37,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Matrix Matrix_( size_t m, size_t n, const double* const data) {
-  MatrixRowMajor A(m,n);
-  copy(data, data+m*n, A.data());
-  return Matrix(A);
-}
-
-/* ************************************************************************* */
-Matrix Matrix_( size_t m, size_t n, const Vector& v)
-{
-  Matrix A(m,n);
-  // column-wise copy
-  for( size_t j = 0, k=0  ; j < n ; j++)
-    for( size_t i = 0; i < m ; i++,k++)
-      A(i,j) = v(k);
-  return A;
-}
-
-/* ************************************************************************* */
-Matrix Matrix_(size_t m, size_t n, ...) {
-  Matrix A(m,n);
-  va_list ap;
-  va_start(ap, n);
-  for( size_t i = 0 ; i < m ; i++)
-    for( size_t j = 0 ; j < n ; j++) {
-      double value = va_arg(ap, double);
-      A(i,j) = value;
-    }
-  va_end(ap);
-  return A;
-}
-
-/* ************************************************************************* */
 Matrix zeros( size_t m, size_t n ) {
   return Matrix::Zero(m,n);
 }
@@ -209,17 +177,6 @@ void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
   x += alpha * A.transpose() * e;
-}
-
-/* ************************************************************************* */
-Vector Vector_(const Matrix& A)
-{
-  size_t m = A.rows(), n = A.cols();
-  Vector v(m*n);
-  for( size_t j = 0, k=0  ; j < n ; j++)
-    for( size_t i = 0; i < m ; i++,k++)
-      v(k) = A(i,j);
-  return v;
 }
 
 /* ************************************************************************* */

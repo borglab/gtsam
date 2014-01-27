@@ -44,9 +44,6 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   /** constructor with size and initial data, row order ! */
   GTSAM_EXPORT LieVector(size_t m, const double* const data);
 
-  /** Specify arguments directly, as in Vector_() - always force these to be doubles */
-  GTSAM_EXPORT LieVector(size_t m, ...);
-
   /** get the underlying vector */
   Vector vector() const {
     return static_cast<Vector>(*this);

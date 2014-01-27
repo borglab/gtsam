@@ -119,10 +119,10 @@ TEST( InertialNavFactor_GlobalVelocity, Predict)
   InertialNavFactor_GlobalVelocity<Pose3, LieVector, imuBias::ConstantBias> f(PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc, measurement_gyro, measurement_dt, world_g, world_rho, world_omega_earth, model);
 
   Pose3 Pose1(Rot3(), Point3(2.00, 1.00, 3.00));
-  LieVector Vel1(3, 0.50, -0.50, 0.40);
+  LieVector Vel1((Vector(3) << 0.50, -0.50, 0.40));
   imuBias::ConstantBias Bias1;
   Pose3 expectedPose2(Rot3(), Point3(2.05, 0.95, 3.04));
-  LieVector expectedVel2(3, 0.51, -0.48, 0.43);
+  LieVector expectedVel2((Vector(3) << 0.51, -0.48, 0.43));
   Pose3 actualPose2;
   LieVector actualVel2;
   f.predict(Pose1, Vel1, Bias1, actualPose2, actualVel2);
@@ -157,8 +157,8 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorPosVel)
 
   Pose3 Pose1(Rot3(), Point3(2.00, 1.00, 3.00));
   Pose3 Pose2(Rot3(), Point3(2.05, 0.95, 3.04));
-  LieVector Vel1(3, 0.50, -0.50, 0.40);
-  LieVector Vel2(3, 0.51, -0.48, 0.43);
+  LieVector Vel1((Vector(3) << 0.50, -0.50, 0.40));
+  LieVector Vel2((Vector(3) << 0.51, -0.48, 0.43));
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
@@ -192,8 +192,8 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorRot)
 
   Pose3 Pose1(Rot3(), Point3(2.0,1.0,3.0));
   Pose3 Pose2(Rot3::Expmap(measurement_gyro*measurement_dt), Point3(2.0,1.0,3.0));
-  LieVector Vel1(3,0.0,0.0,0.0);
-  LieVector Vel2(3,0.0,0.0,0.0);
+  LieVector Vel1((Vector(3) << 0.0, 0.0, 0.0));
+  LieVector Vel2((Vector(3) << 0.0, 0.0, 0.0));
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
@@ -230,7 +230,7 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorRotPosVel)
       -0.652537293,   0.709880342,   0.265075427);
   Point3 t1(2.0,1.0,3.0);
   Pose3 Pose1(R1, t1);
-  LieVector Vel1(3,0.5,-0.5,0.4);
+  LieVector Vel1((Vector(3) << 0.5, -0.5, 0.4));
   Rot3 R2(0.473618898,   0.119523052,   0.872582019,
        0.609241153,    0.67099888,  -0.422594037,
       -0.636011287,   0.731761397,   0.244979388);
@@ -302,13 +302,13 @@ TEST (InertialNavFactor_GlobalVelocity, Jacobian ) {
       -0.652537293,   0.709880342,   0.265075427);
   Point3 t1(2.0,1.0,3.0);
   Pose3 Pose1(R1, t1);
-  LieVector Vel1(3,0.5,-0.5,0.4);
+  LieVector Vel1((Vector(3) << 0.5, -0.5, 0.4));
   Rot3 R2(0.473618898,   0.119523052,   0.872582019,
        0.609241153,    0.67099888,  -0.422594037,
       -0.636011287,   0.731761397,   0.244979388);
   Point3 t2(2.052670960415706,   0.977252139079380,   2.942482135362800);
   Pose3 Pose2(R2, t2);
-  LieVector Vel2(3,0.510000000000000,  -0.480000000000000,   0.430000000000000);
+  LieVector Vel2((Vector(3) << 0.510000000000000,  -0.480000000000000,   0.430000000000000));
   imuBias::ConstantBias Bias1;
 
   Matrix H1_actual, H2_actual, H3_actual, H4_actual, H5_actual;
@@ -447,10 +447,10 @@ TEST( InertialNavFactor_GlobalVelocity, PredictWithTransform)
   InertialNavFactor_GlobalVelocity<Pose3, LieVector, imuBias::ConstantBias> f(PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc, measurement_gyro, measurement_dt, world_g, world_rho, world_omega_earth, model, body_P_sensor);
 
   Pose3 Pose1(Rot3(), Point3(2.00, 1.00, 3.00));
-  LieVector Vel1(3, 0.50, -0.50, 0.40);
+  LieVector Vel1((Vector(3) << 0.50, -0.50, 0.40));
   imuBias::ConstantBias Bias1;
   Pose3 expectedPose2(Rot3(), Point3(2.05, 0.95, 3.04));
-  LieVector expectedVel2(3, 0.51, -0.48, 0.43);
+  LieVector expectedVel2((Vector(3) << 0.51, -0.48, 0.43));
   Pose3 actualPose2;
   LieVector actualVel2;
   f.predict(Pose1, Vel1, Bias1, actualPose2, actualVel2);
@@ -488,8 +488,8 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorPosVelWithTransform)
 
   Pose3 Pose1(Rot3(), Point3(2.00, 1.00, 3.00));
   Pose3 Pose2(Rot3(), Point3(2.05, 0.95, 3.04));
-  LieVector Vel1(3, 0.50, -0.50, 0.40);
-  LieVector Vel2(3, 0.51, -0.48, 0.43);
+  LieVector Vel1((Vector(3) << 0.50, -0.50, 0.40));
+  LieVector Vel2((Vector(3) << 0.51, -0.48, 0.43));
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
@@ -527,8 +527,8 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorRotWithTransform)
 
   Pose3 Pose1(Rot3(), Point3(2.0,1.0,3.0));
   Pose3 Pose2(Rot3::Expmap(body_P_sensor.rotation().matrix()*measurement_gyro*measurement_dt), Point3(2.0, 1.0, 3.0));
-  LieVector Vel1(3,0.0,0.0,0.0);
-  LieVector Vel2(3,0.0,0.0,0.0);
+  LieVector Vel1((Vector(3) << 0.0,0.0,0.0));
+  LieVector Vel2((Vector(3) << 0.0,0.0,0.0));
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
@@ -569,7 +569,7 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorRotPosVelWithTransform)
       -0.652537293,  0.709880342,  0.265075427);
   Point3 t1(2.0,1.0,3.0);
   Pose3 Pose1(R1, t1);
-  LieVector Vel1(3,0.5,-0.5,0.4);
+  LieVector Vel1((Vector(3) << 0.5,-0.5,0.4));
   Rot3 R2(0.473618898,   0.119523052,  0.872582019,
        0.609241153,   0.67099888, -0.422594037,
       -0.636011287,  0.731761397,  0.244979388);
@@ -618,13 +618,13 @@ TEST (InertialNavFactor_GlobalVelocity, JacobianWithTransform ) {
       -0.652537293,  0.709880342,  0.265075427);
   Point3 t1(2.0,1.0,3.0);
   Pose3 Pose1(R1, t1);
-  LieVector Vel1(3,0.5,-0.5,0.4);
+  LieVector Vel1((Vector(3) << 0.5,-0.5,0.4));
   Rot3 R2(0.473618898,   0.119523052,  0.872582019,
        0.609241153,   0.67099888, -0.422594037,
       -0.636011287,  0.731761397,  0.244979388);
   Point3 t2(2.052670960415706,   0.977252139079380,   2.942482135362800);
   Pose3 Pose2(R2, t2);
-  LieVector Vel2(3,0.510000000000000,  -0.480000000000000,   0.430000000000000);
+  LieVector Vel2((Vector(3) << 0.510000000000000,  -0.480000000000000,   0.430000000000000));
   imuBias::ConstantBias Bias1;
 
   Matrix H1_actual, H2_actual, H3_actual, H4_actual, H5_actual;
