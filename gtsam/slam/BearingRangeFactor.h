@@ -96,7 +96,7 @@ namespace gtsam {
       Vector e1 = Rot::Logmap(measuredBearing_.between(y1));
 
       double y2 = pose.range(point, H21_, H22_);
-      Vector e2 = Vector_(1, y2 - measuredRange_);
+      Vector e2 = (Vector(1) << y2 - measuredRange_);
 
       if (H1) *H1 = gtsam::stack(2, &H11, &H21);
       if (H2) *H2 = gtsam::stack(2, &H12, &H22);

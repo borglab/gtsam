@@ -138,7 +138,7 @@ int main()
 
   // create a random pose:
   double x = 4.0, y = 2.0, r = 0.3;
-  Vector v = Vector_(3,x,y,r);
+  Vector v = (Vector(3) << x, y, r);
   Pose2 X = Pose2(3,2,0.4), X2 = X.retract(v), X3(5,6,0.3);
 
   TEST(Expmap, Pose2::Expmap(v));

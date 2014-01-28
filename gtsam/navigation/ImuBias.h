@@ -113,7 +113,7 @@ namespace imuBias {
 //
 //      return measurement - biasGyro_ - w_earth_rate_I;
 //
-////      Vector bias_gyro_temp(Vector_(3, -bias_gyro_(0), bias_gyro_(1), bias_gyro_(2)));
+////      Vector bias_gyro_temp((Vector(3) << -bias_gyro_(0), bias_gyro_(1), bias_gyro_(2)));
 ////      return measurement - bias_gyro_temp - R_G_to_I * w_earth_rate_G;
 //    }
 

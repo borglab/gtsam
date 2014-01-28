@@ -46,23 +46,6 @@ public:
   }
 
   /**
-   *  nice constructor, dangerous as number of arguments must be exactly right
-   *  and you have to pass doubles !!! always use 0.0 never 0
-   *
-   *  NOTE: this will throw warnings/explode if there is no argument
-   *  before the variadic section, so there is a meaningless size argument.
-   */
-  FixedVector(size_t n, ...) {
-      va_list ap;
-      va_start(ap, n);
-      for(size_t i = 0 ; i < N ; i++) {
-        double value = va_arg(ap, double);
-        (*this)(i) = value;
-      }
-      va_end(ap);
-  }
-
-  /**
    * Create vector initialized to a constant value
    * @param value constant value
    */

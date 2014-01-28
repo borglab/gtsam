@@ -49,15 +49,15 @@ namespace gtsam {
    * Example:
    * \code
      VectorValues values;
-     values.insert(3, Vector_(3, 1.0, 2.0, 3.0));
-     values.insert(4, Vector_(2, 4.0, 5.0));
-     values.insert(0, Vector_(4, 6.0, 7.0, 8.0, 9.0));
+     values.insert(3, (Vector(3) << 1.0, 2.0, 3.0));
+     values.insert(4, (Vector(2) << 4.0, 5.0));
+     values.insert(0, (Vector(4) << 6.0, 7.0, 8.0, 9.0));
 
      // Prints [ 3.0 4.0 ]
      gtsam::print(values[1]);
 
      // Prints [ 8.0 9.0 ]
-     values[1] = Vector_(2, 8.0, 9.0);
+     values[1] = (Vector(2) << 8.0, 9.0);
      gtsam::print(values[1]);
      \endcode
    *

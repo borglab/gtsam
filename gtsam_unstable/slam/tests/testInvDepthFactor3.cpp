@@ -38,7 +38,7 @@ TEST( InvDepthFactor, optimize) {
   Point2 expected_uv = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector inv_landmark(5, 0., 0., 1., 0., 0.);
+  LieVector inv_landmark((Vector(5) << 0., 0., 1., 0., 0.));
   // initialize inverse depth with "incorrect" depth of 1/4
   // in reality this is 1/5, but initial depth is guessed
   LieScalar inv_depth(1./4);
