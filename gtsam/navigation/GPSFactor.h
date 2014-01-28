@@ -23,7 +23,12 @@
 namespace gtsam {
 
 /**
- * Prior on position in a local North-East-Down () navigation frame
+ * Prior on position in a cartesian frame.
+ * Possibilities include:
+ *   ENU: East-North-Up navigation frame at some local origin
+ *   NED: North-East-Down navigation frame at some local origin
+ *   ECEF: Earth-centered Earth-fixed, origin at Earth's center
+ * See Farrell08book or e.g. http://www.dirsig.org/docs/new/coordinates.html
  * @addtogroup Navigation
  */
 class GPSFactor: public NoiseModelFactor1<Pose3> {
@@ -70,36 +75,28 @@ public:
 
   /** print */
   virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
-    std::cout << s << "GPSFactor on " << keyFormatter(this->key()) << "\n";
-    nT_.print("  prior mean: ");
-    this->noiseModel_->print("  noise model: ");
-  }
+      DefaultKeyFormatter) const;
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& expected,
-      double tol = 1e-9) const {
-    const This* e = dynamic_cast<const This*>(&expected);
-    return e != NULL && Base::equals(*e, tol) && this->nT_.equals(e->nT_, tol);
-  }
+  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
 
   /** implement functions needed to derive from Factor */
 
   /** vector of errors */
   Vector evaluateError(const Pose3& p,
-      boost::optional<Matrix&> H = boost::none) const {
-    if (H) {
-      H->resize(3, 6);
-      H->block < 3, 3 > (0, 0) << zeros(3, 3);
-      H->block < 3, 3 > (0, 3) << p.rotation().matrix();
-    }
-    // manifold equivalent of h(x)-z -> log(z,h(x))
-    return nT_.localCoordinates(p.translation());
-  }
+      boost::optional<Matrix&> H = boost::none) const;
 
-  const Point3 & measurementIn() const {
+  inline const Point3 & measurementIn() const {
     return nT_;
   }
+
+  /*
+   *  Convenience funcion to estimate state at time t, given two GPS
+   *  readings (in local NED Cartesian frame) bracketing t
+   *  Assumes roll is zero, calculates yaw and pitch from NED1->NED2 vector.
+   */
+  static std::pair<Pose3, Vector3> EstimateState(double t1, const Vector3& NED1,
+      double t2, const Vector3& NED2, double timestamp);
 
 private:
 
