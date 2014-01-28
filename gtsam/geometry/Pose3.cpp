@@ -98,7 +98,7 @@ Vector Pose3::adjointTranspose(const Vector& xi, const Vector& y,
 /* ************************************************************************* */
 Matrix6 Pose3::dExpInv_exp(const Vector& xi) {
   // Bernoulli numbers, from Wikipedia
-  static const Vector B = Vector_(9, 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
+  static const Vector B = (Vector(9) << 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
       0.0, 1.0 / 42.0, 0.0, -1.0 / 30);
   static const int N = 5; // order of approximation
   Matrix res = I6;

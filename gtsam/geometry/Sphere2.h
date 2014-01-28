@@ -14,6 +14,7 @@
  * @date Feb 02, 2011
  * @author Can Erdogan
  * @author Frank Dellaert
+ * @author Alex Trevor
  * @brief Develop a Sphere2 class - basically a point on a unit sphere
  */
 
@@ -21,6 +22,10 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
+
+#ifndef SPHERE2_DEFAULT_COORDINATES_MODE
+  #define SPHERE2_DEFAULT_COORDINATES_MODE Sphere2::RENORM
+#endif
 
 // (Cumbersome) forward declaration for random generator
 namespace boost {
@@ -65,6 +70,10 @@ public:
     p_ = p_ / p_.norm();
   }
 
+  /// Named constructor from Point3 with optional Jacobian
+  static Sphere2 FromPoint3(const Point3& point,
+      boost::optional<Matrix&> H = boost::none);
+
   /// Random direction, using boost::uniform_on_sphere
   static Sphere2 Random(boost::random::mt19937 & rng);
 
@@ -85,7 +94,11 @@ public:
   /// @name Other functionality
   /// @{
 
-  /// Returns the local coordinate frame to tangent plane
+  /**
+   * Returns the local coordinate frame to tangent plane
+   * It is a 3*2 matrix [b1 b2] composed of two orthogonal directions
+   * tangent to the sphere at the current direction.
+   */
   Matrix basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
@@ -96,6 +109,13 @@ public:
     if (H)
       *H = basis();
     return p_;
+  }
+
+  /// Return unit-norm Vector
+  Vector unitVector(boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = basis();
+    return (p_.vector ());
   }
 
   /// Signed, vector-valued error between two directions
@@ -121,11 +141,16 @@ public:
     return 2;
   }
 
+  enum CoordinatesMode {
+    EXPMAP, ///< Use the exponential map to retract
+    RENORM ///< Retract with vector addtion and renormalize.
+  };
+
   /// The retract function
-  Sphere2 retract(const Vector& v) const;
+  Sphere2 retract(const Vector& v, Sphere2::CoordinatesMode mode = SPHERE2_DEFAULT_COORDINATES_MODE) const;
 
   /// The local coordinates function
-  Vector localCoordinates(const Sphere2& s) const;
+  Vector localCoordinates(const Sphere2& s, Sphere2::CoordinatesMode mode = SPHERE2_DEFAULT_COORDINATES_MODE) const;
 
   /// @}
 };

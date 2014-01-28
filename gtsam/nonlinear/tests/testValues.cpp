@@ -65,7 +65,8 @@ public:
 TEST( Values, equals1 )
 {
   Values expected;
-  LieVector v(3, 5.0, 6.0, 7.0);
+  LieVector v((Vector(3) << 5.0, 6.0, 7.0));
+
   expected.insert(key1,v);
   Values actual;
   actual.insert(key1,v);
@@ -76,8 +77,9 @@ TEST( Values, equals1 )
 TEST( Values, equals2 )
 {
   Values cfg1, cfg2;
-  LieVector v1(3, 5.0, 6.0, 7.0);
-  LieVector v2(3, 5.0, 6.0, 8.0);
+  LieVector v1((Vector(3) << 5.0, 6.0, 7.0));
+  LieVector v2((Vector(3) << 5.0, 6.0, 8.0));
+
   cfg1.insert(key1, v1);
   cfg2.insert(key1, v2);
   CHECK(!cfg1.equals(cfg2));
@@ -88,8 +90,9 @@ TEST( Values, equals2 )
 TEST( Values, equals_nan )
 {
   Values cfg1, cfg2;
-  LieVector v1(3, 5.0, 6.0, 7.0);
-  LieVector v2(3, inf, inf, inf);
+  LieVector v1((Vector(3) << 5.0, 6.0, 7.0));
+  LieVector v2((Vector(3) << inf, inf, inf));
+
   cfg1.insert(key1, v1);
   cfg2.insert(key1, v2);
   CHECK(!cfg1.equals(cfg2));
@@ -100,10 +103,11 @@ TEST( Values, equals_nan )
 TEST( Values, insert_good )
 {
   Values cfg1, cfg2, expected;
-  LieVector v1(3, 5.0, 6.0, 7.0);
-  LieVector v2(3, 8.0, 9.0, 1.0);
-  LieVector v3(3, 2.0, 4.0, 3.0);
-  LieVector v4(3, 8.0, 3.0, 7.0);
+  LieVector v1((Vector(3) << 5.0, 6.0, 7.0));
+  LieVector v2((Vector(3) << 8.0, 9.0, 1.0));
+  LieVector v3((Vector(3) << 2.0, 4.0, 3.0));
+  LieVector v4((Vector(3) << 8.0, 3.0, 7.0));
+
   cfg1.insert(key1, v1);
   cfg1.insert(key2, v2);
   cfg2.insert(key3, v4);
@@ -121,10 +125,11 @@ TEST( Values, insert_good )
 TEST( Values, insert_bad )
 {
   Values cfg1, cfg2;
-  LieVector v1(3, 5.0, 6.0, 7.0);
-  LieVector v2(3, 8.0, 9.0, 1.0);
-  LieVector v3(3, 2.0, 4.0, 3.0);
-  LieVector v4(3, 8.0, 3.0, 7.0);
+  LieVector v1((Vector(3) << 5.0, 6.0, 7.0));
+  LieVector v2((Vector(3) << 8.0, 9.0, 1.0));
+  LieVector v3((Vector(3) << 2.0, 4.0, 3.0));
+  LieVector v4((Vector(3) << 8.0, 3.0, 7.0));
+
   cfg1.insert(key1, v1);
   cfg1.insert(key2, v2);
   cfg2.insert(key2, v3);
@@ -137,8 +142,8 @@ TEST( Values, insert_bad )
 TEST( Values, update_element )
 {
   Values cfg;
-  LieVector v1(3, 5.0, 6.0, 7.0);
-  LieVector v2(3, 8.0, 9.0, 1.0);
+  LieVector v1((Vector(3) << 5.0, 6.0, 7.0));
+  LieVector v2((Vector(3) << 8.0, 9.0, 1.0));
 
   cfg.insert(key1, v1);
   CHECK(cfg.size() == 1);
@@ -181,8 +186,8 @@ TEST(Values, basic_functions)
 //TEST(Values, dim_zero)
 //{
 //  Values config0;
-//  config0.insert(key1, LieVector(2, 2.0, 3.0));
-//  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+//  config0.insert(key1, LieVector((Vector(2) << 2.0, 3.0));
+//  config0.insert(key2, LieVector((Vector(3) << 5.0, 6.0, 7.0));
 //  LONGS_EQUAL(5, config0.dim());
 //
 //  VectorValues expected;
@@ -195,16 +200,16 @@ TEST(Values, basic_functions)
 TEST(Values, expmap_a)
 {
   Values config0;
-  config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
-  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+  config0.insert(key1, LieVector((Vector(3) << 1.0, 2.0, 3.0)));
+  config0.insert(key2, LieVector((Vector(3) << 5.0, 6.0, 7.0)));
 
   VectorValues increment = pair_list_of<Key, Vector>
     (key1, (Vector(3) << 1.0, 1.1, 1.2))
     (key2, (Vector(3) << 1.3, 1.4, 1.5));
 
   Values expected;
-  expected.insert(key1, LieVector(3, 2.0, 3.1, 4.2));
-  expected.insert(key2, LieVector(3, 6.3, 7.4, 8.5));
+  expected.insert(key1, LieVector((Vector(3) << 2.0, 3.1, 4.2)));
+  expected.insert(key2, LieVector((Vector(3) << 6.3, 7.4, 8.5)));
 
   CHECK(assert_equal(expected, config0.retract(increment)));
 }
@@ -213,15 +218,15 @@ TEST(Values, expmap_a)
 TEST(Values, expmap_b)
 {
   Values config0;
-  config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
-  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+  config0.insert(key1, LieVector((Vector(3) << 1.0, 2.0, 3.0)));
+  config0.insert(key2, LieVector((Vector(3) << 5.0, 6.0, 7.0)));
 
   VectorValues increment = pair_list_of<Key, Vector>
     (key2, (Vector(3) << 1.3, 1.4, 1.5));
 
   Values expected;
-  expected.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
-  expected.insert(key2, LieVector(3, 6.3, 7.4, 8.5));
+  expected.insert(key1, LieVector((Vector(3) << 1.0, 2.0, 3.0)));
+  expected.insert(key2, LieVector((Vector(3) << 6.3, 7.4, 8.5)));
 
   CHECK(assert_equal(expected, config0.retract(increment)));
 }
@@ -230,16 +235,16 @@ TEST(Values, expmap_b)
 //TEST(Values, expmap_c)
 //{
 //  Values config0;
-//  config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
-//  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+//  config0.insert(key1, LieVector((Vector(3) << 1.0, 2.0, 3.0)));
+//  config0.insert(key2, LieVector((Vector(3) << 5.0, 6.0, 7.0)));
 //
 //  Vector increment = LieVector(6,
 //      1.0, 1.1, 1.2,
 //      1.3, 1.4, 1.5);
 //
 //  Values expected;
-//  expected.insert(key1, LieVector(3, 2.0, 3.1, 4.2));
-//  expected.insert(key2, LieVector(3, 6.3, 7.4, 8.5));
+//  expected.insert(key1, LieVector((Vector(3) << 2.0, 3.1, 4.2)));
+//  expected.insert(key2, LieVector((Vector(3) << 6.3, 7.4, 8.5)));
 //
 //  CHECK(assert_equal(expected, config0.retract(increment)));
 //}
@@ -248,8 +253,8 @@ TEST(Values, expmap_b)
 TEST(Values, expmap_d)
 {
   Values config0;
-  config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
-  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+  config0.insert(key1, LieVector((Vector(3) << 1.0, 2.0, 3.0)));
+  config0.insert(key2, LieVector((Vector(3) << 5.0, 6.0, 7.0)));
   //config0.print("config0");
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
@@ -266,8 +271,8 @@ TEST(Values, expmap_d)
 TEST(Values, localCoordinates)
 {
   Values valuesA;
-  valuesA.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
-  valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+  valuesA.insert(key1, LieVector((Vector(3) << 1.0, 2.0, 3.0)));
+  valuesA.insert(key2, LieVector((Vector(3) << 5.0, 6.0, 7.0)));
 
   VectorValues expDelta = pair_list_of<Key, Vector>
     (key1, (Vector(3) << 0.1, 0.2, 0.3))
@@ -314,17 +319,17 @@ TEST(Values, exists_)
 TEST(Values, update)
 {
   Values config0;
-  config0.insert(key1, LieVector(1, 1.));
-  config0.insert(key2, LieVector(1, 2.));
+  config0.insert(key1, LieVector((Vector(1) << 1.)));
+  config0.insert(key2, LieVector((Vector(1) << 2.)));
 
   Values superset;
-  superset.insert(key1, LieVector(1, -1.));
-  superset.insert(key2, LieVector(1, -2.));
+  superset.insert(key1, LieVector((Vector(1) << -1.)));
+  superset.insert(key2, LieVector((Vector(1) << -2.)));
   config0.update(superset);
 
   Values expected;
-  expected.insert(key1, LieVector(1, -1.));
-  expected.insert(key2, LieVector(1, -2.));
+  expected.insert(key1, LieVector((Vector(1) << -1.)));
+  expected.insert(key2, LieVector((Vector(1) << -2.)));
   CHECK(assert_equal(expected,config0));
 }
 

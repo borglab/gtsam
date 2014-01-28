@@ -47,22 +47,6 @@ typedef Eigen::VectorBlock<const Vector> ConstSubVector;
 GTSAM_EXPORT void odprintf(const char *format, ...);
 
 /**
- *  constructor with size and initial data, row order !
- */
-GTSAM_EXPORT Vector Vector_( size_t m, const double* const data);
-
-/**
- *  nice constructor, dangerous as number of arguments must be exactly right
- *  and you have to pass doubles !!! always use 0.0 never 0
- */
-GTSAM_EXPORT Vector Vector_(size_t m, ...);
-
-/**
- * Create a numeric vector from an STL vector of doubles
- */
-GTSAM_EXPORT Vector Vector_(const std::vector<double>& data);
-
-/**
  * Create vector initialized to a constant value
  * @param n is the size of the vector
  * @param value is a constant value to insert into the vector

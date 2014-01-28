@@ -75,6 +75,16 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::linearize() const {
 }
 
 /* ************************************************************************* */
+void LevenbergMarquardtOptimizer::increaseLambda(){
+  state_.lambda *= params_.lambdaFactor;
+}
+
+/* ************************************************************************* */
+void LevenbergMarquardtOptimizer::decreaseLambda(){
+  state_.lambda /= params_.lambdaFactor;
+}
+
+/* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
   gttic (LM_iterate);
@@ -146,7 +156,7 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (error <= state_.error) {
         state_.values.swap(newValues);
         state_.error = error;
-        state_.lambda /= params_.lambdaFactor;
+        decreaseLambda();
         break;
       } else {
         // Either we're not cautious, or the same lambda was worse than the current error.
@@ -157,7 +167,10 @@ void LevenbergMarquardtOptimizer::iterate() {
             cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
           break;
         } else {
-          state_.lambda *= params_.lambdaFactor;
+          if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+            cout << "increasing lambda: old error (" << state_.error << ") new error (" << error << ")"  << endl;
+
+          increaseLambda();
         }
       }
     } catch (IndeterminantLinearSystemException& e) {
@@ -172,7 +185,7 @@ void LevenbergMarquardtOptimizer::iterate() {
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
         break;
       } else {
-        state_.lambda *= params_.lambdaFactor;
+        increaseLambda();
       }
     }
 // Frank asks: why would we do that?

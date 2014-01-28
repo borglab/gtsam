@@ -110,7 +110,7 @@ TEST( GeneralSFMFactor, error ) {
   Pose3 x1(R,t1);
   values.insert(X(1), GeneralCamera(x1));
   Point3 l1;  values.insert(L(1), l1);
-  EXPECT(assert_equal((Vector(2) << -3.0, 0.0), factor->unwhitenedError(values)));
+  EXPECT(assert_equal(((Vector) (Vector(2) << -3.0, 0.0)), factor->unwhitenedError(values)));
 }
 
 static const double baseline = 5.0 ;

@@ -70,7 +70,7 @@ namespace gtsam {
 
     /** Single Element Constructor: acts on a single parameter specified by idx */
     PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
-      Base(model, key), prior_(Vector_(1, prior)), mask_(1, idx), H_(zeros(1, T::Dim())) {
+      Base(model, key), prior_((Vector(1) << prior)), mask_(1, idx), H_(zeros(1, T::Dim())) {
       assert(model->dim() == 1);
       this->fillH();
     }

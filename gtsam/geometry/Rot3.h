@@ -194,7 +194,7 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez(Vector_(3,wx,wy,wz));}
+      { return rodriguez((Vector(3) << wx, wy, wz));}
 
     /// @}
     /// @name Testable
@@ -329,6 +329,10 @@ namespace gtsam {
 
     /// rotate 3D direction from rotated coordinate frame to world frame
     Sphere2 rotate(const Sphere2& p, boost::optional<Matrix&> HR = boost::none,
+        boost::optional<Matrix&> Hp = boost::none) const;
+
+    /// unrotate 3D direction from world frame to rotated coordinate frame
+    Sphere2 unrotate(const Sphere2& p, boost::optional<Matrix&> HR = boost::none,
         boost::optional<Matrix&> Hp = boost::none) const;
 
     /// rotate 3D direction from rotated coordinate frame to world frame

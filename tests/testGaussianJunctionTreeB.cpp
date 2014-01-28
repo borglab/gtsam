@@ -199,7 +199,7 @@ TEST(GaussianJunctionTreeB, simpleMarginal) {
   // Create a simple graph
   NonlinearFactorGraph fg;
   fg.add(PriorFactor<Pose2>(X(0), Pose2(), noiseModel::Isotropic::Sigma(3, 10.0)));
-  fg.add(BetweenFactor<Pose2>(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas(Vector_(3, 10.0, 1.0, 1.0))));
+  fg.add(BetweenFactor<Pose2>(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas((Vector(3) << 10.0, 1.0, 1.0))));
 
   Values init;
   init.insert(X(0), Pose2());

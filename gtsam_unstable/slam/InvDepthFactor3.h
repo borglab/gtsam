@@ -96,7 +96,7 @@ public:
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       return gtsam::ones(2) * 2.0 * K_->fx();
     }
-    return gtsam::Vector_(1, 0.0);
+    return (gtsam::Vector(1) << 0.0);
   }
 
   /** return the measurement */

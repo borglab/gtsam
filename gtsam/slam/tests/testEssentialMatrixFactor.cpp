@@ -154,8 +154,8 @@ TEST (EssentialMatrixFactor2, factor) {
     EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), model2);
 
     // Check evaluation
-    Point3 P1 = data.tracks[i].p;
-    const Point2 pi = camera2.project(P1);
+    Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
+    const Point2 pi = SimpleCamera::project_to_camera(P2);
     Point2 reprojectionError(pi - pB(i));
     Vector expected = reprojectionError.vector();
 
@@ -269,6 +269,21 @@ TEST (EssentialMatrixFactor3, minimization) {
     truth.insert(i, LieScalar(baseline / P1.z()));
   }
   EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+
+  // Optimize
+  LevenbergMarquardtParams parameters;
+  // parameters.setVerbosity("ERROR");
+  LevenbergMarquardtOptimizer optimizer(graph, truth, parameters);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EssentialMatrix actual = result.at<EssentialMatrix>(100);
+  EXPECT(assert_equal(bodyE, actual, 1e-1));
+  for (size_t i = 0; i < 5; i++)
+    EXPECT(assert_equal(truth.at<LieScalar>(i), result.at<LieScalar>(i), 1e-1));
+
+  // Check error at result
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
 }
 
 } // namespace example1

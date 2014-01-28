@@ -59,7 +59,7 @@ namespace gtsam {
 
   /** global functions for converting to a LieVector for use with numericalDerivative */
   inline LieVector makeLieVector(const Vector& v) { return LieVector(v); }
-  inline LieVector makeLieVectorD(double d) { return LieVector(Vector_(1, d)); }
+  inline LieVector makeLieVectorD(double d) { return LieVector((Vector) (Vector(1) << d)); }
 
   /**
    * Numerically compute gradient of scalar function

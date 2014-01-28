@@ -23,15 +23,6 @@
 using namespace std;
 using namespace gtsam;
 
-/* ************************************************************************* */
-TEST( TestVector, Vector_variants )
-{
-  Vector a = (Vector(2) << 10.0,20.0);
-  double data[] = {10,20};
-  Vector b = Vector_(2, data);
-  EXPECT(assert_equal(a, b));
-}
-
 namespace {
   /* ************************************************************************* */
   template<typename Derived>

@@ -43,7 +43,7 @@ TEST( InvDepthFactorVariant3, optimize) {
   double theta = atan2(landmark_p1.x(), landmark_p1.z());
   double phi = atan2(landmark_p1.y(), sqrt(landmark_p1.x()*landmark_p1.x()+landmark_p1.z()*landmark_p1.z()));
   double rho = 1./landmark_p1.norm();
-  LieVector expected(3, theta, phi, rho);
+  LieVector expected((Vector(3) << theta, phi, rho));
 
 
   
