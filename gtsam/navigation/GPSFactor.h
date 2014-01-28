@@ -23,7 +23,7 @@
 namespace gtsam {
 
 /**
- * Prior on position in a cartesian frame.
+ * Prior on position in a Cartesian frame.
  * Possibilities include:
  *   ENU: East-North-Up navigation frame at some local origin
  *   NED: North-East-Down navigation frame at some local origin
