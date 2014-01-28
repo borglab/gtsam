@@ -20,6 +20,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/Errors.h>
 
 #include <boost/algorithm/string.hpp>
 #include <string>
@@ -75,12 +76,12 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::linearize() const {
 }
 
 /* ************************************************************************* */
-void LevenbergMarquardtOptimizer::increaseLambda(){
+void LevenbergMarquardtOptimizer::increaseLambda(double stepQuality){
   state_.lambda *= params_.lambdaFactor;
 }
 
 /* ************************************************************************* */
-void LevenbergMarquardtOptimizer::decreaseLambda(){
+void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality){
   state_.lambda /= params_.lambdaFactor;
 }
 
@@ -97,6 +98,8 @@ void LevenbergMarquardtOptimizer::iterate() {
   if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
     cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
+
+  double modelMismatch =  std::numeric_limits<size_t>::max();
 
   // Keep increasing lambda until we make make progress
   while (true) {
@@ -153,10 +156,25 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "next error = " << error << endl;
 
+      // oldCost - newCost
+      double costChange = state_.error - error;
+
+      // newLinearizedCost (scalar) = 1/2 [f + J * step]^2 = 1/2 [ f'f + 2f'J * step + step' * J' * J * step ]
+      // linearizedCostChange  = oldCost - newLinearizedCost = f'f/2  - 1/2 [ f'f + 2f'J * step + step' * J' * J * step]
+      //  = -f'J * step - step' * J' * J * step / 2 = -(f' + modelResidual') * (modelResidual)
+      // (with modelResidual = J * step)
+      Errors modelResidualList = (*linear) * delta; // modelResidual = A * delta
+      Vector modelResidual = concatVectors(modelResidualList); // TODO: is this an ordered list?
+      Vector residuals = - linear->jacobian().second; // TODO: optimize this computation, TODO: is there a minus sign?
+      double linearizedCostChange =  dot(- modelResidual, (residuals + modelResidual / 2.0) );
+
+      // Measure of mismatch between original (usually nonlinear) system and its linearized version
+      modelMismatch = costChange / linearizedCostChange;
+
       if (error <= state_.error) {
         state_.values.swap(newValues);
         state_.error = error;
-        decreaseLambda();
+        decreaseLambda(modelMismatch);
         break;
       } else {
         // Either we're not cautious, or the same lambda was worse than the current error.
@@ -170,7 +188,7 @@ void LevenbergMarquardtOptimizer::iterate() {
           if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
             cout << "increasing lambda: old error (" << state_.error << ") new error (" << error << ")"  << endl;
 
-          increaseLambda();
+          increaseLambda(modelMismatch);
         }
       }
     } catch (IndeterminantLinearSystemException& e) {
@@ -185,13 +203,13 @@ void LevenbergMarquardtOptimizer::iterate() {
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
         break;
       } else {
-        increaseLambda();
+        increaseLambda(modelMismatch);
       }
     }
-// Frank asks: why would we do that?
-//    catch(...) {
-//      throw;
-//    }
+    // Frank asks: why would we do that?
+    //    catch(...) {
+    //      throw;
+    //    }
   } // end while
 
   if (lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
@@ -203,7 +221,7 @@ void LevenbergMarquardtOptimizer::iterate() {
 
 /* ************************************************************************* */
 LevenbergMarquardtParams LevenbergMarquardtOptimizer::ensureHasOrdering(
-  LevenbergMarquardtParams params, const NonlinearFactorGraph& graph) const
+    LevenbergMarquardtParams params, const NonlinearFactorGraph& graph) const
 {
   if(!params.ordering)
     params.ordering = Ordering::COLAMD(graph);

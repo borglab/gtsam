@@ -181,11 +181,11 @@ public:
     return state_.lambda;
   }
 
-  // Apply policy to increase lambda if the current update was successful
-  virtual void increaseLambda();
+  // Apply policy to increase lambda if the current update was successful (stepQuality not used in the naive policy)
+  virtual void increaseLambda(double stepQuality);
 
-  // Apply policy to decrease lambda if the current update was NOT successful
-  virtual void decreaseLambda();
+  // Apply policy to decrease lambda if the current update was NOT successful (stepQuality not used in the naive policy)
+  virtual void decreaseLambda(double stepQuality);
 
   /// Access the current number of inner iterations
   int getInnerIterations() const {
