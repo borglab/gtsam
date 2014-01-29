@@ -37,7 +37,7 @@ private:
 
   typedef NoiseModelFactor1<Pose3> Base;
 
-  Sphere2 z_, ref_; ///< Position measurement in
+  Sphere2 nZ_, bRef_; ///< Position measurement in
 
 public:
 
@@ -57,13 +57,13 @@ public:
   /**
    * @brief Constructor
    * @param key of the Pose3 variable that will be constrained
-   * @param z measured direction in body frame
-   * @param ref reference direction in navigation frame
+   * @param nZ measured direction in navigation frame
    * @param model Gaussian noise model
+   * @param bRef reference direction in body frame (default Z-axis)
    */
-  AttitudeFactor(Key key, const Sphere2& z, const Sphere2& ref,
-      const SharedNoiseModel& model) :
-      Base(model, key), z_(z), ref_(ref) {
+  AttitudeFactor(Key key, const Sphere2& nZ,
+      const SharedNoiseModel& model, const Sphere2& bRef=Sphere2(0,0,1)) :
+      Base(model, key), nZ_(nZ), bRef_(bRef) {
   }
 
   /// @return a deep copy of this factor
@@ -96,8 +96,8 @@ private:
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(z_);
-    ar & BOOST_SERIALIZATION_NVP(ref_);
+    ar & BOOST_SERIALIZATION_NVP(nZ_);
+    ar & BOOST_SERIALIZATION_NVP(bRef_);
   }
 };
 
