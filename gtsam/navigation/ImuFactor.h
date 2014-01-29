@@ -33,7 +33,8 @@ namespace gtsam {
   /**
    * 
    * @addtogroup SLAM
-   *    * REFERENCES:
+   *
+   * REFERENCES:
    * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
    * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for High-Dynamic Motion in Built
    * Environments Without Initial Conditions", TRO, 28(1):61-76, 2012.
@@ -87,7 +88,7 @@ namespace gtsam {
       imuBias::ConstantBias biasHat; ///< Acceleration and angular rate bias values used during preintegration
       Matrix measurementCovariance; ///< (Raw measurements uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
 
-      Vector3 deltaPij; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, , in [2]) (in frame i)
+      Vector3 deltaPij; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
       Vector3 deltaVij; ///< Preintegrated relative velocity (in global frame)
       Rot3 deltaRij; ///< Preintegrated relative orientation (in frame i)
       double deltaTij; ///< Time interval from i to j
@@ -170,18 +171,14 @@ namespace gtsam {
         // Then compensate for sensor-body displacement: we express the quantities (originally in the IMU frame) into the body frame
         if(body_P_sensor){
           Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
-
           correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
-
           Matrix3 body_omega_body__cross = skewSymmetric(correctedOmega);
-
           correctedAcc = body_R_sensor * correctedAcc - body_omega_body__cross * body_omega_body__cross * body_P_sensor->translation().vector();
           // linear acceleration vector in the body frame
         }
 
         const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
         const Rot3 Rincr = Rot3::Expmap(theta_incr); // rotation increment computed from the current rotation rate measurement
-
         const Matrix3 Jr_theta_incr = rightJacobianExpMapSO3(theta_incr); // Right jacobian computed at theta_incr
 
         // Update Jacobians
@@ -190,12 +187,13 @@ namespace gtsam {
         //        delPdelBiasOmega += delVdelBiasOmega * deltaT;
         delPdelBiasAcc += delVdelBiasAcc * deltaT - 0.5 * deltaRij.matrix() * deltaT*deltaT;
         delPdelBiasOmega += delVdelBiasOmega * deltaT - 0.5 * deltaRij.matrix()
-                            * skewSymmetric(biasHat.correctAccelerometer(measuredAcc)) * deltaT*deltaT * delRdelBiasOmega;
+                                    * skewSymmetric(biasHat.correctAccelerometer(measuredAcc)) * deltaT*deltaT * delRdelBiasOmega;
+
         delVdelBiasAcc += -deltaRij.matrix() * deltaT;
         delVdelBiasOmega += -deltaRij.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega;
         delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega - Jr_theta_incr  * deltaT;
 
-        // Update preintegrated mesurements covariance
+        // Update preintegrated measurements covariance
         /* ----------------------------------------------------------------------------------------------------------------------- */
         Matrix3 Z_3x3 = Matrix3::Zero();
         Matrix3 I_3x3 = Matrix3::Identity();
@@ -424,6 +422,7 @@ namespace gtsam {
                     // dfR/dPi
                     Matrix3::Zero();
       }
+
       if(H2) {
         H2->resize(9,3);
         (*H2) <<
@@ -437,6 +436,7 @@ namespace gtsam {
         Matrix3::Zero();
 
       }
+
       if(H3) {
 
         H3->resize(9,6);
@@ -448,6 +448,7 @@ namespace gtsam {
             // dfR/dPosej
             Jrinv_fRhat *  ( Matrix3::Identity() ), Matrix3::Zero();
       }
+
       if(H4) {
         H4->resize(9,3);
         (*H4) <<
@@ -458,8 +459,8 @@ namespace gtsam {
             // dfR/dVj
             Matrix3::Zero();
       }
-      if(H5) {
 
+      if(H5) {
         const Matrix3 Jrinv_theta_bc = rightJacobianExpMapSO3inverse(theta_biascorrected);
         const Matrix3 Jr_JbiasOmegaIncr = rightJacobianExpMapSO3(preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr);
         const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega;

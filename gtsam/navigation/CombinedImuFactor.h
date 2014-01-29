@@ -274,7 +274,6 @@ namespace gtsam {
 
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
-        // deltaPij += deltaVij * deltaT;
         deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
         deltaVij += deltaRij.matrix() * correctedAcc * deltaT;
         deltaRij = deltaRij * Rincr;
@@ -347,6 +346,7 @@ namespace gtsam {
 #else
       typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
 #endif
+
     /** Default constructor - only use for serialization */
     CombinedImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix::Zero(6,6)) {}
 
@@ -554,7 +554,6 @@ namespace gtsam {
                   //dBiasOmega/dBias_j
                   Matrix3::Zero(), Matrix3::Identity();
       }
-
 
       // Evaluate residual error, according to [3]
       /* ---------------------------------------------------------------------------------------------------- */
