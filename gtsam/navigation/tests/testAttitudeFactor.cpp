@@ -35,7 +35,7 @@ TEST( AttitudeFactor, Constructor ) {
 
   // Factor
   Key key(1);
-  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
   AttitudeFactor factor0(key, nDown, model);
   AttitudeFactor factor(key, nDown, model, bZ);
   EXPECT(assert_equal(factor0,factor,1e-5));
