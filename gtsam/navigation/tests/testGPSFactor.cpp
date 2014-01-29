@@ -17,15 +17,16 @@
  */
 
 #include <gtsam/navigation/GPSFactor.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+
 #include <CppUnitLite/TestHarness.h>
+
 #include <GeographicLib/LocalCartesian.hpp>
 
 using namespace std;
-using namespace GeographicLib;
 using namespace gtsam;
+using namespace GeographicLib;
 
 // *************************************************************************
 TEST( GPSFactor, Constructors ) {
@@ -50,8 +51,9 @@ TEST( GPSFactor, Constructors ) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
   GPSFactor factor(key, Point3(E, N, U), model);
 
-  // Create a linearization point at the zero-error point
-  Pose3 T(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(-5.0, 8.0, -11.0));
+  // Create a linearization point at zero error
+  Pose3 T(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(E, N, U));
+  EXPECT(assert_equal(zero(3),factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Pose3>(
@@ -62,7 +64,7 @@ TEST( GPSFactor, Constructors ) {
   factor.evaluateError(T, actualH);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
 //***************************************************************************

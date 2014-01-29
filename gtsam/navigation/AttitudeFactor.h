@@ -10,59 +10,60 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   GPSFactor.h
+ *  @file   AttitudeFactor.h
  *  @author Frank Dellaert
- *  @brief  Header file for GPS factor
- *  @date   January 22, 2014
+ *  @brief  Header file for Attitude factor
+ *  @date   January 28, 2014
  **/
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Sphere2.h>
 
 namespace gtsam {
 
 /**
- * Prior on position in a Cartesian frame.
- * Possibilities include:
- *   ENU: East-North-Up navigation frame at some local origin
- *   NED: North-East-Down navigation frame at some local origin
- *   ECEF: Earth-centered Earth-fixed, origin at Earth's center
- * See Farrell08book or e.g. http://www.dirsig.org/docs/new/coordinates.html
+ * Prior on the attitude of a Pose3.
+ * Example:
+ * - measurement is direction of gravity in body frame bF
+ * - reference is direction of gravity in navigation frame nG
+ * This factor will give zero error if nRb * bF == nG
  * @addtogroup Navigation
  */
-class GPSFactor: public NoiseModelFactor1<Pose3> {
+class AttitudeFactor: public NoiseModelFactor1<Pose3> {
 
 private:
 
   typedef NoiseModelFactor1<Pose3> Base;
 
-  Point3 nT_; ///< Position measurement in
+  Sphere2 z_, ref_; ///< Position measurement in
 
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<GPSFactor> shared_ptr;
+  typedef boost::shared_ptr<AttitudeFactor> shared_ptr;
 
   /// Typedef to this class
-  typedef GPSFactor This;
+  typedef AttitudeFactor This;
 
   /** default constructor - only use for serialization */
-  GPSFactor() {
+  AttitudeFactor() {
   }
 
-  virtual ~GPSFactor() {
+  virtual ~AttitudeFactor() {
   }
 
   /**
-   * @brief Constructor from a measurement in a Cartesian frame.
-   * Use GeographicLib to convert from geographic (latitude and longitude) coordinates
+   * @brief Constructor
    * @param key of the Pose3 variable that will be constrained
-   * @param gpsIn measurement already in  coordinates
+   * @param z measured direction in body frame
+   * @param ref reference direction in navigation frame
    * @param model Gaussian noise model
    */
-  GPSFactor(Key key, const Point3& gpsIn, const SharedNoiseModel& model) :
-      Base(model, key), nT_(gpsIn) {
+  AttitudeFactor(Key key, const Sphere2& z, const Sphere2& ref,
+      const SharedNoiseModel& model) :
+      Base(model, key), z_(z), ref_(ref) {
   }
 
   /// @return a deep copy of this factor
@@ -86,18 +87,6 @@ public:
   Vector evaluateError(const Pose3& p,
       boost::optional<Matrix&> H = boost::none) const;
 
-  inline const Point3 & measurementIn() const {
-    return nT_;
-  }
-
-  /*
-   *  Convenience funcion to estimate state at time t, given two GPS
-   *  readings (in local NED Cartesian frame) bracketing t
-   *  Assumes roll is zero, calculates yaw and pitch from NED1->NED2 vector.
-   */
-  static std::pair<Pose3, Vector3> EstimateState(double t1, const Vector3& NED1,
-      double t2, const Vector3& NED2, double timestamp);
-
 private:
 
   /** Serialization function */
@@ -107,8 +96,10 @@ private:
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nT_);
+    ar & BOOST_SERIALIZATION_NVP(z_);
+    ar & BOOST_SERIALIZATION_NVP(ref_);
   }
 };
 
 } /// namespace gtsam
+
