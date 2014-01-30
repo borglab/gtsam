@@ -15,10 +15,10 @@ set(slam_excluded_files
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    gtsam_add_subdir_tests(slam "${gtsam-default}" "${gtsam-default}" "${slam_excluded_files}") 
+    gtsam_add_subdir_tests(slam "gtsam" "gtsam" "${slam_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_subdir_timing(slam "${gtsam-default}" "${gtsam-default}" "${slam_excluded_files}") 
+    gtsam_add_subdir_timing(slam "gtsam" "gtsam" "${slam_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)

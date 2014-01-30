@@ -10,11 +10,11 @@ set(nonlinear_excluded_files
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    gtsam_add_subdir_tests(nonlinear "${gtsam-default}" "${gtsam-default}" "${nonlinear_excluded_files}") 
+    gtsam_add_subdir_tests(nonlinear "gtsam" "gtsam" "${nonlinear_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_subdir_timing(nonlinear "${gtsam-default}" "${gtsam-default}" "${nonlinear_excluded_files}") 
+    gtsam_add_subdir_timing(nonlinear "gtsam" "gtsam" "${nonlinear_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)
 

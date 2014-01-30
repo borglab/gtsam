@@ -4,8 +4,8 @@ install(FILES ${nonlinear_headers} DESTINATION include/gtsam_unstable/nonlinear)
 
 # Components to link tests in this subfolder against
 set (nonlinear_full_libs
-${gtsam-default}
-${gtsam_unstable-default})
+gtsam
+gtsam_unstable)
 
 # Exclude tests that don't work
 set (nonlinear_excluded_tests #"")

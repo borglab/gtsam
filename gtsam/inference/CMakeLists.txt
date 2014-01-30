@@ -10,11 +10,11 @@ set(inference_excluded_files
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    gtsam_add_subdir_tests(inference "${gtsam-default}" "${gtsam-default}" "${inference_excluded_files}") 
+    gtsam_add_subdir_tests(inference "gtsam" "gtsam" "${inference_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_subdir_timing(inference "${gtsam-default}" "${gtsam-default}" "${inference_excluded_files}") 
+    gtsam_add_subdir_timing(inference "gtsam" "gtsam" "${inference_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)
 

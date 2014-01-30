@@ -52,8 +52,7 @@ option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"  
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
-option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
-option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" OFF)
+option(GTSAM_BUILD_STATIC_LIBRARY        "Build a static gtsam library, instead of shared" OFF)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
 option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
@@ -76,14 +75,13 @@ if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
 	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
 endif()
 
+if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_STATIC_LIBRARY)
+	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_BUILD_STATIC_LIBRARY are both enabled.  The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of GTSAM_BUILD_STATIC_LIBRARY.")
+endif()
+
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
-
-# Sanity check building of libraries
-if (NOT GTSAM_BUILD_SHARED_LIBRARY AND NOT GTSAM_BUILD_STATIC_LIBRARY)
-    message(FATAL_ERROR "Both shared and static version of GTSAM library disabled - need to choose at least one!")
-endif()
 
 # Flags to determine whether tests and examples are build during 'make install'
 # Note that these remove the targets from the 'all'
@@ -286,23 +284,10 @@ endif()
 
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
-endif()   
+endif()
 
 ###############################################################################
 # Add components
-
-# Set default library - static or shared, before adding subdirectories
-if(GTSAM_BUILD_SHARED_LIBRARY)
-	set(gtsam-default gtsam-shared)
-	if(GTSAM_BUILD_UNSTABLE)
-		set(gtsam_unstable-default gtsam_unstable-shared)
-	endif()
-else()
-	set(gtsam-default gtsam-static)
-	if(GTSAM_BUILD_UNSTABLE)
-		set(gtsam_unstable-default gtsam_unstable-static)
-	endif()
-endif()
 
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
@@ -381,8 +366,7 @@ print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests             
 if (DOXYGEN_FOUND)
     print_config_flag(${GTSAM_BUILD_DOCS}                  "Build Docs                     ")
 endif()
-print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
-print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
+print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM library instead of shared")
 print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in library name ")
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}           "Build libgtsam_unstable        ")
