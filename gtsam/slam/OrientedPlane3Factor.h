@@ -69,6 +69,7 @@ namespace gtsam {
 
     public:
 
+      typedef OrientedPlane3DirectionPrior This;
       /// Constructor
       OrientedPlane3DirectionPrior ()
       {}

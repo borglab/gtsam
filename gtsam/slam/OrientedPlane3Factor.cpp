@@ -34,7 +34,19 @@ Vector OrientedPlane3DirectionPrior::evaluateError(const OrientedPlane3& plane,
     boost::optional<Matrix&> H) const {
 
   if(H) {
-    H->resize(2,4);
+    Matrix H_p;
+    Sphere2 n_hat_p = measured_p_.getPlanenormals();
+    Sphere2 n_hat_q = plane.getPlanenormals();
+    Vector e = n_hat_p.error(n_hat_q,H_p);
+    H->resize(2,3);
+    H->block <2,2>(0,0) << H_p;
+    H->block <2,1>(0,2) << Matrix::Zero(2, 1);
+    return e;
+  } else {
+    Sphere2 n_hat_p = measured_p_.getPlanenormals();
+    Sphere2 n_hat_q = plane.getPlanenormals();
+    Vector e = n_hat_p.error(n_hat_q);
+    return e;
   }
 
 }
