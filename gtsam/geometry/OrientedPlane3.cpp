@@ -72,7 +72,7 @@ void OrientedPlane3::print(const std::string& s) const {
   {
     Vector n_error = -n_.localCoordinates (plane.n_, Sphere2::EXPMAP);
     double d_error = d_ - plane.d_;
-    return (Vector (3) << n_error (0), n_error (1), -d_error);
+    return (Vector (3) << n_error (0), n_error (1), d_error);
   }
 
 /* ************************************************************************* */
