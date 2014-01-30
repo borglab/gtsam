@@ -10,11 +10,7 @@ if(NOT FIRST_PASS_DONE AND NOT CMAKE_BUILD_TYPE AND NOT MSVC AND NOT XCODE_VERSI
 endif()
 
 # Add option for using build type postfixes to allow installing multiple build modes
-if(MSVC OR XCODE_VERSION)
-  option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
-else()
-  option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" OFF)
-endif()
+option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
 
 # Add debugging flags but only on the first pass
 if(NOT FIRST_PASS_DONE)

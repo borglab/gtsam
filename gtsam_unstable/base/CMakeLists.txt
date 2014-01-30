@@ -3,8 +3,8 @@ file(GLOB base_headers "*.h")
 install(FILES ${base_headers} DESTINATION include/gtsam_unstable/base)
 
 set (base_full_libs
-    ${gtsam-default}
-    ${gtsam_unstable-default})
+    gtsam
+    gtsam_unstable)
 
 # Exclude tests that don't work
 set (base_excluded_tests "")

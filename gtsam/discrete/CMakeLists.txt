@@ -9,7 +9,7 @@ set (discrete_excluded_tests "")
 
 # Add all tests
 if (GTSAM_BUILD_TESTS)
-    gtsam_add_subdir_tests(discrete "${gtsam-default}" "${gtsam-default}" "${discrete_excluded_tests}")
+    gtsam_add_subdir_tests(discrete "gtsam" "gtsam" "${discrete_excluded_tests}")
 endif()
 
 # Build timing scripts

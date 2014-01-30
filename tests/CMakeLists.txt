@@ -1,6 +1,6 @@
 # Assemble local libraries
 set (tests_full_libs
-    ${gtsam-default}
+    gtsam
     CppUnitLite)
 
 # exclude certain files

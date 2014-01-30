@@ -4,8 +4,8 @@ install(FILES ${dynamics_headers} DESTINATION include/gtsam_unstable/dynamics)
 
 # Components to link tests in this subfolder against
 set (dynamics_full_libs
-    ${gtsam-default}
-    ${gtsam_unstable-default})
+    gtsam
+    gtsam_unstable)
 
 # Exclude tests that don't work
 set (dynamics_excluded_tests "")

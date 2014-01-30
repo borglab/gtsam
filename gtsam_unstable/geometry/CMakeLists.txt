@@ -4,8 +4,8 @@ install(FILES ${geometry_headers} DESTINATION include/gtsam_unstable/geometry)
 
 # Components to link tests in this subfolder against
 set (geometry_full_libs
-    ${gtsam-default}
-    ${gtsam_unstable-default})
+    gtsam
+    gtsam_unstable)
 
 # Exclude tests that don't work
 set (geometry_excluded_tests "")
