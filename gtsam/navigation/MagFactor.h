@@ -21,8 +21,7 @@
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/LieScalar.h>
 
-using namespace std;
-using namespace gtsam;
+namespace gtsam {
 
 /**
  * Factor to calibrate local Earth magnetic field as well as magnetometer bias
@@ -118,4 +117,6 @@ public:
     return hx - measured_;
   }
 };
+
+}
 
