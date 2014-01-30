@@ -59,5 +59,38 @@ namespace gtsam {
       };
   };
 
+  class OrientedPlane3DirectionPrior: public NoiseModelFactor1<OrientedPlane3> {
+
+    protected:
+      OrientedPlane3 measured_p_; /// measured plane parameters
+      Symbol landmarkSymbol_;
+
+      typedef NoiseModelFactor1<OrientedPlane3 > Base;
+
+    public:
+
+      /// Constructor
+      OrientedPlane3DirectionPrior ()
+      {}
+
+      /// Constructor with measured plane coefficients (a,b,c,d), noise model, landmark symbol
+      OrientedPlane3DirectionPrior (const Symbol& landmark, const Vector&z,
+          const SharedGaussian& noiseModel)
+        : Base (noiseModel, landmark),
+          landmarkSymbol_ (landmark)
+      {
+        measured_p_ = OrientedPlane3 (Sphere2 (z (0), z (1), z (2)), z (3));
+      }
+
+      /// print
+      void print(const std::string& s) const;
+
+      /** equals */
+      virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+
+      virtual Vector evaluateError(const OrientedPlane3& plane,
+                                   boost::optional<Matrix&> H = boost::none) const;
+  };
+
 } // gtsam
 

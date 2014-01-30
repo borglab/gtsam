@@ -85,7 +85,7 @@ TEST (OrientedPlane3, lm_rotation_error)
   // Normal along -x, 3m away
   gtsam::Symbol lm_sym ('p', 0);
   gtsam::OrientedPlane3 test_lm0 (-1.0, 0.0, 0.0, 3.0);
- 
+
   gtsam::ISAM2 isam2;
   gtsam::Values new_values;
   gtsam::NonlinearFactorGraph new_graph;
@@ -113,6 +113,36 @@ TEST (OrientedPlane3, lm_rotation_error)
   // Given two noisy measurements of equal weight, expect result between the two
   gtsam::OrientedPlane3 expected_plane_landmark (-sqrt (2.0)/2.0, -sqrt (2.0)/2.0, 0.0, 3.0);
   EXPECT (assert_equal (optimized_plane_landmark, expected_plane_landmark));
+}
+
+// *************************************************************************
+TEST( OrientedPlane3DirectionPriorFactor, Constructor ) {
+
+  // Example: pitch and roll of aircraft in an ENU Cartesian frame.
+  // If pitch and roll are zero for an aerospace frame,
+  // that means Z is pointing down, i.e., direction of Z = (0,0,-1)
+
+  Sphere2 planeOrientation(0, 0, 1); // body Z axis
+
+  // Factor
+  Key key(1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  OrientedPlane3DirectionPriorFactor factor(key, planeOrientation, model);
+
+  // Create a linearization point at the zero-error point
+  Pose3 T(Rot3(), Point3(-5.0, 8.0, -11.0));
+  EXPECT(assert_equal(zero(2),factor.evaluateError(T),1e-5));
+
+  // Calculate numerical derivatives
+  Matrix expectedH = numericalDerivative11<Pose3>(
+      boost::bind(&AttitudeFactor::evaluateError, &factor, _1, boost::none), T);
+
+  // Use the factor to calculate the derivative
+  Matrix actualH;
+  factor.evaluateError(T, actualH);
+
+  // Verify we get the expected error
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
 /* ************************************************************************* */
