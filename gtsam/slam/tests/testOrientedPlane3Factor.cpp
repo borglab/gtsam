@@ -130,21 +130,36 @@ TEST( OrientedPlane3DirectionPriorFactor, Constructor ) {
   OrientedPlane3DirectionPrior factor(lm_sym, planeOrientation, model);
 
   // Create a linearization point at the zero-error point
-  Vector theta = Vector_(4,0.0, 0.0, -20.0, 10.0);
-  OrientedPlane3 T(theta);
-  EXPECT(assert_equal(zero(2),factor.evaluateError(T),1e-5));
+  Vector theta1 = Vector_(4,0.0, 0.02, -1.2, 10.0);
+  Vector theta2 = Vector_(4,0.0, 0.1, - 0.8, 10.0);
+  Vector theta3 = Vector_(4,0.0, 0.2,  -0.9, 10.0);
 
 
-//  // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<OrientedPlane3>(
-      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1, boost::none), T);
+  OrientedPlane3 T1(theta1);
+  OrientedPlane3 T2(theta2);
+  OrientedPlane3 T3(theta3);
+
+
+  // Calculate numerical derivatives
+  Matrix expectedH1 = numericalDerivative11<OrientedPlane3>(
+      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1, boost::none), T1);
+
+  Matrix expectedH2 = numericalDerivative11<OrientedPlane3>(
+      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1, boost::none), T2);
+
+  Matrix expectedH3 = numericalDerivative11<OrientedPlane3>(
+      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1, boost::none), T3);
 
   // Use the factor to calculate the derivative
-  Matrix actualH;
-  factor.evaluateError(T, actualH);
+  Matrix actualH1, actualH2, actualH3;
+  factor.evaluateError(T1, actualH1);
+  factor.evaluateError(T2, actualH2);
+  factor.evaluateError(T3, actualH3);
 
   // Verify we get the expected error
-  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-8));
+  EXPECT(assert_equal(expectedH3, actualH3, 1e-8));
 }
 
 /* ************************************************************************* */

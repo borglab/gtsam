@@ -101,7 +101,7 @@ public:
   /// Returns the plane coefficients (a, b, c, d)
   Vector planeCoefficients () const;
 
-  Sphere2 getPlanenormals () const {
+  Sphere2 normal () const {
     return n_;
   }
     
