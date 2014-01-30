@@ -24,12 +24,58 @@
 namespace gtsam {
 
 /**
+ * Factor to estimate rotation given magnetometer reading
+ * This version uses model measured bM = scale * bRn * direction + bias
+ * and assumes scale, direction, and the bias are given
+ */
+class MagFactor1: public NoiseModelFactor1<Rot3> {
+
+  const Vector3 measured_; /** The measured magnetometer values */
+  const double scale_;
+  const Sphere2 direction_;
+  const Vector3 bias_;
+
+public:
+
+  /** Constructor */
+  MagFactor1(Key key, const Vector3& measured, const LieScalar& scale,
+      const Sphere2& direction, const LieVector& bias,
+      const SharedNoiseModel& model) :
+      NoiseModelFactor1<Rot3>(model, key), //
+      measured_(measured), scale_(scale), direction_(direction), bias_(bias) {
+  }
+
+  /// @return a deep copy of this factor
+  virtual NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<NonlinearFactor>(
+        NonlinearFactor::shared_ptr(new MagFactor1(*this)));
+  }
+
+  /**
+   * @brief vector of errors
+   */
+  Vector evaluateError(const Rot3& nRb,
+      boost::optional<Matrix&> H = boost::none) const {
+    // measured bM = nRb’ * nM + b, where b is unknown bias
+    Sphere2 rotated = nRb.unrotate(direction_, H);
+    Vector3 hx = scale_ * rotated.unitVector() + bias_;
+    if (H) // I think H2 is 2*2, but we need 3*2
+    {
+      Matrix U;
+      rotated.unitVector(U);
+      *H = scale_ * U * (*H);
+    }
+    return hx - measured_;
+  }
+};
+
+/**
  * Factor to calibrate local Earth magnetic field as well as magnetometer bias
  * This version uses model measured bM = bRn * nM + bias
  * and optimizes for both nM and the bias.
  * Issue with it: expresses nM in units of magnetometer
  */
-class MagFactor1: public NoiseModelFactor2<LieVector, LieVector> {
+class MagFactor2: public NoiseModelFactor2<LieVector, LieVector> {
 
   Vector3 measured_; /** The measured magnetometer values */
   Matrix3 bRn_; /** The assumed known rotation from nav to body */
@@ -37,7 +83,7 @@ class MagFactor1: public NoiseModelFactor2<LieVector, LieVector> {
 public:
 
   /** Constructor */
-  MagFactor1(Key key1, Key key2, const Vector3& measured, const Rot3& nRb,
+  MagFactor2(Key key1, Key key2, const Vector3& measured, const Rot3& nRb,
       const SharedNoiseModel& model) :
       NoiseModelFactor2<LieVector, LieVector>(model, key1, key2), //
       measured_(measured), bRn_(nRb.transpose()) {
@@ -46,7 +92,7 @@ public:
   /// @return a deep copy of this factor
   virtual NonlinearFactor::shared_ptr clone() const {
     return boost::static_pointer_cast<NonlinearFactor>(
-        NonlinearFactor::shared_ptr(new MagFactor1(*this)));
+        NonlinearFactor::shared_ptr(new MagFactor2(*this)));
   }
 
   /**
@@ -72,7 +118,7 @@ public:
  * This version uses model measured bM = scale * bRn * direction + bias
  * and optimizes for both scale, direction, and the bias.
  */
-class MagFactor2: public NoiseModelFactor3<LieScalar, Sphere2, LieVector> {
+class MagFactor3: public NoiseModelFactor3<LieScalar, Sphere2, LieVector> {
 
   Vector3 measured_; /** The measured magnetometer values */
   Rot3 bRn_; /** The assumed known rotation from nav to body */
@@ -80,7 +126,7 @@ class MagFactor2: public NoiseModelFactor3<LieScalar, Sphere2, LieVector> {
 public:
 
   /** Constructor */
-  MagFactor2(Key key1, Key key2, Key key3, const Vector3& measured,
+  MagFactor3(Key key1, Key key2, Key key3, const Vector3& measured,
       const Rot3& nRb, const SharedNoiseModel& model) :
       NoiseModelFactor3<LieScalar, Sphere2, LieVector>(model, key1, key2, key3), //
       measured_(measured), bRn_(nRb.inverse()) {
@@ -89,7 +135,7 @@ public:
   /// @return a deep copy of this factor
   virtual NonlinearFactor::shared_ptr clone() const {
     return boost::static_pointer_cast<NonlinearFactor>(
-        NonlinearFactor::shared_ptr(new MagFactor2(*this)));
+        NonlinearFactor::shared_ptr(new MagFactor3(*this)));
   }
 
   /**

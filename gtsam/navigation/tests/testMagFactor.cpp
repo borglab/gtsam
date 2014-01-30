@@ -51,33 +51,41 @@ TEST( MagFactor, Constructors ) {
   Vector3 scaled = scale * nM;
   Vector3 measured = scale * nRb.transpose() * nM + bias;
 
+  LieScalar s(scale * nM.norm());
+  Sphere2 dir(nM[0], nM[1], nM[2]);
+
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
   Matrix expectedH1, expectedH2, expectedH3;
   Matrix H1, H2, H3;
 
   // MagFactor1
-  MagFactor1 f1(1, 2, measured, nRb, model);
-  EXPECT( assert_equal(zero(3),f1.evaluateError(scaled,bias,H1,H2),1e-5));
+  MagFactor1 f1(1, measured, s, dir, bias, model);
+  EXPECT( assert_equal(zero(3),f1.evaluateError(nRb,H1),1e-5));
+  EXPECT( assert_equal(numericalDerivative11<Rot3> //
+      (boost::bind(&MagFactor1::evaluateError, &f1, _1, none), nRb),//
+      H1, 1e-7));
+
+  // MagFactor2
+  MagFactor2 f2(1, 2, measured, nRb, model);
+  EXPECT( assert_equal(zero(3),f2.evaluateError(scaled,bias,H1,H2),1e-5));
   EXPECT( assert_equal(numericalDerivative11<LieVector> //
-      (boost::bind(&MagFactor1::evaluateError, &f1, _1, bias, none, none), scaled),//
+      (boost::bind(&MagFactor2::evaluateError, &f2, _1, bias, none, none), scaled),//
       H1, 1e-7));
   EXPECT( assert_equal(numericalDerivative11<LieVector> //
-      (boost::bind(&MagFactor1::evaluateError, &f1, scaled, _1, none, none), bias),//
+      (boost::bind(&MagFactor2::evaluateError, &f2, scaled, _1, none, none), bias),//
       H2, 1e-7));
 
   // MagFactor2
-  MagFactor2 f2(1, 2, 3, measured, nRb, model);
-  LieScalar s(scale*nM.norm());
-  Sphere2 dir(nM[0], nM[1], nM[2]);
-  EXPECT(assert_equal(zero(3),f2.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
+  MagFactor3 f3(1, 2, 3, measured, nRb, model);
+  EXPECT(assert_equal(zero(3),f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
   EXPECT(assert_equal(numericalDerivative11<LieScalar> //
-      (boost::bind(&MagFactor2::evaluateError, &f2, _1, dir, bias, none, none, none), s),//
+      (boost::bind(&MagFactor3::evaluateError, &f3, _1, dir, bias, none, none, none), s),//
       H1, 1e-7));
   EXPECT(assert_equal(numericalDerivative11<Sphere2> //
-      (boost::bind(&MagFactor2::evaluateError, &f2, s, _1, bias, none, none, none), dir),//
+      (boost::bind(&MagFactor3::evaluateError, &f3, s, _1, bias, none, none, none), dir),//
       H2, 1e-7));
   EXPECT(assert_equal(numericalDerivative11<LieVector> //
-      (boost::bind(&MagFactor2::evaluateError, &f2, s, dir, _1, none, none, none), bias),//
+      (boost::bind(&MagFactor3::evaluateError, &f3, s, dir, _1, none, none, none), bias),//
       H3, 1e-7));
 }
 
