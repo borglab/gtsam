@@ -41,12 +41,16 @@ TEST(MutliDisparityFactor,error)
   Key key(1);
   Vector disparities = Vector_(2, 1.0, 1.0); // matlab generated values
 
+  Eigen::Matrix<int,Eigen::Dynamic,2> uv;
+  uv.resize(2,2);
+  uv.block<2,2>(0,0) << 20, 30, 40, 60;
   SharedIsotropic model = gtsam::noiseModel::Isotropic::Sigma(disparities.rows(), 0.25, true);
 
-  cout << "Vector # main :" << disparities << endl;
+  Pose3 cameraPose;
 
-  MultiDisparityFactor factor(key, disparities, model);
-  factor.print("Multi-disparity Factor");
+  MultiDisparityFactor factor(key, disparities, uv, cameraPose, model);
+  factor.print("Multi Disparity factor");
+
 }
 
 /* ************************************************************************* */

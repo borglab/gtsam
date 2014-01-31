@@ -33,7 +33,10 @@ class MultiDisparityFactor: public NoiseModelFactor1<OrientedPlane3> {
   protected :
 
     Key landmarkKey_; // the key of the hidden plane in the world
-    Vector disparities_; // measured disparities in a set of Superpixels \mathcal{V}
+    Pose3 cameraPose_; // not a random variable , treated as a parameter to the factor
+    Vector disparities_; // measured disparity at a Pixel (u,v)
+    Eigen::Matrix<int,Eigen::Dynamic,2> uv_; // the 2D image coordinates. It is assumed here that the image co-ordinates are
+    // aligned with the disparity
 
     typedef NoiseModelFactor1<OrientedPlane3> Base;
 
@@ -44,11 +47,13 @@ class MultiDisparityFactor: public NoiseModelFactor1<OrientedPlane3> {
      {};
 
      /// Constructor with measured plane coefficients (a,b,c,d), noise model, pose symbol
-    MultiDisparityFactor (Key key, const Vector& disparities,
-        const SharedIsotropic& noiseModel)
+    MultiDisparityFactor (Key key, const Vector& disparities, const Eigen::Matrix<int,Eigen::Dynamic,2>& uv,
+        const Pose3& cameraPose, const SharedIsotropic& noiseModel)
       : Base (noiseModel, key),
         landmarkKey_ (key),
-        disparities_(disparities)
+        disparities_(disparities),
+        uv_(uv),
+        cameraPose_(cameraPose)
     {};
 
 
