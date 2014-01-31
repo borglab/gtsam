@@ -125,9 +125,9 @@ TEST( OrientedPlane3DirectionPriorFactor, Constructor ) {
   Vector planeOrientation = Vector_(4,0.0, 0.0, -1.0, 10.0); // all vertical planes directly facing the origin
 
   // Factor
-  gtsam::Symbol lm_sym ('l', 0);
+  Key key(1);
   SharedGaussian model = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (3, 0.1, 0.1, 10.0));
-  OrientedPlane3DirectionPrior factor(lm_sym, planeOrientation, model);
+  OrientedPlane3DirectionPrior factor(key, planeOrientation, model);
 
   // Create a linearization point at the zero-error point
   Vector theta1 = Vector_(4,0.0, 0.02, -1.2, 10.0);
