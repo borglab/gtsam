@@ -11,6 +11,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Key.h>
 #include <iostream>
 
 namespace gtsam {
@@ -59,11 +60,12 @@ namespace gtsam {
       };
   };
 
+  // TODO: Convert this factor to dimension two, three dimensions is redundant for direction prior
   class OrientedPlane3DirectionPrior: public NoiseModelFactor1<OrientedPlane3> {
 
     protected:
       OrientedPlane3 measured_p_; /// measured plane parameters
-      Symbol landmarkSymbol_;
+      Key landmarkSymbol_;
 
       typedef NoiseModelFactor1<OrientedPlane3 > Base;
 
@@ -75,10 +77,10 @@ namespace gtsam {
       {}
 
       /// Constructor with measured plane coefficients (a,b,c,d), noise model, landmark symbol
-      OrientedPlane3DirectionPrior (const Symbol& landmark, const Vector&z,
+      OrientedPlane3DirectionPrior (Key key, const Vector&z,
           const SharedGaussian& noiseModel)
-        : Base (noiseModel, landmark),
-          landmarkSymbol_ (landmark)
+        : Base (noiseModel, key),
+          landmarkSymbol_ (key)
       {
         measured_p_ = OrientedPlane3 (Sphere2 (z (0), z (1), z (2)), z (3));
       }
