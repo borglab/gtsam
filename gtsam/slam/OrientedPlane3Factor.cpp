@@ -15,7 +15,7 @@ namespace gtsam {
 //***************************************************************************
 
 void OrientedPlane3DirectionPrior::print(const string& s) const {
-  cout << "Prior Factor on " << landmarkSymbol_ << "\n";
+  cout << "Prior Factor on " << landmarkKey_ << "\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }

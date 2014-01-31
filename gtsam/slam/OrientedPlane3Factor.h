@@ -65,7 +65,7 @@ namespace gtsam {
 
     protected:
       OrientedPlane3 measured_p_; /// measured plane parameters
-      Key landmarkSymbol_;
+      Key landmarkKey_;
 
       typedef NoiseModelFactor1<OrientedPlane3 > Base;
 
@@ -80,7 +80,7 @@ namespace gtsam {
       OrientedPlane3DirectionPrior (Key key, const Vector&z,
           const SharedGaussian& noiseModel)
         : Base (noiseModel, key),
-          landmarkSymbol_ (key)
+          landmarkKey_ (key)
       {
         measured_p_ = OrientedPlane3 (Sphere2 (z (0), z (1), z (2)), z (3));
       }
