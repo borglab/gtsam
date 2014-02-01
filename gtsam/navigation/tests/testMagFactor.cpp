@@ -58,10 +58,10 @@ using boost::none;
 // *************************************************************************
 TEST( MagFactor, unrotate ) {
   Matrix H;
-  Sphere2 expected(0.457383, 0.00632703, 0.889247);
-  EXPECT( assert_equal(expected, MagFactor::unrotate(theta,dir,H),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<Sphere2,Rot2> //
-      (boost::bind(&MagFactor::unrotate, _1, dir, none), theta), H, 1e-7));
+  Point3 expected(22735.5, 314.502, 44202.5);
+  EXPECT( assert_equal(expected, MagFactor::unrotate(theta,nM,H),1e-1));
+  EXPECT( assert_equal(numericalDerivative11<Point3,Rot2> //
+      (boost::bind(&MagFactor::unrotate, _1, nM, none), theta), H, 1e-6));
 }
 
 // *************************************************************************

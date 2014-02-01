@@ -31,8 +31,7 @@ namespace gtsam {
 class MagFactor: public NoiseModelFactor1<Rot2> {
 
   const Point3 measured_; ///< The measured magnetometer values
-  const double scale_; ///< Scale factor from direction to magnetometer readings
-  const Sphere2 direction_; ///< Local magnetic field direction
+  const Point3 nM_; ///< Local magnetic field (mag output units)
   const Point3 bias_; ///< bias
 
 public:
@@ -42,7 +41,7 @@ public:
       const Sphere2& direction, const Point3& bias,
       const SharedNoiseModel& model) :
       NoiseModelFactor1<Rot2>(model, key), //
-      measured_(measured), scale_(scale), direction_(direction), bias_(bias) {
+      measured_(measured), nM_(scale * direction), bias_(bias) {
   }
 
   /// @return a deep copy of this factor
@@ -51,15 +50,10 @@ public:
         NonlinearFactor::shared_ptr(new MagFactor(*this)));
   }
 
-  static Sphere2 unrotate(const Rot2& R, const Sphere2& p,
+  static Point3 unrotate(const Rot2& R, const Point3& p,
       boost::optional<Matrix&> HR = boost::none) {
-    Sphere2 q = Rot3::yaw(R.theta()) * p;
-    if (HR) {
-      HR->resize(2, 1);
-      Point3 Q = q.point3();
-      Matrix B = q.basis().transpose();
-      (*HR) = Q.x() * B.col(1) - Q.y() * B.col(0);
-    }
+    Point3 q = Rot3::yaw(R.theta()).rotate(p,HR);
+    if (HR) *HR = HR->col(2);
     return q;
   }
 
@@ -68,14 +62,8 @@ public:
    */
   Vector evaluateError(const Rot2& nRb,
       boost::optional<Matrix&> H = boost::none) const {
-    // measured bM = nRb’ * nM + b, where b is unknown bias
-    Sphere2 rotated = unrotate(nRb, direction_, H);
-    Point3 hx = scale_ * rotated.point3() + bias_;
-    if (H) {
-      Matrix U;
-      rotated.point3(U);
-      *H = scale_ * U * (*H);
-    }
+    // measured bM = nRb’ * nM + b
+    Point3 hx = unrotate(nRb, nM_, H) + bias_;
     return (hx - measured_).vector();
   }
 };
@@ -112,9 +100,8 @@ public:
    */
   Vector evaluateError(const Rot3& nRb,
       boost::optional<Matrix&> H = boost::none) const {
-    // measured bM = nRb’ * nM + b, where b is unknown bias
-    Point3 q = nRb.unrotate(nM_, H);
-    Point3 hx = q + bias_;
+    // measured bM = nRb’ * nM + b
+    Point3 hx = nRb.unrotate(nM_, H) + bias_;
     return (hx - measured_).vector();
   }
 };
