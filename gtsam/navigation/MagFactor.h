@@ -31,10 +31,10 @@ namespace gtsam {
  */
 class MagFactor: public NoiseModelFactor1<Rot2> {
 
-  const Vector3 measured_; /** The measured magnetometer values */
-  const double scale_;
-  const Sphere2 direction_;
-  const Vector3 bias_;
+  const Vector3 measured_; ///< The measured magnetometer values
+  const double scale_; ///< Scale factor from direction to magnetometer readings
+  const Sphere2 direction_; ///< Local magnetic field direction
+  const Vector3 bias_; ///< bias
 
 public:
 
@@ -88,10 +88,10 @@ public:
  */
 class MagFactor1: public NoiseModelFactor1<Rot3> {
 
-  const Vector3 measured_; /** The measured magnetometer values */
-  const double scale_;
-  const Sphere2 direction_;
-  const Vector3 bias_;
+  const Vector3 measured_; ///< The measured magnetometer values
+  const double scale_; ///< Scale factor from direction to magnetometer readings
+  const Sphere2 direction_; ///< Local magnetic field direction
+  const Vector3 bias_; ///< bias
 
 public:
 
@@ -130,13 +130,12 @@ public:
 /**
  * Factor to calibrate local Earth magnetic field as well as magnetometer bias
  * This version uses model measured bM = bRn * nM + bias
- * and optimizes for both nM and the bias.
- * Issue with it: expresses nM in units of magnetometer
+ * and optimizes for both nM and the bias, where nM is in units defined by magnetometer
  */
 class MagFactor2: public NoiseModelFactor2<LieVector, LieVector> {
 
-  Vector3 measured_; /** The measured magnetometer values */
-  Matrix3 bRn_; /** The assumed known rotation from nav to body */
+  const Vector3 measured_; ///< The measured magnetometer values
+  const Matrix3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
 
@@ -178,8 +177,8 @@ public:
  */
 class MagFactor3: public NoiseModelFactor3<LieScalar, Sphere2, LieVector> {
 
-  Vector3 measured_; /** The measured magnetometer values */
-  Rot3 bRn_; /** The assumed known rotation from nav to body */
+  const Vector3 measured_; ///< The measured magnetometer values
+  const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
 
