@@ -36,20 +36,20 @@ using namespace GeographicLib;
 // Get field from http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
 // Declination = -4.94 degrees (West), Inclination = 62.78 degrees Down
 // As NED vector, in nT:
-Vector3 nM(22653.29982, -1956.83010, 44202.47862);
+Point3 nM(22653.29982, -1956.83010, 44202.47862);
 // Let's assume scale factor,
 double scale = 255.0 / 50000.0;
 // ...ground truth orientation,
 Rot3 nRb = Rot3::yaw(-0.1);
 Rot2 theta = -nRb.yaw();
 // ...and bias
-Vector3 bias(10, -10, 50);
+Point3 bias(10, -10, 50);
 // ... then we measure
-Vector3 scaled = scale * nM;
-Vector3 measured = scale * nRb.transpose() * nM + bias;
+Point3 scaled = scale * nM;
+Point3 measured = nRb.inverse() * (scale * nM) + bias;
 
 LieScalar s(scale * nM.norm());
-Sphere2 dir(nM[0], nM[1], nM[2]);
+Sphere2 dir(nM);
 
 SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
 
@@ -84,10 +84,10 @@ TEST( MagFactor, Factors ) {
 // MagFactor2
   MagFactor2 f2(1, 2, measured, nRb, model);
   EXPECT( assert_equal(zero(3),f2.evaluateError(scaled,bias,H1,H2),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<LieVector> //
+  EXPECT( assert_equal(numericalDerivative11<Point3> //
       (boost::bind(&MagFactor2::evaluateError, &f2, _1, bias, none, none), scaled),//
       H1, 1e-7));
-  EXPECT( assert_equal(numericalDerivative11<LieVector> //
+  EXPECT( assert_equal(numericalDerivative11<Point3> //
       (boost::bind(&MagFactor2::evaluateError, &f2, scaled, _1, none, none), bias),//
       H2, 1e-7));
 
@@ -100,7 +100,7 @@ TEST( MagFactor, Factors ) {
   EXPECT(assert_equal(numericalDerivative11<Sphere2> //
       (boost::bind(&MagFactor3::evaluateError, &f3, s, _1, bias, none, none, none), dir),//
       H2, 1e-7));
-  EXPECT(assert_equal(numericalDerivative11<LieVector> //
+  EXPECT(assert_equal(numericalDerivative11<Point3> //
       (boost::bind(&MagFactor3::evaluateError, &f3, s, dir, _1, none, none, none), bias),//
       H3, 1e-7));
 }
