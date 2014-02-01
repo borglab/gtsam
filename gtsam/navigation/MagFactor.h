@@ -38,7 +38,7 @@ class MagFactor: public NoiseModelFactor1<Rot2> {
 public:
 
   /** Constructor */
-  MagFactor(Key key, const Point3& measured, const LieScalar& scale,
+  MagFactor(Key key, const Point3& measured, double scale,
       const Sphere2& direction, const Point3& bias,
       const SharedNoiseModel& model) :
       NoiseModelFactor1<Rot2>(model, key), //
@@ -53,8 +53,9 @@ public:
 
   static Point3 unrotate(const Rot2& R, const Point3& p,
       boost::optional<Matrix&> HR = boost::none) {
-    Point3 q = Rot3::yaw(R.theta()).unrotate(p,HR);
-    if (HR) *HR = HR->col(2);
+    Point3 q = Rot3::yaw(R.theta()).unrotate(p, HR);
+    if (HR)
+      *HR = HR->col(2);
     return q;
   }
 
@@ -83,7 +84,7 @@ class MagFactor1: public NoiseModelFactor1<Rot3> {
 public:
 
   /** Constructor */
-  MagFactor1(Key key, const Point3& measured, const LieScalar& scale,
+  MagFactor1(Key key, const Point3& measured, double scale,
       const Sphere2& direction, const Point3& bias,
       const SharedNoiseModel& model) :
       NoiseModelFactor1<Rot3>(model, key), //
