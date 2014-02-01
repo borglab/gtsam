@@ -73,7 +73,7 @@ Point3 Rot3::operator*(const Point3& p) const {
 /* ************************************************************************* */
 Sphere2 Rot3::rotate(const Sphere2& p,
     boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
-  Sphere2 q = rotate(p.point3(Hp));
+  Sphere2 q = Sphere2(rotate(p.point3(Hp)));
   if (Hp)
     (*Hp) = q.basis().transpose() * matrix() * (*Hp);
   if (HR)
@@ -84,7 +84,7 @@ Sphere2 Rot3::rotate(const Sphere2& p,
 /* ************************************************************************* */
 Sphere2 Rot3::unrotate(const Sphere2& p,
     boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
-  Sphere2 q = unrotate(p.point3(Hp));
+  Sphere2 q = Sphere2(unrotate(p.point3(Hp)));
   if (Hp)
     (*Hp) = q.basis().transpose() * matrix().transpose () * (*Hp);
   if (HR)
