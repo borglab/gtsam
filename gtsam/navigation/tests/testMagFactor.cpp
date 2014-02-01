@@ -17,7 +17,6 @@
  */
 
 #include <gtsam/navigation/MagFactor.h>
-#include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 
@@ -28,64 +27,6 @@
 using namespace std;
 using namespace gtsam;
 using namespace GeographicLib;
-
-/**
- * Factor to estimate rotation given magnetometer reading
- * This version uses model measured bM = scale * bRn * direction + bias
- * and assumes scale, direction, and the bias are given
- */
-class MagFactor: public NoiseModelFactor1<Rot2> {
-
-  const Vector3 measured_; /** The measured magnetometer values */
-  const double scale_;
-  const Sphere2 direction_;
-  const Vector3 bias_;
-
-public:
-
-  /** Constructor */
-  MagFactor(Key key, const Vector3& measured, const LieScalar& scale,
-      const Sphere2& direction, const LieVector& bias,
-      const SharedNoiseModel& model) :
-      NoiseModelFactor1<Rot2>(model, key), //
-      measured_(measured), scale_(scale), direction_(direction), bias_(bias) {
-  }
-
-  /// @return a deep copy of this factor
-  virtual NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<NonlinearFactor>(
-        NonlinearFactor::shared_ptr(new MagFactor(*this)));
-  }
-
-  static Sphere2 unrotate(const Rot2& R, const Sphere2& p,
-      boost::optional<Matrix&> HR = boost::none) {
-    Sphere2 q = Rot3::yaw(R.theta()) * p;
-    if (HR) {
-      HR->resize(2, 1);
-      Point3 Q = q.unitVector();
-      Matrix B = q.basis().transpose();
-      (*HR) = Q.x() * B.col(1) - Q.y() * B.col(0);
-    }
-    return q;
-  }
-
-  /**
-   * @brief vector of errors
-   */
-  Vector evaluateError(const Rot2& nRb,
-      boost::optional<Matrix&> H = boost::none) const {
-    // measured bM = nRb’ * nM + b, where b is unknown bias
-    Sphere2 rotated = unrotate(nRb, direction_, H);
-    Vector3 hx = scale_ * rotated.unitVector() + bias_;
-    if (H) // I think H2 is 2*2, but we need 3*2
-    {
-      Matrix U;
-      rotated.unitVector(U);
-      *H = scale_ * U * (*H);
-    }
-    return hx - measured_;
-  }
-};
 
 // *************************************************************************
 // Convert from Mag to ENU
