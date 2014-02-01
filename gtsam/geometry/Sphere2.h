@@ -105,17 +105,15 @@ public:
   Matrix skew() const;
 
   /// Return unit-norm Point3
-  Point3 point3(boost::optional<Matrix&> H = boost::none) const {
+  const Point3& point3(boost::optional<Matrix&> H = boost::none) const {
     if (H)
       *H = basis();
     return p_;
   }
 
-  /// Return unit-norm Vector
-  Vector unitVector(boost::optional<Matrix&> H = boost::none) const {
-    if (H)
-      *H = basis();
-    return (p_.vector ());
+  /// Return scaled direction as Point3
+  friend Point3 operator*(double s, const Sphere2& d) {
+    return s*d.p_;
   }
 
   /// Signed, vector-valued error between two directions
