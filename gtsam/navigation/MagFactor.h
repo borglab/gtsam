@@ -26,7 +26,8 @@ namespace gtsam {
 /**
  * Factor to estimate rotation given magnetometer reading
  * This version uses model measured bM = scale * bRn * direction + bias
- * and assumes scale, direction, and the bias are given
+ * and assumes scale, direction, and the bias are given.
+ * Rotation is around negative Z axis, i.e. positive is yaw to right!
  */
 class MagFactor: public NoiseModelFactor1<Rot2> {
 
@@ -52,7 +53,7 @@ public:
 
   static Point3 unrotate(const Rot2& R, const Point3& p,
       boost::optional<Matrix&> HR = boost::none) {
-    Point3 q = Rot3::yaw(R.theta()).rotate(p,HR);
+    Point3 q = Rot3::yaw(R.theta()).unrotate(p,HR);
     if (HR) *HR = HR->col(2);
     return q;
   }
