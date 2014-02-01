@@ -39,7 +39,40 @@ bool AttitudeFactor::equals(const NonlinearFactor& expected, double tol) const {
 }
 
 //***************************************************************************
-Vector AttitudeFactor::evaluateError(const Pose3& p,
+Vector AttitudeFactor::evaluateError(const Rot3& nRb,
+    boost::optional<Matrix&> H) const {
+  if (H) {
+    Matrix D_nRef_R, D_e_nRef;
+    Sphere2 nRef = nRb.rotate(bRef_, D_nRef_R);
+    Vector e = nZ_.error(nRef, D_e_nRef);
+    H->resize(2, 3);
+    H->block < 2, 3 > (0, 0) = D_e_nRef * D_nRef_R;
+    return e;
+  } else {
+    Sphere2 nRef = nRb * bRef_;
+    return nZ_.error(nRef);
+  }
+}
+
+//***************************************************************************
+void Pose3AttitudeFactor::print(const string& s,
+    const KeyFormatter& keyFormatter) const {
+  cout << s << "Pose3AttitudeFactor on " << keyFormatter(this->key()) << "\n";
+  nZ_.print("  measured direction in nav frame: ");
+  bRef_.print("  reference direction in body frame: ");
+  this->noiseModel_->print("  noise model: ");
+}
+
+//***************************************************************************
+bool Pose3AttitudeFactor::equals(const NonlinearFactor& expected,
+    double tol) const {
+  const This* e = dynamic_cast<const This*>(&expected);
+  return e != NULL && Base::equals(*e, tol) && this->nZ_.equals(e->nZ_, tol)
+      && this->bRef_.equals(e->bRef_, tol);
+}
+
+//***************************************************************************
+Vector Pose3AttitudeFactor::evaluateError(const Pose3& p,
     boost::optional<Matrix&> H) const {
   const Rot3& nRb = p.rotation();
   if (H) {
