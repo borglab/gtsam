@@ -60,8 +60,12 @@ public:
   static Sphere2 unrotate(const Rot2& R, const Sphere2& p,
       boost::optional<Matrix&> HR = boost::none) {
     Sphere2 q = Rot3::yaw(R.theta()) * p;
-    if (HR) // 2*3                     3*1
-      (*HR) = -q.basis().transpose() * q.skew().col(2);
+    if (HR) {
+      HR->resize(2, 1);
+      Point3 Q = q.unitVector();
+      Matrix B = q.basis().transpose();
+      (*HR) = Q.x() * B.col(1) - Q.y() * B.col(0);
+    }
     return q;
   }
 
