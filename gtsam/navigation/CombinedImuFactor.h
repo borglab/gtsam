@@ -11,7 +11,7 @@
 
 /**
  *  @file  CombinedImuFactor.h
- *  @author Luca Carlone, Stephen Williams, Richard Roberts
+ *  @author Luca Carlone, Stephen Williams, Richard Roberts, Vadim Indelman
  **/
 
 #pragma once
