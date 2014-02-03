@@ -32,8 +32,63 @@ void MultiDisparityFactor::print(const string& s) const {
 
 Vector MultiDisparityFactor::evaluateError(const OrientedPlane3& plane,
     boost::optional<Matrix&> H) const {
+  Vector e;
+  vector p2 = plane.normal().basis().transpose()
+  e.resize(uv_.rows());
+  if(H) {
+    (*H).resize(uv_.rows(), 3);
 
+    R(plane);
+    for(int i = 0 ; i < uv_.rows() ; i++ ) {
+      Matrix d = Rd_ * plane.planeCoefficients();
+      (*H).row(i) = (plane.planeCoefficients().transpose() * R_.at(i) ) /( pow(d(0,0) ,2) );
+    }
+    e = diff(plane);
+    return e;
+  } else {
+    R(plane); // recompute the Rd_, R_, Rn_
+    e = diff(plane);
+    return e;
+  }
+}
 
-};
+void MultiDisparityFactor::Rn(const OrientedPlane3& p) const {
+
+  Rn_.resize(uv_.rows(),3);
+  Matrix wRc = cameraPose_.rotation().matrix();
+  Rn_.setZero();
+  Rn_ << uv_ *  wRc.transpose() * p.normal().basis();
+
+  return;
+}
+
+void MultiDisparityFactor::Rd(const OrientedPlane3& p) const {
+
+  Rd_.resize(1,3);
+  Vector wTc = cameraPose_.translation().vector();
+
+  Rd_.block<1,2>(0,0) << wTc.transpose() * p.normal().basis();
+  Rd_.block<1,1>(0,2) << 0.0;
+  return;
+
+}
+
+Vector MultiDisparityFactor::diff(const OrientedPlane3& theta) const {
+    Vector e;
+    e.resize(uv_.rows(),1);
+    Matrix wRc = cameraPose_.rotation().matrix();
+    Vector wTc = cameraPose_.translation().vector();
+    Vector planecoeffs = theta.planeCoefficients();
+    for(int i=0; i < uv_.rows(); i++) {
+      Matrix numerator = planecoeffs.block(0,0,3,1).transpose() * wRc * uv_.row(i).transpose();
+      Matrix denominator = planecoeffs.block(0,0,3,1).transpose() * wTc;
+      cout << "Numerator : \n" << numerator << "Denominator \n" << denominator <<"\n";
+      e(i,0) =  disparities_(i,0) - ( numerator(0,0) /( denominator(0,0) + planecoeffs(0,3) ) );
+      cout << e(i,0) << " = " << disparities_(i,0) << " - " << ( numerator(0,0) /( denominator(0,0) + planecoeffs(0,3) ) ) <<  "\n";
+    }
+    cout << "\n";
+    return e;
+
+}
 
 }
