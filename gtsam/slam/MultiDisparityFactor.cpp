@@ -33,15 +33,20 @@ void MultiDisparityFactor::print(const string& s) const {
 Vector MultiDisparityFactor::evaluateError(const OrientedPlane3& plane,
     boost::optional<Matrix&> H) const {
   Vector e;
-  vector p2 = plane.normal().basis().transpose()
   e.resize(uv_.rows());
   if(H) {
     (*H).resize(uv_.rows(), 3);
 
+    Matrix B;
+    B.resize(4,3);
+    B.block<3,2>(0,0) << plane.normal().basis();
+    B.block<4,1>(0,2) << 0 , 0 , 0 ,1;
+    B.block<1,3>(3,0) << 0 , 0 , 0;
     R(plane);
+
     for(int i = 0 ; i < uv_.rows() ; i++ ) {
       Matrix d = Rd_ * plane.planeCoefficients();
-      (*H).row(i) = (plane.planeCoefficients().transpose() * R_.at(i) ) /( pow(d(0,0) ,2) );
+      (*H).row(i) = (plane.planeCoefficients().transpose() * R_.at(i) ) /( pow(d(0,0) ,2) ) * B;
     }
     e = diff(plane);
     return e;
@@ -54,21 +59,21 @@ Vector MultiDisparityFactor::evaluateError(const OrientedPlane3& plane,
 
 void MultiDisparityFactor::Rn(const OrientedPlane3& p) const {
 
-  Rn_.resize(uv_.rows(),3);
+  Rn_.resize(uv_.rows(),4);
   Matrix wRc = cameraPose_.rotation().matrix();
   Rn_.setZero();
-  Rn_ << uv_ *  wRc.transpose() * p.normal().basis();
+  Rn_ << uv_ *  wRc.transpose();
 
   return;
 }
 
 void MultiDisparityFactor::Rd(const OrientedPlane3& p) const {
 
-  Rd_.resize(1,3);
+  Rd_.resize(1,4);
   Vector wTc = cameraPose_.translation().vector();
 
-  Rd_.block<1,2>(0,0) << wTc.transpose() * p.normal().basis();
-  Rd_.block<1,1>(0,2) << 0.0;
+  Rd_.block<1,3>(0,0) << -1 * wTc.transpose();
+  Rd_.block<1,1>(0,3) << 0.0;
   return;
 
 }
@@ -82,7 +87,8 @@ Vector MultiDisparityFactor::diff(const OrientedPlane3& theta) const {
     for(int i=0; i < uv_.rows(); i++) {
       Matrix numerator = planecoeffs.block(0,0,3,1).transpose() * wRc * uv_.row(i).transpose();
       Matrix denominator = planecoeffs.block(0,0,3,1).transpose() * wTc;
-      cout << "Numerator : \n" << numerator << "Denominator \n" << denominator <<"\n";
+      cout << "\n Plane Normals : " << planecoeffs.block(0,0,3,1);
+      cout << "\nNumerator : " << numerator(0,0) << "\n Denominator : " << denominator(0,0) << "\n";
       e(i,0) =  disparities_(i,0) - ( numerator(0,0) /( denominator(0,0) + planecoeffs(0,3) ) );
       cout << e(i,0) << " = " << disparities_(i,0) << " - " << ( numerator(0,0) /( denominator(0,0) + planecoeffs(0,3) ) ) <<  "\n";
     }
