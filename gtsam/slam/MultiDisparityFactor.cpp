@@ -41,12 +41,13 @@ Vector MultiDisparityFactor::evaluateError(const OrientedPlane3& plane,
     B.resize(4,3);
     B.block<3,2>(0,0) << plane.normal().basis();
     B.block<4,1>(0,2) << 0 , 0 , 0 ,1;
-    B.block<1,3>(3,0) << 0 , 0 , 0;
+    B.block<1,2>(3,0) << 0 , 0 ;
     R(plane);
 
     for(int i = 0 ; i < uv_.rows() ; i++ ) {
       Matrix d = Rd_ * plane.planeCoefficients();
-      (*H).row(i) = (plane.planeCoefficients().transpose() * R_.at(i) ) /( pow(d(0,0) ,2) ) * B;
+      (*H).row(i) =  ( (plane.planeCoefficients().transpose() * R_.at(i) ) /(pow(d(0,0) ,2) ) ) * B;
+
     }
     e = diff(plane);
     return e;
@@ -55,28 +56,37 @@ Vector MultiDisparityFactor::evaluateError(const OrientedPlane3& plane,
     e = diff(plane);
     return e;
   }
+
 }
+
+//***************************************************************************
 
 void MultiDisparityFactor::Rn(const OrientedPlane3& p) const {
 
   Rn_.resize(uv_.rows(),4);
   Matrix wRc = cameraPose_.rotation().matrix();
   Rn_.setZero();
-  Rn_ << uv_ *  wRc.transpose();
+  Rn_ << -1.0 *uv_ *  wRc.transpose();
 
   return;
 }
+
+//***************************************************************************
 
 void MultiDisparityFactor::Rd(const OrientedPlane3& p) const {
 
   Rd_.resize(1,4);
   Vector wTc = cameraPose_.translation().vector();
 
-  Rd_.block<1,3>(0,0) << -1 * wTc.transpose();
-  Rd_.block<1,1>(0,3) << 0.0;
+
+  Rd_.block<1,3>(0,0) << wTc.transpose();
+  Rd_.block<1,1>(0,3) << 1.0;
+
   return;
 
 }
+
+//***************************************************************************
 
 Vector MultiDisparityFactor::diff(const OrientedPlane3& theta) const {
     Vector e;
@@ -85,16 +95,17 @@ Vector MultiDisparityFactor::diff(const OrientedPlane3& theta) const {
     Vector wTc = cameraPose_.translation().vector();
     Vector planecoeffs = theta.planeCoefficients();
     for(int i=0; i < uv_.rows(); i++) {
-      Matrix numerator = planecoeffs.block(0,0,3,1).transpose() * wRc * uv_.row(i).transpose();
-      Matrix denominator = planecoeffs.block(0,0,3,1).transpose() * wTc;
-      cout << "\n Plane Normals : " << planecoeffs.block(0,0,3,1);
-      cout << "\nNumerator : " << numerator(0,0) << "\n Denominator : " << denominator(0,0) << "\n";
-      e(i,0) =  disparities_(i,0) - ( numerator(0,0) /( denominator(0,0) + planecoeffs(0,3) ) );
-      cout << e(i,0) << " = " << disparities_(i,0) << " - " << ( numerator(0,0) /( denominator(0,0) + planecoeffs(0,3) ) ) <<  "\n";
+
+      Matrix numerator = Rn_.row(i) * planecoeffs;
+      Matrix denominator = Rd_ * planecoeffs;
+
+      //      cout << "Numerator : " << numerator << " \t Denominator :" << denominator << "\n";
+      e(i,0) =  disparities_(i,0) - ( ( 1.0 * numerator(0,0) ) / ( denominator(0,0) ) );
+//      cout << e(i,0) << " = " << disparities_(i,0) << " - " << ( numerator(0,0) /( denominator(0,0) ) ) <<  "\n";
     }
-    cout << "\n";
     return e;
 
 }
 
+//***************************************************************************
 }
