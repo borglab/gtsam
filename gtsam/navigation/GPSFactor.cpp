@@ -48,26 +48,26 @@ Vector GPSFactor::evaluateError(const Pose3& p,
 }
 
 //***************************************************************************
-pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Vector3& NED1,
-    double t2, const Vector3& NED2, double timestamp) {
+pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Point3& NED1,
+    double t2, const Point3& NED2, double timestamp) {
   // Estimate initial velocity as difference in NED frame
   double dt = t2 - t1;
-  Vector3 nV = (NED2 - NED1) / dt;
+  Point3 nV = (NED2 - NED1) / dt;
 
   // Estimate initial position as linear interpolation
-  Vector3 nT = NED1 + nV * (timestamp - t1);
+  Point3 nT = NED1 + nV * (timestamp - t1);
 
   // Estimate Rotation
-  double yaw = atan2(nV[1], nV[0]);
+  double yaw = atan2(nV.y(), nV.x());
   Rot3 nRy = Rot3::yaw(yaw); // yaw frame
-  Vector3 yV = nRy.transpose() * nV; // velocity in yaw frame
-  double pitch = -atan2(yV[2], yV[0]), roll = 0;
+  Point3 yV = nRy.inverse() * nV; // velocity in yaw frame
+  double pitch = -atan2(yV.z(), yV.x()), roll = 0;
   Rot3 nRb = Rot3::ypr(yaw, pitch, roll);
 
   // Construct initial pose
-  Pose3 nTb(nRb, Point3(nT[0], nT[1], nT[2])); // nTb
+  Pose3 nTb(nRb, nT); // nTb
 
-  return make_pair(nTb, nV);
+  return make_pair(nTb, nV.vector());
 }
 //***************************************************************************
 

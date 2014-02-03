@@ -72,7 +72,7 @@ TEST(GPSData, init) {
 
   // GPS Reading 1 will be ENU origin
   double t1 = 84831;
-  Vector3 NED1(0, 0, 0);
+  Point3 NED1(0, 0, 0);
   LocalCartesian enu(35.4393283333333, -119.062986666667, 275.54,
       Geocentric::WGS84);
 
@@ -80,7 +80,7 @@ TEST(GPSData, init) {
   double t2 = 84831.5;
   double E, N, U;
   enu.Forward(35.4394633333333, -119.063146666667, 276.52, E, N, U);
-  Vector3 NED2(N, E, -U);
+  Point3 NED2(N, E, -U);
 
   // Estimate initial state
   Pose3 T;
