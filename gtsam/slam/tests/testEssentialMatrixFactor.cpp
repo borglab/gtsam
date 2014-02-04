@@ -37,7 +37,7 @@ bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
 PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(),Cal3_S2());
-EssentialMatrix trueE(c1Rc2, c1Tc2);
+EssentialMatrix trueE(c1Rc2, Sphere2(c1Tc2));
 double baseline = 0.1; // actual baseline of the camera
 
 Point2 pA(size_t i) {
@@ -297,7 +297,7 @@ SfM_data data;
 bool readOK = readBAL(filename, data);
 Rot3 aRb = data.cameras[1].pose().rotation();
 Point3 aTb = data.cameras[1].pose().translation();
-EssentialMatrix trueE(aRb, aTb);
+EssentialMatrix trueE(aRb, Sphere2(aTb));
 
 double baseline = 10; // actual baseline of the camera
 

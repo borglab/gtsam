@@ -22,17 +22,17 @@ GTSAM_CONCEPT_MANIFOLD_INST(EssentialMatrix)
 // Create two cameras and corresponding essential matrix E
 Rot3 c1Rc2 = Rot3::yaw(M_PI_2);
 Point3 c1Tc2(0.1, 0, 0);
-EssentialMatrix trueE(c1Rc2, c1Tc2);
+EssentialMatrix trueE(c1Rc2, Sphere2(c1Tc2));
 
 //*************************************************************************
 TEST (EssentialMatrix, equality) {
-  EssentialMatrix actual(c1Rc2, c1Tc2), expected(c1Rc2, c1Tc2);
+  EssentialMatrix actual(c1Rc2, Sphere2(c1Tc2)), expected(c1Rc2, Sphere2(c1Tc2));
   EXPECT(assert_equal(expected, actual));
 }
 
 //*************************************************************************
 TEST (EssentialMatrix, retract1) {
-  EssentialMatrix expected(c1Rc2.retract((Vector(3) << 0.1, 0, 0)), c1Tc2);
+  EssentialMatrix expected(c1Rc2.retract((Vector(3) << 0.1, 0, 0)), Sphere2(c1Tc2));
   EssentialMatrix actual = trueE.retract((Vector(5) << 0.1, 0, 0, 0, 0));
   EXPECT(assert_equal(expected, actual));
 }
@@ -54,7 +54,7 @@ TEST (EssentialMatrix, transform_to) {
   Rot3 aRb2 = Rot3::yaw(M_PI / 3.0) * Rot3::pitch(M_PI_4)
       * Rot3::roll(M_PI / 6.0);
   Point3 aTb2(19.2, 3.7, 5.9);
-  EssentialMatrix E(aRb2, aTb2);
+  EssentialMatrix E(aRb2, Sphere2(aTb2));
   //EssentialMatrix E(aRb, Sphere2(aTb).retract((Vector(2) << 0.1, 0)));
   static Point3 P(0.2, 0.7, -2);
   Matrix actH1, actH2;
@@ -79,7 +79,7 @@ TEST (EssentialMatrix, rotate) {
   // Let's compute the ground truth E in body frame:
   Rot3 b1Rb2 = bRc * c1Rc2 * cRb;
   Point3 b1Tb2 = bRc * c1Tc2;
-  EssentialMatrix bodyE(b1Rb2, b1Tb2);
+  EssentialMatrix bodyE(b1Rb2, Sphere2(b1Tb2));
   EXPECT(assert_equal(bodyE, bRc * trueE, 1e-8));
   EXPECT(assert_equal(bodyE, trueE.rotate(bRc), 1e-8));
 
@@ -111,7 +111,7 @@ TEST (EssentialMatrix, FromPose3_b) {
   Matrix actualH;
   Rot3 c1Rc2 = Rot3::ypr(0.1, -0.2, 0.3);
   Point3 c1Tc2(0.4, 0.5, 0.6);
-  EssentialMatrix trueE(c1Rc2, c1Tc2);
+  EssentialMatrix trueE(c1Rc2, Sphere2(c1Tc2));
   Pose3 pose(c1Rc2, c1Tc2); // Pose between two cameras
   EXPECT(assert_equal(trueE, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
   Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(
@@ -121,7 +121,7 @@ TEST (EssentialMatrix, FromPose3_b) {
 
 //*************************************************************************
 TEST (EssentialMatrix, streaming) {
-  EssentialMatrix expected(c1Rc2, c1Tc2), actual;
+  EssentialMatrix expected(c1Rc2, Sphere2(c1Tc2)), actual;
   stringstream ss;
   ss << expected;
   ss >> actual;
