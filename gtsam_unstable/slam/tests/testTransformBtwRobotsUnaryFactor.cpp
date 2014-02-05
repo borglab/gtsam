@@ -60,7 +60,7 @@ TEST( TransformBtwRobotsUnaryFactor, ConstructorAndEquals)
   gtsam::Pose2 rel_pose_ideal = p1.between(p2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vec(3) << 0.5, 0.5, 0.05)));
+  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.05)));
 
   gtsam::Values valA, valB;
   valA.insert(keyA, p1);
@@ -91,7 +91,7 @@ TEST( TransformBtwRobotsUnaryFactor, unwhitenedError)
   gtsam::Pose2 rel_pose_ideal = orgA_T_1.between(orgA_T_2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal;
 
-  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vec(3) << 0.5, 0.5, 0.05)));
+  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.05)));
 
   gtsam::Values valA, valB;
   valA.insert(keyA, orgA_T_1);
@@ -125,7 +125,7 @@ TEST( TransformBtwRobotsUnaryFactor, unwhitenedError2)
   gtsam::Pose2 rel_pose_ideal = orgA_T_currA.between(orgA_T_currB);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal;
 
-  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vec(3) << 0.5, 0.5, 0.05)));
+  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.05)));
 
   double prior_outlier = 0.01;
   double prior_inlier = 0.99;
@@ -171,7 +171,7 @@ TEST( TransformBtwRobotsUnaryFactor, Optimize)
   gtsam::Pose2 currA_Tmsr_currB3 = currA_Tmsr_currB1;
   gtsam::Pose2 currA_Tmsr_currB4 = currA_Tmsr_currB1;
 
-  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vec(3) << 0.5, 0.5, 0.05)));
+  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.05)));
 
   gtsam::Values valA, valB;
   valA.insert(keyA, orgA_T_currA);
@@ -224,7 +224,7 @@ TEST( TransformBtwRobotsUnaryFactor, Jacobian)
   gtsam::Pose2 rel_pose_ideal = orgA_T_1.between(orgA_T_2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vec(3) << 0.5, 0.5, 0.05)));
+  SharedGaussian model(noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.05)));
 
   gtsam::Values valA, valB;
   valA.insert(keyA, orgA_T_1);
@@ -262,8 +262,8 @@ TEST( TransformBtwRobotsUnaryFactor, Jacobian)
 //  gtsam::Pose2 rel_pose_ideal = p1.between(p2);
 //  gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 //
-//  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 0.5, 0.5, 0.05)));
-//  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vec(3) << 50.0, 50.0, 10.0)));
+//  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.5, 0.5, 0.05)));
+//  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 50.0, 50.0, 10.0)));
 //
 //  gtsam::Values values;
 //  values.insert(keyA, p1);
@@ -284,7 +284,7 @@ TEST( TransformBtwRobotsUnaryFactor, Jacobian)
 //  // compare to standard between factor
 //  BetweenFactor<gtsam::Pose2> h(keyA, keyB, rel_pose_msr, model_inlier );
 //  Vector actual_err_wh_stnd = h.whitenedError(values);
-//  Vector actual_err_wh_inlier = (Vec(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+//  Vector actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
 //  CHECK( assert_equal(actual_err_wh_stnd, actual_err_wh_inlier, 1e-8));
 //  std::vector<gtsam::Matrix> H_actual_stnd_unwh(2);
 //  (void)h.unwhitenedError(values, H_actual_stnd_unwh);
