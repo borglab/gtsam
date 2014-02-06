@@ -22,14 +22,14 @@ timeElapsed = 10;
 times = 0:deltaT:timeElapsed;
 
 %omega = [0;0;7.292115e-5]; % Earth Rotation
-%omega = [0;0;5*pi/10];
+omega = [0;0;pi/30];
 omega = [0;0;0];
 omegaFixed = [0;0;0];
 velocity = [0;0;0];                 % initially not moving
-accelFixed = [0;0.1;0.1];           % accelerate in the positive z-direction
+accelFixed = [0.1;0.1;0.1];           % accelerate in the positive z-direction
 initialPosition = [0; 1.05; 0];     % start along the positive x-axis
 IMUinBody = Pose3;
-g = [0;0;0];                     % Gravity, will need to fix this b/c of ECEF frame
+g = [0;0;0];                        % Gravity
 zeroBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 IMU_metadata.AccelerometerSigma = 1e-5;
 IMU_metadata.GyroscopeSigma = 1e-7;
@@ -48,11 +48,10 @@ currentPoseRotatingFrame = Pose3;
 %% Initialize storage variables
 positionsFixedGT = zeros(3, length(times));
 positionsRotatingGT = zeros(3, length(times));
+positionsEstimates = zeros(3,length(times));
 
 changePoseRotatingFrame = Pose3.Expmap([omega*deltaT; 0; 0; 0]);
 h = figure(1);
-
-positionsEstimates = zeros(3,length(times)+1);
 
 % Solver object
 isamParams = ISAM2Params;
@@ -63,7 +62,8 @@ newFactors = NonlinearFactorGraph;
 newValues = Values;
 
 
-%% Main loop: iterate through
+%% Main loop: iterate through the ground truth trajectory, add factors
+% and values to the factor graph, and perform inference
 for i = 1:length(times)
     t = times(i);
     
@@ -72,22 +72,26 @@ for i = 1:length(times)
     currentVelKey = symbol('v', i);
     currentBiasKey = symbol('b', i);
     
+    %% Set priors on the first iteration
     if(i == 1)
         positionsFixedGT(:,1) = currentPoseFixedGT.translation.vector;
         positionsRotatingGT(:,1) = currentPoseRotatingGT.translation.vector;
         poses(1).p = currentPoseRotatingFrame.translation.vector;
         poses(1).R = currentPoseRotatingFrame.rotation.matrix;
         
-        currentPoseGlobal = currentPoseFixedGT;
-        currentVelocityGlobal = LieVector(currentVelocityFixedGT);
+        currentPoseEstimate = currentPoseFixedGT;
+        currentVelocityEstimate = LieVector(currentVelocityFixedGT);
 
         % Set Priors
-        newValues.insert(currentPoseKey, currentPoseGlobal);
-        newValues.insert(currentVelKey, currentVelocityGlobal);
+        newValues.insert(currentPoseKey, currentPoseEstimate);
+        newValues.insert(currentVelKey, currentVelocityEstimate);
         newValues.insert(currentBiasKey, zeroBias);
-        newFactors.add(PriorFactorPose3(currentPoseKey, currentPoseGlobal, sigma_init_x));
-        newFactors.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
+        newFactors.add(PriorFactorPose3(currentPoseKey, currentPoseEstimate, sigma_init_x));
+        newFactors.add(PriorFactorLieVector(currentVelKey, currentVelocityEstimate, sigma_init_v));
         newFactors.add(PriorFactorConstantBias(currentBiasKey, zeroBias, sigma_init_b));
+        
+        % Store data
+        positionsEstimates(:,i) = currentPoseEstimate.translation.vector;
         
     else
         
@@ -111,8 +115,7 @@ for i = 1:length(times)
         poses(i).p = currentPoseRotatingFrame.translation.vector;
         poses(i).R = currentPoseRotatingFrame.rotation.matrix;
         
-        %% Estimate trajectory in rotating frame using the ground truth
-        % measurements
+        %% Estimate trajectory in rotating frame using the ground truth measurements
         % Instantiate preintegrated measurements class
         currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
             zeroBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
@@ -129,9 +132,11 @@ for i = 1:length(times)
         newFactors.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
             noiseModel.Isotropic.Sigma(6, 1e-10)));
         
-        % Add values to the graph
-        newValues.insert(currentPoseKey, currentPoseGlobal);
-        newValues.insert(currentVelKey, currentVelocityGlobal);
+        % Add values to the graph. Use the current pose and velocity
+        % estimates as to values when interpreting the next pose and
+        % velocity estimates
+        newValues.insert(currentPoseKey, currentPoseEstimate);
+        newValues.insert(currentVelKey, currentVelocityEstimate);
         newValues.insert(currentBiasKey, zeroBias);
         
         %newFactors.print('');
@@ -143,29 +148,31 @@ for i = 1:length(times)
             newFactors = NonlinearFactorGraph;
             newValues = Values;
             
-            currentPoseGlobal = isam.calculateEstimate(currentPoseKey);
-            currentVelocityGlobal = isam.calculateEstimate(currentVelKey);
+            % Get the new pose, velocity, and bias estimates
+            currentPoseEstimate = isam.calculateEstimate(currentPoseKey);
+            currentVelocityEstimate = isam.calculateEstimate(currentVelKey);
             currentBias = isam.calculateEstimate(currentBiasKey);
             
-            positionsEstimates(:,i) = currentPoseGlobal.translation.vector;
+            positionsEstimates(:,i) = currentPoseEstimate.translation.vector;
             %velocitiesEstimates(:,i) = currentVelocityGlobal;
         end
     end
+    
     %% incremental plotting for animation (ground truth)
     figure(h)
     plot_trajectory(poses(i),1, '-k', 'Rotating Frame',0.1,0.75,1)
     hold on;
     plot3(positionsFixedGT(1,1:i), positionsFixedGT(2,1:i), positionsFixedGT(3,1:i));
-    plot3(positionsFixedGT(1,1), positionsFixedGT(2,1), positionsFixedGT(3,1), 'o');
-    plot3(positionsFixedGT(1,end), positionsFixedGT(2,end), positionsFixedGT(3,end), 'x');
+    plot3(positionsFixedGT(1,1), positionsFixedGT(2,1), positionsFixedGT(3,1), 'x');
+    plot3(positionsFixedGT(1,i), positionsFixedGT(2,i), positionsFixedGT(3,i), 'o');
     
     plot3(positionsRotatingGT(1,1:i), positionsRotatingGT(2,1:i), positionsRotatingGT(3,1:i), '-r');
-    plot3(positionsRotatingGT(1,1), positionsRotatingGT(2,1), positionsRotatingGT(3,1), 'or');
-    plot3(positionsRotatingGT(1,end), positionsRotatingGT(2,end), positionsRotatingGT(3,end), 'xr');
+    plot3(positionsRotatingGT(1,1), positionsRotatingGT(2,1), positionsRotatingGT(3,1), 'xr');
+    plot3(positionsRotatingGT(1,i), positionsRotatingGT(2,i), positionsRotatingGT(3,i), 'or');
     
     plot3(positionsEstimates(1,1:i), positionsEstimates(2,1:i), positionsEstimates(3,1:i), '-g');
-    plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'og');
-    plot3(positionsEstimates(1,end), positionsEstimates(2,end), positionsEstimates(3,end), 'xg');
+    plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xg');
+    plot3(positionsEstimates(1,i), positionsEstimates(2,i), positionsEstimates(3,i), 'og');
     
     hold off;
     xlabel('X axis')
@@ -173,26 +180,40 @@ for i = 1:length(times)
     zlabel('Z axis')
     axis equal
     grid on;
-    pause(0.1);
+    %pause(0.1);
     
     i = i + 1;
 end
 
-%% Final plotting
+figure
+%% Print and plot trajectory error results
+positionsError = positionsRotatingGT - positionsEstimates;
+fprintf('Final position error = %f\n', positionsError(end));
+plot(times, positionsError);
+plotTitle = sprintf('Error in Estimated Position (omega = [%.2f; %.2f; %.2f])', omega(1), omega(2), omega(3));
+title(plotTitle);
+xlabel('Time');
+ylabel('Error (ground_truth - estimate)');
+legend('X axis', 'Y axis', 'Z axis', 'Location', 'NORTHWEST');
+
+%% Plot final trajectories
 figure
 sphere  % sphere for reference
 hold on;
-% trajectories in Fixed and Rotating frames
+% Ground truth trajectory in fixed reference frame
 plot3(positionsFixedGT(1,:), positionsFixedGT(2,:), positionsFixedGT(3,:));
-plot3(positionsRotatingGT(1,:), positionsRotatingGT(2,:), positionsRotatingGT(3,:), '-r');
-
-% beginning and end points of Fixed
 plot3(positionsFixedGT(1,1), positionsFixedGT(2,1), positionsFixedGT(3,1), 'x');
 plot3(positionsFixedGT(1,end), positionsFixedGT(2,end), positionsFixedGT(3,end), 'o');
 
-% beginning and end points of Rotating
+% Ground truth trajectory in rotating reference frame
+plot3(positionsRotatingGT(1,:), positionsRotatingGT(2,:), positionsRotatingGT(3,:), '-r');
 plot3(positionsRotatingGT(1,1), positionsRotatingGT(2,1), positionsRotatingGT(3,1), 'xr');
 plot3(positionsRotatingGT(1,end), positionsRotatingGT(2,end), positionsRotatingGT(3,end), 'or');
+
+% Estimates
+plot3(positionsEstimates(1,:), positionsEstimates(2,:), positionsEstimates(3,:), '-g');
+plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xg');
+plot3(positionsEstimates(1,end), positionsEstimates(2,end), positionsEstimates(3,end), 'og');
 
 xlabel('X axis')
 ylabel('Y axis')
