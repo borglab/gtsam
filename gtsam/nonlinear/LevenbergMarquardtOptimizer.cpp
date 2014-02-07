@@ -163,14 +163,20 @@ void LevenbergMarquardtOptimizer::iterate() {
       // linearizedCostChange  = oldCost - newLinearizedCost = f'f/2  - 1/2 [ f'f + 2f'J * step + step' * J' * J * step]
       //  = -f'J * step - step' * J' * J * step / 2 = -(f' + modelResidual') * (modelResidual)
       // (with modelResidual = J * step)
-      /* Errors modelResidualList = (*linear) * delta; // modelResidual = A * delta
-      Vector modelResidual = concatVectors(modelResidualList); // TODO: is this an ordered list?
-      Vector residuals = - linear->jacobian().second; // TODO: optimize this computation, TODO: is there a minus sign?
-      double linearizedCostChange =  dot(- modelResidual, (residuals + modelResidual / 2.0) );
+      // Errors modelResidualList = (*linear) * delta; // modelResidual = A * delta
+     // modelResidualList.print("");
+      // Vector modelResidual = concatVectors(modelResidualList); // TODO: is this an ordered list?
+      //cout << "modelResidual: " << modelResidual << endl;
+      // cout << "linear->jacobian().second: " << linear->jacobian().second << endl;
+      // cout << "linear->augmentedJacobian().second: " << linear->augmentedJacobian() << endl;
+      // cout << "linear->augmentedHessian().second: " << linear->augmentedHessian() << endl;
 
-      // Measure of mismatch between original (usually nonlinear) system and its linearized version
-      modelMismatch = costChange / linearizedCostChange;
-      */
+      // Vector residuals = linear->jacobian().second; // TODO: optimize this computation, TODO: is there a minus sign?
+//      double linearizedCostChange =  dot(- modelResidual, (- residuals + modelResidual / 2.0) );
+//
+//      // Measure of mismatch between original (usually nonlinear) system and its linearized version
+//      modelMismatch = costChange / linearizedCostChange;
+
 
       if (error <= state_.error) {
         state_.values.swap(newValues);
