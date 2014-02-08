@@ -169,23 +169,27 @@ find_package(GooglePerfTools)
 
 ###############################################################################
 # Find MKL
-find_package(MKL)
+if(GTSAM_USE_EIGEN_MKL)
+    find_package(MKL)
 
-if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
-	set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
-	set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
-	include_directories(${MKL_INCLUDE_DIR})
-	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+    if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
+        set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
+        set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
+        include_directories(${MKL_INCLUDE_DIR})
+        list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+    endif()
 endif()
 
 
 ###############################################################################
 # Find OpenMP
-find_package(OpenMP)
+if(GTSAM_USE_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP)
+    find_package(OpenMP)
 
-if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
-	set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
+        set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
 endif()
 
 
