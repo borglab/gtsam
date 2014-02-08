@@ -182,8 +182,8 @@ endif()
 
 
 ###############################################################################
-# Find OpenMP
-if(GTSAM_USE_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP)
+# Find OpenMP (if we're also using MKL)
+if(GTSAM_USE_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
     find_package(OpenMP)
 
     if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
