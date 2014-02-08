@@ -32,7 +32,7 @@ if (GTSAM_BUILD_EXAMPLES)
             set_target_properties(${example} PROPERTIES EXCLUDE_FROM_ALL ON)
         endif()
     	
-		if(NOT MSVC)
+		if(NOT MSVC AND NOT XCODE_VERSION)
 			add_dependencies(examples ${example})
 			add_custom_target(${example}.run ${EXECUTABLE_OUTPUT_PATH}${example} ${ARGN})
 		endif()
