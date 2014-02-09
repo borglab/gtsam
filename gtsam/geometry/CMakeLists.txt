@@ -10,11 +10,11 @@ set(geometry_excluded_files
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    gtsam_add_subdir_tests(geometry "${gtsam-default}" "${gtsam-default}" "${geometry_excluded_files}") 
+    gtsam_add_subdir_tests(geometry "gtsam" "gtsam" "${geometry_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_subdir_timing(geometry "${gtsam-default}" "${gtsam-default}" "${geometry_excluded_files}") 
+    gtsam_add_subdir_timing(geometry "gtsam" "gtsam" "${geometry_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)
 

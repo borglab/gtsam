@@ -155,7 +155,7 @@ macro(gtsam_add_grouped_scripts group pattern target_prefix pretty_prefix_name l
 				endif()
 				
 				# Add .run target
-				if(NOT MSVC)
+				if(NOT MSVC AND NOT XCODE_VERSION)
 				  add_custom_target(${script_bin}.run ${EXECUTABLE_OUTPUT_PATH}${script_bin} ${ARGN})
 				endif()
 				

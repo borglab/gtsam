@@ -10,7 +10,7 @@ set(linear_excluded_files
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    gtsam_add_subdir_tests(linear "${gtsam-default}" "${gtsam-default}" "${linear_excluded_files}") 
+    gtsam_add_subdir_tests(linear "gtsam" "gtsam" "${linear_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
 if(MSVC)
@@ -20,5 +20,5 @@ endif()
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_subdir_timing(linear "${gtsam-default}" "${gtsam-default}" "${linear_excluded_files}") 
+    gtsam_add_subdir_timing(linear "gtsam" "gtsam" "${linear_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)

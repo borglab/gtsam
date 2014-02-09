@@ -11,7 +11,7 @@
 
 /**
  *  @file  CombinedImuFactor.h
- *  @author Luca Carlone, Stephen Williams, Richard Roberts
+ *  @author Luca Carlone, Stephen Williams, Richard Roberts, Vadim Indelman
  **/
 
 #pragma once
@@ -342,11 +342,8 @@ namespace gtsam {
   public:
 
     /** Shorthand for a smart pointer to a factor */
-#ifndef _MSC_VER
-    typedef typename boost::shared_ptr<CombinedImuFactor> shared_ptr;
-#else
-      typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
-#endif
+    typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
+
     /** Default constructor - only use for serialization */
     CombinedImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix::Zero(6,6)) {}
 

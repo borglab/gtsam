@@ -60,7 +60,7 @@ public:
   }
 
   /// Construct from point
-  Sphere2(const Point3& p) :
+  explicit Sphere2(const Point3& p) :
       p_(p / p.norm()) {
   }
 

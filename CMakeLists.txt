@@ -52,8 +52,7 @@ option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"  
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
-option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
-option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" OFF)
+option(GTSAM_BUILD_STATIC_LIBRARY        "Build a static gtsam library, instead of shared" OFF)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
 option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
@@ -76,14 +75,13 @@ if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
 	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
 endif()
 
+if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_STATIC_LIBRARY)
+	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_BUILD_STATIC_LIBRARY are both enabled.  The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of GTSAM_BUILD_STATIC_LIBRARY.")
+endif()
+
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
-
-# Sanity check building of libraries
-if (NOT GTSAM_BUILD_SHARED_LIBRARY AND NOT GTSAM_BUILD_STATIC_LIBRARY)
-    message(FATAL_ERROR "Both shared and static version of GTSAM library disabled - need to choose at least one!")
-endif()
 
 # Flags to determine whether tests and examples are build during 'make install'
 # Note that these remove the targets from the 'all'
@@ -171,23 +169,27 @@ find_package(GooglePerfTools)
 
 ###############################################################################
 # Find MKL
-find_package(MKL)
+if(GTSAM_USE_EIGEN_MKL)
+    find_package(MKL)
 
-if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
-	set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
-	set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
-	include_directories(${MKL_INCLUDE_DIR})
-	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+    if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
+        set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
+        set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
+        include_directories(${MKL_INCLUDE_DIR})
+        list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+    endif()
 endif()
 
 
 ###############################################################################
-# Find OpenMP
-find_package(OpenMP)
+# Find OpenMP (if we're also using MKL)
+if(GTSAM_USE_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
+    find_package(OpenMP)
 
-if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
-	set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
+        set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
 endif()
 
 
@@ -286,23 +288,10 @@ endif()
 
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
-endif()   
+endif()
 
 ###############################################################################
 # Add components
-
-# Set default library - static or shared, before adding subdirectories
-if(GTSAM_BUILD_SHARED_LIBRARY)
-	set(gtsam-default gtsam-shared)
-	if(GTSAM_BUILD_UNSTABLE)
-		set(gtsam_unstable-default gtsam_unstable-shared)
-	endif()
-else()
-	set(gtsam-default gtsam-static)
-	if(GTSAM_BUILD_UNSTABLE)
-		set(gtsam_unstable-default gtsam_unstable-static)
-	endif()
-endif()
 
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
@@ -351,7 +340,7 @@ endif()
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
 set(CPACK_PACKAGE_VENDOR "Frank Dellaert, Georgia Institute of Technology")
 set(CPACK_PACKAGE_CONTACT "Frank Dellaert, dellaert@cc.gatech.edu")
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_VERSION_MAJOR ${GTSAM_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${GTSAM_VERSION_MINOR})
@@ -381,8 +370,7 @@ print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests             
 if (DOXYGEN_FOUND)
     print_config_flag(${GTSAM_BUILD_DOCS}                  "Build Docs                     ")
 endif()
-print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
-print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
+print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM library instead of shared")
 print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in library name ")
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}           "Build libgtsam_unstable        ")
@@ -390,9 +378,11 @@ endif()
 print_config_flag(${GTSAM_DISABLE_TESTS_ON_INSTALL}     "No tests in all or install     ")
 print_config_flag(${GTSAM_DISABLE_EXAMPLES_ON_INSTALL}  "No examples in all or install  ")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
-message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
-message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
-message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
+if(NOT MSVC AND NOT XCODE_VERSION)
+    message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
+    message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
+    message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
+endif()
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")
 elseif(TBB_FOUND)

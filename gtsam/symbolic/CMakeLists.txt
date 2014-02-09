@@ -10,11 +10,11 @@ set(symbolic_excluded_files
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    gtsam_add_subdir_tests(symbolic "${gtsam-default}" "${gtsam-default}" "${symbolic_excluded_files}") 
+    gtsam_add_subdir_tests(symbolic "gtsam" "gtsam" "${symbolic_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_subdir_timing(symbolic "${gtsam-default}" "${gtsam-default}" "${symbolic_excluded_files}") 
+    gtsam_add_subdir_timing(symbolic "gtsam" "gtsam" "${symbolic_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)
 

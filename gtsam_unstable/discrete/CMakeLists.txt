@@ -3,8 +3,8 @@ file(GLOB discrete_headers "*.h")
 install(FILES ${discrete_headers} DESTINATION include/gtsam_unstable/discrete)
 
 set (discrete_full_libs
-    ${gtsam-default}
-    ${gtsam_unstable-default})
+    gtsam
+    gtsam_unstable)
 
 # Exclude tests that don't work
 #set (discrete_excluded_tests 
@@ -32,11 +32,11 @@ if (GTSAM_BUILD_EXAMPLES)
             set_target_properties(${example} PROPERTIES EXCLUDE_FROM_ALL ON)
         endif()
     	
-		if(NOT MSVC)
+		if(NOT MSVC AND NOT XCODE_VERSION)
 			add_dependencies(examples ${example})
 			add_custom_target(${example}.run ${EXECUTABLE_OUTPUT_PATH}${example} ${ARGN})
 		endif()
     	
-    	target_link_libraries(${example} ${gtsam-default} ${gtsam_unstable-default})
+    	target_link_libraries(${example} gtsam gtsam_unstable)
     endforeach(example)
 endif (GTSAM_BUILD_EXAMPLES)
