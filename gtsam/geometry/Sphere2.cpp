@@ -44,9 +44,9 @@ Sphere2 Sphere2::FromPoint3(const Point3& point,
 }
 
 /* ************************************************************************* */
-Sphere2 Sphere2::Random(boost::random::mt19937 & rng) {
+Sphere2 Sphere2::Random(boost::mt19937 & rng) {
   // TODO allow any engine without including all of boost :-(
-  boost::random::uniform_on_sphere<double> randomDirection(3);
+  boost::uniform_on_sphere<double> randomDirection(3);
   vector<double> d = randomDirection(rng);
   Sphere2 result;
   result.p_ = Point3(d[0], d[1], d[2]);
