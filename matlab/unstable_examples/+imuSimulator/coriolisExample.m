@@ -20,7 +20,7 @@ addpath(genpath('./Libraries'))
 navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
                             % 1 = perform navigation in the rotating frame
 IMU_type = 1;               % IMU type 1 or type 2
-useRealisticValues = 0;     % use reaslist values for initial position and earth rotation
+useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
 record_movie = 0;           % 0 = do not record movie
                             % 1 = record movie of the trajectories. One
                             % frame per time step (15 fps)
@@ -30,13 +30,23 @@ deltaT = 0.01;              % timestep
 timeElapsed = 5;            % Total elapsed time
 times = 0:deltaT:timeElapsed;
 
-omegaEarthSeconds = 100*[0;0;7.292115e-5]; % Earth Rotation
-% omegaRotatingFrame = omegaEarthSeconds/deltaT;%[0;0;pi/3000]; % rotation of the moving frame wrt fixed frame
-omegaRotatingFrame = [0;0;pi/300];
-currentRotatingFrame = Pose3; % initially coincide with fixed frame
-omegaFixed = [0;0;0]; % constant rotation rate measurement
-accelFixed =10 * [0.1;0.1;0.1];  % constant acceleration measurement
-g = [0;0;0];                        % Gravity
+% Initial Conditions
+omegaEarthSeconds = [0;0;7.292115e-5]; % Earth Rotation rate (rad/s)
+if useRealisticValues == 1
+    omegaRotatingFrame = omegaEarthSeconds; % rotation of the moving frame wrt fixed frame
+    omegaFixed = [0;0;0];       % constant rotation rate measurement
+    accelFixed = [0.5;-0.5;0];       % constant acceleration measurement
+    g = [0;0;0];                % Gravity
+    initialVelocity = [0;0;0];      % initial velocity
+    initialPosition = [4509997.76107; 4509997.76107; 3189050];  % initial position
+else
+    omegaRotatingFrame = [0;0;pi/300];  % rotation of the moving frame wrt fixed frame
+    omegaFixed = [0;0;0];       % constant rotation rate measurement
+    accelFixed = [0.1;0;0];     % constant acceleration measurement
+    g = [0;0;0];                % Gravity
+    initialVelocity = [0;0;0];      % initial velocity
+    initialPosition = [0; 1; 0];    % initial position, at 45 degrees longitude and 30 degrees latitude on earth surface
+end
 
 if navFrameRotating == 0
     omegaCoriolisIMU = [0;0;0];
@@ -44,13 +54,11 @@ else
     omegaCoriolisIMU = omegaRotatingFrame;
 end
 
-% Initial conditions
-velocity = [0;0;0];                 % initially not moving
-initialPosition = [1; 0; 0];     % start along the positive x-axis
 %
+currentRotatingFrame = Pose3;   % rotating frame initially coincides with fixed frame at t=0
 currentPoseFixedGT = Pose3(Rot3, Point3(initialPosition));
 currentPoseRotatingGT = currentPoseFixedGT; % frames coincide for t=0
-currentVelocityFixedGT = velocity;
+currentVelocityFixedGT = initialVelocity;
 %
 epsBias = 1e-15;
 sigma_init_x = noiseModel.Isotropic.Sigma(6, 1e-10);
@@ -93,11 +101,11 @@ if record_movie == 1
 end
 
 %% Print Info about the test
-fprintf('\n-------------------------------------------------');
+fprintf('\n-------------------------------------------------\n');
 if navFrameRotating == 0
     fprintf('Performing navigation in the Fixed frame.\n');
 else
-    fprintf('\nPerforming navigation in the Rotating frame.\n');
+    fprintf('Performing navigation in the Rotating frame.\n');
 end
 fprintf('IMU_type = %d\n', IMU_type);
 fprintf('Record Movie = %d\n', record_movie);
@@ -107,7 +115,7 @@ fprintf('timeElapsed = %f\n', timeElapsed);
 fprintf('omegaRotatingFrame = [%f %f %f]\n', omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
 fprintf('omegaFixed = [%f %f %f]\n', omegaFixed(1), omegaFixed(2), omegaFixed(3));
 fprintf('accelFixed = [%f %f %f]\n', accelFixed(1), accelFixed(2), accelFixed(3));
-fprintf('Initial Velocity = [%f %f %f]\n', velocity(1), velocity(2), velocity(3));
+fprintf('Initial Velocity = [%f %f %f]\n', initialVelocity(1), initialVelocity(2), initialVelocity(3));
 fprintf('Initial Position = [%f %f %f]\n', initialPosition(1), initialPosition(2), initialPosition(3));
 fprintf('\n');
 %% Main loop: iterate through the ground truth trajectory, add factors
