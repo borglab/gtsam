@@ -99,7 +99,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
 
-  double modelFidelity =  std::numeric_limits<size_t>::max();
+  double modelFidelity = 0.0;
 
   // Keep increasing lambda until we make make progress
   while (true) {
@@ -158,23 +158,20 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       // cost change in the original, possibly nonlinear system (old - new)
       double costChange = state_.error - error;
-      std::cout <<  "costChange " << costChange << std::endl;
 
       // cost change in the linearized system (old - new)
-      std::cout <<  "graph_ " << graph_.size() << std::endl;
-      std::cout <<  "linear " << linear->size() << std::endl;
-      linear->print("linear");
-      std::cout <<  "linear->error(delta) " << linear->error(delta) << std::endl;
       double linearizedCostChange = state_.error - linear->error(delta);
-      std::cout <<  "linearizedCostChange " << linearizedCostChange << std::endl;
 
+      // checking similarity between change in original and linearized cost
       modelFidelity = costChange / linearizedCostChange;
-      std::cout <<  "modelFidelity " << modelFidelity << std::endl;
 
-      if (error <= state_.error) {
+      if (error < state_.error) {
         state_.values.swap(newValues);
         state_.error = error;
-        decreaseLambda(modelFidelity);
+        if(modelFidelity > params_.minModelFidelity)
+          decreaseLambda(modelFidelity);
+        else
+          increaseLambda(modelFidelity);
         break;
       } else {
         // Either we're not cautious, or the same lambda was worse than the current error.

@@ -50,11 +50,12 @@ public:
   double lambdaLowerBound; ///< The minimum lambda used in LM (default: 0)
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
   bool disableInnerIterations; ///< If enabled inner iterations on the linearized system are performed
+  double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
 
   LevenbergMarquardtParams() :
       lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(0.0),
-      verbosityLM(SILENT), disableInnerIterations(false) {
+      verbosityLM(SILENT), disableInnerIterations(false), minModelFidelity(1e-3) {
   }
   virtual ~LevenbergMarquardtParams() {
   }
