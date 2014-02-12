@@ -17,19 +17,25 @@ import gtsam.*;
 addpath(genpath('./Libraries'))
 
 %% General configuration
-navFrameRotating = 0;
-deltaT = 0.01;
-timeElapsed = 5;
+navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
+                            % 1 = perform navigation in the rotating frame
+IMU_type = 1;               % IMU type 1 or type 2
+useRealisticValues = 0;     % use reaslist values for initial position and earth rotation
+record_movie = 0;           % 0 = do not record movie
+                            % 1 = record movie of the trajectories. One
+                            % frame per time step (15 fps)
+
+%% Scenario Configuration                            
+deltaT = 0.01;              % timestep
+timeElapsed = 5;            % Total elapsed time
 times = 0:deltaT:timeElapsed;
-IMU_type = 1;
-record_movie = 0;
 
 omegaEarthSeconds = 100*[0;0;7.292115e-5]; % Earth Rotation
 % omegaRotatingFrame = omegaEarthSeconds/deltaT;%[0;0;pi/3000]; % rotation of the moving frame wrt fixed frame
 omegaRotatingFrame = [0;0;pi/300];
 currentRotatingFrame = Pose3; % initially coincide with fixed frame
 omegaFixed = [0;0;0]; % constant rotation rate measurement
-accelFixed =10 * [0;0;0.1];  % constant acceleration measurement
+accelFixed =10 * [0.1;0.1;0.1];  % constant acceleration measurement
 g = [0;0;0];                        % Gravity
 
 if navFrameRotating == 0
@@ -86,6 +92,24 @@ if record_movie == 1
     set(gcf,'Renderer','zbuffer');
 end
 
+%% Print Info about the test
+fprintf('\n-------------------------------------------------');
+if navFrameRotating == 0
+    fprintf('Performing navigation in the Fixed frame.\n');
+else
+    fprintf('\nPerforming navigation in the Rotating frame.\n');
+end
+fprintf('IMU_type = %d\n', IMU_type);
+fprintf('Record Movie = %d\n', record_movie);
+fprintf('Realistic Values = %d\n', useRealisticValues);
+fprintf('deltaT = %f\n', deltaT);
+fprintf('timeElapsed = %f\n', timeElapsed);
+fprintf('omegaRotatingFrame = [%f %f %f]\n', omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
+fprintf('omegaFixed = [%f %f %f]\n', omegaFixed(1), omegaFixed(2), omegaFixed(3));
+fprintf('accelFixed = [%f %f %f]\n', accelFixed(1), accelFixed(2), accelFixed(3));
+fprintf('Initial Velocity = [%f %f %f]\n', velocity(1), velocity(2), velocity(3));
+fprintf('Initial Position = [%f %f %f]\n', initialPosition(1), initialPosition(2), initialPosition(3));
+fprintf('\n');
 %% Main loop: iterate through the ground truth trajectory, add factors
 % and values to the factor graph, and perform inference
 for i = 1:length(times)
@@ -251,6 +275,16 @@ if record_movie == 1
     close(writerObj);
 end
 
+% Calculate trajectory length
+trajectoryLengthEstimated = 0;
+trajectoryLengthFixedFrameGT = 0;
+trajectoryLengthRotatingFrameGT = 0;
+for i = 2:length(positionsEstimates)
+    trajectoryLengthEstimated = trajectoryLengthEstimated + norm(positionsEstimates(:,i) - positionsEstimates(:,i-1));
+    trajectoryLengthFixedFrameGT = trajectoryLengthFixedFrameGT + norm(positionsInFixedGT(:,i) - positionsInFixedGT(:,i-1));
+    trajectoryLengthRotatingFrameGT = trajectoryLengthRotatingFrameGT + norm(positionsInRotatingGT(:,i) - positionsInRotatingGT(:,i-1));
+end
+
 figure
 %% Print and plot trajectory error results
 if navFrameRotating == 0
@@ -274,7 +308,19 @@ plotTitle = sprintf('3D Error in Estimated Position\n(IMU type = %d, omega = [%.
 title(plotTitle);
 xlabel('Time');
 ylabel('3D error [meters]');
-fprintf('Final position error = %f\n', norm(axisPositionsError(:,end)));
+
+if navFrameRotating == 0
+    fprintf('Fixed Frame ground truth trajectory length is %f [m]\n', trajectoryLengthFixedFrameGT);
+    fprintf('Estimated trajectory length is %f [m]\n', trajectoryLengthEstimated);
+    fprintf('Final position error = %f (%.4f%% of ground truth trajectory length)\n', ...
+        norm(axisPositionsError(:,end)), norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100);
+else
+    fprintf('Rotating Frame ground truth trajectory length is %f [m]\n', trajectoryLengthRotatingFrameGT);
+    fprintf('Estimated trajectory length is %f [m]\n', trajectoryLengthEstimated);
+    fprintf('Final position error = %f (%.4f%% of ground truth trajectory length)\n', ...
+        norm(axisPositionsError(:,end)), norm(axisPositionsError(:,end))/trajectoryLengthRotatingFrameGT*100);
+end
+
 
 %% Plot final trajectories
 figure
