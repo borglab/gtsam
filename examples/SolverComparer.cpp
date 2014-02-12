@@ -499,8 +499,8 @@ void runCompare()
 void runPerturb()
 {
   // Set up random number generator
-  boost::random::mt19937 rng;
-  boost::random::normal_distribution<double> normal(0.0, perturbationNoise);
+  boost::mt19937 rng;
+  boost::normal_distribution<double> normal(0.0, perturbationNoise);
 
   // Perturb values
   VectorValues noise;
