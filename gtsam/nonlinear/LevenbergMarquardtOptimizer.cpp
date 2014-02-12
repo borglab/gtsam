@@ -99,7 +99,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
 
-  double modelMismatch =  std::numeric_limits<size_t>::max();
+  double modelFidelity =  std::numeric_limits<size_t>::max();
 
   // Keep increasing lambda until we make make progress
   while (true) {
@@ -156,32 +156,25 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "next error = " << error << endl;
 
-      // oldCost - newCost
+      // cost change in the original, possibly nonlinear system (old - new)
       double costChange = state_.error - error;
+      std::cout <<  "costChange " << costChange << std::endl;
 
-      // newLinearizedCost (scalar) = 1/2 [f + J * step]^2 = 1/2 [ f'f + 2f'J * step + step' * J' * J * step ]
-      // linearizedCostChange  = oldCost - newLinearizedCost = f'f/2  - 1/2 [ f'f + 2f'J * step + step' * J' * J * step]
-      //  = -f'J * step - step' * J' * J * step / 2 = -(f' + modelResidual') * (modelResidual)
-      // (with modelResidual = J * step)
-      // Errors modelResidualList = (*linear) * delta; // modelResidual = A * delta
-     // modelResidualList.print("");
-      // Vector modelResidual = concatVectors(modelResidualList); // TODO: is this an ordered list?
-      //cout << "modelResidual: " << modelResidual << endl;
-      // cout << "linear->jacobian().second: " << linear->jacobian().second << endl;
-      // cout << "linear->augmentedJacobian().second: " << linear->augmentedJacobian() << endl;
-      // cout << "linear->augmentedHessian().second: " << linear->augmentedHessian() << endl;
+      // cost change in the linearized system (old - new)
+      std::cout <<  "graph_ " << graph_.size() << std::endl;
+      std::cout <<  "linear " << linear->size() << std::endl;
+      linear->print("linear");
+      std::cout <<  "linear->error(delta) " << linear->error(delta) << std::endl;
+      double linearizedCostChange = state_.error - linear->error(delta);
+      std::cout <<  "linearizedCostChange " << linearizedCostChange << std::endl;
 
-      // Vector residuals = linear->jacobian().second; // TODO: optimize this computation, TODO: is there a minus sign?
-//      double linearizedCostChange =  dot(- modelResidual, (- residuals + modelResidual / 2.0) );
-//
-//      // Measure of mismatch between original (usually nonlinear) system and its linearized version
-//      modelMismatch = costChange / linearizedCostChange;
-
+      modelFidelity = costChange / linearizedCostChange;
+      std::cout <<  "modelFidelity " << modelFidelity << std::endl;
 
       if (error <= state_.error) {
         state_.values.swap(newValues);
         state_.error = error;
-        decreaseLambda(modelMismatch);
+        decreaseLambda(modelFidelity);
         break;
       } else {
         // Either we're not cautious, or the same lambda was worse than the current error.
@@ -195,7 +188,7 @@ void LevenbergMarquardtOptimizer::iterate() {
           if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
             cout << "increasing lambda: old error (" << state_.error << ") new error (" << error << ")"  << endl;
 
-          increaseLambda(modelMismatch);
+          increaseLambda(modelFidelity);
         }
       }
     } catch (IndeterminantLinearSystemException& e) {
@@ -210,9 +203,12 @@ void LevenbergMarquardtOptimizer::iterate() {
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
         break;
       } else {
-        increaseLambda(modelMismatch);
+        increaseLambda(modelFidelity);
       }
     }
+
+    if(params_.disableInnerIterations)
+      break;
     // Frank asks: why would we do that?
     //    catch(...) {
     //      throw;

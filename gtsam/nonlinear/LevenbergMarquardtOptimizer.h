@@ -49,11 +49,12 @@ public:
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
   double lambdaLowerBound; ///< The minimum lambda used in LM (default: 0)
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
+  bool disableInnerIterations; ///< If enabled inner iterations on the linearized system are performed
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
 
   LevenbergMarquardtParams() :
-      lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(0.0), verbosityLM(
-          SILENT) {
+      lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(0.0),
+      verbosityLM(SILENT), disableInnerIterations(false) {
   }
   virtual ~LevenbergMarquardtParams() {
   }
