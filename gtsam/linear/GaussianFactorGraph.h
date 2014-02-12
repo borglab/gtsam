@@ -138,8 +138,10 @@ namespace gtsam {
     /** unnormalized error */
     double error(const VectorValues& x) const {
       double total_error = 0.;
-      BOOST_FOREACH(const sharedFactor& factor, *this)
-        total_error += factor->error(x);
+      BOOST_FOREACH(const sharedFactor& factor, *this){
+        if(factor)
+          total_error += factor->error(x);
+      }
       return total_error;
     }
 
