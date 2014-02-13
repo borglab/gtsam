@@ -65,20 +65,20 @@ namespace gtsam {
 
     /** Construct from a container of the sizes of each vertical block. */
     template<typename CONTAINER>
-    VerticalBlockMatrix(const CONTAINER& dimensions, DenseIndex height) :
+    VerticalBlockMatrix(const CONTAINER& dimensions, DenseIndex height, bool appendOneDimension = false) :
       rowStart_(0), rowEnd_(height), blockStart_(0)
     {
-      fillOffsets(dimensions.begin(), dimensions.end());
+      fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
       matrix_.resize(height, variableColOffsets_.back());
       assertInvariants();
     }
 
     /** Construct from a container of the sizes of each vertical block and a pre-prepared matrix. */
     template<typename CONTAINER>
-    VerticalBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix) :
+    VerticalBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix, bool appendOneDimension = false) :
       matrix_(matrix), rowStart_(0), rowEnd_(matrix.rows()), blockStart_(0)
     {
-      fillOffsets(dimensions.begin(), dimensions.end());
+      fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
       if(variableColOffsets_.back() != matrix_.cols())
         throw std::invalid_argument("Requested to create a VerticalBlockMatrix with dimensions that do not sum to the total columns of the provided matrix.");
       assertInvariants();
@@ -87,10 +87,10 @@ namespace gtsam {
     /**
      * Construct from iterator over the sizes of each vertical block. */
     template<typename ITERATOR>
-    VerticalBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim, DenseIndex height) :
+    VerticalBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim, DenseIndex height, bool appendOneDimension = false) :
       rowStart_(0), rowEnd_(height), blockStart_(0)
     {
-      fillOffsets(firstBlockDim, lastBlockDim);
+      fillOffsets(firstBlockDim, lastBlockDim, appendOneDimension);
       matrix_.resize(height, variableColOffsets_.back());
       assertInvariants();
     }
@@ -202,12 +202,17 @@ namespace gtsam {
     }
 
     template<typename ITERATOR>
-    void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim) {
-      variableColOffsets_.resize((lastBlockDim-firstBlockDim)+1);
+    void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool appendOneDimension) {
+      variableColOffsets_.resize((lastBlockDim-firstBlockDim) + 1 + (appendOneDimension ? 1 : 0));
       variableColOffsets_[0] = 0;
       DenseIndex j=0;
       for(ITERATOR dim=firstBlockDim; dim!=lastBlockDim; ++dim) {
         variableColOffsets_[j+1] = variableColOffsets_[j] + *dim;
+        ++ j;
+      }
+      if(appendOneDimension)
+      {
+        variableColOffsets_[j+1] = variableColOffsets_[j] + 1;
         ++ j;
       }
     }

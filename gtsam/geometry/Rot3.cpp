@@ -45,10 +45,10 @@ Rot3 Rot3::rodriguez(const Sphere2& w, double theta) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::Random(boost::random::mt19937 & rng) {
+Rot3 Rot3::Random(boost::mt19937 & rng) {
   // TODO allow any engine without including all of boost :-(
   Sphere2 w = Sphere2::Random(rng);
-  boost::random::uniform_real_distribution<double> randomAngle(-M_PI,M_PI);
+  boost::uniform_real<double> randomAngle(-M_PI,M_PI);
   double angle = randomAngle(rng);
   return rodriguez(w,angle);
 }
