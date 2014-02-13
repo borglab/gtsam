@@ -47,7 +47,6 @@ endif()
 
 # Configurable Options
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" OFF) # These do not currently work
-option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
@@ -81,17 +80,6 @@ endif()
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
-
-# Flags to determine whether examples are build during 'make install'
-# Note that these remove the targets from the 'all'
-option(GTSAM_DISABLE_EXAMPLES_ON_INSTALL "Disables building examples during install" OFF)
-
-# Pull in infrastructure
-if (GTSAM_BUILD_TESTS)
-    enable_testing()
-    include(Dart)
-    include(CTest)
-endif()
 
 ###############################################################################
 # Find boost
@@ -362,18 +350,17 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
 message(STATUS "Build flags                                               ")
-print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
-print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples                 ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
+print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
+print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
 if (DOXYGEN_FOUND)
-    print_config_flag(${GTSAM_BUILD_DOCS}                  "Build Docs                     ")
+    print_config_flag(${GTSAM_BUILD_DOCS}              "Build Docs                     ")
 endif()
 print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM library instead of shared")
 print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in library name ")
 if(GTSAM_UNSTABLE_AVAILABLE)
-    print_config_flag(${GTSAM_BUILD_UNSTABLE}           "Build libgtsam_unstable        ")
+    print_config_flag(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
 endif()
-print_config_flag(${GTSAM_DISABLE_EXAMPLES_ON_INSTALL}  "No examples in all or install  ")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
 if(NOT MSVC AND NOT XCODE_VERSION)
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")

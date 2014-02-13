@@ -3,13 +3,7 @@
 enable_testing()
 
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
-
-# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
-if(GTSAM_BUILD_TESTS)
-    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
-endif()
-
-add_custom_target(timing)
+option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
 
 # Add option for combining unit tests
 if(MSVC OR XCODE_VERSION)
@@ -18,6 +12,14 @@ else()
 	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
 endif()
 mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
+
+# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
+if(GTSAM_BUILD_TESTS)
+    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+endif()
+
+add_custom_target(timing)
+add_custom_target(examples)
 
 # Macro for adding a group of tests relative to the current directory.
 # globPatterns: e.g. "test*.cpp", or a list of globs, e.g. "testA*.cpp;testB*.cpp".
