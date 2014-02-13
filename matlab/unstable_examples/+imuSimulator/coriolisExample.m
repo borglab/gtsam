@@ -17,7 +17,7 @@ import gtsam.*;
 addpath(genpath('./Libraries'))
 
 %% General configuration
-navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
+navFrameRotating = 0;       % 0 = perform navigation in the fixed frame
                             % 1 = perform navigation in the rotating frame
 IMU_type = 1;               % IMU type 1 or type 2
 useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
@@ -184,6 +184,7 @@ for i = 1:length(times)
         positionsInRotatingGT(:,1) = currentPoseRotatingGT.translation.vector;
         %velocityInRotatingGT(:,1) = currentPoseRotatingGT.velocity.vector;
         positionsEstimates(:,i) = currentPoseEstimate.translation.vector;
+        velocitiesEstimates(:,i) = currentVelocityEstimate.vector;
         currentRotatingFrameForPlot(1).p = currentRotatingFrame.translation.vector;
         currentRotatingFrameForPlot(1).R = currentRotatingFrame.rotation.matrix;
     else
@@ -205,7 +206,7 @@ for i = 1:length(times)
         
         % Get velocity in rotating frame by treating it like a position and using compose 
         % Maybe Luca knows a better way to do this within GTSAM. 
-        currentVelocityPoseFixedGT = Pose3(Rot3, Point3(currentVelocityFixedGT));
+        currentVelocityPoseFixedGT = Pose3(Rot3, Point3(currentVelocityFixedGT-initialVelocityFixedFrame));
         currentVelocityPoseRotatingGT = inverseCurrentRotatingFrame.compose(currentVelocityPoseFixedGT);
         
         % Store GT (ground truth) poses
