@@ -20,7 +20,7 @@ addpath(genpath('./Libraries'))
 navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
                             % 1 = perform navigation in the rotating frame
 IMU_type = 1;               % IMU type 1 or type 2
-useRealisticValues = 0;     % use reaslist values for initial position and earth rotation
+useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
 record_movie = 0;           % 0 = do not record movie
                             % 1 = record movie of the trajectories. One
                             % frame per time step (15 fps)
@@ -32,22 +32,43 @@ times = 0:deltaT:timeElapsed;
 
 % Initial Conditions
 omegaEarthSeconds = [0;0;7.292115e-5]; % Earth Rotation rate (rad/s)
+radiusEarth = 6378.1*1000;             % radius of Earth is 6,378.1 km
+angularVelocityTensorEarth = [         0            -omegaEarthSeconds(3)  omegaEarthSeconds(2);
+                              omegaEarthSeconds(3)            0           -omegaEarthSeconds(1);
+                              -omegaEarthSeconds(2) omegaEarthSeconds(1)            0         ];
 if useRealisticValues == 1
     omegaRotatingFrame = omegaEarthSeconds; % rotation of the moving frame wrt fixed frame
     omegaFixed = [0;0;0];       % constant rotation rate measurement
-    accelFixed = [0.5;-0.5;0];       % constant acceleration measurement
+    accelFixed = [0.5;-0.5;0];  % constant acceleration measurement
     g = [0;0;0];                % Gravity
-    initialVelocity = radiusEarth * omegaEarthSeconds [vector.. is a cross product, wee wiki link] ; %[0;0;0];  % TODO     % initial velocity
-    initialPosition = [4509997.76107; 4509997.76107; 3189050];  % initial position (Earth radius 6371 km)
+    initialLongitude = 45;
+    initialLatitude = 30;
+    % initial position at some [longitude, latitude] location on earth's
+    % surface (approximating Earth as a sphere)
+    initialPosition = [radiusEarth*sind(initialLongitude);
+                       radiusEarth*cosd(initialLongitude);
+                       radiusEarth*sind(initialLatitude)];
+    initialVelocity = [0; 0; 0];% initial velocity of the body in the rotating frame,
+                                % (ignoring the velocity due to the earth's rotation)
 else
     omegaRotatingFrame = [0;0;pi/300];  % rotation of the moving frame wrt fixed frame
     omegaFixed = [0;0;0];       % constant rotation rate measurement
     accelFixed = [0.1;0;0];     % constant acceleration measurement
     g = [0;0;0];                % Gravity
-    initialVelocity = [0;0;0];      % initial velocity
-    initialPosition = [0; 1; 0];    % initial position, at 45 degrees longitude and 30 degrees latitude on earth surface
+    initialPosition = [0; 1; 0];% initial position in both frames
+    initialVelocity = [0;0;0];  % initial velocity in the rotating frame (ignoring the velocity due to the frame's rotation)
 end
 
+% From Wikipedia Angular Velocity page, dr/dt = W*r, where r is
+% position vector and W is angular velocity tensor
+% We add the initial velocity in the rotating frame because they
+% are the same frame at t=0, so no transformation is needed
+angularVelocityTensor = [         0             -omegaRotatingFrame(3)  omegaRotatingFrame(2);
+                         omegaRotatingFrame(3)            0            -omegaRotatingFrame(1);
+                         -omegaRotatingFrame(2) omegaRotatingFrame(1)             0         ];
+initialVelocityFixedFrame = angularVelocityTensor * initialPosition + initialVelocity;
+initialVelocityRotatingFrame = initialVelocity;
+                     
 if navFrameRotating == 0
     omegaCoriolisIMU = [0;0;0];
 else
@@ -58,7 +79,8 @@ end
 currentRotatingFrame = Pose3;   % rotating frame initially coincides with fixed frame at t=0
 currentPoseFixedGT = Pose3(Rot3, Point3(initialPosition));
 currentPoseRotatingGT = currentPoseFixedGT; % frames coincide for t=0
-currentVelocityFixedGT = initialVelocity;
+currentVelocityFixedGT = initialVelocityFixedFrame;
+currentVelocityRotatingGT = initialVelocityRotatingFrame;
 %
 epsBias = 1e-20;
 sigma_init_x = noiseModel.Isotropic.Sigma(6, 1e-10);
@@ -119,11 +141,13 @@ fprintf('Realistic Values = %d\n', useRealisticValues);
 fprintf('deltaT = %f\n', deltaT);
 fprintf('timeElapsed = %f\n', timeElapsed);
 fprintf('omegaRotatingFrame = [%f %f %f]\n', omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
+fprintf('omegaCoriolisIMU = [%f %f %f]\n', omegaCoriolisIMU(1), omegaCoriolisIMU(2), omegaCoriolisIMU(3));
 fprintf('omegaFixed = [%f %f %f]\n', omegaFixed(1), omegaFixed(2), omegaFixed(3));
 fprintf('accelFixed = [%f %f %f]\n', accelFixed(1), accelFixed(2), accelFixed(3));
 fprintf('Initial Velocity = [%f %f %f]\n', initialVelocity(1), initialVelocity(2), initialVelocity(3));
 fprintf('Initial Position = [%f %f %f]\n', initialPosition(1), initialPosition(2), initialPosition(3));
 fprintf('\n');
+
 %% Main loop: iterate through the ground truth trajectory, add factors
 % and values to the factor graph, and perform inference
 for i = 1:length(times)
@@ -136,8 +160,13 @@ for i = 1:length(times)
     
     %% Set priors on the first iteration
     if(i == 1)
-        currentPoseEstimate = currentPoseFixedGT; % known initial conditions
-        currentVelocityEstimate = LieVector(currentVelocityFixedGT); % known initial conditions
+        % known initial conditions
+        currentPoseEstimate = currentPoseFixedGT;
+        if navFrameRotating == 1
+            currentVelocityEstimate = LieVector(currentVelocityRotatingGT);
+        else
+            currentVelocityEstimate = LieVector(currentVelocityFixedGT);
+        end
         
         % Set Priors
         newValues.insert(currentPoseKey, currentPoseEstimate);
@@ -264,16 +293,16 @@ for i = 1:length(times)
     %hold on;
     plot3(positionsInFixedGT(1,1:i), positionsInFixedGT(2,1:i), positionsInFixedGT(3,1:i),'r');
     hold on;
-    %plot3(positionsInFixedGT(1,1), positionsInFixedGT(2,1), positionsInFixedGT(3,1), 'x');
-    %plot3(positionsInFixedGT(1,i), positionsInFixedGT(2,i), positionsInFixedGT(3,i), 'o');
+    plot3(positionsInFixedGT(1,1), positionsInFixedGT(2,1), positionsInFixedGT(3,1), 'xr');
+    plot3(positionsInFixedGT(1,i), positionsInFixedGT(2,i), positionsInFixedGT(3,i), 'or');
     
-    plot3(positionsInRotatingGT(1,1:i), positionsInRotatingGT(2,1:i), positionsInRotatingGT(3,1:i), '-g');
-    %plot3(positionsInRotatingGT(1,1), positionsInRotatingGT(2,1), positionsInRotatingGT(3,1), 'xg');
-    %plot3(positionsInRotatingGT(1,i), positionsInRotatingGT(2,i), positionsInRotatingGT(3,i), 'og');
+    plot3(positionsInRotatingGT(1,1:i), positionsInRotatingGT(2,1:i), positionsInRotatingGT(3,1:i), 'g');
+    plot3(positionsInRotatingGT(1,1), positionsInRotatingGT(2,1), positionsInRotatingGT(3,1), 'xg');
+    plot3(positionsInRotatingGT(1,i), positionsInRotatingGT(2,i), positionsInRotatingGT(3,i), 'og');
     
-    plot3(positionsEstimates(1,1:i), positionsEstimates(2,1:i), positionsEstimates(3,1:i), '-b');
-    %plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xb');
-    %plot3(positionsEstimates(1,i), positionsEstimates(2,i), positionsEstimates(3,i), 'ob');
+    plot3(positionsEstimates(1,1:i), positionsEstimates(2,1:i), positionsEstimates(3,1:i), 'b');
+    plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xb');
+    plot3(positionsEstimates(1,i), positionsEstimates(2,i), positionsEstimates(3,i), 'ob');
     
     hold off;
     xlabel('X axis')
@@ -378,16 +407,16 @@ grid on;
 hold off;
 
 % TODO: logging rotation errors
-for all time steps
-    Rerror =  Rgt' * Restimated;
-    % transforming rotation matrix to axis-angle representation
-    vector_error = Rot3.Logmap(Rerror);
-    norm(vector_error)
-    
-   axis angle: [u,theta], with norm(u)=1
-   vector_error = u * theta;
+%for all time steps
+%    Rerror =  Rgt' * Restimated;
+%    % transforming rotation matrix to axis-angle representation
+%    vector_error = Rot3.Logmap(Rerror);
+%    norm(vector_error)
+%    
+%   axis angle: [u,theta], with norm(u)=1
+%   vector_error = u * theta;
    
 % TODO: logging velocity errors
-velocities..
+%velocities..
 
 
