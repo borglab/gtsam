@@ -36,7 +36,6 @@ macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
 		endif()
 	
 	    # Get all script files
-		message(STATUS "Filling test group ${groupName}")
         file(GLOB script_files ${globPatterns})
 
 	    # Remove excluded scripts from the list
