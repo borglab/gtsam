@@ -200,20 +200,27 @@ for i = 1:length(times)
         currentPoseFixedGT = Pose3(Rot3, currentPositionFixedGT); % constant orientation
         
         % Rotate pose in fixed frame to get pose in rotating frame
+        previousPositionRotatingGT = currentPoseRotatingGT.translation.vector;
         currentRotatingFrame = currentRotatingFrame.compose(changePoseRotatingFrame);
         inverseCurrentRotatingFrame = (currentRotatingFrame.inverse);
         currentPoseRotatingGT = inverseCurrentRotatingFrame.compose(currentPoseFixedGT);
+        currentPositionRotatingGT = currentPoseRotatingGT.translation.vector;
         
         % Get velocity in rotating frame by treating it like a position and using compose 
         % Maybe Luca knows a better way to do this within GTSAM. 
-        currentVelocityPoseFixedGT = Pose3(Rot3, Point3(currentVelocityFixedGT-initialVelocityFixedFrame));
-        currentVelocityPoseRotatingGT = inverseCurrentRotatingFrame.compose(currentVelocityPoseFixedGT);
+        %currentVelocityPoseFixedGT = Pose3(Rot3, Point3(currentVelocityFixedGT-initialVelocityFixedFrame));
+        %currentVelocityPoseRotatingGT = inverseCurrentRotatingFrame.compose(currentVelocityPoseFixedGT);
+        
+        %currentRot3RotatingGT = currentRotatingFrame.rotation();
+        %currentVelocityRotatingGT = currentRot3RotatingGT.unrotate(Point3(currentVelocityFixedGT));
+        % TODO: check if initial velocity in rotating frame is correct
+        currentVelocityRotatingGT = (currentPositionRotatingGT-previousPositionRotatingGT)/deltaT;
         
         % Store GT (ground truth) poses
         positionsInFixedGT(:,i) = currentPoseFixedGT.translation.vector;
         velocityInFixedGT(:,i) = currentVelocityFixedGT;
         positionsInRotatingGT(:,i) = currentPoseRotatingGT.translation.vector;
-        velocityInRotatingGT(:,i) = currentVelocityPoseRotatingGT.translation.vector;
+        velocityInRotatingGT(:,i) = currentVelocityRotatingGT;
         currentRotatingFrameForPlot(i).p = currentRotatingFrame.translation.vector;
         currentRotatingFrameForPlot(i).R = currentRotatingFrame.rotation.matrix;
         
@@ -265,6 +272,7 @@ for i = 1:length(times)
         % Add values to the graph. Use the current pose and velocity
         % estimates as to values when interpreting the next pose and
         % velocity estimates
+        %ImuFactor.Predict(currentPoseEstimate, currentVelocityEstimate, pose_j, vel_j, zeroBias, currentSummarizedMeasurement, g, omegaCoriolisIMU);
         newValues.insert(currentPoseKey, currentPoseEstimate);
         newValues.insert(currentVelKey, currentVelocityEstimate);
         newValues.insert(currentBiasKey, zeroBias);
