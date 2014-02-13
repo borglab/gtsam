@@ -2,8 +2,13 @@
 
 enable_testing()
 
+option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
+
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+if(GTSAM_BUILD_TESTS)
+    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+endif()
+
 add_custom_target(timing)
 
 # Add option for combining unit tests
@@ -12,6 +17,108 @@ if(MSVC)
 else()
 	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
 endif()
+
+# Macro for adding glob(s) of tests relative to the current directory.  Automatically
+# links the tests with CppUnitLite.  Separate multiple globPatterns, linkLibraries,
+# and excludedFiles using a semicolon, e.g. "testThings*.cpp;testOthers*.cpp".
+# Usage example:  gtsamAddTestsGlob(basic "test*.cpp" "testBroken.cpp" "gtsam;GeographicLib")
+macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
+	if(GTSAM_BUILD_TESTS)
+		# Add group target if it doesn't already exist
+	    if(NOT TARGET check.${groupName})
+			add_custom_target(check.${groupName} COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+		endif()
+	
+	    # Get all script files relative to the currect directory
+	    set(script_files_relative "")
+	    foreach(one_pattern IN ITEMS ${globPatterns})
+			message(STATUS "Filling test group ${groupName}")
+	        file(GLOB RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} one_script_files "${one_pattern}")
+	        list(APPEND script_files_relative "${one_script_files}")
+	    endforeach()
+
+	    # Remove excluded scripts from the list
+	    if(excludedFiles)
+	    	list(REMOVE_ITEM script_files_relative excludedFiles)
+	    endif()
+	
+		# Get absolute paths
+		set(script_files "")
+		foreach(script_file IN ITEMS ${script_files_relative})
+			list(APPEND script_files "${CMAKE_CURRENT_SOURCE_DIR}/${script_file}")
+		endforeach()
+
+		# Separate into source files and headers (allows for adding headers to show up in
+		# MSVC and Xcode projects).
+		set(script_srcs "")
+		set(script_headers "")
+		foreach(script_file IN ITEMS ${script_files})
+			get_filename_component(script_ext ${script_file} EXT)
+			if(script_ext MATCHES "(h|H)")
+				list(APPEND script_headers ${script_file})
+			else()
+				list(APPEND script_srcs ${script_file})
+			endif()
+		endforeach()
+	
+		# Don't put test files in folders in MSVC and Xcode because they're already grouped
+		source_group("" FILES ${script_srcs} ${script_headers})
+
+		if(NOT GTSAM_SINGLE_TEST_EXE)
+			foreach(script_src IN ITEMS ${script_srcs})
+				# Get test base name
+				get_filename_component(script_name ${script_src} NAME_WE)
+			
+				# Add executable
+				add_executable(script_name ${script_src} ${script_headers})
+				target_link_libraries(${script_name} CppUnitLite ${linkLibraries})
+			
+				# Add target dependencies
+				add_test(NAME ${script_name} COMMAND ${script_name})
+				add_dependencies(check.${groupName} ${script_name})
+				add_dependencies(check ${script_name})
+				if(NOT MSVC AND NOT XCODE_VERSION)
+				  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name})
+				endif()
+			
+				# Add TOPSRCDIR
+				set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
+			
+				# Exclude from 'make all' and 'make install'
+				set_target_properties(${script_name} PROPERTIES EXCLUDE_FROM_ALL ON)
+			
+				# Configure target folder (for MSVC and Xcode)
+				set_property(TARGET ${script_name} PROPERTY FOLDER "Unit tests/${groupName}")
+			endforeach()
+		else()
+			# Create single unit test exe from all test scripts
+			set(target_name check_${groupName}_program)
+		
+			# Add executable
+			add_executable(${target_name} ${script_srcs} ${script_headers})
+			target_link_libraries(${target_name} CppUnitLite ${linkLibraries})
+		
+			# Only have a main function in one script - use preprocessor
+			set(rest_script_srcs ${script_srcs})
+			list(REMOVE_AT rest_script_srcs 0)
+			set_property(SOURCE ${rest_script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "main=static no_main")
+		
+			# Add target dependencies
+			add_test(NAME ${target_name} COMMAND ${target_name})
+			add_dependencies(check.${groupName} ${target_name})
+			add_dependencies(check ${target_name})
+		
+			# Add TOPSRCDIR
+			set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
+		
+			# Excluse from 'make all' and 'make install'
+			set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
+
+			# Configure target folder (for MSVC and Xcode)
+			set_property(TARGET ${script_name} PROPERTY FOLDER "Unit tests")
+		endif()
+	endif()
+endmacro()
 
 # Macro for adding categorized tests in a "tests" folder, with 
 # optional exclusion of tests and convenience library linking options

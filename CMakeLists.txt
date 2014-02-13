@@ -46,7 +46,6 @@ endif()
 # Set up options
 
 # Configurable Options
-option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" OFF) # These do not currently work
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
 if(GTSAM_UNSTABLE_AVAILABLE)
@@ -83,9 +82,8 @@ endif()
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
 
-# Flags to determine whether tests and examples are build during 'make install'
+# Flags to determine whether examples are build during 'make install'
 # Note that these remove the targets from the 'all'
-option(GTSAM_DISABLE_TESTS_ON_INSTALL "Disables building tests during install" ON)
 option(GTSAM_DISABLE_EXAMPLES_ON_INSTALL "Disables building examples during install" OFF)
 
 # Pull in infrastructure
@@ -375,7 +373,6 @@ print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in librar
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}           "Build libgtsam_unstable        ")
 endif()
-print_config_flag(${GTSAM_DISABLE_TESTS_ON_INSTALL}     "No tests in all or install     ")
 print_config_flag(${GTSAM_DISABLE_EXAMPLES_ON_INSTALL}  "No examples in all or install  ")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
 if(NOT MSVC AND NOT XCODE_VERSION)

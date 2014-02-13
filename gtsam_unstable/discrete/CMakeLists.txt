@@ -2,19 +2,8 @@
 file(GLOB discrete_headers "*.h")
 install(FILES ${discrete_headers} DESTINATION include/gtsam_unstable/discrete)
 
-set (discrete_full_libs
-    gtsam
-    gtsam_unstable)
-
-# Exclude tests that don't work
-#set (discrete_excluded_tests 
-#"${CMAKE_CURRENT_SOURCE_DIR}/tests/testScheduler.cpp"
-#)
-
-
 # Add all tests
-gtsam_add_subdir_tests(discrete_unstable "${discrete_full_libs}" "${discrete_full_libs}" "${discrete_excluded_tests}") 
-add_dependencies(check.unstable check.discrete_unstable)
+add_subdirectory(tests)
 
 # List examples to build - comment out here to exclude from compilation
 set(discrete_unstable_examples
