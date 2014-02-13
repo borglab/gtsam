@@ -117,31 +117,32 @@ TEST(GaussianFactorGraph, matrices) {
   gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.), (Vector(2) << 4., 8.), model);
   gfg.add(0, (Matrix(2, 3) << 9.,10., 0., 0., 0., 0.), 1, (Matrix(2, 2) << 11., 12., 14., 15.), (Vector(2) << 13.,16.), model);
 
-  Matrix jacobian(4,6);
-  jacobian <<
+  Matrix Ab(4,6);
+  Ab <<
       1, 2, 3, 0, 0, 4,
       5, 6, 7, 0, 0, 8,
       9,10, 0,11,12,13,
       0, 0, 0,14,15,16;
 
-  Matrix expectedJacobian = jacobian;
-  Matrix expectedHessian = jacobian.transpose() * jacobian;
-  Matrix expectedA = jacobian.leftCols(jacobian.cols()-1);
-  Vector expectedb = jacobian.col(jacobian.cols()-1);
-  Matrix expectedL = expectedA.transpose() * expectedA;
-  Vector expectedeta = expectedA.transpose() * expectedb;
+  EXPECT(assert_equal(Ab, gfg.augmentedJacobian()));
+  EXPECT(assert_equal(Ab.transpose() * Ab, gfg.augmentedHessian()));
 
-  Matrix actualJacobian = gfg.augmentedJacobian();
-  Matrix actualHessian = gfg.augmentedHessian();
+  Matrix A = Ab.leftCols(Ab.cols()-1);
+  Vector b = Ab.col(Ab.cols()-1);
   Matrix actualA; Vector actualb; boost::tie(actualA,actualb) = gfg.jacobian();
-  Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
+  EXPECT(assert_equal(A, actualA));
+  EXPECT(assert_equal(b, actualb));
 
-  EXPECT(assert_equal(expectedJacobian, actualJacobian));
-  EXPECT(assert_equal(expectedHessian, actualHessian));
-  EXPECT(assert_equal(expectedA, actualA));
-  EXPECT(assert_equal(expectedb, actualb));
-  EXPECT(assert_equal(expectedL, actualL));
-  EXPECT(assert_equal(expectedeta, actualeta));
+  Matrix L = A.transpose() * A;
+  Vector eta = A.transpose() * b;
+  Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
+  EXPECT(assert_equal(L, actualL));
+  EXPECT(assert_equal(eta, actualeta));
+
+  Vector expectLdiagonal(5); // Make explicit that diagonal is sum-squares of columns
+  expectLdiagonal << 1+25+81, 4+36+100, 9+49, 121+196, 144+225;
+  EXPECT(assert_equal(L.diagonal(), expectLdiagonal));
+  // EXPECT(assert_equal(expectLdiagonal, gfg.hessianDiagonal()));
 }
 
 /* ************************************************************************* */
