@@ -312,7 +312,7 @@ TEST(Sphere2, localCoordinates_retract_expmap) {
 
 //*******************************************************************************
 TEST(Sphere2, Random) {
-  boost::random::mt19937 rng(42);
+  boost::mt19937 rng(42);
   // Check that is deterministic given same random seed
   Point3 expected(-0.667578, 0.671447, 0.321713);
   Point3 actual = Sphere2::Random(rng).point3();
