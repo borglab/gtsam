@@ -37,8 +37,8 @@ if useRealisticValues == 1
     omegaFixed = [0;0;0];       % constant rotation rate measurement
     accelFixed = [0.5;-0.5;0];       % constant acceleration measurement
     g = [0;0;0];                % Gravity
-    initialVelocity = [0;0;0];      % initial velocity
-    initialPosition = [4509997.76107; 4509997.76107; 3189050];  % initial position
+    initialVelocity = radiusEarth * omegaEarthSeconds [vector.. is a cross product, wee wiki link] ; %[0;0;0];  % TODO     % initial velocity
+    initialPosition = [4509997.76107; 4509997.76107; 3189050];  % initial position (Earth radius 6371 km)
 else
     omegaRotatingFrame = [0;0;pi/300];  % rotation of the moving frame wrt fixed frame
     omegaFixed = [0;0;0];       % constant rotation rate measurement
@@ -60,7 +60,7 @@ currentPoseFixedGT = Pose3(Rot3, Point3(initialPosition));
 currentPoseRotatingGT = currentPoseFixedGT; % frames coincide for t=0
 currentVelocityFixedGT = initialVelocity;
 %
-epsBias = 1e-15;
+epsBias = 1e-20;
 sigma_init_x = noiseModel.Isotropic.Sigma(6, 1e-10);
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1e-10);
 sigma_init_b = noiseModel.Isotropic.Sigma(6, epsBias);
@@ -70,9 +70,9 @@ zeroBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1)); % bias is not of intere
 IMU_metadata.AccelerometerSigma = 1e-5;
 IMU_metadata.GyroscopeSigma = 1e-7;
 IMU_metadata.IntegrationSigma = 1e-10;
-IMU_metadata.BiasAccelerometerSigma = 1e-5;
-IMU_metadata.BiasGyroscopeSigma = 1e-7;
-IMU_metadata.BiasAccOmegaInit = 1e-10;
+IMU_metadata.BiasAccelerometerSigma = epsBias;
+IMU_metadata.BiasGyroscopeSigma = epsBias;
+IMU_metadata.BiasAccOmegaInit = epsBias;
 
 %% Initialize storage variables
 positionsInFixedGT = zeros(3, length(times));
@@ -228,9 +228,7 @@ for i = 1:length(times)
                 currentBiasKey-1, currentBiasKey, ...
                 currentSummarizedMeasurement, g, omegaCoriolisIMU, ...
                 noiseModel.Isotropic.Sigma(15, epsBias)));
-        else
-            error('imuSimulator:coriolisExample:IMU_typeNotFound', ...
-                'IMU_type = %d does not exist.\nAvailable IMU types are 1 and 2\n', IMU_type);
+            % TODO: prior on biases?
         end
 
         % Add values to the graph. Use the current pose and velocity
@@ -378,3 +376,18 @@ zlabel('Z axis')
 axis equal
 grid on;
 hold off;
+
+% TODO: logging rotation errors
+for all time steps
+    Rerror =  Rgt' * Restimated;
+    % transforming rotation matrix to axis-angle representation
+    vector_error = Rot3.Logmap(Rerror);
+    norm(vector_error)
+    
+   axis angle: [u,theta], with norm(u)=1
+   vector_error = u * theta;
+   
+% TODO: logging velocity errors
+velocities..
+
+
