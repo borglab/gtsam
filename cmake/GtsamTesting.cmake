@@ -12,11 +12,12 @@ endif()
 add_custom_target(timing)
 
 # Add option for combining unit tests
-if(MSVC)
+if(MSVC OR XCODE_VERSION)
 	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
 else()
 	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
 endif()
+mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
 
 # Macro for adding glob(s) of tests relative to the current directory.  Automatically
 # links the tests with CppUnitLite.  Separate multiple globPatterns, linkLibraries,
@@ -33,13 +34,13 @@ macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
 	    set(script_files_relative "")
 	    foreach(one_pattern IN ITEMS ${globPatterns})
 			message(STATUS "Filling test group ${groupName}")
-	        file(GLOB RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} one_script_files "${one_pattern}")
-	        list(APPEND script_files_relative "${one_script_files}")
+	        file(GLOB one_script_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${one_pattern}")
+	        list(APPEND script_files_relative ${one_script_files})		
 	    endforeach()
 
 	    # Remove excluded scripts from the list
-	    if(excludedFiles)
-	    	list(REMOVE_ITEM script_files_relative excludedFiles)
+	    if(NOT "${excludedFiles}" STREQUAL "")
+	    	list(REMOVE_ITEM script_files_relative ${excludedFiles})
 	    endif()
 	
 		# Get absolute paths
@@ -65,14 +66,15 @@ macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
 		source_group("" FILES ${script_srcs} ${script_headers})
 
 		if(NOT GTSAM_SINGLE_TEST_EXE)
+			# Default for Makefiles - each test in its own executable
 			foreach(script_src IN ITEMS ${script_srcs})
 				# Get test base name
 				get_filename_component(script_name ${script_src} NAME_WE)
 			
 				# Add executable
-				add_executable(script_name ${script_src} ${script_headers})
+				add_executable(${script_name} ${script_src} ${script_headers})
 				target_link_libraries(${script_name} CppUnitLite ${linkLibraries})
-			
+				
 				# Add target dependencies
 				add_test(NAME ${script_name} COMMAND ${script_name})
 				add_dependencies(check.${groupName} ${script_name})
@@ -91,7 +93,7 @@ macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
 				set_property(TARGET ${script_name} PROPERTY FOLDER "Unit tests/${groupName}")
 			endforeach()
 		else()
-			# Create single unit test exe from all test scripts
+			# Default on MSVC and XCode - combine test group into a single exectuable
 			set(target_name check_${groupName}_program)
 		
 			# Add executable
