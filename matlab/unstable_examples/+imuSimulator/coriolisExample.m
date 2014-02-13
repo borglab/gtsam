@@ -104,8 +104,9 @@ positionsInRotatingGT = zeros(3, length(times));
 velocityInRotatingGT = zeros(3, length(times));
 
 positionsEstimates = zeros(3,length(times));
-velocityEstimates = zeros(3,length(times));
-%rotationsEstimates = zeros(3,length(times));
+velocitiesEstimates = zeros(3,length(times));
+
+rotationsErrorVectors = zeros(3,length(times));   % Rotating/Fixed frame selected later
 
 changePoseRotatingFrame = Pose3.Expmap([omegaRotatingFrame*deltaT; 0; 0; 0]); % rotation of the rotating frame at each time step
 h = figure(1);
@@ -281,9 +282,18 @@ for i = 1:length(times)
             currentBias = isam.calculateEstimate(currentBiasKey);
             
             positionsEstimates(:,i) = currentPoseEstimate.translation.vector;
-            %rotationsEstimates(:,i) = currentPoseEstimate.rotation.vector;
             velocitiesEstimates(:,i) = currentVelocityEstimate.vector;
             biasEstimates(:,i) = currentBias.vector;
+            
+            % In matrix form: R_error = R_gt'*R_estimate
+            % Perform Logmap on the rotation matrix to get a vector
+            if navFrameRotating == 1
+                rotationError = Rot3(currentPoseRotatingGT.rotation.matrix' * currentPoseEstimate.rotation.matrix);
+            else
+                rotationError = Rot3(currentPoseFixedGT.rotation.matrix' * currentPoseEstimate.rotation.matrix);
+            end
+            
+            rotationsErrorVectors(:,i) = Rot3.Logmap(rotationError);
         end
     end
     
@@ -333,40 +343,57 @@ for i = 2:length(positionsEstimates)
 end
 
 %% Print and plot error results
+% Calculate errors for appropriate navigation scheme
 if navFrameRotating == 0
     axisPositionsError = positionsInFixedGT - positionsEstimates;
-    axisVelocityError = velocityInFixedGT - velocityEstimates;
+    axisVelocityError = velocityInFixedGT - velocitiesEstimates;
 else
     axisPositionsError = positionsInRotatingGT - positionsEstimates;
-    axisVelocityError = velocityInRotatingGT - velocityEstimates;
+    axisVelocityError = velocityInRotatingGT - velocitiesEstimates;
 end
+
+% Plot individual axis position errors
 figure
 plot(times, axisPositionsError);
 plotTitle = sprintf('Axis Error in Estimated Position\n(IMU type = %d, omega = [%.2f; %.2f; %.2f])', ...
     IMU_type, omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
 title(plotTitle);
-xlabel('Time');
+xlabel('Time [s]');
 ylabel('Error (ground_truth - estimate) [m]');
 legend('X axis', 'Y axis', 'Z axis', 'Location', 'NORTHWEST');
 
+% Plot 3D position error
 figure
 positionError3D = sqrt(axisPositionsError(1,:).^2+axisPositionsError(2,:).^2 + axisPositionsError(3,:).^2);
 plot(times, positionError3D);
 plotTitle = sprintf('3D Error in Estimated Position\n(IMU type = %d, omega = [%.2f; %.2f; %.2f])', ...
     IMU_type, omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
 title(plotTitle);
-xlabel('Time');
+xlabel('Time [s]');
 ylabel('3D error [meters]');
 
+% Plot individual axis velocity errors
 figure
 plot(times, axisVelocityError);
 plotTitle = sprintf('Axis Error in Estimated Velocity\n(IMU type = %d, omega = [%.2f; %.2f; %.2f])', ...
     IMU_type, omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
 title(plotTitle);
-xlabel('Time');
+xlabel('Time [s]');
 ylabel('Error (ground_truth - estimate) [m/s]');
 legend('X axis', 'Y axis', 'Z axis', 'Location', 'NORTHWEST');
 
+% Plot magnitude of rotation errors
+figure
+for i = 1:size(rotationsErrorVectors,2)
+    rotationsErrorMagnitudes(i) = norm(rotationsErrorVectors(:,i));
+end
+plot(times,rotationsErrorMagnitudes);
+title('Rotation Error');
+xlabel('Time [s]');
+ylabel('Error [rads]');
+
+
+% Text output for errors
 if navFrameRotating == 0
     fprintf('Fixed Frame ground truth trajectory length is %f [m]\n', trajectoryLengthFixedFrameGT);
     fprintf('Estimated trajectory length is %f [m]\n', trajectoryLengthEstimated);
@@ -379,6 +406,7 @@ else
         norm(axisPositionsError(:,end)), norm(axisPositionsError(:,end))/trajectoryLengthRotatingFrameGT*100);
 end
 fprintf('Final velocity error = [%f %f %f] [m/s]\n', axisVelocityError(1,end), axisVelocityError(2,end), axisVelocityError(3,end));
+fprintf('Final rotation error = %f [rads]\n', norm(rotationsErrorVectors(:,end)));
 
 %% Plot final trajectories
 figure
