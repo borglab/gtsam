@@ -17,7 +17,7 @@ import gtsam.*;
 addpath(genpath('./Libraries'))
 
 %% General configuration
-navFrameRotating = 0;       % 0 = perform navigation in the fixed frame
+navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
                             % 1 = perform navigation in the rotating frame
 IMU_type = 1;               % IMU type 1 or type 2
 useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
@@ -382,6 +382,16 @@ title(plotTitle);
 xlabel('Time [s]');
 ylabel('Error (ground_truth - estimate) [m/s]');
 legend('X axis', 'Y axis', 'Z axis', 'Location', 'NORTHWEST');
+
+% Plot 3D velocity error
+figure
+velocityError3D = sqrt(axisVelocityError(1,:).^2+axisVelocityError(2,:).^2 + axisVelocityError(3,:).^2);
+plot(times, velocityError3D);
+plotTitle = sprintf('3D Error in Estimated Velocity\n(IMU type = %d, omega = [%.2f; %.2f; %.2f])', ...
+    IMU_type, omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
+title(plotTitle);
+xlabel('Time [s]');
+ylabel('3D error [meters/s]');
 
 % Plot magnitude of rotation errors
 figure
