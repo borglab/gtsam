@@ -102,7 +102,7 @@ if(    NOT cmake_build_type_tolower STREQUAL ""
 endif()
 
 # Mark that first pass is done
-set(FIRST_PASS_DONE TRUE CACHE BOOL "Internally used to mark whether cmake has been run multiple times" FORCE)
+set(FIRST_PASS_DONE TRUE CACHE INTERNAL "Internally used to mark whether cmake has been run multiple times")
 mark_as_advanced(FIRST_PASS_DONE) 
 
 # Enable Visual Studio solution folders
