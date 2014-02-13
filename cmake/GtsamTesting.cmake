@@ -22,7 +22,9 @@ add_custom_target(timing)
 add_custom_target(examples)
 
 # Macro for adding a group of tests relative to the current directory.
-# globPatterns: e.g. "test*.cpp", or a list of globs, e.g. "testA*.cpp;testB*.cpp".
+# groupName: A name that will allow this group of tests to be run independently, e.g.
+#            'basic' causes a 'check.basic' target to be created to run this test group.
+# globPatterns: e.g. "test*.cpp", or a list of globs and files, e.g. "testA*.cpp;testB*.cpp".
 # excludedFiles: list of files or globs to exclude, e.g. "testC*.cpp;testBroken.cpp".
 # linkLibraries: list of libraries to link to in addition to CppUnitLite.
 # Usage example:  gtsamAddTestsGlob(basic "test*.cpp" "testBroken.cpp" "gtsam;GeographicLib")
@@ -111,7 +113,7 @@ macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
 			# Add TOPSRCDIR
 			set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
 		
-			# Excluse from 'make all' and 'make install'
+			# Exclude from 'make all' and 'make install'
 			set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
 
 			# Configure target folder (for MSVC and Xcode)
