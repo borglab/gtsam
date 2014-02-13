@@ -19,9 +19,10 @@ else()
 endif()
 mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
 
-# Macro for adding glob(s) of tests relative to the current directory.  Automatically
-# links the tests with CppUnitLite.  Separate multiple globPatterns, linkLibraries,
-# and excludedFiles using a semicolon, e.g. "testThings*.cpp;testOthers*.cpp".
+# Macro for adding a group of tests relative to the current directory.
+# globPatterns: e.g. "test*.cpp", or a list of globs, e.g. "testA*.cpp;testB*.cpp".
+# excludedFiles: list of files or globs to exclude, e.g. "testC*.cpp;testBroken.cpp".
+# linkLibraries: list of libraries to link to in addition to CppUnitLite.
 # Usage example:  gtsamAddTestsGlob(basic "test*.cpp" "testBroken.cpp" "gtsam;GeographicLib")
 macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
 	if(GTSAM_BUILD_TESTS)
@@ -30,25 +31,20 @@ macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
 			add_custom_target(check.${groupName} COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
 		endif()
 	
-	    # Get all script files relative to the currect directory
-	    set(script_files_relative "")
-	    foreach(one_pattern IN ITEMS ${globPatterns})
-			message(STATUS "Filling test group ${groupName}")
-	        file(GLOB one_script_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${one_pattern}")
-	        list(APPEND script_files_relative ${one_script_files})		
-	    endforeach()
+	    # Get all script files
+		message(STATUS "Filling test group ${groupName}")
+        file(GLOB script_files ${globPatterns})
 
 	    # Remove excluded scripts from the list
 	    if(NOT "${excludedFiles}" STREQUAL "")
-	    	list(REMOVE_ITEM script_files_relative ${excludedFiles})
+			file(GLOB excludedFilePaths ${excludedFiles})
+			if("${excludedFilePaths}" STREQUAL "")
+				message(WARNING "The pattern '${excludedFiles}' for excluding tests from group ${groupName} did not match any files")
+			else()
+		    	list(REMOVE_ITEM script_files ${excludedFilePaths})
+			endif()
 	    endif()
 	
-		# Get absolute paths
-		set(script_files "")
-		foreach(script_file IN ITEMS ${script_files_relative})
-			list(APPEND script_files "${CMAKE_CURRENT_SOURCE_DIR}/${script_file}")
-		endforeach()
-
 		# Separate into source files and headers (allows for adding headers to show up in
 		# MSVC and Xcode projects).
 		set(script_srcs "")
