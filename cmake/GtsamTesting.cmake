@@ -121,6 +121,69 @@ macro(gtsamAddTestsGlob groupName globPatterns excludedFiles linkLibraries)
 	endif()
 endmacro()
 
+# Macro for adding scripts - one executable per cpp file.
+# globPatterns: e.g. "*.cpp", or a list of globs and files, e.g. "A*.cpp;B*.cpp".
+# excludedFiles: list of files or globs to exclude, e.g. "testC*.cpp;testBroken.cpp".
+# linkLibraries: list of libraries to link to.
+# Usage example:  gtsamAddScriptsGlob("*.cpp" "Broken.cpp" "gtsam;GeographicLib")
+macro(gtsamAddExamplesGlob globPatterns excludedFiles linkLibraries)
+    # Get all script files
+    file(GLOB script_files ${globPatterns})
+
+    # Remove excluded scripts from the list
+    if(NOT "${excludedFiles}" STREQUAL "")
+		file(GLOB excludedFilePaths ${excludedFiles})
+		if("${excludedFilePaths}" STREQUAL "")
+			message(WARNING "The script exclusion pattern '${excludedFiles}' did not match any files")
+		else()
+	    	list(REMOVE_ITEM script_files ${excludedFilePaths})
+		endif()
+    endif()
+
+	# Separate into source files and headers (allows for adding headers to show up in
+	# MSVC and Xcode projects).
+	set(script_srcs "")
+	set(script_headers "")
+	foreach(script_file IN ITEMS ${script_files})
+		get_filename_component(script_ext ${script_file} EXT)
+		if(script_ext MATCHES "(h|H)")
+			list(APPEND script_headers ${script_file})
+		else()
+			list(APPEND script_srcs ${script_file})
+		endif()
+	endforeach()
+
+	# Don't put test files in folders in MSVC and Xcode because they're already grouped
+	source_group("" FILES ${script_srcs} ${script_headers})
+
+	# Create executables
+	foreach(script_src IN ITEMS ${script_srcs})
+		# Get script base name
+		get_filename_component(script_name ${script_src} NAME_WE)
+
+		# Add executable
+		add_executable(${script_name} ${script_src} ${script_headers})
+		target_link_libraries(${script_name} ${linkLibraries})
+	
+		# Add target dependencies
+		add_dependencies(examples ${script_name})
+		if(NOT MSVC AND NOT XCODE_VERSION)
+		  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name})
+		endif()
+
+		# Add TOPSRCDIR
+		set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
+	
+		if(NOT GTSAM_BUILD_EXAMPLES_ALWAYS)
+			# Exclude from 'make all' and 'make install'
+			set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
+		endif()
+
+		# Configure target folder (for MSVC and Xcode)
+		set_property(TARGET ${script_name} PROPERTY FOLDER "Examples")
+	endforeach()
+endmacro()
+
 # Macro for adding categorized tests in a "tests" folder, with 
 # optional exclusion of tests and convenience library linking options
 #  
