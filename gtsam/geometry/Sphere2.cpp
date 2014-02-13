@@ -22,6 +22,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_on_sphere.hpp>
+#include <boost/random/variate_generator.hpp>
 #include <iostream>
 
 using namespace std;
@@ -47,7 +48,11 @@ Sphere2 Sphere2::FromPoint3(const Point3& point,
 Sphere2 Sphere2::Random(boost::mt19937 & rng) {
   // TODO allow any engine without including all of boost :-(
   boost::uniform_on_sphere<double> randomDirection(3);
-  vector<double> d = randomDirection(rng);
+  // This variate_generator object is required for versions of boost somewhere
+  // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
+  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> >
+      generator(rng, randomDirection);
+  vector<double> d = generator();
   Sphere2 result;
   result.p_ = Point3(d[0], d[1], d[2]);
   return result;
