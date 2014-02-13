@@ -20,7 +20,7 @@ addpath(genpath('./Libraries'))
 navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
                             % 1 = perform navigation in the rotating frame
 IMU_type = 1;               % IMU type 1 or type 2
-useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
+useRealisticValues = 0;     % use reaslist values for initial position and earth rotation
 record_movie = 0;           % 0 = do not record movie
                             % 1 = record movie of the trajectories. One
                             % frame per time step (15 fps)
@@ -76,8 +76,14 @@ IMU_metadata.BiasAccOmegaInit = 1e-10;
 
 %% Initialize storage variables
 positionsInFixedGT = zeros(3, length(times));
+velocityInFixedGT = zeros(3, length(times));
+
 positionsInRotatingGT = zeros(3, length(times));
+velocityInRotatingGT = zeros(3, length(times));
+
 positionsEstimates = zeros(3,length(times));
+velocityEstimates = zeros(3,length(times));
+%rotationsEstimates = zeros(3,length(times));
 
 changePoseRotatingFrame = Pose3.Expmap([omegaRotatingFrame*deltaT; 0; 0; 0]); % rotation of the rotating frame at each time step
 h = figure(1);
@@ -144,7 +150,9 @@ for i = 1:length(times)
         
         % Store data
         positionsInFixedGT(:,1) = currentPoseFixedGT.translation.vector;
+        velocityInFixedGT(:,1) = currentVelocityFixedGT;
         positionsInRotatingGT(:,1) = currentPoseRotatingGT.translation.vector;
+        %velocityInRotatingGT(:,1) = currentPoseRotatingGT.velocity.vector;
         positionsEstimates(:,i) = currentPoseEstimate.translation.vector;
         currentRotatingFrameForPlot(1).p = currentRotatingFrame.translation.vector;
         currentRotatingFrameForPlot(1).R = currentRotatingFrame.rotation.matrix;
@@ -162,16 +170,19 @@ for i = 1:length(times)
         
         % Rotate pose in fixed frame to get pose in rotating frame
         currentRotatingFrame = currentRotatingFrame.compose(changePoseRotatingFrame);
-        %currentPoseRotatingGT = currentPoseFixedGT.transform_to(currentRotatingFrame);
-        inverseCurrentRotatingFrame =  (currentRotatingFrame.inverse);
+        inverseCurrentRotatingFrame = (currentRotatingFrame.inverse);
         currentPoseRotatingGT = inverseCurrentRotatingFrame.compose(currentPoseFixedGT);
         
-        %inverseCurrentPoseRotatingGT = currentRotatingFrame.rotation.inverse;
-        %TODO: currentPoseRotatingGT.rotation = inverseCurrentPoseRotatingGT.compose(currentPoseFixedGT.rotation);
+        % Get velocity in rotating frame by treating it like a position and using compose 
+        % Maybe Luca knows a better way to do this within GTSAM. 
+        currentVelocityPoseFixedGT = Pose3(Rot3, Point3(currentVelocityFixedGT));
+        currentVelocityPoseRotatingGT = inverseCurrentRotatingFrame.compose(currentVelocityPoseFixedGT);
         
         % Store GT (ground truth) poses
         positionsInFixedGT(:,i) = currentPoseFixedGT.translation.vector;
+        velocityInFixedGT(:,i) = currentVelocityFixedGT;
         positionsInRotatingGT(:,i) = currentPoseRotatingGT.translation.vector;
+        velocityInRotatingGT(:,i) = currentVelocityPoseRotatingGT.translation.vector;
         currentRotatingFrameForPlot(i).p = currentRotatingFrame.translation.vector;
         currentRotatingFrameForPlot(i).R = currentRotatingFrame.rotation.matrix;
         
@@ -243,6 +254,7 @@ for i = 1:length(times)
             currentBias = isam.calculateEstimate(currentBiasKey);
             
             positionsEstimates(:,i) = currentPoseEstimate.translation.vector;
+            %rotationsEstimates(:,i) = currentPoseEstimate.rotation.vector;
             velocitiesEstimates(:,i) = currentVelocityEstimate.vector;
             biasEstimates(:,i) = currentBias.vector;
         end
@@ -293,19 +305,21 @@ for i = 2:length(positionsEstimates)
     trajectoryLengthRotatingFrameGT = trajectoryLengthRotatingFrameGT + norm(positionsInRotatingGT(:,i) - positionsInRotatingGT(:,i-1));
 end
 
-figure
-%% Print and plot trajectory error results
+%% Print and plot error results
 if navFrameRotating == 0
     axisPositionsError = positionsInFixedGT - positionsEstimates;
+    axisVelocityError = velocityInFixedGT - velocityEstimates;
 else
     axisPositionsError = positionsInRotatingGT - positionsEstimates;
+    axisVelocityError = velocityInRotatingGT - velocityEstimates;
 end
-plot(times, abs(axisPositionsError));
+figure
+plot(times, axisPositionsError);
 plotTitle = sprintf('Axis Error in Estimated Position\n(IMU type = %d, omega = [%.2f; %.2f; %.2f])', ...
     IMU_type, omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
 title(plotTitle);
 xlabel('Time');
-ylabel('Error (ground_truth - estimate)');
+ylabel('Error (ground_truth - estimate) [m]');
 legend('X axis', 'Y axis', 'Z axis', 'Location', 'NORTHWEST');
 
 figure
@@ -317,18 +331,27 @@ title(plotTitle);
 xlabel('Time');
 ylabel('3D error [meters]');
 
+figure
+plot(times, axisVelocityError);
+plotTitle = sprintf('Axis Error in Estimated Velocity\n(IMU type = %d, omega = [%.2f; %.2f; %.2f])', ...
+    IMU_type, omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
+title(plotTitle);
+xlabel('Time');
+ylabel('Error (ground_truth - estimate) [m/s]');
+legend('X axis', 'Y axis', 'Z axis', 'Location', 'NORTHWEST');
+
 if navFrameRotating == 0
     fprintf('Fixed Frame ground truth trajectory length is %f [m]\n', trajectoryLengthFixedFrameGT);
     fprintf('Estimated trajectory length is %f [m]\n', trajectoryLengthEstimated);
-    fprintf('Final position error = %f (%.4f%% of ground truth trajectory length)\n', ...
+    fprintf('Final position error = %f [m](%.4f%% of ground truth trajectory length)\n', ...
         norm(axisPositionsError(:,end)), norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100);
 else
     fprintf('Rotating Frame ground truth trajectory length is %f [m]\n', trajectoryLengthRotatingFrameGT);
     fprintf('Estimated trajectory length is %f [m]\n', trajectoryLengthEstimated);
-    fprintf('Final position error = %f (%.4f%% of ground truth trajectory length)\n', ...
+    fprintf('Final position error = %f [m](%.4f%% of ground truth trajectory length)\n', ...
         norm(axisPositionsError(:,end)), norm(axisPositionsError(:,end))/trajectoryLengthRotatingFrameGT*100);
 end
-
+fprintf('Final velocity error = [%f %f %f] [m/s]\n', axisVelocityError(1,end), axisVelocityError(2,end), axisVelocityError(3,end));
 
 %% Plot final trajectories
 figure
