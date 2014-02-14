@@ -456,6 +456,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  map<Key,Matrix> JacobianFactor::hessianBlockDiagonal() const {
+    map<Key,Matrix> blocks;
+    return blocks;
+  }
+
+  /* ************************************************************************* */
   Vector JacobianFactor::operator*(const VectorValues& x) const {
     Vector Ax = zero(Ab_.rows());
     if (empty()) return Ax;

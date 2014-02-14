@@ -364,6 +364,12 @@ VectorValues HessianFactor::hessianDiagonal() const {
 }
 
 /* ************************************************************************* */
+map<Key,Matrix> HessianFactor::hessianBlockDiagonal() const {
+  map<Key,Matrix> blocks;
+  return blocks;
+}
+
+/* ************************************************************************* */
 Matrix HessianFactor::augmentedJacobian() const
 {
   return JacobianFactor(*this).augmentedJacobian();
