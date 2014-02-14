@@ -41,21 +41,28 @@ namespace gtsam {
   GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
     EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
-  // Definition of Scatter, which is an intermediate data structure used when building a
-  // HessianFactor incrementally, to get the keys in the right order. The "scatter" is a map from
-  // global variable indices to slot indices in the union of involved variables.  We also include
-  // the dimensionality of the variable.
+  /**
+   * One SlotEntry stores the slot index for a variable, as well its dimension.
+   */
   struct GTSAM_EXPORT SlotEntry {
-    size_t slot;
-    size_t dimension;
+    size_t slot, dimension;
     SlotEntry(size_t _slot, size_t _dimension)
     : slot(_slot), dimension(_dimension) {}
     std::string toString() const;
   };
-  class Scatter : public FastMap<Key, SlotEntry> {
+
+  /**
+   * Scatter is an intermediate data structure used when building a HessianFactor
+   * incrementally, to get the keys in the right order. The "scatter" is a map from
+   * global variable indices to slot indices in the union of involved variables.
+   * We also include the dimensionality of the variable.
+   */
+  class Scatter: public FastMap<Key, SlotEntry> {
   public:
-    Scatter() {}
-    Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering = boost::none);
+    Scatter() {
+    }
+    Scatter(const GaussianFactorGraph& gfg,
+        boost::optional<const Ordering&> ordering = boost::none);
   };
 
   /**
