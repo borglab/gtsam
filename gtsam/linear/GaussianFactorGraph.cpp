@@ -197,6 +197,16 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::hessianDiagonal() const {
+    VectorValues d;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      VectorValues di = factor->hessianDiagonal();
+      d.addInPlace_(di);
+    }
+    return d;
+  }
+
+  /* ************************************************************************* */
   VectorValues GaussianFactorGraph::optimize(OptionalOrdering ordering, const Eliminate& function) const
   {
     gttic(GaussianFactorGraph_optimize);

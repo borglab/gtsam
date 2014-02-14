@@ -335,7 +335,10 @@ namespace gtsam {
      * GaussianFactor.
      */
     virtual Matrix information() const;
-        
+
+    /// Return the diagonal of the Hessian for this factor
+    virtual VectorValues hessianDiagonal() const;
+
     /**
      * Return (dense) matrix associated with factor
      * @param ordering of variables needed for matrix column order

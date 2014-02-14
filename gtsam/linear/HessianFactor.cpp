@@ -352,6 +352,12 @@ Matrix HessianFactor::information() const
 }
 
 /* ************************************************************************* */
+VectorValues HessianFactor::hessianDiagonal() const {
+  VectorValues d;
+  return d;
+}
+
+/* ************************************************************************* */
 Matrix HessianFactor::augmentedJacobian() const
 {
   return JacobianFactor(*this).augmentedJacobian();

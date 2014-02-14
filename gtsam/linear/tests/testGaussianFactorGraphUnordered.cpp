@@ -139,10 +139,10 @@ TEST(GaussianFactorGraph, matrices) {
   EXPECT(assert_equal(L, actualL));
   EXPECT(assert_equal(eta, actualeta));
 
-  Vector expectLdiagonal(5); // Make explicit that diagonal is sum-squares of columns
-  expectLdiagonal << 1+25+81, 4+36+100, 9+49, 121+196, 144+225;
-  EXPECT(assert_equal(L.diagonal(), expectLdiagonal));
-  // EXPECT(assert_equal(expectLdiagonal, gfg.hessianDiagonal()));
+  VectorValues expectLdiagonal; // Make explicit that diagonal is sum-squares of columns
+  expectLdiagonal.insert(0, (Vector(3) << 1+25+81, 4+36+100, 9+49));
+  expectLdiagonal.insert(1, (Vector(2) << 121+196, 144+225));
+  EXPECT(assert_equal(expectLdiagonal, gfg.hessianDiagonal()));
 }
 
 /* ************************************************************************* */

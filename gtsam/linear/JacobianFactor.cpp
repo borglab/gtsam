@@ -439,6 +439,23 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues JacobianFactor::hessianDiagonal() const {
+    VectorValues d;
+    for(size_t pos=0; pos<size(); ++pos)
+    {
+      Key j = keys_[pos];
+      size_t nj = Ab_(pos).cols();
+      Vector dj(nj);
+      for (size_t k = 0; k < nj; ++k) {
+        Vector column_k = Ab_(pos).col(k);
+        dj(k) = dot(column_k,column_k);
+      }
+      d.insert(j,dj);
+    }
+    return d;
+  }
+
+  /* ************************************************************************* */
   Vector JacobianFactor::operator*(const VectorValues& x) const {
     Vector Ax = zero(Ab_.rows());
     if (empty()) return Ax;
@@ -458,8 +475,9 @@ namespace gtsam {
     // Just iterate over all A matrices and insert Ai^e into VectorValues
     for(size_t pos=0; pos<size(); ++pos)
     {
+      Key j = keys_[pos];
       // Create the value as a zero vector if it does not exist.
-      pair<VectorValues::iterator, bool> xi = x.tryInsert(keys_[pos], Vector());
+      pair<VectorValues::iterator, bool> xi = x.tryInsert(j, Vector());
       if(xi.second)
         xi.first->second = Vector::Zero(getDim(begin() + pos));
       gtsam::transposeMultiplyAdd(Ab_(pos), E, xi.first->second);

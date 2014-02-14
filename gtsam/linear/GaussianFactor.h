@@ -96,6 +96,9 @@ namespace gtsam {
      */
     virtual Matrix information() const = 0;
 
+    /// Return the diagonal of the Hessian for this factor
+    virtual VectorValues hessianDiagonal() const = 0;
+
     /** Clone a factor (make a deep copy) */
     virtual GaussianFactor::shared_ptr clone() const = 0;
 

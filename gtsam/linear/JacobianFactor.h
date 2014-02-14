@@ -181,6 +181,9 @@ namespace gtsam {
      */
     virtual Matrix information() const;
     
+    /// Return the diagonal of the Hessian for this factor
+    virtual VectorValues hessianDiagonal() const;
+
     /**
      * @brief Returns (dense) A,b pair associated with factor, bakes in the weights
      */
