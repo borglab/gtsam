@@ -79,7 +79,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
+  vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
     // First find dimensions of each variable
     vector<size_t> dims;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
@@ -146,7 +146,7 @@ namespace gtsam {
 
     // call sparseJacobian
     typedef boost::tuple<size_t, size_t, double> triplet;
-    std::vector<triplet> result = sparseJacobian();
+    vector<triplet> result = sparseJacobian();
 
     // translate to base 1 matrix
     size_t nzmax = result.size();
@@ -169,7 +169,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::pair<Matrix, Vector> GaussianFactorGraph::jacobian(
+  pair<Matrix, Vector> GaussianFactorGraph::jacobian(
       boost::optional<const Ordering&> optionalOrdering) const {
     Matrix augmented = augmentedJacobian(optionalOrdering);
     return make_pair(augmented.leftCols(augmented.cols() - 1),
@@ -188,7 +188,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::pair<Matrix, Vector> GaussianFactorGraph::hessian(
+  pair<Matrix, Vector> GaussianFactorGraph::hessian(
       boost::optional<const Ordering&> optionalOrdering) const {
     Matrix augmented = augmentedHessian(optionalOrdering);
     return make_pair(
@@ -207,6 +207,24 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  map<Key,Matrix> GaussianFactorGraph::hessianBlockDiagonal() const {
+    map<Key,Matrix> blocks;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      map<Key,Matrix> BD = factor->hessianBlockDiagonal();
+      map<Key,Matrix>::const_iterator it = BD.begin();
+      for(;it!=BD.end();it++) {
+        Key j = it->first; // variable key for this block
+        const Matrix& Bj = it->second;
+        if (blocks.count(j))
+          blocks[j] += Bj;
+        else
+          blocks.insert(make_pair(j,Bj));
+      }
+    }
+    return blocks;
+  }
+
+  /* ************************************************************************* */
   VectorValues GaussianFactorGraph::optimize(OptionalOrdering ordering, const Eliminate& function) const
   {
     gttic(GaussianFactorGraph_optimize);
@@ -217,9 +235,9 @@ namespace gtsam {
   namespace {
     JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
       JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
-      if( !result ) {
-        result = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
-      }
+      if( !result )
+        // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+        result = boost::make_shared<JacobianFactor>(*gf);
       return result;
     }
   }
