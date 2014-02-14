@@ -364,6 +364,18 @@ VectorValues HessianFactor::hessianDiagonal() const {
 }
 
 /* ************************************************************************* */
+map<Key,Matrix> HessianFactor::hessianBlockDiagonal() const {
+  map<Key,Matrix> blocks;
+  // Loop over all variables
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    // Get the diagonal block, and insert it
+    Matrix B = info_(j, j).selfadjointView();
+    blocks.insert(make_pair(keys_[j],B));
+  }
+  return blocks;
+}
+
+/* ************************************************************************* */
 Matrix HessianFactor::augmentedJacobian() const
 {
   return JacobianFactor(*this).augmentedJacobian();

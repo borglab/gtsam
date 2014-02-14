@@ -112,10 +112,14 @@ TEST(GaussianFactorGraph, matrices) {
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
 
+  Matrix A00 = (Matrix(2, 3) << 1, 2, 3, 5, 6, 7);
+  Matrix A10 = (Matrix(2, 3) << 9, 10, 0, 0, 0, 0);
+  Matrix A11 = (Matrix(2, 2) << 11, 12, 14, 15);
+
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Unit::Create(2);
-  gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.), (Vector(2) << 4., 8.), model);
-  gfg.add(0, (Matrix(2, 3) << 9.,10., 0., 0., 0., 0.), 1, (Matrix(2, 2) << 11., 12., 14., 15.), (Vector(2) << 13.,16.), model);
+  gfg.add(0, A00, (Vector(2) << 4., 8.), model);
+  gfg.add(0, A10, 1, A11, (Vector(2) << 13.,16.), model);
 
   Matrix Ab(4,6);
   Ab <<
@@ -124,25 +128,35 @@ TEST(GaussianFactorGraph, matrices) {
       9,10, 0,11,12,13,
       0, 0, 0,14,15,16;
 
+  // augmented versions
   EXPECT(assert_equal(Ab, gfg.augmentedJacobian()));
   EXPECT(assert_equal(Ab.transpose() * Ab, gfg.augmentedHessian()));
 
+  // jacobian
   Matrix A = Ab.leftCols(Ab.cols()-1);
   Vector b = Ab.col(Ab.cols()-1);
   Matrix actualA; Vector actualb; boost::tie(actualA,actualb) = gfg.jacobian();
   EXPECT(assert_equal(A, actualA));
   EXPECT(assert_equal(b, actualb));
 
+  // hessian
   Matrix L = A.transpose() * A;
   Vector eta = A.transpose() * b;
   Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
   EXPECT(assert_equal(L, actualL));
   EXPECT(assert_equal(eta, actualeta));
 
+  // hessianBlockDiagonal
   VectorValues expectLdiagonal; // Make explicit that diagonal is sum-squares of columns
   expectLdiagonal.insert(0, (Vector(3) << 1+25+81, 4+36+100, 9+49));
   expectLdiagonal.insert(1, (Vector(2) << 121+196, 144+225));
   EXPECT(assert_equal(expectLdiagonal, gfg.hessianDiagonal()));
+
+  // hessianBlockDiagonal
+  map<Key,Matrix> actualBD = gfg.hessianBlockDiagonal();
+  LONGS_EQUAL(2,actualBD.size());
+  EXPECT(assert_equal(A00.transpose()*A00 + A10.transpose()*A10,actualBD[0]));
+  EXPECT(assert_equal(A11.transpose()*A11,actualBD[1]));
 }
 
 /* ************************************************************************* */

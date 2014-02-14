@@ -460,11 +460,18 @@ TEST(HessianFactor, hessianDiagonal)
 
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
 
+  // hessianDiagonal
   VectorValues expected;
   expected.insert(0, (Vector(1) << 1));
   expected.insert(1, (Vector(2) << 1,1));
   EXPECT(assert_equal(expected, factor.hessianDiagonal()));
-}
+
+  // hessianBlockDiagonal
+  map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();
+  LONGS_EQUAL(2,actualBD.size());
+  EXPECT(assert_equal(G11,actualBD[0]));
+  EXPECT(assert_equal(G22,actualBD[1]));
+  }
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

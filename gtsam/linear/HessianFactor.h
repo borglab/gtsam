@@ -339,6 +339,9 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const;
 
+    /// Return the block diagonal of the Hessian for this factor
+    virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
+
     /**
      * Return (dense) matrix associated with factor
      * @param ordering of variables needed for matrix column order

@@ -240,6 +240,13 @@ TEST(JacobianFactor, matrices)
   expectDiagonal.insert(10, (Vector(3) << 4, 4, 4)/0.25);
   expectDiagonal.insert(15, (Vector(3) << 9, 9, 9)/0.25);
   EXPECT(assert_equal(expectDiagonal, factor.hessianDiagonal()));
+
+  // hessianBlockDiagonal
+  map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();
+  LONGS_EQUAL(3,actualBD.size());
+  EXPECT(assert_equal(4*eye(3),actualBD[5]));
+  EXPECT(assert_equal(16*eye(3),actualBD[10]));
+  EXPECT(assert_equal(36*eye(3),actualBD[15]));
 }
 
 /* ************************************************************************* */
