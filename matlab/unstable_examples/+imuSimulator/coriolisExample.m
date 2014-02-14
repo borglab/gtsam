@@ -12,6 +12,8 @@ import gtsam.*;
 
 addpath(genpath('./Libraries'))
 
+estimationEnabled = 1
+
 % Check for an external configuarion. This is useful for setting up
 % multiple tests
 if ~exist('externalCoriolisConfiguration', 'var')
@@ -53,7 +55,7 @@ if ~exist('externalCoriolisConfiguration', 'var')
     else
         omegaRotatingFrame = [0;0;pi/300];  % rotation of the moving frame wrt fixed frame
         omegaFixed = [0;0;0];       % constant rotation rate measurement
-        accelFixed = [0.1;0;0];     % constant acceleration measurement
+        accelFixed = [1;0;0];     % constant acceleration measurement
         g = [0;0;0];                % Gravity
         initialPosition = [0; 1; 0];% initial position in both frames
         initialVelocity = [0;0;0];  % initial velocity in the rotating frame (ignoring the velocity due to the frame's rotation)
@@ -286,7 +288,7 @@ for i = 1:length(times)
         %newFactors.print(''); newValues.print('');
         
         %% Solve factor graph
-        if(i > 1)
+        if(i > 1 && estimationEnabled)
             isam.update(newFactors, newValues);
             newFactors = NonlinearFactorGraph;
             newValues = Values;
@@ -325,9 +327,11 @@ for i = 1:length(times)
     plot3(positionsInRotatingGT(1,1), positionsInRotatingGT(2,1), positionsInRotatingGT(3,1), 'xg');
     plot3(positionsInRotatingGT(1,i), positionsInRotatingGT(2,i), positionsInRotatingGT(3,i), 'og');
     
-    plot3(positionsEstimates(1,1:i), positionsEstimates(2,1:i), positionsEstimates(3,1:i), 'b');
-    plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xb');
-    plot3(positionsEstimates(1,i), positionsEstimates(2,i), positionsEstimates(3,i), 'ob');
+    if(estimationEnabled)
+      plot3(positionsEstimates(1,1:i), positionsEstimates(2,1:i), positionsEstimates(3,1:i), 'b');
+      plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xb');
+      plot3(positionsEstimates(1,i), positionsEstimates(2,i), positionsEstimates(3,i), 'ob');
+    end
     
     hold off;
     xlabel('X axis')
@@ -387,6 +391,21 @@ title(plotTitle);
 xlabel('Time [s]');
 ylabel('3D error [meters]');
 
+% Plot 3D position error
+if navFrameRotating == 0
+    trajLen = trajectoryLengthFixedFrameGT;
+else
+    trajLen = trajectoryLengthRotatingFrameGT;
+end
+
+figure
+plot(times, (positionError3D/trajLen)*100);
+plotTitle = sprintf('3D Error normalized by distance in Estimated Position\n(IMU type = %d, omega = [%.2f; %.2f; %.2f])', ...
+    IMU_type, omegaRotatingFrame(1), omegaRotatingFrame(2), omegaRotatingFrame(3));
+title(plotTitle);
+xlabel('Time [s]');
+ylabel('normalized 3D error [% of distance traveled]');
+
 % Plot individual axis velocity errors
 figure
 plot(times, axisVelocityError);
@@ -435,22 +454,26 @@ fprintf('Final rotation error = %f [rads]\n', norm(rotationsErrorVectors(:,end))
 
 %% Plot final trajectories
 figure
-sphere  % sphere for reference
+[x,y,z] = sphere(30);
+mesh(radiusEarth*x,radiusEarth*y, radiusEarth*z) % where (a,b,c) is center of the sphere  % sphere for reference
 hold on;
+axis equal
 % Ground truth trajectory in fixed reference frame
-plot3(positionsInFixedGT(1,:), positionsInFixedGT(2,:), positionsInFixedGT(3,:),'r');
-plot3(positionsInFixedGT(1,1), positionsInFixedGT(2,1), positionsInFixedGT(3,1), 'xr');
-plot3(positionsInFixedGT(1,end), positionsInFixedGT(2,end), positionsInFixedGT(3,end), 'or');
+plot3(positionsInFixedGT(1,:), positionsInFixedGT(2,:), positionsInFixedGT(3,:),'r','lineWidth',4);
+plot3(positionsInFixedGT(1,1), positionsInFixedGT(2,1), positionsInFixedGT(3,1), 'xr','lineWidth',4);
+plot3(positionsInFixedGT(1,end), positionsInFixedGT(2,end), positionsInFixedGT(3,end), 'or','lineWidth',4);
 
 % Ground truth trajectory in rotating reference frame
-plot3(positionsInRotatingGT(1,:), positionsInRotatingGT(2,:), positionsInRotatingGT(3,:), '-g');
-plot3(positionsInRotatingGT(1,1), positionsInRotatingGT(2,1), positionsInRotatingGT(3,1), 'xg');
-plot3(positionsInRotatingGT(1,end), positionsInRotatingGT(2,end), positionsInRotatingGT(3,end), 'og');
+plot3(positionsInRotatingGT(1,:), positionsInRotatingGT(2,:), positionsInRotatingGT(3,:), '-g','lineWidth',4);
+plot3(positionsInRotatingGT(1,1), positionsInRotatingGT(2,1), positionsInRotatingGT(3,1), 'xg','lineWidth',4);
+plot3(positionsInRotatingGT(1,end), positionsInRotatingGT(2,end), positionsInRotatingGT(3,end), 'og','lineWidth',4);
 
 % Estimates
-plot3(positionsEstimates(1,:), positionsEstimates(2,:), positionsEstimates(3,:), '-b');
-plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xb');
-plot3(positionsEstimates(1,end), positionsEstimates(2,end), positionsEstimates(3,end), 'ob');
+if(estimationEnabled)
+  plot3(positionsEstimates(1,:), positionsEstimates(2,:), positionsEstimates(3,:), '-b','lineWidth',4);
+  plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xb','lineWidth',4);
+  plot3(positionsEstimates(1,end), positionsEstimates(2,end), positionsEstimates(3,end), 'ob','lineWidth',4);
+end
 
 xlabel('X axis')
 ylabel('Y axis')
@@ -471,5 +494,3 @@ hold off;
    
 % TODO: logging velocity errors
 %velocities..
-
-
