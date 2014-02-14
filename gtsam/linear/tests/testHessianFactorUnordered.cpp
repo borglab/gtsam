@@ -467,10 +467,10 @@ TEST(HessianFactor, hessianDiagonal)
   EXPECT(assert_equal(expected, factor.hessianDiagonal()));
 
   // hessianBlockDiagonal
-  map<Key,Matrix> expectedBD;
-  expected.insert(make_pair(0,G11));
-  expected.insert(make_pair(1,G22));
-  //EXPECT(assert_equal(expectedBD, factor.hessianBlockDiagonal()));
+  map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();
+  LONGS_EQUAL(2,actualBD.size());
+  EXPECT(assert_equal(G11,actualBD[0]));
+  EXPECT(assert_equal(G22,actualBD[1]));
   }
 
 /* ************************************************************************* */
