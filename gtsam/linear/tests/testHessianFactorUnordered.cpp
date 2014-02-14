@@ -460,10 +460,10 @@ TEST(HessianFactor, hessianDiagonal)
 
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
 
-  VectorValues expectLdiagonal; // Make explicit that diagonal is sum-squares of columns
-  expectLdiagonal.insert(0, (Vector(1) << 1));
-  expectLdiagonal.insert(1, (Vector(2) << 1,1));
-  EXPECT(assert_equal(expectLdiagonal, factor.hessianDiagonal()));
+  VectorValues expected; // Make explicit that diagonal is sum-squares of columns
+  expected.insert(0, (Vector(1) << 1));
+  expected.insert(1, (Vector(2) << 1,1));
+  EXPECT(assert_equal(expected, factor.hessianDiagonal()));
 }
 
 /* ************************************************************************* */
