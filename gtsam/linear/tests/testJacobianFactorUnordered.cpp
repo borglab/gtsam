@@ -232,6 +232,14 @@ TEST(JacobianFactor, matrices)
   EXPECT(assert_equal(jacobianExpected, factor.jacobianUnweighted().first));
   EXPECT(assert_equal(rhsExpected, factor.jacobianUnweighted().second));
   EXPECT(assert_equal(augmentedJacobianExpected, factor.augmentedJacobianUnweighted()));
+
+  // hessianDiagonal
+  VectorValues expectDiagonal;
+  // below we divide by the variance 0.5^2
+  expectDiagonal.insert(5, (Vector(3) << 1, 1, 1)/0.25);
+  expectDiagonal.insert(10, (Vector(3) << 4, 4, 4)/0.25);
+  expectDiagonal.insert(15, (Vector(3) << 9, 9, 9)/0.25);
+  EXPECT(assert_equal(expectDiagonal, factor.hessianDiagonal()));
 }
 
 /* ************************************************************************* */

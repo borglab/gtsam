@@ -2164,10 +2164,10 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testJacobianFactor.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="testJacobianFactorUnordered.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>testJacobianFactor.run</buildTarget>
+				<buildTarget>testJacobianFactorUnordered.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
