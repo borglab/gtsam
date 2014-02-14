@@ -8,55 +8,56 @@
 % Its position is plotted in both the fixed and rotating reference frames to simulate how an observer in each frame would
 % experience the body's motion.
 
-clc
-clear all
-close all
-
 import gtsam.*;
 
 addpath(genpath('./Libraries'))
 
-%% General configuration
-navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
-                            % 1 = perform navigation in the rotating frame
-IMU_type = 1;               % IMU type 1 or type 2
-useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
-record_movie = 0;           % 0 = do not record movie
-                            % 1 = record movie of the trajectories. One
-                            % frame per time step (15 fps)
+% Check for an external configuarion. This is useful for setting up
+% multiple tests
+if ~exist('externalCoriolisConfiguration', 'var')
+    clc
+    clear all
+    close all
+    %% General configuration
+    navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
+                                % 1 = perform navigation in the rotating frame
+    IMU_type = 1;               % IMU type 1 or type 2
+    useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
+    record_movie = 0;           % 0 = do not record movie
+                                % 1 = record movie of the trajectories. One
+                                % frame per time step (15 fps
 
-%% Scenario Configuration                            
-deltaT = 0.01;              % timestep
-timeElapsed = 5;            % Total elapsed time
-times = 0:deltaT:timeElapsed;
+    %% Scenario Configuration                            
+    deltaT = 0.01;              % timestep
+    timeElapsed = 5;            % Total elapsed time
+    times = 0:deltaT:timeElapsed;
 
-% Initial Conditions
-omegaEarthSeconds = [0;0;7.292115e-5]; % Earth Rotation rate (rad/s)
-radiusEarth = 6378.1*1000;             % radius of Earth is 6,378.1 km
-angularVelocityTensorEarth = [         0            -omegaEarthSeconds(3)  omegaEarthSeconds(2);
-                              omegaEarthSeconds(3)            0           -omegaEarthSeconds(1);
-                              -omegaEarthSeconds(2) omegaEarthSeconds(1)            0         ];
-if useRealisticValues == 1
-    omegaRotatingFrame = omegaEarthSeconds; % rotation of the moving frame wrt fixed frame
-    omegaFixed = [0;0;0];       % constant rotation rate measurement
-    accelFixed = [0.5;-0.5;0];  % constant acceleration measurement
-    g = [0;0;0];                % Gravity
-    initialLongitude = 45;
-    initialLatitude = 30;
-    % initial position at some [longitude, latitude] location on earth's
-    % surface (approximating Earth as a sphere)
-    initialPosition = [radiusEarth*sind(initialLongitude);
-                       radiusEarth*cosd(initialLongitude);
-                       radiusEarth*sind(initialLatitude)];
-    initialVelocity = [0; 0; 0];% initial velocity of the body in the rotating frame,
-                                % (ignoring the velocity due to the earth's rotation)
-else
-    omegaRotatingFrame = [0;0;pi/300];  % rotation of the moving frame wrt fixed frame
-    omegaFixed = [0;0;0];       % constant rotation rate measurement
-    accelFixed = [0.1;0;0];     % constant acceleration measurement
-    g = [0;0;0];                % Gravity
-    initialPosition = [0; 1; 0];% initial position in both frames
-    initialVelocity = [0;0;0];  % initial velocity in the rotating frame (ignoring the velocity due to the frame's rotation)
+    % Initial Conditions
+    omegaEarthSeconds = [0;0;7.292115e-5]; % Earth Rotation rate (rad/s)
+    radiusEarth = 6378.1*1000;             % radius of Earth is 6,378.1 km
+    
+    if useRealisticValues == 1
+        omegaRotatingFrame = omegaEarthSeconds; % rotation of the moving frame wrt fixed frame
+        omegaFixed = [0;0;0];       % constant rotation rate measurement
+        accelFixed = [-0.5;0.5;2];  % constant acceleration measurement
+        g = [0;0;0];                % Gravity
+        initialLongitude = 45;      % longitude in degrees
+        initialLatitude = 30;       % latitude in degrees
+        % initial position at some [longitude, latitude] location on earth's
+        % surface (approximating Earth as a sphere)
+        initialPosition = [radiusEarth*sind(initialLongitude);
+                           radiusEarth*cosd(initialLongitude);
+                           radiusEarth*sind(initialLatitude)];
+        initialVelocity = [0; 0; 0];% initial velocity of the body in the rotating frame,
+                                    % (ignoring the velocity due to the earth's rotation)
+    else
+        omegaRotatingFrame = [0;0;pi/300];  % rotation of the moving frame wrt fixed frame
+        omegaFixed = [0;0;0];       % constant rotation rate measurement
+        accelFixed = [0.1;0;0];     % constant acceleration measurement
+        g = [0;0;0];                % Gravity
+        initialPosition = [0; 1; 0];% initial position in both frames
+        initialVelocity = [0;0;0];  % initial velocity in the rotating frame (ignoring the velocity due to the frame's rotation)
+    end
 end
 
 % From Wikipedia Angular Velocity page, dr/dt = W*r, where r is
@@ -109,7 +110,7 @@ velocitiesEstimates = zeros(3,length(times));
 rotationsErrorVectors = zeros(3,length(times));   % Rotating/Fixed frame selected later
 
 changePoseRotatingFrame = Pose3.Expmap([omegaRotatingFrame*deltaT; 0; 0; 0]); % rotation of the rotating frame at each time step
-h = figure(1);
+h = figure;
 
 % Solver object
 isamParams = ISAM2Params;
@@ -146,7 +147,12 @@ fprintf('omegaCoriolisIMU = [%f %f %f]\n', omegaCoriolisIMU(1), omegaCoriolisIMU
 fprintf('omegaFixed = [%f %f %f]\n', omegaFixed(1), omegaFixed(2), omegaFixed(3));
 fprintf('accelFixed = [%f %f %f]\n', accelFixed(1), accelFixed(2), accelFixed(3));
 fprintf('Initial Velocity = [%f %f %f]\n', initialVelocity(1), initialVelocity(2), initialVelocity(3));
-fprintf('Initial Position = [%f %f %f]\n', initialPosition(1), initialPosition(2), initialPosition(3));
+if(exist('initialLatitude', 'var') && exist('initialLongitude', 'var'))
+    fprintf('Initial Position\n\t[Long, Lat] = [%f %f] degrees\n\tEFEC = [%f %f %f]\n', ...
+        initialLongitude, initialLatitude, initialPosition(1), initialPosition(2), initialPosition(3));
+else
+    fprintf('Initial Position = [%f %f %f]\n', initialPosition(1), initialPosition(2), initialPosition(3));
+end
 fprintf('\n');
 
 %% Main loop: iterate through the ground truth trajectory, add factors
