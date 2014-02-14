@@ -354,6 +354,12 @@ Matrix HessianFactor::information() const
 /* ************************************************************************* */
 VectorValues HessianFactor::hessianDiagonal() const {
   VectorValues d;
+  // Loop over all variables
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    // Get the diagonal block, and insert its diagonal
+    Matrix B = info_(j, j).selfadjointView();
+    d.insert(keys_[j],B.diagonal());
+  }
   return d;
 }
 

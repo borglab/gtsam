@@ -430,11 +430,11 @@ TEST(HessianFactor, combine) {
 /* ************************************************************************* */
 TEST(HessianFactor, gradientAtZero)
 {
-  Matrix G11 = (Matrix(1, 1) << 1.0);
-  Matrix G12 = (Matrix(1, 2) << 0.0, 0.0);
-  Matrix G22 = (Matrix(2, 2) << 1.0, 0.0, 0.0, 1.0);
-  Vector g1 = (Vector(1) << -7.0);
-  Vector g2 = (Vector(2) << -8.0, -9.0);
+  Matrix G11 = (Matrix(1, 1) << 1);
+  Matrix G12 = (Matrix(1, 2) << 0, 0);
+  Matrix G22 = (Matrix(2, 2) << 1, 0, 0, 1);
+  Vector g1 = (Vector(1) << -7);
+  Vector g2 = (Vector(2) << -8, -9);
   double f = 194;
 
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
@@ -446,6 +446,24 @@ TEST(HessianFactor, gradientAtZero)
   EXPECT(assert_equal(-A.transpose()*b, expectedG.vector(keys)));
   VectorValues actualG = factor.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, hessianDiagonal)
+{
+  Matrix G11 = (Matrix(1, 1) << 1);
+  Matrix G12 = (Matrix(1, 2) << 0, 0);
+  Matrix G22 = (Matrix(2, 2) << 1, 0, 0, 1);
+  Vector g1 = (Vector(1) << -7);
+  Vector g2 = (Vector(2) << -8, -9);
+  double f = 194;
+
+  HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
+
+  VectorValues expectLdiagonal; // Make explicit that diagonal is sum-squares of columns
+  expectLdiagonal.insert(0, (Vector(1) << 1));
+  expectLdiagonal.insert(1, (Vector(2) << 1,1));
+  EXPECT(assert_equal(expectLdiagonal, factor.hessianDiagonal()));
 }
 
 /* ************************************************************************* */
