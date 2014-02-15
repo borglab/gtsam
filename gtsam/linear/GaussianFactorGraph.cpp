@@ -200,8 +200,10 @@ namespace gtsam {
   VectorValues GaussianFactorGraph::hessianDiagonal() const {
     VectorValues d;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
-      VectorValues di = factor->hessianDiagonal();
-      d.addInPlace_(di);
+      if(factor){
+        VectorValues di = factor->hessianDiagonal();
+        d.addInPlace_(di);
+      }
     }
     return d;
   }
