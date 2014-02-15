@@ -447,7 +447,11 @@ namespace gtsam {
       size_t nj = Ab_(pos).cols();
       Vector dj(nj);
       for (size_t k = 0; k < nj; ++k) {
-        Vector column_k = model_->whiten(Ab_(pos).col(k));
+        Vector column_k;
+        if(model_)
+          column_k = model_->whiten(Ab_(pos).col(k));
+        else
+          column_k = Ab_(pos).col(k);
         dj(k) = dot(column_k,column_k);
       }
       d.insert(j,dj);
