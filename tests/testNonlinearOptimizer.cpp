@@ -257,7 +257,11 @@ TEST(NonlinearOptimizer, MoreOptimization) {
 
   // Try LM with diagonal damping
   LevenbergMarquardtParams params;
+  params.verbosityLM = gtsam::LevenbergMarquardtParams::DAMPED;
+  params.verbosity = gtsam::NonlinearOptimizerParams::ERROR;
   params.setDiagonalDamping(true);
+  params.setRelativeErrorTol(1e-9);
+  params.setAbsoluteErrorTol(1e-9);
   LevenbergMarquardtOptimizer optimizer(fg, init, params);
   EXPECT(assert_equal(expected, optimizer.optimize()));
 }
