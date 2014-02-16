@@ -184,10 +184,12 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (error < state_.error) {
         state_.values.swap(newValues);
         state_.error = error;
-        if(modelFidelity > params_.minModelFidelity)
+        if(modelFidelity > params_.minModelFidelity){
           decreaseLambda(modelFidelity);
-        else
-          increaseLambda(modelFidelity);
+        }else{
+          if(state_.lambda < params_.lambdaUpperBound)
+            increaseLambda(modelFidelity);
+        }
         break;
       } else {
         // Either we're not cautious, or the same lambda was worse than the current error.
