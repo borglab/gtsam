@@ -254,6 +254,12 @@ TEST(NonlinearOptimizer, MoreOptimization) {
   // Try LM and Dogleg
   EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init).optimize()));
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
+
+  // Try LM with diagonal damping
+  LevenbergMarquardtParams params;
+  params.setDiagonalDamping(true);
+  LevenbergMarquardtOptimizer optimizer(fg, init, params);
+  EXPECT(assert_equal(expected, optimizer.optimize()));
 }
 
 /* ************************************************************************* */
