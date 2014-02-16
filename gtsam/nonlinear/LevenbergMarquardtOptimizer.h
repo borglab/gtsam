@@ -52,10 +52,12 @@ public:
   bool disableInnerIterations; ///< If enabled inner iterations on the linearized system are performed
   double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
+  bool diagonalDamping; ///< if true, use diagonal of Hessian
 
   LevenbergMarquardtParams() :
-      lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(0.0),
-      verbosityLM(SILENT), disableInnerIterations(false), minModelFidelity(1e-3) {
+      lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(
+          0.0), verbosityLM(SILENT), disableInnerIterations(false), minModelFidelity(
+          1e-3), diagonalDamping(false) {
   }
   virtual ~LevenbergMarquardtParams() {
   }
@@ -80,6 +82,9 @@ public:
   inline std::string getLogFile() const {
     return logFile;
   }
+  inline bool getDiagonalDamping() const {
+    return diagonalDamping;
+  }
 
   inline void setlambdaInitial(double value) {
     lambdaInitial = value;
@@ -98,6 +103,9 @@ public:
   }
   inline void setLogFile(const std::string &s) {
     logFile = s;
+  }
+  inline void setDiagonalDamping(bool flag) {
+    diagonalDamping = flag;
   }
 };
 
