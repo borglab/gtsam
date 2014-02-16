@@ -205,8 +205,53 @@ TEST(JacobianFactor, error)
 }
 
 /* ************************************************************************* */
+TEST(JacobianFactor, matrices_NULL)
+{
+  // Make sure everything works with NULL noise model
+  JacobianFactor factor(simple::terms, simple::b);
+
+  Matrix jacobianExpected(3, 9);
+  jacobianExpected << simple::terms[0].second, simple::terms[1].second, simple::terms[2].second;
+  Vector rhsExpected = simple::b;
+  Matrix augmentedJacobianExpected(3, 10);
+  augmentedJacobianExpected << jacobianExpected, rhsExpected;
+
+  Matrix augmentedHessianExpected =
+    augmentedJacobianExpected.transpose() * augmentedJacobianExpected;
+
+  // Hessian
+  EXPECT(assert_equal(Matrix(augmentedHessianExpected.topLeftCorner(9,9)), factor.information()));
+  EXPECT(assert_equal(augmentedHessianExpected, factor.augmentedInformation()));
+
+  // Whitened Jacobian
+  EXPECT(assert_equal(jacobianExpected, factor.jacobian().first));
+  EXPECT(assert_equal(rhsExpected, factor.jacobian().second));
+  EXPECT(assert_equal(augmentedJacobianExpected, factor.augmentedJacobian()));
+
+  // Unwhitened Jacobian
+  EXPECT(assert_equal(jacobianExpected, factor.jacobianUnweighted().first));
+  EXPECT(assert_equal(rhsExpected, factor.jacobianUnweighted().second));
+  EXPECT(assert_equal(augmentedJacobianExpected, factor.augmentedJacobianUnweighted()));
+
+  // hessianDiagonal
+  VectorValues expectDiagonal;
+  expectDiagonal.insert(5, ones(3));
+  expectDiagonal.insert(10, 4*ones(3));
+  expectDiagonal.insert(15, 9*ones(3));
+  EXPECT(assert_equal(expectDiagonal, factor.hessianDiagonal()));
+
+  // hessianBlockDiagonal
+  map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();
+  LONGS_EQUAL(3,actualBD.size());
+  EXPECT(assert_equal(1*eye(3),actualBD[5]));
+  EXPECT(assert_equal(4*eye(3),actualBD[10]));
+  EXPECT(assert_equal(9*eye(3),actualBD[15]));
+}
+
+/* ************************************************************************* */
 TEST(JacobianFactor, matrices)
 {
+  // And now witgh a non-unit noise model
   JacobianFactor factor(simple::terms, simple::b, simple::noise);
 
   Matrix jacobianExpected(3, 9);

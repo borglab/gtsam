@@ -447,11 +447,8 @@ namespace gtsam {
       size_t nj = Ab_(pos).cols();
       Vector dj(nj);
       for (size_t k = 0; k < nj; ++k) {
-        Vector column_k;
-        if(model_)
-          column_k = model_->whiten(Ab_(pos).col(k));
-        else
-          column_k = Ab_(pos).col(k);
+        Vector column_k = Ab_(pos).col(k);
+        if (model_) column_k = model_->whiten(column_k);
         dj(k) = dot(column_k,column_k);
       }
       d.insert(j,dj);
@@ -465,7 +462,8 @@ namespace gtsam {
     for(size_t pos=0; pos<size(); ++pos)
     {
       Key j = keys_[pos];
-      Matrix Aj = model_->Whiten(Ab_(pos));
+      Matrix Aj = Ab_(pos);
+      if (model_) Aj = model_->Whiten(Aj);
       blocks.insert(make_pair(j,Aj.transpose()*Aj));
     }
     return blocks;
