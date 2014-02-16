@@ -118,6 +118,8 @@ void LevenbergMarquardtOptimizer::iterate() {
 
         size_t dim = key_value.value.dim();
         Matrix A = Matrix::Identity(dim, dim);
+        //Replace the identity matrix with diagonal of Hessian
+        A.diagonal()=diagHessian.at(key_value.key);
         Vector b = Vector::Zero(dim);
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
         dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
