@@ -138,8 +138,7 @@ TEST(JabobianFactor, Hessian_conversion) {
   JacobianFactor expected(0, (Matrix(2,4) <<
       1.2530,   2.1508,   -0.8779,  -1.8755,
            0,   2.5858,    0.4789,  -2.3943).finished(),
-      (Vector(2) << -6.2929, -5.7941).finished(),
-      noiseModel::Unit::Create(2));
+      (Vector(2) << -6.2929, -5.7941).finished());
 
   JacobianFactor actual(hessian);
 

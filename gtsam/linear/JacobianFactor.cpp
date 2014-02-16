@@ -131,7 +131,7 @@ namespace gtsam {
         Matrix::Zero(maxrank, Ab_.matrix().cols());
     // FIXME: replace with triangular system
     Ab_.rowEnd() = maxrank;
-    model_ = noiseModel::Unit::Create(maxrank);
+    model_ = SharedDiagonal(); // should be same as Unit::Create(maxrank);
   }
 
   /* ************************************************************************* */
