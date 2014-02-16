@@ -123,7 +123,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         Matrix A = Matrix::Identity(dim, dim);
         //Replace the identity matrix with diagonal of Hessian
         if (params_.diagonalDamping) {
-           A.diagonal() = hessianDiagonal.at(key_value.key)*state_.lambda;
+           A.diagonal() = hessianDiagonal.at(key_value.key);
            for (int aa=0; aa<dim; aa++)
            {
         	   A(aa,aa)=sqrt(A(aa,aa));
