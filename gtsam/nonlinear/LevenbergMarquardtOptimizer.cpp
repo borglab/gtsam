@@ -100,6 +100,9 @@ void LevenbergMarquardtOptimizer::iterate() {
   GaussianFactorGraph::shared_ptr linear = linearize();
 
   double modelFidelity = 0.0;
+  //Set two parameters as Ceres, will move out later
+  double min_diagonal_ = 1e-6;
+  double max_diagonal_ = 1e32;
 
   // Keep increasing lambda until we make make progress
   while (true) {
@@ -124,9 +127,9 @@ void LevenbergMarquardtOptimizer::iterate() {
         //Replace the identity matrix with diagonal of Hessian
         if (params_.diagonalDamping) {
            A.diagonal() = hessianDiagonal.at(key_value.key);
-           for (int aa=0; aa<dim; aa++)
+           for (size_t aa=0; aa<dim; aa++)
            {
-        	   A(aa,aa)=sqrt(A(aa,aa));
+        	   A(aa,aa)=sqrt(std::min(std::max(A(aa,aa), min_diagonal_), max_diagonal_));
            }
          }
         Vector b = Vector::Zero(dim);
