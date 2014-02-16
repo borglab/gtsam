@@ -129,7 +129,7 @@ void LevenbergMarquardtOptimizer::iterate() {
            A.diagonal() = hessianDiagonal.at(key_value.key);
            for (size_t aa=0; aa<dim; aa++)
            {
-        	   A(aa,aa)=sqrt(std::min(std::max(A(aa,aa), min_diagonal_), max_diagonal_));
+        	   A(aa,aa)= sqrt(std::min(std::max(A(aa,aa), min_diagonal_), max_diagonal_));
            }
          }
         Vector b = Vector::Zero(dim);

@@ -256,13 +256,14 @@ TEST(NonlinearOptimizer, MoreOptimization) {
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
 
   // Try LM with diagonal damping
+  Values initBetter;
+  initBetter.insert(0, Pose2(3,4,0));
+  initBetter.insert(1, Pose2(10,2,M_PI/3));
+  initBetter.insert(2, Pose2(11,7,M_PI/2));
+
   LevenbergMarquardtParams params;
-  params.verbosityLM = gtsam::LevenbergMarquardtParams::DAMPED;
-  params.verbosity = gtsam::NonlinearOptimizerParams::ERROR;
   params.setDiagonalDamping(true);
-  params.setRelativeErrorTol(1e-9);
-  params.setAbsoluteErrorTol(1e-9);
-  LevenbergMarquardtOptimizer optimizer(fg, init, params);
+  LevenbergMarquardtOptimizer optimizer(fg, initBetter, params);
   EXPECT(assert_equal(expected, optimizer.optimize()));
 }
 
