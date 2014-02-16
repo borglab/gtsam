@@ -114,15 +114,21 @@ void LevenbergMarquardtOptimizer::iterate() {
       dampedSystem.reserve(dampedSystem.size() + state_.values.size());
       // for each of the variables, add a prior
       VectorValues hessianDiagonal;
-      if (params_.diagonalDamping)
+      if (params_.diagonalDamping) {
         hessianDiagonal = linear->hessianDiagonal();
+      }
       BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
 
         size_t dim = key_value.value.dim();
         Matrix A = Matrix::Identity(dim, dim);
         //Replace the identity matrix with diagonal of Hessian
-        if (params_.diagonalDamping)
-          A.diagonal() = hessianDiagonal.at(key_value.key);
+        if (params_.diagonalDamping) {
+           A.diagonal() = hessianDiagonal.at(key_value.key)*state_.lambda;
+           for (int aa=0; aa<dim; aa++)
+           {
+        	   A(aa,aa)=sqrt(A(aa,aa));
+           }
+         }
         Vector b = Vector::Zero(dim);
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
         dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
