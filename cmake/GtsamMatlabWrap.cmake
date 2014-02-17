@@ -103,6 +103,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	# Add -shared or -static suffix to targets
 	set(correctedOtherLibraries "")
 	set(otherLibraryTargets "")
+    set(otherLibraryNontargets "")
 	foreach(lib ${moduleName} ${linkLibraries})
 		if(TARGET ${lib})
 			list(APPEND correctedOtherLibraries ${lib})
@@ -115,8 +116,20 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 			list(APPEND otherLibraryTargets ${lib}-static)
 		else()
 			list(APPEND correctedOtherLibraries ${lib})
+            list(APPEND otherLibraryNontargets ${lib})
 		endif()
 	endforeach()
+    
+    # Check libraries for conflicting versions built-in to MATLAB
+    set(dependentLibraries "")
+    if(NOT "${otherLibraryTargets}" STREQUAL "")
+        foreach(target ${otherLibraryTargets})
+            get_target_property(dependentLibrariesOne ${target} INTERFACE_LINK_LIBRARIES)
+            list(APPEND dependentLibraries ${dependentLibrariesOne})
+        endforeach()
+    endif()
+    list(APPEND dependentLibraries ${otherLibraryNontargets})
+    check_conflicting_libraries_internal("${dependentLibraries}")
 
 	# Set up generation of module source file
 	file(MAKE_DIRECTORY "${generated_files_path}")
@@ -203,6 +216,76 @@ function(install_wrapped_library_internal interfaceHeader)
 			LIBRARY DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}
 			RUNTIME DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH})
 	endif()
+endfunction()
+
+function(check_conflicting_libraries_internal libraries)
+    if(UNIX)
+        # Set path for matlab's built-in libraries
+        if(APPLE)
+            set(mxLibPath "${MATLAB_ROOT}/bin/maci64")
+        else()
+            if(CMAKE_CL_64)
+                set(mxLibPath "${MATLAB_ROOT}/bin/glnxa64")
+            else()
+                set(mxLibPath "${MATLAB_ROOT}/bin/glnx86")
+            endif()
+        endif()
+        
+        # List matlab's built-in libraries
+        file(GLOB matlabLibs RELATIVE "${mxLibPath}" "${mxLibPath}/lib*")
+        
+        # Convert to base names
+        set(matlabLibNames "")
+        foreach(lib ${matlabLibs})
+            get_filename_component(libName "${lib}" NAME_WE)
+            list(APPEND matlabLibNames "${libName}")
+        endforeach()
+        
+        # Get names of link libraries
+        set(linkLibNames "")
+        foreach(lib ${libraries})
+            string(FIND "${lib}" "/" slashPos)
+            if(NOT slashPos EQUAL -1)
+                # If the name is a path, just get the library name
+                get_filename_component(libName "${lib}" NAME_WE)
+                list(APPEND linkLibNames "${libName}")
+            else()
+                # It's not a path, so see if it looks like a filename
+                get_filename_component(ext "${lib}" EXT)
+                if(NOT "${ext}" STREQUAL "")
+                    # It's a filename, so get the base name
+                    get_filename_component(libName "${lib}" NAME_WE)
+                    list(APPEND linkLibNames "${libName}")
+                else()
+                    # It's not a filename so it must be a short name, add the "lib" prefix
+                    list(APPEND linkLibNames "lib${lib}")
+                endif()
+            endif()
+        endforeach()
+        
+        # Remove duplicates
+        list(REMOVE_DUPLICATES linkLibNames)
+        
+        set(conflictingLibs "")
+        foreach(lib ${linkLibNames})
+            list(FIND matlabLibNames "${lib}" libPos)
+            if(NOT libPos EQUAL -1)
+                if(NOT conflictingLibs STREQUAL "")
+                    set(conflictingLibs "${conflictingLibs}, ")
+                endif()
+                set(conflictingLibs "${conflictingLibs}${lib}")
+            endif()
+        endforeach()
+        
+        if(NOT "${conflictingLibs}" STREQUAL "")
+            message(WARNING "GTSAM links to the libraries [ ${conflictingLibs} ] on your system, but "
+                "MATLAB is distributed with its own versions of these libraries which may conflict. "
+                "If you get strange errors or crashes with the GTSAM MATLAB wrapper, move these "
+                "libraries out of MATLAB's built-in library directory, which is ${mxLibPath} on "
+                "your system.  MATLAB will usually still work with these libraries moved away, but "
+                "if not, you'll have to compile the static GTSAM MATLAB wrapper module.")
+        endif()
+    endif()
 endfunction()
 
 
