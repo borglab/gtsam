@@ -452,12 +452,12 @@ namespace gtsam {
             Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij
                 + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr),
                 // dfP/dPi
-                - Rot_i.matrix(),
+                - Rot_i.matrix() + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij*deltaTij,
                 // dfV/dRi
                 Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij
                     + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr),
                     // dfV/dPi
-                    Matrix3::Zero(),
+                    skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij,
                     // dfR/dRi
                     Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
                     // dfR/dPi
@@ -476,14 +476,13 @@ namespace gtsam {
             + skewSymmetric(omegaCoriolis_) * deltaTij * deltaTij,  // Coriolis term - we got rid of the 2 wrt ins paper
             // dfV/dVi
             - Matrix3::Identity()
-        + 2 * skewSymmetric(omegaCoriolis_) * deltaTij, // Coriolis term
-        // dfR/dVi
-        Matrix3::Zero(),
-        //dBiasAcc/dVi
-        Matrix3::Zero(),
-        //dBiasOmega/dVi
-        Matrix3::Zero();
-
+			+ 2 * skewSymmetric(omegaCoriolis_) * deltaTij, // Coriolis term
+			// dfR/dVi
+			Matrix3::Zero(),
+			//dBiasAcc/dVi
+			Matrix3::Zero(),
+			//dBiasOmega/dVi
+			Matrix3::Zero();
       }
 
       if(H3) {
@@ -564,6 +563,7 @@ namespace gtsam {
               + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr)
               - vel_i * deltaTij
               + skewSymmetric(omegaCoriolis_) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
+              + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * pos_i * deltaTij*deltaTij
               - 0.5 * gravity_ * deltaTij*deltaTij;
 
       const Vector3 fv =
@@ -571,6 +571,7 @@ namespace gtsam {
               + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr
               + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr)
               + 2 * skewSymmetric(omegaCoriolis_) * vel_i * deltaTij  // Coriolis term
+              + skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * pos_i * deltaTij // Coriolis term
               - gravity_ * deltaTij;
 
       const Vector3 fR = Rot3::Logmap(fRhat);
