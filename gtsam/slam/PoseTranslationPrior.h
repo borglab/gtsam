@@ -36,6 +36,9 @@ protected:
 
 public:
 
+  /** default constructor - only use for serialization */
+  PoseTranslationPrior() {}
+
   /** standard constructor */
   PoseTranslationPrior(Key key, const Translation& measured, const noiseModel::Base::shared_ptr& model)
   : Base(model, key), measured_(measured) {

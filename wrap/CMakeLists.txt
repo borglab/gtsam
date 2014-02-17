@@ -31,9 +31,5 @@ set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 install(FILES matlab.h DESTINATION include/wrap)
 
 # Build tests
-if (GTSAM_BUILD_TESTS)
-    set(wrap_local_libs wrap_lib ${WRAP_BOOST_LIBRARIES}) 
-    gtsam_add_subdir_tests("wrap" "${wrap_local_libs}" "${wrap_local_libs}" "") 
-endif(GTSAM_BUILD_TESTS)
-
+add_subdirectory(tests)
 

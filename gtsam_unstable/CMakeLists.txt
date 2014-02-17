@@ -105,7 +105,7 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	endif()
 
     # Wrap
-    wrap_and_install_library(gtsam_unstable.h "gtsam;gtsam_unstable" "" "${mexFlags}")
+    wrap_and_install_library(gtsam_unstable.h "gtsam" "" "${mexFlags}")
 endif(GTSAM_INSTALL_MATLAB_TOOLBOX)
 
 

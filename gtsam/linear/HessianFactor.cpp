@@ -42,7 +42,6 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/map.hpp>
-#include <boost/range/join.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
 #include <sstream>
@@ -179,7 +178,7 @@ DenseIndex _getSizeHF(const Vector& m) { return m.size(); }
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
     const std::vector<Vector>& gs, double f) :
-                        GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), ListOfOne((DenseIndex)1)))
+                        GaussianFactor(js), info_(gs | br::transformed(&_getSizeHF), true)
 {
   // Get the number of variables
   size_t variable_count = js.size();

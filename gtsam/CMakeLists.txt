@@ -156,5 +156,5 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	endif()
 
     # Wrap
-    wrap_and_install_library(../gtsam.h "gtsam;${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
+    wrap_and_install_library(../gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
 endif ()

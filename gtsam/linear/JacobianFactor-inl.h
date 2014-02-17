@@ -21,7 +21,6 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/join.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 #include <boost/foreach.hpp>
 
@@ -123,7 +122,7 @@ namespace gtsam {
     // matrices, then extract the number of columns e.g. dimensions in each matrix.  Then joins with
     // a single '1' to add a dimension for the b vector.
     {
-      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&internal::getColsJF), ListOfOne((DenseIndex)1)), b.size());
+      Ab_ = VerticalBlockMatrix(terms | transformed(&internal::getColsJF), b.size(), true);
     }
 
     // Check and add terms
