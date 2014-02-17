@@ -47,14 +47,14 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-numTests = 10
+numTests = 20
 for testInd=1:numTests
   navFrameRotating = 0;
   accelFixed = 2*rand(3,1)-ones(3,1);
   imuSimulator.coriolisExample
-  posFinError(testInd) = norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100
-  rotFinError(testInd) = norm(rotationsErrorVectors(:,end))
-  velFinError(testInd) =  norm(axisVelocityError(:,end))
+  posFinErrorFixed(testInd) = norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100
+  rotFinErrorFixed(testInd) = norm(rotationsErrorVectors(:,end))
+  velFinErrorFixed(testInd) =  norm(axisVelocityError(:,end))
   % Run the same initial conditions but navigating in the rotating frame
   navFrameRotating = 1;
   imuSimulator.coriolisExample
@@ -62,5 +62,10 @@ for testInd=1:numTests
   rotFinErrorRot(testInd) = norm(rotationsErrorVectors(:,end))
   velFinErrorRot(testInd) =  norm(axisVelocityError(:,end))
 end
+
+mean(posFinErrorFixed)
+max(posFinErrorFixed)
+
+box(posFinErrorFixed)
 
 
