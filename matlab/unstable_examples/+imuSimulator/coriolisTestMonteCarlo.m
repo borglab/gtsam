@@ -49,13 +49,24 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 numTests = 20
 for testInd=1:numTests
+  omegaCoriolisIMU = [0;0;0];
   navFrameRotating = 0;
   accelFixed = 2*rand(3,1)-ones(3,1);
   imuSimulator.coriolisExample
   posFinErrorFixed(testInd) = norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100
   rotFinErrorFixed(testInd) = norm(rotationsErrorVectors(:,end))
   velFinErrorFixed(testInd) =  norm(axisVelocityError(:,end))
+  
   % Run the same initial conditions but navigating in the rotating frame
+-->  enable coriolis effect by setting:omegaCoriolisIMU = omegaRotatingFrame;
+  navFrameRotating = 1;
+  imuSimulator.coriolisExample
+  posFinErrorRot(testInd) = norm(axisPositionsError(:,end))/trajLen*100
+  rotFinErrorRot(testInd) = norm(rotationsErrorVectors(:,end))
+  velFinErrorRot(testInd) =  norm(axisVelocityError(:,end))
+  
+  % Run the same initial conditions but navigating in the rotating frame
+-->  disable coriolis effect by setting: omegaCoriolisIMU = [0;0;0];
   navFrameRotating = 1;
   imuSimulator.coriolisExample
   posFinErrorRot(testInd) = norm(axisPositionsError(:,end))/trajLen*100

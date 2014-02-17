@@ -60,6 +60,12 @@ if ~exist('externalCoriolisConfiguration', 'var')
         initialPosition = [0; 1; 0];% initial position in both frames
         initialVelocity = [0;0;0];  % initial velocity in the rotating frame (ignoring the velocity due to the frame's rotation)
     end
+    
+    if navFrameRotating == 0
+      omegaCoriolisIMU = [0;0;0];
+    else
+      omegaCoriolisIMU = omegaRotatingFrame;
+    end
 end
 
 % From Wikipedia Angular Velocity page, dr/dt = W*r, where r is
@@ -72,12 +78,6 @@ angularVelocityTensor = [         0             -omegaRotatingFrame(3)  omegaRot
 initialVelocityFixedFrame = angularVelocityTensor * initialPosition + initialVelocity;
 initialVelocityRotatingFrame = initialVelocity;
                      
-if navFrameRotating == 0
-    omegaCoriolisIMU = [0;0;0];
-else
-    omegaCoriolisIMU = omegaRotatingFrame;
-end
-
 %
 currentRotatingFrame = Pose3;   % rotating frame initially coincides with fixed frame at t=0
 currentPoseFixedGT = Pose3(Rot3, Point3(initialPosition));
