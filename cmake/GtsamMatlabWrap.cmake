@@ -48,7 +48,7 @@ set(MATLAB_ROOT "${MATLAB_ROOT}" CACHE PATH "Path to MATLAB installation root (e
 #   extraIncludeDirs : Extra include directories, in addition to those already passed to include_directories(...)
 #   extraMexFlags    : Any additional compiler flags
 function(wrap_and_install_library interfaceHeader linkLibraries extraIncludeDirs extraMexFlags)
-	wrap_library_internal("${interfaceHeader}" "${otherLibraries}" "${extraIncludeDirs}" "${mexFlags}")
+	wrap_library_internal("${interfaceHeader}" "${linkLibraries}" "${extraIncludeDirs}" "${mexFlags}")
 	install_wrapped_library_internal("${interfaceHeader}")
 endfunction()
 
@@ -103,7 +103,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	# Add -shared or -static suffix to targets
 	set(correctedOtherLibraries "")
 	set(otherLibraryTargets "")
-	foreach(lib ${moduleName} ${otherLibraries})
+	foreach(lib ${moduleName} ${linkLibraries})
 		if(TARGET ${lib})
 			list(APPEND correctedOtherLibraries ${lib})
 			list(APPEND otherLibraryTargets ${lib})
