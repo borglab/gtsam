@@ -48,21 +48,19 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 numTests = 10
-% for testInd=1:numTests
-%   accelFixed = 2*rand(3,1)-ones(3,1);
-%   imuSimulator.coriolisExample
-%   posFinError(testInd) = norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100
-%   rotFinError(testInd) = norm(rotationsErrorVectors(:,end))
-%   velFinError(testInd) =  norm(axisVelocityError(:,end))
-% end
-
-% Run the same initial conditions but navigating in the rotating frame
-navFrameRotating = 1;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for testInd=1:numTests
+  navFrameRotating = 0;
   accelFixed = 2*rand(3,1)-ones(3,1);
+  imuSimulator.coriolisExample
+  posFinError(testInd) = norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100
+  rotFinError(testInd) = norm(rotationsErrorVectors(:,end))
+  velFinError(testInd) =  norm(axisVelocityError(:,end))
+  % Run the same initial conditions but navigating in the rotating frame
+  navFrameRotating = 1;
   imuSimulator.coriolisExample
   posFinErrorRot(testInd) = norm(axisPositionsError(:,end))/trajLen*100
   rotFinErrorRot(testInd) = norm(rotationsErrorVectors(:,end))
   velFinErrorRot(testInd) =  norm(axisVelocityError(:,end))
 end
+
+
