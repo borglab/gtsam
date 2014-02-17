@@ -116,9 +116,9 @@ void LevenbergMarquardtOptimizer::iterate() {
       double sigma = 1.0 / std::sqrt(state_.lambda);
       dampedSystem.reserve(dampedSystem.size() + state_.values.size());
       // for each of the variables, add a prior
-      VectorValues hessianDiagonal;
-      if (params_.diagonalDamping) {
-        hessianDiagonal = linear->hessianDiagonal();
+      // Only retrieve diagonal vector when reuse_diagonal = false
+      if (params_.diagonalDamping && params_.reuse_diagonal_==false) {
+        state_.hessianDiagonal = linear->hessianDiagonal();
       }
       BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
 
@@ -126,10 +126,12 @@ void LevenbergMarquardtOptimizer::iterate() {
         Matrix A = Matrix::Identity(dim, dim);
         //Replace the identity matrix with diagonal of Hessian
         if (params_.diagonalDamping) {
-           A.diagonal() = hessianDiagonal.at(key_value.key);
+           A.diagonal() = state_.hessianDiagonal.at(key_value.key);
            for (size_t aa=0; aa<dim; aa++)
            {
-        	   A(aa,aa)= sqrt(std::min(std::max(A(aa,aa), min_diagonal_), max_diagonal_));
+        	   if (params_.reuse_diagonal_==false)
+        		   A(aa,aa)= std::min(std::max(A(aa,aa), min_diagonal_), max_diagonal_);
+        	   A(aa,aa)= sqrt(A(aa,aa));
            }
          }
         Vector b = Vector::Zero(dim);

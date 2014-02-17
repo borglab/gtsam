@@ -53,11 +53,12 @@ public:
   double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
   bool diagonalDamping; ///< if true, use diagonal of Hessian
+  bool reuse_diagonal_; //an additional option in Ceres for diagonalDamping (related to efficiency)
 
   LevenbergMarquardtParams() :
       lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(
           0.0), verbosityLM(SILENT), disableInnerIterations(false), minModelFidelity(
-          1e-3), diagonalDamping(false) {
+          1e-3), diagonalDamping(false), reuse_diagonal_(false) {
   }
   virtual ~LevenbergMarquardtParams() {
   }
@@ -118,6 +119,7 @@ public:
   double lambda;
   int totalNumberInnerIterations; // The total number of inner iterations in the optimization (for each iteration, LM may try multiple iterations with different lambdas)
   boost::posix_time::ptime startTime;
+  VectorValues hessianDiagonal; //only update hessianDiagonal when reuse_diagonal_ = false
 
   LevenbergMarquardtState() {
     initTime();
