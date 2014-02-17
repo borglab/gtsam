@@ -66,6 +66,10 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "              lambdaInitial: " << lambdaInitial << "\n";
   std::cout << "               lambdaFactor: " << lambdaFactor << "\n";
   std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
+  std::cout << "           lambdaLowerBound: " << lambdaLowerBound << "\n";
+  std::cout << "     disableInnerIterations: " << disableInnerIterations << "\n";
+  std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
+  std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
   std::cout << "                verbosityLM: " << verbosityLMTranslator(verbosityLM) << "\n";
   std::cout.flush();
 }
