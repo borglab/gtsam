@@ -266,11 +266,6 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) :
 }
 
 /* ************************************************************************* */
-namespace {
-DenseIndex _dimFromScatterEntry(const Scatter::value_type& key_slotentry) {
-  return key_slotentry.second.dimension; } }
-
-/* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
     boost::optional<const Scatter&> scatter)
 {
