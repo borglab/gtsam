@@ -559,14 +559,6 @@ public:
   /** Access the current linearization point */
   const Values& getLinearizationPoint() const { return theta_; }
 
-  /// Compute the current solution.  This is the "standard" function for computing the solution that
-  /// uses:
-  ///   - Partial relinearization and backsubstitution using the thresholds provided in ISAM2Params.
-  ///   - Dogleg trust-region step, if enabled in ISAM2Params.
-  ///   - Equivalent to getLinearizationPoint().retract(getDelta())
-  /// The solution returned is in general not the same as that returned by getLinearizationPoint().
-  Values optimize() const;
-
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
