@@ -49,13 +49,14 @@ LevenbergMarquardtParams::VerbosityLM LevenbergMarquardtParams::verbosityLMTrans
 std::string LevenbergMarquardtParams::verbosityLMTranslator(VerbosityLM value) const {
   std::string s;
   switch (value) {
-  case LevenbergMarquardtParams::SILENT:    s = "SILENT" ;     break;
-  case LevenbergMarquardtParams::LAMBDA:    s = "LAMBDA" ;     break;
-  case LevenbergMarquardtParams::TRYLAMBDA: s = "TRYLAMBDA" ;  break;
-  case LevenbergMarquardtParams::TRYCONFIG: s = "TRYCONFIG" ;  break;
-  case LevenbergMarquardtParams::TRYDELTA:  s = "TRYDELTA" ;   break;
-  case LevenbergMarquardtParams::DAMPED:    s = "DAMPED" ;     break;
-  default:                                  s = "UNDEFINED" ;  break;
+  case LevenbergMarquardtParams::SILENT:         s = "SILENT" ;     break;
+  case LevenbergMarquardtParams::TERMINATION:    s = "TERMINATION" ;     break;
+  case LevenbergMarquardtParams::LAMBDA:         s = "LAMBDA" ;     break;
+  case LevenbergMarquardtParams::TRYLAMBDA:      s = "TRYLAMBDA" ;  break;
+  case LevenbergMarquardtParams::TRYCONFIG:      s = "TRYCONFIG" ;  break;
+  case LevenbergMarquardtParams::TRYDELTA:       s = "TRYDELTA" ;   break;
+  case LevenbergMarquardtParams::DAMPED:         s = "DAMPED" ;     break;
+  default:                                       s = "UNDEFINED" ;  break;
   }
   return s;
 }
@@ -203,7 +204,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         // The more adventurous lambda was worse too, so make lambda more conservative
         // and keep the same values.
         if(state_.lambda >= params_.lambdaUpperBound) {
-          if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
+          if(nloVerbosity >= NonlinearOptimizerParams::TERMINATION)
             cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
           break;
         } else {
@@ -212,20 +213,24 @@ void LevenbergMarquardtOptimizer::iterate() {
 
           increaseLambda(modelFidelity);
         }
-        // bool converged = checkConvergence(_params().relativeErrorTol, _params().absoluteErrorTol, _params().errorTol, state_.error, error);
-        // cout << " Inner iteration - converged " << converged << endl;
+//        bool converged = checkConvergence(_params().relativeErrorTol, _params().absoluteErrorTol, _params().errorTol, state_.error, error);
+//        cout << " Inner iteration - converged " << converged << endl;
+//        cout << "current error " << state_.error << endl;
+//        cout << "new error " <<  error << endl;
+//        cout << "costChange " << costChange << endl;
+//        cout << "linearizedCostChange " << linearizedCostChange << endl;
+//        cout << "modelFidelity " << modelFidelity << endl;
       }
     } catch (IndeterminantLinearSystemException& e) {
       (void) e; // Prevent unused variable warning
-      if(lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
+      if(lmVerbosity >= LevenbergMarquardtParams::TERMINATION)
         cout << "Negative matrix, increasing lambda" << endl;
 
-      // cout << "failed to solve current system" << endl;
       // Either we're not cautious, or the same lambda was worse than the current error.
       // The more adventurous lambda was worse too, so make lambda more conservative
       // and keep the same values.
       if(state_.lambda >= params_.lambdaUpperBound) {
-        if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
+        if(nloVerbosity >= NonlinearOptimizerParams::TERMINATION)
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
         break;
       } else {

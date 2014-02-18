@@ -35,7 +35,7 @@ class GTSAM_EXPORT LevenbergMarquardtParams: public NonlinearOptimizerParams {
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
   enum VerbosityLM {
-    SILENT = 0, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
+    SILENT = 0, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
   };
 
 private:
