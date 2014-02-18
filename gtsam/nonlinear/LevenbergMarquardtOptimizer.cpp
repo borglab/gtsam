@@ -99,7 +99,7 @@ void LevenbergMarquardtOptimizer::iterate() {
   const LevenbergMarquardtParams::VerbosityLM lmVerbosity = params_.verbosityLM;
 
   // Linearize graph
-  if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
+  if(lmVerbosity >= LevenbergMarquardtParams::DAMPED)
     cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
 
@@ -172,7 +172,8 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       // create new optimization state with more adventurous lambda
       gttic (compute_error);
-      if(nloVerbosity >= NonlinearOptimizerParams::ERROR) cout << "calculating error" << endl;
+
+      if(lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "calculating error" << endl;
       double error = graph_.error(newValues);
       gttoc(compute_error);
 
@@ -211,11 +212,15 @@ void LevenbergMarquardtOptimizer::iterate() {
 
           increaseLambda(modelFidelity);
         }
+        // bool converged = checkConvergence(_params().relativeErrorTol, _params().absoluteErrorTol, _params().errorTol, state_.error, error);
+        // cout << " Inner iteration - converged " << converged << endl;
       }
     } catch (IndeterminantLinearSystemException& e) {
       (void) e; // Prevent unused variable warning
       if(lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
         cout << "Negative matrix, increasing lambda" << endl;
+
+      // cout << "failed to solve current system" << endl;
       // Either we're not cautious, or the same lambda was worse than the current error.
       // The more adventurous lambda was worse too, so make lambda more conservative
       // and keep the same values.

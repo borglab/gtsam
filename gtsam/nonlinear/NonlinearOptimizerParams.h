@@ -34,7 +34,7 @@ class GTSAM_EXPORT NonlinearOptimizerParams {
 public:
   /** See NonlinearOptimizerParams::verbosity */
   enum Verbosity {
-    SILENT, ERROR, VALUES, DELTA, LINEAR
+    SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR
   };
 
   int maxIterations; ///< The maximum iterations to stop iterating (default 100)
