@@ -13,6 +13,8 @@ useRealisticValues = 1;     % use reaslist values for initial position and earth
 record_movie = 0;           % 0 = do not record movie
                             % 1 = record movie of the trajectories. One
                             % frame per time step (15 fps)
+incrementalPlotting = 0;
+estimationEnabled = 1;
 
 %% Scenario Configuration                            
 deltaT = 0.01;              % timestep
@@ -28,15 +30,16 @@ if useRealisticValues == 1
     omegaFixed = [0;0;0];       % constant rotation rate measurement
     accelFixed = [0.1;0;1];  % constant acceleration measurement
     g = [0;0;0];                % Gravity
-    initialLongitude = -45;      % longitude in degrees
+    
+    initialLongitude = 45;      % longitude in degrees
     initialLatitude = 30;       % latitude in degrees
-    % initial position at some [longitude, latitude] location on earth's
-    % surface (approximating Earth as a sphere)
-    initialPosition = [radiusEarth*sind(initialLongitude);
-                       radiusEarth*cosd(initialLongitude);
-                       radiusEarth*sind(initialLatitude)];
+    initialAltitude = 0;        % Altitude above Earth's surface in meters
+    [x, y, z] = sph2cart(initialLongitude * pi/180, initialLatitude * pi/180, radiusEarth + initialAltitude);
+    initialPosition = [x; y; z];
+    
     initialVelocity = [0; 0; 0];% initial velocity of the body in the rotating frame,
                                 % (ignoring the velocity due to the earth's rotation)
+                                
 else
     omegaRotatingFrame = [0;0;pi/300];  % rotation of the moving frame wrt fixed frame
     omegaFixed = [0;0;0];       % constant rotation rate measurement
@@ -47,36 +50,106 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-numTests = 20
-for testInd=1:numTests
-  omegaCoriolisIMU = [0;0;0];
-  navFrameRotating = 0;
-  accelFixed = 2*rand(3,1)-ones(3,1);
-  imuSimulator.coriolisExample
-  posFinErrorFixed(testInd) = norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100
-  rotFinErrorFixed(testInd) = norm(rotationsErrorVectors(:,end))
-  velFinErrorFixed(testInd) =  norm(axisVelocityError(:,end))
-  
-  % Run the same initial conditions but navigating in the rotating frame
--->  enable coriolis effect by setting:omegaCoriolisIMU = omegaRotatingFrame;
-  navFrameRotating = 1;
-  imuSimulator.coriolisExample
-  posFinErrorRot(testInd) = norm(axisPositionsError(:,end))/trajLen*100
-  rotFinErrorRot(testInd) = norm(rotationsErrorVectors(:,end))
-  velFinErrorRot(testInd) =  norm(axisVelocityError(:,end))
-  
-  % Run the same initial conditions but navigating in the rotating frame
--->  disable coriolis effect by setting: omegaCoriolisIMU = [0;0;0];
-  navFrameRotating = 1;
-  imuSimulator.coriolisExample
-  posFinErrorRot(testInd) = norm(axisPositionsError(:,end))/trajLen*100
-  rotFinErrorRot(testInd) = norm(rotationsErrorVectors(:,end))
-  velFinErrorRot(testInd) =  norm(axisVelocityError(:,end))
+
+% Run tests with randomly generated initialPosition and accelFixed values
+% For each initial position, a number of acceleration vectors are
+% generated. For each (initialPosition, accelFixed) pair, the coriolis test
+% is run for the following 3 scenarios
+%   - Navigation performed in fixed frame
+%   - Navigation performed in rotating frame, including the coriolis effect
+%   - Navigation performed in rotating frame, ignoring coriolis effect
+%
+
+%% Testing configuration
+numPosTests = 10;
+numAccelTests = 20;
+totalNumTests = numPosTests * numAccelTests;
+
+% Storage variables
+posFinErrorFixed = zeros(numPosTests, numAccelTests);
+rotFinErrorFixed = zeros(numPosTests, numAccelTests);
+velFinErrorFixed = zeros(numPosTests, numAccelTests);
+
+posFinErrorRotCoriolis = zeros(numPosTests, numAccelTests);
+rotFinErrorRotCoriolis = zeros(numPosTests, numAccelTests);
+velFinErrorRotCoriolis = zeros(numPosTests, numAccelTests);
+
+posFinErrorRot = zeros(numPosTests, numAccelTests);
+rotFinErrorRot = zeros(numPosTests, numAccelTests);
+velFinErrorRot = zeros(numPosTests, numAccelTests);
+
+
+numErrors = 0;
+testIndPos = 1;
+testIndAccel = 1;
+while testIndPos <= numPosTests
+    %generate a random initial position vector
+    initialLongitude = rand()*360 - 180;    % longitude in degrees (-90 to 90)
+    initialLatitude = rand()*180 - 90;      % latitude in degrees (-180 to 180)
+    initialAltitude = rand()*150;           % Altitude above Earth's surface in meters (0-150)
+    [x, y, z] = sph2cart(initialLongitude * pi/180, initialLatitude * pi/180, radiusEarth + initialAltitude);
+    initialPosition = [x; y; z];
+    
+    while testIndAccel <= numAccelTests
+        [testIndPos testIndAccel]
+        % generate a random acceleration vector
+        accelFixed = 2*rand(3,1)-ones(3,1);
+        
+        try
+            omegaCoriolisIMU = [0;0;0];
+            navFrameRotating = 0;
+            imuSimulator.coriolisExample
+            posFinErrorFixed(testIndPos, testIndAccel) = norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100;
+            rotFinErrorFixed(testIndPos, testIndAccel) = norm(rotationsErrorVectors(:,end));
+            velFinErrorFixed(testIndPos, testIndAccel) =  norm(axisVelocityError(:,end));
+            
+            close all;
+            
+            % Run the same initial conditions but navigating in the rotating frame
+            %  enable coriolis effect by setting:
+            omegaCoriolisIMU = omegaRotatingFrame;
+            navFrameRotating = 1;
+            imuSimulator.coriolisExample
+            posFinErrorRotCoriolis(testIndPos, testIndAccel) = norm(axisPositionsError(:,end))/trajLen*100;
+            rotFinErrorRotCoriolis(testIndPos, testIndAccel) = norm(rotationsErrorVectors(:,end));
+            velFinErrorRotCoriolis(testIndPos, testIndAccel) =  norm(axisVelocityError(:,end));
+            
+            close all;
+            
+            % Run the same initial conditions but navigating in the rotating frame
+            % disable coriolis effect by setting:
+            omegaCoriolisIMU = [0;0;0];
+            navFrameRotating = 1;
+            imuSimulator.coriolisExample
+            posFinErrorRot(testIndPos, testIndAccel) = norm(axisPositionsError(:,end))/trajLen*100;
+            rotFinErrorRot(testIndPos, testIndAccel) = norm(rotationsErrorVectors(:,end));
+            velFinErrorRot(testIndPos, testIndAccel) =  norm(axisVelocityError(:,end));
+            
+            close all;
+        catch
+            numErrors = numErrors + 1;
+            fprintf('*ERROR*');
+            fprintf('%d tests cancelled due to errors\n', numErrors);
+            fprintf('restarting test with new accelFixed');
+            testIndAccel = testIndAccel - 1;
+        end
+        testIndAccel = testIndAccel + 1;
+    end
+    testIndAccel = 1;
+    testIndPos = testIndPos + 1;
 end
+fprintf('\nTotal: %d tests cancelled due to errors\n', numErrors);
 
-mean(posFinErrorFixed)
-max(posFinErrorFixed)
+mean(posFinErrorFixed);
+max(posFinErrorFixed);
+% box(posFinErrorFixed);
 
-box(posFinErrorFixed)
+mean(posFinErrorRotCoriolis);
+max(posFinErrorRotCoriolis);
+% box(posFinErrorRotCoriolis);
+
+mean(posFinErrorRot);
+max(posFinErrorRot);
+% box(posFinErrorRot);
 
 

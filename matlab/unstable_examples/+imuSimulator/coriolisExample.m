@@ -12,8 +12,6 @@ import gtsam.*;
 
 addpath(genpath('./Libraries'))
 
-estimationEnabled = 1
-
 % Check for an external configuarion. This is useful for setting up
 % multiple tests
 if ~exist('externalCoriolisConfiguration', 'var')
@@ -21,13 +19,16 @@ if ~exist('externalCoriolisConfiguration', 'var')
     clear all
     close all
     %% General configuration
-    navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
+    navFrameRotating = 0;       % 0 = perform navigation in the fixed frame
                                 % 1 = perform navigation in the rotating frame
     IMU_type = 1;               % IMU type 1 or type 2
     useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
     record_movie = 0;           % 0 = do not record movie
                                 % 1 = record movie of the trajectories. One
-                                % frame per time step (15 fps
+                                % frame per time step (15 fps)
+    incrementalPlotting = 0;    % turn incremental plotting on and off. Turning plotting off increases
+                                % speed for batch testing
+    estimationEnabled = 1;
 
     %% Scenario Configuration                            
     deltaT = 0.01;              % timestep
@@ -43,21 +44,21 @@ if ~exist('externalCoriolisConfiguration', 'var')
         omegaFixed = [0;0;0];       % constant rotation rate measurement
         accelFixed = [-0.5;0.5;2];  % constant acceleration measurement
         g = [0;0;0];                % Gravity
-        initialLongitude = 45;      % longitude in degrees
-        initialLatitude = 30;       % latitude in degrees
         % initial position at some [longitude, latitude] location on earth's
         % surface (approximating Earth as a sphere)
-        initialPosition = [radiusEarth*sind(initialLongitude);
-                           radiusEarth*cosd(initialLongitude);
-                           radiusEarth*sind(initialLatitude)];
+        initialLongitude = 45;      % longitude in degrees
+        initialLatitude = 30;       % latitude in degrees
+        initialAltitude = 0;        % Altitude above Earth's surface in meters
+        [x, y, z] = sph2cart(initialLongitude * pi/180, initialLatitude * pi/180, radiusEarth + initialAltitude);
+        initialPosition = [x; y; z];
         initialVelocity = [0; 0; 0];% initial velocity of the body in the rotating frame,
                                     % (ignoring the velocity due to the earth's rotation)
     else
-        omegaRotatingFrame = [0;0;pi/300];  % rotation of the moving frame wrt fixed frame
+        omegaRotatingFrame = [0;0;pi/5];  % rotation of the moving frame wrt fixed frame
         omegaFixed = [0;0;0];       % constant rotation rate measurement
-        accelFixed = [1;0;0];     % constant acceleration measurement
+        accelFixed = [0.5;0.5;0.5];     % constant acceleration measurement
         g = [0;0;0];                % Gravity
-        initialPosition = [0; 1; 0];% initial position in both frames
+        initialPosition = [1; 0; 0];% initial position in both frames
         initialVelocity = [0;0;0];  % initial velocity in the rotating frame (ignoring the velocity due to the frame's rotation)
     end
     
@@ -67,6 +68,8 @@ if ~exist('externalCoriolisConfiguration', 'var')
       omegaCoriolisIMU = omegaRotatingFrame;
     end
 end
+
+
 
 % From Wikipedia Angular Velocity page, dr/dt = W*r, where r is
 % position vector and W is angular velocity tensor
@@ -139,6 +142,7 @@ if navFrameRotating == 0
 else
     fprintf('Performing navigation in the Rotating frame.\n');
 end
+fprintf('Estimation Enabled = %d\n', estimationEnabled);
 fprintf('IMU_type = %d\n', IMU_type);
 fprintf('Record Movie = %d\n', record_movie);
 fprintf('Realistic Values = %d\n', useRealisticValues);
@@ -223,6 +227,8 @@ for i = 1:length(times)
         %currentVelocityRotatingGT = currentRot3RotatingGT.unrotate(Point3(currentVelocityFixedGT));
         % TODO: check if initial velocity in rotating frame is correct
         currentVelocityRotatingGT = (currentPositionRotatingGT-previousPositionRotatingGT)/deltaT;
+        %currentVelocityRotatingGT = (currentPositionRotatingGT - previousPositionRotatingGT ...
+        %    - 0.5 * accelFixed * deltaT * deltaT) / deltaT + accelFixed * deltaT;
         
         % Store GT (ground truth) poses
         positionsInFixedGT(:,i) = currentPoseFixedGT.translation.vector;
@@ -315,35 +321,38 @@ for i = 1:length(times)
     end
     
     %% incremental plotting for animation (ground truth)
-    figure(h)
-    %plot_trajectory(currentRotatingFrameForPlot(i),1, '-k', 'Rotating Frame',0.1,0.75,1)
-    %hold on;
-    plot3(positionsInFixedGT(1,1:i), positionsInFixedGT(2,1:i), positionsInFixedGT(3,1:i),'r');
-    hold on;
-    plot3(positionsInFixedGT(1,1), positionsInFixedGT(2,1), positionsInFixedGT(3,1), 'xr');
-    plot3(positionsInFixedGT(1,i), positionsInFixedGT(2,i), positionsInFixedGT(3,i), 'or');
-    
-    plot3(positionsInRotatingGT(1,1:i), positionsInRotatingGT(2,1:i), positionsInRotatingGT(3,1:i), 'g');
-    plot3(positionsInRotatingGT(1,1), positionsInRotatingGT(2,1), positionsInRotatingGT(3,1), 'xg');
-    plot3(positionsInRotatingGT(1,i), positionsInRotatingGT(2,i), positionsInRotatingGT(3,i), 'og');
-    
-    if(estimationEnabled)
-      plot3(positionsEstimates(1,1:i), positionsEstimates(2,1:i), positionsEstimates(3,1:i), 'b');
-      plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xb');
-      plot3(positionsEstimates(1,i), positionsEstimates(2,i), positionsEstimates(3,i), 'ob');
-    end
-    
-    hold off;
-    xlabel('X axis')
-    ylabel('Y axis')
-    zlabel('Z axis')
-    axis equal
-    grid on;
-    %pause(0.1);
-    
-    if record_movie == 1
-        frame = getframe(gcf); 
-        writeVideo(writerObj,frame);
+    if incrementalPlotting == 1
+        figure(h)
+        %plot_trajectory(currentRotatingFrameForPlot(i),1, '-k', 'Rotating Frame',0.1,0.75,1)
+        %hold on;
+        plot3(positionsInFixedGT(1,1:i), positionsInFixedGT(2,1:i), positionsInFixedGT(3,1:i),'r');
+        hold on;
+        plot3(positionsInFixedGT(1,1), positionsInFixedGT(2,1), positionsInFixedGT(3,1), 'xr');
+        plot3(positionsInFixedGT(1,i), positionsInFixedGT(2,i), positionsInFixedGT(3,i), 'or');
+
+        plot3(positionsInRotatingGT(1,1:i), positionsInRotatingGT(2,1:i), positionsInRotatingGT(3,1:i), 'g');
+        plot3(positionsInRotatingGT(1,1), positionsInRotatingGT(2,1), positionsInRotatingGT(3,1), 'xg');
+        plot3(positionsInRotatingGT(1,i), positionsInRotatingGT(2,i), positionsInRotatingGT(3,i), 'og');
+
+        if(estimationEnabled)
+          plot3(positionsEstimates(1,1:i), positionsEstimates(2,1:i), positionsEstimates(3,1:i), 'b');
+          plot3(positionsEstimates(1,1), positionsEstimates(2,1), positionsEstimates(3,1), 'xb');
+          plot3(positionsEstimates(1,i), positionsEstimates(2,i), positionsEstimates(3,i), 'ob');
+        end
+
+        hold off;
+        xlabel('X axis')
+        ylabel('Y axis')
+        zlabel('Z axis')
+        axis equal
+        grid on;
+        %pause(0.1);
+
+        % record frames for movie
+        if record_movie == 1
+            frame = getframe(gcf); 
+            writeVideo(writerObj,frame);
+        end
     end
 end
 
@@ -455,7 +464,11 @@ fprintf('Final rotation error = %f [rads]\n', norm(rotationsErrorVectors(:,end))
 %% Plot final trajectories
 figure
 [x,y,z] = sphere(30);
-mesh(radiusEarth*x,radiusEarth*y, radiusEarth*z) % where (a,b,c) is center of the sphere  % sphere for reference
+if useRealisticValues
+    mesh(radiusEarth*x,radiusEarth*y, radiusEarth*z) % where (a,b,c) is center of the sphere  % sphere for reference
+else
+    mesh(x,y,z);
+end
 hold on;
 axis equal
 % Ground truth trajectory in fixed reference frame
