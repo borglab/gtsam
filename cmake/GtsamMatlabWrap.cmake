@@ -40,13 +40,21 @@ set(MATLAB_ROOT "${MATLAB_ROOT}" CACHE PATH "Path to MATLAB installation root (e
 
 
 # User-friendly wrapping function.  Builds a mex module from the provided
-# interfaceHeader.  For example, for the interface header /path/to/gtsam.h,
+# interfaceHeader.  For example, for the interface header gtsam.h,
 # this will build the wrap module 'gtsam'.
-# Params:
-#   interfaceHeader  : Absolute or relative path to the interface definition file
-#   linkLibraries    : All dependent CMake target names, library names, or full library paths
-#   extraIncludeDirs : Extra include directories, in addition to those already passed to include_directories(...)
-#   extraMexFlags    : Any additional compiler flags
+#
+# Arguments:
+#
+# interfaceHeader:  The relative path to the wrapper interface definition file.
+# linkLibraries:    Any *additional* libraries to link.  Your project library
+#                   (e.g. `lba`), libraries it depends on, and any necessary
+#                   MATLAB libraries will be linked automatically.  So normally,
+#                   leave this empty.
+# extraIncludeDirs: Any *additional* include paths required by dependent
+#                   libraries that have not already been added by
+#                   include_directories.  Again, normally, leave this empty.
+# extraMexFlags:    Any *additional* flags to pass to the compiler when building
+#                   the wrap code.  Normally, leave this empty.
 function(wrap_and_install_library interfaceHeader linkLibraries extraIncludeDirs extraMexFlags)
 	wrap_library_internal("${interfaceHeader}" "${linkLibraries}" "${extraIncludeDirs}" "${mexFlags}")
 	install_wrapped_library_internal("${interfaceHeader}")
