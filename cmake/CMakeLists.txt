@@ -2,7 +2,7 @@
 # projects.  See README.txt in this directory for documentation.
 
 # Set the install directory depending on the platform so it will be found by
-# find_package(GTSAM-CMakeTools)
+# find_package(GTSAMCMakeTools)
 if(WIN32 AND NOT CYGWIN)
 	set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/CMake")
 else()
@@ -11,7 +11,7 @@ endif()
 
 # Install scripts
 install(FILES
-  GTSAM-CMakeToolsConfig.cmake
+  GTSAMCMakeToolsConfig.cmake
   Config.cmake.in
   dllexport.h.in
   GtsamBuildTypes.cmake
@@ -21,6 +21,6 @@ install(FILES
   GtsamPythonWrap.cmake
   GtsamTesting.cmake
   GtsamTestingObsolete.cmake
-  DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAM-CMakeTools")
+  DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")
 
 
