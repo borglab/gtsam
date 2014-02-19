@@ -23,7 +23,7 @@ Including this file immediately sets up the following build types and a drop-dow
 It also configures several minor details, as follows:
 
 *   The compile flag `-ftemplate-depth=1024` is set for newer versions of Clang to handle complex templates.
-*   On Windows, executable and dll output paths are set to `${CMAKE_BINARY_DIR}/bin` and import library output to `${CMAKE_BINARY_DIR}/bin`.
+*   On Windows, executable and dll output paths are set to `${CMAKE_BINARY_DIR}/bin` and import library output to `${CMAKE_BINARY_DIR}/lib`.
 
 It defines the following functions:
 
