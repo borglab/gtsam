@@ -486,7 +486,7 @@ namespace gtsam {
               + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr)
               - vel_i * deltaTij
               + skewSymmetric(omegaCoriolis_) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
-              + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * pos_i * deltaTij*deltaTij
+              + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * pos_i * deltaTij*deltaTij // 2nd order coriolis term
               - 0.5 * gravity_ * deltaTij*deltaTij;
 
       const Vector3 fv =
@@ -494,7 +494,7 @@ namespace gtsam {
               + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr
               + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr)
               + 2 * skewSymmetric(omegaCoriolis_) * vel_i * deltaTij // Coriolis term
-              + skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * pos_i * deltaTij // Coriolis term
+              + skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * pos_i * deltaTij // 2nd order Coriolis term
               - gravity_ * deltaTij;
 
       const Vector3 fR = Rot3::Logmap(fRhat);
@@ -524,12 +524,14 @@ namespace gtsam {
           + preintegratedMeasurements.delPdelBiasOmega * biasOmegaIncr)
           + vel_i * deltaTij
           - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
+          - 0.5 * skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij*deltaTij	// 2nd order coriolis term
           + 0.5 * gravity * deltaTij*deltaTij;
 
       vel_j = LieVector(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij
           + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
           + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
           - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
+          - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij // 2nd order Coriolis term
           + gravity * deltaTij);
 
       const Rot3 deltaRij_biascorrected = preintegratedMeasurements.deltaRij.retract(preintegratedMeasurements.delRdelBiasOmega * biasOmegaIncr, Rot3::EXPMAP);
