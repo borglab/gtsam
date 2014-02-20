@@ -200,6 +200,12 @@ void LevenbergMarquardtOptimizer::iterate() {
       // checking similarity between change in original and linearized cost
       modelFidelity = costChange / linearizedCostChange;
 
+//              cout << "current error " << state_.error << endl;
+//              cout << "new error " <<  error << endl;
+//              cout << "costChange " << costChange << endl;
+//              cout << "linearizedCostChange " << linearizedCostChange << endl;
+//              cout << "modelFidelity " << modelFidelity << endl;
+
       if (error < state_.error) {
         state_.values.swap(newValues);
         state_.error = error;
@@ -226,11 +232,6 @@ void LevenbergMarquardtOptimizer::iterate() {
         }
 //        bool converged = checkConvergence(_params().relativeErrorTol, _params().absoluteErrorTol, _params().errorTol, state_.error, error);
 //        cout << " Inner iteration - converged " << converged << endl;
-//        cout << "current error " << state_.error << endl;
-//        cout << "new error " <<  error << endl;
-//        cout << "costChange " << costChange << endl;
-//        cout << "linearizedCostChange " << linearizedCostChange << endl;
-//        cout << "modelFidelity " << modelFidelity << endl;
       }
     } catch (IndeterminantLinearSystemException& e) {
       (void) e; // Prevent unused variable warning
@@ -247,14 +248,10 @@ void LevenbergMarquardtOptimizer::iterate() {
       } else {
         increaseLambda(modelFidelity);
       }
-    }
+    } // Frank asks: why would we do that?  catch(...) {  throw;  }
 
     if(params_.disableInnerIterations)
       break;
-    // Frank asks: why would we do that?
-    //    catch(...) {
-    //      throw;
-    //    }
   } // end while
 
   if (lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
