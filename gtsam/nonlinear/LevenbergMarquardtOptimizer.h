@@ -56,11 +56,12 @@ public:
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
   bool diagonalDamping; ///< if true, use diagonal of Hessian
   bool reuse_diagonal_; //an additional option in Ceres for diagonalDamping (related to efficiency)
+  bool useFixedLambdaFactor_; // if true applies constant increase (or decrease) to lambda according to lambdaFactor
 
   LevenbergMarquardtParams() :
       lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(
           0.0), verbosityLM(SILENT), disableInnerIterations(false), minModelFidelity(
-          1e-3), diagonalDamping(false), reuse_diagonal_(false) {
+          1e-3), diagonalDamping(false), reuse_diagonal_(false), useFixedLambdaFactor_(true) {
   }
   virtual ~LevenbergMarquardtParams() {
   }
@@ -109,6 +110,10 @@ public:
   }
   inline void setDiagonalDamping(bool flag) {
     diagonalDamping = flag;
+  }
+
+  inline void setUseFixedLambdaFactor(bool flag) {
+    useFixedLambdaFactor_ = flag;
   }
 };
 
@@ -196,10 +201,10 @@ public:
   }
 
   // Apply policy to increase lambda if the current update was successful (stepQuality not used in the naive policy)
-  virtual void increaseLambda(double stepQuality);
+  void increaseLambda(double stepQuality);
 
   // Apply policy to decrease lambda if the current update was NOT successful (stepQuality not used in the naive policy)
-  virtual void decreaseLambda(double stepQuality);
+  void decreaseLambda(double stepQuality);
 
   /// Access the current number of inner iterations
   int getInnerIterations() const {

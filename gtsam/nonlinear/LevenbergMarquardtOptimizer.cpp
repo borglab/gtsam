@@ -82,12 +82,28 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::linearize() const {
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::increaseLambda(double stepQuality){
-  state_.lambda *= params_.lambdaFactor;
+  if(params_.useFixedLambdaFactor_){
+    state_.lambda *= params_.lambdaFactor;
+  }else{
+    state_.lambda *= params_.lambdaFactor;
+    params_.lambdaFactor *= 2.0;
+    // reuse_diagonal_ = true;
+  }
 }
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality){
-  state_.lambda /= params_.lambdaFactor;
+
+  if(params_.useFixedLambdaFactor_){
+    state_.lambda /= params_.lambdaFactor;
+  }else{
+    // CHECK_GT(step_quality, 0.0);
+    state_.lambda *= std::max(1.0 / 3.0, 1.0 - pow(2.0 * stepQuality - 1.0, 3));
+    state_.lambda = std::max(params_.lambdaLowerBound, state_.lambda);
+    params_.lambdaFactor = 2.0;
+    // reuse_diagonal_ = false;
+  }
+  std::cout << " state_.lambda "  << state_.lambda << std::endl;
 }
 
 /* ************************************************************************* */
@@ -143,8 +159,7 @@ void LevenbergMarquardtOptimizer::iterate() {
   const LevenbergMarquardtParams::VerbosityLM lmVerbosity = params_.verbosityLM;
 
   // Linearize graph
-  if(lmVerbosity >= LevenbergMarquardtParams::DAMPED)
-    cout << "linearizing = " << endl;
+  if(lmVerbosity >= LevenbergMarquardtParams::DAMPED) cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
 
   double modelFidelity = 0.0;
@@ -153,8 +168,7 @@ void LevenbergMarquardtOptimizer::iterate() {
   while (true) {
     ++state_.totalNumberInnerIterations;
 
-    if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
-      cout << "trying lambda = " << state_.lambda << endl;
+    if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "trying lambda = " << state_.lambda << endl;
 
     // Build damped system for this lambda (adds prior factors that make it like gradient descent)
     GaussianFactorGraph dampedSystem = buildDampedSystem(*linear);
@@ -184,27 +198,28 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       // create new optimization state with more adventurous lambda
       gttic (compute_error);
-
       if(lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "calculating error" << endl;
       double error = graph_.error(newValues);
       gttoc(compute_error);
-
-      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "next error = " << error << endl;
 
       // cost change in the original, possibly nonlinear system (old - new)
       double costChange = state_.error - error;
 
       // cost change in the linearized system (old - new)
-      double linearizedCostChange = state_.error - linear->error(delta);
+      double newlinearizedError = linear->error(delta);
+      double linearizedCostChange = state_.error - newlinearizedError;
 
       // checking similarity between change in original and linearized cost
       modelFidelity = costChange / linearizedCostChange;
 
-//              cout << "current error " << state_.error << endl;
-//              cout << "new error " <<  error << endl;
-//              cout << "costChange " << costChange << endl;
-//              cout << "linearizedCostChange " << linearizedCostChange << endl;
-//              cout << "modelFidelity " << modelFidelity << endl;
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA){
+        cout << "current error " << state_.error << endl;
+        cout << "new error " <<  error << endl;
+        cout << "costChange " << costChange << endl;
+        cout << "new error in linearized model " <<  newlinearizedError << endl;
+        cout << "linearizedCostChange " << linearizedCostChange << endl;
+        cout << "modelFidelity " << modelFidelity << endl;
+      }
 
       if (error < state_.error) {
         state_.values.swap(newValues);
@@ -230,8 +245,8 @@ void LevenbergMarquardtOptimizer::iterate() {
 
           increaseLambda(modelFidelity);
         }
-//        bool converged = checkConvergence(_params().relativeErrorTol, _params().absoluteErrorTol, _params().errorTol, state_.error, error);
-//        cout << " Inner iteration - converged " << converged << endl;
+        //        bool converged = checkConvergence(_params().relativeErrorTol, _params().absoluteErrorTol, _params().errorTol, state_.error, error);
+        //        cout << " Inner iteration - converged " << converged << endl;
       }
     } catch (IndeterminantLinearSystemException& e) {
       (void) e; // Prevent unused variable warning
@@ -239,8 +254,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         cout << "Negative matrix, increasing lambda" << endl;
 
       // Either we're not cautious, or the same lambda was worse than the current error.
-      // The more adventurous lambda was worse too, so make lambda more conservative
-      // and keep the same values.
+      // The more adventurous lambda was worse too, so make lambda more conservative and keep the same values.
       if(state_.lambda >= params_.lambdaUpperBound) {
         if(nloVerbosity >= NonlinearOptimizerParams::TERMINATION)
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
