@@ -175,4 +175,19 @@ GTSAM_EXPORT Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz);
  */
 GTSAM_EXPORT Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
 
+/**
+ * @brief This function creates initial values for cameras from db
+ * @param SfM_data
+ * @return Values
+ */
+GTSAM_EXPORT Values initialCamerasEstimate(const SfM_data& db);
+
+/**
+ * @brief This function creates initial values for cameras and points from db
+ * @param SfM_data
+ * @return Values
+ */
+GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfM_data& db);
+
+
 } // namespace gtsam

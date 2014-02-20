@@ -720,4 +720,22 @@ bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
   return writeBAL(filename, data);
 }
 
+Values initialCamerasEstimate(const SfM_data& db) {
+  Values initial;
+  size_t i = 0; // NO POINTS:  j = 0;
+  BOOST_FOREACH(const SfM_Camera& camera, db.cameras)
+  initial.insert(i++, camera);
+  return initial;
+}
+
+Values initialCamerasAndPointsEstimate(const SfM_data& db) {
+  Values initial;
+  size_t i = 0, j = 0;
+  BOOST_FOREACH(const SfM_Camera& camera, db.cameras)
+  initial.insert((i++), camera);
+  BOOST_FOREACH(const SfM_Track& track, db.tracks)
+  initial.insert(P(j++), track.p);
+  return initial;
+}
+
 } // \namespace gtsam
