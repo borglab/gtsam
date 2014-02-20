@@ -26,15 +26,8 @@ namespace gtsam {
 /** This class contains the implementation of the Dogleg algorithm.  It is used
  * by DoglegOptimizer and can be used to easily put together custom versions of
  * Dogleg.  Each function is well-documented and unit-tested.  The notation
- * here matches that in "trustregion.pdf" in gtsam_experimental/doc, see this
- * file for further explanation of the computations performed by this class.
- *
- * \tparam VALUES The Values or TupleValues type to hold the values to be
- * estimated.
- *
- * \tparam GAUSSIAN_SOLVER The linear solver to use at each iteration,
- * currently either GaussianSequentialSolver or GaussianMultifrontalSolver.
- * The latter is typically faster, especially for non-trivial problems.
+ * here matches that in "trustregion.pdf" in doc, see this file for further
+ * explanation of the computations performed by this class.
  */
 struct GTSAM_EXPORT DoglegOptimizerImpl {
 

@@ -321,6 +321,9 @@ if (DOXYGEN_FOUND)
     add_subdirectory(doc)
 endif()
 
+# CMake Tools
+add_subdirectory(cmake)
+
 
 ###############################################################################
 # Set up CPack
