@@ -15,7 +15,7 @@ using namespace boost::assign;
 #include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 
-#include "partition/GenericGraph.h"
+#include <gtsam_unstable/partition/GenericGraph.h>
 
 using namespace std;
 using namespace gtsam;

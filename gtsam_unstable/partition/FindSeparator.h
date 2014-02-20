@@ -9,7 +9,8 @@
 #include <map>
 #include <vector>
 #include <boost/optional.hpp>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Symbol.h>
 
 #include "PartitionWorkSpace.h"
 

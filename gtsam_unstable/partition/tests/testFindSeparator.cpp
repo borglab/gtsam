@@ -14,8 +14,8 @@ using namespace boost::assign;
 #include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 
-#include "partition/FindSeparator-inl.h"
-#include "partition/GenericGraph.h"
+#include <gtsam_unstable/partition/FindSeparator-inl.h>
+#include <gtsam_unstable/partition/GenericGraph.h>
 
 using namespace std;
 using namespace gtsam;
@@ -66,7 +66,7 @@ TEST ( Partition, separatorPartitionByMetis2 )
 	CHECK(C_expected == actual->C);
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* 
 // x0 - x2 - x3 - x5
 TEST ( Partition, edgePartitionByMetis )
 {
@@ -94,7 +94,7 @@ TEST ( Partition, edgePartitionByMetis )
 	CHECK(C_expected == actual->C);
 }
 
-/* ************************************************************************* */
+
 // x0 - x2 - x3 - x5 - x6
 TEST ( Partition, edgePartitionByMetis2 )
 {
@@ -114,8 +114,7 @@ TEST ( Partition, edgePartitionByMetis2 )
 	CHECK(A_expected == actual->A);
 	CHECK(B_expected == actual->B);
 	CHECK(C_expected == actual->C);
-}
-
+} 
 
 /* ************************************************************************* */
 // x0 - x1 - x2
@@ -132,7 +131,8 @@ TEST ( Partition, findSeparator )
 	WorkSpace workspace(5);
 	int minNodesPerMap = -1;
 	bool reduceGraph = false;
-	int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace, false, boost::none, reduceGraph);
+	int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
+		false, boost::none, reduceGraph, 0, 0);
 	LONGS_EQUAL(2, numSubmaps);
 	LONGS_EQUAL(5, workspace.partitionTable.size());
 	LONGS_EQUAL(1, workspace.partitionTable[0]);
@@ -157,7 +157,8 @@ TEST ( Partition, findSeparator2 )
 	WorkSpace workspace(8);
 	int minNodesPerMap = -1;
 	bool reduceGraph = false;
-	int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace, false, boost::none, reduceGraph);
+	int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
+		false, boost::none, reduceGraph, 0, 0);
 	LONGS_EQUAL(2, numSubmaps);
 	LONGS_EQUAL(8, workspace.partitionTable.size());
 	LONGS_EQUAL(-1,workspace.partitionTable[0]);
@@ -170,7 +171,7 @@ TEST ( Partition, findSeparator2 )
 	LONGS_EQUAL(-1,workspace.partitionTable[7]);
 }
 
-/* ************************************************************************* */
+/* *************************************************************************
 //  l1-l8   l9-l16    l17-l24
 //   / |     /    \    |  \
 // x25 x26             x27 x28
@@ -201,7 +202,7 @@ TEST ( Partition, findSeparator3_with_reduced_camera )
 
 	WorkSpace workspace(29);
 	bool reduceGraph = true;
-	int numIsland = findSeparator(graph, keys, 3, workspace, false, int2symbol, reduceGraph);
+	int numIsland = findSeparator(graph, keys, 3, workspace, false, int2symbol, reduceGraph, 0, 0);
 	LONGS_EQUAL(2, numIsland);
 
 	partition::PartitionTable& partitionTable = workspace.partitionTable;

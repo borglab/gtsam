@@ -2,7 +2,9 @@
  * FindSeparator-inl.h
  *
  *   Created on: Nov 23, 2010
+ *   Updated: Feb 20. 2014
  *       Author: nikai
+ *       Author: Andrew Melim
  *  Description: find the separator of bisectioning for a given graph
  */
 
@@ -13,6 +15,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_array.hpp>
+#include <boost/timer.hpp>
 
 extern "C" {
 #include <metis.h>
@@ -24,7 +27,7 @@ using namespace std;
 
 namespace gtsam { namespace partition {
 
-	typedef boost::shared_array<idxtype> sharedInts;
+	typedef boost::shared_array<idx_t> sharedInts;
 
 	/* ************************************************************************* */
 	/**
@@ -36,7 +39,7 @@ namespace gtsam { namespace partition {
 	pair<int, sharedInts> separatorMetis(int n, const sharedInts& xadj,	const sharedInts& adjncy, const sharedInts& adjwgt, bool verbose) {
 
 		// control parameters
-		idxtype vwgt[n];                  // the weights of the vertices
+		idx_t vwgt[n];                  // the weights of the vertices
 		int options[8]; options [0] = 0 ;	// use defaults
 		int sepsize;                      // the size of the separator, output
 		sharedInts part_(new int[n]);      // the partition of each vertex, output
@@ -44,34 +47,37 @@ namespace gtsam { namespace partition {
 		// set uniform weights on the vertices
 		std::fill(vwgt, vwgt+n, 1);
 
-		timer TOTALTmr;
+		// TODO: Fix at later time
+		/*boost::timer::cpu_timer TOTALTmr;
 		if (verbose) {
 			printf("**********************************************************************\n");
 			printf("Graph Information ---------------------------------------------------\n");
 			printf("  #Vertices: %d, #Edges: %u\n", n, *(xadj.get()+n) / 2);
 			printf("\nND Partitioning... -------------------------------------------\n");
-			cleartimer(TOTALTmr);
-			starttimer(TOTALTmr);
-		}
+			TOTALTmr.start()
+		}*/
 
-		// call metis parition routine
-		METIS_NodeComputeSeparator(&n, xadj.get(), adjncy.get(), vwgt, adjwgt.get(),
-				options, &sepsize, part_.get());
+		// call metis parition routine OLD!!!!
+		/*METIS_NodeComputeSeparator(&n, xadj.get(), adjncy.get(), vwgt, adjwgt.get(),
+				options, &sepsize, part_.get());*/
+		// new
+		METIS_ComputeVertexSeparator(&n, xadj.get(), adjncy.get(), 
+           vwgt, options, &sepsize, part_.get());
 
-		if (verbose) {
-			stoptimer(TOTALTmr);
+		/*if (verbose) {
+			boost::cpu_times const elapsed_times(timer.elapsed());
 			printf("\nTiming Information --------------------------------------------------\n");
-			printf("  Total:        \t\t %7.3f\n", gettimer(TOTALTmr));
+			printf("  Total:        \t\t %7.3f\n", elapsed_times);
 			printf("  Sep size:        \t\t %d\n", sepsize);
 			printf("**********************************************************************\n");
-		}
+		}*/
 
 		return make_pair(sepsize, part_);
 	}
 
-	/* ************************************************************************* */
-	void modefied_EdgeComputeSeparator(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
-			idxtype *adjwgt, int *options, int *edgecut, idxtype *part)
+	/* ************************************************************************* *
+	void modefied_EdgeComputeSeparator(int *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+			idx_t *adjwgt, int *options, int *edgecut, idx_t *part)
 	{
 	  int i, j, tvwgt, tpwgts[2];
 	  GraphType graph;
@@ -80,7 +86,7 @@ namespace gtsam { namespace partition {
 	  SetUpGraph(&graph, OP_ONMETIS, *nvtxs, 1, xadj, adjncy, vwgt, adjwgt, 3);
 	  tvwgt = idxsum(*nvtxs, graph.vwgt);
 
-	  if (options[0] == 0) {  /* Use the default parameters */
+	  if (options[0] == 0) {  // Use the default parameters
 	    ctrl.CType = ONMETIS_CTYPE;
 	    ctrl.IType = ONMETIS_ITYPE;
 	    ctrl.RType = ONMETIS_RTYPE;
@@ -104,9 +110,9 @@ namespace gtsam { namespace partition {
 
 	  AllocateWorkSpace(&ctrl, &graph, 2);
 
-	  /*============================================================
-	   * Perform the bisection
-	   *============================================================*/
+	  //============================================================
+	  // Perform the bisection
+	  //============================================================
 	  tpwgts[0] = tvwgt/2;
 	  tpwgts[1] = tvwgt-tpwgts[0];
 
@@ -128,11 +134,11 @@ namespace gtsam { namespace partition {
 	 * Return the number of edge cuts and the partiion indices {part}
 	 * Part [j] is 0 or 1, depending on
 	 * whether node j is in the left part of the graph or the right part respectively
-	 */
+	 *
 	pair<int, sharedInts> edgeMetis(int n, const sharedInts& xadj,	const sharedInts& adjncy, const sharedInts& adjwgt, bool verbose) {
 
 		// control parameters
-		idxtype vwgt[n];                  // the weights of the vertices
+		idx_t vwgt[n];                  // the weights of the vertices
 		int options[10]; options [0] = 1;	options [1] = 3; options [2] = 1; options [3] = 1; options [4] = 0; // use defaults
 		int edgecut;                      // the number of edge cuts, output
 		sharedInts part_(new int[n]);      // the partition of each vertex, output
@@ -140,7 +146,8 @@ namespace gtsam { namespace partition {
 		// set uniform weights on the vertices
 		std::fill(vwgt, vwgt+n, 1);
 
-		timer TOTALTmr;
+		 TODO: Fix later
+		boost::timer TOTALTmr;
 		if (verbose) {
 			printf("**********************************************************************\n");
 			printf("Graph Information ---------------------------------------------------\n");
@@ -160,6 +167,7 @@ namespace gtsam { namespace partition {
 		modefied_EdgeComputeSeparator(&n, xadj.get(), adjncy.get(), vwgt, adjwgt.get(),
 				options, &edgecut, part_.get());
 
+		
 		if (verbose) {
 			stoptimer(TOTALTmr);
 			printf("\nTiming Information --------------------------------------------------\n");
@@ -279,7 +287,7 @@ namespace gtsam { namespace partition {
 		return boost::make_optional<MetisResult >(result);
 	}
 
-	/* ************************************************************************* */
+	/* ************************************************************************* 
 	template<class GenericGraph>
 	boost::optional<MetisResult> edgePartitionByMetis(const GenericGraph& graph, const vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
 
@@ -456,7 +464,7 @@ namespace gtsam { namespace partition {
 			const std::vector<int>& dictionary = workspace.dictionary;
 			reduceGenericGraph(graph, cameraKeys, landmarkKeys, dictionary, reducedGraph);
 			cout << "original graph: V" << keys.size() << ", E" << graph.size() << " --> reduced graph: V" << cameraKeys.size() << ", E" << reducedGraph.size() << endl;
-			result = edgePartitionByMetis(reducedGraph, keyToPartition, workspace, verbose);
+			//result = edgePartitionByMetis(reducedGraph, keyToPartition, workspace, verbose);
 		}	else // call Metis to partition the graph to A, B, C
 			result = separatorPartitionByMetis(graph, keys, workspace, verbose);
 
@@ -521,10 +529,12 @@ namespace gtsam { namespace partition {
 			result->C.insert(result->C.end(), island.begin(), island.end());
 			islands.pop_back();
 		}
-		if (islands.size() != oldSize)
+		if (islands.size() != oldSize){
 			if (verbose) cout << oldSize << "-" << oldSize - islands.size() << " submap(s);\t" << endl;
-		else
+		}
+		else{
 			if (verbose) cout << oldSize << " submap(s);\t" << endl;
+		}
 
 		// generate the node map
 		std::vector<int>& partitionTable = workspace.partitionTable;
