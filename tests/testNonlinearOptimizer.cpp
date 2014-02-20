@@ -237,34 +237,77 @@ TEST(NonlinearOptimizer, NullFactor) {
 TEST(NonlinearOptimizer, MoreOptimization) {
 
   NonlinearFactorGraph fg;
-  fg += PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1));
-  fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1));
+  fg += PriorFactor<Pose2>(0, Pose2(0, 0, 0),
+      noiseModel::Isotropic::Sigma(3, 1));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1, 0, M_PI / 2),
+      noiseModel::Isotropic::Sigma(3, 1));
+  fg += BetweenFactor<Pose2>(1, 2, Pose2(1, 0, M_PI / 2),
+      noiseModel::Isotropic::Sigma(3, 1));
 
   Values init;
-  init.insert(0, Pose2(3,4,-M_PI));
-  init.insert(1, Pose2(10,2,-M_PI));
-  init.insert(2, Pose2(11,7,-M_PI));
+  init.insert(0, Pose2(3, 4, -M_PI));
+  init.insert(1, Pose2(10, 2, -M_PI));
+  init.insert(2, Pose2(11, 7, -M_PI));
 
   Values expected;
-  expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(1,0,M_PI/2));
-  expected.insert(2, Pose2(1,1,M_PI));
+  expected.insert(0, Pose2(0, 0, 0));
+  expected.insert(1, Pose2(1, 0, M_PI / 2));
+  expected.insert(2, Pose2(1, 1, M_PI));
+
+  VectorValues expectedGradient;
+  expectedGradient.insert(0,zero(3));
+  expectedGradient.insert(1,zero(3));
+  expectedGradient.insert(2,zero(3));
 
   // Try LM and Dogleg
-  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init).optimize()));
+  LevenbergMarquardtParams params;
+//  params.setVerbosityLM("TRYDELTA");
+//  params.setVerbosity("TERMINATION");
+  params.setlambdaUpperBound(1e9);
+  params.setRelativeErrorTol(0);
+  params.setAbsoluteErrorTol(0);
+  //params.setlambdaInitial(10);
+
+  {
+    LevenbergMarquardtOptimizer optimizer(fg, init, params);
+
+    // test convergence
+    Values actual = optimizer.optimize();
+    EXPECT(assert_equal(expected, actual));
+
+    // Check that the gradient is zero
+    GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+  }
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
 
-  // Try LM with diagonal damping
-  Values initBetter;
-  initBetter.insert(0, Pose2(3,4,0));
-  initBetter.insert(1, Pose2(10,2,M_PI/3));
-  initBetter.insert(2, Pose2(11,7,M_PI/2));
+  cout << "===================================================================================" << endl;
 
-  LevenbergMarquardtParams params;
-  params.setDiagonalDamping(true);
-  LevenbergMarquardtOptimizer optimizer(fg, initBetter, params);
-  EXPECT(assert_equal(expected, optimizer.optimize()));
+  // Try LM with diagonal damping
+  Values initBetter = init;
+//  initBetter.insert(0, Pose2(3,4,0));
+//  initBetter.insert(1, Pose2(10,2,M_PI/3));
+//  initBetter.insert(2, Pose2(11,7,M_PI/2));
+
+  {
+    params.setDiagonalDamping(true);
+    LevenbergMarquardtOptimizer optimizer(fg, initBetter, params);
+
+    // test the diagonal
+    GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
+    GaussianFactorGraph damped = optimizer.buildDampedSystem(*linear);
+    VectorValues d = linear->hessianDiagonal(), //
+    expectedDiagonal = d + params.lambdaInitial * d;
+    EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
+
+    // test convergence
+    Values actual = optimizer.optimize();
+    EXPECT(assert_equal(expected, actual));
+
+    // Check that the gradient is zero
+    linear = optimizer.linearize();
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+  }
 }
 
 /* ************************************************************************* */
