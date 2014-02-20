@@ -21,6 +21,8 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+class NonlinearOptimizerMoreOptimizationTest;
+
 namespace gtsam {
 
 class LevenbergMarquardtOptimizer;
@@ -248,6 +250,11 @@ public:
   /// @}
 
 protected:
+
+  /** Build a damped system for a specific lambda */
+  GaussianFactorGraph buildDampedSystem(const GaussianFactorGraph& linear);
+  friend class ::NonlinearOptimizerMoreOptimizationTest;
+
   /** Access the parameters (base class version) */
   virtual const NonlinearOptimizerParams& _params() const {
     return params_;

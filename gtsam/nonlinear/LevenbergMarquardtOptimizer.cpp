@@ -91,6 +91,49 @@ void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality){
 }
 
 /* ************************************************************************* */
+GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
+    const GaussianFactorGraph& linear) {
+
+  //Set two parameters as Ceres, will move out later
+  static const double min_diagonal_ = 1e-6;
+  static const double max_diagonal_ = 1e32;
+
+  gttic(damp);
+  if (params_.verbosityLM >= LevenbergMarquardtParams::DAMPED)
+    cout << "building damped system with lambda " << state_.lambda << endl;
+  GaussianFactorGraph dampedSystem = linear;
+  {
+    double sigma = 1.0 / std::sqrt(state_.lambda);
+    dampedSystem.reserve(dampedSystem.size() + state_.values.size());
+    // Only retrieve diagonal vector when reuse_diagonal = false
+    if (params_.diagonalDamping && params_.reuse_diagonal_ == false) {
+      state_.hessianDiagonal = linear.hessianDiagonal();
+    }
+    // for each of the variables, add a prior
+    BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
+      size_t dim = key_value.value.dim();
+      Matrix A = Matrix::Identity(dim, dim);
+      //Replace the identity matrix with diagonal of Hessian
+      if (params_.diagonalDamping) {
+        A.diagonal() = state_.hessianDiagonal.at(key_value.key);
+        for (size_t aa = 0; aa < dim; aa++) {
+          if (params_.reuse_diagonal_ == false)
+            A(aa, aa) = std::min(std::max(A(aa, aa), min_diagonal_),
+                max_diagonal_);
+          A(aa, aa) = sqrt(A(aa, aa));
+        }
+      }
+      Vector b = Vector::Zero(dim);
+      SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
+      dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b,
+          model);
+    }
+  }
+  gttoc(damp);
+  return dampedSystem;
+}
+
+/* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
   gttic (LM_iterate);
@@ -105,51 +148,19 @@ void LevenbergMarquardtOptimizer::iterate() {
   GaussianFactorGraph::shared_ptr linear = linearize();
 
   double modelFidelity = 0.0;
-  //Set two parameters as Ceres, will move out later
-  double min_diagonal_ = 1e-6;
-  double max_diagonal_ = 1e32;
 
   // Keep increasing lambda until we make make progress
   while (true) {
     ++state_.totalNumberInnerIterations;
-    // Add prior-factors
-    // TODO: replace this dampening with a backsubstitution approach
-    gttic(damp);
-    if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) cout << "building damped system" << endl;
-    GaussianFactorGraph dampedSystem = *linear;
-    {
-      double sigma = 1.0 / std::sqrt(state_.lambda);
-      dampedSystem.reserve(dampedSystem.size() + state_.values.size());
-      // for each of the variables, add a prior
-      // Only retrieve diagonal vector when reuse_diagonal = false
-      if (params_.diagonalDamping && params_.reuse_diagonal_==false) {
-        state_.hessianDiagonal = linear->hessianDiagonal();
-      }
-      BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
 
-        size_t dim = key_value.value.dim();
-        Matrix A = Matrix::Identity(dim, dim);
-        //Replace the identity matrix with diagonal of Hessian
-        if (params_.diagonalDamping) {
-           A.diagonal() = state_.hessianDiagonal.at(key_value.key);
-           for (size_t aa=0; aa<dim; aa++)
-           {
-        	   if (params_.reuse_diagonal_==false)
-        		   A(aa,aa)= std::min(std::max(A(aa,aa), min_diagonal_), max_diagonal_);
-        	   A(aa,aa)= sqrt(A(aa,aa));
-           }
-         }
-        Vector b = Vector::Zero(dim);
-        SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
-        dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
-      }
-    }
-    gttoc(damp);
+    if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+      cout << "trying lambda = " << state_.lambda << endl;
+
+    // Build damped system for this lambda (adds prior factors that make it like gradient descent)
+    GaussianFactorGraph dampedSystem = buildDampedSystem(*linear);
 
     // Try solving
     try {
-      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
-        cout << "trying lambda = " << state_.lambda << endl;
       // Log current error/lambda to file
       if (!params_.logFile.empty()) {
         ofstream os(params_.logFile.c_str(), ios::app);
