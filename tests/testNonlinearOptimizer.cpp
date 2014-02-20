@@ -326,8 +326,11 @@ TEST(NonlinearOptimizer, MoreOptimization) {
     // Still pointing downhill !
     EXPECT_DOUBLES_EQUAL( 0.0105584,dot(-1*actualGradient,delta),1e-5);
 
-    // Check errors at convergence and errors in direction of solution (does not decreaase!)
+    // Check errors at convergence and errors in direction of solution (does not decrease!)
     EXPECT_DOUBLES_EQUAL(46.0254859,fg.error(actual.retract(delta)),1e-5);
+
+    // Check errors at convergence and errors at a small step in direction of solution (does not decrease!)
+    EXPECT_DOUBLES_EQUAL(46.02549021,fg.error(actual.retract(0.01*delta)),1e-5);
   }
 }
 
