@@ -323,8 +323,13 @@ TEST(NonlinearOptimizer, MoreOptimization) {
     double factor = actualGradient[0][0]/delta[0][0];
     EXPECT(assert_equal(actualGradient,factor*delta));
 
-    // Still pointing downhill !
+    // Still pointing downhill wrt actual gradient !
     EXPECT_DOUBLES_EQUAL( 0.0105584,dot(-1*actualGradient,delta),1e-5);
+
+    // delta.print("This is the delta value computed by LM with diagonal damping");
+
+    // Still pointing downhill wrt expected gradient (IT DOES NOT! actually they are perpendicular)
+    EXPECT_DOUBLES_EQUAL( 0.0,dot(-1*expectedGradient,delta),1e-5);
 
     // Check errors at convergence and errors in direction of solution (does not decrease!)
     EXPECT_DOUBLES_EQUAL(46.0254859,fg.error(actual.retract(delta)),1e-5);
