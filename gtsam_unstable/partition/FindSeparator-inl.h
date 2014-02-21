@@ -19,6 +19,7 @@
 
 extern "C" {
 #include <metis.h>
+#include "metislib.h"
 }
 
 #include "FindSeparator.h"
@@ -41,7 +42,6 @@ namespace gtsam { namespace partition {
 
 		// control parameters
 		idx_t vwgt[n];                  // the weights of the vertices
-		//int options[8]; options [0] = 0 ;
 		idx_t options[METIS_NOPTIONS];
 		METIS_SetDefaultOptions(options);	// use defaults
 		idx_t sepsize;                      // the size of the separator, output
@@ -60,10 +60,7 @@ namespace gtsam { namespace partition {
 			//TOTALTmr.start()
 		}
 
-		// call metis parition routine OLD!!!!
-		/*METIS_NodeComputeSeparator(&n, xadj.get(), adjncy.get(), vwgt, adjwgt.get(),
-				options, &sepsize, part_.get());*/
-		// new
+		// call metis parition routine
 		METIS_ComputeVertexSeparator(&n, xadj.get(), adjncy.get(), 
            vwgt, options, &sepsize, part_.get());
 
@@ -78,103 +75,90 @@ namespace gtsam { namespace partition {
 		return make_pair(sepsize, part_);
 	}
 
-	/* ************************************************************************* *
-	void modefied_EdgeComputeSeparator(int *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
-			idx_t *adjwgt, int *options, int *edgecut, idx_t *part)
+	/* ************************************************************************* */
+	void modefied_EdgeComputeSeparator(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+			idx_t *adjwgt, idx_t *options, idx_t *edgecut, idx_t *part)
 	{
-	  int i, j, tvwgt, tpwgts[2];
-	  GraphType graph;
-	  CtrlType ctrl;
+    idx_t i, j, ncon;
+		graph_t *graph;
+		real_t *tpwgts2;
+		ctrl_t *ctrl;
+		ctrl = SetupCtrl(METIS_OP_OMETIS, options, 1, 3, NULL, NULL);
+		ctrl->iptype = METIS_IPTYPE_GROW;
+		//if () == NULL)
+		//  return METIS_ERROR_INPUT;
 
-	  SetUpGraph(&graph, OP_ONMETIS, *nvtxs, 1, xadj, adjncy, vwgt, adjwgt, 3);
-	  tvwgt = idxsum(*nvtxs, graph.vwgt);
+		InitRandom(ctrl->seed);
 
-	  if (options[0] == 0) {  // Use the default parameters
-	    ctrl.CType = ONMETIS_CTYPE;
-	    ctrl.IType = ONMETIS_ITYPE;
-	    ctrl.RType = ONMETIS_RTYPE;
-	    ctrl.dbglvl = ONMETIS_DBGLVL;
-	  }
-	  else {
-	    ctrl.CType = options[OPTION_CTYPE];
-	    ctrl.IType = options[OPTION_ITYPE];
-	    ctrl.RType = options[OPTION_RTYPE];
-	    ctrl.dbglvl = options[OPTION_DBGLVL];
-	  }
+		graph = SetupGraph(ctrl, *nvtxs, 1, xadj, adjncy, vwgt, NULL, NULL);
 
-	  ctrl.oflags  = 0;
-	  ctrl.pfactor = 0;
-	  ctrl.nseps = 1;
-	  ctrl.optype = OP_OEMETIS;
-	  ctrl.CoarsenTo = amin(100, *nvtxs-1);
-	  ctrl.maxvwgt = 1.5*tvwgt/ctrl.CoarsenTo;
+		AllocateWorkSpace(ctrl, graph);
 
-	  InitRandom(options[7]);
+  	ncon = graph->ncon;
+  	ctrl->ncuts = 1;
+	
+  	/* determine the weights of the two partitions as a function of the weight of the
+  	   target partition weights */
 
-	  AllocateWorkSpace(&ctrl, &graph, 2);
+  	tpwgts2 = rwspacemalloc(ctrl, 2*ncon);
+  	for (i=0; i<ncon; i++) {
+  	  tpwgts2[i]      = rsum((2>>1), ctrl->tpwgts+i, ncon);
+  	  tpwgts2[ncon+i] = 1.0 - tpwgts2[i];
+  	}
+  	/* perform the bisection */
+  	*edgecut = MultilevelBisect(ctrl, graph, tpwgts2);
 
-	  //============================================================
-	  // Perform the bisection
-	  //============================================================
-	  tpwgts[0] = tvwgt/2;
-	  tpwgts[1] = tvwgt-tpwgts[0];
-
-	  MlevelEdgeBisection(&ctrl, &graph, tpwgts, 1.05);
-	//  ConstructMinCoverSeparator(&ctrl, &graph, 1.05);
-	  *edgecut = graph.mincut;
+		//  ConstructMinCoverSeparator(&ctrl, &graph, 1.05);
+	//  *edgecut = graph->mincut;
 	//  *sepsize = graph.pwgts[2];
-	  idxcopy(*nvtxs, graph.where, part);
+	  icopy(*nvtxs, graph->where, part);
+		cout << "Finished bisection:" << *edgecut << endl;
+		FreeGraph(&graph);
 
-	  GKfree((void**)&graph.gdata, &graph.rdata, &graph.label, LTERM);
-
-
-	  FreeWorkSpace(&ctrl, &graph);
-
+		FreeCtrl(&ctrl);
 	}
 
 	/* ************************************************************************* */
 	/**
-	 * Return the number of edge cuts and the partiion indices {part}
+	 * Return the number of edge cuts and the partition indices {part}
 	 * Part [j] is 0 or 1, depending on
 	 * whether node j is in the left part of the graph or the right part respectively
-	 *
-	pair<int, sharedInts> edgeMetis(int n, const sharedInts& xadj,	const sharedInts& adjncy, const sharedInts& adjwgt, bool verbose) {
+	 */
+	pair<int, sharedInts> edgeMetis(idx_t n, const sharedInts& xadj,	const sharedInts& adjncy,
+		const sharedInts& adjwgt, bool verbose) {
 
 		// control parameters
 		idx_t vwgt[n];                  // the weights of the vertices
-		int options[10]; options [0] = 1;	options [1] = 3; options [2] = 1; options [3] = 1; options [4] = 0; // use defaults
-		int edgecut;                      // the number of edge cuts, output
-		sharedInts part_(new int[n]);      // the partition of each vertex, output
+		idx_t options[METIS_NOPTIONS];
+		METIS_SetDefaultOptions(options);	// use defaults
+		idx_t edgecut;                      // the number of edge cuts, output
+		sharedInts part_(new idx_t[n]);      // the partition of each vertex, output
 
 		// set uniform weights on the vertices
 		std::fill(vwgt, vwgt+n, 1);
 
-		 TODO: Fix later
-		boost::timer TOTALTmr;
+		//TODO: Fix later
+		//boost::timer TOTALTmr;
 		if (verbose) {
 			printf("**********************************************************************\n");
 			printf("Graph Information ---------------------------------------------------\n");
 			printf("  #Vertices: %d, #Edges: %u\n", n, *(xadj.get()+n) / 2);
 			printf("\nND Partitioning... -------------------------------------------\n");
-			cleartimer(TOTALTmr);
-			starttimer(TOTALTmr);
+			//cleartimer(TOTALTmr);
+			//starttimer(TOTALTmr);
 		}
 
-		// call metis parition routine
-		int wgtflag = 1; // only edge weights
-		int numflag = 0; // c style numbering starting from 0
-		int nparts = 2; // partition the graph to 2 submaps
-//		METIS_PartGraphRecursive(&n, xadj.get(), adjncy.get(), NULL, adjwgt.get(), &wgtflag,
-//				&numflag, &nparts, options, &edgecut, part_.get());
-
+		//int wgtflag = 1; // only edge weights
+		//int numflag = 0; // c style numbering starting from 0
+		//int nparts = 2; // partition the graph to 2 submaps
 		modefied_EdgeComputeSeparator(&n, xadj.get(), adjncy.get(), vwgt, adjwgt.get(),
 				options, &edgecut, part_.get());
 
 		
 		if (verbose) {
-			stoptimer(TOTALTmr);
+			//stoptimer(TOTALTmr);
 			printf("\nTiming Information --------------------------------------------------\n");
-			printf("  Total:        \t\t %7.3f\n", gettimer(TOTALTmr));
+			//printf("  Total:        \t\t %7.3f\n", gettimer(TOTALTmr));
 			printf("  Edge cuts:    \t\t %d\n", edgecut);
 			printf("**********************************************************************\n");
 		}
@@ -204,17 +188,21 @@ namespace gtsam { namespace partition {
 		// prepare for {adjancyMap}, a pair of neighbor indices and the correponding edge weights
 		int numNodes = keys.size();
 		int numEdges = 0;
-		vector<NeighborsInfo> adjancyMap; // TODO: set is slow, but have to use it to remove duplicated edges
+		vector<NeighborsInfo> adjancyMap;
 		adjancyMap.resize(numNodes);
+		cout << "Number of nodes: " << adjancyMap.size() << endl;
 		int index1, index2;
 
 		BOOST_FOREACH(const typename GenericGraph::value_type& factor, graph){
 			index1 = dictionary[factor->key1.index];
 			index2 = dictionary[factor->key2.index];
+			cout << "index1: " << index1 << endl;
+			cout << "index2: " << index2 << endl;
 			// if both nodes are in the current graph, i.e. not a joint factor between frontal and separator
 			if (index1 >= 0 && index2 >= 0) {       
 				pair<Neighbors, Weights>& adjancyMap1 = adjancyMap[index1];
 				pair<Neighbors, Weights>& adjancyMap2 = adjancyMap[index2];
+				cout << adjancyMap1.first.size() << endl;
 				adjancyMap1.first .push_back(index2);
 				adjancyMap1.second.push_back(factor->weight);
 				adjancyMap2.first .push_back(index1);
@@ -297,9 +285,10 @@ namespace gtsam { namespace partition {
 		return boost::make_optional<MetisResult >(result);
 	}
 
-	/* ************************************************************************* 
+	/* *************************************************************************/ 
 	template<class GenericGraph>
-	boost::optional<MetisResult> edgePartitionByMetis(const GenericGraph& graph, const vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
+	boost::optional<MetisResult> edgePartitionByMetis(const GenericGraph& graph,
+	 const vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
 
 		// a small hack for handling the camera1-camera2 case used in the unit tests
 		if (graph.size() == 1 && keys.size() == 2) {
@@ -338,7 +327,8 @@ namespace gtsam { namespace partition {
 		}
 
 		if (verbose) {
-			cout << "the size of two submaps in the reduced graph: " << result.A.size() << " " << result.B.size() << endl;
+			cout << "the size of two submaps in the reduced graph: " << result.A.size() 
+				<< " " << result.B.size() << endl;
 			int edgeCut = 0;
 
 			BOOST_FOREACH(const typename GenericGraph::value_type& factor, graph){
