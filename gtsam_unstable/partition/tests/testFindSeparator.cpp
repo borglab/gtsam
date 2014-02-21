@@ -34,7 +34,9 @@ TEST ( Partition, separatorPartitionByMetis )
 	std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
 
 	WorkSpace workspace(5);
-	boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys, workspace, false);
+	boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
+	 workspace, true);
+
 	CHECK(actual.is_initialized());
 	vector<size_t> A_expected; A_expected += 0, 3; // frontal
 	vector<size_t> B_expected; B_expected += 2, 4; // frontal
@@ -55,8 +57,11 @@ TEST ( Partition, separatorPartitionByMetis2 )
 	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
 	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
 	std::vector<size_t> keys; keys += 1, 2, 3, 5, 6;
+
 	WorkSpace workspace(8);
-	boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys, workspace, false);
+	boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
+	 workspace, true);
+
 	CHECK(actual.is_initialized());
 	vector<size_t> A_expected; A_expected += 1, 5; // frontal
 	vector<size_t> B_expected; B_expected += 3, 6; // frontal
@@ -77,7 +82,8 @@ TEST ( Partition, edgePartitionByMetis )
 	std::vector<size_t> keys; keys += 0, 2, 3, 5;
 
 	WorkSpace workspace(6);
-	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys, workspace, false);
+	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
+	 workspace, false);
 	CHECK(actual.is_initialized());
 	vector<size_t> A_expected; A_expected += 0, 2; // frontal
 	vector<size_t> B_expected; B_expected += 3, 5; // frontal
@@ -106,7 +112,8 @@ TEST ( Partition, edgePartitionByMetis2 )
 	std::vector<size_t> keys; keys += 0, 2, 3, 5, 6;
 
 	WorkSpace workspace(6);
-	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys, workspace, false);
+	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
+	 workspace, false);
 	CHECK(actual.is_initialized());
 	vector<size_t> A_expected; A_expected += 0, 2; // frontal
 	vector<size_t> B_expected; B_expected += 3, 5, 6; // frontal
