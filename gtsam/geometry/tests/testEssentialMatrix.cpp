@@ -30,6 +30,36 @@ TEST (EssentialMatrix, equality) {
   EXPECT(assert_equal(expected, actual));
 }
 
+//*******************************************************************************
+TEST(EssentialMatrix, localCoordinates0) {
+  EssentialMatrix E;
+  Vector expected = zero(5);
+  Vector actual = E.localCoordinates(E);
+  EXPECT(assert_equal(expected, actual, 1e-8));
+}
+
+//*************************************************************************
+TEST (EssentialMatrix, localCoordinates) {
+
+  // Pose between two cameras
+  Pose3 pose(c1Rc2, c1Tc2);
+  EssentialMatrix hx = EssentialMatrix::FromPose3(pose);
+  Vector actual = hx.localCoordinates(EssentialMatrix::FromPose3(pose));
+  EXPECT(assert_equal(zero(5), actual, 1e-8));
+
+  Vector d = zero(6);
+  d(4) += 1e-5;
+  Vector actual2 = hx.localCoordinates(
+      EssentialMatrix::FromPose3(pose.retract(d)));
+  EXPECT(assert_equal(zero(5), actual2, 1e-8));
+}
+
+//*************************************************************************
+TEST (EssentialMatrix, retract0) {
+  EssentialMatrix actual = trueE.retract(zero(5));
+  EXPECT(assert_equal(trueE, actual));
+}
+
 //*************************************************************************
 TEST (EssentialMatrix, retract1) {
   EssentialMatrix expected(c1Rc2.retract((Vector(3) << 0.1, 0, 0)), c1Tc2);
@@ -89,7 +119,10 @@ TEST (EssentialMatrix, rotate) {
 
   // Derivatives
   Matrix actH1, actH2;
-  try { bodyE.rotate(cRb, actH1, actH2);} catch(exception e) {} // avoid exception
+  try {
+    bodyE.rotate(cRb, actH1, actH2);
+  } catch (exception e) {
+  } // avoid exception
   Matrix expH1 = numericalDerivative21(rotate_, bodyE, cRb), //
   expH2 = numericalDerivative22(rotate_, bodyE, cRb);
   EXPECT(assert_equal(expH1, actH1, 1e-8));
