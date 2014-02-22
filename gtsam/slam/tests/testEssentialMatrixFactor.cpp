@@ -128,7 +128,7 @@ TEST (EssentialMatrixFactor, minimization) {
   EssentialMatrix initialE = trueE.retract(
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
   initial.insert(1, initialE);
-  EXPECT_DOUBLES_EQUAL(640, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
 
   // Optimize
   LevenbergMarquardtParams parameters;
@@ -339,7 +339,7 @@ TEST (EssentialMatrixFactor, extraMinimization) {
   EssentialMatrix initialE = trueE.retract(
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
   initial.insert(1, initialE);
-  EXPECT_DOUBLES_EQUAL(640, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
 
   // Optimize
   LevenbergMarquardtParams parameters;
