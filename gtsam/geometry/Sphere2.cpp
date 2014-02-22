@@ -29,8 +29,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Sphere2 Sphere2::FromPoint3(const Point3& point,
-    boost::optional<Matrix&> H) {
+Sphere2 Sphere2::FromPoint3(const Point3& point, boost::optional<Matrix&> H) {
   Sphere2 direction(point);
   if (H) {
     // 3*3 Derivative of representation with respect to point is 3*3:
@@ -114,7 +113,7 @@ double Sphere2::distance(const Sphere2& q, boost::optional<Matrix&> H) const {
 }
 
 /* ************************************************************************* */
-Sphere2 Sphere2::retract(const Vector& v, Sphere2::CoordinatesMode mode) const {
+Sphere2 Sphere2::retract(const Vector& v) const {
 
   // Get the vector form of the point and the basis matrix
   Vector p = Point3::Logmap(p_);
@@ -122,75 +121,42 @@ Sphere2 Sphere2::retract(const Vector& v, Sphere2::CoordinatesMode mode) const {
 
   // Compute the 3D xi_hat vector
   Vector xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
-  
-  if (mode == Sphere2::EXPMAP) {
-    double xi_hat_norm = xi_hat.norm();
 
-    // Avoid nan
-    if (xi_hat_norm == 0.0) {
-      if (v.norm () == 0.0)
-        return Sphere2 (point3 ());
-      else
-        return Sphere2 (-point3 ());
-    }
-    
-    Vector exp_p_xi_hat = cos (xi_hat_norm) * p + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
-    return Sphere2(exp_p_xi_hat);
-  } else if (mode == Sphere2::RENORM) {
-    // Project onto the manifold, i.e. the closest point on the circle to the new location;
-    // same as putting it onto the unit circle
-    Vector newPoint = p + xi_hat;
-    Vector projected = newPoint / newPoint.norm();
+  double xi_hat_norm = xi_hat.norm();
 
-    return Sphere2(Point3::Expmap(projected));
-  } else {
-    assert (false);
-    exit (1);
-  }  
+  // Avoid nan
+  if (xi_hat_norm == 0.0) {
+    if (v.norm() == 0.0)
+      return Sphere2(point3());
+    else
+      return Sphere2(-point3());
+  }
+
+  Vector exp_p_xi_hat = cos(xi_hat_norm) * p
+      + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
+  return Sphere2(exp_p_xi_hat);
+
 }
 
 /* ************************************************************************* */
-  Vector Sphere2::localCoordinates(const Sphere2& y, Sphere2::CoordinatesMode mode) const {
+Vector Sphere2::localCoordinates(const Sphere2& y) const {
 
-  if (mode == Sphere2::EXPMAP) {
-    Matrix B = basis();
-    
-    Vector p = Point3::Logmap(p_);
-    Vector q = Point3::Logmap(y.p_);
-    double theta = acos(p.transpose() * q);
+  Matrix B = basis();
 
-    // the below will be nan if theta == 0.0
-    if (p == q)
-      return (Vector (2) << 0, 0);
-    else if (p == (Vector)-q)
-      return (Vector (2) << M_PI, 0);
-    
-    Vector result_hat = (theta / sin(theta)) * (q - p * cos(theta));
-    Vector result = B.transpose() * result_hat;
-    
-    return result;
-  } else if (mode == Sphere2::RENORM) {
-    // Make sure that the angle different between x and y is less than 90. Otherwise,
-    // we can project x + xi_hat from the tangent space at x to y.
-    assert(y.p_.dot(p_) > 0.0 && "Can not retract from x to y.");
-    
-    // Get the basis matrix
-    Matrix B = basis();
-    
-    // Create the vector forms of p and q (the Point3 of y).
-    Vector p = Point3::Logmap(p_);
-    Vector q = Point3::Logmap(y.p_);
-    
-    // Compute the basis coefficients [v0,v1] = (B'q)/(p'q).
-    double alpha = p.transpose() * q;
-    assert(alpha != 0.0);
-    Matrix coeffs = (B.transpose() * q) / alpha;
-    Vector result = Vector_(2, coeffs(0, 0), coeffs(1, 0));
-    return result;
-  } else {
-    assert (false);
-    exit (1);
-  }
+  Vector p = Point3::Logmap(p_);
+  Vector q = Point3::Logmap(y.p_);
+  double theta = acos(p.transpose() * q);
+
+  // the below will be nan if theta == 0.0
+  if (p == q)
+    return (Vector(2) << 0, 0);
+  else if (p == (Vector) -q)
+    return (Vector(2) << M_PI, 0);
+
+  Vector result_hat = (theta / sin(theta)) * (q - p * cos(theta));
+  Vector result = B.transpose() * result_hat;
+
+  return result;
 }
 /* ************************************************************************* */
 

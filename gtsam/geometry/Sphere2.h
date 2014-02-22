@@ -23,10 +23,6 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 
-#ifndef SPHERE2_DEFAULT_COORDINATES_MODE
-  #define SPHERE2_DEFAULT_COORDINATES_MODE Sphere2::RENORM
-#endif
-
 // (Cumbersome) forward declaration for random generator
 namespace boost {
 namespace random {
@@ -71,8 +67,8 @@ public:
   }
 
   /// Named constructor from Point3 with optional Jacobian
-  static Sphere2 FromPoint3(const Point3& point,
-      boost::optional<Matrix&> H = boost::none);
+  static Sphere2 FromPoint3(const Point3& point, boost::optional<Matrix&> H =
+      boost::none);
 
   /// Random direction, using boost::uniform_on_sphere
   static Sphere2 Random(boost::random::mt19937 & rng);
@@ -113,7 +109,7 @@ public:
 
   /// Return scaled direction as Point3
   friend Point3 operator*(double s, const Sphere2& d) {
-    return s*d.p_;
+    return s * d.p_;
   }
 
   /// Signed, vector-valued error between two directions
@@ -145,10 +141,10 @@ public:
   };
 
   /// The retract function
-  Sphere2 retract(const Vector& v, Sphere2::CoordinatesMode mode = SPHERE2_DEFAULT_COORDINATES_MODE) const;
+  Sphere2 retract(const Vector& v) const;
 
   /// The local coordinates function
-  Vector localCoordinates(const Sphere2& s, Sphere2::CoordinatesMode mode = SPHERE2_DEFAULT_COORDINATES_MODE) const;
+  Vector localCoordinates(const Sphere2& s) const;
 
   /// @}
 };
