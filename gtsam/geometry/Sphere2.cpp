@@ -141,22 +141,21 @@ Sphere2 Sphere2::retract(const Vector& v) const {
 /* ************************************************************************* */
 Vector Sphere2::localCoordinates(const Sphere2& y) const {
 
-  Matrix B = basis();
-
   Vector p = Point3::Logmap(p_);
   Vector q = Point3::Logmap(y.p_);
-  double theta = acos(p.transpose() * q);
+  double dot = p.dot(q);
 
-  // the below will be nan if theta == 0.0
-  if (p == q)
+  // Check for special cases
+  if (std::abs(dot - 1.0) < 1e-20)
     return (Vector(2) << 0, 0);
-  else if (p == (Vector) -q)
+  else if (std::abs(dot + 1.0) < 1e-20)
     return (Vector(2) << M_PI, 0);
-
-  Vector result_hat = (theta / sin(theta)) * (q - p * cos(theta));
-  Vector result = B.transpose() * result_hat;
-
-  return result;
+  else {
+    // no special case
+    double theta = acos(dot);
+    Vector result_hat = (theta / sin(theta)) * (q - p * dot);
+    return basis().transpose() * result_hat;
+  }
 }
 /* ************************************************************************* */
 
