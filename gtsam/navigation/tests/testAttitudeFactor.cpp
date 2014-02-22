@@ -30,8 +30,8 @@ TEST( Rot3AttitudeFactor, Constructor ) {
   // Example: pitch and roll of aircraft in an ENU Cartesian frame.
   // If pitch and roll are zero for an aerospace frame,
   // that means Z is pointing down, i.e., direction of Z = (0,0,-1)
-  Sphere2 bZ(0, 0, 1); // reference direction is body Z axis
-  Sphere2 nDown(0, 0, -1); // down, in ENU navigation frame, is "measurement"
+  Unit3 bZ(0, 0, 1); // reference direction is body Z axis
+  Unit3 nDown(0, 0, -1); // down, in ENU navigation frame, is "measurement"
 
   // Factor
   Key key(1);
@@ -63,8 +63,8 @@ TEST( Pose3AttitudeFactor, Constructor ) {
   // Example: pitch and roll of aircraft in an ENU Cartesian frame.
   // If pitch and roll are zero for an aerospace frame,
   // that means Z is pointing down, i.e., direction of Z = (0,0,-1)
-  Sphere2 bZ(0, 0, 1); // reference direction is body Z axis
-  Sphere2 nDown(0, 0, -1); // down, in ENU navigation frame, is "measurement"
+  Unit3 bZ(0, 0, 1); // reference direction is body Z axis
+  Unit3 nDown(0, 0, -1); // down, in ENU navigation frame, is "measurement"
 
   // Factor
   Key key(1);

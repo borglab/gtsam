@@ -39,7 +39,7 @@ public:
 
   /** Constructor */
   MagFactor(Key key, const Point3& measured, double scale,
-      const Sphere2& direction, const Point3& bias,
+      const Unit3& direction, const Point3& bias,
       const SharedNoiseModel& model) :
       NoiseModelFactor1<Rot2>(model, key), //
       measured_(measured), nM_(scale * direction), bias_(bias) {
@@ -85,7 +85,7 @@ public:
 
   /** Constructor */
   MagFactor1(Key key, const Point3& measured, double scale,
-      const Sphere2& direction, const Point3& bias,
+      const Unit3& direction, const Point3& bias,
       const SharedNoiseModel& model) :
       NoiseModelFactor1<Rot3>(model, key), //
       measured_(measured), nM_(scale * direction), bias_(bias) {
@@ -154,7 +154,7 @@ public:
  * This version uses model measured bM = scale * bRn * direction + bias
  * and optimizes for both scale, direction, and the bias.
  */
-class MagFactor3: public NoiseModelFactor3<LieScalar, Sphere2, Point3> {
+class MagFactor3: public NoiseModelFactor3<LieScalar, Unit3, Point3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
@@ -164,7 +164,7 @@ public:
   /** Constructor */
   MagFactor3(Key key1, Key key2, Key key3, const Point3& measured,
       const Rot3& nRb, const SharedNoiseModel& model) :
-      NoiseModelFactor3<LieScalar, Sphere2, Point3>(model, key1, key2, key3), //
+      NoiseModelFactor3<LieScalar, Unit3, Point3>(model, key1, key2, key3), //
       measured_(measured), bRn_(nRb.inverse()) {
   }
 
@@ -179,12 +179,12 @@ public:
    * @param nM (unknown) local earth magnetic field vector, in nav frame
    * @param bias (unknown) 3D bias
    */
-  Vector evaluateError(const LieScalar& scale, const Sphere2& direction,
+  Vector evaluateError(const LieScalar& scale, const Unit3& direction,
       const Point3& bias, boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
           boost::none) const {
     // measured bM = nRb’ * nM + b, where b is unknown bias
-    Sphere2 rotated = bRn_.rotate(direction, boost::none, H2);
+    Unit3 rotated = bRn_.rotate(direction, boost::none, H2);
     Point3 hx = scale * rotated.point3() + bias;
     if (H1)
       *H1 = rotated.point3().vector();

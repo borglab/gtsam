@@ -40,14 +40,14 @@ Rot3 Rot3::rodriguez(const Point3& w, double theta) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Sphere2& w, double theta) {
+Rot3 Rot3::rodriguez(const Unit3& w, double theta) {
   return rodriguez(w.point3(),theta);
 }
 
 /* ************************************************************************* */
 Rot3 Rot3::Random(boost::random::mt19937 & rng) {
   // TODO allow any engine without including all of boost :-(
-  Sphere2 w = Sphere2::Random(rng);
+  Unit3 w = Unit3::Random(rng);
   boost::random::uniform_real_distribution<double> randomAngle(-M_PI,M_PI);
   double angle = randomAngle(rng);
   return rodriguez(w,angle);
@@ -71,9 +71,9 @@ Point3 Rot3::operator*(const Point3& p) const {
 }
 
 /* ************************************************************************* */
-Sphere2 Rot3::rotate(const Sphere2& p,
+Unit3 Rot3::rotate(const Unit3& p,
     boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
-  Sphere2 q = rotate(p.point3(Hp));
+  Unit3 q = rotate(p.point3(Hp));
   if (Hp)
     (*Hp) = q.basis().transpose() * matrix() * (*Hp);
   if (HR)
@@ -82,9 +82,9 @@ Sphere2 Rot3::rotate(const Sphere2& p,
 }
 
 /* ************************************************************************* */
-Sphere2 Rot3::unrotate(const Sphere2& p,
+Unit3 Rot3::unrotate(const Unit3& p,
     boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
-  Sphere2 q = unrotate(p.point3(Hp));
+  Unit3 q = unrotate(p.point3(Hp));
   if (Hp)
     (*Hp) = q.basis().transpose() * matrix().transpose () * (*Hp);
   if (HR)
@@ -93,7 +93,7 @@ Sphere2 Rot3::unrotate(const Sphere2& p,
 }
 
 /* ************************************************************************* */
-Sphere2 Rot3::operator*(const Sphere2& p) const {
+Unit3 Rot3::operator*(const Unit3& p) const {
   return rotate(p);
 }
 

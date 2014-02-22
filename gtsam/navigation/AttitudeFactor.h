@@ -19,7 +19,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Unit3.h>
 
 namespace gtsam {
 
@@ -35,7 +35,7 @@ class AttitudeFactor {
 
 protected:
 
-  const Sphere2 nZ_, bRef_; ///< Position measurement in
+  const Unit3 nZ_, bRef_; ///< Position measurement in
 
 public:
 
@@ -48,7 +48,7 @@ public:
    * @param nZ measured direction in navigation frame
    * @param bRef reference direction in body frame (default Z-axis)
    */
-  AttitudeFactor(const Sphere2& nZ, const Sphere2& bRef = Sphere2(0, 0, 1)) :
+  AttitudeFactor(const Unit3& nZ, const Unit3& bRef = Unit3(0, 0, 1)) :
       nZ_(nZ), bRef_(bRef) {
   }
 
@@ -87,8 +87,8 @@ public:
    * @param model Gaussian noise model
    * @param bRef reference direction in body frame (default Z-axis)
    */
-  Rot3AttitudeFactor(Key key, const Sphere2& nZ, const SharedNoiseModel& model,
-      const Sphere2& bRef = Sphere2(0, 0, 1)) :
+  Rot3AttitudeFactor(Key key, const Unit3& nZ, const SharedNoiseModel& model,
+      const Unit3& bRef = Unit3(0, 0, 1)) :
       Base(model, key), AttitudeFactor(nZ, bRef) {
   }
 
@@ -156,8 +156,8 @@ public:
    * @param model Gaussian noise model
    * @param bRef reference direction in body frame (default Z-axis)
    */
-  Pose3AttitudeFactor(Key key, const Sphere2& nZ, const SharedNoiseModel& model,
-      const Sphere2& bRef = Sphere2(0, 0, 1)) :
+  Pose3AttitudeFactor(Key key, const Unit3& nZ, const SharedNoiseModel& model,
+      const Unit3& bRef = Unit3(0, 0, 1)) :
       Base(model, key), AttitudeFactor(nZ, bRef) {
   }
 

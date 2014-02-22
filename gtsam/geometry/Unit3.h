@@ -10,12 +10,12 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file Sphere2.h
+ * @file Unit3.h
  * @date Feb 02, 2011
  * @author Can Erdogan
  * @author Frank Dellaert
  * @author Alex Trevor
- * @brief Develop a Sphere2 class - basically a point on a unit sphere
+ * @brief Develop a Unit3 class - basically a point on a unit sphere
  */
 
 #pragma once
@@ -38,7 +38,7 @@ typedef mersenne_twister_engine<uint32_t, 32, 624, 397, 31, 0x9908b0df, 11,
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class Sphere2: public DerivedValue<Sphere2> {
+class Unit3: public DerivedValue<Unit3> {
 
 private:
 
@@ -51,27 +51,27 @@ public:
   /// @{
 
   /// Default constructor
-  Sphere2() :
+  Unit3() :
       p_(1.0, 0.0, 0.0) {
   }
 
   /// Construct from point
-  Sphere2(const Point3& p) :
+  Unit3(const Point3& p) :
       p_(p / p.norm()) {
   }
 
   /// Construct from x,y,z
-  Sphere2(double x, double y, double z) :
+  Unit3(double x, double y, double z) :
       p_(x, y, z) {
     p_ = p_ / p_.norm();
   }
 
   /// Named constructor from Point3 with optional Jacobian
-  static Sphere2 FromPoint3(const Point3& point, boost::optional<Matrix&> H =
+  static Unit3 FromPoint3(const Point3& point, boost::optional<Matrix&> H =
       boost::none);
 
   /// Random direction, using boost::uniform_on_sphere
-  static Sphere2 Random(boost::random::mt19937 & rng);
+  static Unit3 Random(boost::random::mt19937 & rng);
 
   /// @}
 
@@ -82,7 +82,7 @@ public:
   void print(const std::string& s = std::string()) const;
 
   /// The equals function with tolerance
-  bool equals(const Sphere2& s, double tol = 1e-9) const {
+  bool equals(const Unit3& s, double tol = 1e-9) const {
     return p_.equals(s.p_, tol);
   }
   /// @}
@@ -108,16 +108,16 @@ public:
   }
 
   /// Return scaled direction as Point3
-  friend Point3 operator*(double s, const Sphere2& d) {
+  friend Point3 operator*(double s, const Unit3& d) {
     return s * d.p_;
   }
 
   /// Signed, vector-valued error between two directions
-  Vector error(const Sphere2& q,
+  Vector error(const Unit3& q,
       boost::optional<Matrix&> H = boost::none) const;
 
   /// Distance between two directions
-  double distance(const Sphere2& q,
+  double distance(const Unit3& q,
       boost::optional<Matrix&> H = boost::none) const;
 
   /// @}
@@ -141,10 +141,10 @@ public:
   };
 
   /// The retract function
-  Sphere2 retract(const Vector& v) const;
+  Unit3 retract(const Vector& v) const;
 
   /// The local coordinates function
-  Vector localCoordinates(const Sphere2& s) const;
+  Vector localCoordinates(const Unit3& s) const;
 
   /// @}
 };

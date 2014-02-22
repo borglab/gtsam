@@ -563,15 +563,15 @@ virtual class Pose3 : gtsam::Value {
   void serialize() const;
 };
 
-#include <gtsam/geometry/Sphere2.h>
-virtual class Sphere2 : gtsam::Value {
+#include <gtsam/geometry/Unit3.h>
+virtual class Unit3 : gtsam::Value {
   // Standard Constructors
-  Sphere2();
-  Sphere2(const gtsam::Point3& pose);
+  Unit3();
+  Unit3(const gtsam::Point3& pose);
 
   // Testable
   void print(string s) const;
-  bool equals(const gtsam::Sphere2& pose, double tol) const;
+  bool equals(const gtsam::Unit3& pose, double tol) const;
 
   // Other functionality
   Matrix basis() const;
@@ -580,14 +580,14 @@ virtual class Sphere2 : gtsam::Value {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::Sphere2 retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Sphere2& s) const;
+  gtsam::Unit3 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Unit3& s) const;
 };
 
 #include <gtsam/geometry/EssentialMatrix.h>
 virtual class EssentialMatrix : gtsam::Value {
   // Standard Constructors
-  EssentialMatrix(const gtsam::Rot3& aRb, const gtsam::Sphere2& aTb);
+  EssentialMatrix(const gtsam::Rot3& aRb, const gtsam::Unit3& aTb);
 
   // Testable
   void print(string s) const;
@@ -601,7 +601,7 @@ virtual class EssentialMatrix : gtsam::Value {
 
   // Other methods:
   gtsam::Rot3 rotation() const;
-  gtsam::Sphere2 direction() const;
+  gtsam::Unit3 direction() const;
   Matrix matrix() const;
   double error(Vector vA, Vector vB);
 };
