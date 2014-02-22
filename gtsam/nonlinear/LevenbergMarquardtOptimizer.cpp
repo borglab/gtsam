@@ -103,7 +103,6 @@ void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality){
     params_.lambdaFactor = 2.0;
     // reuse_diagonal_ = false;
   }
-  std::cout << " state_.lambda "  << state_.lambda << std::endl;
 }
 
 /* ************************************************************************* */
