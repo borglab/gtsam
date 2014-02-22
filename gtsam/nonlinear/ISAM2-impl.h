@@ -123,11 +123,24 @@ struct GTSAM_EXPORT ISAM2::Impl {
       boost::optional<VectorValues&> invalidateIfDebug = boost::none,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
-  static size_t UpdateDelta(const FastVector<ISAM2::sharedClique>& roots,
-    FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold);
+  /**
+   * Update the Newton's method step point, using wildfire
+   */
+  static size_t UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots,
+      const FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold);
 
-  static size_t UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, FastSet<Key>& replacedKeys,
-      VectorValues& deltaNewton, VectorValues& RgProd);
+  /**
+   * Update the RgProd (R*g) incrementally taking into account which variables
+   * have been recalculated in \c replacedKeys.  Only used in Dogleg.
+   */
+  static size_t UpdateRgProd(const ISAM2::Roots& roots, const FastSet<Key>& replacedKeys,
+      const VectorValues& gradAtZero, VectorValues& RgProd);
+  
+  /**
+   * Compute the gradient-search point.  Only used in Dogleg.
+   */
+  static VectorValues ComputeGradientSearch(const VectorValues& gradAtZero,
+                                            const VectorValues& RgProd);
 
 };
 

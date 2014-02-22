@@ -151,15 +151,13 @@ void ISAM2Clique::print(const std::string& s, const KeyFormatter& formatter) con
 }
 
 /* ************************************************************************* */
-ISAM2::ISAM2(const ISAM2Params& params):
-    deltaDoglegUptodate_(true), deltaUptodate_(true), params_(params) {
+ISAM2::ISAM2(const ISAM2Params& params): params_(params) {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
 
 /* ************************************************************************* */
-ISAM2::ISAM2():
-    deltaDoglegUptodate_(true), deltaUptodate_(true) {
+ISAM2::ISAM2() {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
@@ -745,8 +743,6 @@ ISAM2Result ISAM2::update(
     gttoc(remove_variables);
   }
   result.cliques = this->nodes().size();
-  deltaDoglegUptodate_ = false;
-  deltaUptodate_ = false;
 
   gttic(evaluate_error_after);
   if(params_.evaluateNonlinearError)
@@ -975,20 +971,36 @@ void ISAM2::updateDelta(bool forceFullSolve) const
         boost::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
     const double effectiveWildfireThreshold = forceFullSolve ? 0.0 : gaussNewtonParams.wildfireThreshold;
     gttic(Wildfire_update);
-    lastBacksubVariableCount = Impl::UpdateDelta(roots_, deltaReplacedMask_, delta_, effectiveWildfireThreshold);
+    lastBacksubVariableCount = Impl::UpdateGaussNewtonDelta(
+        roots_, deltaReplacedMask_, delta_, effectiveWildfireThreshold);
+    deltaReplacedMask_.clear();
     gttoc(Wildfire_update);
 
   } else if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams)) {
     // If using Dogleg, do a Dogleg step
     const ISAM2DoglegParams& doglegParams =
         boost::get<ISAM2DoglegParams>(params_.optimizationParams);
+    const double effectiveWildfireThreshold = forceFullSolve ? 0.0 : doglegParams.wildfireThreshold;
 
     // Do one Dogleg iteration
     gttic(Dogleg_Iterate);
-    VectorValues dx_u = gtsam::optimizeGradientSearch(*this);
-    VectorValues dx_n = gtsam::optimize(*this);
+
+    // Compute Newton's method step
+    gttic(Wildfire_update);
+    lastBacksubVariableCount = Impl::UpdateGaussNewtonDelta(roots_, deltaReplacedMask_, deltaNewton_, effectiveWildfireThreshold);
+    gttoc(Wildfire_update);
+    
+    // Compute steepest descent step
+    const VectorValues gradAtZero = this->gradientAtZero(); // Compute gradient
+    Impl::UpdateRgProd(roots_, deltaReplacedMask_, gradAtZero, RgProd_); // Update RgProd
+    const VectorValues dx_u = Impl::ComputeGradientSearch(gradAtZero, RgProd_); // Compute gradient search point
+    
+    // Clear replaced keys mask because now we've updated deltaNewton_ and RgProd_
+    deltaReplacedMask_.clear();
+    
+    // Compute dogleg point
     DoglegOptimizerImpl::IterationResult doglegResult(DoglegOptimizerImpl::Iterate(
-        *doglegDelta_, doglegParams.adaptationMode, dx_u, dx_n, *this, nonlinearFactors_,
+        *doglegDelta_, doglegParams.adaptationMode, dx_u, deltaNewton_, *this, nonlinearFactors_,
         theta_, nonlinearFactors_.error(theta_), doglegParams.verbose));
     gttoc(Dogleg_Iterate);
 
@@ -998,21 +1010,15 @@ void ISAM2::updateDelta(bool forceFullSolve) const
     delta_ = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
     gttoc(Copy_dx_d);
   }
-
-  deltaUptodate_ = true;
 }
 
 /* ************************************************************************* */
 Values ISAM2::calculateEstimate() const {
   gttic(ISAM2_calculateEstimate);
-  gttic(Copy_Values);
-  Values ret(theta_);
-  gttoc(Copy_Values);
   const VectorValues& delta(getDelta());
   gttic(Expmap);
-  ret = ret.retract(delta);
+  return theta_.retract(delta);
   gttoc(Expmap);
-  return ret;
 }
 
 /* ************************************************************************* */
@@ -1023,7 +1029,8 @@ const Value& ISAM2::calculateEstimate(Key key) const {
 
 /* ************************************************************************* */
 Values ISAM2::calculateBestEstimate() const {
-  return theta_.retract(internal::linearAlgorithms::optimizeBayesTree(*this));
+  updateDelta(true); // Force full solve when updating delta_
+  return theta_.retract(delta_);
 }
 
 /* ************************************************************************* */
@@ -1033,7 +1040,7 @@ Matrix ISAM2::marginalCovariance(Key key) const {
 
 /* ************************************************************************* */
 const VectorValues& ISAM2::getDelta() const {
-  if(!deltaUptodate_)
+  if(!deltaReplacedMask_.empty())
     updateDelta();
   return delta_;
 }
@@ -1042,88 +1049,6 @@ const VectorValues& ISAM2::getDelta() const {
 double ISAM2::error(const VectorValues& x) const
 {
   return GaussianFactorGraph(*this).error(x);
-}
-
-/* ************************************************************************* */
-VectorValues optimize(const ISAM2& isam) {
-  VectorValues delta;
-  optimizeInPlace(isam, delta);
-  return delta;
-}
-
-/* ************************************************************************* */
-void optimizeInPlace(const ISAM2& isam, VectorValues& delta)
-{
-  gttic(ISAM2_optimizeInPlace);
-  // We may need to update the solution calculations
-  if(!isam.deltaDoglegUptodate_) {
-    gttic(UpdateDoglegDeltas);
-    double wildfireThreshold = 0.0;
-    if(isam.params().optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
-      wildfireThreshold = boost::get<ISAM2GaussNewtonParams>(isam.params().optimizationParams).wildfireThreshold;
-    else if(isam.params().optimizationParams.type() == typeid(ISAM2DoglegParams))
-      wildfireThreshold = boost::get<ISAM2DoglegParams>(isam.params().optimizationParams).wildfireThreshold;
-    else
-      assert(false);
-    ISAM2::Impl::UpdateDoglegDeltas(isam, wildfireThreshold, isam.deltaReplacedMask_, isam.deltaNewton_, isam.RgProd_);
-    isam.deltaDoglegUptodate_ = true;
-    gttoc(UpdateDoglegDeltas);
-  }
-
-  gttic(copy_delta);
-  delta = isam.deltaNewton_;
-  gttoc(copy_delta);
-}
-
-/* ************************************************************************* */
-
-VectorValues optimizeGradientSearch(const ISAM2& isam) {
-  VectorValues grad;
-  optimizeGradientSearchInPlace(isam, grad);
-  return grad;
-}
-
-/* ************************************************************************* */
-void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad)
-{
-  gttic(ISAM2_optimizeGradientSearchInPlace);
-  // We may need to update the solution calcaulations
-  if(!isam.deltaDoglegUptodate_) {
-    gttic(UpdateDoglegDeltas);
-    double wildfireThreshold = 0.0;
-    if(isam.params().optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
-      wildfireThreshold = boost::get<ISAM2GaussNewtonParams>(isam.params().optimizationParams).wildfireThreshold;
-    else if(isam.params().optimizationParams.type() == typeid(ISAM2DoglegParams))
-      wildfireThreshold = boost::get<ISAM2DoglegParams>(isam.params().optimizationParams).wildfireThreshold;
-    else
-      assert(false);
-    ISAM2::Impl::UpdateDoglegDeltas(isam, wildfireThreshold, isam.deltaReplacedMask_, isam.deltaNewton_, isam.RgProd_);
-    isam.deltaDoglegUptodate_ = true;
-    gttoc(UpdateDoglegDeltas);
-  }
-
-  gttic(Compute_Gradient);
-  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-  gradientAtZero(isam, grad);
-  double gradientSqNorm = grad.dot(grad);
-  gttoc(Compute_Gradient);
-
-  gttic(Compute_minimizing_step_size);
-  // Compute minimizing step size
-  double RgNormSq = isam.RgProd_.vector().squaredNorm();
-  double step = -gradientSqNorm / RgNormSq;
-  gttoc(Compute_minimizing_step_size);
-
-  gttic(Compute_point);
-  // Compute steepest descent point
-  grad *= step;
-  gttoc(Compute_point);
-}
-
-/* ************************************************************************* */
-
-VectorValues gradient(const ISAM2& bayesTree, const VectorValues& x0) {
-  return GaussianFactorGraph(bayesTree).gradient(x0);
 }
 
 /* ************************************************************************* */
@@ -1147,13 +1072,16 @@ static void gradientAtZeroTreeAdder(const boost::shared_ptr<ISAM2Clique>& root, 
 }
 
 /* ************************************************************************* */
-void gradientAtZero(const ISAM2& bayesTree, VectorValues& g) {
-  // Zero-out gradient
-  g.setZero();
-
+VectorValues ISAM2::gradientAtZero() const
+{
+  // Create result
+  VectorValues g;
+  
   // Sum up contributions for each clique
-  BOOST_FOREACH(const ISAM2::sharedClique& root, bayesTree.roots())
-    gradientAtZeroTreeAdder(root, g);
+  BOOST_FOREACH(const ISAM2::sharedClique& root, this->roots())
+  gradientAtZeroTreeAdder(root, g);
+  
+  return g;
 }
 
 }
