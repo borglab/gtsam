@@ -154,9 +154,23 @@ TEST(Sphere2, distance) {
 //*******************************************************************************
 TEST(Sphere2, localCoordinates0) {
   Sphere2 p;
-  Vector expected = zero(2);
   Vector actual = p.localCoordinates(p);
-  EXPECT(assert_equal(expected, actual, 1e-8));
+  EXPECT(assert_equal(zero(2), actual, 1e-8));
+}
+
+//*******************************************************************************
+TEST(Sphere2, localCoordinates1) {
+  Sphere2 p, q(1, 6.12385e-21, 0);
+  Vector actual = p.localCoordinates(q);
+  CHECK(assert_equal(zero(2), actual, 1e-8));
+}
+
+//*******************************************************************************
+TEST(Sphere2, localCoordinates2) {
+  Sphere2 p, q(-1, 0, 0);
+  Vector expected = (Vector(2) << M_PI, 0);
+  Vector actual = p.localCoordinates(q);
+  CHECK(assert_equal(expected, actual, 1e-8));
 }
 
 //*******************************************************************************
