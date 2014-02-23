@@ -150,9 +150,7 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
 
   if(removeFactorIndices){
     if(debug){
-      BOOST_FOREACH(size_t slot, *removeFactorIndices) {
-        std::cout << "ConcurrentBatchFilter::update  removeFactorIndices " << std::endl;
-      }
+      std::cout << "ConcurrentBatchFilter::update  removeFactorIndices " << std::endl;
     }
     removeFactors(*removeFactorIndices);
   }
