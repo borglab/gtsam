@@ -295,9 +295,7 @@ add_subdirectory(gtsam)
 add_subdirectory(tests)
 
 # Build examples
-if (GTSAM_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif(GTSAM_BUILD_EXAMPLES)
+add_subdirectory(examples)
 
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
