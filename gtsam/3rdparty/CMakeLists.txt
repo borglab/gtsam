@@ -25,4 +25,6 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 		FILES_MATCHING PATTERN "*.h")
 endif()
 
+############ NOTE:  When updating GeographicLib be sure to disable building their examples
+############        by commenting out their line add_subdirectory (examples).
 add_subdirectory(GeographicLib)
