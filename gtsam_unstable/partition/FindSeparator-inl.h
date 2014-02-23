@@ -79,7 +79,7 @@ namespace gtsam { namespace partition {
 	void modefied_EdgeComputeSeparator(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
 			idx_t *adjwgt, idx_t *options, idx_t *edgecut, idx_t *part)
 	{
-    idx_t i, j, ncon;
+    idx_t i, ncon;
 		graph_t *graph;
 		real_t *tpwgts2;
 		ctrl_t *ctrl;
@@ -185,12 +185,12 @@ namespace gtsam { namespace partition {
 		std::vector<int>& dictionary = workspace.dictionary;
 		workspace.prepareDictionary(keys);
 
-		// prepare for {adjancyMap}, a pair of neighbor indices and the correponding edge weights
+		// prepare for {adjacencyMap}, a pair of neighbor indices and the correponding edge weights
 		int numNodes = keys.size();
 		int numEdges = 0;
-		vector<NeighborsInfo> adjancyMap;
-		adjancyMap.resize(numNodes);
-		cout << "Number of nodes: " << adjancyMap.size() << endl;
+		vector<NeighborsInfo> adjacencyMap;
+		adjacencyMap.resize(numNodes);
+		cout << "Number of nodes: " << adjacencyMap.size() << endl;
 		int index1, index2;
 
 		BOOST_FOREACH(const typename GenericGraph::value_type& factor, graph){
@@ -200,13 +200,13 @@ namespace gtsam { namespace partition {
 			cout << "index2: " << index2 << endl;
 			// if both nodes are in the current graph, i.e. not a joint factor between frontal and separator
 			if (index1 >= 0 && index2 >= 0) {       
-				pair<Neighbors, Weights>& adjancyMap1 = adjancyMap[index1];
-				pair<Neighbors, Weights>& adjancyMap2 = adjancyMap[index2];
+				pair<Neighbors, Weights>& adjacencyMap1 = adjacencyMap[index1];
+				pair<Neighbors, Weights>& adjacencyMap2 = adjacencyMap[index2];
 				try{
-				 adjancyMap1.first.push_back(index2);
-				 adjancyMap1.second.push_back(factor->weight);
-				 adjancyMap2.first.push_back(index1);
-				 adjancyMap2.second.push_back(factor->weight);
+				 adjacencyMap1.first.push_back(index2);
+				 adjacencyMap1.second.push_back(factor->weight);
+				 adjacencyMap2.first.push_back(index1);
+				 adjacencyMap2.second.push_back(factor->weight);
 				}catch(std::exception& e){
 					cout << e.what() << endl;
 				}
@@ -222,7 +222,7 @@ namespace gtsam { namespace partition {
 		sharedInts& adjncy = *ptr_adjncy;
 		sharedInts& adjwgt = *ptr_adjwgt;
 		int ind_xadj = 0, ind_adjncy = 0;
-		BOOST_FOREACH(const NeighborsInfo& info, adjancyMap) {
+		BOOST_FOREACH(const NeighborsInfo& info, adjacencyMap) {
 			*(xadj.get() + ind_xadj) = ind_adjncy;
 			std::copy(info.first .begin(), info.first .end(), adjncy.get() + ind_adjncy);
 			std::copy(info.second.begin(), info.second.end(), adjwgt.get() + ind_adjncy);
@@ -248,7 +248,7 @@ namespace gtsam { namespace partition {
 		prepareMetisGraph<GenericGraph>(graph, keys, workspace, &xadj, &adjncy, &adjwgt);
 
 		// run ND on the graph
-		int sepsize;
+		size_t sepsize;
 		sharedInts part;
 		boost::tie(sepsize, part) = separatorMetis(numKeys, xadj, adjncy, adjwgt, verbose);
 		if (!sepsize)	return boost::optional<MetisResult>();
@@ -528,7 +528,7 @@ namespace gtsam { namespace partition {
 #endif
 
 		// absorb small components into the separator
-		int oldSize = islands.size();
+		size_t oldSize = islands.size();
 		while(true) {
 			if (islands.size() < 2) {
 				cout << "numIsland: " << numIsland0 << endl;
