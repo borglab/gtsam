@@ -23,164 +23,160 @@ using namespace gtsam::partition;
 
 /* ************************************************************************* */
 // x0 - x1 - x2
-// l3   		 l4
+// l3        l4
 TEST ( Partition, separatorPartitionByMetis )
 {
-	GenericGraph2D graph;
-	graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 3, NODE_LANDMARK_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-	std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
+  GenericGraph2D graph;
+  graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 3, NODE_LANDMARK_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
 
-	WorkSpace workspace(5);
-	boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
-	 workspace, true);
+  WorkSpace workspace(5);
+  boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
+   workspace, true);
 
-	CHECK(actual.is_initialized());
-	vector<size_t> A_expected; A_expected += 0, 3; // frontal
-	vector<size_t> B_expected; B_expected += 2, 4; // frontal
-	vector<size_t> C_expected; C_expected += 1;    // separator
-	CHECK(A_expected == actual->A);
-	CHECK(B_expected == actual->B);
-	CHECK(C_expected == actual->C);
+  CHECK(actual.is_initialized());
+  vector<size_t> A_expected; A_expected += 0, 3; // frontal
+  vector<size_t> B_expected; B_expected += 2, 4; // frontal
+  vector<size_t> C_expected; C_expected += 1;    // separator
+  CHECK(A_expected == actual->A);
+  CHECK(B_expected == actual->B);
+  CHECK(C_expected == actual->C);
 }
 
 /* ************************************************************************* */
 // x1 - x2 - x3,     variable  not used x0, x4, l7
-// l5   		 l6
+// l5        l6
 TEST ( Partition, separatorPartitionByMetis2 )
 {
-	GenericGraph2D graph;
-	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
-	std::vector<size_t> keys; keys += 1, 2, 3, 5, 6;
+  GenericGraph2D graph;
+  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
+  std::vector<size_t> keys; keys += 1, 2, 3, 5, 6;
 
-	WorkSpace workspace(8);
-	boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
-	 workspace, true);
+  WorkSpace workspace(8);
+  boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
+   workspace, true);
 
-	CHECK(actual.is_initialized());
-	vector<size_t> A_expected; A_expected += 1, 5; // frontal
-	vector<size_t> B_expected; B_expected += 3, 6; // frontal
-	vector<size_t> C_expected; C_expected += 2;    // separator
-	CHECK(A_expected == actual->A);
-	CHECK(B_expected == actual->B);
-	CHECK(C_expected == actual->C);
+  CHECK(actual.is_initialized());
+  vector<size_t> A_expected; A_expected += 1, 5; // frontal
+  vector<size_t> B_expected; B_expected += 3, 6; // frontal
+  vector<size_t> C_expected; C_expected += 2;    // separator
+  CHECK(A_expected == actual->A);
+  CHECK(B_expected == actual->B);
+  CHECK(C_expected == actual->C);
 }
 
 /* *************************************************************************/
 // x0 - x1 - x2 - x3
 TEST ( Partition, edgePartitionByMetis )
 {
-	GenericGraph2D graph;
-	graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D, 1));
-	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D, 1));
-	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D, 1));
-	std::vector<size_t> keys; keys += 0, 1, 2, 3;
+  GenericGraph3D graph;
+  graph.push_back(boost::make_shared<GenericFactor3D>(0, 1, 0, NODE_POSE_3D, NODE_POSE_3D));
+  graph.push_back(boost::make_shared<GenericFactor3D>(1, 2, 1, NODE_POSE_3D, NODE_POSE_3D));
+  graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 2, NODE_POSE_3D, NODE_POSE_3D));
+  std::vector<size_t> keys; keys += 0, 1, 2, 3;
 
-	WorkSpace workspace(6);
-	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph2D>(graph, keys,
-	 workspace, true);
+  WorkSpace workspace(6);
+  boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
+   workspace, true);
 
-	CHECK(actual.is_initialized());
-	vector<size_t> A_expected; A_expected += 0, 1; // frontal
-	vector<size_t> B_expected; B_expected += 2, 3; // frontal
-	vector<size_t> C_expected;    // separator
-	BOOST_FOREACH(const size_t a, actual->A)
-		cout << a << " ";
-	cout << endl;
-	BOOST_FOREACH(const size_t b, actual->B)
-		cout << b << " ";
-	cout << endl;
+  CHECK(actual.is_initialized());
+  vector<size_t> A_expected; A_expected += 0, 1; // frontal
+  vector<size_t> B_expected; B_expected += 2, 3; // frontal
+  vector<size_t> C_expected;    // separator
+//  BOOST_FOREACH(const size_t a, actual->A)
+//    cout << a << " ";
+//  cout << endl;
+//  BOOST_FOREACH(const size_t b, actual->B)
+//    cout << b << " ";
+//  cout << endl;
 
-	CHECK(A_expected == actual->A || A_expected == actual->B);
-	CHECK(B_expected == actual->B || B_expected == actual->A);
-	CHECK(C_expected == actual->C);
+  CHECK(A_expected == actual->A || A_expected == actual->B);
+  CHECK(B_expected == actual->B || B_expected == actual->A);
+  CHECK(C_expected == actual->C);
 }
 
 /* *************************************************************************/
 // x0 - x1 - x2 - x3 - x4
 TEST ( Partition, edgePartitionByMetis2 )
 {
-	GenericGraph2D graph;
-	graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D, 20));
-	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D, 1));
-	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D, 1));
-	graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 4, NODE_POSE_2D, 1));
-	//graph.push_back(boost::make_shared<GenericFactor3D>(0, 2, 0, NODE_POSE_3D, NODE_POSE_3D, 1));
-	//graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 1, NODE_POSE_3D, NODE_POSE_3D, 1));
-	//graph.push_back(boost::make_shared<GenericFactor3D>(3, 5, 2, NODE_POSE_3D, NODE_POSE_3D, 20));
-	//graph.push_back(boost::make_shared<GenericFactor3D>(5, 6, 3, NODE_POSE_3D, NODE_POSE_3D, 1));
-	std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
+  GenericGraph3D graph;
+  graph.push_back(boost::make_shared<GenericFactor3D>(0, 1, 0, NODE_POSE_3D, NODE_POSE_3D, 1));
+  graph.push_back(boost::make_shared<GenericFactor3D>(1, 2, 1, NODE_POSE_3D, NODE_POSE_3D, 1));
+  graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 2, NODE_POSE_3D, NODE_POSE_3D, 20));
+  graph.push_back(boost::make_shared<GenericFactor3D>(3, 4, 3, NODE_POSE_3D, NODE_POSE_3D, 1));
+  std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
 
-	WorkSpace workspace(6);
-	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph2D>(graph, keys,
-	 workspace, true);
-	CHECK(actual.is_initialized());
-	vector<size_t> A_expected; A_expected += 0, 1; // frontal
-	vector<size_t> B_expected; B_expected += 2, 3, 4; // frontal
-	vector<size_t> C_expected;    // separator
-	CHECK(A_expected == actual->A);
-	CHECK(B_expected == actual->B);
-	CHECK(C_expected == actual->C);
+  WorkSpace workspace(6);
+  boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
+   workspace, true);
+  CHECK(actual.is_initialized());
+  vector<size_t> A_expected; A_expected += 0, 1; // frontal
+  vector<size_t> B_expected; B_expected += 2, 3, 4; // frontal
+  vector<size_t> C_expected;    // separator
+  CHECK(A_expected == actual->A);
+  CHECK(B_expected == actual->B);
+  CHECK(C_expected == actual->C);
 } 
 
 /* ************************************************************************* */
 // x0 - x1 - x2
-// l3   		 l4
+// l3        l4
 TEST ( Partition, findSeparator )
 {
-	GenericGraph2D graph;
-	graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 3, NODE_LANDMARK_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-	std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
+  GenericGraph2D graph;
+  graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 3, NODE_LANDMARK_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
 
-	WorkSpace workspace(5);
-	int minNodesPerMap = -1;
-	bool reduceGraph = false;
-	int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
-		false, boost::none, reduceGraph, 0, 0);
-	LONGS_EQUAL(2, numSubmaps);
-	LONGS_EQUAL(5, workspace.partitionTable.size());
-	LONGS_EQUAL(1, workspace.partitionTable[0]);
-	LONGS_EQUAL(0, workspace.partitionTable[1]);
-	LONGS_EQUAL(2, workspace.partitionTable[2]);
-	LONGS_EQUAL(1, workspace.partitionTable[3]);
-	LONGS_EQUAL(2, workspace.partitionTable[4]);
+  WorkSpace workspace(5);
+  int minNodesPerMap = -1;
+  bool reduceGraph = false;
+  int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
+    false, boost::none, reduceGraph, 0, 0);
+  LONGS_EQUAL(2, numSubmaps);
+  LONGS_EQUAL(5, workspace.partitionTable.size());
+  LONGS_EQUAL(1, workspace.partitionTable[0]);
+  LONGS_EQUAL(0, workspace.partitionTable[1]);
+  LONGS_EQUAL(2, workspace.partitionTable[2]);
+  LONGS_EQUAL(1, workspace.partitionTable[3]);
+  LONGS_EQUAL(2, workspace.partitionTable[4]);
 }
 
 /* ************************************************************************* */
 // x1 - x2 - x3,     variable  not used x0, x4, l7
-// l5   		 l6
+// l5        l6
 TEST ( Partition, findSeparator2 )
 {
-	GenericGraph2D graph;
-	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
-	std::vector<size_t> keys; keys += 1, 2, 3, 5, 6;
+  GenericGraph2D graph;
+  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
+  std::vector<size_t> keys; keys += 1, 2, 3, 5, 6;
 
-	WorkSpace workspace(8);
-	int minNodesPerMap = -1;
-	bool reduceGraph = false;
-	int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
-		false, boost::none, reduceGraph, 0, 0);
-	LONGS_EQUAL(2, numSubmaps);
-	LONGS_EQUAL(8, workspace.partitionTable.size());
-	LONGS_EQUAL(-1,workspace.partitionTable[0]);
-	LONGS_EQUAL(1, workspace.partitionTable[1]);
-	LONGS_EQUAL(0, workspace.partitionTable[2]);
-	LONGS_EQUAL(2, workspace.partitionTable[3]);
-	LONGS_EQUAL(-1,workspace.partitionTable[4]);
-	LONGS_EQUAL(1, workspace.partitionTable[5]);
-	LONGS_EQUAL(2, workspace.partitionTable[6]);
-	LONGS_EQUAL(-1,workspace.partitionTable[7]);
+  WorkSpace workspace(8);
+  int minNodesPerMap = -1;
+  bool reduceGraph = false;
+  int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
+    false, boost::none, reduceGraph, 0, 0);
+  LONGS_EQUAL(2, numSubmaps);
+  LONGS_EQUAL(8, workspace.partitionTable.size());
+  LONGS_EQUAL(-1,workspace.partitionTable[0]);
+  LONGS_EQUAL(1, workspace.partitionTable[1]);
+  LONGS_EQUAL(0, workspace.partitionTable[2]);
+  LONGS_EQUAL(2, workspace.partitionTable[3]);
+  LONGS_EQUAL(-1,workspace.partitionTable[4]);
+  LONGS_EQUAL(1, workspace.partitionTable[5]);
+  LONGS_EQUAL(2, workspace.partitionTable[6]);
+  LONGS_EQUAL(-1,workspace.partitionTable[7]);
 }
 
 /* *************************************************************************
