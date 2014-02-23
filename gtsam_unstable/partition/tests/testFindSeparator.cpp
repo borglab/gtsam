@@ -72,22 +72,22 @@ TEST ( Partition, separatorPartitionByMetis2 )
 }
 
 /* *************************************************************************/
-// x0 - x2 - x3 - x5
+// x0 - x1 - x2 - x3
 TEST ( Partition, edgePartitionByMetis )
 {
-	GenericGraph3D graph;
-	graph.push_back(boost::make_shared<GenericFactor3D>(0, 2, 0, NODE_POSE_3D, NODE_POSE_3D));
-	graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 1, NODE_POSE_3D, NODE_POSE_3D));
-	graph.push_back(boost::make_shared<GenericFactor3D>(3, 5, 2, NODE_POSE_3D, NODE_POSE_3D));
-	std::vector<size_t> keys; keys += 0, 2, 3, 5;
+	GenericGraph2D graph;
+	graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D, 1));
+	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D, 1));
+	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D, 1));
+	std::vector<size_t> keys; keys += 0, 1, 2, 3;
 
 	WorkSpace workspace(6);
-	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
+	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph2D>(graph, keys,
 	 workspace, true);
 
 	CHECK(actual.is_initialized());
-	vector<size_t> A_expected; A_expected += 0, 2; // frontal
-	vector<size_t> B_expected; B_expected += 3, 5; // frontal
+	vector<size_t> A_expected; A_expected += 0, 1; // frontal
+	vector<size_t> B_expected; B_expected += 2, 3; // frontal
 	vector<size_t> C_expected;    // separator
 	BOOST_FOREACH(const size_t a, actual->A)
 		cout << a << " ";
@@ -102,22 +102,26 @@ TEST ( Partition, edgePartitionByMetis )
 }
 
 /* *************************************************************************/
-// x0 - x2 - x3 - x5 - x6
+// x0 - x1 - x2 - x3 - x4
 TEST ( Partition, edgePartitionByMetis2 )
 {
-	GenericGraph3D graph;
-	graph.push_back(boost::make_shared<GenericFactor3D>(0, 2, 0, NODE_POSE_3D, NODE_POSE_3D, 1));
-	graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 1, NODE_POSE_3D, NODE_POSE_3D, 1));
-	graph.push_back(boost::make_shared<GenericFactor3D>(3, 5, 2, NODE_POSE_3D, NODE_POSE_3D, 20));
-	graph.push_back(boost::make_shared<GenericFactor3D>(5, 6, 3, NODE_POSE_3D, NODE_POSE_3D, 1));
-	std::vector<size_t> keys; keys += 0, 2, 3, 5, 6;
+	GenericGraph2D graph;
+	graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D, 20));
+	graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D, 1));
+	graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D, 1));
+	graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 4, NODE_POSE_2D, 1));
+	//graph.push_back(boost::make_shared<GenericFactor3D>(0, 2, 0, NODE_POSE_3D, NODE_POSE_3D, 1));
+	//graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 1, NODE_POSE_3D, NODE_POSE_3D, 1));
+	//graph.push_back(boost::make_shared<GenericFactor3D>(3, 5, 2, NODE_POSE_3D, NODE_POSE_3D, 20));
+	//graph.push_back(boost::make_shared<GenericFactor3D>(5, 6, 3, NODE_POSE_3D, NODE_POSE_3D, 1));
+	std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
 
-	WorkSpace workspace(5);
-	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
-	 workspace, false);
+	WorkSpace workspace(6);
+	boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph2D>(graph, keys,
+	 workspace, true);
 	CHECK(actual.is_initialized());
-	vector<size_t> A_expected; A_expected += 0, 2; // frontal
-	vector<size_t> B_expected; B_expected += 3, 5, 6; // frontal
+	vector<size_t> A_expected; A_expected += 0, 1; // frontal
+	vector<size_t> B_expected; B_expected += 2, 3, 4; // frontal
 	vector<size_t> C_expected;    // separator
 	CHECK(A_expected == actual->A);
 	CHECK(B_expected == actual->B);

@@ -256,8 +256,9 @@ idx_t MultilevelBisect(ctrl_t *ctrl, graph_t *graph, real_t *tpwgts)
         icopy(graph->nvtxs, graph->where, bestwhere);
     }
 
-    if (bestobj == 0)
+    if (bestobj == 0){
       break;
+    }
 
     if (i < ctrl->ncuts-1)
       FreeRData(graph);
@@ -269,7 +270,6 @@ idx_t MultilevelBisect(ctrl_t *ctrl, graph_t *graph, real_t *tpwgts)
   }
 
   WCOREPOP;
-
   return bestobj;
 }
 

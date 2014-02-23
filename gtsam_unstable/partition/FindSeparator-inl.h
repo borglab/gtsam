@@ -202,19 +202,22 @@ namespace gtsam { namespace partition {
 			if (index1 >= 0 && index2 >= 0) {       
 				pair<Neighbors, Weights>& adjancyMap1 = adjancyMap[index1];
 				pair<Neighbors, Weights>& adjancyMap2 = adjancyMap[index2];
-				cout << adjancyMap1.first.size() << endl;
-				adjancyMap1.first .push_back(index2);
-				adjancyMap1.second.push_back(factor->weight);
-				adjancyMap2.first .push_back(index1);
-				adjancyMap2.second.push_back(factor->weight);
+				try{
+				 adjancyMap1.first.push_back(index2);
+				 adjancyMap1.second.push_back(factor->weight);
+				 adjancyMap2.first.push_back(index1);
+				 adjancyMap2.second.push_back(factor->weight);
+				}catch(std::exception& e){
+					cout << e.what() << endl;
+				}
 				numEdges++;
 			}
 		}
 
 		// prepare for {xadj}, {adjncy}, and {adjwgt}
-		*ptr_xadj   = sharedInts(new int[numNodes+1]);
-		*ptr_adjncy = sharedInts(new int[numEdges*2]);
-		*ptr_adjwgt = sharedInts(new int[numEdges*2]);
+		*ptr_xadj   = sharedInts(new idx_t[numNodes+1]);
+		*ptr_adjncy = sharedInts(new idx_t[numEdges*2]);
+		*ptr_adjwgt = sharedInts(new idx_t[numEdges*2]);
 		sharedInts& xadj = *ptr_xadj;
 		sharedInts& adjncy = *ptr_adjncy;
 		sharedInts& adjwgt = *ptr_adjwgt;

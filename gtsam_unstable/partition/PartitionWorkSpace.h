@@ -22,7 +22,8 @@ namespace gtsam { namespace partition {
 		PartitionTable partitionTable;                        // a mapping from a key to the submap index, 0 means the separator, i means the ith submap
 
 		// constructor
-		WorkSpace(const size_t numNodes) : dictionary(numNodes,0), dsf(new std::vector<size_t>(numNodes, 0)), partitionTable(numNodes, -1) { }
+		WorkSpace(const size_t numNodes) : dictionary(numNodes,0),
+		 dsf(new std::vector<size_t>(numNodes, 0)), partitionTable(numNodes, -1) { }
 
 		// set up dictionary: -1: no such key, none-zero: the corresponding 0-based index
 		inline void prepareDictionary(const std::vector<size_t>& keys) {
