@@ -37,7 +37,7 @@ bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
 PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(),Cal3_S2());
-EssentialMatrix trueE(c1Rc2, Sphere2(c1Tc2));
+EssentialMatrix trueE(c1Rc2, Unit3(c1Tc2));
 double baseline = 0.1; // actual baseline of the camera
 
 Point2 pA(size_t i) {
@@ -128,7 +128,7 @@ TEST (EssentialMatrixFactor, minimization) {
   EssentialMatrix initialE = trueE.retract(
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
   initial.insert(1, initialE);
-  EXPECT_DOUBLES_EQUAL(640, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
 
   // Optimize
   LevenbergMarquardtParams parameters;
@@ -297,7 +297,7 @@ SfM_data data;
 bool readOK = readBAL(filename, data);
 Rot3 aRb = data.cameras[1].pose().rotation();
 Point3 aTb = data.cameras[1].pose().translation();
-EssentialMatrix trueE(aRb, Sphere2(aTb));
+EssentialMatrix trueE(aRb, Unit3(aTb));
 
 double baseline = 10; // actual baseline of the camera
 
@@ -339,7 +339,7 @@ TEST (EssentialMatrixFactor, extraMinimization) {
   EssentialMatrix initialE = trueE.retract(
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
   initial.insert(1, initialE);
-  EXPECT_DOUBLES_EQUAL(640, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
 
   // Optimize
   LevenbergMarquardtParams parameters;

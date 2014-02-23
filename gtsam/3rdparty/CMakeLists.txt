@@ -24,3 +24,5 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 		DESTINATION include/gtsam/3rdparty/Eigen
 		FILES_MATCHING PATTERN "*.h")
 endif()
+
+add_subdirectory(GeographicLib)
