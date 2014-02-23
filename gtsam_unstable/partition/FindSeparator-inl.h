@@ -469,7 +469,7 @@ namespace gtsam { namespace partition {
 			reduceGenericGraph(graph, cameraKeys, landmarkKeys, dictionary, reducedGraph);
 			cout << "original graph: V" << keys.size() << ", E" << graph.size() 
 			<< " --> reduced graph: V" << cameraKeys.size() << ", E" << reducedGraph.size() << endl;
-			//result = edgePartitionByMetis(reducedGraph, keyToPartition, workspace, verbose);
+			result = edgePartitionByMetis(reducedGraph, keyToPartition, workspace, verbose);
 		}	else // call Metis to partition the graph to A, B, C
 			result = separatorPartitionByMetis(graph, keys, workspace, verbose);
 
