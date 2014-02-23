@@ -263,6 +263,7 @@ TEST( triangulation, twoIdenticalPoses) {
  CHECK_EXCEPTION(triangulatePoint3(poses, measurements, *sharedCal),
  TriangulationUnderconstrainedException);
  }
+ */
 
  /* ************************************************************************* */
 int main() {
