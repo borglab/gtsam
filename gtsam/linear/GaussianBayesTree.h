@@ -103,8 +103,7 @@ namespace gtsam {
      * \right\Vert^2 \f$, centered around zero. The gradient about zero is \f$ -R^T d \f$.  See also
      * gradient(const GaussianBayesNet&, const VectorValues&).
      * 
-     * @param [output] g A VectorValues to store the gradient, which must be preallocated, see
-     *        allocateVectorValues */
+     * @return A VectorValues storing the gradient. */
     VectorValues gradientAtZero() const;
 
     /** Mahalanobis norm error. */

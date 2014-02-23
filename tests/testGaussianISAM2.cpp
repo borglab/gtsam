@@ -274,8 +274,7 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   // Check gradient
   VectorValues expectedGradient = GaussianFactorGraph(isam).gradientAtZero();
   VectorValues expectedGradient2 = GaussianFactorGraph(isam).gradient(VectorValues::Zero(expectedGradient));
-  VectorValues actualGradient;
-  gradientAtZero(isam, actualGradient);
+  VectorValues actualGradient = isam.gradientAtZero();
   bool expectedGradOk = assert_equal(expectedGradient2, expectedGradient);
   EXPECT(expectedGradOk);
   bool totalGradOk = assert_equal(expectedGradient, actualGradient);
@@ -503,8 +502,7 @@ TEST(ISAM2, swapFactors)
   // Check gradient
   VectorValues expectedGradient = GaussianFactorGraph(isam).gradientAtZero();
   VectorValues expectedGradient2 = GaussianFactorGraph(isam).gradient(VectorValues::Zero(expectedGradient));
-  VectorValues actualGradient;
-  gradientAtZero(isam, actualGradient);
+  VectorValues actualGradient = isam.gradientAtZero();
   EXPECT(assert_equal(expectedGradient2, expectedGradient));
   EXPECT(assert_equal(expectedGradient, actualGradient));
 }
@@ -629,8 +627,7 @@ TEST(ISAM2, constrained_ordering)
   // Check gradient
   VectorValues expectedGradient = GaussianFactorGraph(isam).gradientAtZero();
   VectorValues expectedGradient2 = GaussianFactorGraph(isam).gradient(VectorValues::Zero(expectedGradient));
-  VectorValues actualGradient;
-  gradientAtZero(isam, actualGradient);
+  VectorValues actualGradient = isam.gradientAtZero();
   EXPECT(assert_equal(expectedGradient2, expectedGradient));
   EXPECT(assert_equal(expectedGradient, actualGradient));
 }

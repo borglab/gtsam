@@ -413,12 +413,12 @@ namespace gtsam {
   void BayesTree<CLIQUE>::removeClique(sharedClique clique)
   {
     if (clique->isRoot()) {
-      typename FastVector<sharedClique>::iterator root = std::find(roots_.begin(), roots_.end(), clique);
+      typename Roots::iterator root = std::find(roots_.begin(), roots_.end(), clique);
       if(root != roots_.end())
         roots_.erase(root);
     } else { // detach clique from parent
       sharedClique parent = clique->parent_.lock();
-      typename FastVector<sharedClique>::iterator child = std::find(parent->children.begin(), parent->children.end(), clique);
+      typename Roots::iterator child = std::find(parent->children.begin(), parent->children.end(), clique);
       assert(child != parent->children.end());
       parent->children.erase(child);
     }
