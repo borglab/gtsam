@@ -537,9 +537,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   VariableIndex variableIndex(factors_);
   BOOST_FOREACH(Key key, keysToMove) {
     const FastList<size_t>& slots = variableIndex[key];
-    BOOST_FOREACH(size_t slot, slots) {
-      removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
-    }
+    removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
   // Sort and remove duplicates
