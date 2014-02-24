@@ -200,6 +200,37 @@ TEST(Rot3, log)
   CHECK_OMEGA_ZERO(x*2.*PI,y*2.*PI,z*2.*PI)
 }
 
+Rot3 evaluateRotation(const Vector3 thetahat){
+  return Rot3::Expmap(thetahat);
+}
+
+Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta){
+  return Rot3::Logmap( Rot3::Expmap(thetahat).compose( Rot3::Expmap(deltatheta) ) );
+}
+
+/* ************************************************************************* */
+TEST( Rot3, rightJacobianExpMapSO3 )
+{
+  // Linearization point
+  Vector3 thetahat; thetahat << 0.1, 0, 0;
+
+  Matrix expectedJacobian = numericalDerivative11<Rot3, LieVector>(boost::bind(&evaluateRotation, _1), LieVector(thetahat));
+  Matrix actualJacobian = Rot3::rightJacobianExpMapSO3(thetahat);
+  EXPECT(assert_equal(expectedJacobian, actualJacobian));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, rightJacobianExpMapSO3inverse )
+{
+  // Linearization point
+  Vector3 thetahat; thetahat << 0.1,0.1,0; ///< Current estimate of rotation rate bias
+  Vector3 deltatheta; deltatheta << 0, 0, 0;
+
+  Matrix expectedJacobian = numericalDerivative11<LieVector>(boost::bind(&evaluateLogRotation, thetahat, _1), LieVector(deltatheta));
+  Matrix actualJacobian = Rot3::rightJacobianExpMapSO3inverse(thetahat);
+  EXPECT(assert_equal(expectedJacobian, actualJacobian));
+}
+
 /* ************************************************************************* */
 TEST(Rot3, manifold_caley)
 {
