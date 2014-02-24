@@ -25,6 +25,7 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 		FILES_MATCHING PATTERN "*.h")
 endif()
 
+add_subdirectory(metis-5.1.0)
 ############ NOTE:  When updating GeographicLib be sure to disable building their examples
 ############        and unit tests by commenting out their lines:
 # add_subdirectory (examples)
