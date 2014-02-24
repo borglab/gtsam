@@ -95,7 +95,10 @@ namespace gtsam {
     Nodes nodes_;
 
     /** Root cliques */
-    FastVector<sharedClique> roots_;
+    typedef FastVector<sharedClique> Roots;
+    
+    /** Root cliques */
+    Roots roots_;
 
     /// @name Standard Constructors
     /// @{
@@ -141,7 +144,7 @@ namespace gtsam {
     const sharedNode operator[](Key j) const { return nodes_.at(j); }
 
     /** return root cliques */
-    const FastVector<sharedClique>& roots() const { return roots_;  }
+    const Roots& roots() const { return roots_;  }
 
     /** alternate syntax for matlab: find the clique that contains the variable with Key j */
     const sharedClique& clique(Key j) const {

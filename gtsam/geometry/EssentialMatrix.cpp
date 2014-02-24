@@ -19,14 +19,14 @@ EssentialMatrix EssentialMatrix::FromPose3(const Pose3& _1P2_,
   const Point3& _1T2_ = _1P2_.translation();
   if (!H) {
     // just make a direction out of translation and create E
-    Sphere2 direction(_1T2_);
+    Unit3 direction(_1T2_);
     return EssentialMatrix(_1R2_, direction);
   } else {
     // Calculate the 5*6 Jacobian H = D_E_1P2
     // D_E_1P2 = [D_E_1R2 D_E_1T2], 5*3 wrpt rotation, 5*3 wrpt translation
-    // First get 2*3 derivative from Sphere2::FromPoint3
+    // First get 2*3 derivative from Unit3::FromPoint3
     Matrix D_direction_1T2;
-    Sphere2 direction = Sphere2::FromPoint3(_1T2_, D_direction_1T2);
+    Unit3 direction = Unit3::FromPoint3(_1T2_, D_direction_1T2);
     H->resize(5, 6);
     H->block<3, 3>(0, 0) << Matrix::Identity(3, 3); // upper left
     H->block<2, 3>(3, 0) << Matrix::Zero(2, 3); // lower left
@@ -49,7 +49,7 @@ EssentialMatrix EssentialMatrix::retract(const Vector& xi) const {
   Vector3 omega(sub(xi, 0, 3));
   Vector2 z(sub(xi, 3, 5));
   Rot3 R = aRb_.retract(omega);
-  Sphere2 t = aTb_.retract(z);
+  Unit3 t = aTb_.retract(z);
   return EssentialMatrix(R, t);
 }
 
@@ -85,12 +85,12 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
 
   if (!HE && !HR) {
     // Rotate translation direction and return
-    Sphere2 c1Tc2 = cRb * aTb_;
+    Unit3 c1Tc2 = cRb * aTb_;
     return EssentialMatrix(c1Rc2, c1Tc2);
   } else {
     // Calculate derivatives
     Matrix D_c1Tc2_cRb, D_c1Tc2_aTb; // 2*3 and 2*2
-    Sphere2 c1Tc2 = cRb.rotate(aTb_, D_c1Tc2_cRb, D_c1Tc2_aTb);
+    Unit3 c1Tc2 = cRb.rotate(aTb_, D_c1Tc2_cRb, D_c1Tc2_aTb);
     if (HE) {
       *HE = zeros(5, 5);
       HE->block<3, 3>(0, 0) << cRb.matrix(); // a change in aRb_ will yield a rotated change in c1Rc2
@@ -126,7 +126,7 @@ double EssentialMatrix::error(const Vector& vA, const Vector& vB, //
 /* ************************************************************************* */
 ostream& operator <<(ostream& os, const EssentialMatrix& E) {
   Rot3 R = E.rotation();
-  Sphere2 d = E.direction();
+  Unit3 d = E.direction();
   os.precision(10);
   os << R.xyz().transpose() << " " << d.point3().vector().transpose() << " ";
   return os;
@@ -140,7 +140,7 @@ istream& operator >>(istream& is, EssentialMatrix& E) {
 
   // Create EssentialMatrix from rotation and translation
   Rot3 rot = Rot3::RzRyRx(rx, ry, rz);
-  Sphere2 dt = Sphere2(dx, dy, dz);
+  Unit3 dt = Unit3(dx, dy, dz);
   E = EssentialMatrix(rot, dt);
 
   return is;

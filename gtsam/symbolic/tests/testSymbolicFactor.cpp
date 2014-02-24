@@ -50,6 +50,23 @@ TEST(SymbolicFactor, eliminate) {
   CHECK(assert_equal(**fragmentCond++, *expected2));
 }
 #endif
+
+/* ************************************************************************* */
+TEST(SymbolicFactor, Constructors)
+{
+  SymbolicFactor expected(3, 4);
+
+  SymbolicFactor actual1 = SymbolicFactor::FromKeys(expected.keys());
+  SymbolicFactor actual2 = SymbolicFactor::FromIterators(expected.begin(), expected.end());
+  SymbolicFactor actual3 = *SymbolicFactor::FromKeysShared(expected.keys());
+  SymbolicFactor actual4 = *SymbolicFactor::FromIteratorsShared(expected.begin(), expected.end());
+
+  EXPECT(assert_equal(expected, actual1));
+  EXPECT(assert_equal(expected, actual2));
+  EXPECT(assert_equal(expected, actual3));
+  EXPECT(assert_equal(expected, actual4));
+}
+
 /* ************************************************************************* */
 TEST(SymbolicFactor, EliminateSymbolic)
 {

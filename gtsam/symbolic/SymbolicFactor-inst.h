@@ -60,10 +60,8 @@ namespace gtsam
 
       // Return resulting conditional and factor
       return std::make_pair(
-        boost::make_shared<SymbolicConditional>(
-        SymbolicConditional::FromKeys(orderedKeys, nFrontals)),
-        boost::make_shared<SymbolicFactor>(
-        SymbolicFactor::FromIterators(orderedKeys.begin() + nFrontals, orderedKeys.end())));
+        SymbolicConditional::FromKeysShared(orderedKeys, nFrontals),
+        SymbolicFactor::FromIteratorsShared(orderedKeys.begin() + nFrontals, orderedKeys.end()));
     }
   }
 }

@@ -26,3 +26,11 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 endif()
 
 add_subdirectory(metis-5.1.0)
+############ NOTE:  When updating GeographicLib be sure to disable building their examples
+############        and unit tests by commenting out their lines:
+# add_subdirectory (examples)
+# set (TOOLS CartConvert ConicProj GeodesicProj GeoConvert GeodSolve
+#   GeoidEval Gravity MagneticField Planimeter TransverseMercatorProj)
+# add_subdirectory (tools)
+
+add_subdirectory(GeographicLib)

@@ -125,9 +125,6 @@ TEST( TransformBtwRobotsUnaryFactor, unwhitenedError2)
 
   SharedGaussian model(noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.05)));
 
-  double prior_outlier = 0.01;
-  double prior_inlier = 0.99;
-
   gtsam::Values valA, valB;
   valA.insert(keyA, orgA_T_currA);
   valB.insert(keyB, orgB_T_currB);

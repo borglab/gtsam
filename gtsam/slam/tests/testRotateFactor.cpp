@@ -28,7 +28,7 @@ Point3 cameraX(0, 1, 0), cameraY(0, 0, 1), cameraZ(1, 0, 0);
 Rot3 iRc(cameraX, cameraY, cameraZ);
 
 // Now, let's create some rotations around IMU frame
-Sphere2 p1(1, 0, 0), p2(0, 1, 0), p3(0, 0, 1);
+Unit3 p1(1, 0, 0), p2(0, 1, 0), p3(0, 0, 1);
 Rot3 i1Ri2 = Rot3::rodriguez(p1, 1), //
 i2Ri3 = Rot3::rodriguez(p2, 1), //
 i3Ri4 = Rot3::rodriguez(p3, 1);
@@ -39,7 +39,7 @@ c2Zc3 = iRc.inverse() * i2Ri3 * iRc, //
 c3Zc4 = iRc.inverse() * i3Ri4 * iRc;
 
 // The corresponding rotated directions in the camera frame
-Sphere2 z1 = iRc.inverse() * p1, //
+Unit3 z1 = iRc.inverse() * p1, //
 z2 = iRc.inverse() * p2, //
 z3 = iRc.inverse() * p3;
 

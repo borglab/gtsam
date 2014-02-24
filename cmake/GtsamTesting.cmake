@@ -160,7 +160,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			# Only have a main function in one script - use preprocessor
 			set(rest_script_srcs ${script_srcs})
 			list(REMOVE_AT rest_script_srcs 0)
-			set_property(SOURCE ${rest_script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "main=static no_main")
+			set_property(SOURCE ${rest_script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "main=inline no_main")
 		
 			# Add target dependencies
 			add_test(NAME ${target_name} COMMAND ${target_name})

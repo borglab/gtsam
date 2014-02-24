@@ -10,15 +10,15 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file testSphere2.cpp
+ * @file testUnit3.cpp
  * @date Feb 03, 2012
  * @author Can Erdogan
  * @author Frank Dellaert
  * @author Alex Trevor
- * @brief Tests the Sphere2 class
+ * @brief Tests the Unit3 class
  */
 
-#include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -33,36 +33,36 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
-GTSAM_CONCEPT_TESTABLE_INST(Sphere2)
-GTSAM_CONCEPT_MANIFOLD_INST(Sphere2)
+GTSAM_CONCEPT_TESTABLE_INST(Unit3)
+GTSAM_CONCEPT_MANIFOLD_INST(Unit3)
 
 //*******************************************************************************
-Point3 point3_(const Sphere2& p) {
+Point3 point3_(const Unit3& p) {
   return p.point3();
 }
-TEST(Sphere2, point3) {
+TEST(Unit3, point3) {
   vector<Point3> ps;
   ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
       / sqrt(2);
   Matrix actualH, expectedH;
   BOOST_FOREACH(Point3 p,ps) {
-    Sphere2 s(p);
-    expectedH = numericalDerivative11<Point3, Sphere2>(point3_, s);
+    Unit3 s(p);
+    expectedH = numericalDerivative11<Point3, Unit3>(point3_, s);
     EXPECT(assert_equal(p, s.point3(actualH), 1e-8));
     EXPECT(assert_equal(expectedH, actualH, 1e-9));
   }
 }
 
 //*******************************************************************************
-static Sphere2 rotate_(const Rot3& R, const Sphere2& p) {
+static Unit3 rotate_(const Rot3& R, const Unit3& p) {
   return R * p;
 }
 
-TEST(Sphere2, rotate) {
+TEST(Unit3, rotate) {
   Rot3 R = Rot3::yaw(0.5);
-  Sphere2 p(1, 0, 0);
-  Sphere2 expected = Sphere2(R.column(1));
-  Sphere2 actual = R * p;
+  Unit3 p(1, 0, 0);
+  Unit3 expected = Unit3(R.column(1));
+  Unit3 actual = R * p;
   EXPECT(assert_equal(expected, actual, 1e-8));
   Matrix actualH, expectedH;
   // Use numerical derivatives to calculate the expected Jacobian
@@ -79,15 +79,15 @@ TEST(Sphere2, rotate) {
 }
 
 //*******************************************************************************
-static Sphere2 unrotate_(const Rot3& R, const Sphere2& p) {
-  return R.unrotate (p);
+static Unit3 unrotate_(const Rot3& R, const Unit3& p) {
+  return R.unrotate(p);
 }
 
-TEST(Sphere2, unrotate) {
-  Rot3 R = Rot3::yaw(-M_PI/4.0);
-  Sphere2 p(1, 0, 0);
-  Sphere2 expected = Sphere2(1, 1, 0);
-  Sphere2 actual = R.unrotate (p);
+TEST(Unit3, unrotate) {
+  Rot3 R = Rot3::yaw(-M_PI / 4.0);
+  Unit3 p(1, 0, 0);
+  Unit3 expected = Unit3(1, 1, 0);
+  Unit3 actual = R.unrotate(p);
   EXPECT(assert_equal(expected, actual, 1e-8));
   Matrix actualH, expectedH;
   // Use numerical derivatives to calculate the expected Jacobian
@@ -104,64 +104,78 @@ TEST(Sphere2, unrotate) {
 }
 
 //*******************************************************************************
-TEST(Sphere2, error) {
-  Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0), Sphere2::RENORM), //
-  r = p.retract((Vector(2) << 0.8, 0), Sphere2::RENORM);
+TEST(Unit3, error) {
+  Unit3 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
+  r = p.retract((Vector(2) << 0.8, 0));
   EXPECT(assert_equal((Vector(2) << 0, 0), p.error(p), 1e-8));
-  EXPECT(assert_equal((Vector(2) << 0.447214, 0), p.error(q), 1e-5));
-  EXPECT(assert_equal((Vector(2) << 0.624695, 0), p.error(r), 1e-5));
+  EXPECT(assert_equal((Vector(2) << 0.479426, 0), p.error(q), 1e-5));
+  EXPECT(assert_equal((Vector(2) << 0.717356, 0), p.error(r), 1e-5));
 
   Matrix actual, expected;
   // Use numerical derivatives to calculate the expected Jacobian
   {
-    expected = numericalDerivative11<Sphere2>(
-        boost::bind(&Sphere2::error, &p, _1, boost::none), q);
+    expected = numericalDerivative11<Unit3>(
+        boost::bind(&Unit3::error, &p, _1, boost::none), q);
     p.error(q, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
   }
   {
-    expected = numericalDerivative11<Sphere2>(
-        boost::bind(&Sphere2::error, &p, _1, boost::none), r);
+    expected = numericalDerivative11<Unit3>(
+        boost::bind(&Unit3::error, &p, _1, boost::none), r);
     p.error(r, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
   }
 }
 
 //*******************************************************************************
-TEST(Sphere2, distance) {
-  Sphere2 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0), Sphere2::RENORM), //
-  r = p.retract((Vector(2) << 0.8, 0), Sphere2::RENORM);
+TEST(Unit3, distance) {
+  Unit3 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
+  r = p.retract((Vector(2) << 0.8, 0));
   EXPECT_DOUBLES_EQUAL(0, p.distance(p), 1e-8);
-  EXPECT_DOUBLES_EQUAL(0.44721359549995798, p.distance(q), 1e-8);
-  EXPECT_DOUBLES_EQUAL(0.6246950475544244, p.distance(r), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0.47942553860420301, p.distance(q), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0.71735609089952279, p.distance(r), 1e-8);
 
   Matrix actual, expected;
   // Use numerical derivatives to calculate the expected Jacobian
   {
-    expected = numericalGradient<Sphere2>(
-        boost::bind(&Sphere2::distance, &p, _1, boost::none), q);
+    expected = numericalGradient<Unit3>(
+        boost::bind(&Unit3::distance, &p, _1, boost::none), q);
     p.distance(q, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
   }
   {
-    expected = numericalGradient<Sphere2>(
-        boost::bind(&Sphere2::distance, &p, _1, boost::none), r);
+    expected = numericalGradient<Unit3>(
+        boost::bind(&Unit3::distance, &p, _1, boost::none), r);
     p.distance(r, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
   }
 }
 
 //*******************************************************************************
-TEST(Sphere2, localCoordinates0) {
-  Sphere2 p;
-  Vector expected = zero(2);
+TEST(Unit3, localCoordinates0) {
+  Unit3 p;
   Vector actual = p.localCoordinates(p);
-  EXPECT(assert_equal(expected, actual, 1e-8));
+  EXPECT(assert_equal(zero(2), actual, 1e-8));
 }
 
 //*******************************************************************************
-TEST(Sphere2, basis) {
-  Sphere2 p;
+TEST(Unit3, localCoordinates1) {
+  Unit3 p, q(1, 6.12385e-21, 0);
+  Vector actual = p.localCoordinates(q);
+  CHECK(assert_equal(zero(2), actual, 1e-8));
+}
+
+//*******************************************************************************
+TEST(Unit3, localCoordinates2) {
+  Unit3 p, q(-1, 0, 0);
+  Vector expected = (Vector(2) << M_PI, 0);
+  Vector actual = p.localCoordinates(q);
+  CHECK(assert_equal(expected, actual, 1e-8));
+}
+
+//*******************************************************************************
+TEST(Unit3, basis) {
+  Unit3 p;
   Matrix expected(3, 2);
   expected << 0, 0, 0, -1, 1, 0;
   Matrix actual = p.basis();
@@ -169,25 +183,25 @@ TEST(Sphere2, basis) {
 }
 
 //*******************************************************************************
-TEST(Sphere2, retract) {
-  Sphere2 p;
+TEST(Unit3, retract) {
+  Unit3 p;
   Vector v(2);
   v << 0.5, 0;
-  Sphere2 expected(Point3(1, 0, 0.5));
-  Sphere2 actual = p.retract(v, Sphere2::RENORM);
-  EXPECT(assert_equal(expected, actual, 1e-8));
-  EXPECT(assert_equal(v, p.localCoordinates(actual, Sphere2::RENORM), 1e-8));
+  Unit3 expected(0.877583, 0, 0.479426);
+  Unit3 actual = p.retract(v);
+  EXPECT(assert_equal(expected, actual, 1e-6));
+  EXPECT(assert_equal(v, p.localCoordinates(actual), 1e-8));
 }
 
 //*******************************************************************************
-TEST(Sphere2, retract_expmap) {
-  Sphere2 p;
+TEST(Unit3, retract_expmap) {
+  Unit3 p;
   Vector v(2);
-  v << (M_PI/2.0), 0;
-  Sphere2 expected(Point3(0, 0, 1));
-  Sphere2 actual = p.retract(v, Sphere2::EXPMAP);
+  v << (M_PI / 2.0), 0;
+  Unit3 expected(Point3(0, 0, 1));
+  Unit3 actual = p.retract(v);
   EXPECT(assert_equal(expected, actual, 1e-8));
-  EXPECT(assert_equal(v, p.localCoordinates(actual, Sphere2::EXPMAP), 1e-8));
+  EXPECT(assert_equal(v, p.localCoordinates(actual), 1e-8));
 }
 
 //*******************************************************************************
@@ -208,9 +222,9 @@ inline static Vector randomVector(const Vector& minLimits,
 }
 
 //*******************************************************************************
-// Let x and y be two Sphere2's.
+// Let x and y be two Unit3's.
 // The equality x.localCoordinates(x.retract(v)) == v should hold.
-TEST(Sphere2, localCoordinates_retract) {
+TEST(Unit3, localCoordinates_retract) {
 
   size_t numIterations = 10000;
   Vector minSphereLimit = (Vector(3) << -1.0, -1.0, -1.0), maxSphereLimit =
@@ -221,27 +235,27 @@ TEST(Sphere2, localCoordinates_retract) {
     // Sleep for the random number generator (TODO?: Better create all of them first).
     sleep(0);
 
-    // Create the two Sphere2s.
-    // NOTE: You can not create two totally random Sphere2's because you cannot always compute
-    // between two any Sphere2's. (For instance, they might be at the different sides of the circle).
-    Sphere2 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
-//      Sphere2 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
+    // Create the two Unit3s.
+    // NOTE: You can not create two totally random Unit3's because you cannot always compute
+    // between two any Unit3's. (For instance, they might be at the different sides of the circle).
+    Unit3 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
+//      Unit3 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
-    Sphere2 s2 = s1.retract(v12);
+    Unit3 s2 = s1.retract(v12);
 
     // Check if the local coordinates and retract return the same results.
     Vector actual_v12 = s1.localCoordinates(s2);
     EXPECT(assert_equal(v12, actual_v12, 1e-3));
-    Sphere2 actual_s2 = s1.retract(actual_v12);
+    Unit3 actual_s2 = s1.retract(actual_v12);
     EXPECT(assert_equal(s2, actual_s2, 1e-3));
   }
 }
 
 //*******************************************************************************
-// Let x and y be two Sphere2's.
+// Let x and y be two Unit3's.
 // The equality x.localCoordinates(x.retract(v)) == v should hold.
-TEST(Sphere2, localCoordinates_retract_expmap) {
-  
+TEST(Unit3, localCoordinates_retract_expmap) {
+
   size_t numIterations = 10000;
   Vector minSphereLimit = (Vector(3) << -1.0, -1.0, -1.0), maxSphereLimit =
       (Vector(3) << 1.0, 1.0, 1.0);
@@ -251,21 +265,21 @@ TEST(Sphere2, localCoordinates_retract_expmap) {
     // Sleep for the random number generator (TODO?: Better create all of them first).
     sleep(0);
 
-    // Create the two Sphere2s.
+    // Create the two Unit3s.
     // Unlike the above case, we can use any two sphers.
-    Sphere2 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
-//      Sphere2 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
+    Unit3 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
+//      Unit3 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
-    
+
     // Magnitude of the rotation can be at most pi
-    if (v12.norm () > M_PI)
+    if (v12.norm() > M_PI)
       v12 = v12 / M_PI;
-    Sphere2 s2 = s1.retract(v12);
+    Unit3 s2 = s1.retract(v12);
 
     // Check if the local coordinates and retract return the same results.
     Vector actual_v12 = s1.localCoordinates(s2);
     EXPECT(assert_equal(v12, actual_v12, 1e-3));
-    Sphere2 actual_s2 = s1.retract(actual_v12);
+    Unit3 actual_s2 = s1.retract(actual_v12);
     EXPECT(assert_equal(s2, actual_s2, 1e-3));
   }
 }
@@ -311,28 +325,28 @@ TEST(Sphere2, localCoordinates_retract_expmap) {
 //}
 
 //*******************************************************************************
-TEST(Sphere2, Random) {
+TEST(Unit3, Random) {
   boost::mt19937 rng(42);
   // Check that is deterministic given same random seed
   Point3 expected(-0.667578, 0.671447, 0.321713);
-  Point3 actual = Sphere2::Random(rng).point3();
+  Point3 actual = Unit3::Random(rng).point3();
   EXPECT(assert_equal(expected,actual,1e-5));
   // Check that means are all zero at least
   Point3 expectedMean, actualMean;
   for (size_t i = 0; i < 100; i++)
-    actualMean = actualMean + Sphere2::Random(rng).point3();
-  actualMean = actualMean/100;
+    actualMean = actualMean + Unit3::Random(rng).point3();
+  actualMean = actualMean / 100;
   EXPECT(assert_equal(expectedMean,actualMean,0.1));
 }
 
 //*************************************************************************
-TEST (Sphere2, FromPoint3) {
+TEST (Unit3, FromPoint3) {
   Matrix actualH;
   Point3 point(1, -2, 3); // arbitrary point
-  Sphere2 expected(point);
-  EXPECT(assert_equal(expected, Sphere2::FromPoint3(point, actualH), 1e-8));
-  Matrix expectedH = numericalDerivative11<Sphere2, Point3>(
-      boost::bind(Sphere2::FromPoint3, _1, boost::none), point);
+  Unit3 expected(point);
+  EXPECT(assert_equal(expected, Unit3::FromPoint3(point, actualH), 1e-8));
+  Matrix expectedH = numericalDerivative11<Unit3, Point3>(
+      boost::bind(Unit3::FromPoint3, _1, boost::none), point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
