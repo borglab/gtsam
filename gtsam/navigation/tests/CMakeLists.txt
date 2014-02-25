@@ -1,3 +1,22 @@
-include_directories(${PROJECT_SOURCE_DIR}/gtsam/3rdparty/GeographicLib/include)
+set(test_link_libraries gtsam)
+set(tests_excluded "")
 
-gtsamAddTestsGlob(navigation "test*.cpp" "" "gtsam;GeographicLib")
+# Decide whether to use installed GeographicLib or the one built in GTSAM.
+# If we are not installing GeographicLib and it's not installed already,
+# disable the unit tests that require it.
+if(GTSAM_INSTALL_GEOGRAPHICLIB)
+  # If we're installing GeographicLib, use the one we're compiling
+  include_directories(${PROJECT_SOURCE_DIR}/gtsam/3rdparty/GeographicLib/include)
+  list(APPEND test_link_libraries GeographicLib)
+else()
+  if(GEOGRAPHICLIB_FOUND)
+    # If we're not installing, but it's already installed, use the installed one
+    include_directories(${GeographicLib_INCLUDE_DIRS})
+    list(APPEND test_link_libraries ${GeographicLib_LIBRARIES})
+  else()
+    # We don't have GeographicLib
+    set(tests_excluded testGeographicLib.cpp testGPSFactor.cpp testMagFactor.cpp)
+  endif()
+endif()
+
+gtsamAddTestsGlob(navigation "test*.cpp" "${tests_excluded}" "${test_link_libraries}")

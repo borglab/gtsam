@@ -33,4 +33,22 @@ add_subdirectory(metis-5.1.0)
 #   GeoidEval Gravity MagneticField Planimeter TransverseMercatorProj)
 # add_subdirectory (tools)
 
-add_subdirectory(GeographicLib)
+# Find GeographicLib using the find script distributed with it
+include(GeographicLib/cmake/FindGeographicLib.cmake)
+
+# Set up the option to install GeographicLib
+if(GEOGRAPHICLIB_FOUND)
+  set(install_geographiclib_default OFF)
+else()
+  set(install_geographiclib_default ON)
+endif()
+option(GTSAM_INSTALL_GEOGRAPHICLIB "Build and install the 3rd-party library GeographicLib" ${install_geographiclib_default})
+
+# Print warning if we'll overwrite GeographicLib
+if(GEOGRAPHICLIB_FOUND AND GTSAM_INSTALL_GEOGRAPHICLIB)
+  message(WARNING "GeographicLib is installed on your system and GTSAM_INSTALL_GEOGRAPHICLIB is enabled.  Installing gtsam will either overwrite the installed GeographicLib or install a second version that may conflict.  You may want to disable GTSAM_INSTALL_GEOGRAPHICLIB if the installed version was not installed by GTSAM.")
+endif()
+
+if(GTSAM_INSTALL_GEOGRAPHICLIB)
+  add_subdirectory(GeographicLib)
+endif()
