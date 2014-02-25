@@ -19,14 +19,14 @@ if ~exist('externalCoriolisConfiguration', 'var')
     clear all
     close all
     %% General configuration
-    navFrameRotating = 0;       % 0 = perform navigation in the fixed frame
+    navFrameRotating = 1;       % 0 = perform navigation in the fixed frame
                                 % 1 = perform navigation in the rotating frame
     IMU_type = 1;               % IMU type 1 or type 2
     useRealisticValues = 1;     % use reaslist values for initial position and earth rotation
     record_movie = 0;           % 0 = do not record movie
                                 % 1 = record movie of the trajectories. One
                                 % frame per time step (15 fps)
-    incrementalPlotting = 0;    % turn incremental plotting on and off. Turning plotting off increases
+    incrementalPlotting = 1;    % turn incremental plotting on and off. Turning plotting off increases
                                 % speed for batch testing
     estimationEnabled = 1;
 
@@ -68,7 +68,6 @@ if ~exist('externalCoriolisConfiguration', 'var')
       omegaCoriolisIMU = omegaRotatingFrame;
     end
 end
-
 
 
 % From Wikipedia Angular Velocity page, dr/dt = W*r, where r is

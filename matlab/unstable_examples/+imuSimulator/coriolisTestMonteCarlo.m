@@ -2,7 +2,7 @@ clc
 clear all
 close all
 
-% Flag to mark external configuration
+% Flag to mark external configuration to the main test script
 externalCoriolisConfiguration = 1;
 
 %% General configuration
@@ -49,6 +49,7 @@ else
     initialVelocity = [0;0;0];  % initial velocity in the rotating frame (ignoring the velocity due to the frame's rotation)
 end
 
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Run tests with randomly generated initialPosition and accelFixed values
@@ -60,12 +61,13 @@ end
 %   - Navigation performed in rotating frame, ignoring coriolis effect
 %
 
-%% Testing configuration
-numPosTests = 10;
-numAccelTests = 20;
+% Testing configuration
+numPosTests = 1;
+numAccelTests = 10;
 totalNumTests = numPosTests * numAccelTests;
 
 % Storage variables
+
 posFinErrorFixed = zeros(numPosTests, numAccelTests);
 rotFinErrorFixed = zeros(numPosTests, numAccelTests);
 velFinErrorFixed = zeros(numPosTests, numAccelTests);
@@ -82,6 +84,7 @@ velFinErrorRot = zeros(numPosTests, numAccelTests);
 numErrors = 0;
 testIndPos = 1;
 testIndAccel = 1;
+
 while testIndPos <= numPosTests
     %generate a random initial position vector
     initialLongitude = rand()*360 - 180;    % longitude in degrees (-90 to 90)
@@ -95,6 +98,16 @@ while testIndPos <= numPosTests
         % generate a random acceleration vector
         accelFixed = 2*rand(3,1)-ones(3,1);
         
+        %lla = oldTestInfo(testIndPos,testIndAccel).initialPositionLLA;
+        %initialLongitude = lla(1);
+        %initialLatitude = lla(2);
+        %initialAltitude = lla(3);
+        %initialPosition = oldTestInfo(testIndPos, testIndAccel).initialPositionECEF;
+        
+        testInfo(testIndPos, testIndAccel).initialPositionLLA = [initialLongitude, initialLatitude, initialAltitude]; 
+        testInfo(testIndPos, testIndAccel).initialPositionECEF = initialPosition;
+        testInfo(testIndPos, testIndAccel).accelFixed = accelFixed;
+        
         try
             omegaCoriolisIMU = [0;0;0];
             navFrameRotating = 0;
@@ -102,6 +115,12 @@ while testIndPos <= numPosTests
             posFinErrorFixed(testIndPos, testIndAccel) = norm(axisPositionsError(:,end))/trajectoryLengthFixedFrameGT*100;
             rotFinErrorFixed(testIndPos, testIndAccel) = norm(rotationsErrorVectors(:,end));
             velFinErrorFixed(testIndPos, testIndAccel) =  norm(axisVelocityError(:,end));
+            testInfo(testIndPos, testIndAccel).fixedPositionError = axisPositionsError(:,end);
+            testInfo(testIndPos, testIndAccel).fixedVelocityError = axisVelocityError(:,end);
+            testInfo(testIndPos, testIndAccel).fixedRotationError = rotationsErrorVectors(:,end);
+            testInfo(testIndPos, testIndAccel).fixedEstTrajLength = trajectoryLengthEstimated;
+            testInfo(testIndPos, testIndAccel).trajLengthFixedFrameGT = trajectoryLengthFixedFrameGT;
+            testInfo(testIndPos, testIndAccel).trajLengthRotFrameGT = trajectoryLengthRotatingFrameGT;
             
             close all;
             
@@ -113,6 +132,10 @@ while testIndPos <= numPosTests
             posFinErrorRotCoriolis(testIndPos, testIndAccel) = norm(axisPositionsError(:,end))/trajLen*100;
             rotFinErrorRotCoriolis(testIndPos, testIndAccel) = norm(rotationsErrorVectors(:,end));
             velFinErrorRotCoriolis(testIndPos, testIndAccel) =  norm(axisVelocityError(:,end));
+            testInfo(testIndPos, testIndAccel).rotCoriolisPositionError = axisPositionsError(:,end);
+            testInfo(testIndPos, testIndAccel).rotCoriolisVelocityError = axisVelocityError(:,end);
+            testInfo(testIndPos, testIndAccel).rotCoriolisRotationError = rotationsErrorVectors(:,end);
+            testInfo(testIndPos, testIndAccel).rotCoriolisEstTrajLength = trajectoryLengthEstimated;
             
             close all;
             
@@ -124,6 +147,10 @@ while testIndPos <= numPosTests
             posFinErrorRot(testIndPos, testIndAccel) = norm(axisPositionsError(:,end))/trajLen*100;
             rotFinErrorRot(testIndPos, testIndAccel) = norm(rotationsErrorVectors(:,end));
             velFinErrorRot(testIndPos, testIndAccel) =  norm(axisVelocityError(:,end));
+            testInfo(testIndPos, testIndAccel).rotPositionError = axisPositionsError(:,end);
+            testInfo(testIndPos, testIndAccel).rotVelocityError = axisVelocityError(:,end);
+            testInfo(testIndPos, testIndAccel).rotRotationError = rotationsErrorVectors(:,end);
+            testInfo(testIndPos, testIndAccel).rotEstTrajLength = trajectoryLengthEstimated;
             
             close all;
         catch
