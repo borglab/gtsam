@@ -99,10 +99,10 @@ void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality){
   }else{
     // CHECK_GT(step_quality, 0.0);
     state_.lambda *= std::max(1.0 / 3.0, 1.0 - pow(2.0 * stepQuality - 1.0, 3));
-    state_.lambda = std::max(params_.lambdaLowerBound, state_.lambda);
     params_.lambdaFactor = 2.0;
     // reuse_diagonal_ = false;
   }
+  state_.lambda = std::max(params_.lambdaLowerBound, state_.lambda);
 }
 
 /* ************************************************************************* */
