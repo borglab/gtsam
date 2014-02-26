@@ -82,6 +82,7 @@ TEST( Cal3Bundler, retract)
   d << 10, 1e-3, 1e-3;
   Cal3Bundler actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-7));
+  CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
 }
 
 /* ************************************************************************* */
