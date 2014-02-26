@@ -165,7 +165,6 @@ void LevenbergMarquardtOptimizer::iterate() {
 
   // Keep increasing lambda until we make make progress
   while (true) {
-    ++state_.totalNumberInnerIterations;
 
     if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "trying lambda = " << state_.lambda << endl;
 
@@ -180,9 +179,11 @@ void LevenbergMarquardtOptimizer::iterate() {
 
         boost::posix_time::ptime currentTime = boost::posix_time::microsec_clock::universal_time();
 
-        os << state_.iterations << "," << 1e-6 * (currentTime - state_.startTime).total_microseconds() << ","
+        os << state_.totalNumberInnerIterations << "," << 1e-6 * (currentTime - state_.startTime).total_microseconds() << ","
             << state_.error << "," << state_.lambda << endl;
       }
+
+      ++state_.totalNumberInnerIterations;
 
       // Solve Damped Gaussian Factor Graph
       const VectorValues delta = solve(dampedSystem, state_.values, params_);
