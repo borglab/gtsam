@@ -190,67 +190,77 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.norm() << endl;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");
 
-      // update values
-      gttic (retract);
-      Values newValues = state_.values.retract(delta);
-      gttoc(retract);
-
-      // create new optimization state with more adventurous lambda
-      gttic (compute_error);
-      if(lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "calculating error" << endl;
-      double error = graph_.error(newValues);
-      gttoc(compute_error);
-
-      // cost change in the original, possibly nonlinear system (old - new)
-      double costChange = state_.error - error;
-
       // cost change in the linearized system (old - new)
       double newlinearizedError = linear->error(delta);
+
       double linearizedCostChange = state_.error - newlinearizedError;
 
-      // checking similarity between change in original and linearized cost
-      modelFidelity = costChange / linearizedCostChange;
+      double error;
+      Values newValues;
+      bool step_is_successful = false;
 
-      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA){
-        cout << "current error " << state_.error << endl;
-        cout << "new error " <<  error << endl;
-        cout << "costChange " << costChange << endl;
-        cout << "new error in linearized model " <<  newlinearizedError << endl;
-        cout << "linearizedCostChange " << linearizedCostChange << endl;
-        cout << "modelFidelity " << modelFidelity << endl;
+      if(linearizedCostChange >= 0){
+        // step is valid
+
+        // not implemented
+        // iteration_summary.step_norm = (x - x_plus_delta).norm();
+        // iteration_summary.step_norm <= step_size_tolerance -> return
+
+        // iteration_summary.cost_change =  cost - new_cost;
+        // update values
+        gttic (retract);
+        newValues = state_.values.retract(delta);
+        gttoc(retract);
+
+        // create new optimization state with more adventurous lambda
+        gttic (compute_error);
+        if(lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "calculating error" << endl;
+        error = graph_.error(newValues);
+        gttoc(compute_error);
+
+        // cost change in the original, possibly nonlinear system (old - new)
+        double costChange = state_.error - error;
+
+        double absolute_function_tolerance = params_.relativeErrorTol * state_.error;
+        if (fabs(costChange) < absolute_function_tolerance) break; // TODO: check is break is correct
+
+        // fidelity of linearized model VS original system between (relative_decrease in ceres)
+        modelFidelity = costChange / linearizedCostChange;
+
+        step_is_successful = modelFidelity > params_.minModelFidelity;
+
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA){
+          cout << "current error " << state_.error << endl;
+          cout << "new error " <<  error << endl;
+          cout << "costChange " << costChange << endl;
+          cout << "new error in linearized model " <<  newlinearizedError << endl;
+          cout << "linearizedCostChange " << linearizedCostChange << endl;
+          cout << "modelFidelity " << modelFidelity << endl;
+          cout << "step_is_successful " << step_is_successful << endl;
+        }
       }
 
-      if (error < state_.error) {
+      if(step_is_successful){
         state_.values.swap(newValues);
         state_.error = error;
-        if(modelFidelity > params_.minModelFidelity){
-          decreaseLambda(modelFidelity);
-        }else{
-          if(state_.lambda < params_.lambdaUpperBound)
-            increaseLambda(modelFidelity);
-        }
+        decreaseLambda(modelFidelity);
         break;
-      } else {
-        // Either we're not cautious, or the same lambda was worse than the current error.
-        // The more adventurous lambda was worse too, so make lambda more conservative
-        // and keep the same values.
+      }else{
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+          cout << "increasing lambda: old error (" << state_.error << ") new error (" << error << ")"  << endl;
+        increaseLambda(modelFidelity);
+
+        // check if lambda is too big
         if(state_.lambda >= params_.lambdaUpperBound) {
           if(nloVerbosity >= NonlinearOptimizerParams::TERMINATION)
             cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
           break;
-        } else {
-          if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
-            cout << "increasing lambda: old error (" << state_.error << ") new error (" << error << ")"  << endl;
-
-          increaseLambda(modelFidelity);
         }
-        //        bool converged = checkConvergence(_params().relativeErrorTol, _params().absoluteErrorTol, _params().errorTol, state_.error, error);
-        //        cout << " Inner iteration - converged " << converged << endl;
       }
+
     } catch (IndeterminantLinearSystemException& e) {
       (void) e; // Prevent unused variable warning
-      if(lmVerbosity >= LevenbergMarquardtParams::TERMINATION)
-        cout << "Negative matrix, increasing lambda" << endl;
+      if(lmVerbosity >= LevenbergMarquardtParams::TERMINATION) cout << "Negative matrix, increasing lambda" << endl;
 
       // Either we're not cautious, or the same lambda was worse than the current error.
       // The more adventurous lambda was worse too, so make lambda more conservative and keep the same values.
@@ -259,12 +269,11 @@ void LevenbergMarquardtOptimizer::iterate() {
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
         break;
       } else {
+        cout << " THIS SHOULD NOT HAPPEN IN SMART FACTOR CERES PROJECT " << endl;
         increaseLambda(modelFidelity);
       }
-    } // Frank asks: why would we do that?  catch(...) {  throw;  }
+    }
 
-    if(params_.disableInnerIterations)
-      break;
   } // end while
 
   if (lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
