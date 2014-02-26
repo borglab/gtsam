@@ -77,5 +77,17 @@ TEST( Cal3DS2, assert_equal)
 }
 
 /* ************************************************************************* */
+TEST( Cal3DS2, retract)
+{
+  Cal3DS2 expected(500 + 1, 100 + 2, 0.1 + 3, 320 + 4, 240 + 5, 1e-3 + 6,
+      2.0 * 1e-3 + 7, 3.0 * 1e-3 + 8, 4.0 * 1e-3 + 9);
+  Vector d(9);
+  d << 1,2,3,4,5,6,7,8,9;
+  Cal3DS2 actual = K.retract(d);
+  CHECK(assert_equal(expected,actual,1e-7));
+  CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

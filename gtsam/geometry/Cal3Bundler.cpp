@@ -152,7 +152,7 @@ Cal3Bundler Cal3Bundler::retract(const Vector& d) const {
 
 /* ************************************************************************* */
 Vector Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
-  return vector() - T2.vector();
+  return T2.vector() - vector();
 }
 
 }
