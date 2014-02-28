@@ -23,13 +23,17 @@
 #include <gtsam/linear/Errors.h>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <string>
 #include <cmath>
 #include <fstream>
 
 using namespace std;
 
+
 namespace gtsam {
+
+using boost::adaptors::map_values;
 
 /* ************************************************************************* */
 LevenbergMarquardtParams::VerbosityLM LevenbergMarquardtParams::verbosityLMTranslator(const std::string &src) const {
@@ -123,6 +127,15 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
     // Only retrieve diagonal vector when reuse_diagonal = false
     if (params_.diagonalDamping && params_.reuse_diagonal_ == false) {
       state_.hessianDiagonal = linear.hessianDiagonal();
+      BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values)
+      {
+     	  for( size_t aa = 0 ; aa < v.size() ; aa++)
+    	  {
+    		  v(aa) = std::min(std::max(v(aa), min_diagonal_),
+    	                max_diagonal_);
+    		  v(aa) = sqrt(v(aa));
+    	  }
+      }
     }
     // for each of the variables, add a prior
     BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
@@ -131,12 +144,6 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
       //Replace the identity matrix with diagonal of Hessian
       if (params_.diagonalDamping) {
         A.diagonal() = state_.hessianDiagonal.at(key_value.key);
-        for (size_t aa = 0; aa < dim; aa++) {
-          if (params_.reuse_diagonal_ == false)
-            A(aa, aa) = std::min(std::max(A(aa, aa), min_diagonal_),
-                max_diagonal_);
-          A(aa, aa) = sqrt(A(aa, aa));
-        }
       }
       Vector b = Vector::Zero(dim);
       SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
