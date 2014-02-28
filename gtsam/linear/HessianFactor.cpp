@@ -269,6 +269,7 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) :
 HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
     boost::optional<const Scatter&> scatter)
 {
+  gttic(HessianFactor_MergeConstructor);
   boost::optional<Scatter> computedScatter;
   if(!scatter) {
     computedScatter = Scatter(factors);
