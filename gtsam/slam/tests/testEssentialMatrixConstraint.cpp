@@ -103,11 +103,12 @@ TEST(EssentialMatrixConstraint, optimization) {
   //params.setVerbosityLM("TRYDELTA");
   //params.setVerbosity("DELTA");
   LevenbergMarquardtOptimizer lm(graph, initial, params);
-  Values result = lm.optimize();
+  Values actual = lm.optimize();
 
-  Rot3 actualRotation = result.at<Pose3>(1).rotation();
-  Unit3 actualDirection(result.at<Pose3>(1).translation());
+  Rot3 actualRotation = actual.at<Pose3>(2).rotation();
+  Unit3 actualDirection(actual.at<Pose3>(2).translation());
 
+  EXPECT(assert_equal(expected.at<Pose3>(1),actual.at<Pose3>(1),1e-4));
   EXPECT(assert_equal(expectedRotation,actualRotation,1e-4));
   EXPECT(assert_equal(expectedDirection,actualDirection,1e-4));
 }
