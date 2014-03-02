@@ -5,11 +5,12 @@
  * @date    Aug 2, 2013
  */
 
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;

@@ -87,6 +87,8 @@ public:
     return measuredE_;
   }
 
+  Vector errorVector(const Pose3& p1, const Pose3& p2) const ;
+
   /** number of variables attached to this factor */
   std::size_t size() const {
     return 2;

@@ -17,6 +17,7 @@
  **/
 
 #include <gtsam/slam/EssentialMatrixConstraint.h>
+#include <gtsam/base/numericalDerivative.h>
 //#include <gtsam/linear/GaussianFactor.h>
 //#include <gtsam/base/Testable.h>
 
@@ -42,6 +43,7 @@ bool EssentialMatrixConstraint::equals(const NonlinearFactor& expected,
 }
 
 /* ************************************************************************* */
+#ifdef ANALYTIC_DERIVATIVES
 Vector EssentialMatrixConstraint::evaluateError(const Pose3& p1,
     const Pose3& p2, boost::optional<Matrix&> Hp1,
     boost::optional<Matrix&> Hp2) const {
@@ -71,5 +73,33 @@ Vector EssentialMatrixConstraint::evaluateError(const Pose3& p1,
   // manifold equivalent of h(x)-z -> log(z,h(x))
   return measuredE_.localCoordinates(hx); // 5D error
 }
+
+#else
+
+/* ************************************************************************* */
+Vector EssentialMatrixConstraint::errorVector(const Pose3& p1, const Pose3& p2) const {
+
+  Pose3 _1P2_ = p1.between(p2);
+  EssentialMatrix hx = EssentialMatrix::FromPose3(_1P2_);
+  // manifold equivalent of h(x)-z -> log(z,h(x))
+  return measuredE_.localCoordinates(hx); // 5D error
+}
+
+/* ************************************************************************* */
+Vector EssentialMatrixConstraint::evaluateError(const Pose3& p1,
+    const Pose3& p2, boost::optional<Matrix&> Hp1,
+    boost::optional<Matrix&> Hp2) const {
+
+  // Calculate derivatives if needed
+  if (Hp1 || Hp2) {
+    // Calculate numerical derivatives
+    (*Hp1) = numericalDerivative11<Pose3>(
+          boost::bind(&EssentialMatrixConstraint::errorVector, this, _1, p2), p1);
+    (*Hp2) = numericalDerivative11<Pose3>(
+          boost::bind(&EssentialMatrixConstraint::errorVector, this, p1, _1), p2);
+  }
+  return errorVector(p1,p2); // 5D error
+}
+#endif
 
 } /// namespace gtsam
