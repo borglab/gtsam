@@ -18,10 +18,10 @@
 
 #pragma once
 
-#include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/geometry/TriangulationFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/slam/PriorFactor.h>
 
 #include <vector>
@@ -56,9 +56,6 @@ GTSAM_UNSTABLE_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix>& projection_matrices,
     const std::vector<Point2>& measurements, double rank_tol);
 
-// Frank says: putting priors on poses and then optimizing is a terrible idea: we turn a 3dof problem into a much more difficult problem
-// We should have a projectionfactor that knows pose is fixed
-
 ///
 /**
  * Create a factor graph with projection factors from poses and one calibration
@@ -81,10 +78,9 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const Pose3& pose_i = poses[i];
-    graph.push_back(GenericProjectionFactor<Pose3, Point3, CALIBRATION> //
-        (measurements[i], unit2, i, landmarkKey, sharedCal));
-    graph.push_back(PriorFactor<Pose3>(i, pose_i, prior_model));
-    values.insert(i, pose_i);
+    PinholeCamera<CALIBRATION> camera_i(pose_i, *sharedCal);
+    graph.push_back(TriangulationFactor<CALIBRATION> //
+        (camera_i, measurements[i], unit2, landmarkKey));
   }
   return std::make_pair(graph, values);
 }
@@ -110,13 +106,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const PinholeCamera<CALIBRATION>& camera_i = cameras[i];
-    boost::shared_ptr<CALIBRATION> // Seems wasteful to create new object
-    sharedCal(new CALIBRATION(camera_i.calibration()));
-    graph.push_back(GenericProjectionFactor<Pose3, Point3, CALIBRATION> //
-        (measurements[i], unit2, i, landmarkKey, sharedCal));
-    const Pose3& pose_i = camera_i.pose();
-    graph.push_back(PriorFactor<Pose3>(i, pose_i, prior_model));
-    values.insert(i, pose_i);
+    graph.push_back(TriangulationFactor<CALIBRATION> //
+        (camera_i, measurements[i], unit2, landmarkKey));
   }
   return std::make_pair(graph, values);
 }
@@ -251,9 +242,9 @@ Point3 triangulatePoint3(
   typedef PinholeCamera<CALIBRATION> Camera;
   std::vector<Matrix> projection_matrices;
   BOOST_FOREACH(const Camera& camera, cameras)
-  projection_matrices.push_back(
-      camera.calibration().K()
-      * sub(camera.pose().inverse().matrix(), 0, 3, 0, 4));
+    projection_matrices.push_back(
+        camera.calibration().K()
+            * sub(camera.pose().inverse().matrix(), 0, 3, 0, 4));
 
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
