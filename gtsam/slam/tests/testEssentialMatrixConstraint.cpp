@@ -20,6 +20,8 @@
 #include <gtsam/slam/EssentialMatrixConstraint.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
@@ -65,6 +67,44 @@ TEST( EssentialMatrixConstraint, test ) {
   // Verify we get the expected error
   CHECK(assert_equal(expectedH1, actualH1, 1e-9));
   CHECK(assert_equal(expectedH2, actualH2, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(EssentialMatrixConstraint, optimization) {
+  Pose3 P1 = Pose3();
+  Pose3 P2 = Pose3(Rot3(),Point3(1,1,1));
+
+  NonlinearFactorGraph graph;
+
+  // prior
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Isotropic::Sigma(6, 1.0);
+  graph.push_back(PriorFactor<Pose3>(0, P1, priorNoise)); // add directly to graph
+
+  // scaleless between factor
+  Unit3 relDirection = Unit3(1,1,1);
+  Rot3 relRot = Rot3();
+  EssentialMatrix E(relRot,relDirection);
+  noiseModel::Isotropic::shared_ptr noise = noiseModel::Isotropic::Sigma(5, 1.0);
+  EssentialMatrixConstraint factor(0, 1, E, noise);
+  graph.push_back(factor);
+
+  Values expected;
+  expected.insert(0,P1);
+  expected.insert(1,P2);
+
+  Values initial;
+  initial.insert(0,P1);
+  Pose3 noisePose = Pose3(Rot3::rodriguez(0.5, 0.5, 0.3),Point3(1,-1,1));
+  initial.insert(1,P2.compose(noisePose));
+
+  LevenbergMarquardtParams params;
+  params.relativeErrorTol = 0.0;
+  params.absoluteErrorTol = 0.0;
+  //params.setVerbosityLM("TRYDELTA");
+  //params.setVerbosity("DELTA");
+  LevenbergMarquardtOptimizer lm(graph, initial, params);
+  Values actual = lm.optimize();
+  EXPECT(assert_equal(expected,actual,0.1));
 }
 
 /* ************************************************************************* */
