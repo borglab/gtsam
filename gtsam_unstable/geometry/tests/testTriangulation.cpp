@@ -34,22 +34,28 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
+// Some common constants
+static const Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
+    gtsam::Point3(0, 0, 1));
+static const Pose3 level_pose_right = level_pose
+    * Pose3(Rot3(), Point3(1, 0, 0));
+
+// landmark ~5 meters infront of camera
+Point3 landmark(5, 0.5, 1.2);
+
+boost::shared_ptr<Cal3_S2> sharedCal = //
+    boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
+
 /* ************************************************************************* */
 
 TEST( triangulation, twoPosesBundler) {
-  boost::shared_ptr<Cal3Bundler> sharedCal = //
+  boost::shared_ptr<Cal3Bundler> bundlerCal = //
       boost::make_shared<Cal3Bundler>(1500, 0, 0, 640, 480);
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-      gtsam::Point3(0, 0, 1));
-  PinholeCamera<Cal3Bundler> level_camera(level_pose, *sharedCal);
+  PinholeCamera<Cal3Bundler> level_camera(level_pose, *bundlerCal);
 
   // create second camera 1 meter to the right of first camera
-  Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-  PinholeCamera<Cal3Bundler> level_camera_right(level_pose_right, *sharedCal);
-
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
+  PinholeCamera<Cal3Bundler> level_camera_right(level_pose_right, *bundlerCal);
 
   // 1. Project two landmarks into two cameras and triangulate
   Point2 level_uv = level_camera.project(landmark);
@@ -80,19 +86,11 @@ TEST( triangulation, twoPosesBundler) {
 /* ************************************************************************* */
 
 TEST( triangulation, fourPoses) {
-  boost::shared_ptr<Cal3_S2> sharedCal = //
-      boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-      gtsam::Point3(0, 0, 1));
   SimpleCamera level_camera(level_pose, *sharedCal);
 
   // create second camera 1 meter to the right of first camera
-  Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
   SimpleCamera level_camera_right(level_pose_right, *sharedCal);
-
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
 
   // 1. Project two landmarks into two cameras and triangulate
   Point2 level_uv = level_camera.project(landmark);
@@ -153,17 +151,11 @@ TEST( triangulation, fourPoses) {
 TEST( triangulation, fourPoses_distinct_Ks) {
   Cal3_S2 K1(1500, 1200, 0, 640, 480);
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-      gtsam::Point3(0, 0, 1));
   SimpleCamera level_camera(level_pose, K1);
 
   // create second camera 1 meter to the right of first camera
-  Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
   Cal3_S2 K2(1600, 1300, 0, 650, 440);
   SimpleCamera level_camera_right(level_pose_right, K2);
-
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
 
   // 1. Project two landmarks into two cameras and triangulate
   Point2 level_uv = level_camera.project(landmark);
@@ -223,15 +215,8 @@ TEST( triangulation, fourPoses_distinct_Ks) {
 /* ************************************************************************* */
 
 TEST( triangulation, twoIdenticalPoses) {
-  boost::shared_ptr<Cal3_S2> sharedCal = //
-      boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-      gtsam::Point3(0, 0, 1));
   SimpleCamera level_camera(level_pose, *sharedCal);
-
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
 
   // 1. Project two landmarks into two cameras and triangulate
   Point2 level_uv = level_camera.project(landmark);
