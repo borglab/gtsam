@@ -31,15 +31,19 @@ namespace gtsam {
  * TODO: even better, make GTSAM designate certain variables as constant
  * @addtogroup SLAM
  */
-template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-class TriangulationFactor: public NoiseModelFactor1<LANDMARK> {
+template<class CALIBRATION = Cal3_S2>
+class TriangulationFactor: public NoiseModelFactor1<Point3> {
+
+public:
+
+  /// Camera type
+  typedef PinholeCamera<CALIBRATION> Camera;
+
 protected:
 
   // Keep a copy of measurement and calibration for I/O
-  const Pose3 pose_; ///< Pose where this landmark was seen
+  const Camera camera_; ///< Camera in which this landmark was seen
   const Point2 measured_; ///< 2D measurement
-  boost::shared_ptr<CALIBRATION> K_; ///< shared pointer to calibration object
-  boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
   // verbosity handling for Cheirality Exceptions
   const bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
@@ -48,10 +52,10 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor1<LANDMARK> Base;
+  typedef NoiseModelFactor1<Point3> Base;
 
   /// shorthand for this class
-  typedef TriangulationFactor<POSE, LANDMARK, CALIBRATION> This;
+  typedef TriangulationFactor<CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -62,42 +66,19 @@ public:
   }
 
   /**
-   * Constructor
-   * TODO: Mark argument order standard (keys, measurement, parameters)
-   * @param measured is the 2 dimensional location of point in image (the measurement)
-   * @param model is the standard deviation
-   * @param poseKey is the index of the camera
-   * @param pointKey is the index of the landmark
-   * @param K shared pointer to the constant calibration
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
-   */
-  TriangulationFactor(const Pose3& pose, const Point2& measured,
-      const SharedNoiseModel& model, Key pointKey,
-      const boost::shared_ptr<CALIBRATION>& K,
-      boost::optional<POSE> body_P_sensor = boost::none) :
-      Base(model, pointKey), pose_(pose), measured_(measured), K_(K), body_P_sensor_(
-          body_P_sensor), throwCheirality_(false), verboseCheirality_(false) {
-  }
-
-  /**
    * Constructor with exception-handling flags
-   * TODO: Mark argument order standard (keys, measurement, parameters)
+   * @param camera is the camera in which unknown landmark is seen
    * @param measured is the 2 dimensional location of point in image (the measurement)
    * @param model is the standard deviation
-   * @param poseKey is the index of the camera
    * @param pointKey is the index of the landmark
-   * @param K shared pointer to the constant calibration
    * @param throwCheirality determines whether Cheirality exceptions are rethrown
    * @param verboseCheirality determines whether exceptions are printed for Cheirality
-   * @param body_P_sensor is the transform from body to sensor frame  (default identity)
    */
-  TriangulationFactor(const Pose3& pose, const Point2& measured,
-      const SharedNoiseModel& model, Key poseKey, Key pointKey,
-      const boost::shared_ptr<CALIBRATION>& K, bool throwCheirality,
-      bool verboseCheirality, boost::optional<POSE> body_P_sensor = boost::none) :
-      Base(model, pointKey), pose_(pose), measured_(measured), K_(K), body_P_sensor_(
-          body_P_sensor), throwCheirality_(throwCheirality), verboseCheirality_(
-          verboseCheirality) {
+  TriangulationFactor(const Camera& camera, const Point2& measured,
+      const SharedNoiseModel& model, Key pointKey, bool throwCheirality = false,
+      bool verboseCheirality = false) :
+      Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
+          throwCheirality), verboseCheirality_(verboseCheirality) {
   }
 
   /** Virtual destructor */
@@ -117,39 +98,25 @@ public:
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
-    std::cout << s << "TriangulationFactor, z = ";
-    measured_.print();
-    if (this->body_P_sensor_)
-      this->body_P_sensor_->print("  sensor pose in body frame: ");
+    std::cout << s << "TriangulationFactor,";
+    camera_.print("camera");
+    measured_.print("z");
     Base::print("", keyFormatter);
   }
 
   /// equals
   virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
-    return e && Base::equals(p, tol)
-        && this->measured_.equals(e->measured_, tol)
-        && this->K_->equals(*e->K_, tol)
-        && ((!body_P_sensor_ && !e->body_P_sensor_)
-            || (body_P_sensor_ && e->body_P_sensor_
-                && body_P_sensor_->equals(*e->body_P_sensor_)));
+    return e && Base::equals(p, tol) && this->camera_.equals(e->camera_, tol)
+        && this->measured_.equals(e->measured_, tol);
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
       boost::none) const {
     try {
-      if (body_P_sensor_) {
-        PinholeCamera<CALIBRATION> camera(pose_.compose(*body_P_sensor_), *K_);
-        Point2 reprojectionError(
-            camera.project(point, boost::none, H2) - measured_);
-        return reprojectionError.vector();
-      } else {
-        PinholeCamera<CALIBRATION> camera(pose_, *K_);
-        Point2 reprojectionError(
-            camera.project(point, boost::none, H2) - measured_);
-        return reprojectionError.vector();
-      }
+      Point2 error(camera_.project(point, boost::none, H2) - measured_);
+      return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
         *H2 = zeros(2, 3);
@@ -159,18 +126,13 @@ public:
             << std::endl;
       if (throwCheirality_)
         throw e;
+      return ones(2) * 2.0 * camera_.calibration().fx();
     }
-    return ones(2) * 2.0 * K_->fx();
   }
 
   /** return the measurement */
   const Point2& measured() const {
     return measured_;
-  }
-
-  /** return the calibration object */
-  inline const boost::shared_ptr<CALIBRATION> calibration() const {
-    return K_;
   }
 
   /** return verbosity */
@@ -190,9 +152,8 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar & BOOST_SERIALIZATION_NVP(camera_);
     ar & BOOST_SERIALIZATION_NVP(measured_);
-    ar & BOOST_SERIALIZATION_NVP(K_);
-    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
     ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
@@ -450,8 +411,8 @@ TEST( triangulation, TriangulationFactor ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Key pointKey(1);
   SharedNoiseModel model;
-  typedef TriangulationFactor<Pose3, Point3> Factor;
-  Factor factor(pose1, z1, model, pointKey, sharedCal);
+  typedef TriangulationFactor<> Factor;
+  Factor factor(camera1, z1, model, pointKey, sharedCal);
 
   // Use the factor to calculate the Jacobians
   Matrix HActual;
