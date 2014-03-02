@@ -35,26 +35,28 @@ using namespace gtsam;
 using namespace boost::assign;
 
 // Some common constants
+
+// Looking along X-axis, 1 meter above ground plane (x-y)
 static const Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
     gtsam::Point3(0, 0, 1));
+
+// create second camera 1 meter to the right of first camera
 static const Pose3 level_pose_right = level_pose
     * Pose3(Rot3(), Point3(1, 0, 0));
 
 // landmark ~5 meters infront of camera
-Point3 landmark(5, 0.5, 1.2);
+static const Point3 landmark(5, 0.5, 1.2);
 
-boost::shared_ptr<Cal3_S2> sharedCal = //
+static const boost::shared_ptr<Cal3_S2> sharedCal = //
     boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
 
 /* ************************************************************************* */
 
 TEST( triangulation, twoPosesBundler) {
+
   boost::shared_ptr<Cal3Bundler> bundlerCal = //
       boost::make_shared<Cal3Bundler>(1500, 0, 0, 640, 480);
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   PinholeCamera<Cal3Bundler> level_camera(level_pose, *bundlerCal);
-
-  // create second camera 1 meter to the right of first camera
   PinholeCamera<Cal3Bundler> level_camera_right(level_pose_right, *bundlerCal);
 
   // 1. Project two landmarks into two cameras and triangulate
@@ -71,7 +73,7 @@ TEST( triangulation, twoPosesBundler) {
   double rank_tol = 1e-9;
 
   boost::optional<Point3> triangulated_landmark = triangulatePoint3(poses,
-      sharedCal, measurements, rank_tol, optimize);
+      bundlerCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
 
   // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
@@ -79,7 +81,7 @@ TEST( triangulation, twoPosesBundler) {
   measurements.at(1) += Point2(-0.2, 0.3);
 
   boost::optional<Point3> triangulated_landmark_noise = triangulatePoint3(poses,
-      sharedCal, measurements, rank_tol, optimize);
+      bundlerCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
 }
 
@@ -137,6 +139,7 @@ TEST( triangulation, fourPoses) {
       Point3(0, 0, 1));
   SimpleCamera camera_180(level_pose180, *sharedCal);
 
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   CHECK_EXCEPTION(camera_180.project(landmark) ;, CheiralityException);
 
   poses += level_pose180;
@@ -144,6 +147,7 @@ TEST( triangulation, fourPoses) {
 
   CHECK_EXCEPTION(triangulatePoint3(poses, sharedCal, measurements),
       TriangulationCheiralityException);
+#endif
 }
 
 /* ************************************************************************* */
@@ -204,12 +208,14 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   Cal3_S2 K4(700, 500, 0, 640, 480);
   SimpleCamera camera_180(level_pose180, K4);
 
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   CHECK_EXCEPTION(camera_180.project(landmark) ;, CheiralityException);
 
   cameras += camera_180;
   measurements += Point2(400, 400);
   CHECK_EXCEPTION(triangulatePoint3(cameras, measurements),
       TriangulationCheiralityException);
+#endif
 }
 
 /* ************************************************************************* */
@@ -231,8 +237,8 @@ TEST( triangulation, twoIdenticalPoses) {
       TriangulationUnderconstrainedException);
 }
 
-/* ************************************************************************* *
-
+/* ************************************************************************* */
+/*
  TEST( triangulation, onePose) {
  // we expect this test to fail with a TriangulationUnderconstrainedException
  // because there's only one camera observation
@@ -248,7 +254,7 @@ TEST( triangulation, twoIdenticalPoses) {
  CHECK_EXCEPTION(triangulatePoint3(poses, measurements, *sharedCal),
  TriangulationUnderconstrainedException);
  }
-
+*/
  /* ************************************************************************* */
 int main() {
   TestResult tr;
