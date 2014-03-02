@@ -18,19 +18,11 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/base/dllexport.h>
-
-#include <boost/foreach.hpp>
-#include <boost/assign.hpp>
-#include <boost/assign/std/vector.hpp>
+#include <gtsam/slam/PriorFactor.h>
 
 #include <vector>
 
@@ -60,7 +52,9 @@ public:
  * @param rank_tol SVD rank tolerance
  * @return Triangulated Point3
  */
-GTSAM_UNSTABLE_EXPORT Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices, const std::vector<Point2>& measurements, double rank_tol);
+GTSAM_UNSTABLE_EXPORT Point3 triangulateDLT(
+    const std::vector<Matrix>& projection_matrices,
+    const std::vector<Point2>& measurements, double rank_tol);
 
 // Frank says: putting priors on poses and then optimizing is a terrible idea: we turn a 3dof problem into a much more difficult problem
 // We should have a projectionfactor that knows pose is fixed
@@ -135,7 +129,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
  * @param landmarkKey to refer to landmark
  * @return refined Point3
  */
-GTSAM_UNSTABLE_EXPORT Point3 optimize(const NonlinearFactorGraph& graph, const Values& values, Key landmarkKey);
+GTSAM_UNSTABLE_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
+    const Values& values, Key landmarkKey);
 
 /**
  * Given an initial estimate , refine a point using measurements in several cameras
@@ -221,7 +216,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(point);
     if (p_local.z() <= 0)
-      throw(TriangulationCheiralityException());
+    throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -256,9 +251,9 @@ Point3 triangulatePoint3(
   typedef PinholeCamera<CALIBRATION> Camera;
   std::vector<Matrix> projection_matrices;
   BOOST_FOREACH(const Camera& camera, cameras)
-    projection_matrices.push_back(
-        camera.calibration().K()
-            * sub(camera.pose().inverse().matrix(), 0, 3, 0, 4));
+  projection_matrices.push_back(
+      camera.calibration().K()
+      * sub(camera.pose().inverse().matrix(), 0, 3, 0, 4));
 
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
@@ -271,7 +266,7 @@ Point3 triangulatePoint3(
   BOOST_FOREACH(const Camera& camera, cameras) {
     const Point3& p_local = camera.pose().transform_to(point);
     if (p_local.z() <= 0)
-      throw(TriangulationCheiralityException());
+    throw(TriangulationCheiralityException());
   }
 #endif
 

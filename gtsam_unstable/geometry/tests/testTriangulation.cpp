@@ -16,19 +16,12 @@
  *      Author: cbeall3
  */
 
-#include <CppUnitLite/TestHarness.h>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/geometry/Cal3Bundler.h>
-
-#include <gtsam_unstable/geometry/InvDepthCamera3.h>
 #include <gtsam_unstable/geometry/triangulation.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign.hpp>
 #include <boost/assign/std/vector.hpp>
-#include <boost/make_shared.hpp>
 
 using namespace std;
 using namespace gtsam;
