@@ -18,19 +18,11 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam_unstable/base/dllexport.h>
-
-#include <boost/foreach.hpp>
-#include <boost/assign.hpp>
-#include <boost/assign/std/vector.hpp>
+#include <gtsam_unstable/geometry/TriangulationFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/slam/PriorFactor.h>
 
 #include <vector>
 
@@ -60,10 +52,9 @@ public:
  * @param rank_tol SVD rank tolerance
  * @return Triangulated Point3
  */
-GTSAM_UNSTABLE_EXPORT Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices, const std::vector<Point2>& measurements, double rank_tol);
-
-// Frank says: putting priors on poses and then optimizing is a terrible idea: we turn a 3dof problem into a much more difficult problem
-// We should have a projectionfactor that knows pose is fixed
+GTSAM_UNSTABLE_EXPORT Point3 triangulateDLT(
+    const std::vector<Matrix>& projection_matrices,
+    const std::vector<Point2>& measurements, double rank_tol);
 
 ///
 /**
@@ -87,10 +78,9 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const Pose3& pose_i = poses[i];
-    graph.push_back(GenericProjectionFactor<Pose3, Point3, CALIBRATION> //
-        (measurements[i], unit2, i, landmarkKey, sharedCal));
-    graph.push_back(PriorFactor<Pose3>(i, pose_i, prior_model));
-    values.insert(i, pose_i);
+    PinholeCamera<CALIBRATION> camera_i(pose_i, *sharedCal);
+    graph.push_back(TriangulationFactor<CALIBRATION> //
+        (camera_i, measurements[i], unit2, landmarkKey));
   }
   return std::make_pair(graph, values);
 }
@@ -116,13 +106,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const PinholeCamera<CALIBRATION>& camera_i = cameras[i];
-    boost::shared_ptr<CALIBRATION> // Seems wasteful to create new object
-    sharedCal(new CALIBRATION(camera_i.calibration()));
-    graph.push_back(GenericProjectionFactor<Pose3, Point3, CALIBRATION> //
-        (measurements[i], unit2, i, landmarkKey, sharedCal));
-    const Pose3& pose_i = camera_i.pose();
-    graph.push_back(PriorFactor<Pose3>(i, pose_i, prior_model));
-    values.insert(i, pose_i);
+    graph.push_back(TriangulationFactor<CALIBRATION> //
+        (camera_i, measurements[i], unit2, landmarkKey));
   }
   return std::make_pair(graph, values);
 }
@@ -135,7 +120,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
  * @param landmarkKey to refer to landmark
  * @return refined Point3
  */
-GTSAM_UNSTABLE_EXPORT Point3 optimize(const NonlinearFactorGraph& graph, const Values& values, Key landmarkKey);
+GTSAM_UNSTABLE_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
+    const Values& values, Key landmarkKey);
 
 /**
  * Given an initial estimate , refine a point using measurements in several cameras
@@ -221,7 +207,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(point);
     if (p_local.z() <= 0)
-      throw(TriangulationCheiralityException());
+    throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -271,7 +257,7 @@ Point3 triangulatePoint3(
   BOOST_FOREACH(const Camera& camera, cameras) {
     const Point3& p_local = camera.pose().transform_to(point);
     if (p_local.z() <= 0)
-      throw(TriangulationCheiralityException());
+    throw(TriangulationCheiralityException());
   }
 #endif
 
