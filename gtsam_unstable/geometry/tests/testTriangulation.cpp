@@ -16,6 +16,189 @@
  *      Author: cbeall3
  */
 
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <boost/optional.hpp>
+
+namespace gtsam {
+
+/**
+ * Non-linear factor for a constraint derived from a 2D measurement.
+ * The calibration and pose are assumed known.
+ * i.e. the main building block for visual SLAM.
+ * TODO: refactor to avoid large copy/paste
+ * TODO: even better, make GTSAM designate certain variables as constant
+ * @addtogroup SLAM
+ */
+template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
+class TriangulationFactor: public NoiseModelFactor1<LANDMARK> {
+protected:
+
+  // Keep a copy of measurement and calibration for I/O
+  const Pose3 pose_; ///< Pose where this landmark was seen
+  const Point2 measured_; ///< 2D measurement
+  boost::shared_ptr<CALIBRATION> K_; ///< shared pointer to calibration object
+  boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+
+  // verbosity handling for Cheirality Exceptions
+  const bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
+  const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
+
+public:
+
+  /// shorthand for base class type
+  typedef NoiseModelFactor1<LANDMARK> Base;
+
+  /// shorthand for this class
+  typedef TriangulationFactor<POSE, LANDMARK, CALIBRATION> This;
+
+  /// shorthand for a smart pointer to a factor
+  typedef boost::shared_ptr<This> shared_ptr;
+
+  /// Default constructor
+  TriangulationFactor() :
+      throwCheirality_(false), verboseCheirality_(false) {
+  }
+
+  /**
+   * Constructor
+   * TODO: Mark argument order standard (keys, measurement, parameters)
+   * @param measured is the 2 dimensional location of point in image (the measurement)
+   * @param model is the standard deviation
+   * @param poseKey is the index of the camera
+   * @param pointKey is the index of the landmark
+   * @param K shared pointer to the constant calibration
+   * @param body_P_sensor is the transform from body to sensor frame (default identity)
+   */
+  TriangulationFactor(const Pose3& pose, const Point2& measured,
+      const SharedNoiseModel& model, Key pointKey,
+      const boost::shared_ptr<CALIBRATION>& K,
+      boost::optional<POSE> body_P_sensor = boost::none) :
+      Base(model, pointKey), pose_(pose), measured_(measured), K_(K), body_P_sensor_(
+          body_P_sensor), throwCheirality_(false), verboseCheirality_(false) {
+  }
+
+  /**
+   * Constructor with exception-handling flags
+   * TODO: Mark argument order standard (keys, measurement, parameters)
+   * @param measured is the 2 dimensional location of point in image (the measurement)
+   * @param model is the standard deviation
+   * @param poseKey is the index of the camera
+   * @param pointKey is the index of the landmark
+   * @param K shared pointer to the constant calibration
+   * @param throwCheirality determines whether Cheirality exceptions are rethrown
+   * @param verboseCheirality determines whether exceptions are printed for Cheirality
+   * @param body_P_sensor is the transform from body to sensor frame  (default identity)
+   */
+  TriangulationFactor(const Pose3& pose, const Point2& measured,
+      const SharedNoiseModel& model, Key poseKey, Key pointKey,
+      const boost::shared_ptr<CALIBRATION>& K, bool throwCheirality,
+      bool verboseCheirality, boost::optional<POSE> body_P_sensor = boost::none) :
+      Base(model, pointKey), pose_(pose), measured_(measured), K_(K), body_P_sensor_(
+          body_P_sensor), throwCheirality_(throwCheirality), verboseCheirality_(
+          verboseCheirality) {
+  }
+
+  /** Virtual destructor */
+  virtual ~TriangulationFactor() {
+  }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  /**
+   * print
+   * @param s optional string naming the factor
+   * @param keyFormatter optional formatter useful for printing Symbols
+   */
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const {
+    std::cout << s << "TriangulationFactor, z = ";
+    measured_.print();
+    if (this->body_P_sensor_)
+      this->body_P_sensor_->print("  sensor pose in body frame: ");
+    Base::print("", keyFormatter);
+  }
+
+  /// equals
+  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+    const This *e = dynamic_cast<const This*>(&p);
+    return e && Base::equals(p, tol)
+        && this->measured_.equals(e->measured_, tol)
+        && this->K_->equals(*e->K_, tol)
+        && ((!body_P_sensor_ && !e->body_P_sensor_)
+            || (body_P_sensor_ && e->body_P_sensor_
+                && body_P_sensor_->equals(*e->body_P_sensor_)));
+  }
+
+  /// Evaluate error h(x)-z and optionally derivatives
+  Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
+      boost::none) const {
+    try {
+      if (body_P_sensor_) {
+        PinholeCamera<CALIBRATION> camera(pose_.compose(*body_P_sensor_), *K_);
+        Point2 reprojectionError(
+            camera.project(point, boost::none, H2) - measured_);
+        return reprojectionError.vector();
+      } else {
+        PinholeCamera<CALIBRATION> camera(pose_, *K_);
+        Point2 reprojectionError(
+            camera.project(point, boost::none, H2) - measured_);
+        return reprojectionError.vector();
+      }
+    } catch (CheiralityException& e) {
+      if (H2)
+        *H2 = zeros(2, 3);
+      if (verboseCheirality_)
+        std::cout << e.what() << ": Landmark "
+            << DefaultKeyFormatter(this->key()) << " moved behind camera"
+            << std::endl;
+      if (throwCheirality_)
+        throw e;
+    }
+    return ones(2) * 2.0 * K_->fx();
+  }
+
+  /** return the measurement */
+  const Point2& measured() const {
+    return measured_;
+  }
+
+  /** return the calibration object */
+  inline const boost::shared_ptr<CALIBRATION> calibration() const {
+    return K_;
+  }
+
+  /** return verbosity */
+  inline bool verboseCheirality() const {
+    return verboseCheirality_;
+  }
+
+  /** return flag for throwing cheirality exceptions */
+  inline bool throwCheirality() const {
+    return throwCheirality_;
+  }
+
+private:
+
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar & BOOST_SERIALIZATION_NVP(measured_);
+    ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
+    ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
+    ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
+  }
+};
+} // \ namespace gtsam
+
 #include <gtsam_unstable/geometry/triangulation.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <CppUnitLite/TestHarness.h>
@@ -48,8 +231,7 @@ static const Point3 landmark(5, 0.5, 1.2);
 Point2 z1 = camera1.project(landmark);
 Point2 z2 = camera2.project(landmark);
 
-/* ************************************************************************* */
-
+//******************************************************************************
 TEST( triangulation, twoPoses) {
 
   vector<Pose3> poses;
@@ -74,7 +256,7 @@ TEST( triangulation, twoPoses) {
   EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 
 TEST( triangulation, twoPosesBundler) {
 
@@ -109,8 +291,7 @@ TEST( triangulation, twoPosesBundler) {
   EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
 }
 
-/* ************************************************************************* */
-
+//******************************************************************************
 TEST( triangulation, fourPoses) {
   vector<Pose3> poses;
   vector<Point2> measurements;
@@ -162,8 +343,7 @@ TEST( triangulation, fourPoses) {
 #endif
 }
 
-/* ************************************************************************* */
-
+//******************************************************************************
 TEST( triangulation, fourPoses_distinct_Ks) {
   Cal3_S2 K1(1500, 1200, 0, 640, 480);
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
@@ -228,8 +408,7 @@ TEST( triangulation, fourPoses_distinct_Ks) {
 #endif
 }
 
-/* ************************************************************************* */
-
+//******************************************************************************
 TEST( triangulation, twoIdenticalPoses) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   SimpleCamera camera1(pose1, *sharedCal);
@@ -247,7 +426,7 @@ TEST( triangulation, twoIdenticalPoses) {
       TriangulationUnderconstrainedException);
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 /*
  TEST( triangulation, onePose) {
  // we expect this test to fail with a TriangulationUnderconstrainedException
@@ -265,9 +444,33 @@ TEST( triangulation, twoIdenticalPoses) {
  TriangulationUnderconstrainedException);
  }
  */
-/* ************************************************************************* */
+
+//******************************************************************************
+TEST( triangulation, TriangulationFactor ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  Key pointKey(1);
+  SharedNoiseModel model;
+  typedef TriangulationFactor<Pose3, Point3> Factor;
+  Factor factor(pose1, z1, model, pointKey, sharedCal);
+
+  // Use the factor to calculate the Jacobians
+  Matrix HActual;
+  factor.evaluateError(landmark, HActual);
+
+//  Matrix expectedH1 = numericalDerivative11<Pose3>(
+//      boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, _1, pose2,
+//          boost::none, boost::none), pose1);
+  // The expected Jacobian
+  Matrix HExpected = numericalDerivative11<Point3>(
+      boost::bind(&Factor::evaluateError, &factor, _1, boost::none), landmark);
+
+  // Verify the Jacobians are correct
+  CHECK(assert_equal(HExpected, HActual, 1e-3));
+}
+
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-/* ************************************************************************* */
+//******************************************************************************
