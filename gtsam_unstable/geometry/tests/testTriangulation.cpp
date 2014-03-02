@@ -29,19 +29,51 @@ using namespace boost::assign;
 
 // Some common constants
 
+static const boost::shared_ptr<Cal3_S2> sharedCal = //
+    boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
+
 // Looking along X-axis, 1 meter above ground plane (x-y)
 static const Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
     gtsam::Point3(0, 0, 1));
+PinholeCamera<Cal3_S2> level_camera(level_pose, *sharedCal);
 
 // create second camera 1 meter to the right of first camera
 static const Pose3 level_pose_right = level_pose
     * Pose3(Rot3(), Point3(1, 0, 0));
+PinholeCamera<Cal3_S2> level_camera_right(level_pose_right, *sharedCal);
 
 // landmark ~5 meters infront of camera
 static const Point3 landmark(5, 0.5, 1.2);
 
-static const boost::shared_ptr<Cal3_S2> sharedCal = //
-    boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
+// 1. Project two landmarks into two cameras and triangulate
+Point2 level_uv = level_camera.project(landmark);
+Point2 level_uv_right = level_camera_right.project(landmark);
+
+/* ************************************************************************* */
+
+TEST( triangulation, twoPoses) {
+
+  vector<Pose3> poses;
+  vector<Point2> measurements;
+
+  poses += level_pose, level_pose_right;
+  measurements += level_uv, level_uv_right;
+
+  bool optimize = true;
+  double rank_tol = 1e-9;
+
+  boost::optional<Point3> triangulated_landmark = triangulatePoint3(poses,
+      sharedCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+
+  // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+  measurements.at(0) += Point2(0.1, 0.5);
+  measurements.at(1) += Point2(-0.2, 0.3);
+
+  boost::optional<Point3> triangulated_landmark_noise = triangulatePoint3(poses,
+      sharedCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+}
 
 /* ************************************************************************* */
 
@@ -56,7 +88,7 @@ TEST( triangulation, twoPosesBundler) {
   Point2 level_uv = level_camera.project(landmark);
   Point2 level_uv_right = level_camera_right.project(landmark);
 
-  vector < Pose3 > poses;
+  vector<Pose3> poses;
   vector<Point2> measurements;
 
   poses += level_pose, level_pose_right;
@@ -81,17 +113,7 @@ TEST( triangulation, twoPosesBundler) {
 /* ************************************************************************* */
 
 TEST( triangulation, fourPoses) {
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  SimpleCamera level_camera(level_pose, *sharedCal);
-
-  // create second camera 1 meter to the right of first camera
-  SimpleCamera level_camera_right(level_pose_right, *sharedCal);
-
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
-
-  vector < Pose3 > poses;
+  vector<Pose3> poses;
   vector<Point2> measurements;
 
   poses += level_pose, level_pose_right;
@@ -133,7 +155,7 @@ TEST( triangulation, fourPoses) {
   SimpleCamera camera_180(level_pose180, *sharedCal);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  CHECK_EXCEPTION(camera_180.project(landmark) ;, CheiralityException);
+  CHECK_EXCEPTION(camera_180.project(landmark);, CheiralityException);
 
   poses += level_pose180;
   measurements += Point2(400, 400);
@@ -202,7 +224,7 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   SimpleCamera camera_180(level_pose180, K4);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  CHECK_EXCEPTION(camera_180.project(landmark) ;, CheiralityException);
+  CHECK_EXCEPTION(camera_180.project(landmark);, CheiralityException);
 
   cameras += camera_180;
   measurements += Point2(400, 400);
@@ -220,7 +242,7 @@ TEST( triangulation, twoIdenticalPoses) {
   // 1. Project two landmarks into two cameras and triangulate
   Point2 level_uv = level_camera.project(landmark);
 
-  vector < Pose3 > poses;
+  vector<Pose3> poses;
   vector<Point2> measurements;
 
   poses += level_pose, level_pose;
@@ -247,8 +269,8 @@ TEST( triangulation, twoIdenticalPoses) {
  CHECK_EXCEPTION(triangulatePoint3(poses, measurements, *sharedCal),
  TriangulationUnderconstrainedException);
  }
-*/
- /* ************************************************************************* */
+ */
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
