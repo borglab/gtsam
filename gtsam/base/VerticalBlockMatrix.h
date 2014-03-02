@@ -58,13 +58,25 @@ protected:
   DenseIndex rowEnd_; ///< Changes apparent matrix view, see class comments.
   DenseIndex blockStart_; ///< Changes apparent matrix view, see class comments.
 
+#define ASSERT_INVARIANTS \
+  assert(matrix_.cols() == variableColOffsets_.back());\
+  assert(blockStart_ < (DenseIndex)variableColOffsets_.size());\
+  assert(rowStart_ <= matrix_.rows());\
+  assert(rowEnd_ <= matrix_.rows());\
+  assert(rowStart_ <= rowEnd_);\
+
+#define CHECK_BLOCK(block) \
+  assert(matrix_.cols() == variableColOffsets_.back());\
+  assert(block < (DenseIndex)variableColOffsets_.size() - 1);\
+  assert(variableColOffsets_[block] < matrix_.cols() && variableColOffsets_[block+1] <= matrix_.cols());
+
 public:
 
   /** Construct an empty VerticalBlockMatrix */
   VerticalBlockMatrix() :
       rowStart_(0), rowEnd_(0), blockStart_(0) {
     variableColOffsets_.push_back(0);
-    assertInvariants();
+    ASSERT_INVARIANTS
   }
 
   /** Construct from a container of the sizes of each vertical block. */
@@ -73,7 +85,7 @@ public:
       rowStart_(0), rowEnd_(height), blockStart_(0) {
     fillOffsets(dimensions.begin(), dimensions.end());
     matrix_.resize(height, variableColOffsets_.back());
-    assertInvariants();
+    ASSERT_INVARIANTS
   }
 
   /**
@@ -87,7 +99,7 @@ public:
     if (variableColOffsets_.back() != matrix_.cols())
       throw std::invalid_argument(
           "Requested to create a VerticalBlockMatrix with dimensions that do not sum to the total columns of the provided matrix.");
-    assertInvariants();
+    ASSERT_INVARIANTS
   }
 
   /**
@@ -98,7 +110,7 @@ public:
       rowStart_(0), rowEnd_(height), blockStart_(0) {
     fillOffsets(firstBlockDim, lastBlockDim);
     matrix_.resize(height, variableColOffsets_.back());
-    assertInvariants();
+    ASSERT_INVARIANTS
   }
 
   /**
@@ -118,40 +130,40 @@ public:
       DenseIndex height);
 
   /// Row size
-  DenseIndex rows() const {
-    assertInvariants();
+  inline DenseIndex rows() const {
+    ASSERT_INVARIANTS
     return rowEnd_ - rowStart_;
   }
 
   /// Column size
-  DenseIndex cols() const {
-    assertInvariants();
+  inline DenseIndex cols() const {
+    ASSERT_INVARIANTS
     return variableColOffsets_.back() - variableColOffsets_[blockStart_];
   }
 
   /// Block count
-  DenseIndex nBlocks() const {
-    assertInvariants();
+  inline DenseIndex nBlocks() const {
+    ASSERT_INVARIANTS
     return variableColOffsets_.size() - 1 - blockStart_;
   }
 
   /** Access a single block in the underlying matrix with read/write access */
-  Block operator()(DenseIndex block) {
+  inline Block operator()(DenseIndex block) {
     return range(block, block + 1);
   }
 
   /** Access a const block view */
-  const constBlock operator()(DenseIndex block) const {
+  inline const constBlock operator()(DenseIndex block) const {
     return range(block, block + 1);
   }
 
   /** access ranges of blocks at a time */
   Block range(DenseIndex startBlock, DenseIndex endBlock) {
-    assertInvariants();
+    ASSERT_INVARIANTS
     DenseIndex actualStartBlock = startBlock + blockStart_;
     DenseIndex actualEndBlock = endBlock + blockStart_;
     if (startBlock != 0 || endBlock != 0) {
-      checkBlock(actualStartBlock);
+      CHECK_BLOCK(actualStartBlock);
       assert(actualEndBlock < (DenseIndex)variableColOffsets_.size());
     }
     const DenseIndex startCol = variableColOffsets_[actualStartBlock];
@@ -160,11 +172,11 @@ public:
   }
 
   const constBlock range(DenseIndex startBlock, DenseIndex endBlock) const {
-    assertInvariants();
+    ASSERT_INVARIANTS
     DenseIndex actualStartBlock = startBlock + blockStart_;
     DenseIndex actualEndBlock = endBlock + blockStart_;
     if (startBlock != 0 || endBlock != 0) {
-      checkBlock(actualStartBlock);
+      CHECK_BLOCK(actualStartBlock);
       assert(actualEndBlock < (DenseIndex)variableColOffsets_.size());
     }
     const DenseIndex startCol = variableColOffsets_[actualStartBlock];
@@ -175,82 +187,76 @@ public:
 
   /** Return the full matrix, *not* including any portions excluded by
    * rowStart(), rowEnd(), and firstBlock() */
-  Block full() {
+  inline Block full() {
     return range(0, nBlocks());
   }
 
   /** Return the full matrix, *not* including any portions excluded by
    * rowStart(), rowEnd(), and firstBlock() */
-  const constBlock full() const {
+  inline const constBlock full() const {
     return range(0, nBlocks());
   }
 
-  DenseIndex offset(DenseIndex block) const {
-    assertInvariants();
+  inline DenseIndex offset(DenseIndex block) const {
+    ASSERT_INVARIANTS
     DenseIndex actualBlock = block + blockStart_;
-    checkBlock(actualBlock);
+    CHECK_BLOCK(actualBlock);
     return variableColOffsets_[actualBlock];
   }
 
   /// Get/set the apparent first row of the underlying matrix for all operations
-  DenseIndex& rowStart() {
+  inline DenseIndex& rowStart() {
     return rowStart_;
   }
 
   /** Get/set the apparent last row
    * (exclusive, i.e. rows() == rowEnd() - rowStart())
    * of the underlying matrix for all operations */
-  DenseIndex& rowEnd() {
+  inline DenseIndex& rowEnd() {
     return rowEnd_;
   }
 
   /** Get/set the apparent first block for all operations */
-  DenseIndex& firstBlock() {
+  inline DenseIndex& firstBlock() {
     return blockStart_;
   }
 
   /** Get the apparent first row of the underlying matrix for all operations */
-  DenseIndex rowStart() const {
+  inline DenseIndex rowStart() const {
     return rowStart_;
   }
 
   /** Get the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart())
    *  of the underlying matrix for all operations */
-  DenseIndex rowEnd() const {
+  inline DenseIndex rowEnd() const {
     return rowEnd_;
   }
 
   /** Get the apparent first block for all operations */
-  DenseIndex firstBlock() const {
+  inline DenseIndex firstBlock() const {
     return blockStart_;
   }
 
   /** Access to full matrix (*including* any portions excluded by rowStart(),
    * rowEnd(), and firstBlock()) */
-  const Matrix& matrix() const {
+  inline const Matrix& matrix() const {
     return matrix_;
   }
 
   /** Non-const access to full matrix (*including* any portions excluded by
    * rowStart(), rowEnd(), and firstBlock()) */
-  Matrix& matrix() {
+  inline Matrix& matrix() {
     return matrix_;
   }
 
 protected:
+
   void assertInvariants() const {
-    assert(matrix_.cols() == variableColOffsets_.back());
-    assert(blockStart_ < (DenseIndex)variableColOffsets_.size());
-    assert(rowStart_ <= matrix_.rows());
-    assert(rowEnd_ <= matrix_.rows());
-    assert(rowStart_ <= rowEnd_);
+    ASSERT_INVARIANTS
   }
 
   void checkBlock(DenseIndex block) const {
-    assert(matrix_.cols() == variableColOffsets_.back());
-    assert(block < (DenseIndex)variableColOffsets_.size() - 1);
-    assert(
-        variableColOffsets_[block] < matrix_.cols() && variableColOffsets_[block+1] <= matrix_.cols());
+    CHECK_BLOCK(block)
   }
 
   template<typename ITERATOR>
