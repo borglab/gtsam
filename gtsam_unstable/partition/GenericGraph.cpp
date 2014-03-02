@@ -266,11 +266,12 @@ namespace gtsam { namespace partition {
 				else
 					isLandmark[factor_->key1.index] = true;
 			}
-			if (workspace.dictionary[factor_->key2.index] != -1)
+            if (workspace.dictionary[factor_->key2.index] != -1) {
 				if (factor_->key2.type == NODE_POSE_3D)
 					isCamera[factor_->key2.index] = true;
 				else
 					isLandmark[factor_->key2.index] = true;
+            }
 		}
 
 		vector<int> nrConstraints(workspace.dictionary.size(), 0);
