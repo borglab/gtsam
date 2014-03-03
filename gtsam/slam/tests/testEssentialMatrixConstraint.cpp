@@ -174,6 +174,7 @@ TEST(EssentialMatrixConstraint, optimization) {
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <gtsam/navigation/AttitudeFactor.h>
 #include <fstream>
 #include <iostream>
 
@@ -220,6 +221,11 @@ bool loadBetween(const string& filename, NonlinearFactorGraph& graph) {
     return false;
   }
 
+  // noiseModel::Isotropic::shared_ptr noise = noiseModel::Isotropic::Sigma(5, 0.1);
+
+  const noiseModel::Robust::shared_ptr noise =
+      noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0),noiseModel::Isotropic::Sigma(5, 0.05));
+
   int id1, id2;
   while (fin >> id1) {
     fin >> id2;
@@ -242,7 +248,6 @@ bool loadBetween(const string& filename, NonlinearFactorGraph& graph) {
     }
     Unit3 t_E = Unit3(Point3(directionVector));
     EssentialMatrix E(R_E,t_E);
-    noiseModel::Isotropic::shared_ptr noise = noiseModel::Isotropic::Sigma(5, 1.0);
     EssentialMatrixConstraint factor(id1, id2, E, noise);
     graph.push_back(factor);
 
@@ -260,6 +265,9 @@ bool loadGravity(const string& filename, NonlinearFactorGraph& graph) {
     return false;
   }
 
+  Unit3 g_global(Point3(0,0,-1));\
+  g_global.print("g_global ");
+
   int id1;
   while (fin >> id1) {
     Vector3 gravityVector;
@@ -267,13 +275,51 @@ bool loadGravity(const string& filename, NonlinearFactorGraph& graph) {
       fin >> gravityVector(i);
     }
     Unit3 g_local = Unit3(Point3(gravityVector));
-    SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.5);
-    Pose3AttitudeFactor factor(id1, nDown, model, bZ);
+    SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.1);
+    Pose3AttitudeFactor factor(id1, g_local, model, g_global);
     graph.push_back(factor);
   }
   fin.close();
   return true;
 }
+
+bool loadPriors(const string& filename, NonlinearFactorGraph& graph) {
+
+  // Load the data file
+  ifstream fin(filename.c_str(),ifstream::in);
+  if(!fin){
+    cout << "Error in loadPriors: can not find the file!!" << endl;
+    return false;
+  }
+
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Precisions((Vector(6) << 1e5,1e5,1e5,0,0,0));
+
+  int pose_id;
+  while (fin >> pose_id) {
+    Matrix3 rotationMatrix;
+    fin >> rotationMatrix(0,0);
+    fin >> rotationMatrix(0,1);
+    fin >> rotationMatrix(0,2);
+    fin >> rotationMatrix(1,0);
+    fin >> rotationMatrix(1,1);
+    fin >> rotationMatrix(1,2);
+    fin >> rotationMatrix(2,0);
+    fin >> rotationMatrix(2,1);
+    fin >> rotationMatrix(2,2);
+    Rot3 R = Rot3(rotationMatrix);
+
+    Vector3 translationVector;
+    for (size_t i = 0; i < 3; ++i) { // fill in translation
+      fin >> translationVector(i);
+    }
+    Point3 t = Point3(translationVector);
+    Pose3 pose_matlab_i = Pose3(R,t);
+    graph.push_back(PriorFactor<Pose3>(pose_id, pose_matlab_i, priorNoise));
+  }
+  fin.close();
+  return true;
+}
+
 
 bool writeEstimate(const string& filename, const Values& estimate) {
 
@@ -327,9 +373,13 @@ TEST(EssentialMatrixConstraint, BAinSO2) {
   // graph.print("");
 
   // create EssentialMatrixConstraints
-//  string gravityFile = "/home/aspn/borg/BAinSO2/data/gravityNL.txt";
-//  loadGravity(gravityFile, graph);
-  // graph.print("");
+  string gravityFile = "/home/aspn/borg/BAinSO2/data/gravityNL.txt";
+  loadGravity(gravityFile, graph);
+  //graph.print("");
+
+  // add priors on rotations
+  loadPriors(initialGuessFile, graph);
+  //graph.print("");
 
   LevenbergMarquardtParams params;
   params.relativeErrorTol = 0.0;
