@@ -185,7 +185,7 @@ Values loadInitialGuess(const string& filename) {
   // Load the data file
   ifstream fin(filename.c_str(),ifstream::in);
   if(!fin)
-    cout << "Error in loadInitialGuess: can not find the file!!" << endl;
+    cout << "Error in loadInitialGuess: cannot find the file!!" << endl;
 
   int pose_id;
   while (fin >> pose_id) {
@@ -209,6 +209,7 @@ Values loadInitialGuess(const string& filename) {
     initialValues.insert(pose_id, Pose3(R,t));
   }
   fin.close();
+  cout << "- Read initial values" << endl;
   return initialValues;
 }
 
@@ -218,7 +219,7 @@ bool loadBetween(const string& filename, NonlinearFactorGraph& graph) {
   // Load the data file
   ifstream fin(filename.c_str(),ifstream::in);
   if(!fin){
-    cout << "Error in loadBetween: can not find the file!!" << endl;
+    cout << "Error in loadBetween: cannot find the file!!" << endl;
     return false;
   }
 
@@ -254,6 +255,7 @@ bool loadBetween(const string& filename, NonlinearFactorGraph& graph) {
 
   }
   fin.close();
+  cout << "- Read between measurements" << endl;
   return true;
 }
 
@@ -262,12 +264,12 @@ bool loadGravity(const string& filename, NonlinearFactorGraph& graph) {
   // Load the data file
   ifstream fin(filename.c_str(),ifstream::in);
   if(!fin){
-    cout << "Error in loadGravity: can not find the file!!" << endl;
+    cout << "Error in loadGravity: cannot find the file!!" << endl;
     return false;
   }
 
   Unit3 g_global(Point3(0,0,-1));\
-  g_global.print("g_global ");
+  // g_global.print("g_global ");
 
   int id1;
   while (fin >> id1) {
@@ -281,6 +283,7 @@ bool loadGravity(const string& filename, NonlinearFactorGraph& graph) {
     graph.push_back(factor);
   }
   fin.close();
+  cout << "- Read gravity measurements" << endl;
   return true;
 }
 
@@ -319,6 +322,34 @@ bool loadPriors(const string& filename, NonlinearFactorGraph& graph) {
     graph.push_back(PriorFactor<Pose3>(pose_id, pose_matlab_i, priorNoise));
   }
   fin.close();
+  cout << "- Read prior measurements" << endl;
+  return true;
+}
+
+bool loadGPS(const string& filename, NonlinearFactorGraph& graph) {
+
+  // Load the data file
+  ifstream fin(filename.c_str(),ifstream::in);
+  if(!fin){
+    cout << "Error in loadGPS: cannot find the file!!" << endl;
+    return false;
+  }
+
+  double gpsPrec = 1.0;
+  noiseModel::Diagonal::shared_ptr gpsNoise = noiseModel::Diagonal::Precisions((Vector(6) << 0,0,0,gpsPrec,gpsPrec,gpsPrec));
+
+  int id1;
+  while (fin >> id1) {
+    Vector3 positionVector;
+    for (size_t i = 0; i < 3; ++i) {
+      fin >> positionVector(i);
+    }
+    Point3 position_i = Point3(positionVector);
+    Pose3 pose_i(Rot3(),position_i);
+    graph.push_back(PriorFactor<Pose3>(id1, pose_i, gpsNoise));
+  }
+  fin.close();
+  cout << "- Read GPS measurements" << endl;
   return true;
 }
 
@@ -330,7 +361,7 @@ bool writeEstimate(const string& filename, const Values& estimate) {
   os.open(filename.c_str());
   os.precision(20);
   if (!os.is_open()) {
-    cout << "Error in writeEstimate: can not open the file!!" << endl;
+    cout << "Error in writeEstimate: cannot open the file!!" << endl;
     return false;
   }
 
@@ -381,15 +412,24 @@ TEST(EssentialMatrixConstraint, BAinSO2) {
 
   // add priors on rotations
   loadPriors(initialGuessFile, graph);
-  //graph.print("");
+
+  // add priors on rotations
+  string gpsFile = "/home/aspn/borg/BAinSO2/data/gpsNL.txt";
+  loadPriors(gpsFile, graph);
 
   LevenbergMarquardtParams params;
   params.relativeErrorTol = 0.0;
   params.absoluteErrorTol = 0.0;
-  params.setVerbosityLM("TRYLAMBDA");
+  //params.setVerbosityLM("TRYLAMBDA");
   //params.setVerbosity("DELTA");
   LevenbergMarquardtOptimizer lm(graph, initialValues, params);
+  gttic_(BAinSO2);
   Values estimate = lm.optimize();
+  gttoc_(BAinSO2);
+  tictoc_print_();
+
+  std::cout << "Initial error: " << graph.error(initialValues) << std::endl;
+  std::cout << "Final error: " << graph.error(estimate) << std::endl;
 
   // write results
   string outputFile = "/home/aspn/borg/BAinSO2/data/estimateNL.txt";
