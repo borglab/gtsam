@@ -14,6 +14,7 @@
  *  @brief Unit tests for EssentialMatrixConstraint Class
  *  @author Frank Dellaert
  *  @author Pablo Alcantarilla
+ *  @author Luca Carlone
  *  @date Jan 5, 2014
  */
 
@@ -292,7 +293,8 @@ bool loadPriors(const string& filename, NonlinearFactorGraph& graph) {
     return false;
   }
 
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Precisions((Vector(6) << 1e5,1e5,1e5,0,0,0));
+  double rotPrec = 1e5;
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Precisions((Vector(6) << rotPrec,rotPrec,rotPrec,0,0,0));
 
   int pose_id;
   while (fin >> pose_id) {
