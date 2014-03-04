@@ -92,6 +92,17 @@ namespace gtsam
     std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminate(const Eliminate& function) const;
 
+    /** Eliminate the factors to a Bayes tree and remaining factor graph.  This is
+    * used when the result BayesTree has already been allocated, e.g. when used in
+    * iterative optimization.
+    * @param function The function to use to eliminate, see the namespace functions
+    * in GaussianFactorGraph.h
+    * @param bayesTree The already-allocated Bayes tree, obtained from a previous
+    * call to ClusterTree::eliminate().
+    * @return The remaining factor graph resulting from elimination
+    */
+    boost::shared_ptr<FactorGraphType> eliminateInPlace(BAYESTREE& bayesTree, const Eliminate& function) const;
+
     /// @}
 
     /// @name Advanced Interface
