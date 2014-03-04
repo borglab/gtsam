@@ -119,6 +119,9 @@ public:
   virtual boost::shared_ptr<GaussianFactor>
   linearize(const Values& c) const = 0;
 
+  /** relinearize an existing GaussianFactor */
+  virtual void linearizeInPlace(const Values& c, GaussianFactor& gaussianFactor) const = 0;
+
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
    * for subclasses
@@ -314,6 +317,22 @@ public:
     }
     else
       return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
+  }
+
+  /** relinearize an existing GaussianFactor */
+  void linearizeInPlace(const Values& c, GaussianFactor& gaussianFactor) const {
+    // Call evaluate error to get Jacobians and b vector
+    std::vector<Matrix> A(this->size());
+    Vector b = -unwhitenedError(x, A);
+    if(noiseModel_)
+    {
+      if((size_t) b.size() != noiseModel_->dim())
+        throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
+
+      this->noiseModel_->WhitenSystem(A,b);
+    }
+
+
   }
 
 private:
