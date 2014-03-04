@@ -120,7 +120,9 @@ public:
   linearize(const Values& c) const = 0;
 
   /** relinearize an existing GaussianFactor */
-  virtual void linearizeInPlace(const Values& c, GaussianFactor& gaussianFactor) const = 0;
+  virtual void linearizeInPlace(const Values& c, GaussianFactor& gaussianFactor) const {
+    throw RuntimeErrorThreadsafe("Not implemented");
+  }
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
@@ -321,18 +323,52 @@ public:
 
   /** relinearize an existing GaussianFactor */
   void linearizeInPlace(const Values& c, GaussianFactor& gaussianFactor) const {
-    // Call evaluate error to get Jacobians and b vector
-    std::vector<Matrix> A(this->size());
-    Vector b = -unwhitenedError(x, A);
-    if(noiseModel_)
+    // Cast to Jacobian
+    JacobianFactor& jacobian = dynamic_cast<JacobianFactor&>(gaussianFactor);
+
+    // Only linearize if the factor is active
+    if (!this->active(c))
     {
-      if((size_t) b.size() != noiseModel_->dim())
-        throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
-
-      this->noiseModel_->WhitenSystem(A,b);
+      jacobian.matrixObject().matrix().setZero(); // Zero augmented jacobian matrix
+      jacobian.get_model().reset(); // Remove noise model
     }
+    else
+    {
+      // Call evaluate error to get Jacobians and b vector
+      std::vector<Matrix> A(this->size());
+      Vector b = -unwhitenedError(c, A);
+      if(noiseModel_)
+      {
+        if((size_t) b.size() != noiseModel_->dim())
+          throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
 
+        this->noiseModel_->WhitenSystem(A,b);
+      }
 
+      // Now copy the blocks into the Jacobian
+      assert(this->size() == jacobian.size());
+      for(size_t j = 0; j < A.size(); ++j)
+        jacobian.getA(jacobian.begin() + j) = A[j];
+
+      // Construct noise model and get RHS
+      if(noiseModel_)
+      {
+        noiseModel::Constrained::shared_ptr constrained =
+            boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
+        if(constrained) {
+          size_t augmentedDim = A[0].rows() - constrained->dim();
+          Vector augmentedZero = zero(augmentedDim);
+          jacobian.getb() = concatVectors(2, &b, &augmentedZero);
+          jacobian.get_model() = constrained->unit(augmentedDim);
+        } else {
+          jacobian.getb() = b;
+          jacobian.get_model().reset();
+        }
+      } else {
+        jacobian.getb() = b;
+        jacobian.get_model().reset();
+      }
+    }
   }
 
 private:
