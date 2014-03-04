@@ -29,15 +29,6 @@
 #include <gtsam/inference/Factor.h>
 
 
-/**
- * Macro to add a standard clone function to a derived factor
- * @deprecated: will go away shortly - just add the clone function directly
- */
-#define ADD_CLONE_NONLINEAR_FACTOR(Derived) \
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const { \
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>( \
-      gtsam::NonlinearFactor::shared_ptr(new Derived(*this))); }
-
 namespace gtsam {
 
 using boost::assign::cref_list_of;
@@ -127,17 +118,6 @@ public:
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
   linearize(const Values& c) const = 0;
-
-  /**
-   * Create a symbolic factor using the given ordering to determine the
-   * variable indices.
-   */
-  //virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-  //  std::vector<Index> indices(this->size());
-  //  for(size_t j=0; j<this->size(); ++j)
-  //    indices[j] = ordering[this->keys()[j]];
-  //  return IndexFactor::shared_ptr(new IndexFactor(indices));
-  //}
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
