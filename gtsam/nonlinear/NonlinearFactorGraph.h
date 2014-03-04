@@ -134,6 +134,10 @@ namespace gtsam {
      */
     boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
+    /** Relinearize an existing GaussianFactorGraph with identical structure, obtained
+     * from a previous call to linearize(). */
+    void linearizeInPlace(const Values& c, GaussianFactorGraph& gaussianFactorGraph) const;
+
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors
      */

@@ -166,5 +166,35 @@ TEST( NonlinearFactorGraph, symbolic )
 }
 
 /* ************************************************************************* */
+TEST( NonlinearFactorGraph, relinearize )
+{
+  // This unit test tests the relinearize function, which should update factors
+  // in-place.  We verify this using another "aliased" graph that shares factor
+  // pointers with the graph being modified, which should also be updated.
+
+  const NonlinearFactorGraph graph = createNonlinearFactorGraph();
+
+  const Values vals1 = createValues();
+  Values vals2 = vals1;
+  vals2.update(symbol_shorthand::X(1), Point2(0.0, 1.0));
+
+  // Const linearized graphs
+  const GaussianFactorGraph linearized1 = *graph.linearize(vals1);
+  const GaussianFactorGraph linearized2 = *graph.linearize(vals2);
+
+  // Now the graph to be updated
+  GaussianFactorGraph linearized = *graph.linearize(vals1);
+  EXPECT(assert_equal(linearized1, linearized));
+
+  // Relinearize the graph
+  GaussianFactorGraph aliasedGraph = linearized; // Shares factors
+  graph.linearizeInPlace(vals2, linearized);
+
+  // Both the linearized graph and the aliased one should be updated
+  EXPECT(assert_equal(linearized2, linearized));
+  EXPECT(assert_equal(linearized2, aliasedGraph));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

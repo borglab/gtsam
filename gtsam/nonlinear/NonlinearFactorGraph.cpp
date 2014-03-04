@@ -366,6 +366,52 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
 }
 
 /* ************************************************************************* */
+namespace {
+
+#ifdef GTSAM_USE_TBB
+  struct _LinearizeOneFactorInPlace {
+    const NonlinearFactorGraph& graph;
+    const Values& linearizationPoint;
+    GaussianFactorGraph& result;
+    _LinearizeOneFactorInPlace(const NonlinearFactorGraph& graph, const Values& linearizationPoint, GaussianFactorGraph& result) :
+      graph(graph), linearizationPoint(linearizationPoint), result(result) {}
+    void operator()(const tbb::blocked_range<size_t>& r) const
+    {
+      for(size_t i = r.begin(); i != r.end(); ++i)
+      {
+        if(graph[i])
+          graph[i]->linearizeInPlace(linearizationPoint, *result[i]);
+      }
+    }
+  };
+#endif
+
+}
+
+/* ************************************************************************* */
+void NonlinearFactorGraph::linearizeInPlace(const Values& linearizationPoint, GaussianFactorGraph& linearFG) const
+{
+  gttic(NonlinearFactorGraph_linearizeInPlace);
+
+#ifdef GTSAM_USE_TBB
+
+  TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, this->size()),
+    _LinearizeOneFactorInPlace(*this, linearizationPoint, linearFG));
+
+#else
+
+  // linearize all factors
+  for(size_t i = 0; i < this->size(); ++i) {
+    const sharedFactor& factor = this->factors_[i];
+    if(factor)
+      factor->linearizeInPlace(linearizationPoint, linearFG[i]);
+  }
+
+#endif
+}
+
+/* ************************************************************************* */
 NonlinearFactorGraph NonlinearFactorGraph::clone() const {
   NonlinearFactorGraph result;
   BOOST_FOREACH(const sharedFactor& f, *this) {
