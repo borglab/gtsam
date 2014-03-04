@@ -539,6 +539,11 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
     double* yvalues, vector<size_t> keys) const {
 
+  // Use eigen magic to access raw memory
+  typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
+  typedef Eigen::Map<DVector> DMap;
+  typedef Eigen::Map<const DVector> ConstDMap;
+
   // Create a vector of temporary y values, corresponding to rows i
   vector<Vector> y;
   y.reserve(size());

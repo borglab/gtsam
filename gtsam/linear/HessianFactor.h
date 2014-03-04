@@ -142,11 +142,6 @@ namespace gtsam {
     typedef SymmetricBlockMatrix::constBlock constBlock; ///< A block from the Hessian matrix (const version)
 
 
-    // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
-    typedef Eigen::Map<DVector> DMap;
-    typedef Eigen::Map<const DVector> ConstDMap;
-
     /** default constructor for I/O */
     HessianFactor();
 

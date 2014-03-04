@@ -507,6 +507,12 @@ namespace gtsam {
   }
 
   void JacobianFactor::multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const {
+
+	  // Use eigen magic to access raw memory
+	  typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
+	  typedef Eigen::Map<DVector> DMap;
+	  typedef Eigen::Map<const DVector> ConstDMap;
+
 	  if (empty()) return;
 	     Vector Ax = zero(Ab_.rows());
 

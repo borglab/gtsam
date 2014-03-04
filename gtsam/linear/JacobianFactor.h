@@ -96,11 +96,6 @@ namespace gtsam {
     typedef ABlock::ColXpr BVector;
     typedef constABlock::ConstColXpr constBVector;
 
-    // Use eigen magic to access raw memory
-     typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
-     typedef Eigen::Map<DVector> DMap;
-     typedef Eigen::Map<const DVector> ConstDMap;
-
 
     /** Convert from other GaussianFactor */
     explicit JacobianFactor(const GaussianFactor& gf);
