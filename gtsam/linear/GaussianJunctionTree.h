@@ -16,6 +16,8 @@
  * @author Richard Roberts
  */
 
+#pragma once
+
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/inference/JunctionTree.h>
