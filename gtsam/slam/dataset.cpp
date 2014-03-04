@@ -685,7 +685,7 @@ bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
     Values valuesCameras = values.filter< PinholeCamera<Cal3Bundler> >();
     if ( valuesCameras.size() == data.number_cameras() ){  // we only estimated camera poses and calibration
       for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
-        Key cameraKey = symbol('c',i);
+        Key cameraKey = i; // symbol('c',i);
         PinholeCamera<Cal3Bundler> camera = values.at<PinholeCamera<Cal3Bundler> >(cameraKey);
         data.cameras[i] = camera;
       }
