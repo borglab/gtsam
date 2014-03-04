@@ -135,6 +135,8 @@ namespace gtsam {
     typedef FastSet<Key> Keys;
     Keys keys() const;
 
+    std::vector<size_t> getkeydim() const;
+
     /** unnormalized error */
     double error(const VectorValues& x) const {
       double total_error = 0.;
@@ -295,6 +297,10 @@ namespace gtsam {
     ///** y += alpha*A'A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x,
         VectorValues& y) const;
+
+    ///** y += alpha*A'A*x */
+    void multiplyHessianAdd(double alpha, const double* x,
+        double* y) const;
 
     ///** In-place version e <- A*x that overwrites e. */
     void multiplyInPlace(const VectorValues& x, Errors& e) const;

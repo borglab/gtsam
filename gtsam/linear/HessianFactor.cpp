@@ -525,7 +525,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 
   // copy to yvalues
   for(DenseIndex i = 0; i < (DenseIndex)size(); ++i) {
-    bool didNotExist;
+	bool didNotExist;
     VectorValues::iterator it;
     boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
     if (didNotExist)
@@ -534,6 +534,38 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
       it->second += alpha * y[i]; // add
   }
 }
+
+/* ************************************************************************* */
+void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
+    double* yvalues, vector<size_t> keys) const {
+
+  // Create a vector of temporary y values, corresponding to rows i
+  vector<Vector> y;
+  y.reserve(size());
+  for (const_iterator it = begin(); it != end(); it++)
+    y.push_back(zero(getDim(it)));
+
+  // Accessing the VectorValues one by one is expensive
+  // So we will loop over columns to access x only once per column
+  // And fill the above temporary y values, to be added into yvalues after
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+     DenseIndex i = 0;
+    for (; i < j; ++i)
+      y[i] += info_(i, j).knownOffDiagonal() * ConstDMap(x+keys[keys_[j]],keys[keys_[j]+1]-keys[keys_[j]]);
+    // blocks on the diagonal are only half
+    y[i] += info_(j, j).selfadjointView() * ConstDMap(x+keys[keys_[j]],keys[keys_[j]+1]-keys[keys_[j]]);
+    // for below diagonal, we take transpose block from upper triangular part
+    for (i = j + 1; i < (DenseIndex)size(); ++i)
+      y[i] += info_(i, j).knownOffDiagonal() * ConstDMap(x+keys[keys_[j]],keys[keys_[j]+1]-keys[keys_[j]]);
+  }
+
+  // copy to yvalues
+  for(DenseIndex i = 0; i < (DenseIndex)size(); ++i)
+	  DMap(yvalues+keys[keys_[i]],keys[keys_[i]+1]-keys[keys_[i]]) += alpha * y[i];
+
+
+}
+
 
 /* ************************************************************************* */
 VectorValues HessianFactor::gradientAtZero() const {

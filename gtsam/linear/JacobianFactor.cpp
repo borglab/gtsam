@@ -495,6 +495,7 @@ namespace gtsam {
       if(xi.second)
         xi.first->second = Vector::Zero(getDim(begin() + pos));
       gtsam::transposeMultiplyAdd(Ab_(pos), E, xi.first->second);
+
     }
   }
 
@@ -503,6 +504,26 @@ namespace gtsam {
       VectorValues& y) const {
     Vector Ax = (*this)*x;
     transposeMultiplyAdd(alpha,Ax,y);
+  }
+
+  void JacobianFactor::multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const {
+	  if (empty()) return;
+	     Vector Ax = zero(Ab_.rows());
+
+	     // Just iterate over all A matrices and multiply in correct config part
+	     for(size_t pos=0; pos<size(); ++pos)
+	       Ax += Ab_(pos) * ConstDMap(x + keys[keys_[pos]],keys[keys_[pos]+1]-keys[keys_[pos]]);
+
+	     // Deal with noise properly, need to Double* whiten as we are dividing by variance
+	     if  (model_) { model_->whitenInPlace(Ax); model_->whitenInPlace(Ax); }
+
+	     // multiply with alpha
+	     Ax *= alpha;
+
+	     // Again iterate over all A matrices and insert Ai^e into y
+	     for(size_t pos=0; pos<size(); ++pos)
+	       DMap(y + keys[keys_[pos]],keys[keys_[pos]+1]-keys[keys_[pos]]) += Ab_(pos).transpose() * Ax;
+
   }
 
   /* ************************************************************************* */

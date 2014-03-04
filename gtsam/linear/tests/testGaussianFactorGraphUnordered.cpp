@@ -166,9 +166,9 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
   fg += JacobianFactor(2, 10*eye(2), -1.0*ones(2), unit2);
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(2, -10*eye(2), 0, 10*eye(2), (Vector(2) << 2.0, -1.0), unit2);
+  fg += JacobianFactor(0, 10*eye(2), 2, -10*eye(2), (Vector(2) << 2.0, -1.0), unit2);
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(2, -5*eye(2), 1, 5*eye(2), (Vector(2) << 0.0, 1.0), unit2);
+  fg += JacobianFactor(1, 5*eye(2), 2, -5*eye(2), (Vector(2) << 0.0, 1.0), unit2);
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
   fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), (Vector(2) << -1.0, 1.5), unit2);
   return fg;
@@ -311,6 +311,31 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
   // now, do it with non-zero y
   gfg.multiplyHessianAdd(1.0, x, actual);
   EXPECT(assert_equal(2*expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, multiplyHessianAdd3 )
+{
+  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
+
+  // brute force
+  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
+  Vector X(6); X<<1,2,3,4,5,6;
+  Vector Y(6); Y<<-450, -450, 300, 400, 2950, 3450;
+  EXPECT(assert_equal(Y,AtA*X));
+
+    double* x = &X[0];
+    double* y = &Y[0];
+
+    Vector fast_y = gtsam::zero(6);
+    double* actual = &fast_y[0];
+    gfg.multiplyHessianAdd(1.0, x, fast_y.data());
+    EXPECT(assert_equal(Y, fast_y));
+
+    // now, do it with non-zero y
+    gfg.multiplyHessianAdd(1.0, x, fast_y.data());
+    EXPECT(assert_equal(2*Y, fast_y));
+
 }
 
 

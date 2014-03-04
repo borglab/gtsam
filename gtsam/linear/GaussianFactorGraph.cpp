@@ -55,6 +55,27 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+    vector<size_t> GaussianFactorGraph::getkeydim() const {
+      // First find dimensions of each variable
+      vector<size_t> dims;
+      BOOST_FOREACH(const sharedFactor& factor, *this) {
+        for (GaussianFactor::const_iterator pos = factor->begin();
+            pos != factor->end(); ++pos) {
+          if (dims.size() <= *pos)
+            dims.resize(*pos + 1, 0);
+          dims[*pos] = factor->getDim(pos);
+        }
+      }
+      // Find accumulated dimensions for variables
+      vector<size_t> dims_accumulated;
+      dims_accumulated.resize(dims.size()+1,0);
+      dims_accumulated[0]=0;
+      for (int i=1; i<dims_accumulated.size(); i++)
+    	  dims_accumulated[i] = dims_accumulated[i-1]+dims[i-1];
+      return dims_accumulated;
+    }
+
+  /* ************************************************************************* */
   GaussianFactorGraph GaussianFactorGraph::clone() const {
     GaussianFactorGraph result;
     BOOST_FOREACH(const sharedFactor& f, *this) {
@@ -310,7 +331,16 @@ namespace gtsam {
   void GaussianFactorGraph::multiplyHessianAdd(double alpha,
       const VectorValues& x, VectorValues& y) const {
     BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
-      f->multiplyHessianAdd(alpha, x, y);
+     f->multiplyHessianAdd(alpha, x, y);
+  }
+
+  /* ************************************************************************* */
+  void GaussianFactorGraph::multiplyHessianAdd(double alpha,
+      const double* x, double* y) const {
+	vector<size_t> FactorKeys = getkeydim();
+	BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
+      f->multiplyHessianAdd(alpha, x, y, FactorKeys);
+
   }
 
   /* ************************************************************************* */

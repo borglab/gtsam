@@ -141,6 +141,12 @@ namespace gtsam {
     typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
     typedef SymmetricBlockMatrix::constBlock constBlock; ///< A block from the Hessian matrix (const version)
 
+
+    // Use eigen magic to access raw memory
+    typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+    typedef Eigen::Map<const DVector> ConstDMap;
+
     /** default constructor for I/O */
     HessianFactor();
 
@@ -375,6 +381,10 @@ namespace gtsam {
 
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
+
+    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
+
+    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
 
     /// eta for Hessian
     VectorValues gradientAtZero() const;

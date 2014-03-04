@@ -96,6 +96,12 @@ namespace gtsam {
     typedef ABlock::ColXpr BVector;
     typedef constABlock::ConstColXpr constBVector;
 
+    // Use eigen magic to access raw memory
+     typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
+     typedef Eigen::Map<DVector> DMap;
+     typedef Eigen::Map<const DVector> ConstDMap;
+
+
     /** Convert from other GaussianFactor */
     explicit JacobianFactor(const GaussianFactor& gf);
 
@@ -274,6 +280,10 @@ namespace gtsam {
 
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
+
+    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
+
+    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
 
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;
