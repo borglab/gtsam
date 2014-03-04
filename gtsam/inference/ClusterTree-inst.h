@@ -212,7 +212,7 @@ namespace gtsam
   {
     std::cout << s;
     BOOST_FOREACH(Key j, keys)
-      std::cout << j << "  ";
+      std::cout << keyFormatter(j) << "  ";
     std::cout << "problemSize = " << problemSize_ << std::endl;
   }
 
