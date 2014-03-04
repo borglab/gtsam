@@ -19,6 +19,7 @@
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <boost/optional.hpp>
+#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -75,6 +76,9 @@ public:
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
           throwCheirality), verboseCheirality_(verboseCheirality) {
+    if (model && model->dim() != 2)
+      throw std::invalid_argument(
+          "TriangulationFactor must be created with 2-dimensional noise model.");
   }
 
   /** Virtual destructor */
@@ -126,6 +130,41 @@ public:
     }
   }
 
+  /// thread-safe (?) scratch memory for linearize
+  mutable VerticalBlockMatrix Ab;
+  mutable Matrix A;
+  mutable Vector b;
+
+  /**
+   * Linearize to a JacobianFactor, does not support constrained noise model !
+   * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
+   * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
+   */
+  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
+    // Only linearize if the factor is active
+    if (!this->active(x))
+      return boost::shared_ptr<JacobianFactor>();
+
+    // Allocate memory for Jacobian factor, do only once
+    if (Ab.rows() == 0) {
+      std::vector<size_t> dimensions(1, 3);
+      Ab = VerticalBlockMatrix(dimensions, 2, true);
+      A.resize(2,3);
+      b.resize(2);
+    }
+
+    // Would be even better if we could pass blocks to project
+    const Point3& point = x.at<Point3>(key());
+    b = -(camera_.project(point, boost::none, A) - measured_).vector();
+    if (noiseModel_)
+      this->noiseModel_->WhitenSystem(A, b);
+
+    Ab(0) = A;
+    Ab(1) = b;
+
+    return boost::make_shared<JacobianFactor>(this->keys_, Ab);
+  }
+
   /** return the measurement */
   const Point2& measured() const {
     return measured_;
@@ -155,5 +194,4 @@ private:
   }
 };
 } // \ namespace gtsam
-
 
