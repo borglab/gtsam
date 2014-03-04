@@ -20,6 +20,9 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/inference/VariableIndex.h>
 
 #include <boost/algorithm/string.hpp>
 #include <string>
@@ -85,6 +88,26 @@ void LevenbergMarquardtOptimizer::decreaseLambda(){
 }
 
 /* ************************************************************************* */
+const Values& LevenbergMarquardtOptimizer::optimize() {
+  // Set up graph for re-use, but be sure to delete it before returning
+  try {
+    // Only can reuse with direct multifrontal solving
+    if(params_.linearSolverType == NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY
+       || params_.linearSolverType == NonlinearOptimizerParams::MULTIFRONTAL_QR)
+      reusableLinearizedGraph_ = GaussianFactorGraph();
+    defaultOptimize();
+    reusableLinearizedGraph_.reset();
+    return values();
+  } catch(...) {
+    reusableLinearizedGraph_.reset();
+    reusableJunctionTree_.reset();
+    reusableBayesTree_.reset();
+    reusableVariableIndex_.reset();
+    throw;
+  }
+}
+
+/* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
   gttic (LM_iterate);
@@ -96,7 +119,48 @@ void LevenbergMarquardtOptimizer::iterate() {
   // Linearize graph
   if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
     cout << "linearizing = " << endl;
-  GaussianFactorGraph::shared_ptr linear = linearize();
+
+  // Set up damped system
+  GaussianFactorGraph* dampedSystem;
+  GaussianFactorGraph::shared_ptr _dampedSystemAllocatedHere;
+  if(reusableLinearizedGraph_)
+  {
+    dampedSystem = &(*reusableLinearizedGraph_);
+
+    if(dampedSystem->empty()) {
+      // Create for the first time
+      (*dampedSystem) = *linearize();
+
+      // Create damping factors
+      dampedSystem->reserve(dampedSystem->size() + state_.values.size());
+      BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
+        size_t dim = key_value.value.dim();
+        Matrix A = Matrix::Identity(dim, dim);
+        Vector b = Vector::Zero(dim);
+        SharedDiagonal model = noiseModel::Unit::Create(dim);
+        (*dampedSystem) += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
+      }
+    } else {
+      // Relinearize in place
+      GaussianFactorGraph linearizedFactorPointers(dampedSystem->begin(), dampedSystem->begin() + graph_.size());
+      graph_.linearizeInPlace(state_.values, linearizedFactorPointers);
+    }
+  }
+  else
+  {
+    _dampedSystemAllocatedHere = linearize();
+    dampedSystem = _dampedSystemAllocatedHere.get();
+
+    // Create damping factors
+    dampedSystem->reserve(dampedSystem->size() + state_.values.size());
+    BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
+      size_t dim = key_value.value.dim();
+      Matrix A = Matrix::Identity(dim, dim);
+      Vector b = Vector::Zero(dim);
+      SharedDiagonal model = noiseModel::Unit::Create(dim);
+      (*dampedSystem) += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
+    }
+  }
 
   // Keep increasing lambda until we make make progress
   while (true) {
@@ -105,17 +169,11 @@ void LevenbergMarquardtOptimizer::iterate() {
     // TODO: replace this dampening with a backsubstitution approach
     gttic(damp);
     if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) cout << "building damped system" << endl;
-    GaussianFactorGraph dampedSystem = *linear;
     {
       double sigma = 1.0 / std::sqrt(state_.lambda);
-      dampedSystem.reserve(dampedSystem.size() + state_.values.size());
-      // for each of the variables, add a prior
-      BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
-        size_t dim = key_value.value.dim();
-        Matrix A = Matrix::Identity(dim, dim);
-        Vector b = Vector::Zero(dim);
-        SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
-        dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
+      for(size_t i = graph_.size(); i < dampedSystem->size(); ++i) {
+        JacobianFactor& jacobian = dynamic_cast<JacobianFactor&>(*dampedSystem->at(i));
+        jacobian.get_model() = noiseModel::Isotropic::Sigma(jacobian.rows(), sigma);
       }
     }
     gttoc(damp);
@@ -134,8 +192,31 @@ void LevenbergMarquardtOptimizer::iterate() {
             << state_.error << "," << state_.lambda << endl;
       }
 
-      // Solve Damped Gaussian Factor Graph
-      const VectorValues delta = solve(dampedSystem, state_.values, params_);
+      VectorValues delta;
+
+      if(reusableLinearizedGraph_)
+      {
+        // Build variable index if needed
+        if(!reusableVariableIndex_)
+          reusableVariableIndex_ = VariableIndex(*dampedSystem);
+
+        // Build junction tree if needed
+        if(!reusableJunctionTree_)
+          reusableJunctionTree_ = GaussianJunctionTree(GaussianEliminationTree(*dampedSystem, *reusableVariableIndex_, *params_.ordering));
+
+        // Eliminate or reeliminate
+        if(reusableBayesTree_)
+          reusableJunctionTree_->eliminateInPlace(*reusableBayesTree_, params_.getEliminationFunction());
+        else
+          reusableBayesTree_ = *reusableJunctionTree_->eliminate(params_.getEliminationFunction()).first;
+
+        // Get delta
+        delta = reusableBayesTree_->optimize();
+      }
+      else
+      {
+        delta = solve(*dampedSystem, state_.values, params_);
+      }
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.norm() << endl;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");

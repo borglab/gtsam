@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace gtsam {
@@ -134,6 +135,12 @@ protected:
   LevenbergMarquardtParams params_; ///< LM parameters
   LevenbergMarquardtState state_; ///< optimization state
 
+  /// Internal linear graph whose memory is reused between iterations
+  boost::optional<GaussianFactorGraph> reusableLinearizedGraph_;
+  boost::optional<VariableIndex> reusableVariableIndex_;
+  boost::optional<GaussianJunctionTree> reusableJunctionTree_;
+  boost::optional<GaussianBayesTree> reusableBayesTree_;
+
 public:
   typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
 
@@ -199,6 +206,16 @@ public:
   /** Virtual destructor */
   virtual ~LevenbergMarquardtOptimizer() {
   }
+
+  /** Optimize for the maximum-likelihood estimate, returning the optimized
+   * variable assignments.
+   *
+   * This function simply calls iterate() in a loop, checking for convergence
+   * with check_convergence().  For fine-grain control over the optimization
+   * process, you may call iterate() and check_convergence() yourself, and if
+   * needed modify the optimization state between iterations.
+   */
+  virtual const Values& optimize();
 
   /** Perform a single iteration, returning a new NonlinearOptimizer class
    * containing the updated variable assignments, which may be retrieved with
