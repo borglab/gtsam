@@ -279,11 +279,9 @@ public:
     if (!this->active(x))
       return boost::shared_ptr<JacobianFactor>();
 
-    // Create the set of terms - Jacobians for each index
-    Vector b;
     // Call evaluate error to get Jacobians and b vector
     std::vector<Matrix> A(this->size());
-    b = -unwhitenedError(x, A);
+    Vector b = -unwhitenedError(x, A);
     if(noiseModel_)
     {
       if((size_t) b.size() != noiseModel_->dim())
