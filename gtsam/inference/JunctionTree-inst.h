@@ -25,6 +25,8 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/SymbolicFactor-inst.h>
 
+#include <ittnotify.h>
+
 namespace gtsam {
   
   namespace {
@@ -124,6 +126,15 @@ namespace gtsam {
   JunctionTree<BAYESTREE,GRAPH>::JunctionTree(const EliminationTree<ETREE_BAYESNET, ETREE_GRAPH>& eliminationTree)
   {
     gttic(JunctionTree_FromEliminationTree);
+
+    static __itt_domain* fjtree = 0;
+    if(fjtree == 0) {
+      fjtree =  __itt_domain_create("JTree construct");
+      fjtree->flags = 1;
+    }
+
+    __itt_frame_begin_v3(fjtree, NULL);
+
     // Here we rely on the BayesNet having been produced by this elimination tree, such that the
     // conditionals are arranged in DFS post-order.  We traverse the elimination tree, and inspect
     // the symbolic conditional corresponding to each node.  The elimination tree node is added to
@@ -143,6 +154,8 @@ namespace gtsam {
 
     // Transfer remaining factors from elimination tree
     Base::remainingFactors_ = eliminationTree.remainingFactors();
+
+    __itt_frame_end_v3(fjtree, NULL);
   }
 
 } //namespace gtsam

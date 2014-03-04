@@ -35,6 +35,8 @@
 #  include <tbb/parallel_reduce.h>
 #endif
 
+#include <ittnotify.h>
+
 using namespace std;
 
 namespace gtsam {
@@ -282,6 +284,14 @@ namespace {
 double NonlinearFactorGraph::error(const Values& c) const {
   gttic(NonlinearFactorGraph_error);
 
+  static __itt_domain* ferror = 0;
+  if(ferror == 0) {
+    ferror =  __itt_domain_create("error");
+    ferror->flags = 1;
+  }
+
+  __itt_frame_begin_v3(ferror, NULL);
+
 #ifdef GTSAM_USE_TBB
   double total_error = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, size()), 0.0,
                                             _ErrorOneFactor(*this, c), std::plus<double>());
@@ -293,6 +303,8 @@ double NonlinearFactorGraph::error(const Values& c) const {
       total_error += factor->error(c);
   }
 #endif
+
+  __itt_frame_end_v3(ferror, NULL);
 
   return total_error;
 }
@@ -310,7 +322,19 @@ FastSet<Key> NonlinearFactorGraph::keys() const {
 /* ************************************************************************* */
 Ordering NonlinearFactorGraph::orderingCOLAMD() const
 {
-  return Ordering::COLAMD(*this);
+  static __itt_domain* fordering = 0;
+  if(fordering == 0) {
+    fordering =  __itt_domain_create("orderingCOLAMD");
+    fordering->flags = 1;
+  }
+
+  __itt_frame_begin_v3(fordering, NULL);
+
+  Ordering ordering = Ordering::COLAMD(*this);
+
+  __itt_frame_end_v3(fordering, NULL);
+
+  return ordering;
 }
 
 /* ************************************************************************* */
@@ -366,6 +390,14 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
 {
   gttic(NonlinearFactorGraph_linearize);
 
+  static __itt_domain* flinearize = 0;
+  if(flinearize == 0) {
+    flinearize =  __itt_domain_create("linearize");
+    flinearize->flags = 1;
+  }
+
+  __itt_frame_begin_v3(flinearize, NULL);
+
   // create an empty linear FG
   GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
 
@@ -389,6 +421,8 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   }
 
 #endif
+
+  __itt_frame_end_v3(flinearize, NULL);
 
   return linearFG;
 }
@@ -421,6 +455,14 @@ void NonlinearFactorGraph::linearizeInPlace(const Values& linearizationPoint, Ga
 {
   gttic(NonlinearFactorGraph_linearizeInPlace);
 
+  static __itt_domain* flinearize = 0;
+  if(flinearize == 0) {
+    flinearize =  __itt_domain_create("linearize");
+    flinearize->flags = 1;
+  }
+
+  __itt_frame_begin_v3(flinearize, NULL);
+
 #ifdef GTSAM_USE_TBB
 
   TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
@@ -437,6 +479,8 @@ void NonlinearFactorGraph::linearizeInPlace(const Values& linearizationPoint, Ga
   }
 
 #endif
+
+  __itt_frame_end_v3(flinearize, NULL);
 }
 
 /* ************************************************************************* */

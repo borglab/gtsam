@@ -19,6 +19,8 @@
 
 #include <gtsam/inference/VariableIndex.h>
 
+#include </opt/intel/vtune_amplifier_xe/include/ittnotify.h>
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -26,6 +28,14 @@ template<class FG>
 void VariableIndex::augment(const FG& factors, boost::optional<const FastVector<size_t>&> newFactorIndices)
 {
   gttic(VariableIndex_augment);
+
+  static __itt_domain* faugment = 0;
+  if(faugment == 0) {
+    faugment =  __itt_domain_create("VariableIndex augment");
+    faugment->flags = 1;
+  }
+
+  __itt_frame_begin_v3(faugment, NULL);
 
   // Augment index for each factor
   for(size_t i = 0; i < factors.size(); ++i)
@@ -54,6 +64,8 @@ void VariableIndex::augment(const FG& factors, boost::optional<const FastVector<
       ++ nFactors_;
     }
   }
+
+  __itt_frame_end_v3(faugment, NULL);
 }
 
 /* ************************************************************************* */

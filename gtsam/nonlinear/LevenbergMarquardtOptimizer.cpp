@@ -29,6 +29,8 @@
 #include <cmath>
 #include <fstream>
 
+#include <ittnotify.h>
+
 using namespace std;
 
 namespace gtsam {
@@ -124,6 +126,17 @@ void LevenbergMarquardtOptimizer::iterate() {
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_.verbosity;
   const LevenbergMarquardtParams::VerbosityLM lmVerbosity = params_.verbosityLM;
 
+  static __itt_domain* damp = 0;
+  if(damp == 0) {
+    damp =  __itt_domain_create("damp");
+    damp->flags = 1;
+  }
+  static __itt_domain* retract = 0;
+  if(retract == 0) {
+    retract =  __itt_domain_create("retract");
+    retract->flags = 1;
+  }
+
   // Linearize graph
   if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
     cout << "linearizing = " << endl;
@@ -182,6 +195,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
     gttic(damp);
+    __itt_frame_begin_v3(damp, NULL);
     if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) cout << "building damped system" << endl;
     {
       double sigma = 1.0 / std::sqrt(state_.lambda);
@@ -190,6 +204,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         jacobian.get_model() = noiseModel::Isotropic::Sigma(jacobian.rows(), sigma);
       }
     }
+    __itt_frame_end_v3(damp, NULL);
     gttoc(damp);
 
     // Try solving
@@ -235,7 +250,9 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       // update values
       gttic (retract);
+      __itt_frame_begin_v3(retract, NULL);
       Values newValues = state_.values.retract(*delta);
+      __itt_frame_end_v3(retract, NULL);
       gttoc(retract);
 
       // create new optimization state with more adventurous lambda

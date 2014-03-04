@@ -280,6 +280,9 @@ endif()
 ###############################################################################
 # Add components
 
+
+include_directories(/opt/intel/vtune_amplifier_xe/include)
+
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
 
@@ -321,7 +324,6 @@ endif()
 
 # CMake Tools
 add_subdirectory(cmake)
-
 
 ###############################################################################
 # Set up CPack

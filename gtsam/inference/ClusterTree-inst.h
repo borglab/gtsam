@@ -244,6 +244,15 @@ namespace gtsam
   ClusterTree<BAYESTREE,GRAPH>::eliminate(const Eliminate& function) const
   {
     gttic(ClusterTree_eliminate);
+
+    static __itt_domain* fctree = 0;
+    if(fctree == 0) {
+      fctree =  __itt_domain_create("CTree eliminate");
+      fctree->flags = 1;
+    }
+
+    __itt_frame_begin_v3(fctree, NULL);
+
     // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
     // that contains all of the roots as its children.  rootsContainer also stores the remaining
     // uneliminated factors passed up from the roots.
@@ -267,6 +276,8 @@ namespace gtsam
       if(factor)
         allRemainingFactors->push_back(factor);
 
+    __itt_frame_end_v3(fctree, NULL);
+
     // Return result
     return std::make_pair(result, allRemainingFactors);
   }
@@ -277,6 +288,14 @@ namespace gtsam
   ClusterTree<BAYESTREE,GRAPH>::eliminateInPlace(BAYESTREE& bayesTree, const Eliminate& function) const
   {
     gttic(ClusterTree_eliminateInPlace);
+
+    static __itt_domain* fctree = 0;
+    if(fctree == 0) {
+      fctree =  __itt_domain_create("CTree eliminate");
+      fctree->flags = 1;
+    }
+
+    __itt_frame_begin_v3(fctree, NULL);
     // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
     // that contains all of the roots as its children.  rootsContainer also stores the remaining
     // uneliminated factors passed up from the roots.
@@ -299,6 +318,8 @@ namespace gtsam
     BOOST_FOREACH(const sharedFactor& factor, rootsContainer.childFactors)
       if(factor)
         allRemainingFactors->push_back(factor);
+
+    __itt_frame_end_v3(fctree, NULL);
 
     // Return remaining factors
     return allRemainingFactors;

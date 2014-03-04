@@ -130,6 +130,8 @@ else()
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif()
 
+target_link_libraries(gtsam /opt/intel/vtune_amplifier_xe/lib64/libittnotify.a)
+
 # Set dataset paths
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
     APPEND PROPERTY COMPILE_DEFINITIONS

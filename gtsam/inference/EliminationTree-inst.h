@@ -29,6 +29,8 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/inference-inst.h>
 
+#include <ittnotify.h>
+
 namespace gtsam {
 
   /* ************************************************************************* */
@@ -81,6 +83,14 @@ namespace gtsam {
     const VariableIndex& structure, const Ordering& order)
   {
     gttic(EliminationTree_Contructor);
+
+    static __itt_domain* fetree = 0;
+    if(fetree == 0) {
+      fetree =  __itt_domain_create("ETree constructor");
+      fetree->flags = 1;
+    }
+
+    __itt_frame_begin_v3(fetree, NULL);
 
     // Number of factors and variables - NOTE in the case of partial elimination, n here may
     // be fewer variables than are actually present in the graph.
@@ -153,6 +163,8 @@ namespace gtsam {
     for(size_t i = 0; i < m; ++i)
       if(!factorUsed[i] && graph[i])
         remainingFactors_.push_back(graph[i]);
+
+    __itt_frame_end_v3(fetree, NULL);
   }
 
   /* ************************************************************************* */
@@ -187,7 +199,16 @@ namespace gtsam {
   std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<GRAPH> >
     EliminationTree<BAYESNET,GRAPH>::eliminate(Eliminate function) const
   {
-    gttic(EliminationTree_eliminate);
+    gttic(EliminationTree_eliminate);    
+
+    static __itt_domain* fetree = 0;
+    if(fetree == 0) {
+      fetree =  __itt_domain_create("ETree eliminate");
+      fetree->flags = 1;
+    }
+
+    __itt_frame_begin_v3(fetree, NULL);
+
     // Allocate result
     boost::shared_ptr<BayesNetType> result = boost::make_shared<BayesNetType>();
 
@@ -198,6 +219,8 @@ namespace gtsam {
     boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
     allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
     allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
+
+    __itt_frame_end_v3(fetree, NULL);
 
     // Return result
     return std::make_pair(result, allRemainingFactors);
