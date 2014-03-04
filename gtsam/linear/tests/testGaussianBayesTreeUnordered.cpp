@@ -31,19 +31,12 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 
+#include "linearTestProblems.h"
+
 using namespace std;
 using namespace gtsam;
 
 namespace {
-  const Key x1=1, x2=2, x3=3, x4=4;
-  const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
-  const GaussianFactorGraph chain = list_of
-    (JacobianFactor(x2, (Matrix(1, 1) << 1.), x1, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
-    (JacobianFactor(x2, (Matrix(1, 1) << 1.), x3, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
-    (JacobianFactor(x3, (Matrix(1, 1) << 1.), x4, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
-    (JacobianFactor(x4, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise));
-  const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
-
   /* ************************************************************************* */
   // Helper functions for below
   GaussianBayesTreeClique::shared_ptr MakeClique(const GaussianConditional& conditional)
