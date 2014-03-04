@@ -121,39 +121,39 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
   gttic(damp);
   if (params_.verbosityLM >= LevenbergMarquardtParams::DAMPED)
     cout << "building damped system with lambda " << state_.lambda << endl;
-  GaussianFactorGraph dampedSystem = linear;
-  {
-    double sigma = 1.0 / std::sqrt(state_.lambda);
-    dampedSystem.reserve(dampedSystem.size() + state_.values.size());
-    // Only retrieve diagonal vector when reuse_diagonal = false
-    if (params_.diagonalDamping && params_.reuse_diagonal_ == false) {
-      state_.hessianDiagonal = linear.hessianDiagonal();
-      BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values)
-      {
-     	  for( size_t aa = 0 ; aa < v.size() ; aa++)
-    	  {
-    		  v(aa) = std::min(std::max(v(aa), min_diagonal_),
-    	                max_diagonal_);
-    		  v(aa) = sqrt(v(aa));
-    	  }
+
+  // Only retrieve diagonal vector when reuse_diagonal = false
+  if (params_.diagonalDamping && params_.reuse_diagonal_ == false) {
+    state_.hessianDiagonal = linear.hessianDiagonal();
+    BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
+      for (size_t aa = 0; aa < v.size(); aa++) {
+        v(aa) = std::min(std::max(v(aa), min_diagonal_), max_diagonal_);
+        v(aa) = sqrt(v(aa));
       }
     }
-    // for each of the variables, add a prior
-    BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
-      size_t dim = key_value.value.dim();
-      Matrix A = Matrix::Identity(dim, dim);
-      //Replace the identity matrix with diagonal of Hessian
-      if (params_.diagonalDamping) {
+  } // reuse diagonal
+
+  // for each of the variables, add a prior
+  double sigma = 1.0 / std::sqrt(state_.lambda);
+  GaussianFactorGraph damped = linear;
+  damped.reserve(damped.size() + state_.values.size());
+  BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
+    size_t dim = key_value.value.dim();
+    Matrix A = Matrix::Identity(dim, dim);
+    //Replace the identity matrix with diagonal of Hessian
+    if (params_.diagonalDamping)
+      try {
         A.diagonal() = state_.hessianDiagonal.at(key_value.key);
+      } catch (std::exception e) {
+        // Don't attempt diagonal damping if no key given
       }
-      Vector b = Vector::Zero(dim);
-      SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
-      dampedSystem += boost::make_shared<JacobianFactor>(key_value.key, A, b,
-          model);
-    }
+    Vector b = Vector::Zero(dim);
+    SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
+    damped += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
   }
+
   gttoc(damp);
-  return dampedSystem;
+  return damped;
 }
 
 /* ************************************************************************* */
