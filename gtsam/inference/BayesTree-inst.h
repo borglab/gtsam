@@ -206,19 +206,24 @@ namespace gtsam {
   /* ************************************************************************* */
   // binary predicate to test equality of a pair for use in equals
   template<class CLIQUE>
-  bool check_sharedCliques(
-      const std::pair<Key, typename BayesTree<CLIQUE>::sharedClique>& v1,
-      const std::pair<Key, typename BayesTree<CLIQUE>::sharedClique>& v2
-  ) {
-    return v1.first == v2.first &&
-      ((!v1.second && !v2.second) || (v1.second && v2.second && v1.second->equals(*v2.second)));
-  }
+  struct Check_sharedCliques {
+    double tol;
+
+    Check_sharedCliques(double tol) : tol(tol) {}
+
+    bool operator()(
+        const std::pair<Key, typename BayesTree<CLIQUE>::sharedClique>& v1,
+        const std::pair<Key, typename BayesTree<CLIQUE>::sharedClique>& v2) {
+      return v1.first == v2.first &&
+        ((!v1.second && !v2.second) || (v1.second && v2.second && v1.second->equals(*v2.second, tol)));
+    }
+  };
 
   /* ************************************************************************* */
   template<class CLIQUE>
   bool BayesTree<CLIQUE>::equals(const BayesTree<CLIQUE>& other, double tol) const {
     return size()==other.size() &&
-      std::equal(nodes_.begin(), nodes_.end(), other.nodes_.begin(), &check_sharedCliques<CLIQUE>);
+      std::equal(nodes_.begin(), nodes_.end(), other.nodes_.begin(), Check_sharedCliques<CLIQUE>(tol));
   }
 
   /* ************************************************************************* */
