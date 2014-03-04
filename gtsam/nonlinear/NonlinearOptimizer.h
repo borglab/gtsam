@@ -143,9 +143,8 @@ public:
   /// @name Standard interface
   /// @{
 
-  /** Optimize for the maximum-likelihood estimate, returning a new
-   * NonlinearOptimizer class containing the optimized variable assignments,
-   * which may be retrieved with values().
+  /** Optimize for the maximum-likelihood estimate, returning the optimized
+   * variable assignments.
    *
    * This function simply calls iterate() in a loop, checking for convergence
    * with check_convergence().  For fine-grain control over the optimization
