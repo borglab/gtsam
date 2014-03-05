@@ -17,6 +17,7 @@
 
 #pragma once
 #include <boost/make_shared.hpp>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/Value.h>
 
 //////////////////
@@ -55,7 +56,11 @@ public:
    * The result must be deleted with Value::deallocate_, not with the 'delete' operator.
    */
   virtual Value* clone_() const {
+#ifdef GTSAM_ALLOCATOR_TBB
+    void *place = tbb::tbb_allocator<DERIVED>().allocate(1);
+#else
     void *place = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
+#endif
     DERIVED* ptr = new(place) DERIVED(static_cast<const DERIVED&>(*this));
     return ptr;
   }
@@ -65,7 +70,11 @@ public:
    */
   virtual void deallocate_() const {
     this->~DerivedValue(); // Virtual destructor cleans up the derived object
+#ifdef GTSAM_ALLOCATOR_TBB
+    tbb::tbb_allocator<DERIVED>().deallocate((DERIVED*)this, 1);
+#else
     boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free((void*)this); // Release memory from pool
+#endif
   }
 
   /**
@@ -90,7 +99,11 @@ public:
     const DERIVED retractResult = (static_cast<const DERIVED*>(this))->retract(delta);
 
     // Create a Value pointer copy of the result
-    void* resultAsValuePlace = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
+#ifdef GTSAM_ALLOCATOR_TBB
+    void *resultAsValuePlace = tbb::tbb_allocator<DERIVED>().allocate(1);
+#else
+    void *resultAsValuePlace = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
+#endif
     Value* resultAsValue = new(resultAsValuePlace) DERIVED(retractResult);
 
     // Return the pointer to the Value base class
