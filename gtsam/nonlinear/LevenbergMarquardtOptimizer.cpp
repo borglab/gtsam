@@ -162,6 +162,8 @@ void LevenbergMarquardtOptimizer::iterate() {
     }
   }
 
+  VectorValues delta;
+
   // Keep increasing lambda until we make make progress
   while (true) {
     ++state_.totalNumberInnerIterations;
@@ -192,8 +194,6 @@ void LevenbergMarquardtOptimizer::iterate() {
             << state_.error << "," << state_.lambda << endl;
       }
 
-      VectorValues delta;
-
       if(reusableLinearizedGraph_)
       {
         // Build variable index if needed
@@ -211,7 +211,7 @@ void LevenbergMarquardtOptimizer::iterate() {
           reusableBayesTree_ = *reusableJunctionTree_->eliminate(params_.getEliminationFunction()).first;
 
         // Get delta
-        delta = reusableBayesTree_->optimize();
+        reusableBayesTree_->optimizeInPlace(delta);
       }
       else
       {
