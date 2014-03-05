@@ -94,15 +94,23 @@ const Values& LevenbergMarquardtOptimizer::optimize() {
     // Only can reuse with direct multifrontal solving
     if(params_.linearSolverType == NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY
        || params_.linearSolverType == NonlinearOptimizerParams::MULTIFRONTAL_QR)
+    {
       reusableLinearizedGraph_ = GaussianFactorGraph();
+      reusableVectorValues_ = VectorValues();
+    }
     defaultOptimize();
     reusableLinearizedGraph_.reset();
+    reusableVariableIndex_.reset();
+    reusableJunctionTree_.reset();
+    reusableBayesTree_.reset();
+    reusableVectorValues_.reset();
     return values();
   } catch(...) {
     reusableLinearizedGraph_.reset();
+    reusableVariableIndex_.reset();
     reusableJunctionTree_.reset();
     reusableBayesTree_.reset();
-    reusableVariableIndex_.reset();
+    reusableVectorValues_.reset();
     throw;
   }
 }
@@ -123,9 +131,12 @@ void LevenbergMarquardtOptimizer::iterate() {
   // Set up damped system
   GaussianFactorGraph* dampedSystem;
   GaussianFactorGraph::shared_ptr _dampedSystemAllocatedHere;
+  VectorValues::shared_ptr _vectorValuesAllocatedHere;
+  VectorValues* delta;
   if(reusableLinearizedGraph_)
   {
     dampedSystem = &(*reusableLinearizedGraph_);
+    delta = &(*reusableVectorValues_);
 
     if(dampedSystem->empty()) {
       // Create for the first time
@@ -150,6 +161,8 @@ void LevenbergMarquardtOptimizer::iterate() {
   {
     _dampedSystemAllocatedHere = linearize();
     dampedSystem = _dampedSystemAllocatedHere.get();
+    _vectorValuesAllocatedHere = boost::make_shared<VectorValues>();
+    delta = _vectorValuesAllocatedHere.get();
 
     // Create damping factors
     dampedSystem->reserve(dampedSystem->size() + state_.values.size());
@@ -162,7 +175,6 @@ void LevenbergMarquardtOptimizer::iterate() {
     }
   }
 
-  VectorValues delta;
 
   // Keep increasing lambda until we make make progress
   while (true) {
@@ -211,19 +223,19 @@ void LevenbergMarquardtOptimizer::iterate() {
           reusableBayesTree_ = *reusableJunctionTree_->eliminate(params_.getEliminationFunction()).first;
 
         // Get delta
-        reusableBayesTree_->optimizeInPlace(delta);
+        reusableBayesTree_->optimizeInPlace(*delta);
       }
       else
       {
-        delta = solve(*dampedSystem, state_.values, params_);
+        *delta = solve(*dampedSystem, state_.values, params_);
       }
 
-      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.norm() << endl;
-      if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta->norm() << endl;
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta->print("delta");
 
       // update values
       gttic (retract);
-      Values newValues = state_.values.retract(delta);
+      Values newValues = state_.values.retract(*delta);
       gttoc(retract);
 
       // create new optimization state with more adventurous lambda

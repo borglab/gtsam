@@ -140,6 +140,7 @@ protected:
   boost::optional<VariableIndex> reusableVariableIndex_;
   boost::optional<GaussianJunctionTree> reusableJunctionTree_;
   boost::optional<GaussianBayesTree> reusableBayesTree_;
+  boost::optional<VectorValues> reusableVectorValues_;
 
 public:
   typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
