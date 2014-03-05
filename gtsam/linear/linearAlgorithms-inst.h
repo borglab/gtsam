@@ -22,6 +22,8 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <ittnotify.h>
+
 namespace gtsam
 {
   namespace internal
@@ -148,7 +150,16 @@ namespace gtsam
       template<class BAYESTREE>
       void optimizeBayesTreeInPlace(const BAYESTREE& bayesTree, VectorValues& values)
       {
-        gttic(linear_optimizeBayesTree);
+        gttic(linear_optimizeBayesTreeInPlace);
+
+        static __itt_domain* fctree = 0;
+        if(fctree == 0) {
+          fctree =  __itt_domain_create("optimizeBayesTree");
+          fctree->flags = 1;
+        }
+
+        __itt_frame_begin_v3(fctree, NULL);
+
         //internal::OptimizeData rootData; // Will hold final solution
         //treeTraversal::DepthFirstForest(*this, rootData, internal::OptimizePreVisitor, internal::OptimizePostVisitor);
         //return rootData.results;
@@ -157,6 +168,8 @@ namespace gtsam
         treeTraversal::no_op postVisitor;
         TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
         treeTraversal::DepthFirstForestParallel(bayesTree, rootData, preVisitor, postVisitor);
+
+        __itt_frame_end_v3(fctree, NULL);
       }
     }
   }
