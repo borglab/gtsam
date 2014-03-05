@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <boost/serialization/assume_abstract.hpp>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/Vector.h>
 
 namespace gtsam {
