@@ -19,6 +19,7 @@
 
 #include <cmath>
 #include <limits>
+#include <functional>
 #include <boost/foreach.hpp>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -31,6 +32,7 @@
 
 #ifdef GTSAM_USE_TBB
 #  include <tbb/parallel_for.h>
+#  include <tbb/parallel_reduce.h>
 #endif
 
 using namespace std;
@@ -258,14 +260,40 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_USE_TBB
+namespace {
+  struct _ErrorOneFactor {
+    const NonlinearFactorGraph& graph;
+    const Values& linearizationPoint;
+    _ErrorOneFactor(const NonlinearFactorGraph& graph, const Values& linearizationPoint) :
+      graph(graph), linearizationPoint(linearizationPoint) {}
+    double operator()(const tbb::blocked_range<size_t>& r, double error) const
+    {
+      for(size_t i = r.begin(); i != r.end(); ++i)
+        if(graph[i])
+          error += graph[i]->error(linearizationPoint);
+      return error;
+    }
+  };
+}
+#endif
+
+/* ************************************************************************* */
 double NonlinearFactorGraph::error(const Values& c) const {
   gttic(NonlinearFactorGraph_error);
+
+#ifdef GTSAM_USE_TBB
+  double total_error = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, size()), 0.0,
+                                            _ErrorOneFactor(*this, c), std::plus<double>());
+#else
   double total_error = 0.;
   // iterate over all the factors_ to accumulate the log probabilities
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
     if(factor)
       total_error += factor->error(c);
   }
+#endif
+
   return total_error;
 }
 
