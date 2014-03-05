@@ -46,7 +46,9 @@ namespace gtsam
       template<class CLIQUE>
       struct OptimizeClique
       {
-        VectorValues collectedResult;
+        VectorValues& collectedResult;
+
+        OptimizeClique(VectorValues& result) : collectedResult(result) {}
 
         OptimizeData operator()(
           const boost::shared_ptr<CLIQUE>& clique,
@@ -91,9 +93,11 @@ namespace gtsam
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;
             for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
-              VectorValues::const_iterator r =
-                collectedResult.insert(*frontal, soln.segment(vectorPosition, c.getDim(frontal)));
-              myData.cliqueResults.insert(make_pair(r->first, r));
+              const Vector varSoln = soln.segment(vectorPosition, c.getDim(frontal));
+              std::pair<VectorValues::iterator, bool> r_s = collectedResult.tryInsert(*frontal, varSoln);
+              if(!r_s.second)
+                r_s.first->second = varSoln;
+              myData.cliqueResults.insert(make_pair(r_s.first->first, r_s.first));
               vectorPosition += c.getDim(frontal);
             }
           }
@@ -132,11 +136,27 @@ namespace gtsam
         //treeTraversal::DepthFirstForest(*this, rootData, internal::OptimizePreVisitor, internal::OptimizePostVisitor);
         //return rootData.results;
         OptimizeData rootData;
-        OptimizeClique<typename BAYESTREE::Clique> preVisitor;
+        VectorValues result;
+        OptimizeClique<typename BAYESTREE::Clique> preVisitor(result);
         treeTraversal::no_op postVisitor;
         TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
         treeTraversal::DepthFirstForestParallel(bayesTree, rootData, preVisitor, postVisitor);
-        return preVisitor.collectedResult;
+        return result;
+      }
+
+      /* ************************************************************************* */
+      template<class BAYESTREE>
+      void optimizeBayesTreeInPlace(const BAYESTREE& bayesTree, VectorValues& values)
+      {
+        gttic(linear_optimizeBayesTree);
+        //internal::OptimizeData rootData; // Will hold final solution
+        //treeTraversal::DepthFirstForest(*this, rootData, internal::OptimizePreVisitor, internal::OptimizePostVisitor);
+        //return rootData.results;
+        OptimizeData rootData;
+        OptimizeClique<typename BAYESTREE::Clique> preVisitor(values);
+        treeTraversal::no_op postVisitor;
+        TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
+        treeTraversal::DepthFirstForestParallel(bayesTree, rootData, preVisitor, postVisitor);
       }
     }
   }

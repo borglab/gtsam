@@ -65,6 +65,9 @@ namespace gtsam {
     /** Recursively optimize the BayesTree to produce a vector solution. */
     VectorValues optimize() const;
 
+    /** Recursively optimize the BayesTree to produce a vector solution. */
+    void optimizeInPlace(VectorValues& values) const;
+
     /**
      * Optimize along the gradient direction, with a closed-form computation to perform the line
      * search.  The gradient is computed about \f$ \delta x=0 \f$.

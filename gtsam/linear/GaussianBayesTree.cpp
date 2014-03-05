@@ -56,6 +56,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void GaussianBayesTree::optimizeInPlace(VectorValues& values) const
+  {
+    internal::linearAlgorithms::optimizeBayesTreeInPlace(*this, values);
+  }
+
+  /* ************************************************************************* */
   VectorValues GaussianBayesTree::optimizeGradientSearch() const
   {
     gttic(GaussianBayesTree_optimizeGradientSearch);
