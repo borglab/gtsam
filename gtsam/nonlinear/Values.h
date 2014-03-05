@@ -44,6 +44,7 @@
 #include <string>
 #include <utility>
 
+#include <gtsam/base/FastDefaultAllocator.h>
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/Key.h>
@@ -78,7 +79,7 @@ namespace gtsam {
         Value,
         std::less<Key>,
         ValueCloneAllocator,
-        boost::fast_pool_allocator<std::pair<const Key, void*> > > KeyValueMap;
+        internal::FastDefaultAllocator<std::pair<const Key, void*> >::type> KeyValueMap;
 
     // The member to store the values, see just above
     KeyValueMap values_;
