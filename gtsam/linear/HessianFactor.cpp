@@ -537,7 +537,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 
 /* ************************************************************************* */
 void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
-    double* yvalues, vector<size_t> keys) const {
+    double* yvalues, vector<size_t> offsets) const {
 
   // Use eigen magic to access raw memory
   typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
@@ -553,22 +553,27 @@ void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
   // Accessing the VectorValues one by one is expensive
   // So we will loop over columns to access x only once per column
   // And fill the above temporary y values, to be added into yvalues after
-  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
-     DenseIndex i = 0;
+  for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
+    DenseIndex i = 0;
     for (; i < j; ++i)
-      y[i] += info_(i, j).knownOffDiagonal() * ConstDMap(x+keys[keys_[j]],keys[keys_[j]+1]-keys[keys_[j]]);
+      y[i] += info_(i, j).knownOffDiagonal()
+          * ConstDMap(x + offsets[keys_[j]],
+              offsets[keys_[j] + 1] - offsets[keys_[j]]);
     // blocks on the diagonal are only half
-    y[i] += info_(j, j).selfadjointView() * ConstDMap(x+keys[keys_[j]],keys[keys_[j]+1]-keys[keys_[j]]);
+    y[i] += info_(j, j).selfadjointView()
+        * ConstDMap(x + offsets[keys_[j]],
+            offsets[keys_[j] + 1] - offsets[keys_[j]]);
     // for below diagonal, we take transpose block from upper triangular part
-    for (i = j + 1; i < (DenseIndex)size(); ++i)
-      y[i] += info_(i, j).knownOffDiagonal() * ConstDMap(x+keys[keys_[j]],keys[keys_[j]+1]-keys[keys_[j]]);
+    for (i = j + 1; i < (DenseIndex) size(); ++i)
+      y[i] += info_(i, j).knownOffDiagonal()
+          * ConstDMap(x + offsets[keys_[j]],
+              offsets[keys_[j] + 1] - offsets[keys_[j]]);
   }
 
   // copy to yvalues
-  for(DenseIndex i = 0; i < (DenseIndex)size(); ++i)
-	  DMap(yvalues+keys[keys_[i]],keys[keys_[i]+1]-keys[keys_[i]]) += alpha * y[i];
-
-
+  for (DenseIndex i = 0; i < (DenseIndex) size(); ++i)
+    DMap(yvalues + offsets[keys_[i]], offsets[keys_[i] + 1] - offsets[keys_[i]]) +=
+        alpha * y[i];
 }
 
 
