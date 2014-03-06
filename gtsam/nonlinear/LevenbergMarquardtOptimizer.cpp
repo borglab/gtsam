@@ -145,7 +145,8 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
       try {
         A.diagonal() = state_.hessianDiagonal.at(key_value.key);
       } catch (std::exception e) {
-        // Don't attempt diagonal damping if no key given
+        // Don't attempt any damping if no key found in diagonal
+        continue;
       }
     Vector b = Vector::Zero(dim);
     SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
