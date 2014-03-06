@@ -80,9 +80,11 @@ namespace gtsam {
     // Resize base class key vector
     Base::keys_.resize(terms.size());
 
-    // Gather dimensions - uses boost range adaptors to take terms, extract .second which are the
-    // matrices, then extract the number of columns e.g. dimensions in each matrix.  Then joins with
-    // a single '1' to add a dimension for the b vector.
+    // Construct block matrix - this uses the boost::range 'transformed' construct to apply
+    // internal::getColsJF (defined just above here in this file) to each term.  This
+    // transforms the list of terms into a list of variable dimensions, by extracting the
+    // number of columns in each matrix.  This is done to avoid separately allocating an
+    // array of dimensions before constructing the VerticalBlockMatrix.
     Ab_ = VerticalBlockMatrix(terms | transformed(&internal::getColsJF), b.size(), true);
 
     // Check and add terms
