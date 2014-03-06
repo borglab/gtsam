@@ -38,6 +38,8 @@
 #include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/random.hpp>
 
+#include <ittnotify.h>
+
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb.h>
 #undef max // TBB seems to include windows.h and we don't want these macros
@@ -414,42 +416,54 @@ void runIncremental()
 
   tictoc_print_();
 
+  static __itt_domain* fctree = 0;
+  if(fctree == 0) {
+    fctree =  __itt_domain_create("marginals");
+    fctree->flags = 1;
+  }
+
   // Compute marginals
-  //try {
-  //  Marginals marginals(graph, values);
-  //  int i=0;
-  //  BOOST_REVERSE_FOREACH(Key key1, values.keys()) {
-  //    int j=0;
-  //    BOOST_REVERSE_FOREACH(Key key2, values.keys()) {
-  //      if(i != j) {
-  //        gttic_(jointMarginalInformation);
-  //        std::vector<Key> keys(2);
-  //        keys[0] = key1;
-  //        keys[1] = key2;
-  //        JointMarginal info = marginals.jointMarginalInformation(keys);
-  //        gttoc_(jointMarginalInformation);
-  //        tictoc_finishedIteration_();
-  //      }
-  //      ++j;
-  //      if(j >= 50)
-  //        break;
-  //    }
-  //    ++i;
-  //    if(i >= 50)
-  //      break;
-  //  }
-  //  tictoc_print_();
-  //  BOOST_FOREACH(Key key, values.keys()) {
-  //    gttic_(marginalInformation);
-  //    Matrix info = marginals.marginalInformation(key);
-  //    gttoc_(marginalInformation);
-  //    tictoc_finishedIteration_();
-  //    ++i;
-  //  }
-  //} catch(std::exception& e) {
-  //  cout << e.what() << endl;
-  //}
-  //tictoc_print_();
+  try {
+//    Marginals marginals(graph, values);
+//    int i=0;
+//    BOOST_REVERSE_FOREACH(Key key1, values.keys()) {
+//      int j=0;
+//      BOOST_REVERSE_FOREACH(Key key2, values.keys()) {
+//        if(i != j) {
+//          gttic_(jointMarginalInformation);
+//          std::vector<Key> keys(2);
+//          keys[0] = key1;
+//          keys[1] = key2;
+//          JointMarginal info = marginals.jointMarginalInformation(keys);
+//          gttoc_(jointMarginalInformation);
+//          tictoc_finishedIteration_();
+//        }
+//        ++j;
+//        if(j >= 50)
+//          break;
+//      }
+//      ++i;
+//      if(i >= 50)
+//        break;
+//    }
+//    tictoc_print_();
+    KeyList keys = isam2.getLinearizationPoint().keys();
+
+    __itt_frame_begin_v3(fctree, NULL);
+
+    BOOST_FOREACH(Key key, keys) {
+      gttic_(marginalCovariance);
+      Matrix cov = isam2.marginalCovariance(key);
+      gttoc_(marginalCovariance);
+      tictoc_finishedIteration_();
+    }
+  } catch(std::exception& e) {
+    cout << e.what() << endl;
+  }
+
+  __itt_frame_end_v3(fctree, NULL);
+
+  tictoc_print_();
 }
 
 /* ************************************************************************* */
