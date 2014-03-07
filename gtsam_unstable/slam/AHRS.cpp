@@ -94,17 +94,17 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   Matrix P12 = -Omega_T * H_g * Pa;
 
   Matrix P_plus_k2 = Matrix(9, 9);
-  P_plus_k2.block(0, 0, 3, 3) = P11;
-  P_plus_k2.block(0, 3, 3, 3) = Z3;
-  P_plus_k2.block(0, 6, 3, 3) = P12;
+  P_plus_k2.block<3,3>(0, 0) = P11;
+  P_plus_k2.block<3,3>(0, 3) = Z3;
+  P_plus_k2.block<3,3>(0, 6) = P12;
 
-  P_plus_k2.block(3, 0, 3, 3) = Z3;
-  P_plus_k2.block(3, 3, 3, 3) = Pg_;
-  P_plus_k2.block(3, 6, 3, 3) = Z3;
+  P_plus_k2.block<3,3>(3, 0) = Z3;
+  P_plus_k2.block<3,3>(3, 3) = Pg_;
+  P_plus_k2.block<3,3>(3, 6) = Z3;
 
-  P_plus_k2.block(6, 0, 3, 3) = trans(P12);
-  P_plus_k2.block(6, 3, 3, 3) = Z3;
-  P_plus_k2.block(6, 6, 3, 3) = Pa;
+  P_plus_k2.block<3,3>(6, 0) = trans(P12);
+  P_plus_k2.block<3,3>(6, 3) = Z3;
+  P_plus_k2.block<3,3>(6, 6) = Pa;
 
   Vector dx = zero(9);
   KalmanFilter::State state = KF_.init(dx, P_plus_k2);
@@ -127,19 +127,20 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::integrate(
   Matrix Z3 = zeros(3, 3);
 
   Matrix F_k = zeros(9, 9);
-  F_k.block(0, 3, 3, 3) = -bRn;
-  F_k.block(3, 3, 3, 3) = F_g_;
-  F_k.block(6, 6, 3, 3) = F_a_;
+  F_k.block<3,3>(0, 3) = -bRn;
+  F_k.block<3,3>(3, 3) = F_g_;
+  F_k.block<3,3>(6, 6) = F_a_;
 
   Matrix G_k = zeros(9, 12);
-  G_k.block(0, 0, 3, 3) = -bRn;
-  G_k.block(0, 6, 3, 3) = -bRn;
-  G_k.block(3, 3, 3, 3) = I3;
-  G_k.block(6, 9, 3, 3) = I3;
+  G_k.block<3,3>(0, 0) = -bRn;
+  G_k.block<3,3>(0, 6) = -bRn;
+  G_k.block<3,3>(3, 3) = I3;
+  G_k.block<3,3>(6, 9) = I3;
 
   Matrix Q_k = G_k * var_w_ * trans(G_k);
   Matrix Psi_k = eye(9) + dt * F_k; // +dt*dt*F_k*F_k/2; // transition matrix
 
+  // This implements update in section 10.6
   Matrix B = zeros(9, 9);
   Vector u2 = zero(9);
   KalmanFilter::State newState = KF_.predictQ(state, Psi_k,B,u2,dt*Q_k);
@@ -148,21 +149,21 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::integrate(
 
 /* ************************************************************************* */
 bool AHRS::isAidingAvailable(const Mechanization_bRn2& mech,
-    const gtsam::Vector& f, const gtsam::Vector& u, double ge) {
+    const gtsam::Vector& f, const gtsam::Vector& u, double ge) const {
 
   // Subtract the biases
   Vector f_ = f - mech.x_a();
   Vector u_ = u - mech.x_g();
 
-  double mu_f = f_.norm() - ge;
-  double mu_u = u_.norm();
-  return (fabs(mu_f)<0.5 && mu_u < 5.0 / 180.0 * 3.1415926);
+  double mu_f = f_.norm() - ge; // accelerometer same magnitude as local gravity ?
+  double mu_u = u_.norm(); // gyro says we are not maneuvering ?
+  return (fabs(mu_f)<0.5 && mu_u < 5.0 / 180.0 * M_PI);
 }
 
 /* ************************************************************************* */
 std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     const Mechanization_bRn2& mech, KalmanFilter::State state,
-    const Vector& f, bool Farrell) {
+    const Vector& f, bool Farrell) const {
 
   Matrix bRn = mech.bRn().matrix();
 
@@ -210,7 +211,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
 std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
     const Mechanization_bRn2& mech, KalmanFilter::State state,
     const Vector& f, const Vector& f_previous,
-    const Rot3& R_previous) {
+    const Rot3& R_previous) const {
 
   Matrix increment = R_previous.between(mech.bRn()).matrix();
 

@@ -52,15 +52,22 @@ public:
       const Vector& u, double dt);
 
   bool isAidingAvailable(const Mechanization_bRn2& mech,
-      const Vector& f, const Vector& u, double ge);
+      const Vector& f, const Vector& u, double ge) const;
 
+  /**
+   * Aid the AHRS with an accelerometer reading, typically called when isAidingAvailable == true
+   * @param mech current mechanization state
+   * @param state current Kalman filter state
+   * @param f accelerometer reading
+   * @param Farrell
+   */
   std::pair<Mechanization_bRn2, KalmanFilter::State> aid(
       const Mechanization_bRn2& mech, KalmanFilter::State state,
-      const Vector& f, bool Farrell=0);
+      const Vector& f, bool Farrell=0) const;
 
   std::pair<Mechanization_bRn2, KalmanFilter::State> aidGeneral(
       const Mechanization_bRn2& mech, KalmanFilter::State state,
-      const Vector& f, const Vector& f_expected, const Rot3& R_previous);
+      const Vector& f, const Vector& f_expected, const Rot3& R_previous) const;
 
   /// print
   void print(const std::string& s = "") const;
