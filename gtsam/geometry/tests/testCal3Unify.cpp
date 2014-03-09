@@ -19,16 +19,20 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3Unify.h>
 
-using namespace gtsam;
 
+#include <iostream>
+using namespace gtsam;
+using namespace std;
 GTSAM_CONCEPT_TESTABLE_INST(Cal3Unify)
 GTSAM_CONCEPT_MANIFOLD_INST(Cal3Unify)
 
-/* ground truth data will from matlab, code :
+/*
+ground truth from matlab, code :
 X = [2 3 1]';
 V = [0.01, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3, 0, 0, 100, 105, 320, 240];
 [P, J] = spaceToImgPlane(X, V);
-matlab toolbox available at http://homepages.laas.fr/~cmei/index.php/Toolbox */
+matlab toolbox available at http://homepages.laas.fr/~cmei/index.php/Toolbox
+*/
 
 static Cal3Unify K(0.01, 100, 105, 0.0, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
 static Point2 p(2,3);
@@ -41,10 +45,18 @@ TEST( Cal3Unify, uncalibrate)
   CHECK(assert_equal(q,p_i));
 }
 
-TEST( Cal3Unify, calibrate )
+/* ************************************************************************* */
+TEST( Cal3Unify, spaceNplane)
+{
+  Point2 q = K.spaceToNPlane(p);
+  CHECK(assert_equal(p, K.nPlaneToSpace(q)));
+}
+
+/* ************************************************************************* */
+TEST( Cal3Unify, calibrate)
 {
   Point2 pi = K.uncalibrate(p);
-  Point2 pn_hat = K.calibrate(pi);
+  Point2 pn_hat = K.calibrate(pi, 1);
   CHECK( p.equals(pn_hat, 1e-5));
 }
 

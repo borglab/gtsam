@@ -115,8 +115,11 @@ public:
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;
 
-  /// Convert a image point to normalized unit plane
-  Point2 imageToNPlane(const Point2& p) const;
+  /// Convert a 3D point to normalized unit plane
+  Point2 spaceToNPlane(const Point2& p) const;
+
+  /// Convert a normalized unit plane point to 3D space
+  Point2 nPlaneToSpace(const Point2& p) const;
 
   /// @}
   /// @name Manifold

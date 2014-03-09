@@ -142,24 +142,24 @@ Point2 Cal3Unify::calibrate(const Point2& pi, const double tol) const {
   // pn_{t+1} = (inv(K)*pi - dp(pn_{t})) / g(pn_{t})
 
   // point on the normalized plane, input for DS2
-  Point2 pnpl = this->imageToNPlane(pi);
-  double px = pnpl.x();
-  double py = pnpl.y();
+  double px = pi.x();
+  double py = pi.y();
   const Point2 invKPi ((1 / fx_) * (px - u0_ - (s_ / fy_) * (py - v0_)),
                        (1 / fy_) * (py - v0_));
 
   // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
-  Point2 pn = invKPi;
+  Point2 pn = nPlaneToSpace(invKPi);
 
   // iterate until the uncalibrate is close to the actual pixel coordinate
-  const int maxIterations = 10;
+  const int maxIterations = 100;
   int iteration;
   for ( iteration = 0; iteration < maxIterations; ++iteration ) {
 
-    if ( uncalibrate(pn).distance(pi) <= tol ) break;
+    pn.print();
+    if ( pn.distance(pi) <= tol ) break;
 
-    // part1: image -> normalized plane
-    pnpl = this->imageToNPlane(pn);
+    // part1: 3D space -> normalized plane
+    Point2 pnpl = spaceToNPlane(pn);
     // part2: normalized plane -> 3D space
     px = pnpl.x(), py = pnpl.y();
     const double xy = px*py, xx = px*px, yy = py*py;
@@ -167,22 +167,31 @@ Point2 Cal3Unify::calibrate(const Point2& pi, const double tol) const {
     const double g = (1+k1_*rr+k2_*rr*rr);
     const double dx = 2*k3_*xy + k4_*(rr+2*xx);
     const double dy = 2*k4_*xy + k3_*(rr+2*yy);
-    pn = (invKPi - Point2(dx,dy))/g;
+    pn = nPlaneToSpace((invKPi - Point2(dx,dy))/g);
   }
 
   if ( iteration >= maxIterations )
-    throw std::runtime_error("Cal3DS2::calibrate fails to converge. need a better initialization");
+    throw std::runtime_error("Cal3Unify::calibrate fails to converge. need a better initialization");
 
   return pn;
 }
 /* ************************************************************************* */
-Point2 Cal3Unify::imageToNPlane(const Point2& p) const {
+Point2 Cal3Unify::nPlaneToSpace(const Point2& p) const {
 
   const double x = p.x(), y = p.y();
   const double xy2 = x * x + y * y;
   const double sq_xy = (xi_ + sqrt(1 + (1 - xi_ * xi_) * xy2)) / (xy2 + 1);
 
   return Point2((sq_xy * x / (sq_xy - xi_)), (sq_xy * y / (sq_xy - xi_)));
+}
+
+/* ************************************************************************* */
+Point2 Cal3Unify::spaceToNPlane(const Point2& p) const {
+
+  const double x = p.x(), y = p.y();
+  const double sq_xy = 1 + xi_ * sqrt(x * x + y * y + 1);
+
+  return Point2((x / sq_xy), (y / sq_xy));
 }
 
 /* ************************************************************************* */
