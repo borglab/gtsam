@@ -152,12 +152,11 @@ Point2 Cal3Unify::calibrate(const Point2& pi, const double tol) const {
   Point2 pn = nPlaneToSpace(invKPi);
 
   // iterate until the uncalibrate is close to the actual pixel coordinate
-  const int maxIterations = 100;
+  const int maxIterations = 20;
   int iteration;
   for ( iteration = 0; iteration < maxIterations; ++iteration ) {
 
-    pn.print();
-    if ( pn.distance(pi) <= tol ) break;
+    if ( uncalibrate(pn).distance(pi) <= tol ) break;
 
     // part1: 3D space -> normalized plane
     Point2 pnpl = spaceToNPlane(pn);
