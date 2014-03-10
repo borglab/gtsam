@@ -35,7 +35,7 @@ matlab toolbox available at http://homepages.laas.fr/~cmei/index.php/Toolbox
 */
 
 static Cal3Unify K(0.01, 100, 105, 0.0, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
-static Point2 p(2,3);
+static Point2 p(2, 3);
 
 /* ************************************************************************* */
 TEST( Cal3Unify, uncalibrate)
@@ -68,7 +68,7 @@ TEST( Cal3Unify, Duncalibrate1)
   Matrix computed;
   K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p, 1e-7);
-  CHECK(assert_equal(numerical,computed,1e-5));
+  CHECK(assert_equal(numerical,computed,1e-6));
 }
 
 /* ************************************************************************* */
@@ -77,7 +77,7 @@ TEST( Cal3Unify, Duncalibrate2)
   Matrix computed;
   K.uncalibrate(p, boost::none, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
-  CHECK(assert_equal(numerical,computed,1e-5));
+  CHECK(assert_equal(numerical,computed,1e-6));
 }
 
 /* ************************************************************************* */

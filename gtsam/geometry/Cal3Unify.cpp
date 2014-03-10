@@ -42,7 +42,7 @@ Vector Cal3Unify::vector() const {
 void Cal3Unify::print(const std::string& s) const {
   gtsam::print(K(), s + ".K");
   gtsam::print(Vector(k()), s + ".k");
-  gtsam::print(Vector(xi_), s + ".xi");
+  gtsam::print((Vector)(Vector(1) << xi_), s + ".xi");
 }
 
 /* ************************************************************************* */
@@ -71,9 +71,9 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
   // Part1: project 3D space to NPlane
   const double xs = p.x(), ys = p.y();  // normalized points in 3D space
   const double sqrt_nx = sqrt(xs * xs + ys * ys + 1.0);
-  const double xi_sqrt_nx = 1 + xi * sqrt_nx;
+  const double xi_sqrt_nx = 1.0 / (1 + xi * sqrt_nx);
   const double xi_sqrt_nx2 = xi_sqrt_nx * xi_sqrt_nx;
-  const double x = xs / xi_sqrt_nx, y = ys / xi_sqrt_nx; // points on NPlane
+  const double x = xs * xi_sqrt_nx, y = ys * xi_sqrt_nx; // points on NPlane
 
   // Part2: project NPlane point to pixel plane: same as Cal3DS2
   const double xy = x * y, xx = x * x, yy = y * y;
@@ -110,8 +110,8 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
   // Inlined derivative for calibration
   if (H1) {
     // part1
-    Matrix DU = (Matrix(2,1) << xs * sqrt_nx / xi_sqrt_nx2,
-        ys * sqrt_nx / xi_sqrt_nx2);
+    Matrix DU = (Matrix(2,1) << -xs * sqrt_nx * xi_sqrt_nx2,
+        -ys * sqrt_nx * xi_sqrt_nx2);
     Matrix DDS2U = DDS2 * DU;
     // part2
     Matrix DDS2V = (Matrix(2, 9) <<  pnx, 0.0, pny, 1.0, 0.0, fx * x * rr + s * y * rr,
@@ -124,10 +124,11 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
   // Inlined derivative for points
   if (H2) {
     // part1
-    Matrix DU = (Matrix(2, 2) << (xi_sqrt_nx - xs * xs / sqrt_nx) / xi_sqrt_nx2,
-        -(ys * ys / (sqrt_nx * xi_sqrt_nx2)),
-        -(xs * xs / (sqrt_nx * xi_sqrt_nx2)),
-        (xi_sqrt_nx - ys * ys / sqrt_nx) / xi_sqrt_nx2);
+    const double denom = 1.0 * xi_sqrt_nx2 / sqrt_nx;
+    const double mid = -(xi * xs*ys) * denom;
+    Matrix DU = (Matrix(2, 2) <<
+        (sqrt_nx + xi*(ys*ys + 1)) * denom, mid,
+        mid, (sqrt_nx + xi*(xs*xs + 1)) * denom);
 
     *H2 = DDS2 * DU;
   }
