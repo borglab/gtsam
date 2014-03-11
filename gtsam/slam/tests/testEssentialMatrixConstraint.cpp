@@ -335,8 +335,12 @@ bool loadGPS(const string& filename, NonlinearFactorGraph& graph) {
     return false;
   }
 
-  double gpsPrec = 1.0;
-  noiseModel::Diagonal::shared_ptr gpsNoise = noiseModel::Diagonal::Precisions((Vector(6) << 0,0,0,gpsPrec,gpsPrec,gpsPrec));
+  double gpsPrec = 3.0;
+
+  // noiseModel::Diagonal::shared_ptr gpsNoise = noiseModel::Diagonal::Precisions((Vector(6) << 0,0,0,gpsPrec,gpsPrec,gpsPrec));
+
+  noiseModel::Robust::shared_ptr gpsNoise =
+        noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0), noiseModel::Diagonal::Precisions((Vector(6) << 0,0,0,gpsPrec,gpsPrec,gpsPrec)));
 
   int id1;
   while (fin >> id1) {
@@ -399,9 +403,10 @@ TEST(EssentialMatrixConstraint, BAinSO2) {
   Values initialValues = loadInitialGuess(initialGuessFile);
   // initialValues.print("initialValues\n");
 
+  NonlinearFactorGraph graph;
+
   // create EssentialMatrixConstraints
   string betweenFile = "/home/aspn/borg/BAinSO2/data/betweenNL.txt";
-  NonlinearFactorGraph graph;
   loadBetween(betweenFile, graph);
   // graph.print("");
 
@@ -415,7 +420,7 @@ TEST(EssentialMatrixConstraint, BAinSO2) {
 
   // add priors on rotations
   string gpsFile = "/home/aspn/borg/BAinSO2/data/gpsNL.txt";
-  loadPriors(gpsFile, graph);
+  loadGPS(gpsFile, graph);
 
   LevenbergMarquardtParams params;
   params.relativeErrorTol = 0.0;
