@@ -8,7 +8,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
 #include <iostream>
 
@@ -17,7 +17,7 @@ namespace gtsam {
 /**
  * An essential matrix is like a Pose3, except with translation up to scale
  * It is named after the 3*3 matrix aEb = [aTb]x aRb from computer vision,
- * but here we choose instead to parameterize it as a (Rot3,Sphere2) pair.
+ * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
 class EssentialMatrix: public DerivedValue<EssentialMatrix> {
@@ -25,7 +25,7 @@ class EssentialMatrix: public DerivedValue<EssentialMatrix> {
 private:
 
   Rot3 aRb_; ///< Rotation between a and b
-  Sphere2 aTb_; ///< translation direction from a to b
+  Unit3 aTb_; ///< translation direction from a to b
   Matrix3 E_; ///< Essential matrix
 
 public:
@@ -44,7 +44,7 @@ public:
   }
 
   /// Construct from rotation and translation
-  EssentialMatrix(const Rot3& aRb, const Sphere2& aTb) :
+  EssentialMatrix(const Rot3& aRb, const Unit3& aTb) :
       aRb_(aRb), aTb_(aTb), E_(aTb_.skew() * aRb_.matrix()) {
   }
 
@@ -52,10 +52,10 @@ public:
   static EssentialMatrix FromPose3(const Pose3& _1P2_,
       boost::optional<Matrix&> H = boost::none);
 
-  /// Random, using Rot3::Random and Sphere2::Random
+  /// Random, using Rot3::Random and Unit3::Random
   template<typename Engine>
   static EssentialMatrix Random(Engine & rng) {
-    return EssentialMatrix(Rot3::Random(rng), Sphere2::Random(rng));
+    return EssentialMatrix(Rot3::Random(rng), Unit3::Random(rng));
   }
 
   /// @}
@@ -103,7 +103,7 @@ public:
   }
 
   /// Direction
-  inline const Sphere2& direction() const {
+  inline const Unit3& direction() const {
     return aTb_;
   }
 

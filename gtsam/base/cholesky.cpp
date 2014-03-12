@@ -120,6 +120,8 @@ pair<size_t,bool> choleskyCareful(Matrix& ATA, int order) {
 /* ************************************************************************* */
 bool choleskyPartial(Matrix& ABC, size_t nFrontal) {
 
+  gttic(choleskyPartial);
+
   const bool debug = ISDEBUG("choleskyPartial");
 
   assert(ABC.rows() == ABC.cols());

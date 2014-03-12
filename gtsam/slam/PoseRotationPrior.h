@@ -45,6 +45,11 @@ public:
 
   virtual ~PoseRotationPrior() {}
 
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
   // access
   const Rotation& measured() const { return measured_; }
 

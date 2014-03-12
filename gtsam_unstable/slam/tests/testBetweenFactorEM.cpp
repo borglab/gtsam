@@ -15,10 +15,6 @@
 
 #include <gtsam/slam/BetweenFactor.h>
 
-//#include <gtsam/nonlinear/NonlinearOptimizer.h>
-//#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-//#include <gtsam/linear/GaussianSequentialSolver.h>
-
 
 using namespace std;
 using namespace gtsam;

@@ -20,6 +20,7 @@ using namespace boost::assign;
 #include <boost/make_shared.hpp>
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
 
 using namespace std;
@@ -82,6 +83,22 @@ TEST( SymbolicConditional, FromRange )
     SymbolicConditional::FromKeys(list_of(1)(2)(3)(4)(5), 2));
   LONGS_EQUAL(2, (long)c0->nrFrontals());
   LONGS_EQUAL(3, (long)c0->nrParents());
+}
+
+/* ************************************************************************* */
+TEST(SymbolicConditional, Constructors)
+{
+  SymbolicConditional expected(3, 4);
+
+  SymbolicConditional actual1 = SymbolicConditional::FromKeys(expected.keys(), 1);
+  SymbolicConditional actual2 = SymbolicConditional::FromIterators(expected.begin(), expected.end(), 1);
+  SymbolicConditional actual3 = *SymbolicConditional::FromKeysShared(expected.keys(), 1);
+  SymbolicConditional actual4 = *SymbolicConditional::FromIteratorsShared(expected.begin(), expected.end(), 1);
+
+  EXPECT(assert_equal(expected, actual1));
+  EXPECT(assert_equal(expected, actual2));
+  EXPECT(assert_equal(expected, actual3));
+  EXPECT(assert_equal(expected, actual4));
 }
 
 /* ************************************************************************* */

@@ -42,7 +42,7 @@
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Unit3.h>
 
 namespace gtsam {
 
@@ -104,7 +104,7 @@ namespace gtsam {
     Rot3(const Quaternion& q);
 
     /// Random, generates a random axis, then random angle \in [-p,pi]
-    static Rot3 Random(boost::random::mt19937 & rng);
+    static Rot3 Random(boost::mt19937 & rng);
 
     /** Virtual destructor */
     virtual ~Rot3() {}
@@ -188,7 +188,7 @@ namespace gtsam {
      * @param   theta rotation angle
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Sphere2& w, double theta);
+    static Rot3 rodriguez(const Unit3& w, double theta);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -335,19 +335,19 @@ namespace gtsam {
         boost::optional<Matrix&> H2 = boost::none) const;
 
     /// @}
-    /// @name Group Action on Sphere2
+    /// @name Group Action on Unit3
     /// @{
 
     /// rotate 3D direction from rotated coordinate frame to world frame
-    Sphere2 rotate(const Sphere2& p, boost::optional<Matrix&> HR = boost::none,
+    Unit3 rotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
         boost::optional<Matrix&> Hp = boost::none) const;
 
     /// unrotate 3D direction from world frame to rotated coordinate frame
-    Sphere2 unrotate(const Sphere2& p, boost::optional<Matrix&> HR = boost::none,
+    Unit3 unrotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
         boost::optional<Matrix&> Hp = boost::none) const;
 
     /// rotate 3D direction from rotated coordinate frame to world frame
-    Sphere2 operator*(const Sphere2& p) const;
+    Unit3 operator*(const Unit3& p) const;
 
     /// @}
     /// @name Standard Interface

@@ -439,27 +439,13 @@ protected:
    */
   mutable VectorValues delta_;
 
-  mutable VectorValues deltaNewton_;
-  mutable VectorValues RgProd_;
-  mutable bool deltaDoglegUptodate_;
-
-  /** Indicates whether the current delta is up-to-date, only used
-   * internally - delta will always be updated if necessary when it is
-   * requested with getDelta() or calculateEstimate().
-   *
-   * This is \c mutable because it is used internally to not update delta_
-   * until it is needed.
-   */
-  mutable bool deltaUptodate_;
+  mutable VectorValues deltaNewton_; // Only used when using Dogleg - stores the Gauss-Newton update
+  mutable VectorValues RgProd_; // Only used when using Dogleg - stores R*g and is updated incrementally
 
   /** A cumulative mask for the variables that were replaced and have not yet
    * been updated in the linear solution delta_, this is only used internally,
    * delta will always be updated if necessary when requested with getDelta()
    * or calculateEstimate().
-   *
-   * This does not need to be permuted because any change in variable ordering
-   * that would cause a permutation will also mark variables as needing to be
-   * updated in this mask.
    *
    * This is \c mutable because it is used internally to not update delta_
    * until it is needed.
@@ -559,14 +545,6 @@ public:
   /** Access the current linearization point */
   const Values& getLinearizationPoint() const { return theta_; }
 
-  /// Compute the current solution.  This is the "standard" function for computing the solution that
-  /// uses:
-  ///   - Partial relinearization and backsubstitution using the thresholds provided in ISAM2Params.
-  ///   - Dogleg trust-region step, if enabled in ISAM2Params.
-  ///   - Equivalent to getLinearizationPoint().retract(getDelta())
-  /// The solution returned is in general not the same as that returned by getLinearizationPoint().
-  Values optimize() const;
-
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
@@ -630,7 +608,15 @@ public:
 
   /** prints out clique statistics */
   void printStats() const { getCliqueData().getStats().print(); }
-
+  
+  /** Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d
+   * \right\Vert^2 \f$, centered around zero. The gradient about zero is \f$ -R^T d \f$.  See also
+   * gradient(const GaussianBayesNet&, const VectorValues&).
+   *
+   * @return A VectorValues storing the gradient.
+   */
+  VectorValues gradientAtZero() const;
+  
   /// @}
 
 protected:
@@ -641,19 +627,9 @@ protected:
 
   virtual boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
       const std::vector<Key>& observedKeys, const FastSet<Key>& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
-  //  void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
 
-  friend GTSAM_EXPORT void optimizeInPlace(const ISAM2&, VectorValues&);
-  friend GTSAM_EXPORT void optimizeGradientSearchInPlace(const ISAM2&, VectorValues&);
-
 }; // ISAM2
-
-/** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
-GTSAM_EXPORT VectorValues optimize(const ISAM2& isam);
-
-/** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
-GTSAM_EXPORT void optimizeInPlace(const ISAM2& isam, VectorValues& delta);
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain
@@ -674,65 +650,9 @@ template<class CLIQUE>
 size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
     double threshold, const FastSet<Key>& replaced, VectorValues& delta);
 
-/**
- * Optimize along the gradient direction, with a closed-form computation to
- * perform the line search.  The gradient is computed about \f$ \delta x=0 \f$.
- *
- * This function returns \f$ \delta x \f$ that minimizes a reparametrized
- * problem.  The error function of a GaussianBayesNet is
- *
- * \f[ f(\delta x) = \frac{1}{2} |R \delta x - d|^2 = \frac{1}{2}d^T d - d^T R \delta x + \frac{1}{2} \delta x^T R^T R \delta x \f]
- *
- * with gradient and Hessian
- *
- * \f[ g(\delta x) = R^T(R\delta x - d), \qquad G(\delta x) = R^T R. \f]
- *
- * This function performs the line search in the direction of the
- * gradient evaluated at \f$ g = g(\delta x = 0) \f$ with step size
- * \f$ \alpha \f$ that minimizes \f$ f(\delta x = \alpha g) \f$:
- *
- * \f[ f(\alpha) = \frac{1}{2} d^T d + g^T \delta x + \frac{1}{2} \alpha^2 g^T G g \f]
- *
- * Optimizing by setting the derivative to zero yields
- * \f$ \hat \alpha = (-g^T g) / (g^T G g) \f$.  For efficiency, this function
- * evaluates the denominator without computing the Hessian \f$ G \f$, returning
- *
- * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f]
- */
-GTSAM_EXPORT VectorValues optimizeGradientSearch(const ISAM2& isam);
-
-/** In-place version of optimizeGradientSearch requiring pre-allocated VectorValues \c x */
-GTSAM_EXPORT void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad);
-
 /// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
 template<class CLIQUE>
 int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique);
-
-/**
- * Compute the gradient of the energy function,
- * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
- * centered around \f$ x = x_0 \f$.
- * The gradient is \f$ R^T(Rx-d) \f$.
- * This specialized version is used with ISAM2, where each clique stores its
- * gradient contribution.
- * @param bayesTree The Gaussian Bayes Tree $(R,d)$
- * @param x0 The center about which to compute the gradient
- * @return The gradient as a VectorValues
- */
-GTSAM_EXPORT VectorValues gradient(const ISAM2& bayesTree, const VectorValues& x0);
-
-/**
- * Compute the gradient of the energy function,
- * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
- * centered around zero.
- * The gradient about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&, const VectorValues&).
- * This specialized version is used with ISAM2, where each clique stores its
- * gradient contribution.
- * @param bayesTree The Gaussian Bayes Tree $(R,d)$
- * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
- * @return The gradient as a VectorValues
- */
-GTSAM_EXPORT void gradientAtZero(const ISAM2& bayesTree, VectorValues& g);
 
 } /// namespace gtsam
 

@@ -6,6 +6,7 @@ set (gtsam_unstable_subdirs
     discrete
     dynamics
     nonlinear
+    partition
     slam
 )
 
@@ -46,6 +47,7 @@ set(gtsam_unstable_srcs
     ${discrete_srcs}
     ${dynamics_srcs} 
     ${nonlinear_srcs}
+    ${partition_srcs}
     ${slam_srcs}
 )
 
@@ -58,40 +60,38 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 # build shared and static versions of the library
 if (GTSAM_BUILD_STATIC_LIBRARY)
 	message(STATUS "Building GTSAM_UNSTABLE - static")
-	add_library(gtsam_unstable-static STATIC ${gtsam_unstable_srcs})
-	set_target_properties(gtsam_unstable-static PROPERTIES 
+	add_library(gtsam_unstable STATIC ${gtsam_unstable_srcs})
+	set_target_properties(gtsam_unstable PROPERTIES 
 		OUTPUT_NAME         gtsam_unstable
 		CLEAN_DIRECT_OUTPUT 1
 		VERSION             ${gtsam_unstable_version}
 		SOVERSION           ${gtsam_unstable_soversion})
 	if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
-		set_target_properties(gtsam_unstable-static PROPERTIES
+		set_target_properties(gtsam_unstable PROPERTIES
 			PREFIX "lib"
 			COMPILE_DEFINITIONS GTSAM_UNSTABLE_IMPORT_STATIC)
 	endif()
-	target_link_libraries(gtsam_unstable-static gtsam-static ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
-	install(TARGETS gtsam_unstable-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
-	list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-static)
+	target_link_libraries(gtsam_unstable gtsam ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
+	install(TARGETS gtsam_unstable EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
+	list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable)
 	set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
-endif()
-
-if (GTSAM_BUILD_SHARED_LIBRARY)
+else()
     message(STATUS "Building GTSAM_UNSTABLE - shared")
-    add_library(gtsam_unstable-shared SHARED ${gtsam_unstable_srcs})
-    set_target_properties(gtsam_unstable-shared PROPERTIES 
+    add_library(gtsam_unstable SHARED ${gtsam_unstable_srcs})
+    set_target_properties(gtsam_unstable PROPERTIES 
         OUTPUT_NAME         gtsam_unstable
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_unstable_version}
      	SOVERSION           ${gtsam_unstable_soversion})
 	if(WIN32)
-		set_target_properties(gtsam_unstable-shared PROPERTIES
+		set_target_properties(gtsam_unstable PROPERTIES
 			PREFIX ""
 			DEFINE_SYMBOL GTSAM_UNSTABLE_EXPORTS
 			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 	endif()
-    target_link_libraries(gtsam_unstable-shared gtsam-shared ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
-    install(TARGETS gtsam_unstable-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
-    list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-shared)
+    target_link_libraries(gtsam_unstable gtsam ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
+    install(TARGETS gtsam_unstable EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif()
 
@@ -102,12 +102,12 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
         
     # Generate, build and install toolbox
     set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-	if("${gtsam-default}" STREQUAL "gtsam-static")
+	if(GTSAM_BUILD_STATIC_LIBRARY)
 		list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 	endif()
 
     # Wrap
-    wrap_and_install_library(gtsam_unstable.h "${gtsam-default};${gtsam_unstable-default}" "" "${mexFlags}")
+    wrap_and_install_library(gtsam_unstable.h "gtsam" "" "${mexFlags}")
 endif(GTSAM_INSTALL_MATLAB_TOOLBOX)
 
 

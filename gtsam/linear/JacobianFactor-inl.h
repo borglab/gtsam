@@ -64,44 +64,6 @@ namespace gtsam {
     static inline DenseIndex getColsJF(const std::pair<Key,Matrix>& p) {
       return p.second.cols();
     }
-
-    // Helper to fill terms from any Eigen matrix type, e.g. could be a matrix expression.  Also
-    // handles the cases where the matrix part of the term pair is or isn't a reference, and also
-    // assignment from boost::cref_list_of, where the term ends up wrapped in a assign_reference<T>
-    // that is implicitly convertible to T&.  This was introduced to work around a problem where
-    // BOOST_FOREACH over terms did not work on GCC.
-    struct fillTerm {
-      FastVector<Key>& keys;
-      VerticalBlockMatrix& Ab;
-      DenseIndex& i;
-      fillTerm(FastVector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
-        : keys(keys), Ab(Ab), i(i) {}
-
-      template<class MATRIX>
-      void operator()(const std::pair<Key, MATRIX>& term) const
-      {
-        // Check block rows
-        if(term.second.rows() != Ab.rows())
-          throw InvalidMatrixBlock(Ab.rows(), term.second.rows());
-        // Assign key and matrix
-        keys[i] = term.first;
-        Ab(i) = term.second;
-        // Increment block index
-        ++ i;
-      }
-
-      template<class MATRIX>
-      void operator()(const std::pair<int, MATRIX>& term) const
-      {
-        operator()(std::pair<Key, const MATRIX&>(term));
-      }
-
-      template<class T>
-      void operator()(boost::assign_detail::assign_reference<T> assignReference) const
-      {
-        operator()(assignReference.get_ref());
-      }
-    };
   }
 
   /* ************************************************************************* */
@@ -118,16 +80,29 @@ namespace gtsam {
     // Resize base class key vector
     Base::keys_.resize(terms.size());
 
-    // Gather dimensions - uses boost range adaptors to take terms, extract .second which are the
-    // matrices, then extract the number of columns e.g. dimensions in each matrix.  Then joins with
-    // a single '1' to add a dimension for the b vector.
-    {
-      Ab_ = VerticalBlockMatrix(terms | transformed(&internal::getColsJF), b.size(), true);
-    }
+    // Construct block matrix - this uses the boost::range 'transformed' construct to apply
+    // internal::getColsJF (defined just above here in this file) to each term.  This
+    // transforms the list of terms into a list of variable dimensions, by extracting the
+    // number of columns in each matrix.  This is done to avoid separately allocating an
+    // array of dimensions before constructing the VerticalBlockMatrix.
+    Ab_ = VerticalBlockMatrix(terms | transformed(&internal::getColsJF), b.size(), true);
 
     // Check and add terms
     DenseIndex i = 0; // For block index
-    br::for_each(terms, internal::fillTerm(Base::keys_, Ab_, i));
+    for(typename TERMS::const_iterator termIt = terms.begin(); termIt != terms.end(); ++termIt) {
+      const std::pair<Key, Matrix>& term = *termIt;
+
+      // Check block rows
+      if(term.second.rows() != Ab_.rows())
+        throw InvalidMatrixBlock(Ab_.rows(), term.second.rows());
+
+      // Assign key and matrix
+      Base::keys_[i] = term.first;
+      Ab_(i) = term.second;
+
+      // Increment block index
+      ++ i;
+    }
 
     // Assign RHS vector
     getb() = b;

@@ -321,7 +321,12 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(args,args0)] 
       [assign_a(retVal,retVal0)]; 
  
-  Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>'); 
+  Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wuninitialized"
+#endif
  
   Rule namespace_def_p = 
       (str_p("namespace") 
@@ -330,8 +335,12 @@ void Module::parseMarkup(const std::string& data) {
       >> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | comments_p) 
       >> ch_p('}')) 
       [pop_a(namespaces)]; 
- 
-  Rule forward_declaration_p = 
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+  Rule forward_declaration_p =
       !(str_p("virtual")[assign_a(fwDec.isVirtual, true)]) 
       >> str_p("class") 
       >> (*(namespace_name_p >> str_p("::")) >> className_p)[assign_a(fwDec.name)] 
