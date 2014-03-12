@@ -252,13 +252,13 @@ public:
     return state_;
   }
 
-  /// @}
-
-protected:
-
   /** Build a damped system for a specific lambda */
   GaussianFactorGraph buildDampedSystem(const GaussianFactorGraph& linear);
   friend class ::NonlinearOptimizerMoreOptimizationTest;
+
+  /// @}
+
+protected:
 
   /** Access the parameters (base class version) */
   virtual const NonlinearOptimizerParams& _params() const {
