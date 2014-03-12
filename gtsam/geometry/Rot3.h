@@ -304,6 +304,17 @@ namespace gtsam {
     /// Left-trivialized derivative inverse of the exponential map
     static Matrix3 dexpInvL(const Vector3& v);
 
+    /**
+     * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
+     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+     */
+    static Matrix3 rightJacobianExpMapSO3(const Vector3& x);
+
+    /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
+     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+     */
+    static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x);
+
     /// @}
     /// @name Group Action on Point3
     /// @{

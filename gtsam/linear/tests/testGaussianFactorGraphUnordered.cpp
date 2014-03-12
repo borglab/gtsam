@@ -112,36 +112,51 @@ TEST(GaussianFactorGraph, matrices) {
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
 
+  Matrix A00 = (Matrix(2, 3) << 1, 2, 3, 5, 6, 7);
+  Matrix A10 = (Matrix(2, 3) << 9, 10, 0, 0, 0, 0);
+  Matrix A11 = (Matrix(2, 2) << 11, 12, 14, 15);
+
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Unit::Create(2);
-  gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.), (Vector(2) << 4., 8.), model);
-  gfg.add(0, (Matrix(2, 3) << 9.,10., 0., 0., 0., 0.), 1, (Matrix(2, 2) << 11., 12., 14., 15.), (Vector(2) << 13.,16.), model);
+  gfg.add(0, A00, (Vector(2) << 4., 8.), model);
+  gfg.add(0, A10, 1, A11, (Vector(2) << 13.,16.), model);
 
-  Matrix jacobian(4,6);
-  jacobian <<
+  Matrix Ab(4,6);
+  Ab <<
       1, 2, 3, 0, 0, 4,
       5, 6, 7, 0, 0, 8,
       9,10, 0,11,12,13,
       0, 0, 0,14,15,16;
 
-  Matrix expectedJacobian = jacobian;
-  Matrix expectedHessian = jacobian.transpose() * jacobian;
-  Matrix expectedA = jacobian.leftCols(jacobian.cols()-1);
-  Vector expectedb = jacobian.col(jacobian.cols()-1);
-  Matrix expectedL = expectedA.transpose() * expectedA;
-  Vector expectedeta = expectedA.transpose() * expectedb;
+  // augmented versions
+  EXPECT(assert_equal(Ab, gfg.augmentedJacobian()));
+  EXPECT(assert_equal(Ab.transpose() * Ab, gfg.augmentedHessian()));
 
-  Matrix actualJacobian = gfg.augmentedJacobian();
-  Matrix actualHessian = gfg.augmentedHessian();
+  // jacobian
+  Matrix A = Ab.leftCols(Ab.cols()-1);
+  Vector b = Ab.col(Ab.cols()-1);
   Matrix actualA; Vector actualb; boost::tie(actualA,actualb) = gfg.jacobian();
-  Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
+  EXPECT(assert_equal(A, actualA));
+  EXPECT(assert_equal(b, actualb));
 
-  EXPECT(assert_equal(expectedJacobian, actualJacobian));
-  EXPECT(assert_equal(expectedHessian, actualHessian));
-  EXPECT(assert_equal(expectedA, actualA));
-  EXPECT(assert_equal(expectedb, actualb));
-  EXPECT(assert_equal(expectedL, actualL));
-  EXPECT(assert_equal(expectedeta, actualeta));
+  // hessian
+  Matrix L = A.transpose() * A;
+  Vector eta = A.transpose() * b;
+  Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
+  EXPECT(assert_equal(L, actualL));
+  EXPECT(assert_equal(eta, actualeta));
+
+  // hessianBlockDiagonal
+  VectorValues expectLdiagonal; // Make explicit that diagonal is sum-squares of columns
+  expectLdiagonal.insert(0, (Vector(3) << 1+25+81, 4+36+100, 9+49));
+  expectLdiagonal.insert(1, (Vector(2) << 121+196, 144+225));
+  EXPECT(assert_equal(expectLdiagonal, gfg.hessianDiagonal()));
+
+  // hessianBlockDiagonal
+  map<Key,Matrix> actualBD = gfg.hessianBlockDiagonal();
+  LONGS_EQUAL(2,actualBD.size());
+  EXPECT(assert_equal(A00.transpose()*A00 + A10.transpose()*A10,actualBD[0]));
+  EXPECT(assert_equal(A11.transpose()*A11,actualBD[1]));
 }
 
 /* ************************************************************************* */
@@ -151,9 +166,9 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
   fg += JacobianFactor(2, 10*eye(2), -1.0*ones(2), unit2);
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(2, -10*eye(2), 0, 10*eye(2), (Vector(2) << 2.0, -1.0), unit2);
+  fg += JacobianFactor(0, 10*eye(2), 2, -10*eye(2), (Vector(2) << 2.0, -1.0), unit2);
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(2, -5*eye(2), 1, 5*eye(2), (Vector(2) << 0.0, 1.0), unit2);
+  fg += JacobianFactor(1, 5*eye(2), 2, -5*eye(2), (Vector(2) << 0.0, 1.0), unit2);
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
   fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), (Vector(2) << -1.0, 1.5), unit2);
   return fg;
@@ -296,6 +311,31 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
   // now, do it with non-zero y
   gfg.multiplyHessianAdd(1.0, x, actual);
   EXPECT(assert_equal(2*expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, multiplyHessianAdd3 )
+{
+  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
+
+  // brute force
+  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
+  Vector X(6); X<<1,2,3,4,5,6;
+  Vector Y(6); Y<<-450, -450, 300, 400, 2950, 3450;
+  EXPECT(assert_equal(Y,AtA*X));
+
+    double* x = &X[0];
+    double* y = &Y[0];
+
+    Vector fast_y = gtsam::zero(6);
+    double* actual = &fast_y[0];
+    gfg.multiplyHessianAdd(1.0, x, fast_y.data());
+    EXPECT(assert_equal(Y, fast_y));
+
+    // now, do it with non-zero y
+    gfg.multiplyHessianAdd(1.0, x, fast_y.data());
+    EXPECT(assert_equal(2*Y, fast_y));
+
 }
 
 

@@ -96,6 +96,7 @@ namespace gtsam {
     typedef ABlock::ColXpr BVector;
     typedef constABlock::ConstColXpr constBVector;
 
+
     /** Convert from other GaussianFactor */
     explicit JacobianFactor(const GaussianFactor& gf);
 
@@ -181,6 +182,12 @@ namespace gtsam {
      */
     virtual Matrix information() const;
     
+    /// Return the diagonal of the Hessian for this factor
+    virtual VectorValues hessianDiagonal() const;
+
+    /// Return the block diagonal of the Hessian for this factor
+    virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
+
     /**
      * @brief Returns (dense) A,b pair associated with factor, bakes in the weights
      */
@@ -268,6 +275,10 @@ namespace gtsam {
 
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
+
+    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
+
+    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
 
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;

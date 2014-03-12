@@ -61,41 +61,44 @@ string SlotEntry::toString() const {
 }
 
 /* ************************************************************************* */
-Scatter::Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering)
-{
+Scatter::Scatter(const GaussianFactorGraph& gfg,
+    boost::optional<const Ordering&> ordering) {
   gttic(Scatter_Constructor);
   static const size_t none = std::numeric_limits<size_t>::max();
 
   // First do the set union.
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg) {
-    if(factor) {
-      for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
+    if (factor) {
+      for (GaussianFactor::const_iterator variable = factor->begin();
+          variable != factor->end(); ++variable) {
         // TODO: Fix this hack to cope with zero-row Jacobians that come from BayesTreeOrphanWrappers
-        const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(factor.get());
-        if(!asJacobian || asJacobian->cols() > 1)
-          this->insert(make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
+        const JacobianFactor* asJacobian =
+            dynamic_cast<const JacobianFactor*>(factor.get());
+        if (!asJacobian || asJacobian->cols() > 1)
+          this->insert(
+              make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
       }
     }
   }
 
   // If we have an ordering, pre-fill the ordered variables first
   size_t slot = 0;
-  if(ordering) {
+  if (ordering) {
     BOOST_FOREACH(Key key, *ordering) {
       const_iterator entry = find(key);
-      if(entry == end())
+      if (entry == end())
         throw std::invalid_argument(
             "The ordering provided to the HessianFactor Scatter constructor\n"
-            "contained extra variables that did not appear in the factors to combine.");
-      at(key).slot = (slot ++);
+                "contained extra variables that did not appear in the factors to combine.");
+      at(key).slot = (slot++);
     }
   }
 
   // Next fill in the slot indices (we can only get these after doing the set
   // union.
   BOOST_FOREACH(value_type& var_slot, *this) {
-    if(var_slot.second.slot == none)
-      var_slot.second.slot = (slot ++);
+    if (var_slot.second.slot == none)
+      var_slot.second.slot = (slot++);
   }
 }
 
@@ -344,6 +347,30 @@ Matrix HessianFactor::information() const
 }
 
 /* ************************************************************************* */
+VectorValues HessianFactor::hessianDiagonal() const {
+  VectorValues d;
+  // Loop over all variables
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    // Get the diagonal block, and insert its diagonal
+    Matrix B = info_(j, j).selfadjointView();
+    d.insert(keys_[j],B.diagonal());
+  }
+  return d;
+}
+
+/* ************************************************************************* */
+map<Key,Matrix> HessianFactor::hessianBlockDiagonal() const {
+  map<Key,Matrix> blocks;
+  // Loop over all variables
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    // Get the diagonal block, and insert it
+    Matrix B = info_(j, j).selfadjointView();
+    blocks.insert(make_pair(keys_[j],B));
+  }
+  return blocks;
+}
+
+/* ************************************************************************* */
 Matrix HessianFactor::augmentedJacobian() const
 {
   return JacobianFactor(*this).augmentedJacobian();
@@ -494,7 +521,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 
   // copy to yvalues
   for(DenseIndex i = 0; i < (DenseIndex)size(); ++i) {
-    bool didNotExist;
+	bool didNotExist;
     VectorValues::iterator it;
     boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
     if (didNotExist)
@@ -503,6 +530,48 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
       it->second += alpha * y[i]; // add
   }
 }
+
+/* ************************************************************************* */
+void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
+    double* yvalues, vector<size_t> offsets) const {
+
+  // Use eigen magic to access raw memory
+  typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
+  typedef Eigen::Map<DVector> DMap;
+  typedef Eigen::Map<const DVector> ConstDMap;
+
+  // Create a vector of temporary y values, corresponding to rows i
+  vector<Vector> y;
+  y.reserve(size());
+  for (const_iterator it = begin(); it != end(); it++)
+    y.push_back(zero(getDim(it)));
+
+  // Accessing the VectorValues one by one is expensive
+  // So we will loop over columns to access x only once per column
+  // And fill the above temporary y values, to be added into yvalues after
+  for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
+    DenseIndex i = 0;
+    for (; i < j; ++i)
+      y[i] += info_(i, j).knownOffDiagonal()
+          * ConstDMap(x + offsets[keys_[j]],
+              offsets[keys_[j] + 1] - offsets[keys_[j]]);
+    // blocks on the diagonal are only half
+    y[i] += info_(j, j).selfadjointView()
+        * ConstDMap(x + offsets[keys_[j]],
+            offsets[keys_[j] + 1] - offsets[keys_[j]]);
+    // for below diagonal, we take transpose block from upper triangular part
+    for (i = j + 1; i < (DenseIndex) size(); ++i)
+      y[i] += info_(i, j).knownOffDiagonal()
+          * ConstDMap(x + offsets[keys_[j]],
+              offsets[keys_[j] + 1] - offsets[keys_[j]]);
+  }
+
+  // copy to yvalues
+  for (DenseIndex i = 0; i < (DenseIndex) size(); ++i)
+    DMap(yvalues + offsets[keys_[i]], offsets[keys_[i] + 1] - offsets[keys_[i]]) +=
+        alpha * y[i];
+}
+
 
 /* ************************************************************************* */
 VectorValues HessianFactor::gradientAtZero() const {

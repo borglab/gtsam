@@ -41,21 +41,28 @@ namespace gtsam {
   GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
     EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
-  // Definition of Scatter, which is an intermediate data structure used when building a
-  // HessianFactor incrementally, to get the keys in the right order. The "scatter" is a map from
-  // global variable indices to slot indices in the union of involved variables.  We also include
-  // the dimensionality of the variable.
+  /**
+   * One SlotEntry stores the slot index for a variable, as well its dimension.
+   */
   struct GTSAM_EXPORT SlotEntry {
-    size_t slot;
-    size_t dimension;
+    size_t slot, dimension;
     SlotEntry(size_t _slot, size_t _dimension)
     : slot(_slot), dimension(_dimension) {}
     std::string toString() const;
   };
-  class Scatter : public FastMap<Key, SlotEntry> {
+
+  /**
+   * Scatter is an intermediate data structure used when building a HessianFactor
+   * incrementally, to get the keys in the right order. The "scatter" is a map from
+   * global variable indices to slot indices in the union of involved variables.
+   * We also include the dimensionality of the variable.
+   */
+  class Scatter: public FastMap<Key, SlotEntry> {
   public:
-    Scatter() {}
-    Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering = boost::none);
+    Scatter() {
+    }
+    Scatter(const GaussianFactorGraph& gfg,
+        boost::optional<const Ordering&> ordering = boost::none);
   };
 
   /**
@@ -133,6 +140,7 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr; ///< A shared_ptr to this class
     typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
     typedef SymmetricBlockMatrix::constBlock constBlock; ///< A block from the Hessian matrix (const version)
+
 
     /** default constructor for I/O */
     HessianFactor();
@@ -328,7 +336,13 @@ namespace gtsam {
      * GaussianFactor.
      */
     virtual Matrix information() const;
-        
+
+    /// Return the diagonal of the Hessian for this factor
+    virtual VectorValues hessianDiagonal() const;
+
+    /// Return the block diagonal of the Hessian for this factor
+    virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
+
     /**
      * Return (dense) matrix associated with factor
      * @param ordering of variables needed for matrix column order
@@ -362,6 +376,10 @@ namespace gtsam {
 
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
+
+    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
+
+    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
 
     /// eta for Hessian
     VectorValues gradientAtZero() const;

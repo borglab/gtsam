@@ -21,32 +21,32 @@
 
 namespace gtsam {
 
-  /* ************************************************************************* */
-  VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(const VerticalBlockMatrix& other)
-  {
-    VerticalBlockMatrix result;
-    result.variableColOffsets_.resize(other.nBlocks() + 1);
-    for(size_t i = 0; i < result.variableColOffsets_.size(); ++i)
-      result.variableColOffsets_[i] =
-      other.variableColOffsets_[other.blockStart_ + i] - other.variableColOffsets_[other.blockStart_];
-    result.matrix_.resize(other.rows(), result.variableColOffsets_.back());
-    result.rowEnd_ = other.rows();
-    result.assertInvariants();
-    return result;
-  }
+/* ************************************************************************* */
+VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(
+    const VerticalBlockMatrix& other) {
+  VerticalBlockMatrix result;
+  result.variableColOffsets_.resize(other.nBlocks() + 1);
+  for (size_t i = 0; i < result.variableColOffsets_.size(); ++i)
+    result.variableColOffsets_[i] = other.variableColOffsets_[other.blockStart_
+        + i] - other.variableColOffsets_[other.blockStart_];
+  result.matrix_.resize(other.rows(), result.variableColOffsets_.back());
+  result.rowEnd_ = other.rows();
+  result.assertInvariants();
+  return result;
+}
 
-  /* ************************************************************************* */
-  VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(const SymmetricBlockMatrix& other, DenseIndex height)
-  {
-    VerticalBlockMatrix result;
-    result.variableColOffsets_.resize(other.nBlocks() + 1);
-    for(size_t i = 0; i < result.variableColOffsets_.size(); ++i)
-      result.variableColOffsets_[i] =
-      other.variableColOffsets_[other.blockStart_ + i] - other.variableColOffsets_[other.blockStart_];
-    result.matrix_.resize(height, result.variableColOffsets_.back());
-    result.rowEnd_ = height;
-    result.assertInvariants();
-    return result;
-  }
+/* ************************************************************************* */
+VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(
+    const SymmetricBlockMatrix& other, DenseIndex height) {
+  VerticalBlockMatrix result;
+  result.variableColOffsets_.resize(other.nBlocks() + 1);
+  for (size_t i = 0; i < result.variableColOffsets_.size(); ++i)
+    result.variableColOffsets_[i] = other.variableColOffsets_[other.blockStart_
+        + i] - other.variableColOffsets_[other.blockStart_];
+  result.matrix_.resize(height, result.variableColOffsets_.back());
+  result.rowEnd_ = height;
+  result.assertInvariants();
+  return result;
+}
 
 }
