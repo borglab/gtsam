@@ -201,7 +201,7 @@ public:
   }
 
   // Apply policy to increase lambda if the current update was successful (stepQuality not used in the naive policy)
-  void increaseLambda(double stepQuality);
+  void increaseLambda();
 
   // Apply policy to decrease lambda if the current update was NOT successful (stepQuality not used in the naive policy)
   void decreaseLambda(double stepQuality);
