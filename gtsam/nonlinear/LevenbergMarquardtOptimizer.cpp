@@ -126,7 +126,7 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
   if (params_.diagonalDamping && params_.reuse_diagonal_ == false) {
     state_.hessianDiagonal = linear.hessianDiagonal();
     BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
-      for (size_t aa = 0; aa < v.size(); aa++) {
+      for (int aa = 0; aa < v.size(); aa++) {
         v(aa) = std::min(std::max(v(aa), min_diagonal_), max_diagonal_);
         v(aa) = sqrt(v(aa));
       }
@@ -141,13 +141,14 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
     size_t dim = key_value.value.dim();
     Matrix A = Matrix::Identity(dim, dim);
     //Replace the identity matrix with diagonal of Hessian
-    if (params_.diagonalDamping)
+    if (params_.diagonalDamping){
       try {
         A.diagonal() = state_.hessianDiagonal.at(key_value.key);
       } catch (std::exception e) {
         // Don't attempt any damping if no key found in diagonal
         continue;
       }
+    }
     Vector b = Vector::Zero(dim);
     SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
     damped += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
