@@ -669,28 +669,30 @@ bool writeBAL(const string& filename, SfM_data &data)
   return true;
 }
 
-bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
+bool writeBALfromValues(const string& filename, const SfM_data &data, Values& values){
+
+  SfM_data dataValues = data;
 
   // Store poses or cameras in SfM_data
   Values valuesPoses = values.filter<Pose3>();
-  if( valuesPoses.size() == data.number_cameras() ){ // we only estimated camera poses
-    for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
+  if( valuesPoses.size() == dataValues.number_cameras() ){ // we only estimated camera poses
+    for (size_t i = 0; i < dataValues.number_cameras(); i++){ // for each camera
       Key poseKey = symbol('x',i);
       Pose3 pose = values.at<Pose3>(poseKey);
-      Cal3Bundler K = data.cameras[i].calibration();
+      Cal3Bundler K = dataValues.cameras[i].calibration();
       PinholeCamera<Cal3Bundler> camera(pose, K);
-      data.cameras[i] = camera;
+      dataValues.cameras[i] = camera;
     }
   } else {
     Values valuesCameras = values.filter< PinholeCamera<Cal3Bundler> >();
-    if ( valuesCameras.size() == data.number_cameras() ){  // we only estimated camera poses and calibration
-      for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
+    if ( valuesCameras.size() == dataValues.number_cameras() ){  // we only estimated camera poses and calibration
+      for (size_t i = 0; i < dataValues.number_cameras(); i++){ // for each camera
         Key cameraKey = i; // symbol('c',i);
         PinholeCamera<Cal3Bundler> camera = values.at<PinholeCamera<Cal3Bundler> >(cameraKey);
-        data.cameras[i] = camera;
+        dataValues.cameras[i] = camera;
       }
     }else{
-      cout << "writeBALfromValues: different number of cameras in SfM_data (#cameras= " << data.number_cameras()
+      cout << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras= " << dataValues.number_cameras()
               <<") and values (#cameras " << valuesPoses.size() << ", #poses " << valuesCameras.size() << ")!!" << endl;
       return false;
     }
@@ -698,26 +700,26 @@ bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
 
   // Store 3D points in SfM_data
   Values valuesPoints = values.filter<Point3>();
-  if( valuesPoints.size() != data.number_tracks()){
-    cout << "writeBALfromValues: different number of points in SfM_data (#points= " << data.number_tracks()
+  if( valuesPoints.size() != dataValues.number_tracks()){
+    cout << "writeBALfromValues: different number of points in SfM_dataValues (#points= " << dataValues.number_tracks()
             <<") and values (#points " << valuesPoints.size() << ")!!" << endl;
   }
 
-  for (size_t j = 0; j < data.number_tracks(); j++){ // for each point
+  for (size_t j = 0; j < dataValues.number_tracks(); j++){ // for each point
     Key pointKey = symbol('l',j);
     if(values.exists(pointKey)){
       Point3 point = values.at<Point3>(pointKey);
-      data.tracks[j].p = point;
+      dataValues.tracks[j].p = point;
     }else{
-      data.tracks[j].r = 1.0;
-      data.tracks[j].g = 0.0;
-      data.tracks[j].b = 0.0;
-      data.tracks[j].p = Point3();
+      dataValues.tracks[j].r = 1.0;
+      dataValues.tracks[j].g = 0.0;
+      dataValues.tracks[j].b = 0.0;
+      dataValues.tracks[j].p = Point3();
     }
   }
 
   // Write SfM_data to file
-  return writeBAL(filename, data);
+  return writeBAL(filename, dataValues);
 }
 
 Values initialCamerasEstimate(const SfM_data& db) {

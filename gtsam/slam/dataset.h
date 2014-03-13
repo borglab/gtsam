@@ -146,7 +146,7 @@ GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
  * assumes that the keys are "x1" for pose 1 (or "c1" for camera 1) and "l1" for landmark 1
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool writeBALfromValues(const std::string& filename, SfM_data &data, Values& values);
+GTSAM_EXPORT bool writeBALfromValues(const std::string& filename, const SfM_data &data, Values& values);
 
 /**
  * @brief This function converts an openGL camera pose to an GTSAM camera pose
