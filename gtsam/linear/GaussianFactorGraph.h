@@ -224,10 +224,10 @@ namespace gtsam {
     std::pair<Matrix,Vector> hessian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
 
     /** Return only the diagonal of the Hessian A'*A, as a VectorValues */
-    VectorValues hessianDiagonal() const;
+    virtual VectorValues hessianDiagonal() const;
 
     /** Return the block diagonal of the Hessian for this factor */
-    std::map<Key,Matrix> hessianBlockDiagonal() const;
+    virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
 
     /** Solve the factor graph by performing multifrontal variable elimination in COLAMD order using
      *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
