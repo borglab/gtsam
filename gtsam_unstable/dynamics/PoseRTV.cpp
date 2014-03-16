@@ -15,7 +15,6 @@ namespace gtsam {
 using namespace std;
 
 static const Vector g = delta(3, 2, 9.81);
-const double pi = M_PI;
 
 /* ************************************************************************* */
 double bound(double a, double min, double max) {
