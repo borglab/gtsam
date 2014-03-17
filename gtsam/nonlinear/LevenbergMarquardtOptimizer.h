@@ -51,17 +51,19 @@ public:
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
   double lambdaLowerBound; ///< The minimum lambda used in LM (default: 0)
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
-  bool disableInnerIterations; ///< If enabled inner iterations on the linearized system are performed
   double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
   bool diagonalDamping; ///< if true, use diagonal of Hessian
-  bool reuse_diagonal_; //an additional option in Ceres for diagonalDamping (related to efficiency)
-  bool useFixedLambdaFactor_; // if true applies constant increase (or decrease) to lambda according to lambdaFactor
+  bool reuse_diagonal_; ///< an additional option in Ceres for diagonalDamping (related to efficiency)
+  bool useFixedLambdaFactor_; ///< if true applies constant increase (or decrease) to lambda according to lambdaFactor
+  double min_diagonal_; ///< when using diagonal damping saturates the minimum diagonal entries (default: 1e-6)
+  double max_diagonal_; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
 
   LevenbergMarquardtParams() :
       lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(
-          0.0), verbosityLM(SILENT), disableInnerIterations(false), minModelFidelity(
-          1e-3), diagonalDamping(false), reuse_diagonal_(false), useFixedLambdaFactor_(true) {
+          0.0), verbosityLM(SILENT), minModelFidelity(1e-3),
+          diagonalDamping(false), reuse_diagonal_(false), useFixedLambdaFactor_(true),
+          min_diagonal_(1e-6), max_diagonal_(1e32) {
   }
   virtual ~LevenbergMarquardtParams() {
   }

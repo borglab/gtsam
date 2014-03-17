@@ -11,9 +11,10 @@
 
 /**
  *  @file   testGaussianFactorGraphUnordered.cpp
- *  @brief  Unit tests for Linear Factor
+ *  @brief  Unit tests for Linear Factor Graph
  *  @author Christian Potthast
  *  @author Frank Dellaert
+ *  @author Luca Carlone
  *  @author Richard Roberts
  **/
 
@@ -325,10 +326,8 @@ TEST( GaussianFactorGraph, multiplyHessianAdd3 )
   EXPECT(assert_equal(Y,AtA*X));
 
     double* x = &X[0];
-    double* y = &Y[0];
 
     Vector fast_y = gtsam::zero(6);
-    double* actual = &fast_y[0];
     gfg.multiplyHessianAdd(1.0, x, fast_y.data());
     EXPECT(assert_equal(Y, fast_y));
 
@@ -407,6 +406,21 @@ TEST( GaussianFactorGraph, negate ) {
   expNegation.push_back(init_graph.at(4)->negate());
   expNegation.push_back(GaussianFactor::shared_ptr());
   EXPECT(assert_equal(expNegation, actNegation));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, hessianDiagonal )
+{
+  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
+  VectorValues expected;
+  Matrix infoMatrix = gfg.hessian().first;
+  Vector d = infoMatrix.diagonal();
+
+  VectorValues actual = gfg.hessianDiagonal();
+  expected.insert(0, d.segment<2>(0));
+  expected.insert(1, d.segment<2>(2));
+  expected.insert(2, d.segment<2>(4));
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
