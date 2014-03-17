@@ -148,7 +148,8 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
     state_.hessianDiagonal = linear.hessianDiagonal();
     BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
       for (int aa = 0; aa < v.size(); aa++) {
-        v(aa) = std::min(std::max(v(aa), params_.min_diagonal_), params_.max_diagonal_);
+        v(aa) = std::min(std::max(v(aa), params_.min_diagonal_),
+            params_.max_diagonal_);
         v(aa) = sqrt(v(aa));
       }
     }
@@ -162,11 +163,13 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
     BOOST_FOREACH(const VectorValues::KeyValuePair& key_vector, state_.hessianDiagonal) {
       // Fill in the diagonal of A with diag(hessian)
       try {
-        Matrix A = Eigen::DiagonalMatrix<double, Eigen::Dynamic>(state_.hessianDiagonal.at(key_vector.first));
+        Matrix A = Eigen::DiagonalMatrix<double, Eigen::Dynamic>(
+            state_.hessianDiagonal.at(key_vector.first));
         size_t dim = key_vector.second.size();
         Vector b = Vector::Zero(dim);
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
-        damped += boost::make_shared<JacobianFactor>(key_vector.first, A, b, model);
+        damped += boost::make_shared<JacobianFactor>(key_vector.first, A, b,
+            model);
       } catch (std::exception e) {
         // Don't attempt any damping if no key found in diagonal
         continue;
@@ -268,20 +271,20 @@ void LevenbergMarquardtOptimizer::iterate() {
         // cost change in the original, nonlinear system (old - new)
         double costChange = state_.error - newError;
 
-        double absolute_function_tolerance = params_.relativeErrorTol
-            * state_.error;
-        if (fabs(costChange) >= absolute_function_tolerance) {
+        if (linearizedCostChange > 1e-15) { // the error has to decrease to satify this condition
           // fidelity of linearized model VS original system between
-          if (linearizedCostChange > 1e-15) {
-            modelFidelity = costChange / linearizedCostChange;
-            // if we decrease the error in the nonlinear system and modelFidelity is above threshold
-            step_is_successful = modelFidelity > params_.minModelFidelity;
-          } else {
-            step_is_successful = true; // linearizedCostChange close to zero
-          }
+          modelFidelity = costChange / linearizedCostChange;
+          // if we decrease the error in the nonlinear system and modelFidelity is above threshold
+          step_is_successful = modelFidelity > params_.minModelFidelity;
         } else {
-          stopSearchingLambda = true;
+          step_is_successful = true; // linearizedCostChange close to zero
         }
+
+        double minAbsoluteTolerance = params_.relativeErrorTol * state_.error;
+        // if the change is small we terminate
+        if (fabs(costChange) < minAbsoluteTolerance)
+          stopSearchingLambda = true;
+
       }
     }
 
