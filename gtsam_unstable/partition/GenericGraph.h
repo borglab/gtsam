@@ -96,7 +96,7 @@ namespace gtsam { namespace partition {
 
 	/** merge nodes in DSF using constraints captured by the given graph */
 	std::list<std::vector<size_t> > findIslands(const GenericGraph3D& graph, const std::vector<size_t>& keys, WorkSpace& workspace,
-			const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark);
+			const size_t minNrConstraintsPerCamera, const size_t minNrConstraintsPerLandmark);
 
 	/** eliminate the sensors from generic graph */
 	void reduceGenericGraph(const GenericGraph3D& graph, const std::vector<size_t>& cameraKeys,	const std::vector<size_t>& landmarkKeys,
@@ -104,7 +104,7 @@ namespace gtsam { namespace partition {
 
 	/** check whether the 3D graph is singular (under constrained) */
 	void checkSingularity(const GenericGraph3D& graph, const std::vector<size_t>& frontals,
-			WorkSpace& workspace, const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark);
+			WorkSpace& workspace, const size_t minNrConstraintsPerCamera, const size_t minNrConstraintsPerLandmark);
 
 
 	/** print the graph **/
