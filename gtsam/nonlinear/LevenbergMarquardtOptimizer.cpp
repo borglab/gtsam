@@ -97,8 +97,6 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "               lambdaFactor: " << lambdaFactor << "\n";
   std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
   std::cout << "           lambdaLowerBound: " << lambdaLowerBound << "\n";
-  std::cout << "     disableInnerIterations: " << disableInnerIterations
-      << "\n";
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
   std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
   std::cout << "                verbosityLM: "
@@ -141,10 +139,6 @@ void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality) {
 GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
     const GaussianFactorGraph& linear) {
 
-  //Set two parameters as Ceres, will move out later
-  static const double min_diagonal_ = 1e-6;
-  static const double max_diagonal_ = 1e32;
-
   gttic(damp);
   if (params_.verbosityLM >= LevenbergMarquardtParams::DAMPED)
     cout << "building damped system with lambda " << state_.lambda << endl;
@@ -154,7 +148,7 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
     state_.hessianDiagonal = linear.hessianDiagonal();
     BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
       for (int aa = 0; aa < v.size(); aa++) {
-        v(aa) = std::min(std::max(v(aa), min_diagonal_), max_diagonal_);
+        v(aa) = std::min(std::max(v(aa), params_.min_diagonal_), params_.max_diagonal_);
         v(aa) = sqrt(v(aa));
       }
     }
