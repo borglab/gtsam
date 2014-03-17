@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 project(METIS)
 
+# Add flags for currect directory and below
+add_definitions(-Wno-unused-variable)
+add_definitions(-Wno-unknown-pragmas)
+add_definitions(-Wno-sometimes-uninitialized)
+
 set(GKLIB_PATH ${PROJECT_SOURCE_DIR}/GKlib CACHE PATH "path to GKlib")
 set(SHARED FALSE CACHE BOOL "build a shared library")
 
@@ -24,4 +29,7 @@ include_directories(include)
 # Recursively look for CMakeLists.txt in subdirs.
 add_subdirectory("include")
 add_subdirectory("libmetis")
-add_subdirectory("programs")
+
+if(GTSAM_BUILD_METIS_EXECUTABLES)
+  add_subdirectory("programs")
+endif()

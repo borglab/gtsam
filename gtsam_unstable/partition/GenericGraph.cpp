@@ -29,11 +29,10 @@ namespace gtsam { namespace partition {
 		typedef map<IntPair, FactorList::iterator> Connections;
 
 		// create disjoin set forest
-		int numNodes = keys.size();
 		DSFVector dsf(workspace.dsf, keys);
 
 		FactorList factors(graph.begin(), graph.end());
-		size_t i, nrFactors = factors.size();
+		size_t nrFactors = factors.size();
 		FactorList::iterator itEnd;
 		workspace.prepareDictionary(keys);
 		while (nrFactors) {
@@ -135,7 +134,7 @@ namespace gtsam { namespace partition {
 		typedef list<sharedGenericFactor3D> FactorList;
 
 		FactorList factors(graph.begin(), graph.end());
-		size_t i, nrFactors = factors.size();
+		size_t nrFactors = factors.size();
 		FactorList::iterator itEnd;
 		while (nrFactors) {
 
@@ -225,7 +224,7 @@ namespace gtsam { namespace partition {
 		// find singular cameras and landmarks
 		foundSingularCamera = false;
 		foundSingularLandmark = false;
-		for (int i=0; i<nrConstraints.size(); i++) {
+		for (size_t i=0; i<nrConstraints.size(); i++) {
 			if (isCamera[i] && nrConstraints[i] < minNrConstraintsPerCamera &&
 					singularCameras.find(i) == singularCameras.end()) {
 				singularCameras.insert(i);
@@ -241,7 +240,7 @@ namespace gtsam { namespace partition {
 
 	/* ************************************************************************* */
 	list<vector<size_t> > findIslands(const GenericGraph3D& graph, const vector<size_t>& keys, WorkSpace& workspace,
-			const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark) {
+			const size_t minNrConstraintsPerCamera, const size_t minNrConstraintsPerLandmark) {
 
 		// create disjoint set forest
 		workspace.prepareDictionary(keys);
@@ -320,7 +319,7 @@ namespace gtsam { namespace partition {
 		}
 
 		// sanity check
-		int nrKeys = 0;
+		size_t nrKeys = 0;
 		BOOST_FOREACH(const vector<size_t>& island, islands)
 			nrKeys += island.size();
 		if (nrKeys != keys.size())	{
@@ -336,7 +335,7 @@ namespace gtsam { namespace partition {
 	/* ************************************************************************* */
 	// return the number of intersection between two **sorted** landmark vectors
 	inline int getNrCommonLandmarks(const vector<size_t>& landmarks1, const vector<size_t>& landmarks2){
-		int i1 = 0, i2 = 0;
+		size_t i1 = 0, i2 = 0;
 		int nrCommonLandmarks = 0;
 		while (i1 < landmarks1.size() && i2 < landmarks2.size()) {
 			if (landmarks1[i1] < landmarks2[i2])
@@ -392,8 +391,8 @@ namespace gtsam { namespace partition {
 		int factorIndex = 0;
 		int camera1, camera2, nrTotalConstraints;
 		bool hasOdometry;
-		for (int i1=0; i1<cameraKeys.size()-1; ++i1) {
-			for (int i2=i1+1; i2<cameraKeys.size(); ++i2) {
+		for (size_t i1=0; i1<cameraKeys.size()-1; ++i1) {
+			for (size_t i2=i1+1; i2<cameraKeys.size(); ++i2) {
 				camera1 = cameraKeys[i1];
 				camera2 = cameraKeys[i2];
 				int nrCommonLandmarks = getNrCommonLandmarks(cameraToLandmarks[camera1], cameraToLandmarks[camera2]);
@@ -409,7 +408,7 @@ namespace gtsam { namespace partition {
 
 	/* ************************************************************************* */
 	void checkSingularity(const GenericGraph3D& graph, const std::vector<size_t>& frontals,
-			WorkSpace& workspace, const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark) {
+			WorkSpace& workspace, const size_t minNrConstraintsPerCamera, const size_t minNrConstraintsPerLandmark) {
 		workspace.prepareDictionary(frontals);
 		vector<size_t> nrConstraints(workspace.dictionary.size(), 0);
 
@@ -445,8 +444,8 @@ namespace gtsam { namespace partition {
 		// find the minimum constraint for cameras and landmarks
 		size_t minFoundConstraintsPerCamera = 10000;
 		size_t minFoundConstraintsPerLandmark = 10000;
-		
-		for (int i=0; i<isValidCamera.size(); i++) {
+
+		for (size_t i=0; i<isValidCamera.size(); i++) {
 			if (isValidCamera[i]) {
 				minFoundConstraintsPerCamera   = std::min(nrConstraints[i], minFoundConstraintsPerCamera);
 				if (nrConstraints[i] < minNrConstraintsPerCamera)
@@ -454,7 +453,7 @@ namespace gtsam { namespace partition {
 			}
 
 		}
-		for (int j=0; j<isValidLandmark.size(); j++) {
+		for (size_t j=0; j<isValidLandmark.size(); j++) {
 			if (isValidLandmark[j]) {
 				minFoundConstraintsPerLandmark = std::min(nrConstraints[j], minFoundConstraintsPerLandmark);
 			  if (nrConstraints[j] < minNrConstraintsPerLandmark)
