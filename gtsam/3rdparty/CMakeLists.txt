@@ -15,16 +15,17 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 			install(FILES Eigen/Eigen/${filename} DESTINATION include/gtsam/3rdparty/Eigen/Eigen)
 		endif()
 	endforeach(eigen_dir)
-	
+
 	# Add to project source
 	set(eigen_headers ${eigen_headers} PARENT_SCOPE)
-	
+
 	# install Eigen - only the headers in our 3rdparty directory
-	install(DIRECTORY Eigen/Eigen 
+	install(DIRECTORY Eigen/Eigen
 		DESTINATION include/gtsam/3rdparty/Eigen
 		FILES_MATCHING PATTERN "*.h")
 endif()
 
+option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
 add_subdirectory(metis-5.1.0)
 ############ NOTE:  When updating GeographicLib be sure to disable building their examples
 ############        and unit tests by commenting out their lines:
