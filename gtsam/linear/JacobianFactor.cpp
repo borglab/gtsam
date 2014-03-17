@@ -457,6 +457,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void JacobianFactor::hessianDiagonal(double* d) const {
+    throw std::runtime_error("JacobianFactor::hessianDiagonal non implemented (use VectorValues version)");
+  }
+
+  /* ************************************************************************* */
   map<Key,Matrix> JacobianFactor::hessianBlockDiagonal() const {
     map<Key,Matrix> blocks;
     for(size_t pos=0; pos<size(); ++pos)

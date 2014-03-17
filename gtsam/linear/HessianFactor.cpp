@@ -359,6 +359,23 @@ VectorValues HessianFactor::hessianDiagonal() const {
 }
 
 /* ************************************************************************* */
+// TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
+void HessianFactor::hessianDiagonal(double* d) const {
+
+  // Use eigen magic to access raw memory
+  typedef Eigen::Matrix<double, 9, 1> DVector;
+  typedef Eigen::Map<DVector> DMap;
+
+  // Loop over all variables in the factor
+    for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+      // Get the diagonal block, and insert its diagonal
+      Matrix B = info_(j, j).selfadjointView();
+      DVector dj =  B.diagonal();
+      DMap(d + 9 * j) += dj;
+    }
+}
+
+/* ************************************************************************* */
 map<Key,Matrix> HessianFactor::hessianBlockDiagonal() const {
   map<Key,Matrix> blocks;
   // Loop over all variables
