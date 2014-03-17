@@ -29,11 +29,10 @@ namespace gtsam { namespace partition {
 		typedef map<IntPair, FactorList::iterator> Connections;
 
 		// create disjoin set forest
-		int numNodes = keys.size();
 		DSFVector dsf(workspace.dsf, keys);
 
 		FactorList factors(graph.begin(), graph.end());
-		size_t i, nrFactors = factors.size();
+		size_t nrFactors = factors.size();
 		FactorList::iterator itEnd;
 		workspace.prepareDictionary(keys);
 		while (nrFactors) {
@@ -135,7 +134,7 @@ namespace gtsam { namespace partition {
 		typedef list<sharedGenericFactor3D> FactorList;
 
 		FactorList factors(graph.begin(), graph.end());
-		size_t i, nrFactors = factors.size();
+		size_t nrFactors = factors.size();
 		FactorList::iterator itEnd;
 		while (nrFactors) {
 
@@ -445,7 +444,7 @@ namespace gtsam { namespace partition {
 		// find the minimum constraint for cameras and landmarks
 		size_t minFoundConstraintsPerCamera = 10000;
 		size_t minFoundConstraintsPerLandmark = 10000;
-		
+
 		for (int i=0; i<isValidCamera.size(); i++) {
 			if (isValidCamera[i]) {
 				minFoundConstraintsPerCamera   = std::min(nrConstraints[i], minFoundConstraintsPerCamera);
