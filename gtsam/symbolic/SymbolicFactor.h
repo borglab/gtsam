@@ -98,13 +98,30 @@ namespace gtsam {
     /** Constructor from a collection of keys */
     template<typename KEYITERATOR>
     static SymbolicFactor FromIterators(KEYITERATOR beginKey, KEYITERATOR endKey) {
-      return SymbolicFactor(Base::FromIterators(beginKey, endKey)); }
+      return SymbolicFactor(Base::FromIterators(beginKey, endKey));
+    }
+
+    /** Constructor from a collection of keys */
+    template<typename KEYITERATOR>
+    static SymbolicFactor::shared_ptr FromIteratorsShared(KEYITERATOR beginKey, KEYITERATOR endKey) {
+      SymbolicFactor::shared_ptr result = boost::make_shared<SymbolicFactor>();
+      result->keys_.assign(beginKey, endKey);
+      return result;
+    }
 
     /** Constructor from a collection of keys - compatible with boost::assign::list_of and
      *  boost::assign::cref_list_of */
     template<class CONTAINER>
     static SymbolicFactor FromKeys(const CONTAINER& keys) {
-      return SymbolicFactor(Base::FromKeys(keys)); }
+      return SymbolicFactor(Base::FromKeys(keys));
+    }
+
+    /** Constructor from a collection of keys - compatible with boost::assign::list_of and
+     *  boost::assign::cref_list_of */
+    template<class CONTAINER>
+    static SymbolicFactor::shared_ptr FromKeysShared(const CONTAINER& keys) {
+      return FromIteratorsShared(keys.begin(), keys.end());
+    }
 
     /// @}
 

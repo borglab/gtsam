@@ -1,0 +1,19 @@
+
+This file contains some test graphs and meshes
+
+4elt.graph
+copter2.graph
+mdual.graph
+	These are small to medium size graphs corresponding to 2D and 3D 
+        finite element mesh. They can be used as inputs to gpmetis and ndmetis.
+
+test.mgraph
+	This is a very small graph with two vertex weights (multi-constraint).
+        Can be used as input to gpmetis.
+
+metis.mesh
+	This is a small 2D mesh (It is a triangulation of 'METIS').
+        Can be used as input to mpmetis and m2gmetis.
+
+
+

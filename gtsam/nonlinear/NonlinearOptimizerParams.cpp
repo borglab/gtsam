@@ -27,6 +27,8 @@ NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslato
     return NonlinearOptimizerParams::DELTA;
   if (s == "LINEAR")
     return NonlinearOptimizerParams::LINEAR;
+  if (s == "TERMINATION")
+    return NonlinearOptimizerParams::TERMINATION;
 
   /* default is silent */
   return NonlinearOptimizerParams::SILENT;
@@ -39,6 +41,9 @@ std::string NonlinearOptimizerParams::verbosityTranslator(
   switch (value) {
   case NonlinearOptimizerParams::SILENT:
     s = "SILENT";
+    break;
+  case NonlinearOptimizerParams::TERMINATION:
+    s = "TERMINATION";
     break;
   case NonlinearOptimizerParams::ERROR:
     s = "ERROR";

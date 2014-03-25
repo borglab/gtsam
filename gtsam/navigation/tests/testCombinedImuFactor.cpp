@@ -40,20 +40,6 @@ using symbol_shorthand::B;
 /* ************************************************************************* */
 namespace {
 
-Vector callEvaluateError(const ImuFactor& factor,
-    const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
-    const imuBias::ConstantBias& bias)
-{
-  return factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias);
-}
-
-Rot3 evaluateRotationError(const ImuFactor& factor,
-    const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
-    const imuBias::ConstantBias& bias)
-{
-  return Rot3::Expmap(factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias).tail(3) ) ;
-}
-
 ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias,
     const list<Vector3>& measuredAccs,
@@ -106,17 +92,6 @@ Rot3 evaluatePreintegratedMeasurementsRotation(
 {
   return evaluatePreintegratedMeasurements(bias,
       measuredAccs, measuredOmegas, deltaTs).deltaRij;
-}
-
-Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega, const double deltaT)
-{
-  return Rot3::Expmap((measuredOmega - biasOmega) * deltaT);
-}
-
-
-Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta)
-{
-  return Rot3::Logmap( Rot3::Expmap(thetahat).compose( Rot3::Expmap(deltatheta) ) );
 }
 
 }

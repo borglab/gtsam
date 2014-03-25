@@ -2,41 +2,8 @@
 file(GLOB discrete_headers "*.h")
 install(FILES ${discrete_headers} DESTINATION include/gtsam_unstable/discrete)
 
-set (discrete_full_libs
-    ${gtsam-default}
-    ${gtsam_unstable-default})
-
-# Exclude tests that don't work
-#set (discrete_excluded_tests 
-#"${CMAKE_CURRENT_SOURCE_DIR}/tests/testScheduler.cpp"
-#)
-
-
 # Add all tests
-gtsam_add_subdir_tests(discrete_unstable "${discrete_full_libs}" "${discrete_full_libs}" "${discrete_excluded_tests}") 
-add_dependencies(check.unstable check.discrete_unstable)
+add_subdirectory(tests)
 
-# List examples to build - comment out here to exclude from compilation
-set(discrete_unstable_examples
-schedulingExample
-schedulingQuals12
-schedulingQuals13
-)
-
-if (GTSAM_BUILD_EXAMPLES)
-    foreach(example ${discrete_unstable_examples})
-    	add_executable(${example} "examples/${example}.cpp")
-    	
-    	# Disable building during make all/install
-        if (GTSAM_ENABLE_INSTALL_EXAMPLE_FIX)
-            set_target_properties(${example} PROPERTIES EXCLUDE_FROM_ALL ON)
-        endif()
-    	
-		if(NOT MSVC)
-			add_dependencies(examples ${example})
-			add_custom_target(${example}.run ${EXECUTABLE_OUTPUT_PATH}${example} ${ARGN})
-		endif()
-    	
-    	target_link_libraries(${example} ${gtsam-default} ${gtsam_unstable-default})
-    endforeach(example)
-endif (GTSAM_BUILD_EXAMPLES)
+# Add examples
+add_subdirectory(examples)

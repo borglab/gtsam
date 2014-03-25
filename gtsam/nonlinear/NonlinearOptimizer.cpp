@@ -55,8 +55,12 @@ void NonlinearOptimizer::defaultOptimize() {
   if (params.verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << currentError << endl;
 
   // Return if we already have too many iterations
-  if(this->iterations() >= params.maxIterations)
+  if(this->iterations() >= params.maxIterations){
+    if (params.verbosity >= NonlinearOptimizerParams::TERMINATION) {
+        cout << "iterations: " << this->iterations() << " >? " << params.maxIterations << endl;
+      }
     return;
+  }
 
   // Iterative loop
   do {
@@ -72,7 +76,7 @@ void NonlinearOptimizer::defaultOptimize() {
             params.errorTol, currentError, this->error(), params.verbosity));
 
   // Printing if verbose
-  if (params.verbosity >= NonlinearOptimizerParams::ERROR &&
+  if (params.verbosity >= NonlinearOptimizerParams::TERMINATION &&
       this->iterations() >= params.maxIterations)
     cout << "Terminating because reached maximum iterations" << endl;
 }
@@ -152,11 +156,16 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
   }
   bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold))
       || (absoluteDecrease <= absoluteErrorTreshold);
-  if (verbosity >= NonlinearOptimizerParams::ERROR && converged) {
+  if (verbosity >= NonlinearOptimizerParams::TERMINATION && converged) {
+
     if(absoluteDecrease >= 0.0)
       cout << "converged" << endl;
     else
       cout << "Warning:  stopping nonlinear iterations because error increased" << endl;
+
+    cout << "errorThreshold: " << newError << " <? " << errorThreshold << endl;
+    cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " <? " << absoluteErrorTreshold << endl;
+    cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " <? " << relativeErrorTreshold << endl;
   }
   return converged;
 }

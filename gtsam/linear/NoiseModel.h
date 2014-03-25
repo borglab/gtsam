@@ -585,6 +585,10 @@ namespace gtsam {
       virtual Matrix Whiten(const Matrix& H) const { return H; }
       virtual void WhitenInPlace(Matrix& H) const {}
       virtual void WhitenInPlace(Eigen::Block<Matrix> H) const {}
+      virtual void whitenInPlace(Vector& v) const {}
+      virtual void unwhitenInPlace(Vector& v) const {}
+      virtual void whitenInPlace(Eigen::Block<Vector>& v) const {}
+      virtual void unwhitenInPlace(Eigen::Block<Vector>& v) const {}
 
     private:
       /** Serialization function */

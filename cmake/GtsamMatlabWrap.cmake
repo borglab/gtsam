@@ -40,19 +40,28 @@ set(MATLAB_ROOT "${MATLAB_ROOT}" CACHE PATH "Path to MATLAB installation root (e
 
 
 # User-friendly wrapping function.  Builds a mex module from the provided
-# interfaceHeader.  For example, for the interface header /path/to/gtsam.h,
+# interfaceHeader.  For example, for the interface header gtsam.h,
 # this will build the wrap module 'gtsam'.
-# Params:
-#   interfaceHeader  : Absolute or relative path to the interface definition file
-#   linkLibraries    : All dependent CMake target names, library names, or full library paths
-#   extraIncludeDirs : Extra include directories, in addition to those already passed to include_directories(...)
-#   extraMexFlags    : Any additional compiler flags
+#
+# Arguments:
+#
+# interfaceHeader:  The relative path to the wrapper interface definition file.
+# linkLibraries:    Any *additional* libraries to link.  Your project library
+#                   (e.g. `lba`), libraries it depends on, and any necessary
+#                   MATLAB libraries will be linked automatically.  So normally,
+#                   leave this empty.
+# extraIncludeDirs: Any *additional* include paths required by dependent
+#                   libraries that have not already been added by
+#                   include_directories.  Again, normally, leave this empty.
+# extraMexFlags:    Any *additional* flags to pass to the compiler when building
+#                   the wrap code.  Normally, leave this empty.
 function(wrap_and_install_library interfaceHeader linkLibraries extraIncludeDirs extraMexFlags)
-	wrap_library_internal("${interfaceHeader}" "${otherLibraries}" "${extraIncludeDirs}" "${mexFlags}")
+	wrap_library_internal("${interfaceHeader}" "${linkLibraries}" "${extraIncludeDirs}" "${mexFlags}")
 	install_wrapped_library_internal("${interfaceHeader}")
 endfunction()
 
 
+# Internal function that wraps a library and compiles the wrapper
 function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs extraMexFlags)
 	if(UNIX AND NOT APPLE)
 		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -103,7 +112,8 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	# Add -shared or -static suffix to targets
 	set(correctedOtherLibraries "")
 	set(otherLibraryTargets "")
-	foreach(lib ${moduleName} ${otherLibraries})
+    set(otherLibraryNontargets "")
+	foreach(lib ${moduleName} ${linkLibraries})
 		if(TARGET ${lib})
 			list(APPEND correctedOtherLibraries ${lib})
 			list(APPEND otherLibraryTargets ${lib})
@@ -115,8 +125,20 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 			list(APPEND otherLibraryTargets ${lib}-static)
 		else()
 			list(APPEND correctedOtherLibraries ${lib})
+            list(APPEND otherLibraryNontargets ${lib})
 		endif()
 	endforeach()
+    
+    # Check libraries for conflicting versions built-in to MATLAB
+    set(dependentLibraries "")
+    if(NOT "${otherLibraryTargets}" STREQUAL "")
+        foreach(target ${otherLibraryTargets})
+            get_target_property(dependentLibrariesOne ${target} INTERFACE_LINK_LIBRARIES)
+            list(APPEND dependentLibraries ${dependentLibrariesOne})
+        endforeach()
+    endif()
+    list(APPEND dependentLibraries ${otherLibraryNontargets})
+    check_conflicting_libraries_internal("${dependentLibraries}")
 
 	# Set up generation of module source file
 	file(MAKE_DIRECTORY "${generated_files_path}")
@@ -174,6 +196,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 		COMMAND cmake -E remove_directory ${compiled_mex_modules_root})
 endfunction()
 
+# Internal function that installs a wrap toolbox
 function(install_wrapped_library_internal interfaceHeader)
 	get_filename_component(moduleName "${interfaceHeader}" NAME_WE)
 	set(generated_files_path "${PROJECT_BINARY_DIR}/wrap/${moduleName}")
@@ -205,53 +228,77 @@ function(install_wrapped_library_internal interfaceHeader)
 	endif()
 endfunction()
 
-
-# Function to setup codegen and building of the wrap toolbox
-#
-# params:
-#  moduleName       : the name of the module, interface file must be called moduleName.h
-#  mexFlags         : Compilation flags to be passed to the mex compiler 
-#  modulePath       : relative path to module markup header file (called moduleName.h)
-#  otherLibraries   : list of library targets this should depend on
-#  toolboxPath      : the directory in which to generate/build wrappers
-#  wrap_header_path : path to the installed wrap header  
-function(wrap_library_generic moduleName mexFlags modulePath otherLibraries toolbox_path wrap_header_path)
-
-	if(NOT "${CMAKE_PROJECT_NAME}" STREQUAL "GTSAM")
-		message("Your project uses wrap_library or wrap_library_generic - this is deprecated, please use the more user-friendly function wrap_and_install_library")
-	endif()
-
-	# Append module name to link libraries to keep original behavior
-	list(APPEND otherLibraries ${moduleName})
-	
-	# Set up arguments
-	set(interfaceHeader ${modulePath}/${moduleName}.h)
-	
-	# Call internal function
-	wrap_library_internal("${interfaceHeader}" "${otherLibraries}" "" "${mexFlags}")
-endfunction(wrap_library_generic)
-
-# Function to setup codegen, building and installation of the wrap toolbox
-# This wrap setup function assumes that the toolbox will be installed directly, 
-# with predictable matlab.h sourcing.  Use this version when the toolbox will be used
-# from the installed version, rather than in place.  
-# Assumes variable GTSAM_WRAP_HEADER_PATH has been set
-# params:
-#  moduleName      : the name of the module, interface file must be called moduleName.h
-#  mexFlags        : Compilation flags to be passed to the mex compiler 
-#  modulePath      : relative path to module markup header file (called moduleName.h)
-#  otherLibraries  : list of library targets this should depend on
-function(wrap_library moduleName mexFlags modulePath otherLibraries)
-    # Toolbox generation path goes in build folder
-    set(toolbox_base_path ${PROJECT_BINARY_DIR}/wrap)
-    set(toolbox_path ${toolbox_base_path}/${moduleName})
-    
-    # Call generic version of function
-    wrap_library_generic("${moduleName}" "${mexFlags}" "${modulePath}" "${otherLibraries}" "${toolbox_path}" "${GTSAM_WRAP_HEADER_PATH}")
-	
-	install_wrapped_library_internal("${modulePath}/${moduleName}.h")
-    
-endfunction(wrap_library)
+# Internal function to check for libraries installed with MATLAB that may conflict
+# and prints a warning to move them if problems occur.
+function(check_conflicting_libraries_internal libraries)
+    if(UNIX)
+        # Set path for matlab's built-in libraries
+        if(APPLE)
+            set(mxLibPath "${MATLAB_ROOT}/bin/maci64")
+        else()
+            if(CMAKE_CL_64)
+                set(mxLibPath "${MATLAB_ROOT}/bin/glnxa64")
+            else()
+                set(mxLibPath "${MATLAB_ROOT}/bin/glnx86")
+            endif()
+        endif()
+        
+        # List matlab's built-in libraries
+        file(GLOB matlabLibs RELATIVE "${mxLibPath}" "${mxLibPath}/lib*")
+        
+        # Convert to base names
+        set(matlabLibNames "")
+        foreach(lib ${matlabLibs})
+            get_filename_component(libName "${lib}" NAME_WE)
+            list(APPEND matlabLibNames "${libName}")
+        endforeach()
+        
+        # Get names of link libraries
+        set(linkLibNames "")
+        foreach(lib ${libraries})
+            string(FIND "${lib}" "/" slashPos)
+            if(NOT slashPos EQUAL -1)
+                # If the name is a path, just get the library name
+                get_filename_component(libName "${lib}" NAME_WE)
+                list(APPEND linkLibNames "${libName}")
+            else()
+                # It's not a path, so see if it looks like a filename
+                get_filename_component(ext "${lib}" EXT)
+                if(NOT "${ext}" STREQUAL "")
+                    # It's a filename, so get the base name
+                    get_filename_component(libName "${lib}" NAME_WE)
+                    list(APPEND linkLibNames "${libName}")
+                else()
+                    # It's not a filename so it must be a short name, add the "lib" prefix
+                    list(APPEND linkLibNames "lib${lib}")
+                endif()
+            endif()
+        endforeach()
+        
+        # Remove duplicates
+        list(REMOVE_DUPLICATES linkLibNames)
+        
+        set(conflictingLibs "")
+        foreach(lib ${linkLibNames})
+            list(FIND matlabLibNames "${lib}" libPos)
+            if(NOT libPos EQUAL -1)
+                if(NOT conflictingLibs STREQUAL "")
+                    set(conflictingLibs "${conflictingLibs}, ")
+                endif()
+                set(conflictingLibs "${conflictingLibs}${lib}")
+            endif()
+        endforeach()
+        
+        if(NOT "${conflictingLibs}" STREQUAL "")
+            message(WARNING "GTSAM links to the libraries [ ${conflictingLibs} ] on your system, but "
+                "MATLAB is distributed with its own versions of these libraries which may conflict. "
+                "If you get strange errors or crashes with the GTSAM MATLAB wrapper, move these "
+                "libraries out of MATLAB's built-in library directory, which is ${mxLibPath} on "
+                "your system.  MATLAB will usually still work with these libraries moved away, but "
+                "if not, you'll have to compile the static GTSAM MATLAB wrapper module.")
+        endif()
+    endif()
+endfunction()
 
 # Helper function to install MATLAB scripts and handle multiple build types where the scripts
 # should be installed to all build type toolboxes

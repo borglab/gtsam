@@ -131,19 +131,16 @@ TEST(JabobianFactor, Hessian_conversion) {
         1.57,        2.695,         -1.1,        -2.35,
        2.695,      11.3125,        -0.65,      -10.225,
         -1.1,        -0.65,            1,          0.5,
-       -2.35,      -10.225,          0.5,         9.25).finished(),
-      (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
+       -2.35,      -10.225,          0.5,         9.25),
+      (Vector(4) << -7.885, -28.5175, 2.75, 25.675),
       73.1725);
 
   JacobianFactor expected(0, (Matrix(2,4) <<
       1.2530,   2.1508,   -0.8779,  -1.8755,
-           0,   2.5858,    0.4789,  -2.3943).finished(),
-      (Vector(2) << -6.2929, -5.7941).finished(),
-      noiseModel::Unit::Create(2));
+           0,   2.5858,    0.4789,  -2.3943),
+      (Vector(2) << -6.2929, -5.7941));
 
-  JacobianFactor actual(hessian);
-
-  EXPECT(assert_equal(expected, actual, 1e-3));
+  EXPECT(assert_equal(expected, JacobianFactor(hessian), 1e-3));
 }
 
 /* ************************************************************************* */
@@ -205,8 +202,53 @@ TEST(JacobianFactor, error)
 }
 
 /* ************************************************************************* */
+TEST(JacobianFactor, matrices_NULL)
+{
+  // Make sure everything works with NULL noise model
+  JacobianFactor factor(simple::terms, simple::b);
+
+  Matrix jacobianExpected(3, 9);
+  jacobianExpected << simple::terms[0].second, simple::terms[1].second, simple::terms[2].second;
+  Vector rhsExpected = simple::b;
+  Matrix augmentedJacobianExpected(3, 10);
+  augmentedJacobianExpected << jacobianExpected, rhsExpected;
+
+  Matrix augmentedHessianExpected =
+    augmentedJacobianExpected.transpose() * augmentedJacobianExpected;
+
+  // Hessian
+  EXPECT(assert_equal(Matrix(augmentedHessianExpected.topLeftCorner(9,9)), factor.information()));
+  EXPECT(assert_equal(augmentedHessianExpected, factor.augmentedInformation()));
+
+  // Whitened Jacobian
+  EXPECT(assert_equal(jacobianExpected, factor.jacobian().first));
+  EXPECT(assert_equal(rhsExpected, factor.jacobian().second));
+  EXPECT(assert_equal(augmentedJacobianExpected, factor.augmentedJacobian()));
+
+  // Unwhitened Jacobian
+  EXPECT(assert_equal(jacobianExpected, factor.jacobianUnweighted().first));
+  EXPECT(assert_equal(rhsExpected, factor.jacobianUnweighted().second));
+  EXPECT(assert_equal(augmentedJacobianExpected, factor.augmentedJacobianUnweighted()));
+
+  // hessianDiagonal
+  VectorValues expectDiagonal;
+  expectDiagonal.insert(5, ones(3));
+  expectDiagonal.insert(10, 4*ones(3));
+  expectDiagonal.insert(15, 9*ones(3));
+  EXPECT(assert_equal(expectDiagonal, factor.hessianDiagonal()));
+
+  // hessianBlockDiagonal
+  map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();
+  LONGS_EQUAL(3,actualBD.size());
+  EXPECT(assert_equal(1*eye(3),actualBD[5]));
+  EXPECT(assert_equal(4*eye(3),actualBD[10]));
+  EXPECT(assert_equal(9*eye(3),actualBD[15]));
+}
+
+/* ************************************************************************* */
 TEST(JacobianFactor, matrices)
 {
+  // And now witgh a non-unit noise model
   JacobianFactor factor(simple::terms, simple::b, simple::noise);
 
   Matrix jacobianExpected(3, 9);
@@ -232,6 +274,21 @@ TEST(JacobianFactor, matrices)
   EXPECT(assert_equal(jacobianExpected, factor.jacobianUnweighted().first));
   EXPECT(assert_equal(rhsExpected, factor.jacobianUnweighted().second));
   EXPECT(assert_equal(augmentedJacobianExpected, factor.augmentedJacobianUnweighted()));
+
+  // hessianDiagonal
+  VectorValues expectDiagonal;
+  // below we divide by the variance 0.5^2
+  expectDiagonal.insert(5, (Vector(3) << 1, 1, 1)/0.25);
+  expectDiagonal.insert(10, (Vector(3) << 4, 4, 4)/0.25);
+  expectDiagonal.insert(15, (Vector(3) << 9, 9, 9)/0.25);
+  EXPECT(assert_equal(expectDiagonal, factor.hessianDiagonal()));
+
+  // hessianBlockDiagonal
+  map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();
+  LONGS_EQUAL(3,actualBD.size());
+  EXPECT(assert_equal(4*eye(3),actualBD[5]));
+  EXPECT(assert_equal(16*eye(3),actualBD[10]));
+  EXPECT(assert_equal(36*eye(3),actualBD[15]));
 }
 
 /* ************************************************************************* */

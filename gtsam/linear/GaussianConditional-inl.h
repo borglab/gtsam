@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <boost/range/join.hpp>
-#include <boost/assign/list_of.hpp>
-
 namespace gtsam {
 
   /* ************************************************************************* */

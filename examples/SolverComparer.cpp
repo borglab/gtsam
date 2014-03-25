@@ -95,6 +95,7 @@ int lastStep;
 int nThreads;
 int relinSkip;
 bool incremental;
+bool dogleg;
 bool batch;
 bool compare;
 bool perturb;
@@ -126,6 +127,7 @@ int main(int argc, char *argv[]) {
     ("threads", po::value<int>(&nThreads)->default_value(-1), "Number of threads, or -1 to use all processors")
     ("relinSkip", po::value<int>(&relinSkip)->default_value(10), "Fluid relinearization check every arg steps")
     ("incremental", "Run in incremental mode using ISAM2 (default)")
+    ("dogleg", "When in incremental mode, solve with Dogleg instead of Gauss-Newton in iSAM2")
     ("batch", "Run in batch mode, requires an initialization from --read-solution")
     ("compare", po::value<vector<string> >()->multitoken(), "Compare two solution files")
     ("perturb", po::value<double>(&perturbationNoise), "Perturb a solution file with the specified noise")
@@ -141,6 +143,7 @@ int main(int argc, char *argv[]) {
   stats = (vm.count("stats") > 0);
   const int modesSpecified = int(batch) + int(compare) + int(perturb) + int(stats);
   incremental = (vm.count("incremental") > 0 || modesSpecified == 0);
+  dogleg = (vm.count("dogleg") > 0);
   if(compare) {
     const vector<string>& compareFiles = vm["compare"].as<vector<string> >();
     if(compareFiles.size() != 2) {
@@ -233,6 +236,8 @@ int main(int argc, char *argv[]) {
 void runIncremental()
 {
   ISAM2Params params;
+  if(dogleg)
+    params.optimizationParams = ISAM2DoglegParams();
   params.relinearizeSkip = relinSkip;
   params.enablePartialRelinearizationCheck = true;
   ISAM2 isam2(params);
@@ -536,8 +541,8 @@ void runCompare()
 void runPerturb()
 {
   // Set up random number generator
-  boost::random::mt19937 rng;
-  boost::random::normal_distribution<double> normal(0.0, perturbationNoise);
+  boost::mt19937 rng;
+  boost::normal_distribution<double> normal(0.0, perturbationNoise);
 
   // Perturb values
   VectorValues noise;

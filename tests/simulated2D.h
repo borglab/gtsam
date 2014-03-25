@@ -83,43 +83,41 @@ namespace simulated2D {
     }
   };
 
-  namespace {
-    /// Prior on a single pose
-    inline Point2 prior(const Point2& x) {
-      return x;
-    }
+  /// Prior on a single pose
+  inline Point2 prior(const Point2& x) {
+    return x;
+  }
 
-    /// Prior on a single pose, optionally returns derivative
-    Point2 prior(const Point2& x, boost::optional<Matrix&> H = boost::none) {
-      if (H) *H = gtsam::eye(2);
-      return x;
-    }
+  /// Prior on a single pose, optionally returns derivative
+  inline Point2 prior(const Point2& x, boost::optional<Matrix&> H = boost::none) {
+    if (H) *H = gtsam::eye(2);
+    return x;
+  }
 
-    /// odometry between two poses
-    inline Point2 odo(const Point2& x1, const Point2& x2) {
+  /// odometry between two poses
+  inline Point2 odo(const Point2& x1, const Point2& x2) {
+    return x2 - x1;
+  }
+
+  /// odometry between two poses, optionally returns derivative
+  inline Point2 odo(const Point2& x1, const Point2& x2, boost::optional<Matrix&> H1 =
+    boost::none, boost::optional<Matrix&> H2 = boost::none) {
+      if (H1) *H1 = -gtsam::eye(2);
+      if (H2) *H2 = gtsam::eye(2);
       return x2 - x1;
-    }
+  }
 
-    /// odometry between two poses, optionally returns derivative
-    Point2 odo(const Point2& x1, const Point2& x2, boost::optional<Matrix&> H1 =
-      boost::none, boost::optional<Matrix&> H2 = boost::none) {
-        if (H1) *H1 = -gtsam::eye(2);
-        if (H2) *H2 = gtsam::eye(2);
-        return x2 - x1;
-    }
+  /// measurement between landmark and pose
+  inline Point2 mea(const Point2& x, const Point2& l) {
+    return l - x;
+  }
 
-    /// measurement between landmark and pose
-    inline Point2 mea(const Point2& x, const Point2& l) {
+  /// measurement between landmark and pose, optionally returns derivative
+  inline Point2 mea(const Point2& x, const Point2& l, boost::optional<Matrix&> H1 =
+    boost::none, boost::optional<Matrix&> H2 = boost::none) {
+      if (H1) *H1 = -gtsam::eye(2);
+      if (H2) *H2 = gtsam::eye(2);
       return l - x;
-    }
-
-    /// measurement between landmark and pose, optionally returns derivative
-    Point2 mea(const Point2& x, const Point2& l, boost::optional<Matrix&> H1 =
-      boost::none, boost::optional<Matrix&> H2 = boost::none) {
-        if (H1) *H1 = -gtsam::eye(2);
-        if (H2) *H2 = gtsam::eye(2);
-        return l - x;
-    }
   }
 
   /**

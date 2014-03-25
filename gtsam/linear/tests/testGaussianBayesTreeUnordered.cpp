@@ -114,39 +114,39 @@ TEST(GaussianBayesTree, complicatedMarginal) {
   // Create the conditionals to go in the BayesTree
   GaussianBayesTree bt;
   bt.insertRoot(
-    MakeClique(GaussianConditional(pair_list_of (11, (Matrix(3,1) << 0.0971, 0, 0).finished())
-                                                         (12, (Matrix(3,2) << 0.3171, 0.4387,  0.9502, 0.3816,  0, 0.7655).finished()),
-                                            2, (Vector(3) << 0.2638, 0.1455, 0.1361).finished()), list_of
-      (MakeClique(GaussianConditional(pair_list_of (9, (Matrix(3,1) << 0.7952, 0, 0).finished())
-                                                            (10, (Matrix(3,2) << 0.4456, 0.7547, 0.6463, 0.2760, 0, 0.6797).finished())
-                                                            (11, (Matrix(3,1) << 0.6551, 0.1626, 0.1190).finished())
-                                                            (12, (Matrix(3,2) << 0.4984, 0.5853, 0.9597, 0.2238, 0.3404, 0.7513).finished()),
-                                               2, (Vector(3) << 0.4314, 0.9106, 0.1818).finished())))
-      (MakeClique(GaussianConditional(pair_list_of (7, (Matrix(3,1) << 0.2551, 0, 0).finished())
-                                                            (8, (Matrix(3,2) << 0.8909, 0.1386, 0.9593, 0.1493, 0, 0.2575).finished())
-                                                            (11, (Matrix(3,1) << 0.8407, 0.2543, 0.8143).finished()),
-                                               2, (Vector(3) << 0.3998, 0.2599, 0.8001).finished()), list_of
-          (MakeClique(GaussianConditional(pair_list_of (5, (Matrix(3,1) << 0.2435, 0, 0).finished())
-                                                                (6, (Matrix(3,2) << 0.4733, 0.1966, 0.3517, 0.2511, 0.8308,    0.0).finished())
+    MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (11, (Matrix(3,1) << 0.0971, 0, 0)) 
+                                                         (12, (Matrix(3,2) << 0.3171, 0.4387,  0.9502, 0.3816,  0, 0.7655)),
+                                            2, (Vector(3) << 0.2638, 0.1455, 0.1361)), list_of
+      (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (9, (Matrix(3,1) << 0.7952, 0, 0))
+                                                            (10, (Matrix(3,2) << 0.4456, 0.7547, 0.6463, 0.2760, 0, 0.6797))
+                                                            (11, (Matrix(3,1) << 0.6551, 0.1626, 0.1190))
+                                                            (12, (Matrix(3,2) << 0.4984, 0.5853, 0.9597, 0.2238, 0.3404, 0.7513)),
+                                               2, (Vector(3) << 0.4314, 0.9106, 0.1818))))
+      (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (7, (Matrix(3,1) << 0.2551, 0, 0))
+                                                            (8, (Matrix(3,2) << 0.8909, 0.1386, 0.9593, 0.1493, 0, 0.2575))
+                                                            (11, (Matrix(3,1) << 0.8407, 0.2543, 0.8143)),
+                                               2, (Vector(3) << 0.3998, 0.2599, 0.8001)), list_of
+          (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (5, (Matrix(3,1) << 0.2435, 0, 0))
+                                                                (6, (Matrix(3,2) << 0.4733, 0.1966, 0.3517, 0.2511, 0.8308,    0.0))
                                                                 // NOTE the non-upper-triangular form
                                                                 // here since this test was written when we had column permutations
                                                                 // from LDL.  The code still works currently (does not enfore
                                                                 // upper-triangularity in this case) but this test will need to be
                                                                 // redone if this stops working in the future
-                                                                (7, (Matrix(3,1) << 0.5853, 0.5497, 0.9172).finished())
-                                                                (8, (Matrix(3,2) << 0.2858, 0.3804, 0.7572, 0.5678, 0.7537, 0.0759).finished()),
-                                                  2, (Vector(3) << 0.8173, 0.8687, 0.0844).finished()), list_of
-              (MakeClique(GaussianConditional(pair_list_of (3, (Matrix(3,1) << 0.0540, 0, 0).finished())
-                                                                    (4, (Matrix(3,2) << 0.9340, 0.4694, 0.1299, 0.0119, 0, 0.3371).finished())
-                                                                    (6, (Matrix(3,2) << 0.1622, 0.5285, 0.7943, 0.1656, 0.3112, 0.6020).finished()),
-                                                      2, (Vector(3) << 0.9619, 0.0046, 0.7749).finished())))
-              (MakeClique(GaussianConditional(pair_list_of (1, (Matrix(3,1) << 0.2630, 0, 0).finished())
-                                                                    (2, (Matrix(3,2) << 0.7482, 0.2290, 0.4505, 0.9133, 0, 0.1524).finished())
-                                                                    (5, (Matrix(3,1) << 0.8258, 0.5383, 0.9961).finished()),
-                                                      2, (Vector(3) << 0.0782, 0.4427, 0.1067).finished())))))))));
+                                                                (7, (Matrix(3,1) << 0.5853, 0.5497, 0.9172))
+                                                                (8, (Matrix(3,2) << 0.2858, 0.3804, 0.7572, 0.5678, 0.7537, 0.0759)),
+                                                  2, (Vector(3) << 0.8173, 0.8687, 0.0844)), list_of
+              (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (3, (Matrix(3,1) << 0.0540, 0, 0))
+                                                                    (4, (Matrix(3,2) << 0.9340, 0.4694, 0.1299, 0.0119, 0, 0.3371))
+                                                                    (6, (Matrix(3,2) << 0.1622, 0.5285, 0.7943, 0.1656, 0.3112, 0.6020)),
+                                                      2, (Vector(3) << 0.9619, 0.0046, 0.7749))))
+              (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (1, (Matrix(3,1) << 0.2630, 0, 0))
+                                                                    (2, (Matrix(3,2) << 0.7482, 0.2290, 0.4505, 0.9133, 0, 0.1524))
+                                                                    (5, (Matrix(3,1) << 0.8258, 0.5383, 0.9961)),
+                                                      2, (Vector(3) << 0.0782, 0.4427, 0.1067))))))))));
 
   // Marginal on 5
-  Matrix expectedCov = (Matrix(1,1) << 236.5166).finished();
+  Matrix expectedCov = (Matrix(1,1) << 236.5166);
   //GaussianConditional actualJacobianChol = *bt.marginalFactor(5, EliminateCholesky);
   GaussianConditional actualJacobianQR = *bt.marginalFactor(5, EliminateQR);
   //EXPECT(assert_equal(actualJacobianChol, actualJacobianQR)); // Check that Chol and QR obtained marginals are the same
@@ -160,10 +160,10 @@ TEST(GaussianBayesTree, complicatedMarginal) {
   // Marginal on 6
 //  expectedCov = (Matrix(2,2) <<
 //      8471.2, 2886.2,
-//      2886.2, 1015.8).finished();
+//      2886.2, 1015.8);
   expectedCov = (Matrix(2,2) <<
       1015.8,    2886.2,
-      2886.2,    8471.2).finished();
+      2886.2,    8471.2);
   //actualJacobianChol = bt.marginalFactor(6, EliminateCholesky);
   actualJacobianQR = *bt.marginalFactor(6, EliminateQR);
   //EXPECT(assert_equal(actualJacobianChol, actualJacobianQR)); // Check that Chol and QR obtained marginals are the same

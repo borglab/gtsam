@@ -10,11 +10,7 @@ if(NOT FIRST_PASS_DONE AND NOT CMAKE_BUILD_TYPE AND NOT MSVC AND NOT XCODE_VERSI
 endif()
 
 # Add option for using build type postfixes to allow installing multiple build modes
-if(MSVC OR XCODE_VERSION)
-  option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
-else()
-  option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" OFF)
-endif()
+option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
 
 # Add debugging flags but only on the first pass
 if(NOT FIRST_PASS_DONE)
@@ -66,7 +62,7 @@ endif()
 
 # Set up build type library postfixes
 if(GTSAM_BUILD_TYPE_POSTFIXES)
-	foreach(build_type Debug Timing RelWithDebInfo MinSizeRel)
+	foreach(build_type Debug Timing Profiling RelWithDebInfo MinSizeRel)
 		string(TOUPPER "${build_type}" build_type_toupper)
 		set(CMAKE_${build_type_toupper}_POSTFIX ${build_type})
 	endforeach()
@@ -106,7 +102,7 @@ if(    NOT cmake_build_type_tolower STREQUAL ""
 endif()
 
 # Mark that first pass is done
-set(FIRST_PASS_DONE TRUE CACHE BOOL "Internally used to mark whether cmake has been run multiple times" FORCE)
+set(FIRST_PASS_DONE TRUE CACHE INTERNAL "Internally used to mark whether cmake has been run multiple times")
 mark_as_advanced(FIRST_PASS_DONE) 
 
 # Enable Visual Studio solution folders

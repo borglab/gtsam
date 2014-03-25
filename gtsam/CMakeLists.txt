@@ -95,42 +95,40 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 # build shared and static versions of the library
 if (GTSAM_BUILD_STATIC_LIBRARY)
     message(STATUS "Building GTSAM - static")
-    add_library(gtsam-static STATIC ${gtsam_srcs})
-	target_link_libraries(gtsam-static ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
-    set_target_properties(gtsam-static PROPERTIES 
+    add_library(gtsam STATIC ${gtsam_srcs})
+	target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
+    set_target_properties(gtsam PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
 	if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
-		set_target_properties(gtsam-static PROPERTIES
+		set_target_properties(gtsam PROPERTIES
 			PREFIX "lib"
 			COMPILE_DEFINITIONS GTSAM_IMPORT_STATIC)
 	endif()
-    install(TARGETS gtsam-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
-    list(APPEND GTSAM_EXPORTED_TARGETS gtsam-static)
+    install(TARGETS gtsam EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
-endif ()
-
-if (GTSAM_BUILD_SHARED_LIBRARY)
+else()
     message(STATUS "Building GTSAM - shared")
-    add_library(gtsam-shared SHARED ${gtsam_srcs})
-	target_link_libraries(gtsam-shared ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
-    set_target_properties(gtsam-shared PROPERTIES 
+    add_library(gtsam SHARED ${gtsam_srcs})
+    target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
+    set_target_properties(gtsam PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
 	if(WIN32)
-		set_target_properties(gtsam-shared PROPERTIES
+		set_target_properties(gtsam PROPERTIES
 			PREFIX ""
 			DEFINE_SYMBOL GTSAM_EXPORTS
 			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 	endif()
-    install(TARGETS gtsam-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
-    list(APPEND GTSAM_EXPORTED_TARGETS gtsam-shared)
+    install(TARGETS gtsam EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
-endif(GTSAM_BUILD_SHARED_LIBRARY)
+endif()
 
 # Set dataset paths
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
@@ -153,10 +151,10 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     
     # Generate, build and install toolbox
     set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-	if("${gtsam-default}" STREQUAL "gtsam-static")
+	if(GTSAM_BUILD_STATIC_LIBRARY)
 		list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 	endif()
 
     # Wrap
-    wrap_and_install_library(../gtsam.h "${gtsam-default};${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
+    wrap_and_install_library(../gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
 endif ()

@@ -135,11 +135,15 @@ namespace gtsam {
     typedef FastSet<Key> Keys;
     Keys keys() const;
 
+    std::vector<size_t> getkeydim() const;
+
     /** unnormalized error */
     double error(const VectorValues& x) const {
       double total_error = 0.;
-      BOOST_FOREACH(const sharedFactor& factor, *this)
-        total_error += factor->error(x);
+      BOOST_FOREACH(const sharedFactor& factor, *this){
+        if(factor)
+          total_error += factor->error(x);
+      }
       return total_error;
     }
 
@@ -219,6 +223,12 @@ namespace gtsam {
      */
     std::pair<Matrix,Vector> hessian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
 
+    /** Return only the diagonal of the Hessian A'*A, as a VectorValues */
+    virtual VectorValues hessianDiagonal() const;
+
+    /** Return the block diagonal of the Hessian for this factor */
+    virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
+
     /** Solve the factor graph by performing multifrontal variable elimination in COLAMD order using
      *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
      *  followed by back-substitution in the Bayes tree resulting from elimination.  Is equivalent
@@ -287,6 +297,10 @@ namespace gtsam {
     ///** y += alpha*A'A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x,
         VectorValues& y) const;
+
+    ///** y += alpha*A'A*x */
+    void multiplyHessianAdd(double alpha, const double* x,
+        double* y) const;
 
     ///** In-place version e <- A*x that overwrites e. */
     void multiplyInPlace(const VectorValues& x, Errors& e) const;

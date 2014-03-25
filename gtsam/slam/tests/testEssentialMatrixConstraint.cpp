@@ -34,7 +34,7 @@ TEST( EssentialMatrixConstraint, test ) {
   Key poseKey2(2);
   Rot3 trueRotation = Rot3::RzRyRx(0.15, 0.15, -0.20);
   Point3 trueTranslation(+0.5, -1.0, +1.0);
-  Sphere2 trueDirection(trueTranslation);
+  Unit3 trueDirection(trueTranslation);
   EssentialMatrix measurement(trueRotation, trueDirection);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(5, 0.25);
   EssentialMatrixConstraint factor(poseKey1, poseKey2, measurement, model);

@@ -19,8 +19,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 
-//#include <gtsam/linear/GaussianSequentialSolver.h>
-
 
 using namespace std;
 using namespace gtsam;

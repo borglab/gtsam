@@ -186,7 +186,7 @@ public:
 
   /// Unretraction for the calibration
   Vector localCoordinates(const Cal3_S2& T2) const {
-    return vector() - T2.vector();
+    return T2.vector() - vector();
   }
 
   /// @}

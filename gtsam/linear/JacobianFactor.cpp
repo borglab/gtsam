@@ -131,7 +131,7 @@ namespace gtsam {
         Matrix::Zero(maxrank, Ab_.matrix().cols());
     // FIXME: replace with triangular system
     Ab_.rowEnd() = maxrank;
-    model_ = noiseModel::Unit::Create(maxrank);
+    model_ = SharedDiagonal(); // should be same as Unit::Create(maxrank);
   }
 
   /* ************************************************************************* */
@@ -283,7 +283,7 @@ namespace gtsam {
 
     // Allocate matrix and copy keys in order
     gttic(allocate);
-    Ab_ = VerticalBlockMatrix(boost::join(varDims, ListOfOne((DenseIndex)1)), m); // Allocate augmented matrix
+    Ab_ = VerticalBlockMatrix(varDims, m, true); // Allocate augmented matrix
     Base::keys_.resize(orderedSlots.size());
     boost::range::copy(    // Get variable keys
       orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys, Base::keys_.begin());
@@ -439,6 +439,37 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues JacobianFactor::hessianDiagonal() const {
+    VectorValues d;
+    for(size_t pos=0; pos<size(); ++pos)
+    {
+      Key j = keys_[pos];
+      size_t nj = Ab_(pos).cols();
+      Vector dj(nj);
+      for (size_t k = 0; k < nj; ++k) {
+        Vector column_k = Ab_(pos).col(k);
+        if (model_) column_k = model_->whiten(column_k);
+        dj(k) = dot(column_k,column_k);
+      }
+      d.insert(j,dj);
+    }
+    return d;
+  }
+
+  /* ************************************************************************* */
+  map<Key,Matrix> JacobianFactor::hessianBlockDiagonal() const {
+    map<Key,Matrix> blocks;
+    for(size_t pos=0; pos<size(); ++pos)
+    {
+      Key j = keys_[pos];
+      Matrix Aj = Ab_(pos);
+      if (model_) Aj = model_->Whiten(Aj);
+      blocks.insert(make_pair(j,Aj.transpose()*Aj));
+    }
+    return blocks;
+  }
+
+  /* ************************************************************************* */
   Vector JacobianFactor::operator*(const VectorValues& x) const {
     Vector Ax = zero(Ab_.rows());
     if (empty()) return Ax;
@@ -458,11 +489,13 @@ namespace gtsam {
     // Just iterate over all A matrices and insert Ai^e into VectorValues
     for(size_t pos=0; pos<size(); ++pos)
     {
+      Key j = keys_[pos];
       // Create the value as a zero vector if it does not exist.
-      pair<VectorValues::iterator, bool> xi = x.tryInsert(keys_[pos], Vector());
+      pair<VectorValues::iterator, bool> xi = x.tryInsert(j, Vector());
       if(xi.second)
         xi.first->second = Vector::Zero(getDim(begin() + pos));
       gtsam::transposeMultiplyAdd(Ab_(pos), E, xi.first->second);
+
     }
   }
 
@@ -471,6 +504,32 @@ namespace gtsam {
       VectorValues& y) const {
     Vector Ax = (*this)*x;
     transposeMultiplyAdd(alpha,Ax,y);
+  }
+
+  void JacobianFactor::multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const {
+
+	  // Use eigen magic to access raw memory
+	  typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
+	  typedef Eigen::Map<DVector> DMap;
+	  typedef Eigen::Map<const DVector> ConstDMap;
+
+	  if (empty()) return;
+	     Vector Ax = zero(Ab_.rows());
+
+	     // Just iterate over all A matrices and multiply in correct config part
+	     for(size_t pos=0; pos<size(); ++pos)
+	       Ax += Ab_(pos) * ConstDMap(x + keys[keys_[pos]],keys[keys_[pos]+1]-keys[keys_[pos]]);
+
+	     // Deal with noise properly, need to Double* whiten as we are dividing by variance
+	     if  (model_) { model_->whitenInPlace(Ax); model_->whitenInPlace(Ax); }
+
+	     // multiply with alpha
+	     Ax *= alpha;
+
+	     // Again iterate over all A matrices and insert Ai^e into y
+	     for(size_t pos=0; pos<size(); ++pos)
+	       DMap(y + keys[keys_[pos]],keys[keys_[pos]+1]-keys[keys_[pos]]) += Ab_(pos).transpose() * Ax;
+
   }
 
   /* ************************************************************************* */

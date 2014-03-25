@@ -371,9 +371,7 @@ void BatchFixedLagSmoother::marginalize(const std::set<Key>& marginalizeKeys) {
   VariableIndex variableIndex(factors_);
   BOOST_FOREACH(Key key, marginalizeKeys) {
     const FastList<size_t>& slots = variableIndex[key];
-    BOOST_FOREACH(size_t slot, slots) {
-      removedFactorSlots.insert(slot);
-    }
+    removedFactorSlots.insert(slots.begin(), slots.end());
   }
 
   if(debug) {

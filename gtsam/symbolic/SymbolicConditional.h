@@ -69,12 +69,30 @@ namespace gtsam {
       SymbolicConditional result;
       (BaseFactor&)result = BaseFactor::FromIterators(firstKey, lastKey);
       result.nrFrontals_ = nrFrontals;
-      return result; }
+      return result;
+    }
+
+    /** Named constructor from an arbitrary number of keys and frontals */
+    template<typename ITERATOR>
+    static SymbolicConditional::shared_ptr FromIteratorsShared(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals)
+    {
+      SymbolicConditional::shared_ptr result = boost::make_shared<SymbolicConditional>();
+      result->keys_.assign(firstKey, lastKey);
+      result->nrFrontals_ = nrFrontals;
+      return result;
+    }
 
     /** Named constructor from an arbitrary number of keys and frontals */
     template<class CONTAINER>
     static SymbolicConditional FromKeys(const CONTAINER& keys, size_t nrFrontals) {
-      return FromIterators(keys.begin(), keys.end(), nrFrontals); }
+      return FromIterators(keys.begin(), keys.end(), nrFrontals);
+    }
+
+    /** Named constructor from an arbitrary number of keys and frontals */
+    template<class CONTAINER>
+    static SymbolicConditional::shared_ptr FromKeysShared(const CONTAINER& keys, size_t nrFrontals) {
+      return FromIteratorsShared(keys.begin(), keys.end(), nrFrontals);
+    }
 
     virtual ~SymbolicConditional() {}
 

@@ -53,7 +53,7 @@ KalmanFilter::solve(const GaussianFactorGraph& factorGraph) const {
 /* ************************************************************************* */
 // Auxiliary function to create a small graph for predict or update and solve
 KalmanFilter::State //
-KalmanFilter::fuse(const State& p, GaussianFactor::shared_ptr newFactor) {
+KalmanFilter::fuse(const State& p, GaussianFactor::shared_ptr newFactor) const {
 
   // Create a factor graph
   GaussianFactorGraph factorGraph;
@@ -65,7 +65,7 @@ KalmanFilter::fuse(const State& p, GaussianFactor::shared_ptr newFactor) {
 
 /* ************************************************************************* */
 KalmanFilter::State KalmanFilter::init(const Vector& x0,
-    const SharedDiagonal& P0) {
+    const SharedDiagonal& P0) const {
 
   // Create a factor graph f(x0), eliminate it into P(x0)
   GaussianFactorGraph factorGraph;
@@ -74,7 +74,7 @@ KalmanFilter::State KalmanFilter::init(const Vector& x0,
 }
 
 /* ************************************************************************* */
-KalmanFilter::State KalmanFilter::init(const Vector& x, const Matrix& P0) {
+KalmanFilter::State KalmanFilter::init(const Vector& x, const Matrix& P0) const {
 
   // Create a factor graph f(x0), eliminate it into P(x0)
   GaussianFactorGraph factorGraph;
@@ -89,7 +89,7 @@ void KalmanFilter::print(const string& s) const {
 
 /* ************************************************************************* */
 KalmanFilter::State KalmanFilter::predict(const State& p, const Matrix& F,
-    const Matrix& B, const Vector& u, const SharedDiagonal& model) {
+    const Matrix& B, const Vector& u, const SharedDiagonal& model) const {
 
   // The factor related to the motion model is defined as
   // f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
@@ -100,7 +100,7 @@ KalmanFilter::State KalmanFilter::predict(const State& p, const Matrix& F,
 
 /* ************************************************************************* */
 KalmanFilter::State KalmanFilter::predictQ(const State& p, const Matrix& F,
-    const Matrix& B, const Vector& u, const Matrix& Q) {
+    const Matrix& B, const Vector& u, const Matrix& Q) const {
 
 #ifndef NDEBUG
   DenseIndex n = F.cols();
@@ -126,7 +126,7 @@ KalmanFilter::State KalmanFilter::predictQ(const State& p, const Matrix& F,
 
 /* ************************************************************************* */
 KalmanFilter::State KalmanFilter::predict2(const State& p, const Matrix& A0,
-    const Matrix& A1, const Vector& b, const SharedDiagonal& model) {
+    const Matrix& A1, const Vector& b, const SharedDiagonal& model) const {
   // Nhe factor related to the motion model is defined as
   // f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
   Key k = step(p);
@@ -135,7 +135,7 @@ KalmanFilter::State KalmanFilter::predict2(const State& p, const Matrix& A0,
 
 /* ************************************************************************* */
 KalmanFilter::State KalmanFilter::update(const State& p, const Matrix& H,
-    const Vector& z, const SharedDiagonal& model) {
+    const Vector& z, const SharedDiagonal& model) const {
   // The factor related to the measurements would be defined as
   // f2 = (h(x_{t}) - z_{t}) * R^-1 * (h(x_{t}) - z_{t})^T
   //    = (x_{t} - z_{t}) * R^-1 * (x_{t} - z_{t})^T
@@ -145,7 +145,7 @@ KalmanFilter::State KalmanFilter::update(const State& p, const Matrix& H,
 
 /* ************************************************************************* */
 KalmanFilter::State KalmanFilter::updateQ(const State& p, const Matrix& H,
-    const Vector& z, const Matrix& Q) {
+    const Vector& z, const Matrix& Q) const {
   Key k = step(p);
   Matrix M = inverse(Q), Ht = trans(H);
   Matrix G = Ht * M * H;

@@ -352,6 +352,20 @@ virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
   void serializable() const; // enabling serialization functionality
 };
 
+#include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactor.h>
+template<T = {gtsam::Pose2}>
+virtual class TransformBtwRobotsUnaryFactor : gtsam::NonlinearFactor {
+  TransformBtwRobotsUnaryFactor(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+      const gtsam::Values& valA, const gtsam::Values& valB,
+      const gtsam::noiseModel::Gaussian* model);
+
+  Vector whitenedError(const gtsam::Values& x);
+  Vector unwhitenedError(const gtsam::Values& x);
+  void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
+
+  void serializable() const; // enabling serialization functionality
+};
+
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
   SmartRangeFactor(double s);
