@@ -260,7 +260,7 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements )
   EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc));
   EXPECT(assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega));
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3,3)));
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega));
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega, 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
 }
 
 #include <gtsam/linear/GaussianFactorGraph.h>
