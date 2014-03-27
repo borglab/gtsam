@@ -64,8 +64,7 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
   // is same as Cal3DS2
 
   // parameters
-  const double xi = xi_, fx = fx_, fy = fy_, s = s_;
-  const double k1 = k1_, k2 = k2_, k3 = k3_, k4 = k4_;
+  const double xi = xi_;
 
   // Part1: project 3D space to NPlane
   const double xs = p.x(), ys = p.y();  // normalized points in 3D space
@@ -74,51 +73,19 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
   const double xi_sqrt_nx2 = xi_sqrt_nx * xi_sqrt_nx;
   const double x = xs * xi_sqrt_nx, y = ys * xi_sqrt_nx; // points on NPlane
 
-  // Part2: project NPlane point to pixel plane: same as Cal3DS2
-  const double xy = x * y, xx = x * x, yy = y * y;
-  const double rr = xx + yy;
-  const double r4 = rr * rr;
-  const double g = 1. + k1 * rr + k2 * r4;
-  const double dx = 2. * k3 * xy + k4 * (rr + 2. * xx);
-  const double dy = 2. * k4 * xy + k3 * (rr + 2. * yy);
-
-  const double pnx = g*x + dx;
-  const double pny = g*y + dy;
-
-  // DDS2 will be used both in H1 and H2
-  Matrix DDS2;
-  if (H1 || H2) {
-    // part2
-    const double dr_dx = 2. * x;
-    const double dr_dy = 2. * y;
-    const double dg_dx = k1 * dr_dx + k2 * 2. * rr * dr_dx;
-    const double dg_dy = k1 * dr_dy + k2 * 2. * rr * dr_dy;
-
-    const double dDx_dx = 2. * k3 * y + k4 * (dr_dx + 4. * x);
-    const double dDx_dy = 2. * k3 * x + k4 * dr_dy;
-    const double dDy_dx = 2. * k4 * y + k3 * dr_dx;
-    const double dDy_dy = 2. * k4 * x + k3 * (dr_dy + 4. * y);
-
-    Matrix DK = (Matrix(2, 2) << fx, s_, 0.0, fy);
-    Matrix DR = (Matrix(2, 2) << g + x * dg_dx + dDx_dx, x * dg_dy + dDx_dy,
-        y * dg_dx + dDy_dx, g + y * dg_dy + dDy_dy);
-
-    DDS2 = DK * DR;
-  }
+  // Part2: project NPlane point to pixel plane: use Cal3DS2
+  Point2 m(x,y);
+  Matrix H1base, H2base;    // jacobians from Base class
+  Point2 puncalib = Base::uncalibrate(m, H1base, H2base);
 
   // Inlined derivative for calibration
   if (H1) {
     // part1
     Matrix DU = (Matrix(2,1) << -xs * sqrt_nx * xi_sqrt_nx2,
         -ys * sqrt_nx * xi_sqrt_nx2);
-    Matrix DDS2U = DDS2 * DU;
-    // part2
-    Matrix DDS2V = (Matrix(2, 9) <<  pnx, 0.0, pny, 1.0, 0.0, fx * x * rr + s * y * rr,
-        fx * x * r4 + s * y * r4, fx * 2. * xy + s * (rr + 2. * yy),
-        fx * (rr + 2. * xx) + s * (2. * xy), 0.0, pny, 0.0, 0.0, 1.0,
-        fy * y * rr, fy * y * r4, fy * (rr + 2. * yy), fy * (2. * xy));
+    Matrix DDS2U = H2base * DU;
 
-    *H1 = collect(2, &DDS2V, &DDS2U);
+    *H1 = collect(2, &H1base, &DDS2U);
   }
   // Inlined derivative for points
   if (H2) {
@@ -129,11 +96,10 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
         (sqrt_nx + xi*(ys*ys + 1)) * denom, mid,
         mid, (sqrt_nx + xi*(xs*xs + 1)) * denom);
 
-    *H2 = DDS2 * DU;
+    *H2 = H2base * DU;
   }
 
-
-  return Point2(fx * pnx + s * pny + u0_, fy * pny + v0_);
+  return puncalib;
 }
 
 /* ************************************************************************* */
