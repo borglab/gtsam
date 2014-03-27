@@ -32,9 +32,9 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3Unify : protected Cal3DS2 {
+class GTSAM_EXPORT Cal3Unified : protected Cal3DS2 {
 
-  typedef Cal3Unify This;
+  typedef Cal3Unified This;
   typedef Cal3DS2 Base;
 
 private:
@@ -57,17 +57,17 @@ public:
   /// @{
 
   /// Default Constructor with only unit focal length
-  Cal3Unify() : Cal3DS2(), xi_(0) {}
+  Cal3Unified() : Base(), xi_(0) {}
 
-  Cal3Unify(double fx, double fy, double s, double u0, double v0,
+  Cal3Unified(double fx, double fy, double s, double u0, double v0,
       double k1, double k2, double k3 = 0.0, double k4 = 0.0, double xi = 0.0) :
-  Cal3DS2(fx, fy, s, u0, v0, k1, k2, k3, k4), xi_(xi) {}
+        Base(fx, fy, s, u0, v0, k1, k2, k3, k4), xi_(xi) {}
 
   /// @}
   /// @name Advanced Constructors
   /// @{
 
-  Cal3Unify(const Vector &v) ;
+  Cal3Unified(const Vector &v) ;
 
   /// @}
   /// @name Testable
@@ -77,7 +77,7 @@ public:
   void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
-  bool equals(const Cal3Unify& K, double tol = 10e-9) const;
+  bool equals(const Cal3Unified& K, double tol = 10e-9) const;
 
   /// @}
   /// @name Standard Interface
@@ -126,10 +126,10 @@ public:
   /// @{
 
   /// Given delta vector, update calibration
-  Cal3Unify retract(const Vector& d) const ;
+  Cal3Unified retract(const Vector& d) const ;
 
   /// Given a different calibration, calculate update to obtain it
-  Vector localCoordinates(const Cal3Unify& T2) const ;
+  Vector localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
   virtual size_t dim() const { return 10 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
@@ -148,7 +148,7 @@ private:
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version)
   {
-    ar & boost::serialization::make_nvp("Cal3Unify",
+    ar & boost::serialization::make_nvp("Cal3Unified",
         boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(fx_);
     ar & BOOST_SERIALIZATION_NVP(fy_);

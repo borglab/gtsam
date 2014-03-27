@@ -18,34 +18,34 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Cal3Unify.h>
+#include <gtsam/geometry/Cal3Unified.h>
 
 #include <cmath>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3Unify::Cal3Unify(const Vector &v):
-    Cal3DS2(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]), xi_(v[9]) {}
+Cal3Unified::Cal3Unified(const Vector &v):
+    Base(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]), xi_(v[9]) {}
 
 /* ************************************************************************* */
-Matrix Cal3Unify::K() const {
+Matrix Cal3Unified::K() const {
   return Base::K();
 }
 
 /* ************************************************************************* */
-Vector Cal3Unify::vector() const {
+Vector Cal3Unified::vector() const {
   return (Vector(10) << Base::vector(), xi_);
 }
 
 /* ************************************************************************* */
-void Cal3Unify::print(const std::string& s) const {
+void Cal3Unified::print(const std::string& s) const {
   Base::print(s);
   gtsam::print((Vector)(Vector(1) << xi_), s + ".xi");
 }
 
 /* ************************************************************************* */
-bool Cal3Unify::equals(const Cal3Unify& K, double tol) const {
+bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
   if (fabs(fx_ - K.fx_) > tol || fabs(fy_ - K.fy_) > tol || fabs(s_ - K.s_) > tol ||
       fabs(u0_ - K.u0_) > tol || fabs(v0_ - K.v0_) > tol || fabs(k1_ - K.k1_) > tol ||
       fabs(k2_ - K.k2_) > tol || fabs(k3_ - K.k3_) > tol || fabs(k4_ - K.k4_) > tol ||
@@ -55,7 +55,7 @@ bool Cal3Unify::equals(const Cal3Unify& K, double tol) const {
 }
 
 /* ************************************************************************* */
-Point2 Cal3Unify::uncalibrate(const Point2& p,
+Point2 Cal3Unified::uncalibrate(const Point2& p,
        boost::optional<Matrix&> H1,
        boost::optional<Matrix&> H2) const {
 
@@ -103,7 +103,7 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
 }
 
 /* ************************************************************************* */
-Point2 Cal3Unify::calibrate(const Point2& pi, const double tol) const {
+Point2 Cal3Unified::calibrate(const Point2& pi, const double tol) const {
 
   // calibrate point to Nplane use base class::calibrate()
   Point2 pnplane = Base::calibrate(pi, tol);
@@ -112,7 +112,7 @@ Point2 Cal3Unify::calibrate(const Point2& pi, const double tol) const {
   return this->nPlaneToSpace(pnplane);
 }
 /* ************************************************************************* */
-Point2 Cal3Unify::nPlaneToSpace(const Point2& p) const {
+Point2 Cal3Unified::nPlaneToSpace(const Point2& p) const {
 
   const double x = p.x(), y = p.y();
   const double xy2 = x * x + y * y;
@@ -122,7 +122,7 @@ Point2 Cal3Unify::nPlaneToSpace(const Point2& p) const {
 }
 
 /* ************************************************************************* */
-Point2 Cal3Unify::spaceToNPlane(const Point2& p) const {
+Point2 Cal3Unified::spaceToNPlane(const Point2& p) const {
 
   const double x = p.x(), y = p.y();
   const double sq_xy = 1 + xi_ * sqrt(x * x + y * y + 1);
@@ -131,12 +131,12 @@ Point2 Cal3Unify::spaceToNPlane(const Point2& p) const {
 }
 
 /* ************************************************************************* */
-Cal3Unify Cal3Unify::retract(const Vector& d) const {
-  return Cal3Unify(vector() + d);
+Cal3Unified Cal3Unified::retract(const Vector& d) const {
+  return Cal3Unified(vector() + d);
 }
 
 /* ************************************************************************* */
-Vector Cal3Unify::localCoordinates(const Cal3Unify& T2) const {
+Vector Cal3Unified::localCoordinates(const Cal3Unified& T2) const {
   return T2.vector() - vector();
 }
 
