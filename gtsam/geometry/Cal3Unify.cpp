@@ -26,22 +26,21 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Cal3Unify::Cal3Unify(const Vector &v):
-    xi_(v[0]), fx_(v[1]), fy_(v[2]), s_(v[3]), u0_(v[4]), v0_(v[5]), k1_(v[6]), k2_(v[7]), k3_(v[8]), k4_(v[9]){}
+    Cal3DS2(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]), xi_(v[9]) {}
 
 /* ************************************************************************* */
 Matrix Cal3Unify::K() const {
-  return (Matrix(3, 3) << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0);
+  return Base::K();
 }
 
 /* ************************************************************************* */
 Vector Cal3Unify::vector() const {
-  return (Vector(10) << xi_, fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_);
+  return (Vector(10) << Base::vector(), xi_);
 }
 
 /* ************************************************************************* */
 void Cal3Unify::print(const std::string& s) const {
-  gtsam::print(K(), s + ".K");
-  gtsam::print(Vector(k()), s + ".k");
+  Base::print(s);
   gtsam::print((Vector)(Vector(1) << xi_), s + ".xi");
 }
 
@@ -119,7 +118,7 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
         fx * (rr + 2. * xx) + s * (2. * xy), 0.0, pny, 0.0, 0.0, 1.0,
         fy * y * rr, fy * y * r4, fy * (rr + 2. * yy), fy * (2. * xy));
 
-    *H1 = collect(2, &DDS2U, &DDS2V);
+    *H1 = collect(2, &DDS2V, &DDS2U);
   }
   // Inlined derivative for points
   if (H2) {

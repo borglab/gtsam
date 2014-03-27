@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
+#include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -32,14 +32,14 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3Unify : public DerivedValue<Cal3Unify> {
+class GTSAM_EXPORT Cal3Unify : protected Cal3DS2 {
+
+  typedef Cal3Unify This;
+  typedef Cal3DS2 Base;
 
 private:
 
   double xi_;  // mirror parameter
-  double fx_, fy_, s_, u0_, v0_ ; // focal length, skew and principal point
-  double k1_, k2_ ; // radial 2nd-order and 4th-order
-  double k3_, k4_ ; // tangential distortion
 
   // K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
   // Pn = [ P.x / (1 + xi * \sqrt{P.x^2 + P.y^2 + 1}), P.y / (1 + xi * \sqrt{P.x^2 + P.y^2 + 1})]
@@ -50,18 +50,18 @@ private:
 
 public:
   Matrix K() const ;
-  Eigen::Vector4d k() const { return Eigen::Vector4d(k1_, k2_, k3_, k4_); }
+  Eigen::Vector4d k() const { return Base::k(); }
   Vector vector() const ;
 
   /// @name Standard Constructors
   /// @{
 
   /// Default Constructor with only unit focal length
-  Cal3Unify() : xi_(0), fx_(1), fy_(1), s_(0), u0_(0), v0_(0), k1_(0), k2_(0), k3_(0), k4_(0) {}
+  Cal3Unify() : Cal3DS2(), xi_(0) {}
 
-  Cal3Unify(double xi, double fx, double fy, double s, double u0, double v0,
-      double k1, double k2, double k3 = 0.0, double k4 = 0.0) :
-  xi_(xi), fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0), k1_(k1), k2_(k2), k3_(k3), k4_(k4) {}
+  Cal3Unify(double fx, double fy, double s, double u0, double v0,
+      double k1, double k2, double k3 = 0.0, double k4 = 0.0, double xi = 0.0) :
+  Cal3DS2(fx, fy, s, u0, v0, k1, k2, k3, k4), xi_(xi) {}
 
   /// @}
   /// @name Advanced Constructors
@@ -150,7 +150,6 @@ private:
   {
     ar & boost::serialization::make_nvp("Cal3Unify",
         boost::serialization::base_object<Value>(*this));
-    ar & BOOST_SERIALIZATION_NVP(xi_);
     ar & BOOST_SERIALIZATION_NVP(fx_);
     ar & BOOST_SERIALIZATION_NVP(fy_);
     ar & BOOST_SERIALIZATION_NVP(s_);
@@ -160,6 +159,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(k2_);
     ar & BOOST_SERIALIZATION_NVP(k3_);
     ar & BOOST_SERIALIZATION_NVP(k4_);
+    ar & BOOST_SERIALIZATION_NVP(xi_);
   }
 
 

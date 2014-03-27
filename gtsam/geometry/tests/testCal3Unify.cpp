@@ -32,7 +32,7 @@ V = [0.1, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3, 0, 0, 100, 105, 320, 240];
 matlab toolbox available at http://homepages.laas.fr/~cmei/index.php/Toolbox
 */
 
-static Cal3Unify K(0.1, 100, 105, 0.0, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
+static Cal3Unify K(100, 105, 0.0, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3, 0.1);
 static Point2 p(0.5, 0.7);
 
 /* ************************************************************************* */
@@ -67,7 +67,7 @@ TEST( Cal3Unify, Duncalibrate1)
   Matrix computed;
   K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p, 1e-7);
-  CHECK(assert_equal(numerical,computed,1e-5));
+  CHECK(assert_equal(numerical,computed,1e-6));
 }
 
 /* ************************************************************************* */
@@ -76,7 +76,7 @@ TEST( Cal3Unify, Duncalibrate2)
   Matrix computed;
   K.uncalibrate(p, boost::none, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
-  CHECK(assert_equal(numerical,computed,1e-5));
+  CHECK(assert_equal(numerical,computed,1e-6));
 }
 
 /* ************************************************************************* */
@@ -88,10 +88,10 @@ TEST( Cal3Unify, assert_equal)
 /* ************************************************************************* */
 TEST( Cal3Unify, retract)
 {
-  Cal3Unify expected(0.1 + 1, 100 + 2, 105 + 3, 0.0 + 4, 320 + 5, 240 + 6,
-      1e-3 + 7, 2.0*1e-3 + 8, 3.0*1e-3 + 9, 4.0*1e-3 + 10);
+  Cal3Unify expected(100 + 2, 105 + 3, 0.0 + 4, 320 + 5, 240 + 6,
+      1e-3 + 7, 2.0*1e-3 + 8, 3.0*1e-3 + 9, 4.0*1e-3 + 10, 0.1 + 1);
   Vector d(10);
-  d << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+  d << 2, 3, 4, 5, 6, 7, 8, 9, 10, 1;
   Cal3Unify actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-7));
   CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
