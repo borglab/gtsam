@@ -151,13 +151,13 @@ void ISAM2Clique::print(const std::string& s, const KeyFormatter& formatter) con
 }
 
 /* ************************************************************************* */
-ISAM2::ISAM2(const ISAM2Params& params): params_(params) {
+ISAM2::ISAM2(const ISAM2Params& params): params_(params), update_count_(0) {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
 
 /* ************************************************************************* */
-ISAM2::ISAM2() {
+ISAM2::ISAM2() : update_count_(0) {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
@@ -521,8 +521,7 @@ ISAM2Result ISAM2::update(
 
   gttic(ISAM2_update);
 
-  static int count = 0;
-  count++;
+  this->update_count_++;
 
   lastAffectedVariableCount = 0;
   lastAffectedFactorCount = 0;
@@ -533,7 +532,8 @@ ISAM2Result ISAM2::update(
   ISAM2Result result;
   if(params_.enableDetailedResults)
     result.detail = ISAM2Result::DetailedResults();
-  const bool relinearizeThisStep = force_relinearize || (params_.enableRelinearization && count % params_.relinearizeSkip == 0);
+  const bool relinearizeThisStep = force_relinearize
+      || (params_.enableRelinearization && update_count_ % params_.relinearizeSkip == 0);
 
   if(verbose) {
     cout << "ISAM2::update\n";
