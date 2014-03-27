@@ -56,7 +56,7 @@ TEST( Cal3Unify, calibrate)
 {
   Point2 pi = K.uncalibrate(p);
   Point2 pn_hat = K.calibrate(pi);
-  CHECK( p.equals(pn_hat, 1e-5));
+  CHECK( p.equals(pn_hat, 1e-8));
 }
 
 Point2 uncalibrate_(const Cal3Unify& k, const Point2& pt) { return k.uncalibrate(pt); }
@@ -82,7 +82,7 @@ TEST( Cal3Unify, Duncalibrate2)
 /* ************************************************************************* */
 TEST( Cal3Unify, assert_equal)
 {
-  CHECK(assert_equal(K,K,1e-5));
+  CHECK(assert_equal(K,K,1e-9));
 }
 
 /* ************************************************************************* */
@@ -93,8 +93,8 @@ TEST( Cal3Unify, retract)
   Vector d(10);
   d << 2, 3, 4, 5, 6, 7, 8, 9, 10, 1;
   Cal3Unify actual = K.retract(d);
-  CHECK(assert_equal(expected,actual,1e-7));
-  CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
+  CHECK(assert_equal(expected,actual,1e-9));
+  CHECK(assert_equal(d,K.localCoordinates(actual),1e-9));
 }
 
 /* ************************************************************************* */

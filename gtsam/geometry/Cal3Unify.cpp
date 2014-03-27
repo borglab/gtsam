@@ -104,41 +104,12 @@ Point2 Cal3Unify::uncalibrate(const Point2& p,
 
 /* ************************************************************************* */
 Point2 Cal3Unify::calibrate(const Point2& pi, const double tol) const {
-  // Use the following fixed point iteration to invert the radial distortion.
-  // pn_{t+1} = (inv(K)*pi - dp(pn_{t})) / g(pn_{t})
 
-  // point on the normalized plane, input for DS2
-  double px = pi.x();
-  double py = pi.y();
-  const Point2 invKPi ((1 / fx_) * (px - u0_ - (s_ / fy_) * (py - v0_)),
-                       (1 / fy_) * (py - v0_));
+  // calibrate point to Nplane use base class::calibrate()
+  Point2 pnplane = Base::calibrate(pi, tol);
 
-  // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
-  Point2 pn = nPlaneToSpace(invKPi);
-
-  // iterate until the uncalibrate is close to the actual pixel coordinate
-  const int maxIterations = 20;
-  int iteration;
-  for ( iteration = 0; iteration < maxIterations; ++iteration ) {
-
-    if ( uncalibrate(pn).distance(pi) <= tol ) break;
-
-    // part1: 3D space -> normalized plane
-    Point2 pnpl = spaceToNPlane(pn);
-    // part2: normalized plane -> 3D space
-    px = pnpl.x(), py = pnpl.y();
-    const double xy = px*py, xx = px*px, yy = py*py;
-    const double rr = xx + yy;
-    const double g = (1+k1_*rr+k2_*rr*rr);
-    const double dx = 2*k3_*xy + k4_*(rr+2*xx);
-    const double dy = 2*k4_*xy + k3_*(rr+2*yy);
-    pn = nPlaneToSpace((invKPi - Point2(dx,dy))/g);
-  }
-
-  if ( iteration >= maxIterations )
-    throw std::runtime_error("Cal3Unify::calibrate fails to converge. need a better initialization");
-
-  return pn;
+  // call nplane to space
+  return this->nPlaneToSpace(pnplane);
 }
 /* ************************************************************************* */
 Point2 Cal3Unify::nPlaneToSpace(const Point2& p) const {
