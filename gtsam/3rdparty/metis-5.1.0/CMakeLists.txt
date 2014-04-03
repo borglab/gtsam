@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 2.8)
 project(METIS)
 
 # Add flags for currect directory and below
-add_definitions(-Wno-unused-variable)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  add_definitions(-Wno-unused-variable)
+  add_definitions(-Wno-sometimes-uninitialized)
+endif()
+
 add_definitions(-Wno-unknown-pragmas)
-add_definitions(-Wno-sometimes-uninitialized)
 
 set(GKLIB_PATH ${PROJECT_SOURCE_DIR}/GKlib CACHE PATH "path to GKlib")
 set(SHARED FALSE CACHE BOOL "build a shared library")
