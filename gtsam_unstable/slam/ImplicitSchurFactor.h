@@ -1,7 +1,8 @@
 /**
  * @file    ImplicitSchurFactor.h
- * @brief   A new type of linear factor (GaussianFactor), which is subclass of JacobiaFactor
+ * @brief   A new type of linear factor (GaussianFactor), which is subclass of GaussianFactor
  * @author  Frank Dellaert
+ * @author  Luca Carlone
  */
 
 #pragma once
