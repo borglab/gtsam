@@ -99,6 +99,9 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const = 0;
 
+    /// Return the diagonal of the Hessian for this factor (raw memory version)
+    virtual void hessianDiagonal(double* d) const = 0;
+
     /// Return the block diagonal of the Hessian for this factor
     virtual std::map<Key,Matrix> hessianBlockDiagonal() const = 0;
 
