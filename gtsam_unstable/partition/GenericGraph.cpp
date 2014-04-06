@@ -9,6 +9,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/DSFVector.h>
 
@@ -468,9 +469,9 @@ namespace gtsam { namespace partition {
 		}
 
  		if (minFoundConstraintsPerCamera < minNrConstraintsPerCamera)
-			throw runtime_error("checkSingularity:minConstraintsPerCamera < " + minFoundConstraintsPerCamera);
+			throw runtime_error("checkSingularity:minConstraintsPerCamera < " + boost::lexical_cast<string>(minFoundConstraintsPerCamera));
 		if (minFoundConstraintsPerLandmark < minNrConstraintsPerLandmark)
-			throw runtime_error("checkSingularity:minConstraintsPerLandmark < " + minFoundConstraintsPerLandmark);
+			throw runtime_error("checkSingularity:minConstraintsPerLandmark < " + boost::lexical_cast<string>(minFoundConstraintsPerLandmark));
 	}
 
 }} // namespace

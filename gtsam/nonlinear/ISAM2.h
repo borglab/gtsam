@@ -468,6 +468,8 @@ protected:
    * variables and thus cannot have their linearization points changed. */
   FastSet<Key> fixedVariables_;
 
+  int update_count_; ///< Counter incremented every update(), used to determine periodic relinearization
+
 public:
 
   typedef ISAM2 This; ///< This class
