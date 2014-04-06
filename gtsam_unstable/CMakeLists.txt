@@ -1,14 +1,17 @@
 # Build full gtsam_unstable library as a single library
-# and also build tests 
+# and also build tests
 set (gtsam_unstable_subdirs
-    base 
+    base
     geometry
     discrete
     dynamics
     nonlinear
-    partition
     slam
 )
+
+if(GTSAM_BUILD_METIS) # Only build partition if metis is built
+    set (gtsam_unstable_subdirs ${gtsam_unstable_subdirs} partition)
+endif(GTSAM_BUILD_METIS)
 
 set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES})
 
@@ -22,7 +25,7 @@ set (excluded_sources # "")
 )
 
 set (excluded_headers # "")
-    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"    
+    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
 )
 
 # assemble core libaries
@@ -36,32 +39,35 @@ foreach(subdir ${gtsam_unstable_subdirs})
     gtsam_assign_source_folders("${${subdir}_srcs}") # Create MSVC structure
 
     # Build local library and tests
-    message(STATUS "Building ${subdir}_unstable") 
+    message(STATUS "Building ${subdir}_unstable")
     add_subdirectory(${subdir})
 endforeach(subdir)
- 
+
 # assemble gtsam_unstable components
 set(gtsam_unstable_srcs
-    ${base_srcs} 
+    ${base_srcs}
     ${geometry_srcs}
     ${discrete_srcs}
-    ${dynamics_srcs} 
+    ${dynamics_srcs}
     ${nonlinear_srcs}
-    ${partition_srcs}
     ${slam_srcs}
 )
+
+if(GTSAM_BUILD_METIS) # Only build partition if metis is built
+    set (gtsam_unstable_srcs ${gtsam_unstable_srcs} ${partition_srcs})
+endif(GTSAM_BUILD_METIS)
 
 # Versions - same as core gtsam library
 set(gtsam_unstable_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
 set(gtsam_unstable_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM_UNSTABLE Version: ${gtsam_unstable_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
- 
+
 # build shared and static versions of the library
 if (GTSAM_BUILD_STATIC_LIBRARY)
 	message(STATUS "Building GTSAM_UNSTABLE - static")
 	add_library(gtsam_unstable STATIC ${gtsam_unstable_srcs})
-	set_target_properties(gtsam_unstable PROPERTIES 
+	set_target_properties(gtsam_unstable PROPERTIES
 		OUTPUT_NAME         gtsam_unstable
 		CLEAN_DIRECT_OUTPUT 1
 		VERSION             ${gtsam_unstable_version}
@@ -78,7 +84,7 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
 else()
     message(STATUS "Building GTSAM_UNSTABLE - shared")
     add_library(gtsam_unstable SHARED ${gtsam_unstable_srcs})
-    set_target_properties(gtsam_unstable PROPERTIES 
+    set_target_properties(gtsam_unstable PROPERTIES
         OUTPUT_NAME         gtsam_unstable
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_unstable_version}
@@ -99,7 +105,7 @@ endif()
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Set up codegen
     include(GtsamMatlabWrap)
-        
+
     # Generate, build and install toolbox
     set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
 	if(GTSAM_BUILD_STATIC_LIBRARY)
