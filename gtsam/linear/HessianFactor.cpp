@@ -367,9 +367,10 @@ void HessianFactor::hessianDiagonal(double* d) const {
   typedef Eigen::Map<DVector> DMap;
 
   // Loop over all variables in the factor
-    for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
+      Key j = keys_[pos];
       // Get the diagonal block, and insert its diagonal
-      Matrix B = info_(j, j).selfadjointView();
+      Matrix B = info_(pos, pos).selfadjointView();
       DVector dj =  B.diagonal();
       DMap(d + 9 * j) += dj;
     }
