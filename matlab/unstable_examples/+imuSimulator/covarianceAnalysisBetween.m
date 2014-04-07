@@ -9,15 +9,17 @@ clear all
 close all
 
 %% Create ground truth trajectory
-trajectoryLength = 5;
+trajectoryLength = 49;
 unsmooth_DP = 0.5; % controls smoothness on translation norm
 unsmooth_DR = 0.1; % controls smoothness on translation norm
 
-% possibly create random trajectory
+% possibly create random trajectory as ground Truth
 gtValues = Values;
 gtGraph = NonlinearFactorGraph;
 
-noiseVector = [0.01; 0.0001; 0.0001; 0.1; 0.1; 0.1];
+sigma_ang = 1e-2;
+sigma_cart = 0.1;
+noiseVector = [sigma_ang; sigma_ang; sigma_ang; sigma_cart; sigma_cart; sigma_cart];
 noise = noiseModel.Diagonal.Sigmas(noiseVector);
 
 currentPoseKey = symbol('x', 0);
@@ -44,11 +46,9 @@ end
 figure(1)
 hold on;
 plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
-% plot3DTrajectory(values,linespec,frames,scale,marginals)
 axis equal
 
 numMonteCarloRuns = 100;
-
 for k=1:numMonteCarloRuns
   % create a new graph
   graph = NonlinearFactorGraph;
@@ -62,7 +62,7 @@ for k=1:numMonteCarloRuns
   for i=1:trajectoryLength
     currentPoseKey = symbol('x', i);
     
-    % for each measurement. add noise and add to graph
+    % for each measurement: add noise and add to graph
     noisyDelta = gtDeltaMatrix(i,:)' + (noiseVector .* randn(6,1));
     noisyDeltaPose = Pose3.Expmap(noisyDelta);
     
@@ -99,6 +99,7 @@ for k=1:numMonteCarloRuns
   hold on
   plot(NEES(k,:),'-b','LineWidth',1.5)
 end
+%%
 ANEES = mean(NEES);
 plot(ANEES,'-r','LineWidth',2)
 plot(3*ones(size(ANEES,2),1),'k--'); % Expectation(ANEES) = number of dof 
@@ -106,10 +107,11 @@ box on
 set(gca,'Fontsize',16)
 title('NEES and ANEES');
 
+%%
 figure(1)
 box on
-title('Ground truth and estimates for each MC runs');
 set(gca,'Fontsize',16)
+title('Ground truth and estimates for each MC runs');
 
 %% Let us compute statistics on the overall NEES
 n = 3; % position vector dimension
@@ -132,8 +134,8 @@ plot(ones(size(ANEES,2),1),'r-');
 plot(r1*ones(size(ANEES,2),1),'k-.');
 plot(r2*ones(size(ANEES,2),1),'k-.');
 box on
-title('NEES normalized by dof VS bounds');
 set(gca,'Fontsize',16)
+title('NEES normalized by dof VS bounds');
 
 %% NEES COMPUTATION (Bar-Shalom 2001, Section 5.4)
 % the nees for a single experiment (i) is defined as 
