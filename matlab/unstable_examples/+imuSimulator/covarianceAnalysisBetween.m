@@ -85,11 +85,12 @@ for k=1:numMonteCarloRuns
     currentPoseKey = symbol('x', i-1);
     gtPosition  = gtValues.at(currentPoseKey).translation.vector;
     estPosition = estimate.at(currentPoseKey).translation.vector;
+    estR = estimate.at(currentPoseKey).rotation.matrix;
     errPosition = estPosition - gtPosition;
     
     % compute covariances:
     cov = marginals.marginalCovariance(currentPoseKey);
-    covPosition = cov(4:6,4:6);
+    covPosition = estR * cov(4:6,4:6) * estR';
     
     % compute NEES using (estimationError = estimatedValues - gtValues) and estimated covariances
     NEES(k,i) = errPosition' * inv(covPosition) * errPosition; % distributed according to a Chi square with n = 3 dof
