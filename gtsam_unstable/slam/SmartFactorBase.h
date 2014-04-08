@@ -417,7 +417,7 @@ public:
   }
 
   // ****************************************************************************************************
-   boost::shared_ptr<RegularHessianFactor<D> > updateAugmentedHessian(
+   void updateAugmentedHessian(
        const Cameras& cameras, const Point3& point, const double lambda,
        bool diagonalDamping, SymmetricBlockMatrix& augmentedHessian) const {
 
@@ -435,8 +435,8 @@ public:
      dims.back() = 1;
 
      updateSparseSchurComplement(Fblocks, E, PointCov, b, augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
-     std::cout << "f "<< f <<std::endl;
-     augmentedHessian(numKeys,numKeys)(0,0) += f;
+     // std::cout << "f "<< f <<std::endl;
+     //augmentedHessian(numKeys,numKeys)(0,0) += f;
    }
 
   // ****************************************************************************************************
@@ -486,7 +486,24 @@ public:
 
     // a single point is observed in numKeys cameras
     size_t numKeys = this->keys_.size(); // cameras observing current point
-    size_t aug_numKeys = augmentedHessian.rows() - 1; // all cameras in the group
+    size_t aug_numKeys = (augmentedHessian.rows() - 1)/D; // all cameras in the group
+
+//    MatrixDD delta = eye(D);
+//    size_t n1 = numKeys+1;
+//       for (size_t i1=0; i1 < n1-1; i1++){
+//         MatrixDD Z1 = augmentedHessian(i1,i1).selfadjointView();
+//         std::cout << i1 << " "  << "\n" << Z1 <<  std::endl;
+//         augmentedHessian(i1,i1) = Z1 + delta;
+//         MatrixDD Z2 = augmentedHessian(i1,i1).selfadjointView();
+//         std::cout << i1 << " "  << "\n" << Z2 <<  std::endl;
+////         for (size_t i2=i1+1; i2 < n1-1; i2++){
+////           Z = augmentedHessian(i1,i2).knownOffDiagonal(); // + delta;
+////           std::cout << i1 << " " << i2  << "\n" << Z <<  std::endl;
+////         }
+//       }
+
+    MatrixDD matrixBlock;
+    VectorD vectorBlock;
 
     // Blockwise Schur complement
     for (size_t i1 = 0; i1 < numKeys; i1++) { // for each camera
@@ -497,27 +514,26 @@ public:
       // D = (Dx2) * (2)
       // (augmentedHessian.matrix()).block<D,1> (i1,numKeys+1) = Fi1.transpose() * b.segment < 2 > (2 * i1); // F' * b
       size_t aug_i1 = this->keys_[i1];
-      std::cout << "i1 "<< i1 <<std::endl;
-      std::cout << "aug_i1 "<< aug_i1 <<std::endl;
-      std::cout << "aug_numKeys "<< aug_numKeys <<std::endl;
-      augmentedHessian(aug_i1,aug_numKeys) = //augmentedHessian(aug_i1,aug_numKeys) +
+
+      // augmentedHessian(aug_i1,aug_numKeys)
+      vectorBlock = augmentedHessian(aug_i1,aug_numKeys).knownOffDiagonal();
+      augmentedHessian(aug_i1,aug_numKeys) = vectorBlock +
                         Fi1.transpose() * b.segment < 2 > (2 * i1) // F' * b
                       - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // D = (Dx2) * (2x3) * (3*2m) * (2m x 1)
 
       // (DxD) = (Dx2) * ( (2xD) - (2x3) * (3x2) * (2xD) )
-      std::cout << "filled 1  " <<std::endl;
-      augmentedHessian(aug_i1,aug_i1) = //augmentedHessian(aug_i1,aug_i1) +
+      matrixBlock = augmentedHessian(aug_i1,aug_i1).selfadjointView();
+      augmentedHessian(aug_i1,aug_i1) = matrixBlock+
           Fi1.transpose() * (Fi1 - Ei1_P * E.block<2, 3>(2 * i1, 0).transpose() * Fi1);
 
       // upper triangular part of the hessian
       for (size_t i2 = i1+1; i2 < numKeys; i2++) { // for each camera
         const Matrix2D& Fi2 = Fblocks.at(i2).second;
         size_t aug_i2 = this->keys_[i2];
-        std::cout << "i2 "<< i2 <<std::endl;
-        std::cout << "aug_i2 "<< aug_i2 <<std::endl;
 
         // (DxD) = (Dx2) * ( (2x2) * (2xD) )
-        augmentedHessian(aug_i1, aug_i2) = //augmentedHessian(aug_i1, aug_i2)
+        matrixBlock =  augmentedHessian(aug_i1, aug_i2).knownOffDiagonal();
+        augmentedHessian(aug_i1, aug_i2) = matrixBlock
             - Fi1.transpose() * (Ei1_P * E.block<2, 3>(2 * i2, 0).transpose() * Fi2);
       }
     } // end of for over cameras
