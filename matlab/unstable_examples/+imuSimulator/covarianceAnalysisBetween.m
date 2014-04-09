@@ -12,7 +12,7 @@ close all
 useAspnData = 1; % controls whether or not to use the ASPN data for scenario 2 as the ground truth traj
 
 %% Create ground truth trajectory
-trajectoryLength = 49;
+trajectoryLength = 100;
 unsmooth_DP = 0.5; % controls smoothness on translation norm
 unsmooth_DR = 0.1; % controls smoothness on rotation norm
 
@@ -107,7 +107,7 @@ for k=1:numMonteCarloRuns
     initialPosition = imuSimulator.LatLonHRad_to_ECEF([gtScenario2.Lat(1); gtScenario2.Lon(1); gtScenario2.Alt(1)]);
     initialRotation = [gtScenario2.Roll(1); gtScenario2.Pitch(1); gtScenario2.Heading(1)];
     initialPose = Pose3.Expmap([initialRotation; initialPosition] + (noiseVector .* randn(6,1))); % initial noisy pose
-    graph.add(PriorFactorPose3(currentPoseKey, currentPose, noise));
+    graph.add(PriorFactorPose3(currentPoseKey, initialPose, noise));
   else
     currentPoseKey = symbol('x', 0);
     noisyDelta = noiseVector .* randn(6,1);
@@ -119,7 +119,7 @@ for k=1:numMonteCarloRuns
     currentPoseKey = symbol('x', i);
     
     % for each measurement: add noise and add to graph
-    noisyDelta = gtDeltaMatrix(i,:)';% + (noiseVector .* randn(6,1));
+    noisyDelta = gtDeltaMatrix(i,:)' + (noiseVector .* randn(6,1));
     noisyDeltaPose = Pose3.Expmap(noisyDelta);
     
     % Add the factors to the factor graph
