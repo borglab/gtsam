@@ -569,8 +569,6 @@ public:
     for (size_t slot=0; slot < allKeys.size(); slot++)
       KeySlotMap.insert(std::make_pair<Key,size_t>(allKeys[slot],slot));
 
-    bool debug= false;
-
     // a single point is observed in numKeys cameras
     size_t numKeys = this->keys_.size(); // cameras observing current point
     size_t aug_numKeys = (augmentedHessian.rows() - 1) / D; // all cameras in the group
@@ -588,21 +586,15 @@ public:
       size_t aug_i1 = KeySlotMap[cameraKey_i1];
 
       // information vector - store previous vector
-      vectorBlock = augmentedHessian(aug_i1, aug_numKeys).knownOffDiagonal();
-      if(debug) std::cout <<  "(before) augmentedHessian(" << aug_i1 << "," <<  aug_numKeys << ")= \n" <<
-          vectorBlock << std::endl;
-
+      // vectorBlock = augmentedHessian(aug_i1, aug_numKeys).knownOffDiagonal();
       // add contribution of current factor
-      augmentedHessian(aug_i1, aug_numKeys) = vectorBlock
+      augmentedHessian(aug_i1, aug_numKeys) = augmentedHessian(aug_i1, aug_numKeys).knownOffDiagonal()
           + Fi1.transpose() * b.segment<2>(2 * i1) // F' * b
       - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // D = (Dx2) * (2x3) * (3*2m) * (2m x 1)
 
       // (DxD) = (Dx2) * ( (2xD) - (2x3) * (3x2) * (2xD) )
       // main block diagonal - store previous block
       matrixBlock = augmentedHessian(aug_i1, aug_i1);
-      if(debug) std::cout <<  "(before) augmentedHessian(" << aug_i1 << "," <<  aug_i1 << ")= \n" <<
-          matrixBlock << std::endl;
-
       // add contribution of current factor
       augmentedHessian(aug_i1, aug_i1) = matrixBlock
           + Fi1.transpose()
@@ -613,18 +605,13 @@ public:
         const Matrix2D& Fi2 = Fblocks.at(i2).second;
 
         Key cameraKey_i2 = this->keys_[i2];
-              size_t aug_i2 = KeySlotMap[cameraKey_i2];
+        size_t aug_i2 = KeySlotMap[cameraKey_i2];
 
         // (DxD) = (Dx2) * ( (2x2) * (2xD) )
         // off diagonal block - store previous block
-        matrixBlock = augmentedHessian(aug_i1, aug_i2).knownOffDiagonal();
-
-        if(debug)  std::cout <<  "(aug_i1= " << aug_i1 << ", aug_i2= " << aug_i2 << ") (i2= " <<i2 << ", aug_i2=" << aug_i2 << ")" << std::endl;
-        if(debug) std::cout <<  "(before) augmentedHessian(" << aug_i1 << "," <<  aug_i2 << ")= \n" <<
-            augmentedHessian(aug_i1, aug_i2).knownOffDiagonal() << std::endl;
-
+        // matrixBlock = augmentedHessian(aug_i1, aug_i2).knownOffDiagonal();
         // add contribution of current factor
-        augmentedHessian(aug_i1, aug_i2) = matrixBlock
+        augmentedHessian(aug_i1, aug_i2) = augmentedHessian(aug_i1, aug_i2).knownOffDiagonal()
             - Fi1.transpose()
                 * (Ei1_P * E.block<2, 3>(2 * i2, 0).transpose() * Fi2);
       }
