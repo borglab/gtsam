@@ -9,10 +9,30 @@ clear all
 close all
 
 %% Configuration
-useAspnData = 1; % controls whether or not to use the ASPN data for scenario 2 as the ground truth traj
+useAspnData = 0; % controls whether or not to use the ASPN data for scenario 2 as the ground truth traj
+includeIMUFactors = 1;      % if true, IMU type 1 Factors will be generated for the random trajectory
+includeCameraFactors = 0;
+trajectoryLength = 50;
+
+deltaT = 1.0;       % amount of time between IMU measurements
+vel = [0 0 0];      % initial velocity (used for generating IMU measurements
+g = [0; 0; 0];      % gravity
+omegaCoriolis = [0; 0; 0];  % Coriolis
+
+% Imu metadata
+epsBias = 1e-20;
+zeroBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1)); % bias is not of interest and is set to zero
+IMU_metadata.AccelerometerSigma = 1e-5;
+IMU_metadata.GyroscopeSigma = 1e-7;
+IMU_metadata.IntegrationSigma = 1e-10;
+IMU_metadata.BiasAccelerometerSigma = epsBias;
+IMU_metadata.BiasGyroscopeSigma = epsBias;
+IMU_metadata.BiasAccOmegaInit = epsBias;
+
+noiseVel = noiseModel.Isotropic.Sigma(3, 1e-10);
+noiseBias = noiseModel.Isotropic.Sigma(6, epsBias);
 
 %% Create ground truth trajectory
-trajectoryLength = 100;
 unsmooth_DP = 0.5; % controls smoothness on translation norm
 unsmooth_DR = 0.1; % controls smoothness on rotation norm
 
@@ -26,11 +46,11 @@ else
   sigma_ang = 1e-2;
   sigma_cart = 0.1;
 end
-noiseVector = [sigma_ang; sigma_ang; sigma_ang; sigma_cart; sigma_cart; sigma_cart];
-noise = noiseModel.Diagonal.Sigmas(noiseVector);
+noiseVectorPose = [sigma_ang; sigma_ang; sigma_ang; sigma_cart; sigma_cart; sigma_cart];
+noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
 
 if useAspnData == 1
-% Create a ground truth trajectory using scenario 2 data
+%% Create a ground truth trajectory using scenario 2 data
   fprintf('\nUsing Scenario 2 ground truth data\n');
   % load scenario 2 ground truth data
   gtScenario2 = load('truth_scen2.mat', 'Lat', 'Lon', 'Alt', 'Roll', 'Pitch', 'Heading');
@@ -41,7 +61,7 @@ if useAspnData == 1
   initialRotation = [gtScenario2.Roll(1); gtScenario2.Pitch(1); gtScenario2.Heading(1)];
   currentPose = Pose3.Expmap([initialRotation; initialPosition]); % initial pose
   gtValues.insert(currentPoseKey, currentPose);
-  gtGraph.add(PriorFactorPose3(currentPoseKey, currentPose, noise));
+  gtGraph.add(PriorFactorPose3(currentPoseKey, currentPose, noisePose));
   prevPose = currentPose;
   
   % Limit the trajectory length
@@ -63,19 +83,31 @@ if useAspnData == 1
     gtValues.insert(currentPoseKey, currentPose);
        
     % Add the factor to the factor graph
-    gtGraph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, deltaPose, noise));
+    gtGraph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, deltaPose, noisePose));
   end
 else
-% Create a random trajectory as ground truth
+%% Create a random trajectory as ground truth
   fprintf('\nCreating a random ground truth trajectory\n');
-  % Add first pose
+  % Add priors
   currentPoseKey = symbol('x', 0);
   currentPose = Pose3; % initial pose
   gtValues.insert(currentPoseKey, currentPose);
-  gtGraph.add(PriorFactorPose3(currentPoseKey, currentPose, noise));
+  gtGraph.add(PriorFactorPose3(currentPoseKey, currentPose, noisePose));
 
+  if includeIMUFactors == 1
+    currentVelKey = symbol('v', 0);
+    currentBiasKey = symbol('b', 0);
+    gtValues.insert(currentVelKey, LieVector(vel'));
+    gtValues.insert(currentBiasKey, zeroBias);
+    gtGraph.add(PriorFactorLieVector(currentVelKey, LieVector(vel'), noiseVel));
+    gtGraph.add(PriorFactorConstantBias(currentBiasKey, zeroBias, noiseBias));
+  end
+  
   for i=1:trajectoryLength
     currentPoseKey = symbol('x', i);
+    currentVelKey = symbol('v', i);
+    currentBiasKey = symbol('b', i);
+    
     gtDeltaPosition = unsmooth_DP*randn(3,1) + [20;0;0]; % create random vector with mean = [1 0 0] and sigma = 0.5
     gtDeltaRotation = unsmooth_DR*randn(3,1) + [0;0;0]; % create random rotation with mean [0 0 0] and sigma = 0.1 (rad)
     gtDeltaMatrix(i,:) = [gtDeltaRotation; gtDeltaPosition];
@@ -87,15 +119,40 @@ else
     gtValues.insert(currentPoseKey, currentPose);
 
      % Add the factors to the factor graph
-    gtGraph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, deltaPose, noise));
+    gtGraph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, deltaPose, noisePose));
+    
+    % Add IMU factors
+    if includeIMUFactors == 1
+      % create accel and gyro measurements based on
+      gyro = gtDeltaMatrix(i, 1:3)./deltaT;
+      accel = (gtDeltaMatrix(i, 4:6) - vel.*deltaT).*(2/(deltaT*deltaT));
+      vel = gtDeltaMatrix(i,4:6)./deltaT;
+      imuMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
+        zeroBias, ...
+        IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
+        IMU_metadata.GyroscopeSigma.^2 * eye(3), ...
+        IMU_metadata.IntegrationSigma.^2 * eye(3));
+      imuMeasurement.integrateMeasurement(accel', gyro', deltaT);
+      gtGraph.add(ImuFactor( ...
+        currentPoseKey-1, currentVelKey-1, ...
+        currentPoseKey, currentVelKey, ...
+        currentBiasKey-1, imuMeasurement, g, omegaCoriolis));
+      gtGraph.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, zeroBias, ...
+        noiseModel.Isotropic.Sigma(6, epsBias)));
+      gtGraph.add(PriorFactorConstantBias(currentBiasKey, zeroBias, ...
+        noiseModel.Isotropic.Sigma(6, epsBias)));
+      gtValues.insert(currentVelKey, LieVector(vel'));
+      gtValues.insert(currentBiasKey, zeroBias);
+    end
   end
+  
 end
 figure(1)
 hold on;
 plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
 axis equal
 
-numMonteCarloRuns = 10;
+numMonteCarloRuns = 100;
 for k=1:numMonteCarloRuns
   fprintf('Monte Carlo Run %d.\n', k');
   % create a new graph
@@ -107,23 +164,23 @@ for k=1:numMonteCarloRuns
     initialPosition = imuSimulator.LatLonHRad_to_ECEF([gtScenario2.Lat(1); gtScenario2.Lon(1); gtScenario2.Alt(1)]);
     initialRotation = [gtScenario2.Roll(1); gtScenario2.Pitch(1); gtScenario2.Heading(1)];
     initialPose = Pose3.Expmap([initialRotation; initialPosition] + (noiseVector .* randn(6,1))); % initial noisy pose
-    graph.add(PriorFactorPose3(currentPoseKey, initialPose, noise));
+    graph.add(PriorFactorPose3(currentPoseKey, initialPose, noisePose));
   else
     currentPoseKey = symbol('x', 0);
-    noisyDelta = noiseVector .* randn(6,1);
+    noisyDelta = noiseVectorPose .* randn(6,1);
     initialPose = Pose3.Expmap(noisyDelta);
-    graph.add(PriorFactorPose3(currentPoseKey, initialPose, noise));
+    graph.add(PriorFactorPose3(currentPoseKey, initialPose, noisePose));
   end
   
   for i=1:size(gtDeltaMatrix,1)
     currentPoseKey = symbol('x', i);
     
     % for each measurement: add noise and add to graph
-    noisyDelta = gtDeltaMatrix(i,:)' + (noiseVector .* randn(6,1));
+    noisyDelta = gtDeltaMatrix(i,:)' + (noiseVectorPose .* randn(6,1));
     noisyDeltaPose = Pose3.Expmap(noisyDelta);
     
     % Add the factors to the factor graph
-    graph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, noisyDeltaPose, noise));
+    graph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, noisyDeltaPose, noisePose));
   end
   
   % optimize
