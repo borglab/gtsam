@@ -256,6 +256,9 @@ void LevenbergMarquardtOptimizer::iterate() {
       double newlinearizedError = linear->error(delta);
 
       double linearizedCostChange = state_.error - newlinearizedError;
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+              cout << "newlinearizedError = " << newlinearizedError <<
+              "linearizedCostChange = " << linearizedCostChange << endl;
 
       if (linearizedCostChange >= 0) { // step is valid
         // update values
@@ -266,9 +269,13 @@ void LevenbergMarquardtOptimizer::iterate() {
         // compute new error
         gttic(compute_error);
         if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
-          cout << "calculating error" << endl;
+          cout << "calculating error:" << endl;
         newError = graph_.error(newValues);
         gttoc(compute_error);
+
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+          cout << "old error (" << state_.error
+              << ") new (tentative) error (" << newError << ")" << endl;
 
         // cost change in the original, nonlinear system (old - new)
         double costChange = state_.error - newError;
@@ -297,8 +304,7 @@ void LevenbergMarquardtOptimizer::iterate() {
       break;
     } else if (!stopSearchingLambda) { // we failed to solved the system or we had no decrease in cost
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
-        cout << "increasing lambda: old error (" << state_.error
-            << ") new error (" << newError << ")" << endl;
+        cout << "increasing lambda" << endl;
       increaseLambda();
 
       // check if lambda is too big
@@ -310,6 +316,8 @@ void LevenbergMarquardtOptimizer::iterate() {
         break;
       }
     } else { // the change in the cost is very small and it is not worth trying bigger lambdas
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+              cout << "Levenberg-Marquardt: stopping as relative cost reduction is small" << endl;
       break;
     }
   } // end while
