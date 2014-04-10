@@ -9,7 +9,7 @@ clear all
 close all
 
 %% Configuration
-useAspnData = 0; % controls whether or not to use the ASPN data for scenario 2 as the ground truth traj
+useRealData = 0; % controls whether or not to use the Real data (is available) as the ground truth traj
 includeIMUFactors = 1;      % if true, IMU type 1 Factors will be generated for the random trajectory
 includeCameraFactors = 0;
 trajectoryLength = 50;
@@ -39,7 +39,7 @@ unsmooth_DR = 0.1; % controls smoothness on rotation norm
 gtValues = Values;
 gtGraph = NonlinearFactorGraph;
 
-if useAspnData == 1
+if useRealData == 1
   sigma_ang = 1e-4;
   sigma_cart = 40;
 else
@@ -49,7 +49,7 @@ end
 noiseVectorPose = [sigma_ang; sigma_ang; sigma_ang; sigma_cart; sigma_cart; sigma_cart];
 noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
 
-if useAspnData == 1
+if useRealData == 1
 %% Create a ground truth trajectory using scenario 2 data
   fprintf('\nUsing Scenario 2 ground truth data\n');
   % load scenario 2 ground truth data
@@ -159,7 +159,7 @@ for k=1:numMonteCarloRuns
   graph = NonlinearFactorGraph;
   
   % noisy prior
-  if useAspnData == 1
+  if useRealData == 1
     currentPoseKey = symbol('x', 0);
     initialPosition = imuSimulator.LatLonHRad_to_ECEF([gtScenario2.Lat(1); gtScenario2.Lon(1); gtScenario2.Alt(1)]);
     initialRotation = [gtScenario2.Roll(1); gtScenario2.Pitch(1); gtScenario2.Heading(1)];
