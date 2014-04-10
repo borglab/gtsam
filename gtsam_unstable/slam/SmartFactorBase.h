@@ -597,10 +597,6 @@ public:
           + Fi1.transpose() * b.segment<2>(2 * i1) // F' * b
       - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // D = (Dx2) * (2x3) * (3*2m) * (2m x 1)
 
-      vectorBlock = augmentedHessian(aug_i1, aug_numKeys).knownOffDiagonal();
-      if(debug) std::cout <<  "(after) augmentedHessian(" << aug_i1 << "," <<  aug_numKeys << ")= \n" <<
-          vectorBlock << std::endl;
-
       // (DxD) = (Dx2) * ( (2xD) - (2x3) * (3x2) * (2xD) )
       // main block diagonal - store previous block
       matrixBlock = augmentedHessian(aug_i1, aug_i1);
@@ -611,10 +607,6 @@ public:
       augmentedHessian(aug_i1, aug_i1) = matrixBlock
           + Fi1.transpose()
               * (Fi1 - Ei1_P * E.block<2, 3>(2 * i1, 0).transpose() * Fi1);
-
-      matrixBlock = augmentedHessian(aug_i1, aug_i1);
-      if(debug) std::cout <<  "(after) augmentedHessian(" << aug_i1 << "," <<  aug_i1 << ")= \n" <<
-          matrixBlock << std::endl;
 
       // upper triangular part of the hessian
       for (size_t i2 = i1 + 1; i2 < numKeys; i2++) { // for each camera
@@ -635,13 +627,6 @@ public:
         augmentedHessian(aug_i1, aug_i2) = matrixBlock
             - Fi1.transpose()
                 * (Ei1_P * E.block<2, 3>(2 * i2, 0).transpose() * Fi2);
-
-        if(debug) std::cout <<  "(after) augmentedHessian(" << aug_i1 << "," <<  aug_i2 << ")= \n" <<
-            augmentedHessian(aug_i1, aug_i2).knownOffDiagonal() << std::endl;
-
-        matrixBlock = augmentedHessian(aug_i1, aug_i2).knownOffDiagonal();
-        if(debug) std::cout <<  "(after, after) augmentedHessian(" << aug_i1 << "," <<  aug_i2 << ")= \n" <<
-            matrixBlock<< std::endl;
       }
     } // end of for over cameras
 
