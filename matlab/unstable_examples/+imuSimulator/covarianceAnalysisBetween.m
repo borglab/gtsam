@@ -28,10 +28,13 @@ noiseBias = noiseModel.Isotropic.Sigma(6, epsBias);
 
 %% Between metadata
 if useRealData == 1
-  sigma_ang = 1e-4;  sigma_cart = 0.01;
+  sigma_ang = 1e-1;  sigma_cart = 1;
 else
   sigma_ang = 1e-2;  sigma_cart = 0.1;
 end
+testName = sprintf('sa-%1.2g-sc-%1.2g',sigma_ang,sigma_cart)
+folderName = 'results/'
+
 noiseVectorPose = [sigma_ang; sigma_ang; sigma_ang; sigma_cart; sigma_cart; sigma_cart];
 noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
 
@@ -55,13 +58,13 @@ if useRealData == 1
   trajectoryLength = min([length(gtScenario.Lat) trajectoryLength]);
   
   for i=1:trajectoryLength
-    currentPoseKey = symbol('x', i-1);   
+    currentPoseKey = symbol('x', i-1);
     scenarioInd = subsampleStep * (i-1) + 1
-    gtECEF = imuSimulator.LatLonHRad_to_ECEF([gtScenario.Lat(scenarioInd); gtScenario.Lon(scenarioInd); gtScenario.Alt(scenarioInd)]);   
+    gtECEF = imuSimulator.LatLonHRad_to_ECEF([gtScenario.Lat(scenarioInd); gtScenario.Lon(scenarioInd); gtScenario.Alt(scenarioInd)]);
     % truth in ENU
     dX = gtECEF(1) - initialPositionECEF(1);
     dY = gtECEF(2) - initialPositionECEF(2);
-    dZ = gtECEF(3) - initialPositionECEF(3);  
+    dZ = gtECEF(3) - initialPositionECEF(3);
     [xlt, ylt, zlt] = imuSimulator.ct2ENU(dX, dY, dZ,Org_lat, Org_lon);
     
     gtPosition = [xlt, ylt, zlt]';
@@ -76,15 +79,15 @@ if useRealData == 1
       warning('using identity rotation')
       gtGraph.add(PriorFactorPose3(currentPoseKey, currentPose, noisePose));
       measurements.posePrior = currentPose;
-    else 
+    else
       % Generate measurements as the current pose measured in the frame of
       % the previous pose
       deltaPose = prevPose.between(currentPose);
       measurements.gtDeltaMatrix(i-1,:) = Pose3.Logmap(deltaPose);
-         
+      
       % Add the factor to the factor graph
       gtGraph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, deltaPose, noisePose));
-    end  
+    end
     prevPose = currentPose;
   end
 else
@@ -182,7 +185,7 @@ hold on;
 plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
 axis equal
 
-dis('Plotted ground truth')
+disp('Plotted ground truth')
 
 numMonteCarloRuns = 100;
 for k=1:numMonteCarloRuns
@@ -191,24 +194,17 @@ for k=1:numMonteCarloRuns
   graph = NonlinearFactorGraph;
   
   % noisy prior
-  if useRealData == 1
-    currentPoseKey = symbol('x', 0);
-    initialPosition = imuSimulator.LatLonHRad_to_ECEF([gtScenario.Lat(1); gtScenario.Lon(1); gtScenario.Alt(1)]);
-    initialRotation = [gtScenario.Roll(1); gtScenario.Pitch(1); gtScenario.Heading(1)];
-    initialPose = Pose3.Expmap([initialRotation; initialPosition] + (noiseVector .* randn(6,1))); % initial noisy pose
-    graph.add(PriorFactorPose3(currentPoseKey, initialPose, noisePose));
-  else
-    currentPoseKey = symbol('x', 0);
-    noisyDelta = noiseVectorPose .* randn(6,1);
-    initialPose = Pose3.Expmap(noisyDelta);
-    graph.add(PriorFactorPose3(currentPoseKey, initialPose, noisePose));
-  end
+  currentPoseKey = symbol('x', 0);
+  measurements.posePrior = currentPose;
+  noisyDelta = noiseVectorPose .* randn(6,1);
+  noisyInitialPose = Pose3.Expmap(noisyDelta);
+  graph.add(PriorFactorPose3(currentPoseKey, noisyInitialPose, noisePose));
   
-  for i=1:size(gtDeltaMatrix,1)
+  for i=1:size(measurements.gtDeltaMatrix,1)
     currentPoseKey = symbol('x', i);
     
     % for each measurement: add noise and add to graph
-    noisyDelta = gtDeltaMatrix(i,:)' + (noiseVectorPose .* randn(6,1));
+    noisyDelta = measurements.gtDeltaMatrix(i,:)' + (noiseVectorPose .* randn(6,1));
     noisyDeltaPose = Pose3.Expmap(noisyDelta);
     
     % Add the factors to the factor graph
@@ -225,7 +221,7 @@ for k=1:numMonteCarloRuns
   marginals = Marginals(graph, estimate);
   
   % for each pose in the trajectory
-  for i=1:size(gtDeltaMatrix,1)+1
+  for i=1:size(measurements.gtDeltaMatrix,1)+1
     % compute estimation errors
     currentPoseKey = symbol('x', i-1);
     gtPosition  = gtValues.at(currentPoseKey).translation.vector;
@@ -252,12 +248,16 @@ plot(3*ones(size(ANEES,2),1),'k--'); % Expectation(ANEES) = number of dof
 box on
 set(gca,'Fontsize',16)
 title('NEES and ANEES');
+%print('-djpeg', horzcat('runs-',testName));
+saveas(gcf,horzcat(folderName,'runs-',testName,'.fig'),'fig');
 
 %%
 figure(1)
 box on
 set(gca,'Fontsize',16)
 title('Ground truth and estimates for each MC runs');
+%print('-djpeg', horzcat('gt-',testName));
+saveas(gcf,horzcat(folderName,'gt-',testName,'.fig'),'fig');
 
 %% Let us compute statistics on the overall NEES
 n = 3; % position vector dimension
@@ -282,6 +282,11 @@ plot(r2*ones(size(ANEES,2),1),'k-.');
 box on
 set(gca,'Fontsize',16)
 title('NEES normalized by dof VS bounds');
+%print('-djpeg', horzcat('ANEES-',testName));
+saveas(gcf,horzcat(folderName,'ANEES-',testName,'.fig'),'fig');
+
+logFile = horzcat(folderName,'log-',testName);
+save(logFile)
 
 %% NEES COMPUTATION (Bar-Shalom 2001, Section 5.4)
 % the nees for a single experiment (i) is defined as
