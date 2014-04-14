@@ -1,6 +1,7 @@
 import gtsam.*;
 
 % Test GTSAM covariances on a graph with betweenFactors
+% Optionally, you can also enable IMU factors and Camera factors
 % Authors: Luca Carlone, David Jensen
 % Date: 2014/4/6
 
@@ -9,10 +10,28 @@ clear all
 close all
 
 %% Configuration
-useRealData = 1;           % controls whether or not to use the Real data (is available) as the ground truth traj
+useRealData = 0;           % controls whether or not to use the Real data (is available) as the ground truth traj
 includeIMUFactors = 0;     % if true, IMU type 1 Factors will be generated for the random trajectory
-% includeCameraFactors = 0;  % not implemented yet
-trajectoryLength = 210;     % length of the ground truth trajectory
+includeCameraFactors = 0;  % not implemented yet
+trajectoryLength = 10;     % length of the ground truth trajectory
+
+numMonteCarloRuns = 0;
+
+%% Camera metadata
+numberOfLandmarks = 40;    % Total number of visual landmarks, used for camera factors
+K = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
+cameraMeasurementNoiseSigma = 1.0;
+cameraMeasurementNoise = noiseModel.Isotropic.Sigma(2,cameraMeasurementNoiseSigma);
+
+% Create landmarks
+if includeCameraFactors == 1
+  for i = 1:numberOfLandmarks
+    gtLandmarkPoints(i) = Point3( ...
+        [rand()*20*(trajectoryLength*2.0); ...  % uniformly distributed in the x axis along 200% of the trajectory length
+         randn()*50; ...   % normally distributed in the y axis with a sigma of 50
+         randn()*50]);     % normally distributed in the z axis with a sigma of 50
+  end
+end
 
 %% Imu metadata
 epsBias = 1e-7;
@@ -92,7 +111,7 @@ if useRealData == 1
   end
 else
   %% Create a random trajectory as ground truth
-  currentVel = [0; 0; 0];                % initial velocity (used to generate IMU measurements)
+  currentVel = [0; 0; 0];              % initial velocity (used to generate IMU measurements)
   currentPose = Pose3; % initial pose  % initial pose
   deltaT = 0.1;                        % amount of time between IMU measurements
   g = [0; 0; 0];                       % gravity
@@ -116,13 +135,19 @@ else
     gtGraph.add(PriorFactorConstantBias(currentBiasKey, zeroBias, noiseBias));
   end
   
+  if includeCameraFactors == 1
+    pointNoiseSigma = 0.1;
+    pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
+    gtGraph.add(PriorFactorPoint3(symbol('p',1), gtLandmarkPoints(1), pointPriorNoise));
+  end
+  
   for i=1:trajectoryLength
     currentPoseKey = symbol('x', i);
     
-    gtDeltaPosition = unsmooth_DP*randn(3,1) + [20;0;0]; % create random vector with mean = [1 0 0] and sigma = 0.5
-    gtDeltaRotation = unsmooth_DR*randn(3,1) + [0;0;0]; % create random rotation with mean [0 0 0] and sigma = 0.1 (rad)
-    gtDeltaMatrix(i,:) = [gtDeltaRotation; gtDeltaPosition];
-    gtMeasurements.deltaPose = Pose3.Expmap(gtDeltaMatrix(i,:)');
+    gtDeltaPosition = unsmooth_DP*randn(3,1) + [20;0;0]; % create random vector with mean = [20 0 0]
+    gtDeltaRotation = unsmooth_DR*randn(3,1) + [0;0;0]; % create random rotation with mean [0 0 0]
+    measurements.gtDeltaMatrix(i,:) = [gtDeltaRotation; gtDeltaPosition];
+    gtMeasurements.deltaPose = Pose3.Expmap(measurements.gtDeltaMatrix(i,:)');
     
     % "Deduce" ground truth measurements
     % deltaPose are the gt measurements - save them in some structure
@@ -132,15 +157,15 @@ else
     % Add the factors to the factor graph
     gtGraph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, gtMeasurements.deltaPose, noisePose));
     
-    % Add IMU factors
+    %% Add IMU factors
     if includeIMUFactors == 1
       currentVelKey = symbol('v', i);  % not used if includeIMUFactors is false
       currentBiasKey = symbol('b', i); % not used if includeIMUFactors is false
       
       % create accel and gyro measurements based on
-      gtMeasurements.imu.gyro = gtDeltaMatrix(i, 1:3)'./deltaT;
+      gtMeasurements.imu.gyro = measurements.gtDeltaMatrix(i, 1:3)'./deltaT;
       % acc = (deltaPosition - initialVel * dT) * (2/dt^2)
-      gtMeasurements.imu.accel = (gtDeltaMatrix(i, 4:6)' - currentVel.*deltaT).*(2/(deltaT*deltaT));
+      gtMeasurements.imu.accel = (measurements.gtDeltaMatrix(i, 4:6)' - currentVel.*deltaT).*(2/(deltaT*deltaT));
       % Initialize preintegration
       imuMeasurement = gtsam.ImuFactorPreintegratedMeasurements(zeroBias, ...
         IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
@@ -159,14 +184,42 @@ else
         noiseModel.Isotropic.Sigma(6, epsBias)));
       
       % update current velocity
-      currentVel = gtDeltaMatrix(i,4:6)'./deltaT;
+      currentVel = measurements.gtDeltaMatrix(i,4:6)'./deltaT;
       gtValues.insert(currentVelKey, LieVector(currentVel));
       
       gtGraph.add(PriorFactorLieVector(currentVelKey, LieVector(currentVel), noiseVel));
       
       gtValues.insert(currentBiasKey, zeroBias);
-    end
+    end % end of IMU factor creation
+    
+    %% Add Camera factors
+    if includeCameraFactors == 1
+      % Create camera with the current pose and calibration K (specified above)
+      gtCamera = SimpleCamera(currentPose, K);
+      % Project landmarks into the camera
+      numSkipped = 0;
+      for j = 1:length(gtLandmarkPoints)
+        landmarkKey = symbol('p', j);
+        try
+          Z = gtCamera.project(gtLandmarkPoints(j));
+          gtGraph.add(GenericProjectionFactorCal3_S2(Z, cameraMeasurementNoise, currentPoseKey, landmarkKey, K));
+        catch
+          % Most likely the point is not within the camera's view, which
+          % is fine
+          numSkipped = numSkipped + 1;
+        end
+      end
+      fprintf('(Pose %d) %d landmarks behind the camera\n', i, numSkipped);
+    end % end of Camera factor creation
   end % end of trajectory length
+  
+  %% Add landmark positions to the Values
+  if includeCameraFactors == 1
+    for j = 1:length(gtLandmarkPoints)
+      landmarkKey = symbol('p', j);
+      gtValues.insert(landmarkKey, gtLandmarkPoints(j));
+    end
+  end
   
 end % end of ground truth creation
 
@@ -182,12 +235,12 @@ warning('Additional PriorFactorLieVector on velocities')
 
 figure(1)
 hold on;
+plot3DPoints(gtValues);
 plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
 axis equal
 
 disp('Plotted ground truth')
 
-numMonteCarloRuns = 100;
 for k=1:numMonteCarloRuns
   fprintf('Monte Carlo Run %d.\n', k');
   % create a new graph
