@@ -562,8 +562,9 @@ public:
     // Schur complement trick
     // Gs = F' * F - F' * E * P * E' * F
     // gs = F' * (b - E * P * E' * b)
+
     MatrixDD matrixBlock;
-    VectorD vectorBlock;
+    typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
 
     FastMap<Key,size_t> KeySlotMap;
     for (size_t slot=0; slot < allKeys.size(); slot++)
@@ -582,8 +583,8 @@ public:
       // D = (Dx2) * (2)
       // allKeys are the list of all camera keys in the group, e.g, (1,3,4,5,7)
       // we should map those to a slot in the local (grouped) hessian (0,1,2,3,4)
-      Key cameraKey_i1 = this->keys_[i1];
-      size_t aug_i1 = KeySlotMap[cameraKey_i1];
+      // Key cameraKey_i1 = this->keys_[i1];
+      DenseIndex aug_i1 = KeySlotMap[this->keys_[i1]];
 
       // information vector - store previous vector
       // vectorBlock = augmentedHessian(aug_i1, aug_numKeys).knownOffDiagonal();
@@ -596,24 +597,22 @@ public:
       // main block diagonal - store previous block
       matrixBlock = augmentedHessian(aug_i1, aug_i1);
       // add contribution of current factor
-      augmentedHessian(aug_i1, aug_i1) = matrixBlock
-          + Fi1.transpose()
-              * (Fi1 - Ei1_P * E.block<2, 3>(2 * i1, 0).transpose() * Fi1);
+      augmentedHessian(aug_i1, aug_i1) = matrixBlock +
+          (  Fi1.transpose() * (Fi1 - Ei1_P * E.block<2, 3>(2 * i1, 0).transpose() * Fi1)  );
 
       // upper triangular part of the hessian
       for (size_t i2 = i1 + 1; i2 < numKeys; i2++) { // for each camera
         const Matrix2D& Fi2 = Fblocks.at(i2).second;
 
-        Key cameraKey_i2 = this->keys_[i2];
-        size_t aug_i2 = KeySlotMap[cameraKey_i2];
+        //Key cameraKey_i2 = this->keys_[i2];
+        DenseIndex aug_i2 = KeySlotMap[this->keys_[i2]];
 
         // (DxD) = (Dx2) * ( (2x2) * (2xD) )
         // off diagonal block - store previous block
         // matrixBlock = augmentedHessian(aug_i1, aug_i2).knownOffDiagonal();
         // add contribution of current factor
         augmentedHessian(aug_i1, aug_i2) = augmentedHessian(aug_i1, aug_i2).knownOffDiagonal()
-            - Fi1.transpose()
-                * (Ei1_P * E.block<2, 3>(2 * i2, 0).transpose() * Fi2);
+            - Fi1.transpose() * (Ei1_P * E.block<2, 3>(2 * i2, 0).transpose() * Fi2);
       }
     } // end of for over cameras
 
