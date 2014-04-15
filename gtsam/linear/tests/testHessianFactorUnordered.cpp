@@ -471,7 +471,7 @@ TEST(HessianFactor, hessianDiagonal)
   LONGS_EQUAL(2,actualBD.size());
   EXPECT(assert_equal(G11,actualBD[0]));
   EXPECT(assert_equal(G22,actualBD[1]));
-  }
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

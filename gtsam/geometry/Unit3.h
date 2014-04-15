@@ -136,6 +136,24 @@ public:
   Vector localCoordinates(const Unit3& s) const;
 
   /// @}
+
+private:
+
+  /// @name Advanced Interface
+  /// @{
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+      ar & boost::serialization::make_nvp("Unit3",
+          boost::serialization::base_object<Value>(*this));
+      ar & BOOST_SERIALIZATION_NVP(p_);
+      ar & BOOST_SERIALIZATION_NVP(B_);
+    }
+
+  /// @}
+
 };
 
 } // namespace gtsam

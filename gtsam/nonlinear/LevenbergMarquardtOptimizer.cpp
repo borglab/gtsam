@@ -99,6 +99,8 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "           lambdaLowerBound: " << lambdaLowerBound << "\n";
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
   std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
+  std::cout << "               min_diagonal: " << min_diagonal_ << "\n";
+  std::cout << "               max_diagonal: " << max_diagonal_ << "\n";
   std::cout << "                verbosityLM: "
       << verbosityLMTranslator(verbosityLM) << "\n";
   std::cout.flush();
