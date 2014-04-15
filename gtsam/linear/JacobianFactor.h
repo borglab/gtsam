@@ -295,6 +295,7 @@ namespace gtsam {
 
     /** set noiseModel correctly */
     void setModel(bool anyConstrained, const Vector& sigmas);
+    void setModel(const noiseModel::Diagonal::shared_ptr& model);
     
     /**
      * Densely partially eliminate with QR factorization, this is usually provided as an argument to

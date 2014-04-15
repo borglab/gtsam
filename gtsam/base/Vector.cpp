@@ -327,12 +327,21 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
   vector<bool> isZero;
   for (size_t i = 0; i < m; ++i) isZero.push_back(fabs(a[i]) < 1e-9);
 
-  // If there is a valid (a!=0) constraint (sigma==0) return the first one
-  for (size_t i = 0; i < m; ++i)
+  for (size_t i = 0; i < m; ++i) {
+    // If there is a valid (a!=0) constraint (sigma==0) return the first one
     if (weights[i] == inf && !isZero[i]) {
+      // Basically, instead of doing a normal QR step with the weighted
+      // pseudoinverse, we enforce the constraint by turning
+      // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
       pseudo = delta(m, i, 1 / a[i]);
       return inf;
     }
+    // If there is a valid (a!=0) inequality constraint (sigma<0), ignore it by returning 0
+    else if (weights[i] < 0 && !isZero[i]) {
+      pseudo = zero(m);
+      return 0;
+    }
+  }
 
   // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
   // For diagonal Sigma, inv(Sigma) = diag(precisions)

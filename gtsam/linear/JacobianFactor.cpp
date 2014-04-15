@@ -638,6 +638,13 @@ void JacobianFactor::setModel(bool anyConstrained, const Vector& sigmas) {
 }
 
 /* ************************************************************************* */
+void JacobianFactor::setModel(const noiseModel::Diagonal::shared_ptr& model) {
+  if ((size_t) model->dim() != this->rows())
+    throw InvalidNoiseModel(this->rows(), model->dim());
+  model_ = model;
+}
+
+/* ************************************************************************* */
 std::pair<boost::shared_ptr<GaussianConditional>,
     boost::shared_ptr<JacobianFactor> > EliminateQR(
     const GaussianFactorGraph& factors, const Ordering& keys) {
