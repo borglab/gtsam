@@ -96,6 +96,8 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
 /* ************************************************************************* */
 GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     const VectorValues& x0) const {
+  static const bool debug = false;
+
   // The dual graph to return
   GaussianFactorGraph dualGraph;
 
@@ -110,6 +112,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     if (xiFactors.size() == 0) continue;
     GaussianFactor::shared_ptr xiFactor0 = freeHessians_->at(0);
     size_t xiDim = xiFactor0->getDim(xiFactor0->find(xiKey));
+    if (debug) cout << "xiDim: " << xiDim << endl;
 
     // Compute gradf(xi) = \frac{\partial f}{\partial xi}' = \sum_j G_ij*xj - gi
     Vector gradf_xi = zero(xiDim);
@@ -146,6 +149,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
       // Gradient is the transpose of the Jacobian: A_k = gradc_k(xi) = \frac{\partial c_k}{\partial xi}'
       // Each column for each lambda_k corresponds to [the transpose of] each constrained row factor
       Matrix A_k = factor->getA(factor->find(xiKey)).transpose();
+      if (debug) gtsam::print(A_k, "A_k = ");
       // Deal with mixed sigmas: no information if sigma != 0
       Vector sigmas = factor->get_model()->sigmas();
       for (size_t sigmaIx = 0; sigmaIx<sigmas.size(); ++sigmaIx) {
@@ -261,6 +265,7 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
 /* ************************************************************************* */
 bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution) const {
   static bool debug = false;
+  if (debug) workingGraph.print("workingGraph: ");
   // Obtain the solution from the current working graph
   VectorValues newSolution = workingGraph.optimize();
   if (debug) newSolution.print("New solution:");
@@ -268,6 +273,7 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
   // If we CAN'T move further
   if (newSolution.equals(currentSolution, 1e-5)) {
     // Compute lambda from the dual graph
+    if (debug) cout << "Building dual graph..." << endl;
     GaussianFactorGraph dualGraph = buildDualGraph(workingGraph, newSolution);
     if (debug) dualGraph.print("Dual graph: ");
     VectorValues lambdas = dualGraph.optimize();
@@ -284,6 +290,7 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
   else {
     // If we CAN make some progress
     // Adapt stepsize if some inactive inequality constraints complain about this move
+    if (debug) cout << "Computing stepsize..." << endl;
     double alpha;
     int factorIx, sigmaIx;
     VectorValues p = newSolution - currentSolution;
