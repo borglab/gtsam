@@ -136,8 +136,8 @@ TEST(QPSolver, iterate) {
   GaussianFactorGraph workingGraph = graph.clone();
 
   VectorValues currentSolution;
-  currentSolution.insert(X(1), zeros(1,1));
-  currentSolution.insert(X(2), zeros(1,1));
+  currentSolution.insert(X(1), zero(1));
+  currentSolution.insert(X(2), zero(1));
 
   std::vector<VectorValues> expectedSolutions(3);
   expectedSolutions[0].insert(X(1), (Vector(1) << 4.0/3.0));
@@ -162,8 +162,8 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   GaussianFactorGraph graph = createTestCase();
   QPSolver solver(graph);
   VectorValues initials;
-  initials.insert(X(1), zeros(1,1));
-  initials.insert(X(2), zeros(1,1));
+  initials.insert(X(1), zero(1));
+  initials.insert(X(2), zero(1));
   VectorValues solution = solver.optimize(initials);
   VectorValues expectedSolution;
   expectedSolution.insert(X(1), (Vector(1)<< 1.5));
@@ -172,7 +172,7 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
 }
 
 /* ************************************************************************* */
-// Create test graph according to Forst10book_pg171Ex5
+// Create Matlab's test graph as in http://www.mathworks.com/help/optim/ug/quadprog.html
 GaussianFactorGraph createTestMatlabQPEx() {
   GaussianFactorGraph graph;
 
@@ -202,12 +202,46 @@ TEST(QPSolver, optimizeMatlabEx) {
   GaussianFactorGraph graph = createTestMatlabQPEx();
   QPSolver solver(graph);
   VectorValues initials;
-  initials.insert(X(1), zeros(1,1));
-  initials.insert(X(2), zeros(1,1));
+  initials.insert(X(1), zero(1));
+  initials.insert(X(2), zero(1));
   VectorValues solution = solver.optimize(initials);
   VectorValues expectedSolution;
   expectedSolution.insert(X(1), (Vector(1)<< 2.0/3.0));
   expectedSolution.insert(X(2), (Vector(1)<< 4.0/3.0));
+  CHECK(assert_equal(expectedSolution, solution, 1e-7));
+}
+
+/* ************************************************************************* */
+// Create test graph as in Nocedal06book, Ex 16.4, pg. 475
+GaussianFactorGraph createTestNocedal06bookEx16_4() {
+  GaussianFactorGraph graph;
+
+  graph.push_back(JacobianFactor(X(1), ones(1,1), ones(1)));
+  graph.push_back(JacobianFactor(X(2), ones(1,1), 2.5*ones(1)));
+
+  // Inequality constraints
+  noiseModel::Constrained::shared_ptr noise = noiseModel::Constrained::MixedSigmas(
+      (Vector(1) << -1));
+  graph.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), 2*ones(1), noise));
+  graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2), 2*ones(1,1), 6*ones(1), noise));
+  graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2),-2*ones(1,1), 2*ones(1), noise));
+  graph.push_back(JacobianFactor(X(1), -ones(1,1), zero(1), noise));
+  graph.push_back(JacobianFactor(X(2), -ones(1,1), zero(1), noise));
+
+  return graph;
+}
+
+TEST(QPSolver, optimizeNocedal06bookEx16_4) {
+  GaussianFactorGraph graph = createTestNocedal06bookEx16_4();
+  QPSolver solver(graph);
+  VectorValues initials;
+  initials.insert(X(1), (Vector(1)<<2.0));
+  initials.insert(X(2), zero(1));
+
+  VectorValues solution = solver.optimize(initials);
+  VectorValues expectedSolution;
+  expectedSolution.insert(X(1), (Vector(1)<< 1.4));
+  expectedSolution.insert(X(2), (Vector(1)<< 1.7));
   CHECK(assert_equal(expectedSolution, solution, 1e-7));
 }
 
