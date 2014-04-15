@@ -11,14 +11,16 @@ close all
 
 %% Configuration
 useRealData = 0;           % controls whether or not to use the Real data (is available) as the ground truth traj
-includeIMUFactors = 0;     % if true, IMU type 1 Factors will be generated for the random trajectory
-includeCameraFactors = 0;  % not implemented yet
-trajectoryLength = 10;     % length of the ground truth trajectory
+
+includeIMUFactors = 1;     % if true, IMU type 1 Factors will be generated for the random trajectory
+includeCameraFactors = 0;  % not fully implemented yet
+
+trajectoryLength = 4;     % length of the ground truth trajectory
 
 numMonteCarloRuns = 0;
 
 %% Camera metadata
-numberOfLandmarks = 40;    % Total number of visual landmarks, used for camera factors
+numberOfLandmarks = 10;    % Total number of visual landmarks, used for camera factors
 K = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
 cameraMeasurementNoiseSigma = 1.0;
 cameraMeasurementNoise = noiseModel.Isotropic.Sigma(2,cameraMeasurementNoiseSigma);
@@ -27,14 +29,14 @@ cameraMeasurementNoise = noiseModel.Isotropic.Sigma(2,cameraMeasurementNoiseSigm
 if includeCameraFactors == 1
   for i = 1:numberOfLandmarks
     gtLandmarkPoints(i) = Point3( ...
-        [rand()*20*(trajectoryLength*2.0); ...  % uniformly distributed in the x axis along 200% of the trajectory length
-         randn()*50; ...   % normally distributed in the y axis with a sigma of 50
-         randn()*50]);     % normally distributed in the z axis with a sigma of 50
+        [rand()*20*(trajectoryLength*1.2) + 15*20; ...  % uniformly distributed in the x axis along 120% of the trajectory length, starting after 15 poses
+         randn()*20; ...   % normally distributed in the y axis with a sigma of 20
+         randn()*20]);     % normally distributed in the z axis with a sigma of 20
   end
 end
 
 %% Imu metadata
-epsBias = 1e-7;
+epsBias = 1e-20; % was 1e-7
 zeroBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 IMU_metadata.AccelerometerSigma = 1e-5;
 IMU_metadata.GyroscopeSigma = 1e-7;
@@ -42,7 +44,7 @@ IMU_metadata.IntegrationSigma = 1e-10;
 IMU_metadata.BiasAccelerometerSigma = epsBias;
 IMU_metadata.BiasGyroscopeSigma = epsBias;
 IMU_metadata.BiasAccOmegaInit = epsBias;
-noiseVel =  noiseModel.Isotropic.Sigma(3, 0.1);
+noiseVel =  noiseModel.Isotropic.Sigma(3, 1e-10); % was 0.1
 noiseBias = noiseModel.Isotropic.Sigma(6, epsBias);
 
 %% Between metadata
@@ -56,6 +58,7 @@ folderName = 'results/'
 
 noiseVectorPose = [sigma_ang; sigma_ang; sigma_ang; sigma_cart; sigma_cart; sigma_cart];
 noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
+%noisePose = noiseModel.Isotropic.Sigma(6, 1e-3);
 
 %% Create ground truth trajectory
 gtValues = Values;
@@ -120,11 +123,17 @@ else
   unsmooth_DP = 0.5; % controls smoothness on translation norm
   unsmooth_DR = 0.1; % controls smoothness on rotation norm
   
+  unsmooth_DP = 0;
+  unsmooth_DR = 0;
+  
   fprintf('\nCreating a random ground truth trajectory\n');
   %% Add priors
   currentPoseKey = symbol('x', 0);
   gtValues.insert(currentPoseKey, currentPose);
-  gtGraph.add(PriorFactorPose3(currentPoseKey, currentPose, noisePose));
+  % NOSIE ON PRIOR WAS TOO HIGH? Changing this fixed the indeterminant
+  % linear system error
+  gtGraph.add(PriorFactorPose3(currentPoseKey, currentPose, noiseModel.Isotropic.Sigma(6, 1e-3)));
+  %gtGraph.add(PriorFactorPose3(currentPoseKey, currentPose, noisePose);
   
   if includeIMUFactors == 1
     currentVelKey = symbol('v', 0);
@@ -155,7 +164,7 @@ else
     gtValues.insert(currentPoseKey, currentPose);
     
     % Add the factors to the factor graph
-    gtGraph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, gtMeasurements.deltaPose, noisePose));
+    %gtGraph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, gtMeasurements.deltaPose, noisePose));
     
     %% Add IMU factors
     if includeIMUFactors == 1
@@ -167,7 +176,8 @@ else
       % acc = (deltaPosition - initialVel * dT) * (2/dt^2)
       gtMeasurements.imu.accel = (measurements.gtDeltaMatrix(i, 4:6)' - currentVel.*deltaT).*(2/(deltaT*deltaT));
       % Initialize preintegration
-      imuMeasurement = gtsam.ImuFactorPreintegratedMeasurements(zeroBias, ...
+      imuMeasurement = gtsam.ImuFactorPreintegratedMeasurements(...
+        zeroBias, ...
         IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
         IMU_metadata.GyroscopeSigma.^2 * eye(3), ...
         IMU_metadata.IntegrationSigma.^2 * eye(3));
@@ -187,7 +197,7 @@ else
       currentVel = measurements.gtDeltaMatrix(i,4:6)'./deltaT;
       gtValues.insert(currentVelKey, LieVector(currentVel));
       
-      gtGraph.add(PriorFactorLieVector(currentVelKey, LieVector(currentVel), noiseVel));
+      %gtGraph.add(PriorFactorLieVector(currentVelKey, LieVector(currentVel), noiseVel));
       
       gtValues.insert(currentBiasKey, zeroBias);
     end % end of IMU factor creation
@@ -202,6 +212,8 @@ else
         landmarkKey = symbol('p', j);
         try
           Z = gtCamera.project(gtLandmarkPoints(j));
+          %% TO-DO probably want to do some type of filtering on the measurement values, because
+          % they might not all be valid
           gtGraph.add(GenericProjectionFactorCal3_S2(Z, cameraMeasurementNoise, currentPoseKey, landmarkKey, K));
         catch
           % Most likely the point is not within the camera's view, which
@@ -209,7 +221,7 @@ else
           numSkipped = numSkipped + 1;
         end
       end
-      fprintf('(Pose %d) %d landmarks behind the camera\n', i, numSkipped);
+      %fprintf('(Pose %d) %d landmarks behind the camera\n', i, numSkipped);
     end % end of Camera factor creation
   end % end of trajectory length
   
@@ -222,6 +234,9 @@ else
   end
   
 end % end of ground truth creation
+
+gtGraph.print(sprintf('\nGround Truth Factor graph:\n'));
+gtValues.print(sprintf('\nGround Truth Values:\n  '));
 
 warning('Additional prior on zerobias')
 warning('Additional PriorFactorLieVector on velocities')
@@ -261,7 +276,7 @@ for k=1:numMonteCarloRuns
     noisyDeltaPose = Pose3.Expmap(noisyDelta);
     
     % Add the factors to the factor graph
-    graph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, noisyDeltaPose, noisePose));
+    %graph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, noisyDeltaPose, noisePose));
   end
   
   % optimize
