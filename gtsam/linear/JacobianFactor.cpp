@@ -652,15 +652,12 @@ std::pair<boost::shared_ptr<GaussianConditional>,
   // Combine and sort variable blocks in elimination order
   JacobianFactor::shared_ptr jointFactor;
   try {
-    cout << "JacobianFactor make_shared" << endl;
     jointFactor = boost::make_shared<JacobianFactor>(factors, keys);
   } catch (std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateQR was called with a request to eliminate variables that are not\n"
             "involved in the provided factors.");
   }
-
-  jointFactor->print("JointFactor0:");
 
   // Do dense elimination
   if (jointFactor->model_)
@@ -671,13 +668,9 @@ std::pair<boost::shared_ptr<GaussianConditional>,
   // Zero below the diagonal
   jointFactor->Ab_.matrix().triangularView<Eigen::StrictlyLower>().setZero();
 
-  factors.print("Factors to eliminate: ");
-  jointFactor->print("JointFactor1:");
-
   // Split elimination result into conditional and remaining factor
   GaussianConditional::shared_ptr conditional = jointFactor->splitConditional(
       keys.size());
-  cout << "JacobianFactor split conditoinal ok!" << endl;
 
   return make_pair(conditional, jointFactor);
 }
