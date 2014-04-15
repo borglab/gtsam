@@ -371,15 +371,13 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
   Vector invsigmas = reciprocal(sigmas_);
-  // Obtain the signs of each elements.
-  // We use negative signs to denote inequality constraints
-  // TODO: might be slow!
-  Vector signs(sigmas_.size());
-  for (size_t s = 0; s<sigmas_.size(); ++s) signs[s] = (sigmas_[s]<0)?-1.0:1.0 ;
   gtsam::print(invsigmas, "invsigmas: ");
   Vector weights = emul(invsigmas,invsigmas); // calculate weights once
-  // We use negative signs to denote inequality constraints
-  weights = emul(weights, signs);
+
+  // Denote weights of inequality constraints with the negative sign
+  // TODO: might be slow!
+  for (size_t s = 0; s<sigmas_.size(); ++s)
+    weights[s] = (sigmas_[s]<0)?-weights[s]:weights[s];
   gtsam::print(weights, "weights: ");
 
   // We loop over all columns, because the columns that can be eliminated
