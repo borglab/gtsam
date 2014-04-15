@@ -374,7 +374,8 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   // Obtain the signs of each elements.
   // We use negative signs to denote inequality constraints
   // TODO: might be slow!
-  Vector signs = ediv(sigmas_, sigmas_.cwiseAbs());
+  Vector signs(sigmas_.size());
+  for (size_t s = 0; s<sigmas_.size(); ++s) signs[s] = (sigmas_[s]<0)?-1.0:1.0 ;
   gtsam::print(invsigmas, "invsigmas: ");
   Vector weights = emul(invsigmas,invsigmas); // calculate weights once
   // We use negative signs to denote inequality constraints

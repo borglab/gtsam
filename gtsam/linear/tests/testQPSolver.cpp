@@ -27,11 +27,6 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
-#ifdef __CDT_PARSER__
-#undef BOOST_FOREACH
-#define BOOST_FOREACH(a, b) for(a; ; )
-#endif
-
 class QPSolver {
   const GaussianFactorGraph& graph_;   //!< the original graph, can't be modified!
   GaussianFactorGraph workingGraph_;  //!< working set
@@ -235,8 +230,10 @@ public:
         // Use factorIndex as the lambda's key.
         lambdaTerms.push_back(make_pair(factorIndex, A_k));
       }
-      // Enforce constrained noise model so lambda is solved with QR and exactly satisfies all the equation
-      dualGraph->push_back(JacobianFactor(lambdaTerms, gradf_xi, noiseModel::Constrained::All(gradf_xi.size())));
+      // Enforce constrained noise model so lambdas are solved with QR
+      // and should exactly satisfy all the equations
+      dualGraph->push_back(JacobianFactor(lambdaTerms, gradf_xi,
+          noiseModel::Constrained::All(gradf_xi.size())));
     }
     return dualGraph;
   }
@@ -364,11 +361,51 @@ TEST(QPSolver, constraintsAux) {
       HessianFactor(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
           2.0 * ones(1, 1), zero(1), 1.0));
   EXPECT(expectedFreeHessian.equals(*freeHessian));
+}
+
+/* ************************************************************************* */
+// Create test graph according to Forst10book_pg171Ex5
+std::pair<GaussianFactorGraph, VectorValues> createEqualityConstrainedTest() {
+  GaussianFactorGraph graph;
+
+  // Objective functions x1^2 + x2^2
+  // Note the Hessian encodes:
+  //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
+  // Hence, we have G11=2, G12 = 0, g1 = 0, G22 = 2, g2 = 0, f = 0
+  graph.push_back(
+      HessianFactor(X(1), X(2), 2.0*ones(1, 1), zeros(1, 1), zero(1),
+          2.0*ones(1, 1), zero(1), 0.0));
+
+  // Equality constraints
+  // x1 + x2 = 1 --> x1 + x2 -1 = 0, hence we negate the b vector
+  Matrix A1 = (Matrix(1, 1)<<1);
+  Matrix A2 = (Matrix(1, 1)<<1);
+  Vector b = -(Vector(1)<<1);
+  // Special constrained noise model denoting <= inequalities with negative sigmas
+  noiseModel::Constrained::shared_ptr noise =
+      noiseModel::Constrained::MixedSigmas((Vector(1)<<0.0));
+  graph.push_back(JacobianFactor(X(1), A1, X(2), A2, b, noise));
+
+  // Initials values
+  VectorValues initials;
+  initials.insert(X(1), ones(1));
+  initials.insert(X(2), ones(1));
+
+  return make_pair(graph, initials);
+}
+
+TEST(QPSolver, dual) {
+  GaussianFactorGraph graph;
+  VectorValues initials;
+  boost::tie(graph, initials)= createEqualityConstrainedTest();
+  QPSolver solver(graph, initials);
 
   GaussianFactorGraph::shared_ptr dualGraph = solver.buildDualGraph(initials);
   dualGraph->print("Dual graph: ");
   VectorValues dual = dualGraph->optimize();
-  dual.print("Dual: ");
+  VectorValues expectedDual;
+  expectedDual.insert(1, (Vector(1)<<2.0));
+  CHECK(assert_equal(expectedDual, dual, 1e-100));
 }
 
 /* ************************************************************************* */
