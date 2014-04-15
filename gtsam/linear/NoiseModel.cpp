@@ -428,20 +428,35 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
   Vector invsigmas = reciprocal(sigmas_);
+  // Obtain the signs of each elements.
+  // We use negative signs to denote inequality constraints
+  // TODO: might be slow!
+  Vector signs = ediv(sigmas_, sigmas_.cwiseAbs());
+  gtsam::print(invsigmas, "invsigmas: ");
   Vector weights = emul(invsigmas,invsigmas); // calculate weights once
+  // We use negative signs to denote inequality constraints
+  weights = emul(weights, signs);
+  gtsam::print(weights, "weights: ");
 
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
   // scalar variable x as d-rS, with S the separator (remaining columns).
   // Then update A and b by substituting x with d-rS, zero-ing out x's column.
+  gtsam::print(Ab, "Ab = ");
+  cout << " n = " << n << endl;
   for (size_t j=0; j<n; ++j) {
+    cout << "--------------------" << endl;
+    cout << "j: " << j << endl;
     // extract the first column of A
     Vector a = Ab.col(j);
+    gtsam::print(a, "a = ");
 
     // Calculate weighted pseudo-inverse and corresponding precision
     gttic(constrained_QR_weightedPseudoinverse);
     double precision = weightedPseudoinverse(a, weights, pseudo);
     gttoc(constrained_QR_weightedPseudoinverse);
+    cout << "precision: " << precision << endl;
+    gtsam::print(pseudo, "pseudo: ");
 
     // If precision is zero, no information on this column
     // This is actually not limited to constraints, could happen in Gaussian::QR
@@ -452,12 +467,16 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     // create solution [r d], rhs is automatically r(n)
     Vector rd(n+1); // uninitialized !
     rd(j)=1.0; // put 1 on diagonal
-    for (size_t j2=j+1; j2<n+1; ++j2) // and fill in remainder with dot-products
+    for (size_t j2=j+1; j2<n+1; ++j2) { // and fill in remainder with dot-products
+      Vector Abj2 = Ab.col(j2);
+      gtsam::print(Abj2, "Ab.col(j2): ");
       rd(j2) = pseudo.dot(Ab.col(j2));
+    }
     gttoc(constrained_QR_create_rd);
 
     // construct solution (r, d, sigma)
     Rd.push_back(boost::make_tuple(j, rd, precision));
+    gtsam::print(rd, "rd = ");
 
     // exit after rank exhausted
     if (Rd.size()>=maxRank) break;
@@ -466,6 +485,8 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     gttic(constrained_QR_update_Ab);
     Ab.middleCols(j+1,n-j) -= a * rd.segment(j+1, n-j).transpose();
     gttoc(constrained_QR_update_Ab);
+    gtsam::print(Ab, "Updated Ab = ");
+
   }
 
   // Create storage for precisions
