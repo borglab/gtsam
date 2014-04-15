@@ -323,9 +323,14 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
   size_t m = weights.size();
   static const double inf = std::numeric_limits<double>::infinity();
 
-  // Check once for zero entries of a. TODO: really needed ?
+  // Check once for zero entries of a.
   vector<bool> isZero;
-  for (size_t i = 0; i < m; ++i) isZero.push_back(fabs(a[i]) < 1e-9);
+  for (size_t i = 0; i < m; ++i) {
+    isZero.push_back(fabs(a[i]) < 1e-9);
+    // If there is a valid (a[i]!=0) inequality constraint (weight<0),
+    // ignore it by also setting isZero flag
+    if (!isZero[i] && (weights[i]<0)) isZero[i] = true;
+  }
 
   for (size_t i = 0; i < m; ++i) {
     // If there is a valid (a!=0) constraint (sigma==0) return the first one
@@ -335,11 +340,6 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
       // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
       pseudo = delta(m, i, 1 / a[i]);
       return inf;
-    }
-    // If there is a valid (a!=0) inequality constraint (sigma<0), ignore it by returning 0
-    else if (weights[i] < 0 && !isZero[i]) {
-      pseudo = zero(m);
-      return 0;
     }
   }
 
