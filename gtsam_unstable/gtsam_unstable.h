@@ -388,7 +388,7 @@ virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
 //
 //  // enabling serialization functionality
 //  void serialize() const;
-};
+//};
 
 
 #include <gtsam/slam/RangeFactor.h>
