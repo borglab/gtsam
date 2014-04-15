@@ -253,16 +253,33 @@ public:
     return dualGraph;
   }
 
-  /// Find max lambda element
+  /**
+  * Find max lambda element.
+  * For active ineq constraints (those that are enforced as eq constraints now
+  * in the working set), we want lambda < 0.
+  * This is because:
+  *     - From the Lagrangian L = f - lambda*c, we know that the constraint force is
+  *     (lambda * \grad c) = \grad f, because it cancels out the unconstrained
+  *     unconstrained force (-\grad f), which is pulling x in the opposite direction
+  *     of \grad f towards the unconstrained minimum point
+  *     - We also know that  at the constraint surface \grad c points toward + (>= 0),
+  *     while we are solving for - (<=0) constraint
+  *     - So, we want the constraint force (lambda * \grad c) to to pull x
+  *     towards the opposite direction of \grad c, i.e. towards the area
+  *     where the ineq constraint <=0 is satisfied.
+  *     - Hence, we want lambda < 0
+  */
   std::pair<int, int> findWeakestViolationIneq(const VectorValues& lambdas) const {
     int worstFactorIx = -1, worstSigmaIx = -1;
+    // preset the maxLambda to 0.0: if lambda is <= 0.0, the constraint is either
+    // inactive or a good ineq constraint, so we don't care!
     double maxLambda = 0.0;
     BOOST_FOREACH(size_t factorIx, constraintIndices_) {
       Vector lambda = lambdas.at(factorIx);
       Vector orgSigmas = toJacobian(graph_.at(factorIx))->get_model()->sigmas();
-      for (size_t j = 0; j<lambda.size(); ++j)
-        // If it is an active inequality, and lambda is larger than the current max
-        if (orgSigmas[j]<0 && lambda[j]>maxLambda) {
+      for (size_t j = 0; j<orgSigmas.size(); ++j)
+        // If it is a BAD active inequality, and lambda is larger than the current max
+        if (orgSigmas[j]<0 && lambda[j] > maxLambda) {
           worstFactorIx = factorIx;
           worstSigmaIx = j;
           maxLambda = lambda[j];
@@ -500,15 +517,20 @@ TEST(QPSolver, iterate) {
   currentSolution.insert(X(1), zeros(1,1));
   currentSolution.insert(X(2), zeros(1,1));
 
-  workingGraph.print("workingGraph: ");
+  std::vector<VectorValues> expectedSolutions(3);
+  expectedSolutions[0].insert(X(1), (Vector(1) << 4.0/3.0));
+  expectedSolutions[0].insert(X(2), (Vector(1) << 2.0/3.0));
+  expectedSolutions[1].insert(X(1), (Vector(1) << 1.5));
+  expectedSolutions[1].insert(X(2), (Vector(1) << 0.5));
+  expectedSolutions[2].insert(X(1), (Vector(1) << 1.5));
+  expectedSolutions[2].insert(X(2), (Vector(1) << 0.5));
+
   bool converged = false;
   int it = 0;
   while (!converged) {
-    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
-    cout << "Iteration " << it << " :" << endl;
     converged = solver.iterateInPlace(workingGraph, currentSolution);
-    workingGraph.print("workingGraph: ");
-    currentSolution.print("currentSolution: ");
+    CHECK(assert_equal(expectedSolutions[it], currentSolution, 1e-100));
+    it++;
   }
 }
 
@@ -521,7 +543,10 @@ TEST(QPSolver, optimize) {
   initials.insert(X(1), zeros(1,1));
   initials.insert(X(2), zeros(1,1));
   VectorValues solution = solver.optimize(initials);
-  solution.print("Solution: ");
+  VectorValues expectedSolution;
+  expectedSolution.insert(X(1), (Vector(1)<< 1.5));
+  expectedSolution.insert(X(2), (Vector(1)<< 0.5));
+  CHECK(assert_equal(expectedSolution, solution, 1e-100));
 }
 
 /* ************************************************************************* */
