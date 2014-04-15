@@ -42,7 +42,7 @@ GaussianFactorGraph createTestCase() {
           2.0*ones(1, 1), zero(1), 10.0));
 
   // Inequality constraints
-  // Jacobian factors represent Ax-b, ehnce
+  // Jacobian factors represent Ax-b, hence
   // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
   Matrix A1 = (Matrix(4, 1)<<1, -1, 0, 1);
   Matrix A2 = (Matrix(4, 1)<<1, 0, -1, 0);
@@ -158,7 +158,7 @@ TEST(QPSolver, iterate) {
 
 /* ************************************************************************* */
 
-TEST(QPSolver, optimize) {
+TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   GaussianFactorGraph graph = createTestCase();
   QPSolver solver(graph);
   VectorValues initials;
@@ -169,6 +169,46 @@ TEST(QPSolver, optimize) {
   expectedSolution.insert(X(1), (Vector(1)<< 1.5));
   expectedSolution.insert(X(2), (Vector(1)<< 0.5));
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
+}
+
+/* ************************************************************************* */
+// Create test graph according to Forst10book_pg171Ex5
+GaussianFactorGraph createTestMatlabQPEx() {
+  GaussianFactorGraph graph;
+
+  // Objective functions 0.5*x1^2 + x2^2 - x1*x2 - 2*x1 -6*x2
+  // Note the Hessian encodes:
+  //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
+  // Hence, we have G11=1, G12 = -1, g1 = +2, G22 = 2, g2 = +6, f = 0
+  graph.push_back(
+      HessianFactor(X(1), X(2), 1.0*ones(1, 1), -ones(1, 1), 2.0*ones(1),
+          2.0*ones(1, 1), 6*ones(1), 1000.0));
+
+  // Inequality constraints
+  // Jacobian factors represent Ax-b, hence
+  // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
+  Matrix A1 = (Matrix(5, 1)<<1, -1, 2, -1, 0);
+  Matrix A2 = (Matrix(5, 1)<<1, 2,  1, 0, -1);
+  Vector b =  (Vector(5)   <<2, 2,  3, 0, 0);
+  // Special constrained noise model denoting <= inequalities with negative sigmas
+  noiseModel::Constrained::shared_ptr noise =
+      noiseModel::Constrained::MixedSigmas((Vector(5)<<-1, -1, -1, -1, -1));
+  graph.push_back(JacobianFactor(X(1), A1, X(2), A2, b, noise));
+
+  return graph;
+}
+
+TEST(QPSolver, optimizeMatlabEx) {
+  GaussianFactorGraph graph = createTestMatlabQPEx();
+  QPSolver solver(graph);
+  VectorValues initials;
+  initials.insert(X(1), zeros(1,1));
+  initials.insert(X(2), zeros(1,1));
+  VectorValues solution = solver.optimize(initials);
+  VectorValues expectedSolution;
+  expectedSolution.insert(X(1), (Vector(1)<< 2.0/3.0));
+  expectedSolution.insert(X(2), (Vector(1)<< 4.0/3.0));
+  CHECK(assert_equal(expectedSolution, solution, 1e-7));
 }
 
 /* ************************************************************************* */
