@@ -210,7 +210,7 @@ bool QPSolver::updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
 /* ************************************************************************* */
 boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGraph& workingGraph,
     const VectorValues& xk, const VectorValues& p) const {
-  static bool debug = true;
+  static bool debug = false;
 
   double minAlpha = 1.0;
   int closestFactorIx = -1, closestSigmaIx = -1;
@@ -228,9 +228,7 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
           Vector aj = jacobian->getA(xj).row(s);
           ajTp += aj.dot(pj);
         }
-        if (debug) {
-          cout << "s, ajTp: " << s << " " << ajTp << endl;
-        }
+        if (debug) cout << "s, ajTp: " << s << " " << ajTp << endl;
 
         // Check if  aj'*p >0. Don't care if it's not.
         if (ajTp<=0) continue;
@@ -242,15 +240,11 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
           Vector aj = jacobian->getA(xj).row(s);
           ajTx += aj.dot(xkj);
         }
-        if (debug) {
-          cout << "b[s], ajTx: " << b[s] << " " << ajTx << " " << ajTp << endl;
-        }
+        if (debug) cout << "b[s], ajTx: " << b[s] << " " << ajTx << " " << ajTp << endl;
 
         // alpha = (bj - aj'*xk) / (aj'*p)
         double alpha = (b[s] - ajTx)/ajTp;
-        if (debug) {
-          cout << "alpha: " << alpha << endl;
-        }
+        if (debug) cout << "alpha: " << alpha << endl;
 
         // We want the minimum of all those max alphas
         if (alpha < minAlpha) {
@@ -266,7 +260,7 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
 
 /* ************************************************************************* */
 bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution) const {
-  static bool debug = true;
+  static bool debug = false;
   // Obtain the solution from the current working graph
   VectorValues newSolution = workingGraph.optimize();
   if (debug) newSolution.print("New solution:");
@@ -294,9 +288,7 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
     int factorIx, sigmaIx;
     VectorValues p = newSolution - currentSolution;
     boost::tie(alpha, factorIx, sigmaIx) = computeStepSize(workingGraph, currentSolution, p);
-    if (debug) {
-      cout << "alpha, factorIx, sigmaIx: " << alpha << " " << factorIx << " " << sigmaIx << endl;
-    }
+    if (debug) cout << "alpha, factorIx, sigmaIx: " << alpha << " " << factorIx << " " << sigmaIx << endl;
     // also add to the working set the one that complains the most
     updateWorkingSetInplace(workingGraph, factorIx, sigmaIx, 0.0);
     // step!

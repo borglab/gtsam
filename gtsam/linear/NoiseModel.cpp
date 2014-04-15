@@ -415,7 +415,7 @@ Constrained::shared_ptr Constrained::unit(size_t augmentedDim) const {
 // It is Gram-Schmidt orthogonalization rather than Householder
 // Previously Diagonal::QR
 SharedDiagonal Constrained::QR(Matrix& Ab) const {
-  bool verbose = true;
+  bool verbose = false;
   if (verbose) cout << "\nStarting Constrained::QR" << endl;
 
   // get size(A) and maxRank
@@ -428,34 +428,29 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
   Vector invsigmas = reciprocal(sigmas_);
-  gtsam::print(invsigmas, "invsigmas: ");
   Vector weights = emul(invsigmas,invsigmas); // calculate weights once
 
   // Denote weights of inequality constraints with the negative sign
   // TODO: might be slow!
   for (size_t s = 0; s<sigmas_.size(); ++s)
     weights[s] = (sigmas_[s]<0)?-weights[s]:weights[s];
-  gtsam::print(weights, "weights: ");
+  if (verbose) gtsam::print(weights, "weights: ");
 
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
   // scalar variable x as d-rS, with S the separator (remaining columns).
   // Then update A and b by substituting x with d-rS, zero-ing out x's column.
-  gtsam::print(Ab, "Ab = ");
-  cout << " n = " << n << endl;
+  if (verbose) gtsam::print(Ab, "Ab = ");
   for (size_t j=0; j<n; ++j) {
-    cout << "--------------------" << endl;
-    cout << "j: " << j << endl;
+    if (verbose) cout << "j: " << j << endl;
     // extract the first column of A
     Vector a = Ab.col(j);
-    gtsam::print(a, "a = ");
 
     // Calculate weighted pseudo-inverse and corresponding precision
     gttic(constrained_QR_weightedPseudoinverse);
     double precision = weightedPseudoinverse(a, weights, pseudo);
     gttoc(constrained_QR_weightedPseudoinverse);
-    cout << "precision: " << precision << endl;
-    gtsam::print(pseudo, "pseudo: ");
+    if (verbose) gtsam::print(pseudo, "pseudo: ");
 
     // If precision is zero, no information on this column
     // This is actually not limited to constraints, could happen in Gaussian::QR
@@ -468,14 +463,12 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     rd(j)=1.0; // put 1 on diagonal
     for (size_t j2=j+1; j2<n+1; ++j2) { // and fill in remainder with dot-products
       Vector Abj2 = Ab.col(j2);
-      gtsam::print(Abj2, "Ab.col(j2): ");
       rd(j2) = pseudo.dot(Ab.col(j2));
     }
     gttoc(constrained_QR_create_rd);
 
     // construct solution (r, d, sigma)
     Rd.push_back(boost::make_tuple(j, rd, precision));
-    gtsam::print(rd, "rd = ");
 
     // exit after rank exhausted
     if (Rd.size()>=maxRank) break;
@@ -484,16 +477,12 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     gttic(constrained_QR_update_Ab);
     Ab.middleCols(j+1,n-j) -= a * rd.segment(j+1, n-j).transpose();
     gttoc(constrained_QR_update_Ab);
-    gtsam::print(Ab, "Updated Ab = ");
-
   }
 
-  cout << "Create storage for precisions" << endl;
   // Create storage for precisions
   Vector precisions(Rd.size());
 
   gttic(constrained_QR_write_back_into_Ab);
-  cout << "write back result" << endl;
   // Write back result in Ab, imperative as we are
   // TODO: test that is correct if a column was skipped !!!!
   size_t i = 0; // start with first row
@@ -511,8 +500,6 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   }
   gttoc(constrained_QR_write_back_into_Ab);
 
-  cout << "return " << (int) mixed << endl;
-  gtsam::print(precisions, "precisions:");
   // Must include mu, as the defaults might be higher, resulting in non-convergence
   return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
 }
