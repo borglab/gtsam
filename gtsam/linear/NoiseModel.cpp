@@ -358,7 +358,7 @@ Constrained::shared_ptr Constrained::unit(size_t augmentedDim) const {
 // It is Gram-Schmidt orthogonalization rather than Householder
 // Previously Diagonal::QR
 SharedDiagonal Constrained::QR(Matrix& Ab) const {
-  bool verbose = false;
+  bool verbose = true;
   if (verbose) cout << "\nStarting Constrained::QR" << endl;
 
   // get size(A) and maxRank
@@ -431,10 +431,12 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 
   }
 
+  cout << "Create storage for precisions" << endl;
   // Create storage for precisions
   Vector precisions(Rd.size());
 
   gttic(constrained_QR_write_back_into_Ab);
+  cout << "write back result" << endl;
   // Write back result in Ab, imperative as we are
   // TODO: test that is correct if a column was skipped !!!!
   size_t i = 0; // start with first row
@@ -452,6 +454,8 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   }
   gttoc(constrained_QR_write_back_into_Ab);
 
+  cout << "return " << (int) mixed << endl;
+  gtsam::print(precisions, "precisions:");
   // Must include mu, as the defaults might be higher, resulting in non-convergence
   return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
 }
