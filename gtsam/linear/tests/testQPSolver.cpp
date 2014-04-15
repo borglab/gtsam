@@ -304,7 +304,26 @@ public:
   }
 
   /**
-   * Compute step size
+   * Compute step size alpha for the new solution x' = xk + alpha*p, where alpha \in [0,1]
+   * We have to make sure the new solution with alpha satisfies all INACTIVE ineq constraints
+   * If some inactive ineq constraints complain about the full step (alpha = 1),
+   * we have to adjust alpha to stay within the ineq constraints' feasible regions.
+   *
+   * For each inactive ineq j:
+   *  - We already have: aj'*xk - bj <= 0, since xk satisfies all ineq constraints
+   *  - We want: aj'*(xk + alpha*p) - bj <= 0
+   *  - If aj'*p <= 0, we have: aj'*(xk + alpha*p) <= aj'*xk <= bj, for all alpha>0
+   *  it's good!
+   *  - We only care when aj'*p > 0. In this case, we need to choose alpha so that
+   *  aj'*xk + alpha*aj'*p - bj <= 0  --> alpha <= (bj - aj'*xk) / (aj'*p)
+   *  We want to step as far as possible, so we should choose alpha = (bj - aj'*xk) / (aj'*p)
+   *
+   * We want the minimum of all those alphas among all inactive ineq.
+   *
+   *    @return a tuple of (alpha, factorIndex, sigmaIndex) where (factorIndex, sigmaIndex)
+   *            is the constraint that has minimum alpha, or (-1,-1) if alpha = 1.
+   *            This constraint will be added to the working set and become active
+   *            in the next iteration
    */
   boost::tuple<double, int, int> computeStepSize(const GaussianFactorGraph& workingGraph,
       const VectorValues& xk, const VectorValues& p) const {
@@ -316,9 +335,10 @@ public:
       JacobianFactor::shared_ptr jacobian = toJacobian(workingGraph.at(factorIx));
       Vector sigmas = jacobian->get_model()->sigmas();
       Vector b = jacobian->getb();
-      for (size_t s = 0; s<sigmas.size(); ++s)
+      for (size_t s = 0; s<sigmas.size(); ++s) {
         // If it is an inactive inequality, compute alpha and update min
         if (sigmas[s]<0) {
+          // Compute aj'*p
           double ajTp = 0.0;
           for (Factor::const_iterator xj = jacobian->begin(); xj != jacobian->end(); ++xj) {
             Vector pj = p.at(*xj);
@@ -328,7 +348,11 @@ public:
           if (debug) {
             cout << "s, ajTp: " << s << " " << ajTp << endl;
           }
+
+          // Check if  aj'*p >0. Don't care if it's not.
           if (ajTp<=0) continue;
+
+          // Compute aj'*xk
           double ajTx = 0.0;
           for (Factor::const_iterator xj = jacobian->begin(); xj != jacobian->end(); ++xj) {
             Vector xkj = xk.at(*xj);
@@ -338,16 +362,21 @@ public:
           if (debug) {
             cout << "b[s], ajTx: " << b[s] << " " << ajTx << " " << ajTp << endl;
           }
-          double alpha = (b[s] - ajTx)/ajTp; // TODO: compute me!
+
+          // alpha = (bj - aj'*xk) / (aj'*p)
+          double alpha = (b[s] - ajTx)/ajTp;
           if (debug) {
             cout << "alpha: " << alpha << endl;
           }
+
+          // We want the minimum of all those max alphas
           if (alpha < minAlpha) {
             closestFactorIx = factorIx;
             closestSigmaIx = s;
             minAlpha = alpha;
           }
         }
+      }
     }
     return boost::make_tuple(minAlpha, closestFactorIx, closestSigmaIx);
   }
