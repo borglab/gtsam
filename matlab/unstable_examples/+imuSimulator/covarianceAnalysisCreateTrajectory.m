@@ -81,31 +81,31 @@ end % end of else
 
 %% Create IMU measurements and Values for the trajectory
 if options.includeIMUFactors == 1
-currentVel = [0 0 0];              % initial velocity (used to generate IMU measurements)
-deltaT = 0.1;                        % amount of time between IMU measurements
+currentVel = [0 0 0];  % initial velocity (used to generate IMU measurements)
+deltaT = 0.1;          % amount of time between IMU measurements
 
-% Iterate over the deltaMatrix to generate appropriate IMU measurements
-for i = 1:size(measurements.deltaMatrix, 1)
-  % Update Keys
-  currentVelKey = symbol('v', i);
-  currentBiasKey = symbol('b', i);
+  % Iterate over the deltaMatrix to generate appropriate IMU measurements
+  for i = 1:size(measurements.deltaMatrix, 1)
+    % Update Keys
+    currentVelKey = symbol('v', i);
+    currentBiasKey = symbol('b', i);
 
-  measurements.imu.deltaT(i) = deltaT;
+    measurements.imu.deltaT(i) = deltaT;
 
-  % create accel and gyro measurements based on
-  measurements.imu.gyro(i,:) = measurements.deltaMatrix(i, 1:3)./measurements.imu.deltaT(i);
+    % create accel and gyro measurements based on
+    measurements.imu.gyro(i,:) = measurements.deltaMatrix(i, 1:3)./measurements.imu.deltaT(i);
 
-  % acc = (deltaPosition - initialVel * dT) * (2/dt^2)
-  measurements.imu.accel(i,:) = (measurements.deltaMatrix(i, 4:6) ...
-      - currentVel.*measurements.imu.deltaT(i)).*(2/(measurements.imu.deltaT(i)*measurements.imu.deltaT(i)));
+    % acc = (deltaPosition - initialVel * dT) * (2/dt^2)
+    measurements.imu.accel(i,:) = (measurements.deltaMatrix(i, 4:6) ...
+        - currentVel.*measurements.imu.deltaT(i)).*(2/(measurements.imu.deltaT(i)*measurements.imu.deltaT(i)));
 
-  % Update velocity
-  currentVel = measurements.deltaMatrix(i,4:6)./measurements.imu.deltaT(i);
+    % Update velocity
+    currentVel = measurements.deltaMatrix(i,4:6)./measurements.imu.deltaT(i);
 
-  % Add Values: velocity and bias
-  values.insert(currentVelKey, LieVector(currentVel'));
-  values.insert(currentBiasKey, metadata.imu.zeroBias);
-end
+    % Add Values: velocity and bias
+    values.insert(currentVelKey, LieVector(currentVel'));
+    values.insert(currentBiasKey, metadata.imu.zeroBias);
+  end
 end % end of IMU measurements
 
 end
