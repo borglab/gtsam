@@ -1,4 +1,4 @@
-function [ graph, values ] = covarianceAnalysisCreateFactorGraph( measurements, values, noiseModels, measurementNoise, options, metadata) 
+function [ graph ] = covarianceAnalysisCreateFactorGraph( measurements, values, noiseModels, measurementNoise, options, metadata) 
 % Create a factor graph based on provided measurements, values, and noises.
 % Used for covariance analysis scripts.
 % 'options' contains fields for including various factor types.
@@ -20,19 +20,21 @@ for i=0:size(measurements.deltaMatrix, 1);
     %% first time step, add priors
     warning('fake angles! TODO: use constructor from roll-pitch-yaw when using real data')
     warning('using identity rotation')
-    graph.add(PriorFactorPose3(currentPoseKey, currentPose, noiseModels.noisePose));
-    measurements.posePrior = currentPose;
     
+    % Pose prior (poses used for all factors)
+    initialPose = Pose3.Expmap(measurementNoise.poseNoiseVector .* randn(6,1));
+    graph.add(PriorFactorPose3(currentPoseKey, initialPose, noiseModels.noisePose));
+    
+    % IMU velocity and bias priors
     if options.includeIMUFactors == 1
       currentVelKey = symbol('v', 0);
       currentBiasKey = symbol('b', 0);
       currentVel = [0; 0; 0];
-      values.insert(currentVelKey, LieVector(currentVel));
-      values.insert(currentBiasKey, metadata.imu.zeroBias);
       graph.add(PriorFactorLieVector(currentVelKey, LieVector(currentVel), noiseModels.noiseVel));
       graph.add(PriorFactorConstantBias(currentBiasKey, metadata.imu.zeroBias, noiseModels.noisePriorBias));
     end
     
+    % Camera priors
     if options.includeCameraFactors == 1
       pointNoiseSigma = 0.1;
       pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
@@ -46,7 +48,7 @@ for i=0:size(measurements.deltaMatrix, 1);
     if options.includeBetweenFactors == 1
       % Create the noisy pose estimate
       deltaPose = Pose3.Expmap(measurements.deltaMatrix(i,:)' ...
-        + (measurementNoise.poseNoiseVector' .* randn(6,1)));  % added noise
+        + (measurementNoise.poseNoiseVector .* randn(6,1)));  % added noise
       % Add the between factor to the graph
       graph.add(BetweenFactorPose3(prevPoseKey, currentPoseKey, deltaPose, noiseModels.noisePose));
     end % end of Between pose factor creation
@@ -58,9 +60,9 @@ for i=0:size(measurements.deltaMatrix, 1);
       currentBiasKey = symbol('b', i); % not used if includeIMUFactors is false
       % Generate IMU measurements with noise
       imuAccel = measurements.imu.accel(i,:)' ...
-          + (measurementNoise.imu.accelNoiseVector' .* randn(3,1));  % added noise
+          + (measurementNoise.imu.accelNoiseVector .* randn(3,1));  % added noise
       imuGyro = measurements.imu.gyro(i,:)' ...
-          + (measurementNoise.imu.gyroNoiseVector' .* randn(3,1));   % added noise
+          + (measurementNoise.imu.gyroNoiseVector .* randn(3,1));   % added noise
       % Initialize preintegration
       imuMeasurement = gtsam.ImuFactorPreintegratedMeasurements(...
         metadata.imu.zeroBias, ...

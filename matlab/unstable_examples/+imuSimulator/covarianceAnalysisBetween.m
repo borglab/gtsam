@@ -10,11 +10,11 @@ clear all
 close all
 
 %% Configuration
-options.useRealData = 0;           % controls whether or not to use the real data (if available) as the ground truth traj
+options.useRealData = 1;           % controls whether or not to use the real data (if available) as the ground truth traj
 options.includeBetweenFactors = 1; % if true, BetweenFactors will be generated between consecutive poses
 options.includeIMUFactors = 1;     % if true, IMU type 1 Factors will be generated for the trajectory
 options.includeCameraFactors = 0;  % not fully implemented yet
-options.trajectoryLength = 4;      % length of the ground truth trajectory
+options.trajectoryLength = 209;      % length of the ground truth trajectory
 options.subsampleStep = 20;
 
 numMonteCarloRuns = 2;
@@ -51,8 +51,14 @@ noiseVel =  noiseModel.Isotropic.Sigma(3, 1e-2); % was 0.1
 noiseBias = noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias);
 noisePriorBias = noiseModel.Isotropic.Sigma(6, 1e-4);
 
+sigma_accel = metadata.imu.AccelerometerSigma;
+sigma_gyro = metadata.imu.GyroscopeSigma;
+noiseVectorAccel = [sigma_accel; sigma_accel; sigma_accel];
+noiseVectorGyro = [sigma_gyro; sigma_gyro; sigma_gyro];
+
+
 %% Between metadata
-sigma_ang = 1e-2;  sigma_cart = 1;
+sigma_ang = 1e-3;  sigma_cart = 1e-3;
 noiseVectorPose = [sigma_ang; sigma_ang; sigma_ang; sigma_cart; sigma_cart; sigma_cart];
 noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
 %noisePose = noiseModel.Isotropic.Sigma(6, 1e-3);
@@ -73,10 +79,10 @@ gtNoiseModels.noisePriorPose = noisePose;
 gtNoiseModels.noisePriorBias = noisePriorBias;
 
 % Set measurement noise to 0, because this is ground truth
-gtMeasurementNoise.poseNoiseVector = [0 0 0 0 0 0];
-gtMeasurementNoise.imu.accelNoiseVector = [0 0 0];
-gtMeasurementNoise.imu.gyroNoiseVector = [0 0 0];
-gtMeasurementNoise.cameraPixelNoiseVector = [0 0];
+gtMeasurementNoise.poseNoiseVector = [0; 0; 0; 0; 0; 0;];
+gtMeasurementNoise.imu.accelNoiseVector = [0; 0; 0];
+gtMeasurementNoise.imu.gyroNoiseVector = [0; 0; 0];
+gtMeasurementNoise.cameraPixelNoiseVector = [0; 0];
   
 gtGraph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
     gtMeasurements, ...     % ground truth measurements
@@ -87,8 +93,8 @@ gtGraph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
     metadata);              % misc data necessary for factor creation
 
 %% Display, printing, and plotting of ground truth
-gtGraph.print(sprintf('\nGround Truth Factor graph:\n'));
-gtValues.print(sprintf('\nGround Truth Values:\n  '));
+%gtGraph.print(sprintf('\nGround Truth Factor graph:\n'));
+%gtValues.print(sprintf('\nGround Truth Values:\n  '));
 
 warning('Additional prior on zerobias')
 warning('Additional PriorFactorLieVector on velocities')
@@ -102,40 +108,32 @@ axis equal
 disp('Plotted ground truth')
 
 %% Monte Carlo Runs
+
+% Set up noise models
+monteCarloNoiseModels.noisePose = noisePose;
+monteCarloNoiseModels.noiseVel = noiseVel;
+monteCarloNoiseModels.noiseBias = noiseBias;
+monteCarloNoiseModels.noisePriorPose = noisePose;
+monteCarloNoiseModels.noisePriorBias = noisePriorBias;
+
+% Set measurement noise for monte carlo runs
+monteCarloMeasurementNoise.poseNoiseVector = noiseVectorPose;
+monteCarloMeasurementNoise.imu.accelNoiseVector = noiseVectorAccel;
+monteCarloMeasurementNoise.imu.gyroNoiseVector = noiseVectorGyro;
+monteCarloMeasurementNoise.cameraPixelNoiseVector = [0; 0];
+  
 for k=1:numMonteCarloRuns
   fprintf('Monte Carlo Run %d.\n', k');
-  
-  % create a new graph
-  graph = NonlinearFactorGraph;
-  
-  % noisy prior
-  currentPoseKey = symbol('x', 0);
-  currentPose = gtValues.at(currentPoseKey);
-  gtMeasurements.posePrior = currentPose;
-  noisyDelta = noiseVectorPose .* randn(6,1);
-  noisyInitialPose = Pose3.Expmap(noisyDelta);
-  graph.add(PriorFactorPose3(currentPoseKey, noisyInitialPose, noisePose));
-  
-  for i=1:size(gtMeasurements.deltaMatrix,1)
-    currentPoseKey = symbol('x', i);
-    
-    % for each measurement: add noise and add to graph
-    noisyDelta = gtMeasurements.deltaMatrix(i,:)' + (noiseVectorPose .* randn(6,1));
-    noisyDeltaPose = Pose3.Expmap(noisyDelta);
-    
-    % Add the factors to the factor graph
-    graph.add(BetweenFactorPose3(currentPoseKey-1, currentPoseKey, noisyDeltaPose, noisePose));
-  end
 
-%   graph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
-%     gtMeasurements, ...     % ground truth measurements
-%     gtValues, ...           % ground truth Values
-%     gtNoiseModels, ...      % noise models to use in this graph
-%     gtMeasurementNoise, ... % noise to apply to measurements
-%     options, ...            % options for the graph (e.g. which factors to include)
-%     metadata);              % misc data necessary for factor creation
+  % Create a new graph using noisy measurements
+  graph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
+    gtMeasurements, ...     % ground truth measurements
+    gtValues, ...           % ground truth Values
+    monteCarloNoiseModels, ...      % noise models to use in this graph
+    monteCarloMeasurementNoise, ... % noise to apply to measurements
+    options, ...            % options for the graph (e.g. which factors to include)
+    metadata);              % misc data necessary for factor creation
       
-
   %graph.print('graph')
   
   % optimize
