@@ -2286,7 +2286,8 @@ virtual class ConstantBias : gtsam::Value {
 #include <gtsam/navigation/ImuFactor.h>
 class ImuFactorPreintegratedMeasurements {
   // Standard Constructor
-  ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance, Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance);
+  ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance,Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance, bool use2ndOrderIntegration);
+  ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance,Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance);
   ImuFactorPreintegratedMeasurements(const gtsam::ImuFactorPreintegratedMeasurements& rhs);
 
   // Testable

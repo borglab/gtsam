@@ -9,7 +9,7 @@ import gtsam.*;
 
 values = Values;
 
-warning('fake angles! TODO: use constructor from roll-pitch-yaw when using real data - using identity rotation')
+warning('fake angles! TODO: use constructor from roll-pitch-yaw when using real data - currently using identity rotation')
 
 if options.useRealData == 1
   %% Create a ground truth trajectory from Real data (if available)
