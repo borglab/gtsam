@@ -1,4 +1,4 @@
-function [ values, measurements] = covarianceAnalysisCreateTrajectory( options, metadata )
+function [values, measurements] = covarianceAnalysisCreateTrajectory( options, metadata )
 % Create a trajectory for running covariance analysis scripts.
 % 'options' contains fields for including various factor types and setting trajectory length
 % 'metadata' is a storage variable for miscellaneous factor-specific values
@@ -8,6 +8,9 @@ function [ values, measurements] = covarianceAnalysisCreateTrajectory( options, 
 import gtsam.*;
 
 values = Values;
+
+    warning('fake angles! TODO: use constructor from roll-pitch-yaw when using real data')
+    warning('using identity rotation')
 
 if options.useRealData == 1
   %% Create a ground truth trajectory from Real data (if available)
@@ -26,7 +29,7 @@ if options.useRealData == 1
     % Update the pose key
     currentPoseKey = symbol('x', i-1);
     
-    % Generate the current pose 
+    % Generate the current pose
     scenarioInd = options.subsampleStep * (i-1) + 1;
     fprintf('%d, ', scenarioInd);
     if mod(i,20) == 0
@@ -40,7 +43,7 @@ if options.useRealData == 1
     [xlt, ylt, zlt] = imuSimulator.ct2ENU(dX, dY, dZ,Org_lat, Org_lon);
     
     gtPosition = [xlt, ylt, zlt]';
-    gtRotation = Rot3; % Rot3.ypr(gtScenario.Heading(scenarioInd), gtScenario.Pitch(scenarioInd), gtScenario.Roll(scenarioInd));
+    gtRotation = Rot3; %Rot3.ypr(gtScenario.Heading(scenarioInd), gtScenario.Pitch(scenarioInd), gtScenario.Roll(scenarioInd));
     currentPose = Pose3(gtRotation, Point3(gtPosition));
     
     % Add values
@@ -94,7 +97,7 @@ if options.includeIMUFactors == 1
     % Update Keys
     currentVelKey = symbol('v', i);
     currentBiasKey = symbol('b', i);
-
+    
     if i == 0
       % Add initial values
       currentVel = [0 0 0];
@@ -105,14 +108,14 @@ if options.includeIMUFactors == 1
       
       % create accel and gyro measurements based on
       measurements.imu.gyro(i,:) = measurements.deltaMatrix(i, 1:3)./measurements.imu.deltaT(i);
-
+      
       % acc = (deltaPosition - initialVel * dT) * (2/dt^2)
       measurements.imu.accel(i,:) = (measurements.deltaMatrix(i, 4:6) ...
-          - currentVel.*measurements.imu.deltaT(i)).*(2/(measurements.imu.deltaT(i)*measurements.imu.deltaT(i)));
-
+        - currentVel.*measurements.imu.deltaT(i)).*(2/(measurements.imu.deltaT(i)*measurements.imu.deltaT(i)));
+      
       % Update velocity
       currentVel = measurements.deltaMatrix(i,4:6)./measurements.imu.deltaT(i);
-
+      
       % Add Values: velocity and bias
       values.insert(currentVelKey, LieVector(currentVel'));
       values.insert(currentBiasKey, metadata.imu.zeroBias);
@@ -120,5 +123,5 @@ if options.includeIMUFactors == 1
   end
 end % end of IMU measurements
 
-end
+end % end of function
 

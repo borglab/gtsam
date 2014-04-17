@@ -1,7 +1,9 @@
 import gtsam.*;
 
-% Test GTSAM covariances on a graph with betweenFactors
-% Optionally, you can also enable IMU factors and Camera factors
+% Test GTSAM covariances on a factor graph with:
+% Between Factors
+% IMU factors
+% Projection factors
 % Authors: Luca Carlone, David Jensen
 % Date: 2014/4/6
 
@@ -11,17 +13,20 @@ close all
 
 %% Configuration
 options.useRealData = 1;           % controls whether or not to use the real data (if available) as the ground truth traj
-options.includeBetweenFactors = 1; % if true, BetweenFactors will be generated between consecutive poses
-options.includeIMUFactors = 1;     % if true, IMU factors will be generated for the trajectory based on options.imuFactorType
+options.includeBetweenFactors = 1; % if true, BetweenFactors will be added between consecutive poses
+
+options.includeIMUFactors = 1;     % if true, IMU factors will be added between consecutive states (biases, poses, velocities)
 options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
+
 options.includeCameraFactors = 0;  % not fully implemented yet
+numberOfLandmarks = 10;            % Total number of visual landmarks, used for camera factors
+
 options.trajectoryLength = 209;    % length of the ground truth trajectory
 options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)
 
 numMonteCarloRuns = 2;             % number of Monte Carlo runs to perform
 
 %% Camera metadata
-numberOfLandmarks = 10;    % Total number of visual landmarks, used for camera factors
 K = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
 cameraMeasurementNoiseSigma = 1.0;
 cameraMeasurementNoise = noiseModel.Isotropic.Sigma(2,cameraMeasurementNoiseSigma);
@@ -40,29 +45,27 @@ end
 %% Imu metadata
 metadata.imu.epsBias = 1e-10; % was 1e-7
 metadata.imu.zeroBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
-metadata.imu.AccelerometerSigma = 1e-5;
-metadata.imu.GyroscopeSigma = 1e-7;
-metadata.imu.IntegrationSigma = 1e-4;
+metadata.imu.AccelerometerSigma = 1e-3;
+metadata.imu.GyroscopeSigma = 1e-5;
+metadata.imu.IntegrationSigma = 1e-5;
 metadata.imu.BiasAccelerometerSigma = metadata.imu.epsBias;
-metadata.imu.BiasGyroscopeSigma = metadata.imu.epsBias;
+metadata.imu.BiasGyroscopeSigma = metadata.imu.epsBias;  
 metadata.imu.BiasAccOmegaInit = metadata.imu.epsBias;
 metadata.imu.g = [0;0;0];
 metadata.imu.omegaCoriolis = [0;0;0];
 noiseVel =  noiseModel.Isotropic.Sigma(3, 1e-2); % was 0.1
-noiseBias = noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias);
-noisePriorBias = noiseModel.Isotropic.Sigma(6, 1e-4);
+noiseBias = noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias); % between on biases
+noisePriorBias = noiseModel.Isotropic.Sigma(6, 1e-6);
 
 sigma_accel = metadata.imu.AccelerometerSigma;
 sigma_gyro = metadata.imu.GyroscopeSigma;
-noiseVectorAccel = [sigma_accel; sigma_accel; sigma_accel];
-noiseVectorGyro = [sigma_gyro; sigma_gyro; sigma_gyro];
-
+noiseVectorAccel = sigma_accel * ones(3,1);
+noiseVectorGyro =  sigma_gyro  * ones(3,1);
 
 %% Between metadata
-sigma_ang = 1e-3;  sigma_cart = 1e-3;
-noiseVectorPose = [sigma_ang; sigma_ang; sigma_ang; sigma_cart; sigma_cart; sigma_cart];
+sigma_ang = 1e-2;  sigma_cart = 1e-1;
+noiseVectorPose = [sigma_ang * ones(3,1); sigma_cart * ones(3,1)];
 noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
-%noisePose = noiseModel.Isotropic.Sigma(6, 1e-3);
 
 %% Set log files
 testName = sprintf('sa-%1.2g-sc-%1.2g',sigma_ang,sigma_cart)

@@ -17,10 +17,7 @@ for i=0:size(measurements.deltaMatrix, 1);
   currentPose = values.at(currentPoseKey); 
   
   if i==0
-    %% first time step, add priors
-    warning('fake angles! TODO: use constructor from roll-pitch-yaw when using real data')
-    warning('using identity rotation')
-    
+    %% first time step, add priors    
     % Pose prior (poses used for all factors)
     initialPose = Pose3.Expmap(measurementNoise.poseNoiseVector .* randn(6,1));
     graph.add(PriorFactorPose3(currentPoseKey, initialPose, noiseModels.noisePose));
@@ -28,10 +25,12 @@ for i=0:size(measurements.deltaMatrix, 1);
     % IMU velocity and bias priors
     if options.includeIMUFactors == 1
       currentVelKey = symbol('v', 0);
-      currentBiasKey = symbol('b', 0);
-      currentVel = [0; 0; 0];
+      currentVel = values.at(currentVelKey).vector; 
       graph.add(PriorFactorLieVector(currentVelKey, LieVector(currentVel), noiseModels.noiseVel));
-      graph.add(PriorFactorConstantBias(currentBiasKey, metadata.imu.zeroBias, noiseModels.noisePriorBias));
+      
+      currentBiasKey = symbol('b', 0);
+      currentBias = values.at(currentBiasKey);  
+      graph.add(PriorFactorConstantBias(currentBiasKey, currentBias, noiseModels.noisePriorBias));
     end
     
     % Camera priors
@@ -84,7 +83,7 @@ for i=0:size(measurements.deltaMatrix, 1);
           imuMeasurement, ...
           metadata.imu.g, metadata.imu.omegaCoriolis, ...
           noiseModel.Isotropic.Sigma(15, metadata.imu.epsBias)));
-      else % Assumed to be type 1 if type 2 is not selected
+      else % IMU type 1 
         % Initialize preintegration
         imuMeasurement = gtsam.ImuFactorPreintegratedMeasurements(...
           metadata.imu.zeroBias, ...
@@ -100,8 +99,8 @@ for i=0:size(measurements.deltaMatrix, 1);
         graph.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, metadata.imu.zeroBias, ...
           noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias)));
         % Additional prior on zerobias
-        graph.add(PriorFactorConstantBias(currentBiasKey, metadata.imu.zeroBias, ...
-          noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias))); 
+        %graph.add(PriorFactorConstantBias(currentBiasKey, metadata.imu.zeroBias, ...
+        %  noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias))); 
       end
      
     end % end of IMU factor creation
@@ -128,9 +127,9 @@ for i=0:size(measurements.deltaMatrix, 1);
       %fprintf('(Pose %d) %d landmarks behind the camera\n', i, numSkipped);
     end % end of Camera factor creation
     
-  end % end of else
+  end % end of else (i=0)
   
 end % end of for over trajectory
 
-end
+end % end of function
 
