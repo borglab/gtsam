@@ -9,8 +9,7 @@ import gtsam.*;
 
 values = Values;
 
-warning('fake angles! TODO: use constructor from roll-pitch-yaw when using real data')
-warning('using identity rotation')
+warning('fake angles! TODO: use constructor from roll-pitch-yaw when using real data - using identity rotation')
 
 if options.useRealData == 1
   %% Create a ground truth trajectory from Real data (if available)
@@ -55,11 +54,8 @@ if options.useRealData == 1
           scenarioIndIMU2 = previousScenarioInd+j;
           IMUPose1 = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioIndIMU1);
           IMUPose2 = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioIndIMU2);
-          
-%           scenarioIndIMU1
-%           IMUPose1.print('IMUPose1');
-%           IMUPose2.print('IMUPose2');
-          
+          IMURot2 = IMUPose2.rotation.matrix;
+                    
           IMUdeltaPose = IMUPose1.between(IMUPose2);
           IMUdeltaPoseVector     = Pose3.Logmap(IMUdeltaPose);
           IMUdeltaRotVector      = IMUdeltaPoseVector(1:3);
@@ -72,10 +68,10 @@ if options.useRealData == 1
           
           % deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
           % acc = (deltaPosition - initialVel * dT) * (2/dt^2)
-          measurements(i).imu(j).accel = (IMUdeltaPositionVector - currentVel.*deltaT).*(2/(deltaT*deltaT));
+          measurements(i).imu(j).accel = IMURot2' * (IMUdeltaPositionVector - currentVel.*deltaT).*(2/(deltaT*deltaT));
           
           % Update velocity
-          currentVel = currentVel + measurements(i).imu(j).accel * deltaT;
+          currentVel = currentVel + IMURot2 * measurements(i).imu(j).accel * deltaT;
         end
       end
       

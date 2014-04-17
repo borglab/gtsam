@@ -84,8 +84,7 @@ for i=0:length(measurements)
         graph.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, metadata.imu.zeroBias, ...
           noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias)));
       end
-      
-      
+          
       if options.imuFactorType == 2
         %         % Initialize preintegration
         %         imuMeasurement = gtsam.CombinedImuFactorPreintegratedMeasurements(...
