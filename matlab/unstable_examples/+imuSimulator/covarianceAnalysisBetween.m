@@ -12,12 +12,13 @@ close all
 %% Configuration
 options.useRealData = 1;           % controls whether or not to use the real data (if available) as the ground truth traj
 options.includeBetweenFactors = 1; % if true, BetweenFactors will be generated between consecutive poses
-options.includeIMUFactors = 1;     % if true, IMU type 1 Factors will be generated for the trajectory
+options.includeIMUFactors = 1;     % if true, IMU factors will be generated for the trajectory based on options.imuFactorType
+options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
 options.includeCameraFactors = 0;  % not fully implemented yet
-options.trajectoryLength = 209;      % length of the ground truth trajectory
-options.subsampleStep = 20;
+options.trajectoryLength = 209;    % length of the ground truth trajectory
+options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)
 
-numMonteCarloRuns = 2;
+numMonteCarloRuns = 2;             % number of Monte Carlo runs to perform
 
 %% Camera metadata
 numberOfLandmarks = 10;    % Total number of visual landmarks, used for camera factors

@@ -21,13 +21,17 @@ if options.useRealData == 1
   
   % Limit the trajectory length
   options.trajectoryLength = min([length(gtScenario.Lat) options.trajectoryLength+1]);
-  
+  fprintf('Scenario Ind: ');
   for i=1:options.trajectoryLength+1
     % Update the pose key
     currentPoseKey = symbol('x', i-1);
     
     % Generate the current pose 
-    scenarioInd = options.subsampleStep * (i-1) + 1
+    scenarioInd = options.subsampleStep * (i-1) + 1;
+    fprintf('%d, ', scenarioInd);
+    if mod(i,20) == 0
+      fprintf('\n');
+    end
     gtECEF = imuSimulator.LatLonHRad_to_ECEF([gtScenario.Lat(scenarioInd); gtScenario.Lon(scenarioInd); gtScenario.Alt(scenarioInd)]);
     % truth in ENU
     dX = gtECEF(1) - initialPositionECEF(1);
@@ -50,6 +54,7 @@ if options.useRealData == 1
       measurements.deltaMatrix(i-1,:) = Pose3.Logmap(deltaPose);
     end
   end
+  fprintf('\n');
 else
   %% Create a random trajectory as ground truth
   currentPose = Pose3; % initial pose  % initial pose
