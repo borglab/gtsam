@@ -74,13 +74,15 @@ for i=0:length(measurements)
           
           % Preintegrate
           imuMeasurement.integrateMeasurement(imuAccel, imuGyro, measurements(i).imu(j).deltaT);
-          % Add Imu factor
-          graph.add(ImuFactor(currentPoseKey-1, currentVelKey-1, currentPoseKey, currentVelKey, ...
-            currentBiasKey-1, imuMeasurement, metadata.imu.g, metadata.imu.omegaCoriolis));
-          % Add between factor on biases
-          graph.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, metadata.imu.zeroBias, ...
-            noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias)));
         end
+        %imuMeasurement.print('imuMeasurement');
+        
+        % Add Imu factor
+        graph.add(ImuFactor(currentPoseKey-1, currentVelKey-1, currentPoseKey, currentVelKey, ...
+          currentBiasKey-1, imuMeasurement, metadata.imu.g, metadata.imu.omegaCoriolis));
+        % Add between factor on biases
+        graph.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, metadata.imu.zeroBias, ...
+          noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias)));
       end
       
       

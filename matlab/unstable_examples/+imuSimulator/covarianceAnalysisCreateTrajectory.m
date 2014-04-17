@@ -64,11 +64,12 @@ if options.useRealData == 1
           % gyro rate: Logmap(R_i' * R_i+1) / deltaT
           measurements(i).imu(j).gyro = IMUdeltaRotVector./deltaT;
           
+          % deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
           % acc = (deltaPosition - initialVel * dT) * (2/dt^2)
           measurements(i).imu(j).accel = (IMUdeltaPositionVector - currentVel.*deltaT).*(2/(deltaT*deltaT));
           
           % Update velocity
-          currentVel = IMUdeltaPositionVector./deltaT;
+          currentVel = currentVel + measurements(i).imu(j).accel * deltaT;
         end
       end
       

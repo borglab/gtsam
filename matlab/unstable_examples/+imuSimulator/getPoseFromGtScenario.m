@@ -19,7 +19,7 @@ dZ = gtECEF(3) - initialPositionECEF(3);
 [xlt, ylt, zlt] = imuSimulator.ct2ENU(dX, dY, dZ,Org_lat, Org_lon);
 
 gtPosition = [xlt, ylt, zlt]';
-gtRotation = Rot3; %Rot3.ypr(gtScenario.Heading(scenarioInd), gtScenario.Pitch(scenarioInd), gtScenario.Roll(scenarioInd));
+gtRotation = Rot3; %Rot3.Expmap(rand(3,1)); %Rot3.ypr(gtScenario.Heading(scenarioInd), gtScenario.Pitch(scenarioInd), gtScenario.Roll(scenarioInd));
 currentPose = Pose3(gtRotation, Point3(gtPosition));
 
 end

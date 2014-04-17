@@ -11,6 +11,8 @@ clc
 clear all
 close all
 
+saveResults = 0;
+
 %% Configuration
 options.useRealData = 1;           % controls whether or not to use the real data (if available) as the ground truth traj
 options.includeBetweenFactors = 1; % if true, BetweenFactors will be added between consecutive poses
@@ -106,6 +108,13 @@ plot3DPoints(gtValues);
 plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
 axis equal
 
+% optimize
+optimizer = GaussNewtonOptimizer(gtGraph, gtValues);
+gtEstimate = optimizer.optimize();
+% estimate should match gtValues if graph is correct.
+fprintf('Error in ground truth graph at gtValues: %g \n', gtGraph.error(gtValues) );
+fprintf('Error in ground truth graph at gtEstimate: %g \n', gtGraph.error(gtEstimate) );
+
 disp('Plotted ground truth')
 
 %% Monte Carlo Runs
@@ -174,16 +183,18 @@ plot(3*ones(size(ANEES,2),1),'k--'); % Expectation(ANEES) = number of dof
 box on
 set(gca,'Fontsize',16)
 title('NEES and ANEES');
-%print('-djpeg', horzcat('runs-',testName));
-saveas(gcf,horzcat(folderName,'runs-',testName,'.fig'),'fig');
+if saveResults
+  saveas(gcf,horzcat(folderName,'runs-',testName,'.fig'),'fig');
+end
 
 %%
 figure(1)
 box on
 set(gca,'Fontsize',16)
 title('Ground truth and estimates for each MC runs');
-%print('-djpeg', horzcat('gt-',testName));
-saveas(gcf,horzcat(folderName,'gt-',testName,'.fig'),'fig');
+if saveResults
+  saveas(gcf,horzcat(folderName,'gt-',testName,'.fig'),'fig');
+end
 
 %% Let us compute statistics on the overall NEES
 n = 3; % position vector dimension
@@ -208,11 +219,11 @@ plot(r2*ones(size(ANEES,2),1),'k-.');
 box on
 set(gca,'Fontsize',16)
 title('NEES normalized by dof VS bounds');
-%print('-djpeg', horzcat('ANEES-',testName));
-saveas(gcf,horzcat(folderName,'ANEES-',testName,'.fig'),'fig');
-
-logFile = horzcat(folderName,'log-',testName);
-%save(logFile)
+if saveResults
+  saveas(gcf,horzcat(folderName,'ANEES-',testName,'.fig'),'fig');
+  logFile = horzcat(folderName,'log-',testName);
+  save(logFile)
+end
 
 %% NEES COMPUTATION (Bar-Shalom 2001, Section 5.4)
 % the nees for a single experiment (i) is defined as
