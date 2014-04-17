@@ -1,4 +1,4 @@
-function [ graph ] = covarianceAnalysisCreateFactorGraph( measurements, values, noiseModels, measurementNoise, options, metadata) 
+function [ graph ] = covarianceAnalysisCreateFactorGraph( measurements, values, noiseModels, measurementNoise, options, metadata)
 % Create a factor graph based on provided measurements, values, and noises.
 % Used for covariance analysis scripts.
 % 'options' contains fields for including various factor types.
@@ -10,14 +10,14 @@ import gtsam.*;
 
 graph = NonlinearFactorGraph;
 
-% Iterate through the trajectory 
-for i=0:size(measurements.deltaMatrix, 1);
+% Iterate through the trajectory
+for i=0:length(measurements)
   % Get the current pose
   currentPoseKey = symbol('x', i);
-  currentPose = values.at(currentPoseKey); 
+  currentPose = values.at(currentPoseKey);
   
   if i==0
-    %% first time step, add priors    
+    %% first time step, add priors
     % Pose prior (poses used for all factors)
     initialPose = Pose3.Expmap(measurementNoise.poseNoiseVector .* randn(6,1));
     graph.add(PriorFactorPose3(currentPoseKey, initialPose, noiseModels.noisePose));
@@ -25,11 +25,11 @@ for i=0:size(measurements.deltaMatrix, 1);
     % IMU velocity and bias priors
     if options.includeIMUFactors == 1
       currentVelKey = symbol('v', 0);
-      currentVel = values.at(currentVelKey).vector; 
+      currentVel = values.at(currentVelKey).vector;
       graph.add(PriorFactorLieVector(currentVelKey, LieVector(currentVel), noiseModels.noiseVel));
       
       currentBiasKey = symbol('b', 0);
-      currentBias = values.at(currentBiasKey);  
+      currentBias = values.at(currentBiasKey);
       graph.add(PriorFactorConstantBias(currentBiasKey, currentBias, noiseModels.noisePriorBias));
     end
     
@@ -41,12 +41,12 @@ for i=0:size(measurements.deltaMatrix, 1);
     end
     
   else
-    prevPoseKey = symbol('x', i-1);
-
+    
     %% Add Between factors
     if options.includeBetweenFactors == 1
+      prevPoseKey = symbol('x', i-1);
       % Create the noisy pose estimate
-      deltaPose = Pose3.Expmap(measurements.deltaMatrix(i,:)' ...
+      deltaPose = Pose3.Expmap(measurements(i).deltaVector ...
         + (measurementNoise.poseNoiseVector .* randn(6,1)));  % added noise
       % Add the between factor to the graph
       graph.add(BetweenFactorPose3(prevPoseKey, currentPoseKey, deltaPose, noiseModels.noisePose));
@@ -57,52 +57,55 @@ for i=0:size(measurements.deltaMatrix, 1);
       % Update keys
       currentVelKey = symbol('v', i);  % not used if includeIMUFactors is false
       currentBiasKey = symbol('b', i); % not used if includeIMUFactors is false
-      % Generate IMU measurements with noise
-      imuAccel = measurements.imu.accel(i,:)' ...
-          + (measurementNoise.imu.accelNoiseVector .* randn(3,1));  % added noise
-      imuGyro = measurements.imu.gyro(i,:)' ...
-          + (measurementNoise.imu.gyroNoiseVector .* randn(3,1));   % added noise
-
-      if options.imuFactorType == 2
-        % Initialize preintegration
-        imuMeasurement = gtsam.CombinedImuFactorPreintegratedMeasurements(...
-          metadata.imu.zeroBias, ...
-          metadata.imu.AccelerometerSigma.^2 * eye(3), ...
-          metadata.imu.GyroscopeSigma.^2 * eye(3), ...
-          metadata.imu.IntegrationSigma.^2 * eye(3), ...
-          metadata.imu.BiasAccelerometerSigma.^2 * eye(3), ...
-          metadata.imu.BiasGyroscopeSigma.^2 * eye(3), ...
-          metadata.imu.BiasAccOmegaInit.^2 * eye(6));
-        % Preintegrate
-        imuMeasurement.integrateMeasurement(imuAccel, imuGyro, measurements.imu.deltaT(i));
-        % Add Imu factor
-        graph.add(CombinedImuFactor( ...
-          currentPoseKey-1, currentVelKey-1, ...
-          currentPoseKey, currentVelKey, ...
-          currentBiasKey-1, currentBiasKey, ...
-          imuMeasurement, ...
-          metadata.imu.g, metadata.imu.omegaCoriolis, ...
-          noiseModel.Isotropic.Sigma(15, metadata.imu.epsBias)));
-      else % IMU type 1 
+      
+      if options.imuFactorType == 1
         % Initialize preintegration
         imuMeasurement = gtsam.ImuFactorPreintegratedMeasurements(...
           metadata.imu.zeroBias, ...
           metadata.imu.AccelerometerSigma.^2 * eye(3), ...
           metadata.imu.GyroscopeSigma.^2 * eye(3), ...
           metadata.imu.IntegrationSigma.^2 * eye(3));
-        % Preintegrate
-        imuMeasurement.integrateMeasurement(imuAccel, imuGyro, measurements.imu.deltaT(i));
-        % Add Imu factor
-        graph.add(ImuFactor(currentPoseKey-1, currentVelKey-1, currentPoseKey, currentVelKey, ...
-          currentBiasKey-1, imuMeasurement, metadata.imu.g, metadata.imu.omegaCoriolis));
-        % Add between factor on biases
-        graph.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, metadata.imu.zeroBias, ...
-          noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias)));
-        % Additional prior on zerobias
-        %graph.add(PriorFactorConstantBias(currentBiasKey, metadata.imu.zeroBias, ...
-        %  noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias))); 
+        % Generate IMU measurements with noise
+        for j=1:length(measurements(i).imu) % all measurements to preintegrate
+          imuAccel = measurements(i).imu(j).accel ...
+            + (measurementNoise.imu.accelNoiseVector .* randn(3,1));  % added noise
+          imuGyro = measurements(i).imu(j).gyro ...
+            + (measurementNoise.imu.gyroNoiseVector .* randn(3,1));   % added noise
+          
+          % Preintegrate
+          imuMeasurement.integrateMeasurement(imuAccel, imuGyro, measurements(i).imu(j).deltaT);
+          % Add Imu factor
+          graph.add(ImuFactor(currentPoseKey-1, currentVelKey-1, currentPoseKey, currentVelKey, ...
+            currentBiasKey-1, imuMeasurement, metadata.imu.g, metadata.imu.omegaCoriolis));
+          % Add between factor on biases
+          graph.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, metadata.imu.zeroBias, ...
+            noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias)));
+        end
       end
-     
+      
+      
+      if options.imuFactorType == 2
+        %         % Initialize preintegration
+        %         imuMeasurement = gtsam.CombinedImuFactorPreintegratedMeasurements(...
+        %           metadata.imu.zeroBias, ...
+        %           metadata.imu.AccelerometerSigma.^2 * eye(3), ...
+        %           metadata.imu.GyroscopeSigma.^2 * eye(3), ...
+        %           metadata.imu.IntegrationSigma.^2 * eye(3), ...
+        %           metadata.imu.BiasAccelerometerSigma.^2 * eye(3), ...
+        %           metadata.imu.BiasGyroscopeSigma.^2 * eye(3), ...
+        %           metadata.imu.BiasAccOmegaInit.^2 * eye(6));
+        %         % Preintegrate
+        %         imuMeasurement.integrateMeasurement(imuAccel, imuGyro, measurements.imu.deltaT(i));
+        %         % Add Imu factor
+        %         graph.add(CombinedImuFactor( ...
+        %           currentPoseKey-1, currentVelKey-1, ...
+        %           currentPoseKey, currentVelKey, ...
+        %           currentBiasKey-1, currentBiasKey, ...
+        %           imuMeasurement, ...
+        %           metadata.imu.g, metadata.imu.omegaCoriolis, ...
+        %           noiseModel.Isotropic.Sigma(15, metadata.imu.epsBias)));
+      end
+      
     end % end of IMU factor creation
     
     %% Add Camera factors - UNDER CONSTRUCTION !!!! -
@@ -115,7 +118,7 @@ for i=0:size(measurements.deltaMatrix, 1);
         landmarkKey = symbol('p', j);
         try
           Z = gtCamera.project(gtLandmarkPoints(j));
-          %% TO-DO probably want to do some type of filtering on the measurement values, because
+          % TO-DO probably want to do some type of filtering on the measurement values, because
           % they might not all be valid
           graph.add(GenericProjectionFactorCal3_S2(Z, cameraMeasurementNoise, currentPoseKey, landmarkKey, K));
         catch

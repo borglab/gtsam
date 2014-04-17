@@ -100,9 +100,6 @@ gtGraph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
 %gtGraph.print(sprintf('\nGround Truth Factor graph:\n'));
 %gtValues.print(sprintf('\nGround Truth Values:\n  '));
 
-warning('Additional prior on zerobias')
-warning('Additional PriorFactorLieVector on velocities')
-
 figure(1)
 hold on;
 plot3DPoints(gtValues);
@@ -150,9 +147,9 @@ for k=1:numMonteCarloRuns
   marginals = Marginals(graph, estimate);
   
   % for each pose in the trajectory
-  for i=1:size(gtMeasurements.deltaMatrix,1)+1
+  for i=0:options.trajectoryLength
     % compute estimation errors
-    currentPoseKey = symbol('x', i-1);
+    currentPoseKey = symbol('x', i);
     gtPosition  = gtValues.at(currentPoseKey).translation.vector;
     estPosition = estimate.at(currentPoseKey).translation.vector;
     estR = estimate.at(currentPoseKey).rotation.matrix;
@@ -163,7 +160,7 @@ for k=1:numMonteCarloRuns
     covPosition = estR * cov(4:6,4:6) * estR';
     
     % compute NEES using (estimationError = estimatedValues - gtValues) and estimated covariances
-    NEES(k,i) = errPosition' * inv(covPosition) * errPosition; % distributed according to a Chi square with n = 3 dof
+    NEES(k,i+1) = errPosition' * inv(covPosition) * errPosition; % distributed according to a Chi square with n = 3 dof
   end
   
   figure(2)
@@ -215,7 +212,7 @@ title('NEES normalized by dof VS bounds');
 saveas(gcf,horzcat(folderName,'ANEES-',testName,'.fig'),'fig');
 
 logFile = horzcat(folderName,'log-',testName);
-save(logFile)
+%save(logFile)
 
 %% NEES COMPUTATION (Bar-Shalom 2001, Section 5.4)
 % the nees for a single experiment (i) is defined as
