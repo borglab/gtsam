@@ -124,7 +124,7 @@ TEST(QPSolver, dual) {
   VectorValues dual = dualGraph.optimize();
   VectorValues expectedDual;
   expectedDual.insert(1, (Vector(1)<<2.0));
-  CHECK(assert_equal(expectedDual, dual, 1e-100));
+  CHECK(assert_equal(expectedDual, dual, 1e-10));
 }
 
 /* ************************************************************************* */
