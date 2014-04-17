@@ -48,12 +48,18 @@ if options.useRealData == 1
       if i == 0
         currentVel = [0 0 0]';
       else
-        % integrate & store intermediate measurements
+        % integrate & store intermediate measurements       
         for j=1:options.subsampleStep % we integrate all the intermediate measurements
-          scenarioIndIMU1 = scenarioInd+j-1;
-          scenarioIndIMU2 = scenarioInd+j;
+          previousScenarioInd = options.subsampleStep * (i-1) + 1;
+          scenarioIndIMU1 = previousScenarioInd+j-1;
+          scenarioIndIMU2 = previousScenarioInd+j;
           IMUPose1 = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioIndIMU1);
           IMUPose2 = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioIndIMU2);
+          
+%           scenarioIndIMU1
+%           IMUPose1.print('IMUPose1');
+%           IMUPose2.print('IMUPose2');
+          
           IMUdeltaPose = IMUPose1.between(IMUPose2);
           IMUdeltaPoseVector     = Pose3.Logmap(IMUdeltaPose);
           IMUdeltaRotVector      = IMUdeltaPoseVector(1:3);
