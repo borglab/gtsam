@@ -71,7 +71,7 @@ public:
    *    Hessian factors connecting to xi: \grad f(xi) = \sum_j G_ij*xj - gi
    */
   GaussianFactorGraph buildDualGraph(const GaussianFactorGraph& graph,
-      const VectorValues& x0) const;
+      const VectorValues& x0, bool useLeastSquare = false) const;
 
 
   /**

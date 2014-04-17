@@ -95,7 +95,7 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
 
 /* ************************************************************************* */
 GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
-    const VectorValues& x0) const {
+    const VectorValues& x0, bool useLeastSquare) const {
   static const bool debug = false;
 
   // The dual graph to return
@@ -114,7 +114,9 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     size_t xiDim = xiFactor0->getDim(xiFactor0->find(xiKey));
     if (debug) cout << "xiDim: " << xiDim << endl;
 
-    // Compute gradf(xi) = \frac{\partial f}{\partial xi}' = \sum_j G_ij*xj - gi
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+    // Compute the b-vector for the dual factor Ax-b
+    // b = gradf(xi) = \frac{\partial f}{\partial xi}' = \sum_j G_ij*xj - gi
     Vector gradf_xi = zero(xiDim);
     BOOST_FOREACH(size_t factorIx, xiFactors) {
       HessianFactor::shared_ptr factor = toHessian(freeHessians_->at(factorIx));
@@ -140,9 +142,13 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
       gradf_xi += -factor->linearTerm(xi);
     }
 
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+    // Compute the Jacobian A for the dual factor Ax-b
     // Obtain the jacobians for lambda variables from their corresponding constraints
-    // gradc_k(xi) = \frac{\partial c_k}{\partial xi}'
+    // A = gradc_k(xi) = \frac{\partial c_k}{\partial xi}'
     std::vector<std::pair<Key, Matrix> > lambdaTerms; // collection of lambda_k, and gradc_k
+    typedef std::pair<size_t, size_t> FactorIx_SigmaIx;
+    std::vector<FactorIx_SigmaIx> unconstrainedIndex; // pairs of factorIx,sigmaIx of unconstrained rows
     BOOST_FOREACH(size_t factorIndex, fullFactorIndices_[xiKey]) {
       JacobianFactor::shared_ptr factor = toJacobian(graph.at(factorIndex));
       if (!factor || !factor->isConstrained()) continue;
@@ -157,26 +163,41 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
         // we have no information about it
         if (fabs(sigmas[sigmaIx]) > 1e-9) {
           A_k.col(sigmaIx) = zero(A_k.rows());
+          // remember to add a zero prior on this lambda, otherwise the graph is under-determined
+          unconstrainedIndex.push_back(make_pair(factorIndex, sigmaIx));
         }
       }
       // Use factorIndex as the lambda's key.
       lambdaTerms.push_back(make_pair(factorIndex, A_k));
     }
-    // Enforce constrained noise model so lambdas are solved with QR
-    // and should exactly satisfy all the equations
-    dualGraph.push_back(JacobianFactor(lambdaTerms, gradf_xi,
-        noiseModel::Constrained::All(gradf_xi.size())));
 
-    // Add 0 priors on all lambdas to make sure the graph is solvable
-    // TODO: Can we do for all lambdas like this, or only for those with no information?
-    BOOST_FOREACH(size_t factorIndex, fullFactorIndices_[xiKey]) {
-      JacobianFactor::shared_ptr factor = toJacobian(graph.at(factorIndex));
-      if (!factor || !factor->isConstrained()) continue;
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+    // Create and add factors to the dual graph
+    // If least square approximation is desired, use unit noise model.
+    if (useLeastSquare) {
+      dualGraph.push_back(JacobianFactor(lambdaTerms, gradf_xi,
+          noiseModel::Unit::Create(gradf_xi.size())));
+    }
+    else {
+      // Enforce constrained noise model so lambdas are solved with QR
+      // and should exactly satisfy all the equations
+      dualGraph.push_back(JacobianFactor(lambdaTerms, gradf_xi,
+          noiseModel::Constrained::All(gradf_xi.size())));
+    }
+
+    // Add 0 priors on all lambdas of the unconstrained rows to make sure the graph is solvable
+    BOOST_FOREACH(FactorIx_SigmaIx factorIx_sigmaIx, unconstrainedIndex) {
+      size_t factorIx = factorIx_sigmaIx.first;
+      JacobianFactor::shared_ptr factor = toJacobian(graph.at(factorIx));
       size_t dim= factor->get_model()->dim();
+      Matrix J = zeros(dim, dim);
+      size_t sigmaIx = factorIx_sigmaIx.second;
+      J(sigmaIx,sigmaIx) = 1.0;
       // Use factorIndex as the lambda's key.
-      dualGraph.push_back(JacobianFactor(factorIndex, eye(dim), zero(dim)));
+      dualGraph.push_back(JacobianFactor(factorIx, J, zero(dim)));
     }
   }
+
   return dualGraph;
 }
 
