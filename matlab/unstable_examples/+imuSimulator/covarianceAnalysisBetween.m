@@ -19,6 +19,7 @@ options.includeBetweenFactors = 1; % if true, BetweenFactors will be added betwe
 
 options.includeIMUFactors = 1;     % if true, IMU factors will be added between consecutive states (biases, poses, velocities)
 options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
+options.imuNonzeroBias = 0;        % if true, a nonzero bias is applied to IMU measurements
 
 options.includeCameraFactors = 0;  % not fully implemented yet
 numberOfLandmarks = 10;            % Total number of visual landmarks, used for camera factors
@@ -57,7 +58,8 @@ metadata.imu.g = [0;0;0];
 metadata.imu.omegaCoriolis = [0;0;0];
 noiseVel =  noiseModel.Isotropic.Sigma(3, 1e-2); % was 0.1
 noiseBias = noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias); % between on biases
-noisePriorBias = noiseModel.Isotropic.Sigma(6, 1e-6);
+noisePriorBias = noiseModel.Diagonal.Sigmas([metadata.imu.BiasAccelerometerSigma * ones(3,1); ...
+                                             metadata.imu.BiasGyroscopeSigma * ones(3,1)]);
 
 sigma_accel = metadata.imu.AccelerometerSigma;
 sigma_gyro = metadata.imu.GyroscopeSigma;
@@ -70,7 +72,7 @@ noiseVectorPose = [sigma_ang * ones(3,1); sigma_cart * ones(3,1)];
 noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
 
 %% Set log files
-testName = sprintf('sa-%1.2g-sc-%1.2g',sigma_ang,sigma_cart)
+testName = sprintf('sa-%1.2g-sc-%1.2g-sacc-%1.2g-sg-%1.2g',sigma_ang,sigma_cart,sigma_accel,sigma_gyro)
 folderName = 'results/'
 
 %% Create ground truth trajectory and measurements
@@ -85,11 +87,15 @@ gtNoiseModels.noisePriorPose = noisePose;
 gtNoiseModels.noisePriorBias = noisePriorBias;
 
 % Set measurement noise to 0, because this is ground truth
-gtMeasurementNoise.poseNoiseVector = [0; 0; 0; 0; 0; 0;];
-gtMeasurementNoise.imu.accelNoiseVector = [0; 0; 0];
-gtMeasurementNoise.imu.gyroNoiseVector = [0; 0; 0];
-gtMeasurementNoise.cameraPixelNoiseVector = [0; 0];
+gtMeasurementNoise.poseNoiseVector = zeros(6,1);
+gtMeasurementNoise.imu.accelNoiseVector = zeros(3,1);
+gtMeasurementNoise.imu.gyroNoiseVector = zeros(3,1);
+gtMeasurementNoise.cameraPixelNoiseVector = zeros(2,1);
   
+% Set IMU biases to zero
+metadata.imu.accelConstantBiasVector = zeros(3,1);
+metadata.imu.gyroConstantBiasVector = zeros(3,1);
+    
 gtGraph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
     gtMeasurements, ...     % ground truth measurements
     gtValues, ...           % ground truth Values
@@ -135,6 +141,15 @@ monteCarloMeasurementNoise.cameraPixelNoiseVector = [0; 0];
 for k=1:numMonteCarloRuns
   fprintf('Monte Carlo Run %d.\n', k');
 
+  % Create a random bias for each run
+  if options.imuNonzeroBias == 1
+    metadata.imu.accelBiasVector = metadata.imu.BiasAccelerometerSigma .* randn(3,1);
+    metadata.imu.gyroBiasVector = metadata.imu.BiasGyroscopeSigma .* randn(3,1);
+  else
+    metadata.imu.accelConstantBiasVector = zeros(3,1);
+    metadata.imu.gyroConstantBiasVector = zeros(3,1);
+  end
+  
   % Create a new graph using noisy measurements
   graph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
     gtMeasurements, ...     % ground truth measurements

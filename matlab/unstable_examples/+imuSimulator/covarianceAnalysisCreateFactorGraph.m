@@ -70,9 +70,11 @@ for i=0:length(measurements)
         % Generate IMU measurements with noise
         for j=1:length(measurements(i).imu) % all measurements to preintegrate
           imuAccel = measurements(i).imu(j).accel ...
-            + (measurementNoise.imu.accelNoiseVector .* randn(3,1));  % added noise
+            + (measurementNoise.imu.accelNoiseVector .* randn(3,1))...  % added noise
+            + metadata.imu.accelConstantBiasVector;     % constant bias
           imuGyro = measurements(i).imu(j).gyro ...
-            + (measurementNoise.imu.gyroNoiseVector .* randn(3,1));   % added noise
+            + (measurementNoise.imu.gyroNoiseVector .* randn(3,1))...   % added noise
+            + metadata.imu.gyroConstantBiasVector;      % constant bias
           
           % Preintegrate
           imuMeasurement.integrateMeasurement(imuAccel, imuGyro, measurements(i).imu(j).deltaT);
