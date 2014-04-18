@@ -136,20 +136,22 @@ public:
   /** Optimize */
   VectorValues optimize(const VectorValues& initials) const;
 
-private:
   /// Convert a Gaussian factor to a jacobian. return empty shared ptr if failed
-  JacobianFactor::shared_ptr toJacobian(const GaussianFactor::shared_ptr& factor) const {
+  /// TODO: Move to GaussianFactor?
+  static JacobianFactor::shared_ptr toJacobian(const GaussianFactor::shared_ptr& factor) {
     JacobianFactor::shared_ptr jacobian(
         boost::dynamic_pointer_cast<JacobianFactor>(factor));
     return jacobian;
   }
 
   /// Convert a Gaussian factor to a Hessian. Return empty shared ptr if failed
-  HessianFactor::shared_ptr toHessian(const GaussianFactor::shared_ptr factor) const {
+  /// TODO: Move to GaussianFactor?
+  static HessianFactor::shared_ptr toHessian(const GaussianFactor::shared_ptr factor) {
     HessianFactor::shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
     return hessian;
   }
 
+private:
   /// Collect all free Hessians involving constrained variables into a graph
   GaussianFactorGraph::shared_ptr unconstrainedHessiansOfConstrainedVars(
       const GaussianFactorGraph& graph, const KeySet& constrainedVars) const;
