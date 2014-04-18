@@ -20,7 +20,7 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class EssentialMatrix: public DerivedValue<EssentialMatrix> {
+class GTSAM_EXPORT EssentialMatrix: public DerivedValue<EssentialMatrix> {
 
 private:
 

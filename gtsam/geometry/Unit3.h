@@ -27,7 +27,7 @@
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class Unit3: public DerivedValue<Unit3> {
+class GTSAM_EXPORT Unit3: public DerivedValue<Unit3> {
 
 private:
 
