@@ -150,10 +150,10 @@ public:
   /// @{
 
   /// stream to stream
-  friend std::ostream& operator <<(std::ostream& os, const EssentialMatrix& E);
+  GTSAM_EXPORT friend std::ostream& operator <<(std::ostream& os, const EssentialMatrix& E);
 
   /// stream from stream
-  friend std::istream& operator >>(std::istream& is, EssentialMatrix& E);
+  GTSAM_EXPORT friend std::istream& operator >>(std::istream& is, EssentialMatrix& E);
 
   /// @}
 
