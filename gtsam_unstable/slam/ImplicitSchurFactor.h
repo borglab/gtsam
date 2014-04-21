@@ -235,25 +235,33 @@ public:
   typedef std::vector<Vector2> Error2s;
 
   /**
-   * @brief Calculate corrected error Q*e = (I - E*P*E')*e
+   * @brief Calculate corrected error Q*(e-2*b) = (I - E*P*E')*(e-2*b)
    */
-  void projectError(const Error2s& e1, Error2s& e2) const {
+  void projectError2(const Error2s& e1, Error2s& e2) const {
 
-    // d1 = E.transpose() * e1 = (3*2m)*2m
+    // d1 = E.transpose() * (e1-2*b) = (3*2m)*2m
     Vector3 d1;
     d1.setZero();
     for (size_t k = 0; k < size(); k++)
-      d1 += E_.block < 2, 3 > (2 * k, 0).transpose() * e1[k];
+      d1 += E_.block < 2, 3 > (2 * k, 0).transpose() * (e1[k] - 2 * b_.segment < 2 > (k * 2));
 
     // d2 = E.transpose() * e1 = (3*2m)*2m
     Vector3 d2 = PointCovariance_ * d1;
 
     // e3 = alpha*(e1 - E*d2) = 1*[2m-(2m*3)*3]
     for (size_t k = 0; k < size(); k++)
-      e2[k] = e1[k] - E_.block < 2, 3 > (2 * k, 0) * d2;
+      e2[k] = e1[k] - 2 * b_.segment < 2 > (k * 2) - E_.block < 2, 3 > (2 * k, 0) * d2;
   }
 
-  /// needed to be GaussianFactor - (I - E*P*E')*(F*x - b)
+  /*
+   * This definition matches the linearized error in the Hessian Factor:
+   * LinError(x) = x'*H*x - 2*x'*eta + f
+   * with:
+   * H   = F' * (I-E'*P*E) * F = F' * Q * F
+   * eta = F' * (I-E'*P*E) * b = F' * Q * b
+   * f = nonlinear error
+   * (x'*H*x - 2*x'*eta + f) = x'*F'*Q*F*x - 2*x'*F'*Q *b + f = x'*F'*Q*(F*x - 2*b) + f
+   */
   virtual double error(const VectorValues& x) const {
 
     // resize does not do malloc if correct size
@@ -262,14 +270,55 @@ public:
 
     // e1 = F * x - b = (2m*dm)*dm
     for (size_t k = 0; k < size(); ++k)
-      e1[k] = Fblocks_[k].second * x.at(keys_[k]) - b_.segment < 2 > (k * 2);
-    projectError(e1, e2);
+      e1[k] = Fblocks_[k].second * x.at(keys_[k]);
+    projectError2(e1, e2);
 
     double result = 0;
     for (size_t k = 0; k < size(); ++k)
-      result += dot(e2[k], e2[k]);
-    return 0.5 * result;
+      result += dot(e1[k], e2[k]);
+
+    double f = b_.squaredNorm();
+    return 0.5 * (result + f);
   }
+
+  /// needed to be GaussianFactor - (I - E*P*E')*(F*x - b)
+  // This is wrong and does not match the definition in Hessian
+  //  virtual double error(const VectorValues& x) const {
+  //
+  //    // resize does not do malloc if correct size
+  //    e1.resize(size());
+  //    e2.resize(size());
+  //
+  //    // e1 = F * x - b = (2m*dm)*dm
+  //    for (size_t k = 0; k < size(); ++k)
+  //      e1[k] = Fblocks_[k].second * x.at(keys_[k]) - b_.segment < 2 > (k * 2);
+  //    projectError(e1, e2);
+  //
+  //    double result = 0;
+  //    for (size_t k = 0; k < size(); ++k)
+  //      result += dot(e2[k], e2[k]);
+  //
+  //    std::cout << "implicitFactor::error result " << result << std::endl;
+  //    return 0.5 * result;
+  //  }
+  /**
+   * @brief Calculate corrected error Q*e = (I - E*P*E')*e
+   */
+    void projectError(const Error2s& e1, Error2s& e2) const {
+
+      // d1 = E.transpose() * e1 = (3*2m)*2m
+      Vector3 d1;
+      d1.setZero();
+      for (size_t k = 0; k < size(); k++)
+        d1 += E_.block < 2, 3 > (2 * k, 0).transpose() * e1[k];
+
+      // d2 = E.transpose() * e1 = (3*2m)*2m
+      Vector3 d2 = PointCovariance_ * d1;
+
+      // e3 = alpha*(e1 - E*d2) = 1*[2m-(2m*3)*3]
+      for (size_t k = 0; k < size(); k++)
+        e2[k] = e1[k] - E_.block < 2, 3 > (2 * k, 0) * d2;
+    }
 
   /// Scratch space for multiplyHessianAdd
   mutable Error2s e1, e2;
