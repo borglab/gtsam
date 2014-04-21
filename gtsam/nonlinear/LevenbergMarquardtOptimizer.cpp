@@ -291,8 +291,12 @@ void LevenbergMarquardtOptimizer::iterate() {
 
         double minAbsoluteTolerance = params_.relativeErrorTol * state_.error;
         // if the change is small we terminate
-        if (fabs(costChange) < minAbsoluteTolerance)
+        if (fabs(costChange) < minAbsoluteTolerance){
+          if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+                        cout << "fabs(costChange)="<<fabs(costChange) << "  minAbsoluteTolerance="<< minAbsoluteTolerance
+                        << " (relativeErrorTol=" << params_.relativeErrorTol << ")" << endl;
           stopSearchingLambda = true;
+        }
       }
     }
 
