@@ -214,20 +214,6 @@ void LevenbergMarquardtOptimizer::iterate() {
     // Build damped system for this lambda (adds prior factors that make it like gradient descent)
     GaussianFactorGraph dampedSystem = buildDampedSystem(*linear);
 
-    // Log current error/lambda to file
-    if (!params_.logFile.empty()) {
-      ofstream os(params_.logFile.c_str(), ios::app);
-
-      boost::posix_time::ptime currentTime =
-          boost::posix_time::microsec_clock::universal_time();
-
-      os << state_.totalNumberInnerIterations << ","
-          << 1e-6 * (currentTime - state_.startTime).total_microseconds() << ","
-          << state_.error << "," << state_.lambda << endl;
-    }
-
-    ++state_.totalNumberInnerIterations;
-
     // Try solving
     double modelFidelity = 0.0;
     bool step_is_successful = false;
@@ -299,6 +285,17 @@ void LevenbergMarquardtOptimizer::iterate() {
         }
       }
     }
+
+    // Log current error/lambda to file
+    if (!params_.logFile.empty()) {
+      ofstream os(params_.logFile.c_str(), ios::app);
+      boost::posix_time::ptime currentTime = boost::posix_time::microsec_clock::universal_time();
+      os << /*inner iterations*/ state_.totalNumberInnerIterations << ","
+          << 1e-6 * (currentTime - state_.startTime).total_microseconds() << ","
+          << /*current error*/ state_.error << "," << state_.lambda << ","
+          << /*outer iterations*/ state_.iterations << endl;
+    }
+    ++state_.totalNumberInnerIterations;
 
     if (step_is_successful) { // we have successfully decreased the cost and we have good modelFidelity
       state_.values.swap(newValues);
