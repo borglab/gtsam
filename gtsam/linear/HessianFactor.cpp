@@ -601,6 +601,23 @@ VectorValues HessianFactor::gradientAtZero() const {
 }
 
 /* ************************************************************************* */
+// TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
+void HessianFactor::gradientAtZero(double* d) const {
+
+  // Use eigen magic to access raw memory
+  typedef Eigen::Matrix<double, 9, 1> DVector;
+  typedef Eigen::Map<DVector> DMap;
+
+  // Loop over all variables in the factor
+    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
+      Key j = keys_[pos];
+      // Get the diagonal block, and insert its diagonal
+      DVector dj =  -info_(pos,size()).knownOffDiagonal();
+      DMap(d + 9 * j) += dj;
+    }
+}
+
+/* ************************************************************************* */
 std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
 EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
 {

@@ -257,7 +257,7 @@ namespace gtsam {
      * @param [output] g A VectorValues to store the gradient, which must be preallocated,
      *        see allocateVectorValues
      * @return The gradient as a VectorValues */
-    VectorValues gradientAtZero() const;
+    virtual VectorValues gradientAtZero() const;
 
     /** Optimize along the gradient direction, with a closed-form computation to perform the line
      *  search.  The gradient is computed about \f$ \delta x=0 \f$.

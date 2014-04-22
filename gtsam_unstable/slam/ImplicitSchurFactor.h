@@ -426,6 +426,28 @@ public:
     return g;
   }
 
+  /**
+   * Calculate gradient, which is -F'Q*b, see paper - RAW MEMORY ACCESS
+   */
+  void gradientAtZero(double* d) const {
+
+    // Use eigen magic to access raw memory
+    typedef Eigen::Matrix<double, D, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+
+    // calculate Q*b
+    e1.resize(size());
+    e2.resize(size());
+    for (size_t k = 0; k < size(); k++)
+      e1[k] = b_.segment < 2 > (2 * k);
+    projectError(e1, e2);
+
+    for (size_t k = 0; k < size(); ++k) { // for each camera in the factor
+      Key j = keys_[k];
+      DMap(d + D * j) += -Fblocks_[k].second.transpose() * e2[k];
+    }
+  }
+
 };
 // ImplicitSchurFactor
 
