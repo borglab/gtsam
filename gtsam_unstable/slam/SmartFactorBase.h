@@ -218,8 +218,7 @@ public:
       const Point2& zi = this->measured_.at(i);
       try {
         Point2 reprojectionError(camera.project(point) - zi);
-        overallError += 0.5
-            * this->noise_.at(i)->distance(reprojectionError.vector());
+        overallError += 0.5 * reprojectionError.vector().squaredNorm();
       } catch (CheiralityException& e) {
         std::cout << "Cheirality exception " << std::endl;
         exit(EXIT_FAILURE);
