@@ -189,19 +189,24 @@ public:
   /// Return the block diagonal of the Hessian for this factor
   virtual std::map<Key, Matrix> hessianBlockDiagonal() const {
     std::map<Key, Matrix> blocks;
+    // F'*(I - E*P*E')*F
     for (size_t pos = 0; pos < size(); ++pos) {
       Key j = keys_[pos];
-      const Matrix2D& Fj = Fblocks_[pos].second;
       // F'*F - F'*E*P*E'*F   (9*2)*(2*9) - (9*2)*(2*3)*(3*3)*(3*2)*(2*9)
-      Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-          * E_.block<2, 3>(2 * pos, 0);
-      blocks[j] = Fj.transpose() * Fj
-          - FtE * PointCovariance_ * FtE.transpose();
+      const Matrix2D& Fj = Fblocks_[pos].second;
+      //      Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
+      //          * E_.block<2, 3>(2 * pos, 0);
+      //      blocks[j] = Fj.transpose() * Fj
+      //          - FtE * PointCovariance_ * FtE.transpose();
+
+      const Matrix23& Ej = E_.block<2, 3>(2 * pos, 0);
+      blocks[j] = Fj.transpose() * (Fj - Ej * PointCovariance_ * Ej.transpose() * Fj);
+
       // F'*(I - E*P*E')*F, TODO: this should work, but it does not :-(
-//      static const Eigen::Matrix<double, 2, 2> I2 = eye(2);
-//      Eigen::Matrix<double, 2, 2> Q = //
-//          I2 - E_.block<2, 3>(2 * pos, 0) * PointCovariance_ * E_.block<2, 3>(2 * pos, 0).transpose();
-//      blocks[j] = Fj.transpose() * Q * Fj;
+      //      static const Eigen::Matrix<double, 2, 2> I2 = eye(2);
+      //      Eigen::Matrix<double, 2, 2> Q = //
+      //          I2 - E_.block<2, 3>(2 * pos, 0) * PointCovariance_ * E_.block<2, 3>(2 * pos, 0).transpose();
+      //      blocks[j] = Fj.transpose() * Q * Fj;
     }
     return blocks;
   }
