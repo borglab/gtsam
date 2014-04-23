@@ -82,8 +82,8 @@ if options.useRealData == 1
     
     %% gt GPS measurements
     if options.includeGPSFactors == 1 && i > 0
-      gpsPosition = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd).translation.vector;
-      measurements(i).gpsPosition = Point3(gpsPosition);
+      gpsPositionVector = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd).translation.vector;
+      measurements(i).gpsPositionVector = gpsPositionVector;
     end
     
   end

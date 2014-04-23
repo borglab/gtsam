@@ -15,7 +15,7 @@ saveResults = 0;
 
 %% Configuration
 options.useRealData = 1;           % controls whether or not to use the real data (if available) as the ground truth traj
-options.includeBetweenFactors = 1; % if true, BetweenFactors will be added between consecutive poses
+options.includeBetweenFactors = 0; % if true, BetweenFactors will be added between consecutive poses
 
 options.includeIMUFactors = 1;     % if true, IMU factors will be added between consecutive states (biases, poses, velocities)
 options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
@@ -29,7 +29,7 @@ options.includeGPSFactors = 0;     % if true, GPS factors will be added as prior
 options.trajectoryLength = 209;    % length of the ground truth trajectory
 options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)
 
-numMonteCarloRuns = 2;             % number of Monte Carlo runs to perform
+numMonteCarloRuns = 50;             % number of Monte Carlo runs to perform
 
 %% Camera metadata
 K = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
@@ -73,6 +73,11 @@ sigma_ang = 1e-2;  sigma_cart = 1e-1;
 noiseVectorPose = [sigma_ang * ones(3,1); sigma_cart * ones(3,1)];
 noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
 
+%% GPS metadata
+sigma_gps = 1e-4;
+noiseVectorGPS = sigma_gps * ones(3,1);
+noiseGPS = noiseModel.Diagonal.Precisions([zeros(3,1); 1/sigma_gps^2 * ones(3,1)]);
+
 %% Set log files
 testName = sprintf('sa-%1.2g-sc-%1.2g-sacc-%1.2g-sg-%1.2g',sigma_ang,sigma_cart,sigma_accel,sigma_gyro)
 folderName = 'results/'
@@ -87,12 +92,14 @@ gtNoiseModels.noiseVel = noiseVel;
 gtNoiseModels.noiseBias = noiseBias;
 gtNoiseModels.noisePriorPose = noisePose;
 gtNoiseModels.noisePriorBias = noisePriorBias;
+gtNoiseModels.noiseGPS = noiseGPS;
 
 % Set measurement noise to 0, because this is ground truth
 gtMeasurementNoise.poseNoiseVector = zeros(6,1);
 gtMeasurementNoise.imu.accelNoiseVector = zeros(3,1);
 gtMeasurementNoise.imu.gyroNoiseVector = zeros(3,1);
 gtMeasurementNoise.cameraPixelNoiseVector = zeros(2,1);
+gtMeasurementNoise.gpsNoiseVector = zeros(3,1);
   
 % Set IMU biases to zero
 metadata.imu.accelConstantBiasVector = zeros(3,1);
@@ -133,12 +140,14 @@ monteCarloNoiseModels.noiseVel = noiseVel;
 monteCarloNoiseModels.noiseBias = noiseBias;
 monteCarloNoiseModels.noisePriorPose = noisePose;
 monteCarloNoiseModels.noisePriorBias = noisePriorBias;
+monteCarloNoiseModels.noiseGPS = noiseGPS;
 
 % Set measurement noise for monte carlo runs
 monteCarloMeasurementNoise.poseNoiseVector = noiseVectorPose;
 monteCarloMeasurementNoise.imu.accelNoiseVector = noiseVectorAccel;
 monteCarloMeasurementNoise.imu.gyroNoiseVector = noiseVectorGyro;
 monteCarloMeasurementNoise.cameraPixelNoiseVector = [0; 0];
+monteCarloMeasurementNoise.gpsNoiseVector = noiseVectorGPS;
   
 for k=1:numMonteCarloRuns
   fprintf('Monte Carlo Run %d.\n', k');

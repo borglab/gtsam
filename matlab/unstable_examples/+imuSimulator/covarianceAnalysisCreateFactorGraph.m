@@ -147,9 +147,11 @@ for i=0:length(measurements)
     
     %% Add GPS factors
     if options.includeGPSFactors == 1
-      currentGPSKey = symbol('g', i);
-      graph.add(GPSPriorFactor(currentPoseKey, measurements(i).gpsPosition, ...
-          noiseModel.Isotropic.Sigma(3, 1e-4)));
+      gpsPosition = measurements(i).gpsPositionVector ...
+          + measurementNoise.gpsNoiseVector .* randn(3,1);
+      graph.add(PriorFactorPose3(currentPoseKey, ...
+          Pose3(currentPose.rotation, Point3(gpsPosition)), ...
+          noiseModels.noiseGPS)); 
     end % end of GPS factor creation
     
   end % end of else (i=0)
