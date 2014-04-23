@@ -302,15 +302,18 @@ public:
 
     // Point covariance inv(E'*E)
     Matrix3 EtE = E.transpose() * E;
-    Matrix3 DMatrix = eye(E.cols()); // damping matrix
 
     if (diagonalDamping) { // diagonal of the hessian
-      DMatrix(0, 0) = EtE(0, 0);
-      DMatrix(1, 1) = EtE(1, 1);
-      DMatrix(2, 2) = EtE(2, 2);
+      EtE(0, 0) += lambda * EtE(0, 0);
+      EtE(1, 1) += lambda * EtE(1, 1);
+      EtE(2, 2) += lambda * EtE(2, 2);
+    }else{
+      EtE(0, 0) += lambda;
+      EtE(1, 1) += lambda;
+      EtE(2, 2) += lambda;
     }
 
-    PointCov.noalias() = (EtE + lambda * DMatrix).inverse();
+    PointCov.noalias() = (EtE).inverse();
 
     return f;
   }
