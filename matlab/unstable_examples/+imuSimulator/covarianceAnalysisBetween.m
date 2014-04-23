@@ -21,8 +21,10 @@ options.includeIMUFactors = 1;     % if true, IMU factors will be added between 
 options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
 options.imuNonzeroBias = 0;        % if true, a nonzero bias is applied to IMU measurements
 
-options.includeCameraFactors = 0;  % not fully implemented yet
+options.includeCameraFactors = 0;  % not fully implementemeasurements, values, noiseModels, measurementNoise, options, metadatad yet
 numberOfLandmarks = 10;            % Total number of visual landmarks, used for camera factors
+
+options.includeGPSFactors = 0;     % if true, GPS factors will be added as priors to poses
 
 options.trajectoryLength = 209;    % length of the ground truth trajectory
 options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)

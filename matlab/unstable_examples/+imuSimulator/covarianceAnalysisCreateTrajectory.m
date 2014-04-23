@@ -24,7 +24,7 @@ if options.useRealData == 1
   for i=0:options.trajectoryLength
     scenarioInd = options.subsampleStep * i + 1;
     fprintf('%d, ', scenarioInd);
-    if (mod(i,20) == 0) fprintf('\n'); end
+    if (mod(i,12) == 0) fprintf('\n'); end
     
     %% Generate the current pose
     currentPoseKey = symbol('x', i);
@@ -78,6 +78,12 @@ if options.useRealData == 1
       % Add Values: velocity and bias
       values.insert(currentVelKey, LieVector(currentVel));
       values.insert(currentBiasKey, metadata.imu.zeroBias);
+    end
+    
+    %% gt GPS measurements
+    if options.includeGPSFactors == 1 && i > 0
+      gpsPosition = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd).translation.vector;
+      measurements(i).gpsPosition = Point3(gpsPosition);
     end
     
   end

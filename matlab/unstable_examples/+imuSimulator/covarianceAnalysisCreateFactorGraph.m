@@ -145,6 +145,13 @@ for i=0:length(measurements)
       %fprintf('(Pose %d) %d landmarks behind the camera\n', i, numSkipped);
     end % end of Camera factor creation
     
+    %% Add GPS factors
+    if options.includeGPSFactors == 1
+      currentGPSKey = symbol('g', i);
+      graph.add(GPSPriorFactor(currentPoseKey, measurements(i).gpsPosition, ...
+          noiseModel.Isotropic.Sigma(3, 1e-4)));
+    end % end of GPS factor creation
+    
   end % end of else (i=0)
   
 end % end of for over trajectory
