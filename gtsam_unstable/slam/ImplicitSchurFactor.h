@@ -87,7 +87,8 @@ public:
   }
 
   /// print
-  void print(const std::string& s, const KeyFormatter& formatter) const {
+  void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << " ImplicitSchurFactor " << std::endl;
     Factor::print(s);
     std::cout << " PointCovariance_ \n" << PointCovariance_ << std::endl;
