@@ -146,7 +146,7 @@ for i=0:length(measurements)
     end % end of Camera factor creation
     
     %% Add GPS factors
-    if options.includeGPSFactors == 1
+    if options.includeGPSFactors == 1 && i >= options.gpsStartPose
       gpsPosition = measurements(i).gpsPositionVector ...
           + measurementNoise.gpsNoiseVector .* randn(3,1);
       graph.add(PriorFactorPose3(currentPoseKey, ...
