@@ -255,7 +255,7 @@ public:
   }
 
   /** Build a damped system for a specific lambda */
-  GaussianFactorGraph buildDampedSystem(const GaussianFactorGraph& linear);
+  GaussianFactorGraph::shared_ptr buildDampedSystem(const GaussianFactorGraph& linear);
   friend class ::NonlinearOptimizerMoreOptimizationTest;
 
   /// @}

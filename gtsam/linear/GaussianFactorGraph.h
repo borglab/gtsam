@@ -160,7 +160,13 @@ namespace gtsam {
      * Cloning preserves null factors so indices for the original graph are still
      * valid for the cloned graph.
      */
-    GaussianFactorGraph clone() const;
+    virtual GaussianFactorGraph clone() const;
+
+    /**
+     * CloneToPtr() performs a simple assignment to a new graph and returns it.
+     * There is no preservation of null factors!
+     */
+    virtual GaussianFactorGraph::shared_ptr cloneToPtr() const;
 
     /**
      * Returns the negation of all factors in this graph - corresponds to antifactors.

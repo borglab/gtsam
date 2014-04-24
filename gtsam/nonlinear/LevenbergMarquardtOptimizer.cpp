@@ -138,7 +138,7 @@ void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality) {
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
+GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
     const GaussianFactorGraph& linear) {
 
   gttic(damp);
@@ -159,7 +159,8 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
 
   // for each of the variables, add a prior
   double sigma = 1.0 / std::sqrt(state_.lambda);
-  GaussianFactorGraph damped = linear;
+  GaussianFactorGraph::shared_ptr dampedPtr = linear.cloneToPtr();
+  GaussianFactorGraph &damped = (*dampedPtr);
   damped.reserve(damped.size() + state_.values.size());
   if (params_.diagonalDamping) {
     BOOST_FOREACH(const VectorValues::KeyValuePair& key_vector, state_.hessianDiagonal) {
@@ -188,7 +189,7 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
     }
   }
   gttoc(damp);
-  return damped;
+  return dampedPtr;
 }
 
 /* ************************************************************************* */
@@ -212,7 +213,8 @@ void LevenbergMarquardtOptimizer::iterate() {
       cout << "trying lambda = " << state_.lambda << endl;
 
     // Build damped system for this lambda (adds prior factors that make it like gradient descent)
-    GaussianFactorGraph dampedSystem = buildDampedSystem(*linear);
+    GaussianFactorGraph::shared_ptr dampedSystemPtr = buildDampedSystem(*linear);
+    GaussianFactorGraph &dampedSystem = (*dampedSystemPtr);
 
     // Try solving
     double modelFidelity = 0.0;
