@@ -19,7 +19,11 @@ for i=0:length(measurements)
   if i==0
     %% first time step, add priors
     % Pose prior (poses used for all factors)
-    initialPose = Pose3.Expmap(measurementNoise.poseNoiseVector .* randn(6,1));
+    if options.includeBetweenFactors == 1
+      initialPose = Pose3.Expmap(measurementNoise.poseNoiseVector .* randn(6,1));
+    else
+      initialPose = Pose3;  
+    end
     graph.add(PriorFactorPose3(currentPoseKey, initialPose, noiseModels.noisePose));
     
     % IMU velocity and bias priors

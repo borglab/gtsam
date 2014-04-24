@@ -11,15 +11,15 @@ clc
 clear all
 close all
 
-saveResults = 1;
+saveResults = 0;
 
 %% Configuration
 options.useRealData = 1;           % controls whether or not to use the real data (if available) as the ground truth traj
-options.includeBetweenFactors = 1; % if true, BetweenFactors will be added between consecutive poses
+options.includeBetweenFactors = 0; % if true, BetweenFactors will be added between consecutive poses
 
 options.includeIMUFactors = 1;     % if true, IMU factors will be added between consecutive states (biases, poses, velocities)
 options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
-options.imuNonzeroBias = 1;        % if true, a nonzero bias is applied to IMU measurements
+options.imuNonzeroBias = 0;        % if true, a nonzero bias is applied to IMU measurements
 
 options.includeCameraFactors = 0;  % not fully implementemeasurements, values, noiseModels, measurementNoise, options, metadatad yet
 numberOfLandmarks = 10;            % Total number of visual landmarks, used for camera factors
@@ -30,7 +30,7 @@ options.gpsStartPose = 100;        % Pose number to start including GPS factors 
 options.trajectoryLength = 209;    % length of the ground truth trajectory
 options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)
 
-numMonteCarloRuns = 100;             % number of Monte Carlo runs to perform
+numMonteCarloRuns = 2;             % number of Monte Carlo runs to perform
 
 %% Camera metadata
 K = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
@@ -54,8 +54,8 @@ metadata.imu.zeroBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 metadata.imu.AccelerometerSigma = 1e-3;
 metadata.imu.GyroscopeSigma = 1e-5;
 metadata.imu.IntegrationSigma = 1e-5;
-metadata.imu.BiasAccelerometerSigma = 1e-4; %metadata.imu.epsBias;
-metadata.imu.BiasGyroscopeSigma = 1e-4; %metadata.imu.epsBias;  
+metadata.imu.BiasAccelerometerSigma = 1e-10; %metadata.imu.epsBias;
+metadata.imu.BiasGyroscopeSigma = 1e-10; %metadata.imu.epsBias;  
 metadata.imu.BiasAccOmegaInit = metadata.imu.epsBias;
 metadata.imu.g = [0;0;0];
 metadata.imu.omegaCoriolis = [0;0;0];
@@ -151,7 +151,7 @@ monteCarloMeasurementNoise.cameraPixelNoiseVector = [0; 0];
 monteCarloMeasurementNoise.gpsNoiseVector = noiseVectorGPS;
   
 for k=1:numMonteCarloRuns
-  fprintf('Monte Carlo Run %d.\n', k');
+  fprintf('Monte Carlo Run %d...', k');
 
   % Create a random bias for each run
   if options.imuNonzeroBias == 1
@@ -176,7 +176,8 @@ for k=1:numMonteCarloRuns
   % optimize
   optimizer = GaussNewtonOptimizer(graph, gtValues);
   estimate = optimizer.optimize();
-  
+  fprintf('\n\tEstimate error: %g \n', graph.error(estimate) );
+  fprintf('\tEstimate error (GT): %g \n', graph.error(gtValues) );
   figure(1)
   plot3DTrajectory(estimate, '-b');
   
@@ -212,6 +213,7 @@ set(gca,'Fontsize',16)
 title('NEES and ANEES');
 if saveResults
   saveas(gcf,horzcat(folderName,'runs-',testName,'.fig'),'fig');
+  saveas(gcf,horzcat(folderName,'runs-',testName,'.png'),'png');
 end
 
 %%
@@ -221,6 +223,7 @@ set(gca,'Fontsize',16)
 title('Ground truth and estimates for each MC runs');
 if saveResults
   saveas(gcf,horzcat(folderName,'gt-',testName,'.fig'),'fig');
+  saveas(gcf,horzcat(folderName,'gt-',testName,'.png'),'png');
 end
 
 %% Let us compute statistics on the overall NEES
@@ -248,6 +251,7 @@ set(gca,'Fontsize',16)
 title('NEES normalized by dof VS bounds');
 if saveResults
   saveas(gcf,horzcat(folderName,'ANEES-',testName,'.fig'),'fig');
+  saveas(gcf,horzcat(folderName,'ANEES-',testName,'.png'),'png');
   logFile = horzcat(folderName,'log-',testName);
   save(logFile)
 end
