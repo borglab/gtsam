@@ -2325,6 +2325,15 @@ class CombinedImuFactorPreintegratedMeasurements {
       Matrix biasAccCovariance,
       Matrix biasOmegaCovariance,
       Matrix biasAccOmegaInit);
+  CombinedImuFactorPreintegratedMeasurements(
+      const gtsam::imuBias::ConstantBias& bias,
+      Matrix measuredAccCovariance,
+      Matrix measuredOmegaCovariance,
+      Matrix integrationErrorCovariance,
+      Matrix biasAccCovariance,
+      Matrix biasOmegaCovariance,
+      Matrix biasAccOmegaInit,
+      bool use2ndOrderIntegration);
   CombinedImuFactorPreintegratedMeasurements(const gtsam::CombinedImuFactorPreintegratedMeasurements& rhs);
 
   // Testable
