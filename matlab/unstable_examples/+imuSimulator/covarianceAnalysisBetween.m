@@ -19,18 +19,18 @@ options.includeBetweenFactors = 0; % if true, BetweenFactors will be added betwe
 
 options.includeIMUFactors = 1;     % if true, IMU factors will be added between consecutive states (biases, poses, velocities)
 options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
-options.imuNonzeroBias = 0;        % if true, a nonzero bias is applied to IMU measurements
+options.imuNonzeroBias = 1;        % if true, a nonzero bias is applied to IMU measurements
 
-options.includeCameraFactors = 0;  % not fully implementemeasurements, values, noiseModels, measurementNoise, options, metadatad yet
+options.includeCameraFactors = 0;  % not fully implemented yet
 numberOfLandmarks = 10;            % Total number of visual landmarks, used for camera factors
 
 options.includeGPSFactors = 0;     % if true, GPS factors will be added as priors to poses
 options.gpsStartPose = 100;        % Pose number to start including GPS factors at
 
-options.trajectoryLength = 209;    % length of the ground truth trajectory
+options.trajectoryLength = 50; %209;    % length of the ground truth trajectory
 options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)
 
-numMonteCarloRuns = 2;             % number of Monte Carlo runs to perform
+numMonteCarloRuns = 20;             % number of Monte Carlo runs to perform
 
 %% Camera metadata
 K = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
@@ -49,33 +49,43 @@ if options.includeCameraFactors == 1
 end
 
 %% Imu metadata
+sigma_accel = 1e-3;         % std. deviation for accelerometer noise, typical 1e-3
+sigma_gyro = 1e-5;          % std. deviation for gyroscope noise, typical 1e-5
+sigma_accelBias = 1e-3;     % std. deviation for added accelerometer constant bias, typical 1e-3
+sigma_gyroBias = 1e-5;      % std. deviation for added gyroscope constant bias, typical 1e-5
+
 metadata.imu.epsBias = 1e-10; % was 1e-7
-metadata.imu.zeroBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
-metadata.imu.AccelerometerSigma = 1e-3;
-metadata.imu.GyroscopeSigma = 1e-5;
-metadata.imu.IntegrationSigma = 1e-5;
-metadata.imu.BiasAccelerometerSigma = 1e-10; %metadata.imu.epsBias;
-metadata.imu.BiasGyroscopeSigma = 1e-10; %metadata.imu.epsBias;  
-metadata.imu.BiasAccOmegaInit = metadata.imu.epsBias;
 metadata.imu.g = [0;0;0];
 metadata.imu.omegaCoriolis = [0;0;0];
-noiseVel =  noiseModel.Isotropic.Sigma(3, 1e-2); % was 0.1
-noiseBias = noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias); % between on biases
-noisePriorBias = noiseModel.Diagonal.Sigmas([metadata.imu.BiasAccelerometerSigma * ones(3,1); ...
-                                             metadata.imu.BiasGyroscopeSigma * ones(3,1)]);
+metadata.imu.IntegrationSigma = 1e-5;
+metadata.imu.zeroBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
+metadata.imu.AccelerometerSigma = sigma_accel;
+metadata.imu.GyroscopeSigma = sigma_gyro;
+metadata.imu.BiasAccelerometerSigma = metadata.imu.epsBias;  % noise on expected change in accelerometer bias over time
+metadata.imu.BiasGyroscopeSigma = metadata.imu.epsBias;      % noise on expected change in gyroscope bias over time
+% noise on initial accelerometer and gyroscope biases
+if options.imuNonzeroBias == 1
+  metadata.imu.BiasAccOmegaInit = [sigma_accelBias * ones(3,1); sigma_gyroBias * ones(3,1)];
+else
+  metadata.imu.BiasAccOmegaInit = metadata.imu.epsBias * ones(6,1);
+end
 
-sigma_accel = metadata.imu.AccelerometerSigma;
-sigma_gyro = metadata.imu.GyroscopeSigma;
-noiseVectorAccel = sigma_accel * ones(3,1);
-noiseVectorGyro =  sigma_gyro  * ones(3,1);
+noiseVel =  noiseModel.Isotropic.Sigma(3, 1e-2); % was 0.1
+noiseBiasBetween = noiseModel.Diagonal.Sigmas([metadata.imu.BiasAccelerometerSigma * ones(3,1);...
+                                               metadata.imu.BiasGyroscopeSigma * ones(3,1)]); % between on biases
+noisePriorBias = noiseModel.Diagonal.Sigmas(metadata.imu.BiasAccOmegaInit);
+
+noiseVectorAccel = metadata.imu.AccelerometerSigma * ones(3,1);
+noiseVectorGyro = metadata.imu.GyroscopeSigma  * ones(3,1);
 
 %% Between metadata
-sigma_ang = 1e-2;  sigma_cart = 1e-1;
+sigma_ang = 1e-2;       % std. deviation for rotational noise, typical 1e-2
+sigma_cart = 1e-1;      % std. deviation for translational noise, typical 1e-1
 noiseVectorPose = [sigma_ang * ones(3,1); sigma_cart * ones(3,1)];
 noisePose = noiseModel.Diagonal.Sigmas(noiseVectorPose);
 
 %% GPS metadata
-sigma_gps = 1e-4;
+sigma_gps = 1e-4;       % std. deviation for noise in GPS position measurements, typical 1e-4
 noiseVectorGPS = sigma_gps * ones(3,1);
 noiseGPS = noiseModel.Diagonal.Precisions([zeros(3,1); 1/sigma_gps^2 * ones(3,1)]);
 
@@ -90,7 +100,7 @@ folderName = 'results/'
 % Set up noise models
 gtNoiseModels.noisePose = noisePose;
 gtNoiseModels.noiseVel = noiseVel;
-gtNoiseModels.noiseBias = noiseBias;
+gtNoiseModels.noiseBiasBetween = noiseBiasBetween;
 gtNoiseModels.noisePriorPose = noisePose;
 gtNoiseModels.noisePriorBias = noisePriorBias;
 gtNoiseModels.noiseGPS = noiseGPS;
@@ -138,7 +148,7 @@ disp('Plotted ground truth')
 % Set up noise models
 monteCarloNoiseModels.noisePose = noisePose;
 monteCarloNoiseModels.noiseVel = noiseVel;
-monteCarloNoiseModels.noiseBias = noiseBias;
+monteCarloNoiseModels.noiseBiasBetween = noiseBiasBetween;
 monteCarloNoiseModels.noisePriorPose = noisePose;
 monteCarloNoiseModels.noisePriorBias = noisePriorBias;
 monteCarloNoiseModels.noiseGPS = noiseGPS;
@@ -151,12 +161,14 @@ monteCarloMeasurementNoise.cameraPixelNoiseVector = [0; 0];
 monteCarloMeasurementNoise.gpsNoiseVector = noiseVectorGPS;
   
 for k=1:numMonteCarloRuns
-  fprintf('Monte Carlo Run %d...', k');
+  fprintf('Monte Carlo Run %d...\n', k');
 
   % Create a random bias for each run
   if options.imuNonzeroBias == 1
-    metadata.imu.accelConstantBiasVector = metadata.imu.BiasAccelerometerSigma .* randn(3,1);
-    metadata.imu.gyroConstantBiasVector = metadata.imu.BiasGyroscopeSigma .* randn(3,1);
+    %metadata.imu.accelConstantBiasVector = metadata.imu.BiasAccOmegaInit(1:3) .* randn(3,1);
+    %metadata.imu.gyroConstantBiasVector = metadata.imu.BiasAccOmegaInit(4:6) .* randn(3,1);
+    metadata.imu.accelConstantBiasVector = 1e-2 * ones(3,1);
+    metadata.imu.gyroConstantBiasVector = 1e-3 * ones(3,1);
   else
     metadata.imu.accelConstantBiasVector = zeros(3,1);
     metadata.imu.gyroConstantBiasVector = zeros(3,1);
@@ -176,8 +188,6 @@ for k=1:numMonteCarloRuns
   % optimize
   optimizer = GaussNewtonOptimizer(graph, gtValues);
   estimate = optimizer.optimize();
-  fprintf('\n\tEstimate error: %g \n', graph.error(estimate) );
-  fprintf('\tEstimate error (GT): %g \n', graph.error(gtValues) );
   figure(1)
   plot3DTrajectory(estimate, '-b');
   
@@ -195,7 +205,6 @@ for k=1:numMonteCarloRuns
     % compute covariances:
     cov = marginals.marginalCovariance(currentPoseKey);
     covPosition = estR * cov(4:6,4:6) * estR';
-    
     % compute NEES using (estimationError = estimatedValues - gtValues) and estimated covariances
     NEES(k,i+1) = errPosition' * inv(covPosition) * errPosition; % distributed according to a Chi square with n = 3 dof
   end

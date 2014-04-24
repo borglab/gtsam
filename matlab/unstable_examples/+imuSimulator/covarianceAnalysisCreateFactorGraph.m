@@ -19,11 +19,7 @@ for i=0:length(measurements)
   if i==0
     %% first time step, add priors
     % Pose prior (poses used for all factors)
-    if options.includeBetweenFactors == 1
-      initialPose = Pose3.Expmap(measurementNoise.poseNoiseVector .* randn(6,1));
-    else
-      initialPose = Pose3;  
-    end
+    initialPose = Pose3.Expmap(measurementNoise.poseNoiseVector .* randn(6,1));
     graph.add(PriorFactorPose3(currentPoseKey, initialPose, noiseModels.noisePose));
     
     % IMU velocity and bias priors
@@ -90,19 +86,21 @@ for i=0:length(measurements)
           currentBiasKey-1, imuMeasurement, metadata.imu.g, metadata.imu.omegaCoriolis));
         % Add between factor on biases
         graph.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, metadata.imu.zeroBias, ...
-          noiseModel.Isotropic.Sigma(6, metadata.imu.epsBias)));
+          noiseModels.noiseBiasBetween));
       end
           
       if options.imuFactorType == 2
+        use2ndOrderIntegration = true;
         % Initialize preintegration
         imuMeasurement = gtsam.CombinedImuFactorPreintegratedMeasurements(...
           metadata.imu.zeroBias, ...
           metadata.imu.AccelerometerSigma.^2 * eye(3), ...
           metadata.imu.GyroscopeSigma.^2 * eye(3), ...
           metadata.imu.IntegrationSigma.^2 * eye(3), ...
-          metadata.imu.BiasAccelerometerSigma.^2 * eye(3), ...
-          metadata.imu.BiasGyroscopeSigma.^2 * eye(3), ...
-          metadata.imu.BiasAccOmegaInit.^2 * eye(6));
+          metadata.imu.BiasAccelerometerSigma.^2 * eye(3), ...  % how bias changes over time
+          metadata.imu.BiasGyroscopeSigma.^2 * eye(3), ...      % how bias changes over time
+          diag(metadata.imu.BiasAccOmegaInit.^2), ...           % prior on bias
+          use2ndOrderIntegration);
         % Generate IMU measurements with noise
         for j=1:length(measurements(i).imu) % all measurements to preintegrate
           imuAccel = measurements(i).imu(j).accel ...
