@@ -575,7 +575,7 @@ VectorValues JacobianFactor::gradientAtZero() const {
 
 /* ************************************************************************* */
 void JacobianFactor::gradientAtZero(double* d) const {
-  throw std::runtime_error("gradientAtZero not implemented for Jacobian factor");
+  //throw std::runtime_error("gradientAtZero not implemented for Jacobian factor");
 }
 
 /* ************************************************************************* */
