@@ -24,7 +24,6 @@ class ImplicitSchurFactor: public GaussianFactor {
 
 public:
   typedef ImplicitSchurFactor This; ///< Typedef to this class
-  typedef JacobianFactor Base; ///< Typedef to base class
   typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 protected:
