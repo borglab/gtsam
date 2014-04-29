@@ -277,9 +277,9 @@ void Constrained::print(const std::string& name) const {
 
 /* ************************************************************************* */
 Vector Constrained::whiten(const Vector& v) const {
-  // If sigmas[i] is not 0 then divide v[i] by sigmas[i], as usually done in
-  // other normal Gaussian noise model. Otherwise, sigmas[i] = 0 indicating
-  // a hard constraint, we don't do anything.
+  // If sigmas[i] > 0 then divide v[i] by sigmas[i], as usually done in
+  // other normal Gaussian noise model. Otherwise, sigmas[i] <= 0 indicating
+  // a constraint (ineq and eq), we don't do anything.
   const Vector& a = v;
   const Vector& b = sigmas_;
   // Now allows for whiten augmented vector with a new additional part coming
@@ -287,7 +287,7 @@ Vector Constrained::whiten(const Vector& v) const {
   Vector c = a;
   for( DenseIndex i = 0; i < b.size(); i++ ) {
     const double& ai = a(i), &bi = b(i);
-    if (bi!=0) c(i) = ai/bi;
+    if (bi>0) c(i) = ai/bi;
   }
   return c;
 }
@@ -298,6 +298,7 @@ double Constrained::distance(const Vector& v) const {
   // TODO Find a better way of doing these checks
   for (size_t i=0; i<dim_; ++i)  // add mu weights on constrained variables
     if (!std::isfinite(1./sigmas_[i])) // whiten makes constrained variables zero
+      // TODO: how to deal with ineq constraint (sigmas_[i] < 0) ???
       w[i] = v[i] * sqrt(mu_[i]); // TODO: may want to store sqrt rather than rebuild
   return w.dot(w);
 }
@@ -324,7 +325,7 @@ void Constrained::WhitenInPlace(Matrix& H) const {
   // vector_scale_inplace(v, A, true);
   for (DenseIndex i=0; i<(DenseIndex)dim_; ++i) {
     const double& invsigma = invsigmas_(i);
-    if (std::isfinite(1./sigmas_(i)))
+    if (std::isfinite(1./sigmas_(i)) && sigmas_(i)>0)
       H.row(i) *= invsigma;
   }
 }
@@ -337,19 +338,17 @@ void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
   // indicating a hard constraint, we leave H's row i in place.
   const Vector& _invsigmas = invsigmas();
   for(DenseIndex row = 0; row < _invsigmas.size(); ++row)
-    if(isfinite(_invsigmas(row)))
+    if(isfinite(_invsigmas(row)) && _invsigmas(row)>0 )
       H.row(row) *= _invsigmas(row);
 }
 
 /* ************************************************************************* */
-Constrained::shared_ptr Constrained::unit(size_t augmentedDim) const {
-  Vector sigmas = ones(dim()+augmentedDim);
+Constrained::shared_ptr Constrained::unit() const {
+  Vector sigmas = ones(dim());
   for (size_t i=0; i<dim(); ++i)
-    if (this->sigmas_(i) == 0.0)
-      sigmas(i) = 0.0;
-  Vector augmentedMu = zero(dim()+augmentedDim);
-  subInsert(augmentedMu, mu_, 0);
-  return MixedSigmas(augmentedMu, sigmas);
+    if (this->sigmas_(i) <= 0.0)
+      sigmas(i) = sigmas_(i);
+  return MixedSigmas(mu_, sigmas);
 }
 
 /* ************************************************************************* */
