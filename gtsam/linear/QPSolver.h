@@ -131,10 +131,12 @@ public:
       const VectorValues& xk, const VectorValues& p) const;
 
   /** Iterate 1 step, modify workingGraph and currentSolution *IN PLACE* !!! */
-  bool iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution) const;
+  bool iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution,
+      VectorValues& lambdas) const;
 
   /** Optimize */
-  VectorValues optimize(const VectorValues& initials) const;
+  VectorValues optimize(const VectorValues& initials,
+      boost::optional<VectorValues&> lambdas = boost::none) const;
 
   /// Convert a Gaussian factor to a jacobian. return empty shared ptr if failed
   /// TODO: Move to GaussianFactor?

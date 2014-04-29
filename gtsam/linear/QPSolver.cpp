@@ -7,6 +7,7 @@
 
 #include <boost/foreach.hpp>
 #include <gtsam/linear/QPSolver.h>
+#include <gtsam/inference/Symbol.h>
 
 using namespace std;
 
@@ -82,7 +83,7 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
       }
       else {  // unconstrained Jacobian
         // Convert the original linear factor to Hessian factor
-        hfg->push_back(HessianFactor(*graph[factorIndex]));
+        hfg->push_back(HessianFactor(*jf));
       }
     }
     else { // If it's not a Jacobian, it should be a hessian factor. Just add!
@@ -96,7 +97,7 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
 /* ************************************************************************* */
 GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     const VectorValues& x0, bool useLeastSquare) const {
-  static const bool debug = false;
+  static const bool debug = true;
 
   // The dual graph to return
   GaussianFactorGraph dualGraph;
@@ -104,15 +105,17 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
   // For each variable xi involving in some constraint, compute the unconstrained gradient
   // wrt xi from the prebuilt freeHessian graph
   // \grad f(xi) = \frac{\partial f}{\partial xi}' = \sum_j G_ij*xj - gi
+  if (debug) freeHessianFactorIndex_.print("freeHessianFactorIndex_: ");
   BOOST_FOREACH(const VariableIndex::value_type& xiKey_factors, freeHessianFactorIndex_) {
     Key xiKey = xiKey_factors.first;
     VariableIndex::Factors xiFactors = xiKey_factors.second;
 
     // Find xi's dim from the first factor on xi
     if (xiFactors.size() == 0) continue;
-    GaussianFactor::shared_ptr xiFactor0 = freeHessians_->at(0);
+    GaussianFactor::shared_ptr xiFactor0 = freeHessians_->at(*xiFactors.begin());
     size_t xiDim = xiFactor0->getDim(xiFactor0->find(xiKey));
-    if (debug) cout << "xiDim: " << xiDim << endl;
+    if (debug) xiFactor0->print("xiFactor0: ");
+    if (debug) cout << "xiKey: " << string(Symbol(xiKey)) << ", xiDim: " << xiDim << endl;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
     // Compute the b-vector for the dual factor Ax-b
@@ -156,6 +159,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
       // Each column for each lambda_k corresponds to [the transpose of] each constrained row factor
       Matrix A_k = factor->getA(factor->find(xiKey)).transpose();
       if (debug) gtsam::print(A_k, "A_k = ");
+
       // Deal with mixed sigmas: no information if sigma != 0
       Vector sigmas = factor->get_model()->sigmas();
       for (size_t sigmaIx = 0; sigmaIx<sigmas.size(); ++sigmaIx) {
@@ -167,6 +171,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
           unconstrainedIndex.push_back(make_pair(factorIndex, sigmaIx));
         }
       }
+
       // Use factorIndex as the lambda's key.
       lambdaTerms.push_back(make_pair(factorIndex, A_k));
     }
@@ -174,18 +179,27 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
     // Create and add factors to the dual graph
     // If least square approximation is desired, use unit noise model.
+    if (debug) cout << "Create dual factor" << endl;
     if (useLeastSquare) {
+      if (debug) cout << "use least square!" << endl;
       dualGraph.push_back(JacobianFactor(lambdaTerms, gradf_xi,
           noiseModel::Unit::Create(gradf_xi.size())));
     }
     else {
       // Enforce constrained noise model so lambdas are solved with QR
       // and should exactly satisfy all the equations
+      for (size_t i = 0; i<lambdaTerms.size(); ++i) {
+        cout << "Term " << i << ":" << endl;
+        cout << lambdaTerms[i].first << endl;
+        cout << lambdaTerms[i].second << endl;
+      }
+      if (debug) cout << gradf_xi << endl;
       dualGraph.push_back(JacobianFactor(lambdaTerms, gradf_xi,
           noiseModel::Constrained::All(gradf_xi.size())));
     }
 
     // Add 0 priors on all lambdas of the unconstrained rows to make sure the graph is solvable
+    if (debug) cout << "Create priors" << endl;
     BOOST_FOREACH(FactorIx_SigmaIx factorIx_sigmaIx, unconstrainedIndex) {
       size_t factorIx = factorIx_sigmaIx.first;
       JacobianFactor::shared_ptr factor = toJacobian(graph.at(factorIx));
@@ -194,6 +208,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
       size_t sigmaIx = factorIx_sigmaIx.second;
       J(sigmaIx,sigmaIx) = 1.0;
       // Use factorIndex as the lambda's key.
+      if (debug) cout << "prior for factor " << factorIx << endl;
       dualGraph.push_back(JacobianFactor(factorIx, J, zero(dim)));
     }
   }
@@ -284,8 +299,8 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
 }
 
 /* ************************************************************************* */
-bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution) const {
-  static bool debug = false;
+bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution, VectorValues& lambdas) const {
+  static bool debug = true;
   if (debug) workingGraph.print("workingGraph: ");
   // Obtain the solution from the current working graph
   VectorValues newSolution = workingGraph.optimize();
@@ -297,7 +312,7 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
     if (debug) cout << "Building dual graph..." << endl;
     GaussianFactorGraph dualGraph = buildDualGraph(workingGraph, newSolution);
     if (debug) dualGraph.print("Dual graph: ");
-    VectorValues lambdas = dualGraph.optimize();
+    lambdas = dualGraph.optimize();
     if (debug) lambdas.print("lambdas :");
 
     int factorIx, sigmaIx;
@@ -327,13 +342,16 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
 }
 
 /* ************************************************************************* */
-VectorValues QPSolver::optimize(const VectorValues& initials) const {
+VectorValues QPSolver::optimize(const VectorValues& initials,
+    boost::optional<VectorValues&> lambdas) const {
   GaussianFactorGraph workingGraph = graph_.clone();
   VectorValues currentSolution = initials;
+  VectorValues workingLambdas;
   bool converged = false;
   while (!converged) {
-    converged = iterateInPlace(workingGraph, currentSolution);
+    converged = iterateInPlace(workingGraph, currentSolution, workingLambdas);
   }
+  if (lambdas) *lambdas = workingLambdas;
   return currentSolution;
 }
 
