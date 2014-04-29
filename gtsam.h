@@ -2347,8 +2347,7 @@ class CombinedImuFactorPreintegratedMeasurements {
 
 virtual class CombinedImuFactor : gtsam::NonlinearFactor {
   CombinedImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias_i, size_t bias_j,
-      const gtsam::CombinedImuFactorPreintegratedMeasurements& CombinedPreintegratedMeasurements, Vector gravity, Vector omegaCoriolis,
-      const gtsam::noiseModel::Base* model);
+      const gtsam::CombinedImuFactorPreintegratedMeasurements& CombinedPreintegratedMeasurements, Vector gravity, Vector omegaCoriolis);
 
   // Standard Interface
   gtsam::CombinedImuFactorPreintegratedMeasurements preintegratedMeasurements() const;

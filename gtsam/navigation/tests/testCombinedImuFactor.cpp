@@ -183,7 +183,7 @@ TEST( CombinedImuFactor, ErrorWithBiases )
     ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
     noiseModel::Gaussian::shared_ptr Combinedmodel = noiseModel::Gaussian::Covariance(Combined_pre_int_data.PreintMeasCov);
-    CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), Combined_pre_int_data, gravity, omegaCoriolis, Combinedmodel);
+    CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), Combined_pre_int_data, gravity, omegaCoriolis);
 
 
     Vector errorExpected = factor.evaluateError(x1, v1, x2, v2, bias);

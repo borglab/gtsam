@@ -341,8 +341,8 @@ namespace gtsam {
     /** Constructor */
     CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
         const CombinedPreintegratedMeasurements& preintegratedMeasurements, const Vector3& gravity, const Vector3& omegaCoriolis,
-        const SharedNoiseModel& model, boost::optional<const Pose3&> body_P_sensor = boost::none, const bool use2ndOrderCoriolis = false) :
-      Base(model, pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
+        boost::optional<const Pose3&> body_P_sensor = boost::none, const bool use2ndOrderCoriolis = false) :
+      Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.PreintMeasCov), pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
       preintegratedMeasurements_(preintegratedMeasurements),
       gravity_(gravity),
       omegaCoriolis_(omegaCoriolis),
