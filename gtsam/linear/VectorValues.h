@@ -130,6 +130,9 @@ namespace gtsam {
     /** Create a VectorValues with the same structure as \c other, but filled with zeros. */
     static VectorValues Zero(const VectorValues& other);
 
+    /** Create a VectorValues with the same structure as \c other, but filled with a constant. */
+    static VectorValues One(const VectorValues& other);
+
     /// @}
     /// @name Standard Interface
     /// @{
@@ -301,6 +304,10 @@ namespace gtsam {
     /** Element-wise subtraction, synonym for operator-().  Both VectorValues must have the same
      *  structure (checked when NDEBUG is not defined). */
     VectorValues subtract(const VectorValues& c) const;
+
+    /** Element-wise multiplication.  Both VectorValues must have the same structure
+     *  (checked when NDEBUG is not defined). */
+    VectorValues operator*(const VectorValues& c) const;
 
     /** Element-wise scaling by a constant. */
     friend GTSAM_EXPORT VectorValues operator*(const double a, const VectorValues &v);
