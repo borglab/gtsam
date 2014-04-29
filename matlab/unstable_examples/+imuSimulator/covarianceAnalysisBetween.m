@@ -2,7 +2,7 @@ import gtsam.*;
 
 % Test GTSAM covariances on a factor graph with:
 % Between Factors
-% IMU factors
+% IMU factors (type 1 and type 2)
 % Projection factors
 % Authors: Luca Carlone, David Jensen
 % Date: 2014/4/6
@@ -18,7 +18,7 @@ options.useRealData = 1;           % controls whether or not to use the real dat
 options.includeBetweenFactors = 0; % if true, BetweenFactors will be added between consecutive poses
 
 options.includeIMUFactors = 1;     % if true, IMU factors will be added between consecutive states (biases, poses, velocities)
-options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
+options.imuFactorType = 2;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
 options.imuNonzeroBias = 1;        % if true, a nonzero bias is applied to IMU measurements
 
 options.includeCameraFactors = 0;  % not fully implemented yet
@@ -27,7 +27,7 @@ numberOfLandmarks = 10;            % Total number of visual landmarks, used for 
 options.includeGPSFactors = 0;     % if true, GPS factors will be added as priors to poses
 options.gpsStartPose = 100;        % Pose number to start including GPS factors at
 
-options.trajectoryLength = 50; %209;    % length of the ground truth trajectory
+options.trajectoryLength = 209;%209;    % length of the ground truth trajectory
 options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)
 
 numMonteCarloRuns = 20;             % number of Monte Carlo runs to perform
@@ -51,8 +51,8 @@ end
 %% Imu metadata
 sigma_accel = 1e-3;         % std. deviation for accelerometer noise, typical 1e-3
 sigma_gyro = 1e-5;          % std. deviation for gyroscope noise, typical 1e-5
-sigma_accelBias = 1e-3;     % std. deviation for added accelerometer constant bias, typical 1e-3
-sigma_gyroBias = 1e-5;      % std. deviation for added gyroscope constant bias, typical 1e-5
+sigma_accelBias = 1e-4;     % std. deviation for added accelerometer constant bias, typical 1e-3
+sigma_gyroBias = 1e-6;      % std. deviation for added gyroscope constant bias, typical 1e-5
 
 metadata.imu.epsBias = 1e-10; % was 1e-7
 metadata.imu.g = [0;0;0];
@@ -132,6 +132,7 @@ figure(1)
 hold on;
 plot3DPoints(gtValues);
 plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
+%plot3DTrajectory(gtValues, '-r');
 axis equal
 
 % optimize
@@ -165,10 +166,10 @@ for k=1:numMonteCarloRuns
 
   % Create a random bias for each run
   if options.imuNonzeroBias == 1
-    %metadata.imu.accelConstantBiasVector = metadata.imu.BiasAccOmegaInit(1:3) .* randn(3,1);
-    %metadata.imu.gyroConstantBiasVector = metadata.imu.BiasAccOmegaInit(4:6) .* randn(3,1);
-    metadata.imu.accelConstantBiasVector = 1e-2 * ones(3,1);
-    metadata.imu.gyroConstantBiasVector = 1e-3 * ones(3,1);
+    metadata.imu.accelConstantBiasVector = metadata.imu.BiasAccOmegaInit(1:3) .* randn(3,1);
+    metadata.imu.gyroConstantBiasVector = metadata.imu.BiasAccOmegaInit(4:6) .* randn(3,1);
+    %metadata.imu.accelConstantBiasVector = 1e-2 * ones(3,1);
+    %metadata.imu.gyroConstantBiasVector = 1e-3 * ones(3,1);
   else
     metadata.imu.accelConstantBiasVector = zeros(3,1);
     metadata.imu.gyroConstantBiasVector = zeros(3,1);

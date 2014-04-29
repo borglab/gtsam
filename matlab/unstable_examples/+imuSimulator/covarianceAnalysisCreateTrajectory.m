@@ -43,7 +43,7 @@ if options.useRealData == 1
     if options.includeIMUFactors == 1
       currentVelKey = symbol('v', i);
       currentBiasKey = symbol('b', i);
-      deltaT = 0.01;   % amount of time between IMU measurements
+      deltaT = 1;   % amount of time between IMU measurements
       if i == 0
         currentVel = [0 0 0]';
       else
