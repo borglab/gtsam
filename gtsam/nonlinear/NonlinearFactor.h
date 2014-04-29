@@ -325,17 +325,11 @@ public:
     {
       noiseModel::Constrained::shared_ptr constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-      if(constrained) {
-        size_t augmentedDim = terms[0].second.rows() - constrained->dim();
-        Vector augmentedZero = zero(augmentedDim);
-        Vector augmentedb = concatVectors(2, &b, &augmentedZero);
-        return GaussianFactor::shared_ptr(new JacobianFactor(terms, augmentedb, constrained->unit(augmentedDim)));
-      }
-      else
-        return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
+      if(constrained)
+        return GaussianFactor::shared_ptr(new JacobianFactor(terms, b, constrained->unit()));
     }
-    else
-      return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
+
+    return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
   }
 
 private:
