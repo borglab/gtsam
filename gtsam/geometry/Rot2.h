@@ -173,6 +173,16 @@ namespace gtsam {
       return (Vector(1) << r.theta());
     }
 
+    /// Left-trivialized derivative of the exponential map
+    static Matrix dexpL(const Vector& v) {
+      return ones(1);
+    }
+
+    /// Left-trivialized derivative inverse of the exponential map
+    static Matrix dexpInvL(const Vector& v) {
+      return ones(1);
+    }
+
     /// @}
     /// @name Group Action on Point2
     /// @{
