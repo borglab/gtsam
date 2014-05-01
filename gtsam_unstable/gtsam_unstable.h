@@ -377,18 +377,19 @@ virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam_unstable/slam/SmartProjectionPoseFactor.h>
-template<POSE, LANDMARK, CALIBRATION>
-virtual class SmartProjectionPoseFactor: gtsam::SmartProjectionFactor {
+template<POSE = {gtsam::Pose3},LANDMARK = {gtsam::Point3},CALIBRATION = {gtsam::Cal3_S2}>
+virtual class SmartProjectionPoseFactor : gtsam::SmartProjectionFactor {
 
-  SmartProjectionPoseFactor(double rankTol, double linThreshold,
-      bool manageDegeneracy, bool enableEPI, const POSE& body_P_sensor);
+  //SmartProjectionPoseFactor(double rankTol, double linThreshold, bool manageDegeneracy, bool enableEPI, const POSE& body_P_sensor);
+  SmartProjectionPoseFactor();
 
-  void add(const Point2 measured_i, const Key poseKey_i, const SharedNoiseModel noise_i,
-      const CALIBRATION* K_i);
+  //void add(gtsam::Point2 measured_i, size_t poseKey_i, gtsam::SharedNoiseModel noise_i, CALIBRATION* K_i);
 
   // enabling serialization functionality
-  void serialize() const;
+  // void serialize() const;
 };
+
+//typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2 > SmartProjectionPose3Factor;
 
 
 #include <gtsam/slam/RangeFactor.h>
