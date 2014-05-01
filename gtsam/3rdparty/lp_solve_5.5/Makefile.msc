@@ -1,0 +1,89 @@
+#
+# Makefile for building lp_solve using GNU Make
+# Usage:
+#   gmake -f Makefile.msc [all | bin | lib | clean]
+#
+# $Revision: 1.1 $
+#
+
+AR = ar
+ARFLAGS = rv
+CC = cl
+LEX = flex
+YACC = bison
+
+INC = -I. -Ibfp -Ibfp/bfp_LUSOL -Ibfp/bfp_LUSOL/LUSOL -Icolamd -Ishared
+
+# Uncomment any of the following two depending on your profile
+#DEBUG = -g -pg
+DEBUG = /ML /O1 /Zp8 /Gd /W2 /DWIN32 /D_WINDOWS
+
+DEFINE = -DNoParanoia -DWIN32 -DYY_NEVER_INTERACTIVE -DPARSER_LP -DINVERSE_ACTIVE=INVERSE_LUSOL -DRoleIsExternalInvEngine
+
+# Uncomment any of the following two depending on how easily compiler messages scare you
+CFLAGS= $(INC) $(DEBUG) $(DEFINE) -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
+
+LFLAGS = -L -l
+YFLAGS = --no-lines -y
+
+LDFLAGS =
+
+LUSOLSRC = bfp/bfp_LUSOL/lp_LUSOL.c bfp/bfp_LUSOL/LUSOL/lusol.c
+LUSOLOBJS = bfp/bfp_LUSOL/lp_LUSOL.obj bfp/bfp_LUSOL/LUSOL/lusol.obj
+
+OBJECTS = $(LUSOLOBJS) lp_MDO.obj shared/commonlib.obj colamd/colamd.obj \
+shared/mmio.obj shared/myblas.obj ini.obj fortify.obj lp_rlp.obj lp_crash.obj  \
+lp_Hash.obj lp_lib.obj lp_wlp.obj lp_matrix.obj lp_mipbb.obj lp_MPS.obj	       \
+lp_params.obj lp_presolve.obj lp_price.obj lp_pricePSE.obj lp_report.obj     \
+lp_scale.obj lp_simplex.obj lp_SOS.obj lp_utils.obj yacc_read.obj
+
+SRC = $(LUSOLSRC) lp_MDO.c shared/commonlib.c colamd/colamd.c	   \
+shared/mmio.c shared/myblas.c ini.c fortify.c lp_rlp.c lp_crash.c  \
+lp_Hash.c lp_lib.c lp_wlp.c lp_matrix.c lp_mipbb.c lp_MPS.c	   \
+lp_params.c lp_presolve.c lp_price.c lp_pricePSE.c lp_report.c	   \
+lp_scale.c lp_simplex.c lp_SOS.c lp_utils.c yacc_read.c
+
+#LIBRARIES = liblpsolve55.lib liblpsolve55d.lib lpsolve55.dll
+LIBRARIES =
+#BINARIES = lp_solve.exe demo.exe
+BINARIES = lp_solve.exe
+ALL =  $(BINARIES) $(DEMOS) $(LIBRARIES)
+.PHONY=clean lp_solve
+
+all: $(ALL)
+lib: $(LIBRARIES)
+bin: $(BINARIES)
+objects: $(OBJECTS)
+
+$(OBJECTS): $(SRC)
+	$(CC) -c $(CFLAGS) $(SRC)
+
+lp_rlp.c: lp_rlp.l lp_rlp.y
+	$(LEX) $(LFLAGS) lp_rlp.l
+	sed -e "s/yy/lp_yy/g" lex.yy.c >lp_rlp.h
+	rm -f lex.yy.c
+
+	$(YACC) $(YFLAGS) lp_rlp.y
+	sed -e "s/yy/lp_yy/g" y.tab.c >lp_rlp.c
+	rm -f y.tab.c
+
+	$(CC) $(CFLAGS) $(DEBUG) $(DEFINE) $(INC) -c $*.c
+
+lp_solve.exe: lp_solve/lp_solve.c $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEBUG) $(DEFINE) $(INC) $< $(OBJECTS) -Felp_solve/lp_solve $(LDFLAGS)
+
+demo.exe: demo/demo.c $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEBUG) $(DEFINE) $(INC) $< $(OBJECTS) -Fedemo/demo $(LDFLAGS)
+
+lpsolve.res: lpsolve.rc
+	$(RC) lpsolve.rc
+
+liblpsolve55.lib: $(OBJECTS)
+	$(LIB) *.obj /OUT:lpsolve55/$@
+
+lpsolve55.dll: $(OBJECTS)
+	$(CC) -fpic -shared -Wl,-Bsymbolic -Wl,-soname,$@ -o lpsolve55/$@ `echo $(SRC)|sed 's/[.]c/.obj/g'` $(LDFLAGS)
+
+clean:
+	rm -f $(OBJECTS)  *.lib *.dll lp_solve/lp_solve.exe demo/demo.exe lpsolve55/*.dll lpsolve55/*.lib
+

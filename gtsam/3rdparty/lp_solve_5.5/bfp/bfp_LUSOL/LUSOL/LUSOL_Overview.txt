@@ -1,0 +1,89 @@
+            Notes for Contribution of LUSOL to COIN-OR
+                            May 2004
+
+Introduction
+============
+
+LUSOL maintains sparse LU factors of a square or rectangular sparse matrix.  It includes a Basis Factorization Package (BFP) suitable for implementing simplex and reduced-gradient methods for optimization.  It is a set of  routines written in ANSI C (adapted from the original Fortran 77 version).
+
+LUSOL includes the following features:
+
+-  A Markowitz-based sparse LU factorization for square,
+   rectangular and possibly singular matrices.
+
+-  Three options for balancing sparsity and stability:
+   Threshold Partial/Rook/Complete Pivoting (TPP, TRP, TCP).
+
+-  Rank-revealing properties.  TRP and TCP are intended for detecting singularities.
+
+-  Dynamic storage allocation (C version only).
+
+-  Stable column replacement as in the method of Bartels and Golub.
+
+-  Other stable updates: add, replace, or delete row or column
+   (currently F77 version only).
+
+-  Implementation into an easy-to-use BFP API (C version only).
+
+
+Implementation
+==============
+
+The Factor routine is similar to the classical Markowitz routines MA28 and LA05 in the Harwell Subroutine Library. The source matrix nonzeros are stored column-wise with the largest entry at the top of each column.  Internally, the structure is also accessible row-wise.  All entries in a particular column or row are held in contiguous storage.  Fill is accommodated by moving a column or row to the beginning of free storage. Occasional compressions recover storage.  This scheme is effective for column-oriented TPP.  When the remaining matrix reaches a specified density, the factors are completed using dense processing.
+
+TRP uses an additional vector of storage to maintain the largest element in each remaining row.
+
+TCP uses a heap structure to hold the largest element in each column.  The largest element in the remaining matrix is then available at the top of the heap.
+
+The final L is stored column-wise (and never changed).  The final U is stored row-wise as a triangular or trapezoidal sparse matrix.
+
+Column replacements are implemented using a forward sweep of 2-by-2 stabilized elimination matrices.  L is updated in product form.  U is updated explicitly.
+
+The other updates use either forward or backward sweeps. They tend to generate more nonzeros than column replacement.
+
+Both the F77 and C versions contain extensive comments, method and implementational information as part of the code.
+
+The C version contains a record-based wrapper for the data.  Function calls have been simplified by including references to this structure.  New maintenance routines enable dynamic instance creation and destruction, and  simplifies access to the most frequently used functions.  The LUSOL C library is multi-instance and fully re-entrant.  All control and output parameters have been given long descriptive names for usability. 
+
+
+Benefits
+========
+
+Rank-revealing properties and rectangular factors (and updates) have not previously been available in sparse LU software.  With sensible parameter settings and reasonably scaled data, all routines are numerically stable.  The updates may be called hundreds of times, and the decision to refactorize can be based on sparsity considerations alone.
+
+In the Factor routine, rook pivoting (TRP) gives reliable rank determination without catastrophic degradation in sparsity or speed.  Complete pivoting (TCP) is included for moderate-sized matrices and for checking pathological cases (but the factors tend to be substantially more dense).
+
+To conserve storage, one may request only the row and column pivot orders.  The factors are discarded as they are computed.  This is useful for basis repair, or for selecting a basis from a rectangular matrix.
+
+
+Known Inefficiencies
+====================
+
+LUSOL is usually efficient on sparse matrices with dimensions up to about 100,000 (but not millions).
+
+In the Factor routine, row and column lists must be updated each time a row and column is eliminated.  Deleting the pivot row and column is inefficient if the original matrix contains unusually dense rows or columns.  For TPP, dense columns could be kept aside and incorporated at the end via updates (but dense rows remain a difficulty).  For TRP and TCP, all rows and columns must be present to achieve the required numerical properties.
+
+For TRP, the current bottleneck is updating the vector containing the largest element in each row.  One solution would be to include the matrix nonzeros in the row structure (but this carries its own cost).
+
+For TCP, the heap structure is already efficient, but the dense factors (and the extended searching for acceptable pivots) are unavoidable expenses.
+
+The triangular Solve routines do not take full of advantage of sparse right-hand sides.  Gilbert and Peierls have shown how to solve Lx = (sparse b) efficiently if L is stored column-wise.  Their approach could therefore be implemented in LUSOL for solves with L and U(transpose).  Solves with L(transpose) and U would need a second copy of L and U. 
+
+
+Original Reference
+==================
+
+P. E. Gill, W. Murray, M. A. Saunders and M. H. Wright, Maintaining LU factors of a general sparse matrix, Linear Algebra and its Applications 88/89, 239-270 (1987).
+
+
+Maintainers
+===========
+
+F77 version: Michael Saunders (saunders@stanford.edu).
+C version: Kjell Eikland (kjell.eikland@broadpark.no).
+
+
+Contributors
+============
+
+Philip Gill, Walter Murray, Margaret Wright, Michael O'Sullivan.
