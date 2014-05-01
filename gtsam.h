@@ -2140,6 +2140,8 @@ template<POSE, POINT, ROTATION>
 virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
   BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
 
+  pair<ROTATION, double> measured() const;
+
   // enabling serialization functionality
   void serialize() const;
 };
