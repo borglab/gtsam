@@ -20,6 +20,8 @@ virtual class gtsam::NonlinearFactor;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
+virtual class gtsam::SmartFactorBase;
+virtual class gtsam::SmartProjectionFactor;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -376,6 +378,26 @@ virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
 
 };
 
+#include <gtsam_unstable/slam/SmartFactorBase.h>
+template<POSE, CALIBRATION, D>
+virtual class SmartFactorBase : gtsam::NonlinearFactor {
+	SmartFactorBase(const POSE& body_P_sensor);
+
+	void add(const Point2& measured_i, const Key& poseKey_i,
+	      const SharedNoiseModel& noise_i);
+
+	void serialize() const;
+};
+
+#include <gtsam_unstable/slam/SmartProjectionFactor.h>
+template<POSE, LANDMARK, CALIBRATION, D>
+virtual class SmartProjectionFactor : gtsam::SmartFactorBase {
+	SmartProjectionFactor(double rankTol, double linThreshold,
+		bool manageDegeneracy, bool enableEPI, const POSE& body_P_sensor);
+
+	void serialize() const;
+};
+
 #include <gtsam_unstable/slam/SmartProjectionPoseFactor.h>
 template<POSE = {gtsam::Pose3},LANDMARK = {gtsam::Point3},CALIBRATION = {gtsam::Cal3_S2}>
 virtual class SmartProjectionPoseFactor : gtsam::SmartProjectionFactor {
@@ -386,11 +408,8 @@ virtual class SmartProjectionPoseFactor : gtsam::SmartProjectionFactor {
   //void add(gtsam::Point2 measured_i, size_t poseKey_i, gtsam::SharedNoiseModel noise_i, CALIBRATION* K_i);
 
   // enabling serialization functionality
-  // void serialize() const;
+  void serialize() const;
 };
-
-//typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2 > SmartProjectionPose3Factor;
-
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
