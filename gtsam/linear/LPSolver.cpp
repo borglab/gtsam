@@ -7,6 +7,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/LPSolver.h>
 
 using namespace std;
@@ -78,13 +79,18 @@ void LPSolver::addConstraints(const boost::shared_ptr<lprec>& lp,
   Vector b = jacobian->getb();
   for (int i = 0; i<A.rows(); ++i) {
     // A.row(i).data() gives wrong result so have to make a copy
-    // TODO: Why?
+    // TODO: Why? Probably because lpsolve's add_constraintex modifies this raw buffer!!!
     Vector r = A.row(i);
+
+    // WARNING: lpsolve's add_constraintex modifies the columnNo raw buffer!
+    // so we have to make a new copy for every row!!!!!
+    vector<int> columnNoCopy(columnNo);
+
     if (sigmas[i]>0) {
       throw runtime_error("LP can't accept Gaussian noise!");
     }
     int constraintType = (sigmas[i]<0)?LE:EQ;
-    if(!add_constraintex(lp.get(), columnNo.size(), r.data(), columnNo.data(),
+    if(!add_constraintex(lp.get(), columnNoCopy.size(), r.data(), columnNoCopy.data(),
         constraintType, b[i]))
       throw runtime_error("LP can't accept Gaussian noise!");
   }
@@ -138,8 +144,13 @@ boost::shared_ptr<lprec> LPSolver::buildModel() const {
   set_add_rowmode(lp.get(), FALSE);
 
   // Finally, the objective function from the objective coefficients
-  Vector f = objectiveCoeffs_.vector();
-  vector<int> columnNo = buildColumnNo(objectiveCoeffs_ | boost::adaptors::map_keys);
+  KeyVector keys;
+  BOOST_FOREACH(Key key, objectiveCoeffs_ | boost::adaptors::map_keys) {
+    keys.push_back(key);
+  }
+
+  Vector f = objectiveCoeffs_.vector(keys);
+  vector<int> columnNo = buildColumnNo(keys);
 
   if(!set_obj_fnex(lp.get(), f.size(), f.data(), columnNo.data()))
     throw std::runtime_error("lpsolve cannot set obj function!");

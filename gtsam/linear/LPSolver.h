@@ -12,6 +12,7 @@
 #include <gtsam/3rdparty/lp_solve_5.5/lp_lib.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
 
