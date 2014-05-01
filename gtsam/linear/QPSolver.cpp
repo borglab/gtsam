@@ -16,7 +16,6 @@ namespace gtsam {
 /* ************************************************************************* */
 QPSolver::QPSolver(const GaussianFactorGraph& graph) :
           graph_(graph), fullFactorIndices_(graph) {
-
   // Split the original graph into unconstrained and constrained part
   // and collect indices of constrained factors
   for (size_t i = 0; i < graph.nrFactors(); ++i) {
@@ -29,9 +28,9 @@ QPSolver::QPSolver(const GaussianFactorGraph& graph) :
   }
 
   // Collect constrained variable keys
-  KeySet constrainedVars;
+  std::set<size_t> constrainedVars;
   BOOST_FOREACH(size_t index, constraintIndices_) {
-    KeyVector keys = graph[index]->keys();
+    KeyVector keys = graph.at(index)->keys();
     constrainedVars.insert(keys.begin(), keys.end());
   }
 
@@ -43,10 +42,9 @@ QPSolver::QPSolver(const GaussianFactorGraph& graph) :
 
 /* ************************************************************************* */
 GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars(
-    const GaussianFactorGraph& graph, const KeySet& constrainedVars) const {
+    const GaussianFactorGraph& graph, const std::set<Key>& constrainedVars) const {
   VariableIndex variableIndex(graph);
-  GaussianFactorGraph::shared_ptr hfg = boost::make_shared<GaussianFactorGraph>();
-
+  GaussianFactorGraph::shared_ptr hfg(new GaussianFactorGraph());
   // Collect all factors involving constrained vars
   FastSet<size_t> factors;
   BOOST_FOREACH(Key key, constrainedVars) {
@@ -83,13 +81,19 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
       }
       else {  // unconstrained Jacobian
         // Convert the original linear factor to Hessian factor
-        hfg->push_back(HessianFactor(*jf));
+        // TODO: This may fail and throw the following exception
+        //      Assertion failed: (((!PanelMode) && stride==0 && offset==0) ||
+        //      (PanelMode && stride>=depth && offset<=stride)), function operator(),
+        //      file Eigen/Eigen/src/Core/products/GeneralBlockPanelKernel.h, line 1133.
+        // because of a weird error which might be related to clang
+        // See this: https://groups.google.com/forum/#!topic/ceres-solver/DYhqOLPquHU
+        // My current way to fix this is to compile both gtsam and my library in Release mode
+        hfg->add(HessianFactor(*jf));
       }
     }
     else { // If it's not a Jacobian, it should be a hessian factor. Just add!
       hfg->push_back(graph[factorIndex]);
     }
-
   }
   return hfg;
 }
@@ -97,7 +101,7 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
 /* ************************************************************************* */
 GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     const VectorValues& x0, bool useLeastSquare) const {
-  static const bool debug = true;
+  static const bool debug = false;
 
   // The dual graph to return
   GaussianFactorGraph dualGraph;
@@ -248,9 +252,24 @@ bool QPSolver::updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
 }
 
 /* ************************************************************************* */
+/* We have to make sure the new solution with alpha satisfies all INACTIVE ineq constraints
+ * If some inactive ineq constraints complain about the full step (alpha = 1),
+ * we have to adjust alpha to stay within the ineq constraints' feasible regions.
+ *
+ * For each inactive ineq j:
+ *  - We already have: aj'*xk - bj <= 0, since xk satisfies all ineq constraints
+ *  - We want: aj'*(xk + alpha*p) - bj <= 0
+ *  - If aj'*p <= 0, we have: aj'*(xk + alpha*p) <= aj'*xk <= bj, for all alpha>0
+ *  it's good!
+ *  - We only care when aj'*p > 0. In this case, we need to choose alpha so that
+ *  aj'*xk + alpha*aj'*p - bj <= 0  --> alpha <= (bj - aj'*xk) / (aj'*p)
+ *  We want to step as far as possible, so we should choose alpha = (bj - aj'*xk) / (aj'*p)
+ *
+ * We want the minimum of all those alphas among all inactive ineq.
+ */
 boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGraph& workingGraph,
     const VectorValues& xk, const VectorValues& p) const {
-  static bool debug = false;
+  static bool debug = true;
 
   double minAlpha = 1.0;
   int closestFactorIx = -1, closestSigmaIx = -1;
@@ -268,9 +287,11 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
           Vector aj = jacobian->getA(xj).row(s);
           ajTp += aj.dot(pj);
         }
-        if (debug) cout << "s, ajTp: " << s << " " << ajTp << endl;
+        if (debug) cout << "s, ajTp, b[s]: " << s << " " << ajTp << " " << b[s] << endl;
 
         // Check if  aj'*p >0. Don't care if it's not.
+//        if (ajTp - b[s]>0)
+//          throw std::runtime_error("Infeasible point detected. Please choose a feasible initial values!");
         if (ajTp<=0) continue;
 
         // Compute aj'*xk
@@ -344,6 +365,7 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
 /* ************************************************************************* */
 VectorValues QPSolver::optimize(const VectorValues& initials,
     boost::optional<VectorValues&> lambdas) const {
+  cout << "QP optimize.." << endl;
   GaussianFactorGraph workingGraph = graph_.clone();
   VectorValues currentSolution = initials;
   VectorValues workingLambdas;

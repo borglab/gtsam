@@ -107,20 +107,6 @@ public:
 
   /**
    * Compute step size alpha for the new solution x' = xk + alpha*p, where alpha \in [0,1]
-   * We have to make sure the new solution with alpha satisfies all INACTIVE ineq constraints
-   * If some inactive ineq constraints complain about the full step (alpha = 1),
-   * we have to adjust alpha to stay within the ineq constraints' feasible regions.
-   *
-   * For each inactive ineq j:
-   *  - We already have: aj'*xk - bj <= 0, since xk satisfies all ineq constraints
-   *  - We want: aj'*(xk + alpha*p) - bj <= 0
-   *  - If aj'*p <= 0, we have: aj'*(xk + alpha*p) <= aj'*xk <= bj, for all alpha>0
-   *  it's good!
-   *  - We only care when aj'*p > 0. In this case, we need to choose alpha so that
-   *  aj'*xk + alpha*aj'*p - bj <= 0  --> alpha <= (bj - aj'*xk) / (aj'*p)
-   *  We want to step as far as possible, so we should choose alpha = (bj - aj'*xk) / (aj'*p)
-   *
-   * We want the minimum of all those alphas among all inactive ineq.
    *
    *    @return a tuple of (alpha, factorIndex, sigmaIndex) where (factorIndex, sigmaIndex)
    *            is the constraint that has minimum alpha, or (-1,-1) if alpha = 1.
@@ -156,7 +142,7 @@ public:
 private:
   /// Collect all free Hessians involving constrained variables into a graph
   GaussianFactorGraph::shared_ptr unconstrainedHessiansOfConstrainedVars(
-      const GaussianFactorGraph& graph, const KeySet& constrainedVars) const;
+      const GaussianFactorGraph& graph, const std::set<Key>& constrainedVars) const;
 
 };
 
