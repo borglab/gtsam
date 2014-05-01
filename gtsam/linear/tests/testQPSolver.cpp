@@ -16,9 +16,9 @@
  * @author Duy-Nguyen Ta
  */
 
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/QPSolver.h>
 
 using namespace std;
@@ -150,7 +150,8 @@ TEST(QPSolver, iterate) {
   bool converged = false;
   int it = 0;
   while (!converged) {
-    converged = solver.iterateInPlace(workingGraph, currentSolution);
+    VectorValues lambdas;
+    converged = solver.iterateInPlace(workingGraph, currentSolution, lambdas);
     CHECK(assert_equal(expectedSolutions[it], currentSolution, 1e-100));
     it++;
   }
