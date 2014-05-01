@@ -1,0 +1,60 @@
+# Makefile for Microsoft visual C++ (tested on version 5, 6 & 7 (.NET))
+# to be called with GMAKE
+# gmake -f Makefile.msc
+
+CC= cl
+
+CFLAGS= /ML /O1 /Zp8 /Gd /W2 /DWIN32 /D_WINDOWS /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /DYY_NEVER_INTERACTIVE /DPARSER_LP /I.. /I../bfp /I../bfp/bfp_etaPFI /I../colamd /I../shared /I../BFP/BFP_LUSOL/LUSOL
+
+# You can add a -DREAL=<float type> to the CFLAGS, to change the default float
+# type used in lp_solve (double) to float or 'long double'. However, type float
+# might be fast on your computer, but it is not accurate enough to solve even
+# moderately sized problems without running into numerical problems.
+# The use of long doubles does increase the numerical stability of lp_solve,
+# if your compiler actually implements them with more bits than a double. But
+# it slows down things quite a bit.
+
+# Choose your favorite or available version of lex and yacc
+
+YACC= bison --no-lines -y
+
+LEX= flex -L -l
+
+LEXLIB=
+
+#ANSI math lib
+MATHLIB=
+
+TESTFILES1= lp_examples/*.lp
+TESTFILES2= lp_examples/*.mps
+
+TARGET=lp_solve
+
+CSOURCES=../shared/commonlib.c ../shared/mmio.c ../shared/myblas.c ../ini.c ../lp_rlp.c ../lp_crash.c ../bfp/bfp_LUSOL/lp_LUSOL.c ../bfp/bfp_LUSOL/LUSOL/lusol.c ../lp_Hash.c ../lp_lib.c ../lp_wlp.c ../lp_matrix.c ../lp_mipbb.c ../lp_MPS.c ../lp_params.c ../lp_presolve.c ../lp_price.c ../lp_pricePSE.c ../lp_report.c ../lp_scale.c ../lp_simplex.c lp_solve.c ../lp_SOS.c ../lp_utils.c ../yacc_read.c ../lp_MDO.c ../colamd/colamd.c
+CSOURCES1=$(notdir $(CSOURCES))
+COBJ=$(CSOURCES1:.c=.obj)
+HEADERS=../colamd/colamd.h ../shared/commonlib.h ../declare.h ../fortify.h ../bfp/lp_BFP.h ../lp_crash.h ../bfp/bfp_etaPFI/lp_etaPFI.h ../lp_fortify.h ../lp_Hash.h ../lp_lib.h ../lp_matrix.h ../lp_MDO.h ../lp_mipbb.h ../lp_MPS.h ../lp_presolve.h ../lp_price.h ../lp_pricePSE.h ../lp_report.h ../lp_rlp.h ../lp_scale.h ../lp_simplex.h ../lp_SOS.h ../lp_types.h ../lp_utils.h ../lp_wlp.h ../lpkit.h ../shared/myblas.h ../ufortify.h ../yacc_read.h ../BFP/BFP_LUSOL/LUSOL/lusol.h
+
+all:	$(TARGET).exe
+
+$(TARGET).exe: lp_solve.c $(HEADERS) $(COBJ)
+	$(CC) -o $(TARGET).exe $(CFLAGS) lp_solve.c $(COBJ) $(LEXLIB) $(MATHLIB)
+
+$(COBJ): $(HEADERS) $(CSOURCES)
+	$(CC) -c $(CFLAGS) $(CSOURCES)
+
+../lp_rlp.h: ../lp_rlp.l
+	$(LEX) ../lp_rlp.l
+	sed -e "s/yy/lp_yy/g" lex.yy.c >../lp_rlp.h
+	rm lex.yy.c
+
+../lp_rlp.c: ../lp_rlp.y
+	$(YACC) ../lp_rlp.y
+	sed -e "s/yy/lp_yy/g" y.tab.c >../lp_rlp.c
+	rm y.tab.c
+
+clean:
+	rm -f pe.cfg *.obj $(TARGET).exe
+
+TAGS:
+	etags *.[chyl]

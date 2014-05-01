@@ -1,0 +1,83 @@
+#
+# Makefile for building lp_solve using GNU Make
+# Usage:
+#   make -f Makefile.Linux [all | bin | lib | clean]
+#
+# $Revision: 1.1 $
+#
+
+AR = ar
+ARFLAGS = rv
+CC = gcc
+LEX = flex
+YACC = bison
+
+INCLUDE = -I. -Ibfp -Ibfp/bfp_LUSOL -Ibfp/bfp_LUSOL/LUSOL -Icolamd -Ishared
+
+# Uncomment any of the following two depending on your profile
+#DEBUG = -g -pg
+DEBUG = -O2
+
+DEFINE = -DYY_NEVER_INTERACTIVE -DPARSER_LP -DINVERSE_ACTIVE=INVERSE_LUSOL -DRoleIsExternalInvEngine
+
+# Uncomment any of the following two depending on how easily compiler messages scare you
+#CFLAGS= $(INCLUDE) $(DEBUG) $(DEFINE) -fpic -Wall -pedantic -trigraphs
+CFLAGS= $(INCLUDE) $(DEBUG) $(DEFINE) -fpic
+
+LFLAGS = -L -l
+YFLAGS = --no-lines -y
+
+LDFLAGS = -lm -ldl
+
+LUSOLSRC = bfp/bfp_LUSOL/lp_LUSOL.c bfp/bfp_LUSOL/LUSOL/lusol.c
+LUSOLOBJS = bfp/bfp_LUSOL/lp_LUSOL.o bfp/bfp_LUSOL/LUSOL/lusol.o
+
+OBJECTS = $(LUSOLOBJS) lp_MDO.o shared/commonlib.o colamd/colamd.o \
+shared/mmio.o shared/myblas.o ini.o fortify.o lp_rlp.o lp_crash.o  \
+lp_Hash.o lp_lib.o lp_wlp.o lp_matrix.o lp_mipbb.o lp_MPS.o	   \
+lp_params.o lp_presolve.o lp_price.o lp_pricePSE.o lp_report.o	   \
+lp_scale.o lp_simplex.o lp_SOS.o lp_utils.o yacc_read.o
+
+SRC = $(LUSOLSRC) lp_MDO.c shared/commonlib.c colamd/colamd.c	   \
+shared/mmio.c shared/myblas.c ini.c fortify.c lp_rlp.c lp_crash.c  \
+lp_Hash.c lp_lib.c lp_wlp.c lp_matrix.c lp_mipbb.c lp_MPS.c	   \
+lp_params.c lp_presolve.c lp_price.c lp_pricePSE.c lp_report.c	   \
+lp_scale.c lp_simplex.c lp_SOS.c lp_utils.c yacc_read.c
+
+LIBRARIES = liblpsolve55.a liblpsolve55.so
+BINARIES = lp_solve demo
+ALL =  $(BINARIES) $(DEMOS) $(LIBRARIES)
+.PHONY=clean lp_solve
+
+all: $(ALL)
+lib: $(LIBRARIES)
+bin: $(BINARIES)
+objects: $(OBJECTS)
+
+lp_rlp.o: lp_rlp.l lp_rlp.y
+	$(LEX) $(LFLAGS) lp_rlp.l
+	sed -e "s/yy/lp_yy/g" lex.yy.c >lp_rlp.h
+	rm -f lex.yy.c
+
+	$(YACC) $(YFLAGS) lp_rlp.y
+	sed -e "s/yy/lp_yy/g" y.tab.c >lp_rlp.c
+	rm -f y.tab.c
+
+	$(CC) $(CFLAGS) $(DEBUG) $(DEFINE) $(INCLUDE) -c $*.c
+
+lp_solve: lp_solve/lp_solve.c $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEBUG) $(DEFINE) $(INCLUDE) $< $(OBJECTS) -o lp_solve/lp_solve $(LDFLAGS)
+
+demo: demo/demo.c $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEBUG) $(DEFINE) $(INCLUDE) $< $(OBJECTS) -o demo/demo $(LDFLAGS)
+
+liblpsolve55.a: $(OBJECTS)
+	$(AR) $(ARFLAGS) lpsolve55/$@ `echo $(SRC)|sed 's/[.]c/.o/g'`
+	ranlib lpsolve55/$@
+
+liblpsolve55.so: $(OBJECTS)
+	$(CC) -fpic -shared -Wl,-Bsymbolic -Wl,-soname,$@ -o lpsolve55/$@ `echo $(SRC)|sed 's/[.]c/.o/g'` $(LDFLAGS)
+
+clean:
+	rm -f $(OBJECTS)  *.so *.a lp_solve/lp_solve demo/demo lpsolve55/*.so lpsolve55/*.a
+
