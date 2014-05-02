@@ -275,10 +275,7 @@ void LevenbergMarquardtOptimizer::iterate() {
           step_is_successful = modelFidelity > params_.minModelFidelity;
           if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
             cout << "modelFidelity: " << modelFidelity << endl;
-        }
-        //else {
-        //  step_is_successful = true; // linearizedCostChange close to zero
-        //}
+        } // else we consider the step non successful and we either increase lambda or stop if error change is small
 
         double minAbsoluteTolerance = params_.relativeErrorTol * state_.error;
         // if the change is small we terminate
