@@ -268,14 +268,17 @@ void LevenbergMarquardtOptimizer::iterate() {
         // cost change in the original, nonlinear system (old - new)
         double costChange = state_.error - newError;
 
-        if (linearizedCostChange > 1e-15) { // the error has to decrease to satisfy this condition
+        if (linearizedCostChange > 1e-20) { // the (linear) error has to decrease to satisfy this condition
           // fidelity of linearized model VS original system between
           modelFidelity = costChange / linearizedCostChange;
           // if we decrease the error in the nonlinear system and modelFidelity is above threshold
           step_is_successful = modelFidelity > params_.minModelFidelity;
-        } else {
-          step_is_successful = true; // linearizedCostChange close to zero
+          if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+            cout << "modelFidelity: " << modelFidelity << endl;
         }
+        //else {
+        //  step_is_successful = true; // linearizedCostChange close to zero
+        //}
 
         double minAbsoluteTolerance = params_.relativeErrorTol * state_.error;
         // if the change is small we terminate
