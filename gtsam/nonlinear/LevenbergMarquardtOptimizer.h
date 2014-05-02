@@ -113,7 +113,6 @@ public:
   inline void setDiagonalDamping(bool flag) {
     diagonalDamping = flag;
   }
-
   inline void setUseFixedLambdaFactor(bool flag) {
     useFixedLambdaFactor_ = flag;
   }
@@ -257,6 +256,8 @@ public:
   /** Build a damped system for a specific lambda */
   GaussianFactorGraph::shared_ptr buildDampedSystem(const GaussianFactorGraph& linear);
   friend class ::NonlinearOptimizerMoreOptimizationTest;
+
+  void writeLogFile(double currentError);
 
   /// @}
 

@@ -193,6 +193,19 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
 }
 
 /* ************************************************************************* */
+// Log current error/lambda to file
+inline void LevenbergMarquardtOptimizer::writeLogFile(double currentError){
+  if (!params_.logFile.empty()) {
+    ofstream os(params_.logFile.c_str(), ios::app);
+    boost::posix_time::ptime currentTime = boost::posix_time::microsec_clock::universal_time();
+    os << /*inner iterations*/ state_.totalNumberInnerIterations << ","
+        << 1e-6 * (currentTime - state_.startTime).total_microseconds() << ","
+        << /*current error*/ currentError << "," << state_.lambda << ","
+        << /*outer iterations*/ state_.iterations << endl;
+  }
+}
+
+/* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
   gttic(LM_iterate);
@@ -205,6 +218,9 @@ void LevenbergMarquardtOptimizer::iterate() {
   if (lmVerbosity >= LevenbergMarquardtParams::DAMPED)
     cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
+
+  if(state_.totalNumberInnerIterations==0) // write initial error
+    writeLogFile(state_.error);
 
   // Keep increasing lambda until we make make progress
   while (true) {
@@ -288,36 +304,29 @@ void LevenbergMarquardtOptimizer::iterate() {
       }
     }
 
-    // Log current error/lambda to file
-    if (!params_.logFile.empty()) {
-      ofstream os(params_.logFile.c_str(), ios::app);
-      boost::posix_time::ptime currentTime = boost::posix_time::microsec_clock::universal_time();
-      os << /*inner iterations*/ state_.totalNumberInnerIterations << ","
-          << 1e-6 * (currentTime - state_.startTime).total_microseconds() << ","
-          << /*current error*/ state_.error << "," << state_.lambda << ","
-          << /*outer iterations*/ state_.iterations << endl;
-    }
     ++state_.totalNumberInnerIterations;
 
     if (step_is_successful) { // we have successfully decreased the cost and we have good modelFidelity
       state_.values.swap(newValues);
       state_.error = newError;
       decreaseLambda(modelFidelity);
+      writeLogFile(state_.error);
       break;
     } else if (!stopSearchingLambda) { // we failed to solved the system or we had no decrease in cost
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
         cout << "increasing lambda" << endl;
       increaseLambda();
+      writeLogFile(state_.error);
 
       // check if lambda is too big
       if (state_.lambda >= params_.lambdaUpperBound) {
         if (nloVerbosity >= NonlinearOptimizerParams::TERMINATION)
-          cout
-              << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda"
-              << endl;
+          cout << "Warning:  Levenberg-Marquardt giving up because "
+              "cannot decrease error with maximum lambda" << endl;
         break;
       }
     } else { // the change in the cost is very small and it is not worth trying bigger lambdas
+      writeLogFile(state_.error);
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
               cout << "Levenberg-Marquardt: stopping as relative cost reduction is small" << endl;
       break;
