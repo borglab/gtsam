@@ -249,7 +249,7 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
 /* ************************************************************************* */
 // Create test graph as in Nocedal06book, Ex 16.4, pg. 475
 // with the first constraint (16.49b) is replaced by
-//          x1 - 2 x2 - 2 >=0
+//          x1 - 2 x2 - 1 >=0
 // so that the trivial initial point (0,0) is infeasible
 GaussianFactorGraph modifyNocedal06bookEx16_4() {
   GaussianFactorGraph graph;
@@ -260,7 +260,7 @@ GaussianFactorGraph modifyNocedal06bookEx16_4() {
   // Inequality constraints
   noiseModel::Constrained::shared_ptr noise = noiseModel::Constrained::MixedSigmas(
       (Vector(1) << -1));
-  graph.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), -2*ones(1), noise));
+  graph.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), -1*ones(1), noise));
   graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2), 2*ones(1,1), 6*ones(1), noise));
   graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2),-2*ones(1,1), 2*ones(1), noise));
   graph.push_back(JacobianFactor(X(1), -ones(1,1), zero(1), noise));
@@ -284,9 +284,7 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_findInitialPoint) {
   EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey+3)));
   EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey+4)));
 
-  initialsLP.print("initialsLP: ");
   VectorValues objCoeffs = solver.objectiveCoeffsLP(firstSlackKey);
-  cout << "done" << endl;
   for (size_t i = 0; i<5; ++i)
     EXPECT(assert_equal(ones(1), objCoeffs.at(firstSlackKey+i)));
 
@@ -299,17 +297,42 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_findInitialPoint) {
   GaussianFactorGraph expectedConstraints;
   noiseModel::Constrained::shared_ptr noise = noiseModel::Constrained::MixedSigmas(
         (Vector(1) << -1));
-  expectedConstraints.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), X(3), -ones(1,1),-2*ones(1), noise));
+  expectedConstraints.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), X(3), -ones(1,1),-1*ones(1), noise));
   expectedConstraints.push_back(JacobianFactor(X(1),  ones(1,1), X(2), 2*ones(1,1), X(4), -ones(1,1), 6*ones(1), noise));
   expectedConstraints.push_back(JacobianFactor(X(1),  ones(1,1), X(2),-2*ones(1,1), X(5), -ones(1,1), 2*ones(1), noise));
   expectedConstraints.push_back(JacobianFactor(X(1), -ones(1,1), X(6), -ones(1,1), zero(1), noise));
   expectedConstraints.push_back(JacobianFactor(X(2), -ones(1,1), X(7), -ones(1,1), zero(1), noise));
   EXPECT(assert_equal(expectedConstraints, *constraints));
 
-  VectorValues initials = solver.findFeasibleInitialValues();
-  initials.print("Feasible point found: ");
+  bool isFeasible;
+  VectorValues initials;
+  boost::tie(isFeasible, initials) = solver.findFeasibleInitialValues();
+  EXPECT(assert_equal(1.0*ones(1), initials.at(X(1))));
+  EXPECT(assert_equal(0.0*ones(1), initials.at(X(2))));
+
+  VectorValues solution = solver.optimize();
+  EXPECT(assert_equal(2.0*ones(1), solution.at(X(1))));
+  EXPECT(assert_equal(0.5*ones(1), solution.at(X(2))));
 }
 
+TEST(QPSolver, optimizeNocedal06bookEx16_4_2) {
+  GaussianFactorGraph graph = createTestNocedal06bookEx16_4();
+  QPSolver solver(graph);
+  VectorValues initials;
+  initials.insert(X(1), (Vector(1)<<0.0));
+  initials.insert(X(2), (Vector(1)<<100.0));
+
+  VectorValues expectedSolution;
+  expectedSolution.insert(X(1), (Vector(1)<< 1.4));
+  expectedSolution.insert(X(2), (Vector(1)<< 1.7));
+
+  VectorValues solution = solver.optimize(initials);
+  // THIS should fail because of the bad infeasible initial point!!
+//  CHECK(assert_equal(expectedSolution, solution, 1e-7));
+
+  VectorValues solution2 = solver.optimize();
+  CHECK(assert_equal(expectedSolution, solution2, 1e-7));
+}
 
 /* ************************************************************************* */
 int main() {

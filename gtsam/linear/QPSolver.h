@@ -150,7 +150,7 @@ public:
   std::pair<GaussianFactorGraph::shared_ptr, VectorValues> constraintsLP(Key firstSlackKey) const;
 
   /// Find a feasible initial point
-  VectorValues findFeasibleInitialValues() const;
+  std::pair<bool, VectorValues> findFeasibleInitialValues() const;
 
   /// Convert a Gaussian factor to a jacobian. return empty shared ptr if failed
   /// TODO: Move to GaussianFactor?
