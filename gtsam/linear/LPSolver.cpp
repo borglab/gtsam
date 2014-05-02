@@ -87,7 +87,7 @@ void LPSolver::addConstraints(const boost::shared_ptr<lprec>& lp,
     vector<int> columnNoCopy(columnNo);
 
     if (sigmas[i]>0) {
-      throw runtime_error("LP can't accept Gaussian noise!");
+      cout << "Warning: Ignore Gaussian noise (sigma>0) in LP constraints!" << endl;
     }
     int constraintType = (sigmas[i]<0)?LE:EQ;
     if(!add_constraintex(lp.get(), columnNoCopy.size(), r.data(), columnNoCopy.data(),

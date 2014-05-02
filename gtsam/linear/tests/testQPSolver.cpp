@@ -247,6 +247,71 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
 }
 
 /* ************************************************************************* */
+// Create test graph as in Nocedal06book, Ex 16.4, pg. 475
+// with the first constraint (16.49b) is replaced by
+//          x1 - 2 x2 - 2 >=0
+// so that the trivial initial point (0,0) is infeasible
+GaussianFactorGraph modifyNocedal06bookEx16_4() {
+  GaussianFactorGraph graph;
+
+  graph.push_back(JacobianFactor(X(1), ones(1,1), ones(1)));
+  graph.push_back(JacobianFactor(X(2), ones(1,1), 2.5*ones(1)));
+
+  // Inequality constraints
+  noiseModel::Constrained::shared_ptr noise = noiseModel::Constrained::MixedSigmas(
+      (Vector(1) << -1));
+  graph.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), -2*ones(1), noise));
+  graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2), 2*ones(1,1), 6*ones(1), noise));
+  graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2),-2*ones(1,1), 2*ones(1), noise));
+  graph.push_back(JacobianFactor(X(1), -ones(1,1), zero(1), noise));
+  graph.push_back(JacobianFactor(X(2), -ones(1,1), zero(1), noise));
+
+  return graph;
+}
+
+TEST(QPSolver, optimizeNocedal06bookEx16_4_findInitialPoint) {
+  GaussianFactorGraph graph = modifyNocedal06bookEx16_4();
+  QPSolver solver(graph);
+  VectorValues initialsLP;
+  Key firstSlackKey;
+  boost::tie(initialsLP, firstSlackKey) = solver.initialValuesLP();
+  EXPECT(assert_equal(zero(1), initialsLP.at(X(1))));
+  EXPECT(assert_equal(zero(1), initialsLP.at(X(2))));
+  LONGS_EQUAL(X(2)+1, firstSlackKey);
+  EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey)));
+  EXPECT(assert_equal(ones(1)*6.0, initialsLP.at(firstSlackKey+1)));
+  EXPECT(assert_equal(ones(1)*2.0, initialsLP.at(firstSlackKey+2)));
+  EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey+3)));
+  EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey+4)));
+
+  initialsLP.print("initialsLP: ");
+  VectorValues objCoeffs = solver.objectiveCoeffsLP(firstSlackKey);
+  cout << "done" << endl;
+  for (size_t i = 0; i<5; ++i)
+    EXPECT(assert_equal(ones(1), objCoeffs.at(firstSlackKey+i)));
+
+  GaussianFactorGraph::shared_ptr constraints;
+  VectorValues lowerBounds;
+  boost::tie(constraints, lowerBounds) = solver.constraintsLP(firstSlackKey);
+  for (size_t i = 0; i<5; ++i)
+    EXPECT(assert_equal(zero(1), lowerBounds.at(firstSlackKey+i)));
+
+  GaussianFactorGraph expectedConstraints;
+  noiseModel::Constrained::shared_ptr noise = noiseModel::Constrained::MixedSigmas(
+        (Vector(1) << -1));
+  expectedConstraints.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), X(3), -ones(1,1),-2*ones(1), noise));
+  expectedConstraints.push_back(JacobianFactor(X(1),  ones(1,1), X(2), 2*ones(1,1), X(4), -ones(1,1), 6*ones(1), noise));
+  expectedConstraints.push_back(JacobianFactor(X(1),  ones(1,1), X(2),-2*ones(1,1), X(5), -ones(1,1), 2*ones(1), noise));
+  expectedConstraints.push_back(JacobianFactor(X(1), -ones(1,1), X(6), -ones(1,1), zero(1), noise));
+  expectedConstraints.push_back(JacobianFactor(X(2), -ones(1,1), X(7), -ones(1,1), zero(1), noise));
+  EXPECT(assert_equal(expectedConstraints, *constraints));
+
+  VectorValues initials = solver.findFeasibleInitialValues();
+  initials.print("Feasible point found: ");
+}
+
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
