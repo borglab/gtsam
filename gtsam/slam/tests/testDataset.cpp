@@ -19,10 +19,12 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 
+using namespace gtsam::symbol_shorthand;
 using namespace std;
 using namespace gtsam;
 
@@ -176,7 +178,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
     value.insert(poseKey, pose);
   }
   for(size_t j=0; j < readData.number_tracks(); j++){ // for each point
-    Key pointKey = symbol('l',j);
+    Key pointKey = P(j);
     Point3 point = poseChange.transform_from( readData.tracks[j].p );
     value.insert(pointKey, point);
   }
@@ -208,7 +210,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   EXPECT(assert_equal(expectedPose,actualPose, 1e-7));
 
   Point3 expectedPoint = track0.p;
-  Key pointKey = symbol('l',0);
+  Key pointKey = P(0);
   Point3 actualPoint = value.at<Point3>(pointKey);
   EXPECT(assert_equal(expectedPoint,actualPoint, 1e-6));
 }
