@@ -120,9 +120,37 @@ public:
   bool iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution,
       VectorValues& lambdas) const;
 
-  /** Optimize */
+  /** Optimize with a provided initial values
+   * For this version, it is the responsibility of the caller to provide
+   * a feasible initial value, otherwise the solution will be wrong.
+   * If you don't know a feasible initial value, use the other version
+   * of optimize().
+   */
   VectorValues optimize(const VectorValues& initials,
       boost::optional<VectorValues&> lambdas = boost::none) const;
+
+  /** Optimize without an initial value.
+   * This version of optimize will try to find a feasible initial value by solving
+   * an LP program before solving this QP graph.
+   * TODO: If no feasible initial point exists, it should throw an InfeasibilityException!
+   */
+  VectorValues optimize(boost::optional<VectorValues&> lambdas = boost::none) const;
+
+
+  /**
+   * Create initial values for the LP subproblem
+   * @return initial values and the key for the first slack variable
+   */
+  std::pair<VectorValues, Key> initialValuesLP() const;
+
+  /// Create coefficients for the LP subproblem's objective function as the sum of slack var
+  VectorValues objectiveCoeffsLP(Key firstSlackKey) const;
+
+  /// Build constraints and slacks' lower bounds for the LP subproblem
+  std::pair<GaussianFactorGraph::shared_ptr, VectorValues> constraintsLP(Key firstSlackKey) const;
+
+  /// Find a feasible initial point
+  VectorValues findFeasibleInitialValues() const;
 
   /// Convert a Gaussian factor to a jacobian. return empty shared ptr if failed
   /// TODO: Move to GaussianFactor?

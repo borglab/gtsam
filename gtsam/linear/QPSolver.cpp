@@ -6,8 +6,10 @@
  */
 
 #include <boost/foreach.hpp>
-#include <gtsam/linear/QPSolver.h>
+#include <boost/range/adaptor/map.hpp>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/QPSolver.h>
+#include <gtsam/linear/LPSolver.h>
 
 using namespace std;
 
@@ -15,7 +17,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 QPSolver::QPSolver(const GaussianFactorGraph& graph) :
-          graph_(graph), fullFactorIndices_(graph) {
+                      graph_(graph), fullFactorIndices_(graph) {
   // Split the original graph into unconstrained and constrained part
   // and collect indices of constrained factors
   for (size_t i = 0; i < graph.nrFactors(); ++i) {
@@ -290,8 +292,8 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
         if (debug) cout << "s, ajTp, b[s]: " << s << " " << ajTp << " " << b[s] << endl;
 
         // Check if  aj'*p >0. Don't care if it's not.
-//        if (ajTp - b[s]>0)
-//          throw std::runtime_error("Infeasible point detected. Please choose a feasible initial values!");
+        //        if (ajTp - b[s]>0)
+        //          throw std::runtime_error("Infeasible point detected. Please choose a feasible initial values!");
         if (ajTp<=0) continue;
 
         // Compute aj'*xk
@@ -377,5 +379,134 @@ VectorValues QPSolver::optimize(const VectorValues& initials,
   return currentSolution;
 }
 
+/* ************************************************************************* */
+std::pair<VectorValues, Key> QPSolver::initialValuesLP() const {
+  size_t firstSlackKey = 0;
+  BOOST_FOREACH(Key key, fullFactorIndices_ | boost::adaptors::map_keys) {
+    if (firstSlackKey < key) firstSlackKey = key;
+  }
+  firstSlackKey += 1;
+
+  VectorValues initials;
+  // Create zero values for constrained vars
+  BOOST_FOREACH(size_t iFactor, constraintIndices_) {
+    JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
+    KeyVector keys = jacobian->keys();
+    BOOST_FOREACH(Key key, keys) {
+      if (!initials.exists(key)) {
+        size_t dim = jacobian->getDim(jacobian->find(key));
+        initials.insert(key, zero(dim));
+      }
+    }
+  }
+
+  // Insert initial values for slack variables
+  size_t slackKey = firstSlackKey;
+  BOOST_FOREACH(size_t iFactor, constraintIndices_) {
+    JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
+    Vector errorAtZero = jacobian->getb();
+    Vector slackInit = zero(errorAtZero.size());
+    Vector sigmas = jacobian->get_model()->sigmas();
+    for (size_t i = 0; i<sigmas.size(); ++i) {
+      if (sigmas[i] < 0) {
+        slackInit[i] = std::max(errorAtZero[i], 0.0);
+      } else if (sigmas[i] == 0.0) {
+        errorAtZero[i] = fabs(errorAtZero[i]);
+      } // if it has >0 sigma, i.e. normal Gaussian noise, initialize it at 0
+    }
+    initials.insert(slackKey, slackInit);
+    slackKey++;
+  }
+  return make_pair(initials, firstSlackKey);
+}
+
+/* ************************************************************************* */
+VectorValues QPSolver::objectiveCoeffsLP(Key firstSlackKey) const {
+  VectorValues slackObjective;
+  for (size_t i = 0; i < constraintIndices_.size(); ++i) {
+    Key key = firstSlackKey + i;
+    size_t iFactor = constraintIndices_[i];
+    JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
+    size_t dim = jacobian->rows();
+    Vector objective = ones(dim);
+    /* We should not ignore unconstrained slack var dimensions (those rows with sigmas >0)
+     * because their values might be underdetermined in the LP. Since they will have only
+     * 1 constraint zi>=0, enforcing them in the min obj function won't harm the other constrained
+     * slack vars, but also makes them well defined: 0 at the minimum.
+     */
+    slackObjective.insert(key, ones(dim));
+  }
+  return slackObjective;
+}
+
+/* ************************************************************************* */
+std::pair<GaussianFactorGraph::shared_ptr, VectorValues> QPSolver::constraintsLP(
+    Key firstSlackKey) const {
+  // Create constraints and 0 lower bounds (zi>=0)
+  GaussianFactorGraph::shared_ptr constraints(new GaussianFactorGraph());
+  VectorValues slackLowerBounds;
+  for (size_t key = firstSlackKey; key<firstSlackKey + constraintIndices_.size(); ++key) {
+    size_t iFactor = constraintIndices_[key-firstSlackKey];
+    JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
+    // Collect old terms to form a new factor
+    // TODO: it might be faster if we can get the whole block matrix at once
+    // but I don't know how to extend the current VerticalBlockMatrix
+    std::vector<std::pair<Key, Matrix> > terms;
+    for (Factor::iterator it = jacobian->begin(); it != jacobian->end(); ++it) {
+      terms.push_back(make_pair(*it, jacobian->getA(it)));
+    }
+    // Add the slack term to the constraint
+    // Unlike Nocedal06book, pg.473, we want ax-z <= b, since we always assume
+    // LE constraints ax <= b for sigma < 0.
+    size_t dim = jacobian->rows();
+    terms.push_back(make_pair(key, -eye(dim)));
+    constraints->push_back(JacobianFactor(terms, jacobian->getb(), jacobian->get_model()));
+    // Add lower bound for this slack key
+    slackLowerBounds.insert(key, zero(dim));
+  }
+  return make_pair(constraints, slackLowerBounds);
+}
+
+/* ************************************************************************* */
+VectorValues QPSolver::findFeasibleInitialValues() const {
+  // Initial values with slack variables for the LP subproblem, Nocedal06book, pg.473
+  VectorValues initials;
+  size_t firstSlackKey;
+  boost::tie(initials, firstSlackKey) = initialValuesLP();
+
+  // Coefficients for the LP subproblem objective function, min \sum_i z_i
+  VectorValues objectiveLP = objectiveCoeffsLP(firstSlackKey);
+
+  // Create constraints and lower bounds of slack variables
+  GaussianFactorGraph::shared_ptr constraints;
+  VectorValues slackLowerBounds;
+  boost::tie(constraints, slackLowerBounds) = constraintsLP(firstSlackKey);
+
+  // Solve the LP subproblem
+  LPSolver lpSolver(objectiveLP, constraints, slackLowerBounds);
+  VectorValues solution = lpSolver.solve();
+
+  // Remove slack variables from solution
+  for (Key key = firstSlackKey; key < firstSlackKey+constraintIndices_.size(); ++key) {
+    solution.erase(key);
+  }
+
+  // Insert zero vectors for free variables that are not in the constraints
+  BOOST_FOREACH(Key key, fullFactorIndices_ | boost::adaptors::map_keys) {
+    if (!solution.exists(key)) {
+      GaussianFactor::shared_ptr factor = graph_.at(*fullFactorIndices_[key].begin());
+      size_t dim = factor->getDim(factor->find(key));
+      solution.insert(key, zero(dim));
+    }
+  }
+
+  return solution;
+}
+
+/* ************************************************************************* */
+VectorValues QPSolver::optimize(boost::optional<VectorValues&> lambdas) const {
+  VectorValues initials = findFeasibleInitialValues();
+  return optimize(initials, lambdas);
+}
 
 } /* namespace gtsam */
