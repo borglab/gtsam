@@ -194,11 +194,6 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     else {
       // Enforce constrained noise model so lambdas are solved with QR
       // and should exactly satisfy all the equations
-      for (size_t i = 0; i<lambdaTerms.size(); ++i) {
-        cout << "Term " << i << ":" << endl;
-        cout << lambdaTerms[i].first << endl;
-        cout << lambdaTerms[i].second << endl;
-      }
       if (debug) cout << gradf_xi << endl;
       dualGraph.push_back(JacobianFactor(lambdaTerms, gradf_xi,
           noiseModel::Constrained::All(gradf_xi.size())));
@@ -271,7 +266,7 @@ bool QPSolver::updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
  */
 boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGraph& workingGraph,
     const VectorValues& xk, const VectorValues& p) const {
-  static bool debug = true;
+  static bool debug = false;
 
   double minAlpha = 1.0;
   int closestFactorIx = -1, closestSigmaIx = -1;
@@ -323,7 +318,7 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
 
 /* ************************************************************************* */
 bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution, VectorValues& lambdas) const {
-  static bool debug = true;
+  static bool debug = false;
   if (debug) workingGraph.print("workingGraph: ");
   // Obtain the solution from the current working graph
   VectorValues newSolution = workingGraph.optimize();
@@ -367,7 +362,6 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
 /* ************************************************************************* */
 VectorValues QPSolver::optimize(const VectorValues& initials,
     boost::optional<VectorValues&> lambdas) const {
-  cout << "QP optimize.." << endl;
   GaussianFactorGraph workingGraph = graph_.clone();
   VectorValues currentSolution = initials;
   VectorValues workingLambdas;
@@ -468,7 +462,7 @@ std::pair<GaussianFactorGraph::shared_ptr, VectorValues> QPSolver::constraintsLP
 }
 
 /* ************************************************************************* */
-VectorValues QPSolver::findFeasibleInitialValues() const {
+std::pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
   // Initial values with slack variables for the LP subproblem, Nocedal06book, pg.473
   VectorValues initials;
   size_t firstSlackKey;
@@ -487,7 +481,9 @@ VectorValues QPSolver::findFeasibleInitialValues() const {
   VectorValues solution = lpSolver.solve();
 
   // Remove slack variables from solution
+  double slackSum = 0.0;
   for (Key key = firstSlackKey; key < firstSlackKey+constraintIndices_.size(); ++key) {
+    slackSum += solution.at(key).cwiseAbs().sum();
     solution.erase(key);
   }
 
@@ -500,12 +496,17 @@ VectorValues QPSolver::findFeasibleInitialValues() const {
     }
   }
 
-  return solution;
+  return make_pair(slackSum<1e-5, solution);
 }
 
 /* ************************************************************************* */
 VectorValues QPSolver::optimize(boost::optional<VectorValues&> lambdas) const {
-  VectorValues initials = findFeasibleInitialValues();
+  bool isFeasible;
+  VectorValues initials;
+  boost::tie(isFeasible, initials) = findFeasibleInitialValues();
+  if (!isFeasible) {
+    throw std::runtime_error("LP subproblem is infeasible!");
+  }
   return optimize(initials, lambdas);
 }
 
