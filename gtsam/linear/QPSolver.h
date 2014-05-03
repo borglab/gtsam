@@ -125,16 +125,17 @@ public:
    * a feasible initial value, otherwise the solution will be wrong.
    * If you don't know a feasible initial value, use the other version
    * of optimize().
+   * @return a pair of <primal, dual> solutions
    */
-  VectorValues optimize(const VectorValues& initials,
-      boost::optional<VectorValues&> lambdas = boost::none) const;
+  std::pair<VectorValues, VectorValues> optimize(const VectorValues& initials) const;
 
   /** Optimize without an initial value.
    * This version of optimize will try to find a feasible initial value by solving
    * an LP program before solving this QP graph.
    * TODO: If no feasible initial point exists, it should throw an InfeasibilityException!
+   * @return a pair of <primal, dual> solutions
    */
-  VectorValues optimize(boost::optional<VectorValues&> lambdas = boost::none) const;
+  std::pair<VectorValues, VectorValues> optimize() const;
 
 
   /**

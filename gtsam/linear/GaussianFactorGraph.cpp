@@ -392,16 +392,32 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // x += alpha*A'*e
-void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
-    VectorValues& x) const {
-  // For each factor add the gradient contribution
-  Errors::const_iterator ei = e.begin();
-  BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
-    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-    Ai->transposeMultiplyAdd(alpha, *(ei++), x);
+  std::pair<GaussianFactorGraph, GaussianFactorGraph> GaussianFactorGraph::splitConstraints() const {
+    typedef JacobianFactor J;
+    GaussianFactorGraph unconstraints, constraints;
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, *this) {
+      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
+      if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
+        constraints.push_back(jacobian);
+      }
+      else {
+        unconstraints.push_back(factor);
+      }
+    }
+    return make_pair(unconstraints, constraints);
   }
-}
+
+  /* ************************************************************************* */
+  // x += alpha*A'*e
+  void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
+                                                 VectorValues& x) const {
+    // For each factor add the gradient contribution
+    Errors::const_iterator ei = e.begin();
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      Ai->transposeMultiplyAdd(alpha, *(ei++), x);
+    }
+  }
 
   ///* ************************************************************************* */
   //void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {

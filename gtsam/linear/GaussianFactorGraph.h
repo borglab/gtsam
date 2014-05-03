@@ -322,6 +322,13 @@ namespace gtsam {
 
     /// @}
 
+    /**
+     * Split constraints and unconstrained factors into two different graphs
+     * @return a pair of <unconstrained, constrained> graphs
+     */
+    std::pair<GaussianFactorGraph, GaussianFactorGraph> splitConstraints() const;
+
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
