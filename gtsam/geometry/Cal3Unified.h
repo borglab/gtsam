@@ -32,7 +32,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3Unified : protected Cal3DS2 {
+class GTSAM_EXPORT Cal3Unified : public Cal3DS2 {
 
   typedef Cal3Unified This;
   typedef Cal3DS2 Base;
@@ -49,8 +49,8 @@ private:
   // pi = K*pn
 
 public:
-  Matrix K() const ;
-  Eigen::Vector4d k() const { return Base::k(); }
+  //Matrix K() const ;
+  //Eigen::Vector4d k() const { return Base::k(); }
   Vector vector() const ;
 
   /// @name Standard Constructors
@@ -85,21 +85,6 @@ public:
 
   /// mirror parameter
   inline double xi() const { return xi_;}
-
-  /// focal length x
-  inline double fx() const { return fx_;}
-
-  /// focal length y
-  inline double fy() const { return fy_;}
-
-  /// skew
-  inline double skew() const { return s_;}
-
-  /// image center in x
-  inline double px() const { return u0_;}
-
-  /// image center in y
-  inline double py() const { return v0_;}
 
   /**
    * convert intrinsic coordinates xy to image coordinates uv
@@ -149,19 +134,9 @@ private:
   void serialize(Archive & ar, const unsigned int version)
   {
     ar & boost::serialization::make_nvp("Cal3Unified",
-        boost::serialization::base_object<Value>(*this));
-    ar & BOOST_SERIALIZATION_NVP(fx_);
-    ar & BOOST_SERIALIZATION_NVP(fy_);
-    ar & BOOST_SERIALIZATION_NVP(s_);
-    ar & BOOST_SERIALIZATION_NVP(u0_);
-    ar & BOOST_SERIALIZATION_NVP(v0_);
-    ar & BOOST_SERIALIZATION_NVP(k1_);
-    ar & BOOST_SERIALIZATION_NVP(k2_);
-    ar & BOOST_SERIALIZATION_NVP(k3_);
-    ar & BOOST_SERIALIZATION_NVP(k4_);
+        boost::serialization::base_object<Cal3DS2>(*this));
     ar & BOOST_SERIALIZATION_NVP(xi_);
   }
-
 
   /// @}
 
