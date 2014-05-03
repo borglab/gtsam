@@ -2,7 +2,7 @@
  * \file geodesicline.cpp
  * \brief Matlab mex file for geographic to UTM/UPS conversions
  *
- * Copyright (c) Charles Karney (2010-2011) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2013) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
  * http://geographiclib.sourceforge.net/
  **********************************************************************/
@@ -16,10 +16,39 @@
 //    -lGeographic geodesicline.cpp
 
 #include <GeographicLib/GeodesicLine.hpp>
+#include <GeographicLib/GeodesicLineExact.hpp>
 #include <mex.h>
 
 using namespace std;
 using namespace GeographicLib;
+
+template<class G, class L> void
+compute(double a, double f, double lat1, double lon1, double azi1,
+        mwSize m, const double* s12, double* latlong, double* aux) {
+  double* lat2 = latlong;
+  double* lon2 = latlong + m;
+  double* azi2 = latlong + 2*m;
+  double* a12 = NULL;
+  double* m12 = NULL;
+  double* M12 = NULL;
+  double* M21 = NULL;
+  double* S12 = NULL;
+  if (aux) {
+    a12 = aux;
+    m12 = aux + m;
+    M12 = aux + 2*m;
+    M21 = aux + 3*m;
+    S12 = aux + 4*m;
+  }
+  const G g(a, f);
+  const L l(g, lat1, lon1, azi1);
+  for (mwIndex i = 0; i < m; ++i)
+    if (aux)
+      a12[i] = l.Position(s12[i], lat2[i], lon2[i], azi2[i],
+                          m12[i], M12[i], M21[i], S12[i]);
+    else
+      l.Position(s12[i], lat2[i], lon2[i], azi2[i]);
+}
 
 void mexFunction( int nlhs, mxArray* plhs[],
                   int nrhs, const mxArray* prhs[] ) {
@@ -70,41 +99,24 @@ void mexFunction( int nlhs, mxArray* plhs[],
 
   double* s12 = mxGetPr(prhs[3]);
 
-  plhs[0] = mxCreateDoubleMatrix(m, 3, mxREAL);
-  double* lat2 = mxGetPr(plhs[0]);
-  double* lon2 = lat2 + m;
-  double* azi2 = lat2 + 2*m;
-  double* a12 = NULL;
-  double* m12 = NULL;
-  double* M12 = NULL;
-  double* M21 = NULL;
-  double* S12 = NULL;
-  bool aux = nlhs == 2;
-
-  if (aux) {
-    plhs[1] = mxCreateDoubleMatrix(m, 5, mxREAL);
-    a12 = mxGetPr(plhs[1]);
-    m12 = a12 + m;
-    M12 = a12 + 2*m;
-    M21 = a12 + 3*m;
-    S12 = a12 + 4*m;
-  }
+  double* latlong = mxGetPr(plhs[0] = mxCreateDoubleMatrix(m, 3, mxREAL));
+  double* aux =
+    nlhs == 2 ? mxGetPr(plhs[1] = mxCreateDoubleMatrix(m, 5, mxREAL)) :
+    NULL;
 
   try {
-    const Geodesic g(a, f);
     if (!(abs(lat1) <= 90))
       throw GeographicErr("Invalid latitude");
     if (!(lon1 >= -540 || lon1 < 540))
       throw GeographicErr("Invalid longitude");
     if (!(azi1 >= -540 || azi1 < 540))
       throw GeographicErr("Invalid azimuth");
-    const GeodesicLine l(g, lat1, lon1, azi1);
-    for (mwIndex i = 0; i < m; ++i)
-      if (aux)
-        a12[i] = l.Position(s12[i], lat2[i], lon2[i], azi2[i],
-                            m12[i], M12[i], M21[i], S12[i]);
-      else
-        l.Position(s12[i], lat2[i], lon2[i], azi2[i]);
+    if (std::abs(f) <= 0.02)
+      compute<Geodesic, GeodesicLine>
+        (a, f, lat1, lon1, azi1, m, s12, latlong, aux);
+    else
+      compute<GeodesicExact, GeodesicLineExact>
+        (a, f, lat1, lon1, azi1, m, s12, latlong, aux);
   }
   catch (const std::exception& e) {
     mexErrMsgTxt(e.what());

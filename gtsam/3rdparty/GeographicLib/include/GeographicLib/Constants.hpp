@@ -21,6 +21,17 @@
 #  elif defined(__GXX_EXPERIMENTAL_CXX0X__)
 #    define STATIC_ASSERT static_assert
 #  elif defined(_MSC_VER) && _MSC_VER >= 1600
+// For reference, here is a table of Visual Studio and _MSC_VER
+// correspondences:
+//
+// _MSC_VER  Visual Studio
+//   1300     vc7
+//   1311     vc7.1 (2003)
+//   1400     vc8   (2005)
+//   1500     vc9   (2008)
+//   1600     vc10  (2010)
+//   1700     vc11  (2012)
+//   1800     vc12  (2013)
 #    define STATIC_ASSERT static_assert
 #  else
 #    define STATIC_ASSERT(cond,reason) \

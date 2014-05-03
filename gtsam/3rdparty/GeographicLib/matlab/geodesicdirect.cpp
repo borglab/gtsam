@@ -2,7 +2,7 @@
  * \file geodesicdirect.cpp
  * \brief Matlab mex file for geographic to UTM/UPS conversions
  *
- * Copyright (c) Charles Karney (2010-2011) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2013) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
  * http://geographiclib.sourceforge.net/
  **********************************************************************/
@@ -17,10 +17,50 @@
 
 #include <algorithm>
 #include <GeographicLib/Geodesic.hpp>
+#include <GeographicLib/GeodesicExact.hpp>
 #include <mex.h>
 
 using namespace std;
 using namespace GeographicLib;
+
+template<class G> void
+compute(double a, double f, mwSize m, const double* geodesic,
+        double* latlong, double* aux) {
+  const double* lat1 = geodesic;
+  const double* lon1 = geodesic + m;
+  const double* azi1 = geodesic + 2*m;
+  const double* s12 = geodesic + 3*m;
+  double* lat2 = latlong;
+  double* lon2 = latlong + m;
+  double* azi2 = latlong + 2*m;
+  double* a12 = NULL;
+  double* m12 = NULL;
+  double* M12 = NULL;
+  double* M21 = NULL;
+  double* S12 = NULL;
+  if (aux) {
+    a12 = aux;
+    m12 = aux + m;
+    M12 = aux + 2*m;
+    M21 = aux + 3*m;
+    S12 = aux + 4*m;
+  }
+
+  const G g(a, f);
+  for (mwIndex i = 0; i < m; ++i) {
+    if (abs(lat1[i]) <= 90 &&
+        lon1[i] >= -540 && lon1[i] < 540 &&
+        azi1[i] >= -540 && azi1[i] < 540) {
+      if (aux)
+        a12[i] = g.Direct(lat1[i], lon1[i], azi1[i], s12[i],
+                          lat2[i], lon2[i], azi2[i],
+                          m12[i], M12[i], M21[i], S12[i]);
+      else
+        g.Direct(lat1[i], lon1[i], azi1[i], s12[i],
+                 lat2[i], lon2[i], azi2[i]);
+    }
+  }
+}
 
 void mexFunction( int nlhs, mxArray* plhs[],
                   int nrhs, const mxArray* prhs[] ) {
@@ -54,48 +94,22 @@ void mexFunction( int nlhs, mxArray* plhs[],
 
   mwSize m = mxGetM(prhs[0]);
 
-  double* lat1 = mxGetPr(prhs[0]);
-  double* lon1 = lat1 + m;
-  double* azi1 = lat1 + 2*m;
-  double* s12 = lat1 + 3*m;
+  const double* geodesic = mxGetPr(prhs[0]);
 
-  plhs[0] = mxCreateDoubleMatrix(m, 3, mxREAL);
-  double* lat2 = mxGetPr(plhs[0]);
-  std::fill(lat2, lat2 + 3*m, Math::NaN<double>());
-  double* lon2 = lat2 + m;
-  double* azi2 = lat2 + 2*m;
-  double* a12 = NULL;
-  double* m12 = NULL;
-  double* M12 = NULL;
-  double* M21 = NULL;
-  double* S12 = NULL;
-  bool aux = nlhs == 2;
+  double* latlong = mxGetPr(plhs[0] = mxCreateDoubleMatrix(m, 3, mxREAL));
+  std::fill(latlong, latlong + 3*m, Math::NaN<double>());
 
-  if (aux) {
-    plhs[1] = mxCreateDoubleMatrix(m, 5, mxREAL);
-    a12 = mxGetPr(plhs[1]);
-    std::fill(a12, a12 + 5*m, Math::NaN<double>());
-    m12 = a12 + m;
-    M12 = a12 + 2*m;
-    M21 = a12 + 3*m;
-    S12 = a12 + 4*m;
-  }
+  double* aux =
+    nlhs == 2 ? mxGetPr(plhs[1] = mxCreateDoubleMatrix(m, 5, mxREAL)) :
+    NULL;
+  if (aux)
+    std::fill(aux, aux + 5*m, Math::NaN<double>());
 
   try {
-    const Geodesic g(a, f);
-    for (mwIndex i = 0; i < m; ++i) {
-      if (abs(lat1[i]) <= 90 &&
-          lon1[i] >= -540 && lon1[i] < 540 &&
-          azi1[i] >= -540 && azi1[i] < 540) {
-        if (aux)
-          a12[i] = g.Direct(lat1[i], lon1[i], azi1[i], s12[i],
-                            lat2[i], lon2[i], azi2[i], m12[i],
-                            M12[i], M21[i], S12[i]);
-        else
-          g.Direct(lat1[i], lon1[i], azi1[i], s12[i],
-                   lat2[i], lon2[i], azi2[i]);
-      }
-    }
+    if (std::abs(f) <= 0.02)
+      compute<Geodesic>(a, f, m, geodesic, latlong, aux);
+    else
+      compute<GeodesicExact>(a, f, m, geodesic, latlong, aux);
   }
   catch (const std::exception& e) {
     mexErrMsgTxt(e.what());
