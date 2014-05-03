@@ -1,3 +1,5 @@
 /build*
 *.pyc
 *.DS_Store
+/debug/
+*.txt.user

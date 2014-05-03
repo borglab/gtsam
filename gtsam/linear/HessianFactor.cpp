@@ -641,8 +641,21 @@ EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys
   // all factors to JacobianFactors.  Otherwise, we can convert all factors
   // to HessianFactors.  This is because QR can handle constrained noise
   // models but Cholesky cannot.
-  if (hasConstraints(factors))
-    return EliminateQR(factors, keys);
+  GaussianFactorGraph unconstraints, constraints;
+  boost::tie(unconstraints, constraints) = factors.splitConstraints();
+  if (constraints.size()>0) {
+    // Build joint factor
+    HessianFactor::shared_ptr jointFactor;
+    try {
+      jointFactor = boost::make_shared<HessianFactor>(unconstraints, Scatter(factors, keys));
+    } catch(std::invalid_argument&) {
+      throw InvalidDenseElimination(
+          "EliminateCholesky was called with a request to eliminate variables that are not\n"
+          "involved in the provided factors.");
+    }
+    constraints.push_back(jointFactor);
+    return EliminateQR(constraints, keys);
+  }
   else
     return EliminateCholesky(factors, keys);
 }

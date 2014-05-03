@@ -115,6 +115,9 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor) :
   bool success;
   boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
+  factor.print("HessianFactor to convert: ");
+  cout << "Maxrank: " << maxrank << ", success: " << int(success) << endl;
+
   // Check for indefinite system
   if (!success)
     throw IndeterminantLinearSystemException(factor.keys().front());

@@ -360,17 +360,15 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
 }
 
 /* ************************************************************************* */
-VectorValues QPSolver::optimize(const VectorValues& initials,
-    boost::optional<VectorValues&> lambdas) const {
+std::pair<VectorValues, VectorValues> QPSolver::optimize(const VectorValues& initials) const {
   GaussianFactorGraph workingGraph = graph_.clone();
   VectorValues currentSolution = initials;
-  VectorValues workingLambdas;
+  VectorValues lambdas;
   bool converged = false;
   while (!converged) {
-    converged = iterateInPlace(workingGraph, currentSolution, workingLambdas);
+    converged = iterateInPlace(workingGraph, currentSolution, lambdas);
   }
-  if (lambdas) *lambdas = workingLambdas;
-  return currentSolution;
+  return make_pair(currentSolution, lambdas);
 }
 
 /* ************************************************************************* */
@@ -500,14 +498,14 @@ std::pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
 }
 
 /* ************************************************************************* */
-VectorValues QPSolver::optimize(boost::optional<VectorValues&> lambdas) const {
+std::pair<VectorValues, VectorValues> QPSolver::optimize() const {
   bool isFeasible;
   VectorValues initials;
   boost::tie(isFeasible, initials) = findFeasibleInitialValues();
   if (!isFeasible) {
     throw std::runtime_error("LP subproblem is infeasible!");
   }
-  return optimize(initials, lambdas);
+  return optimize(initials);
 }
 
 } /* namespace gtsam */
