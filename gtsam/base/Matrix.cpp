@@ -695,7 +695,7 @@ Matrix expm(const Matrix& A, size_t K) {
 
 /* ************************************************************************* */
 Matrix Cayley(const Matrix& A) {
-  int n = A.cols();
+  size_t n = A.cols();
   assert(A.rows() == n);
 
   // original
