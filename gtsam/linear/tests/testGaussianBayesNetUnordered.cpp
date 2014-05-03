@@ -35,7 +35,7 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-static const Key _x_=0, _y_=1, _z_=2;
+static const Key _x_=0, _y_=1;
 
 static GaussianBayesNet smallBayesNet = list_of
   (GaussianConditional(_x_, (Vector(1) << 9.0), (Matrix(1, 1) << 1.0), _y_, (Matrix(1, 1) << 1.0)))
