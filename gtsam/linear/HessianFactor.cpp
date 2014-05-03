@@ -657,6 +657,24 @@ EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys
   // all factors to JacobianFactors.  Otherwise, we can convert all factors
   // to HessianFactors.  This is because QR can handle constrained noise
   // models but Cholesky cannot.
+
+  /* Currently, when eliminating a constrained variable, EliminatePreferCholesky
+   * converts every other factors to JacobianFactor before doing the special QR
+   * factorization for constrained variables. Unfortunately, after a constrained
+   * nonlinear graph is linearized, new hessian factors from constraints, multiplied
+   * with the dual variable  (-lambda*\hessian{c} terms in the Lagrangian objective
+   * function), might become negative definite, thus cannot be converted to JacobianFactors.
+   *
+   * Following EliminateCholesky, this version of EliminatePreferCholesky for
+   * constrained var gathers all unconstrained factors into a big joint HessianFactor
+   * before converting it into a JacobianFactor to be eliminiated by QR together with
+   * the other constrained factors.
+   *
+   * Of course, this might not solve the non-positive-definite problem entirely,
+   * because (1) the original hessian factors might be non-positive definite
+   * and (2) large strange value of lambdas might cause the joint factor non-positive
+   * definite [is this true?]. But at least, this will help in typical cases.
+   */
   GaussianFactorGraph unconstraints, constraints;
   boost::tie(unconstraints, constraints) = factors.splitConstraints();
   if (constraints.size()>0) {
