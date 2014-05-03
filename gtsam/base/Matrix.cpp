@@ -642,29 +642,7 @@ Matrix cholesky_inverse(const Matrix &A)
 //  return BNU::prod(trans(inv), inv);
 }
 
-#if 0
 /* ************************************************************************* */
-// TODO, would be faster with Cholesky
-Matrix inverse_square_root(const Matrix& A) {
-  size_t m = A.cols(), n = A.rows();
-  if (m!=n)
-    throw invalid_argument("inverse_square_root: A must be square");
-
-  // Perform SVD, TODO: symmetric SVD?
-  Matrix U,V;
-  Vector S;
-  svd(A,U,S,V);
-
-  // invert and sqrt diagonal of S
-  // We also arbitrarily choose sign to make result have positive signs
-  for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),-0.5);
-  return vector_scale(S, V); // V*S;
-}
-#endif
-
-/* ************************************************************************* */
-// New, improved, with 100% more Cholesky goodness!
-//
 // Semantics: 
 // if B = inverse_square_root(A), then all of the following are true:
 // inv(B) * inv(B)' == A
