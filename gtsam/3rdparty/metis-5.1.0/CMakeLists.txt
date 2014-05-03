@@ -8,7 +8,12 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 add_definitions(-Wno-unknown-pragmas)
-add_definitions(-Wunused-but-set-variable)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.6 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.6)
+    add_definitions(-Wno-unused-but-set-variable)
+  endif()
+endif()
 
 set(GKLIB_PATH ${PROJECT_SOURCE_DIR}/GKlib CACHE PATH "path to GKlib")
 set(SHARED FALSE CACHE BOOL "build a shared library")
