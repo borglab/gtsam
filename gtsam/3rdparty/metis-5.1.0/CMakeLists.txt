@@ -4,11 +4,11 @@ project(METIS)
 # Add flags for currect directory and below
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   add_definitions(-Wno-unused-variable)
-  add_definitions(-Wno-sometimes-uninitialized)
+#  add_definitions(-Wno-sometimes-uninitialized)
 endif()
 
 add_definitions(-Wno-unknown-pragmas)
-add_definitions(-Wunused-but-set-variable)
+#add_definitions(-Wunused-but-set-variable)
 
 set(GKLIB_PATH ${PROJECT_SOURCE_DIR}/GKlib CACHE PATH "path to GKlib")
 set(SHARED FALSE CACHE BOOL "build a shared library")
