@@ -30,7 +30,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3DS2 : public DerivedValue<Cal3DS2> {
 
-private:
+protected:
 
   double fx_, fy_, s_, u0_, v0_ ; // focal length, skew and principal point
   double k1_, k2_ ; // radial 2nd-order and 4th-order
