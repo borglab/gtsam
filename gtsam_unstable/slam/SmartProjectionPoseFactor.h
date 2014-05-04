@@ -22,6 +22,16 @@
 #include "SmartProjectionFactor.h"
 
 namespace gtsam {
+/**
+ *
+ * @addtogroup SLAM
+ *
+ * If you are using the factor, please cite:
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
+ * independent sets in factor graphs: a unifying perspective based on smart factors,
+ * Int. Conf. on Robotics and Automation (ICRA), 2014.
+ *
+ */
 
 /**
  * The calibration is known here. The factor only constraints poses (variable dimension is 6)
