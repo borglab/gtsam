@@ -14,8 +14,6 @@
 #include "OrderedSymbols.h"
 #include "NestedDissection.h"
 
-using namespace std;
-
 namespace gtsam { namespace partition {
 
 	/* ************************************************************************* */
