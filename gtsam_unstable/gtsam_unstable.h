@@ -15,8 +15,11 @@ virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
 virtual class gtsam::imuBias::ConstantBias;
-virtual class gtsam::NoiseModelFactor;
 virtual class gtsam::NonlinearFactor;
+virtual class gtsam::NoiseModelFactor;
+virtual class gtsam::NoiseModelFactor2;
+virtual class gtsam::NoiseModelFactor3;
+virtual class gtsam::NoiseModelFactor4;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
@@ -706,6 +709,34 @@ class AHRS {
   pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> integrate(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector u, double dt);
   pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aid(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, bool Farrel);
   pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aidGeneral(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, Vector f_expected, const gtsam::Rot3& increment);
+  void print(string s) const;
+};
+
+// Tectonic SAM Factors
+
+#include <gtsam_unstable/slam/TSAMFactors.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+
+//typedef gtsam::NoiseModelFactor2<gtsam::Pose2, gtsam::Point2> NLPosePose;
+virtual class DeltaFactor : gtsam::NoiseModelFactor {
+  DeltaFactor(size_t i, size_t j, const gtsam::Point2& measured,
+      const gtsam::noiseModel::Base* noiseModel);
+  void print(string s) const;
+};
+
+//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//    gtsam::Point2> NLPosePosePosePoint;
+virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
+  DeltaFactorBase(size_t b1, size_t i, size_t b2, size_t j,
+      const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel);
+  void print(string s) const;
+};
+
+//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//    gtsam::Pose2> NLPosePosePosePose;
+virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
+  OdometryFactorBase(size_t b1, size_t i, size_t b2, size_t j,
+      const gtsam::Pose2& measured, const gtsam::noiseModel::Base* noiseModel);
   void print(string s) const;
 };
 
