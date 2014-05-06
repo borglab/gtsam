@@ -460,6 +460,22 @@ TEST( matrix, scale_rows_mask )
 }
 
 /* ************************************************************************* */
+TEST( matrix, skewSymmetric )
+{
+  double wx = 1, wy = 2, wz = 3;
+  Matrix3 actual = skewSymmetric(wx,wy,wz);
+
+  Matrix expected(3,3);
+  expected << 0, -3, 2,
+      3, 0, -1,
+      -2, 1, 0;
+
+  EXPECT(assert_equal(actual, expected));
+
+}
+
+
+/* ************************************************************************* */
 TEST( matrix, equal )
 {
   Matrix A(4, 4);
