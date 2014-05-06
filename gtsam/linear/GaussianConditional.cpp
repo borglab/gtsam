@@ -119,13 +119,19 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues GaussianConditional::solve(const VectorValues& x) const
   {
-    // Solve matrix
+    // Concatenate all vector values that correspond to parent variables
     Vector xS = x.vector(FastVector<Key>(beginParents(), endParents()));
+
+    // Update right-hand-side
     xS = getb() - get_S() * xS;
+
+    // Solve matrix
     Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
 
     // Check for indeterminant solution
     if(soln.hasNaN()) throw IndeterminantLinearSystemException(keys().front());
+
+    // TODO, do we not have to scale by sigmas here? Copy/paste bug
 
     // Insert solution into a VectorValues
     VectorValues result;
@@ -142,9 +148,14 @@ namespace gtsam {
   VectorValues GaussianConditional::solveOtherRHS(
     const VectorValues& parents, const VectorValues& rhs) const
   {
+    // Concatenate all vector values that correspond to parent variables
     Vector xS = parents.vector(FastVector<Key>(beginParents(), endParents()));
+
+    // Instead of updating getb(), update the right-hand-side from the given rhs
     const Vector rhsR = rhs.vector(FastVector<Key>(beginFrontals(), endFrontals()));
     xS = rhsR - get_S() * xS;
+
+    // Solve Matrix
     Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
 
     // Scale by sigmas

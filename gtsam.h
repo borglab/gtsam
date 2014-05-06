@@ -2363,6 +2363,7 @@ namespace utilities {
   gtsam::Values allPose3s(gtsam::Values& values);
   Matrix extractPose3(const gtsam::Values& values);
   void perturbPoint2(gtsam::Values& values, double sigma, int seed);
+  void perturbPose2 (gtsam::Values& values, double sigmaT, double sigmaR, int seed);
   void perturbPoint3(gtsam::Values& values, double sigma, int seed);
   void insertBackprojections(gtsam::Values& values, const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
   void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z, const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K);
