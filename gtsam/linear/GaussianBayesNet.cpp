@@ -42,7 +42,14 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues GaussianBayesNet::optimize() const
   {
-    VectorValues soln;
+    VectorValues soln; // no missing variables -> just create an empty vector
+    return optimize(soln);
+  }
+
+  /* ************************************************************************* */
+  VectorValues GaussianBayesNet::optimize(
+      const VectorValues& solutionForMissing) const {
+    VectorValues soln(solutionForMissing); // possibly empty
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
     /** solve each node in turn in topological sort order (parents first)*/
     BOOST_REVERSE_FOREACH(const sharedConditional& cg, *this) {

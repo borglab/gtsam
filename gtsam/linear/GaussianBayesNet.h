@@ -68,11 +68,11 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /**
-    * Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, computed by
-    * back-substitution.
-    */
+    /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by back-substitution
     VectorValues optimize() const;
+
+    /// Version of optimize for incomplete BayesNet, needs solution for missing variables
+    VectorValues optimize(const VectorValues& solutionForMissing) const;
 
     ///@}
 

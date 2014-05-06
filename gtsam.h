@@ -1423,6 +1423,7 @@ virtual class GaussianBayesNet {
   void push_back(const gtsam::GaussianBayesNet& bayesNet);
   
   gtsam::VectorValues optimize() const;
+  gtsam::VectorValues optimize(gtsam::VectorValues& solutionForMissing) const;
   gtsam::VectorValues optimizeGradientSearch() const;
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
   gtsam::VectorValues gradientAtZero() const;

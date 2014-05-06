@@ -70,6 +70,24 @@ TEST( GaussianBayesNet, optimize )
 }
 
 /* ************************************************************************* */
+TEST( GaussianBayesNet, optimizeIncomplete )
+{
+  static GaussianBayesNet incompleteBayesNet = list_of
+    (GaussianConditional(_x_, (Vector(1) << 9.0), (Matrix(1, 1) << 1.0), _y_, (Matrix(1, 1) << 1.0)));
+
+  VectorValues solutionForMissing = map_list_of<Key, Vector>
+    (_y_, (Vector(1) << 5.0));
+
+  VectorValues actual = incompleteBayesNet.optimize(solutionForMissing);
+
+  VectorValues expected = map_list_of<Key, Vector>
+    (_x_, (Vector(1) << 4.0))
+    (_y_, (Vector(1) << 5.0));
+
+  EXPECT(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
 TEST( GaussianBayesNet, optimize3 )
 {
   // y = R*x, x=inv(R)*y
