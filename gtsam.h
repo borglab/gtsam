@@ -1725,6 +1725,7 @@ class KeySet {
 
   // structure specific methods
   void insert(size_t key);
+  void merge(gtsam::KeySet& other);
   bool erase(size_t key); // returns true if value was removed
   bool count(size_t key) const; // returns true if value exists
 
