@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Cal3Unify.cpp
+ * @file Cal3Unified.cpp
  * @date Mar 8, 2014
  * @author Jing Dong
  */

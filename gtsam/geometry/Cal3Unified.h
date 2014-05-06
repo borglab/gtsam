@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Cal3Unify.h
+ * @file Cal3Unified.h
  * @brief Unified Calibration Model, see Mei07icra for details
  * @date Mar 8, 2014
  * @author Jing Dong
