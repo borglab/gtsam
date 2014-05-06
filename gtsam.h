@@ -1551,8 +1551,12 @@ char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
 // Default keyformatter
-void printKeySet(const gtsam::KeySet& keys);
-void printKeySet(const gtsam::KeySet& keys, string s);
+void printKeyList  (const gtsam::KeyList& keys);
+void printKeyList  (const gtsam::KeyList& keys, string s);
+void printKeyVector(const gtsam::KeyVector& keys);
+void printKeyVector(const gtsam::KeyVector& keys, string s);
+void printKeySet   (const gtsam::KeySet& keys);
+void printKeySet   (const gtsam::KeySet& keys, string s);
 
 #include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {
