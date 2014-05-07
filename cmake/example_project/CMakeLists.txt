@@ -39,5 +39,5 @@ gtsamAddTestsGlob("example" "tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 gtsamAddExamplesGlob("*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 
 ###################################################################################
-# Build MATLAB wrapper
+# Build MATLAB wrapper (CMake tracks the dependecy to link with GTSAM through our project's static library)
 wrap_and_install_library("example.h" "${CONVENIENCE_LIB_NAME}" "" "")
