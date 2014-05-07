@@ -12,36 +12,48 @@
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
-template<typename Scalar> void check_all_var(const Matrix<Scalar,3,1>& ea)
+
+template<typename Scalar>
+void verify_euler(const Matrix<Scalar,3,1>& ea, int i, int j, int k)
 {
   typedef Matrix<Scalar,3,3> Matrix3;
   typedef Matrix<Scalar,3,1> Vector3;
   typedef AngleAxis<Scalar> AngleAxisx;
   using std::abs;
+  Matrix3 m(AngleAxisx(ea[0], Vector3::Unit(i)) * AngleAxisx(ea[1], Vector3::Unit(j)) * AngleAxisx(ea[2], Vector3::Unit(k)));
+  Vector3 eabis = m.eulerAngles(i, j, k);
+  Matrix3 mbis(AngleAxisx(eabis[0], Vector3::Unit(i)) * AngleAxisx(eabis[1], Vector3::Unit(j)) * AngleAxisx(eabis[2], Vector3::Unit(k))); 
+  VERIFY_IS_APPROX(m,  mbis); 
+  /* If I==K, and ea[1]==0, then there no unique solution. */ 
+  /* The remark apply in the case where I!=K, and |ea[1]| is close to pi/2. */ 
+  if( (i!=k || ea[1]!=0) && (i==k || !internal::isApprox(abs(ea[1]),Scalar(M_PI/2),test_precision<Scalar>())) ) 
+    VERIFY((ea-eabis).norm() <= test_precision<Scalar>());
   
-  #define VERIFY_EULER(I,J,K, X,Y,Z) { \
-    Matrix3 m(AngleAxisx(ea[0], Vector3::Unit##X()) * AngleAxisx(ea[1], Vector3::Unit##Y()) * AngleAxisx(ea[2], Vector3::Unit##Z())); \
-    Vector3 eabis = m.eulerAngles(I,J,K); \
-    Matrix3 mbis(AngleAxisx(eabis[0], Vector3::Unit##X()) * AngleAxisx(eabis[1], Vector3::Unit##Y()) * AngleAxisx(eabis[2], Vector3::Unit##Z())); \
-    VERIFY_IS_APPROX(m,  mbis); \
-    /* If I==K, and ea[1]==0, then there no unique solution. */ \
-    /* The remark apply in the case where I!=K, and |ea[1]| is close to pi/2. */ \
-    if( (I!=K || ea[1]!=0) && (I==K || !internal::isApprox(abs(ea[1]),Scalar(M_PI/2),test_precision<Scalar>())) ) VERIFY((ea-eabis).norm() <= test_precision<Scalar>()); \
-  }
-  VERIFY_EULER(0,1,2, X,Y,Z);
-  VERIFY_EULER(0,1,0, X,Y,X);
-  VERIFY_EULER(0,2,1, X,Z,Y);
-  VERIFY_EULER(0,2,0, X,Z,X);
+  // approx_or_less_than does not work for 0
+  VERIFY(0 < eabis[0] || test_isMuchSmallerThan(eabis[0], Scalar(1)));
+  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[0], Scalar(M_PI));
+  VERIFY_IS_APPROX_OR_LESS_THAN(-Scalar(M_PI), eabis[1]);
+  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[1], Scalar(M_PI));
+  VERIFY_IS_APPROX_OR_LESS_THAN(-Scalar(M_PI), eabis[2]);
+  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[2], Scalar(M_PI));
+}
 
-  VERIFY_EULER(1,2,0, Y,Z,X);
-  VERIFY_EULER(1,2,1, Y,Z,Y);
-  VERIFY_EULER(1,0,2, Y,X,Z);
-  VERIFY_EULER(1,0,1, Y,X,Y);
+template<typename Scalar> void check_all_var(const Matrix<Scalar,3,1>& ea)
+{
+  verify_euler(ea, 0,1,2);
+  verify_euler(ea, 0,1,0);
+  verify_euler(ea, 0,2,1);
+  verify_euler(ea, 0,2,0);
 
-  VERIFY_EULER(2,0,1, Z,X,Y);
-  VERIFY_EULER(2,0,2, Z,X,Z);
-  VERIFY_EULER(2,1,0, Z,Y,X);
-  VERIFY_EULER(2,1,2, Z,Y,Z);
+  verify_euler(ea, 1,2,0);
+  verify_euler(ea, 1,2,1);
+  verify_euler(ea, 1,0,2);
+  verify_euler(ea, 1,0,1);
+
+  verify_euler(ea, 2,0,1);
+  verify_euler(ea, 2,0,2);
+  verify_euler(ea, 2,1,0);
+  verify_euler(ea, 2,1,2);
 }
 
 template<typename Scalar> void eulerangles()
@@ -63,7 +75,16 @@ template<typename Scalar> void eulerangles()
   ea = m.eulerAngles(0,1,0);
   check_all_var(ea);
   
-  ea = (Array3::Random() + Array3(1,1,0))*Scalar(M_PI)*Array3(0.5,0.5,1);
+  // Check with purely random Quaternion:
+  q1.coeffs() = Quaternionx::Coefficients::Random().normalized();
+  m = q1;
+  ea = m.eulerAngles(0,1,2);
+  check_all_var(ea);
+  ea = m.eulerAngles(0,1,0);
+  check_all_var(ea);
+  
+  // Check with random angles in range [0:pi]x[-pi:pi]x[-pi:pi].
+  ea = (Array3::Random() + Array3(1,0,0))*Scalar(M_PI)*Array3(0.5,1,1);
   check_all_var(ea);
   
   ea[2] = ea[0] = internal::random<Scalar>(0,Scalar(M_PI));

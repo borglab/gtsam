@@ -127,7 +127,7 @@ VectorNf vec1, vec2;
 vec2 = t.linear() * vec1;\endcode</td></tr>
 <tr><td>
 Apply a \em general transformation \n to a \b normal \b vector
-(<a href="http://www.cgafaq.info/wiki/Transforming_normals">explanations</a>)</td><td>\code
+(<a href="http://femto.cs.uiuc.edu/faqs/cga-faq.html#S5.27">explanations</a>)</td><td>\code
 VectorNf n1, n2;
 MatrixNf normalMatrix = t.linear().inverse().transpose();
 n2 = (normalMatrix * n1).normalized();\endcode</td></tr>

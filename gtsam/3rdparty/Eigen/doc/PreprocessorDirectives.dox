@@ -64,9 +64,9 @@ run time. However, these assertions do cost time and can thus be turned off.
    \c EIGEN_DONT_ALIGN is defined.
  - \b EIGEN_DONT_VECTORIZE - disables explicit vectorization when defined. Not defined by default, unless 
    alignment is disabled by %Eigen's platform test or the user defining \c EIGEN_DONT_ALIGN.
- - \b EIGEN_FAST_MATH - enables some optimizations which might affect the accuracy of the result. The only
-   optimization this currently includes is single precision sin() and cos() in the present of SSE
-   vectorization. Defined by default. 
+ - \b EIGEN_FAST_MATH - enables some optimizations which might affect the accuracy of the result. This currently
+   enables the SSE vectorization of sin() and cos(), and speedups sqrt() for single precision. Defined to 1 by default.
+   Define it to 0 to disable.
  - \b EIGEN_UNROLLING_LIMIT - defines the size of a loop to enable meta unrolling. Set it to zero to disable
    unrolling. The size of a loop here is expressed in %Eigen's own notion of "number of FLOPS", it does not
    correspond to the number of iterations or the number of instructions. The default is value 100. 
