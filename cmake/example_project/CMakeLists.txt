@@ -3,6 +3,7 @@
 #    - GTSAM linking
 #    - Unit tests via CppUnitLite
 #    - Scripts
+#    - Automatic MATLAB wrapper generation
 
 ###################################################################################
 # To create your own project, replace "example" with the actual name of your project
