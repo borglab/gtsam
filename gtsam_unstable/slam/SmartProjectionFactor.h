@@ -234,14 +234,14 @@ public:
             rankTolerance_, enableEPI_);
         degenerate_ = false;
         cheiralityException_ = false;
-      } catch (TriangulationUnderconstrainedException& e) {
+      } catch (TriangulationUnderconstrainedException&) {
         // if TriangulationUnderconstrainedException can be
         // 1) There is a single pose for triangulation - this should not happen because we checked the number of poses before
         // 2) The rank of the matrix used for triangulation is < 3: rotation-only, parallel cameras (or motion towards the landmark)
         // in the second case we want to use a rotation-only smart factor
         degenerate_ = true;
         cheiralityException_ = false;
-      } catch (TriangulationCheiralityException& e) {
+      } catch (TriangulationCheiralityException&) {
         // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
         // we manage this case by either discarding the smart factor, or imposing a rotation-only constraint
         cheiralityException_ = true;
@@ -279,7 +279,7 @@ public:
       const Cameras& cameras, const double lambda = 0.0) const {
 
     bool isDebug = false;
-    int numKeys = this->keys_.size();
+    size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
     std::vector < Key > js;
     std::vector < Matrix > Gs(numKeys * (numKeys + 1) / 2);
@@ -351,10 +351,10 @@ public:
 
     // Populate Gs and gs
     int GsCount2 = 0;
-    for (DenseIndex i1 = 0; i1 < numKeys; i1++) { // for each camera
+    for (DenseIndex i1 = 0; i1 < (DenseIndex)numKeys; i1++) { // for each camera
       DenseIndex i1D = i1 * D;
       gs.at(i1) = gs_vector.segment < D > (i1D);
-      for (DenseIndex i2 = 0; i2 < numKeys; i2++) {
+      for (DenseIndex i2 = 0; i2 < (DenseIndex)numKeys; i2++) {
         if (i2 >= i1) {
           Gs.at(GsCount2) = H.block < D, D > (i1D, i2 * D);
           GsCount2++;

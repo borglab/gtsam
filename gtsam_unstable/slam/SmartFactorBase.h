@@ -220,7 +220,7 @@ public:
         Point2 reprojectionError(camera.project(point) - zi);
         overallError += 0.5
         * this->noise_.at(i)->distance(reprojectionError.vector());
-      } catch (CheiralityException& e) {
+      } catch (CheiralityException&) {
         std::cout << "Cheirality exception " << std::endl;
         exit (EXIT_FAILURE);
       }
@@ -260,7 +260,7 @@ public:
   double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
       Vector& b, const Cameras& cameras, const Point3& point) const {
 
-    int numKeys = this->keys_.size();
+    size_t numKeys = this->keys_.size();
     E = zeros(2 * numKeys, 3);
     b = zero(2 * numKeys);
     double f = 0;
@@ -272,7 +272,7 @@ public:
       try {
         bi =
             -(cameras[i].project(point, Fi, Ei, Hcali) - this->measured_.at(i)).vector();
-      } catch (CheiralityException& e) {
+      } catch (CheiralityException&) {
         std::cout << "Cheirality exception " << std::endl;
         exit (EXIT_FAILURE);
       }
@@ -321,7 +321,7 @@ public:
       const Cameras& cameras, const Point3& point,
       const double lambda = 0.0) const {
 
-    int numKeys = this->keys_.size();
+    size_t numKeys = this->keys_.size();
     std::vector < KeyMatrix2D > Fblocks;
     double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point,
         lambda);
