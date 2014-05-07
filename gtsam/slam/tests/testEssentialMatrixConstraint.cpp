@@ -63,8 +63,8 @@ TEST( EssentialMatrixConstraint, test ) {
   factor.evaluateError(pose1, pose2, actualH1, actualH2);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH1, actualH1, 1e-9));
-  CHECK(assert_equal(expectedH2, actualH2, 1e-9));
+  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
+  CHECK(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 /* ************************************************************************* */

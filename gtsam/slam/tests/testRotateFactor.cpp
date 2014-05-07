@@ -59,7 +59,11 @@ TEST (RotateFactor, test) {
   EXPECT(assert_equal(zero(3), f.evaluateError(iRc), 1e-8));
 
   Rot3 R = iRc.retract((Vector(3) << 0.1, 0.2, 0.1));
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  Vector expectedE = (Vector(3) << -0.0248752, 0.202981, -0.0890529);
+#else
   Vector expectedE = (Vector(3) << -0.0246305, 0.20197, -0.08867);
+#endif
   EXPECT( assert_equal(expectedE, f.evaluateError(R), 1e-5));
 
   Matrix actual, expected;
@@ -97,7 +101,12 @@ TEST (RotateFactor, minimization) {
   double degree = M_PI / 180;
   Rot3 initialE = iRc.retract(degree * (Vector(3) << 20, -20, 20));
   initial.insert(1, initialE);
+
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  EXPECT_DOUBLES_EQUAL(3545.40, graph.error(initial), 1);
+#else
   EXPECT_DOUBLES_EQUAL(3349, graph.error(initial), 1);
+#endif
 
   // Optimize
   LevenbergMarquardtParams parameters;
@@ -120,7 +129,13 @@ TEST (RotateDirectionsFactor, test) {
   EXPECT(assert_equal(zero(2), f.evaluateError(iRc), 1e-8));
 
   Rot3 R = iRc.retract((Vector(3) << 0.1, 0.2, 0.1));
+
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  Vector expectedE = (Vector(2) << -0.0890529, -0.202981);
+#else
   Vector expectedE = (Vector(2) << -0.08867, -0.20197);
+#endif
+
   EXPECT( assert_equal(expectedE, f.evaluateError(R), 1e-5));
 
   Matrix actual, expected;
@@ -160,7 +175,12 @@ TEST (RotateDirectionsFactor, minimization) {
   double degree = M_PI / 180;
   Rot3 initialE = iRc.retract(degree * (Vector(3) << 20, -20, 20));
   initial.insert(1, initialE);
+
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  EXPECT_DOUBLES_EQUAL(3335.9, graph.error(initial), 1);
+#else
   EXPECT_DOUBLES_EQUAL(3162, graph.error(initial), 1);
+#endif
 
   // Optimize
   LevenbergMarquardtParams parameters;

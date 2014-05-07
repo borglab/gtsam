@@ -125,7 +125,7 @@ TEST (EssentialMatrix, rotate) {
   } // avoid exception
   Matrix expH1 = numericalDerivative21(rotate_, bodyE, cRb), //
   expH2 = numericalDerivative22(rotate_, bodyE, cRb);
-  EXPECT(assert_equal(expH1, actH1, 1e-8));
+  EXPECT(assert_equal(expH1, actH1, 1e-7));
   // Does not work yet EXPECT(assert_equal(expH2, actH2, 1e-8));
 }
 
@@ -149,7 +149,7 @@ TEST (EssentialMatrix, FromPose3_b) {
   EXPECT(assert_equal(trueE, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
   Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(
       boost::bind(EssentialMatrix::FromPose3, _1, boost::none), pose);
-  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
 //*************************************************************************

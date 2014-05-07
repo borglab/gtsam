@@ -35,13 +35,13 @@ TEST(BetweenFactor, Rot3) {
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);
-  EXPECT(assert_equal(numericalH1,actualH1));
+  EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
   Matrix numericalH2 = numericalDerivative22(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);
-  EXPECT(assert_equal(numericalH2,actualH2));
+  EXPECT(assert_equal(numericalH2,actualH2, 1E-5));
 }
 
 /* ************************************************************************* */
