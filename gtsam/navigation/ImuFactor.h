@@ -301,9 +301,18 @@ namespace gtsam {
     ImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()) {}
 
     /** Constructor */
-    ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-        const PreintegratedMeasurements& preintegratedMeasurements, const Vector3& gravity, const Vector3& omegaCoriolis,
-        boost::optional<const Pose3&> body_P_sensor = boost::none, const bool use2ndOrderCoriolis = false) :
+    ImuFactor(
+    	Key pose_i, ///< previous pose key
+    	Key vel_i, ///< previous velocity key
+    	Key pose_j, ///< current pose key
+    	Key vel_j, ///< current velocity key
+    	Key bias, ///< previous bias key
+        const PreintegratedMeasurements& preintegratedMeasurements, ///< preintegrated IMU measurements
+        const Vector3& gravity, ///< gravity vector
+        const Vector3& omegaCoriolis, ///< rotation rate of the inertial frame
+        boost::optional<const Pose3&> body_P_sensor = boost::none, ///< The Pose of the sensor frame in the body frame
+        const bool use2ndOrderCoriolis = false ///< When true, the second-order term is used in the calculation of the Coriolis Effect
+    ) :
       Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.PreintMeasCov), pose_i, vel_i, pose_j, vel_j, bias),
       preintegratedMeasurements_(preintegratedMeasurements),
       gravity_(gravity),
