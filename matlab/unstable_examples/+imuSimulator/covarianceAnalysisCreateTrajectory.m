@@ -18,7 +18,7 @@ if options.useRealData == 1
     'VEast', 'VNorth', 'VUp');
   
   % Limit the trajectory length
-  options.trajectoryLength = min([length(gtScenario.Lat) options.trajectoryLength]);
+  options.trajectoryLength = min([length(gtScenario.Lat)/options.subsampleStep options.trajectoryLength]);
   fprintf('Scenario Ind: ');
   
   for i=0:options.trajectoryLength
@@ -84,6 +84,19 @@ if options.useRealData == 1
     if options.includeGPSFactors == 1 && i > 0
       gpsPositionVector = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd).translation.vector;
       measurements(i).gpsPositionVector = gpsPositionVector;
+    end
+    
+    %% gt Camera measurements
+    if options.includeCameraFactors == 1 && i > 0
+      camera = SimpleCamera(currentPose, metadata.camera.calibration);
+      for j=1:length(metadata.camera.gtLandmarkPoints)
+        try
+          z = camera.project(metadata.camera.gtLandmarkPoints(j));
+          measurements(i).landmarks(j) = z;
+        catch
+            % point is probably out of the camera's view
+        end
+      end
     end
     
   end

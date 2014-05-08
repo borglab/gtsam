@@ -11,28 +11,28 @@ end
 testOptions = [ ...
     %    1       2       3       4       5       6       7     8      9        10         11      12
     % RealData? Between? IMU? IMUType  Bias?  Camera? #LndMrk GPS? StrtPose TrajLength Subsample #MCRuns
-         %1        0       1      2       0       0       10    0     100       209          20       100   ;... % 1
-         %1        0       1      2       0       0       10    0     100       209          20       100   ;... % 2
-        % 1        0       1      2       0       0       10    0     100       209          20       100   ;... % 3
-         %1        0       1      2       0       0       10    0     100       209          20       100   ;... % 4
-         %1        0       1      2       0       0       10    0     100       209          20       100   ;... % 5
-         %1        0       1      2       0       0       10    0     100       209          20       100   ;... % 6
-        % 1        0       1      2       0       0       10    0     100       209          20       100   ;... % 7
-         1        0       1      2       1       0       10    0     100       209          20       100   ;... % 8
-         1        0       1      2       1       0       10    0     100       209          20       100   ];   % 9
+         %1        0       1      2       0       0      100    0     100       209          20       100   ;... % 1
+         %1        0       1      2       0       0      100    0     100       209          20       100   ;... % 2
+        % 1        0       1      2       0       0      100    0     100       209          20       100   ;... % 3
+         1        0       1      2       0       1      100    0     100       209          20       20   ;... % 4
+         1        0       1      2       0       1      100    0     100       209          20       20   ;... % 5
+         1        0       1      2       0       0      100    0     100       209          20       20   ];%... % 6
+        % 1        0       1      2       0       0      100    0     100       209          20       100   ;... % 7
+         %1        0       1      2       0       0      100    0     100       209          20       1   ;... % 8
+         %1        0       1      2       0       0      100    0     100       209          20       1   ];   % 9
    
 noises = [ ...
-    %      1         2          3           4          5               6              7
-    % sigma_ang sigma_cart sigma_accel sigma_gyro sigma_accelBias sigma_gyroBias sigma_gps
-         %1e-2      1e-1       1e-3        1e-5         0               0            1e-4;... % 1
-         %1e-2      1e-1       1e-2        1e-5         0               0            1e-4;... % 2
-        % 1e-2      1e-1       1e-1        1e-5         0               0            1e-4;... % 3
-         %1e-2      1e-1       1e-3        1e-4         0               0            1e-4;... % 4
-         %1e-2      1e-1       1e-3        1e-3         0               0            1e-4;... % 5
-         %1e-2      1e-1       1e-3        1e-2         0               0            1e-4;... % 6
-        % 1e-2      1e-1       1e-3        1e-1         0               0            1e-4;... % 7
-         1e-2      1e-1       1e-3        1e-5         1e-3            1e-5         1e-4;... % 8
-         1e-2      1e-1       1e-3        1e-5         1e-4            1e-6         1e-4];   % 9
+    %      1         2          3           4          5               6              7         8
+    % sigma_ang sigma_cart sigma_accel sigma_gyro sigma_accelBias sigma_gyroBias sigma_gps sigma_camera
+         %1e-2      1e-1       1e-3        1e-5         0               0            1e-4       1;... % 1
+         %1e-2      1e-1       1e-2        1e-5         0               0            1e-4       1;... % 2
+        % 1e-2      1e-1       1e-1        1e-5         0               0            1e-4       1;... % 3
+         1e-2      1e-1       1e-3        1e-4         0               0            1e-4        1;... % 4
+         1e-2      1e-1       1e-3        1e-3         0               0            1e-4        1;... % 5
+         1e-2      1e-1       1e-3        1e-2         0               0            1e-4        1];%... % 6
+        % 1e-2      1e-1       1e-3        1e-1         0               0            1e-4       1;... % 7
+         %1e-2      1e-1       1e-3        1e-2         1e-3            1e-5         1e-4       1;... % 8
+         %1e-2      1e-1       1e-3        1e-2         1e-4            1e-6         1e-4       1];   % 9
      
 if(size(testOptions,1) ~= size(noises,1))
   error('testOptions and noises do not have same number of rows');
@@ -42,7 +42,7 @@ end
 externallyConfigured = 1;
 
 % Set the flag to save the results
-saveResults = 1;
+saveResults = 0;
 
 errorRuns = [];
 
@@ -59,7 +59,7 @@ for i = 1:size(testOptions,1)
     options.imuFactorType = testOptions(i,4);
     options.imuNonzeroBias = testOptions(i,5);
     options.includeCameraFactors = testOptions(i,6);
-    numberOfLandmarks = testOptions(i,7);
+    options.numberOfLandmarks = testOptions(i,7);
     options.includeGPSFactors = testOptions(i,8);
     options.gpsStartPose = testOptions(i,9);
     options.trajectoryLength = testOptions(i,10);
@@ -73,6 +73,7 @@ for i = 1:size(testOptions,1)
     sigma_accelBias = noises(i,5);
     sigma_gyroBias = noises(i,6);
     sigma_gps = noises(i,7);
+    sigma_camera = noises(i,8);
     
     % Create folder name
     f_between = '';
@@ -95,7 +96,7 @@ for i = 1:size(testOptions,1)
         f_between = sprintf('gps_%d_', gpsStartPose);
     end
     if (options.includeCameraFactors == 1)
-        f_camera = sprintf('camera_%d_', numberOfLandmarks);
+        f_camera = sprintf('camera_%d_', options.numberOfLandmarks);
     end
     f_runs = sprintf('mc%d', numMonteCarloRuns);
     

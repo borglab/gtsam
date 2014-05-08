@@ -33,11 +33,12 @@ for i=0:length(measurements)
       graph.add(PriorFactorConstantBias(currentBiasKey, currentBias, noiseModels.noisePriorBias));
     end
     
-    % Camera priors
+    %% Create a SmartProjectionFactor for each landmark
     if options.includeCameraFactors == 1
-      pointNoiseSigma = 0.1;
-      pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
-      graph.add(PriorFactorPoint3(symbol('p',1), gtLandmarkPoints(1), pointPriorNoise));
+      for j=1:options.numberOfLandmarks
+        %% UNCOMMENT WHEN SMART FACTORS ARE ADDED TO MATLAB WRAPPER
+        %SmartProjectionFactors(j) = SmartProjectionPose3Factor();
+      end
     end
     
   else
@@ -140,26 +141,20 @@ for i=0:length(measurements)
       
     end % end of IMU factor creation
     
-    %% Add Camera factors - UNDER CONSTRUCTION !!!! -
-    if options.includeCameraFactors == 1
-      % Create camera with the current pose and calibration K (specified above)
-      gtCamera = SimpleCamera(currentPose, K);
-      % Project landmarks into the camera
-      numSkipped = 0;
-      for j = 1:length(gtLandmarkPoints)
-        landmarkKey = symbol('p', j);
-        try
-          Z = gtCamera.project(gtLandmarkPoints(j));
-          % TO-DO probably want to do some type of filtering on the measurement values, because
-          % they might not all be valid
-          graph.add(GenericProjectionFactorCal3_S2(Z, cameraMeasurementNoise, currentPoseKey, landmarkKey, K));
-        catch
-          % Most likely the point is not within the camera's view, which
-          % is fine
-          numSkipped = numSkipped + 1;
+    %% Add Camera Factors
+    if options.includeCameraFactors == 1        
+      for(j = 1:length(measurements(i).landmarks))
+        cameraMeasurmentNoise = measurementNoise.cameraNoiseVector .* randn(2,1);
+        cameraPixelMeasurement = measurements(i).landmarks(j).vector;
+        if(cameraPixelMeasurement(1) ~= 0 && cameraPixelMeasurement(2) ~= 0)
+          cameraPixelMeasurement = cameraPixelMeasurement + cameraMeasurmentNoise;
+          %% UNCOMMENT WHEN SMART FACTORS ARE ADDED TO MATLAB WRAPPER
+          % SmartProjectionFactors(j).add( ...
+          %    Point2(cameraPizelMeasurement), ...
+          %    currentPoseKey, noiseModels.noiseCamera, ...
+          %    metadata.camera.calibration);
         end
       end
-      %fprintf('(Pose %d) %d landmarks behind the camera\n', i, numSkipped);
     end % end of Camera factor creation
     
     %% Add GPS factors

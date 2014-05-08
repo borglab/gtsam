@@ -3,7 +3,8 @@ import gtsam.*;
 % Test GTSAM covariances on a factor graph with:
 % Between Factors
 % IMU factors (type 1 and type 2)
-% Projection factors
+% GPS prior factors on poses
+% SmartProjectionPoseFactors
 % Authors: Luca Carlone, David Jensen
 % Date: 2014/4/6
 
@@ -19,31 +20,32 @@ if ~exist('externallyConfigured', 'var')
   %% Configuration
   % General options
   options.useRealData = 1;           % controls whether or not to use the real data (if available) as the ground truth traj
-  options.includeBetweenFactors = 0; % if true, BetweenFactors will be added between consecutive poses
+  options.includeBetweenFactors = 1; % if true, BetweenFactors will be added between consecutive poses
   
-  options.includeIMUFactors = 1;     % if true, IMU factors will be added between consecutive states (biases, poses, velocities)
-  options.imuFactorType = 2;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
+  options.includeIMUFactors = 0;     % if true, IMU factors will be added between consecutive states (biases, poses, velocities)
+  options.imuFactorType = 1;         % Set to 1 or 2 to use IMU type 1 or type 2 factors (will default to type 1)
   options.imuNonzeroBias = 0;        % if true, a nonzero bias is applied to IMU measurements
   
-  options.includeCameraFactors = 0;  % not fully implemented yet
-  numberOfLandmarks = 10;            % Total number of visual landmarks, used for camera factors
+  options.includeCameraFactors = 1;  % if true, SmartProjectionPose3Factors will be used with randomly generated landmarks
+  options.numberOfLandmarks = 100;   % Total number of visual landmarks (randomly generated in a box around the trajectory)
   
   options.includeGPSFactors = 0;     % if true, GPS factors will be added as priors to poses
   options.gpsStartPose = 100;        % Pose number to start including GPS factors at
   
-  options.trajectoryLength = 209;%209;    % length of the ground truth trajectory
+  options.trajectoryLength = 50;%209;    % length of the ground truth trajectory
   options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)
   
-  numMonteCarloRuns = 5;             % number of Monte Carlo runs to perform
+  numMonteCarloRuns = 2;             % number of Monte Carlo runs to perform
   
   % Noise values to be adjusted
   sigma_ang = 1e-2;       % std. deviation for rotational noise, typical 1e-2
   sigma_cart = 1e-1;      % std. deviation for translational noise, typical 1e-1
-  sigma_accel = 1e-1;         % std. deviation for accelerometer noise, typical 1e-3
-  sigma_gyro = 1e-5;          % std. deviation for gyroscope noise, typical 1e-5
-  sigma_accelBias = 1e-4;     % std. deviation for added accelerometer constant bias, typical 1e-3
-  sigma_gyroBias = 1e-6;      % std. deviation for added gyroscope constant bias, typical 1e-5
+  sigma_accel = 1e-3;     % std. deviation for accelerometer noise, typical 1e-3
+  sigma_gyro = 1e-5;      % std. deviation for gyroscope noise, typical 1e-5
+  sigma_accelBias = 1e-4; % std. deviation for added accelerometer constant bias, typical 1e-3
+  sigma_gyroBias = 1e-6;  % std. deviation for added gyroscope constant bias, typical 1e-5
   sigma_gps = 1e-4;       % std. deviation for noise in GPS position measurements, typical 1e-4
+  sigma_camera = 1;  % std. deviation for noise in camera measurements (pixels)
   
   % Set log files
   testName = sprintf('sa-%1.2g-sc-%1.2g-sacc-%1.2g-sg-%1.2g',sigma_ang,sigma_cart,sigma_accel,sigma_gyro)
@@ -86,18 +88,21 @@ noiseVectorGPS = sigma_gps * ones(3,1);
 noiseGPS = noiseModel.Diagonal.Precisions([zeros(3,1); 1/sigma_gps^2 * ones(3,1)]);
 
 %% Camera metadata
-K = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
-cameraMeasurementNoiseSigma = 1.0;
-cameraMeasurementNoise = noiseModel.Isotropic.Sigma(2,cameraMeasurementNoiseSigma);
+metadata.camera.calibration = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
+metadata.camera.xlims = [-100, 650];    % x limits on area for landmark creation
+metadata.camera.ylims = [-100, 700];    % y limits on area for landmark creation
+metadata.camera.zlims = [-10, 30];      % z limits on area for landmark creation
+metadata.camera.CameraSigma = sigma_camera;
+cameraMeasurementNoise = noiseModel.Isotropic.Sigma(2, metadata.camera.CameraSigma);
+noiseVectorCamera = metadata.camera.CameraSigma .* ones(2,1);
 
-% Create landmarks
+% Create landmarks and smart factors
 if options.includeCameraFactors == 1
-  for i = 1:numberOfLandmarks
-    gtLandmarkPoints(i) = Point3( ...
-      ... % uniformly distributed in the x axis along 120% of the trajectory length, starting after 15 poses
-      [rand()*20*(options.trajectoryLength*1.2) + 15*20; ...  
-      randn()*20; ...   % normally distributed in the y axis with a sigma of 20
-      randn()*20]);     % normally distributed in the z axis with a sigma of 20
+  for i = 1:options.numberOfLandmarks
+    metadata.camera.gtLandmarkPoints(i) = Point3( ...
+      [rand() * (metadata.camera.xlims(2)-metadata.camera.xlims(1)) + metadata.camera.xlims(1); ...  
+       rand() * (metadata.camera.ylims(2)-metadata.camera.ylims(1)) + metadata.camera.ylims(1); 
+       rand() * (metadata.camera.zlims(2)-metadata.camera.zlims(1)) + metadata.camera.zlims(1)]);
   end
 end
 
@@ -113,12 +118,13 @@ gtNoiseModels.noiseBiasBetween = noiseBiasBetween;
 gtNoiseModels.noisePriorPose = noisePose;
 gtNoiseModels.noisePriorBias = noisePriorBias;
 gtNoiseModels.noiseGPS = noiseGPS;
+gtNoiseModels.noiseCamera = cameraMeasurementNoise;
 
 % Set measurement noise to 0, because this is ground truth
 gtMeasurementNoise.poseNoiseVector = zeros(6,1);
 gtMeasurementNoise.imu.accelNoiseVector = zeros(3,1);
 gtMeasurementNoise.imu.gyroNoiseVector = zeros(3,1);
-gtMeasurementNoise.cameraPixelNoiseVector = zeros(2,1);
+gtMeasurementNoise.cameraNoiseVector = zeros(2,1);
 gtMeasurementNoise.gpsNoiseVector = zeros(3,1);
   
 % Set IMU biases to zero
@@ -140,8 +146,8 @@ gtGraph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
 figure(1)
 hold on;
 plot3DPoints(gtValues);
-plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
-%plot3DTrajectory(gtValues, '-r');
+%plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
+plot3DTrajectory(gtValues, '-r');
 axis equal
 
 % optimize
@@ -162,13 +168,14 @@ monteCarloNoiseModels.noiseBiasBetween = noiseBiasBetween;
 monteCarloNoiseModels.noisePriorPose = noisePose;
 monteCarloNoiseModels.noisePriorBias = noisePriorBias;
 monteCarloNoiseModels.noiseGPS = noiseGPS;
+monteCarloNoiseModels.noiseCamera = cameraMeasurementNoise;
 
 % Set measurement noise for monte carlo runs
-monteCarloMeasurementNoise.poseNoiseVector = noiseVectorPose;
+monteCarloMeasurementNoise.poseNoiseVector = zeros(6,1); %noiseVectorPose;
 monteCarloMeasurementNoise.imu.accelNoiseVector = noiseVectorAccel;
 monteCarloMeasurementNoise.imu.gyroNoiseVector = noiseVectorGyro;
-monteCarloMeasurementNoise.cameraPixelNoiseVector = [0; 0];
 monteCarloMeasurementNoise.gpsNoiseVector = noiseVectorGPS;
+monteCarloMeasurementNoise.cameraNoiseVector = noiseVectorCamera;
   
 for k=1:numMonteCarloRuns
   fprintf('Monte Carlo Run %d...\n', k');
