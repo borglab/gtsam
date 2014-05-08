@@ -39,7 +39,7 @@ cmake -DCMAKE_BUILD_TYPE=Release \
 -DBoost_USE_STATIC_LIBS:bool=true \
 -DBOOST_ROOT="$1" \
 -DGTSAM_BUILD_SHARED_LIBRARY:bool=false \
--DGTSAM_BUILD_STATIC_LIBRARY:bool=true \
+-DGTSAM_BUILD_STATIC_LIBRARY:bool=false \
 -DGTSAM_BUILD_TESTS:bool=false \
 -DGTSAM_BUILD_EXAMPLES:bool=false \
 -DGTSAM_BUILD_UNSTABLE:bool=false \
@@ -54,7 +54,7 @@ if [ ! $? ]; then
 fi
 
 # Compile
-make -j4 install
+make -j8 install
 
 # Create package
-tar czf gtsam-toolbox-2.3.0-$platform.tgz -C stage/borg toolbox
+tar czf gtsam-toolbox-3.0.0-$platform.tgz -C stage/gtsam_toolbox toolbox
