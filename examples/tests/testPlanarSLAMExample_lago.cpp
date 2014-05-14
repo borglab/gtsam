@@ -12,13 +12,7 @@
 /**
  *  @file  testPlanarSLAMExample_lago.cpp
  *  @brief Unit tests for planar SLAM example using the initialization technique
- *  LAGO (Linear Approximation for Graph Optimization) proposed in:
- *
- *  L. Carlone, R. Aragues, J. Castellanos, and B. Bona, A fast and accurate
- *  approximation for planar pose graph optimization, IJRR, 2014.
- *
- *  L. Carlone, R. Aragues, J.A. Castellanos, and B. Bona, A linear approximation
- *  for graph-based simultaneous localization and mapping, RSS, 2011.
+ *  LAGO (Linear Approximation for Graph Optimization)
  *
  *  @author Luca Carlone
  *  @author Frank Dellaert
@@ -59,8 +53,27 @@ Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x',3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
 static const double PI = boost::math::constants::pi<double>();
 
+/**
+ *  @brief Initialization technique for planar pose SLAM using
+ *  LAGO (Linear Approximation for Graph Optimization). see papers:
+ *
+ *  L. Carlone, R. Aragues, J. Castellanos, and B. Bona, A fast and accurate
+ *  approximation for planar pose graph optimization, IJRR, 2014.
+ *
+ *  L. Carlone, R. Aragues, J.A. Castellanos, and B. Bona, A linear approximation
+ *  for graph-based simultaneous localization and mapping, RSS, 2011.
+ *
+ *  @param graph: nonlinear factor graph including between (Pose2) measurements
+ *  @return Values: initial guess including orientation estimate from LAGO
+ */
+
 /* ************************************************************************* */
+//
+#include <gtsam/inference/graph.h>
 Values initializeLago(const NonlinearFactorGraph& graph) {
+  // Find a minimum spanning tree
+  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key, BetweenFactor<Pose2> >(graph);
+
   // Order measurements: ordered spanning path first, loop closure later
 
   // Extract angles in so2 from relative rotations in SO2
@@ -84,10 +97,11 @@ TEST( Lago, smallGraph_GTmeasurements ) {
 //               x2               0  1
 //             / | \              1  2
 //            /  |  \             2  3
-//          x3   |   x4           2  1
-//           \   |   /            1  3
+//          x3   |   x1           2  0
+//           \   |   /            0  3
 //            \  |  /
 //               x0
+//
 
   Pose2 pose0 = Pose2( 0.000000, 0.000000, 0.000000);
   Pose2 pose1 = Pose2( 1.000000, 1.000000, 1.570796);
@@ -95,35 +109,20 @@ TEST( Lago, smallGraph_GTmeasurements ) {
   Pose2 pose3 = Pose2(-1.000000, 1.000000, 4.712389);
 
   NonlinearFactorGraph graph;
-
-  BetweenFactor<Pose2> factor01(x0, x1, pose0.between(pose1), model);
-  graph.add(factor01);
-
-  BetweenFactor<Pose2> factor12(x1, x2, pose1.between(pose2), model);
-  graph.add(factor12);
-
-  BetweenFactor<Pose2> factor23(x2, x3, pose2.between(pose3), model);
-  graph.add(factor23);
-
-  BetweenFactor<Pose2> factor20(x2, x0, pose2.between(pose0), model);
-  graph.add(factor20);
-
-  BetweenFactor<Pose2> factor03(x0, x3, pose0.between(pose3), model);
-  graph.add(factor03);
+  graph.add( BetweenFactor<Pose2>(x0, x1, pose0.between(pose1), model));
+  graph.add( BetweenFactor<Pose2>(x1, x2, pose1.between(pose2), model));
+  graph.add( BetweenFactor<Pose2>(x2, x3, pose2.between(pose3), model));
+  graph.add( BetweenFactor<Pose2>(x2, x0, pose2.between(pose0), model));
+  graph.add( BetweenFactor<Pose2>(x0, x3, pose0.between(pose3), model));
 
   // graph.print("graph");
 
   Values initialGuessLago = initializeLago(graph);
 
-  Vector expectedOrientations = (Vector(4) << 0.0, 0.5*PI, PI, 1.5*PI);
-  Vector actualOrientations(4);
-  actualOrientations(0) = (initialGuessLago.at<Pose2>(x0)).theta();
-  actualOrientations(1) = (initialGuessLago.at<Pose2>(x1)).theta();
-  actualOrientations(2) = (initialGuessLago.at<Pose2>(x2)).theta();
-  actualOrientations(3) = (initialGuessLago.at<Pose2>(x3)).theta();
-
-  EXPECT(assert_equal(expectedOrientations, actualOrientations, 1e-6));
-  //DOUBLES_EQUAL(expected, actual, 1e-6);
+  DOUBLES_EQUAL(0.0,    (initialGuessLago.at<Pose2>(x0)).theta(), 1e-6);
+  DOUBLES_EQUAL(0.5*PI, (initialGuessLago.at<Pose2>(x1)).theta(), 1e-6);
+  DOUBLES_EQUAL(PI,     (initialGuessLago.at<Pose2>(x2)).theta(), 1e-6);
+  DOUBLES_EQUAL(1.5*PI, (initialGuessLago.at<Pose2>(x3)).theta(), 1e-6);
 }
 
 /* ************************************************************************* */
