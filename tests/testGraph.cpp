@@ -18,7 +18,10 @@
 
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/graph.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -105,24 +108,41 @@ TEST( Graph, composePoses )
   CHECK(assert_equal(expected, *actual));
 }
 
-// SL-FIX TEST( GaussianFactorGraph, findMinimumSpanningTree )
-//{
-//  GaussianFactorGraph g;
-//  Matrix I = eye(2);
-//  Vector b = Vector_(0, 0, 0);
-//  g += X(1), I, X(2), I, b, model;
-//  g += X(1), I, X(3), I, b, model;
-//  g += X(1), I, X(4), I, b, model;
-//  g += X(2), I, X(3), I, b, model;
-//  g += X(2), I, X(4), I, b, model;
-//  g += X(3), I, X(4), I, b, model;
-//
-//  map<string, string> tree = g.findMinimumSpanningTree<string, GaussianFactor>();
-//  EXPECT(tree[X(1)].compare(X(1))==0);
-//  EXPECT(tree[X(2)].compare(X(1))==0);
-//  EXPECT(tree[X(3)].compare(X(1))==0);
-//  EXPECT(tree[X(4)].compare(X(1))==0);
-//}
+///* ************************************************************************* */
+// A linear factor implementing the functions key1 and key2
+// needed for findMinimumSpanningTree
+class Factor2 : public JacobianFactor {
+  public:
+
+  /** Construct binary factor */
+  Factor2(Key i1, const Matrix& A1, Key i2, const Matrix& A2, const Vector& b,
+      const SharedDiagonal& model = SharedDiagonal()) :
+      JacobianFactor(i1, A1, i2, A2, b, model) {
+  }
+  Key key1() const {return keys_[0];}
+  Key key2() const {return keys_[1];}
+};
+
+TEST( GaussianFactorGraph, findMinimumSpanningTree )
+{
+  GaussianFactorGraph g;
+  Matrix I = eye(2);
+  Vector2 b(0, 0);
+  const SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(2) << 0.5, 0.5));
+  using namespace symbol_shorthand;
+  g += Factor2(X(1), I, X(2), I, b, model);
+  g += Factor2(X(1), I, X(3), I, b, model);
+  g += Factor2(X(1), I, X(4), I, b, model);
+  g += Factor2(X(2), I, X(3), I, b, model);
+  g += Factor2(X(2), I, X(4), I, b, model);
+  g += Factor2(X(3), I, X(4), I, b, model);
+
+  PredecessorMap<Key> tree = findMinimumSpanningTree<GaussianFactorGraph, Key, Factor2>(g);
+  EXPECT_LONGS_EQUAL(tree[X(1)], X(1));
+  EXPECT_LONGS_EQUAL(tree[X(2)], X(1));
+  EXPECT_LONGS_EQUAL(tree[X(3)], X(1));
+  EXPECT_LONGS_EQUAL(tree[X(4)], X(1));
+}
 
 ///* ************************************************************************* */
 // SL-FIX TEST( GaussianFactorGraph, split )

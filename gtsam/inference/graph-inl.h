@@ -91,13 +91,13 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
 
     if (key2vertex.find(key1) == key2vertex.end()) {
          v1 = add_vertex(key1, g);
-         key2vertex.insert(make_pair(key1, v1));
+         key2vertex.insert(std::pair<KEY,KEY>(key1, v1));
        } else
          v1 = key2vertex[key1];
 
     if (key2vertex.find(key2) == key2vertex.end()) {
        v2 = add_vertex(key2, g);
-       key2vertex.insert(make_pair(key2, v2));
+       key2vertex.insert(std::pair<KEY,KEY>(key2, v2));
      } else
        v2 = key2vertex[key2];
 
