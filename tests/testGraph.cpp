@@ -109,19 +109,6 @@ TEST( Graph, composePoses )
 }
 
 ///* ************************************************************************* */
-// A linear factor implementing the functions key1 and key2
-// needed for findMinimumSpanningTree
-class Factor2 : public JacobianFactor {
-  public:
-
-  /** Construct binary factor */
-  Factor2(Key i1, const Matrix& A1, Key i2, const Matrix& A2, const Vector& b,
-      const SharedDiagonal& model = SharedDiagonal()) :
-      JacobianFactor(i1, A1, i2, A2, b, model) {
-  }
-  Key key1() const {return keys_[0];}
-  Key key2() const {return keys_[1];}
-};
 
 TEST( GaussianFactorGraph, findMinimumSpanningTree )
 {
@@ -130,14 +117,14 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
   Vector2 b(0, 0);
   const SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(2) << 0.5, 0.5));
   using namespace symbol_shorthand;
-  g += Factor2(X(1), I, X(2), I, b, model);
-  g += Factor2(X(1), I, X(3), I, b, model);
-  g += Factor2(X(1), I, X(4), I, b, model);
-  g += Factor2(X(2), I, X(3), I, b, model);
-  g += Factor2(X(2), I, X(4), I, b, model);
-  g += Factor2(X(3), I, X(4), I, b, model);
+  g += JacobianFactor(X(1), I, X(2), I, b, model);
+  g += JacobianFactor(X(1), I, X(3), I, b, model);
+  g += JacobianFactor(X(1), I, X(4), I, b, model);
+  g += JacobianFactor(X(2), I, X(3), I, b, model);
+  g += JacobianFactor(X(2), I, X(4), I, b, model);
+  g += JacobianFactor(X(3), I, X(4), I, b, model);
 
-  PredecessorMap<Key> tree = findMinimumSpanningTree<GaussianFactorGraph, Key, Factor2>(g);
+  PredecessorMap<Key> tree = findMinimumSpanningTree<GaussianFactorGraph, Key, JacobianFactor>(g);
   EXPECT_LONGS_EQUAL(tree[X(1)], X(1));
   EXPECT_LONGS_EQUAL(tree[X(2)], X(1));
   EXPECT_LONGS_EQUAL(tree[X(3)], X(1));
