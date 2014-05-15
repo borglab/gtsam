@@ -27,15 +27,15 @@ if ~exist('externallyConfigured', 'var')
   options.imuNonzeroBias = 0;        % if true, a nonzero bias is applied to IMU measurements
   
   options.includeCameraFactors = 1;  % if true, SmartProjectionPose3Factors will be used with randomly generated landmarks
-  options.numberOfLandmarks = 100;   % Total number of visual landmarks (randomly generated in a box around the trajectory)
+  options.numberOfLandmarks = 1000;   % Total number of visual landmarks (randomly generated in a box around the trajectory)
   
   options.includeGPSFactors = 0;     % if true, GPS factors will be added as priors to poses
   options.gpsStartPose = 100;        % Pose number to start including GPS factors at
   
-  options.trajectoryLength = 50;%209;    % length of the ground truth trajectory
+  options.trajectoryLength = 20;%209;    % length of the ground truth trajectory
   options.subsampleStep = 20;        % number of poses to skip when using real data (to reduce computation on long trajectories)
   
-  numMonteCarloRuns = 2;             % number of Monte Carlo runs to perform
+  numMonteCarloRuns = 1;             % number of Monte Carlo runs to perform
   
   % Noise values to be adjusted
   sigma_ang = 1e-2;       % std. deviation for rotational noise, typical 1e-2
@@ -88,10 +88,12 @@ noiseVectorGPS = sigma_gps * ones(3,1);
 noiseGPS = noiseModel.Diagonal.Precisions([zeros(3,1); 1/sigma_gps^2 * ones(3,1)]);
 
 %% Camera metadata
-metadata.camera.calibration = Cal3_S2(500,500,0,640/2,480/2); % Camera calibration
+metadata.camera.calibration = Cal3_S2(500,500,0,1920/2,1200/2); % Camera calibration
 metadata.camera.xlims = [-100, 650];    % x limits on area for landmark creation
 metadata.camera.ylims = [-100, 700];    % y limits on area for landmark creation
-metadata.camera.zlims = [-10, 30];      % z limits on area for landmark creation
+metadata.camera.zlims = [-30, 30];      % z limits on area for landmark creation
+metadata.camera.visualRange = 100;      % maximum distance from the camera that a landmark can be seen (meters)
+metadata.camera.bodyPoseCamera = Pose3.Expmap([-pi/2;0;0;0;0;0]);   % pose of camera in body
 metadata.camera.CameraSigma = sigma_camera;
 cameraMeasurementNoise = noiseModel.Isotropic.Sigma(2, metadata.camera.CameraSigma);
 noiseVectorCamera = metadata.camera.CameraSigma .* ones(2,1);
@@ -131,7 +133,7 @@ gtMeasurementNoise.gpsNoiseVector = zeros(3,1);
 metadata.imu.accelConstantBiasVector = zeros(3,1);
 metadata.imu.gyroConstantBiasVector = zeros(3,1);
     
-gtGraph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
+[gtGraph, projectionFactorSeenBy] = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
     gtMeasurements, ...     % ground truth measurements
     gtValues, ...           % ground truth Values
     gtNoiseModels, ...      % noise models to use in this graph
@@ -145,6 +147,18 @@ gtGraph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
 
 figure(1)
 hold on;
+b = [-1000 2000 -2000 2000 -30 30];
+for i = 1:size(metadata.camera.gtLandmarkPoints,2)
+    p = metadata.camera.gtLandmarkPoints(i).vector;
+    if(p(1) > b(1) && p(1) < b(2) && p(2) > b(3) && p(2) < b(4) && p(3) > b(5) && p(3) < b(6))
+        plot3(p(1), p(2), p(3), 'k+');
+    end
+end
+pointsToPlot = metadata.camera.gtLandmarkPoints(find(projectionFactorSeenBy > 0));
+for i = 1:length(pointsToPlot)
+    p = pointsToPlot(i).vector;
+    plot3(p(1), p(2), p(3), 'gs', 'MarkerSize', 10);
+end
 plot3DPoints(gtValues);
 %plot3DTrajectory(gtValues, '-r', [], 1, Marginals(gtGraph, gtValues));
 plot3DTrajectory(gtValues, '-r');
@@ -192,7 +206,7 @@ for k=1:numMonteCarloRuns
   end
   
   % Create a new graph using noisy measurements
-  graph = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
+  [graph, projectionFactorSeenBy] = imuSimulator.covarianceAnalysisCreateFactorGraph( ...
     gtMeasurements, ...     % ground truth measurements
     gtValues, ...           % ground truth Values
     monteCarloNoiseModels, ...      % noise models to use in this graph

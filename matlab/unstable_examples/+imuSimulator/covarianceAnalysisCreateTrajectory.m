@@ -29,6 +29,9 @@ if options.useRealData == 1
     %% Generate the current pose
     currentPoseKey = symbol('x', i);
     currentPose = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd);
+    %% FOR TESTING
+    %currentPose = currentPose.compose(metadata.camera.bodyPoseCamera);
+    
     % add to values
     values.insert(currentPoseKey, currentPose);
     
@@ -87,14 +90,23 @@ if options.useRealData == 1
     end
     
     %% gt Camera measurements
-    if options.includeCameraFactors == 1 && i > 0
+    if options.includeCameraFactors == 1 && i > 0     
+      % Create the camera based on the current pose and the pose of the
+      % camera in the body
+      cameraPose = currentPose.compose(metadata.camera.bodyPoseCamera);
+      %camera = SimpleCamera(cameraPose, metadata.camera.calibration);
       camera = SimpleCamera(currentPose, metadata.camera.calibration);
+      
+      % Record measurements if the landmark is within visual range
       for j=1:length(metadata.camera.gtLandmarkPoints)
-        try
-          z = camera.project(metadata.camera.gtLandmarkPoints(j));
-          measurements(i).landmarks(j) = z;
-        catch
+        distanceToLandmark = camera.pose.range(metadata.camera.gtLandmarkPoints(j));
+        if distanceToLandmark < metadata.camera.visualRange
+          try
+            z = camera.project(metadata.camera.gtLandmarkPoints(j));
+            measurements(i).landmarks(j) = z;
+          catch
             % point is probably out of the camera's view
+          end
         end
       end
     end

@@ -1,4 +1,4 @@
-function [ graph ] = covarianceAnalysisCreateFactorGraph( measurements, values, noiseModels, measurementNoise, options, metadata)
+function [ graph projectionFactorSeenBy] = covarianceAnalysisCreateFactorGraph( measurements, values, noiseModels, measurementNoise, options, metadata)
 % Create a factor graph based on provided measurements, values, and noises.
 % Used for covariance analysis scripts.
 % 'options' contains fields for including various factor types.
@@ -36,9 +36,18 @@ for i=0:length(measurements)
     %% Create a SmartProjectionFactor for each landmark
     if options.includeCameraFactors == 1
       for j=1:options.numberOfLandmarks
-        %% UNCOMMENT WHEN SMART FACTORS ARE ADDED TO MATLAB WRAPPER
-        %SmartProjectionFactors(j) = SmartProjectionPose3Factor();
+        SmartProjectionFactors(j) = SmartProjectionPose3Factor();
+        % Use constructor with default values, but express the pose of the
+        % camera as a 90 degree rotation about the X axis
+%         SmartProjectionFactors(j) = SmartProjectionPose3Factor( ...
+%             1, ...      % rankTol
+%             -1, ...     % linThreshold
+%             false, ...  % manageDegeneracy
+%             false, ...  % enableEPI
+%             metadata.camera.bodyPoseCamera);    % Pose of camera in body frame
+            
       end
+      projectionFactorSeenBy = zeros(options.numberOfLandmarks,1);
     end
     
   else
@@ -141,18 +150,21 @@ for i=0:length(measurements)
       
     end % end of IMU factor creation
     
-    %% Add Camera Factors
+    %% Build Camera Factors
     if options.includeCameraFactors == 1        
-      for(j = 1:length(measurements(i).landmarks))
+      for j = 1:length(measurements(i).landmarks)
         cameraMeasurmentNoise = measurementNoise.cameraNoiseVector .* randn(2,1);
         cameraPixelMeasurement = measurements(i).landmarks(j).vector;
-        if(cameraPixelMeasurement(1) ~= 0 && cameraPixelMeasurement(2) ~= 0)
+        % Only add the measurement if it is in the image frame (based on calibration)
+        if(cameraPixelMeasurement(1) > 0 && cameraPixelMeasurement(2) > 0 ...
+             && cameraPixelMeasurement(1) < 2*metadata.camera.calibration.px ...
+             && cameraPixelMeasurement(2) < 2*metadata.camera.calibration.py)
           cameraPixelMeasurement = cameraPixelMeasurement + cameraMeasurmentNoise;
-          %% UNCOMMENT WHEN SMART FACTORS ARE ADDED TO MATLAB WRAPPER
-          % SmartProjectionFactors(j).add( ...
-          %    Point2(cameraPizelMeasurement), ...
-          %    currentPoseKey, noiseModels.noiseCamera, ...
-          %    metadata.camera.calibration);
+          SmartProjectionFactors(j).add( ...
+             Point2(cameraPixelMeasurement), ...
+             currentPoseKey, noiseModels.noiseCamera, ...
+             metadata.camera.calibration);
+           projectionFactorSeenBy(j) = projectionFactorSeenBy(j)+1;
         end
       end
     end % end of Camera factor creation
@@ -169,6 +181,16 @@ for i=0:length(measurements)
   end % end of else (i=0)
   
 end % end of for over trajectory
+
+%% Add Camera Factors to the graph
+[find(projectionFactorSeenBy ~= 0) projectionFactorSeenBy(find(projectionFactorSeenBy ~= 0))]
+if options.includeCameraFactors == 1
+  for j = 1:options.numberOfLandmarks
+    if projectionFactorSeenBy(j) > 5
+      graph.add(SmartProjectionFactors(j));
+    end
+  end
+end
 
 end % end of function
 
