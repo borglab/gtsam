@@ -30,7 +30,7 @@ if options.useRealData == 1
     currentPoseKey = symbol('x', i);
     currentPose = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd);
     %% FOR TESTING
-    %currentPose = currentPose.compose(metadata.camera.bodyPoseCamera);
+    currentPose = currentPose.compose(metadata.camera.bodyPoseCamera);
     
     % add to values
     values.insert(currentPoseKey, currentPose);

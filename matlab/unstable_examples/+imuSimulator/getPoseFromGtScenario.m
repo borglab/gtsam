@@ -18,8 +18,19 @@ dY = gtECEF(2) - initialPositionECEF(2);
 dZ = gtECEF(3) - initialPositionECEF(3);
 [xlt, ylt, zlt] = imuSimulator.ct2ENU(dX, dY, dZ,Org_lat, Org_lon);
 
-gtPosition = [xlt, ylt, zlt]';
-gtRotation = Rot3; % Rot3.Expmap(rand(3,1)); %Rot3.ypr(gtScenario.Heading(scenarioInd), gtScenario.Pitch(scenarioInd), gtScenario.Roll(scenarioInd));
-currentPose = Pose3(gtRotation, Point3(gtPosition));
+gtPosition = Point3([xlt, ylt, zlt]');
+% use the gtsam.Rot3.Ypr constructor (yaw, pitch, roll) from the ground truth data
+%   yaw = measured positively to the right
+%   pitch = measured positively up
+%   roll = measured positively to right
+% Assumes vehice X forward, Y right, Z down
+%
+% In the gtScenario data
+%   heading (yaw) = measured positively to the left from Y-axis
+%   pitch = 
+%   roll = 
+% Coordinate frame is Y forward, X is right, Z is up
+gtBodyRotation = Rot3.Ypr(-gtScenario.Heading(scenarioInd), -gtScenario.Pitch(scenarioInd), -gtScenario.Roll(scenarioInd));
+currentPose = Pose3(gtBodyRotation, gtPosition);
 
 end

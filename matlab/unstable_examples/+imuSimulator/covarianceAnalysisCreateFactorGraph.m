@@ -19,7 +19,8 @@ for i=0:length(measurements)
   if i==0
     %% first time step, add priors
     % Pose prior (poses used for all factors)
-    initialPose = Pose3.Expmap(measurementNoise.poseNoiseVector .* randn(6,1));
+    noisyInitialPoseVector = Pose3.Logmap(currentPose) + measurementNoise.poseNoiseVector .* rand(6,1); 
+    initialPose = Pose3.Expmap(noisyInitialPoseVector);
     graph.add(PriorFactorPose3(currentPoseKey, initialPose, noiseModels.noisePose));
     
     % IMU velocity and bias priors
@@ -183,10 +184,12 @@ for i=0:length(measurements)
 end % end of for over trajectory
 
 %% Add Camera Factors to the graph
+% Only factors for landmarks that have been viewed at least once are added
+% to the graph
 [find(projectionFactorSeenBy ~= 0) projectionFactorSeenBy(find(projectionFactorSeenBy ~= 0))]
 if options.includeCameraFactors == 1
   for j = 1:options.numberOfLandmarks
-    if projectionFactorSeenBy(j) > 5
+    if projectionFactorSeenBy(j) > 0
       graph.add(SmartProjectionFactors(j));
     end
   end
