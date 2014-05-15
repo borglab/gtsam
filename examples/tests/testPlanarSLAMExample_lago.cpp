@@ -49,7 +49,7 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
-Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x',3);
+Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
 static const double PI = boost::math::constants::pi<double>();
 
@@ -72,7 +72,8 @@ static const double PI = boost::math::constants::pi<double>();
 #include <gtsam/inference/graph.h>
 Values initializeLago(const NonlinearFactorGraph& graph) {
   // Find a minimum spanning tree
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key, BetweenFactor<Pose2> >(graph);
+  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
+      BetweenFactor<Pose2> >(graph);
 
   // Order measurements: ordered spanning path first, loop closure later
 
@@ -89,9 +90,7 @@ Values initializeLago(const NonlinearFactorGraph& graph) {
   return estimateLago;
 }
 
-
-/* *************************************************************************** */
-TEST( Lago, smallGraph_GTmeasurements ) {
+namespace simple {
 // We consider a small graph:
 //                            symbolic FG
 //               x2               0  1
@@ -103,29 +102,65 @@ TEST( Lago, smallGraph_GTmeasurements ) {
 //               x0
 //
 
-  Pose2 pose0 = Pose2( 0.000000, 0.000000, 0.000000);
-  Pose2 pose1 = Pose2( 1.000000, 1.000000, 1.570796);
-  Pose2 pose2 = Pose2( 0.000000, 2.000000, 3.141593);
-  Pose2 pose3 = Pose2(-1.000000, 1.000000, 4.712389);
+Pose2 pose0 = Pose2(0.000000, 0.000000, 0.000000);
+Pose2 pose1 = Pose2(1.000000, 1.000000, 1.570796);
+Pose2 pose2 = Pose2(0.000000, 2.000000, 3.141593);
+Pose2 pose3 = Pose2(-1.000000, 1.000000, 4.712389);
 
-  NonlinearFactorGraph graph;
-  graph.add( BetweenFactor<Pose2>(x0, x1, pose0.between(pose1), model));
-  graph.add( BetweenFactor<Pose2>(x1, x2, pose1.between(pose2), model));
-  graph.add( BetweenFactor<Pose2>(x2, x3, pose2.between(pose3), model));
-  graph.add( BetweenFactor<Pose2>(x2, x0, pose2.between(pose0), model));
-  graph.add( BetweenFactor<Pose2>(x0, x3, pose0.between(pose3), model));
-
-  // graph.print("graph");
-
-  Values initialGuessLago = initializeLago(graph);
-
-  DOUBLES_EQUAL(0.0,    (initialGuessLago.at<Pose2>(x0)).theta(), 1e-6);
-  DOUBLES_EQUAL(0.5*PI, (initialGuessLago.at<Pose2>(x1)).theta(), 1e-6);
-  DOUBLES_EQUAL(PI,     (initialGuessLago.at<Pose2>(x2)).theta(), 1e-6);
-  DOUBLES_EQUAL(1.5*PI, (initialGuessLago.at<Pose2>(x3)).theta(), 1e-6);
+NonlinearFactorGraph graph() {
+  NonlinearFactorGraph g;
+  g.add(BetweenFactor<Pose2>(x0, x1, pose0.between(pose1), model));
+  g.add(BetweenFactor<Pose2>(x1, x2, pose1.between(pose2), model));
+  g.add(BetweenFactor<Pose2>(x2, x3, pose2.between(pose3), model));
+  g.add(BetweenFactor<Pose2>(x2, x0, pose2.between(pose0), model));
+  g.add(BetweenFactor<Pose2>(x0, x3, pose0.between(pose3), model));
+  return g;
+}
 }
 
+map<Key, double> misteryFunction(const PredecessorMap<Key>& tree, const NonlinearFactorGraph&){
+
+}
+
+/* *************************************************************************** */
+TEST( Lago, sumOverLoops ) {
+  NonlinearFactorGraph g = simple::graph();
+  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
+        BetweenFactor<Pose2> >(g);
+
+  // check the tree structure
+  EXPECT_LONGS_EQUAL(tree[x0], x0);
+  EXPECT_LONGS_EQUAL(tree[x1], x0);
+  EXPECT_LONGS_EQUAL(tree[x2], x0);
+  EXPECT_LONGS_EQUAL(tree[x3], x0);
+
+  g.print("");
+
+  map<Key, double> expected;
+  expected[x0]=  0;
+  expected[x1]=  1.570796; // edge x0->x1 (consistent with edge (x0,x1))
+  expected[x2]= -3.141593; // edge x0->x2 (traversed backwards wrt edge (x2,x0))
+  expected[x3]=  4.712389; // edge x0->x3 (consistent with edge (x0,x3))
+
+  map<Key, double> actual;
+  actual = misteryFunction(tree, g);
+}
+
+/* *************************************************************************** */
+//TEST( Lago, smallGraph_GTmeasurements ) {
+//
+//  Values initialGuessLago = initializeLago(simple::graph());
+//
+//  DOUBLES_EQUAL(0.0, (initialGuessLago.at<Pose2>(x0)).theta(), 1e-6);
+//  DOUBLES_EQUAL(0.5 * PI, (initialGuessLago.at<Pose2>(x1)).theta(), 1e-6);
+//  DOUBLES_EQUAL(PI, (initialGuessLago.at<Pose2>(x2)).theta(), 1e-6);
+//  DOUBLES_EQUAL(1.5 * PI, (initialGuessLago.at<Pose2>(x3)).theta(), 1e-6);
+//}
+
 /* ************************************************************************* */
-  int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */
 
