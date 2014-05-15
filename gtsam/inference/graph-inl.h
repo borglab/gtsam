@@ -243,13 +243,12 @@ PredecessorMap<KEY> findMinimumSpanningTree(const G& fg) {
   // convert edge to string pairs
   PredecessorMap<KEY> tree;
   typename SDGraph<KEY>::vertex_iterator itVertex = boost::vertices(g).first;
-  typename std::vector<typename SDGraph<KEY>::Vertex>::iterator vi;
-  for (vi = p_map.begin(); vi != p_map.end(); itVertex++, vi++) {
+  BOOST_FOREACH(const typename SDGraph<KEY>::Vertex& vi, p_map){
     KEY key = boost::get(boost::vertex_name, g, *itVertex);
-    KEY parent = boost::get(boost::vertex_name, g, *vi);
+    KEY parent = boost::get(boost::vertex_name, g, vi);
     tree.insert(key, parent);
+    itVertex++;
   }
-
   return tree;
 }
 
