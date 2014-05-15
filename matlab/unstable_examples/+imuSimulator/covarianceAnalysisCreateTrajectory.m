@@ -9,7 +9,8 @@ import gtsam.*;
 
 values = Values;
 
-warning('fake angles! TODO: use constructor from roll-pitch-yaw when using real data - currently using identity rotation')
+warning('Rotating Pose inside getPoseFromGtScenario! TODO: Use a body_P_sensor transform in the factors')
+
 
 if options.useRealData == 1
   %% Create a ground truth trajectory from Real data (if available)
@@ -29,8 +30,10 @@ if options.useRealData == 1
     %% Generate the current pose
     currentPoseKey = symbol('x', i);
     currentPose = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd);
-    %% FOR TESTING
-    currentPose = currentPose.compose(metadata.camera.bodyPoseCamera);
+    
+    %% FOR TESTING - this is currently moved to getPoseFromGtScenario
+    %currentPose = currentPose.compose(metadata.camera.bodyPoseCamera);
+    %currentPose = currentPose.compose(Pose3.Expmap([-pi/2;0;0;0;0;0]));
     
     % add to values
     values.insert(currentPoseKey, currentPose);
@@ -57,7 +60,7 @@ if options.useRealData == 1
           scenarioIndIMU2 = previousScenarioInd+j;
           IMUPose1 = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioIndIMU1);
           IMUPose2 = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioIndIMU2);
-          IMURot2 = IMUPose2.rotation.matrix;
+          IMURot1 = IMUPose1.rotation.matrix;
                     
           IMUdeltaPose = IMUPose1.between(IMUPose2);
           IMUdeltaPoseVector     = Pose3.Logmap(IMUdeltaPose);
@@ -71,10 +74,10 @@ if options.useRealData == 1
           
           % deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
           % acc = (deltaPosition - initialVel * dT) * (2/dt^2)
-          measurements(i).imu(j).accel = IMURot2' * (IMUdeltaPositionVector - currentVel.*deltaT).*(2/(deltaT*deltaT));
+          measurements(i).imu(j).accel = IMURot1' * (IMUdeltaPositionVector - currentVel.*deltaT).*(2/(deltaT*deltaT));
           
           % Update velocity
-          currentVel = currentVel + IMURot2 * measurements(i).imu(j).accel * deltaT;
+          currentVel = currentVel + IMURot1 * measurements(i).imu(j).accel * deltaT;
         end
       end
       
@@ -94,8 +97,8 @@ if options.useRealData == 1
       % Create the camera based on the current pose and the pose of the
       % camera in the body
       cameraPose = currentPose.compose(metadata.camera.bodyPoseCamera);
-      %camera = SimpleCamera(cameraPose, metadata.camera.calibration);
-      camera = SimpleCamera(currentPose, metadata.camera.calibration);
+      camera = SimpleCamera(cameraPose, metadata.camera.calibration);
+      %camera = SimpleCamera(currentPose, metadata.camera.calibration);
       
       % Record measurements if the landmark is within visual range
       for j=1:length(metadata.camera.gtLandmarkPoints)

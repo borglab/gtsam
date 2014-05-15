@@ -19,7 +19,7 @@ for i=0:length(measurements)
   if i==0
     %% first time step, add priors
     % Pose prior (poses used for all factors)
-    noisyInitialPoseVector = Pose3.Logmap(currentPose) + measurementNoise.poseNoiseVector .* rand(6,1); 
+    noisyInitialPoseVector = Pose3.Logmap(currentPose) + measurementNoise.poseNoiseVector .* randn(6,1); 
     initialPose = Pose3.Expmap(noisyInitialPoseVector);
     graph.add(PriorFactorPose3(currentPoseKey, initialPose, noiseModels.noisePose));
     
@@ -35,9 +35,10 @@ for i=0:length(measurements)
     end
     
     %% Create a SmartProjectionFactor for each landmark
+    projectionFactorSeenBy = [];
     if options.includeCameraFactors == 1
       for j=1:options.numberOfLandmarks
-        SmartProjectionFactors(j) = SmartProjectionPose3Factor();
+        SmartProjectionFactors(j) = SmartProjectionPose3Factor(0.01);
         % Use constructor with default values, but express the pose of the
         % camera as a 90 degree rotation about the X axis
 %         SmartProjectionFactors(j) = SmartProjectionPose3Factor( ...
@@ -46,7 +47,6 @@ for i=0:length(measurements)
 %             false, ...  % manageDegeneracy
 %             false, ...  % enableEPI
 %             metadata.camera.bodyPoseCamera);    % Pose of camera in body frame
-            
       end
       projectionFactorSeenBy = zeros(options.numberOfLandmarks,1);
     end
@@ -186,7 +186,7 @@ end % end of for over trajectory
 %% Add Camera Factors to the graph
 % Only factors for landmarks that have been viewed at least once are added
 % to the graph
-[find(projectionFactorSeenBy ~= 0) projectionFactorSeenBy(find(projectionFactorSeenBy ~= 0))]
+%[find(projectionFactorSeenBy ~= 0) projectionFactorSeenBy(find(projectionFactorSeenBy ~= 0))]
 if options.includeCameraFactors == 1
   for j = 1:options.numberOfLandmarks
     if projectionFactorSeenBy(j) > 0

@@ -30,7 +30,10 @@ gtPosition = Point3([xlt, ylt, zlt]');
 %   pitch = 
 %   roll = 
 % Coordinate frame is Y forward, X is right, Z is up
-gtBodyRotation = Rot3.Ypr(-gtScenario.Heading(scenarioInd), -gtScenario.Pitch(scenarioInd), -gtScenario.Roll(scenarioInd));
+gtBodyRotation = Rot3.Ypr(-gtScenario.Heading(scenarioInd), gtScenario.Pitch(scenarioInd), gtScenario.Roll(scenarioInd));
 currentPose = Pose3(gtBodyRotation, gtPosition);
+
+%% Rotate the pose
+currentPose = currentPose.compose(Pose3.Expmap([-pi/2;0;0;0;0;0]));
 
 end
