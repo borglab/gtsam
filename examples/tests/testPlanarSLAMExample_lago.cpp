@@ -76,20 +76,20 @@ static const double PI = boost::math::constants::pi<double>();
  *  for a node (without wrapping). The function starts at the nodes and moves towards the root
  *  summing up the (directed) rotation measurements. The root is assumed to have orientation zero
  */
-double computeThetaToRoot(const Key nodeKey, PredecessorMap<Key>& tree,
-    map<Key, double>& deltaThetaMap, map<Key, double>& thetaFromRootMap) {
+double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
+    const map<Key, double>& deltaThetaMap, map<Key, double>& thetaFromRootMap) {
 
   double nodeTheta = 0;
   Key key_child = nodeKey; // the node
   Key key_parent = 0; // the initialization does not matter
   while(1){
     // We check if we reached the root
-    if(tree[key_child]==key_child) // if we reached the root
+    if(tree.at(key_child)==key_child) // if we reached the root
       break;
     // we sum the delta theta corresponding to the edge parent->child
-    nodeTheta += deltaThetaMap[key_child];
+    nodeTheta += deltaThetaMap.at(key_child);
     // we get the parent
-    key_parent = tree[key_child]; // the parent
+    key_parent = tree.at(key_child); // the parent
     // we check if we connected to some part of the tree we know
     if(thetaFromRootMap.find(key_parent)!=thetaFromRootMap.end()){
       nodeTheta += thetaFromRootMap[key_parent];
@@ -104,25 +104,29 @@ double computeThetaToRoot(const Key nodeKey, PredecessorMap<Key>& tree,
  *  This function computes the cumulative orientation (without wrapping)
  *  for all node wrt the root (root has zero orientation)
  */
-map<Key, double> computeThetasToRoot(vector<Key>& keysInBinary, map<Key, double>& deltaThetaMap, PredecessorMap<Key>& tree){
+map<Key, double> computeThetasToRoot(const vector<Key>& keysInBinary,
+    const map<Key, double>& deltaThetaMap, const PredecessorMap<Key>& tree) {
 
   map<Key, double> thetaToRootMap;
-  BOOST_FOREACH(const Key& nodeKey, keysInBinary){
-    double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap, thetaToRootMap);
+  // for all nodes in the tree
+  BOOST_FOREACH(const Key& nodeKey, keysInBinary) {
+    // compute the orientation wrt root
+    double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap,
+        thetaToRootMap);
     thetaToRootMap.insert(std::pair<Key, double>(nodeKey, nodeTheta));
   }
   return thetaToRootMap;
 }
 
 /*
- *  Given a factor graph "g", and a spanning tree "tree", the function selects the nodes belong to the tree and to g,
+ *  Given a factor graph "g", and a spanning tree "tree", the function selects the nodes belonging to the tree and to g,
  *  and stores the factor slots corresponding to edges in the tree and to chords wrt this tree
  *  Also it computes deltaThetaMap which is a fast way to encode relative orientations along the tree:
  *  for a node key2, s.t. tree[key2]=key1, the values deltaThetaMap[key2] is the relative orientation theta[key2]-theta[key1]
  */
 void getSymbolicSubgraph(vector<Key>& keysInBinary,
     /*OUTPUTS*/ vector<size_t>& spanningTree, vector<size_t>& chords, map<Key, double>& deltaThetaMap,
-    /*INPUTS*/ PredecessorMap<Key>& tree, const NonlinearFactorGraph& g){
+    /*INPUTS*/ const PredecessorMap<Key>& tree, const NonlinearFactorGraph& g){
 
   // Get keys for which you want the orientation
   size_t id=0;
@@ -147,11 +151,10 @@ void getSymbolicSubgraph(vector<Key>& keysInBinary,
 
       // insert (directed) orientations in the map "deltaThetaMap"
       bool inTree=false;
-      if(tree[key1]==key2){
+      if(tree.at(key1)==key2){
         deltaThetaMap.insert(std::pair<Key, double>(key1, -deltaTheta));
         inTree = true;
-      }
-      if(tree[key2]==key1){
+      } else if(tree.at(key2)==key1){
         deltaThetaMap.insert(std::pair<Key, double>(key2,  deltaTheta));
         inTree = true;
       }
@@ -166,19 +169,25 @@ void getSymbolicSubgraph(vector<Key>& keysInBinary,
   }
 }
 
+// Retrieves the deltaTheta and the corresponding noise model from a BetweenFactor<Pose2>
 void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
-    Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta){
+    Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta) {
   std::cout << "TODO: improve computation of noise model" << std::endl;
-  boost::shared_ptr< BetweenFactor<Pose2> > pose2Between = boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(factor);
-  if (!pose2Between) throw std::invalid_argument("buildOrientationGraph: invalid between factor!");
+  boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
+      boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
+  if (!pose2Between)
+    throw std::invalid_argument(
+        "buildOrientationGraph: invalid between factor!");
   deltaTheta = (Vector(1) << pose2Between->measured().theta());
   // Retrieve noise model
   SharedNoiseModel model = pose2Between->get_noiseModel();
-  boost::shared_ptr< noiseModel::Gaussian > gaussianModel = boost::dynamic_pointer_cast< noiseModel::Gaussian >(model);
-  if (!gaussianModel) throw std::invalid_argument("buildOrientationGraph: invalid noise model!");
+  boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
+      boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+  if (!gaussianModel)
+    throw std::invalid_argument("buildOrientationGraph: invalid noise model!");
   Matrix infoMatrix = gaussianModel->R() * gaussianModel->R(); // information matrix
   Matrix covMatrix = infoMatrix.inverse();
-  Vector variance_deltaTheta = (Vector(1) << covMatrix(2,2));
+  Vector variance_deltaTheta = (Vector(1) << covMatrix(2, 2));
   model_deltaTheta = noiseModel::Diagonal::Variances(variance_deltaTheta);
 }
 
@@ -186,28 +195,27 @@ void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
  *  Linear factor graph with regularized orientation measurements
  */
 GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, const vector<size_t>& chords,
-    const NonlinearFactorGraph& g, map<Key, double> orientationsToRoot, PredecessorMap<Key>& tree){
+    const NonlinearFactorGraph& g, const map<Key, double>& orientationsToRoot, const PredecessorMap<Key>& tree){
 
   GaussianFactorGraph lagoGraph;
   Vector deltaTheta;
   noiseModel::Diagonal::shared_ptr model_deltaTheta;
-  Key key1, key2;
 
   Matrix I = eye(1);
   // put original measurements in the spanning tree
   BOOST_FOREACH(const size_t& factorId, spanningTree){
-    key1 = g[factorId]->keys()[0];
-    key2 = g[factorId]->keys()[1];
+    const FastVector<Key>& keys = g[factorId]->keys();
+    Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     lagoGraph.add(JacobianFactor(key1, -I, key2, I, deltaTheta, model_deltaTheta));
   }
   // put regularized measurements in the chords
   BOOST_FOREACH(const size_t& factorId, chords){
-    key1 = g[factorId]->keys()[0];
-    key2 = g[factorId]->keys()[1];
+    const FastVector<Key>& keys = g[factorId]->keys();
+    Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     double key1_DeltaTheta_key2 = deltaTheta(0);
-    double k2pi_noise = key1_DeltaTheta_key2 + orientationsToRoot[key1] - orientationsToRoot[key2]; // this coincides to summing up measurements along the cycle induced by the chord
+    double k2pi_noise = key1_DeltaTheta_key2 + orientationsToRoot.at(key1) - orientationsToRoot.at(key2); // this coincides to summing up measurements along the cycle induced by the chord
     double k = round(k2pi_noise/(2*PI));
     Vector deltaThetaRegularized = (Vector(1) << key1_DeltaTheta_key2 - 2*k*PI);
     lagoGraph.add(JacobianFactor(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta));
@@ -215,14 +223,7 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, co
   // prior on first orientation (anchor), corresponding to the root of the tree
   noiseModel::Diagonal::shared_ptr model_anchor = noiseModel::Diagonal::Variances((Vector(1) << 1e-8));
   // find the root
-  Key key_root = key1; // one random node
-  while(1){
-    // We check if we reached the root
-    if(tree[key_root]==key_root) // if we reached the root
-      break;
-    key_root = tree[key_root]; // we move upwards in the tree
-  }
-  lagoGraph.add(JacobianFactor(key_root, I, (Vector(1) << 0.0), model_anchor));
+  lagoGraph.add(JacobianFactor(tree.begin()->first, I, (Vector(1) << 0.0), model_anchor));
   return lagoGraph;
 }
 

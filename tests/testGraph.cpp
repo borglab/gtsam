@@ -108,8 +108,7 @@ TEST( Graph, composePoses )
   CHECK(assert_equal(expected, *actual));
 }
 
-///* ************************************************************************* */
-
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, findMinimumSpanningTree )
 {
   GaussianFactorGraph g;
@@ -125,10 +124,21 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
   g += JacobianFactor(X(3), I, X(4), I, b, model);
 
   PredecessorMap<Key> tree = findMinimumSpanningTree<GaussianFactorGraph, Key, JacobianFactor>(g);
-  EXPECT_LONGS_EQUAL(tree[X(1)], X(1));
-  EXPECT_LONGS_EQUAL(tree[X(2)], X(1));
-  EXPECT_LONGS_EQUAL(tree[X(3)], X(1));
-  EXPECT_LONGS_EQUAL(tree[X(4)], X(1));
+  EXPECT_LONGS_EQUAL(X(1),tree[X(1)]);
+  EXPECT_LONGS_EQUAL(X(1),tree[X(2)]);
+  EXPECT_LONGS_EQUAL(X(1),tree[X(3)]);
+  EXPECT_LONGS_EQUAL(X(1),tree[X(4)]);
+
+  // we add a disconnected component
+  g += JacobianFactor(X(5), I, X(6), I, b, model);
+
+  PredecessorMap<Key> forest = findMinimumSpanningTree<GaussianFactorGraph, Key, JacobianFactor>(g);
+  EXPECT_LONGS_EQUAL(X(1),forest[X(1)]);
+  EXPECT_LONGS_EQUAL(X(1),forest[X(2)]);
+  EXPECT_LONGS_EQUAL(X(1),forest[X(3)]);
+  EXPECT_LONGS_EQUAL(X(1),forest[X(4)]);
+  EXPECT_LONGS_EQUAL(X(5),forest[X(5)]);
+  EXPECT_LONGS_EQUAL(X(5),forest[X(6)]);
 }
 
 ///* ************************************************************************* */
