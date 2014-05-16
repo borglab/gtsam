@@ -118,8 +118,90 @@ NonlinearFactorGraph graph() {
 }
 }
 
-map<Key, double> misteryFunction(const PredecessorMap<Key>& tree, const NonlinearFactorGraph&){
+/*
+ *  This function computes the cumulative orientation (without wrapping)
+ *  from each node to the root (root has zero orientation)
+ */
+double computeThetaToRoot(const Key nodeKey, PredecessorMap<Key>& tree,
+    map<Key, double>& deltaThetaMap, map<Key, double>& thetaFromRootMap) {
 
+    double nodeTheta = 0;
+    Key key_child = nodeKey; // the node
+    Key key_parent = 0; // the initialization does not matter
+    while(1){
+      // We check if we reached the root
+      if(tree[key_child]==key_child) // if we reached the root
+        break;
+
+      // we sum the delta theta corresponding to the edge parent->child
+      nodeTheta += deltaThetaMap[key_child];
+
+      // we get the parent
+      key_parent = tree[key_child]; // the parent
+
+      // we check if we connected to some part of the tree we know
+      if(thetaFromRootMap.find(key_parent)!=thetaFromRootMap.end()){
+        nodeTheta += thetaFromRootMap[key_parent];
+        break;
+      }
+      key_child = key_parent; // we move upwards in the tree
+    }
+    return nodeTheta;
+}
+
+void getSymbolicSubgraph(vector<Key>& keysInBinary, vector<size_t>& spanningTree,
+    vector<size_t>& chords, map<Key, double>& deltaThetaMap, PredecessorMap<Key>& tree, const NonlinearFactorGraph& g){
+
+  // Get keys for which you want the orientation
+  size_t id=0;
+
+    // Loop over the factors
+    BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, g){
+      if (factor->keys().size() == 2){
+        Key key1 = factor->keys()[0];
+        Key key2 = factor->keys()[1];
+        if(std::find(keysInBinary.begin(), keysInBinary.end(), key1)==keysInBinary.end()) // did not find key1, we add it
+          keysInBinary.push_back(key1);
+        if(std::find(keysInBinary.begin(), keysInBinary.end(), key2)==keysInBinary.end()) // did not find key2, we add it
+          keysInBinary.push_back(key2);
+
+        // recast to a between
+        boost::shared_ptr< BetweenFactor<Pose2> > pose2Between = boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(factor);
+        if (!pose2Between) continue;
+
+        // get the orientation - measured().theta();
+        double deltaTheta = pose2Between->measured().theta();
+
+        bool inTree=false;
+        if(tree[key1]==key2){
+          deltaThetaMap.insert(std::pair<Key, double>(key1, -deltaTheta));
+          inTree = true;
+        }
+        if(tree[key2]==key1){
+          deltaThetaMap.insert(std::pair<Key, double>(key2,  deltaTheta));
+          inTree = true;
+        }
+        if(inTree == true)
+          spanningTree.push_back(id);
+        else // it's a chord!
+          chords.push_back(id);
+      }
+      id++;
+    }
+}
+
+/*
+ *  This function computes the cumulative orientation (without wrapping)
+ *  from each node to the root (root has zero orientation)
+ */
+map<Key, double> computeThetasToRoot(vector<Key>& keysInBinary, map<Key, double>& deltaThetaMap, PredecessorMap<Key>& tree){
+
+  map<Key, double> thetaToRootMap;
+  BOOST_FOREACH(const Key& nodeKey, keysInBinary){
+    double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap, thetaToRootMap);
+    thetaToRootMap.insert(std::pair<Key, double>(nodeKey, nodeTheta));
+  }
+  return thetaToRootMap;
 }
 
 /* *************************************************************************** */
@@ -134,16 +216,25 @@ TEST( Lago, sumOverLoops ) {
   EXPECT_LONGS_EQUAL(tree[x2], x0);
   EXPECT_LONGS_EQUAL(tree[x3], x0);
 
-  g.print("");
-
   map<Key, double> expected;
   expected[x0]=  0;
-  expected[x1]=  1.570796; // edge x0->x1 (consistent with edge (x0,x1))
-  expected[x2]= -3.141593; // edge x0->x2 (traversed backwards wrt edge (x2,x0))
-  expected[x3]=  4.712389; // edge x0->x3 (consistent with edge (x0,x3))
+  expected[x1]=  PI/2; // edge x0->x1 (consistent with edge (x0,x1))
+  expected[x2]= -PI; // edge x0->x2 (traversed backwards wrt edge (x2,x0))
+  expected[x3]= -PI/2;  // edge x0->x3 (consistent with edge (x0,x3))
 
   map<Key, double> actual;
-  actual = misteryFunction(tree, g);
+
+  vector<Key> keysInBinary;
+  map<Key, double> deltaThetaMap;
+  vector<size_t> spanningTree; // ids of between factors forming the spanning tree T
+  vector<size_t> chords; // ids of between factors corresponding to chords wrt T
+  getSymbolicSubgraph(keysInBinary, spanningTree, chords, deltaThetaMap, tree, g);
+
+  actual = computeThetasToRoot(keysInBinary, deltaThetaMap, tree);
+  DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
+  DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
+  DOUBLES_EQUAL(expected[x2], actual[x2], 1e-6);
+  DOUBLES_EQUAL(expected[x3], actual[x3], 1e-6);
 }
 
 /* *************************************************************************** */
