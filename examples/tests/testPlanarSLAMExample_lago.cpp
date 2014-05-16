@@ -168,6 +168,7 @@ void getSymbolicSubgraph(vector<Key>& keysInBinary,
 
 void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
     Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta){
+  td::cout << "TODO: improve computation of noise model" << std::endl;
   boost::shared_ptr< BetweenFactor<Pose2> > pose2Between = boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(factor);
   if (!pose2Between) throw std::invalid_argument("buildOrientationGraph: invalid between factor!");
   deltaTheta = (Vector(1) << pose2Between->measured().theta());
