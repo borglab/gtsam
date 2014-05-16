@@ -172,7 +172,7 @@ void getSymbolicSubgraph(vector<Key>& keysInBinary,
 // Retrieves the deltaTheta and the corresponding noise model from a BetweenFactor<Pose2>
 void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
     Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta) {
-  std::cout << "TODO: improve computation of noise model" << std::endl;
+
   boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
       boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
   if (!pose2Between)
@@ -181,14 +181,12 @@ void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   deltaTheta = (Vector(1) << pose2Between->measured().theta());
   // Retrieve noise model
   SharedNoiseModel model = pose2Between->get_noiseModel();
-  boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
-      boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
-  if (!gaussianModel)
-    throw std::invalid_argument("buildOrientationGraph: invalid noise model!");
-  Matrix infoMatrix = gaussianModel->R() * gaussianModel->R(); // information matrix
-  Matrix covMatrix = infoMatrix.inverse();
-  Vector variance_deltaTheta = (Vector(1) << covMatrix(2, 2));
-  model_deltaTheta = noiseModel::Diagonal::Variances(variance_deltaTheta);
+  boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+      boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  if (!diagonalModel)
+    throw std::invalid_argument("buildOrientationGraph: invalid noise model (current version assumes diagonal noise model)!");
+  Vector std_deltaTheta = (Vector(1) << diagonalModel->sigma(2) ); // std on the angular measurement
+  model_deltaTheta = noiseModel::Diagonal::Sigmas(std_deltaTheta);
 }
 
 /*
@@ -220,9 +218,8 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, co
     Vector deltaThetaRegularized = (Vector(1) << key1_DeltaTheta_key2 - 2*k*PI);
     lagoGraph.add(JacobianFactor(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta));
   }
-  // prior on first orientation (anchor), corresponding to the root of the tree
+  // prior on some orientation (anchor)
   noiseModel::Diagonal::shared_ptr model_anchor = noiseModel::Diagonal::Variances((Vector(1) << 1e-8));
-  // find the root
   lagoGraph.add(JacobianFactor(tree.begin()->first, I, (Vector(1) << 0.0), model_anchor));
   return lagoGraph;
 }
