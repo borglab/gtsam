@@ -78,64 +78,64 @@ static const double PI = boost::math::constants::pi<double>();
 double computeThetaToRoot(const Key nodeKey, PredecessorMap<Key>& tree,
     map<Key, double>& deltaThetaMap, map<Key, double>& thetaFromRootMap) {
 
-    double nodeTheta = 0;
-    Key key_child = nodeKey; // the node
-    Key key_parent = 0; // the initialization does not matter
-    while(1){
-      // We check if we reached the root
-      if(tree[key_child]==key_child) // if we reached the root
-        break;
-      // we sum the delta theta corresponding to the edge parent->child
-      nodeTheta += deltaThetaMap[key_child];
-      // we get the parent
-      key_parent = tree[key_child]; // the parent
-      // we check if we connected to some part of the tree we know
-      if(thetaFromRootMap.find(key_parent)!=thetaFromRootMap.end()){
-        nodeTheta += thetaFromRootMap[key_parent];
-        break;
-      }
-      key_child = key_parent; // we move upwards in the tree
+  double nodeTheta = 0;
+  Key key_child = nodeKey; // the node
+  Key key_parent = 0; // the initialization does not matter
+  while(1){
+    // We check if we reached the root
+    if(tree[key_child]==key_child) // if we reached the root
+      break;
+    // we sum the delta theta corresponding to the edge parent->child
+    nodeTheta += deltaThetaMap[key_child];
+    // we get the parent
+    key_parent = tree[key_child]; // the parent
+    // we check if we connected to some part of the tree we know
+    if(thetaFromRootMap.find(key_parent)!=thetaFromRootMap.end()){
+      nodeTheta += thetaFromRootMap[key_parent];
+      break;
     }
-    return nodeTheta;
+    key_child = key_parent; // we move upwards in the tree
+  }
+  return nodeTheta;
 }
 
 void getSymbolicSubgraph(vector<Key>& keysInBinary, vector<size_t>& spanningTree,
     vector<size_t>& chords, map<Key, double>& deltaThetaMap, PredecessorMap<Key>& tree, const NonlinearFactorGraph& g){
   // Get keys for which you want the orientation
   size_t id=0;
-    // Loop over the factors
-    BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, g){
-      if (factor->keys().size() == 2){
-        Key key1 = factor->keys()[0];
-        Key key2 = factor->keys()[1];
-        if(std::find(keysInBinary.begin(), keysInBinary.end(), key1)==keysInBinary.end()) // did not find key1, we add it
-          keysInBinary.push_back(key1);
-        if(std::find(keysInBinary.begin(), keysInBinary.end(), key2)==keysInBinary.end()) // did not find key2, we add it
-          keysInBinary.push_back(key2);
+  // Loop over the factors
+  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, g){
+    if (factor->keys().size() == 2){
+      Key key1 = factor->keys()[0];
+      Key key2 = factor->keys()[1];
+      if(std::find(keysInBinary.begin(), keysInBinary.end(), key1)==keysInBinary.end()) // did not find key1, we add it
+        keysInBinary.push_back(key1);
+      if(std::find(keysInBinary.begin(), keysInBinary.end(), key2)==keysInBinary.end()) // did not find key2, we add it
+        keysInBinary.push_back(key2);
 
-        // recast to a between
-        boost::shared_ptr< BetweenFactor<Pose2> > pose2Between = boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(factor);
-        if (!pose2Between) continue;
+      // recast to a between
+      boost::shared_ptr< BetweenFactor<Pose2> > pose2Between = boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(factor);
+      if (!pose2Between) continue;
 
-        // get the orientation - measured().theta();
-        double deltaTheta = pose2Between->measured().theta();
+      // get the orientation - measured().theta();
+      double deltaTheta = pose2Between->measured().theta();
 
-        bool inTree=false;
-        if(tree[key1]==key2){
-          deltaThetaMap.insert(std::pair<Key, double>(key1, -deltaTheta));
-          inTree = true;
-        }
-        if(tree[key2]==key1){
-          deltaThetaMap.insert(std::pair<Key, double>(key2,  deltaTheta));
-          inTree = true;
-        }
-        if(inTree == true)
-          spanningTree.push_back(id);
-        else // it's a chord!
-          chords.push_back(id);
+      bool inTree=false;
+      if(tree[key1]==key2){
+        deltaThetaMap.insert(std::pair<Key, double>(key1, -deltaTheta));
+        inTree = true;
       }
-      id++;
+      if(tree[key2]==key1){
+        deltaThetaMap.insert(std::pair<Key, double>(key2,  deltaTheta));
+        inTree = true;
+      }
+      if(inTree == true)
+        spanningTree.push_back(id);
+      else // it's a chord!
+        chords.push_back(id);
     }
+    id++;
+  }
 }
 
 /*
@@ -202,13 +202,13 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, co
 }
 
 /* ************************************************************************* */
-VectorValues initializeLago(const NonlinearFactorGraph& graph) {
+// returns the orientations of the Pose2 in the connected sub-graph defined by BetweenFactor<Pose2>
+VectorValues initializeLago(const NonlinearFactorGraph& graph, vector<Key>& keysInBinary) {
   // Find a minimum spanning tree
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
       BetweenFactor<Pose2> >(graph);
 
   // Create a linear factor graph (LFG) of scalars
-  vector<Key> keysInBinary;
   map<Key, double> deltaThetaMap;
   vector<size_t> spanningTree; // ids of between factors forming the spanning tree T
   vector<size_t> chords; // ids of between factors corresponding to chords wrt T
@@ -224,6 +224,34 @@ VectorValues initializeLago(const NonlinearFactorGraph& graph) {
   VectorValues estimateLago = lagoGraph.optimize();
 
   return estimateLago;
+}
+
+/* ************************************************************************* */
+// returns the orientations of the Pose2 in the connected sub-graph defined by BetweenFactor<Pose2>
+VectorValues initializeLago(const NonlinearFactorGraph& graph) {
+
+  vector<Key> keysInBinary;
+  return initializeLago(graph, keysInBinary);
+}
+
+/* ************************************************************************* */
+// returns the orientations of the Pose2 in the connected sub-graph defined by BetweenFactor<Pose2>
+Values initializeLago(const NonlinearFactorGraph& graph, const Values& initialGuess) {
+  Values initialGuessLago;
+
+  // get the orientation estimates from LAGO
+  vector<Key> keysInBinary;
+  VectorValues orientations = initializeLago(graph, keysInBinary);
+
+  // plug the orientations in the initialGuess
+  for(size_t i=0; i<keysInBinary.size(); i++){
+    Key key = keysInBinary[i];
+    Pose2 pose = initialGuess.at<Pose2>(key);
+    Vector orientation = orientations.at(key);
+    Pose2 poseLago = Pose2(pose.x(),pose.y(),orientation(0));
+    initialGuessLago.insert(key, poseLago);
+  }
+  return initialGuessLago;
 }
 
 
@@ -259,7 +287,7 @@ NonlinearFactorGraph graph() {
 TEST( Lago, checkSTandChords ) {
   NonlinearFactorGraph g = simple::graph();
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-        BetweenFactor<Pose2> >(g);
+      BetweenFactor<Pose2> >(g);
 
   vector<Key> keysInBinary;
   map<Key, double> deltaThetaMap;
@@ -277,7 +305,7 @@ TEST( Lago, checkSTandChords ) {
 TEST( Lago, orientationsOverSpanningTree ) {
   NonlinearFactorGraph g = simple::graph();
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-        BetweenFactor<Pose2> >(g);
+      BetweenFactor<Pose2> >(g);
 
   // check the tree structure
   EXPECT_LONGS_EQUAL(tree[x0], x0);
@@ -309,7 +337,7 @@ TEST( Lago, orientationsOverSpanningTree ) {
 TEST( Lago, regularizedMeasurements ) {
   NonlinearFactorGraph g = simple::graph();
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-        BetweenFactor<Pose2> >(g);
+      BetweenFactor<Pose2> >(g);
 
   vector<Key> keysInBinary;
   map<Key, double> deltaThetaMap;
@@ -332,7 +360,7 @@ TEST( Lago, regularizedMeasurements ) {
 }
 
 /* *************************************************************************** */
-TEST( Lago, smallGraph_GTmeasurements ) {
+TEST( Lago, smallGraphVectorValues ) {
 
   VectorValues initialGuessLago = initializeLago(simple::graph());
 
@@ -341,6 +369,29 @@ TEST( Lago, smallGraph_GTmeasurements ) {
   EXPECT(assert_equal((Vector(1) << 0.5 * PI), initialGuessLago.at(x1), 1e-6));
   EXPECT(assert_equal((Vector(1) << PI - 2*PI), initialGuessLago.at(x2), 1e-6));
   EXPECT(assert_equal((Vector(1) << 1.5 * PI - 2*PI), initialGuessLago.at(x3), 1e-6));
+}
+
+/* *************************************************************************** */
+TEST( Lago, smallGraphValues ) {
+
+  // we set the orientations in the initial guess to zero
+  Values initialGuess;
+  initialGuess.insert(x0,Pose2(simple::pose0.x(),simple::pose0.y(),0.0));
+  initialGuess.insert(x1,Pose2(simple::pose1.x(),simple::pose1.y(),0.0));
+  initialGuess.insert(x2,Pose2(simple::pose2.x(),simple::pose2.y(),0.0));
+  initialGuess.insert(x3,Pose2(simple::pose3.x(),simple::pose3.y(),0.0));
+
+  // lago does not touch the Cartesian part and only fixed the orientations
+  Values actual = initializeLago(simple::graph(), initialGuess);
+
+  // we are in a noiseless case
+  Values expected;
+  expected.insert(x0,simple::pose0);
+  expected.insert(x1,simple::pose1);
+  expected.insert(x2,simple::pose2);
+  expected.insert(x3,simple::pose3);
+
+  EXPECT(assert_equal(expected, actual, 1e-6));
 }
 
 /* ************************************************************************* */
