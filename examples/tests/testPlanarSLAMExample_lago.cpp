@@ -168,7 +168,7 @@ void getSymbolicSubgraph(vector<Key>& keysInBinary,
 
 void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
     Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta){
-  td::cout << "TODO: improve computation of noise model" << std::endl;
+  std::cout << "TODO: improve computation of noise model" << std::endl;
   boost::shared_ptr< BetweenFactor<Pose2> > pose2Between = boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(factor);
   if (!pose2Between) throw std::invalid_argument("buildOrientationGraph: invalid between factor!");
   deltaTheta = (Vector(1) << pose2Between->measured().theta());
@@ -186,24 +186,25 @@ void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
  *  Linear factor graph with regularized orientation measurements
  */
 GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, const vector<size_t>& chords,
-    const NonlinearFactorGraph& g, map<Key, double> orientationsToRoot){
+    const NonlinearFactorGraph& g, map<Key, double> orientationsToRoot, PredecessorMap<Key>& tree){
 
   GaussianFactorGraph lagoGraph;
   Vector deltaTheta;
   noiseModel::Diagonal::shared_ptr model_deltaTheta;
+  Key key1, key2;
 
   Matrix I = eye(1);
   // put original measurements in the spanning tree
   BOOST_FOREACH(const size_t& factorId, spanningTree){
-    Key key1 = g[factorId]->keys()[0];
-    Key key2 = g[factorId]->keys()[1];
+    key1 = g[factorId]->keys()[0];
+    key2 = g[factorId]->keys()[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     lagoGraph.add(JacobianFactor(key1, -I, key2, I, deltaTheta, model_deltaTheta));
   }
   // put regularized measurements in the chords
   BOOST_FOREACH(const size_t& factorId, chords){
-    Key key1 = g[factorId]->keys()[0];
-    Key key2 = g[factorId]->keys()[1];
+    key1 = g[factorId]->keys()[0];
+    key2 = g[factorId]->keys()[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     double key1_DeltaTheta_key2 = deltaTheta(0);
     double k2pi_noise = key1_DeltaTheta_key2 + orientationsToRoot[key1] - orientationsToRoot[key2]; // this coincides to summing up measurements along the cycle induced by the chord
@@ -211,10 +212,17 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, co
     Vector deltaThetaRegularized = (Vector(1) << key1_DeltaTheta_key2 - 2*k*PI);
     lagoGraph.add(JacobianFactor(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta));
   }
-  // prior on first orientation (anchor)
+  // prior on first orientation (anchor), corresponding to the root of the tree
   noiseModel::Diagonal::shared_ptr model_anchor = noiseModel::Diagonal::Variances((Vector(1) << 1e-8));
-  std::cout << "TODO: fix the right root orientation and key" << std::endl;
-  lagoGraph.add(JacobianFactor(x0, I, (Vector(1) << 0.0), model_anchor));
+  // find the root
+  Key key_root = key1; // one random node
+  while(1){
+    // We check if we reached the root
+    if(tree[key_root]==key_root) // if we reached the root
+      break;
+    key_root = tree[key_root]; // we move upwards in the tree
+  }
+  lagoGraph.add(JacobianFactor(key_root, I, (Vector(1) << 0.0), model_anchor));
   return lagoGraph;
 }
 
@@ -235,7 +243,7 @@ VectorValues initializeLago(const NonlinearFactorGraph& graph, vector<Key>& keys
   map<Key, double> orientationsToRoot = computeThetasToRoot(keysInBinary, deltaThetaMap, tree);
 
   // regularize measurements and plug everything in a factor graph
-  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, graph, orientationsToRoot);
+  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, graph, orientationsToRoot, tree);
 
   // Solve the LFG
   VectorValues estimateLago = lagoGraph.optimize();
@@ -364,7 +372,7 @@ TEST( Lago, regularizedMeasurements ) {
 
   map<Key, double> orientationsToRoot = computeThetasToRoot(keysInBinary, deltaThetaMap, tree);
 
-  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, g, orientationsToRoot);
+  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, g, orientationsToRoot, tree);
   std::pair<Matrix,Vector> actualAb = lagoGraph.jacobian();
   // jacobian corresponding to the orientation measurements (last entry is the prior on the anchor and is disregarded)
   Vector actual = (Vector(5) <<  actualAb.second(0),actualAb.second(1),actualAb.second(2),actualAb.second(3),actualAb.second(4));
