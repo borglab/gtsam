@@ -259,7 +259,7 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, co
 }
 
 /* *************************************************************************** */
-TEST( Lago, sumOverLoops ) {
+TEST( Lago, regularizedMeasurements ) {
   NonlinearFactorGraph g = simple::graph();
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
         BetweenFactor<Pose2> >(g);
@@ -273,12 +273,16 @@ TEST( Lago, sumOverLoops ) {
   map<Key, double> orientationsToRoot = computeThetasToRoot(keysInBinary, deltaThetaMap, tree);
 
   GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, g, orientationsToRoot);
+  std::pair<Matrix,Vector> actualAb = lagoGraph.jacobian();
+  Vector actual = actualAb.second;
 
-//  Vector2 expected;
-//  expected[0]=  0.0;
-//  expected[1]=  0.0;
-//  DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
-//  DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
+  // This respects the order of the factors in the original graph
+  Vector expected = (Vector(5) <<  1.570796326794897, 1.570796326794897, 1.570796326794897, -3.141592653589793, 4.712388980384690 );
+  // This arranges the spanning tree first and chords later
+  Vector orderedExpected = (Vector(5) <<  expected[spanningTree[0]], expected[spanningTree[1]], expected[spanningTree[2]],
+      expected[chords[0]], expected[chords[1]] );
+
+  EXPECT(assert_equal(orderedExpected, actual, 1e-6));
 }
 
 /* *************************************************************************** */
