@@ -23,6 +23,8 @@
 // the robot positions and Point2 variables (x, y) to represent the landmark coordinates.
 #include <gtsam/geometry/Pose2.h>
 
+#include <gtsam/linear/GaussianFactorGraph.h>
+
 // Each variable in the system (poses and landmarks) must be identified with a unique key.
 // We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
 // Here we will use Symbols
@@ -205,7 +207,7 @@ map<Key, double> computeThetasToRoot(vector<Key>& keysInBinary, map<Key, double>
 }
 
 /* *************************************************************************** */
-TEST( Lago, sumOverLoops ) {
+TEST( Lago, orientationsOverSpanningTree ) {
   NonlinearFactorGraph g = simple::graph();
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
         BetweenFactor<Pose2> >(g);
@@ -222,7 +224,45 @@ TEST( Lago, sumOverLoops ) {
   expected[x2]= -PI; // edge x0->x2 (traversed backwards wrt edge (x2,x0))
   expected[x3]= -PI/2;  // edge x0->x3 (consistent with edge (x0,x3))
 
+  vector<Key> keysInBinary;
+  map<Key, double> deltaThetaMap;
+  vector<size_t> spanningTree; // ids of between factors forming the spanning tree T
+  vector<size_t> chords; // ids of between factors corresponding to chords wrt T
+  getSymbolicSubgraph(keysInBinary, spanningTree, chords, deltaThetaMap, tree, g);
+
   map<Key, double> actual;
+  actual = computeThetasToRoot(keysInBinary, deltaThetaMap, tree);
+  DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
+  DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
+  DOUBLES_EQUAL(expected[x2], actual[x2], 1e-6);
+  DOUBLES_EQUAL(expected[x3], actual[x3], 1e-6);
+}
+
+/*
+ *  Linear factor graph with regularized orientation measurements
+ */
+GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, const vector<size_t>& chords,
+    const NonlinearFactorGraph& g, map<Key, double> orientationsToRoot){
+  GaussianFactorGraph lagoGraph;
+
+  BOOST_FOREACH(const size_t& factorId, spanningTree){ // put original measurements in the spanning tree
+    Key key1 = g[factorId]->keys()[0];
+    Key key2 = g[factorId]->keys()[1];
+    boost::shared_ptr< BetweenFactor<Pose2> > pose2Between = boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(g[factorId]);
+    if (!pose2Between) throw std::invalid_argument("buildOrientationGraph: invalid between factor!");;
+    double deltaTheta = pose2Between->measured().theta();
+    //SharedNoiseModel model = g[factorId]->get_noiseModel()
+    //lagoGraph.add(JacobianFactor(key1, -1, key2, 1, deltaTheta, model));
+  }
+
+  return lagoGraph;
+}
+
+/* *************************************************************************** */
+TEST( Lago, sumOverLoops ) {
+  NonlinearFactorGraph g = simple::graph();
+  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
+        BetweenFactor<Pose2> >(g);
 
   vector<Key> keysInBinary;
   map<Key, double> deltaThetaMap;
@@ -230,11 +270,15 @@ TEST( Lago, sumOverLoops ) {
   vector<size_t> chords; // ids of between factors corresponding to chords wrt T
   getSymbolicSubgraph(keysInBinary, spanningTree, chords, deltaThetaMap, tree, g);
 
-  actual = computeThetasToRoot(keysInBinary, deltaThetaMap, tree);
-  DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
-  DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
-  DOUBLES_EQUAL(expected[x2], actual[x2], 1e-6);
-  DOUBLES_EQUAL(expected[x3], actual[x3], 1e-6);
+  map<Key, double> orientationsToRoot = computeThetasToRoot(keysInBinary, deltaThetaMap, tree);
+
+  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, g, orientationsToRoot);
+
+//  Vector2 expected;
+//  expected[0]=  0.0;
+//  expected[1]=  0.0;
+//  DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
+//  DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
 }
 
 /* *************************************************************************** */
