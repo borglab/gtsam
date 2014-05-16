@@ -99,6 +99,20 @@ double computeThetaToRoot(const Key nodeKey, PredecessorMap<Key>& tree,
   return nodeTheta;
 }
 
+/*
+ *  This function computes the cumulative orientation (without wrapping)
+ *  from each node to the root (root has zero orientation)
+ */
+map<Key, double> computeThetasToRoot(vector<Key>& keysInBinary, map<Key, double>& deltaThetaMap, PredecessorMap<Key>& tree){
+
+  map<Key, double> thetaToRootMap;
+  BOOST_FOREACH(const Key& nodeKey, keysInBinary){
+    double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap, thetaToRootMap);
+    thetaToRootMap.insert(std::pair<Key, double>(nodeKey, nodeTheta));
+  }
+  return thetaToRootMap;
+}
+
 void getSymbolicSubgraph(vector<Key>& keysInBinary, vector<size_t>& spanningTree,
     vector<size_t>& chords, map<Key, double>& deltaThetaMap, PredecessorMap<Key>& tree, const NonlinearFactorGraph& g){
   // Get keys for which you want the orientation
@@ -136,20 +150,6 @@ void getSymbolicSubgraph(vector<Key>& keysInBinary, vector<size_t>& spanningTree
     }
     id++;
   }
-}
-
-/*
- *  This function computes the cumulative orientation (without wrapping)
- *  from each node to the root (root has zero orientation)
- */
-map<Key, double> computeThetasToRoot(vector<Key>& keysInBinary, map<Key, double>& deltaThetaMap, PredecessorMap<Key>& tree){
-
-  map<Key, double> thetaToRootMap;
-  BOOST_FOREACH(const Key& nodeKey, keysInBinary){
-    double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap, thetaToRootMap);
-    thetaToRootMap.insert(std::pair<Key, double>(nodeKey, nodeTheta));
-  }
-  return thetaToRootMap;
 }
 
 /*
