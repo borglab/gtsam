@@ -195,6 +195,9 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, co
     noiseModel::Diagonal::shared_ptr model_deltaTheta = noiseModel::Diagonal::Variances(variance_deltaTheta);
     lagoGraph.add(JacobianFactor(key1, -I, key2, I, deltaTheta, model_deltaTheta));
   }
+  // prior on first orientation (anchor)
+  noiseModel::Diagonal::shared_ptr model_anchor = noiseModel::Diagonal::Variances((Vector(1) << 1e-8));
+  lagoGraph.add(JacobianFactor(x0, I, (Vector(1) << 0.0), model_anchor));
   return lagoGraph;
 }
 
@@ -216,8 +219,6 @@ VectorValues initializeLago(const NonlinearFactorGraph& graph) {
 
   // regularize measurements and plug everything in a factor graph
   GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, graph, orientationsToRoot);
-
-  lagoGraph.print("lagoGraph");
 
   // Solve the LFG
   VectorValues estimateLago = lagoGraph.optimize();
@@ -320,8 +321,10 @@ TEST( Lago, regularizedMeasurements ) {
 
   GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, g, orientationsToRoot);
   std::pair<Matrix,Vector> actualAb = lagoGraph.jacobian();
-  Vector actual = 0.1 * actualAb.second; // this is the whitened error, so we multiply by the std to unwhiten
-
+  // jacobian corresponding to the orientation measurements (last entry is the prior on the anchor and is disregarded)
+  Vector actual = (Vector(5) <<  actualAb.second(0),actualAb.second(1),actualAb.second(2),actualAb.second(3),actualAb.second(4));
+  // this is the whitened error, so we multiply by the std to unwhiten
+  actual = 0.1 * actual;
   // Expected regularized measurements (same for the spanning tree, corrected for the chords)
   Vector expected = (Vector(5) << PI/2, PI, -PI/2, PI/2 - 2*PI , PI/2);
 
@@ -333,14 +336,11 @@ TEST( Lago, smallGraph_GTmeasurements ) {
 
   VectorValues initialGuessLago = initializeLago(simple::graph());
 
-  initialGuessLago.print("");
-
+  // comparison is up to PI, that's why we add some multiples of 2*PI
   EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
-
-  // DOUBLES_EQUAL(0.0, (initialGuessLago.at<Pose2>(x0)).theta(), 1e-6);
-  // DOUBLES_EQUAL(0.5 * PI, (initialGuessLago.at<Pose2>(x1)).theta(), 1e-6);
-  // DOUBLES_EQUAL(PI, (initialGuessLago.at<Pose2>(x2)).theta(), 1e-6);
-  // DOUBLES_EQUAL(1.5 * PI, (initialGuessLago.at<Pose2>(x3)).theta(), 1e-6);
+  EXPECT(assert_equal((Vector(1) << 0.5 * PI), initialGuessLago.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << PI - 2*PI), initialGuessLago.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * PI - 2*PI), initialGuessLago.at(x3), 1e-6));
 }
 
 /* ************************************************************************* */
