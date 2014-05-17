@@ -85,12 +85,17 @@ int main(const int argc, const char *argv[]){
 
       noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Variances((Vector(3) << 1/I11, 1/I22, 1/I33));
 
-      NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
+      NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose2>(id1, id2, l1Xl2,
+          noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0), model)));
       graph.add(factor);
     }
     is.ignore(LINESIZE, '\n');
   }
-  // graph.print("graph");
+
+  // otherwise GTSAM cannot solve the problem
+  NonlinearFactorGraph graphWithPrior = graph;
+  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 0.01, 0.01, 0.001));
+  graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
   // GaussNewtonParams parameters;
   // Stop iterating once the change in error between steps is less than this value
@@ -99,7 +104,7 @@ int main(const int argc, const char *argv[]){
   // parameters.maxIterations = 100;
   // Create the optimizer ...
   std::cout << "Optimizing the factor graph" << std::endl;
-  GaussNewtonOptimizer optimizer(graph, initial); // , parameters);
+  GaussNewtonOptimizer optimizer(graphWithPrior, initial); // , parameters);
   // ... and optimize
   Values result = optimizer.optimize();
   // result.print("results");
