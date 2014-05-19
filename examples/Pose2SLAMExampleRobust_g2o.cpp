@@ -85,12 +85,19 @@ int main(const int argc, const char *argv[]){
 
       noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Variances((Vector(3) << 1/I11, 1/I22, 1/I33));
 
+      //      NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose2>(id1, id2, l1Xl2,
+      //          noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), model)));
+
       NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose2>(id1, id2, l1Xl2,
-          noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0), model)));
+          noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), model)));
+
       graph.add(factor);
     }
     is.ignore(LINESIZE, '\n');
   }
+
+  //std::cout << "Robust kernel: Huber" << std::endl;
+  std::cout << "Robust kernel: Tukey" << std::endl;
 
   // otherwise GTSAM cannot solve the problem
   NonlinearFactorGraph graphWithPrior = graph;
