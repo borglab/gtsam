@@ -538,6 +538,118 @@ bool readBundler(const string& filename, SfM_data &data)
 }
 
 /* ************************************************************************* */
+bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& initial,
+    const kernelFunctionType kernelFunction){
+
+  ifstream is(g2oFile.c_str());
+  if (!is){
+    throw std::invalid_argument("File not found!");
+    return false;
+  }
+
+  std::cout << "Reading g2o file: " << g2oFile << std::endl;
+  // READ INITIAL GUESS FROM G2O FILE
+  string tag;
+  while (is) {
+    if(! (is >> tag))
+      break;
+
+    if (tag == "VERTEX_SE2") {
+      int id;
+      double x, y, yaw;
+      is >> id >> x >> y >> yaw;
+      initial.insert(id, Pose2(x, y, yaw));
+    }
+    is.ignore(LINESIZE, '\n');
+  }
+  is.clear(); /* clears the end-of-file and error flags */
+  is.seekg(0, ios::beg);
+  // initial.print("initial guess");
+
+  // READ MEASUREMENTS FROM G2O FILE
+  while (is) {
+    if(! (is >> tag))
+      break;
+
+    if (tag == "EDGE_SE2") {
+      int id1, id2;
+      double x, y, yaw;
+      double I11, I12, I13, I22, I23, I33;
+
+      is >> id1 >> id2 >> x >> y >> yaw;
+      is >> I11 >> I12 >> I13 >> I22 >> I23 >> I33;
+      Pose2 l1Xl2(x, y, yaw);
+      noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions((Vector(3) << I11, I22, I33));
+
+      switch (kernelFunction) {
+      {case QUADRATIC:
+        NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
+        graph.add(factor);
+        break;}
+      {case HUBER:
+        NonlinearFactor::shared_ptr huberFactor(new BetweenFactor<Pose2>(id1, id2, l1Xl2,
+            noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), model)));
+        graph.add(huberFactor);
+        break;}
+      {case TUKEY:
+        NonlinearFactor::shared_ptr tukeyFactor(new BetweenFactor<Pose2>(id1, id2, l1Xl2,
+            noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), model)));
+        graph.add(tukeyFactor);
+        break;}
+      }
+    }
+    is.ignore(LINESIZE, '\n');
+  }
+  // Output which kernel is used
+  switch (kernelFunction) {
+  case QUADRATIC:
+      std::cout << "Robust kernel: None" << std::endl; break;
+  case HUBER:
+    std::cout << "Robust kernel: Huber" << std::endl; break;
+  case TUKEY:
+    std::cout << "Robust kernel: Tukey" << std::endl; break;
+  }
+  return true;
+}
+
+/* ************************************************************************* */
+bool writeG2o(const std::string& filename, const NonlinearFactorGraph& graph, const Values& estimate){
+
+  fstream stream(filename.c_str(), fstream::out);
+
+  // save poses
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate)
+  {
+    const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
+    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
+        << pose.y() << " " << pose.theta() << endl;
+  }
+
+  // save edges
+  BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph)
+  {
+    boost::shared_ptr<BetweenFactor<Pose2> > factor =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
+    if (!factor)
+      continue;
+
+    SharedNoiseModel model = factor->get_noiseModel();
+    boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+        boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+    if (!diagonalModel)
+      throw std::invalid_argument("writeG2o: invalid noise model (current version assumes diagonal noise model)!");
+
+    Pose2 pose = factor->measured(); //.inverse();
+    stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
+        << pose.x() << " " << pose.y() << " " << pose.theta() << " "
+        << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " "
+        << diagonalModel->precision(1) << " " << 0.0 << " " << diagonalModel->precision(2) << endl;
+  }
+  stream.close();
+  return true;
+}
+
+/* ************************************************************************* */
 bool readBAL(const string& filename, SfM_data &data)
 {
   // Load the data file
