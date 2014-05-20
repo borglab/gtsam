@@ -547,7 +547,6 @@ bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& in
     return false;
   }
 
-  std::cout << "Reading g2o file: " << g2oFile << std::endl;
   // READ INITIAL GUESS FROM G2O FILE
   string tag;
   while (is) {
@@ -603,7 +602,7 @@ bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& in
   // Output which kernel is used
   switch (kernelFunction) {
   case QUADRATIC:
-      std::cout << "Robust kernel: None" << std::endl; break;
+      break;
   case HUBER:
     std::cout << "Robust kernel: Huber" << std::endl; break;
   case TUKEY:
