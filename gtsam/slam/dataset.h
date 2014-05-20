@@ -121,7 +121,7 @@ GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_data &data);
  * @brief This function parses a g2o file and stores the measurements into a
  * NonlinearFactorGraph and the initial guess in a Values structure
  * @param filename The name of the g2o file
- * @param graph NonlinearFactor graph storing the measurements (EDGE_SE2)
+ * @param graph NonlinearFactor graph storing the measurements (EDGE_SE2). NOTE: information matrix is assumed diagonal.
  * @return initial Values containing the initial guess (VERTEX_SE2)
  */
 enum kernelFunctionType { QUADRATIC, HUBER, TUKEY };

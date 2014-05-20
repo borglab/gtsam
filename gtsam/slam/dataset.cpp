@@ -554,7 +554,7 @@ bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& in
     if(! (is >> tag))
       break;
 
-    if (tag == "VERTEX_SE2") {
+    if (tag == "VERTEX_SE2" || tag == "VERTEX2") {
       int id;
       double x, y, yaw;
       is >> id >> x >> y >> yaw;
@@ -571,7 +571,7 @@ bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& in
     if(! (is >> tag))
       break;
 
-    if (tag == "EDGE_SE2") {
+    if (tag == "EDGE_SE2" || tag == "EDGE2") {
       int id1, id2;
       double x, y, yaw;
       double I11, I12, I13, I22, I23, I33;
