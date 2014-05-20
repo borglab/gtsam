@@ -77,7 +77,7 @@ static const double PI = boost::math::constants::pi<double>();
  *  summing up the (directed) rotation measurements. The root is assumed to have orientation zero
  */
 typedef map<Key,double> key2doubleMap;
-const Key keyAnchor = symbol('A',0);
+const Key keyAnchor = symbol('Z',9999999);
 
 double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
     const key2doubleMap& deltaThetaMap, key2doubleMap& thetaFromRootMap) {
@@ -220,7 +220,7 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTreeIds,
   }
   // prior on some orientation (anchor)
   noiseModel::Diagonal::shared_ptr model_anchor = noiseModel::Diagonal::Variances((Vector(1) << 1e-8));
-  lagoGraph.add(JacobianFactor(tree.begin()->first, I, (Vector(1) << 0.0), model_anchor));
+  lagoGraph.add(JacobianFactor(keyAnchor, I, (Vector(1) << 0.0), model_anchor));
   return lagoGraph;
 }
 
