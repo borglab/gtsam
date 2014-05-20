@@ -125,7 +125,16 @@ GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_data &data);
  * @return initial Values containing the initial guess (VERTEX_SE2)
  */
 enum kernelFunctionType { QUADRATIC, HUBER, TUKEY };
-bool readG2o2D(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& initial, const kernelFunctionType kernelFunction);
+bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& initial, const kernelFunctionType kernelFunction = QUADRATIC);
+
+/**
+ * @brief This function writes a g2o file from
+ * NonlinearFactorGraph and a Values structure
+ * @param filename The name of the g2o file to write
+ * @param graph NonlinearFactor graph storing the measurements (EDGE_SE2)
+ * @return estimate Values containing the values (VERTEX_SE2)
+ */
+bool writeG2o(const std::string& filename, const NonlinearFactorGraph& graph, const Values& estimate);
 
 /**
  * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and stores the data into a

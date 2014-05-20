@@ -539,7 +539,7 @@ bool readBundler(const string& filename, SfM_data &data)
 
 /* ************************************************************************* */
 bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& initial,
-    const kernelFunctionType kernelFunction = QUADRATIC){
+    const kernelFunctionType kernelFunction){
 
   ifstream is(g2oFile.c_str());
   if (!is){
@@ -613,7 +613,7 @@ bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph, Values& in
 }
 
 /* ************************************************************************* */
-bool writeG2o(const string& filename, const NonlinearFactorGraph& graph, const Values& estimate){
+bool writeG2o(const std::string& filename, const NonlinearFactorGraph& graph, const Values& estimate){
 
   fstream stream(filename.c_str(), fstream::out);
 
@@ -633,16 +633,20 @@ bool writeG2o(const string& filename, const NonlinearFactorGraph& graph, const V
     if (!factor)
       continue;
 
-//    Matrix sqrtInfo = factor->get_Noise Model ().
-//        Matrix info = sqrtInfo.tra
+    SharedNoiseModel model = factor->get_noiseModel();
+    boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+        boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+    if (!diagonalModel)
+      throw std::invalid_argument("writeG2o: invalid noise model (current version assumes diagonal noise model)!");
 
     Pose2 pose = factor->measured(); //.inverse();
     stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
         << pose.x() << " " << pose.y() << " " << pose.theta() << " "
-        << info(0, 0) << " " << info(0, 1) << " " << info(1, 1) << " "
-        << info(2, 2) << " " << info(0, 2) << " " << info(1, 2) << endl;
+        << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " "
+        << diagonalModel->precision(1) << " " << 0.0 << " " << diagonalModel->precision(2) << endl;
   }
   stream.close();
+  return true;
 }
 
 /* ************************************************************************* */
