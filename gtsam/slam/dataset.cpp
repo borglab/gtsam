@@ -258,8 +258,8 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
     if (!factor)
       continue;
 
-    Pose2 pose = factor->measured(); //.inverse();
-    stream << "EDGE2 " << factor->key1() << " " << factor->key2() << " "
+    Pose2 pose = factor->measured().inverse();
+    stream << "EDGE2 " << factor->key2() << " " << factor->key1() << " "
         << pose.x() << " " << pose.y() << " " << pose.theta() << " "
         << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " "
         << RR(2, 2) << " " << RR(0, 2) << " " << RR(1, 2) << endl;
