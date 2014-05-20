@@ -31,35 +31,30 @@
 using namespace std;
 using namespace gtsam;
 
-#define LINESIZE 81920
 
 int main(const int argc, const char *argv[]){
 
   if (argc < 2)
-    std::cout << "Please specify input file (in g2o format) and output file" << std::endl;
+    std::cout << "Please specify: 1st argument: input file (in g2o format) and 2nd argument: output file" << std::endl;
   const string g2oFile = argv[1];
 
   NonlinearFactorGraph graph;
   Values initial;
   readG2o(g2oFile, graph, initial);
 
-  // otherwise GTSAM cannot solve the problem
+  // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = graph;
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 0.01, 0.01, 0.001));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
-  // Create the optimizer ...
   std::cout << "Optimizing the factor graph" << std::endl;
   GaussNewtonOptimizer optimizer(graphWithPrior, initial); // , parameters);
-  // ... and optimize
   Values result = optimizer.optimize();
   std::cout << "Optimization complete" << std::endl;
 
   const string outputFile = argv[2];
   std::cout << "Writing results to file: " << outputFile << std::endl;
-
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.0, 0.0, 0.0));
-  writeG2o(graph, result, model, outputFile);
+  writeG2o(outputFile, graph, result);
   std::cout << "done! " << std::endl;
 
   return 0;
