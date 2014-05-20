@@ -77,6 +77,7 @@ static const double PI = boost::math::constants::pi<double>();
  *  summing up the (directed) rotation measurements. The root is assumed to have orientation zero
  */
 typedef map<Key,double> key2doubleMap;
+const Key keyAnchor = symbol('A',0);
 
 double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
     const key2doubleMap& deltaThetaMap, key2doubleMap& thetaFromRootMap) {
@@ -125,12 +126,12 @@ key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
 
 /*
  *  Given a factor graph "g", and a spanning tree "tree", the function selects the nodes belonging to the tree and to g,
- *  and stores the factor slots corresponding to edges in the tree and to chords wrt this tree
+ *  and stores the factor slots corresponding to edges in the tree and to chordsIds wrt this tree
  *  Also it computes deltaThetaMap which is a fast way to encode relative orientations along the tree:
  *  for a node key2, s.t. tree[key2]=key1, the values deltaThetaMap[key2] is the relative orientation theta[key2]-theta[key1]
  */
-void getSymbolicSubgraph(
-    /*OUTPUTS*/ vector<size_t>& spanningTree, vector<size_t>& chords, key2doubleMap& deltaThetaMap,
+void getSymbolicGraph(
+    /*OUTPUTS*/ vector<size_t>& spanningTreeIds, vector<size_t>& chordsIds, key2doubleMap& deltaThetaMap,
     /*INPUTS*/ const PredecessorMap<Key>& tree, const NonlinearFactorGraph& g){
 
   // Get keys for which you want the orientation
@@ -158,11 +159,11 @@ void getSymbolicSubgraph(
         inTree = true;
       }
 
-      // store factor slot, distinguishing spanning tree edges from chords
+      // store factor slot, distinguishing spanning tree edges from chordsIds
       if(inTree == true)
-        spanningTree.push_back(id);
+        spanningTreeIds.push_back(id);
       else // it's a chord!
-        chords.push_back(id);
+        chordsIds.push_back(id);
     }
     id++;
   }
@@ -191,7 +192,7 @@ void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
 /*
  *  Linear factor graph with regularized orientation measurements
  */
-GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, const vector<size_t>& chords,
+GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTreeIds, const vector<size_t>& chordsIds,
     const NonlinearFactorGraph& g, const key2doubleMap& orientationsToRoot, const PredecessorMap<Key>& tree){
 
   GaussianFactorGraph lagoGraph;
@@ -200,14 +201,14 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, co
 
   Matrix I = eye(1);
   // put original measurements in the spanning tree
-  BOOST_FOREACH(const size_t& factorId, spanningTree){
+  BOOST_FOREACH(const size_t& factorId, spanningTreeIds){
     const FastVector<Key>& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     lagoGraph.add(JacobianFactor(key1, -I, key2, I, deltaTheta, model_deltaTheta));
   }
-  // put regularized measurements in the chords
-  BOOST_FOREACH(const size_t& factorId, chords){
+  // put regularized measurements in the chordsIds
+  BOOST_FOREACH(const size_t& factorId, chordsIds){
     const FastVector<Key>& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
@@ -224,26 +225,62 @@ GaussianFactorGraph buildOrientationGraph(const vector<size_t>& spanningTree, co
 }
 
 /* ************************************************************************* */
+// Selects the subgraph composed by between factors and transforms priors into between wrt a fictitious node
+NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph){
+  NonlinearFactorGraph pose2Graph;
+
+  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, graph){
+
+    // recast to a between on Pose2
+    boost::shared_ptr< BetweenFactor<Pose2> > pose2Between =
+        boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(factor);
+    if (pose2Between)
+      pose2Graph.add(pose2Between);
+
+    // recast to a between on Rot2
+    boost::shared_ptr< BetweenFactor<Rot2> > rot2Between =
+        boost::dynamic_pointer_cast< BetweenFactor<Rot2> >(factor);
+    if (rot2Between)
+      pose2Graph.add(rot2Between);
+
+    // recast to a prior on Pose2
+    boost::shared_ptr< PriorFactor<Pose2> > pose2Prior =
+        boost::dynamic_pointer_cast< PriorFactor<Pose2> >(factor);
+    if (pose2Prior)
+      pose2Graph.add(BetweenFactor<Pose2>(keyAnchor, pose2Prior->keys()[0],
+          pose2Prior->prior(), pose2Prior->get_noiseModel()));
+
+    // recast to a prior on Rot2
+    boost::shared_ptr< PriorFactor<Rot2> > rot2Prior =
+        boost::dynamic_pointer_cast< PriorFactor<Rot2> >(factor);
+    if (rot2Prior)
+      pose2Graph.add(BetweenFactor<Rot2>(keyAnchor, rot2Prior->keys()[0],
+          rot2Prior->prior(), rot2Prior->get_noiseModel()));
+  }
+  return pose2Graph;
+}
+/* ************************************************************************* */
 // returns the orientations of the Pose2 in the connected sub-graph defined by BetweenFactor<Pose2>
 VectorValues initializeLago(const NonlinearFactorGraph& graph) {
+
+  // We "extract" the Pose2 subgraph of the original graph: this
+  // is done to properly model priors and avoiding operating on a larger graph
+  NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
+
   // Find a minimum spanning tree
-
-  //buildPose2graph
-
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-      BetweenFactor<Pose2> >(graph);
+  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key, BetweenFactor<Pose2> >(pose2Graph);
 
   // Create a linear factor graph (LFG) of scalars
   key2doubleMap deltaThetaMap;
-  vector<size_t> spanningTree; // ids of between factors forming the spanning tree T
-  vector<size_t> chords; // ids of between factors corresponding to chords wrt T
-  getSymbolicSubgraph(spanningTree, chords, deltaThetaMap, tree, graph);
+  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
+  vector<size_t> chordsIds;       // ids of between factors corresponding to chordsIds wrt T
+  getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, pose2Graph);
 
   // temporary structure to correct wraparounds along loops
   key2doubleMap orientationsToRoot = computeThetasToRoot(deltaThetaMap, tree);
 
   // regularize measurements and plug everything in a factor graph
-  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, graph, orientationsToRoot, tree);
+  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTreeIds, chordsIds, pose2Graph, orientationsToRoot, tree);
 
   // Solve the LFG
   VectorValues estimateLago = lagoGraph.optimize();
@@ -252,25 +289,29 @@ VectorValues initializeLago(const NonlinearFactorGraph& graph) {
 }
 
 /* ************************************************************************* */
-// returns the orientations of the Pose2 in the connected sub-graph defined by BetweenFactor<Pose2>
+// Only correct the orientation part in initialGuess
 Values initializeLago(const NonlinearFactorGraph& graph, const Values& initialGuess) {
   Values initialGuessLago;
 
   // get the orientation estimates from LAGO
   VectorValues orientations = initializeLago(graph);
 
-  VectorValues::const_iterator it;
   // for all nodes in the tree
-  for(it = orientations.begin(); it != orientations.end(); ++it )
-  {
+  for(VectorValues::const_iterator it = orientations.begin(); it != orientations.end(); ++it ){
     Key key = it->first;
-    Pose2 pose = initialGuess.at<Pose2>(key);
-    Vector orientation = orientations.at(key);
-    Pose2 poseLago = Pose2(pose.x(),pose.y(),orientation(0));
-    initialGuessLago.insert(key, poseLago);
+    if (key != keyAnchor){
+      Pose2 pose = initialGuess.at<Pose2>(key);
+      Vector orientation = orientations.at(key);
+      Pose2 poseLago = Pose2(pose.x(),pose.y(),orientation(0));
+      initialGuessLago.insert(key, poseLago);
+    }
   }
   return initialGuessLago;
 }
+
+/* ************************************************************************* */
+/* ************************************************************************* */
+/* ************************************************************************* */
 
 
 namespace simple {
@@ -297,6 +338,7 @@ NonlinearFactorGraph graph() {
   g.add(BetweenFactor<Pose2>(x2, x3, pose2.between(pose3), model));
   g.add(BetweenFactor<Pose2>(x2, x0, pose2.between(pose0), model));
   g.add(BetweenFactor<Pose2>(x0, x3, pose0.between(pose3), model));
+  g.add(PriorFactor<Pose2>(x0, pose0, model));
   return g;
 }
 }
@@ -308,13 +350,13 @@ TEST( Lago, checkSTandChords ) {
       BetweenFactor<Pose2> >(g);
 
   key2doubleMap deltaThetaMap;
-  vector<size_t> spanningTree; // ids of between factors forming the spanning tree T
-  vector<size_t> chords; // ids of between factors corresponding to chords wrt T
-  getSymbolicSubgraph(spanningTree, chords, deltaThetaMap, tree, g);
+  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
+  vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
+  getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
 
-  DOUBLES_EQUAL(spanningTree[0], 0, 1e-6); // factor 0 is the first in the ST (0->1)
-  DOUBLES_EQUAL(spanningTree[1], 3, 1e-6); // factor 3 is the second in the ST(2->0)
-  DOUBLES_EQUAL(spanningTree[2], 4, 1e-6); // factor 4 is the third in the  ST(0->3)
+  DOUBLES_EQUAL(spanningTreeIds[0], 0, 1e-6); // factor 0 is the first in the ST (0->1)
+  DOUBLES_EQUAL(spanningTreeIds[1], 3, 1e-6); // factor 3 is the second in the ST(2->0)
+  DOUBLES_EQUAL(spanningTreeIds[2], 4, 1e-6); // factor 4 is the third in the  ST(0->3)
 
 }
 
@@ -337,9 +379,9 @@ TEST( Lago, orientationsOverSpanningTree ) {
   expected[x3]= -PI/2;  // edge x0->x3 (consistent with edge (x0,x3))
 
   key2doubleMap deltaThetaMap;
-  vector<size_t> spanningTree; // ids of between factors forming the spanning tree T
-  vector<size_t> chords; // ids of between factors corresponding to chords wrt T
-  getSymbolicSubgraph(spanningTree, chords, deltaThetaMap, tree, g);
+  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
+  vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
+  getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
 
   key2doubleMap actual;
   actual = computeThetasToRoot(deltaThetaMap, tree);
@@ -356,19 +398,19 @@ TEST( Lago, regularizedMeasurements ) {
       BetweenFactor<Pose2> >(g);
 
   key2doubleMap deltaThetaMap;
-  vector<size_t> spanningTree; // ids of between factors forming the spanning tree T
-  vector<size_t> chords; // ids of between factors corresponding to chords wrt T
-  getSymbolicSubgraph(spanningTree, chords, deltaThetaMap, tree, g);
+  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
+  vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
+  getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
 
   key2doubleMap orientationsToRoot = computeThetasToRoot(deltaThetaMap, tree);
 
-  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTree, chords, g, orientationsToRoot, tree);
+  GaussianFactorGraph lagoGraph = buildOrientationGraph(spanningTreeIds, chordsIds, g, orientationsToRoot, tree);
   std::pair<Matrix,Vector> actualAb = lagoGraph.jacobian();
   // jacobian corresponding to the orientation measurements (last entry is the prior on the anchor and is disregarded)
   Vector actual = (Vector(5) <<  actualAb.second(0),actualAb.second(1),actualAb.second(2),actualAb.second(3),actualAb.second(4));
   // this is the whitened error, so we multiply by the std to unwhiten
   actual = 0.1 * actual;
-  // Expected regularized measurements (same for the spanning tree, corrected for the chords)
+  // Expected regularized measurements (same for the spanning tree, corrected for the chordsIds)
   Vector expected = (Vector(5) << PI/2, PI, -PI/2, PI/2 - 2*PI , PI/2);
 
   EXPECT(assert_equal(expected, actual, 1e-6));
@@ -378,6 +420,32 @@ TEST( Lago, regularizedMeasurements ) {
 TEST( Lago, smallGraphVectorValues ) {
 
   VectorValues initialGuessLago = initializeLago(simple::graph());
+
+  // comparison is up to PI, that's why we add some multiples of 2*PI
+  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * PI), initialGuessLago.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << PI - 2*PI), initialGuessLago.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * PI - 2*PI), initialGuessLago.at(x3), 1e-6));
+}
+
+/* *************************************************************************** */
+TEST( Lago, multiplePosePriors ) {
+  NonlinearFactorGraph g = simple::graph();
+  g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
+  VectorValues initialGuessLago = initializeLago(g);
+
+  // comparison is up to PI, that's why we add some multiples of 2*PI
+  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * PI), initialGuessLago.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << PI - 2*PI), initialGuessLago.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * PI - 2*PI), initialGuessLago.at(x3), 1e-6));
+}
+
+/* *************************************************************************** */
+TEST( Lago, multiplePoseAndRotPriors ) {
+  NonlinearFactorGraph g = simple::graph();
+  g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
+  VectorValues initialGuessLago = initializeLago(g);
 
   // comparison is up to PI, that's why we add some multiples of 2*PI
   EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
