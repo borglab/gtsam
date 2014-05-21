@@ -232,7 +232,9 @@ Values initializeLago(const NonlinearFactorGraph& graph) {
   pose2Graph.add(PriorFactor<Pose2>(keyAnchor, Pose2(), priorPose2Noise));
 
   // Optimize Pose2, with initialGuessLago as initial guess
-  GaussNewtonOptimizer pose2optimizer(pose2Graph, initialGuessLago);
+  GaussNewtonParams params;
+  params.setMaxIterations(1);
+  GaussNewtonOptimizer pose2optimizer(pose2Graph, initialGuessLago, params);
   initialGuessLago = pose2optimizer.optimize();
   initialGuessLago.erase(keyAnchor); // that was fictitious
   return initialGuessLago;
