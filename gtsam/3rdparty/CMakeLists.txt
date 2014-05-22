@@ -24,7 +24,7 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 		get_filename_component(filename ${unsupported_eigen_dir} NAME)
 		if (NOT ((${filename} MATCHES "CMakeLists.txt") OR (${filename} MATCHES "src") OR (${filename} MATCHES ".svn")))
 			list(APPEND unsupported_eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/unsupported/Eigen/${filename}")
-			install(FILES Eigen/unsupported/Eigen/${filename} DESTINATION include/gtsam/3rdparty/unsupported/Eigen)
+			install(FILES Eigen/unsupported/Eigen/${filename} DESTINATION include/gtsam/3rdparty/Eigen/unsupported/Eigen)
 		endif()
 	endforeach(unsupported_eigen_dir)
 
@@ -38,7 +38,7 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 		FILES_MATCHING PATTERN "*.h")
 	
 	install(DIRECTORY Eigen/unsupported/Eigen
-		DESTINATION include/gtsam/3rdparty/unsupported/
+		DESTINATION include/gtsam/3rdparty/Eigen/unsupported/
 		FILES_MATCHING PATTERN "*.h")
 endif()
 
