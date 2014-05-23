@@ -20,6 +20,7 @@
 #pragma once
 
 #include "JacobianFactorQ.h"
+#include "JacobianFactorSVD.h"
 #include "ImplicitSchurFactor.h"
 #include "RegularHessianFactor.h"
 
@@ -627,6 +628,17 @@ public:
     computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
         diagonalDamping);
     return boost::make_shared < JacobianFactorQ<D> > (Fblocks, E, PointCov, b);
+  }
+
+  // ****************************************************************************************************
+  boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
+      const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
+    size_t numKeys = this->keys_.size();
+    std::vector < KeyMatrix2D > Fblocks;
+    Vector b;
+    Matrix Enull(2*numKeys, 2*numKeys-3);
+    computeJacobiansSVD(Fblocks, Enull, b, cameras, point, lambda);
+    return boost::make_shared< JacobianFactorSVD<6> >(Fblocks, Enull, b);
   }
 
 private:

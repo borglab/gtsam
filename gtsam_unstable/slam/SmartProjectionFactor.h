@@ -54,6 +54,10 @@ public:
   double f;
 };
 
+enum linearizationType {
+  HESSIAN, JACOBIAN_SVD, JACOBIAN_Q
+};
+
 /**
  * SmartProjectionFactor: triangulates point
  * TODO: why LANDMARK parameter?
@@ -396,6 +400,15 @@ public:
     bool nonDegenerate = computeCamerasAndTriangulate(values, myCameras);
     if (nonDegenerate)
       return createJacobianQFactor(myCameras, lambda);
+    else
+      return boost::shared_ptr<JacobianFactorQ<D> >();
+  }
+
+  /// different (faster) way to compute Jacobian factor
+  boost::shared_ptr<JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
+      double lambda) const {
+    if (triangulateForLinearize(cameras))
+      return Base::createJacobianQFactor(cameras, point_, lambda);
     else
       return boost::shared_ptr<JacobianFactorQ<D> >();
   }
