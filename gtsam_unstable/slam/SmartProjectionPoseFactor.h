@@ -59,8 +59,10 @@ public:
   SmartProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
       const bool enableEPI = false, boost::optional<POSE> body_P_sensor = boost::none,
-      linearizationType linearizeTo = HESSIAN) :
-        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor), linearizeTo_(linearizeTo) {}
+      linearizationType linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
+      double dynamicOutlierRejectionThreshold = -1) :
+        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor,
+        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(linearizeTo) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionPoseFactor() {}
