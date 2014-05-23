@@ -424,7 +424,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianQFactor(cameras, point_, lambda);
     else
-      return boost::shared_ptr<JacobianFactorQ<D> >();
+      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
   }
 
   /// Create a factor, takes values
@@ -436,16 +436,16 @@ public:
     if (nonDegenerate)
       return createJacobianQFactor(myCameras, lambda);
     else
-      return boost::shared_ptr<JacobianFactorQ<D> >();
+      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
   }
 
   /// different (faster) way to compute Jacobian factor
-  boost::shared_ptr<JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
+  boost::shared_ptr< JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
       double lambda) const {
     if (triangulateForLinearize(cameras))
-      return Base::createJacobianQFactor(cameras, point_, lambda);
+      return Base::createJacobianSVDFactor(cameras, point_, lambda);
     else
-      return boost::shared_ptr<JacobianFactorQ<D> >();
+      return boost::make_shared< JacobianFactorSVD<D> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate
