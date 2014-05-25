@@ -34,6 +34,57 @@ namespace gtsam {
 
 namespace utilities {
 
+// Create a KeyList from indices
+FastList<Key> createKeyList(const Vector& I) {
+  FastList<Key> set;
+  for (int i = 0; i < I.size(); i++)
+    set.push_back(I[i]);
+  return set;
+}
+
+// Create a KeyList from indices using symbol
+FastList<Key> createKeyList(string s, const Vector& I) {
+  FastList<Key> set;
+  char c = s[0];
+  for (int i = 0; i < I.size(); i++)
+    set.push_back(Symbol(c, I[i]));
+  return set;
+}
+
+// Create a KeyVector from indices
+FastVector<Key> createKeyVector(const Vector& I) {
+  FastVector<Key> set;
+  for (int i = 0; i < I.size(); i++)
+    set.push_back(I[i]);
+  return set;
+}
+
+// Create a KeyVector from indices using symbol
+FastVector<Key> createKeyVector(string s, const Vector& I) {
+  FastVector<Key> set;
+  char c = s[0];
+  for (int i = 0; i < I.size(); i++)
+    set.push_back(Symbol(c, I[i]));
+  return set;
+}
+
+// Create a KeySet from indices
+FastSet<Key> createKeySet(const Vector& I) {
+  FastSet<Key> set;
+  for (int i = 0; i < I.size(); i++)
+    set.insert(I[i]);
+  return set;
+}
+
+// Create a KeySet from indices using symbol
+FastSet<Key> createKeySet(string s, const Vector& I) {
+  FastSet<Key> set;
+  char c = s[0];
+  for (int i = 0; i < I.size(); i++)
+    set.insert(symbol(c, I[i]));
+  return set;
+}
+
 /// Extract all Point2 values into a single matrix [x y]
 Matrix extractPoint2(const Values& values) {
   size_t j = 0;
@@ -165,15 +216,6 @@ Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
       errors.col(k++) = p->unwhitenedError(values);
   }
   return errors;
-}
-
-// Create a Keyset from indices
-FastSet<Key> createKeySet(string s, const Vector& I) {
-  FastSet<Key> set;
-  char c = s[0];
-  for (int i = 0; i < I.size(); i++)
-    set.insert(symbol(c, I[i]));
-  return set;
 }
 
 }
