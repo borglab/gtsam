@@ -23,9 +23,6 @@
 #include "ReturnValue.h"
 #include "TypeAttributesTable.h"
 
-#include <string>
-#include <list>
-
 namespace wrap {
 
 /// StaticMethod class
@@ -33,7 +30,8 @@ struct StaticMethod {
 
   /// Constructor creates empty object
   StaticMethod(bool verbosity = true) :
-      verbose(verbosity) {}
+      verbose(verbosity) {
+  }
 
   // Then the instance variables are set directly by the Module constructor
   bool verbose;
@@ -45,22 +43,20 @@ struct StaticMethod {
   // with those in rhs, but in subsequent calls it adds additional argument
   // lists as function overloads.
   void addOverload(bool verbose, const std::string& name,
-    const ArgumentList& args, const ReturnValue& retVal);
+      const ArgumentList& args, const ReturnValue& retVal);
 
   // MATLAB code generation
   // classPath is class directory, e.g., ../matlab/@Point2
   void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
-    const std::string& cppClassName, const std::string& matlabQualName, const std::string& matlabUniqueName,
-    const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
-    std::vector<std::string>& functionNames) const;
+      const std::string& cppClassName, const std::string& matlabQualName,
+      const std::string& matlabUniqueName, const std::string& wrapperName,
+      const TypeAttributesTable& typeAttributes,
+      std::vector<std::string>& functionNames) const;
 
 private:
   std::string wrapper_fragment(FileWriter& file,
-      const std::string& cppClassName,
-      const std::string& matlabUniqueName,
-      int overload,
-      int id,
-      const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
+      const std::string& cppClassName, const std::string& matlabUniqueName,
+      int overload, int id, const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
 };
 
 } // \namespace wrap
