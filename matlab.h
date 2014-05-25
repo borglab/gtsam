@@ -151,6 +151,14 @@ namespace gtsam {
       return errors;
     }
 
+    // Create a Keyset from indices
+    FastSet<Key> createKeySet(string s, const Vector& I) {
+      FastSet<Key> set;
+      char c = s[0];
+      for(int i=0;i<I.size();i++)
+        set.insert(symbol(c,I[i]));
+      return set;
+    }
   }
 
 }
