@@ -170,14 +170,9 @@ void ArgumentList::emit_conditional_call(FileWriter& file,
   file.oss << "\n";
 
   // output call to C++ wrapper
-  string output;
-  if (returnVal.isPair)
-    output = "[ varargout{1} varargout{2} ] = ";
-  else if (returnVal.category1 == ReturnValue::VOID)
-    output = "";
-  else
-    output = "varargout{1} = ";
-  file.oss << "        " << output << wrapperName << "(" << id;
+  file.oss << "        ";
+  returnVal.emit_matlab(file);
+  file.oss << wrapperName << "(" << id;
   if (!staticMethod)
     file.oss << ", this";
   file.oss << ", varargin{:});\n";

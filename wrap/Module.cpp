@@ -98,7 +98,7 @@ void Module::parseMarkup(const std::string& data) {
   // The one with postfix 0 are used to reset the variables after parse. 
   string methodName, methodName0; 
   bool isConst, isConst0 = false; 
-  ReturnValue retVal0(verbose), retVal(verbose);
+  ReturnValue retVal0, retVal;
   Argument arg0, arg; 
   ArgumentList args0, args; 
   vector<string> arg_dup; ///keep track of duplicates 

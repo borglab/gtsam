@@ -78,6 +78,8 @@ void Method::proxy_wrapper_fragments(FileWriter& file, FileWriter& wrapperFile,
     }
   }
 
+  // Handle special case of single overload with numeric
+
   // Check arguments for all overloads
   for (size_t overload = 0; overload < argLists.size(); ++overload) {
 

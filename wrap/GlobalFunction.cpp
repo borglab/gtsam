@@ -103,14 +103,9 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath, cons
     mfunctionFile.oss << "\n";
 
     // output call to C++ wrapper
-    string output;
-    if(returnVal.isPair)
-      output = "[ varargout{1} varargout{2} ] = ";
-    else if(returnVal.category1 == ReturnValue::VOID)
-      output = "";
-    else
-      output = "varargout{1} = ";
-    mfunctionFile.oss << "    " << output << wrapperName << "(" << id << ", varargin{:});\n";
+    mfunctionFile.oss << "    ";
+    returnVal.emit_matlab(mfunctionFile);
+    mfunctionFile.oss << wrapperName << "(" << id << ", varargin{:});\n";
 
     // Output C++ wrapper code
 

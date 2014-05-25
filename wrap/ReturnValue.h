@@ -27,16 +27,15 @@ struct ReturnValue {
     CLASS = 1, EIGEN = 2, BASIS = 3, VOID = 4
   } return_category;
 
-  bool verbose;
   bool isPtr1, isPtr2, isPair;
   return_category category1, category2;
   std::string type1, type2;
   std::vector<std::string> namespaces1, namespaces2;
 
   /// Constructor
-  ReturnValue(bool enable_verbosity = true) :
-      verbose(enable_verbosity), isPtr1(false), isPtr2(false), isPair(false), category1(
-          CLASS), category2(CLASS) {
+  ReturnValue() :
+      isPtr1(false), isPtr2(false), isPair(false), category1(CLASS), category2(
+          CLASS) {
   }
 
   typedef enum {
@@ -55,6 +54,7 @@ struct ReturnValue {
 
   void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 
+  void emit_matlab(FileWriter& file) const;
 };
 
 } // \namespace wrap
