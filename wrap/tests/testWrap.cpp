@@ -307,8 +307,8 @@ TEST( wrap, parse_geometry ) {
   }
 
   // evaluate global functions
-//  Vector aGlobalFunction();
-  LONGS_EQUAL(1, module.global_functions.size());
+  //  Vector aGlobalFunction();
+  LONGS_EQUAL(2, module.global_functions.size());
   CHECK(module.global_functions.find("aGlobalFunction") != module.global_functions.end());
   {
     GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
@@ -447,6 +447,7 @@ TEST( wrap, matlab_code_geometry ) {
   EXPECT(files_equal(epath + "Point3.m"             , apath + "Point3.m"             ));
   EXPECT(files_equal(epath + "Test.m"               , apath + "Test.m"               ));
   EXPECT(files_equal(epath + "aGlobalFunction.m"    , apath + "aGlobalFunction.m"    ));
+  EXPECT(files_equal(epath + "overloadedGlobalFunction.m"    , apath + "overloadedGlobalFunction.m"    ));
 }
 
 /* ************************************************************************* */
