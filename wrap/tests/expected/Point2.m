@@ -44,9 +44,6 @@ classdef Point2 < handle
     function varargout = argChar(this, varargin)
       % ARGCHAR usage: argChar(char a) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % argChar(char a)
       if length(varargin) == 1 && isa(varargin{1},'char')
         geometry_wrapper(4, this, varargin{:});
       else
@@ -57,9 +54,6 @@ classdef Point2 < handle
     function varargout = argUChar(this, varargin)
       % ARGUCHAR usage: argUChar(unsigned char a) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % argUChar(unsigned char a)
       if length(varargin) == 1 && isa(varargin{1},'char')
         geometry_wrapper(5, this, varargin{:});
       else
@@ -70,9 +64,6 @@ classdef Point2 < handle
     function varargout = dim(this, varargin)
       % DIM usage: dim() : returns int
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % dim()
       if length(varargin) == 0
         varargout{1} = geometry_wrapper(6, this, varargin{:});
       else
@@ -83,9 +74,6 @@ classdef Point2 < handle
     function varargout = returnChar(this, varargin)
       % RETURNCHAR usage: returnChar() : returns char
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % returnChar()
       if length(varargin) == 0
         varargout{1} = geometry_wrapper(7, this, varargin{:});
       else
@@ -96,9 +84,6 @@ classdef Point2 < handle
     function varargout = vectorConfusion(this, varargin)
       % VECTORCONFUSION usage: vectorConfusion() : returns VectorNotEigen
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % vectorConfusion()
       if length(varargin) == 0
         varargout{1} = geometry_wrapper(8, this, varargin{:});
       else
@@ -109,9 +94,6 @@ classdef Point2 < handle
     function varargout = x(this, varargin)
       % X usage: x() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % x()
       if length(varargin) == 0
         varargout{1} = geometry_wrapper(9, this, varargin{:});
       else
@@ -122,9 +104,6 @@ classdef Point2 < handle
     function varargout = y(this, varargin)
       % Y usage: y() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % y()
       if length(varargin) == 0
         varargout{1} = geometry_wrapper(10, this, varargin{:});
       else

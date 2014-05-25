@@ -68,12 +68,14 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
       << endl;
 
   // Document all overloads, if any
-  proxyFile.oss << "      % " << "" << endl;
-  proxyFile.oss << "      % " << "Method Overloads" << endl;
-  BOOST_FOREACH(ArgumentList argList, argLists) {
-    proxyFile.oss << "      % ";
-    argList.emit_prototype(proxyFile, name);
-    proxyFile.oss << endl;
+  if (argLists.size() > 1) {
+    proxyFile.oss << "      % " << "" << endl;
+    proxyFile.oss << "      % " << "Method Overloads" << endl;
+    BOOST_FOREACH(ArgumentList argList, argLists) {
+      proxyFile.oss << "      % ";
+      argList.emit_prototype(proxyFile, name);
+      proxyFile.oss << endl;
+    }
   }
 
   // For all overloads, check the number of arguments

@@ -43,9 +43,6 @@ classdef Point3 < handle
     function varargout = norm(this, varargin)
       % NORM usage: norm() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % norm()
       if length(varargin) == 0
         varargout{1} = geometry_wrapper(14, this, varargin{:});
       else
