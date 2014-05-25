@@ -382,7 +382,7 @@ TEST( wrap, parse_namespaces ) {
   // evaluate global functions
 //  Vector ns1::aGlobalFunction();
 //  Vector ns2::aGlobalFunction();
-  LONGS_EQUAL(1, module.global_functions.size());
+  LONGS_EQUAL(2, module.global_functions.size());
   CHECK(module.global_functions.find("aGlobalFunction") != module.global_functions.end());
   {
     GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
@@ -417,13 +417,17 @@ TEST( wrap, matlab_code_namespaces ) {
   module.matlab_code("actual_namespaces", headerPath);
 
 
-  EXPECT(files_equal(exp_path + "ClassD.m"                    , act_path + "ClassD.m"                   ));
-  EXPECT(files_equal(exp_path + "+ns1/ClassA.m"               , act_path + "+ns1/ClassA.m"              ));
-  EXPECT(files_equal(exp_path + "+ns1/ClassB.m"               , act_path + "+ns1/ClassB.m"              ));
-  EXPECT(files_equal(exp_path + "+ns2/ClassA.m"               , act_path + "+ns2/ClassA.m"              ));
-  EXPECT(files_equal(exp_path + "+ns2/ClassC.m"               , act_path + "+ns2/ClassC.m"              ));
-  EXPECT(files_equal(exp_path + "+ns2/+ns3/ClassB.m"          , act_path + "+ns2/+ns3/ClassB.m"         ));
-  EXPECT(files_equal(exp_path + "testNamespaces_wrapper.cpp"  , act_path + "testNamespaces_wrapper.cpp" ));
+  EXPECT(files_equal(exp_path + "ClassD.m", act_path + "ClassD.m" ));
+  EXPECT(files_equal(exp_path + "+ns1/ClassA.m", act_path + "+ns1/ClassA.m" ));
+  EXPECT(files_equal(exp_path + "+ns1/ClassB.m", act_path + "+ns1/ClassB.m" ));
+  EXPECT(files_equal(exp_path + "+ns2/ClassA.m", act_path + "+ns2/ClassA.m" ));
+  EXPECT(files_equal(exp_path + "+ns2/ClassC.m", act_path + "+ns2/ClassC.m" ));
+  EXPECT(
+      files_equal(exp_path + "+ns2/overloadedGlobalFunction.m", exp_path + "+ns2/overloadedGlobalFunction.m" ));
+  EXPECT(
+      files_equal(exp_path + "+ns2/+ns3/ClassB.m", act_path + "+ns2/+ns3/ClassB.m" ));
+  EXPECT(
+      files_equal(exp_path + "testNamespaces_wrapper.cpp", act_path + "testNamespaces_wrapper.cpp" ));
 }
 
 /* ************************************************************************* */
