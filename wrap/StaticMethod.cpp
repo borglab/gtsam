@@ -16,14 +16,15 @@
  * @author Richard Roberts
  **/
 
-#include <iostream>
-#include <fstream>
+#include "StaticMethod.h"
+#include "utilities.h"
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
-#include "StaticMethod.h"
-#include "utilities.h"
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 using namespace wrap;
@@ -50,22 +51,14 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
   proxyFile.oss << "    function varargout = " << upperName << "(varargin)\n";
   //Comments for documentation
   string up_name = boost::to_upper_copy(name);
-  proxyFile.oss << "      % " << up_name << " usage:";
+  proxyFile.oss << "      % " << up_name << " usage: ";
   unsigned int argLCount = 0;
   BOOST_FOREACH(ArgumentList argList, argLists) {
-    proxyFile.oss << " " << name << "(";
-    unsigned int i = 0;
-    BOOST_FOREACH(const Argument& arg, argList) {
-      if (i != argList.size() - 1)
-        proxyFile.oss << arg.type << " " << arg.name << ", ";
-      else
-        proxyFile.oss << arg.type << " " << arg.name;
-      i++;
-    }
+    argList.emit_prototype(proxyFile, name);
     if (argLCount != argLists.size() - 1)
-      proxyFile.oss << "), ";
+      proxyFile.oss << ", ";
     else
-      proxyFile.oss << ") : returns "
+      proxyFile.oss << " : returns "
           << returnVals[0].return_type(false, returnVals[0].pair) << endl;
     argLCount++;
   }
@@ -76,16 +69,9 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
   proxyFile.oss << "      % " << "" << endl;
   proxyFile.oss << "      % " << "Usage" << endl;
   BOOST_FOREACH(ArgumentList argList, argLists) {
-    proxyFile.oss << "      % " << up_name << "(";
-    unsigned int i = 0;
-    BOOST_FOREACH(const Argument& arg, argList) {
-      if (i != argList.size() - 1)
-        proxyFile.oss << arg.type << " " << arg.name << ", ";
-      else
-        proxyFile.oss << arg.type << " " << arg.name;
-      i++;
-    }
-    proxyFile.oss << ")" << endl;
+    proxyFile.oss << "      % ";
+    argList.emit_prototype(proxyFile, up_name);
+    proxyFile.oss << endl;
   }
 
   for (size_t overload = 0; overload < argLists.size(); ++overload) {
