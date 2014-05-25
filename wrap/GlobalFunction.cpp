@@ -84,32 +84,13 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath,
   for (size_t overload = 0; overload < argLists.size(); ++overload) {
     const ArgumentList& args = argLists[overload];
     const ReturnValue& returnVal = returnVals[overload];
-    size_t nrArgs = args.size();
 
     const int id = functionNames.size();
 
     // Output proxy matlab code
-
-    // check for number of arguments...
-    mfunctionFile.oss << (overload == 0 ? "" : "else")
-        << "if length(varargin) == " << nrArgs;
-    if (nrArgs > 0)
-      mfunctionFile.oss << " && ";
-    // ...and their types
-    bool first = true;
-    for (size_t i = 0; i < nrArgs; i++) {
-      if (!first)
-        mfunctionFile.oss << " && ";
-      mfunctionFile.oss << "isa(varargin{" << i + 1 << "},'"
-          << args[i].matlabClass(".") << "')";
-      first = false;
-    }
-    mfunctionFile.oss << "\n";
-
-    // output call to C++ wrapper
-    mfunctionFile.oss << "    ";
-    returnVal.emit_matlab(mfunctionFile);
-    mfunctionFile.oss << wrapperName << "(" << id << ", varargin{:});\n";
+    mfunctionFile.oss << "      " << (overload == 0 ? "" : "else");
+    argLists[overload].emit_conditional_call(mfunctionFile,
+        returnVals[overload], wrapperName, id, true); // true omits "this"
 
     // Output C++ wrapper code
 
@@ -146,11 +127,11 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath,
     functionNames.push_back(wrapFunctionName);
   }
 
-  mfunctionFile.oss << "else\n";
+  mfunctionFile.oss << "      else\n";
   mfunctionFile.oss
-      << "    error('Arguments do not match any overload of function "
+      << "        error('Arguments do not match any overload of function "
       << matlabQualName << "');" << endl;
-  mfunctionFile.oss << "end" << endl;
+  mfunctionFile.oss << "      end" << endl;
 
   // Close file
   mfunctionFile.emit(true);
