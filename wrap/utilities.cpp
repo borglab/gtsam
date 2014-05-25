@@ -89,7 +89,7 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
     bool equal = actual_contents == expected_contents;
     if (!equal) {
       stringstream command;
-      command << "diff " << actual << " " << expected << endl;
+      command << "diff " << expected << " " << actual << endl;
       system(command.str().c_str());
     }
     return equal;
