@@ -41,6 +41,9 @@ struct Argument {
   /// return MATLAB class for use in isa(x,class)
   std::string matlabClass(const std::string& delim = "") const;
 
+  /// Check if will be unwrapped using scalar login in wrap/matlab.h
+  bool isScalar() const;
+
   /// adds namespaces to type
   std::string qualifiedType(const std::string& delim = "") const;
 
@@ -59,6 +62,9 @@ struct ArgumentList: public std::vector<Argument> {
 
   /// create a comma-separated string listing all argument names, used in m-files
   std::string names() const;
+
+  /// Check if all arguments scalar
+  bool allScalar() const;
 
   // MATLAB code generation:
 

@@ -45,6 +45,12 @@ string Argument::matlabClass(const string& delim) const {
 }
 
 /* ************************************************************************* */
+bool Argument::isScalar() const {
+  return (type == "bool" || type == "char" || type == "unsigned char"
+      || type == "int" || type == "size_t" || type == "double");
+}
+
+/* ************************************************************************* */
 void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   file.oss << "  ";
 
@@ -125,6 +131,13 @@ string ArgumentList::names() const {
     first = false;
   }
   return str;
+}
+
+/* ************************************************************************* */
+bool ArgumentList::allScalar() const {
+  BOOST_FOREACH(Argument arg, *this)
+      if (!arg.isScalar()) return false;
+  return true;
 }
 
 /* ************************************************************************* */
