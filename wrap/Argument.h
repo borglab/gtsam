@@ -68,6 +68,13 @@ struct ArgumentList: public std::vector<Argument> {
    */
   void matlab_unwrap(FileWriter& file, int start = 0) const; // MATLAB to C++
 
+  /**
+   * emit MATLAB prototype
+   * @param file output stream
+   * @param name of method or function
+   */
+  void emit_prototype(FileWriter& file, const std::string& name) const;
+
 };
 
 } // \namespace wrap

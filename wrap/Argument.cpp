@@ -16,13 +16,14 @@
  * @author Richard Roberts
  **/
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
+#include "Argument.h"
+
 #include <boost/foreach.hpp>
 #include <boost/regex.hpp>
 
-#include "Argument.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 using namespace wrap;
@@ -127,5 +128,18 @@ void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
   }
 }
 
+/* ************************************************************************* */
+void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
+  file.oss << name << "(";
+  unsigned int i = 0;
+  BOOST_FOREACH(Argument arg, *this) {
+    if (i != size() - 1)
+      file.oss << arg.type << " " << arg.name << ", ";
+    else
+      file.oss << arg.type << " " << arg.name;
+    i++;
+  }
+  file.oss << ")";
+}
 /* ************************************************************************* */
 
