@@ -16,18 +16,19 @@
  * @author Richard Roberts
  **/
 
+#include "Class.h"
+#include "utilities.h"
+#include "Argument.h"
+
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+
 #include <vector> 
 #include <iostream> 
 #include <fstream> 
 //#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags 
 //#include <cinttypes> // same failure as above 
 #include <stdint.h> // works on Linux GCC 
-#include <boost/foreach.hpp> 
-#include <boost/lexical_cast.hpp> 
-
-#include "Class.h" 
-#include "utilities.h" 
-#include "Argument.h" 
 
 using namespace std;
 using namespace wrap;
@@ -406,17 +407,9 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
   BOOST_FOREACH(const Methods::value_type& name_m, methods) {
     const Method& m = name_m.second;
     BOOST_FOREACH(ArgumentList argList, m.argLists) {
-      string up_name = boost::to_upper_copy(m.name);
-      proxyFile.oss << "%" << m.name << "(";
-      unsigned int i = 0;
-      BOOST_FOREACH(const Argument& arg, argList) {
-        if (i != argList.size() - 1)
-          proxyFile.oss << arg.type << " " << arg.name << ", ";
-        else
-          proxyFile.oss << arg.type << " " << arg.name;
-        i++;
-      }
-      proxyFile.oss << ") : returns "
+      proxyFile.oss << "%";
+      argList.emit_prototype(proxyFile, m.name);
+      proxyFile.oss << " : returns "
           << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl;
     }
   }
