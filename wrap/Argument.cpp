@@ -131,13 +131,11 @@ void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
 /* ************************************************************************* */
 void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   file.oss << name << "(";
-  unsigned int i = 0;
+  bool first = true;
   BOOST_FOREACH(Argument arg, *this) {
-    if (i != size() - 1)
-      file.oss << arg.type << " " << arg.name << ", ";
-    else
-      file.oss << arg.type << " " << arg.name;
-    i++;
+    if (!first) file.oss << ", ";
+    file.oss << arg.type << " " << arg.name;
+    first = false;
   }
   file.oss << ")";
 }
