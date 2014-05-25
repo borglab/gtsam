@@ -151,6 +151,15 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   file.oss << ")";
 }
 /* ************************************************************************* */
+void ArgumentList::emit_call(FileWriter& file, const ReturnValue& returnVal,
+    const string& wrapperName, int id, bool staticMethod) const {
+  returnVal.emit_matlab(file);
+  file.oss << wrapperName << "(" << id;
+  if (!staticMethod)
+    file.oss << ", this";
+  file.oss << ", varargin{:});\n";
+}
+/* ************************************************************************* */
 void ArgumentList::emit_conditional_call(FileWriter& file,
     const ReturnValue& returnVal, const string& wrapperName, int id,
     bool staticMethod) const {
@@ -171,11 +180,7 @@ void ArgumentList::emit_conditional_call(FileWriter& file,
 
   // output call to C++ wrapper
   file.oss << "        ";
-  returnVal.emit_matlab(file);
-  file.oss << wrapperName << "(" << id;
-  if (!staticMethod)
-    file.oss << ", this";
-  file.oss << ", varargin{:});\n";
+  emit_call(file, returnVal, wrapperName, id, staticMethod);
 }
 /* ************************************************************************* */
 
