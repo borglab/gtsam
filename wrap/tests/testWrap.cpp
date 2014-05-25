@@ -15,16 +15,18 @@
  * @author Frank Dellaert
  **/
 
+#include <wrap/utilities.h>
+#include <wrap/Module.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/std/vector.hpp>
+#include <boost/filesystem.hpp>
+
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <boost/assign/std/vector.hpp>
-#include <boost/filesystem.hpp>
-#include <CppUnitLite/TestHarness.h>
-
-#include <wrap/utilities.h>
-#include <wrap/Module.h>
 
 using namespace std;
 using namespace boost::assign;
