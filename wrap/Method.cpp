@@ -78,28 +78,42 @@ void Method::proxy_wrapper_fragments(FileWriter& file, FileWriter& wrapperFile,
     }
   }
 
-  // Handle special case of single overload with numeric
-
-  // Check arguments for all overloads
-  for (size_t overload = 0; overload < argLists.size(); ++overload) {
-
+  // Handle special case of single overload with all numeric arguments
+  if (argLists.size() == 1 && argLists[0].allScalar()) {
     // Output proxy matlab code
-    file.oss << "      " << (overload == 0 ? "" : "else");
+    file.oss << "      ";
     const int id = (int) functionNames.size();
-    argLists[overload].emit_conditional_call(file, returnVals[overload],
-        wrapperName, id);
+    argLists[0].emit_call(file, returnVals[0], wrapperName, id);
 
     // Output C++ wrapper code
     const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
-        matlabUniqueName, overload, id, typeAttributes);
+        matlabUniqueName, 0, id, typeAttributes);
 
     // Add to function list
     functionNames.push_back(wrapFunctionName);
+  } else {
+    // Check arguments for all overloads
+    for (size_t overload = 0; overload < argLists.size(); ++overload) {
+
+      // Output proxy matlab code
+      file.oss << "      " << (overload == 0 ? "" : "else");
+      const int id = (int) functionNames.size();
+      argLists[overload].emit_conditional_call(file, returnVals[overload],
+          wrapperName, id);
+
+      // Output C++ wrapper code
+      const string wrapFunctionName = wrapper_fragment(wrapperFile,
+          cppClassName, matlabUniqueName, overload, id, typeAttributes);
+
+      // Add to function list
+      functionNames.push_back(wrapFunctionName);
+    }
+    file.oss << "      else\n";
+    file.oss
+        << "        error('Arguments do not match any overload of function "
+        << matlabQualName << "." << name << "');" << endl;
+    file.oss << "      end\n";
   }
-  file.oss << "      else\n";
-  file.oss << "        error('Arguments do not match any overload of function "
-      << matlabQualName << "." << name << "');" << endl;
-  file.oss << "      end\n";
 
   file.oss << "    end\n";
 }

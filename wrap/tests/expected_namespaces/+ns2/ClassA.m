@@ -40,11 +40,7 @@ classdef ClassA < handle
     function varargout = memberFunction(this, varargin)
       % MEMBERFUNCTION usage: memberFunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 0
-        varargout{1} = testNamespaces_wrapper(9, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function ns2.ClassA.memberFunction');
-      end
+      varargout{1} = testNamespaces_wrapper(9, this, varargin{:});
     end
 
     function varargout = nsArg(this, varargin)
@@ -60,11 +56,7 @@ classdef ClassA < handle
     function varargout = nsReturn(this, varargin)
       % NSRETURN usage: nsReturn(double q) : returns ns2::ns3::ClassB
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = testNamespaces_wrapper(11, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function ns2.ClassA.nsReturn');
-      end
+      varargout{1} = testNamespaces_wrapper(11, this, varargin{:});
     end
 
   end

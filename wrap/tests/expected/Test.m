@@ -66,41 +66,25 @@ classdef Test < handle
     function varargout = create_MixedPtrs(this, varargin)
       % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< Test, SharedTest >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 0
-        [ varargout{1} varargout{2} ] = geometry_wrapper(24, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function Test.create_MixedPtrs');
-      end
+      [ varargout{1} varargout{2} ] = geometry_wrapper(24, this, varargin{:});
     end
 
     function varargout = create_ptrs(this, varargin)
       % CREATE_PTRS usage: create_ptrs() : returns pair< SharedTest, SharedTest >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 0
-        [ varargout{1} varargout{2} ] = geometry_wrapper(25, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function Test.create_ptrs');
-      end
+      [ varargout{1} varargout{2} ] = geometry_wrapper(25, this, varargin{:});
     end
 
     function varargout = print(this, varargin)
       % PRINT usage: print() : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 0
-        geometry_wrapper(26, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function Test.print');
-      end
+      geometry_wrapper(26, this, varargin{:});
     end
 
     function varargout = return_Point2Ptr(this, varargin)
       % RETURN_POINT2PTR usage: return_Point2Ptr(bool value) : returns Point2
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 1 && isa(varargin{1},'logical')
-        varargout{1} = geometry_wrapper(27, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function Test.return_Point2Ptr');
-      end
+      varargout{1} = geometry_wrapper(27, this, varargin{:});
     end
 
     function varargout = return_Test(this, varargin)
@@ -126,21 +110,13 @@ classdef Test < handle
     function varargout = return_bool(this, varargin)
       % RETURN_BOOL usage: return_bool(bool value) : returns bool
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 1 && isa(varargin{1},'logical')
-        varargout{1} = geometry_wrapper(30, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function Test.return_bool');
-      end
+      varargout{1} = geometry_wrapper(30, this, varargin{:});
     end
 
     function varargout = return_double(this, varargin)
       % RETURN_DOUBLE usage: return_double(double value) : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(31, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function Test.return_double');
-      end
+      varargout{1} = geometry_wrapper(31, this, varargin{:});
     end
 
     function varargout = return_field(this, varargin)
@@ -156,11 +132,7 @@ classdef Test < handle
     function varargout = return_int(this, varargin)
       % RETURN_INT usage: return_int(int value) : returns int
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 1 && isa(varargin{1},'numeric')
-        varargout{1} = geometry_wrapper(33, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function Test.return_int');
-      end
+      varargout{1} = geometry_wrapper(33, this, varargin{:});
     end
 
     function varargout = return_matrix1(this, varargin)
@@ -206,11 +178,7 @@ classdef Test < handle
     function varargout = return_size_t(this, varargin)
       % RETURN_SIZE_T usage: return_size_t(size_t value) : returns size_t
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 1 && isa(varargin{1},'numeric')
-        varargout{1} = geometry_wrapper(38, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function Test.return_size_t');
-      end
+      varargout{1} = geometry_wrapper(38, this, varargin{:});
     end
 
     function varargout = return_string(this, varargin)
