@@ -39,99 +39,67 @@ void Method::addOverload(bool verbose, bool is_const, const std::string& name,
 }
 
 /* ************************************************************************* */
-void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const string& cppClassName,
-    const std::string& matlabQualName, const std::string& matlabUniqueName,
-    const string& wrapperName, const TypeAttributesTable& typeAttributes,
+void Method::proxy_wrapper_fragments(FileWriter& file, FileWriter& wrapperFile,
+    const string& cppClassName, const std::string& matlabQualName,
+    const std::string& matlabUniqueName, const string& wrapperName,
+    const TypeAttributesTable& typeAttributes,
     vector<string>& functionNames) const {
 
   // Create function header
-  proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
+  file.oss << "    function varargout = " << name << "(this, varargin)\n";
 
   // Emit comments for documentation
   string up_name = boost::to_upper_copy(name);
-  proxyFile.oss << "      % " << up_name << " usage: ";
+  file.oss << "      % " << up_name << " usage: ";
   unsigned int argLCount = 0;
   BOOST_FOREACH(ArgumentList argList, argLists) {
-    argList.emit_prototype(proxyFile, name);
+    argList.emit_prototype(file, name);
     if (argLCount != argLists.size() - 1)
-      proxyFile.oss << ", ";
+      file.oss << ", ";
     else
-      proxyFile.oss << " : returns "
+      file.oss << " : returns "
           << returnVals[0].return_type(false, returnVals[0].pair) << endl;
     argLCount++;
   }
 
   // Emit URL to Doxygen page
-  proxyFile.oss << "      % "
+  file.oss << "      % "
       << "Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html"
       << endl;
 
   // Document all overloads, if any
   if (argLists.size() > 1) {
-    proxyFile.oss << "      % " << "" << endl;
-    proxyFile.oss << "      % " << "Method Overloads" << endl;
+    file.oss << "      % " << "" << endl;
+    file.oss << "      % " << "Method Overloads" << endl;
     BOOST_FOREACH(ArgumentList argList, argLists) {
-      proxyFile.oss << "      % ";
-      argList.emit_prototype(proxyFile, name);
-      proxyFile.oss << endl;
+      file.oss << "      % ";
+      argList.emit_prototype(file, name);
+      file.oss << endl;
     }
   }
 
-  // For all overloads, check the number of arguments
+  // Check arguments for all overloads
   for (size_t overload = 0; overload < argLists.size(); ++overload) {
-    const ArgumentList& args = argLists[overload];
-    const ReturnValue& returnVal = returnVals[overload];
-    size_t nrArgs = args.size();
-
-    const int id = functionNames.size();
 
     // Output proxy matlab code
-
-    // check for number of arguments...
-    proxyFile.oss << "      " << (overload == 0 ? "" : "else")
-        << "if length(varargin) == " << nrArgs;
-    if (nrArgs > 0)
-      proxyFile.oss << " && ";
-    // ...and their types
-    bool first = true;
-    for (size_t i = 0; i < nrArgs; i++) {
-      if (!first)
-        proxyFile.oss << " && ";
-      proxyFile.oss << "isa(varargin{" << i + 1 << "},'"
-          << args[i].matlabClass(".") << "')";
-      first = false;
-    }
-    proxyFile.oss << "\n";
-
-    // output call to C++ wrapper
-    string output;
-    if (returnVal.isPair)
-      output = "[ varargout{1} varargout{2} ] = ";
-    else if (returnVal.category1 == ReturnValue::VOID)
-      output = "";
-    else
-      output = "varargout{1} = ";
-    proxyFile.oss << "        " << output << wrapperName << "(" << id
-        << ", this, varargin{:});\n";
+    file.oss << "      " << (overload == 0 ? "" : "else");
+    const int id = (int) functionNames.size();
+    argLists[overload].emit_conditional_call(file, returnVals[overload],
+        wrapperName, id);
 
     // Output C++ wrapper code
-
     const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
         matlabUniqueName, overload, id, typeAttributes);
 
     // Add to function list
     functionNames.push_back(wrapFunctionName);
-
   }
-
-  proxyFile.oss << "      else\n";
-  proxyFile.oss
-      << "        error('Arguments do not match any overload of function "
+  file.oss << "      else\n";
+  file.oss << "        error('Arguments do not match any overload of function "
       << matlabQualName << "." << name << "');" << endl;
+  file.oss << "      end\n";
 
-  proxyFile.oss << "      end\n";
-  proxyFile.oss << "    end\n";
+  file.oss << "    end\n";
 }
 
 /* ************************************************************************* */

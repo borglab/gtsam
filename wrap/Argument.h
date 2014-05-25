@@ -20,6 +20,7 @@
 #pragma once
 
 #include "FileWriter.h"
+#include "ReturnValue.h"
 
 #include <string>
 #include <vector>
@@ -75,6 +76,14 @@ struct ArgumentList: public std::vector<Argument> {
    */
   void emit_prototype(FileWriter& file, const std::string& name) const;
 
+  /**
+   * emit conditional MATLAB call (checking arguments first)
+   * @param file output stream
+   * @param returnVal the return value
+   * @param wrapperName of method or function
+   */
+  void emit_conditional_call(FileWriter& file, const ReturnValue& returnVal,
+      const std::string& wrapperName, int id, bool staticMethod=false) const;
 };
 
 } // \namespace wrap

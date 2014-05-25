@@ -32,14 +32,14 @@ using namespace wrap;
 string Argument::matlabClass(const string& delim) const {
   string result;
   BOOST_FOREACH(const string& ns, namespaces)
-  result += ns + delim;
-  if (type=="string" || type=="unsigned char" || type=="char")
+    result += ns + delim;
+  if (type == "string" || type == "unsigned char" || type == "char")
     return result + "char";
-  if (type=="Vector" || type=="Matrix")
+  if (type == "Vector" || type == "Matrix")
     return result + "double";
-  if (type=="int" || type=="size_t")
+  if (type == "int" || type == "size_t")
     return result + "numeric";
-  if (type=="bool")
+  if (type == "bool")
     return result + "logical";
   return result + type;
 }
@@ -53,7 +53,8 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 
   if (is_ptr)
     // A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
-    file.oss << "boost::shared_ptr<" << cppType << "> " << name << " = unwrap_shared_ptr< ";
+    file.oss << "boost::shared_ptr<" << cppType << "> " << name
+        << " = unwrap_shared_ptr< ";
   else if (is_ref)
     // A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer
     file.oss << cppType << "& " << name << " = *unwrap_shared_ptr< ";
@@ -66,23 +67,28 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
     file.oss << cppType << " " << name << " = unwrap< ";
 
   file.oss << cppType << " >(" << matlabName;
-  if (is_ptr || is_ref) file.oss << ", \"ptr_" << matlabUniqueType << "\"";
+  if (is_ptr || is_ref)
+    file.oss << ", \"ptr_" << matlabUniqueType << "\"";
   file.oss << ");" << endl;
 }
 
 /* ************************************************************************* */
 string Argument::qualifiedType(const string& delim) const {
   string result;
-  BOOST_FOREACH(const string& ns, namespaces) result += ns + delim;
+  BOOST_FOREACH(const string& ns, namespaces)
+    result += ns + delim;
   return result + type;
 }
 
 /* ************************************************************************* */
 string ArgumentList::types() const {
   string str;
-  bool first=true;
+  bool first = true;
   BOOST_FOREACH(Argument arg, *this) {
-    if (!first) str += ","; str += arg.type; first=false;
+    if (!first)
+      str += ",";
+    str += arg.type;
+    first = false;
   }
   return str;
 }
@@ -90,16 +96,17 @@ string ArgumentList::types() const {
 /* ************************************************************************* */
 string ArgumentList::signature() const {
   string sig;
-  bool cap=false;
+  bool cap = false;
 
   BOOST_FOREACH(Argument arg, *this) {
     BOOST_FOREACH(char ch, arg.type)
-        if(isupper(ch)) {
-            sig += ch;
-            //If there is a capital letter, we don't want to read it below
-            cap=true;
-        }
-    if(!cap) sig += arg.type[0];
+      if (isupper(ch)) {
+        sig += ch;
+        //If there is a capital letter, we don't want to read it below
+        cap = true;
+      }
+    if (!cap)
+      sig += arg.type[0];
     //Reset to default
     cap = false;
   }
@@ -110,9 +117,12 @@ string ArgumentList::signature() const {
 /* ************************************************************************* */
 string ArgumentList::names() const {
   string str;
-  bool first=true;
+  bool first = true;
   BOOST_FOREACH(Argument arg, *this) {
-    if (!first) str += ","; str += arg.name; first=false;
+    if (!first)
+      str += ",";
+    str += arg.name;
+    first = false;
   }
   return str;
 }
@@ -123,7 +133,7 @@ void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
   BOOST_FOREACH(Argument arg, *this) {
     stringstream buf;
     buf << "in[" << index << "]";
-    arg.matlab_unwrap(file,buf.str());
+    arg.matlab_unwrap(file, buf.str());
     index++;
   }
 }
@@ -133,11 +143,44 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   file.oss << name << "(";
   bool first = true;
   BOOST_FOREACH(Argument arg, *this) {
-    if (!first) file.oss << ", ";
+    if (!first)
+      file.oss << ", ";
     file.oss << arg.type << " " << arg.name;
     first = false;
   }
   file.oss << ")";
+}
+/* ************************************************************************* */
+void ArgumentList::emit_conditional_call(FileWriter& file,
+    const ReturnValue& returnVal, const string& wrapperName, int id,
+    bool staticMethod) const {
+  // Check nr of arguments
+  file.oss << "if length(varargin) == " << size();
+  if (size() > 0)
+    file.oss << " && ";
+  // ...and their types
+  bool first = true;
+  for (size_t i = 0; i < size(); i++) {
+    if (!first)
+      file.oss << " && ";
+    file.oss << "isa(varargin{" << i + 1 << "},'" << (*this)[i].matlabClass(".")
+        << "')";
+    first = false;
+  }
+  file.oss << "\n";
+
+  // output call to C++ wrapper
+  string output;
+  if (returnVal.isPair)
+    output = "[ varargout{1} varargout{2} ] = ";
+  else if (returnVal.category1 == ReturnValue::VOID)
+    output = "";
+  else
+    output = "varargout{1} = ";
+  file.oss << "        " << output << wrapperName << "(" << id;
+  if (!staticMethod)
+    file.oss << ", this";
+  file.oss << ", varargin{:});\n";
 }
 /* ************************************************************************* */
 
