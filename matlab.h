@@ -28,6 +28,8 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
+#include <boost/foreach.hpp>
+
 #include <exception>
 
 namespace gtsam {
@@ -216,6 +218,36 @@ Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
       errors.col(k++) = p->unwhitenedError(values);
   }
   return errors;
+}
+
+/// Convert from local to world coordinates
+Values localToWorld(const Values& local, const Pose2& base,
+    const FastVector<Key> user_keys = FastVector<Key>()) {
+
+  Values world;
+
+  // if no keys given, get all keys from local values
+  FastVector<Key> keys(user_keys);
+  if (keys.size()==0)
+    keys = FastVector<Key>(local.keys());
+
+  // Loop over all keys
+  BOOST_FOREACH(Key key, keys) {
+    try {
+      // if value is a Pose2, compose it with base pose
+      Pose2 pose = local.at<Pose2>(key);
+      world.insert(key, base.compose(pose));
+    } catch (std::exception e1) {
+      try {
+        // if value is a Point2, transform it from base pose
+        Point2 point = local.at<Point2>(key);
+        world.insert(key, base.transform_from(point));
+      } catch (std::exception e2) {
+        // if not Pose2 or Point2, do nothing
+      }
+    }
+  }
+  return world;
 }
 
 }

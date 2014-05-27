@@ -189,3 +189,4 @@
 %   utilities.insertBackprojections   - Insert a number of initial point values by backprojecting
 %   utilities.insertProjectionFactors - Insert multiple projection factors for a single pose key
 %   utilities.reprojectionErrors      - Calculate the errors of all projection factors in a graph
+%   utilities.localToWorld            - Convert from local to world coordinates
