@@ -20,7 +20,10 @@
  */
 
 #include <gtsam/geometry/Pose2.h>
+
 #include <gtsam/inference/Symbol.h>
+
+#include <gtsam/slam/dataset.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -214,6 +217,63 @@ TEST( Lago, smallGraph2 ) {
   expected.insert(x1,simple::pose1);
   expected.insert(x2,simple::pose2);
   expected.insert(x3,simple::pose3);
+
+  EXPECT(assert_equal(expected, actual, 1e-6));
+}
+
+/* *************************************************************************** */
+TEST( Lago, smallGraphNoisy_orientations ) {
+
+  NonlinearFactorGraph g;
+  Values initial;
+  readG2o("/home/aspn/Desktop/noisyToyGraph.txt", g, initial);
+
+  // Add prior on the pose having index (key) = 0
+  NonlinearFactorGraph graphWithPrior = g;
+  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
+  graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
+
+  VectorValues initialGuessLago = initializeOrientationsLago(graphWithPrior);
+
+  // Results from Matlab
+  //  VERTEX_SE2 0 0.000000 0.000000 0.000000
+  //  VERTEX_SE2 1 0.000000 0.000000 1.568774
+  //  VERTEX_SE2 2 0.000000 0.000000 3.142238
+  //  VERTEX_SE2 3 0.000000 0.000000 4.702950
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(0), 1e-5));
+  EXPECT(assert_equal((Vector(1) << 1.568774), initialGuessLago.at(1), 1e-5));
+  EXPECT(assert_equal((Vector(1) << 3.14223 - 2*M_PI), initialGuessLago.at(2), 1e-5));
+  EXPECT(assert_equal((Vector(1) << 4.702950 - 2*M_PI), initialGuessLago.at(3), 1e-5));
+}
+
+/* *************************************************************************** */
+TEST( Lago, smallGraphNoisy ) {
+
+  NonlinearFactorGraph g;
+  Values initial;
+  readG2o("/home/aspn/Desktop/noisyToyGraph.txt", g, initial);
+
+  // Add prior on the pose having index (key) = 0
+  NonlinearFactorGraph graphWithPrior = g;
+  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
+  graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
+
+  // lago does not touch the Cartesian part and only fixed the orientations
+  Values actual = initializeLago(graphWithPrior);
+
+  // Optimized results from matlab
+  //  VERTEX_SE2 0 0.000000 0.000000 0.000000
+  //  VERTEX_SE2 1 1.141931 0.980395 1.569023
+  //  VERTEX_SE2 2 0.124207 2.140972 -3.140451
+  //  VERTEX_SE2 3 -0.958080 1.070072 -1.577699
+
+  Values expected;
+  expected.insert(x0,Pose2(0.000000, 0.000000, 0.000000));
+  expected.insert(x1,Pose2(1.141931, 0.980395, 1.569023));
+  expected.insert(x2,Pose2(0.124207, 2.140972, -3.140451));
+  expected.insert(x3,Pose2(-0.958080, 1.070072, -1.577699));
 
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
