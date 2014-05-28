@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/nonlinear/LagoInitializer.h>
+#include <gtsam/slam/dataset.h>
 
 namespace gtsam {
 
@@ -30,6 +31,7 @@ double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
   double nodeTheta = 0;
   Key key_child = nodeKey; // the node
   Key key_parent = 0; // the initialization does not matter
+  ///std::cout << "start" << std::endl;
   while(1){
     // We check if we reached the root
     if(tree.at(key_child)==key_child) // if we reached the root
@@ -45,6 +47,7 @@ double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
     }
     key_child = key_parent; // we move upwards in the tree
   }
+  ///std::cout << "end" << std::endl;
   return nodeTheta;
 }
 
@@ -54,6 +57,10 @@ key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
 
   key2doubleMap thetaToRootMap;
   key2doubleMap::const_iterator it;
+
+  // Orientation of the roo
+  thetaToRootMap.insert(std::pair<Key, double>(keyAnchor, 0.0));
+
   // for all nodes in the tree
   for(it = deltaThetaMap.begin(); it != deltaThetaMap.end(); ++it ){
     // compute the orientation wrt root
@@ -100,6 +107,15 @@ void getSymbolicGraph(
     }
     id++;
   }
+
+  ///g.print("Before detlta map \n");
+
+  key2doubleMap::const_iterator it;
+  for(it = deltaThetaMap.begin(); it != deltaThetaMap.end(); ++it ){
+    Key nodeKey = it->first;
+    ///std::cout << "deltaThMAP = key " << DefaultKeyFormatter(nodeKey) << " th= " << it->second << std::endl;
+  }
+
 }
 
 /* ************************************************************************* */
@@ -145,6 +161,7 @@ GaussianFactorGraph buildLinearOrientationGraph(const std::vector<size_t>& spann
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     double key1_DeltaTheta_key2 = deltaTheta(0);
+    ///std::cout << "REG: key1= " << DefaultKeyFormatter(key1) << " key2= " << DefaultKeyFormatter(key2) << std::endl;
     double k2pi_noise = key1_DeltaTheta_key2 + orientationsToRoot.at(key1) - orientationsToRoot.at(key2); // this coincides to summing up measurements along the cycle induced by the chord
     double k = round(k2pi_noise/(2*M_PI));
     //if (k2pi_noise - 2*k*M_PI > 1e-5) std::cout << k2pi_noise - 2*k*M_PI << std::endl; // for debug
@@ -179,10 +196,43 @@ NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph){
 }
 
 /* ************************************************************************* */
+PredecessorMap<Key> findOdometricPath(const NonlinearFactorGraph& pose2Graph) {
+
+  PredecessorMap<Key> tree;
+  Key minKey;
+  bool minUnassigned = true;
+
+  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, pose2Graph){
+
+    Key key1 = std::min(factor->keys()[0], factor->keys()[1]);
+    Key key2 = std::max(factor->keys()[0], factor->keys()[1]);
+    if(minUnassigned){
+      minKey = key1;
+      minUnassigned = false;
+    }
+    if( key2 - key1 == 1){ // consecutive keys
+      tree.insert(key2, key1);
+      if(key1 < minKey)
+        minKey = key1;
+    }
+  }
+  tree.insert(minKey,keyAnchor);
+  tree.insert(keyAnchor,keyAnchor); // root
+  return tree;
+}
+
+/* ************************************************************************* */
 VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph){
 
+  bool useOdometricPath = true;
   // Find a minimum spanning tree
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key, BetweenFactor<Pose2> >(pose2Graph);
+  PredecessorMap<Key> tree;
+  if (useOdometricPath)
+    tree = findOdometricPath(pose2Graph);
+  else
+    tree = findMinimumSpanningTree<NonlinearFactorGraph, Key, BetweenFactor<Pose2> >(pose2Graph);
+
+  ///std::cout << "found spanning tree"  << std::endl;
 
   // Create a linear factor graph (LFG) of scalars
   key2doubleMap deltaThetaMap;
@@ -190,8 +240,12 @@ VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph){
   std::vector<size_t> chordsIds;       // ids of between factors corresponding to chordsIds wrt T
   getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, pose2Graph);
 
+  ///std::cout << "found symbolic graph"  << std::endl;
+
   // temporary structure to correct wraparounds along loops
   key2doubleMap orientationsToRoot = computeThetasToRoot(deltaThetaMap, tree);
+
+  ///std::cout << "computed orientations from root"  << std::endl;
 
   // regularize measurements and plug everything in a factor graph
   GaussianFactorGraph lagoGraph = buildLinearOrientationGraph(spanningTreeIds, chordsIds, pose2Graph, orientationsToRoot, tree);
@@ -280,12 +334,27 @@ Values initializeLago(const NonlinearFactorGraph& graph) {
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
+  ///std::cout << "buildPose2graph" << std::endl;
   NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
 
   // Get orientations from relative orientation measurements
+  ///std::cout << "computeLagoOrientations" << std::endl;
   VectorValues orientationsLago = computeLagoOrientations(pose2Graph);
 
+//  VectorValues orientationsLago;
+//  NonlinearFactorGraph g;
+//  Values orientationsLagoV;
+//  readG2o("/home/aspn/Desktop/orientationsNoisyToyGraph.txt", g, orientationsLagoV);
+//
+//  BOOST_FOREACH(const Values::KeyValuePair& key_val, orientationsLagoV){
+//    Key k = key_val.key;
+//    double th = orientationsLagoV.at<Pose2>(k).theta();
+//    orientationsLago.insert(k,(Vector(1) << th));
+//  }
+//  orientationsLago.insert(keyAnchor,(Vector(1) << 0.0));
+
   // Compute the full poses
+  ///std::cout << "computeLagoPoses" << std::endl;
   return computeLagoPoses(pose2Graph, orientationsLago);
 }
 

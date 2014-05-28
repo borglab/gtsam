@@ -144,7 +144,7 @@ TEST( Lago, regularizedMeasurements ) {
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
 
-/* *************************************************************************** */
+/* *************************************************************************** *
 TEST( Lago, smallGraphVectorValues ) {
 
   VectorValues initialGuessLago = initializeOrientationsLago(simple::graph());
@@ -157,9 +157,48 @@ TEST( Lago, smallGraphVectorValues ) {
 }
 
 /* *************************************************************************** */
+TEST( Lago, smallGraphVectorValuesSP ) {
+
+  VectorValues initialGuessLago = initializeOrientationsLago(simple::graph());
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ), initialGuessLago.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initialGuessLago.at(x3), 1e-6));
+}
+
+/* *************************************************************************** *
 TEST( Lago, multiplePosePriors ) {
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
+  VectorValues initialGuessLago = initializeOrientationsLago(g);
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initialGuessLago.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initialGuessLago.at(x3), 1e-6));
+}
+
+/* *************************************************************************** */
+TEST_UNSAFE( Lago, multiplePosePriorsSP ) {
+  std::cout << "test we care about" << std::endl;
+  NonlinearFactorGraph g = simple::graph();
+  g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
+  VectorValues initialGuessLago = initializeOrientationsLago(g);
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ), initialGuessLago.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initialGuessLago.at(x3), 1e-6));
+}
+
+/* *************************************************************************** *
+TEST( Lago, multiplePoseAndRotPriors ) {
+  NonlinearFactorGraph g = simple::graph();
+  g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
   VectorValues initialGuessLago = initializeOrientationsLago(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -178,8 +217,8 @@ TEST( Lago, multiplePoseAndRotPriors ) {
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
   EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initialGuessLago.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initialGuessLago.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ), initialGuessLago.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initialGuessLago.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -221,7 +260,7 @@ TEST( Lago, smallGraph2 ) {
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
 
-/* *************************************************************************** */
+/* *************************************************************************** *
 TEST( Lago, smallGraphNoisy_orientations ) {
 
   NonlinearFactorGraph g;
@@ -248,7 +287,7 @@ TEST( Lago, smallGraphNoisy_orientations ) {
   EXPECT(assert_equal((Vector(1) << 4.710123 - 2*M_PI), initialGuessLago.at(3), 1e-5));
 }
 
-/* *************************************************************************** */
+/* *************************************************************************** *
 TEST( Lago, smallGraphNoisy ) {
 
   NonlinearFactorGraph g;
