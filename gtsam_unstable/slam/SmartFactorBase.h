@@ -136,12 +136,12 @@ public:
   }
 
   /** return the measurements */
-  const Vector& measured() const {
+  const std::vector<Point2>& measured() const {
     return measured_;
   }
 
   /** return the noise model */
-  const SharedNoiseModel& noise() const {
+  const std::vector<SharedNoiseModel>& noise() const {
     return noise_;
   }
 
