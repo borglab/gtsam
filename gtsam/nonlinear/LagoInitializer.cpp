@@ -85,10 +85,10 @@ void getSymbolicGraph(
       double deltaTheta = pose2Between->measured().theta();
       // insert (directed) orientations in the map "deltaThetaMap"
       bool inTree=false;
-      if(tree.at(key1)==key2){
+      if(tree.at(key1)==key2){ // key2 -> key1
         deltaThetaMap.insert(std::pair<Key, double>(key1, -deltaTheta));
         inTree = true;
-      } else if(tree.at(key2)==key1){
+      } else if(tree.at(key2)==key1){ // key1 -> key2
         deltaThetaMap.insert(std::pair<Key, double>(key2,  deltaTheta));
         inTree = true;
       }
