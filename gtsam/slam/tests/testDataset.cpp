@@ -22,6 +22,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/inference/Symbol.h>
+
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace gtsam::symbol_shorthand;
@@ -36,6 +38,20 @@ TEST(dataSet, findExampleDataFile) {
   boost::replace_all(actual_end, "\\", "/"); // Convert directory separators to forward-slash
   EXPECT(assert_equal(expected_end, actual_end));
 }
+
+/* ************************************************************************* */
+//TEST( dataSet, load2D)
+//{
+//  ///< The structure where we will save the SfM data
+//  const string filename = findExampleDataFile("smallGraph.g2o");
+//  boost::tie(graph,initialGuess) = load2D(filename, boost::none, 10000,
+//      false, false);
+////  print
+////
+////  print
+////
+////  EXPECT(assert_equal(expected,actual,12));
+//}
 
 /* ************************************************************************* */
 TEST( dataSet, Balbianello)
@@ -56,6 +72,117 @@ TEST( dataSet, Balbianello)
   const SfM_Camera& camera0 = mydata.cameras[0];
   Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,1));
+}
+
+/* ************************************************************************* */
+TEST( dataSet, readG2o)
+{
+  const string g2oFile = findExampleDataFile("pose2example");
+  NonlinearFactorGraph actualGraph;
+  Values actualValues;
+  readG2o(g2oFile, actualGraph, actualValues);
+
+  Values expectedValues;
+  expectedValues.insert(0, Pose2(0.000000, 0.000000, 0.000000));
+  expectedValues.insert(1, Pose2(1.030390, 0.011350, -0.081596));
+  expectedValues.insert(2, Pose2(2.036137, -0.129733, -0.301887));
+  expectedValues.insert(3, Pose2(3.015097, -0.442395, -0.345514));
+  expectedValues.insert(4, Pose2(3.343949, 0.506678, 1.214715));
+  expectedValues.insert(5, Pose2(3.684491, 1.464049, 1.183785));
+  expectedValues.insert(6, Pose2(4.064626, 2.414783, 1.176333));
+  expectedValues.insert(7, Pose2(4.429778, 3.300180, 1.259169));
+  expectedValues.insert(8, Pose2(4.128877, 2.321481, -1.825391));
+  expectedValues.insert(9, Pose2(3.884653, 1.327509, -1.953016));
+  expectedValues.insert(10, Pose2(3.531067, 0.388263, -2.148934));
+  EXPECT(assert_equal(expectedValues,actualValues,1e-5));
+
+  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
+  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
+  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
+  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
+  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
+  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
+  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
+  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
+  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
+  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
+  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
+  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  EXPECT(assert_equal(actualGraph,expectedGraph,1e-5));
+}
+
+/* ************************************************************************* */
+TEST( dataSet, readG2oHuber)
+{
+  const string g2oFile = findExampleDataFile("pose2example");
+  NonlinearFactorGraph actualGraph;
+  Values actualValues;
+  readG2o(g2oFile, actualGraph, actualValues, HUBER);
+
+  noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
+  SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), baseModel);
+
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
+  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
+  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
+  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
+  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
+  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
+  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
+  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
+  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
+  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
+  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
+  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  EXPECT(assert_equal(actualGraph,expectedGraph,1e-5));
+}
+
+/* ************************************************************************* */
+TEST( dataSet, readG2oTukey)
+{
+  const string g2oFile = findExampleDataFile("pose2example");
+  NonlinearFactorGraph actualGraph;
+  Values actualValues;
+  readG2o(g2oFile, actualGraph, actualValues, TUKEY);
+
+  noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
+  SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
+
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
+  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
+  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
+  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
+  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
+  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
+  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
+  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
+  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
+  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
+  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
+  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  EXPECT(assert_equal(actualGraph,expectedGraph,1e-5));
+}
+
+/* ************************************************************************* */
+TEST( dataSet, writeG2o)
+{
+  const string g2oFile = findExampleDataFile("pose2example");
+  NonlinearFactorGraph expectedGraph;
+  Values expectedValues;
+  readG2o(g2oFile, expectedGraph, expectedValues);
+
+  const string filenameToWrite = findExampleDataFile("pose2example-rewritten");
+  writeG2o(filenameToWrite, expectedGraph, expectedValues);
+
+  NonlinearFactorGraph actualGraph;
+  Values actualValues;
+  readG2o(filenameToWrite, actualGraph, actualValues);
+  EXPECT(assert_equal(expectedValues,actualValues,1e-5));
+  EXPECT(assert_equal(actualGraph,expectedGraph,1e-5));
 }
 
 /* ************************************************************************* */

@@ -18,7 +18,10 @@
 
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/graph.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -105,24 +108,38 @@ TEST( Graph, composePoses )
   CHECK(assert_equal(expected, *actual));
 }
 
-// SL-FIX TEST( GaussianFactorGraph, findMinimumSpanningTree )
-//{
-//  GaussianFactorGraph g;
-//  Matrix I = eye(2);
-//  Vector b = Vector_(0, 0, 0);
-//  g += X(1), I, X(2), I, b, model;
-//  g += X(1), I, X(3), I, b, model;
-//  g += X(1), I, X(4), I, b, model;
-//  g += X(2), I, X(3), I, b, model;
-//  g += X(2), I, X(4), I, b, model;
-//  g += X(3), I, X(4), I, b, model;
-//
-//  map<string, string> tree = g.findMinimumSpanningTree<string, GaussianFactor>();
-//  EXPECT(tree[X(1)].compare(X(1))==0);
-//  EXPECT(tree[X(2)].compare(X(1))==0);
-//  EXPECT(tree[X(3)].compare(X(1))==0);
-//  EXPECT(tree[X(4)].compare(X(1))==0);
-//}
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, findMinimumSpanningTree )
+{
+  GaussianFactorGraph g;
+  Matrix I = eye(2);
+  Vector2 b(0, 0);
+  const SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(2) << 0.5, 0.5));
+  using namespace symbol_shorthand;
+  g += JacobianFactor(X(1), I, X(2), I, b, model);
+  g += JacobianFactor(X(1), I, X(3), I, b, model);
+  g += JacobianFactor(X(1), I, X(4), I, b, model);
+  g += JacobianFactor(X(2), I, X(3), I, b, model);
+  g += JacobianFactor(X(2), I, X(4), I, b, model);
+  g += JacobianFactor(X(3), I, X(4), I, b, model);
+
+  PredecessorMap<Key> tree = findMinimumSpanningTree<GaussianFactorGraph, Key, JacobianFactor>(g);
+  EXPECT_LONGS_EQUAL(X(1),tree[X(1)]);
+  EXPECT_LONGS_EQUAL(X(1),tree[X(2)]);
+  EXPECT_LONGS_EQUAL(X(1),tree[X(3)]);
+  EXPECT_LONGS_EQUAL(X(1),tree[X(4)]);
+
+  // we add a disconnected component - does not work yet
+  //  g += JacobianFactor(X(5), I, X(6), I, b, model);
+  //
+  //  PredecessorMap<Key> forest = findMinimumSpanningTree<GaussianFactorGraph, Key, JacobianFactor>(g);
+  //  EXPECT_LONGS_EQUAL(X(1),forest[X(1)]);
+  //  EXPECT_LONGS_EQUAL(X(1),forest[X(2)]);
+  //  EXPECT_LONGS_EQUAL(X(1),forest[X(3)]);
+  //  EXPECT_LONGS_EQUAL(X(1),forest[X(4)]);
+  //  EXPECT_LONGS_EQUAL(X(5),forest[X(5)]);
+  //  EXPECT_LONGS_EQUAL(X(5),forest[X(6)]);
+}
 
 ///* ************************************************************************* */
 // SL-FIX TEST( GaussianFactorGraph, split )

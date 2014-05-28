@@ -178,6 +178,7 @@ Pose2 Pose2::between(const Pose2& p2, boost::optional<Matrix&> H1,
   // Calculate delta translation = unrotate(R1, dt);
   Point2 dt = p2.t() - t_;
   double x = dt.x(), y = dt.y();
+  // t = R1' * (t2-t1)
   Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
 
   // FD: This is just -AdjointMap(between(p2,p1)) inlined and re-using above
