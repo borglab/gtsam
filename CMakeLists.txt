@@ -91,10 +91,10 @@ set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
 # If using Boost shared libs, disable auto linking
 if(MSVC)
 	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols
-	add_definitions(-DBOOST_ALL_DYN_LINK)
 	# Disable autolinking
 	if(NOT Boost_USE_STATIC_LIBS)
 		add_definitions(-DBOOST_ALL_NO_LIB)
+	    add_definitions(-DBOOST_ALL_DYN_LINK)
 	endif()
 endif()
 

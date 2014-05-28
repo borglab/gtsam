@@ -35,7 +35,7 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-static const Key _x_=0, _y_=1, _z_=2;
+static const Key _x_=0, _y_=1;
 
 static GaussianBayesNet smallBayesNet = list_of
   (GaussianConditional(_x_, (Vector(1) << 9.0), (Matrix(1, 1) << 1.0), _y_, (Matrix(1, 1) << 1.0)))
@@ -61,6 +61,24 @@ TEST( GaussianBayesNet, matrix )
 TEST( GaussianBayesNet, optimize )
 {
   VectorValues actual = smallBayesNet.optimize();
+
+  VectorValues expected = map_list_of<Key, Vector>
+    (_x_, (Vector(1) << 4.0))
+    (_y_, (Vector(1) << 5.0));
+
+  EXPECT(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, optimizeIncomplete )
+{
+  static GaussianBayesNet incompleteBayesNet = list_of
+    (GaussianConditional(_x_, (Vector(1) << 9.0), (Matrix(1, 1) << 1.0), _y_, (Matrix(1, 1) << 1.0)));
+
+  VectorValues solutionForMissing = map_list_of<Key, Vector>
+    (_y_, (Vector(1) << 5.0));
+
+  VectorValues actual = incompleteBayesNet.optimize(solutionForMissing);
 
   VectorValues expected = map_list_of<Key, Vector>
     (_x_, (Vector(1) << 4.0))

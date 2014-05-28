@@ -191,7 +191,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       if(mode == ONE_STEP_PER_ITERATION || mode == SEARCH_REDUCE_ONLY)
         stay = false;   // If not searching, just return with the new Delta
       else if(mode == SEARCH_EACH_ITERATION) {
-        if(newDelta == Delta || lastAction == DECREASED_DELTA)
+        if(fabs(newDelta - Delta) < 1e-15 || lastAction == DECREASED_DELTA)
           stay = false; // Searching, but Newton's solution is within trust region so keep the same trust region
         else {
           stay = true;  // Searching and increased Delta, so try again to increase Delta

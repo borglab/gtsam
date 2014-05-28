@@ -62,7 +62,7 @@ if HAVE_PODPROGS
 	$(POD2MAN) $^ > $@
 
 .pod.1.html:
-	pod2html --noindex $^ | $(PODFIX) > $@
+	pod2html --noindex --tile "$*(1)" $^ | $(PODFIX) > $@
 
 else
 

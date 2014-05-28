@@ -151,9 +151,9 @@ Vector Unit3::localCoordinates(const Unit3& y) const {
   double dot = p.dot(q);
 
   // Check for special cases
-  if (std::abs(dot - 1.0) < 1e-20)
+  if (std::abs(dot - 1.0) < 1e-16)
     return (Vector(2) << 0, 0);
-  else if (std::abs(dot + 1.0) < 1e-20)
+  else if (std::abs(dot + 1.0) < 1e-16)
     return (Vector(2) << M_PI, 0);
   else {
     // no special case

@@ -31,7 +31,7 @@ namespace gtsam {
  * See Farrell08book or e.g. http://www.dirsig.org/docs/new/coordinates.html
  * @addtogroup Navigation
  */
-class GPSFactor: public NoiseModelFactor1<Pose3> {
+class GTSAM_EXPORT GPSFactor: public NoiseModelFactor1<Pose3> {
 
 private:
 

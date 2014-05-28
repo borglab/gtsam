@@ -27,30 +27,47 @@
 
 namespace gtsam {
 
-
 /* ************************************************************************* */
-std::string _multirobotKeyFormatter(gtsam::Key key) {
+std::string _multirobotKeyFormatter(Key key) {
   const LabeledSymbol asLabeledSymbol(key);
-  if(asLabeledSymbol.chr() > 0 && asLabeledSymbol.label() > 0)
-    return (std::string)asLabeledSymbol;
+  if (asLabeledSymbol.chr() > 0 && asLabeledSymbol.label() > 0)
+    return (std::string) asLabeledSymbol;
 
-  const gtsam::Symbol asSymbol(key);
+  const Symbol asSymbol(key);
   if (asLabeledSymbol.chr() > 0)
-    return (std::string)asSymbol;
+    return (std::string) asSymbol;
   else
     return boost::lexical_cast<std::string>(key);
 }
 
 /* ************************************************************************* */
-void printKeySet(const gtsam::KeySet& keys, const std::string& s, const KeyFormatter& keyFormatter) {
+template<class CONTAINER>
+static void print(const CONTAINER& keys, const std::string& s,
+    const KeyFormatter& keyFormatter) {
   std::cout << s << " ";
   if (keys.empty())
     std::cout << "(none)" << std::endl;
   else {
-    BOOST_FOREACH(const gtsam::Key& key, keys)
+    BOOST_FOREACH(const Key& key, keys)
       std::cout << keyFormatter(key) << " ";
     std::cout << std::endl;
   }
+}
+
+/* ************************************************************************* */
+void printKeyList(const KeyList& keys, const std::string& s,
+    const KeyFormatter& keyFormatter) {
+  print(keys, s, keyFormatter);
+}
+/* ************************************************************************* */
+void printKeyVector(const KeyVector& keys, const std::string& s,
+    const KeyFormatter& keyFormatter) {
+  print(keys, s, keyFormatter);
+}
+/* ************************************************************************* */
+void printKeySet(const KeySet& keys, const std::string& s,
+    const KeyFormatter& keyFormatter) {
+  print(keys, s, keyFormatter);
 }
 /* ************************************************************************* */
 

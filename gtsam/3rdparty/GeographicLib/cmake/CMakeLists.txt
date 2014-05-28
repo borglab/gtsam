@@ -31,14 +31,17 @@ endif ()
 # it to prevent the source and build paths appearing in the installed
 # config files
 set (PROJECT_INCLUDE_DIRS)
-configure_file (project-config.cmake.in
-  ${PROJECT_NAME_LOWER}-config.cmake @ONLY)
+configure_file (project-config.cmake.in project-config.cmake @ONLY)
 configure_file (project-config-version.cmake.in
-  ${PROJECT_NAME_LOWER}-config-version.cmake @ONLY)
+  project-config-version.cmake @ONLY)
 install (FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}-config.cmake"
-  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}-config-version.cmake"
-  DESTINATION "${INSTALL_CMAKE_DIR}")
+  "${CMAKE_CURRENT_BINARY_DIR}/project-config.cmake"
+  DESTINATION "${INSTALL_CMAKE_DIR}"
+  RENAME "${PROJECT_NAME_LOWER}-config.cmake")
+install (FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/project-config-version.cmake"
+  DESTINATION "${INSTALL_CMAKE_DIR}"
+  RENAME "${PROJECT_NAME_LOWER}-config-version.cmake")
 # Make information about the cmake targets (the library and the tools)
 # available.
 install (EXPORT depends

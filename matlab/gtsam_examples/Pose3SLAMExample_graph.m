@@ -12,6 +12,8 @@
 
 import gtsam.*
 
+%% PLEASE NOTE THAT PLOTTING TAKES A VERY LONG TIME HERE
+
 %% Find data file
 N = 2500;
 % dataset = 'sphere_smallnoise.graph';

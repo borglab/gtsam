@@ -53,7 +53,7 @@ SymmetricBlockMatrix SymmetricBlockMatrix::LikeActiveViewOf(
 VerticalBlockMatrix SymmetricBlockMatrix::choleskyPartial(
     DenseIndex nFrontals) {
   // Do dense elimination
-  if (!blockStart() == 0)
+  if (blockStart() != 0)
     throw std::invalid_argument(
         "Can only do Cholesky when the SymmetricBlockMatrix is not a restricted view, i.e. when blockStart == 0.");
   if (!gtsam::choleskyPartial(matrix_, offset(nFrontals)))

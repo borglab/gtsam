@@ -88,9 +88,11 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
     string actual_contents   = file_contents(actual, skipheader);
     bool equal = actual_contents == expected_contents;
     if (!equal) {
+      cerr << "<<< DIFF OUTPUT (if none, white-space differences only):\n";
       stringstream command;
-      command << "diff " << actual << " " << expected << endl;
+      command << "diff --ignore-all-space " << expected << " " << actual << endl;
       system(command.str().c_str());
+      cerr << ">>>\n";
     }
     return equal;
   }

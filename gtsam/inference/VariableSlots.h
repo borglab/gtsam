@@ -55,7 +55,7 @@ class VariableSlots : public FastMap<Key, FastVector<size_t> > {
 public:
 
   typedef FastMap<Key, FastVector<size_t> > Base;
-  static const size_t Empty;
+  GTSAM_EXPORT static const size_t Empty;
 
   /// @name Standard Constructors
   /// @{

@@ -1423,6 +1423,7 @@ virtual class GaussianBayesNet {
   void push_back(const gtsam::GaussianBayesNet& bayesNet);
   
   gtsam::VectorValues optimize() const;
+  gtsam::VectorValues optimize(gtsam::VectorValues& solutionForMissing) const;
   gtsam::VectorValues optimizeGradientSearch() const;
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
   gtsam::VectorValues gradientAtZero() const;
@@ -1550,8 +1551,12 @@ char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
 // Default keyformatter
-void printKeySet(const gtsam::KeySet& keys);
-void printKeySet(const gtsam::KeySet& keys, string s);
+void printKeyList  (const gtsam::KeyList& keys);
+void printKeyList  (const gtsam::KeyList& keys, string s);
+void printKeyVector(const gtsam::KeyVector& keys);
+void printKeyVector(const gtsam::KeyVector& keys, string s);
+void printKeySet   (const gtsam::KeySet& keys);
+void printKeySet   (const gtsam::KeySet& keys, string s);
 
 #include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {
@@ -1725,6 +1730,7 @@ class KeySet {
 
   // structure specific methods
   void insert(size_t key);
+  void merge(gtsam::KeySet& other);
   bool erase(size_t key); // returns true if value was removed
   bool count(size_t key) const; // returns true if value exists
 
@@ -2140,6 +2146,8 @@ template<POSE, POINT, ROTATION>
 virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
   BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
 
+  pair<ROTATION, double> measured() const;
+
   // enabling serialization functionality
   void serialize() const;
 };
@@ -2355,17 +2363,26 @@ virtual class CombinedImuFactor : gtsam::NonlinearFactor {
 namespace utilities {
 
   #include <matlab.h>
+  gtsam::KeyList createKeyList(Vector I);
+  gtsam::KeyList createKeyList(string s, Vector I);
+  gtsam::KeyVector createKeyVector(Vector I);
+  gtsam::KeyVector createKeyVector(string s, Vector I);
+  gtsam::KeySet createKeySet(Vector I);
+  gtsam::KeySet createKeySet(string s, Vector I);
   Matrix extractPoint2(const gtsam::Values& values);
   Matrix extractPoint3(const gtsam::Values& values);
   Matrix extractPose2(const gtsam::Values& values);
   gtsam::Values allPose3s(gtsam::Values& values);
   Matrix extractPose3(const gtsam::Values& values);
   void perturbPoint2(gtsam::Values& values, double sigma, int seed);
+  void perturbPose2 (gtsam::Values& values, double sigmaT, double sigmaR, int seed);
   void perturbPoint3(gtsam::Values& values, double sigma, int seed);
   void insertBackprojections(gtsam::Values& values, const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
   void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z, const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K);
   void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z, const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K, const gtsam::Pose3& body_P_sensor);
   Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values);
+  gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base);
+  gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base, const gtsam::KeyVector& keys);
 
 } //\namespace utilities
 

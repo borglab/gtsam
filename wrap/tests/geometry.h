@@ -87,6 +87,10 @@ class Test {
 
 Vector aGlobalFunction();
 
+// An overloaded global function
+Vector overloadedGlobalFunction(int a);
+Vector overloadedGlobalFunction(int a, double b);
+
 // comments at the end!
 
 // even more comments at the end!

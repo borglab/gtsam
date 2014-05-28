@@ -24,13 +24,18 @@
 		   Google Maps,
 		   WGS84 ellipsoid,
 		   GeographicLib" />
-    <link href="http://code.google.com/apis/maps/documentation/javascript/examples/default.css"
-	  rel="stylesheet" type="text/css" />
+    <style>
+      html, body, #map-canvas {
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+      }
+    </style>
     <script type="text/javascript"
 	    src="http://geographiclib.sf.net/scripts/geographiclib.js">
     </script>
     <script type="text/javascript"
-	    src="http://maps.googleapis.com/maps/api/js?sensor=false">
+	    src="https://maps.googleapis.com/maps/api/js?sensor=false">
     </script>
     <script type="text/javascript">
 var geod = GeographicLib.Geodesic.WGS84;
@@ -43,7 +48,7 @@ function initialize() {
     center: new google.maps.LatLng(41.3, -5.5),
     mapTypeId: google.maps.MapTypeId.ROADMAP
   };
-  map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
+  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
   var geodesicOptions = {
     strokeColor: '#0000FF',
@@ -179,7 +184,7 @@ function clearPaths() {
     </script>
   </head>
   <body onload="initialize()">
-    <div id="map_canvas"
+    <div id="map-canvas"
 	 style="position:relative; border: 1px solid black; width:99.5%;
 	 height:72%;">
     </div>

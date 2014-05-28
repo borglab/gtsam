@@ -26,6 +26,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/random.hpp>
+#include <boost/thread.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <cmath>
 
@@ -43,7 +44,7 @@ Point3 point3_(const Unit3& p) {
 TEST(Unit3, point3) {
   vector<Point3> ps;
   ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
-      / sqrt(2);
+      / sqrt(2.0);
   Matrix actualH, expectedH;
   BOOST_FOREACH(Point3 p,ps) {
     Unit3 s(p);
@@ -233,7 +234,7 @@ TEST(Unit3, localCoordinates_retract) {
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
-    sleep(0);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
 
     // Create the two Unit3s.
     // NOTE: You can not create two totally random Unit3's because you cannot always compute
@@ -263,7 +264,7 @@ TEST(Unit3, localCoordinates_retract_expmap) {
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
-    sleep(0);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
 
     // Create the two Unit3s.
     // Unlike the above case, we can use any two sphers.

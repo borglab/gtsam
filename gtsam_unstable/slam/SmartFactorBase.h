@@ -20,6 +20,7 @@
 #pragma once
 
 #include "JacobianFactorQ.h"
+#include "JacobianFactorSVD.h"
 #include "ImplicitSchurFactor.h"
 #include "RegularHessianFactor.h"
 
@@ -135,12 +136,12 @@ public:
   }
 
   /** return the measurements */
-  const Vector& measured() const {
+  const std::vector<Point2>& measured() const {
     return measured_;
   }
 
   /** return the noise model */
-  const SharedNoiseModel& noise() const {
+  const std::vector<SharedNoiseModel>& noise() const {
     return noise_;
   }
 
@@ -218,8 +219,9 @@ public:
       const Point2& zi = this->measured_.at(i);
       try {
         Point2 reprojectionError(camera.project(point) - zi);
-        overallError += 0.5 * reprojectionError.vector().squaredNorm();
-      } catch (CheiralityException& e) {
+        overallError += 0.5
+        * this->noise_.at(i)->distance(reprojectionError.vector());
+      } catch (CheiralityException&) {
         std::cout << "Cheirality exception " << std::endl;
         exit(EXIT_FAILURE);
       }
@@ -259,7 +261,7 @@ public:
   double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
       Vector& b, const Cameras& cameras, const Point3& point) const {
 
-    int numKeys = this->keys_.size();
+    size_t numKeys = this->keys_.size();
     E = zeros(2 * numKeys, 3);
     b = zero(2 * numKeys);
     double f = 0;
@@ -271,7 +273,7 @@ public:
       try {
         bi =
             -(cameras[i].project(point, Fi, Ei, Hcali) - this->measured_.at(i)).vector();
-      } catch (CheiralityException& e) {
+      } catch (CheiralityException&) {
         std::cout << "Cheirality exception " << std::endl;
         exit(EXIT_FAILURE);
       }
@@ -644,6 +646,17 @@ public:
     computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
         diagonalDamping);
     return boost::make_shared<JacobianFactorQ<D> >(Fblocks, E, PointCov, b);
+  }
+
+  // ****************************************************************************************************
+  boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
+      const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
+    size_t numKeys = this->keys_.size();
+    std::vector < KeyMatrix2D > Fblocks;
+    Vector b;
+    Matrix Enull(2*numKeys, 2*numKeys-3);
+    computeJacobiansSVD(Fblocks, Enull, b, cameras, point, lambda);
+    return boost::make_shared< JacobianFactorSVD<6> >(Fblocks, Enull, b);
   }
 
 private:

@@ -14,8 +14,8 @@ using namespace gtsam::symbol_shorthand;
 
 const double tol=1e-5;
 const double h = 0.01;
-const double deg2rad = M_PI/180.0;
 
+//const double deg2rad = M_PI/180.0;
 //Pose3 g1(Rot3::ypr(deg2rad*10.0, deg2rad*20.0, deg2rad*30.0), Point3(100.0, 200.0, 300.0));
 Pose3 g1(Rot3(), Point3(100.0, 0.0, 300.0));
 //LieVector v1((Vector(6) << 0.1, 0.05, 0.02, 10.0, 20.0, 30.0));

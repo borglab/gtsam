@@ -54,6 +54,10 @@ public:
   double f;
 };
 
+enum linearizationType {
+  HESSIAN, JACOBIAN_SVD, JACOBIAN_Q
+};
+
 /**
  * SmartProjectionFactor: triangulates point
  * TODO: why LANDMARK parameter?
@@ -91,6 +95,13 @@ protected:
   /// shorthand for base class type
   typedef SmartFactorBase<POSE, CALIBRATION, D> Base;
 
+  double landmarkDistanceThreshold_; // if the landmark is triangulated at a
+  // distance larger than that the factor is considered degenerate
+
+  double dynamicOutlierRejectionThreshold_; // if this is nonnegative the factor will check if the
+  // average reprojection error is smaller than this threshold after triangulation,
+  // and the factor is disregarded if the error is large
+
   /// shorthand for this class
   typedef SmartProjectionFactor<POSE, LANDMARK, CALIBRATION, D> This;
 
@@ -115,12 +126,15 @@ public:
   SmartProjectionFactor(const double rankTol, const double linThreshold,
       const bool manageDegeneracy, const bool enableEPI,
       boost::optional<POSE> body_P_sensor = boost::none,
-      SmartFactorStatePtr state = SmartFactorStatePtr(
-          new SmartProjectionFactorState())) :
+      double landmarkDistanceThreshold = 1e10,
+      double dynamicOutlierRejectionThreshold = -1,
+      SmartFactorStatePtr state = SmartFactorStatePtr(new SmartProjectionFactorState())) :
       Base(body_P_sensor), rankTolerance_(rankTol), retriangulationThreshold_(
           1e-5), manageDegeneracy_(manageDegeneracy), enableEPI_(enableEPI), linearizationThreshold_(
           linThreshold), degenerate_(false), cheiralityException_(false), throwCheirality_(
-          false), verboseCheirality_(false), state_(state) {
+          false), verboseCheirality_(false), state_(state),
+          landmarkDistanceThreshold_(landmarkDistanceThreshold),
+          dynamicOutlierRejectionThreshold_(dynamicOutlierRejectionThreshold) {
   }
 
   /** Virtual destructor */
@@ -234,14 +248,39 @@ public:
             rankTolerance_, enableEPI_);
         degenerate_ = false;
         cheiralityException_ = false;
-      } catch (TriangulationUnderconstrainedException& e) {
+
+        // Check landmark distance and reprojection errors to avoid outliers
+        double totalReprojError = 0.0;
+        size_t i=0;
+        BOOST_FOREACH(const Camera& camera, cameras) {
+          Point3 cameraTranslation = camera.pose().translation();
+          // we discard smart factors corresponding to points that are far away
+          if(cameraTranslation.distance(point_) > landmarkDistanceThreshold_){
+            degenerate_ = true;
+            break;
+          }
+          const Point2& zi = this->measured_.at(i);
+          try {
+            Point2 reprojectionError(camera.project(point_) - zi);
+            totalReprojError += reprojectionError.vector().norm();
+          } catch (CheiralityException& e) {
+            cheiralityException_ = true;
+          }
+          i += 1;
+        }
+        // we discard smart factors that have large reprojection error
+        if(dynamicOutlierRejectionThreshold_ > 0 &&
+            totalReprojError/m > dynamicOutlierRejectionThreshold_)
+          degenerate_ = true;
+
+      } catch (TriangulationUnderconstrainedException&) {
         // if TriangulationUnderconstrainedException can be
         // 1) There is a single pose for triangulation - this should not happen because we checked the number of poses before
         // 2) The rank of the matrix used for triangulation is < 3: rotation-only, parallel cameras (or motion towards the landmark)
         // in the second case we want to use a rotation-only smart factor
         degenerate_ = true;
         cheiralityException_ = false;
-      } catch (TriangulationCheiralityException& e) {
+      } catch (TriangulationCheiralityException&) {
         // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
         // we manage this case by either discarding the smart factor, or imposing a rotation-only constraint
         cheiralityException_ = true;
@@ -279,7 +318,7 @@ public:
       const Cameras& cameras, const double lambda = 0.0) const {
 
     bool isDebug = false;
-    int numKeys = this->keys_.size();
+    size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
     std::vector < Key > js;
     std::vector < Matrix > Gs(numKeys * (numKeys + 1) / 2);
@@ -351,10 +390,10 @@ public:
 
     // Populate Gs and gs
     int GsCount2 = 0;
-    for (DenseIndex i1 = 0; i1 < numKeys; i1++) { // for each camera
+    for (DenseIndex i1 = 0; i1 < (DenseIndex)numKeys; i1++) { // for each camera
       DenseIndex i1D = i1 * D;
       gs.at(i1) = gs_vector.segment < D > (i1D);
-      for (DenseIndex i2 = 0; i2 < numKeys; i2++) {
+      for (DenseIndex i2 = 0; i2 < (DenseIndex)numKeys; i2++) {
         if (i2 >= i1) {
           Gs.at(GsCount2) = H.block < D, D > (i1D, i2 * D);
           GsCount2++;
@@ -385,7 +424,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianQFactor(cameras, point_, lambda);
     else
-      return boost::shared_ptr<JacobianFactorQ<D> >();
+      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
   }
 
   /// Create a factor, takes values
@@ -397,7 +436,16 @@ public:
     if (nonDegenerate)
       return createJacobianQFactor(myCameras, lambda);
     else
-      return boost::shared_ptr<JacobianFactorQ<D> >();
+      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
+  }
+
+  /// different (faster) way to compute Jacobian factor
+  boost::shared_ptr< JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
+      double lambda) const {
+    if (triangulateForLinearize(cameras))
+      return Base::createJacobianSVDFactor(cameras, point_, lambda);
+    else
+      return boost::make_shared< JacobianFactorSVD<D> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate

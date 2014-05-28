@@ -18,13 +18,12 @@
 
 #pragma once
 
-#include <string>
-#include <list>
-
 #include "Argument.h"
 #include "ReturnValue.h"
 #include "TypeAttributesTable.h"
-#include <boost/algorithm/string.hpp>
+
+#include <string>
+#include <list>
 
 namespace wrap {
 

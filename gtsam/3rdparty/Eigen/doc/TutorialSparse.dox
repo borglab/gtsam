@@ -83,7 +83,7 @@ There is no notion of compressed/uncompressed mode for a SparseVector.
 
 \section TutorialSparseExample First example
 
-Before describing each individual class, let's start with the following typical example: solving the Lapace equation \f$ \nabla u = 0 \f$ on a regular 2D grid using a finite difference scheme and Dirichlet boundary conditions.
+Before describing each individual class, let's start with the following typical example: solving the Laplace equation \f$ \nabla u = 0 \f$ on a regular 2D grid using a finite difference scheme and Dirichlet boundary conditions.
 Such problem can be mathematically expressed as a linear problem of the form \f$ Ax=b \f$ where \f$ x \f$ is the vector of \c m unknowns (in our case, the values of the pixels), \f$ b \f$ is the right hand side vector resulting from the boundary conditions, and \f$ A \f$ is an \f$ m \times m \f$ matrix containing only a few non-zero elements resulting from the discretization of the Laplacian operator.
 
 <table class="manual">

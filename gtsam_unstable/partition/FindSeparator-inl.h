@@ -24,8 +24,6 @@ extern "C" {
 
 #include "FindSeparator.h"
 
-using namespace std;
-
 namespace gtsam { namespace partition {
 
 	typedef boost::shared_array<idx_t> sharedInts;
@@ -37,7 +35,7 @@ namespace gtsam { namespace partition {
 	 * whether node j is in the left part of the graph, the right part, or the
 	 * separator, respectively
 	 */
-	pair<int, sharedInts> separatorMetis(idx_t n, const sharedInts& xadj,	
+	std::pair<int, sharedInts> separatorMetis(idx_t n, const sharedInts& xadj,
 		const sharedInts& adjncy, const sharedInts& adjwgt, bool verbose) {
 
 		// control parameters
@@ -72,7 +70,7 @@ namespace gtsam { namespace partition {
 			printf("**********************************************************************\n");
 		}
 
-		return make_pair(sepsize, part_);
+		return std::make_pair(sepsize, part_);
 	}
 
 	/* ************************************************************************* */
@@ -112,7 +110,7 @@ namespace gtsam { namespace partition {
 	//  *edgecut = graph->mincut;
 	//  *sepsize = graph.pwgts[2];
 	  icopy(*nvtxs, graph->where, part);
-		cout << "Finished bisection:" << *edgecut << endl;
+		std::cout << "Finished bisection:" << *edgecut << std::endl;
 		FreeGraph(&graph);
 
 		FreeCtrl(&ctrl);
@@ -124,7 +122,7 @@ namespace gtsam { namespace partition {
 	 * Part [j] is 0 or 1, depending on
 	 * whether node j is in the left part of the graph or the right part respectively
 	 */
-	pair<int, sharedInts> edgeMetis(idx_t n, const sharedInts& xadj,	const sharedInts& adjncy,
+	std::pair<int, sharedInts> edgeMetis(idx_t n, const sharedInts& xadj,	const sharedInts& adjncy,
 		const sharedInts& adjwgt, bool verbose) {
 
 		// control parameters
@@ -163,7 +161,7 @@ namespace gtsam { namespace partition {
 			printf("**********************************************************************\n");
 		}
 
-		return make_pair(edgecut, part_);
+		return std::make_pair(edgecut, part_);
 	}
 
 	/* ************************************************************************* */
@@ -173,13 +171,13 @@ namespace gtsam { namespace partition {
 	 * adjncy always has the size equal to two times of the no. of the edges in the Metis graph
 	 */
 	template <class GenericGraph>
-	void prepareMetisGraph(const GenericGraph& graph, const vector<size_t>& keys, WorkSpace& workspace,
+	void prepareMetisGraph(const GenericGraph& graph, const std::vector<size_t>& keys, WorkSpace& workspace,
 			sharedInts* ptr_xadj, sharedInts* ptr_adjncy, sharedInts* ptr_adjwgt) {
 
 		typedef int Weight;
-		typedef vector<int> Weights;
-		typedef vector<int> Neighbors;
-		typedef pair<Neighbors, Weights> NeighborsInfo;
+		typedef std::vector<int> Weights;
+		typedef std::vector<int> Neighbors;
+		typedef std::pair<Neighbors, Weights> NeighborsInfo;
 
 		// set up dictionary
 		std::vector<int>& dictionary = workspace.dictionary;
@@ -188,27 +186,27 @@ namespace gtsam { namespace partition {
 		// prepare for {adjacencyMap}, a pair of neighbor indices and the correponding edge weights
 		int numNodes = keys.size();
 		int numEdges = 0;
-		vector<NeighborsInfo> adjacencyMap;
+		std::vector<NeighborsInfo> adjacencyMap;
 		adjacencyMap.resize(numNodes);
-		cout << "Number of nodes: " << adjacencyMap.size() << endl;
+		std::cout << "Number of nodes: " << adjacencyMap.size() << std::endl;
 		int index1, index2;
 
 		BOOST_FOREACH(const typename GenericGraph::value_type& factor, graph){
 			index1 = dictionary[factor->key1.index];
 			index2 = dictionary[factor->key2.index];
-			cout << "index1: " << index1 << endl;
-			cout << "index2: " << index2 << endl;
+			std::cout << "index1: " << index1 << std::endl;
+			std::cout << "index2: " << index2 << std::endl;
 			// if both nodes are in the current graph, i.e. not a joint factor between frontal and separator
 			if (index1 >= 0 && index2 >= 0) {       
-				pair<Neighbors, Weights>& adjacencyMap1 = adjacencyMap[index1];
-				pair<Neighbors, Weights>& adjacencyMap2 = adjacencyMap[index2];
+			  std::pair<Neighbors, Weights>& adjacencyMap1 = adjacencyMap[index1];
+			  std::pair<Neighbors, Weights>& adjacencyMap2 = adjacencyMap[index2];
 				try{
 				 adjacencyMap1.first.push_back(index2);
 				 adjacencyMap1.second.push_back(factor->weight);
 				 adjacencyMap2.first.push_back(index1);
 				 adjacencyMap2.second.push_back(factor->weight);
 				}catch(std::exception& e){
-					cout << e.what() << endl;
+					std::cout << e.what() << std::endl;
 				}
 				numEdges++;
 			}
@@ -237,11 +235,11 @@ namespace gtsam { namespace partition {
 	/* ************************************************************************* */
 	template<class GenericGraph>
 	boost::optional<MetisResult> separatorPartitionByMetis(const GenericGraph& graph,
-		const vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
+		const std::vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
 		// create a metis graph
 		size_t numKeys = keys.size();
 		if (verbose) 
-			cout << graph.size() << " factors,\t" << numKeys << " nodes;\t" << endl;
+			std::cout << graph.size() << " factors,\t" << numKeys << " nodes;\t" << std::endl;
 
 		sharedInts xadj, adjncy, adjwgt;
 
@@ -260,29 +258,29 @@ namespace gtsam { namespace partition {
 		result.A.reserve(numKeys - sepsize);
 		result.B.reserve(numKeys - sepsize);
 		int* ptr_part = part.get();
-		vector<size_t>::const_iterator itKey = keys.begin();
-		vector<size_t>::const_iterator itKeyLast = keys.end();
+		std::vector<size_t>::const_iterator itKey = keys.begin();
+		std::vector<size_t>::const_iterator itKeyLast = keys.end();
 		while(itKey != itKeyLast) {
 			switch(*(ptr_part++)) {
 			case 0: result.A.push_back(*(itKey++)); break;
 			case 1: result.B.push_back(*(itKey++)); break;
 			case 2: result.C.push_back(*(itKey++)); break;
-			default: throw runtime_error("separatorPartitionByMetis: invalid results from Metis ND!");
+			default: throw std::runtime_error("separatorPartitionByMetis: invalid results from Metis ND!");
 			}
 		}
 
 		if (verbose) {
-			cout << "total key: " << keys.size()
+			std::cout << "total key: " << keys.size()
 										<< " result(A,B,C) = " << result.A.size() << ", " << result.B.size() << ", "
-										<< result.C.size() << "; sepsize from Metis = " << sepsize << endl;
+										<< result.C.size() << "; sepsize from Metis = " << sepsize << std::endl;
 			//throw runtime_error("separatorPartitionByMetis:stop for debug");
 		}
 
 		if(result.C.size() != sepsize) {
-			cout << "total key: " << keys.size()
+			std::cout << "total key: " << keys.size()
 					<< " result(A,B,C) = " << result.A.size() << ", " << result.B.size() << ", " << result.C.size()
-					<< "; sepsize from Metis = " << sepsize << endl;
-			throw runtime_error("separatorPartitionByMetis: invalid sepsize from Metis ND!");
+					<< "; sepsize from Metis = " << sepsize << std::endl;
+			throw std::runtime_error("separatorPartitionByMetis: invalid sepsize from Metis ND!");
 		}
 
 		return boost::make_optional<MetisResult >(result);
@@ -291,7 +289,7 @@ namespace gtsam { namespace partition {
 	/* *************************************************************************/ 
 	template<class GenericGraph>
 	boost::optional<MetisResult> edgePartitionByMetis(const GenericGraph& graph,
-	 const vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
+	 const std::vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
 
 		// a small hack for handling the camera1-camera2 case used in the unit tests
 		if (graph.size() == 1 && keys.size() == 2) {
@@ -303,7 +301,7 @@ namespace gtsam { namespace partition {
 
 		// create a metis graph
 		size_t numKeys = keys.size();
-		if (verbose) cout << graph.size() << " factors,\t" << numKeys << " nodes;\t" << endl;
+		if (verbose) std::cout << graph.size() << " factors,\t" << numKeys << " nodes;\t" << std::endl;
 		sharedInts xadj, adjncy, adjwgt;
 		prepareMetisGraph<GenericGraph>(graph, keys, workspace, &xadj, &adjncy, &adjwgt);
 
@@ -317,35 +315,35 @@ namespace gtsam { namespace partition {
 		result.A.reserve(numKeys);
 		result.B.reserve(numKeys);
 		int* ptr_part = part.get();
-		vector<size_t>::const_iterator itKey = keys.begin();
-		vector<size_t>::const_iterator itKeyLast = keys.end();
+		std::vector<size_t>::const_iterator itKey = keys.begin();
+		std::vector<size_t>::const_iterator itKeyLast = keys.end();
 		while(itKey != itKeyLast) {
 			if (*ptr_part != 0 && *ptr_part != 1)
-				cout << *ptr_part << "!!!" << endl;
+				std::cout << *ptr_part << "!!!" << std::endl;
 			switch(*(ptr_part++)) {
 			case 0: result.A.push_back(*(itKey++)); break;
 			case 1: result.B.push_back(*(itKey++)); break;
-			default: throw runtime_error("edgePartitionByMetis: invalid results from Metis ND!");
+			default: throw std::runtime_error("edgePartitionByMetis: invalid results from Metis ND!");
 			}
 		}
 
 		if (verbose) {
-			cout << "the size of two submaps in the reduced graph: " << result.A.size() 
-				<< " " << result.B.size() << endl;
+			std::cout << "the size of two submaps in the reduced graph: " << result.A.size()
+				<< " " << result.B.size() << std::endl;
 			int edgeCut = 0;
 
 			BOOST_FOREACH(const typename GenericGraph::value_type& factor, graph){
 				int key1 = factor->key1.index;
 				int key2 = factor->key2.index;
 				// print keys and their subgraph assignment
-				cout << key1;
-				if (std::find(result.A.begin(), result.A.end(), key1) != result.A.end()) cout <<"A ";
-				if (std::find(result.B.begin(), result.B.end(), key1) != result.B.end()) cout <<"B ";
+				std::cout << key1;
+				if (std::find(result.A.begin(), result.A.end(), key1) != result.A.end()) std::cout <<"A ";
+				if (std::find(result.B.begin(), result.B.end(), key1) != result.B.end()) std::cout <<"B ";
 
-				cout << key2;
-				if (std::find(result.A.begin(), result.A.end(), key2) != result.A.end()) cout <<"A ";
-				if (std::find(result.B.begin(), result.B.end(), key2) != result.B.end()) cout <<"B ";
-        cout << "weight " << factor->weight;;
+				std::cout << key2;
+				if (std::find(result.A.begin(), result.A.end(), key2) != result.A.end()) std::cout <<"A ";
+				if (std::find(result.B.begin(), result.B.end(), key2) != result.B.end()) std::cout <<"B ";
+        std::cout << "weight " << factor->weight;;
 
 				// find vertices that were assigned to sets A & B. Their edge will be cut
 				if ((std::find(result.A.begin(), result.A.end(), key1) != result.A.end() &&
@@ -353,48 +351,48 @@ namespace gtsam { namespace partition {
   					(std::find(result.B.begin(), result.B.end(), key1) != result.B.end() &&
    					 std::find(result.A.begin(), result.A.end(), key2) != result.A.end())){
 					edgeCut ++;
-					cout << " CUT ";
+					std::cout << " CUT ";
 				}
-				cout << endl;
+				std::cout << std::endl;
 			}
-			cout << "edgeCut: " << edgeCut << endl;
+			std::cout << "edgeCut: " << edgeCut << std::endl;
 		}
 
 		return boost::make_optional<MetisResult >(result);
 	}
 
 	/* ************************************************************************* */
-	bool isLargerIsland(const vector<size_t>& island1, const vector<size_t>& island2) {
+	bool isLargerIsland(const std::vector<size_t>& island1, const std::vector<size_t>& island2) {
 		return island1.size() > island2.size();
 	}
 
 	/* ************************************************************************* */
 	// debug functions
-	void printIsland(const vector<size_t>& island) {
-		cout << "island: ";
+	void printIsland(const std::vector<size_t>& island) {
+		std::cout << "island: ";
 		BOOST_FOREACH(const size_t key, island)
-			cout << key << " ";
-		cout << endl;
+			std::cout << key << " ";
+		std::cout << std::endl;
 	}
 
-	void printIslands(const list<vector<size_t> >& islands) {
-		BOOST_FOREACH(const vector<size_t>& island, islands)
+	void printIslands(const std::list<std::vector<size_t> >& islands) {
+		BOOST_FOREACH(const std::vector<std::size_t>& island, islands)
 				printIsland(island);
 	}
 
-	void printNumCamerasLandmarks(const vector<size_t>& keys, const vector<Symbol>& int2symbol) {
+	void printNumCamerasLandmarks(const std::vector<size_t>& keys, const std::vector<Symbol>& int2symbol) {
 		int numCamera = 0, numLandmark = 0;
 		BOOST_FOREACH(const size_t key, keys)
 		if (int2symbol[key].chr() == 'x')
 			numCamera++;
 		else
 			numLandmark++;
-		cout << "numCamera: " << numCamera << " numLandmark: " << numLandmark << endl;
+		std::cout << "numCamera: " << numCamera << " numLandmark: " << numLandmark << std::endl;
 	}
 
 	/* ************************************************************************* */
 	template<class GenericGraph>
-	void addLandmarkToPartitionResult(const GenericGraph& graph, const vector<size_t>& landmarkKeys,
+	void addLandmarkToPartitionResult(const GenericGraph& graph, const std::vector<size_t>& landmarkKeys,
 			MetisResult& partitionResult, WorkSpace& workspace) {
 
 		// set up cameras in the dictionary
@@ -408,7 +406,7 @@ namespace gtsam { namespace partition {
 		BOOST_FOREACH(const size_t b, B)
 			dictionary[b] = 2;
 		if (!C.empty())
-			throw runtime_error("addLandmarkToPartitionResult: C is not empty");
+			throw std::runtime_error("addLandmarkToPartitionResult: C is not empty");
 
 		// set up landmarks
 		size_t i,j;
@@ -424,7 +422,7 @@ namespace gtsam { namespace partition {
 					dictionary[j] = 0;
 			}
 //			if (j == 67980)
-//				cout << "dictionary[67980]" << dictionary[j] << endl;
+//				std::cout << "dictionary[67980]" << dictionary[j] << std::endl;
 		}
 
 		BOOST_FOREACH(const size_t j, landmarkKeys) {
@@ -432,8 +430,8 @@ namespace gtsam { namespace partition {
 			case 0: C.push_back(j); break;
 			case 1: A.push_back(j); break;
 			case 2: B.push_back(j); break;
-			default: cout << j << ": " << dictionary[j] << endl; 
-			throw runtime_error("addLandmarkToPartitionResult: wrong status for landmark");
+			default: std::cout << j << ": " << dictionary[j] << std::endl;
+			throw std::runtime_error("addLandmarkToPartitionResult: wrong status for landmark");
 			}
 		}
 	}
@@ -442,13 +440,13 @@ namespace gtsam { namespace partition {
 
 	/* ************************************************************************* */
 	template<class GenericGraph>
-	boost::optional<MetisResult> findPartitoning(const GenericGraph& graph, const vector<size_t>& keys,
+	boost::optional<MetisResult> findPartitoning(const GenericGraph& graph, const std::vector<size_t>& keys,
 			WorkSpace& workspace, bool verbose,
-			const boost::optional<vector<Symbol> >& int2symbol, const bool reduceGraph) {
+			const boost::optional<std::vector<Symbol> >& int2symbol, const bool reduceGraph) {
 		boost::optional<MetisResult> result;
 		GenericGraph reducedGraph;
-		vector<size_t> keyToPartition;
-		vector<size_t> cameraKeys, landmarkKeys;
+		std::vector<size_t> keyToPartition;
+		std::vector<size_t> cameraKeys, landmarkKeys;
 		if (reduceGraph) {
 			if (!int2symbol.is_initialized())
 				throw std::invalid_argument("findSeparator: int2symbol must be valid!");
@@ -467,20 +465,20 @@ namespace gtsam { namespace partition {
 			workspace.prepareDictionary(keyToPartition);
 			const std::vector<int>& dictionary = workspace.dictionary;
 			reduceGenericGraph(graph, cameraKeys, landmarkKeys, dictionary, reducedGraph);
-			cout << "original graph: V" << keys.size() << ", E" << graph.size() 
-			<< " --> reduced graph: V" << cameraKeys.size() << ", E" << reducedGraph.size() << endl;
+			std::cout << "original graph: V" << keys.size() << ", E" << graph.size()
+			<< " --> reduced graph: V" << cameraKeys.size() << ", E" << reducedGraph.size() << std::endl;
 			result = edgePartitionByMetis(reducedGraph, keyToPartition, workspace, verbose);
 		}	else // call Metis to partition the graph to A, B, C
 			result = separatorPartitionByMetis(graph, keys, workspace, verbose);
 
 		if (!result.is_initialized()) {
-			cout << "metis failed!" << endl;
+			std::cout << "metis failed!" << std::endl;
 			return 0;
 		}
 
 		if (reduceGraph) {
 			addLandmarkToPartitionResult(graph, landmarkKeys, *result, workspace);
-			cout << "the separator size: " << result->C.size() << " landmarks" << endl;
+			std::cout << "the separator size: " << result->C.size() << " landmarks" << std::endl;
 		}
 
 		return result;
@@ -488,22 +486,22 @@ namespace gtsam { namespace partition {
 
 	/* ************************************************************************* */
 	template<class GenericGraph>
-	int findSeparator(const GenericGraph& graph, const vector<size_t>& keys,
+	int findSeparator(const GenericGraph& graph, const std::vector<size_t>& keys,
 			const int minNodesPerMap, WorkSpace& workspace, bool verbose,
-			const boost::optional<vector<Symbol> >& int2symbol, const bool reduceGraph,
+			const boost::optional<std::vector<Symbol> >& int2symbol, const bool reduceGraph,
 			const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark) {
 
 		boost::optional<MetisResult> result = findPartitoning(graph, keys, workspace, 
 			verbose, int2symbol, reduceGraph);
 
 		// find the island in A and B, and make them separated submaps
-		typedef vector<size_t> Island;
-		list<Island> islands;
+		typedef std::vector<size_t> Island;
+		std::list<Island> islands;
 
-		list<Island> islands_in_A = findIslands(graph, result->A, workspace, 
+		std::list<Island> islands_in_A = findIslands(graph, result->A, workspace,
 			minNrConstraintsPerCamera, minNrConstraintsPerLandmark);
 
-		list<Island> islands_in_B = findIslands(graph, result->B, workspace, 
+		std::list<Island> islands_in_B = findIslands(graph, result->B, workspace,
 			minNrConstraintsPerCamera, minNrConstraintsPerLandmark);
 
 		islands.insert(islands.end(), islands_in_A.begin(), islands_in_A.end());
@@ -514,13 +512,13 @@ namespace gtsam { namespace partition {
 #ifdef NDEBUG
 //		verbose = true;
 //		if (!int2symbol) throw std::invalid_argument("findSeparator: int2symbol is not set!");
-//		cout << "sep size: " << result->C.size() << "; ";
+//		std::cout << "sep size: " << result->C.size() << "; ";
 //		printNumCamerasLandmarks(result->C, *int2symbol);
-//		cout << "no. of island: " << islands.size() << "; ";
-//		cout << "island size: ";
+//		std::cout << "no. of island: " << islands.size() << "; ";
+//		std::cout << "island size: ";
 //		BOOST_FOREACH(const Island& island, islands)
-//			cout << island.size() << " ";
-//		cout << endl;
+//			std::cout << island.size() << " ";
+//		std::cout << std::endl;
 
 //		BOOST_FOREACH(const Island& island, islands) {
 //			printNumCamerasLandmarks(island, int2symbol);
@@ -531,20 +529,20 @@ namespace gtsam { namespace partition {
 		size_t oldSize = islands.size();
 		while(true) {
 			if (islands.size() < 2) {
-				cout << "numIsland: " << numIsland0 << endl;
-				throw runtime_error("findSeparator: found fewer than 2 submaps!");
+				std::cout << "numIsland: " << numIsland0 << std::endl;
+				throw std::runtime_error("findSeparator: found fewer than 2 submaps!");
 			}
 
-			list<Island>::reference island = islands.back();
+			std::list<Island>::reference island = islands.back();
 			if ((int)island.size() >= minNodesPerMap) break;
 			result->C.insert(result->C.end(), island.begin(), island.end());
 			islands.pop_back();
 		}
 		if (islands.size() != oldSize){
-			if (verbose) cout << oldSize << "-" << oldSize - islands.size() << " submap(s);\t" << endl;
+			if (verbose) std::cout << oldSize << "-" << oldSize - islands.size() << " submap(s);\t" << std::endl;
 		}
 		else{
-			if (verbose) cout << oldSize << " submap(s);\t" << endl;
+			if (verbose) std::cout << oldSize << " submap(s);\t" << std::endl;
 		}
 
 		// generate the node map

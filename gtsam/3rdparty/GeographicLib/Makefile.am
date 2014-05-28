@@ -9,7 +9,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src man tools doc include matlab python cmake examples
 
-EXTRA_DIST = AUTHORS 00README.txt LICENSE.txt NEWS INSTALL \
+EXTRA_DIST = AUTHORS 00README.txt LICENSE.txt NEWS INSTALL pom.xml \
 	Makefile.mk CMakeLists.txt windows maxima doc legacy java dotnet
 
 dist-hook:

@@ -9,7 +9,7 @@ int usage(int retval, bool brief) {
 "For full documentation type:\n"
 "    Planimeter --help\n"
 "or visit:\n"
-"    http://geographiclib.sf.net/1.34/Planimeter.1.html\n";
+"    http://geographiclib.sf.net/1.35/Planimeter.1.html\n";
   else
     ( retval ? std::cerr : std::cout ) << "Man page:\n"
 "NAME\n"
@@ -76,7 +76,7 @@ int usage(int retval, bool brief) {
 "           default, the WGS84 ellipsoid is used, a = 6378137 m, f =\n"
 "           1/298.257223563.  If entering vertices as UTM/UPS or MGRS\n"
 "           coordinates, use the default ellipsoid, since the conversion of\n"
-"           these coordinates to latitude and longitude uses the WGS84\n"
+"           these coordinates to latitude and longitude always uses the WGS84\n"
 "           parameters.\n"
 "\n"
 "       --comment-delimiter\n"
