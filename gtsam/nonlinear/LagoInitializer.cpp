@@ -21,8 +21,8 @@
 
 namespace gtsam {
 
-Matrix I = eye(1);
-Matrix I3 = eye(3);
+static Matrix I = eye(1);
+static Matrix I3 = eye(3);
 
 /* ************************************************************************* */
 double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
