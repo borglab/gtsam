@@ -591,41 +591,17 @@ Matrix3 skewSymmetric(double wx, double wy, double wz)
 }
 
 /* ************************************************************************* */
-/** Numerical Recipes in C wrappers                                          
- *  create Numerical Recipes in C structure
- * pointers are subtracted by one to provide base 1 access 
- */
-/* ************************************************************************* */
-// FIXME: assumes row major, rather than column major
-//double** createNRC(Matrix& A) {
-//  const size_t m=A.rows();
-//  double** a = new double* [m];
-//  for(size_t i = 0; i < m; i++)
-//    a[i] = &A(i,0)-1;
-//  return a;
-//}
-
-/* ******************************************
- * 
- * Modified from Justin's codebase
- *
- *  Idea came from other public domain code.  Takes a S.P.D. matrix
- *  and computes the LL^t decomposition.  returns L, which is lower
- *  triangular.  Note this is the opposite convention from Matlab,
- *  which calculates Q'Q where Q is upper triangular.
- *
- * ******************************************/
 Matrix LLt(const Matrix& A)
 {
-  Matrix L = zeros(A.rows(), A.rows());
-  Eigen::LLT<Matrix> llt;
-  llt.compute(A);
+  Eigen::LLT<Matrix> llt(A);
   return llt.matrixL();
 }
 
+/* ************************************************************************* */
 Matrix RtR(const Matrix &A)
 {
-  return LLt(A).transpose();
+  Eigen::LLT<Matrix> llt(A);
+  return llt.matrixU();
 }
 
 /*
@@ -633,13 +609,10 @@ Matrix RtR(const Matrix &A)
  */
 Matrix cholesky_inverse(const Matrix &A)
 {
-  // FIXME: replace with real algorithm
-  return A.inverse();
-
-//  Matrix L = LLt(A);
-//  Matrix inv(eye(A.rows()));
-//  inplace_solve (L, inv, BNU::lower_tag ());
-//  return BNU::prod(trans(inv), inv);
+  Eigen::LLT<Matrix> llt(A);
+  Matrix inv = eye(A.rows());
+  llt.matrixU().solveInPlace<Eigen::OnTheRight>(inv);
+  return inv*inv.transpose();
 }
 
 /* ************************************************************************* */
@@ -648,9 +621,9 @@ Matrix cholesky_inverse(const Matrix &A)
 // inv(B) * inv(B)' == A
 // inv(B' * B) == A
 Matrix inverse_square_root(const Matrix& A) {
-  Matrix R = RtR(A);
+  Eigen::LLT<Matrix> llt(A);
   Matrix inv = eye(A.rows());
-  R.triangularView<Eigen::Upper>().solveInPlace<Eigen::OnTheRight>(inv);
+  llt.matrixU().solveInPlace<Eigen::OnTheRight>(inv);
   return inv.transpose();
 }
 
