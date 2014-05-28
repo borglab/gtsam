@@ -130,6 +130,9 @@ namespace gtsam {
     /// A'*b for Jacobian, eta for Hessian
     virtual VectorValues gradientAtZero() const = 0;
 
+    /// A'*b for Jacobian, eta for Hessian (raw memory version)
+    virtual void gradientAtZero(double* d) const = 0;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

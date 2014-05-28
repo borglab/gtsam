@@ -713,7 +713,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data, Values& va
   }
 
   for (size_t j = 0; j < dataValues.number_tracks(); j++){ // for each point
-    Key pointKey = symbol('l',j);
+    Key pointKey = P(j);
     if(values.exists(pointKey)){
       Point3 point = values.at<Point3>(pointKey);
       dataValues.tracks[j].p = point;

@@ -76,6 +76,13 @@ namespace gtsam {
     }
 
   /* ************************************************************************* */
+  GaussianFactorGraph::shared_ptr GaussianFactorGraph::cloneToPtr() const {
+    gtsam::GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
+    *result = *this;
+    return result;
+  }
+
+  /* ************************************************************************* */
   GaussianFactorGraph GaussianFactorGraph::clone() const {
     GaussianFactorGraph result;
     BOOST_FOREACH(const sharedFactor& f, *this) {
