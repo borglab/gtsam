@@ -23,6 +23,19 @@ public:
   JacobianFactorQ() {
   }
 
+  /// Empty constructor with keys
+  JacobianFactorQ(const FastVector<Key>& keys,
+      const SharedDiagonal& model =  SharedDiagonal()) : JacobianSchurFactor<D>() {
+    Matrix zeroMatrix = Matrix::Zero(0,D);
+    Vector zeroVector = Vector::Zero(0);
+    typedef std::pair<Key, Matrix> KeyMatrix;
+    std::vector<KeyMatrix> QF;
+    QF.reserve(keys.size());
+    BOOST_FOREACH(const Key& key, keys)
+            QF.push_back(KeyMatrix(key, zeroMatrix));
+    JacobianFactor::fillTerms(QF, zeroVector, model);
+  }
+
   /// Constructor
   JacobianFactorQ(const std::vector<typename Base::KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix3& P, const Vector& b,

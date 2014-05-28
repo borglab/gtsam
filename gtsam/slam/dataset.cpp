@@ -112,14 +112,14 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   // Create a sampler with random number generator
   Sampler sampler(42u);
 
-  // load the factors
+  // Parse the pose constraints
+  int id1, id2;
   bool haveLandmark = false;
   while (is) {
     if(! (is >> tag))
       break;
 
     if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
-      int id1, id2;
       double x, y, yaw;
       double v1, v2, v3, v4, v5, v6;
 
@@ -168,68 +168,75 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
           new BetweenFactor<Pose2>(id1, id2, l1Xl2, *model));
       graph->push_back(factor);
     }
+
+    // Parse measurements
+    double bearing, range, bearing_std, range_std;
+
+    // A bearing-range measurement
     if (tag == "BR") {
-      int id1, id2;
-      double bearing, range, bearing_std, range_std;
-
       is >> id1 >> id2 >> bearing >> range >> bearing_std >> range_std;
-
-      // optional filter
-      if (maxID && (id1 >= maxID || id2 >= maxID))
-        continue;
-
-      noiseModel::Diagonal::shared_ptr measurementNoise =
-          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
-      *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
-
-      // Insert poses or points if they do not exist yet
-      if (!initial->exists(id1))
-        initial->insert(id1, Pose2());
-      if (!initial->exists(id2)) {
-        Pose2 pose = initial->at<Pose2>(id1);
-        Point2 local(cos(bearing)*range,sin(bearing)*range);
-        Point2 global = pose.transform_from(local);
-        initial->insert(id2, global);
-      }
     }
+
+    // A landmark measurement, TODO Frank says: don't know why is converted to bearing-range
     if (tag == "LANDMARK") {
-      int id1, id2;
       double lmx, lmy;
       double v1, v2, v3;
 
       is >> id1 >> id2 >> lmx >> lmy >> v1 >> v2 >> v3;
 
       // Convert x,y to bearing,range
-      double bearing = std::atan2(lmy, lmx);
-      double range = std::sqrt(lmx*lmx + lmy*lmy);
+      bearing = std::atan2(lmy, lmx);
+      range = std::sqrt(lmx*lmx + lmy*lmy);
 
       // In our experience, the x-y covariance on landmark sightings is not very good, so assume
-      // that it describes the uncertainty at a range of 10m, and convert that to bearing/range
-      // uncertainty.
-      SharedDiagonal measurementNoise;
+      // it describes the uncertainty at a range of 10m, and convert that to bearing/range uncertainty.
       if(std::abs(v1 - v3) < 1e-4)
       {
-        double rangeVar = v1;
-        double bearingVar = v1 / 10.0;
-        measurementNoise = noiseModel::Diagonal::Sigmas((Vector(2) << bearingVar, rangeVar));
+        bearing_std = sqrt(v1 / 10.0);
+        range_std = sqrt(v1);
       }
       else
       {
+        bearing_std = 1;
+        range_std = 1;
         if(!haveLandmark) {
           cout << "Warning: load2D is a very simple dataset loader and is ignoring the\n"
               "non-uniform covariance on LANDMARK measurements in this file." << endl;
           haveLandmark = true;
         }
       }
+    }
+
+    // Do some common stuff for bearing-range measurements
+    if (tag == "LANDMARK" || tag == "BR") {
+
+      // optional filter
+      if (maxID && id1 >= maxID)
+        continue;
+
+      // Create noise model
+      noiseModel::Diagonal::shared_ptr measurementNoise =
+          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
 
       // Add to graph
-      *graph += BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range, measurementNoise);
+      *graph += BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range,
+          measurementNoise);
+
+      // Insert poses or points if they do not exist yet
+      if (!initial->exists(id1))
+        initial->insert(id1, Pose2());
+      if (!initial->exists(L(id2))) {
+        Pose2 pose = initial->at<Pose2>(id1);
+        Point2 local(cos(bearing)*range,sin(bearing)*range);
+        Point2 global = pose.transform_from(local);
+        initial->insert(L(id2), global);
+      }
     }
     is.ignore(LINESIZE, '\n');
   }
 
   cout << "load2D read a graph file with " << initial->size()
-                        << " vertices and " << graph->nrFactors() << " factors" << endl;
+      << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
@@ -817,7 +824,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data, Values& va
   }
 
   for (size_t j = 0; j < dataValues.number_tracks(); j++){ // for each point
-    Key pointKey = symbol('l',j);
+    Key pointKey = P(j);
     if(values.exists(pointKey)){
       Point3 point = values.at<Point3>(pointKey);
       dataValues.tracks[j].p = point;

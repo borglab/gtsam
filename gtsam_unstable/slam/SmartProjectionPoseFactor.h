@@ -22,6 +22,16 @@
 #include "SmartProjectionFactor.h"
 
 namespace gtsam {
+/**
+ *
+ * @addtogroup SLAM
+ *
+ * If you are using the factor, please cite:
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
+ * independent sets in factor graphs: a unifying perspective based on smart factors,
+ * Int. Conf. on Robotics and Automation (ICRA), 2014.
+ *
+ */
 
 /**
  * The calibration is known here. The factor only constraints poses (variable dimension is 6)
@@ -30,6 +40,8 @@ namespace gtsam {
 template<class POSE, class LANDMARK, class CALIBRATION>
 class SmartProjectionPoseFactor: public SmartProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> {
 protected:
+
+  linearizationType linearizeTo_;
 
   // Known calibration
   std::vector<boost::shared_ptr<CALIBRATION> > K_all_; ///< shared pointer to calibration object (one for each camera)
@@ -56,8 +68,11 @@ public:
    */
   SmartProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, boost::optional<POSE> body_P_sensor = boost::none) :
-        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor) {}
+      const bool enableEPI = false, boost::optional<POSE> body_P_sensor = boost::none,
+      linearizationType linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
+      double dynamicOutlierRejectionThreshold = -1) :
+        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor,
+        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(linearizeTo) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionPoseFactor() {}
@@ -139,11 +154,22 @@ public:
   }
 
   /**
-   * linearize returns a Hessian factor contraining the poses
+   * linear factor on the poses
    */
   virtual boost::shared_ptr<GaussianFactor> linearize(
       const Values& values) const {
-    return this->createHessianFactor(cameras(values));
+    // depending on flag set on construction we may linearize to different linear factors
+    switch(linearizeTo_){
+    case JACOBIAN_SVD :
+      return this->createJacobianSVDFactor(cameras(values), 0.0);
+      break;
+    case JACOBIAN_Q :
+      return this->createJacobianQFactor(cameras(values), 0.0);
+      break;
+    default:
+      return this->createHessianFactor(cameras(values));
+      break;
+    }
   }
 
   /**

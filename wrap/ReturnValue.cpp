@@ -141,5 +141,13 @@ void ReturnValue::wrapTypeUnwrap(FileWriter& wrapperFile) const {
   }
 }
 /* ************************************************************************* */
+void ReturnValue::emit_matlab(FileWriter& file) const {
+  string output;
+  if (isPair)
+    file.oss << "[ varargout{1} varargout{2} ] = ";
+  else if (category1 != ReturnValue::VOID)
+    file.oss << "varargout{1} = ";
+}
+/* ************************************************************************* */
 
 

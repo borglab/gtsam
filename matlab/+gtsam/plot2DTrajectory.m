@@ -8,53 +8,41 @@ function plot2DTrajectory(values, linespec, marginals)
 import gtsam.*
 
 if ~exist('linespec', 'var') || isempty(linespec)
-    linespec = 'k*-';
+  linespec = 'k*-';
 end
 
 haveMarginals = exist('marginals', 'var');
-keys = KeyVector(values.keys);
 
 holdstate = ishold;
 hold on
 
-% Plot poses and covariance matrices
-lastIndex = [];
-for i = 0:keys.size-1
+% Do something very efficient to draw trajectory
+poses = utilities.extractPose2(values);
+X = poses(:,1);
+Y = poses(:,2);
+theta = poses(:,3);
+plot(X,Y,linespec);
+
+% Quiver can also be vectorized if no marginals asked
+if ~haveMarginals
+  C = cos(theta);
+  S = sin(theta);
+  quiver(X,Y,C,S,0.1,linespec);
+else
+  % plotPose2 does both quiver and covariance matrix
+  keys = KeyVector(values.keys);
+  for i = 0:keys.size-1
     key = keys.at(i);
     x = values.at(key);
     if isa(x, 'gtsam.Pose2')
-        if ~isempty(lastIndex)
-            % Draw line from last pose then covariance ellipse on top of
-            % last pose.
-            lastKey = keys.at(lastIndex);
-            lastPose = values.at(lastKey);
-            plot([ x.x; lastPose.x ], [ x.y; lastPose.y ], linespec);
-            if haveMarginals
-                P = marginals.marginalCovariance(lastKey);
-                gtsam.plotPose2(lastPose, 'g', P);
-            else
-                gtsam.plotPose2(lastPose, 'g', []);
-            end
-            
-        end
-        lastIndex = i;
+      P = marginals.marginalCovariance(key);
+      gtsam.plotPose2(x,linespec(1), P);
     end
-end
-
-% Draw final covariance ellipse
-if ~isempty(lastIndex)
-    lastKey = keys.at(lastIndex);
-    lastPose = values.at(lastKey);
-    if haveMarginals
-        P = marginals.marginalCovariance(lastKey);
-        gtsam.plotPose2(lastPose, 'g', P);
-    else
-        gtsam.plotPose2(lastPose, 'g', []);
-    end
+  end
 end
 
 if ~holdstate
-    hold off
+  hold off
 end
 
 end
