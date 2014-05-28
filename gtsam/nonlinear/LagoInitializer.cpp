@@ -31,7 +31,6 @@ double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
   double nodeTheta = 0;
   Key key_child = nodeKey; // the node
   Key key_parent = 0; // the initialization does not matter
-  ///std::cout << "start" << std::endl;
   while(1){
     // We check if we reached the root
     if(tree.at(key_child)==key_child) // if we reached the root
@@ -47,7 +46,6 @@ double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
     }
     key_child = key_parent; // we move upwards in the tree
   }
-  ///std::cout << "end" << std::endl;
   return nodeTheta;
 }
 
@@ -107,15 +105,6 @@ void getSymbolicGraph(
     }
     id++;
   }
-
-  ///g.print("Before detlta map \n");
-
-  key2doubleMap::const_iterator it;
-  for(it = deltaThetaMap.begin(); it != deltaThetaMap.end(); ++it ){
-    Key nodeKey = it->first;
-    ///std::cout << "deltaThMAP = key " << DefaultKeyFormatter(nodeKey) << " th= " << it->second << std::endl;
-  }
-
 }
 
 /* ************************************************************************* */
@@ -222,9 +211,8 @@ PredecessorMap<Key> findOdometricPath(const NonlinearFactorGraph& pose2Graph) {
 }
 
 /* ************************************************************************* */
-VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph){
+VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph, bool useOdometricPath){
 
-  bool useOdometricPath = true;
   // Find a minimum spanning tree
   PredecessorMap<Key> tree;
   if (useOdometricPath)
@@ -232,20 +220,14 @@ VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph){
   else
     tree = findMinimumSpanningTree<NonlinearFactorGraph, Key, BetweenFactor<Pose2> >(pose2Graph);
 
-  ///std::cout << "found spanning tree"  << std::endl;
-
   // Create a linear factor graph (LFG) of scalars
   key2doubleMap deltaThetaMap;
   std::vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
   std::vector<size_t> chordsIds;       // ids of between factors corresponding to chordsIds wrt T
   getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, pose2Graph);
 
-  ///std::cout << "found symbolic graph"  << std::endl;
-
   // temporary structure to correct wraparounds along loops
   key2doubleMap orientationsToRoot = computeThetasToRoot(deltaThetaMap, tree);
-
-  ///std::cout << "computed orientations from root"  << std::endl;
 
   // regularize measurements and plug everything in a factor graph
   GaussianFactorGraph lagoGraph = buildLinearOrientationGraph(spanningTreeIds, chordsIds, pose2Graph, orientationsToRoot, tree);
@@ -257,14 +239,14 @@ VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph){
 }
 
 /* ************************************************************************* */
-VectorValues initializeOrientationsLago(const NonlinearFactorGraph& graph) {
+VectorValues initializeOrientationsLago(const NonlinearFactorGraph& graph, bool useOdometricPath) {
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
   NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
 
   // Get orientations from relative orientation measurements
-  return computeLagoOrientations(pose2Graph);
+  return computeLagoOrientations(pose2Graph, useOdometricPath);
 }
 
 /* ************************************************************************* */
@@ -289,8 +271,6 @@ Values computeLagoPoses(const NonlinearFactorGraph& pose2graph, VectorValues& or
 
       double linearDeltaRot = theta2 - theta1 - pose2Between->measured().theta();
       linearDeltaRot = Rot2(linearDeltaRot).theta(); // to normalize
-      if(fabs(linearDeltaRot)>M_PI)
-        std::cout << "linearDeltaRot " << linearDeltaRot << std::endl;
 
       double dx = pose2Between->measured().x();
       double dy = pose2Between->measured().y();
@@ -330,31 +310,16 @@ Values computeLagoPoses(const NonlinearFactorGraph& pose2graph, VectorValues& or
 }
 
 /* ************************************************************************* */
-Values initializeLago(const NonlinearFactorGraph& graph) {
+Values initializeLago(const NonlinearFactorGraph& graph, bool useOdometricPath) {
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
-  ///std::cout << "buildPose2graph" << std::endl;
   NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
 
   // Get orientations from relative orientation measurements
-  ///std::cout << "computeLagoOrientations" << std::endl;
-  VectorValues orientationsLago = computeLagoOrientations(pose2Graph);
-
-//  VectorValues orientationsLago;
-//  NonlinearFactorGraph g;
-//  Values orientationsLagoV;
-//  readG2o("/home/aspn/Desktop/orientationsNoisyToyGraph.txt", g, orientationsLagoV);
-//
-//  BOOST_FOREACH(const Values::KeyValuePair& key_val, orientationsLagoV){
-//    Key k = key_val.key;
-//    double th = orientationsLagoV.at<Pose2>(k).theta();
-//    orientationsLago.insert(k,(Vector(1) << th));
-//  }
-//  orientationsLago.insert(keyAnchor,(Vector(1) << 0.0));
+  VectorValues orientationsLago = computeLagoOrientations(pose2Graph, useOdometricPath);
 
   // Compute the full poses
-  ///std::cout << "computeLagoPoses" << std::endl;
   return computeLagoPoses(pose2Graph, orientationsLago);
 }
 

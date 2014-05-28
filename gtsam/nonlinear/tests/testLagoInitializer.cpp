@@ -144,10 +144,10 @@ TEST( Lago, regularizedMeasurements ) {
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
 
-/* *************************************************************************** *
+/* *************************************************************************** */
 TEST( Lago, smallGraphVectorValues ) {
-
-  VectorValues initialGuessLago = initializeOrientationsLago(simple::graph());
+  bool useOdometricPath = false;
+  VectorValues initialGuessLago = initializeOrientationsLago(simple::graph(), useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
@@ -168,11 +168,12 @@ TEST( Lago, smallGraphVectorValuesSP ) {
   EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initialGuessLago.at(x3), 1e-6));
 }
 
-/* *************************************************************************** *
+/* *************************************************************************** */
 TEST( Lago, multiplePosePriors ) {
+  bool useOdometricPath = false;
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
-  VectorValues initialGuessLago = initializeOrientationsLago(g);
+  VectorValues initialGuessLago = initializeOrientationsLago(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
@@ -195,11 +196,12 @@ TEST_UNSAFE( Lago, multiplePosePriorsSP ) {
   EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initialGuessLago.at(x3), 1e-6));
 }
 
-/* *************************************************************************** *
+/* *************************************************************************** */
 TEST( Lago, multiplePoseAndRotPriors ) {
+  bool useOdometricPath = false;
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
-  VectorValues initialGuessLago = initializeOrientationsLago(g);
+  VectorValues initialGuessLago = initializeOrientationsLago(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
@@ -209,7 +211,7 @@ TEST( Lago, multiplePoseAndRotPriors ) {
 }
 
 /* *************************************************************************** */
-TEST( Lago, multiplePoseAndRotPriors ) {
+TEST( Lago, multiplePoseAndRotPriorsSP ) {
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
   VectorValues initialGuessLago = initializeOrientationsLago(g);

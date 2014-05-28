@@ -83,13 +83,13 @@ GaussianFactorGraph buildLinearOrientationGraph(const std::vector<size_t>& spann
 NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph);
 
 /* Returns the orientations of a graph including only BetweenFactors<Pose2> */
-VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph);
+VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph, bool useOdometricPath = true);
 
 /*  LAGO: Returns the orientations of the Pose2 in a generic factor graph */
-VectorValues initializeOrientationsLago(const NonlinearFactorGraph& graph);
+VectorValues initializeOrientationsLago(const NonlinearFactorGraph& graph, bool useOdometricPath = true);
 
 /*  Returns the values for the Pose2 in a generic factor graph */
-Values initializeLago(const NonlinearFactorGraph& graph);
+Values initializeLago(const NonlinearFactorGraph& graph, bool useOdometricPath = true);
 
 /*  Only corrects the orientation part in initialGuess */
 Values initializeLago(const NonlinearFactorGraph& graph, const Values& initialGuess);
