@@ -237,15 +237,15 @@ TEST( Lago, smallGraphNoisy_orientations ) {
 
   // Results from Matlab
   //  VERTEX_SE2 0 0.000000 0.000000 0.000000
-  //  VERTEX_SE2 1 0.000000 0.000000 1.568774
-  //  VERTEX_SE2 2 0.000000 0.000000 3.142238
-  //  VERTEX_SE2 3 0.000000 0.000000 4.702950
+  //  VERTEX_SE2 1 0.000000 0.000000 1.565449
+  //  VERTEX_SE2 2 0.000000 0.000000 3.134143
+  //  VERTEX_SE2 3 0.000000 0.000000 4.710123
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(0), 1e-5));
-  EXPECT(assert_equal((Vector(1) << 1.568774), initialGuessLago.at(1), 1e-5));
-  EXPECT(assert_equal((Vector(1) << 3.14223 - 2*M_PI), initialGuessLago.at(2), 1e-5));
-  EXPECT(assert_equal((Vector(1) << 4.702950 - 2*M_PI), initialGuessLago.at(3), 1e-5));
+  EXPECT(assert_equal((Vector(1) << 1.565449), initialGuessLago.at(1), 1e-5));
+  EXPECT(assert_equal((Vector(1) << 3.134143), initialGuessLago.at(2), 1e-5));
+  EXPECT(assert_equal((Vector(1) << 4.710123 - 2*M_PI), initialGuessLago.at(3), 1e-5));
 }
 
 /* *************************************************************************** */
@@ -264,18 +264,18 @@ TEST( Lago, smallGraphNoisy ) {
   Values actual = initializeLago(graphWithPrior);
 
   // Optimized results from matlab
-  //  VERTEX_SE2 0 0.000000 0.000000 0.000000
-  //  VERTEX_SE2 1 1.141931 0.980395 1.569023
-  //  VERTEX_SE2 2 0.124207 2.140972 -3.140451
-  //  VERTEX_SE2 3 -0.958080 1.070072 -1.577699
+//  VERTEX_SE2 0 0.000000 -0.000000 0.000000
+//  VERTEX_SE2 1 0.955797 1.137643 -0.022408
+//  VERTEX_SE2 2 0.129867 1.989651 0.067117
+//  VERTEX_SE2 3 -1.047715 0.933789 0.033559
 
   Values expected;
-  expected.insert(x0,Pose2(0.000000, 0.000000, 0.000000));
-  expected.insert(x1,Pose2(1.141931, 0.980395, 1.569023));
-  expected.insert(x2,Pose2(0.124207, 2.140972, -3.140451));
-  expected.insert(x3,Pose2(-0.958080, 1.070072, -1.577699));
+  expected.insert(0,Pose2(0.000000, 0.000000, 0.000000));
+  expected.insert(1,Pose2(0.955797, 1.137643, 1.565449 -0.022408));
+  expected.insert(2,Pose2(0.129867, 1.989651, 3.134143 + 0.067117));
+  expected.insert(3,Pose2(-1.047715, 0.933789, 4.710123 + 0.033559));
 
-  EXPECT(assert_equal(expected, actual, 1e-6));
+  EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
 /* ************************************************************************* */

@@ -20,6 +20,9 @@
 
 namespace gtsam {
 
+Matrix I = eye(1);
+Matrix I3 = eye(3);
+
 /* ************************************************************************* */
 double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
     const key2doubleMap& deltaThetaMap, const key2doubleMap& thetaFromRootMap) {
@@ -129,7 +132,6 @@ GaussianFactorGraph buildLinearOrientationGraph(const std::vector<size_t>& spann
   Vector deltaTheta;
   noiseModel::Diagonal::shared_ptr model_deltaTheta;
 
-  Matrix I = eye(1);
   // put original measurements in the spanning tree
   BOOST_FOREACH(const size_t& factorId, spanningTreeIds){
     const FastVector<Key>& keys = g[factorId]->keys();
@@ -212,6 +214,68 @@ VectorValues initializeOrientationsLago(const NonlinearFactorGraph& graph) {
 }
 
 /* ************************************************************************* */
+Values computeLagoPoses(const NonlinearFactorGraph& pose2graph, VectorValues& orientationsLago) {
+
+  // Linearized graph on full poses
+  GaussianFactorGraph linearPose2graph;
+
+  // We include the linear version of each between factor
+  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, pose2graph){
+
+    boost::shared_ptr< BetweenFactor<Pose2> > pose2Between =
+        boost::dynamic_pointer_cast< BetweenFactor<Pose2> >(factor);
+
+    if(pose2Between){
+      Key key1 = pose2Between->keys()[0];
+      double theta1 = orientationsLago.at(key1)(0);
+      double s1 = sin(theta1); double c1 = cos(theta1);
+
+      Key key2 = pose2Between->keys()[1];
+      double theta2 = orientationsLago.at(key2)(0);
+
+      double linearDeltaRot = theta2 - theta1 - pose2Between->measured().theta();
+      linearDeltaRot = Rot2(linearDeltaRot).theta(); // to normalize
+      if(fabs(linearDeltaRot)>M_PI)
+        std::cout << "linearDeltaRot " << linearDeltaRot << std::endl;
+
+      double dx = pose2Between->measured().x();
+      double dy = pose2Between->measured().y();
+
+      Vector globalDeltaCart = (Vector(2) << c1*dx - s1*dy, s1*dx + c1*dy);
+      Vector b = (Vector(3) <<  globalDeltaCart, linearDeltaRot );// rhs
+      Matrix J1 = - I3;
+      J1(0,2) =  s1*dx + c1*dy;
+      J1(1,2) = -c1*dx + s1*dy;
+      // Retrieve the noise model for the relative rotation
+      boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+          boost::dynamic_pointer_cast<noiseModel::Diagonal>(pose2Between->get_noiseModel());
+
+      linearPose2graph.add(JacobianFactor(key1, J1, key2, I3, b, diagonalModel));
+    }else{
+      throw std::invalid_argument("computeLagoPoses: cannot manage non between factor here!");
+    }
+  }
+  // add prior
+  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
+  linearPose2graph.add(JacobianFactor(keyAnchor, I3, (Vector(3) << 0.0,0.0,0.0), priorModel));
+
+  // optimize
+  VectorValues posesLago = linearPose2graph.optimize();
+
+  // put into Values structure
+  Values initialGuessLago;
+  for(VectorValues::const_iterator it = posesLago.begin(); it != posesLago.end(); ++it ){
+    Key key = it->first;
+    if (key != keyAnchor){
+      Vector poseVector = posesLago.at(key);
+      Pose2 poseLago = Pose2(poseVector(0),poseVector(1),orientationsLago.at(key)(0)+poseVector(2));
+      initialGuessLago.insert(key, poseLago);
+    }
+  }
+  return initialGuessLago;
+}
+
+/* ************************************************************************* */
 Values initializeLago(const NonlinearFactorGraph& graph) {
 
   // We "extract" the Pose2 subgraph of the original graph: this
@@ -221,24 +285,8 @@ Values initializeLago(const NonlinearFactorGraph& graph) {
   // Get orientations from relative orientation measurements
   VectorValues orientationsLago = computeLagoOrientations(pose2Graph);
 
-  Values initialGuessLago;
-  // for all nodes in the tree
-  for(VectorValues::const_iterator it = orientationsLago.begin(); it != orientationsLago.end(); ++it ){
-    Key key = it->first;
-    Vector orientation = orientationsLago.at(key);
-    Pose2 poseLago = Pose2(0.0,0.0,orientation(0));
-    initialGuessLago.insert(key, poseLago);
-  }
-  // add prior needed by GN
-  pose2Graph.add(PriorFactor<Pose2>(keyAnchor, Pose2(), priorPose2Noise));
-
-  // Optimize Pose2, with initialGuessLago as initial guess
-  GaussNewtonParams params;
-  params.setMaxIterations(1);
-  GaussNewtonOptimizer pose2optimizer(pose2Graph, initialGuessLago, params);
-  initialGuessLago = pose2optimizer.optimize();
-  initialGuessLago.erase(keyAnchor); // that was fictitious
-  return initialGuessLago;
+  // Compute the full poses
+  return computeLagoPoses(pose2Graph, orientationsLago);
 }
 
 /* ************************************************************************* */
