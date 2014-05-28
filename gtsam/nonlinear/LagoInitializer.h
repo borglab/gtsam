@@ -21,7 +21,10 @@
  *  for graph-based simultaneous localization and mapping, RSS, 2011.
  *
  *  @param graph: nonlinear factor graph (can include arbitrary factors but we assume
- *  that there is a subgraph involving Pose2 and betweenFactors)
+ *  that there is a subgraph involving Pose2 and betweenFactors). Also in the current
+ *  version we assume that there is an odometric spanning path (x0->x1, x1->x2, etc)
+ *  and a prior on x0. This assumption can be relaxed by using the extra argument
+ *  useOdometricPath = false, although this part of code is not stable yet.
  *  @return Values: initial guess from LAGO (only pose2 are initialized)
  *
  *  @author Luca Carlone

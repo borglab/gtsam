@@ -183,8 +183,7 @@ TEST( Lago, multiplePosePriors ) {
 }
 
 /* *************************************************************************** */
-TEST_UNSAFE( Lago, multiplePosePriorsSP ) {
-  std::cout << "test we care about" << std::endl;
+TEST( Lago, multiplePosePriorsSP ) {
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
   VectorValues initialGuessLago = initializeOrientationsLago(g);
@@ -262,62 +261,67 @@ TEST( Lago, smallGraph2 ) {
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
 
-/* *************************************************************************** *
-TEST( Lago, smallGraphNoisy_orientations ) {
+/* *************************************************************************** */
+TEST( Lago, largeGraphNoisy_orientations ) {
 
   NonlinearFactorGraph g;
   Values initial;
-  readG2o("/home/aspn/Desktop/noisyToyGraph.txt", g, initial);
+  string inputFile = findExampleDataFile("noisyToyGraph");
+  readG2o(inputFile, g, initial);
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = g;
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
-  VectorValues initialGuessLago = initializeOrientationsLago(graphWithPrior);
+  VectorValues actualVV = initializeOrientationsLago(graphWithPrior);
+  Values actual;
+  Key keyAnc = symbol('Z',9999999);
+  for(VectorValues::const_iterator it = actualVV.begin(); it != actualVV.end(); ++it ){
+    Key key = it->first;
+    if (key != keyAnc){
+      Vector orientation = actualVV.at(key);
+      Pose2 poseLago = Pose2(0.0,0.0,orientation(0));
+      actual.insert(key, poseLago);
+    }
+  }
+  NonlinearFactorGraph gmatlab;
+  Values expected;
+  string matlabFile = findExampleDataFile("orientationsNoisyToyGraph");
+  readG2o(matlabFile, gmatlab, expected);
 
-  // Results from Matlab
-  //  VERTEX_SE2 0 0.000000 0.000000 0.000000
-  //  VERTEX_SE2 1 0.000000 0.000000 1.565449
-  //  VERTEX_SE2 2 0.000000 0.000000 3.134143
-  //  VERTEX_SE2 3 0.000000 0.000000 4.710123
-
-  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(0), 1e-5));
-  EXPECT(assert_equal((Vector(1) << 1.565449), initialGuessLago.at(1), 1e-5));
-  EXPECT(assert_equal((Vector(1) << 3.134143), initialGuessLago.at(2), 1e-5));
-  EXPECT(assert_equal((Vector(1) << 4.710123 - 2*M_PI), initialGuessLago.at(3), 1e-5));
+  BOOST_FOREACH(const Values::KeyValuePair& key_val, expected){
+    Key k = key_val.key;
+    EXPECT(assert_equal(expected.at<Pose2>(k), actual.at<Pose2>(k), 1e-5));
+  }
 }
 
-/* *************************************************************************** *
-TEST( Lago, smallGraphNoisy ) {
+/* *************************************************************************** */
+TEST( Lago, largeGraphNoisy ) {
 
   NonlinearFactorGraph g;
   Values initial;
-  readG2o("/home/aspn/Desktop/noisyToyGraph.txt", g, initial);
+  string inputFile = findExampleDataFile("noisyToyGraph");
+  readG2o(inputFile, g, initial);
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = g;
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
-  // lago does not touch the Cartesian part and only fixed the orientations
   Values actual = initializeLago(graphWithPrior);
 
-  // Optimized results from matlab
-//  VERTEX_SE2 0 0.000000 -0.000000 0.000000
-//  VERTEX_SE2 1 0.955797 1.137643 -0.022408
-//  VERTEX_SE2 2 0.129867 1.989651 0.067117
-//  VERTEX_SE2 3 -1.047715 0.933789 0.033559
-
+  NonlinearFactorGraph gmatlab;
   Values expected;
-  expected.insert(0,Pose2(0.000000, 0.000000, 0.000000));
-  expected.insert(1,Pose2(0.955797, 1.137643, 1.565449 -0.022408));
-  expected.insert(2,Pose2(0.129867, 1.989651, 3.134143 + 0.067117));
-  expected.insert(3,Pose2(-1.047715, 0.933789, 4.710123 + 0.033559));
+  string matlabFile = findExampleDataFile("optimizedNoisyToyGraph");
+  readG2o(matlabFile, gmatlab, expected);
 
-  EXPECT(assert_equal(expected, actual, 1e-5));
+  BOOST_FOREACH(const Values::KeyValuePair& key_val, expected){
+    Key k = key_val.key;
+    EXPECT(assert_equal(expected.at<Pose2>(k), actual.at<Pose2>(k), 1e-2));
+  }
 }
+
 
 /* ************************************************************************* */
 int main() {
