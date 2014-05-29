@@ -18,6 +18,7 @@
 
 #include <gtsam/nonlinear/LagoInitializer.h>
 #include <gtsam/slam/dataset.h>
+#include <boost/math/special_functions.hpp>
 
 namespace gtsam {
 
@@ -152,7 +153,7 @@ GaussianFactorGraph buildLinearOrientationGraph(const std::vector<size_t>& spann
     double key1_DeltaTheta_key2 = deltaTheta(0);
     ///std::cout << "REG: key1= " << DefaultKeyFormatter(key1) << " key2= " << DefaultKeyFormatter(key2) << std::endl;
     double k2pi_noise = key1_DeltaTheta_key2 + orientationsToRoot.at(key1) - orientationsToRoot.at(key2); // this coincides to summing up measurements along the cycle induced by the chord
-    double k = round(k2pi_noise/(2*M_PI));
+    double k = boost::math::round(k2pi_noise/(2*M_PI));
     //if (k2pi_noise - 2*k*M_PI > 1e-5) std::cout << k2pi_noise - 2*k*M_PI << std::endl; // for debug
     Vector deltaThetaRegularized = (Vector(1) << key1_DeltaTheta_key2 - 2*k*M_PI);
     lagoGraph.add(JacobianFactor(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta));
