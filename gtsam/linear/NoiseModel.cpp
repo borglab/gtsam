@@ -220,6 +220,7 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
 Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
   if (smart) {
     size_t n = sigmas.size();
+    if (n==0) goto full;
     // look for zeros to make a constraint
     for (size_t j=0; j< n; ++j)
       if (sigmas(j)<1e-8)
