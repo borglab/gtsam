@@ -208,8 +208,8 @@ Diagonal::Diagonal(const Vector& sigmas) :
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
   if (smart) {
     // check whether all the same entry
-    DenseIndex j, n = variances.size();
-    for (j = 1; j < n; j++)
+    size_t n = variances.size();
+    for (size_t j = 1; j < n; j++)
       if (variances(j) != variances(0)) goto full;
     return Isotropic::Variance(n, variances(0), true);
   }
@@ -219,13 +219,13 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
   if (smart) {
-    DenseIndex j, n = sigmas.size();
+    size_t n = sigmas.size();
     // look for zeros to make a constraint
-    for (j=0; j< n; ++j)
+    for (size_t j=0; j< n; ++j)
       if (sigmas(j)<1e-8)
         return Constrained::MixedSigmas(sigmas);
     // check whether all the same entry
-    for (j = 1; j < n; j++)
+    for (size_t j = 1; j < n; j++)
       if (sigmas(j) != sigmas(0)) goto full;
     return Isotropic::Sigma(n, sigmas(0), true);
   }
