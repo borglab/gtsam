@@ -33,28 +33,32 @@ fi
 
 # Run cmake
 cmake -DCMAKE_BUILD_TYPE=Release \
--DGTSAM_INSTALL_MATLAB_TOOLBOX:bool=true \
+-DGTSAM_INSTALL_MATLAB_TOOLBOX:BOOL=ON \
 -DCMAKE_INSTALL_PREFIX="$PWD/stage" \
--DBoost_NO_SYSTEM_PATHS:bool=true \
--DBoost_USE_STATIC_LIBS:bool=true \
+-DBoost_NO_SYSTEM_PATHS:BOOL=ON \
+-DBoost_USE_STATIC_LIBS:BOOL=ON \
 -DBOOST_ROOT="$1" \
--DGTSAM_BUILD_SHARED_LIBRARY:bool=false \
--DGTSAM_BUILD_STATIC_LIBRARY:bool=true \
--DGTSAM_BUILD_TESTS:bool=false \
--DGTSAM_BUILD_EXAMPLES:bool=false \
--DGTSAM_BUILD_UNSTABLE:bool=false \
--DGTSAM_DISABLE_EXAMPLES_ON_INSTALL:bool=true \
--DGTSAM_DISABLE_TESTS_ON_INSTALL:bool=true \
--DGTSAM_BUILD_CONVENIENCE_LIBRARIES:bool=false \
--DGTSAM_MEX_BUILD_STATIC_MODULE:bool=true ..
+-DGTSAM_BUILD_TESTS:BOOL=OFF \
+-DGTSAM_BUILD_TIMING:BOOL=OFF \
+-DGTSAM_BUILD_EXAMPLES_ALWAYS:BOOL=OFF \
+-DGTSAM_WITH_TBB:BOOL=OFF \
+-DGTSAM_BUILD_METIS:BOOL=OFF \
+-DGTSAM_INSTALL_GEOGRAPHICLIB:BOOL=OFF \
+-DGTSAM_BUILD_UNSTABLE:BOOL=OFF \
+-DGTSAM_MEX_BUILD_STATIC_MODULE:BOOL=ON ..
 
-if [ ! $? ]; then
+if [ $? -ne 0 ]; then
 	echo "CMake failed"
 	exit 1
 fi
 
 # Compile
-make -j4 install
+make -j8 install
+
+if [ $? -ne 0 ]; then
+    echo "Compile failed"
+    exit 1
+fi
 
 # Create package
-tar czf gtsam-toolbox-2.3.0-$platform.tgz -C stage/borg toolbox
+tar czf gtsam-toolbox-3.0.0-$platform.tgz -C stage/gtsam_toolbox toolbox
