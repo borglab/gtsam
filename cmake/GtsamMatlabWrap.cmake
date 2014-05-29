@@ -114,17 +114,17 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	# any static libraries
 	set(automaticDependencies "")
 	foreach(lib ${moduleName} ${linkLibraries})
-	  message("MODULE NAME: ${moduleName}")
+	  #message("MODULE NAME: ${moduleName}")
 		if(TARGET "${lib}")
             get_target_property(dependentLibraries ${lib} INTERFACE_LINK_LIBRARIES)
-            message("DEPENDENT LIBRARIES:  ${dependentLibraries}")
+           # message("DEPENDENT LIBRARIES:  ${dependentLibraries}")
             if(dependentLibraries)
                list(APPEND automaticDependencies ${dependentLibraries})
             endif()
         endif()
     endforeach()
     
-    ## CHRIS: START HACK. On my system the get_target_property above returned Not-found for gtsam module
+    ## CHRIS: Temporary fix. On my system the get_target_property above returned Not-found for gtsam module
     ## This needs to be fixed!!
     if(UNIX AND NOT APPLE)
       list(APPEND automaticDependencies ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE}
@@ -138,8 +138,8 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
       endif()
     endif()
     
-    message("AUTOMATIC DEPENDENCIES:  ${automaticDependencies}")
-    ## CHRIS: END HACK
+    #message("AUTOMATIC DEPENDENCIES:  ${automaticDependencies}")
+    ## CHRIS: End temporary fix
 
 	# Separate dependencies
 	set(correctedOtherLibraries "")
