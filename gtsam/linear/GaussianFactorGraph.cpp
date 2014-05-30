@@ -70,7 +70,7 @@ namespace gtsam {
       vector<size_t> dims_accumulated;
       dims_accumulated.resize(dims.size()+1,0);
       dims_accumulated[0]=0;
-      for (int i=1; i<dims_accumulated.size(); i++)
+      for (size_t i=1; i<dims_accumulated.size(); i++)
     	  dims_accumulated[i] = dims_accumulated[i-1]+dims[i-1];
       return dims_accumulated;
     }
