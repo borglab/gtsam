@@ -273,6 +273,13 @@ if(MSVC)
 	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344) # Disable non-DLL-exported base class and other warnings
 endif()
 
+# GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+    add_definitions(-Wno-unused-local-typedefs)
+  endif()
+endif()
+
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
