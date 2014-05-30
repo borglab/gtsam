@@ -54,14 +54,14 @@ int main(int argc, char** argv){
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   double fx, fy, s, u0, v0, b;
-  ifstream calibration_file(calibration_loc);
+  ifstream calibration_file(calibration_loc.c_str());
   cout << "Reading calibration info" << endl;
   calibration_file >> fx >> fy >> s >> u0 >> v0 >> b;
 
   //create stereo camera calibration object
   const Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fx,fy,s,u0,v0,b));
   
-  ifstream pose_file(pose_loc);
+  ifstream pose_file(pose_loc.c_str());
   cout << "Reading camera poses" << endl;
   int pose_id;
   MatrixRowMajor m(4,4);
@@ -79,7 +79,7 @@ int main(int argc, char** argv){
   // pixel coordinates uL, uR, v (same for left/right images due to rectification)
   // landmark coordinates X, Y, Z in camera frame, resulting from triangulation
   double uL, uR, v, X, Y, Z;
-  ifstream factor_file(factor_loc);
+  ifstream factor_file(factor_loc.c_str());
   cout << "Reading stereo factors" << endl;
   //read stereo measurement details from file and use to create and add GenericStereoFactor objects to the graph representation
   while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
