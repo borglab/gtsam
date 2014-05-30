@@ -54,7 +54,7 @@ public:
   double f;
 };
 
-enum linearizationType {
+enum LinearizationMode {
   HESSIAN, JACOBIAN_SVD, JACOBIAN_Q
 };
 
