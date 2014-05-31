@@ -29,18 +29,19 @@ using namespace gtsam;
 
 int main(int argc, char *argv[]) {
 
-  size_t trials = 1000;
+  size_t trials = 1;
 
   // read graph
-  NonlinearFactorGraph g;
-  Values initial;
-  string inputFile = findExampleDataFile("noisyToyGraph");
-  readG2o(inputFile, g, initial);
+  Values::shared_ptr initial;
+  NonlinearFactorGraph::shared_ptr g;
+  string inputFile = findExampleDataFile("w10000");
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.05, 0.05, 5.0 * M_PI / 180.0));
+  boost::tie(g, initial) = load2D(inputFile, model);
 
   // Add prior on the pose having index (key) = 0
   noiseModel::Diagonal::shared_ptr priorModel = //
-      noiseModel::Diagonal::Sigmas(Vector3(0, 0, 0));
-  g.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
+      noiseModel::Diagonal::Sigmas(Vector3(1e-6, 1e-6, 1e-8));
+  g->add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
   // LAGO
   for (size_t i = 0; i < trials; i++) {
@@ -48,18 +49,18 @@ int main(int argc, char *argv[]) {
       gttic_(lago);
 
       gttic_(init);
-      Values lagoInitial = lago::initialize(g);
+      Values lagoInitial = lago::initialize(*g);
       gttoc_(init);
 
       gttic_(refine);
-      GaussNewtonOptimizer optimizer(g, lagoInitial);
+      GaussNewtonOptimizer optimizer(*g, lagoInitial);
       Values result = optimizer.optimize();
       gttoc_(refine);
     }
 
     {
       gttic_(optimize);
-      GaussNewtonOptimizer optimizer(g, initial);
+      GaussNewtonOptimizer optimizer(*g, *initial);
       Values result = optimizer.optimize();
     }
 
