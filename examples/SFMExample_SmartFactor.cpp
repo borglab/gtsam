@@ -86,9 +86,8 @@ int main(int argc, char* argv[]) {
   // Create a factor graph
   NonlinearFactorGraph graph;
 
-  // Add a prior on pose x0. This indirectly specifies where the origin is.
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise)); // add directly to graph
+  // A vector saved all Smart factors (for get landmark position after optimization)
+  vector<SmartFactor::shared_ptr> smartfactors_ptr;
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t i = 0; i < points.size(); ++i) {
@@ -110,9 +109,16 @@ int main(int argc, char* argv[]) {
       smartfactor->add(measurement, Symbol('x', j), measurementNoise, K);
     }
 
+    // save smartfactors to get landmark position
+    smartfactors_ptr.push_back(smartfactor);
+
     // insert the smart factor in the graph
     graph.push_back(smartfactor);
   }
+
+  // Add a prior on pose x0. This indirectly specifies where the origin is.
+  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise)); // add directly to graph
 
   // Because the structure-from-motion problem has a scale ambiguity, the problem is still under-constrained
   // Here we add a prior on the second pose x1, so this will fix the scale by indicating the distance between x0 and x1.
@@ -131,6 +137,29 @@ int main(int argc, char* argv[]) {
   // Optimize the graph and print results
   Values result = DoglegOptimizer(graph, initialEstimate).optimize();
   result.print("Final results:\n");
+
+
+  // Notice: Smart factor represent the 3D point as a factor, not a variable.
+  // The 3D position of the landmark is not explicitly calculated by the optimizer.
+  // If you do want to output the landmark's 3D position, you should use the internal function point()
+  // of the smart factor to get the 3D point.
+  Values landmark_result;
+  for (size_t i = 0; i < points.size(); ++i) {
+
+    // The output of point() is in boost::optional<gtsam::Point3>, since sometimes
+    // the triangulation opterations inside smart factor will encounter degeneracy.
+    // Check the manual of boost::optional for more details for the usages.
+    boost::optional<Point3> point;
+
+    // here we use the saved smart factors to call, pass in all optimized pose to calculate landmark positions
+    point = smartfactors_ptr.at(i)->point(result);
+
+    // ignore if boost::optional return NULL
+    if (point)
+      landmark_result.insert(Symbol('l', i), *point);
+  }
+
+  landmark_result.print("Landmark results:\n");
 
 
   return 0;
