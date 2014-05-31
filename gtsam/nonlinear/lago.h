@@ -44,9 +44,6 @@ namespace gtsam {
 namespace lago {
 
 typedef std::map<Key,double> key2doubleMap;
-const Key keyAnchor = symbol('Z',9999999);
-noiseModel::Diagonal::shared_ptr priorOrientationNoise = noiseModel::Diagonal::Variances((Vector(1) << 1e-8));
-noiseModel::Diagonal::shared_ptr priorPose2Noise = noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
 
 /*  This function computes the cumulative orientation (without wrapping) wrt the root of a spanning tree (tree)
  *  for a node (nodeKey). The function starts at the nodes and moves towards the root
@@ -83,16 +80,16 @@ GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(const std::vector<s
 GTSAM_EXPORT NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph);
 
 /* Returns the orientations of a graph including only BetweenFactors<Pose2> */
-GTSAM_EXPORT VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph, bool useOdometricPath = true);
+GTSAM_EXPORT VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph, bool useOdometricPath = true);
 
 /*  LAGO: Returns the orientations of the Pose2 in a generic factor graph */
-GTSAM_EXPORT VectorValues initializeOrientationsLago(const NonlinearFactorGraph& graph, bool useOdometricPath = true);
+GTSAM_EXPORT VectorValues initializeOrientations(const NonlinearFactorGraph& graph, bool useOdometricPath = true);
 
 /*  Returns the values for the Pose2 in a generic factor graph */
-GTSAM_EXPORT Values initializeLago(const NonlinearFactorGraph& graph, bool useOdometricPath = true);
+GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, bool useOdometricPath = true);
 
 /*  Only corrects the orientation part in initialGuess */
-GTSAM_EXPORT Values initializeLago(const NonlinearFactorGraph& graph, const Values& initialGuess);
+GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, const Values& initialGuess);
 
 } // end of namespace lago
 } // end of namespace gtsam

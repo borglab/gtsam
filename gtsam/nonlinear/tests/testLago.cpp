@@ -148,25 +148,25 @@ TEST( Lago, regularizedMeasurements ) {
 /* *************************************************************************** */
 TEST( Lago, smallGraphVectorValues ) {
   bool useOdometricPath = false;
-  VectorValues initialGuessLago = initializeOrientationsLago(simple::graph(), useOdometricPath);
+  VectorValues initial = initializeOrientations(simple::graph(), useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initialGuessLago.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initialGuessLago.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
 TEST( Lago, smallGraphVectorValuesSP ) {
 
-  VectorValues initialGuessLago = initializeOrientationsLago(simple::graph());
+  VectorValues initial = initializeOrientations(simple::graph());
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ), initialGuessLago.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initialGuessLago.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -174,26 +174,26 @@ TEST( Lago, multiplePosePriors ) {
   bool useOdometricPath = false;
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
-  VectorValues initialGuessLago = initializeOrientationsLago(g, useOdometricPath);
+  VectorValues initial = initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initialGuessLago.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initialGuessLago.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
 TEST( Lago, multiplePosePriorsSP ) {
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
-  VectorValues initialGuessLago = initializeOrientationsLago(g);
+  VectorValues initial = initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ), initialGuessLago.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initialGuessLago.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -201,26 +201,26 @@ TEST( Lago, multiplePoseAndRotPriors ) {
   bool useOdometricPath = false;
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
-  VectorValues initialGuessLago = initializeOrientationsLago(g, useOdometricPath);
+  VectorValues initial = initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initialGuessLago.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initialGuessLago.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
 TEST( Lago, multiplePoseAndRotPriorsSP ) {
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
-  VectorValues initialGuessLago = initializeOrientationsLago(g);
+  VectorValues initial = initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initialGuessLago.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initialGuessLago.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ), initialGuessLago.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initialGuessLago.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -234,7 +234,7 @@ TEST( Lago, smallGraphValues ) {
   initialGuess.insert(x3,Pose2(simple::pose3.x(),simple::pose3.y(),0.0));
 
   // lago does not touch the Cartesian part and only fixed the orientations
-  Values actual = initializeLago(simple::graph(), initialGuess);
+  Values actual = lago::initialize(simple::graph(), initialGuess);
 
   // we are in a noiseless case
   Values expected;
@@ -250,7 +250,7 @@ TEST( Lago, smallGraphValues ) {
 TEST( Lago, smallGraph2 ) {
 
   // lago does not touch the Cartesian part and only fixed the orientations
-  Values actual = initializeLago(simple::graph());
+  Values actual = lago::initialize(simple::graph());
 
   // we are in a noiseless case
   Values expected;
@@ -275,7 +275,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
-  VectorValues actualVV = initializeOrientationsLago(graphWithPrior);
+  VectorValues actualVV = initializeOrientations(graphWithPrior);
   Values actual;
   Key keyAnc = symbol('Z',9999999);
   for(VectorValues::const_iterator it = actualVV.begin(); it != actualVV.end(); ++it ){
@@ -310,7 +310,7 @@ TEST( Lago, largeGraphNoisy ) {
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
-  Values actual = initializeLago(graphWithPrior);
+  Values actual = lago::initialize(graphWithPrior);
 
   NonlinearFactorGraph gmatlab;
   Values expected;

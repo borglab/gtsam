@@ -26,8 +26,12 @@
 namespace gtsam {
 namespace lago {
 
-static Matrix I = eye(1);
-static Matrix I3 = eye(3);
+static const Matrix I = eye(1);
+static const Matrix I3 = eye(3);
+
+static const Key keyAnchor = symbol('Z',9999999);
+static const noiseModel::Diagonal::shared_ptr priorOrientationNoise = noiseModel::Diagonal::Variances((Vector(1) << 1e-8));
+static const noiseModel::Diagonal::shared_ptr priorPose2Noise = noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
 
 /* ************************************************************************* */
 double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
@@ -216,7 +220,7 @@ PredecessorMap<Key> findOdometricPath(const NonlinearFactorGraph& pose2Graph) {
 }
 
 /* ************************************************************************* */
-VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph, bool useOdometricPath){
+VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph, bool useOdometricPath){
 
   // Find a minimum spanning tree
   PredecessorMap<Key> tree;
@@ -244,18 +248,18 @@ VectorValues computeLagoOrientations(const NonlinearFactorGraph& pose2Graph, boo
 }
 
 /* ************************************************************************* */
-VectorValues initializeOrientationsLago(const NonlinearFactorGraph& graph, bool useOdometricPath) {
+VectorValues initializeOrientations(const NonlinearFactorGraph& graph, bool useOdometricPath) {
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
   NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
 
   // Get orientations from relative orientation measurements
-  return computeLagoOrientations(pose2Graph, useOdometricPath);
+  return computeOrientations(pose2Graph, useOdometricPath);
 }
 
 /* ************************************************************************* */
-Values computeLagoPoses(const NonlinearFactorGraph& pose2graph, VectorValues& orientationsLago) {
+Values computePoses(const NonlinearFactorGraph& pose2graph, VectorValues& orientationsLago) {
 
   // Linearized graph on full poses
   GaussianFactorGraph linearPose2graph;
@@ -315,25 +319,25 @@ Values computeLagoPoses(const NonlinearFactorGraph& pose2graph, VectorValues& or
 }
 
 /* ************************************************************************* */
-Values initializeLago(const NonlinearFactorGraph& graph, bool useOdometricPath) {
+Values initialize(const NonlinearFactorGraph& graph, bool useOdometricPath) {
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
   NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
 
   // Get orientations from relative orientation measurements
-  VectorValues orientationsLago = computeLagoOrientations(pose2Graph, useOdometricPath);
+  VectorValues orientationsLago = computeOrientations(pose2Graph, useOdometricPath);
 
   // Compute the full poses
-  return computeLagoPoses(pose2Graph, orientationsLago);
+  return computePoses(pose2Graph, orientationsLago);
 }
 
 /* ************************************************************************* */
-Values initializeLago(const NonlinearFactorGraph& graph, const Values& initialGuess) {
+Values initialize(const NonlinearFactorGraph& graph, const Values& initialGuess) {
   Values initialGuessLago;
 
   // get the orientation estimates from LAGO
-  VectorValues orientations = initializeOrientationsLago(graph);
+  VectorValues orientations = initializeOrientations(graph);
 
   // for all nodes in the tree
   for(VectorValues::const_iterator it = orientations.begin(); it != orientations.end(); ++it ){
