@@ -37,7 +37,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace lago;
 using namespace boost::assign;
 
 Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
@@ -78,10 +77,10 @@ TEST( Lago, checkSTandChords ) {
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
       BetweenFactor<Pose2> >(g);
 
-  key2doubleMap deltaThetaMap;
+  lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
   vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
-  getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
+  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
 
   DOUBLES_EQUAL(spanningTreeIds[0], 0, 1e-6); // factor 0 is the first in the ST (0->1)
   DOUBLES_EQUAL(spanningTreeIds[1], 3, 1e-6); // factor 3 is the second in the ST(2->0)
@@ -101,19 +100,19 @@ TEST( Lago, orientationsOverSpanningTree ) {
   EXPECT_LONGS_EQUAL(tree[x2], x0);
   EXPECT_LONGS_EQUAL(tree[x3], x0);
 
-  key2doubleMap expected;
+  lago::key2doubleMap expected;
   expected[x0]=  0;
   expected[x1]=  M_PI/2; // edge x0->x1 (consistent with edge (x0,x1))
   expected[x2]= -M_PI; // edge x0->x2 (traversed backwards wrt edge (x2,x0))
   expected[x3]= -M_PI/2;  // edge x0->x3 (consistent with edge (x0,x3))
 
-  key2doubleMap deltaThetaMap;
+  lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
   vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
-  getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
+  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
 
-  key2doubleMap actual;
-  actual = computeThetasToRoot(deltaThetaMap, tree);
+  lago::key2doubleMap actual;
+  actual = lago::computeThetasToRoot(deltaThetaMap, tree);
   DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
   DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
   DOUBLES_EQUAL(expected[x2], actual[x2], 1e-6);
@@ -126,14 +125,14 @@ TEST( Lago, regularizedMeasurements ) {
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
       BetweenFactor<Pose2> >(g);
 
-  key2doubleMap deltaThetaMap;
+  lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
   vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
-  getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
+  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
 
-  key2doubleMap orientationsToRoot = computeThetasToRoot(deltaThetaMap, tree);
+  lago::key2doubleMap orientationsToRoot = lago::computeThetasToRoot(deltaThetaMap, tree);
 
-  GaussianFactorGraph lagoGraph = buildLinearOrientationGraph(spanningTreeIds, chordsIds, g, orientationsToRoot, tree);
+  GaussianFactorGraph lagoGraph = lago::buildLinearOrientationGraph(spanningTreeIds, chordsIds, g, orientationsToRoot, tree);
   std::pair<Matrix,Vector> actualAb = lagoGraph.jacobian();
   // jacobian corresponding to the orientation measurements (last entry is the prior on the anchor and is disregarded)
   Vector actual = (Vector(5) <<  actualAb.second(0),actualAb.second(1),actualAb.second(2),actualAb.second(3),actualAb.second(4));
@@ -148,7 +147,7 @@ TEST( Lago, regularizedMeasurements ) {
 /* *************************************************************************** */
 TEST( Lago, smallGraphVectorValues ) {
   bool useOdometricPath = false;
-  VectorValues initial = initializeOrientations(simple::graph(), useOdometricPath);
+  VectorValues initial = lago::initializeOrientations(simple::graph(), useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
@@ -160,7 +159,7 @@ TEST( Lago, smallGraphVectorValues ) {
 /* *************************************************************************** */
 TEST( Lago, smallGraphVectorValuesSP ) {
 
-  VectorValues initial = initializeOrientations(simple::graph());
+  VectorValues initial = lago::initializeOrientations(simple::graph());
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
@@ -174,7 +173,7 @@ TEST( Lago, multiplePosePriors ) {
   bool useOdometricPath = false;
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
-  VectorValues initial = initializeOrientations(g, useOdometricPath);
+  VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
@@ -187,7 +186,7 @@ TEST( Lago, multiplePosePriors ) {
 TEST( Lago, multiplePosePriorsSP ) {
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
-  VectorValues initial = initializeOrientations(g);
+  VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
@@ -201,7 +200,7 @@ TEST( Lago, multiplePoseAndRotPriors ) {
   bool useOdometricPath = false;
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
-  VectorValues initial = initializeOrientations(g, useOdometricPath);
+  VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
@@ -214,7 +213,7 @@ TEST( Lago, multiplePoseAndRotPriors ) {
 TEST( Lago, multiplePoseAndRotPriorsSP ) {
   NonlinearFactorGraph g = simple::graph();
   g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
-  VectorValues initial = initializeOrientations(g);
+  VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
@@ -275,7 +274,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
-  VectorValues actualVV = initializeOrientations(graphWithPrior);
+  VectorValues actualVV = lago::initializeOrientations(graphWithPrior);
   Values actual;
   Key keyAnc = symbol('Z',9999999);
   for(VectorValues::const_iterator it = actualVV.begin(); it != actualVV.end(); ++it ){
