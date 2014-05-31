@@ -200,7 +200,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
 /* ************************************************************************* */
 // Select the subgraph of betweenFactors and transforms priors into between wrt a fictitious node
 static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
-  gttic_(lago_buildPose2graph);
+  gttic(lago_buildPose2graph);
   NonlinearFactorGraph pose2Graph;
 
   BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, graph) {
@@ -253,7 +253,7 @@ static PredecessorMap<Key> findOdometricPath(
 // Return the orientations of a graph including only BetweenFactors<Pose2>
 static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
     bool useOdometricPath) {
-  gttic_(lago_computeOrientations);
+  gttic(lago_computeOrientations);
 
   // Find a minimum spanning tree
   PredecessorMap<Key> tree;
@@ -297,7 +297,7 @@ VectorValues initializeOrientations(const NonlinearFactorGraph& graph,
 /* ************************************************************************* */
 Values computePoses(const NonlinearFactorGraph& pose2graph,
     VectorValues& orientationsLago) {
-  gttic_(lago_computePoses);
+  gttic(lago_computePoses);
 
   // Linearized graph on full poses
   GaussianFactorGraph linearPose2graph;
@@ -367,7 +367,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
 
 /* ************************************************************************* */
 Values initialize(const NonlinearFactorGraph& graph, bool useOdometricPath) {
-  gttic_(lago_initialize);
+  gttic(lago_initialize);
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
