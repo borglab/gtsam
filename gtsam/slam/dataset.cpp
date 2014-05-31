@@ -67,6 +67,21 @@ string findExampleDataFile(const string& name) {
       INSTALLED_DATASET_DIR " named\n" +
       name + ", " + name + ".graph, or " + name + ".txt");
 }
+
+string createRewrittenFileName(const string& name) {
+  // Search source tree and installed location
+  if(!exists(fs::path(name))) {
+	throw std::invalid_argument(
+      "gtsam::createRewrittenFileName could not find a matching file in\n"
+      + name);
+  }
+
+  fs::path p(name); 
+  fs::path newpath = fs::path(p.parent_path().string()) / fs::path(p.stem().string() + "-rewritten.txt" );
+
+  printf("New path = %s\n", newpath.string().c_str() );
+  return   newpath.string();
+}
 #endif
 
 /* ************************************************************************* */

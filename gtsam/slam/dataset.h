@@ -35,7 +35,7 @@ namespace gtsam {
 /**
  * Find the full path to an example dataset distributed with gtsam.  The name
  * may be specified with or without a file extension - if no extension is
- * give, this function first looks for the .graph extension, then .txt.  We
+ * given, this function first looks for the .graph extension, then .txt.  We
  * first check the gtsam source tree for the file, followed by the installed
  * example dataset location.  Both the source tree and installed locations
  * are obtained from CMake during compilation.
@@ -44,6 +44,12 @@ namespace gtsam {
  * search process described above.
  */
 GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
+
+/**
+ * searches for the file using the findExample funtion, if not found ,
+ * creates one in the source tree and returns the full path
+ */
+GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
 #endif
 
 /**

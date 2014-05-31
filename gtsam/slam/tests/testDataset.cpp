@@ -175,7 +175,7 @@ TEST( dataSet, writeG2o)
   Values expectedValues;
   readG2o(g2oFile, expectedGraph, expectedValues);
 
-  const string filenameToWrite = findExampleDataFile("pose2example-rewritten");
+  const string filenameToWrite = createRewrittenFileName(g2oFile);
   writeG2o(filenameToWrite, expectedGraph, expectedValues);
 
   NonlinearFactorGraph actualGraph;
@@ -249,7 +249,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
   readBAL(filenameToRead, readData);
 
   // Write readData to file filenameToWrite
-  const string filenameToWrite = findExampleDataFile("dubrovnik-3-7-pre-rewritten");
+  const string filenameToWrite = createRewrittenFileName(filenameToRead);
   CHECK(writeBAL(filenameToWrite, readData));
 
   // Read what we wrote
@@ -311,7 +311,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   }
 
   // Write values and readData to a file
-  const string filenameToWrite = findExampleDataFile("dubrovnik-3-7-pre-rewritten");
+  const string filenameToWrite = createRewrittenFileName(filenameToRead);
   writeBALfromValues(filenameToWrite, readData, value);
 
   // Read the file we wrote
