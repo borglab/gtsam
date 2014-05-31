@@ -40,18 +40,17 @@ TEST(dataSet, findExampleDataFile) {
 }
 
 /* ************************************************************************* */
-//TEST( dataSet, load2D)
-//{
-//  ///< The structure where we will save the SfM data
-//  const string filename = findExampleDataFile("smallGraph.g2o");
-//  boost::tie(graph,initialGuess) = load2D(filename, boost::none, 10000,
-//      false, false);
-////  print
-////
-////  print
-////
-////  EXPECT(assert_equal(expected,actual,12));
-//}
+TEST( dataSet, load2D)
+{
+  ///< The structure where we will save the SfM data
+  const string filename = findExampleDataFile("w100.graph");
+  NonlinearFactorGraph::shared_ptr graph;
+  Values::shared_ptr initial;
+  boost::tie(graph, initial) = //
+      load2D(filename, SharedNoiseModel(), 10000, false, false);
+  EXPECT_LONGS_EQUAL(300,graph->size());
+  EXPECT_LONGS_EQUAL(100,initial->size());
+}
 
 /* ************************************************************************* */
 TEST( dataSet, Balbianello)
