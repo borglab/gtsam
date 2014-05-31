@@ -19,20 +19,14 @@
  *  @date   May 14, 2014
  */
 
-#include <gtsam/geometry/Pose2.h>
-
+#include <gtsam/nonlinear/lago.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/inference/Symbol.h>
 
-#include <gtsam/slam/dataset.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/lago.h>
-
-#include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/math/constants/constants.hpp>
+
 #include <cmath>
 
 using namespace std;

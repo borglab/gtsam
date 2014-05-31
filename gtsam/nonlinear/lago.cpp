@@ -19,6 +19,7 @@
 #include <gtsam/nonlinear/lago.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
 
 #include <boost/math/special_functions.hpp>
