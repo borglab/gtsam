@@ -37,8 +37,16 @@ static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
     noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
 
 /* ************************************************************************* */
-double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
-    const key2doubleMap& deltaThetaMap, const key2doubleMap& thetaFromRootMap) {
+/**
+ * Compute the cumulative orientation (without wrapping) wrt the root of a
+ * spanning tree (tree) for a node (nodeKey). The function starts at the nodes and
+ * moves towards the root summing up the (directed) rotation measurements.
+ * Relative measurements are encoded in "deltaThetaMap".
+ * The root is assumed to have orientation zero.
+ */
+static double computeThetaToRoot(const Key nodeKey,
+    const PredecessorMap<Key>& tree, const key2doubleMap& deltaThetaMap,
+    const key2doubleMap& thetaFromRootMap) {
 
   double nodeTheta = 0;
   Key key_child = nodeKey; // the node
@@ -122,7 +130,8 @@ void getSymbolicGraph(
 }
 
 /* ************************************************************************* */
-void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
+// Retrieve the deltaTheta and the corresponding noise model from a BetweenFactor<Pose2>
+static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
     Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta) {
 
   // Get the relative rotation measurement from the between factor
@@ -187,7 +196,8 @@ GaussianFactorGraph buildLinearOrientationGraph(
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
+// Select the subgraph of betweenFactors and transforms priors into between wrt a fictitious node
+static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
   NonlinearFactorGraph pose2Graph;
 
   BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, graph) {
@@ -210,7 +220,8 @@ NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
 }
 
 /* ************************************************************************* */
-PredecessorMap<Key> findOdometricPath(const NonlinearFactorGraph& pose2Graph) {
+static PredecessorMap<Key> findOdometricPath(
+    const NonlinearFactorGraph& pose2Graph) {
 
   PredecessorMap<Key> tree;
   Key minKey;
@@ -236,7 +247,8 @@ PredecessorMap<Key> findOdometricPath(const NonlinearFactorGraph& pose2Graph) {
 }
 
 /* ************************************************************************* */
-VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
+// Return the orientations of a graph including only BetweenFactors<Pose2>
+static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
     bool useOdometricPath) {
 
   // Find a minimum spanning tree
