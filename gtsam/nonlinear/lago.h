@@ -42,53 +42,70 @@
 namespace gtsam {
 namespace lago {
 
-typedef std::map<Key,double> key2doubleMap;
+typedef std::map<Key, double> key2doubleMap;
 
-/*  This function computes the cumulative orientation (without wrapping) wrt the root of a spanning tree (tree)
- *  for a node (nodeKey). The function starts at the nodes and moves towards the root
- *  summing up the (directed) rotation measurements. Relative measurements are encoded in "deltaThetaMap"
- *  The root is assumed to have orientation zero.
+/**
+ * Compute the cumulative orientation (without wrapping) wrt the root of a
+ * spanning tree (tree) for a node (nodeKey). The function starts at the nodes and
+ * moves towards the root summing up the (directed) rotation measurements.
+ * Relative measurements are encoded in "deltaThetaMap".
+ * The root is assumed to have orientation zero.
  */
-GTSAM_EXPORT double computeThetaToRoot(const Key nodeKey, const PredecessorMap<Key>& tree,
-    const key2doubleMap& deltaThetaMap, const key2doubleMap& thetaFromRootMap);
+GTSAM_EXPORT double computeThetaToRoot(const Key nodeKey,
+    const PredecessorMap<Key>& tree, const key2doubleMap& deltaThetaMap,
+    const key2doubleMap& thetaFromRootMap);
 
-/*  This function computes the cumulative orientations (without wrapping)
- *  for all node wrt the root (root has zero orientation)
+/**
+ * Compute the cumulative orientations (without wrapping)
+ * for all nodes wrt the root (root has zero orientation).
  */
-GTSAM_EXPORT key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
-    const PredecessorMap<Key>& tree);
+GTSAM_EXPORT key2doubleMap computeThetasToRoot(
+    const key2doubleMap& deltaThetaMap, const PredecessorMap<Key>& tree);
 
-/*  Given a factor graph "g", and a spanning tree "tree", the function selects the nodes belonging to the tree and to g,
- *  and stores the factor slots corresponding to edges in the tree and to chordsIds wrt this tree
- *  Also it computes deltaThetaMap which is a fast way to encode relative orientations along the tree:
- *  for a node key2, s.t. tree[key2]=key1, the values deltaThetaMap[key2] is the relative orientation theta[key2]-theta[key1]
+/**
+ * Given a factor graph "g", and a spanning tree "tree", select the nodes belonging
+ * to the tree and to g, and stores the factor slots corresponding to edges in the
+ * tree and to chordsIds wrt this tree.
+ * Also it computes deltaThetaMap which is a fast way to encode relative
+ * orientations along the tree: for a node key2, s.t. tree[key2]=key1,
+ * the value deltaThetaMap[key2] is relative orientation theta[key2]-theta[key1]
  */
 GTSAM_EXPORT void getSymbolicGraph(
-    /*OUTPUTS*/ std::vector<size_t>& spanningTreeIds, std::vector<size_t>& chordsIds, key2doubleMap& deltaThetaMap,
-    /*INPUTS*/ const PredecessorMap<Key>& tree, const NonlinearFactorGraph& g);
+/*OUTPUTS*/std::vector<size_t>& spanningTreeIds, std::vector<size_t>& chordsIds,
+    key2doubleMap& deltaThetaMap,
+    /*INPUTS*/const PredecessorMap<Key>& tree, const NonlinearFactorGraph& g);
 
-/*  Retrieves the deltaTheta and the corresponding noise model from a BetweenFactor<Pose2> */
+/**
+ * Retrieve the deltaTheta and the corresponding noise model from a BetweenFactor<Pose2>
+ */
 GTSAM_EXPORT void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
     Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta);
 
-/*  Linear factor graph with regularized orientation measurements */
-GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(const std::vector<size_t>& spanningTreeIds, const std::vector<size_t>& chordsIds,
-    const NonlinearFactorGraph& g, const key2doubleMap& orientationsToRoot, const PredecessorMap<Key>& tree);
+/** Linear factor graph with regularized orientation measurements */
+GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(
+    const std::vector<size_t>& spanningTreeIds,
+    const std::vector<size_t>& chordsIds, const NonlinearFactorGraph& g,
+    const key2doubleMap& orientationsToRoot, const PredecessorMap<Key>& tree);
 
-/* Selects the subgraph of betweenFactors and transforms priors into between wrt a fictitious node */
-GTSAM_EXPORT NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph);
+/** Select the subgraph of betweenFactors and transforms priors into between wrt a fictitious node */
+GTSAM_EXPORT NonlinearFactorGraph buildPose2graph(
+    const NonlinearFactorGraph& graph);
 
-/* Returns the orientations of a graph including only BetweenFactors<Pose2> */
-GTSAM_EXPORT VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph, bool useOdometricPath = true);
+/** Return the orientations of a graph including only BetweenFactors<Pose2> */
+GTSAM_EXPORT VectorValues computeOrientations(
+    const NonlinearFactorGraph& pose2Graph, bool useOdometricPath = true);
 
-/*  LAGO: Returns the orientations of the Pose2 in a generic factor graph */
-GTSAM_EXPORT VectorValues initializeOrientations(const NonlinearFactorGraph& graph, bool useOdometricPath = true);
+/** LAGO: Return the orientations of the Pose2 in a generic factor graph */
+GTSAM_EXPORT VectorValues initializeOrientations(
+    const NonlinearFactorGraph& graph, bool useOdometricPath = true);
 
-/*  Returns the values for the Pose2 in a generic factor graph */
-GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, bool useOdometricPath = true);
+/** Return the values for the Pose2 in a generic factor graph */
+GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph,
+    bool useOdometricPath = true);
 
-/*  Only corrects the orientation part in initialGuess */
-GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, const Values& initialGuess);
+/** Only correct the orientation part in initialGuess */
+GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph,
+    const Values& initialGuess);
 
 } // end of namespace lago
 } // end of namespace gtsam
