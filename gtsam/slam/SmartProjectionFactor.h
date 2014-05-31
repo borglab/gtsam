@@ -21,11 +21,10 @@
 
 #include "SmartFactorBase.h"
 
-#include <gtsam_unstable/geometry/triangulation.h>
+#include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam_unstable/geometry/triangulation.h>
 
 #include <boost/optional.hpp>
 #include <boost/make_shared.hpp>

@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
-#include <gtsam_unstable/geometry/TriangulationFactor.h>
+
+#include <gtsam/geometry/TriangulationFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -52,7 +52,7 @@ public:
  * @param rank_tol SVD rank tolerance
  * @return Triangulated Point3
  */
-GTSAM_UNSTABLE_EXPORT Point3 triangulateDLT(
+GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix>& projection_matrices,
     const std::vector<Point2>& measurements, double rank_tol);
 
@@ -120,7 +120,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
  * @param landmarkKey to refer to landmark
  * @return refined Point3
  */
-GTSAM_UNSTABLE_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
+GTSAM_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
     const Values& values, Key landmarkKey);
 
 /**

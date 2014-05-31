@@ -5,7 +5,7 @@
  */
 
 #pragma once
-#include "gtsam_unstable/slam/JacobianSchurFactor.h"
+#include "gtsam/slam/JacobianSchurFactor.h"
 
 namespace gtsam {
 /**

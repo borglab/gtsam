@@ -35,7 +35,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 
-#include <gtsam_unstable/slam/SmartProjectionPoseFactor.h>
+#include <gtsam/slam/SmartProjectionPoseFactor.h>
 
 #include <string>
 #include <fstream>
