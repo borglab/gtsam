@@ -21,6 +21,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/math/special_functions.hpp>
 
@@ -198,6 +199,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
 /* ************************************************************************* */
 // Select the subgraph of betweenFactors and transforms priors into between wrt a fictitious node
 static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
+  gttic_(buildPose2graph);
   NonlinearFactorGraph pose2Graph;
 
   BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, graph) {
@@ -250,6 +252,7 @@ static PredecessorMap<Key> findOdometricPath(
 // Return the orientations of a graph including only BetweenFactors<Pose2>
 static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
     bool useOdometricPath) {
+  gttic_(computeOrientations);
 
   // Find a minimum spanning tree
   PredecessorMap<Key> tree;
@@ -293,6 +296,7 @@ VectorValues initializeOrientations(const NonlinearFactorGraph& graph,
 /* ************************************************************************* */
 Values computePoses(const NonlinearFactorGraph& pose2graph,
     VectorValues& orientationsLago) {
+  gttic_(computePoses);
 
   // Linearized graph on full poses
   GaussianFactorGraph linearPose2graph;
