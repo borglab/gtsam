@@ -171,8 +171,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
     const FastVector<Key>& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
-    lagoGraph.add(
-        JacobianFactor(key1, -I, key2, I, deltaTheta, model_deltaTheta));
+    lagoGraph.add(key1, -I, key2, I, deltaTheta, model_deltaTheta);
   }
   // put regularized measurements in the chordsIds
   BOOST_FOREACH(const size_t& factorId, chordsIds) {
@@ -187,13 +186,10 @@ GaussianFactorGraph buildLinearOrientationGraph(
     //if (k2pi_noise - 2*k*M_PI > 1e-5) cout << k2pi_noise - 2*k*M_PI << endl; // for debug
     Vector deltaThetaRegularized = (Vector(1)
         << key1_DeltaTheta_key2 - 2 * k * M_PI);
-    lagoGraph.add(
-        JacobianFactor(key1, -I, key2, I, deltaThetaRegularized,
-            model_deltaTheta));
+    lagoGraph.add(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta);
   }
   // prior on the anchor orientation
-  lagoGraph.add(
-      JacobianFactor(keyAnchor, I, (Vector(1) << 0.0), priorOrientationNoise));
+  lagoGraph.add(keyAnchor, I, (Vector(1) << 0.0), priorOrientationNoise);
   return lagoGraph;
 }
 
@@ -324,8 +320,8 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       double dx = pose2Between->measured().x();
       double dy = pose2Between->measured().y();
 
-      Vector globalDeltaCart = (Vector(2) << c1 * dx - s1 * dy, s1 * dx
-          + c1 * dy);
+      Vector globalDeltaCart = //
+          (Vector(2) << c1 * dx - s1 * dy, s1 * dx + c1 * dy);
       Vector b = (Vector(3) << globalDeltaCart, linearDeltaRot); // rhs
       Matrix J1 = -I3;
       J1(0, 2) = s1 * dx + c1 * dy;
@@ -335,18 +331,15 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
           boost::dynamic_pointer_cast<noiseModel::Diagonal>(
               pose2Between->get_noiseModel());
 
-      linearPose2graph.add(
-          JacobianFactor(key1, J1, key2, I3, b, diagonalModel));
+      linearPose2graph.add(key1, J1, key2, I3, b, diagonalModel);
     } else {
       throw invalid_argument(
           "computeLagoPoses: cannot manage non between factor here!");
     }
   }
   // add prior
-  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(
-      (Vector(3) << 1e-2, 1e-2, 1e-4));
-  linearPose2graph.add(
-      JacobianFactor(keyAnchor, I3, (Vector(3) << 0.0, 0.0, 0.0), priorModel));
+  linearPose2graph.add(keyAnchor, I3, (Vector(3) << 0.0, 0.0, 0.0),
+      priorPose2Noise);
 
   // optimize
   VectorValues posesLago = linearPose2graph.optimize();
