@@ -25,6 +25,8 @@
 
 #include <boost/math/special_functions.hpp>
 
+using namespace std;
+
 namespace gtsam {
 namespace lago {
 
@@ -77,7 +79,7 @@ key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
   key2doubleMap thetaToRootMap;
 
   // Orientation of the roo
-  thetaToRootMap.insert(std::pair<Key, double>(keyAnchor, 0.0));
+  thetaToRootMap.insert(pair<Key, double>(keyAnchor, 0.0));
 
   // for all nodes in the tree
   BOOST_FOREACH(const key2doubleMap::value_type& it, deltaThetaMap) {
@@ -85,14 +87,14 @@ key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
     Key nodeKey = it.first;
     double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap,
         thetaToRootMap);
-    thetaToRootMap.insert(std::pair<Key, double>(nodeKey, nodeTheta));
+    thetaToRootMap.insert(pair<Key, double>(nodeKey, nodeTheta));
   }
   return thetaToRootMap;
 }
 
 /* ************************************************************************* */
 void getSymbolicGraph(
-/*OUTPUTS*/std::vector<size_t>& spanningTreeIds, std::vector<size_t>& chordsIds,
+/*OUTPUTS*/vector<size_t>& spanningTreeIds, vector<size_t>& chordsIds,
     key2doubleMap& deltaThetaMap,
     /*INPUTS*/const PredecessorMap<Key>& tree, const NonlinearFactorGraph& g) {
 
@@ -113,10 +115,10 @@ void getSymbolicGraph(
       // insert (directed) orientations in the map "deltaThetaMap"
       bool inTree = false;
       if (tree.at(key1) == key2) { // key2 -> key1
-        deltaThetaMap.insert(std::pair<Key, double>(key1, -deltaTheta));
+        deltaThetaMap.insert(pair<Key, double>(key1, -deltaTheta));
         inTree = true;
       } else if (tree.at(key2) == key1) { // key1 -> key2
-        deltaThetaMap.insert(std::pair<Key, double>(key2, deltaTheta));
+        deltaThetaMap.insert(pair<Key, double>(key2, deltaTheta));
         inTree = true;
       }
       // store factor slot, distinguishing spanning tree edges from chordsIds
@@ -139,7 +141,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
       boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
   if (!pose2Between)
-    throw std::invalid_argument(
+    throw invalid_argument(
         "buildLinearOrientationGraph: invalid between factor!");
   deltaTheta = (Vector(1) << pose2Between->measured().theta());
 
@@ -148,18 +150,17 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
       boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!diagonalModel)
-    throw std::invalid_argument(
-        "buildLinearOrientationGraph: invalid noise model "
-            "(current version assumes diagonal noise model)!");
+    throw invalid_argument("buildLinearOrientationGraph: invalid noise model "
+        "(current version assumes diagonal noise model)!");
   Vector std_deltaTheta = (Vector(1) << diagonalModel->sigma(2)); // std on the angular measurement
   model_deltaTheta = noiseModel::Diagonal::Sigmas(std_deltaTheta);
 }
 
 /* ************************************************************************* */
 GaussianFactorGraph buildLinearOrientationGraph(
-    const std::vector<size_t>& spanningTreeIds,
-    const std::vector<size_t>& chordsIds, const NonlinearFactorGraph& g,
-    const key2doubleMap& orientationsToRoot, const PredecessorMap<Key>& tree) {
+    const vector<size_t>& spanningTreeIds, const vector<size_t>& chordsIds,
+    const NonlinearFactorGraph& g, const key2doubleMap& orientationsToRoot,
+    const PredecessorMap<Key>& tree) {
 
   GaussianFactorGraph lagoGraph;
   Vector deltaTheta;
@@ -179,11 +180,11 @@ GaussianFactorGraph buildLinearOrientationGraph(
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     double key1_DeltaTheta_key2 = deltaTheta(0);
-    ///std::cout << "REG: key1= " << DefaultKeyFormatter(key1) << " key2= " << DefaultKeyFormatter(key2) << std::endl;
+    ///cout << "REG: key1= " << DefaultKeyFormatter(key1) << " key2= " << DefaultKeyFormatter(key2) << endl;
     double k2pi_noise = key1_DeltaTheta_key2 + orientationsToRoot.at(key1)
         - orientationsToRoot.at(key2); // this coincides to summing up measurements along the cycle induced by the chord
     double k = boost::math::round(k2pi_noise / (2 * M_PI));
-    //if (k2pi_noise - 2*k*M_PI > 1e-5) std::cout << k2pi_noise - 2*k*M_PI << std::endl; // for debug
+    //if (k2pi_noise - 2*k*M_PI > 1e-5) cout << k2pi_noise - 2*k*M_PI << endl; // for debug
     Vector deltaThetaRegularized = (Vector(1)
         << key1_DeltaTheta_key2 - 2 * k * M_PI);
     lagoGraph.add(
@@ -199,7 +200,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
 /* ************************************************************************* */
 // Select the subgraph of betweenFactors and transforms priors into between wrt a fictitious node
 static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
-  gttic_(buildPose2graph);
+  gttic_(lago_buildPose2graph);
   NonlinearFactorGraph pose2Graph;
 
   BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, graph) {
@@ -252,7 +253,7 @@ static PredecessorMap<Key> findOdometricPath(
 // Return the orientations of a graph including only BetweenFactors<Pose2>
 static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
     bool useOdometricPath) {
-  gttic_(computeOrientations);
+  gttic_(lago_computeOrientations);
 
   // Find a minimum spanning tree
   PredecessorMap<Key> tree;
@@ -264,8 +265,8 @@ static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
 
   // Create a linear factor graph (LFG) of scalars
   key2doubleMap deltaThetaMap;
-  std::vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
-  std::vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
+  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
+  vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
   getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, pose2Graph);
 
   // temporary structure to correct wraparounds along loops
@@ -296,7 +297,7 @@ VectorValues initializeOrientations(const NonlinearFactorGraph& graph,
 /* ************************************************************************* */
 Values computePoses(const NonlinearFactorGraph& pose2graph,
     VectorValues& orientationsLago) {
-  gttic_(computePoses);
+  gttic_(lago_computePoses);
 
   // Linearized graph on full poses
   GaussianFactorGraph linearPose2graph;
@@ -337,7 +338,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       linearPose2graph.add(
           JacobianFactor(key1, J1, key2, I3, b, diagonalModel));
     } else {
-      throw std::invalid_argument(
+      throw invalid_argument(
           "computeLagoPoses: cannot manage non between factor here!");
     }
   }
@@ -366,6 +367,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
 
 /* ************************************************************************* */
 Values initialize(const NonlinearFactorGraph& graph, bool useOdometricPath) {
+  gttic_(lago_initialize);
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
