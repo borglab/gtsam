@@ -68,6 +68,7 @@ string findExampleDataFile(const string& name) {
       name + ", " + name + ".graph, or " + name + ".txt");
 }
 
+/* ************************************************************************* */
 string createRewrittenFileName(const string& name) {
   // Search source tree and installed location
   if(!exists(fs::path(name))) {
@@ -81,6 +82,7 @@ string createRewrittenFileName(const string& name) {
 
   return   newpath.string();
 }
+/* ************************************************************************* */
 #endif
 
 /* ************************************************************************* */

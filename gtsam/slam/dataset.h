@@ -46,8 +46,8 @@ namespace gtsam {
 GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
 
 /**
- * searches for the file using the findExample funtion, if not found ,
- * creates one in the source tree and returns the full path
+ * Creates a temporary file name that needs to be ignored in .gitingnore
+ * for checking read-write oprations
  */
 GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
 #endif
