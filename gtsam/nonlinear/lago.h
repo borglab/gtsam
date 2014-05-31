@@ -41,6 +41,7 @@
 #include <gtsam/inference/graph.h>
 
 namespace gtsam {
+namespace lago {
 
 typedef std::map<Key,double> key2doubleMap;
 const Key keyAnchor = symbol('Z',9999999);
@@ -93,4 +94,5 @@ GTSAM_EXPORT Values initializeLago(const NonlinearFactorGraph& graph, bool useOd
 /*  Only corrects the orientation part in initialGuess */
 GTSAM_EXPORT Values initializeLago(const NonlinearFactorGraph& graph, const Values& initialGuess);
 
+} // end of namespace lago
 } // end of namespace gtsam

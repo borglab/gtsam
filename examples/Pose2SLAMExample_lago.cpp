@@ -48,7 +48,7 @@ int main(const int argc, const char *argv[]) {
   graphWithPrior.print();
 
   std::cout << "Computing LAGO estimate" << std::endl;
-  Values estimateLago = initializeLago(graphWithPrior);
+  Values estimateLago = lago::initializeLago(graphWithPrior);
   std::cout << "done!" << std::endl;
 
   if (argc < 3) {

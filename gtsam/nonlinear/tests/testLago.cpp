@@ -37,6 +37,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace lago;
 using namespace boost::assign;
 
 Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);

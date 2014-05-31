@@ -24,6 +24,7 @@
 #include <boost/math/special_functions.hpp>
 
 namespace gtsam {
+namespace lago {
 
 static Matrix I = eye(1);
 static Matrix I3 = eye(3);
@@ -347,4 +348,5 @@ Values initializeLago(const NonlinearFactorGraph& graph, const Values& initialGu
   return initialGuessLago;
 }
 
+} // end of namespace lago
 } // end of namespace gtsam
