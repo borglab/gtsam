@@ -34,15 +34,11 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/graph.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
 
 namespace gtsam {
 
