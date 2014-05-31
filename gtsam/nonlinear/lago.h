@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  LagoInitializer.h
+ *  @file  lago.h
  *  @brief Initialize Pose2 in a factor graph using LAGO
  *  (Linear Approximation for Graph Optimization). see papers:
  *

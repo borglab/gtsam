@@ -28,7 +28,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LagoInitializer.h>
+#include <gtsam/nonlinear/lago.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>

@@ -10,13 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  LagoInitializer.h
+ *  @file  lago.h
  *  @author Luca Carlone
  *  @author Frank Dellaert
  *  @date   May 14, 2014
  */
 
-#include <gtsam/nonlinear/LagoInitializer.h>
+#include <gtsam/nonlinear/lago.h>
 #include <gtsam/slam/dataset.h>
 #include <boost/math/special_functions.hpp>
 
