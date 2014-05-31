@@ -83,7 +83,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   cout << "Will try to read " << filename << endl;
   ifstream is(filename.c_str());
   if (!is)
-    throw std::invalid_argument("load2D: can not find the file!");
+    throw std::invalid_argument("load2D: can not find file " + filename);
 
   Values::shared_ptr initial(new Values);
   NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
