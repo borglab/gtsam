@@ -16,18 +16,18 @@
  * @brief utility functions for loading datasets
  */
 
-#include <fstream>
-#include <sstream>
-#include <cstdlib>
-
-#include <boost/filesystem.hpp>
-
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/linear/Sampler.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/inference/Symbol.h>
+
+#include <boost/filesystem.hpp>
+
+#include <fstream>
+#include <sstream>
+#include <cstdlib>
 
 using namespace std;
 namespace fs = boost::filesystem;
@@ -90,16 +90,16 @@ string createRewrittenFileName(const string& name) {
 
 /* ************************************************************************* */
 pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-    pair<string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
-    int maxID, bool addNoise, bool smart) {
+    pair<string, SharedNoiseModel> dataset, int maxID, bool addNoise,
+    bool smart) {
   return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
 }
 
 /* ************************************************************************* */
 pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-    const string& filename,
-    boost::optional<noiseModel::Diagonal::shared_ptr> model, int maxID,
-    bool addNoise, bool smart) {
+    const string& filename, SharedNoiseModel model, int maxID, bool addNoise,
+    bool smart) {
+
   cout << "Will try to read " << filename << endl;
   ifstream is(filename.c_str());
   if (!is)
@@ -119,9 +119,11 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       int id;
       double x, y, yaw;
       is >> id >> x >> y >> yaw;
+
       // optional filter
       if (maxID && id >= maxID)
         continue;
+
       initial->insert(id, Pose2(x, y, yaw));
     }
     is.ignore(LINESIZE, '\n');
@@ -130,7 +132,17 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   is.seekg(0, ios::beg);
 
   // Create a sampler with random number generator
-  Sampler sampler(42u);
+  Sampler sampler;
+  if (addNoise) {
+    noiseModel::Diagonal::shared_ptr noise;
+    if (model)
+      noise = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+    if (!noise)
+      throw invalid_argument(
+          "gtsam::load2D: invalid noise model for adding noise"
+              "(current version assumes diagonal noise model)!");
+    sampler = Sampler(noise);
+  }
 
   // Parse the pose constraints
   int id1, id2;
@@ -146,21 +158,6 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       is >> id1 >> id2 >> x >> y >> yaw;
       is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
 
-      // Try to guess covariance matrix layout
-      Matrix m(3, 3);
-      if (v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0
-          && v6 == 0.0) {
-        // Looks like [ v1 v2 v5; v2' v3 v6; v5' v6' v4 ]
-        m << v1, v2, v5, v2, v3, v6, v5, v6, v4;
-      } else if (v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0
-          && v6 != 0.0) {
-        // Looks like [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
-        m << v1, v2, v3, v2, v4, v5, v3, v5, v6;
-      } else {
-        throw std::invalid_argument(
-            "load2D: unrecognized covariance matrix format in dataset file");
-      }
-
       // optional filter
       if (maxID && (id1 >= maxID || id2 >= maxID))
         continue;
@@ -169,12 +166,28 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
 
       // SharedNoiseModel noise = noiseModel::Gaussian::Covariance(m, smart);
       if (!model) {
+
+        // Try to guess covariance matrix layout
+        Matrix m(3, 3);
+        if (v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0
+            && v6 == 0.0) {
+          // Looks like [ v1 v2 v5; v2' v3 v6; v5' v6' v4 ]
+          m << v1, v2, v5, v2, v3, v6, v5, v6, v4;
+        } else if (v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0
+            && v6 != 0.0) {
+          // Looks like [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
+          m << v1, v2, v3, v2, v4, v5, v3, v5, v6;
+        } else {
+          throw std::invalid_argument(
+              "load2D: unrecognized covariance matrix format in dataset file");
+        }
+
         Vector variances = (Vector(3) << m(0, 0), m(1, 1), m(2, 2));
         model = noiseModel::Diagonal::Variances(variances, smart);
       }
 
       if (addNoise)
-        l1Xl2 = l1Xl2.retract(sampler.sampleNewModel(*model));
+        l1Xl2 = l1Xl2.retract(sampler.sample());
 
       // Insert vertices if pure odometry file
       if (!initial->exists(id1))
@@ -183,7 +196,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
         initial->insert(id2, initial->at<Pose2>(id1) * l1Xl2);
 
       NonlinearFactor::shared_ptr factor(
-          new BetweenFactor<Pose2>(id1, id2, l1Xl2, *model));
+          new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
       graph->push_back(factor);
     }
 
