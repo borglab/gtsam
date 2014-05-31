@@ -35,7 +35,7 @@ static const Matrix I3 = eye(3);
 
 static const Key keyAnchor = symbol('Z', 9999999);
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =
-    noiseModel::Diagonal::Variances((Vector(1) << 1e-8));
+    noiseModel::Diagonal::Sigmas((Vector(1) << 0));
 static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
     noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
 
