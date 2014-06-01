@@ -56,9 +56,9 @@ public:
     Point3 q = Rot3::yaw(R.theta()).unrotate(p, HR);
     if (HR) {
       // assign to temporary first to avoid error in Win-Debug mode
-	  Matrix H  = HR->col(2);
+      Matrix H = HR->col(2);
       *HR = H;
-	}
+    }
     return q;
   }
 
