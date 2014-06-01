@@ -262,7 +262,7 @@ public:
           try {
             Point2 reprojectionError(camera.project(point_) - zi);
             totalReprojError += reprojectionError.vector().norm();
-          } catch (CheiralityException& e) {
+          } catch (CheiralityException) {
             cheiralityException_ = true;
           }
           i += 1;

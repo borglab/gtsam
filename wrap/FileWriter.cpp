@@ -28,7 +28,7 @@ void FileWriter::emit(bool add_header, bool force_overwrite) const {
   bool file_exists = true;
   try {
     existing_contents = file_contents(filename_.c_str(), add_header);
-  } catch (CantOpenFile& e) {
+  } catch (CantOpenFile) {
     file_exists = false;
   }
 

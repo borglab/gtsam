@@ -244,7 +244,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     try {
       delta = solve(dampedSystem, state_.values, params_);
       systemSolvedSuccessfully = true;
-    } catch (IndeterminantLinearSystemException& e) {
+    } catch (IndeterminantLinearSystemException) {
       systemSolvedSuccessfully = false;
     }
 
