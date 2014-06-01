@@ -33,7 +33,7 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
-Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
+static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
 
 namespace simple {
@@ -48,10 +48,10 @@ namespace simple {
 //               x0
 //
 
-Pose2 pose0 = Pose2(0.000000, 0.000000, 0.000000);
-Pose2 pose1 = Pose2(1.000000, 1.000000, 1.570796);
-Pose2 pose2 = Pose2(0.000000, 2.000000, 3.141593);
-Pose2 pose3 = Pose2(-1.000000, 1.000000, 4.712389);
+static Pose2 pose0 = Pose2(0.000000, 0.000000, 0.000000);
+static Pose2 pose1 = Pose2(1.000000, 1.000000, 1.570796);
+static Pose2 pose2 = Pose2(0.000000, 2.000000, 3.141593);
+static Pose2 pose3 = Pose2(-1.000000, 1.000000, 4.712389);
 
 NonlinearFactorGraph graph() {
   NonlinearFactorGraph g;
