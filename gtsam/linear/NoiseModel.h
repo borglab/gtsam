@@ -165,6 +165,13 @@ namespace gtsam {
       static shared_ptr SqrtInformation(const Matrix& R, bool smart = true);
 
       /**
+       * A Gaussian noise model created by specifying an information matrix.
+       * @param M The information matrix
+       * @param smart check if can be simplified to derived class
+       */
+      static shared_ptr Information(const Matrix& M, bool smart = true);
+
+      /**
        * A Gaussian noise model created by specifying a covariance matrix.
        * @param covariance The square covariance Matrix
        * @param smart check if can be simplified to derived class
@@ -864,6 +871,9 @@ namespace gtsam {
         ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
       }
     };
+    
+    // Helper function
+    boost::optional<Vector> checkIfDiagonal(const Matrix M);
 
   } // namespace noiseModel
 
