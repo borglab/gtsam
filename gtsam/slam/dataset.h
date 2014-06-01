@@ -56,7 +56,8 @@ GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
 enum NoiseFormat {
   NoiseFormatG2O,   ///< Information matrix I11, I12, I13, I22, I23, I33
   NoiseFormatTORO,  ///< Information matrix, but inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
-  NoiseFormatGRAPH  ///< default: toro-style order, but covariance matrix !
+  NoiseFormatGRAPH, ///< default: toro-style order, but covariance matrix !
+  NoiseFormatCOV    ///< Covariance matrix C11, C12, C13, C22, C23, C33
 };
 
 enum KernelFunctionType {

@@ -104,13 +104,15 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
   double v1, v2, v3, v4, v5, v6;
   is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
 
+  // Read matrix and check that diagonal entries are non-zero
   Matrix M(3, 3);
   switch (noiseFormat) {
   case NoiseFormatG2O:
+  case NoiseFormatCOV:
     // i.e., [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
     if (v1 == 0.0 || v4 == 0.0 || v6 == 0.0)
-      throw std::invalid_argument(
-          "load2D: looks like this is not G2O file format");
+      throw std::runtime_error(
+          "load2D::readNoiseModel looks like this is not G2O matrix order");
     M << v1, v2, v3, v2, v4, v5, v3, v5, v6;
     break;
   case NoiseFormatTORO:
@@ -120,13 +122,15 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
     // i.e., [ v1 v2 v5; v2' v3 v6; v5' v6' v4 ]
     if (v1 == 0.0 || v3 == 0.0 || v4 == 0.0)
       throw std::invalid_argument(
-          "load2D: looks like this is not TORO file format");
+          "load2D::readNoiseModel looks like this is not TORO matrix order");
     M << v1, v2, v5, v2, v3, v6, v5, v6, v4;
     break;
   default:
-    throw std::invalid_argument("load2D: invalid noise format");
+    throw std::runtime_error("load2D: invalid noise format");
   }
 
+  // Now, create a Gaussian noise model
+  // The smart flag will try to detect a simpler model, e.g., unit
   SharedNoiseModel model;
   switch (noiseFormat) {
   case NoiseFormatG2O:
@@ -135,7 +139,8 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
     model = noiseModel::Gaussian::Information(M, smart);
     break;
   case NoiseFormatGRAPH:
-    // but default case expects covariance matrix
+  case NoiseFormatCOV:
+    // These cases expect covariance matrix
     model = noiseModel::Gaussian::Covariance(M, smart);
     break;
   default:
