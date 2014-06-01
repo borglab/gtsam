@@ -49,7 +49,7 @@ void updateAb(MATRIX& Ab, int j, const Vector& a, const Vector& rd) {
 
 /* ************************************************************************* */
 // check *above the diagonal* for non-zero entries
-static boost::optional<Vector> checkIfDiagonal(const Matrix M) {
+boost::optional<Vector> checkIfDiagonal(const Matrix M) {
   size_t m = M.rows(), n = M.cols();
   // check all non-diagonal entries
   bool full = false;
@@ -74,23 +74,46 @@ static boost::optional<Vector> checkIfDiagonal(const Matrix M) {
 /* ************************************************************************* */
 Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
   size_t m = R.rows(), n = R.cols();
-  if (m != n) throw invalid_argument("Gaussian::SqrtInformation: R not square");
+  if (m != n)
+    throw invalid_argument("Gaussian::SqrtInformation: R not square");
   boost::optional<Vector> diagonal = boost::none;
   if (smart)
     diagonal = checkIfDiagonal(R);
-  if (diagonal) return Diagonal::Sigmas(reciprocal(*diagonal),true);
-  else return shared_ptr(new Gaussian(R.rows(),R));
+  if (diagonal)
+    return Diagonal::Sigmas(reciprocal(*diagonal), true);
+  else
+    return shared_ptr(new Gaussian(R.rows(), R));
 }
 
 /* ************************************************************************* */
-Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance, bool smart) {
+Gaussian::shared_ptr Gaussian::Information(const Matrix& M, bool smart) {
+  size_t m = M.rows(), n = M.cols();
+  if (m != n)
+    throw invalid_argument("Gaussian::Information: R not square");
+  boost::optional<Vector> diagonal = boost::none;
+  if (smart)
+    diagonal = checkIfDiagonal(M);
+  if (diagonal)
+    return Diagonal::Precisions(*diagonal, true);
+  else {
+    Matrix R = RtR(M);
+    return shared_ptr(new Gaussian(R.rows(), R));
+  }
+}
+
+/* ************************************************************************* */
+Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
+    bool smart) {
   size_t m = covariance.rows(), n = covariance.cols();
-  if (m != n) throw invalid_argument("Gaussian::Covariance: covariance not square");
+  if (m != n)
+    throw invalid_argument("Gaussian::Covariance: covariance not square");
   boost::optional<Vector> variances = boost::none;
   if (smart)
     variances = checkIfDiagonal(covariance);
-  if (variances) return Diagonal::Variances(*variances,true);
-  else return shared_ptr(new Gaussian(n, inverse_square_root(covariance)));
+  if (variances)
+    return Diagonal::Variances(*variances, true);
+  else
+    return shared_ptr(new Gaussian(n, inverse_square_root(covariance)));
 }
 
 /* ************************************************************************* */

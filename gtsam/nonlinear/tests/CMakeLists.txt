@@ -1,1 +1,1 @@
-gtsamAddTestsGlob(nonlinear "*.cpp" "" "gtsam")
+gtsamAddTestsGlob(nonlinear "test*.cpp" "" "gtsam")
