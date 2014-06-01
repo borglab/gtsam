@@ -46,8 +46,7 @@ TEST( dataSet, load2D)
   const string filename = findExampleDataFile("w100.graph");
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
-  boost::tie(graph, initial) = //
-      load2D(filename, SharedNoiseModel(), 10000, false, false);
+  boost::tie(graph, initial) = load2D(filename);
   EXPECT_LONGS_EQUAL(300,graph->size());
   EXPECT_LONGS_EQUAL(100,initial->size());
   noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
