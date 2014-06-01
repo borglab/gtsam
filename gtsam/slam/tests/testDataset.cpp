@@ -50,6 +50,11 @@ TEST( dataSet, load2D)
       load2D(filename, SharedNoiseModel(), 10000, false, false);
   EXPECT_LONGS_EQUAL(300,graph->size());
   EXPECT_LONGS_EQUAL(100,initial->size());
+  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
+  BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879,0.0417574,-0.00818381), model);
+  BetweenFactor<Pose2>::shared_ptr actual = boost::dynamic_pointer_cast<
+      BetweenFactor<Pose2> >(graph->at(0));
+  EXPECT(assert_equal(expected, *actual));
 }
 
 /* ************************************************************************* */
@@ -118,7 +123,7 @@ TEST( dataSet, readG2oHuber)
   const string g2oFile = findExampleDataFile("pose2example");
   NonlinearFactorGraph actualGraph;
   Values actualValues;
-  readG2o(g2oFile, actualGraph, actualValues, HUBER);
+  readG2o(g2oFile, actualGraph, actualValues, KernelFunctionTypeHUBER);
 
   noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), baseModel);
@@ -145,7 +150,7 @@ TEST( dataSet, readG2oTukey)
   const string g2oFile = findExampleDataFile("pose2example");
   NonlinearFactorGraph actualGraph;
   Values actualValues;
-  readG2o(g2oFile, actualGraph, actualValues, TUKEY);
+  readG2o(g2oFile, actualGraph, actualValues, KernelFunctionTypeTUKEY);
 
   noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
