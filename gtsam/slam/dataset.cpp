@@ -185,7 +185,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
     if (!(is >> tag))
       break;
 
-    if ((tag == "VERTEX2") || (tag == "VERTEX")) {
+    if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
       int id;
       double x, y, yaw;
       is >> id >> x >> y >> yaw;
