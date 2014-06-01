@@ -54,15 +54,19 @@ GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
 
 /// Indicates how noise parameters are stored in file
 enum NoiseFormat {
-  NoiseFormatG2O,   ///< Information matrix I11, I12, I13, I22, I23, I33
-  NoiseFormatTORO,  ///< Information matrix, but inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
+  NoiseFormatG2O, ///< Information matrix I11, I12, I13, I22, I23, I33
+  NoiseFormatTORO, ///< Information matrix, but inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
   NoiseFormatGRAPH, ///< default: toro-style order, but covariance matrix !
-  NoiseFormatCOV    ///< Covariance matrix C11, C12, C13, C22, C23, C33
+  NoiseFormatCOV ///< Covariance matrix C11, C12, C13, C22, C23, C33
 };
 
+/// Robust kernel type to wrap around quadratic noise model
 enum KernelFunctionType {
-  KernelFunctionTypeQUADRATIC, KernelFunctionTypeHUBER, KernelFunctionTypeTUKEY
+  KernelFunctionTypeNONE, KernelFunctionTypeHUBER, KernelFunctionTypeTUKEY
 };
+
+/// Return type for load functions
+typedef std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> GraphAndValues;
 
 /**
  * Load TORO 2D Graph
@@ -71,35 +75,57 @@ enum KernelFunctionType {
  * @param addNoise add noise to the edges
  * @param smart try to reduce complexity of covariance to cheapest model
  */
-GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+GTSAM_EXPORT GraphAndValues load2D(
     std::pair<std::string, SharedNoiseModel> dataset, int maxID = 0,
     bool addNoise = false,
     bool smart = true, //
     NoiseFormat noiseFormat = NoiseFormatGRAPH,
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeQUADRATIC);
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /**
- * Load TORO 2D Graph
+ * Load TORO/G2O style graph files
  * @param filename
  * @param model optional noise model to use instead of one specified by file
  * @param maxID if non-zero cut out vertices >= maxID
  * @param addNoise add noise to the edges
  * @param smart try to reduce complexity of covariance to cheapest model
+ * @param noiseFormat how noise parameters are stored
+ * @param kernelFunctionType whether to wrap the noise model in a robust kernel
+ * @return graph and initial values
  */
-GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-    const std::string& filename, SharedNoiseModel model = SharedNoiseModel(),
-    int maxID = 0, bool addNoise = false, bool smart = true,
-    NoiseFormat noiseFormat = NoiseFormatGRAPH, //
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeQUADRATIC);
+GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
+    SharedNoiseModel model = SharedNoiseModel(), int maxID = 0, bool addNoise =
+        false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatGRAPH, //
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
-GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
-    const std::string& filename, noiseModel::Base::shared_ptr& model,
-    int maxID = 0);
+/// @deprecated load2D now allows for arbitrary models and wrapping a robust kernel
+GTSAM_EXPORT GraphAndValues load2D_robust(const std::string& filename,
+    noiseModel::Base::shared_ptr& model, int maxID = 0);
 
 /** save 2d graph */
 GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
     const Values& config, const noiseModel::Diagonal::shared_ptr model,
     const std::string& filename);
+
+/**
+ * @brief This function parses a g2o file and stores the measurements into a
+ * NonlinearFactorGraph and the initial guess in a Values structure
+ * @param filename The name of the g2o file
+ * @param kernelFunctionType whether to wrap the noise model in a robust kernel
+ * @return graph and initial values
+ */
+GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile,
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
+
+/**
+ * @brief This function writes a g2o file from
+ * NonlinearFactorGraph and a Values structure
+ * @param filename The name of the g2o file to write
+ * @param graph NonlinearFactor graph storing the measurements
+ * @param estimate Values
+ */
+GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
+    const Values& estimate, const std::string& filename);
 
 /**
  * Load TORO 3D Graph
@@ -142,27 +168,6 @@ struct SfM_data {
  * @return true if the parsing was successful, false otherwise
  */
 GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_data &data);
-
-/**
- * @brief This function parses a g2o file and stores the measurements into a
- * NonlinearFactorGraph and the initial guess in a Values structure
- * @param filename The name of the g2o file
- * @param graph NonlinearFactor graph storing the measurements (EDGE_SE2). NOTE: information matrix is assumed diagonal.
- * @return initial Values containing the initial guess (VERTEX_SE2)
- */
-GTSAM_EXPORT bool readG2o(const std::string& g2oFile,
-    NonlinearFactorGraph& graph, Values& initial,
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeQUADRATIC);
-
-/**
- * @brief This function writes a g2o file from
- * NonlinearFactorGraph and a Values structure
- * @param filename The name of the g2o file to write
- * @param graph NonlinearFactor graph storing the measurements (EDGE_SE2)
- * @return estimate Values containing the values (VERTEX_SE2)
- */
-GTSAM_EXPORT bool writeG2o(const std::string& filename,
-    const NonlinearFactorGraph& graph, const Values& estimate);
 
 /**
  * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and stores the data into a

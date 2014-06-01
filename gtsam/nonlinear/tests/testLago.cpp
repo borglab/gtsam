@@ -258,13 +258,13 @@ TEST( Lago, smallGraph2 ) {
 /* *************************************************************************** */
 TEST( Lago, largeGraphNoisy_orientations ) {
 
-  NonlinearFactorGraph g;
-  Values initial;
   string inputFile = findExampleDataFile("noisyToyGraph");
-  readG2o(inputFile, g, initial);
+  NonlinearFactorGraph::shared_ptr g;
+  Values::shared_ptr initial;
+  boost::tie(g, initial) = readG2o(inputFile);
 
   // Add prior on the pose having index (key) = 0
-  NonlinearFactorGraph graphWithPrior = g;
+  NonlinearFactorGraph graphWithPrior = *g;
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
@@ -279,40 +279,40 @@ TEST( Lago, largeGraphNoisy_orientations ) {
       actual.insert(key, poseLago);
     }
   }
-  NonlinearFactorGraph gmatlab;
-  Values expected;
   string matlabFile = findExampleDataFile("orientationsNoisyToyGraph");
-  readG2o(matlabFile, gmatlab, expected);
+  NonlinearFactorGraph::shared_ptr gmatlab;
+  Values::shared_ptr expected;
+  boost::tie(gmatlab, expected) = readG2o(matlabFile);
 
-  BOOST_FOREACH(const Values::KeyValuePair& key_val, expected){
+  BOOST_FOREACH(const Values::KeyValuePair& key_val, *expected){
     Key k = key_val.key;
-    EXPECT(assert_equal(expected.at<Pose2>(k), actual.at<Pose2>(k), 1e-5));
+    EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-5));
   }
 }
 
 /* *************************************************************************** */
 TEST( Lago, largeGraphNoisy ) {
 
-  NonlinearFactorGraph g;
-  Values initial;
   string inputFile = findExampleDataFile("noisyToyGraph");
-  readG2o(inputFile, g, initial);
+  NonlinearFactorGraph::shared_ptr g;
+  Values::shared_ptr initial;
+  boost::tie(g, initial) = readG2o(inputFile);
 
   // Add prior on the pose having index (key) = 0
-  NonlinearFactorGraph graphWithPrior = g;
+  NonlinearFactorGraph graphWithPrior = *g;
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
   Values actual = lago::initialize(graphWithPrior);
 
-  NonlinearFactorGraph gmatlab;
-  Values expected;
   string matlabFile = findExampleDataFile("optimizedNoisyToyGraph");
-  readG2o(matlabFile, gmatlab, expected);
+  NonlinearFactorGraph::shared_ptr gmatlab;
+  Values::shared_ptr expected;
+  boost::tie(gmatlab, expected) = readG2o(matlabFile);
 
-  BOOST_FOREACH(const Values::KeyValuePair& key_val, expected){
+  BOOST_FOREACH(const Values::KeyValuePair& key_val, *expected){
     Key k = key_val.key;
-    EXPECT(assert_equal(expected.at<Pose2>(k), actual.at<Pose2>(k), 1e-2));
+    EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-2));
   }
 }
 

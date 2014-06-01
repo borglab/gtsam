@@ -36,12 +36,12 @@ int main(const int argc, const char *argv[]) {
   else
     g2oFile = argv[1];
 
-  NonlinearFactorGraph graph;
-  Values initial;
-  readG2o(g2oFile, graph, initial);
+  NonlinearFactorGraph::shared_ptr graph;
+  Values::shared_ptr initial;
+  boost::tie(graph, initial) = readG2o(g2oFile);
 
   // Add prior on the pose having index (key) = 0
-  NonlinearFactorGraph graphWithPrior = graph;
+  NonlinearFactorGraph graphWithPrior = *graph;
   noiseModel::Diagonal::shared_ptr priorModel = //
       noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
@@ -56,7 +56,7 @@ int main(const int argc, const char *argv[]) {
   } else {
     const string outputFile = argv[2];
     std::cout << "Writing results to file: " << outputFile << std::endl;
-    writeG2o(outputFile, graph, estimateLago);
+    writeG2o(*graph, estimateLago, outputFile);
     std::cout << "done! " << std::endl;
   }
 

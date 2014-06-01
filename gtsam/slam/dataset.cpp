@@ -62,7 +62,7 @@ string findExampleDataFile(const string& name) {
 
   // If we did not return already, then we did not find the file
   throw
-std::invalid_argument(
+invalid_argument(
     "gtsam::findExampleDataFile could not find a matching file in\n"
     SOURCE_TREE_DATASET_DIR " or\n"
     INSTALLED_DATASET_DIR " named\n" +
@@ -73,7 +73,7 @@ std::invalid_argument(
 string createRewrittenFileName(const string& name) {
   // Search source tree and installed location
   if (!exists(fs::path(name))) {
-    throw std::invalid_argument(
+    throw invalid_argument(
         "gtsam::createRewrittenFileName could not find a matching file in\n"
             + name);
   }
@@ -89,9 +89,8 @@ string createRewrittenFileName(const string& name) {
 #endif
 
 /* ************************************************************************* */
-pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-    pair<string, SharedNoiseModel> dataset, int maxID, bool addNoise,
-    bool smart, NoiseFormat noiseFormat,
+GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, int maxID,
+    bool addNoise, bool smart, NoiseFormat noiseFormat,
     KernelFunctionType kernelFunctionType) {
   return load2D(dataset.first, dataset.second, maxID, addNoise, smart,
       noiseFormat, kernelFunctionType);
@@ -111,7 +110,7 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
   case NoiseFormatCOV:
     // i.e., [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
     if (v1 == 0.0 || v4 == 0.0 || v6 == 0.0)
-      throw std::runtime_error(
+      throw runtime_error(
           "load2D::readNoiseModel looks like this is not G2O matrix order");
     M << v1, v2, v3, v2, v4, v5, v3, v5, v6;
     break;
@@ -121,12 +120,12 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
     // inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
     // i.e., [ v1 v2 v5; v2' v3 v6; v5' v6' v4 ]
     if (v1 == 0.0 || v3 == 0.0 || v4 == 0.0)
-      throw std::invalid_argument(
+      throw invalid_argument(
           "load2D::readNoiseModel looks like this is not TORO matrix order");
     M << v1, v2, v5, v2, v3, v6, v5, v6, v4;
     break;
   default:
-    throw std::runtime_error("load2D: invalid noise format");
+    throw runtime_error("load2D: invalid noise format");
   }
 
   // Now, create a Gaussian noise model
@@ -144,11 +143,11 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
     model = noiseModel::Gaussian::Covariance(M, smart);
     break;
   default:
-    throw std::invalid_argument("load2D: invalid noise format");
+    throw invalid_argument("load2D: invalid noise format");
   }
 
   switch (kernelFunctionType) {
-  case KernelFunctionTypeQUADRATIC:
+  case KernelFunctionTypeNONE:
     return model;
     break;
   case KernelFunctionTypeHUBER:
@@ -160,20 +159,18 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
         noiseModel::mEstimator::Tukey::Create(4.6851), model);
     break;
   default:
-    throw std::invalid_argument("load2D: invalid kernel function type");
+    throw invalid_argument("load2D: invalid kernel function type");
   }
 }
 
 /* ************************************************************************* */
-pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-    const string& filename, SharedNoiseModel model, int maxID, bool addNoise,
-    bool smart, NoiseFormat noiseFormat,
+GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
+    bool addNoise, bool smart, NoiseFormat noiseFormat,
     KernelFunctionType kernelFunctionType) {
 
-  cout << "Will try to read " << filename << endl;
   ifstream is(filename.c_str());
   if (!is)
-    throw std::invalid_argument("load2D: can not find file " + filename);
+    throw invalid_argument("load2D: can not find file " + filename);
 
   Values::shared_ptr initial(new Values);
   NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
@@ -270,8 +267,8 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       is >> id1 >> id2 >> lmx >> lmy >> v1 >> v2 >> v3;
 
       // Convert x,y to bearing,range
-      bearing = std::atan2(lmy, lmx);
-      range = std::sqrt(lmx * lmx + lmy * lmy);
+      bearing = atan2(lmy, lmx);
+      range = sqrt(lmx * lmx + lmy * lmy);
 
       // In our experience, the x-y covariance on landmark sightings is not very good, so assume
       // it describes the uncertainty at a range of 10m, and convert that to bearing/range uncertainty.
@@ -319,10 +316,13 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
     is.ignore(LINESIZE, '\n');
   }
 
-  cout << "load2D read a graph file with " << initial->size()
-      << " vertices and " << graph->nrFactors() << " factors" << endl;
-
   return make_pair(graph, initial);
+}
+
+/* ************************************************************************* */
+GraphAndValues load2D_robust(const string& filename,
+    noiseModel::Base::shared_ptr& model, int maxID) {
+  return load2D(filename, model, maxID);
 }
 
 /* ************************************************************************* */
@@ -354,6 +354,54 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
         << RR(0, 2) << " " << RR(1, 2) << endl;
   }
 
+  stream.close();
+}
+
+/* ************************************************************************* */
+GraphAndValues readG2o(const string& g2oFile,
+    KernelFunctionType kernelFunctionType) {
+  // just call load2D
+  int maxID = 0;
+  bool addNoise = false;
+  bool smart = true;
+  return load2D(g2oFile, SharedNoiseModel(), maxID, addNoise, smart,
+      NoiseFormatG2O, kernelFunctionType);
+}
+
+/* ************************************************************************* */
+void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
+    const string& filename) {
+
+  fstream stream(filename.c_str(), fstream::out);
+
+  // save poses
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
+    const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
+    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
+        << pose.y() << " " << pose.theta() << endl;
+  }
+
+  // save edges
+  BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
+    boost::shared_ptr<BetweenFactor<Pose2> > factor =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
+    if (!factor)
+      continue;
+
+    SharedNoiseModel model = factor->get_noiseModel();
+    boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+        boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+    if (!diagonalModel)
+      throw invalid_argument(
+          "writeG2o: invalid noise model (current version assumes diagonal noise model)!");
+
+    Pose2 pose = factor->measured(); //.inverse();
+    stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
+        << pose.x() << " " << pose.y() << " " << pose.theta() << " "
+        << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " "
+        << diagonalModel->precision(1) << " " << 0.0 << " "
+        << diagonalModel->precision(2) << endl;
+  }
   stream.close();
 }
 
@@ -397,105 +445,6 @@ bool load3D(const string& filename) {
     }
   }
   return true;
-}
-
-/* ************************************************************************* */
-pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
-    const string& filename, noiseModel::Base::shared_ptr& model, int maxID) {
-  cout << "Will try to read " << filename << endl;
-  ifstream is(filename.c_str());
-  if (!is)
-    throw std::invalid_argument("load2D: can not find the file!");
-
-  Values::shared_ptr initial(new Values);
-  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
-
-  string tag;
-
-  // load the poses
-  while (is) {
-    is >> tag;
-
-    if ((tag == "VERTEX2") || (tag == "VERTEX")) {
-      int id;
-      double x, y, yaw;
-      is >> id >> x >> y >> yaw;
-      // optional filter
-      if (maxID && id >= maxID)
-        continue;
-      initial->insert(id, Pose2(x, y, yaw));
-    }
-    is.ignore(LINESIZE, '\n');
-  }
-  is.clear(); /* clears the end-of-file and error flags */
-  is.seekg(0, ios::beg);
-
-  // Create a sampler with random number generator
-  Sampler sampler(42u);
-
-  // load the factors
-  while (is) {
-    is >> tag;
-
-    if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
-      int id1, id2;
-      double x, y, yaw;
-
-      is >> id1 >> id2 >> x >> y >> yaw;
-      Matrix m = eye(3);
-      is >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
-      m(2, 0) = m(0, 2);
-      m(2, 1) = m(1, 2);
-      m(1, 0) = m(0, 1);
-
-      // optional filter
-      if (maxID && (id1 >= maxID || id2 >= maxID))
-        continue;
-
-      Pose2 l1Xl2(x, y, yaw);
-
-      // Insert vertices if pure odometry file
-      if (!initial->exists(id1))
-        initial->insert(id1, Pose2());
-      if (!initial->exists(id2))
-        initial->insert(id2, initial->at<Pose2>(id1) * l1Xl2);
-
-      NonlinearFactor::shared_ptr factor(
-          new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
-      graph->push_back(factor);
-    }
-    if (tag == "BR") {
-      int id1, id2;
-      double bearing, range, bearing_std, range_std;
-
-      is >> id1 >> id2 >> bearing >> range >> bearing_std >> range_std;
-
-      // optional filter
-      if (maxID && (id1 >= maxID || id2 >= maxID))
-        continue;
-
-      noiseModel::Diagonal::shared_ptr measurementNoise =
-          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
-      *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range,
-          measurementNoise);
-
-      // Insert poses or points if they do not exist yet
-      if (!initial->exists(id1))
-        initial->insert(id1, Pose2());
-      if (!initial->exists(id2)) {
-        Pose2 pose = initial->at<Pose2>(id1);
-        Point2 local(cos(bearing) * range, sin(bearing) * range);
-        Point2 global = pose.transform_from(local);
-        initial->insert(id2, global);
-      }
-    }
-    is.ignore(LINESIZE, '\n');
-  }
-
-  cout << "load2D read a graph file with " << initial->size()
-      << " vertices and " << graph->nrFactors() << " factors" << endl;
-
-  return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */
@@ -614,61 +563,6 @@ bool readBundler(const string& filename, SfM_data &data) {
   }
 
   is.close();
-  return true;
-}
-
-/* ************************************************************************* */
-bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph,
-    Values& initial, KernelFunctionType kernelFunctionType) {
-
-  // just call load2D
-  NonlinearFactorGraph::shared_ptr graph_ptr;
-  Values::shared_ptr initial_ptr;
-  int maxID = 0;
-  bool addNoise = false;
-  bool smart = true;
-  boost::tie(graph_ptr, initial_ptr) = load2D(g2oFile, SharedNoiseModel(),
-      maxID, addNoise, smart, NoiseFormatG2O, kernelFunctionType);
-  graph = *graph_ptr;
-  initial = *initial_ptr;
-  return true;
-}
-
-/* ************************************************************************* */
-bool writeG2o(const std::string& filename, const NonlinearFactorGraph& graph,
-    const Values& estimate) {
-
-  fstream stream(filename.c_str(), fstream::out);
-
-  // save poses
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
-    const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
-    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
-        << pose.y() << " " << pose.theta() << endl;
-  }
-
-  // save edges
-  BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
-    boost::shared_ptr<BetweenFactor<Pose2> > factor =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
-    if (!factor)
-      continue;
-
-    SharedNoiseModel model = factor->get_noiseModel();
-    boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
-        boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-    if (!diagonalModel)
-      throw std::invalid_argument(
-          "writeG2o: invalid noise model (current version assumes diagonal noise model)!");
-
-    Pose2 pose = factor->measured(); //.inverse();
-    stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
-        << pose.x() << " " << pose.y() << " " << pose.theta() << " "
-        << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " "
-        << diagonalModel->precision(1) << " " << 0.0 << " "
-        << diagonalModel->precision(2) << endl;
-  }
-  stream.close();
   return true;
 }
 
