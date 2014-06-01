@@ -52,6 +52,17 @@ GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
 GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
 #endif
 
+/// Indicates how noise parameters are stored in file
+enum NoiseFormat {
+  NoiseFormatG2O,   ///< Information matrix I11, I12, I13, I22, I23, I33
+  NoiseFormatTORO,  ///< Information matrix, but inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
+  NoiseFormatGRAPH  ///< default: toro-style order, but covariance matrix !
+};
+
+enum KernelFunctionType {
+  KernelFunctionTypeQUADRATIC, KernelFunctionTypeHUBER, KernelFunctionTypeTUKEY
+};
+
 /**
  * Load TORO 2D Graph
  * @param dataset/model pair as constructed by [dataset]
@@ -61,7 +72,10 @@ GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
  */
 GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
     std::pair<std::string, SharedNoiseModel> dataset, int maxID = 0,
-    bool addNoise = false, bool smart = true);
+    bool addNoise = false,
+    bool smart = true, //
+    NoiseFormat noiseFormat = NoiseFormatGRAPH,
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeQUADRATIC);
 
 /**
  * Load TORO 2D Graph
@@ -73,7 +87,9 @@ GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> loa
  */
 GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
     const std::string& filename, SharedNoiseModel model = SharedNoiseModel(),
-    int maxID = 0, bool addNoise = false, bool smart = true);
+    int maxID = 0, bool addNoise = false, bool smart = true,
+    NoiseFormat noiseFormat = NoiseFormatGRAPH, //
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeQUADRATIC);
 
 GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
     const std::string& filename, noiseModel::Base::shared_ptr& model,
@@ -133,12 +149,9 @@ GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_data &data);
  * @param graph NonlinearFactor graph storing the measurements (EDGE_SE2). NOTE: information matrix is assumed diagonal.
  * @return initial Values containing the initial guess (VERTEX_SE2)
  */
-enum kernelFunctionType {
-  QUADRATIC, HUBER, TUKEY
-};
 GTSAM_EXPORT bool readG2o(const std::string& g2oFile,
     NonlinearFactorGraph& graph, Values& initial,
-    const kernelFunctionType kernelFunction = QUADRATIC);
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeQUADRATIC);
 
 /**
  * @brief This function writes a g2o file from

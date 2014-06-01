@@ -91,14 +91,79 @@ string createRewrittenFileName(const string& name) {
 /* ************************************************************************* */
 pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
     pair<string, SharedNoiseModel> dataset, int maxID, bool addNoise,
-    bool smart) {
-  return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
+    bool smart, NoiseFormat noiseFormat,
+    KernelFunctionType kernelFunctionType) {
+  return load2D(dataset.first, dataset.second, maxID, addNoise, smart,
+      noiseFormat, kernelFunctionType);
+}
+
+/* ************************************************************************* */
+// Read noise parameters and interpret them according to flags
+static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
+    NoiseFormat noiseFormat, KernelFunctionType kernelFunctionType) {
+  double v1, v2, v3, v4, v5, v6;
+  is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
+
+  Matrix M(3, 3);
+  switch (noiseFormat) {
+  case NoiseFormatG2O:
+    // i.e., [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
+    if (v1 == 0.0 || v4 == 0.0 || v6 == 0.0)
+      throw std::invalid_argument(
+          "load2D: looks like this is not G2O file format");
+    M << v1, v2, v3, v2, v4, v5, v3, v5, v6;
+    break;
+  case NoiseFormatTORO:
+  case NoiseFormatGRAPH:
+    // http://www.openslam.org/toro.html
+    // inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
+    // i.e., [ v1 v2 v5; v2' v3 v6; v5' v6' v4 ]
+    if (v1 == 0.0 || v3 == 0.0 || v4 == 0.0)
+      throw std::invalid_argument(
+          "load2D: looks like this is not TORO file format");
+    M << v1, v2, v5, v2, v3, v6, v5, v6, v4;
+    break;
+  default:
+    throw std::invalid_argument("load2D: invalid noise format");
+  }
+
+  SharedNoiseModel model;
+  switch (noiseFormat) {
+  case NoiseFormatG2O:
+  case NoiseFormatTORO:
+    // In both cases, what is stored in file is the information matrix
+    model = noiseModel::Gaussian::Information(M, smart);
+    break;
+  case NoiseFormatGRAPH:
+    // but default case expects covariance matrix
+    model = noiseModel::Gaussian::Covariance(M, smart);
+    break;
+  default:
+    throw std::invalid_argument("load2D: invalid noise format");
+  }
+
+  switch (kernelFunctionType) {
+  case KernelFunctionTypeQUADRATIC:
+    return model;
+    break;
+  case KernelFunctionTypeHUBER:
+    return noiseModel::Robust::Create(
+        noiseModel::mEstimator::Huber::Create(1.345), model);
+    break;
+  case KernelFunctionTypeTUKEY:
+    return noiseModel::Robust::Create(
+        noiseModel::mEstimator::Tukey::Create(4.6851), model);
+    break;
+  default:
+    throw std::invalid_argument("load2D: invalid kernel function type");
+  }
 }
 
 /* ************************************************************************* */
 pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
     const string& filename, SharedNoiseModel model, int maxID, bool addNoise,
-    bool smart) {
+    bool smart, NoiseFormat noiseFormat,
+    KernelFunctionType kernelFunctionType) {
 
   cout << "Will try to read " << filename << endl;
   ifstream is(filename.c_str());
@@ -131,7 +196,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   is.clear(); /* clears the end-of-file and error flags */
   is.seekg(0, ios::beg);
 
-  // Create a sampler with random number generator
+  // If asked, create a sampler with random number generator
   Sampler sampler;
   if (addNoise) {
     noiseModel::Diagonal::shared_ptr noise;
@@ -151,40 +216,24 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
     if (!(is >> tag))
       break;
 
-    if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
-      double x, y, yaw;
-      double v1, v2, v3, v4, v5, v6;
+    if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2")
+        || (tag == "ODOMETRY")) {
 
+      // Read transform
+      double x, y, yaw;
       is >> id1 >> id2 >> x >> y >> yaw;
-      is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
+      Pose2 l1Xl2(x, y, yaw);
+
+      // read noise model
+      SharedNoiseModel modelInFile = readNoiseModel(is, smart, noiseFormat,
+          kernelFunctionType);
 
       // optional filter
       if (maxID && (id1 >= maxID || id2 >= maxID))
         continue;
 
-      Pose2 l1Xl2(x, y, yaw);
-
-      // SharedNoiseModel noise = noiseModel::Gaussian::Covariance(m, smart);
-      if (!model) {
-
-        // Try to guess covariance matrix layout
-        Matrix m(3, 3);
-        if (v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0
-            && v6 == 0.0) {
-          // Looks like [ v1 v2 v5; v2' v3 v6; v5' v6' v4 ]
-          m << v1, v2, v5, v2, v3, v6, v5, v6, v4;
-        } else if (v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0
-            && v6 != 0.0) {
-          // Looks like [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
-          m << v1, v2, v3, v2, v4, v5, v3, v5, v6;
-        } else {
-          throw std::invalid_argument(
-              "load2D: unrecognized covariance matrix format in dataset file");
-        }
-
-        Vector variances = (Vector(3) << m(0, 0), m(1, 1), m(2, 2));
-        model = noiseModel::Diagonal::Variances(variances, smart);
-      }
+      if (!model)
+        model = modelInFile;
 
       if (addNoise)
         l1Xl2 = l1Xl2.retract(sampler.sample());
@@ -565,89 +614,18 @@ bool readBundler(const string& filename, SfM_data &data) {
 
 /* ************************************************************************* */
 bool readG2o(const std::string& g2oFile, NonlinearFactorGraph& graph,
-    Values& initial, const kernelFunctionType kernelFunction) {
+    Values& initial, KernelFunctionType kernelFunctionType) {
 
-  ifstream is(g2oFile.c_str());
-  if (!is) {
-    throw std::invalid_argument("File not found!");
-    return false;
-  }
-
-  // READ INITIAL GUESS FROM G2O FILE
-  string tag;
-  while (is) {
-    if (!(is >> tag))
-      break;
-
-    if (tag == "VERTEX_SE2" || tag == "VERTEX2") {
-      int id;
-      double x, y, yaw;
-      is >> id >> x >> y >> yaw;
-      initial.insert(id, Pose2(x, y, yaw));
-    }
-    is.ignore(LINESIZE, '\n');
-  }
-  is.clear(); /* clears the end-of-file and error flags */
-  is.seekg(0, ios::beg);
-  // initial.print("initial guess");
-
-  // READ MEASUREMENTS FROM G2O FILE
-  while (is) {
-    if (!(is >> tag))
-      break;
-
-    if (tag == "EDGE_SE2" || tag == "EDGE2") {
-      int id1, id2;
-      double x, y, yaw;
-      double I11, I12, I13, I22, I23, I33;
-
-      is >> id1 >> id2 >> x >> y >> yaw;
-      is >> I11 >> I12 >> I13 >> I22 >> I23 >> I33;
-      Pose2 l1Xl2(x, y, yaw);
-      noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions(
-          (Vector(3) << I11, I22, I33));
-
-      switch (kernelFunction) {
-      {
-        case QUADRATIC:
-        NonlinearFactor::shared_ptr factor(
-            new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
-        graph.add(factor);
-        break;
-      }
-      {
-        case HUBER:
-        NonlinearFactor::shared_ptr huberFactor(
-            new BetweenFactor<Pose2>(id1, id2, l1Xl2,
-                noiseModel::Robust::Create(
-                    noiseModel::mEstimator::Huber::Create(1.345), model)));
-        graph.add(huberFactor);
-        break;
-      }
-      {
-        case TUKEY:
-        NonlinearFactor::shared_ptr tukeyFactor(
-            new BetweenFactor<Pose2>(id1, id2, l1Xl2,
-                noiseModel::Robust::Create(
-                    noiseModel::mEstimator::Tukey::Create(4.6851), model)));
-        graph.add(tukeyFactor);
-        break;
-      }
-      }
-    }
-    is.ignore(LINESIZE, '\n');
-  }
-  // Output which kernel is used
-  switch (kernelFunction) {
-  case QUADRATIC:
-    break;
-  case HUBER:
-    std::cout << "Robust kernel: Huber" << std::endl;
-    break;
-  case TUKEY:
-    std::cout << "Robust kernel: Tukey" << std::endl;
-    break;
-  }
+  // just call load2D
+  NonlinearFactorGraph::shared_ptr graph_ptr;
+  Values::shared_ptr initial_ptr;
+  int maxID = 0;
+  bool addNoise = false;
+  bool smart = true;
+  boost::tie(graph_ptr, initial_ptr) = load2D(g2oFile, SharedNoiseModel(),
+      maxID, addNoise, smart, NoiseFormatG2O, kernelFunctionType);
+  graph = *graph_ptr;
+  initial = *initial_ptr;
   return true;
 }
 
