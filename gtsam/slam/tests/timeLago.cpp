@@ -18,7 +18,7 @@
 
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/nonlinear/lago.h>
+#include <gtsam/slam/lago.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/base/timing.h>

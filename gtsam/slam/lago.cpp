@@ -16,7 +16,7 @@
  *  @date   May 14, 2014
  */
 
-#include <gtsam/nonlinear/lago.h>
+#include <gtsam/slam/lago.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/inference/Symbol.h>

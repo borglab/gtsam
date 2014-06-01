@@ -19,7 +19,7 @@
  * @author Luca Carlone
  */
 
-#include <gtsam/nonlinear/lago.h>
+#include <gtsam/slam/lago.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <fstream>
