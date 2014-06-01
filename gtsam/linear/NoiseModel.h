@@ -873,7 +873,7 @@ namespace gtsam {
     };
     
     // Helper function
-    boost::optional<Vector> checkIfDiagonal(const Matrix M);
+    GTSAM_EXPORT boost::optional<Vector> checkIfDiagonal(const Matrix M);
 
   } // namespace noiseModel
 
