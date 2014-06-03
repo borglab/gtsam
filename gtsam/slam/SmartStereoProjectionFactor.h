@@ -23,6 +23,7 @@
 
 #include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 
@@ -110,7 +111,10 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// shorthand for a pinhole camera
+  // TODO: Switch to stereoCamera:
   typedef PinholeCamera<CALIBRATION> Camera;
+//  typedef StereoCamera Camera;
+
   typedef std::vector<Camera> Cameras;
 
   /**
@@ -243,8 +247,10 @@ public:
       // We triangulate the 3D position of the landmark
       try {
         // std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
-        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
-            rankTolerance_, enableEPI_);
+
+        //TODO: Chris will replace this with something else for stereo
+//        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
+//            rankTolerance_, enableEPI_);
         degenerate_ = false;
         cheiralityException_ = false;
 
@@ -639,23 +645,23 @@ public:
     }
 
     if (this->degenerate_) {
-      // return 0.0; // TODO: this maybe should be zero?
-      std::cout
-          << "SmartProjectionHessianFactor: trying to manage degeneracy (this should not happen is manageDegeneracy is disabled)!"
-          << std::endl;
-      size_t i = 0;
-      double overallError = 0;
-      BOOST_FOREACH(const Camera& camera, cameras) {
-        const Point2& zi = this->measured_.at(i);
-        if (i == 0) // first pose
-          this->point_ = camera.backprojectPointAtInfinity(zi); // 3D parametrization of point at infinity
-        Point2 reprojectionError(
-            camera.projectPointAtInfinity(this->point_) - zi);
-        overallError += 0.5
-            * this->noise_.at(i)->distance(reprojectionError.vector());
-        i += 1;
-      }
-      return overallError;
+       return 0.0; // TODO: this maybe should be zero?
+//      std::cout
+//          << "SmartProjectionHessianFactor: trying to manage degeneracy (this should not happen is manageDegeneracy is disabled)!"
+//          << std::endl;
+//      size_t i = 0;
+//      double overallError = 0;
+//      BOOST_FOREACH(const Camera& camera, cameras) {
+//        const Point2& zi = this->measured_.at(i);
+//        if (i == 0) // first pose
+//          this->point_ = camera.backprojectPointAtInfinity(zi); // 3D parametrization of point at infinity
+//        Point2 reprojectionError(
+//            camera.projectPointAtInfinity(this->point_) - zi);
+//        overallError += 0.5
+//            * this->noise_.at(i)->distance(reprojectionError.vector());
+//        i += 1;
+//      }
+//      return overallError;
     } else {
       // Just use version in base class
       return Base::totalReprojectionError(cameras, point_);
