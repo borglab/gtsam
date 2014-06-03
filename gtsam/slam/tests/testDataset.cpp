@@ -40,18 +40,21 @@ TEST(dataSet, findExampleDataFile) {
 }
 
 /* ************************************************************************* */
-//TEST( dataSet, load2D)
-//{
-//  ///< The structure where we will save the SfM data
-//  const string filename = findExampleDataFile("smallGraph.g2o");
-//  boost::tie(graph,initialGuess) = load2D(filename, boost::none, 10000,
-//      false, false);
-////  print
-////
-////  print
-////
-////  EXPECT(assert_equal(expected,actual,12));
-//}
+TEST( dataSet, load2D)
+{
+  ///< The structure where we will save the SfM data
+  const string filename = findExampleDataFile("w100.graph");
+  NonlinearFactorGraph::shared_ptr graph;
+  Values::shared_ptr initial;
+  boost::tie(graph, initial) = load2D(filename);
+  EXPECT_LONGS_EQUAL(300,graph->size());
+  EXPECT_LONGS_EQUAL(100,initial->size());
+  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
+  BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879,0.0417574,-0.00818381), model);
+  BetweenFactor<Pose2>::shared_ptr actual = boost::dynamic_pointer_cast<
+      BetweenFactor<Pose2> >(graph->at(0));
+  EXPECT(assert_equal(expected, *actual));
+}
 
 /* ************************************************************************* */
 TEST( dataSet, Balbianello)
@@ -78,9 +81,9 @@ TEST( dataSet, Balbianello)
 TEST( dataSet, readG2o)
 {
   const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph actualGraph;
-  Values actualValues;
-  readG2o(g2oFile, actualGraph, actualValues);
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile);
 
   Values expectedValues;
   expectedValues.insert(0, Pose2(0.000000, 0.000000, 0.000000));
@@ -94,7 +97,7 @@ TEST( dataSet, readG2o)
   expectedValues.insert(8, Pose2(4.128877, 2.321481, -1.825391));
   expectedValues.insert(9, Pose2(3.884653, 1.327509, -1.953016));
   expectedValues.insert(10, Pose2(3.531067, 0.388263, -2.148934));
-  EXPECT(assert_equal(expectedValues,actualValues,1e-5));
+  EXPECT(assert_equal(expectedValues,*actualValues,1e-5));
 
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
   NonlinearFactorGraph expectedGraph;
@@ -110,16 +113,16 @@ TEST( dataSet, readG2o)
   expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
   expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
   expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
-  EXPECT(assert_equal(actualGraph,expectedGraph,1e-5));
+  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
 /* ************************************************************************* */
 TEST( dataSet, readG2oHuber)
 {
   const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph actualGraph;
-  Values actualValues;
-  readG2o(g2oFile, actualGraph, actualValues, HUBER);
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, KernelFunctionTypeHUBER);
 
   noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), baseModel);
@@ -137,16 +140,16 @@ TEST( dataSet, readG2oHuber)
   expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
   expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
   expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
-  EXPECT(assert_equal(actualGraph,expectedGraph,1e-5));
+  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
 /* ************************************************************************* */
 TEST( dataSet, readG2oTukey)
 {
   const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph actualGraph;
-  Values actualValues;
-  readG2o(g2oFile, actualGraph, actualValues, TUKEY);
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, KernelFunctionTypeTUKEY);
 
   noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
@@ -164,25 +167,25 @@ TEST( dataSet, readG2oTukey)
   expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
   expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
   expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
-  EXPECT(assert_equal(actualGraph,expectedGraph,1e-5));
+  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
 /* ************************************************************************* */
 TEST( dataSet, writeG2o)
 {
   const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph expectedGraph;
-  Values expectedValues;
-  readG2o(g2oFile, expectedGraph, expectedValues);
+  NonlinearFactorGraph::shared_ptr expectedGraph;
+  Values::shared_ptr expectedValues;
+  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile);
 
-  const string filenameToWrite = findExampleDataFile("pose2example-rewritten");
-  writeG2o(filenameToWrite, expectedGraph, expectedValues);
+  const string filenameToWrite = createRewrittenFileName(g2oFile);
+  writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
 
-  NonlinearFactorGraph actualGraph;
-  Values actualValues;
-  readG2o(filenameToWrite, actualGraph, actualValues);
-  EXPECT(assert_equal(expectedValues,actualValues,1e-5));
-  EXPECT(assert_equal(actualGraph,expectedGraph,1e-5));
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite);
+  EXPECT(assert_equal(*expectedValues,*actualValues,1e-5));
+  EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-5));
 }
 
 /* ************************************************************************* */
@@ -249,7 +252,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
   readBAL(filenameToRead, readData);
 
   // Write readData to file filenameToWrite
-  const string filenameToWrite = findExampleDataFile("dubrovnik-3-7-pre-rewritten");
+  const string filenameToWrite = createRewrittenFileName(filenameToRead);
   CHECK(writeBAL(filenameToWrite, readData));
 
   // Read what we wrote
@@ -311,7 +314,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   }
 
   // Write values and readData to a file
-  const string filenameToWrite = findExampleDataFile("dubrovnik-3-7-pre-rewritten");
+  const string filenameToWrite = createRewrittenFileName(filenameToRead);
   writeBALfromValues(filenameToWrite, readData, value);
 
   // Read the file we wrote

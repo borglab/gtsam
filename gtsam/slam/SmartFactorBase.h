@@ -325,7 +325,7 @@ public:
       const Cameras& cameras, const Point3& point,
       const double lambda = 0.0) const {
 
-    int numKeys = this->keys_.size();
+    size_t numKeys = this->keys_.size();
     std::vector<KeyMatrix2D> Fblocks;
     double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point,
         lambda);
@@ -352,7 +352,7 @@ public:
     Eigen::JacobiSVD<Matrix> svd(E, Eigen::ComputeFullU);
     Vector s = svd.singularValues();
     // Enull = zeros(2 * numKeys, 2 * numKeys - 3);
-    int numKeys = this->keys_.size();
+    size_t numKeys = this->keys_.size();
     Enull = svd.matrixU().block(0, 3, 2 * numKeys, 2 * numKeys - 3); // last 2m-3 columns
 
     return f;

@@ -286,6 +286,17 @@ TEST(NoiseModel, SmartSqrtInformation2 )
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, SmartInformation )
+{
+  bool smart = true;
+  gtsam::SharedGaussian expected = Unit::Isotropic::Variance(3,2);
+  Matrix M = 0.5*eye(3);
+  EXPECT(checkIfDiagonal(M));
+  gtsam::SharedGaussian actual = Gaussian::Information(M, smart);
+  EXPECT(assert_equal(*expected,*actual));
+}
+
+/* ************************************************************************* */
 TEST(NoiseModel, SmartCovariance )
 {
   bool smart = true;

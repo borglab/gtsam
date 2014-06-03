@@ -52,9 +52,9 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 // tests data
-Symbol x1('X',  1);
-Symbol x2('X',  2);
-Symbol x3('X',  3);
+static Symbol x1('X',  1);
+static Symbol x2('X',  2);
+static Symbol x3('X',  3);
 
 static Key poseKey1(x1);
 static Point2 measurement1(323.0, 240.0);

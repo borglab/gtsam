@@ -21,11 +21,10 @@
 
 #include "SmartFactorBase.h"
 
-#include <gtsam_unstable/geometry/triangulation.h>
+#include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam_unstable/geometry/triangulation.h>
 
 #include <boost/optional.hpp>
 #include <boost/make_shared.hpp>
@@ -54,7 +53,7 @@ public:
   double f;
 };
 
-enum linearizationType {
+enum LinearizationMode {
   HESSIAN, JACOBIAN_SVD, JACOBIAN_Q
 };
 
@@ -263,7 +262,7 @@ public:
           try {
             Point2 reprojectionError(camera.project(point_) - zi);
             totalReprojError += reprojectionError.vector().norm();
-          } catch (CheiralityException& e) {
+          } catch (CheiralityException) {
             cheiralityException_ = true;
           }
           i += 1;

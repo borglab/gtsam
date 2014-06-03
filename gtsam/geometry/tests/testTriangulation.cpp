@@ -16,7 +16,7 @@
  *      Author: cbeall3
  */
 
-#include <gtsam_unstable/geometry/triangulation.h>
+#include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <CppUnitLite/TestHarness.h>
 

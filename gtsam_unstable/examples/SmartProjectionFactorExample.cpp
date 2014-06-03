@@ -10,18 +10,20 @@
 * -------------------------------------------------------------------------- */
 
 /**
-* @file SteroVOExample.cpp
+* @file SmartProjectionFactorExample.cpp
 * @brief A stereo visual odometry example
-* @date May 25, 2014
+* @date May 30, 2014
 * @author Stephen Camp
+* @author Chris Beall
 */
 
 
 /**
- * A 3D stereo visual odometry example
- *  - robot starts at origin
+ * A smart projection factor example based on stereo data, throwing away the
+ * measurement from the right camera
+ *  -robot starts at origin
  *  -moves forward, taking periodic stereo measurements
- *  -takes stereo readings of many landmarks
+ *  -makes monocular observations of many landmarks
  */
 
 #include <gtsam/geometry/Pose3.h>
@@ -31,8 +33,9 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/slam/StereoFactor.h>
 #include <gtsam/slam/dataset.h>
+
+#include <gtsam/slam/SmartProjectionPoseFactor.h>
 
 #include <string>
 #include <fstream>
@@ -43,9 +46,11 @@ using namespace gtsam;
 
 int main(int argc, char** argv){
 
+  typedef SmartProjectionPoseFactor<Pose3, Point3, Cal3_S2> SmartFactor;
+
   Values initial_estimate;
   NonlinearFactorGraph graph;
-  const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,1);
+  const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(2,1);
 
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
@@ -53,16 +58,16 @@ int main(int argc, char** argv){
   
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
-  double fx, fy, s, u0, v0, b;
-  ifstream calibration_file(calibration_loc.c_str());
   cout << "Reading calibration info" << endl;
-  calibration_file >> fx >> fy >> s >> u0 >> v0 >> b;
+  ifstream calibration_file(calibration_loc.c_str());
 
-  //create stereo camera calibration object
-  const Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fx,fy,s,u0,v0,b));
-  
-  ifstream pose_file(pose_loc.c_str());
+  double fx, fy, s, u0, v0, b;
+  calibration_file >> fx >> fy >> s >> u0 >> v0 >> b;
+  const Cal3_S2::shared_ptr K(new Cal3_S2(fx, fy, s, u0, v0));
+
   cout << "Reading camera poses" << endl;
+  ifstream pose_file(pose_loc.c_str());
+
   int pose_id;
   MatrixRowMajor m(4,4);
   //read camera pose parameters and use to make initial estimates of camera poses
@@ -81,18 +86,20 @@ int main(int argc, char** argv){
   double uL, uR, v, X, Y, Z;
   ifstream factor_file(factor_loc.c_str());
   cout << "Reading stereo factors" << endl;
-  //read stereo measurement details from file and use to create and add GenericStereoFactor objects to the graph representation
+
+  //read stereo measurements and construct smart factors
+
+  SmartFactor::shared_ptr factor(new SmartFactor());
+  size_t current_l = 3;   // hardcoded landmark ID from first measurement
+
   while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
-    graph.push_back(
-        GenericStereoFactor<Pose3, Point3>(StereoPoint2(uL, uR, v), model,
-            Symbol('x', x), Symbol('l', l), K));
-    //if the landmark variable included in this factor has not yet been added to the initial variable value estimate, add it
-    if (!initial_estimate.exists(Symbol('l', l))) {
-      Pose3 camPose = initial_estimate.at<Pose3>(Symbol('x', x));
-      //transform_from() transforms the input Point3 from the camera pose space, camPose, to the global space
-      Point3 worldPoint = camPose.transform_from(Point3(X, Y, Z));
-      initial_estimate.insert(Symbol('l', l), worldPoint);
+
+    if(current_l != l) {
+      graph.push_back(factor);
+      factor = SmartFactor::shared_ptr(new SmartFactor());
+      current_l = l;
     }
+    factor->add(Point2(uL,v), Symbol('x',x), model, K);
   }
 
   Pose3 first_pose = initial_estimate.at<Pose3>(Symbol('x',1));

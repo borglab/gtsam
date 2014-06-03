@@ -2249,6 +2249,13 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename,
     gtsam::noiseModel::Base* model);
+void save2D(const gtsam::NonlinearFactorGraph& graph,
+    const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
+    string filename);
+
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
+void writeG2o(const gtsam::NonlinearFactorGraph& graph,
+    const gtsam::Values& estimate, string filename);
 
 //*************************************************************************
 // Navigation
