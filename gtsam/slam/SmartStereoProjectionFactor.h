@@ -408,44 +408,44 @@ public:
     return boost::make_shared<RegularHessianFactor<D> >(this->keys_, Gs, gs, f);
   }
 
-  // create factor
-  boost::shared_ptr<ImplicitSchurFactor<D> > createImplicitSchurFactor(
-      const Cameras& cameras, double lambda) const {
-    if (triangulateForLinearize(cameras))
-      return Base::createImplicitSchurFactor(cameras, point_, lambda);
-    else
-      return boost::shared_ptr<ImplicitSchurFactor<D> >();
-  }
-
-  /// create factor
-  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
-      const Cameras& cameras, double lambda) const {
-    if (triangulateForLinearize(cameras))
-      return Base::createJacobianQFactor(cameras, point_, lambda);
-    else
-      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
-  }
-
-  /// Create a factor, takes values
-  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
-      const Values& values, double lambda) const {
-    Cameras myCameras;
-    // TODO triangulate twice ??
-    bool nonDegenerate = computeCamerasAndTriangulate(values, myCameras);
-    if (nonDegenerate)
-      return createJacobianQFactor(myCameras, lambda);
-    else
-      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
-  }
-
-  /// different (faster) way to compute Jacobian factor
-  boost::shared_ptr< JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
-      double lambda) const {
-    if (triangulateForLinearize(cameras))
-      return Base::createJacobianSVDFactor(cameras, point_, lambda);
-    else
-      return boost::make_shared< JacobianFactorSVD<D> >(this->keys_);
-  }
+//  // create factor
+//  boost::shared_ptr<ImplicitSchurFactor<D> > createImplicitSchurFactor(
+//      const Cameras& cameras, double lambda) const {
+//    if (triangulateForLinearize(cameras))
+//      return Base::createImplicitSchurFactor(cameras, point_, lambda);
+//    else
+//      return boost::shared_ptr<ImplicitSchurFactor<D> >();
+//  }
+//
+//  /// create factor
+//  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
+//      const Cameras& cameras, double lambda) const {
+//    if (triangulateForLinearize(cameras))
+//      return Base::createJacobianQFactor(cameras, point_, lambda);
+//    else
+//      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
+//  }
+//
+//  /// Create a factor, takes values
+//  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
+//      const Values& values, double lambda) const {
+//    Cameras myCameras;
+//    // TODO triangulate twice ??
+//    bool nonDegenerate = computeCamerasAndTriangulate(values, myCameras);
+//    if (nonDegenerate)
+//      return createJacobianQFactor(myCameras, lambda);
+//    else
+//      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
+//  }
+//
+//  /// different (faster) way to compute Jacobian factor
+//  boost::shared_ptr< JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
+//      double lambda) const {
+//    if (triangulateForLinearize(cameras))
+//      return Base::createJacobianSVDFactor(cameras, point_, lambda);
+//    else
+//      return boost::make_shared< JacobianFactorSVD<D> >(this->keys_);
+//  }
 
   /// Returns true if nonDegenerate
   bool computeCamerasAndTriangulate(const Values& values,
@@ -546,41 +546,41 @@ public:
     } // end else
   }
 
-  /// Version that computes PointCov, with optional lambda parameter
-  double computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& E, Matrix& PointCov, Vector& b, const Cameras& cameras,
-      const double lambda = 0.0) const {
-
-    double f = computeJacobians(Fblocks, E, b, cameras);
-
-    // Point covariance inv(E'*E)
-    PointCov.noalias() = (E.transpose() * E + lambda * eye(E.cols())).inverse();
-
-    return f;
-  }
-
-  /// takes values
-  bool computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& Enull, Vector& b, const Values& values) const {
-    typename Base::Cameras myCameras;
-    double good = computeCamerasAndTriangulate(values, myCameras);
-    if (good)
-      computeJacobiansSVD(Fblocks, Enull, b, myCameras);
-    return true;
-  }
-
-  /// SVD version
-  double computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& Enull, Vector& b, const Cameras& cameras) const {
-    return Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, point_);
-  }
-
-  /// Returns Matrix, TODO: maybe should not exist -> not sparse !
-  // TODO should there be a lambda?
-  double computeJacobiansSVD(Matrix& F, Matrix& Enull, Vector& b,
-      const Cameras& cameras) const {
-    return Base::computeJacobiansSVD(F, Enull, b, cameras, point_);
-  }
+//  /// Version that computes PointCov, with optional lambda parameter
+//  double computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
+//      Matrix& E, Matrix& PointCov, Vector& b, const Cameras& cameras,
+//      const double lambda = 0.0) const {
+//
+//    double f = computeJacobians(Fblocks, E, b, cameras);
+//
+//    // Point covariance inv(E'*E)
+//    PointCov.noalias() = (E.transpose() * E + lambda * eye(E.cols())).inverse();
+//
+//    return f;
+//  }
+//
+//  /// takes values
+//  bool computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
+//      Matrix& Enull, Vector& b, const Values& values) const {
+//    typename Base::Cameras myCameras;
+//    double good = computeCamerasAndTriangulate(values, myCameras);
+//    if (good)
+//      computeJacobiansSVD(Fblocks, Enull, b, myCameras);
+//    return true;
+//  }
+//
+//  /// SVD version
+//  double computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
+//      Matrix& Enull, Vector& b, const Cameras& cameras) const {
+//    return Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, point_);
+//  }
+//
+//  /// Returns Matrix, TODO: maybe should not exist -> not sparse !
+//  // TODO should there be a lambda?
+//  double computeJacobiansSVD(Matrix& F, Matrix& Enull, Vector& b,
+//      const Cameras& cameras) const {
+//    return Base::computeJacobiansSVD(F, Enull, b, cameras, point_);
+//  }
 
   /// Returns Matrix, TODO: maybe should not exist -> not sparse !
   double computeJacobians(Matrix& F, Matrix& E, Matrix3& PointCov, Vector& b,
