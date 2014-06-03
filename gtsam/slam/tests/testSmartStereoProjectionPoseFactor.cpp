@@ -1310,9 +1310,9 @@ TEST( SmartStereoProjectionPoseFactor, Constructor) {
 //  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
 //  if(isDebugTest) tictoc_print_();
 //}
-//
-///* ************************************************************************* */
-//int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
-///* ************************************************************************* */
+
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+/* ************************************************************************* */
 
 
