@@ -36,7 +36,7 @@
 
 namespace gtsam {
 /// Base class with no internal point, completely functional
-template<class POSE, class Z, class CALIBRATION, size_t D>
+template<class POSE, class Z, class CAMERA, size_t D>
 class SmartFactorBase: public NonlinearFactor {
 
 protected:
@@ -61,7 +61,7 @@ protected:
   typedef NonlinearFactor Base;
 
   /// shorthand for this class
-  typedef SmartFactorBase<POSE, Z, CALIBRATION, D> This;
+  typedef SmartFactorBase<POSE, Z, CAMERA, D> This;
 
 public:
 
@@ -69,8 +69,7 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// shorthand for a pinhole camera
-  typedef PinholeCamera<CALIBRATION> Camera;
-  typedef std::vector<Camera> Cameras;
+  typedef std::vector<CAMERA> Cameras;
 
   /**
    * Constructor
@@ -216,7 +215,7 @@ public:
     double overallError = 0;
 
     size_t i = 0;
-    BOOST_FOREACH(const Camera& camera, cameras) {
+    BOOST_FOREACH(const CAMERA& camera, cameras) {
       const Z& zi = this->measured_.at(i);
       try {
         Z reprojectionError(camera.project(point) - zi);

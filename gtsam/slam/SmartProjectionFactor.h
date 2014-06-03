@@ -62,7 +62,7 @@ enum LinearizationMode {
  * TODO: why LANDMARK parameter?
  */
 template<class POSE, class LANDMARK, class CALIBRATION, size_t D>
-class SmartProjectionFactor: public SmartFactorBase<POSE, gtsam::Point2, CALIBRATION, D> {
+class SmartProjectionFactor: public SmartFactorBase<POSE, gtsam::Point2, gtsam::PinholeCamera<CALIBRATION>, D> {
 protected:
 
   // Some triangulation parameters
@@ -92,7 +92,7 @@ protected:
   typedef boost::shared_ptr<SmartProjectionFactorState> SmartFactorStatePtr;
 
   /// shorthand for base class type
-  typedef SmartFactorBase<POSE, gtsam::Point2, CALIBRATION, D> Base;
+  typedef SmartFactorBase<POSE, gtsam::Point2, gtsam::PinholeCamera<CALIBRATION>, D> Base;
 
   double landmarkDistanceThreshold_; // if the landmark is triangulated at a
   // distance larger than that the factor is considered degenerate
