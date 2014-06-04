@@ -156,21 +156,21 @@ find_package(GooglePerfTools)
 
 ###############################################################################
 # Find MKL
-if(GTSAM_USE_EIGEN_MKL)
-    find_package(MKL)
+find_package(MKL)
 
-    if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
-        set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
-        set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
-        include_directories(${MKL_INCLUDE_DIR})
-        list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
-    endif()
+if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
+    set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
+    set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
+    include_directories(${MKL_INCLUDE_DIR})
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+else()
+    set(GTSAM_USE_EIGEN_MKL 0)
+    set(EIGEN_USE_MKL_ALL 0)
 endif()
-
 
 ###############################################################################
 # Find OpenMP (if we're also using MKL)
-if(GTSAM_USE_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
+if(GTSAM_WITH_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
     find_package(OpenMP)
 
     if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
