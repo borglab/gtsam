@@ -96,16 +96,24 @@ const Values& NonlinearOptimizer::optimizeSafely() {
 /* ************************************************************************* */
 VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph &gfg,
     const Values& initial, const NonlinearOptimizerParams& params) const {
+
+  // solution of linear solver is an update to the linearization point
   VectorValues delta;
+
+  // Check which solver we are using
   if (params.isMultifrontal()) {
+    // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
     delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
   } else if (params.isSequential()) {
+    // Sequential QR or Cholesky (decided by params.getEliminationFunction())
     delta = gfg.eliminateSequential(*params.ordering,
         params.getEliminationFunction())->optimize();
   } else if (params.isCG()) {
+    // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)
       throw std::runtime_error(
           "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
+    // the type of params.iterativeParams decides the type of CG solver
     if (boost::dynamic_pointer_cast<SubgraphSolverParameters>(
         params.iterativeParams)) {
       SubgraphSolver solver(gfg,
@@ -120,6 +128,8 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph &gfg,
     throw std::runtime_error(
         "NonlinearOptimizer::solve: Optimization parameter is invalid");
   }
+
+  // return update
   return delta;
 }
 
