@@ -1481,9 +1481,7 @@ class GaussianISAM {
 
 #include <gtsam/linear/IterativeSolver.h>
 virtual class IterativeOptimizationParameters {
-  string getKernel() const ;
   string getVerbosity() const;
-  void setKernel(string s) ;
   void setVerbosity(string s) ;
   void print() const;
 };
@@ -1860,7 +1858,7 @@ virtual class NonlinearOptimizerParams {
   bool isMultifrontal() const;
   bool isSequential() const;
   bool isCholmod() const;
-  bool isCG() const;
+  bool isIterative() const;
 };
 
 bool checkConvergence(double relativeErrorTreshold,

@@ -30,21 +30,19 @@ namespace gtsam {
   public:
 
     typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr;
-    enum Kernel { CG = 0 } kernel_ ;                                          ///< Iterative Method Kernel
     enum Verbosity { SILENT = 0, COMPLEXITY, ERROR } verbosity_;
 
   public:
 
     IterativeOptimizationParameters(const IterativeOptimizationParameters &p)
-      : kernel_(p.kernel_), verbosity_(p.verbosity_) {}
+      : verbosity_(p.verbosity_) {}
 
-    IterativeOptimizationParameters(const Kernel kernel = CG, const Verbosity verbosity = SILENT)
-      : kernel_(kernel), verbosity_(verbosity) {}
+    IterativeOptimizationParameters(const Verbosity verbosity = SILENT)
+      : verbosity_(verbosity) {}
 
     virtual ~IterativeOptimizationParameters() {}
 
     /* general interface */
-    inline Kernel kernel() const { return kernel_; }
     inline Verbosity verbosity() const { return verbosity_; }
 
     /* matlab interface */
@@ -53,15 +51,9 @@ namespace gtsam {
     void setKernel(const std::string &s) ;
     void setVerbosity(const std::string &s) ;
 
-    virtual void print() const {
-      std::cout << "IterativeOptimizationParameters" << std::endl
-                << "kernel:        " << kernelTranslator(kernel_) << std::endl
-                << "verbosity:     " << verbosityTranslator(verbosity_) << std::endl;
-    }
+    virtual void print() const ;
 
-    static Kernel kernelTranslator(const std::string &s);
     static Verbosity verbosityTranslator(const std::string &s);
-    static std::string kernelTranslator(Kernel k);
     static std::string verbosityTranslator(Verbosity v);
   };
 
