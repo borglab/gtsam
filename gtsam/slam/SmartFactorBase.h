@@ -26,6 +26,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>  // for Cheirality exception
+#include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 

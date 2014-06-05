@@ -36,9 +36,10 @@ static bool isDebugTest = false;
 // make a realistic calibration matrix
 static double fov = 60; // degrees
 static size_t w=640,h=480;
+static double b = 1;
 
-static Cal3_S2::shared_ptr K(new Cal3_S2(fov,w,h));
-static Cal3_S2::shared_ptr K2(new Cal3_S2(1500, 1200, 0, 640, 480));
+static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fov,w,h,b));
+static Cal3_S2Stereo::shared_ptr K2(new Cal3_S2Stereo(1500, 1200, 0, 640, 480,b));
 static boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
 
 static double rankTol = 1.0;
@@ -57,19 +58,19 @@ static Symbol x2('X',  2);
 static Symbol x3('X',  3);
 
 static Key poseKey1(x1);
-static Point2 measurement1(323.0, 240.0);
+static StereoPoint2 measurement1(323.0, 300.0, 240.0); //potentially use more reasonable measurement value?
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
 
-typedef SmartStereoProjectionPoseFactor<Pose3,Point3,Cal3_S2> SmartFactor;
+typedef SmartStereoProjectionPoseFactor<Pose3,Point3,Cal3_S2Stereo> SmartFactor;
 typedef SmartStereoProjectionPoseFactor<Pose3,Point3,Cal3Bundler> SmartFactorBundler;
 
 void stereo_projectToMultipleCameras(
-    SimpleCamera cam1, SimpleCamera cam2, SimpleCamera cam3, Point3 landmark,
-    vector<Point2>& measurements_cam){
+    StereoCamera cam1, StereoCamera cam2, StereoCamera cam3, Point3 landmark,
+    vector<StereoPoint2>& measurements_cam){
 
-  Point2 cam1_uv1 = cam1.project(landmark);
-  Point2 cam2_uv1 = cam2.project(landmark);
-  Point2 cam3_uv1 = cam3.project(landmark);
+  StereoPoint2 cam1_uv1 = cam1.project(landmark);
+  StereoPoint2 cam2_uv1 = cam2.project(landmark);
+  StereoPoint2 cam3_uv1 = cam3.project(landmark);
   measurements_cam.push_back(cam1_uv1);
   measurements_cam.push_back(cam2_uv1);
   measurements_cam.push_back(cam3_uv1);

@@ -83,7 +83,7 @@ public:
    * @param noise_i is the measurement noise
    * @param K_i is the (known) camera calibration
    */
-  void add(const Point2 measured_i, const Key poseKey_i,
+  void add(const StereoPoint2 measured_i, const Key poseKey_i,
       const SharedNoiseModel noise_i,
       const boost::shared_ptr<CALIBRATION> K_i) {
     Base::add(measured_i, poseKey_i, noise_i);
@@ -97,7 +97,7 @@ public:
    * @param noises vector of measurement noises
    * @param Ks vector of calibration objects
    */
-  void add(std::vector<Point2> measurements, std::vector<Key> poseKeys,
+  void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
       std::vector<SharedNoiseModel> noises,
       std::vector<boost::shared_ptr<CALIBRATION> > Ks) {
     Base::add(measurements, poseKeys, noises);
@@ -113,7 +113,7 @@ public:
    * @param noise measurement noise (same for all measurements)
    * @param K the (known) camera calibration (same for all measurements)
    */
-  void add(std::vector<Point2> measurements, std::vector<Key> poseKeys,
+  void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
       const SharedNoiseModel noise, const boost::shared_ptr<CALIBRATION> K) {
     for (size_t i = 0; i < measurements.size(); i++) {
       Base::add(measurements.at(i), poseKeys.at(i), noise);
@@ -157,7 +157,7 @@ public:
     size_t i=0;
     BOOST_FOREACH(const Key& k, this->keys_) {
       Pose3 pose = values.at<Pose3>(k);
-      typename Base::Camera camera(pose, *K_all_[i++]);
+      typename Base::Camera camera(pose, K_all_[i++]);
       cameras.push_back(camera);
     }
     return cameras;

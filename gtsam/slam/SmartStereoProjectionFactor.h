@@ -63,7 +63,7 @@ enum LinearizationMode {
  * TODO: why LANDMARK parameter?
  */
 template<class POSE, class LANDMARK, class CALIBRATION, size_t D>
-class SmartStereoProjectionFactor: public SmartFactorBase<POSE, gtsam::Point2, gtsam::PinholeCamera<CALIBRATION>, D> {
+class SmartStereoProjectionFactor: public SmartFactorBase<POSE, gtsam::StereoPoint2, gtsam::StereoCamera, D> {
 protected:
 
   // Some triangulation parameters
@@ -93,7 +93,7 @@ protected:
   typedef boost::shared_ptr<SmartStereoProjectionFactorState> SmartFactorStatePtr;
 
   /// shorthand for base class type
-  typedef SmartFactorBase<POSE, gtsam::Point2, gtsam::PinholeCamera<CALIBRATION>, D> Base;
+  typedef SmartFactorBase<POSE, gtsam::StereoPoint2, gtsam::StereoCamera, D> Base;
 
   double landmarkDistanceThreshold_; // if the landmark is triangulated at a
   // distance larger than that the factor is considered degenerate
@@ -112,7 +112,7 @@ public:
 
   /// shorthand for a pinhole camera
   // TODO: Switch to stereoCamera:
-  typedef PinholeCamera<CALIBRATION> Camera;
+  typedef StereoCamera Camera;
 //  typedef StereoCamera Camera;
 
   typedef std::vector<Camera> Cameras;
@@ -264,9 +264,9 @@ public:
             degenerate_ = true;
             break;
           }
-          const Point2& zi = this->measured_.at(i);
+          const StereoPoint2& zi = this->measured_.at(i);
           try {
-            Point2 reprojectionError(camera.project(point_) - zi);
+            StereoPoint2 reprojectionError(camera.project(point_) - zi);
             totalReprojError += reprojectionError.vector().norm();
           } catch (CheiralityException) {
             cheiralityException_ = true;
@@ -652,10 +652,10 @@ public:
 //      size_t i = 0;
 //      double overallError = 0;
 //      BOOST_FOREACH(const Camera& camera, cameras) {
-//        const Point2& zi = this->measured_.at(i);
+//        const StereoPoint2& zi = this->measured_.at(i);
 //        if (i == 0) // first pose
 //          this->point_ = camera.backprojectPointAtInfinity(zi); // 3D parametrization of point at infinity
-//        Point2 reprojectionError(
+//        StereoPoint2 reprojectionError(
 //            camera.projectPointAtInfinity(this->point_) - zi);
 //        overallError += 0.5
 //            * this->noise_.at(i)->distance(reprojectionError.vector());
