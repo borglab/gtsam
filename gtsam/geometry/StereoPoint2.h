@@ -89,8 +89,6 @@ namespace gtsam {
       return StereoPoint2(uL_ - b.uL_, uR_ - b.uR_, v_ - b.v_);
     }
     
-    GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const StereoPoint2& p);
-
     /// @}
     /// @name Manifold
     /// @{
@@ -153,6 +151,9 @@ namespace gtsam {
     inline Point2 right(){
       return Point2(uR_, v_);
     }
+
+    /// Streaming
+    GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const StereoPoint2& p);
 
   private:
 
