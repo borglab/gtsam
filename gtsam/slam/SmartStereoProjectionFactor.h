@@ -512,40 +512,40 @@ public:
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   double computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
       Matrix& E, Vector& b, const Cameras& cameras) const {
-
     if (this->degenerate_) {
-      std::cout << "manage degeneracy " << manageDegeneracy_ << std::endl;
-      std::cout << "point " << point_ << std::endl;
-      std::cout
-          << "SmartStereoProjectionFactor: Management of degeneracy is disabled - not ready to be used"
-          << std::endl;
-      if (D > 6) {
-        std::cout
-            << "Management of degeneracy is not yet ready when one also optimizes for the calibration "
-            << std::endl;
-      }
-
-      int numKeys = this->keys_.size();
-      E = zeros(2 * numKeys, 2);
-      b = zero(2 * numKeys);
-      double f = 0;
-      for (size_t i = 0; i < this->measured_.size(); i++) {
-        if (i == 0) { // first pose
-          this->point_ = cameras[i].backprojectPointAtInfinity(
-              this->measured_.at(i));
-          // 3D parametrization of point at infinity: [px py 1]
-        }
-        Matrix Fi, Ei;
-        Vector bi = -(cameras[i].projectPointAtInfinity(this->point_, Fi, Ei)
-            - this->measured_.at(i)).vector();
-
-        this->noise_.at(i)->WhitenSystem(Fi, Ei, bi);
-        f += bi.squaredNorm();
-        Fblocks.push_back(typename Base::KeyMatrix2D(this->keys_[i], Fi));
-        E.block < 2, 2 > (2 * i, 0) = Ei;
-        subInsert(b, bi, 2 * i);
-      }
-      return f;
+      throw("FIXME: computeJacobians degenerate case commented out!");
+//      std::cout << "manage degeneracy " << manageDegeneracy_ << std::endl;
+//      std::cout << "point " << point_ << std::endl;
+//      std::cout
+//          << "SmartStereoProjectionFactor: Management of degeneracy is disabled - not ready to be used"
+//          << std::endl;
+//      if (D > 6) {
+//        std::cout
+//            << "Management of degeneracy is not yet ready when one also optimizes for the calibration "
+//            << std::endl;
+//      }
+//
+//      int numKeys = this->keys_.size();
+//      E = zeros(2 * numKeys, 2);
+//      b = zero(2 * numKeys);
+//      double f = 0;
+//      for (size_t i = 0; i < this->measured_.size(); i++) {
+//        if (i == 0) { // first pose
+//          this->point_ = cameras[i].backprojectPointAtInfinity(
+//              this->measured_.at(i));
+//          // 3D parametrization of point at infinity: [px py 1]
+//        }
+//        Matrix Fi, Ei;
+//        Vector bi = -(cameras[i].projectPointAtInfinity(this->point_, Fi, Ei)
+//            - this->measured_.at(i)).vector();
+//
+//        this->noise_.at(i)->WhitenSystem(Fi, Ei, bi);
+//        f += bi.squaredNorm();
+//        Fblocks.push_back(typename Base::KeyMatrix2D(this->keys_[i], Fi));
+//        E.block < 2, 2 > (2 * i, 0) = Ei;
+//        subInsert(b, bi, 2 * i);
+//      }
+//      return f;
     } else {
       // nondegenerate: just return Base version
       return Base::computeJacobians(Fblocks, E, b, cameras, point_);
