@@ -20,6 +20,7 @@ namespace gtsam {
  */
 
 class ConjugateGradientParameters : public IterativeOptimizationParameters {
+
 public:
   typedef IterativeOptimizationParameters Base;
   typedef boost::shared_ptr<ConjugateGradientParameters> shared_ptr;
@@ -30,14 +31,23 @@ public:
   double epsilon_rel_;    ///< threshold for relative error decrease
   double epsilon_abs_;    ///< threshold for absolute error decrease
 
-  ConjugateGradientParameters()
-  : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3), epsilon_abs_(1e-3){}
+  /* Matrix Operation Kernel */
+  enum BLASKernel {
+    GTSAM = 0,        ///< Jacobian Factor Graph of GTSAM
+  } blas_kernel_ ;
 
-  ConjugateGradientParameters(size_t minIterations, size_t maxIterations, size_t reset, double epsilon_rel, double epsilon_abs)
-    : minIterations_(minIterations), maxIterations_(maxIterations), reset_(reset), epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs){}
+  ConjugateGradientParameters()
+    : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3),
+      epsilon_abs_(1e-3), blas_kernel_(GTSAM) {}
+
+  ConjugateGradientParameters(size_t minIterations, size_t maxIterations, size_t reset,
+    double epsilon_rel, double epsilon_abs, BLASKernel blas)
+    : minIterations_(minIterations), maxIterations_(maxIterations), reset_(reset),
+      epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas) {}
 
   ConjugateGradientParameters(const ConjugateGradientParameters &p)
-    : Base(p), minIterations_(p.minIterations_), maxIterations_(p.maxIterations_), reset_(p.reset_), epsilon_rel_(p.epsilon_rel_), epsilon_abs_(p.epsilon_abs_) {}
+    : Base(p), minIterations_(p.minIterations_), maxIterations_(p.maxIterations_), reset_(p.reset_),
+               epsilon_rel_(p.epsilon_rel_), epsilon_abs_(p.epsilon_abs_), blas_kernel_(GTSAM) {}
 
   /* general interface */
   inline size_t minIterations() const { return minIterations_; }
@@ -61,15 +71,10 @@ public:
   inline void setEpsilon_rel(double value) { epsilon_rel_ = value; }
   inline void setEpsilon_abs(double value) { epsilon_abs_ = value; }
 
-  virtual void print() const {
-    Base::print();
-    std::cout << "ConjugateGradientParameters" << std::endl
-              << "minIter:       " << minIterations_ << std::endl
-              << "maxIter:       " << maxIterations_ << std::endl
-              << "resetIter:     " << reset_ << std::endl
-              << "eps_rel:       " << epsilon_rel_ << std::endl
-              << "eps_abs:       " << epsilon_abs_ << std::endl;
-  }
+  static std::string blasTranslator(const BLASKernel k) ;
+  static BLASKernel blasTranslator(const std::string &s) ;
+
+  virtual void print() const;
 };
 
 }
