@@ -26,7 +26,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/random.hpp>
-#include <boost/thread.hpp>
+//#include <boost/thread.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <cmath>
 
@@ -234,7 +234,7 @@ TEST(Unit3, localCoordinates_retract) {
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
-    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
 
     // Create the two Unit3s.
     // NOTE: You can not create two totally random Unit3's because you cannot always compute
@@ -264,10 +264,10 @@ TEST(Unit3, localCoordinates_retract_expmap) {
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
-    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
 
     // Create the two Unit3s.
-    // Unlike the above case, we can use any two sphers.
+    // Unlike the above case, we can use any two Unit3's.
     Unit3 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
 //      Unit3 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
