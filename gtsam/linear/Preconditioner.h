@@ -18,7 +18,6 @@ namespace gtsam {
 class GaussianFactorGraph;
 class KeyInfo;
 class VectorValues;
-//class Subgraph;
 
 /* parameters for the preconditioner */
 struct PreconditionerParameters {
@@ -75,15 +74,15 @@ public:
 
   /* implement x = S^{-1} y */
   virtual void solve(const Vector& y, Vector &x) const = 0;
-  virtual void solve(const VectorValues& y, VectorValues &x) const = 0;
+//  virtual void solve(const VectorValues& y, VectorValues &x) const = 0;
 
   /* implement x = S^{-T} y */
   virtual void transposeSolve(const Vector& y, Vector& x) const = 0;
-  virtual void transposeSolve(const VectorValues& y, VectorValues &x) const = 0;
+//  virtual void transposeSolve(const VectorValues& y, VectorValues &x) const = 0;
 
-  /* implement x = S^{-1} S^{-T} y */
-  virtual void fullSolve(const Vector& y, Vector &x) const = 0;
-  virtual void fullSolve(const VectorValues& y, VectorValues &x) const = 0;
+//  /* implement x = S^{-1} S^{-T} y */
+//  virtual void fullSolve(const Vector& y, Vector &x) const = 0;
+//  virtual void fullSolve(const VectorValues& y, VectorValues &x) const = 0;
 
   /* build/factorize the preconditioner */
   virtual void build(
@@ -91,23 +90,6 @@ public:
     const KeyInfo &info,
     const std::map<Key,Vector> &lambda
     ) = 0;
-
-//  /* complexity index */
-//  virtual size_t complexity() const = 0;
-//
-//  /* is the preconditioner dependent to data */
-//  virtual bool isStatic() const = 0;
-//
-//  /* is the preconditioner kind of spanning subgraph preconditioner */
-//  virtual bool isSubgraph() const = 0;
-//
-//  /* return A\b */
-//  virtual void xstar(Vector &result) const = 0 ;
-//
-//protected:
-//  Parameters::shared_ptr parameters_;
-//  KeyInfo keyInfo_;
-
 };
 
 /*******************************************************************************************/
@@ -131,30 +113,57 @@ public:
 
   /* Computation Interfaces for raw vector */
   virtual void solve(const Vector& y, Vector &x) const { x = y; }
-  virtual void solve(const VectorValues& y, VectorValues& x) const { x = y; }
+//  virtual void solve(const VectorValues& y, VectorValues& x) const { x = y; }
 
   virtual void transposeSolve(const Vector& y, Vector& x) const { x = y; }
-  virtual void transposeSolve(const VectorValues& y, VectorValues& x) const { x = y; }
+//  virtual void transposeSolve(const VectorValues& y, VectorValues& x) const { x = y; }
 
-  virtual void fullSolve(const Vector& y, Vector &x) const { x = y; }
-  virtual void fullSolve(const VectorValues& y, VectorValues& x) const { x = y; }
+//  virtual void fullSolve(const Vector& y, Vector &x) const { x = y; }
+//  virtual void fullSolve(const VectorValues& y, VectorValues& x) const { x = y; }
 
   virtual void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
     const std::map<Key,Vector> &lambda
     )  {}
-
-//  virtual void replaceFactors(const JacobianFactorGraph &jfg, const double lambda = 0.0) {
-//    Base::replaceFactors(jfg,lambda);
-//  }
-//  virtual void buildPreconditioner() {}
-//  virtual size_t complexity() const { return 0; }
-//  virtual bool isStatic() const { return true; }
-//  virtual bool isSubgraph() const { return false; }
-//  virtual void xstar(Vector &result) const {}
 };
 
+/*******************************************************************************************/
+struct BlockJacobiPreconditionerParameters : public PreconditionerParameters {
+  typedef PreconditionerParameters Base;
+  BlockJacobiPreconditionerParameters() : Base() {}
+  virtual ~BlockJacobiPreconditionerParameters() {}
+};
+
+/*******************************************************************************************/
+class BlockJacobiPreconditioner : public Preconditioner {
+public:
+  typedef Preconditioner Base;
+  BlockJacobiPreconditioner() ;
+  virtual ~BlockJacobiPreconditioner() ;
+
+  /* Computation Interfaces for raw vector */
+  virtual void solve(const Vector& y, Vector &x) const;
+  virtual void transposeSolve(const Vector& y, Vector& x) const ;
+//  virtual void fullSolve(const Vector& y, Vector &x) const ;
+
+  virtual void build(
+    const GaussianFactorGraph &gfg,
+    const KeyInfo &info,
+    const std::map<Key,Vector> &lambda
+    ) ;
+
+protected:
+
+  void clean() ;
+
+  std::vector<size_t> dims_;
+  double *buffer_;
+  size_t bufferSize_;
+  size_t nnz_;
+};
+
+/*********************************************************************************************/
 /* factory method to create preconditioners */
 boost::shared_ptr<Preconditioner> createPreconditioner(const boost::shared_ptr<PreconditionerParameters> parameters);
 

@@ -9,6 +9,7 @@
 //#include <gtsam/linear/CombinatorialPreconditioner.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 //#include <gtsam/linear/FactorGraphUtil-inl.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
 //#include <gtsam/linear/JacobianFactorGraph.h>
@@ -83,26 +84,137 @@ std::string PreconditionerParameters::verbosityTranslator(PreconditionerParamete
   else return "UNKNOWN";
 }
 
-///***************************************************************************************/
-//void Preconditioner::replaceFactors(const JacobianFactorGraph &jfg, const double lambda)
-//{
-//  const Parameters &p = *parameters_;
-//
-//  if ( keyInfo_.size() == 0 ) {
-//    keyInfo_ = KeyInfo(jfg, *orderingNatural(jfg));
-//  }
-//
-//  if ( p.verbosity() >= Parameters::COMPLEXITY )
-//    cout << "Preconditioner::replaceFactors with a jfg of " << jfg.size() << " factors."<< endl;
-//}
-//
+/***************************************************************************************/
+BlockJacobiPreconditioner::BlockJacobiPreconditioner()
+  : Base(), buffer_(0), bufferSize_(0), nnz_(0) {}
+
+/***************************************************************************************/
+BlockJacobiPreconditioner::~BlockJacobiPreconditioner() { clean(); }
+
+/***************************************************************************************/
+void BlockJacobiPreconditioner::solve(const Vector& y, Vector &x) const {
+
+  const size_t n = dims_.size();
+  double *ptr = buffer_, *dst = x.data();
+
+  std::copy(y.data(), y.data() + y.rows(), x.data());
+
+  for ( size_t i = 0 ; i < n ; ++i ) {
+    const size_t d = dims_[i];
+    const size_t sz = d*d;
+
+    const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
+    Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
+    R.triangularView<Eigen::Upper>().solveInPlace(b);
+
+    dst += d;
+    ptr += sz;
+  }
+}
+
+/***************************************************************************************/
+void BlockJacobiPreconditioner::transposeSolve(const Vector& y, Vector& x) const {
+  const size_t n = dims_.size();
+  double *ptr = buffer_, *dst = x.data();
+
+  std::copy(y.data(), y.data() + y.rows(), x.data());
+
+  for ( size_t i = 0 ; i < n ; ++i ) {
+    const size_t d = dims_[i];
+    const size_t sz = d*d;
+
+    const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
+    Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
+    R.transpose().triangularView<Eigen::Upper>().solveInPlace(b);
+
+    dst += d;
+    ptr += sz;
+  }
+}
+
+/***************************************************************************************/
+void BlockJacobiPreconditioner::build(
+  const GaussianFactorGraph &gfg, const KeyInfo &keyInfo, const std::map<Key,Vector> &lambda)
+{
+  const size_t n = keyInfo.size();
+  dims_ = keyInfo.colSpec();
+
+  /* prepare the buffer of block diagonals */
+  std::vector<Matrix> blocks; blocks.reserve(n);
+
+  /* allocate memory for the factorization of block diagonals */
+  size_t nnz = 0;
+  for ( size_t i = 0 ; i < n ; ++i ) {
+    const size_t dim = dims_[i];
+    blocks.push_back(Matrix::Zero(dim, dim));
+    // nnz += (((dim)*(dim+1)) >> 1); // d*(d+1) / 2  ;
+    nnz += dim*dim;
+  }
+
+  /* compute the block diagonal by scanning over the factors */
+  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg ) {
+    if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
+      for ( JacobianFactor::const_iterator it = jf->begin() ; it != jf->end() ; ++it ) {
+        const KeyInfoEntry &entry =  keyInfo.find(*it)->second;
+        const Matrix &Ai = jf->getA(it);
+        blocks[entry.index()] += (Ai.transpose() * Ai);
+      }
+    }
+    else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
+      for ( HessianFactor::const_iterator it = hf->begin() ; it != hf->end() ; ++it ) {
+        const KeyInfoEntry &entry =  keyInfo.find(*it)->second;
+        const Matrix &Hii = hf->info(it, it).selfadjointView();
+        blocks[entry.index()] += Hii;
+      }
+    }
+    else {
+      throw invalid_argument("BlockJacobiPreconditioner::build gfg contains a factor that is neither a JacobianFactor nor a HessianFactor.");
+    }
+  }
+
+  /* if necessary, allocating the memory for cacheing the factorization results */
+  if ( nnz > bufferSize_ ) {
+    clean();
+    buffer_ = new double [nnz];
+    bufferSize_ = nnz;
+  }
+  nnz_ = nnz;
+
+  /* factorizing the blocks respectively */
+  double *ptr = buffer_;
+  for ( size_t i = 0 ; i < n ; ++i ) {
+    /* use eigen to decompose Di */
+    const Matrix R = blocks[i].llt().matrixL().transpose();
+
+    /* store the data in the buffer */
+    size_t sz = dims_[i]*dims_[i] ;
+    std::copy(R.data(), R.data() + sz, ptr);
+
+    /* advance the pointer */
+    ptr += sz;
+  }
+}
+
+/*****************************************************************************/
+void BlockJacobiPreconditioner::clean() {
+  if ( buffer_ ) {
+    delete [] buffer_;
+    buffer_ = 0;
+    bufferSize_ = 0;
+    nnz_ = 0;
+  }
+}
+
 /***************************************************************************************/
 boost::shared_ptr<Preconditioner> createPreconditioner(const boost::shared_ptr<PreconditionerParameters> parameters) {
 
-  DummyPreconditionerParameters::shared_ptr dummy = boost::dynamic_pointer_cast<DummyPreconditionerParameters>(parameters);
-  if ( dummy ) {
+  if ( DummyPreconditionerParameters::shared_ptr dummy = boost::dynamic_pointer_cast<DummyPreconditionerParameters>(parameters) ) {
     return boost::make_shared<DummyPreconditioner>();
   }
+  else if ( BlockJacobiPreconditionerParameters::shared_ptr blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditionerParameters>(parameters) ) {
+    return boost::make_shared<BlockJacobiPreconditioner>();
+  }
+
 
 //  BlockJacobiPreconditioner::Parameters::shared_ptr jacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditioner::Parameters>(parameters);
 //  if ( jacobi ) {
