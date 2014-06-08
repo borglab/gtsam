@@ -6,9 +6,23 @@
  */
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
+#include <boost/algorithm/string.hpp>
 #include <iostream>
 
+using namespace std;
+
 namespace gtsam {
+
+/*****************************************************************************/
+void ConjugateGradientParameters::print(ostream &os) const {
+   Base::print(os);
+   cout << "ConjugateGradientParameters" << endl
+        << "minIter:       " << minIterations_ << endl
+        << "maxIter:       " << maxIterations_ << endl
+        << "resetIter:     " << reset_ << endl
+        << "eps_rel:       " << epsilon_rel_ << endl
+        << "eps_abs:       " << epsilon_abs_ << endl;
+}
 
 /*****************************************************************************/
 std::string ConjugateGradientParameters::blasTranslator(const BLASKernel value) {
@@ -29,18 +43,6 @@ ConjugateGradientParameters::BLASKernel ConjugateGradientParameters::blasTransla
   return ConjugateGradientParameters::GTSAM;
 }
 
-/*****************************************************************************/
-
-/*****************************************************************************/
-void ConjugateGradientParameters::print() const {
-   Base::print();
-   std::cout << "ConjugateGradientParameters" << std::endl
-             << "minIter:       " << minIterations_ << std::endl
-             << "maxIter:       " << maxIterations_ << std::endl
-             << "resetIter:     " << reset_ << std::endl
-             << "eps_rel:       " << epsilon_rel_ << std::endl
-             << "eps_abs:       " << epsilon_abs_ << std::endl;
- }
 
 }
 

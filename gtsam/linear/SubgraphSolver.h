@@ -15,8 +15,8 @@
 #include <gtsam/linear/ConjugateGradientSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/inference/Ordering.h>
-
 #include <boost/tuple/tuple.hpp>
+#include <iosfwd>
 
 namespace gtsam {
 
@@ -28,7 +28,7 @@ class GTSAM_EXPORT SubgraphSolverParameters : public ConjugateGradientParameters
 public:
   typedef ConjugateGradientParameters Base;
   SubgraphSolverParameters() : Base() {}
-  virtual void print() const { Base::print(); }
+  virtual void print(std::ostream &os) const { Base::print(os); }
 };
 
 /**
@@ -77,8 +77,17 @@ public:
   SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &Rc1, const boost::shared_ptr<GaussianFactorGraph> &Ab2, const Parameters &parameters, const Ordering& ordering);
 
   virtual ~SubgraphSolver() {}
-  virtual VectorValues optimize () ;
-  virtual VectorValues optimize (const VectorValues &initial) ;
+
+  VectorValues optimize () ;
+  VectorValues optimize (const VectorValues &initial) ;
+
+  /* interface to the nonlinear optimizer that the subclasses have to implement */
+  virtual VectorValues optimize (
+    const GaussianFactorGraph &gfg,
+    const KeyInfo &keyInfo,
+    const std::map<Key, Vector> &lambda,
+    const VectorValues &initial
+  ) { return VectorValues(); }
 
 protected:
 
