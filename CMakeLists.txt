@@ -46,7 +46,6 @@ endif()
 # Set up options
 
 # Configurable Options
-option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" OFF) # These do not currently work
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
