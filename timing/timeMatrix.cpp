@@ -189,7 +189,7 @@ double timeColumn(size_t reps) {
  */
 double timeHouseholder(size_t reps) {
   // create a matrix
-  Matrix Abase = Mat(4, 7) <<
+  Matrix Abase = (Matrix(4, 7) <<
       -5,  0, 5, 0,  0,  0,  -1,
       00, -5, 0, 5,  0,  0, 1.5,
       10,  0, 0, 0,-10,  0,   2,

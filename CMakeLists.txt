@@ -303,6 +303,9 @@ add_subdirectory(tests)
 # Build examples
 add_subdirectory(examples)
 
+# Build timing
+add_subdirectory(timing)
+
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
