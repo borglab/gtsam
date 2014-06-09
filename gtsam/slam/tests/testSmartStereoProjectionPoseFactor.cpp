@@ -47,7 +47,7 @@ static double rankTol = 1.0;
 static double linThreshold = -1.0;
 static bool manageDegeneracy = true;
 // Create a noise model for the pixel error
-static SharedNoiseModel model(noiseModel::Unit::Create(2));
+static SharedNoiseModel model(noiseModel::Unit::Create(3));
 
 // Convenience for named keys
 using symbol_shorthand::X;
@@ -87,19 +87,19 @@ TEST( SmartStereoProjectionPoseFactor, Constructor2) {
   SmartFactor factor1(rankTol, linThreshold);
 }
 
-///* ************************************************************************* */
+/* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor3) {
   SmartFactor::shared_ptr factor1(new SmartFactor());
   factor1->add(measurement1, poseKey1, model, K);
 }
 
-///* ************************************************************************* */
+/* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor4) {
   SmartFactor factor1(rankTol, linThreshold);
   factor1.add(measurement1, poseKey1, model, K);
 }
 
-///* ************************************************************************* */
+/* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, ConstructorWithTransform) {
   bool manageDegeneracy = true;
   bool enableEPI = false;
@@ -107,7 +107,7 @@ TEST( SmartStereoProjectionPoseFactor, ConstructorWithTransform) {
   factor1.add(measurement1, poseKey1, model, K);
 }
 
-///* ************************************************************************* */
+/* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Equals ) {
   SmartFactor::shared_ptr factor1(new SmartFactor());
   factor1->add(measurement1, poseKey1, model, K);
@@ -142,8 +142,8 @@ TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ){
   values.insert(x2, level_pose_right);
 
   SmartFactor factor1;
-  factor1.add(level_uv, x1, model, K);
-  factor1.add(level_uv_right, x2, model, K);
+  factor1.add(level_uv, x1, model, K2);
+  factor1.add(level_uv_right, x2, model, K2);
 
   double actualError = factor1.error(values);
   double expectedError = 0.0;
@@ -1113,205 +1113,6 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ){
   EXPECT(assert_equal(hessianFactor->information(), hessianFactorRotTran->information(), 1e-8) );
 }
 
-/* ************************************************************************* */
-//TEST( SmartStereoProjectionPoseFactor, ConstructorWithCal3Bundler) {
-//  SmartStereoProjectionPoseFactor<Pose3,Point3,Cal3Bundler> factor1(rankTol, linThreshold);
-//  boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
-//  factor1.add(measurement1, poseKey1, model, Kbundler);
-//}
-
-/* *************************************************************************/
-//TEST( SmartStereoProjectionPoseFactor, Cal3Bundler ){
-//  // cout << " ************************ SmartStereoProjectionPoseFactor: Cal3Bundler **********************" << endl;
-//
-//  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-//  StereoCamera cam1(pose1, *Kbundler);
-//
-//  // create second camera 1 meter to the right of first camera
-//  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
-//  StereoCamera cam2(pose2, *Kbundler);
-//
-//  // create third camera 1 meter above the first camera
-//  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
-//  StereoCamera cam3(pose3, *Kbundler);
-//
-//  // three landmarks ~5 meters infront of camera
-//  Point3 landmark1(5, 0.5, 1.2);
-//  Point3 landmark2(5, -0.5, 1.2);
-//  Point3 landmark3(3, 0, 3.0);
-//
-//  vector<StereoPoint2> measurements_cam1, measurements_cam2, measurements_cam3;
-//
-//  // 1. Project three landmarks into three cameras and triangulate
-//  StereoPoint2 cam1_uv1 = cam1.project(landmark1);
-//  StereoPoint2 cam2_uv1 = cam2.project(landmark1);
-//  StereoPoint2 cam3_uv1 = cam3.project(landmark1);
-//  measurements_cam1.push_back(cam1_uv1);
-//  measurements_cam1.push_back(cam2_uv1);
-//  measurements_cam1.push_back(cam3_uv1);
-//
-//  StereoPoint2 cam1_uv2 = cam1.project(landmark2);
-//  StereoPoint2 cam2_uv2 = cam2.project(landmark2);
-//  StereoPoint2 cam3_uv2 = cam3.project(landmark2);
-//  measurements_cam2.push_back(cam1_uv2);
-//  measurements_cam2.push_back(cam2_uv2);
-//  measurements_cam2.push_back(cam3_uv2);
-//
-//  StereoPoint2 cam1_uv3 = cam1.project(landmark3);
-//  StereoPoint2 cam2_uv3 = cam2.project(landmark3);
-//  StereoPoint2 cam3_uv3 = cam3.project(landmark3);
-//  measurements_cam3.push_back(cam1_uv3);
-//  measurements_cam3.push_back(cam2_uv3);
-//  measurements_cam3.push_back(cam3_uv3);
-//
-//  std::vector<Key> views;
-//  views.push_back(x1);
-//  views.push_back(x2);
-//  views.push_back(x3);
-//
-//  SmartFactorBundler::shared_ptr smartFactor1(new SmartFactorBundler());
-//  smartFactor1->add(measurements_cam1, views, model, Kbundler);
-//
-//  SmartFactorBundler::shared_ptr smartFactor2(new SmartFactorBundler());
-//  smartFactor2->add(measurements_cam2, views, model, Kbundler);
-//
-//  SmartFactorBundler::shared_ptr smartFactor3(new SmartFactorBundler());
-//  smartFactor3->add(measurements_cam3, views, model, Kbundler);
-//
-//  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-//
-//  NonlinearFactorGraph graph;
-//  graph.push_back(smartFactor1);
-//  graph.push_back(smartFactor2);
-//  graph.push_back(smartFactor3);
-//  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-//  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
-//
-//  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
-//  Values values;
-//  values.insert(x1, pose1);
-//  values.insert(x2, pose2);
-//  // initialize third pose with some noise, we expect it to move back to original pose3
-//  values.insert(x3, pose3*noise_pose);
-//  if(isDebugTest) values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
-//
-//  LevenbergMarquardtParams params;
-//  if(isDebugTest) params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-//  if(isDebugTest) params.verbosity = NonlinearOptimizerParams::ERROR;
-//
-//  Values result;
-//  gttic_(SmartStereoProjectionPoseFactor);
-//  LevenbergMarquardtOptimizer optimizer(graph, values, params);
-//  result = optimizer.optimize();
-//  gttoc_(SmartStereoProjectionPoseFactor);
-//  tictoc_finishedIteration_();
-//
-//  // result.print("results of 3 camera, 3 landmark optimization \n");
-//  if(isDebugTest) result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-//  EXPECT(assert_equal(pose3,result.at<Pose3>(x3), 1e-6));
-//  if(isDebugTest) tictoc_print_();
-// }
-
-/* *************************************************************************/
-//TEST( SmartStereoProjectionPoseFactor, Cal3BundlerRotationOnly  ){
-//
-//  std::vector<Key> views;
-//  views.push_back(x1);
-//  views.push_back(x2);
-//  views.push_back(x3);
-//
-//  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-//  StereoCamera cam1(pose1, *Kbundler);
-//
-//  // create second camera 1 meter to the right of first camera
-//  Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0,0,0));
-//  StereoCamera cam2(pose2, *Kbundler);
-//
-//  // create third camera 1 meter above the first camera
-//  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0,0,0));
-//  StereoCamera cam3(pose3, *Kbundler);
-//
-//  // three landmarks ~5 meters infront of camera
-//  Point3 landmark1(5, 0.5, 1.2);
-//  Point3 landmark2(5, -0.5, 1.2);
-//  Point3 landmark3(3, 0, 3.0);
-//
-//  vector<StereoPoint2> measurements_cam1, measurements_cam2, measurements_cam3;
-//
-//  // 1. Project three landmarks into three cameras and triangulate
-//  StereoPoint2 cam1_uv1 = cam1.project(landmark1);
-//  StereoPoint2 cam2_uv1 = cam2.project(landmark1);
-//  StereoPoint2 cam3_uv1 = cam3.project(landmark1);
-//  measurements_cam1.push_back(cam1_uv1);
-//  measurements_cam1.push_back(cam2_uv1);
-//  measurements_cam1.push_back(cam3_uv1);
-//
-//  StereoPoint2 cam1_uv2 = cam1.project(landmark2);
-//  StereoPoint2 cam2_uv2 = cam2.project(landmark2);
-//  StereoPoint2 cam3_uv2 = cam3.project(landmark2);
-//  measurements_cam2.push_back(cam1_uv2);
-//  measurements_cam2.push_back(cam2_uv2);
-//  measurements_cam2.push_back(cam3_uv2);
-//
-//  StereoPoint2 cam1_uv3 = cam1.project(landmark3);
-//  StereoPoint2 cam2_uv3 = cam2.project(landmark3);
-//  StereoPoint2 cam3_uv3 = cam3.project(landmark3);
-//  measurements_cam3.push_back(cam1_uv3);
-//  measurements_cam3.push_back(cam2_uv3);
-//  measurements_cam3.push_back(cam3_uv3);
-//
-//  double rankTol = 10;
-//
-//  SmartFactorBundler::shared_ptr smartFactor1(new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy));
-//  smartFactor1->add(measurements_cam1, views, model, Kbundler);
-//
-//  SmartFactorBundler::shared_ptr smartFactor2(new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy));
-//  smartFactor2->add(measurements_cam2, views, model, Kbundler);
-//
-//  SmartFactorBundler::shared_ptr smartFactor3(new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy));
-//  smartFactor3->add(measurements_cam3, views, model, Kbundler);
-//
-//  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-//  const SharedDiagonal noisePriorTranslation = noiseModel::Isotropic::Sigma(3, 0.10);
-//  Point3 positionPrior = gtsam::Point3(0,0,1);
-//
-//  NonlinearFactorGraph graph;
-//  graph.push_back(smartFactor1);
-//  graph.push_back(smartFactor2);
-//  graph.push_back(smartFactor3);
-//  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-//  graph.push_back(PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
-//  graph.push_back(PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
-//
-//  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
-//  Values values;
-//  values.insert(x1, pose1);
-//  values.insert(x2, pose2);
-//  // initialize third pose with some noise, we expect it to move back to original pose3
-//  values.insert(x3, pose3*noise_pose);
-//  if(isDebugTest) values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
-//
-//  LevenbergMarquardtParams params;
-//  if(isDebugTest) params.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
-//  if(isDebugTest) params.verbosity = NonlinearOptimizerParams::ERROR;
-//
-//  Values result;
-//  gttic_(SmartStereoProjectionPoseFactor);
-//  LevenbergMarquardtOptimizer optimizer(graph, values, params);
-//  result = optimizer.optimize();
-//  gttoc_(SmartStereoProjectionPoseFactor);
-//  tictoc_finishedIteration_();
-//
-//  // result.print("results of 3 camera, 3 landmark optimization \n");
-//  if(isDebugTest) result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-//  std::cout << "TEST COMMENTED: rotation only version of smart factors has been deprecated " << std::endl;
-//  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
-//  if(isDebugTest) tictoc_print_();
-//}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
