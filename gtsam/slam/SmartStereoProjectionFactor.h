@@ -251,6 +251,11 @@ public:
         //TODO: Chris will replace this with something else for stereo
 //        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
 //            rankTolerance_, enableEPI_);
+
+        // FIXME: temporary: triangulation using only first camera
+        const StereoPoint2& z0 = this->measured_.at(0);
+        point_ = cameras[0].backproject(z0);
+
         degenerate_ = false;
         cheiralityException_ = false;
 
