@@ -110,11 +110,10 @@ public:
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
-  /// shorthand for a pinhole camera
-  // TODO: Switch to stereoCamera:
+  /// shorthand for a StereoCamera // TODO: Get rid of this?
   typedef StereoCamera Camera;
-//  typedef StereoCamera Camera;
 
+  /// Vector of cameras
   typedef std::vector<Camera> Cameras;
 
   /**
@@ -278,6 +277,7 @@ public:
           }
           i += 1;
         }
+        std::cout << "totalReprojError error: " << totalReprojError << std::endl;
         // we discard smart factors that have large reprojection error
         if(dynamicOutlierRejectionThreshold_ > 0 &&
             totalReprojError/m > dynamicOutlierRejectionThreshold_)
@@ -612,7 +612,7 @@ public:
     if (nonDegenerate)
       return reprojectionError(myCameras);
     else
-      return zero(myCameras.size() * 2);
+      return zero(myCameras.size() * 3);
   }
 
   /**
