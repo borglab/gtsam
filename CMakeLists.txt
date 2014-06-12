@@ -34,7 +34,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
-# See whether gtsam_unstable is available (it will be present only if we're using an SVN checkout)
+# See whether gtsam_unstable is available (it will be present only if we're using a git checkout)
 if(EXISTS "${PROJECT_SOURCE_DIR}/gtsam_unstable" AND IS_DIRECTORY "${PROJECT_SOURCE_DIR}/gtsam_unstable")
     set(GTSAM_UNSTABLE_AVAILABLE 1)
 else()
@@ -94,7 +94,7 @@ if(MSVC)
 	# Disable autolinking
 	if(NOT Boost_USE_STATIC_LIBS)
 		add_definitions(-DBOOST_ALL_NO_LIB)
-	    add_definitions(-DBOOST_ALL_DYN_LINK)
+	  add_definitions(-DBOOST_ALL_DYN_LINK)
 	endif()
 endif()
 
