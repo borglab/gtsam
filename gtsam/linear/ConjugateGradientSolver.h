@@ -19,7 +19,7 @@ namespace gtsam {
 /**
  * parameters for the conjugate gradient method
  */
-class ConjugateGradientParameters : public IterativeOptimizationParameters {
+class GTSAM_EXPORT ConjugateGradientParameters : public IterativeOptimizationParameters {
 
 public:
   typedef IterativeOptimizationParameters Base;

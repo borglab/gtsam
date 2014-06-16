@@ -115,6 +115,7 @@ namespace gtsam {
   class KeyInfo : public std::map<Key, KeyInfoEntry> {
   public:
     typedef std::map<Key, KeyInfoEntry> Base;
+    KeyInfo() {}
     KeyInfo(const GaussianFactorGraph &fg);
     KeyInfo(const GaussianFactorGraph &fg, const Ordering &ordering);
 
@@ -131,9 +132,6 @@ namespace gtsam {
 
     Ordering ordering_;
     size_t numCols_;
-
-  private:
-    KeyInfo() {}
 
   };
 

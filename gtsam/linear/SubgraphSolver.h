@@ -13,7 +13,6 @@
 
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
-#include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/inference/Ordering.h>
 #include <boost/tuple/tuple.hpp>
 #include <iosfwd>
@@ -23,6 +22,7 @@ namespace gtsam {
   // Forward declarations
   class GaussianFactorGraph;
   class GaussianBayesNet;
+  class SubgraphPreconditioner;
 
 class GTSAM_EXPORT SubgraphSolverParameters : public ConjugateGradientParameters {
 public:
@@ -61,7 +61,7 @@ public:
 protected:
   Parameters parameters_;
   Ordering ordering_;
-  SubgraphPreconditioner::shared_ptr pc_;  ///< preconditioner object
+  boost::shared_ptr<SubgraphPreconditioner> pc_;  ///< preconditioner object
 
 public:
   /* Given a gaussian factor graph, split it into a spanning tree (A1) + others (A2) for SPCG */
@@ -87,7 +87,7 @@ public:
     const KeyInfo &keyInfo,
     const std::map<Key, Vector> &lambda,
     const VectorValues &initial
-  ) { return VectorValues(); }
+  ) ;
 
 protected:
 

@@ -27,6 +27,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
+#include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
@@ -88,7 +89,6 @@ TEST( PCGSolver, llt ) {
 
 }
 
-
 /* ************************************************************************* */
 TEST( PCGSolver, dummy )
 {
@@ -116,6 +116,26 @@ TEST( PCGSolver, blockjacobi )
   paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
   PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ = boost::make_shared<BlockJacobiPreconditionerParameters>();
+  paramsPCG.iterativeParams = pcg;
+
+  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 x0(10,10);
+  Values c0;
+  c0.insert(X(1), x0);
+
+  Values actualPCG = LevenbergMarquardtOptimizer(fg, c0, paramsPCG).optimize();
+
+  DOUBLES_EQUAL(0,fg.error(actualPCG),tol);
+}
+
+/* ************************************************************************* */
+TEST( PCGSolver, subgraph )
+{
+  LevenbergMarquardtParams paramsPCG;
+  paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
+  PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
+  pcg->preconditioner_ = boost::make_shared<SubgraphPreconditionerParameters>();
   paramsPCG.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();

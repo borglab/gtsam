@@ -1,7 +1,7 @@
 /*
  * Preconditioner.h
  *
- *  Created on: Feb 1, 2012
+ *  Created on: Jun 2, 2014
  *      Author: ydjian
  */
 
@@ -20,7 +20,7 @@ class KeyInfo;
 class VectorValues;
 
 /* parameters for the preconditioner */
-struct PreconditionerParameters {
+struct GTSAM_EXPORT PreconditionerParameters {
 
    typedef boost::shared_ptr<PreconditionerParameters> shared_ptr;
 
@@ -54,14 +54,12 @@ struct PreconditionerParameters {
 
    /* for serialization */
    friend std::ostream& operator<<(std::ostream &os, const PreconditionerParameters &p);
-
  };
-
 
 /* PCG aims to solve the problem: A x = b by reparametrizing it as
  * S^t A S y = S^t b   or   M A x = M b, where A \approx S S, or A \approx M
  * The goal of this class is to provide a general interface to all preconditioners */
-class Preconditioner {
+class GTSAM_EXPORT Preconditioner {
 public:
   typedef boost::shared_ptr<Preconditioner> shared_ptr;
   typedef std::vector<size_t> Dimensions;
@@ -93,7 +91,7 @@ public:
 };
 
 /*******************************************************************************************/
-struct DummyPreconditionerParameters : public PreconditionerParameters {
+struct GTSAM_EXPORT DummyPreconditionerParameters : public PreconditionerParameters {
   typedef PreconditionerParameters Base;
   typedef boost::shared_ptr<DummyPreconditionerParameters> shared_ptr;
   DummyPreconditionerParameters() : Base() {}
@@ -101,7 +99,7 @@ struct DummyPreconditionerParameters : public PreconditionerParameters {
 };
 
 /*******************************************************************************************/
-class DummyPreconditioner : public Preconditioner {
+class GTSAM_EXPORT DummyPreconditioner : public Preconditioner {
 public:
   typedef Preconditioner Base;
   typedef boost::shared_ptr<DummyPreconditioner> shared_ptr;
@@ -129,14 +127,14 @@ public:
 };
 
 /*******************************************************************************************/
-struct BlockJacobiPreconditionerParameters : public PreconditionerParameters {
+struct GTSAM_EXPORT BlockJacobiPreconditionerParameters : public PreconditionerParameters {
   typedef PreconditionerParameters Base;
   BlockJacobiPreconditionerParameters() : Base() {}
   virtual ~BlockJacobiPreconditionerParameters() {}
 };
 
 /*******************************************************************************************/
-class BlockJacobiPreconditioner : public Preconditioner {
+class GTSAM_EXPORT BlockJacobiPreconditioner : public Preconditioner {
 public:
   typedef Preconditioner Base;
   BlockJacobiPreconditioner() ;
@@ -166,16 +164,6 @@ protected:
 /*********************************************************************************************/
 /* factory method to create preconditioners */
 boost::shared_ptr<Preconditioner> createPreconditioner(const boost::shared_ptr<PreconditionerParameters> parameters);
-
-///* build a factor subgraph, which is defined as a set of weighted edges (factors).
-// * "hessian"={0,1} indicates whether the non-subgraph edges are split into multiple unary factors
-// * "lambda" indicates whether scaled identity matrix is augmented
-// * "clone" indicates whether factors are cloned into the subgraph if the edge has weight = 1.0
-// * "includeUnary" indicates whether the unary factors are forced to join the subgraph:
-// *    useful for static subgraph preconditioner, because unary factors were imposed dynamically by LM */
-//boost::shared_ptr<JacobianFactorGraph>
-//buildFactorSubgraph(const JacobianFactorGraph &jfg, const KeyInfo &keyInfo,
-//  const Subgraph &subgraph, const int hessian, const double lambda, const bool clone, const bool includeUnary);
 
 }
 

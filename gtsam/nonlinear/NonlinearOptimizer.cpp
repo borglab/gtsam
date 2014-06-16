@@ -103,6 +103,7 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph &gfg,
   } else if (params.isSequential()) {
     delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction())->optimize();
   } else if (params.isIterative()) {
+
     if (!params.iterativeParams)
       throw std::runtime_error("NonlinearOptimizer::solve: cg parameter has to be assigned ...");
 
