@@ -55,6 +55,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  std::map<Key, size_t> GaussianFactorGraph::getKeyDimMap() const {
+    map<Key, size_t> spec;
+    BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, *this ) {
+      for ( GaussianFactor::const_iterator it = gf->begin() ; it != gf->end() ; it++ ) {
+        map<Key,size_t>::iterator it2 = spec.find(*it);
+        if ( it2 == spec.end() ) {
+          spec.insert(make_pair<Key,size_t>(*it, gf->getDim(it)));
+        }
+      }
+    }
+    return spec;
+  }
+
+  /* ************************************************************************* */
     vector<size_t> GaussianFactorGraph::getkeydim() const {
       // First find dimensions of each variable
       vector<size_t> dims;

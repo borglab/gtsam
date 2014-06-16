@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
   LevenbergMarquardtParams parameters;
   parameters.verbosity = NonlinearOptimizerParams::ERROR;
   parameters.verbosityLM = LevenbergMarquardtParams::LAMBDA;
-  parameters.linearSolverType = NonlinearOptimizerParams::CONJUGATE_GRADIENT;
+  parameters.linearSolverType = NonlinearOptimizerParams::Iterative;
 
   {
     parameters.iterativeParams = boost::make_shared<SubgraphSolverParameters>();

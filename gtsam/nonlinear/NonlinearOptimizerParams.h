@@ -99,7 +99,7 @@ public:
     MULTIFRONTAL_QR,
     SEQUENTIAL_CHOLESKY,
     SEQUENTIAL_QR,
-    CONJUGATE_GRADIENT, /* Experimental Flag */
+    Iterative, /* Experimental Flag */
     CHOLMOD, /* Experimental Flag */
   };
 
@@ -121,8 +121,8 @@ public:
     return (linearSolverType == CHOLMOD);
   }
 
-  inline bool isCG() const {
-    return (linearSolverType == CONJUGATE_GRADIENT);
+  inline bool isIterative() const {
+    return (linearSolverType == Iterative);
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {

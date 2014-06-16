@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/linear/VectorValues.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 class NonlinearOptimizerMoreOptimizationTest;
