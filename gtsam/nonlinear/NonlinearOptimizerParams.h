@@ -148,7 +148,9 @@ public:
   void setLinearSolverType(const std::string& solver) {
     linearSolverType = linearSolverTranslator(solver);
   }
-  void setIterativeParams(const SubgraphSolverParameters& params);
+
+  void setIterativeParams(const boost::shared_ptr<IterativeOptimizationParameters> params);
+
   void setOrdering(const Ordering& ordering) {
     this->ordering = ordering;
   }

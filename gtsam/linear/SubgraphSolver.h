@@ -28,6 +28,7 @@ class GTSAM_EXPORT SubgraphSolverParameters : public ConjugateGradientParameters
 public:
   typedef ConjugateGradientParameters Base;
   SubgraphSolverParameters() : Base() {}
+  void print() const { Base::print(); }
   virtual void print(std::ostream &os) const { Base::print(os); }
 };
 

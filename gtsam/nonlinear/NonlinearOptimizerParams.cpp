@@ -66,8 +66,8 @@ std::string NonlinearOptimizerParams::verbosityTranslator(
 
 /* ************************************************************************* */
 void NonlinearOptimizerParams::setIterativeParams(
-    const SubgraphSolverParameters &params) {
-  iterativeParams = boost::make_shared<SubgraphSolverParameters>(params);
+    const boost::shared_ptr<IterativeOptimizationParameters> params) {
+  iterativeParams = params;
 }
 
 /* ************************************************************************* */

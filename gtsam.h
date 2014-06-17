@@ -1514,7 +1514,7 @@ virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
   void print() const;
 };
 
-class SubgraphSolver  {
+virtual class SubgraphSolver  {
   SubgraphSolver(const gtsam::GaussianFactorGraph &A, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
   SubgraphSolver(const gtsam::GaussianFactorGraph &Ab1, const gtsam::GaussianFactorGraph &Ab2, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
   gtsam::VectorValues optimize() const;
@@ -1853,7 +1853,7 @@ virtual class NonlinearOptimizerParams {
   
   void setLinearSolverType(string solver);
   void setOrdering(const gtsam::Ordering& ordering);
-  void setIterativeParams(const gtsam::SubgraphSolverParameters &params);
+  void setIterativeParams(gtsam::IterativeOptimizationParameters* params);
 
   bool isMultifrontal() const;
   bool isSequential() const;
