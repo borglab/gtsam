@@ -25,7 +25,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Cal3DS2::Cal3DS2(const Vector &v):
-    fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), k3_(v[7]), k4_(v[8]){}
+    fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), p1_(v[7]), p2_(v[8]){}
 
 /* ************************************************************************* */
 Matrix Cal3DS2::K() const {
@@ -34,20 +34,20 @@ Matrix Cal3DS2::K() const {
 
 /* ************************************************************************* */
 Vector Cal3DS2::vector() const {
-  return (Vector(9) << fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_);
+  return (Vector(9) << fx_, fy_, s_, u0_, v0_, k1_, k2_, p1_, p2_);
 }
 
 /* ************************************************************************* */
-void Cal3DS2::print(const std::string& s) const {
-  gtsam::print(K(), s + ".K");
-  gtsam::print(Vector(k()), s + ".k");
+void Cal3DS2::print(const std::string& s_) const {
+  gtsam::print(K(), s_ + ".K");
+  gtsam::print(Vector(k()), s_ + ".k");
 }
 
 /* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {
   if (fabs(fx_ - K.fx_) > tol || fabs(fy_ - K.fy_) > tol || fabs(s_ - K.s_) > tol ||
       fabs(u0_ - K.u0_) > tol || fabs(v0_ - K.v0_) > tol || fabs(k1_ - K.k1_) > tol ||
-      fabs(k2_ - K.k2_) > tol || fabs(k3_ - K.k3_) > tol || fabs(k4_ - K.k4_) > tol)
+      fabs(k2_ - K.k2_) > tol || fabs(p1_ - K.p1_) > tol || fabs(p2_ - K.p2_) > tol)
     return false;
   return true;
 }
@@ -57,10 +57,6 @@ Point2 Cal3DS2::uncalibrate(const Point2& p,
        boost::optional<Matrix&> H1,
        boost::optional<Matrix&> H2) const {
 
-  // parameters
-  const double fx = fx_, fy = fy_, s = s_;
-  const double k1 = k1_, k2 = k2_, k3 = k3_, k4 = k4_;
-
   //  rr = x^2 + y^2;
   //  g = (1 + k(1)*rr + k(2)*rr^2);
   //  dp = [2*k(3)*x*y + k(4)*(rr + 2*x^2); 2*k(4)*x*y + k(3)*(rr + 2*y^2)];
@@ -68,40 +64,44 @@ Point2 Cal3DS2::uncalibrate(const Point2& p,
   const double x = p.x(), y = p.y(), xy = x * y, xx = x * x, yy = y * y;
   const double rr = xx + yy;
   const double r4 = rr * rr;
-  const double g = 1. + k1 * rr + k2 * r4;
-  const double dx = 2. * k3 * xy + k4 * (rr + 2. * xx);
-  const double dy = 2. * k4 * xy + k3 * (rr + 2. * yy);
+  const double g = 1. + k1_ * rr + k2_ * r4; // scaling factor
 
+  // tangential component
+  const double dx = 2. * p1_ * xy + p2_ * (rr + 2. * xx);
+  const double dy = 2. * p2_ * xy + p1_ * (rr + 2. * yy);
+
+  // Radial and tangential distortion applied
   const double pnx = g*x + dx;
   const double pny = g*y + dy;
 
   // Inlined derivative for calibration
   if (H1) {
-    *H1 = (Matrix(2, 9) <<  pnx, 0.0, pny, 1.0, 0.0, fx * x * rr + s * y * rr,
-        fx * x * r4 + s * y * r4, fx * 2. * xy + s * (rr + 2. * yy),
-        fx * (rr + 2. * xx) + s * (2. * xy), 0.0, pny, 0.0, 0.0, 1.0,
-        fy * y * rr, fy * y * r4, fy * (rr + 2. * yy), fy * (2. * xy));
+    *H1 = (Matrix(2, 9) <<  pnx, 0.0, pny, 1.0, 0.0, fx_ * x * rr + s_ * y * rr,
+        fx_ * x * r4 + s_ * y * r4, fx_ * 2. * xy + s_ * (rr + 2. * yy),
+        fx_ * (rr + 2. * xx) + s_ * (2. * xy), 0.0, pny, 0.0, 0.0, 1.0,
+        fy_ * y * rr, fy_ * y * r4, fy_ * (rr + 2. * yy), fy_ * (2. * xy));
   }
   // Inlined derivative for points
   if (H2) {
     const double dr_dx = 2. * x;
     const double dr_dy = 2. * y;
-    const double dg_dx = k1 * dr_dx + k2 * 2. * rr * dr_dx;
-    const double dg_dy = k1 * dr_dy + k2 * 2. * rr * dr_dy;
+    const double dg_dx = k1_ * dr_dx + k2_ * 2. * rr * dr_dx;
+    const double dg_dy = k1_ * dr_dy + k2_ * 2. * rr * dr_dy;
 
-    const double dDx_dx = 2. * k3 * y + k4 * (dr_dx + 4. * x);
-    const double dDx_dy = 2. * k3 * x + k4 * dr_dy;
-    const double dDy_dx = 2. * k4 * y + k3 * dr_dx;
-    const double dDy_dy = 2. * k4 * x + k3 * (dr_dy + 4. * y);
+    const double dDx_dx = 2. * p1_ * y + p2_ * (dr_dx + 4. * x);
+    const double dDx_dy = 2. * p1_ * x + p2_ * dr_dy;
+    const double dDy_dx = 2. * p2_ * y + p1_ * dr_dx;
+    const double dDy_dy = 2. * p2_ * x + p1_ * (dr_dy + 4. * y);
 
-    Matrix DK = (Matrix(2, 2) << fx, s_, 0.0, fy);
+    Matrix DK = (Matrix(2, 2) << fx_, s_, 0.0, fy_);
     Matrix DR = (Matrix(2, 2) << g + x * dg_dx + dDx_dx, x * dg_dy + dDx_dy,
         y * dg_dx + dDy_dx, g + y * dg_dy + dDy_dy);
 
     *H2 = DK * DR;
   }
 
-  return Point2(fx * pnx + s * pny + u0_, fy * pny + v0_);
+  // Regular uncalibrate after distortion
+  return Point2(fx_ * pnx + s_ * pny + u0_, fy_ * pny + v0_);
 }
 
 /* ************************************************************************* */
@@ -123,8 +123,8 @@ Point2 Cal3DS2::calibrate(const Point2& pi, const double tol) const {
     const double x = pn.x(), y = pn.y(), xy = x*y, xx = x*x, yy = y*y;
     const double rr = xx + yy;
     const double g = (1+k1_*rr+k2_*rr*rr);
-    const double dx = 2*k3_*xy + k4_*(rr+2*xx);
-    const double dy = 2*k4_*xy + k3_*(rr+2*yy);
+    const double dx = 2*p1_*xy + p2_*(rr+2*xx);
+    const double dy = 2*p2_*xy + p1_*(rr+2*yy);
     pn = (invKPi - Point2(dx,dy))/g;
   }
 
@@ -136,24 +136,21 @@ Point2 Cal3DS2::calibrate(const Point2& pi, const double tol) const {
 
 /* ************************************************************************* */
 Matrix Cal3DS2::D2d_intrinsic(const Point2& p) const {
-  //const double fx = fx_, fy = fy_, s = s_;
-  const double k1 = k1_, k2 = k2_, k3 = k3_, k4 = k4_;
-  //const double x = p.x(), y = p.y(), xx = x*x, yy = y*y, xy = x*y;
   const double x = p.x(), y = p.y(), xx = x*x, yy = y*y;
   const double rr = xx + yy;
   const double dr_dx = 2*x;
   const double dr_dy = 2*y;
   const double r4 = rr*rr;
-  const double g = 1 + k1*rr + k2*r4;
-  const double dg_dx = k1*dr_dx + k2*2*rr*dr_dx;
-  const double dg_dy = k1*dr_dy + k2*2*rr*dr_dy;
+  const double g = 1 + k1_*rr + k2_*r4;
+  const double dg_dx = k1_*dr_dx + k2_*2*rr*dr_dx;
+  const double dg_dy = k1_*dr_dy + k2_*2*rr*dr_dy;
 
-  // Dx = 2*k3*xy + k4*(rr+2*xx);
-  // Dy = 2*k4*xy + k3*(rr+2*yy);
-  const double dDx_dx = 2*k3*y + k4*(dr_dx + 4*x);
-  const double dDx_dy = 2*k3*x + k4*dr_dy;
-  const double dDy_dx = 2*k4*y + k3*dr_dx;
-  const double dDy_dy = 2*k4*x + k3*(dr_dy + 4*y);
+  // Dx = 2*p1_*xy + p2_*(rr+2*xx);
+  // Dy = 2*p2_*xy + p1_*(rr+2*yy);
+  const double dDx_dx = 2*p1_*y + p2_*(dr_dx + 4*x);
+  const double dDx_dy = 2*p1_*x + p2_*dr_dy;
+  const double dDy_dx = 2*p2_*y + p1_*dr_dx;
+  const double dDy_dy = 2*p2_*x + p1_*(dr_dy + 4*y);
 
   Matrix DK = (Matrix(2, 2) << fx_, s_, 0.0, fy_);
   Matrix DR = (Matrix(2, 2) << g + x*dg_dx + dDx_dx,     x*dg_dy + dDx_dy,
@@ -167,16 +164,15 @@ Matrix Cal3DS2::D2d_calibration(const Point2& p) const {
   const double x = p.x(), y = p.y(), xx = x*x, yy = y*y, xy = x*y;
   const double rr = xx + yy;
   const double r4 = rr*rr;
-  const double fx = fx_, fy = fy_, s = s_;
   const double g = (1+k1_*rr+k2_*r4);
-  const double dx = 2*k3_*xy + k4_*(rr+2*xx);
-  const double dy = 2*k4_*xy + k3_*(rr+2*yy);
+  const double dx = 2*p1_*xy + p2_*(rr+2*xx);
+  const double dy = 2*p2_*xy + p1_*(rr+2*yy);
   const double pnx = g*x + dx;
   const double pny = g*y + dy;
 
   return (Matrix(2, 9) <<
-  pnx, 0.0, pny, 1.0, 0.0, fx*x*rr + s*y*rr, fx*x*r4 + s*y*r4, fx*2*xy + s*(rr+2*yy), fx*(rr+2*xx) + s*(2*xy),
-  0.0, pny, 0.0, 0.0, 1.0, fy*y*rr      , fy*y*r4         , fy*(rr+2*yy)         , fy*(2*xy)  );
+  pnx, 0.0, pny, 1.0, 0.0, fx_*x*rr + s_*y*rr, fx_*x*r4 + s_*y*r4, fx_*2*xy + s_*(rr+2*yy), fx_*(rr+2*xx) + s_*(2*xy),
+  0.0, pny, 0.0, 0.0, 1.0, fy_*y*rr      , fy_*y*r4         , fy_*(rr+2*yy)         , fy_*(2*xy)  );
 }
 
 /* ************************************************************************* */
