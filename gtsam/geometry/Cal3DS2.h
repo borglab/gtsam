@@ -95,16 +95,16 @@ public:
   /// image center in y
   inline double py() const { return v0_;}
 
-  /// image center in x
+  /// First distortion coefficient
   inline double k1() const { return k1_;}
 
-  /// image center in y
+  /// Second distortion coefficient
   inline double k2() const { return k2_;}
 
-  /// image center in x
+  /// First tangential distortion coefficient
   inline double p1() const { return p1_;}
 
-  /// image center in y
+  /// Second tangential distortion coefficient
   inline double p2() const { return p2_;}
 
   /**
