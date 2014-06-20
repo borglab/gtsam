@@ -104,7 +104,7 @@ namespace gtsam {
   class GTSAM_EXPORT KeyInfoEntry : public boost::tuple<size_t, size_t, size_t> {
   public:
     typedef boost::tuple<Key,size_t,Key> Base;
-	KeyInfoEntry(){}
+    KeyInfoEntry(){}
     KeyInfoEntry(size_t idx, size_t d, Key start) : Base(idx, d, start) {}
     const size_t index() const { return this->get<0>(); }
     const size_t dim() const { return this->get<1>(); }

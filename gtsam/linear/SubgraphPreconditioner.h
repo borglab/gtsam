@@ -157,8 +157,6 @@ namespace gtsam {
     Weights weights(const GaussianFactorGraph &gfg) const;
     SubgraphBuilderParameters parameters_;
 
-  private:
-    SubgraphBuilder() {};
   };
 
   /*******************************************************************************************/
