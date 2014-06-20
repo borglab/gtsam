@@ -136,8 +136,9 @@ TEST( ImuFactor, PreintegratedMeasurements )
   Rot3 expectedDeltaR1 = Rot3::RzRyRx(0.5 * M_PI/100.0, 0.0, 0.0);
   double expectedDeltaT1(0.5);
 
+  bool use2ndOrderIntegration = true;
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+  ImuFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), use2ndOrderIntegration);
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij), 1e-6));
@@ -177,7 +178,8 @@ TEST( ImuFactor, Error )
   Vector3 measuredOmega; measuredOmega << M_PI/100, 0, 0;
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector();
   double deltaT = 1.0;
-  ImuFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+  bool use2ndOrderIntegration = true;
+  ImuFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), use2ndOrderIntegration);
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -217,7 +219,7 @@ TEST( ImuFactor, Error )
   Matrix H1atop6 =  H1a.topRows(6);
   EXPECT(assert_equal(H1etop6, H1atop6));
   // rotations
-  EXPECT(assert_equal(RH1e, H1a.bottomRows(3)));  // evaluate only the rotation residue
+  EXPECT(assert_equal(RH1e, H1a.bottomRows(3), 1e-5));  // 1e-5 needs to be added only when using quaternions for rotations
 
   EXPECT(assert_equal(H2e, H2a));
 
@@ -226,7 +228,7 @@ TEST( ImuFactor, Error )
   Matrix H3atop6 =  H3a.topRows(6);
   EXPECT(assert_equal(H3etop6, H3atop6));
   // rotations
-  EXPECT(assert_equal(RH3e, H3a.bottomRows(3)));  // evaluate only the rotation residue
+  EXPECT(assert_equal(RH3e, H3a.bottomRows(3), 1e-5));  // 1e-5 needs to be added only when using quaternions for rotations
 
   EXPECT(assert_equal(H4e, H4a));
 //  EXPECT(assert_equal(H5e, H5a));
@@ -324,7 +326,7 @@ TEST( ImuFactor, PartialDerivativeExpmap )
    Matrix3  actualdelRdelBiasOmega = - Jr * deltaT; // the delta bias appears with the minus sign
 
   // Compare Jacobians
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, actualdelRdelBiasOmega));
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, actualdelRdelBiasOmega, 1e-3));  // 1e-3 needs to be added only when using quaternions for rotations
 
 }
 
@@ -436,7 +438,7 @@ TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
   EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc));
   EXPECT(assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega));
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3,3)));
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega));
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega, 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
 }
 
 //#include <gtsam/linear/GaussianFactorGraph.h>
