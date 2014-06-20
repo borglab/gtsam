@@ -22,7 +22,7 @@ namespace gtsam {
 class GaussianFactorGraph;
 class KeyInfo;
 class Preconditioner;
-class PreconditionerParameters;
+struct PreconditionerParameters;
 
 /*****************************************************************************/
 struct GTSAM_EXPORT PCGSolverParameters: public ConjugateGradientParameters {
