@@ -99,7 +99,7 @@ void KeyInfo::initialize(const GaussianFactorGraph &fg){
   for ( size_t i = 0 ; i < n ; ++i ) {
     const size_t key = ordering_[i];
     const size_t dim = colspec.find(key)->second;
-    insert(make_pair<Key, KeyInfoEntry>(key, KeyInfoEntry(i, dim, start)));
+    insert(make_pair(key, KeyInfoEntry(i, dim, start)));
     start += dim ;
   }
   numCols_ = start;

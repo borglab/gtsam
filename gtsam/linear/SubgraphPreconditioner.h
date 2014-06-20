@@ -302,7 +302,7 @@ namespace gtsam {
      std::vector<std::pair<size_t,T> > tmp;
      tmp.reserve(n);
      for ( size_t i = 0 ; i < n ; i++ )
-       tmp.push_back(std::make_pair<size_t,T>(i, src[i]));
+       tmp.push_back(std::make_pair(i, src[i]));
 
      /* sort */
      std::stable_sort(tmp.begin(), tmp.end()) ;

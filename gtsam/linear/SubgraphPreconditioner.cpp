@@ -617,7 +617,7 @@ Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<
   size_t d = 0;
   BOOST_FOREACH ( const Key &key, keys ) {
     const KeyInfoEntry &entry = keyInfo.find(key)->second;
-    cache.push_back(make_pair<size_t,size_t>(entry.colstart(), entry.dim()));
+    cache.push_back(make_pair(entry.colstart(), entry.dim()));
     d += entry.dim();
   }
 
