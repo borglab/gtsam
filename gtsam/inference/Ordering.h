@@ -17,9 +17,11 @@
 
 #pragma once
 
+#include <algorithm>
 #include <vector>
 #include <boost/assign/list_inserter.hpp>
 
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/FactorGraph.h>
@@ -134,6 +136,15 @@ namespace gtsam {
     /// supplied indices, see the CCOLAMD documentation for more information.
     static GTSAM_EXPORT Ordering COLAMDConstrained(const VariableIndex& variableIndex,
       const FastMap<Key, int>& groups);
+
+    /// Return a natural Ordering. Typically used by iterative solvers
+    template <class FACTOR>
+    static Ordering Natural(const FactorGraph<FACTOR> &fg) {
+      FastSet<Key> src = fg.keys();
+      std::vector<Key> keys(src.begin(), src.end());
+      std::stable_sort(keys.begin(), keys.end());
+      return Ordering(keys);
+    }
 
     /// @}
 

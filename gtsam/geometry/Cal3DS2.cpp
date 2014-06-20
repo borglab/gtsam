@@ -25,7 +25,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Cal3DS2::Cal3DS2(const Vector &v):
-    fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), k3_(v[7]), k4_(v[8]){}
+    fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), p1_(v[7]), p2_(v[8]){}
 
 /* ************************************************************************* */
 Matrix Cal3DS2::K() const {
@@ -34,32 +34,64 @@ Matrix Cal3DS2::K() const {
 
 /* ************************************************************************* */
 Vector Cal3DS2::vector() const {
-  return (Vector(9) << fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_);
+  return (Vector(9) << fx_, fy_, s_, u0_, v0_, k1_, k2_, p1_, p2_);
 }
 
 /* ************************************************************************* */
-void Cal3DS2::print(const std::string& s) const {
-  gtsam::print(K(), s + ".K");
-  gtsam::print(Vector(k()), s + ".k");
+void Cal3DS2::print(const std::string& s_) const {
+  gtsam::print(K(), s_ + ".K");
+  gtsam::print(Vector(k()), s_ + ".k");
 }
 
 /* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {
   if (fabs(fx_ - K.fx_) > tol || fabs(fy_ - K.fy_) > tol || fabs(s_ - K.s_) > tol ||
       fabs(u0_ - K.u0_) > tol || fabs(v0_ - K.v0_) > tol || fabs(k1_ - K.k1_) > tol ||
-      fabs(k2_ - K.k2_) > tol || fabs(k3_ - K.k3_) > tol || fabs(k4_ - K.k4_) > tol)
+      fabs(k2_ - K.k2_) > tol || fabs(p1_ - K.p1_) > tol || fabs(p2_ - K.p2_) > tol)
     return false;
   return true;
 }
 
 /* ************************************************************************* */
-Point2 Cal3DS2::uncalibrate(const Point2& p,
-       boost::optional<Matrix&> H1,
-       boost::optional<Matrix&> H2) const {
+static Eigen::Matrix<double, 2, 9> D2dcalibration(double x, double y, double xx,
+    double yy, double xy, double rr, double r4, double pnx, double pny,
+    const Eigen::Matrix<double, 2, 2>& DK) {
+  Eigen::Matrix<double, 2, 5> DR1;
+  DR1 << pnx, 0.0, pny, 1.0, 0.0, 0.0, pny, 0.0, 0.0, 1.0;
+  Eigen::Matrix<double, 2, 4> DR2;
+  DR2 << x * rr, x * r4, 2 * xy, rr + 2 * xx, //
+         y * rr, y * r4, rr + 2 * yy, 2 * xy;
+  Eigen::Matrix<double, 2, 9> D;
+  D << DR1, DK * DR2;
+  return D;
+}
 
-  // parameters
-  const double fx = fx_, fy = fy_, s = s_;
-  const double k1 = k1_, k2 = k2_, k3 = k3_, k4 = k4_;
+/* ************************************************************************* */
+static Eigen::Matrix<double, 2, 2> D2dintrinsic(double x, double y, double rr,
+    double g, double k1, double k2, double p1, double p2,
+    const Eigen::Matrix<double, 2, 2>& DK) {
+  const double drdx = 2. * x;
+  const double drdy = 2. * y;
+  const double dgdx = k1 * drdx + k2 * 2. * rr * drdx;
+  const double dgdy = k1 * drdy + k2 * 2. * rr * drdy;
+
+  // Dx = 2*p1*xy + p2*(rr+2*xx);
+  // Dy = 2*p2*xy + p1*(rr+2*yy);
+  const double dDxdx = 2. * p1 * y + p2 * (drdx + 4. * x);
+  const double dDxdy = 2. * p1 * x + p2 * drdy;
+  const double dDydx = 2. * p2 * y + p1 * drdx;
+  const double dDydy = 2. * p2 * x + p1 * (drdy + 4. * y);
+
+  Eigen::Matrix<double, 2, 2> DR;
+  DR << g + x * dgdx + dDxdx, x * dgdy + dDxdy, //
+        y * dgdx + dDydx, g + y * dgdy + dDydy;
+
+  return DK * DR;
+}
+
+/* ************************************************************************* */
+Point2 Cal3DS2::uncalibrate(const Point2& p, boost::optional<Matrix&> H1,
+    boost::optional<Matrix&> H2) const {
 
   //  rr = x^2 + y^2;
   //  g = (1 + k(1)*rr + k(2)*rr^2);
@@ -68,40 +100,29 @@ Point2 Cal3DS2::uncalibrate(const Point2& p,
   const double x = p.x(), y = p.y(), xy = x * y, xx = x * x, yy = y * y;
   const double rr = xx + yy;
   const double r4 = rr * rr;
-  const double g = 1. + k1 * rr + k2 * r4;
-  const double dx = 2. * k3 * xy + k4 * (rr + 2. * xx);
-  const double dy = 2. * k4 * xy + k3 * (rr + 2. * yy);
+  const double g = 1. + k1_ * rr + k2_ * r4; // scaling factor
 
-  const double pnx = g*x + dx;
-  const double pny = g*y + dy;
+  // tangential component
+  const double dx = 2. * p1_ * xy + p2_ * (rr + 2. * xx);
+  const double dy = 2. * p2_ * xy + p1_ * (rr + 2. * yy);
 
-  // Inlined derivative for calibration
-  if (H1) {
-    *H1 = (Matrix(2, 9) <<  pnx, 0.0, pny, 1.0, 0.0, fx * x * rr + s * y * rr,
-        fx * x * r4 + s * y * r4, fx * 2. * xy + s * (rr + 2. * yy),
-        fx * (rr + 2. * xx) + s * (2. * xy), 0.0, pny, 0.0, 0.0, 1.0,
-        fy * y * rr, fy * y * r4, fy * (rr + 2. * yy), fy * (2. * xy));
-  }
-  // Inlined derivative for points
-  if (H2) {
-    const double dr_dx = 2. * x;
-    const double dr_dy = 2. * y;
-    const double dg_dx = k1 * dr_dx + k2 * 2. * rr * dr_dx;
-    const double dg_dy = k1 * dr_dy + k2 * 2. * rr * dr_dy;
+  // Radial and tangential distortion applied
+  const double pnx = g * x + dx;
+  const double pny = g * y + dy;
 
-    const double dDx_dx = 2. * k3 * y + k4 * (dr_dx + 4. * x);
-    const double dDx_dy = 2. * k3 * x + k4 * dr_dy;
-    const double dDy_dx = 2. * k4 * y + k3 * dr_dx;
-    const double dDy_dy = 2. * k4 * x + k3 * (dr_dy + 4. * y);
+  Eigen::Matrix<double, 2, 2> DK;
+  if (H1 || H2) DK << fx_, s_, 0.0, fy_;
 
-    Matrix DK = (Matrix(2, 2) << fx, s_, 0.0, fy);
-    Matrix DR = (Matrix(2, 2) << g + x * dg_dx + dDx_dx, x * dg_dy + dDx_dy,
-        y * dg_dx + dDy_dx, g + y * dg_dy + dDy_dy);
+  // Derivative for calibration
+  if (H1)
+    *H1 = D2dcalibration(x, y, xx, yy, xy, rr, r4, pnx, pny, DK);
 
-    *H2 = DK * DR;
-  }
+  // Derivative for points
+  if (H2)
+    *H2 = D2dintrinsic(x, y, rr, g, k1_, k2_, p1_, p2_, DK);
 
-  return Point2(fx * pnx + s * pny + u0_, fy * pny + v0_);
+  // Regular uncalibrate after distortion
+  return Point2(fx_ * pnx + s_ * pny + u0_, fy_ * pny + v0_);
 }
 
 /* ************************************************************************* */
@@ -118,14 +139,14 @@ Point2 Cal3DS2::calibrate(const Point2& pi, const double tol) const {
   // iterate until the uncalibrate is close to the actual pixel coordinate
   const int maxIterations = 10;
   int iteration;
-  for ( iteration = 0; iteration < maxIterations; ++iteration ) {
-    if ( uncalibrate(pn).distance(pi) <= tol ) break;
-    const double x = pn.x(), y = pn.y(), xy = x*y, xx = x*x, yy = y*y;
+  for (iteration = 0; iteration < maxIterations; ++iteration) {
+    if (uncalibrate(pn).distance(pi) <= tol) break;
+    const double x = pn.x(), y = pn.y(), xy = x * y, xx = x * x, yy = y * y;
     const double rr = xx + yy;
-    const double g = (1+k1_*rr+k2_*rr*rr);
-    const double dx = 2*k3_*xy + k4_*(rr+2*xx);
-    const double dy = 2*k4_*xy + k3_*(rr+2*yy);
-    pn = (invKPi - Point2(dx,dy))/g;
+    const double g = (1 + k1_ * rr + k2_ * rr * rr);
+    const double dx = 2 * p1_ * xy + p2_ * (rr + 2 * xx);
+    const double dy = 2 * p2_ * xy + p1_ * (rr + 2 * yy);
+    pn = (invKPi - Point2(dx, dy)) / g;
   }
 
   if ( iteration >= maxIterations )
@@ -136,47 +157,28 @@ Point2 Cal3DS2::calibrate(const Point2& pi, const double tol) const {
 
 /* ************************************************************************* */
 Matrix Cal3DS2::D2d_intrinsic(const Point2& p) const {
-  //const double fx = fx_, fy = fy_, s = s_;
-  const double k1 = k1_, k2 = k2_, k3 = k3_, k4 = k4_;
-  //const double x = p.x(), y = p.y(), xx = x*x, yy = y*y, xy = x*y;
-  const double x = p.x(), y = p.y(), xx = x*x, yy = y*y;
+  const double x = p.x(), y = p.y(), xx = x * x, yy = y * y;
   const double rr = xx + yy;
-  const double dr_dx = 2*x;
-  const double dr_dy = 2*y;
-  const double r4 = rr*rr;
-  const double g = 1 + k1*rr + k2*r4;
-  const double dg_dx = k1*dr_dx + k2*2*rr*dr_dx;
-  const double dg_dy = k1*dr_dy + k2*2*rr*dr_dy;
-
-  // Dx = 2*k3*xy + k4*(rr+2*xx);
-  // Dy = 2*k4*xy + k3*(rr+2*yy);
-  const double dDx_dx = 2*k3*y + k4*(dr_dx + 4*x);
-  const double dDx_dy = 2*k3*x + k4*dr_dy;
-  const double dDy_dx = 2*k4*y + k3*dr_dx;
-  const double dDy_dy = 2*k4*x + k3*(dr_dy + 4*y);
-
-  Matrix DK = (Matrix(2, 2) << fx_, s_, 0.0, fy_);
-  Matrix DR = (Matrix(2, 2) << g + x*dg_dx + dDx_dx,     x*dg_dy + dDx_dy,
-             y*dg_dx + dDy_dx, g + y*dg_dy + dDy_dy);
-
-  return DK * DR;
+  const double r4 = rr * rr;
+  const double g = (1 + k1_ * rr + k2_ * r4);
+  Eigen::Matrix<double, 2, 2> DK;
+  DK << fx_, s_, 0.0, fy_;
+  return D2dintrinsic(x, y, rr, g, k1_, k2_, p1_, p2_, DK);
 }
 
 /* ************************************************************************* */
 Matrix Cal3DS2::D2d_calibration(const Point2& p) const {
-  const double x = p.x(), y = p.y(), xx = x*x, yy = y*y, xy = x*y;
+  const double x = p.x(), y = p.y(), xx = x * x, yy = y * y, xy = x * y;
   const double rr = xx + yy;
-  const double r4 = rr*rr;
-  const double fx = fx_, fy = fy_, s = s_;
-  const double g = (1+k1_*rr+k2_*r4);
-  const double dx = 2*k3_*xy + k4_*(rr+2*xx);
-  const double dy = 2*k4_*xy + k3_*(rr+2*yy);
-  const double pnx = g*x + dx;
-  const double pny = g*y + dy;
-
-  return (Matrix(2, 9) <<
-  pnx, 0.0, pny, 1.0, 0.0, fx*x*rr + s*y*rr, fx*x*r4 + s*y*r4, fx*2*xy + s*(rr+2*yy), fx*(rr+2*xx) + s*(2*xy),
-  0.0, pny, 0.0, 0.0, 1.0, fy*y*rr      , fy*y*r4         , fy*(rr+2*yy)         , fy*(2*xy)  );
+  const double r4 = rr * rr;
+  const double g = (1 + k1_ * rr + k2_ * r4);
+  const double dx = 2 * p1_ * xy + p2_ * (rr + 2 * xx);
+  const double dy = 2 * p2_ * xy + p1_ * (rr + 2 * yy);
+  const double pnx = g * x + dx;
+  const double pny = g * y + dy;
+  Eigen::Matrix<double, 2, 2> DK;
+  DK << fx_, s_, 0.0, fy_;
+  return D2dcalibration(x, y, xx, yy, xy, rr, r4, pnx, pny, DK);
 }
 
 /* ************************************************************************* */

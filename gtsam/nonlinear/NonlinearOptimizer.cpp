@@ -21,6 +21,7 @@
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -106,23 +107,21 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph &gfg,
     delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
-    delta = gfg.eliminateSequential(*params.ordering,
-        params.getEliminationFunction())->optimize();
-  } else if (params.isCG()) {
+    delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction())->optimize();
+  } else if (params.isIterative()) {
+
     // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)
-      throw std::runtime_error(
-          "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
-    // the type of params.iterativeParams decides the type of CG solver
-    if (boost::dynamic_pointer_cast<SubgraphSolverParameters>(
-        params.iterativeParams)) {
-      SubgraphSolver solver(gfg,
-          dynamic_cast<const SubgraphSolverParameters&>(*params.iterativeParams),
-          *params.ordering);
-      delta = solver.optimize();
-    } else {
-      throw std::runtime_error(
-          "NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
+      throw std::runtime_error("NonlinearOptimizer::solve: cg parameter has to be assigned ...");
+
+    if (boost::shared_ptr<PCGSolverParameters> pcg = boost::dynamic_pointer_cast<PCGSolverParameters>(params.iterativeParams) ) {
+      delta = PCGSolver(*pcg).optimize(gfg);
+    }
+    else if (boost::shared_ptr<SubgraphSolverParameters> spcg = boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams) ) {
+      delta = SubgraphSolver(gfg, *spcg, *params.ordering).optimize();
+    }
+    else {
+      throw std::runtime_error("NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
     }
   } else {
     throw std::runtime_error(

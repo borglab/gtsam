@@ -23,6 +23,7 @@ virtual class gtsam::NoiseModelFactor4;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
+virtual class gtsam::Cal3_S2;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -378,7 +379,6 @@ virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
   void print(string s) const;
 
 };
-
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
