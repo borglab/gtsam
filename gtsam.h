@@ -2181,6 +2181,27 @@ typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
 
 
+#include <gtsam/slam/TransformProjectionFactor.h>
+template<POSE, LANDMARK, CALIBRATION>
+virtual class TransformProjectionFactor : gtsam::NoiseModelFactor {
+  TransformProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k);
+
+  TransformProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
+
+  gtsam::Point2 measured() const;
+  CALIBRATION* calibration() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+typedef gtsam::TransformProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> TransformProjectionFactorCal3_S2;
+typedef gtsam::TransformProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> TransformProjectionFactorCal3DS2;
+
+
 #include <gtsam/slam/GeneralSFMFactor.h>
 template<CAMERA, LANDMARK>
 virtual class GeneralSFMFactor : gtsam::NoiseModelFactor {
