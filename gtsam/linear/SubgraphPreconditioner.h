@@ -158,7 +158,7 @@ namespace gtsam {
     SubgraphBuilderParameters parameters_;
 
   private:
-    SubgraphBuilder() {}
+    SubgraphBuilder() {};
   };
 
   /*******************************************************************************************/
