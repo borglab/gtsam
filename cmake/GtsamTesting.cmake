@@ -52,7 +52,7 @@ endmacro()
 #                  an empty string "" if nothing needs to be excluded.
 #   linkLibraries: The list of libraries to link to.
 macro(gtsamAddExamplesGlob globPatterns excludedFiles linkLibraries)
-	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "examples" "${GTSAM_BUILD_EXAMPLES_ALWAYS}")
+	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "examples" ${GTSAM_BUILD_EXAMPLES_ALWAYS})
 endmacro()
 
 
@@ -77,7 +77,7 @@ endmacro()
 #                  an empty string "" if nothing needs to be excluded.
 #   linkLibraries: The list of libraries to link to.
 macro(gtsamAddTimingGlob globPatterns excludedFiles linkLibraries)
-	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "timing" "FALSE")
+	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "timing" ${GTSAM_BUILD_TIMING_ALWAYS})
 endmacro()
 
 
@@ -88,7 +88,7 @@ enable_testing()
 
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
-option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" OFF) # These do not currently work
+option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
 
 # Add option for combining unit tests
 if(MSVC OR XCODE_VERSION)
@@ -107,9 +107,7 @@ endif()
 add_custom_target(examples)
 
 # Add timing target
-if(GTSAM_BUILD_TIMING)
-    add_custom_target(timing)
-endif()
+add_custom_target(timing)
 
 # Include obsolete macros - will be removed in the near future
 include(GtsamTestingObsolete)
@@ -258,10 +256,12 @@ macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName b
 
 		# Add TOPSRCDIR
 		set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
-	
-		if(NOT buildWithAll)
+
+        # Exclude from all or not - note weird variable assignment because we're in a macro	
+	    set(buildWithAll_on ${buildWithAll})
+		if(NOT buildWithAll_on)
 			# Exclude from 'make all' and 'make install'
-			set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
+			set_target_properties("${script_name}" PROPERTIES EXCLUDE_FROM_ALL ON)
 		endif()
 
 		# Configure target folder (for MSVC and Xcode)
