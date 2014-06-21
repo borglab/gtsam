@@ -138,6 +138,9 @@ namespace gtsam {
     typedef FastSet<Key> Keys;
     Keys keys() const;
 
+    /* return a map of (Key, dimension) */
+    std::map<Key, size_t> getKeyDimMap() const;
+
     std::vector<size_t> getkeydim() const;
 
     /** unnormalized error */

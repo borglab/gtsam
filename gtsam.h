@@ -1481,9 +1481,7 @@ class GaussianISAM {
 
 #include <gtsam/linear/IterativeSolver.h>
 virtual class IterativeOptimizationParameters {
-  string getKernel() const ;
   string getVerbosity() const;
-  void setKernel(string s) ;
   void setVerbosity(string s) ;
   void print() const;
 };
@@ -1516,7 +1514,7 @@ virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
   void print() const;
 };
 
-class SubgraphSolver  {
+virtual class SubgraphSolver  {
   SubgraphSolver(const gtsam::GaussianFactorGraph &A, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
   SubgraphSolver(const gtsam::GaussianFactorGraph &Ab1, const gtsam::GaussianFactorGraph &Ab2, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
   gtsam::VectorValues optimize() const;
@@ -1855,12 +1853,12 @@ virtual class NonlinearOptimizerParams {
   
   void setLinearSolverType(string solver);
   void setOrdering(const gtsam::Ordering& ordering);
-  void setIterativeParams(const gtsam::SubgraphSolverParameters &params);
+  void setIterativeParams(gtsam::IterativeOptimizationParameters* params);
 
   bool isMultifrontal() const;
   bool isSequential() const;
   bool isCholmod() const;
-  bool isCG() const;
+  bool isIterative() const;
 };
 
 bool checkConvergence(double relativeErrorTreshold,
@@ -2199,6 +2197,25 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/slam/SmartProjectionPoseFactor.h>
+template<POSE, LANDMARK, CALIBRATION>
+virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
+
+  SmartProjectionPoseFactor(double rankTol, double linThreshold,
+      bool manageDegeneracy, bool enableEPI, const POSE& body_P_sensor);
+
+  SmartProjectionPoseFactor(double rankTol);
+  SmartProjectionPoseFactor();
+
+  void add(const gtsam::Point2& measured_i, size_t poseKey_i, const gtsam::noiseModel::Base* noise_i,
+      const CALIBRATION* K_i);
+
+  // enabling serialization functionality
+  //void serialize() const;
+};
+
+typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> SmartProjectionPose3Factor;
+
 
 #include <gtsam/slam/StereoFactor.h>
 template<POSE, LANDMARK>
@@ -2301,7 +2318,8 @@ virtual class ConstantBias : gtsam::Value {
 #include <gtsam/navigation/ImuFactor.h>
 class ImuFactorPreintegratedMeasurements {
   // Standard Constructor
-  ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance, Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance);
+  ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance,Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance, bool use2ndOrderIntegration);
+  ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance,Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance);
   ImuFactorPreintegratedMeasurements(const gtsam::ImuFactorPreintegratedMeasurements& rhs);
 
   // Testable
@@ -2339,6 +2357,15 @@ class CombinedImuFactorPreintegratedMeasurements {
       Matrix biasAccCovariance,
       Matrix biasOmegaCovariance,
       Matrix biasAccOmegaInit);
+  CombinedImuFactorPreintegratedMeasurements(
+      const gtsam::imuBias::ConstantBias& bias,
+      Matrix measuredAccCovariance,
+      Matrix measuredOmegaCovariance,
+      Matrix integrationErrorCovariance,
+      Matrix biasAccCovariance,
+      Matrix biasOmegaCovariance,
+      Matrix biasAccOmegaInit,
+      bool use2ndOrderIntegration);
   CombinedImuFactorPreintegratedMeasurements(const gtsam::CombinedImuFactorPreintegratedMeasurements& rhs);
 
   // Testable
@@ -2352,8 +2379,7 @@ class CombinedImuFactorPreintegratedMeasurements {
 
 virtual class CombinedImuFactor : gtsam::NonlinearFactor {
   CombinedImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias_i, size_t bias_j,
-      const gtsam::CombinedImuFactorPreintegratedMeasurements& CombinedPreintegratedMeasurements, Vector gravity, Vector omegaCoriolis,
-      const gtsam::noiseModel::Base* model);
+      const gtsam::CombinedImuFactorPreintegratedMeasurements& CombinedPreintegratedMeasurements, Vector gravity, Vector omegaCoriolis);
 
   // Standard Interface
   gtsam::CombinedImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
