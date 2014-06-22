@@ -27,11 +27,11 @@ int main()
 {
   int n = 100000;
 
-  const Pose3 pose1((Matrix)(Mat(3,3) <<
+  const Pose3 pose1(Matrix3((Matrix(3,3) <<
       1., 0., 0.,
       0.,-1., 0.,
       0., 0.,-1.
-  ),
+  )),
   Point3(0,0,0.5));
 
   const CalibratedCamera camera(pose1);

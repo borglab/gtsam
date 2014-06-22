@@ -119,3 +119,5 @@ endif(GTSAM_INSTALL_MATLAB_TOOLBOX)
 # Build examples
 add_subdirectory(examples)
 
+# Build timing
+add_subdirectory(timing)

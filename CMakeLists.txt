@@ -46,7 +46,6 @@ endif()
 # Set up options
 
 # Configurable Options
-option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" OFF) # These do not currently work
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
@@ -304,6 +303,9 @@ add_subdirectory(tests)
 # Build examples
 add_subdirectory(examples)
 
+# Build timing
+add_subdirectory(timing)
+
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
@@ -361,7 +363,7 @@ message(STATUS "================  Configuration Options  ======================"
 message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
-print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
+print_config_flag(${GTSAM_BUILD_TIMING_ALWAYS}         "Build timing scripts with 'make all'")
 if (DOXYGEN_FOUND)
     print_config_flag(${GTSAM_BUILD_DOCS}              "Build Docs                     ")
 endif()
