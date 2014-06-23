@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
     boost::optional<Point3> point;
 
     // The graph stores Factor shared_ptrs, so we cast back to a SmartFactor first
-    SmartFactor::shared_ptr smart = dynamic_pointer_cast<SmartFactor>(graph[j]);
+    SmartFactor::shared_ptr smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
       point = smart->point(result);
       if (point) // ignore if boost::optional return NULL
