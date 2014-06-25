@@ -53,6 +53,10 @@ int main()
   // After Cal3DS2 fix: 0.12231 musecs/call
   // Cal3Bundler:       0.12000 musecs/call
   // Cal3Bundler fix:   0.14637 musecs/call
+  // June 24 2014, Macbook Pro 2.3GHz Core i7
+  // GTSAM 3.1:         0.04295 musecs/call
+  // After project fix: 0.04193 musecs/call
+
   {
     long timeLog = clock();
     for(int i = 0; i < n; i++)
@@ -70,6 +74,9 @@ int main()
   // After Cal3DS2 fix: 3.2857 musecs/call
   // Cal3Bundler:       2.6556 musecs/call
   // Cal3Bundler fix:   2.1613 musecs/call
+  // June 24 2014, Macbook Pro 2.3GHz Core i7
+  // GTSAM 3.1:         0.2322 musecs/call
+  // After project fix: 0.2094 musecs/call
   {
     Matrix Dpose, Dpoint;
     long timeLog = clock();
@@ -88,6 +95,9 @@ int main()
   // After Cal3DS2 fix: 3.4483 musecs/call
   // Cal3Bundler:       2.5112 musecs/call
   // Cal3Bundler fix:   2.0946 musecs/call
+  // June 24 2014, Macbook Pro 2.3GHz Core i7
+  // GTSAM 3.1:         0.2294 musecs/call
+  // After project fix: 0.2093 musecs/call
   {
     Matrix Dpose, Dpoint, Dcal;
     long timeLog = clock();
