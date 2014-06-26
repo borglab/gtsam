@@ -28,6 +28,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
     bool flat) :
     KF_(9) {
 
+
   // Initial state
   mech0_ = Mechanization_bRn2::initialize(stationaryU, stationaryF, g_e, flat);
 
@@ -43,14 +44,27 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   // Quantities needed for integration
 
   // dynamics, Chris' email September 23, 2011 3:38:05 PM EDT
-  double tau_g = 730; // correlation time for gyroscope
-  double tau_a = 730; // correlation time for accelerometer
+//  double tau_g = 730; // correlation time for gyroscope
+//  double tau_a = 730; // correlation time for accelerometer
+//  Matrix F_g = (Matrix(3,3)<<
+//                        1./560.,     0,       0,
+//                        0   ,   1./501.,    0,
+//                        0,      0,      1./586.);        //730; // correlation time for gyroscope
+//  Matrix F_a = (Matrix(3,3)<<
+//                          1./490.,     0,      0,
+//                          0,        1./500., 0,
+//                          0,        0,      1./772.);         //730; // correlation time for accelerometer
+  Matrix F_g = diag(Vector3(1./560,1./501,1./586));
+  Matrix F_a = diag(Vector3(1./490,1./500,1./772));
+  F_g_ = -I3 * F_g;
+  F_a_ = -I3 * F_a;
+  cout.precision(5);
+  cout<<"F_g_ \n"<<F_g_<<endl;
+  cout<<"F_a_\n"<<F_a_<<endl;
 
-  F_g_ = -I3 / tau_g;
-  F_a_ = -I3 / tau_a;
   Vector var_omega_w = 0 * ones(3); // TODO
-  Vector var_omega_g = (0.0034 * 0.0034) * ones(3);
-  Vector var_omega_a = (0.034 * 0.034) * ones(3);
+  Vector var_omega_g = Vector3(8.7275e-4, 0.004, 0.004);        //(0.0034 * 0.0034) * ones(3);
+  Vector var_omega_a = Vector3(0.0261, 0.0064, 0.034);          //(0.034 * 0.034) * ones(3);
   Vector sigmas_v_g_sq = emul(sigmas_v_g, sigmas_v_g);
   Vector vars = concatVectors(4, &var_omega_w, &var_omega_g, &sigmas_v_g_sq,
       &var_omega_a);
@@ -76,6 +90,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
 
   // Calculate Jacobian of roll/pitch/yaw wrpt (g1,g2,g3), see doc/ypr.nb
   Vector b_g = mech0_.b_g(g_e);
+  std::cout<<"b_g : \n"<<b_g.transpose()<<std::endl;
   double g1 = b_g(0);
   double g2 = b_g(1);
   double g3 = b_g(2);
@@ -105,9 +120,11 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   P_plus_k2.block<3,3>(6, 0) = trans(P12);
   P_plus_k2.block<3,3>(6, 3) = Z3;
   P_plus_k2.block<3,3>(6, 6) = Pa;
+  std::cout<<"P_PLUS_K2 : \n"<<P_plus_k2<<std::endl;
 
   Vector dx = zero(9);
   KalmanFilter::State state = KF_.init(dx, P_plus_k2);
+  state->print("KF initialize state: ");
   return std::make_pair(mech0_, state);
 }
 
@@ -143,7 +160,17 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::integrate(
   // This implements update in section 10.6
   Matrix B = zeros(9, 9);
   Vector u2 = zero(9);
+  std::cout<<"dt : \n"<<dt<<std::endl;
+  std::cout<<"F_k \n:"<<F_k<<std::endl;
+  std::cout<<"G_k : \n"<<G_k<<std::endl;
+  std::cout<<"Psi_k : \n"<<Psi_k<<std::endl;
+  std::cout<<"Q_k : \n"<<Q_k<<std::endl;
+
+  cout<<" before predict Q \n"<<endl;
   KalmanFilter::State newState = KF_.predictQ(state, Psi_k,B,u2,dt*Q_k);
+  cout<<"after Predict Q \n"<<endl;
+  cout<<"newState mean: \n"<<newState->mean();
+  cout<<"newState covariance: \n"<<newState->covariance();
   return make_pair(newMech, newState);
 }
 
@@ -164,7 +191,7 @@ bool AHRS::isAidingAvailable(const Mechanization_bRn2& mech,
 std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     const Mechanization_bRn2& mech, KalmanFilter::State state,
     const Vector& f, bool Farrell) const {
-
+cout<<"in aid"<<endl;
   Matrix bRn = mech.bRn().matrix();
 
   // get gravity in body from accelerometer
@@ -192,11 +219,19 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     H = collect(3, &b_g, &Z3, &I3);
     // And the measurement noise, TODO: should be created once where sigmas_v_a is given
     R = diag(emul(sigmas_v_a_, sigmas_v_a_));
-  }
 
+  }
+  cout<<"R: \n"<<R<<endl;
+  cout<<"H: \n"<<H<<endl;
+  cout<<"z: \n"<<z<<endl;
+  cout<<"state mean: \n"<<state->mean();
+  cout<<"state covariance\n" <<state->covariance();
+  cout<<"before updated state\n"<<endl;
 // update the Kalman filter
   KalmanFilter::State updatedState = KF_.updateQ(state, H, z, R);
-
+  cout<<"after updateQ \n"<<endl;
+  cout<<"after updated state :\n"<<updatedState->mean()<<endl;
+  cout<<"before correct\n"<<endl;
 // update full state (rotation and accelerometer bias)
   Mechanization_bRn2 newMech = mech.correct(updatedState->mean());
 

@@ -27,7 +27,7 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
   // estimate gyro bias by averaging gyroscope readings (10.62)
   Vector x_g = U.rowwise().mean();
   Vector meanF = F.rowwise().mean();
-
+  std::cout<<"F"<<F<<std::endl;
   // estimate gravity
   Vector b_g;
   if(g_e == 0) {
@@ -48,7 +48,8 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
 
   // estimate accelerometer bias
   Vector x_a = meanF + b_g;
-
+  std::cout<<"meanF: " <<meanF<<std::endl;
+  std::cout<<"b_g: " <<b_g<<std::endl;
   // initialize roll, pitch (eqns. 10.14, 10.15)
   double g1=b_g(0);
   double g2=b_g(1);
@@ -61,6 +62,7 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
   double yaw = 0;
   // This returns body-to-nav nRb
   Rot3 bRn = Rot3::ypr(yaw, pitch, roll).inverse();
+  std::cout<<"x_a :" <<x_a<<std::endl;
 
   return Mechanization_bRn2(bRn, x_g, x_a);
 }
@@ -72,8 +74,8 @@ Mechanization_bRn2 Mechanization_bRn2::correct(const Vector& dx) const {
   Rot3 delta_nRn = Rot3::rodriguez(rho);
   Rot3 bRn = bRn_ * delta_nRn;
 
-  Vector x_g = x_g_ + sub(dx, 3, 6);
-  Vector x_a = x_a_ + sub(dx, 6, 9);
+  Vector x_g = x_g_ - sub(dx, 3, 6);
+  Vector x_a = x_a_ - sub(dx, 6, 9);
 
   return Mechanization_bRn2(bRn, x_g, x_a);
 }
