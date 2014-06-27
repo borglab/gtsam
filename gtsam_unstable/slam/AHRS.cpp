@@ -63,8 +63,8 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   cout<<"F_a_\n"<<F_a_<<endl;
 
   Vector var_omega_w = 0 * ones(3); // TODO
-  Vector var_omega_g = Vector3(8.7275e-4, 0.004, 0.004);        //(0.0034 * 0.0034) * ones(3);
-  Vector var_omega_a = Vector3(0.0261, 0.0064, 0.034);          //(0.034 * 0.034) * ones(3);
+  Vector var_omega_g = Vector3(8.7275e-4, 0.004, 0.00);        //(0.0034 * 0.0034) * ones(3);
+  Vector var_omega_a = Vector3(0.0261, 0.0064, 0.0);          //(0.034 * 0.034) * ones(3);
   Vector sigmas_v_g_sq = emul(sigmas_v_g, sigmas_v_g);
   Vector vars = concatVectors(4, &var_omega_w, &var_omega_g, &sigmas_v_g_sq,
       &var_omega_a);
@@ -120,11 +120,11 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   P_plus_k2.block<3,3>(6, 0) = trans(P12);
   P_plus_k2.block<3,3>(6, 3) = Z3;
   P_plus_k2.block<3,3>(6, 6) = Pa;
-  std::cout<<"P_PLUS_K2 : \n"<<P_plus_k2<<std::endl;
+//  std::cout<<"P_PLUS_K2 : \n"<<P_plus_k2<<std::endl;
 
   Vector dx = zero(9);
   KalmanFilter::State state = KF_.init(dx, P_plus_k2);
-  state->print("KF initialize state: ");
+//  state->print("KF initialize state: ");
   return std::make_pair(mech0_, state);
 }
 
@@ -160,17 +160,17 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::integrate(
   // This implements update in section 10.6
   Matrix B = zeros(9, 9);
   Vector u2 = zero(9);
-  std::cout<<"dt : \n"<<dt<<std::endl;
-  std::cout<<"F_k \n:"<<F_k<<std::endl;
-  std::cout<<"G_k : \n"<<G_k<<std::endl;
-  std::cout<<"Psi_k : \n"<<Psi_k<<std::endl;
-  std::cout<<"Q_k : \n"<<Q_k<<std::endl;
+//  std::cout<<"dt : \n"<<dt<<std::endl;
+//  std::cout<<"F_k \n:"<<F_k<<std::endl;
+//  std::cout<<"G_k : \n"<<G_k<<std::endl;
+//  std::cout<<"Psi_k : \n"<<Psi_k<<std::endl;
+//  std::cout<<"Q_k : \n"<<Q_k<<std::endl;
 
-  cout<<" before predict Q \n"<<endl;
+//  cout<<" before predict Q \n"<<endl;
   KalmanFilter::State newState = KF_.predictQ(state, Psi_k,B,u2,dt*Q_k);
-  cout<<"after Predict Q \n"<<endl;
-  cout<<"newState mean: \n"<<newState->mean();
-  cout<<"newState covariance: \n"<<newState->covariance();
+//  cout<<"after Predict Q \n"<<endl;
+//  cout<<"newState mean: \n"<<newState->mean();
+//  cout<<"newState covariance: \n"<<newState->covariance();
   return make_pair(newMech, newState);
 }
 
@@ -221,17 +221,17 @@ cout<<"in aid"<<endl;
     R = diag(emul(sigmas_v_a_, sigmas_v_a_));
 
   }
-  cout<<"R: \n"<<R<<endl;
-  cout<<"H: \n"<<H<<endl;
-  cout<<"z: \n"<<z<<endl;
-  cout<<"state mean: \n"<<state->mean();
-  cout<<"state covariance\n" <<state->covariance();
-  cout<<"before updated state\n"<<endl;
+//  cout<<"R: \n"<<R<<endl;
+//  cout<<"H: \n"<<H<<endl;
+//  cout<<"z: \n"<<z<<endl;
+//  cout<<"state mean: \n"<<state->mean();
+//  cout<<"state covariance\n" <<state->covariance();
+//  cout<<"before updated state\n"<<endl;
 // update the Kalman filter
   KalmanFilter::State updatedState = KF_.updateQ(state, H, z, R);
-  cout<<"after updateQ \n"<<endl;
-  cout<<"after updated state :\n"<<updatedState->mean()<<endl;
-  cout<<"before correct\n"<<endl;
+//  cout<<"after updateQ \n"<<endl;
+//  cout<<"after updated state :\n"<<updatedState->mean()<<endl;
+//  cout<<"before correct\n"<<endl;
 // update full state (rotation and accelerometer bias)
   Mechanization_bRn2 newMech = mech.correct(updatedState->mean());
 

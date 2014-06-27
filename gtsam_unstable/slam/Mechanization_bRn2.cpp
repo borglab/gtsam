@@ -75,7 +75,7 @@ Mechanization_bRn2 Mechanization_bRn2::correct(const Vector& dx) const {
   Rot3 bRn = bRn_ * delta_nRn;
 
   Vector x_g = x_g_ - sub(dx, 3, 6);
-  Vector x_a = x_a_ - sub(dx, 6, 9);
+  Vector x_a = x_a_ + sub(dx, 6, 9);
 
   return Mechanization_bRn2(bRn, x_g, x_a);
 }

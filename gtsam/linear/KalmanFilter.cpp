@@ -111,7 +111,7 @@ KalmanFilter::State KalmanFilter::predictQ(const State& p, const Matrix& F,
   assert(Q.cols() == n);
 #endif
 
-  cout<<"in predict Q "<<endl;
+//  cout<<"in predict Q "<<endl;
   // The factor related to the motion model is defined as
   // f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
   // See documentation in HessianFactor, we have A1 = -F,  A2 = I_, b = B*u:
@@ -124,9 +124,9 @@ KalmanFilter::State KalmanFilter::predictQ(const State& p, const Matrix& F,
   KalmanFilter KF1(9);
   Vector x = F* p->mean() + B*u;
   Matrix P = F*p->covariance()*F.transpose()+Q;
-  std::cout<<"x in predict Q: \n"<<x<<std::endl;
-  std::cout<<"P in predict Q: \n"<<P<<std::endl;
-  cout<<"in predict Q before return"<<endl;
+//  std::cout<<"x in predict Q: \n"<<x<<std::endl;
+//  std::cout<<"P in predict Q: \n"<<P<<std::endl;
+//  cout<<"in predict Q before return"<<endl;
 //  return fuse(p,
 //      boost::make_shared<HessianFactor>(k, k + 1, G11, G12, g1, G22, g2, f));
   return KF1.init(x,P);
@@ -161,30 +161,30 @@ KalmanFilter::State KalmanFilter::updateQ(const State& p, const Matrix& H,
 //  Vector g = Ht * M * z;
 //  double f = dot(z, M * z);
 //  return fuse(p, boost::make_shared<HessianFactor>(k, G, g, f));
-  cout<<"in update Q"<<endl;
+//  cout<<"in update Q"<<endl;
   Vector y = H*p->mean();
   Vector v = z-y;
   Matrix Ht = H.transpose();
   Matrix HPHtplusR = H*p->covariance()*Ht + Q;
-  cout<<"found mean and covariance"<<endl;
+//  cout<<"found mean and covariance"<<endl;
   Matrix k = p->covariance()*Ht*(HPHtplusR.inverse());
   Matrix x = p->mean()+k*v;
   Matrix I_KH = eye(9) - k*H;
   Matrix P = I_KH*p->covariance()*I_KH.transpose() + k*Q*k.transpose();
-  cout<<"H : \n"<<H<<endl;
-  cout<<"p->mean : \n"<<p->mean().transpose()<<endl;
-  cout<< "y: \n "<<y.transpose()<<endl;
-  cout<< "z: \n "<<z.transpose()<<endl;
-  cout<< "v: \n "<<v.transpose()<<endl;
-  cout<< "HPHtplusR : \n" << HPHtplusR<<endl;
-  cout<<"k : \n"<<k<<endl;
-  cout<<"x : \n "<<x<<endl;
-  cout<<"I_KH: \n"<<I_KH<<endl;
-  cout << "P: \n" <<P<<endl;
+//  cout<<"H : \n"<<H<<endl;
+//  cout<<"p->mean : \n"<<p->mean().transpose()<<endl;
+//  cout<< "y: \n "<<y.transpose()<<endl;
+//  cout<< "z: \n "<<z.transpose()<<endl;
+//  cout<< "v: \n "<<v.transpose()<<endl;
+//  cout<< "HPHtplusR : \n" << HPHtplusR<<endl;
+//  cout<<"k : \n"<<k<<endl;
+//  cout<<"x : \n "<<x<<endl;
+//  cout<<"I_KH: \n"<<I_KH<<endl;
+//  cout << "P: \n" <<P<<endl;
 
-  cout<<"before creating KF"<<endl;
+//  cout<<"before creating KF"<<endl;
   KalmanFilter KF2(9);
-  std::cout<<"after KF"<<std::endl;
+//  std::cout<<"after KF"<<std::endl;
   //KalmanFilter::State newState = KF1.init(x, P);
   return KF2.init(x, P);
 }
