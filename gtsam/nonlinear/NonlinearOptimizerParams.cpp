@@ -14,7 +14,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslator(
-    const std::string &src) const {
+    const std::string &src) {
   std::string s = src;
   boost::algorithm::to_upper(s);
   if (s == "SILENT")
@@ -36,7 +36,7 @@ NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslato
 
 /* ************************************************************************* */
 std::string NonlinearOptimizerParams::verbosityTranslator(
-    Verbosity value) const {
+    Verbosity value) {
   std::string s;
   switch (value) {
   case NonlinearOptimizerParams::SILENT:

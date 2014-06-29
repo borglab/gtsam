@@ -84,9 +84,8 @@ public:
     verbosity = verbosityTranslator(src);
   }
 
-private:
-  Verbosity verbosityTranslator(const std::string &s) const;
-  std::string verbosityTranslator(Verbosity value) const;
+  static Verbosity verbosityTranslator(const std::string &s) ;
+  static std::string verbosityTranslator(Verbosity value) ;
 
   // Successive Linearization Parameters
 
