@@ -18,7 +18,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/slam/TransformProjectionFactor.h>
+#include <gtsam_unstable/slam/TransformProjectionFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2.h>

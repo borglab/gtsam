@@ -24,6 +24,7 @@ virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
 virtual class gtsam::Cal3_S2;
+virtual class gtsam::Cal3DS2;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -739,5 +740,46 @@ virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
       const gtsam::Pose2& measured, const gtsam::noiseModel::Base* noiseModel);
   void print(string s) const;
 };
+
+#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam_unstable/slam/TransformProjectionFactor.h>
+template<POSE, LANDMARK, CALIBRATION>
+virtual class TransformProjectionFactor : gtsam::NoiseModelFactor {
+  TransformProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k);
+
+  TransformProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
+
+  gtsam::Point2 measured() const;
+  CALIBRATION* calibration() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+typedef gtsam::TransformProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> TransformProjectionFactorCal3_S2;
+typedef gtsam::TransformProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> TransformProjectionFactorCal3DS2;
+
+
+#include <gtsam_unstable/slam/TransformCalProjectionFactor.h>
+template<POSE, LANDMARK, CALIBRATION>
+virtual class TransformCalProjectionFactor : gtsam::NoiseModelFactor {
+  TransformCalProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey, size_t transformKey, size_t pointKey, size_t calibKey);
+
+  TransformCalProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t transformKey, size_t pointKey, size_t calibKey, bool throwCheirality, bool verboseCheirality);
+
+  gtsam::Point2 measured() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+typedef gtsam::TransformCalProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> TransformCalProjectionFactorCal3_S2;
+typedef gtsam::TransformCalProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> TransformCalProjectionFactorCal3DS2;
 
 } //\namespace gtsam
