@@ -36,7 +36,7 @@ public:
   }
 
   /// Constructor
-  JacobianFactorSVD(const std::vector<KeyMatrix2D>& Fblocks, const Matrix& Enull, const Vector& b,
+  JacobianFactorSVD(const std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D>>& Fblocks, const Matrix& Enull, const Vector& b,
       const SharedDiagonal& model =  SharedDiagonal()) : JacobianSchurFactor<D>() {
     size_t numKeys = Enull.rows() / 2;
     size_t j = 0, m2 = 2*numKeys-3;

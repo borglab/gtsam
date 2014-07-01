@@ -79,6 +79,7 @@ void stereo_projectToMultipleCameras(
 
 /* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor) {
+  fprintf(stderr,"Test 1 Complete");
   SmartFactor::shared_ptr factor1(new SmartFactor());
 }
 

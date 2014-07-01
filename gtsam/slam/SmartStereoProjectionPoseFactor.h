@@ -47,6 +47,8 @@ protected:
 
 public:
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// shorthand for base class type
   typedef SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> Base;
 
