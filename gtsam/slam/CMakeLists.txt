@@ -8,8 +8,3 @@ install(FILES ${slam_headers} DESTINATION include/gtsam/slam)
 
 # Build tests
 add_subdirectory(tests)
-
-# Build timing scripts
-if (GTSAM_BUILD_TIMING)
-    gtsam_add_subdir_timing(slam "gtsam" "gtsam" "${slam_excluded_files}") 
-endif(GTSAM_BUILD_TIMING)

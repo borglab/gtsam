@@ -20,9 +20,9 @@
 #include <gtsam_unstable/slam/InertialNavFactor_GlobalVelocity.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Key.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/LieVector.h>
+#include <gtsam/inference/Key.h>
 
 using namespace std;
 using namespace gtsam;
@@ -32,7 +32,7 @@ gtsam::Rot3 world_R_ECEF(
     0.85173,     -0.52399,            0,
     0.41733,      0.67835,     -0.60471);
 
-gtsam::Vector ECEF_omega_earth((Vec(3) << 0.0, 0.0, 7.292115e-5));
+gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
 gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
 /* ************************************************************************* */
@@ -54,16 +54,16 @@ int main() {
   gtsam::Key BiasKey1(31);
 
   double measurement_dt(0.1);
-  Vector world_g((Vec(3) << 0.0, 0.0, 9.81));
-  Vector world_rho((Vec(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vec(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
+  Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
+  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
   gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
   // Second test: zero angular motion, some acceleration - generated in matlab
-  Vector measurement_acc((Vec(3) << 6.501390843381716,  -6.763926150509185,  -2.300389940090343));
-  Vector measurement_gyro((Vec(3) << 0.1, 0.2, 0.3));
+  Vector measurement_acc((Vector(3) << 6.501390843381716,  -6.763926150509185,  -2.300389940090343));
+  Vector measurement_gyro((Vector(3) << 0.1, 0.2, 0.3));
 
   InertialNavFactor_GlobalVelocity<Pose3, LieVector, imuBias::ConstantBias> f(PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc, measurement_gyro, measurement_dt, world_g, world_rho, world_omega_earth, model);
 
@@ -72,7 +72,7 @@ int main() {
       -0.652537293,  0.709880342,  0.265075427);
   Point3 t1(2.0,1.0,3.0);
   Pose3 Pose1(R1, t1);
-  LieVector Vel1(3,0.5,-0.5,0.4);
+  LieVector Vel1 = Vector((Vector(3) << 0.5,-0.5,0.4));
   Rot3 R2(0.473618898,   0.119523052,  0.872582019,
        0.609241153,   0.67099888, -0.422594037,
       -0.636011287,  0.731761397,  0.244979388);
@@ -99,7 +99,7 @@ int main() {
   GaussianFactorGraph graph;
   gttic_(LinearizeTiming);
   for(size_t i = 0; i < 100000; ++i) {
-    GaussianFactor::shared_ptr g = f.linearize(values, ordering);
+    GaussianFactor::shared_ptr g = f.linearize(values);
     graph.push_back(g);
   }
   gttoc_(LinearizeTiming);

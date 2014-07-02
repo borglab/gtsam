@@ -58,7 +58,7 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 /* ************************************************************************* */
-Matrix Unit3::basis() const {
+const Matrix& Unit3::basis() const {
 
   // Return cached version if exists
   if (B_.rows() == 3)

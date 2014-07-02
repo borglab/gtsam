@@ -333,6 +333,10 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
   void set_flag_bump_up_near_zero_probs(bool flag);
   bool get_flag_bump_up_near_zero_probs() const;
 
+  void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph);
+  Matrix get_model_inlier_cov();
+  Matrix get_model_outlier_cov();
+
   void serializable() const; // enabling serialization functionality
 };
 

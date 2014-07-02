@@ -14,10 +14,12 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 
 
 using namespace std;
 using namespace gtsam;
+
 
 // Disabled this test because it is currently failing - remove the lines "#if 0" and "#endif" below
 // to reenable the test.
@@ -250,6 +252,49 @@ TEST( BetweenFactorEM, CaseStudy)
     cout<<"actual_err_wh_outlier: "<<actual_err_wh_outlier[0]<<", "<<actual_err_wh_outlier[1]<<", "<<actual_err_wh_outlier[2]<<endl;
   }
 }
+
+
+///* ************************************************************************** */
+TEST (BetweenFactorEM, updateNoiseModel ) {
+	gtsam::Key key1(1);
+	gtsam::Key key2(2);
+
+	gtsam::Pose2 p1(10.0, 15.0, 0.1);
+	gtsam::Pose2 p2(15.0, 15.0, 0.3);
+	gtsam::Pose2 noise(0.5, 0.4, 0.01);
+	gtsam::Pose2 rel_pose_ideal = p1.between(p2);
+	gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
+
+	SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas( (gtsam::Vector(3) << 1.5, 2.5, 4.05)));
+	SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas( (gtsam::Vector(3) << 50.0, 50.0, 10.0)));
+
+	gtsam::Values values;
+	values.insert(key1, p1);
+	values.insert(key2, p2);
+
+	double prior_outlier = 0.0;
+	double prior_inlier = 1.0;
+
+	BetweenFactorEM<gtsam::Pose2> f(key1, key2, rel_pose_msr, model_inlier, model_outlier,
+			prior_inlier, prior_outlier);
+
+	SharedGaussian model = SharedGaussian(noiseModel::Isotropic::Sigma(3, 1e2));
+
+	NonlinearFactorGraph graph;
+	graph.push_back(gtsam::PriorFactor<Pose2>(key1, p1, model));
+	graph.push_back(gtsam::PriorFactor<Pose2>(key2, p2, model));
+
+	f.updateNoiseModels(values, graph);
+
+	SharedGaussian model_inlier_new = f.get_model_inlier();
+	SharedGaussian model_outlier_new = f.get_model_outlier();
+
+	model_inlier->print("model_inlier:");
+	model_outlier->print("model_outlier:");
+	model_inlier_new->print("model_inlier_new:");
+	model_outlier_new->print("model_outlier_new:");
+}
+
 
 #endif
 

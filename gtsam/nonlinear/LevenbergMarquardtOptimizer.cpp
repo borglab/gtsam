@@ -37,7 +37,7 @@ using boost::adaptors::map_values;
 
 /* ************************************************************************* */
 LevenbergMarquardtParams::VerbosityLM LevenbergMarquardtParams::verbosityLMTranslator(
-    const std::string &src) const {
+    const std::string &src) {
   std::string s = src;
   boost::algorithm::to_upper(s);
   if (s == "SILENT")
@@ -59,7 +59,7 @@ LevenbergMarquardtParams::VerbosityLM LevenbergMarquardtParams::verbosityLMTrans
 
 /* ************************************************************************* */
 std::string LevenbergMarquardtParams::verbosityLMTranslator(
-    VerbosityLM value) const {
+    VerbosityLM value) {
   std::string s;
   switch (value) {
   case LevenbergMarquardtParams::SILENT:
