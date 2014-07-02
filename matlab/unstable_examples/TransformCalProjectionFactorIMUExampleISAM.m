@@ -130,7 +130,12 @@ for i=1:20
         fg.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
         
         result = initial;
-    else
+    end
+    if i == 2
+        fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
+        fg.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
+    end
+    if i > 1
         if i < 11   
             step = move_forward;
         else
@@ -138,7 +143,7 @@ for i=1:20
         end
         
         initial.insert(i,result.at(i-1).compose(step));
-%         fg.add(BetweenFactorPose3(i-1,i, step, covariance));
+        fg.add(BetweenFactorPose3(i-1,i, step, covariance));
         
         deltaT = 1;
         logmap = Pose3.Logmap(step);
@@ -199,8 +204,16 @@ for i=1:20
         
         currentVelocityGlobal = isam.calculateEstimate(currentVelKey);
         currentBias = isam.calculateEstimate(currentBiasKey);
+        
+        %% Compute some marginals
+        marginal = isam.marginalCovariance(calibrationKey);
+        marginal_fx(i)=sqrt(marginal(1,1));
+        marginal_fy(i)=sqrt(marginal(2,2));
     end
    
+  
+    
+    
     hold off;
 
     clf;
@@ -241,13 +254,22 @@ for i=1:20
     fys(i) = fy;
     subplot(3,1,3);
     hold on;
-    plot(1:20,repmat(K.fx,1,20),'b--');
-    plot(1:i,fxs,'b');
+    p(1) = plot(1:20,repmat(K.fx,1,20),'r--');
+    p(2) = plot(1:i,fxs,'r','LineWidth',2);
+        
+    p(3) = plot(1:20,repmat(K.fy,1,20),'g--');
+    p(4) = plot(1:i,fys,'g','LineWidth',2);
     
-    plot(1:20,repmat(K.fy,1,20),'g--');
-    plot(1:i,fys,'g');
+    if i > 1
+        plot(2:i,fxs(2:i) + marginal_fx(2:i),'r-.');
+        plot(2:i,fxs(2:i) - marginal_fx(2:i),'r-.');
+        
+        plot(2:i,fys(2:i) + marginal_fy(2:i),'g-.');
+        plot(2:i,fys(2:i) - marginal_fy(2:i),'g-.');
+    end
     
-    legend('f_x', 'f_x''', 'f_y', 'f_y''', 'Location', 'SouthWest'); 
+    
+    legend(p, 'f_x', 'f_x''', 'f_y', 'f_y''', 'Location', 'SouthWest'); 
     
     
     if(write_video)
