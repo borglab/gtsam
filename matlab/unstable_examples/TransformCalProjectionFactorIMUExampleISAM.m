@@ -36,19 +36,20 @@ nrPoints = 8;
     
 IMU_metadata.AccelerometerSigma = 1e-2;    
 IMU_metadata.GyroscopeSigma = 1e-2;
-IMU_metadata.AccelerometerBiasSigma = 1e-3;
-IMU_metadata.GyroscopeBiasSigma = 1e-3;
+IMU_metadata.AccelerometerBiasSigma = 1e-6;
+IMU_metadata.GyroscopeBiasSigma = 1e-6;
 IMU_metadata.IntegrationSigma = 1e-1;
 
 curvature = 5.0;
 transformKey = 1000;
 calibrationKey = 2000;
+steps = 20;
 
 fg = NonlinearFactorGraph;
 initial = Values;
 
 %% intial landmarks and camera trajectory shifted in + y-direction
-y_shift = Point3(0,1,0);
+y_shift = Point3(0,1.0,0);
 
 % insert shifted points
 for i=1:nrPoints
@@ -98,7 +99,7 @@ g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 
 
-for i=1:20
+for i=1:steps
     
     t = i-1;
     
@@ -173,7 +174,7 @@ for i=1:20
     
         % Bias evolution as given in the IMU metadata
         fg.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
-        noiseModel.Diagonal.Sigmas(sqrt(20) * sigma_between_b)));
+        noiseModel.Diagonal.Sigmas(sqrt(steps) * sigma_between_b)));
 
     end
     
@@ -254,10 +255,10 @@ for i=1:20
     fys(i) = fy;
     subplot(3,1,3);
     hold on;
-    p(1) = plot(1:20,repmat(K.fx,1,20),'r--');
+    p(1) = plot(1:steps,repmat(K.fx,1,steps),'r--');
     p(2) = plot(1:i,fxs,'r','LineWidth',2);
         
-    p(3) = plot(1:20,repmat(K.fy,1,20),'g--');
+    p(3) = plot(1:steps,repmat(K.fy,1,steps),'g--');
     p(4) = plot(1:i,fys,'g','LineWidth',2);
     
     if i > 1
