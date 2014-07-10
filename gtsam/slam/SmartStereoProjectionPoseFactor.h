@@ -174,12 +174,14 @@ public:
       const Values& values) const {
     // depending on flag set on construction we may linearize to different linear factors
     switch(linearizeTo_){
-//    case JACOBIAN_SVD :
+    case JACOBIAN_SVD :
+      throw("JacobianSVD not working yet!");
 //      return this->createJacobianSVDFactor(cameras(values), 0.0);
-//      break;
-//    case JACOBIAN_Q :
+      break;
+    case JACOBIAN_Q :
+      throw("JacobianQ not working yet!");
 //      return this->createJacobianQFactor(cameras(values), 0.0);
-//      break;
+      break;
     default:
       return this->createHessianFactor(cameras(values));
       break;
