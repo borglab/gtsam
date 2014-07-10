@@ -114,21 +114,18 @@ public:
 
   /*
    * project 3D point and compute optional derivatives
+   * @param H1 derivative with respect to pose
+   * @param H2 derivative with respect to point
+   * @param H3 IGNORED (for calibration)
    */
   StereoPoint2 project(const Point3& point,
       boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none) const;
 
-  /*
-   * to accomodate tsam's assumption that K is estimated, too
+  /**
+   *
    */
-  StereoPoint2 project(const Point3& point,
-      boost::optional<Matrix&> H1,
-      boost::optional<Matrix&> H1_k,
-      boost::optional<Matrix&> H2) const {
-    return project(point, H1, H2);
-  }
-
   Point3 backproject(const StereoPoint2& z) const {
     Vector measured = z.vector();
     double Z = K_->baseline()*K_->fx()/(measured[0]-measured[1]);
