@@ -253,9 +253,26 @@ public:
 //        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
 //            rankTolerance_, enableEPI_);
 
+        // // // Temporary hack to use monocular triangulation
+        std::vector<Point2> mono_measurements;
+        BOOST_FOREACH(const StereoPoint2& sp, this->measured_) {
+          mono_measurements.push_back(sp.point2());
+        }
+
+        std::vector<PinholeCamera<Cal3_S2> > mono_cameras;
+        BOOST_FOREACH(const Camera& camera, cameras) {
+          const Pose3& pose = camera.pose();
+          const Cal3_S2& K = camera.calibration()->calibration();
+          mono_cameras.push_back(PinholeCamera<Cal3_S2>(pose, K));
+        }
+        point_ = triangulatePoint3<Cal3_S2>(mono_cameras, mono_measurements,
+            rankTolerance_, enableEPI_);
+
+        // // // End temporary hack
+
         // FIXME: temporary: triangulation using only first camera
-        const StereoPoint2& z0 = this->measured_.at(0);
-        point_ = cameras[0].backproject(z0);
+//        const StereoPoint2& z0 = this->measured_.at(0);
+//        point_ = cameras[0].backproject(z0);
 
         degenerate_ = false;
         cheiralityException_ = false;
@@ -344,11 +361,12 @@ public:
     }
 
     this->triangulateSafe(cameras);
+    if (isDebug) std::cout << "point_ = " << point_ << std::endl;
 
     if (numKeys < 2
         || (!this->manageDegeneracy_
             && (this->cheiralityException_ || this->degenerate_))) {
-      // std::cout << "In linearize: exception" << std::endl;
+      if (isDebug) std::cout << "In linearize: exception" << std::endl;
       BOOST_FOREACH(gtsam::Matrix& m, Gs)
         m = zeros(D, D);
       BOOST_FOREACH(Vector& v, gs)
@@ -360,9 +378,12 @@ public:
     // instead, if we want to manage the exception..
     if (this->cheiralityException_ || this->degenerate_) { // if we want to manage the exceptions with rotation-only factors
       this->degenerate_ = true;
+      if (isDebug) std::cout << "degenerate_ = true" << std::endl;
     }
 
     bool doLinearize = this->decideIfLinearize(cameras);
+
+    if (isDebug) std::cout << "doLinearize = " << doLinearize << std::endl;
 
     if (this->linearizationThreshold_ >= 0 && doLinearize) // if we apply selective relinearization and we need to relinearize
       for (size_t i = 0; i < cameras.size(); i++)
@@ -397,8 +418,9 @@ public:
     H.noalias() = F.transpose() * (F - (E * (PointCov * (E.transpose() * F))));
     gs_vector.noalias() = F.transpose()
         * (b - (E * (PointCov * (E.transpose() * b))));
-    if (isDebug)
-      std::cout << "gs_vector size " << gs_vector.size() << std::endl;
+
+    if (isDebug) std::cout << "gs_vector size " << gs_vector.size() << std::endl;
+    if (isDebug) std::cout << "H:\n" << H << std::endl;
 
     // Populate Gs and gs
     int GsCount2 = 0;
