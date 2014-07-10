@@ -37,7 +37,7 @@ public:
   }
 
   /// Constructor
-  JacobianFactorQ(const std::vector<typename Base::KeyMatrix2D, Eigen::aligned_allocator<KeyMatrix2D>>& Fblocks,
+  JacobianFactorQ(const std::vector<typename Base::KeyMatrix2D, Eigen::aligned_allocator<typename Base::KeyMatrix2D> >& Fblocks,
       const Matrix& E, const Matrix3& P, const Vector& b,
       const SharedDiagonal& model = SharedDiagonal()) :
       JacobianSchurFactor<D>() {

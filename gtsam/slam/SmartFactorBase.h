@@ -33,7 +33,8 @@
 #include <boost/optional.hpp>
 #include <boost/make_shared.hpp>
 #include <vector>
-#include <gtsam/3rdparty/Eigen/Eigen/StdVector>
+#include <gtsam/3rdparty/gtsam_eigen_includes.h>
+//#include <gtsam/3rdparty/Eigen/Eigen/StdVector>
 
 namespace gtsam {
 /// Base class with no internal point, completely functional
@@ -261,7 +262,7 @@ public:
   // ****************************************************************************************************
   /// Compute F, E only (called below in both vanilla and SVD versions)
   /// Given a Point3, assumes dimensionality is 3
-  double computeJacobians(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D>>& Fblocks, Matrix& E,
+  double computeJacobians(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> >& Fblocks, Matrix& E,
       Vector& b, const Cameras& cameras, const Point3& point) const {
 
     size_t numKeys = this->keys_.size();
@@ -298,7 +299,7 @@ public:
 
   // ****************************************************************************************************
   /// Version that computes PointCov, with optional lambda parameter
-  double computeJacobians(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D>>& Fblocks, Matrix& E,
+  double computeJacobians(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> >& Fblocks, Matrix& E,
       Matrix3& PointCov, Vector& b, const Cameras& cameras, const Point3& point,
       double lambda = 0.0, bool diagonalDamping = false) const {
 
@@ -329,7 +330,7 @@ public:
       const double lambda = 0.0) const {
 
     size_t numKeys = this->keys_.size();
-    std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D>> Fblocks;
+    std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> > Fblocks;
     double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point,
         lambda);
     F = zeros(Z::Dim() * numKeys, D * numKeys);
@@ -342,7 +343,7 @@ public:
 
   // ****************************************************************************************************
   /// SVD version
-  double computeJacobiansSVD(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D>>& Fblocks, Matrix& Enull,
+  double computeJacobiansSVD(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> >& Fblocks, Matrix& Enull,
       Vector& b, const Cameras& cameras, const Point3& point, double lambda =
           0.0, bool diagonalDamping = false) const {
 
@@ -642,7 +643,7 @@ public:
   boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
-    std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D>> Fblocks;
+    std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> > Fblocks;
     Matrix E;
     Matrix3 PointCov;
     Vector b;
