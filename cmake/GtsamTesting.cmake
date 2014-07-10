@@ -38,21 +38,46 @@ endmacro()
 # 
 # Add scripts that will serve as examples of how to use the library.  A list of files or
 # glob patterns is specified, and one executable will be created for each matching .cpp
-# file.  These executables will not be installed.  They are build with 'make all' if
+# file.  These executables will not be installed.  They are built with 'make all' if
 # GTSAM_BUILD_EXAMPLES_ALWAYS is enabled.  They may also be built with 'make examples'.
 #
 # Usage example:
 #   gtsamAddExamplesGlob("*.cpp" "BrokenExample.cpp" "gtsam;GeographicLib")
 #
 # Arguments:
-#   globPatterns:  The list of files or glob patterns from which to create unit tests, with
-#                  one test created for each cpp file.  e.g. "*.cpp", or
+#   globPatterns:  The list of files or glob patterns from which to create examples, with
+#                  one program created for each cpp file.  e.g. "*.cpp", or
 #                  "A*.cpp;B*.cpp;MyExample.cpp".
 #   excludedFiles: A list of files or globs to exclude, e.g. "C*.cpp;BrokenExample.cpp".  Pass
 #                  an empty string "" if nothing needs to be excluded.
 #   linkLibraries: The list of libraries to link to.
 macro(gtsamAddExamplesGlob globPatterns excludedFiles linkLibraries)
-	gtsamAddExamplesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}")
+	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "examples" ${GTSAM_BUILD_EXAMPLES_ALWAYS})
+endmacro()
+
+
+###############################################################################
+# Macro:
+#
+# gtsamAddTimingGlob(globPatterns excludedFiles linkLibraries)
+# 
+# Add scripts that time aspects of the library.  A list of files or
+# glob patterns is specified, and one executable will be created for each matching .cpp
+# file.  These executables will not be installed.  They are not built with 'make all',
+# but they may be built with 'make timing'.
+#
+# Usage example:
+#   gtsamAddTimingGlob("*.cpp" "DisabledTimingScript.cpp" "gtsam;GeographicLib")
+#
+# Arguments:
+#   globPatterns:  The list of files or glob patterns from which to create programs, with
+#                  one program created for each cpp file.  e.g. "*.cpp", or
+#                  "A*.cpp;B*.cpp;MyExample.cpp".
+#   excludedFiles: A list of files or globs to exclude, e.g. "C*.cpp;BrokenExample.cpp".  Pass
+#                  an empty string "" if nothing needs to be excluded.
+#   linkLibraries: The list of libraries to link to.
+macro(gtsamAddTimingGlob globPatterns excludedFiles linkLibraries)
+	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "timing" ${GTSAM_BUILD_TIMING_ALWAYS})
 endmacro()
 
 
@@ -63,6 +88,7 @@ enable_testing()
 
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
+option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
 
 # Add option for combining unit tests
 if(MSVC OR XCODE_VERSION)
@@ -79,6 +105,9 @@ endif()
 
 # Add examples target
 add_custom_target(examples)
+
+# Add timing target
+add_custom_target(timing)
 
 # Include obsolete macros - will be removed in the near future
 include(GtsamTestingObsolete)
@@ -180,7 +209,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 endmacro()
 
 
-macro(gtsamAddExamplesGlob_impl globPatterns excludedFiles linkLibraries)
+macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName buildWithAll)
     # Get all script files
     file(GLOB script_files ${globPatterns})
 
@@ -220,20 +249,22 @@ macro(gtsamAddExamplesGlob_impl globPatterns excludedFiles linkLibraries)
 		target_link_libraries(${script_name} ${linkLibraries})
 	
 		# Add target dependencies
-		add_dependencies(examples ${script_name})
+		add_dependencies(${groupName} ${script_name})
 		if(NOT MSVC AND NOT XCODE_VERSION)
 		  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name})
 		endif()
 
 		# Add TOPSRCDIR
 		set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
-	
-		if(NOT GTSAM_BUILD_EXAMPLES_ALWAYS)
+
+        # Exclude from all or not - note weird variable assignment because we're in a macro	
+	    set(buildWithAll_on ${buildWithAll})
+		if(NOT buildWithAll_on)
 			# Exclude from 'make all' and 'make install'
-			set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
+			set_target_properties("${script_name}" PROPERTIES EXCLUDE_FROM_ALL ON)
 		endif()
 
 		# Configure target folder (for MSVC and Xcode)
-		set_property(TARGET ${script_name} PROPERTY FOLDER "Examples")
+		set_property(TARGET ${script_name} PROPERTY FOLDER "${groupName}")
 	endforeach()
 endmacro()

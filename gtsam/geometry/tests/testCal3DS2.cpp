@@ -60,6 +60,8 @@ TEST( Cal3DS2, Duncalibrate1)
   K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical,computed,1e-5));
+  Matrix separate = K.D2d_calibration(p);
+  CHECK(assert_equal(numerical,separate,1e-5));
 }
 
 /* ************************************************************************* */
@@ -68,6 +70,8 @@ TEST( Cal3DS2, Duncalibrate2)
   Matrix computed; K.uncalibrate(p, boost::none, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical,computed,1e-5));
+  Matrix separate = K.D2d_intrinsic(p);
+  CHECK(assert_equal(numerical,separate,1e-5));
 }
 
 /* ************************************************************************* */

@@ -16,30 +16,29 @@
  * @date    Aug 20, 2010
  */
 
+#include <gtsam/base/timing.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/linear/VectorValues.h>
 
 #include <boost/random.hpp>
-#include <boost/timer.hpp>
 #include <vector>
 
 using namespace gtsam;
 using namespace std;
 
-typedef EliminationTree<GaussianFactor> GaussianEliminationTree;
-
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost::mt19937(), boost::uniform_real<>(0.0, 1.0));
 
 int main(int argc, char *argv[]) {
 
-  Index key = 0;
+  Key key = 0;
 
   size_t vardim = 2;
   size_t blockdim = 1;
-  size_t nBlocks = 2000;
+  size_t nBlocks = 4000;
 
-  size_t nTrials = 10;
+  size_t nTrials = 20;
 
   double blockbuild, blocksolve, combbuild, combsolve;
 
@@ -54,8 +53,7 @@ int main(int argc, char *argv[]) {
     // Build GFG's
     cout << "Building blockwise Gaussian factor graphs... ";
     cout.flush();
-    boost::timer timer;
-    timer.restart();
+    gttic_(blockbuild);
     vector<GaussianFactorGraph> blockGfgs;
     blockGfgs.reserve(nTrials);
     for(size_t trial=0; trial<nTrials; ++trial) {
@@ -70,22 +68,26 @@ int main(int argc, char *argv[]) {
         Vector b(blockdim);
         for(size_t j=0; j<blockdim; ++j)
           b(j) = rg();
-        blockGfgs[trial].push_back(JacobianFactor::shared_ptr(new JacobianFactor(key, A, b, noise)));
+        blockGfgs[trial].push_back(boost::make_shared<JacobianFactor>(key, A, b, noise));
       }
     }
-    blockbuild = timer.elapsed();
+    gttoc_(blockbuild);
+    tictoc_getNode(blockbuildNode, blockbuild);
+    blockbuild = blockbuildNode->secs();
     cout << blockbuild << " s" << endl;
 
     // Solve GFG's
     cout << "Solving blockwise Gaussian factor graphs... ";
     cout.flush();
-    timer.restart();
+    gttic_(blocksolve);
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
-      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(blockGfgs[trial])->eliminate(&EliminateQR));
-      VectorValues soln(optimize(*gbn));
+      GaussianBayesNet::shared_ptr gbn = blockGfgs[trial].eliminateSequential();
+      VectorValues soln = gbn->optimize();
     }
-    blocksolve = timer.elapsed();
+    gttoc_(blocksolve);
+    tictoc_getNode(blocksolveNode, blocksolve);
+    blocksolve = blocksolveNode->secs();
     cout << blocksolve << " s" << endl;
   }
 
@@ -97,8 +99,7 @@ int main(int argc, char *argv[]) {
     // Build GFG's
     cout << "Building combined-factor Gaussian factor graphs... ";
     cout.flush();
-    boost::timer timer;
-    timer.restart();
+    gttic_(combbuild);
     vector<GaussianFactorGraph> combGfgs;
     for(size_t trial=0; trial<nTrials; ++trial) {
       combGfgs.push_back(GaussianFactorGraph());
@@ -115,21 +116,25 @@ int main(int argc, char *argv[]) {
         for(size_t j=0; j<blockdim; ++j)
           bcomb(blockdim*i+j) = rg();
       }
-      combGfgs[trial].push_back(JacobianFactor::shared_ptr(new JacobianFactor(key, Acomb, bcomb,
-          noiseModel::Isotropic::Sigma(blockdim*nBlocks, 1.0))));
+      combGfgs[trial].push_back(boost::make_shared<JacobianFactor>(key, Acomb, bcomb,
+          noiseModel::Isotropic::Sigma(blockdim*nBlocks, 1.0)));
     }
-    combbuild = timer.elapsed();
+    gttoc(combbuild);
+    tictoc_getNode(combbuildNode, combbuild);
+    combbuild = combbuildNode->secs();
     cout << combbuild << " s" << endl;
 
     // Solve GFG's
     cout << "Solving combined-factor Gaussian factor graphs... ";
     cout.flush();
-    timer.restart();
+    gttic_(combsolve);
     for(size_t trial=0; trial<nTrials; ++trial) {
-      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(combGfgs[trial])->eliminate(&EliminateQR));
-      VectorValues soln(optimize(*gbn));
+      GaussianBayesNet::shared_ptr gbn = combGfgs[trial].eliminateSequential();
+      VectorValues soln = gbn->optimize();
     }
-    combsolve = timer.elapsed();
+    gttoc_(combsolve);
+    tictoc_getNode(combsolveNode, combsolve);
+    combsolve = combsolveNode->secs();
     cout << combsolve << " s" << endl;
   }
 

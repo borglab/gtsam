@@ -23,6 +23,7 @@ virtual class gtsam::NoiseModelFactor4;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
+virtual class gtsam::Cal3_S2;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -331,6 +332,10 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
   void set_flag_bump_up_near_zero_probs(bool flag);
   bool get_flag_bump_up_near_zero_probs() const;
 
+  void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph);
+  Matrix get_model_inlier_cov();
+  Matrix get_model_outlier_cov();
+
   void serializable() const; // enabling serialization functionality
 };
 
@@ -378,7 +383,6 @@ virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
   void print(string s) const;
 
 };
-
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>

@@ -144,9 +144,9 @@ TEST (EssentialMatrix, FromPose3_b) {
   Matrix actualH;
   Rot3 c1Rc2 = Rot3::ypr(0.1, -0.2, 0.3);
   Point3 c1Tc2(0.4, 0.5, 0.6);
-  EssentialMatrix trueE(c1Rc2, Unit3(c1Tc2));
+  EssentialMatrix E(c1Rc2, Unit3(c1Tc2));
   Pose3 pose(c1Rc2, c1Tc2); // Pose between two cameras
-  EXPECT(assert_equal(trueE, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
+  EXPECT(assert_equal(E, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
   Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(
       boost::bind(EssentialMatrix::FromPose3, _1, boost::none), pose);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
@@ -159,6 +159,35 @@ TEST (EssentialMatrix, streaming) {
   ss << expected;
   ss >> actual;
   EXPECT(assert_equal(expected, actual));
+}
+
+//*************************************************************************
+TEST (EssentialMatrix, epipoles) {
+  // Create an E
+  Rot3 c1Rc2 = Rot3::ypr(0.1, -0.2, 0.3);
+  Point3 c1Tc2(0.4, 0.5, 0.6);
+  EssentialMatrix E(c1Rc2, Unit3(c1Tc2));
+
+  // Calculate expected values through SVD
+  Matrix U, V;
+  Vector S;
+  gtsam::svd(E.matrix(), U, S, V);
+
+  // check rank 2 constraint
+  CHECK(fabs(S(2))<1e-10);
+
+  // check epipoles not at infinity
+  CHECK(fabs(U(2,2))>1e-10 && fabs(V(2,2))>1e-10);
+
+  // Check epipoles
+
+  // Epipole in image 1 is just E.direction()
+  Unit3 e1(U(0, 2), U(1, 2), U(2, 2));
+  EXPECT(assert_equal(e1, E.epipole_a()));
+
+  // Epipole in image 2 is E.rotation().unrotate(E.direction())
+  Unit3 e2(V(0, 2), V(1, 2), V(2, 2));
+  EXPECT(assert_equal(e2, E.epipole_b()));
 }
 
 /* ************************************************************************* */

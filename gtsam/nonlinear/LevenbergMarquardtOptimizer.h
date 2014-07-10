@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/linear/VectorValues.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 class NonlinearOptimizerMoreOptimizationTest;
@@ -40,9 +41,8 @@ public:
     SILENT = 0, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
   };
 
-private:
-  VerbosityLM verbosityLMTranslator(const std::string &s) const;
-  std::string verbosityLMTranslator(VerbosityLM value) const;
+  static VerbosityLM verbosityLMTranslator(const std::string &s);
+  static std::string verbosityLMTranslator(VerbosityLM value);
 
 public:
 

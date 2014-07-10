@@ -22,7 +22,7 @@
 using namespace std;
 
 #include <boost/tuple/tuple.hpp>
-#include <boost/assign/std/list.hpp> // for operator += in Ordering
+#include <boost/assign/list_of.hpp>
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -33,7 +33,7 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
-static const Index _x1_=1, _x2_=2, _l1_=3;
+static const Key _x1_=1, _x2_=2, _l1_=3;
 
 /*
  * Alex's Machine
@@ -53,7 +53,7 @@ static const Index _x1_=1, _x2_=2, _l1_=3;
 int main()
 {
   // create a linear factor
-  Matrix Ax2 = (Mat(8, 2) <<
+  Matrix Ax2 = (Matrix(8, 2) <<
            // x2  
            -5., 0.,
            +0.,-5.,
@@ -65,7 +65,7 @@ int main()
            +0.,10.
            );
                      
-  Matrix Al1 = (Mat(8, 10) <<
+  Matrix Al1 = (Matrix(8, 10) <<
            // l1     
            5., 0.,1.,2.,3.,4.,5.,6.,7.,8.,
            0., 5.,1.,2.,3.,4.,5.,6.,7.,8.,
@@ -77,7 +77,7 @@ int main()
            0., 0.,1.,2.,3.,4.,5.,6.,7.,8.
            );
                      
-  Matrix Ax1 = (Mat(8, 2) <<
+  Matrix Ax1 = (Matrix(8, 2) <<
            // x1
            0.00,  0.,1.,2.,3.,4.,5.,6.,7.,8.,
            0.00,  0.,1.,2.,3.,4.,5.,6.,7.,8.,
@@ -108,7 +108,8 @@ int main()
   JacobianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
-    conditional = JacobianFactor(combined).eliminateFirst();
+    boost::tie(conditional, factor) =
+        JacobianFactor(combined).eliminate(Ordering(boost::assign::list_of(_x2_)));
 
   long timeLog2 = clock();
   double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;

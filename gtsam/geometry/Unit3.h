@@ -84,7 +84,7 @@ public:
    * It is a 3*2 matrix [b1 b2] composed of two orthogonal directions
    * tangent to the sphere at the current direction.
    */
-  Matrix basis() const;
+  const Matrix& basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
   Matrix skew() const;

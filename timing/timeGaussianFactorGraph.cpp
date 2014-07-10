@@ -29,10 +29,10 @@ using namespace boost::assign;
 /* ************************************************************************* */
 // Create a Kalman smoother for t=1:T and optimize
 double timeKalmanSmoother(int T) {
-  pair<GaussianFactorGraph,Ordering> smoother_ordering = createSmoother(T);
-  GaussianFactorGraph& smoother(smoother_ordering.first);
+  GaussianFactorGraph smoother = createSmoother(T);
   clock_t start = clock();
-  GaussianSequentialSolver(smoother).optimize();
+  // Keys will come out sorted since keys() returns a set
+  smoother.optimize(Ordering(smoother.keys()));
   clock_t end = clock ();
   double dif = (double)(end - start) / CLOCKS_PER_SEC;
   return dif;
@@ -40,12 +40,10 @@ double timeKalmanSmoother(int T) {
 
 /* ************************************************************************* */
 // Create a planar factor graph and optimize
-// todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmoother(int N, bool old = true) {
-  boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
-  GaussianFactorGraph& fg(pg.get<0>());
+  GaussianFactorGraph fg = planarGraph(N).get<0>();
   clock_t start = clock();
-  GaussianSequentialSolver(fg).optimize();
+  fg.optimize();
   clock_t end = clock ();
   double dif = (double)(end - start) / CLOCKS_PER_SEC;
   return dif;
@@ -53,12 +51,10 @@ double timePlanarSmoother(int N, bool old = true) {
 
 /* ************************************************************************* */
 // Create a planar factor graph and eliminate
-// todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmootherEliminate(int N, bool old = true) {
-  boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
-  GaussianFactorGraph& fg(pg.get<0>());
+  GaussianFactorGraph fg = planarGraph(N).get<0>();
   clock_t start = clock();
-  GaussianSequentialSolver(fg).eliminate();
+  fg.eliminateMultifrontal();
   clock_t end = clock ();
   double dif = (double)(end - start) / CLOCKS_PER_SEC;
   return dif;

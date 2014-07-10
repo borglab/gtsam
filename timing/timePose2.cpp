@@ -58,7 +58,7 @@ Pose2 Pose2betweenOptimized(const Pose2& r1, const Pose2& r2,
   if (H1) {
     double dt1 = -s2 * x + c2 * y;
     double dt2 = -c2 * x - s2 * y;
-    *H1 = (Mat(3,3) <<
+    *H1 = (Matrix(3,3) <<
       -c,  -s,  dt1,
       s,  -c,  dt2,
       0.0, 0.0,-1.0);

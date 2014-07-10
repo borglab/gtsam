@@ -32,7 +32,7 @@ int main(const int argc, const char *argv[]) {
   // Read graph from file
   string g2oFile;
   if (argc < 2)
-    g2oFile = "../../examples/Data/noisyToyGraph.txt";
+    g2oFile = findExampleDataFile("noisyToyGraph.txt");
   else
     g2oFile = argv[1];
 
