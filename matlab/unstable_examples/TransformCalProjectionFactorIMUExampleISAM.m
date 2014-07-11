@@ -14,7 +14,7 @@ clear all;
 clc;
 import gtsam.*
 
-write_video = true;
+write_video = false;
 
 if(write_video)
     videoObj = VideoWriter('test.avi');
@@ -43,7 +43,7 @@ IMU_metadata.IntegrationSigma = 1e-1;
 curvature = 5.0;
 transformKey = 1000;
 calibrationKey = 2000;
-steps = 20;
+steps = 30;
 
 fg = NonlinearFactorGraph;
 initial = Values;
@@ -210,6 +210,36 @@ for i=1:steps
         marginal = isam.marginalCovariance(calibrationKey);
         marginal_fx(i)=sqrt(marginal(1,1));
         marginal_fy(i)=sqrt(marginal(2,2));
+        
+        %% Compute condition number 
+        isam_fg = isam.getFactorsUnsafe();
+        isam_values = isam.getLinearizationPoint();
+        gfg = isam_fg.linearize(isam_values);
+        mat = gfg.jacobian();
+        c(i) = cond(mat, 2);
+        mat = gfg.augmentedJacobian();
+        augmented_c(i)= cond(mat, 2);
+        
+
+
+        for f=0:isam_fg.size()-1
+           nonlinear_factor = isam_fg.at(f);
+           if strcmp(class(nonlinear_factor),'gtsam.TransformCalProjectionFactorCal3_S2')
+               gaussian_factor = nonlinear_factor.linearize(isam_values);
+               A = gaussian_factor.getA();
+               b = gaussian_factor.getb()
+               % Column 17 (fy) in jacobian
+               A_col = A(:,17);  
+               if A_col(2) == 0
+                   pause
+               end
+           end
+            
+        end
+        
+        
+
+        
     end
    
   
@@ -218,7 +248,8 @@ for i=1:steps
     hold off;
 
     clf;
-    subplot(3,1,1:2);
+    figure(1);
+    subplot(4,1,1:2);
     hold on;
     
     %% plot the integrated IMU frame (not from 
@@ -253,7 +284,7 @@ for i=1:steps
     
     fxs(i) = fx;
     fys(i) = fy;
-    subplot(3,1,3);
+    subplot(4,1,3);
     hold on;
     p(1) = plot(1:steps,repmat(K.fx,1,steps),'r--');
     p(2) = plot(1:i,fxs,'r','LineWidth',2);
@@ -267,6 +298,16 @@ for i=1:steps
         
         plot(2:i,fys(2:i) + marginal_fy(2:i),'g-.');
         plot(2:i,fys(2:i) - marginal_fy(2:i),'g-.');
+        
+        subplot(4,1,4);
+        hold on;
+        title('Condition Number');
+        plot(2:i,c(2:i),'b-');
+        plot(2:i,augmented_c(2:i),'r-');
+        
+%         figure(2);
+%         plotBayesTree(isam);
+        
     end
     
     
