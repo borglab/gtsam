@@ -34,15 +34,6 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT ValueCloneAllocator {
-  public:
-    static Value* allocate_clone(const Value& a) { return a.clone_(); }
-    static void deallocate_clone(const Value* a) { a->deallocate_(); }
-  private:
-    ValueCloneAllocator() {}
-  };
-
-  /* ************************************************************************* */
   template<class ValueType>
   struct _ValuesKeyValuePair {
     const Key key; ///< The key

@@ -28,13 +28,13 @@ endif()
 # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
 # on the system path.
 list(REVERSE matlab_bin_directories) # Reverse list so the highest version (sorted alphabetically) is preferred
-find_program(mex_command ${mex_program_name}
+find_program(MEX_COMMAND ${mex_program_name}
 	PATHS ${matlab_bin_directories} ENV PATH
 	NO_DEFAULT_PATH)
-mark_as_advanced(FORCE mex_command)
+mark_as_advanced(FORCE MEX_COMMAND)
 # Now that we have mex, trace back to find the Matlab installation root
-get_filename_component(mex_command "${mex_command}" REALPATH)
-get_filename_component(mex_path "${mex_command}" PATH)
+get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
+get_filename_component(mex_path "${MEX_COMMAND}" PATH)
 get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
 set(MATLAB_ROOT "${MATLAB_ROOT}" CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
 
