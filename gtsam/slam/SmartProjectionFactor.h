@@ -444,7 +444,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, point_, lambda);
     else
-      return boost::make_shared< JacobianFactorSVD<D> >(this->keys_);
+      return boost::make_shared< JacobianFactorSVD<D, Point2> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate
