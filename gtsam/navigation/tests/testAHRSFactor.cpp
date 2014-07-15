@@ -48,27 +48,27 @@ Rot3 evaluateRotationError(const AHRSFactor& factor, const Rot3 rot_i,
 }
 
 AHRSFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
-    const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs,
+    const imuBias::ConstantBias& bias,
+    const list<Vector3>& measuredOmegas,
+    const list<double>& deltaTs,
     const Vector3& initialRotationRate = Vector3(0.0, 0.0, 0.0)) {
-  AHRSFactor::PreintegratedMeasurements result(bias, Matrix3::Identity(),
-      Matrix3::Identity(), Matrix3::Identity());
+  AHRSFactor::PreintegratedMeasurements result(bias, Matrix3::Identity());
 
-  list<Vector3>::const_iterator itAcc = measuredAccs.begin();
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
   list<double>::const_iterator itDeltaT = deltaTs.begin();
-  for (; itAcc != measuredAccs.end(); ++itAcc, ++itOmega, ++itDeltaT) {
-    result.integrateMeasurement(*itAcc, *itOmega, *itDeltaT);
+  for (; itOmega != measuredOmegas.end(); ++itOmega, ++itDeltaT) {
+    result.integrateMeasurement(*itOmega, *itDeltaT);
   }
 
   return result;
 }
 
 Rot3 evaluatePreintegratedMeasurementsRotation(
-    const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs,
+    const imuBias::ConstantBias& bias,
+    const list<Vector3>& measuredOmegas,
+    const list<double>& deltaTs,
     const Vector3& initialRotationRate = Vector3(0.0, 0.0, 0.0)) {
-  return evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
+  return evaluatePreintegratedMeasurements(bias, measuredOmegas,
       deltaTs, initialRotationRate).deltaRij;
 }
 
@@ -88,7 +88,6 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); ///< Current estimate of acceleration and angular rate biases
 
   // Measurements
-  Vector3 measuredAcc(0.1, 0.0, 0.0);
   Vector3 measuredOmega(M_PI / 100.0, 0.0, 0.0);
   double deltaT = 0.5;
 
@@ -96,11 +95,9 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
   Rot3 expectedDeltaR1 = Rot3::RzRyRx(0.5 * M_PI / 100.0, 0.0, 0.0);
   double expectedDeltaT1(0.5);
 
-  bool use2ndOrderIntegration = true;
   // Actual preintegrated values
-  AHRSFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero(),
-      Matrix3::Zero(), Matrix3::Zero(), use2ndOrderIntegration);
-  actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  AHRSFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero());
+  actual1.integrateMeasurement(measuredOmega, deltaT);
 
   EXPECT(assert_equal(expectedDeltaR1, actual1.deltaRij, 1e-6));
   DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij, 1e-6);
@@ -111,7 +108,7 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
 
   // Actual preintegrated values
   AHRSFactor::PreintegratedMeasurements actual2 = actual1;
-  actual2.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  actual2.integrateMeasurement(measuredOmega, deltaT);
 
   EXPECT(assert_equal(expectedDeltaR2, actual2.deltaRij, 1e-6));
   DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij, 1e-6);
@@ -131,15 +128,12 @@ TEST( ImuFactor, Error ) {
   omegaCoriolis << 0, 0, 0;
   Vector3 measuredOmega;
   measuredOmega << M_PI / 100, 0, 0;
-  Vector3 measuredAcc = x1.unrotate(-Point3(gravity)).vector();
   double deltaT = 1.0;
-  bool use2ndOrderIntegration = true;
-  AHRSFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero(),
-      Matrix3::Zero(), Matrix3::Zero(), use2ndOrderIntegration);
-  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  AHRSFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero());
+  pre_int_data.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, gravity, omegaCoriolis,
+  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis,
       false);
 
   Vector errorActual = factor.evaluateError(x1, x2, bias);
@@ -192,26 +186,21 @@ TEST( ImuFactor, ErrorWithBiases ) {
   Rot3 x2(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0 + M_PI / 10.0)));
 
   // Measurements
-  Vector3 gravity;
-  gravity << 0, 0, 9.81;
   Vector3 omegaCoriolis;
   omegaCoriolis << 0, 0.1, 0.1;
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
-  Vector3 measuredAcc = x1.unrotate(-Point3(gravity)).vector()
-      + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
   AHRSFactor::PreintegratedMeasurements pre_int_data(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
-      Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
-  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)), Matrix3::Zero());
+  pre_int_data.integrateMeasurement(measuredOmega, deltaT);
 
 //  ImuFactor::PreintegratedMeasurements pre_int_data(bias.head(3), bias.tail(3));
 //    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, gravity, omegaCoriolis);
+  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
 
   SETDEBUG("ImuFactor evaluateError", false);
   Vector errorActual = factor.evaluateError(x1, x2, bias);
@@ -344,16 +333,13 @@ TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
   Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.1, 0.1)), Point3(1, 0, 1));
 
   // Measurements
-  list<Vector3> measuredAccs, measuredOmegas;
+  list<Vector3> measuredOmegas;
   list<double> deltaTs;
-  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
   measuredOmegas.push_back(Vector3(M_PI / 100.0, 0.0, 0.0));
   deltaTs.push_back(0.01);
-  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
   measuredOmegas.push_back(Vector3(M_PI / 100.0, 0.0, 0.0));
   deltaTs.push_back(0.01);
   for (int i = 1; i < 100; i++) {
-    measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
     measuredOmegas.push_back(
         Vector3(M_PI / 100.0, M_PI / 300.0, 2 * M_PI / 100.0));
     deltaTs.push_back(0.01);
@@ -361,14 +347,14 @@ TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
 
   // Actual preintegrated values
   AHRSFactor::PreintegratedMeasurements preintegrated =
-      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
+      evaluatePreintegratedMeasurements(bias, measuredOmegas,
           deltaTs, Vector3(M_PI / 100.0, 0.0, 0.0));
 
   // Compute numerical derivatives
   Matrix expectedDelRdelBias =
       numericalDerivative11<Rot3, imuBias::ConstantBias>(
           boost::bind(&evaluatePreintegratedMeasurementsRotation, _1,
-              measuredAccs, measuredOmegas, deltaTs,
+              measuredOmegas, deltaTs,
               Vector3(M_PI / 100.0, 0.0, 0.0)), bias);
   Matrix expectedDelRdelBiasAcc = expectedDelRdelBias.leftCols(3);
   Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
@@ -397,8 +383,6 @@ TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
   omegaCoriolis << 0, 0.1, 0.1;
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
-  Vector3 measuredAcc = x1.unrotate(-Point3(gravity)).vector()
-      + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
   const Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.10, 0.10)),
@@ -409,12 +393,12 @@ TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
 
   AHRSFactor::PreintegratedMeasurements pre_int_data(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
-      Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+      Matrix3::Zero());
 
-  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pre_int_data.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, gravity, omegaCoriolis);
+  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
 
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Rot3>(
@@ -458,7 +442,7 @@ TEST (AHRSFactor, graphTest) {
   Vector3 omegaCoriolis;
   omegaCoriolis << 0, 0, 0;
   AHRSFactor::PreintegratedMeasurements pre_int_data(biasHat,
-      Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
+      Matrix3::Identity());
 
   // Pre-integrate measurements
   Vector3 measuredAcc(0.0, 0.0, 0.0);
@@ -473,10 +457,10 @@ TEST (AHRSFactor, graphTest) {
   NonlinearFactorGraph graph;
   Values values;
   for(size_t i = 0; i < 5; ++i) {
-    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+    pre_int_data.integrateMeasurement(measuredOmega, deltaT);
   }
 //  pre_int_data.print("Pre integrated measurementes");
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, gravity, omegaCoriolis);
+  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
   values.insert(X(1), x1);
   values.insert(X(2), x2);
   values.insert(B(1), bias);

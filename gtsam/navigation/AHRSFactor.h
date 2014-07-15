@@ -28,16 +28,11 @@ public:
     double deltaTij;
     Matrix3 delRdelBiasOmega;
     Matrix PreintMeasCov;
-    bool use2ndOrderIntegration_;
 
     PreintegratedMeasurements(const imuBias::ConstantBias& bias,
-        const Matrix3& measurementAccCovariance,
-        const Matrix3& measuredOmegaCovariance,
-        const Matrix3& integrationErrorCovariance,
-        const bool use2ndOrderIntegration = false) :
+        const Matrix3& measuredOmegaCovariance) :
           biasHat(bias), measurementCovariance(3,3), delRdelBiasOmega(
-              Matrix3::Zero()), PreintMeasCov(3,3), use2ndOrderIntegration_(
-                  use2ndOrderIntegration) {
+              Matrix3::Zero()), PreintMeasCov(3,3) {
 //      measurementCovariance << integrationErrorCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measurementAccCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measuredOmegaCovariance;
       measurementCovariance <<measuredOmegaCovariance;
       PreintMeasCov = Matrix::Zero(3,3);
@@ -77,19 +72,15 @@ public:
       PreintMeasCov = Matrix::Zero(9, 9);
     }
 
-    void integrateMeasurement(const Vector3& measuredAcc,
+    void integrateMeasurement(
         const Vector3& measuredOmega, double deltaT,
         boost::optional<const Pose3&> body_P_sensor = boost::none) {
-      Vector3 correctedAcc = biasHat.correctAccelerometer(measuredAcc);
       Vector3 correctedOmega = biasHat.correctGyroscope(measuredOmega);
 
       if (body_P_sensor) {
         Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
         correctedOmega = body_R_sensor * correctedOmega;
         Matrix3 body_omega_body_cross = skewSymmetric(correctedOmega);
-        correctedAcc = body_R_sensor * correctedAcc
-            - body_omega_body_cross * body_omega_body_cross
-            * body_P_sensor->translation().vector();
       }
       const Vector3 theta_incr = correctedOmega * deltaT;
       const Rot3 Rincr = Rot3::Expmap(theta_incr);
@@ -156,7 +147,6 @@ private:
   Vector3 gravity_;
   Vector3 omegaCoriolis_;
   boost::optional<Pose3> body_P_sensor_;
-  bool use2ndOrderCoriolis_;
 
 public:
 
@@ -169,21 +159,17 @@ public:
 
   /** Default constructor - only use for serialization */
   AHRSFactor() :
-    preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(),
-        Matrix3::Zero(), Matrix3::Zero()) {
-  }
+    preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero()) {}
 
   AHRSFactor(Key rot_i, Key rot_j, Key bias,
       const PreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& gravity, const Vector3& omegaCoriolis,
-      boost::optional<const Pose3&> body_P_sensor = boost::none,
-      const bool use2ndOrderCoriolis = false) :
+      const Vector3& omegaCoriolis,
+      boost::optional<const Pose3&> body_P_sensor = boost::none) :
         Base(
             noiseModel::Gaussian::Covariance(
                 preintegratedMeasurements.PreintMeasCov), rot_i, rot_j, bias), preintegratedMeasurements_(
-                    preintegratedMeasurements), gravity_(gravity), omegaCoriolis_(
-                        omegaCoriolis), body_P_sensor_(body_P_sensor), use2ndOrderCoriolis_(
-                            use2ndOrderCoriolis) {
+                    preintegratedMeasurements), omegaCoriolis_(
+                        omegaCoriolis), body_P_sensor_(body_P_sensor) {
   }
 
   virtual ~AHRSFactor() {}
@@ -203,7 +189,6 @@ public:
         << keyFormatter(this->key2()) << "," << keyFormatter(this->key3())
         << ",";
     preintegratedMeasurements_.print("  preintegrated measurements:");
-    std::cout << "  gravity: [ " << gravity_.transpose() << " ]" << std::endl;
     std::cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]"
         << std::endl;
     this->noiseModel_->print("  noise model: ");
@@ -216,7 +201,6 @@ public:
     const This *e = dynamic_cast<const This*>(&expected);
     return e != NULL && Base::equals(*e, tol)
     && preintegratedMeasurements_.equals(e->preintegratedMeasurements_, tol)
-    && equal_with_abs_tol(gravity_, e->gravity_, tol)
     && equal_with_abs_tol(omegaCoriolis_, e->omegaCoriolis_, tol)
     && ((!body_P_sensor_ && !e->body_P_sensor_)
         || (body_P_sensor_ && e->body_P_sensor_
@@ -227,9 +211,6 @@ public:
     return preintegratedMeasurements_;
   }
 
-  const Vector3& gravity() const {
-    return gravity_;
-  }
 
   const Vector3& omegaCoriolis() const {
     return omegaCoriolis_;
@@ -321,9 +302,9 @@ public:
   static void Predict(const Rot3& rot_i, const Rot3& rot_j,
       const imuBias::ConstantBias& bias,
       const PreintegratedMeasurements preintegratedMeasurements,
-      const Vector3& gravity, const Vector3& omegaCoriolis,
-      boost::optional<const Pose3&> body_P_sensor = boost::none,
-      const bool use2ndOrderCoriolis = false) {
+      const Vector3& omegaCoriolis,
+      boost::optional<const Pose3&> body_P_sensor = boost::none
+      ) {
 
     const double& deltaTij = preintegratedMeasurements.deltaTij;
 //    const Vector3 biasAccIncr = bias.accelerometer()
@@ -360,7 +341,6 @@ private:
     & boost::serialization::make_nvp("NoiseModelFactor3",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(preintegratedMeasurements_);
-    ar & BOOST_SERIALIZATION_NVP(gravity_);
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
