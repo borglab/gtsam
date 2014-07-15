@@ -50,7 +50,7 @@ int main(int argc, char** argv){
 
   Values initial_estimate;
   NonlinearFactorGraph graph;
-  const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(2,1);
+  const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,1);
 
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
