@@ -296,7 +296,7 @@ public:
           }
           i += 1;
         }
-        std::cout << "totalReprojError error: " << totalReprojError << std::endl;
+        //std::cout << "totalReprojError error: " << totalReprojError << std::endl;
         // we discard smart factors that have large reprojection error
         if(dynamicOutlierRejectionThreshold_ > 0 &&
             totalReprojError/m > dynamicOutlierRejectionThreshold_)
