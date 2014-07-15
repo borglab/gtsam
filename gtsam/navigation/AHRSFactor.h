@@ -35,18 +35,19 @@ public:
         const Matrix3& measuredOmegaCovariance,
         const Matrix3& integrationErrorCovariance,
         const bool use2ndOrderIntegration = false) :
-          biasHat(bias), measurementCovariance(9, 9), delRdelBiasOmega(
-              Matrix3::Zero()), PreintMeasCov(9, 9), use2ndOrderIntegration_(
+          biasHat(bias), measurementCovariance(3,3), delRdelBiasOmega(
+              Matrix3::Zero()), PreintMeasCov(3,3), use2ndOrderIntegration_(
                   use2ndOrderIntegration) {
-      measurementCovariance << integrationErrorCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measurementAccCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measuredOmegaCovariance;
-      PreintMeasCov = Matrix::Zero(9, 9);
+//      measurementCovariance << integrationErrorCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measurementAccCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measuredOmegaCovariance;
+      measurementCovariance <<measuredOmegaCovariance;
+      PreintMeasCov = Matrix::Zero(3,3);
     }
 
     PreintegratedMeasurements() :
-      biasHat(imuBias::ConstantBias()), measurementCovariance(9, 9), delRdelBiasOmega(
-          Matrix3::Zero()), PreintMeasCov(9, 9) {
-      measurementCovariance = Matrix::Zero(9, 9);
-      PreintMeasCov = Matrix::Zero(9, 9);
+      biasHat(imuBias::ConstantBias()), measurementCovariance(3,3), delRdelBiasOmega(
+          Matrix3::Zero()), PreintMeasCov(3,3) {
+      measurementCovariance = Matrix::Zero(3,3);
+      PreintMeasCov = Matrix::Zero(3,3);
     }
 
     void print(const std::string& s = "Preintegrated Measurements: ") const {
@@ -302,9 +303,10 @@ public:
       const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc
           * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega;
 
-      H3->resize(3, 3);
+      H3->resize(3, 6);
       (*H3) <<
           // dfR/dBias
+          Matrix::Zero(3,3),
           Jrinv_fRhat * (-fRhat.inverse().matrix() * JbiasOmega);
     }
 
