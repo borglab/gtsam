@@ -660,7 +660,7 @@ public:
     Vector b;
     Matrix Enull(Z::Dim()*numKeys, Z::Dim()*numKeys-3);
     computeJacobiansSVD(Fblocks, Enull, b, cameras, point, lambda);
-    return boost::make_shared< JacobianFactorSVD<6> >(Fblocks, Enull, b);
+    return boost::make_shared< JacobianFactorSVD<6, Z> >(Fblocks, Enull, b);
   }
 
 private:

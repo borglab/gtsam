@@ -298,206 +298,205 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ){
 }
 
 
-///* *************************************************************************/
-//TEST( SmartStereoProjectionPoseFactor, jacobianSVD ){
-//
-//  std::vector<Key> views;
-//  views.push_back(x1);
-//  views.push_back(x2);
-//  views.push_back(x3);
-//
-//  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-//  StereoCamera cam1(pose1, K);
-//  // create second camera 1 meter to the right of first camera
-//  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
-//  StereoCamera cam2(pose2, K);
-//  // create third camera 1 meter above the first camera
-//  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
-//  StereoCamera cam3(pose3, K);
-//
-//  // three landmarks ~5 meters infront of camera
-//  Point3 landmark1(5, 0.5, 1.2);
-//  Point3 landmark2(5, -0.5, 1.2);
-//  Point3 landmark3(3, 0, 3.0);
-//
-//  // 1. Project three landmarks into three cameras and triangulate
-//  vector<StereoPoint2> measurements_cam1 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark1);
-//  vector<StereoPoint2> measurements_cam2 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2);
-//  vector<StereoPoint2> measurements_cam3 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark3);
-//
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
-//  smartFactor1->add(measurements_cam1, views, model, K);
-//
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
-//  smartFactor2->add(measurements_cam2, views, model, K);
-//
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
-//  smartFactor3->add(measurements_cam3, views, model, K);
-//
-//  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-//
-//  NonlinearFactorGraph graph;
-//  graph.push_back(smartFactor1);
-//  graph.push_back(smartFactor2);
-//  graph.push_back(smartFactor3);
-//  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-//  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
-//
-//  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
-//  Values values;
-//  values.insert(x1, pose1);
-//  values.insert(x2, pose2);
-//  values.insert(x3, pose3*noise_pose);
-//
-//  LevenbergMarquardtParams params;
-//  Values result;
-//  LevenbergMarquardtOptimizer optimizer(graph, values, params);
-//  result = optimizer.optimize();
-//  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
-//}
+/* *************************************************************************/
+TEST( SmartStereoProjectionPoseFactor, jacobianSVD ){
 
-///* *************************************************************************/
-//TEST( SmartStereoProjectionPoseFactor, landmarkDistance ){
-//
-//  double excludeLandmarksFutherThanDist = 2;
-//
-//  std::vector<Key> views;
-//  views.push_back(x1);
-//  views.push_back(x2);
-//  views.push_back(x3);
-//
-//  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-//  StereoCamera cam1(pose1, K);
-//  // create second camera 1 meter to the right of first camera
-//  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
-//  StereoCamera cam2(pose2, K);
-//  // create third camera 1 meter above the first camera
-//  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
-//  StereoCamera cam3(pose3, K);
-//
-//  // three landmarks ~5 meters infront of camera
-//  Point3 landmark1(5, 0.5, 1.2);
-//  Point3 landmark2(5, -0.5, 1.2);
-//  Point3 landmark3(3, 0, 3.0);
-//
-//  vector<StereoPoint2> measurements_cam1, measurements_cam2, measurements_cam3;
-//
-//  // 1. Project three landmarks into three cameras and triangulate
-//  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
-//  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
-//  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
-//
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD, excludeLandmarksFutherThanDist));
-//  smartFactor1->add(measurements_cam1, views, model, K);
-//
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD, excludeLandmarksFutherThanDist));
-//  smartFactor2->add(measurements_cam2, views, model, K);
-//
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD, excludeLandmarksFutherThanDist));
-//  smartFactor3->add(measurements_cam3, views, model, K);
-//
-//  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-//
-//  NonlinearFactorGraph graph;
-//  graph.push_back(smartFactor1);
-//  graph.push_back(smartFactor2);
-//  graph.push_back(smartFactor3);
-//  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-//  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
-//
-//  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
-//  Values values;
-//  values.insert(x1, pose1);
-//  values.insert(x2, pose2);
-//  values.insert(x3, pose3*noise_pose);
-//
-//  // All factors are disabled and pose should remain where it is
-//  LevenbergMarquardtParams params;
-//  Values result;
-//  LevenbergMarquardtOptimizer optimizer(graph, values, params);
-//  result = optimizer.optimize();
-//  EXPECT(assert_equal(values.at<Pose3>(x3),result.at<Pose3>(x3)));
-//}
-//
-///* *************************************************************************/
-//TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ){
-//
-//  double excludeLandmarksFutherThanDist = 1e10;
-//  double dynamicOutlierRejectionThreshold = 1; // max 1 pixel of average reprojection error
-//
-//  std::vector<Key> views;
-//  views.push_back(x1);
-//  views.push_back(x2);
-//  views.push_back(x3);
-//
-//  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-//  StereoCamera cam1(pose1, K);
-//  // create second camera 1 meter to the right of first camera
-//  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
-//  StereoCamera cam2(pose2, K);
-//  // create third camera 1 meter above the first camera
-//  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
-//  StereoCamera cam3(pose3, K);
-//
-//  // three landmarks ~5 meters infront of camera
-//  Point3 landmark1(5, 0.5, 1.2);
-//  Point3 landmark2(5, -0.5, 1.2);
-//  Point3 landmark3(3, 0, 3.0);
-//  Point3 landmark4(5, -0.5, 1);
-//
-//  vector<StereoPoint2> measurements_cam1, measurements_cam2, measurements_cam3, measurements_cam4;
-//
-//  // 1. Project three landmarks into three cameras and triangulate
-//  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
-//  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
-//  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
-//  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
-//  measurements_cam4.at(0) = measurements_cam4.at(0) + StereoPoint2(10,10,1); // add outlier
-//
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, boost::none,
-//      JACOBIAN_SVD, excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
-//  smartFactor1->add(measurements_cam1, views, model, K);
-//
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
-//      excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
-//  smartFactor2->add(measurements_cam2, views, model, K);
-//
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
-//      excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
-//  smartFactor3->add(measurements_cam3, views, model, K);
-//
-//  SmartFactor::shared_ptr smartFactor4(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
-//      excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
-//  smartFactor4->add(measurements_cam4, views, model, K);
-//
-//  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-//
-//  NonlinearFactorGraph graph;
-//  graph.push_back(smartFactor1);
-//  graph.push_back(smartFactor2);
-//  graph.push_back(smartFactor3);
-//  graph.push_back(smartFactor4);
-//  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-//  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
-//
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
-//  Values values;
-//  values.insert(x1, pose1);
-//  values.insert(x2, pose2);
-//  values.insert(x3, pose3);
-//
-//  // All factors are disabled and pose should remain where it is
-//  LevenbergMarquardtParams params;
-//  Values result;
-//  LevenbergMarquardtOptimizer optimizer(graph, values, params);
-//  result = optimizer.optimize();
-//  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
-//}
+  std::vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  StereoCamera cam1(pose1, K);
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
+  StereoCamera cam2(pose2, K);
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
+  StereoCamera cam3(pose3, K);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(3, 0, 3.0);
+
+  // 1. Project three landmarks into three cameras and triangulate
+  vector<StereoPoint2> measurements_cam1 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark1);
+  vector<StereoPoint2> measurements_cam2 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2);
+  vector<StereoPoint2> measurements_cam3 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark3);
+
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+  smartFactor1->add(measurements_cam1, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+  smartFactor2->add(measurements_cam2, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+  smartFactor3->add(measurements_cam3, views, model, K);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+
+  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  values.insert(x3, pose3*noise_pose);
+
+  LevenbergMarquardtParams params;
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+}
+
+/* *************************************************************************/
+TEST( SmartStereoProjectionPoseFactor, landmarkDistance ){
+
+  double excludeLandmarksFutherThanDist = 2;
+
+  std::vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  StereoCamera cam1(pose1, K);
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
+  StereoCamera cam2(pose2, K);
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
+  StereoCamera cam3(pose3, K);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(3, 0, 3.0);
+
+  // 1. Project three landmarks into three cameras and triangulate
+  vector<StereoPoint2> measurements_cam1 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark1);
+  vector<StereoPoint2> measurements_cam2 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2);
+  vector<StereoPoint2> measurements_cam3 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark3);
+
+
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD, excludeLandmarksFutherThanDist));
+  smartFactor1->add(measurements_cam1, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD, excludeLandmarksFutherThanDist));
+  smartFactor2->add(measurements_cam2, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD, excludeLandmarksFutherThanDist));
+  smartFactor3->add(measurements_cam3, views, model, K);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+
+  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  values.insert(x3, pose3*noise_pose);
+
+  // All factors are disabled and pose should remain where it is
+  LevenbergMarquardtParams params;
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(values.at<Pose3>(x3),result.at<Pose3>(x3)));
+}
+
+/* *************************************************************************/
+TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ){
+
+  double excludeLandmarksFutherThanDist = 1e10;
+  double dynamicOutlierRejectionThreshold = 1; // max 1 pixel of average reprojection error
+
+  std::vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+  StereoCamera cam1(pose1, K);
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
+  StereoCamera cam2(pose2, K);
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0,-1,0));
+  StereoCamera cam3(pose3, K);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(3, 0, 3.0);
+  Point3 landmark4(5, -0.5, 1);
+
+  // 1. Project four landmarks into three cameras and triangulate
+   vector<StereoPoint2> measurements_cam1 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark1);
+   vector<StereoPoint2> measurements_cam2 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2);
+   vector<StereoPoint2> measurements_cam3 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark3);
+   vector<StereoPoint2> measurements_cam4 = stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark4);
+
+
+  measurements_cam4.at(0) = measurements_cam4.at(0) + StereoPoint2(10,10,1); // add outlier
+
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, boost::none,
+      JACOBIAN_SVD, excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
+  smartFactor1->add(measurements_cam1, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
+  smartFactor2->add(measurements_cam2, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
+  smartFactor3->add(measurements_cam3, views, model, K);
+
+  SmartFactor::shared_ptr smartFactor4(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
+  smartFactor4->add(measurements_cam4, views, model, K);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.push_back(smartFactor4);
+  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1)); // smaller noise
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  values.insert(x3, pose3);
+
+  // All factors are disabled and pose should remain where it is
+  LevenbergMarquardtParams params;
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+}
 //
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, jacobianQ ){

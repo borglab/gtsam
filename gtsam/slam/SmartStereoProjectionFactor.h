@@ -473,14 +473,14 @@ public:
 //      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
 //  }
 //
-//  /// different (faster) way to compute Jacobian factor
-//  boost::shared_ptr< JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
-//      double lambda) const {
-//    if (triangulateForLinearize(cameras))
-//      return Base::createJacobianSVDFactor(cameras, point_, lambda);
-//    else
-//      return boost::make_shared< JacobianFactorSVD<D> >(this->keys_);
-//  }
+  /// different (faster) way to compute Jacobian factor
+  boost::shared_ptr< JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
+      double lambda) const {
+    if (triangulateForLinearize(cameras))
+      return Base::createJacobianSVDFactor(cameras, point_, lambda);
+    else
+      return boost::make_shared< JacobianFactorSVD<D, StereoPoint2> >(this->keys_);
+  }
 
   /// Returns true if nonDegenerate
   bool computeCamerasAndTriangulate(const Values& values,
