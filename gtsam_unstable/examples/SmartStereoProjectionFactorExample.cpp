@@ -52,6 +52,8 @@ int main(int argc, char** argv){
   NonlinearFactorGraph graph;
   const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,1);
 
+  bool add_initial_noise = true;
+
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors_large.txt");
@@ -74,6 +76,9 @@ int main(int argc, char** argv){
   while (pose_file >> pose_id) {
     for (int i = 0; i < 16; i++) {
       pose_file >> m.data()[i];
+    }
+    if(add_initial_noise){
+      m(0,3) += (pose_id % 10)/5;
     }
     initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
   }
