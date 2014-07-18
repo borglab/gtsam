@@ -43,13 +43,13 @@ IMU_metadata.IntegrationSigma = 1e-1;
 curvature = 5.0;
 transformKey = 1000;
 calibrationKey = 2000;
-steps = 30;
+steps = 50;
 
 fg = NonlinearFactorGraph;
 initial = Values;
 
 %% intial landmarks and camera trajectory shifted in + y-direction
-y_shift = Point3(0,1.0,0);
+y_shift = Point3(0,0.5,0);
 
 % insert shifted points
 for i=1:nrPoints
@@ -61,7 +61,7 @@ cla
 hold on;
 
 %% initial pose priors
-pose_cov = noiseModel.Diagonal.Sigmas([0.1*pi/180; 0.1*pi/180; 0.1*pi/180; 1e-9; 1e-9; 1e-9]);
+pose_cov = noiseModel.Diagonal.Sigmas([0.1*pi/180; 0.1*pi/180; 0.1*pi/180; 1e-4; 1e-4; 1e-4]);
 
 %% Actual camera translation coincides with odometry, but -90deg Z-X rotation
 camera_transform = Pose3(Rot3.RzRyRx(-pi/2, 0, -pi/2),y_shift);
@@ -133,6 +133,7 @@ for i=1:steps
         result = initial;
     end
     if i == 2
+        fg.add(PriorFactorPose3(2, Pose3(Rot3(),Point3(1,0,0)),pose_cov));
         fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
         fg.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
     end
@@ -179,7 +180,7 @@ for i=1:steps
     end
     
     % generate some camera measurements
-    cam_pose = initial.at(i).compose(actual_transform);
+    cam_pose = currentIMUPoseGlobal.compose(actual_transform);
 %     gtsam.plotPose3(cam_pose);
     cam = SimpleCamera(cam_pose,K);
     i
@@ -188,7 +189,7 @@ for i=1:steps
         % All landmarks seen in every frame
         try
             z = cam.project(landmarks{j});
-            fg.add(TransformCalProjectionFactorCal3_S2(z, z_cov, i, transformKey, 100+j, calibrationKey));
+            fg.add(TransformCalProjectionFactorCal3_S2(z, z_cov, i, transformKey, 100+j, calibrationKey, false, true));
         catch
             cheirality_exception_count = cheirality_exception_count + 1;
         end % end try/catch
@@ -220,36 +221,28 @@ for i=1:steps
         mat = gfg.augmentedJacobian();
         augmented_c(i)= cond(mat, 2);
         
-
-
         for f=0:isam_fg.size()-1
            nonlinear_factor = isam_fg.at(f);
            if strcmp(class(nonlinear_factor),'gtsam.TransformCalProjectionFactorCal3_S2')
                gaussian_factor = nonlinear_factor.linearize(isam_values);
                A = gaussian_factor.getA();
-               b = gaussian_factor.getb()
+               b = gaussian_factor.getb();
                % Column 17 (fy) in jacobian
                A_col = A(:,17);  
                if A_col(2) == 0
-                   pause
+%                    pause
+                   disp('Cheirality Exception!');
                end
            end
-            
         end
         
-        
-
-        
     end
-   
-  
-    
-    
+     
     hold off;
 
     clf;
     figure(1);
-    subplot(4,1,1:2);
+    subplot(5,1,1:2);
     hold on;
     
     %% plot the integrated IMU frame (not from 
@@ -278,20 +271,24 @@ for i=1:steps
     ty = result.at(transformKey).translation().y();
     fx = result.at(calibrationKey).fx();
     fy = result.at(calibrationKey).fy();
+    px = result.at(calibrationKey).px();
+    py = result.at(calibrationKey).py();
     text(1,5,5,sprintf('Y-Transform(0.0): %0.2f',ty));
     text(1,5,3,sprintf('fx(900): %.0f',fx));
     text(1,5,1,sprintf('fy(900): %.0f',fy));
     
     fxs(i) = fx;
     fys(i) = fy;
-    subplot(4,1,3);
+    pxs(i) = px;
+    pys(i) = py;
+    subplot(5,1,3);
     hold on;
-    p(1) = plot(1:steps,repmat(K.fx,1,steps),'r--');
-    p(2) = plot(1:i,fxs,'r','LineWidth',2);
+    plot(1:steps,repmat(K.fx,1,steps),'r--');
+    p(1) = plot(1:i,fxs,'r','LineWidth',2);
         
-    p(3) = plot(1:steps,repmat(K.fy,1,steps),'g--');
-    p(4) = plot(1:i,fys,'g','LineWidth',2);
-    
+    plot(1:steps,repmat(K.fy,1,steps),'g--');
+    p(2) = plot(1:i,fys,'g','LineWidth',2);
+        
     if i > 1
         plot(2:i,fxs(2:i) + marginal_fx(2:i),'r-.');
         plot(2:i,fxs(2:i) - marginal_fx(2:i),'r-.');
@@ -299,20 +296,34 @@ for i=1:steps
         plot(2:i,fys(2:i) + marginal_fy(2:i),'g-.');
         plot(2:i,fys(2:i) - marginal_fy(2:i),'g-.');
         
-        subplot(4,1,4);
+        
+        
+        subplot(5,1,5);
         hold on;
         title('Condition Number');
         plot(2:i,c(2:i),'b-');
         plot(2:i,augmented_c(2:i),'r-');
+        axis([0 steps 0 max(c(2:i))*1.1]);
+        
         
 %         figure(2);
 %         plotBayesTree(isam);
         
     end
+    legend(p, 'f_x', 'f_y', 'Location', 'SouthWest'); 
     
+%     legend(p, 'f_x', 'f_x''', 'f_y', 'f_y''', 'Location', 'SouthWest'); 
     
-    legend(p, 'f_x', 'f_x''', 'f_y', 'f_y''', 'Location', 'SouthWest'); 
-    
+    %% plot principal points
+    subplot(5,1,4);
+    hold on;
+    plot(1:steps,repmat(K.px,1,steps),'r--');
+    pp(1) = plot(1:i,pxs,'r','LineWidth',2);
+        
+    plot(1:steps,repmat(K.py,1,steps),'g--');
+    pp(2) = plot(1:i,pys,'g','LineWidth',2);
+    title('Principal Point');
+    legend(pp, 'p_x', 'p_y', 'Location', 'SouthWest'); 
     
     if(write_video)
         currFrame = getframe(gcf);
