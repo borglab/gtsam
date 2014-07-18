@@ -64,6 +64,9 @@ public:
               && equal_with_abs_tol(delRdelBiasOmega, expected.delRdelBiasOmega,
                   tol);
     }
+    Matrix MeasurementCovariance(){
+      return measurementCovariance;
+    }
 
     void resetIntegration() {
       deltaRij = Rot3();
