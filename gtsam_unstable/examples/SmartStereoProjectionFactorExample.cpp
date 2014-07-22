@@ -48,9 +48,12 @@ int main(int argc, char** argv){
 
   typedef SmartStereoProjectionPoseFactor<Pose3, Point3, Cal3_S2Stereo> SmartFactor;
 
+  bool output_poses = true;
+  string poseOutput("../../../examples/data/optimized_poses.txt");
   Values initial_estimate;
   NonlinearFactorGraph graph;
   const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,1);
+  ofstream pose3Out;
 
   bool add_initial_noise = true;
 
@@ -125,6 +128,15 @@ int main(int argc, char** argv){
   cout << "Final result sample:" << endl;
   Values pose_values = result.filter<Pose3>();
   pose_values.print("Final camera poses:\n");
+
+  if(output_poses){
+    pose3Out.open(poseOutput.c_str(),ios::out);
+    for(int i = 1; i<=pose_values.size(); i++){
+      pose3Out << i << " " << pose_values.at<Pose3>(Symbol('x',i)).matrix().format(Eigen::IOFormat(Eigen::StreamPrecision, 0,
+        " ", " ")) << endl;
+    }
+    cout << "Writing output" << endl;
+  }
 
   return 0;
 }
