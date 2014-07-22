@@ -49,11 +49,13 @@ int main(int argc, char** argv){
   typedef SmartStereoProjectionPoseFactor<Pose3, Point3, Cal3_S2Stereo> SmartFactor;
 
   bool output_poses = true;
+  bool output_initial_poses = true;
   string poseOutput("../../../examples/data/optimized_poses.txt");
+  string init_poseOutput("../../../examples/data/initial_poses.txt");
   Values initial_estimate;
   NonlinearFactorGraph graph;
   const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,1);
-  ofstream pose3Out;
+  ofstream pose3Out, init_pose3Out;
 
   bool add_initial_noise = true;
 
@@ -81,9 +83,18 @@ int main(int argc, char** argv){
       pose_file >> m.data()[i];
     }
     if(add_initial_noise){
-      m(0,3) += (pose_id % 10)/5;
+      m(1,3) += (pose_id % 10)/10;
     }
     initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
+  }
+
+  Values initial_pose_values = initial_estimate.filter<Pose3>();
+  if(output_poses){
+    init_pose3Out.open(init_poseOutput.c_str(),ios::out);
+    for(int i = 1; i<=initial_pose_values.size(); i++){
+      init_pose3Out << i << " " << initial_pose_values.at<Pose3>(Symbol('x',i)).matrix().format(Eigen::IOFormat(Eigen::StreamPrecision, 0,
+        " ", " ")) << endl;
+    }
   }
   
   // camera and landmark keys
