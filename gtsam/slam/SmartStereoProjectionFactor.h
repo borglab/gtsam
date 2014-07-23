@@ -156,6 +156,7 @@ public:
     std::cout << "rankTolerance_ = " << rankTolerance_ << std::endl;
     std::cout << "degenerate_ = " << degenerate_ << std::endl;
     std::cout << "cheiralityException_ = " << cheiralityException_ << std::endl;
+    std::cout << "linearizationThreshold_ = " << linearizationThreshold_ << std::endl;
     Base::print("", keyFormatter);
   }
 
