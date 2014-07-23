@@ -83,7 +83,7 @@ int main(int argc, char** argv){
       pose_file >> m.data()[i];
     }
     if(add_initial_noise){
-      m(1,3) += (pose_id % 10)/10;
+      m(1,3) += (pose_id % 10)/10.0;
     }
     initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
   }
