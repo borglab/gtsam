@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testPlanarSLAMExample_lago.cpp
+ *  @file  testLago.cpp
  *  @brief Unit tests for planar SLAM example using the initialization technique
  *  LAGO (Linear Approximation for Graph Optimization)
  *
