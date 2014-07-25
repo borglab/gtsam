@@ -3,21 +3,28 @@ clf;
 
 import gtsam.*;
 
-write_video = false;
+write_video = true;
 
 use_camera = true;
 use_camera_transform_noise = true;
-gps_noise = 0.5;
+gps_noise = 0.5;           % normally distributed (meters)
+landmark_noise = 0.2;      % normally distributed (meters)
+nrLandmarks = 1000;         % Number of randomly generated landmarks
 
+% ground-truth IMU-camera transform
+camera_transform = Pose3(Rot3.RzRyRx(-pi, 0, -pi/2),Point3());
+
+% noise to compose onto the above for initialization
 camera_transform_noise = Pose3(Rot3.RzRyRx(0.1,0.1,0.1),Point3(0,0.02,0));
 
 if(write_video)
-    videoObj = VideoWriter('FlightCameraIMU_transform_GPS.avi');
+    videoObj = VideoWriter('FlightCameraIMU_transform_GPS0_5_lm0_2_robust.avi');
     videoObj.Quality = 100;
     videoObj.FrameRate = 10;
     open(videoObj);
 end
 
+% IMU parameters
 IMU_metadata.AccelerometerSigma = 1e-2;    
 IMU_metadata.GyroscopeSigma = 1e-2;
 IMU_metadata.AccelerometerBiasSigma = 1e-6;
@@ -35,8 +42,9 @@ trans_cov = noiseModel.Diagonal.Sigmas([5*pi/180; 5*pi/180; 5*pi/180; 20; 20; 0.
 GPS_trans_cov = noiseModel.Diagonal.Sigmas([3; 3; 4]);
 K_cov = noiseModel.Diagonal.Sigmas([20; 20; 0.001; 20; 20]);
 
-l_cov = noiseModel.Diagonal.Sigmas([1e-2; 1e-2; 1e-2]);
+l_cov = noiseModel.Diagonal.Sigmas([landmark_noise; landmark_noise; landmark_noise]);
 z_cov = noiseModel.Diagonal.Sigmas([1.0;1.0]);
+% z_cov = noiseModel.Robust(noiseModel.mEstimator.Huber(1.0), noiseModel.Diagonal.Sigmas([1.0;1.0]));
 
 %% calibration initialization
 K = Cal3_S2(20,1280,960);
@@ -58,10 +66,9 @@ sigma_between_b = [ IMU_metadata.AccelerometerBiasSigma * ones(3,1); IMU_metadat
 g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 
-
 %% generate trajectory and landmarks
 trajectory = flight_trajectory();
-landmarks = ground_landmarks(100);
+landmarks = ground_landmarks(nrLandmarks);
 
 figure(1);
 % 3D map subplot
@@ -94,22 +101,23 @@ axis equal;
 
 for i=1:size(trajectory)-1
     xKey = symbol('x',i);
-    pose = trajectory.at(xKey);
-    pose_t = pose.translation();
+    pose = trajectory.at(xKey);     % GT pose
+    pose_t = pose.translation();    % GT pose-translation
     
     if exist('h_cursor','var')
         delete(h_cursor);
     end
     
+    % current ground-truth position indicator
     h_cursor = plot3(a1, pose_t.x,pose_t.y,pose_t.z,'*');
  
-    camera_transform = Pose3(Rot3.RzRyRx(-pi, 0, -pi/2),Point3());
     camera_pose = pose.compose(camera_transform);
     
     axes(a2);
     if use_camera
-        % project (and plot inside)
+        % project (and plot 2D camera view inside)
         measurements = project_landmarks(camera_pose,landmarks, K);
+        % plot red landmarks in 3D plot
         plot_projected_landmarks(a1, landmarks, measurements);
     else
         measurements = Values;
@@ -178,10 +186,11 @@ for i=1:size(trajectory)-1
 
                 % only add landmark to values if doesn't exist yet
                 if ~result.exists(lKey)
-                    initial.insert(lKey, landmarks.at(lKey));
+                    noisy_landmark = landmarks.at(lKey).compose(Point3(normrnd(0,landmark_noise,3,1)));
+                    initial.insert(lKey, noisy_landmark);
 
                     % and add a prior since its position is known
-                    fg.add(PriorFactorPoint3(lKey, landmarks.at(lKey),l_cov));
+                    fg.add(PriorFactorPoint3(lKey, noisy_landmark,l_cov));
                 end
             end
         end % end landmark observations 
@@ -255,14 +264,14 @@ for i=1:size(trajectory)-1
         fx = result.at(calibrationKey).fx();
         fy = result.at(calibrationKey).fy();
 %         h_text1 = text(-600,0,0,sprintf('Y-Transform(0.0): %0.2f',ty));
-        text(0,1100,0,sprintf('Calibration and IMU-cam transform errors:'));
+        text(0,1300,0,sprintf('Calibration and IMU-cam transform errors:'));
         
         entries = [{' f_x', ' f_y', ' s', 'p_x', 'p_y'}; num2cell(K_errors')];
-        h_text1 = text(0,1550,0,sprintf('%s = %0.1f\n', entries{:}));
+        h_text1 = text(0,1750,0,sprintf('%s = %0.1f\n', entries{:}));
         
         camera_transform_errors = camera_transform.localCoordinates(camera_transform_estimate);
         entries1 = [{'ax', 'ay', 'az', 'tx', 'ty', 'tz'}; num2cell(camera_transform_errors')];
-        h_text2 = text(600,1500,0,sprintf('%s = %0.2f\n', entries1{:}));
+        h_text2 = text(600,1700,0,sprintf('%s = %0.2f\n', entries1{:}));
         
         % marginal is really huge
 %         marginal_camera_transform = isam.marginalCovariance(transformKey);
