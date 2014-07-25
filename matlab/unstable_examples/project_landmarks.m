@@ -36,6 +36,8 @@ function [ measurements ] = project_landmarks( pose, landmarks, K )
     cla;
     plot2DPoints(measurements,'*g');
     
+    text(1120, 1000, sprintf('# = %d', measurements.size));
+    
     axis equal;
     axis([0 1280 0 960]);
     
