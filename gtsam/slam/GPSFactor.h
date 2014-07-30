@@ -90,11 +90,6 @@ namespace gtsam {
       return measured_;
     }
 
-    /** number of variables attached to this factor */
-    size_t size() const {
-      return 2;
-    }
-
   private:
 
     /** Serialization function */
