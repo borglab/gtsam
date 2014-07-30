@@ -11,7 +11,7 @@
 
 /**
  *  @file   GaussMarkov1stOrderFactor.h
- *  @author Vadim Indelman, Stephen Williams
+ *  @author Vadim Indelman, Stephen Williams, Luca Carlone
  *  @date   Jan 17, 2012
  **/
 #pragma once
@@ -63,7 +63,7 @@ public:
   /** Constructor */
   GaussMarkov1stOrderFactor(const Key& key1, const Key& key2, double delta_t, Vector tau,
       const SharedGaussian& model) :
-        Base(calc_descrete_noise_model(model, delta_t), key1, key2), dt_(delta_t), tau_(tau) {
+        Base(calcDiscreteNoiseModel(model, delta_t), key1, key2), dt_(delta_t), tau_(tau) {
   }
 
   virtual ~GaussMarkov1stOrderFactor() {}
@@ -120,7 +120,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(tau_);
   }
 
-  SharedGaussian calc_descrete_noise_model(const SharedGaussian& model, double delta_t){
+  SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model, double delta_t){
     /* Q_d (approx)= Q * delta_t */
     /* In practice, square root of the information matrix is represented, so that:
      *  R_d (approx)= R / sqrt(delta_t)
