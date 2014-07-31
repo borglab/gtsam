@@ -333,6 +333,7 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
   bool get_flag_bump_up_near_zero_probs() const;
 
   void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph);
+  void updateNoiseModels_givenCovs(const gtsam::Values& values, Matrix cov1, Matrix cov2, Matrix cov12);
   Matrix get_model_inlier_cov();
   Matrix get_model_outlier_cov();
 
