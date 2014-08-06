@@ -1217,6 +1217,14 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
       const gtsam::noiseModel::Diagonal* model);
   JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
       Vector b, const gtsam::noiseModel::Diagonal* model);
+  JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
+      size_t i4, Matrix A4, Vector b, const gtsam::noiseModel::Diagonal* model);
+  JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
+      size_t i4, Matrix A4, size_t i5, Matrix A5, Vector b,
+      const gtsam::noiseModel::Diagonal* model);
+  JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
+      size_t i4, Matrix A4, size_t i5, Matrix A5, size_t i6, Matrix A6, Vector b,
+      const gtsam::noiseModel::Diagonal* model);
   JacobianFactor(const gtsam::GaussianFactorGraph& graph);
 
   //Testable

@@ -103,6 +103,34 @@ JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
 }
 
 /* ************************************************************************* */
+JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
+    const Matrix& A2, Key i3, const Matrix& A3, Key i4, const Matrix& A4,
+    const Vector& b, const SharedDiagonal& model) {
+  fillTerms(
+      cref_list_of<4>(make_pair(i1, A1))(make_pair(i2, A2))(make_pair(i3, A3))
+        (make_pair(i4, A4)), b, model);
+}
+
+/* ************************************************************************* */
+JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
+    const Matrix& A2, Key i3, const Matrix& A3, Key i4, const Matrix& A4,
+    Key i5, const Matrix& A5, const Vector& b, const SharedDiagonal& model) {
+  fillTerms(
+      cref_list_of<5>(make_pair(i1, A1))(make_pair(i2, A2))(make_pair(i3, A3))
+        (make_pair(i4, A4))(make_pair(i5, A5)), b, model);
+}
+
+/* ************************************************************************* */
+JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
+    const Matrix& A2, Key i3, const Matrix& A3, Key i4, const Matrix& A4,
+    Key i5, const Matrix& A5, Key i6, const Matrix& A6, const Vector& b,
+    const SharedDiagonal& model) {
+  fillTerms(
+      cref_list_of<6>(make_pair(i1, A1))(make_pair(i2, A2))(make_pair(i3, A3))
+        (make_pair(i4, A4))(make_pair(i5, A5))(make_pair(i6, A6)), b, model);
+}
+
+/* ************************************************************************* */
 JacobianFactor::JacobianFactor(const HessianFactor& factor) :
     Base(factor), Ab_(
         VerticalBlockMatrix::LikeActiveViewOf(factor.matrixObject(),
@@ -114,9 +142,6 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor) :
   size_t maxrank;
   bool success;
   boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
-
-  factor.print("HessianFactor to convert: ");
-  cout << "Maxrank: " << maxrank << ", success: " << int(success) << endl;
 
   // Check for indefinite system
   if (!success)

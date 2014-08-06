@@ -126,6 +126,22 @@ namespace gtsam {
         const Matrix& A2, Key i3, const Matrix& A3,
         const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
+    /** Construct four-ary factor */
+    JacobianFactor(Key i1, const Matrix& A1, Key i2,
+        const Matrix& A2, Key i3, const Matrix& A3, Key i4, const Matrix& A4,
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal());
+
+    /** Construct five-ary factor */
+    JacobianFactor(Key i1, const Matrix& A1, Key i2,
+        const Matrix& A2, Key i3, const Matrix& A3, Key i4, const Matrix& A4,
+        Key i5, const Matrix& A5, const Vector& b, const SharedDiagonal& model = SharedDiagonal());
+
+    /** Construct six-ary factor */
+    JacobianFactor(Key i1, const Matrix& A1, Key i2,
+        const Matrix& A2, Key i3, const Matrix& A3, Key i4, const Matrix& A4,
+        Key i5, const Matrix& A5, Key i6, const Matrix& A6,
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal());
+
     /** Construct an n-ary factor
      * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
      *         collection of keys and matrices making up the factor. */
