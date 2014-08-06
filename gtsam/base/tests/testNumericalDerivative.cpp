@@ -125,5 +125,22 @@ TEST(testNumericalDerivative, numericalHessian311) {
 }
 
 /* ************************************************************************* */
+/// A small example showing that Hessian matrices in Lie group might not be symmetric!!!
+
+#include <gtsam/geometry/Pose2.h>
+double f5(const Pose2& x) {
+  Point2 p(5, 10);
+  Point2 q = x.transform_from(p);
+  return q.x();
+}
+
+TEST(testNumericalDerivative, numericalHessianPose2) {
+  Pose2 x0(Rot2(20.0*M_PI/180.0), Point2(20, 25));
+  Matrix actualH = numericalHessian<Pose2>(f5, x0);
+  Matrix expectedH = (Matrix(3,3) << 0, 0, -0.34202, 0, 0, -0.939693, 0, 0, -1.27827);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
