@@ -250,10 +250,28 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
 }
 
 /* ************************************************************************* */
-// Create test graph as in Nocedal06book, Ex 16.4, pg. 475
-// with the first constraint (16.49b) is replaced by
-//          x1 - 2 x2 - 1 >=0
-// so that the trivial initial point (0,0) is infeasible
+/* Create test graph as in Nocedal06book, Ex 16.4, pg. 475
+ with the first constraint (16.49b) is replaced by
+      x1 - 2 x2 - 1 >=0
+so that the trivial initial point (0,0) is infeasible
+====
+ H = [2 0; 0 2];
+f = [-2; -5];
+ A =[-1 2;
+      1 2
+      1 -2];
+b = [-1; 6; 2];
+lb = zeros(2,1);
+
+opts = optimoptions('quadprog','Algorithm','active-set','Display','off');
+
+[x,fval,exitflag,output,lambda] = ...
+   quadprog(H,f,A,b,[],[],lb,[],[],opts);
+====
+x =
+    2.0000
+    0.5000
+*/
 GaussianFactorGraph modifyNocedal06bookEx16_4() {
   GaussianFactorGraph graph;
 
@@ -355,8 +373,8 @@ TEST(QPSolver, failedSubproblem) {
   QPSolver solver(graph);
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize();
-  graph.print("Graph: ");
-  solution.print("Solution: ");
+//  graph.print("Graph: ");
+//  solution.print("Solution: ");
   CHECK(assert_equal(expected, solution, 1e-7));
 }
 
