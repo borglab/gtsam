@@ -33,6 +33,8 @@ INSTANTIATE_LIE(Pose2);
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose2);
 
+#define SLOW_BUT_CORRECT_EXPMAP
+
 static const Matrix I3 = eye(3), Z12 = zeros(1,2);
 static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 
@@ -116,6 +118,13 @@ Matrix Pose2::AdjointMap() const {
       0.0, 0.0, 1.0
   );
 }
+
+/* ************************************************************************* */
+Vector Pose2::Adjoint(const Vector& xi) const {
+  assert(xi.size() == 3);
+  return AdjointMap()*xi;
+}
+
 
 /* ************************************************************************* */
 Pose2 Pose2::inverse(boost::optional<Matrix&> H1) const {

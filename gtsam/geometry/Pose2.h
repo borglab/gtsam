@@ -159,10 +159,7 @@ public:
    * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
   Matrix AdjointMap() const;
-  inline Vector Adjoint(const Vector& xi) const {
-    assert(xi.size() == 3);
-    return AdjointMap()*xi;
-  }
+  Vector Adjoint(const Vector& xi) const;
 
   /**
    * wedge for SE(2):
