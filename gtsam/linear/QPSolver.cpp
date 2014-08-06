@@ -287,8 +287,6 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(const GaussianFactorGra
         if (debug) cout << "s, ajTp, b[s]: " << s << " " << ajTp << " " << b[s] << endl;
 
         // Check if  aj'*p >0. Don't care if it's not.
-        //        if (ajTp - b[s]>0)
-        //          throw std::runtime_error("Infeasible point detected. Please choose a feasible initial values!");
         if (ajTp<=0) continue;
 
         // Compute aj'*xk
@@ -335,6 +333,7 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
 
     int factorIx, sigmaIx;
     boost::tie(factorIx, sigmaIx) = findWorstViolatedActiveIneq(lambdas);
+    if (debug) cout << "violated active ineq - factorIx, sigmaIx: " << factorIx << " " << sigmaIx << endl;
 
     // Try to disactivate the weakest violated ineq constraints
     // if not successful, i.e. all ineq constraints are satisfied: We have the solution!!
@@ -354,6 +353,14 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& c
     updateWorkingSetInplace(workingGraph, factorIx, sigmaIx, 0.0);
     // step!
     currentSolution = currentSolution + alpha * p;
+//    if (alpha <1e-5) {
+//      if (debug) cout << "Building dual graph..." << endl;
+//      GaussianFactorGraph dualGraph = buildDualGraph(workingGraph, newSolution);
+//      if (debug) dualGraph.print("Dual graph: ");
+//      lambdas = dualGraph.optimize();
+//      if (debug) lambdas.print("lambdas :");
+//      return true; // TODO: HACK HACK!!!
+//    }
   }
 
   return false;
@@ -461,6 +468,7 @@ std::pair<GaussianFactorGraph::shared_ptr, VectorValues> QPSolver::constraintsLP
 
 /* ************************************************************************* */
 std::pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
+  static const bool debug = false;
   // Initial values with slack variables for the LP subproblem, Nocedal06book, pg.473
   VectorValues initials;
   size_t firstSlackKey;
@@ -477,6 +485,11 @@ std::pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
   // Solve the LP subproblem
   LPSolver lpSolver(objectiveLP, constraints, slackLowerBounds);
   VectorValues solution = lpSolver.solve();
+
+  if (debug) initials.print("Initials LP: ");
+  if (debug) objectiveLP.print("Objective LP: ");
+  if (debug) constraints->print("Constraints LP: ");
+  if (debug) solution.print("LP solution: ");
 
   // Remove slack variables from solution
   double slackSum = 0.0;
