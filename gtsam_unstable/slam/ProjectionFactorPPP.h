@@ -10,18 +10,17 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file TransformProjectionFactor.h
- * @brief Basic bearing factor from 2D measurement
+ * @file ProjectionFactorPPP.h
+ * @brief Derived from ProjectionFactor, but estimates body-camera transform
+ * in addition to body pose and 3D landmark
  * @author Chris Beall
- * @author Richard Roberts
- * @author Frank Dellaert
- * @author Alex Cunningham
  */
 
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <boost/optional.hpp>
 
 namespace gtsam {
@@ -32,7 +31,7 @@ namespace gtsam {
    * @addtogroup SLAM
    */
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-  class TransformProjectionFactor: public NoiseModelFactor3<POSE, POSE, LANDMARK> {
+  class ProjectionFactorPPP: public NoiseModelFactor3<POSE, POSE, LANDMARK> {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -49,13 +48,13 @@ namespace gtsam {
     typedef NoiseModelFactor3<POSE, POSE, LANDMARK> Base;
 
     /// shorthand for this class
-    typedef TransformProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
+    typedef ProjectionFactorPPP<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
-    TransformProjectionFactor() : throwCheirality_(false), verboseCheirality_(false) {}
+    ProjectionFactorPPP() : throwCheirality_(false), verboseCheirality_(false) {}
 
     /**
      * Constructor
@@ -63,10 +62,11 @@ namespace gtsam {
      * @param measured is the 2 dimensional location of point in image (the measurement)
      * @param model is the standard deviation
      * @param poseKey is the index of the camera
+     * @param transformKey is the index of the body-camera transform
      * @param pointKey is the index of the landmark
      * @param K shared pointer to the constant calibration
      */
-    TransformProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
+    ProjectionFactorPPP(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key transformKey,  Key pointKey,
         const boost::shared_ptr<CALIBRATION>& K) :
           Base(model, poseKey, transformKey, pointKey), measured_(measured), K_(K),
@@ -83,7 +83,7 @@ namespace gtsam {
      * @param throwCheirality determines whether Cheirality exceptions are rethrown
      * @param verboseCheirality determines whether exceptions are printed for Cheirality
      */
-    TransformProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
+    ProjectionFactorPPP(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key transformKey, Key pointKey,
         const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality) :
@@ -91,7 +91,7 @@ namespace gtsam {
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /** Virtual destructor */
-    virtual ~TransformProjectionFactor() {}
+    virtual ~ProjectionFactorPPP() {}
 
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
@@ -104,7 +104,7 @@ namespace gtsam {
      * @param keyFormatter optional formatter useful for printing Symbols
      */
     void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      std::cout << s << "TransformProjectionFactor, z = ";
+      std::cout << s << "ProjectionFactorPPP, z = ";
       measured_.print();
       Base::print("", keyFormatter);
     }

@@ -746,13 +746,13 @@ virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/geometry/Cal3DS2.h>
-#include <gtsam_unstable/slam/TransformProjectionFactor.h>
+#include <gtsam_unstable/slam/ProjectionFactorPPP.h>
 template<POSE, LANDMARK, CALIBRATION>
-virtual class TransformProjectionFactor : gtsam::NoiseModelFactor {
-  TransformProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+virtual class ProjectionFactorPPP : gtsam::NoiseModelFactor {
+  ProjectionFactorPPP(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
     size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k);
 
-  TransformProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+  ProjectionFactorPPP(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
       size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
 
   gtsam::Point2 measured() const;
@@ -763,8 +763,8 @@ virtual class TransformProjectionFactor : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 };
-typedef gtsam::TransformProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> TransformProjectionFactorCal3_S2;
-typedef gtsam::TransformProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> TransformProjectionFactorCal3DS2;
+typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCal3_S2;
+typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCal3DS2;
 
 
 #include <gtsam_unstable/slam/ProjectionFactorPPPC.h>

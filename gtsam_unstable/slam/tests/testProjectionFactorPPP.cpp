@@ -11,14 +11,14 @@
 
 /**
  *  @file  testProjectionFactor.cpp
- *  @brief Unit tests for ProjectionFactor Class
- *  @author Frank Dellaert
- *  @date Nov 2009
+ *  @brief Unit tests for ProjectionFactorPPP Class
+ *  @author Chris Beall
+ *  @date July 2014
  */
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam_unstable/slam/TransformProjectionFactor.h>
+#include <gtsam_unstable/slam/ProjectionFactorPPP.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -46,11 +46,11 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 using symbol_shorthand::T;
 
-typedef TransformProjectionFactor<Pose3, Point3> TestProjectionFactor;
+typedef ProjectionFactorPPP<Pose3, Point3> TestProjectionFactor;
 
 /* ************************************************************************* */
 TEST( ProjectionFactor, nonStandard ) {
-  TransformProjectionFactor<Pose3, Point3, Cal3DS2> f;
+  ProjectionFactorPPP<Pose3, Point3, Cal3DS2> f;
 }
 
 /* ************************************************************************* */
