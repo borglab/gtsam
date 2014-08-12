@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testTransformCalProjectionFactor.cpp
+ *  @file  testProjectionFactorPPPC.cpp
  *  @brief Unit tests for Pose+Transform+Calibration ProjectionFactor Class
  *  @author Chris Beall
  *  @date Jul 29, 2014
@@ -18,7 +18,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam_unstable/slam/TransformCalProjectionFactor.h>
+#include <gtsam_unstable/slam/ProjectionFactorPPPC.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -47,11 +47,11 @@ using symbol_shorthand::L;
 using symbol_shorthand::T;
 using symbol_shorthand::K;
 
-typedef TransformCalProjectionFactor<Pose3, Point3, Cal3_S2> TestProjectionFactor;
+typedef ProjectionFactorPPPC<Pose3, Point3, Cal3_S2> TestProjectionFactor;
 
 /* ************************************************************************* */
 TEST( ProjectionFactor, nonStandard ) {
-  TransformCalProjectionFactor<Pose3, Point3, Cal3DS2> f;
+  ProjectionFactorPPPC<Pose3, Point3, Cal3DS2> f;
 }
 
 /* ************************************************************************* */
