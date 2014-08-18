@@ -38,6 +38,8 @@ GTSAM_EXPORT Values initializeOrientations(const NonlinearFactorGraph& graph);
 
 GTSAM_EXPORT NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph);
 
+GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess);
+
 ///** Linear factor graph with regularized orientation measurements */
 //GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(
 //    const std::vector<size_t>& spanningTreeIds,

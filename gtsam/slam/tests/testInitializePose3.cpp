@@ -89,6 +89,20 @@ TEST( InitializePose3, orientations ) {
   EXPECT(assert_equal(simple::R3, initial.at<Rot3>(x3), 1e-6));
 }
 
+/* *************************************************************************** */
+TEST( InitializePose3, posesWithGivenGuess ) {
+  Values givenPoses;
+  givenPoses.insert(x0,simple::pose0);
+  givenPoses.insert(x1,simple::pose1);
+  givenPoses.insert(x2,simple::pose2);
+  givenPoses.insert(x3,simple::pose3);
+
+  Values initial = InitializePose3::initialize(simple::graph(), givenPoses);
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal(givenPoses, initial, 1e-6));
+}
+
 
 /* ************************************************************************* */
 int main() {

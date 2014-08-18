@@ -239,26 +239,25 @@ Values initializeOrientations(const NonlinearFactorGraph& graph) {
 //  return computePoses(pose2Graph, orientationsLago);
 //}
 //
-///* ************************************************************************* */
-//Values initialize(const NonlinearFactorGraph& graph,
-//    const Values& initialGuess) {
-//  Values initialGuessLago;
-//
-//  // get the orientation estimates from LAGO
-//  VectorValues orientations = initializeOrientations(graph);
-//
-//  // for all nodes in the tree
-//  BOOST_FOREACH(const VectorValues::value_type& it, orientations) {
-//    Key key = it.first;
-//    if (key != keyAnchor) {
-//      const Pose2& pose = initialGuess.at<Pose2>(key);
-//      const Vector& orientation = it.second;
-//      Pose2 poseLago = Pose2(pose.x(), pose.y(), orientation(0));
-//      initialGuessLago.insert(key, poseLago);
-//    }
-//  }
-//  return initialGuessLago;
-//}
+/* ************************************************************************* */
+Values initialize(const NonlinearFactorGraph& graph,
+    const Values& givenGuess) {
+  Values initialValues;
+
+  // get the orientation estimates from LAGO
+  Values orientations = initializeOrientations(graph);
+
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, orientations) {
+    Key key = key_value.key;
+    if (key != keyAnchor) {
+      const Point3& pos = givenGuess.at<Pose3>(key).translation();
+      const Rot3& rot = orientations.at<Rot3>(key);
+      Pose3 initializedPoses = Pose3(rot, pos);
+      initialValues.insert(key, initializedPoses);
+    }
+  }
+  return initialValues;
+}
 
 } // end of namespace lago
 } // end of namespace gtsam
