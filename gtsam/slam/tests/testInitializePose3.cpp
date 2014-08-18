@@ -46,19 +46,19 @@ namespace simple {
 //            \  |  /
 //               x0
 //
-static Point3 p1 = Point3(0,0,0);
-static Rot3   R1 = Rot3::Expmap( ( Vector(3) << 0.0,0.0,0.0 ) );
-static Point3 p2 = Point3(1,2,0);
-static Rot3   R2 = Rot3::Expmap( ( Vector(3) << 0.0,0.0,1.570796 ) );
-static Point3 p3 = Point3(0,2,0);
-static Rot3   R3 = Rot3::Expmap( ( Vector(3) << 0.0,0.0,3.141593 ) );
-static Point3 p4 = Point3(-1,1,0);
-static Rot3   R4 = Rot3::Expmap( ( Vector(3) << 0.0,0.0,4.712389 ) );
+static Point3 p0 = Point3(0,0,0);
+static Rot3   R0 = Rot3::Expmap( ( Vector(3) << 0.0,0.0,0.0 ) );
+static Point3 p1 = Point3(1,2,0);
+static Rot3   R1 = Rot3::Expmap( ( Vector(3) << 0.0,0.0,1.570796 ) );
+static Point3 p2 = Point3(0,2,0);
+static Rot3   R2 = Rot3::Expmap( ( Vector(3) << 0.0,0.0,3.141593 ) );
+static Point3 p3 = Point3(-1,1,0);
+static Rot3   R3 = Rot3::Expmap( ( Vector(3) << 0.0,0.0,4.712389 ) );
 
-static Pose3 pose0 = Pose3(R1,p1);
-static Pose3 pose1 = Pose3(R2,p2);
-static Pose3 pose2 = Pose3(R3,p3);
-static Pose3 pose3 = Pose3(R4,p4);
+static Pose3 pose0 = Pose3(R0,p0);
+static Pose3 pose1 = Pose3(R1,p1);
+static Pose3 pose2 = Pose3(R2,p2);
+static Pose3 pose3 = Pose3(R3,p3);
 
 NonlinearFactorGraph graph() {
   NonlinearFactorGraph g;
@@ -83,7 +83,10 @@ TEST( InitializePose3, orientations ) {
   Values initial = InitializePose3::initializeOrientations(simple::graph());
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal(initial.at<Pose3>(0), simple::pose0, 1e-6));
+  EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
+  EXPECT(assert_equal(simple::R1, initial.at<Rot3>(x1), 1e-6));
+  EXPECT(assert_equal(simple::R2, initial.at<Rot3>(x2), 1e-6));
+  EXPECT(assert_equal(simple::R3, initial.at<Rot3>(x3), 1e-6));
 }
 
 

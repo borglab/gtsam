@@ -44,24 +44,27 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
   noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(9);
 
   BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, g) {
-    Matrix3 Rijt;
+    Matrix3 Rij;
 
     boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
         boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
     if (pose3Between)
-      Rijt = pose3Between->measured().rotation().matrix().transpose();
+      Rij = pose3Between->measured().rotation().matrix();
     else
       std::cout << "Error in buildLinearOrientationGraph" << std::endl;
 
+    // std::cout << "Rij \n" << Rij << std::endl;
+
     const FastVector<Key>& keys = factor->keys();
     Key key1 = keys[0], key2 = keys[1];
-    Matrix M9 = (Matrix(9,9) << Rijt,   zero33, zero33,
-                      zero33, Rijt,   zero33,
-                      zero33, zero33, Rijt);
+    Matrix M9 = Matrix::Zero(9,9);
+    M9.block(0,0,3,3) = Rij;
+    M9.block(3,3,3,3) = Rij;
+    M9.block(6,6,3,3) = Rij;
     linearGraph.add(key1, -I9, key2, M9, zero9, model);
   }
   // prior on the anchor orientation
-  linearGraph.add(keyAnchor, I9, (Vector(1) << 1.0, 0.0, 0.0,/*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0), model);
+  linearGraph.add(keyAnchor, I9, (Vector(9) << 1.0, 0.0, 0.0,/*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0), model);
   return linearGraph;
 }
 
@@ -71,7 +74,18 @@ Values normalizeRelaxedRotations(const VectorValues& relaxedRot3) {
   gttic(InitializePose3_computeOrientations);
 
   Values validRot3;
-
+  BOOST_FOREACH(const VectorValues::value_type& it, relaxedRot3) {
+    Key key = it.first;
+    if (key != keyAnchor) {
+      const Vector& rotVector = it.second;
+      Matrix3 rotMat;
+      rotMat(0,0) = rotVector(0); rotMat(0,1) = rotVector(1); rotMat(0,2) = rotVector(2);
+      rotMat(1,0) = rotVector(3); rotMat(1,1) = rotVector(4); rotMat(1,2) = rotVector(5);
+      rotMat(2,0) = rotVector(6); rotMat(2,1) = rotVector(7); rotMat(2,2) = rotVector(8);
+      Rot3 initRot = Rot3(rotMat);
+      validRot3.insert(key, initRot);
+    }
+  }
   return validRot3;
 }
 
@@ -112,9 +126,7 @@ Values computeOrientations(const NonlinearFactorGraph& pose3Graph) {
   VectorValues relaxedRot3 = relaxedGraph.optimize();
 
   // normalize and compute Rot3
-  Values initializedRot3 = normalizeRelaxedRotations(relaxedRot3);
-
-  return initializedRot3;
+  return normalizeRelaxedRotations(relaxedRot3);
 }
 
 /* ************************************************************************* */
