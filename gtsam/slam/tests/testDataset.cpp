@@ -253,6 +253,25 @@ TEST( dataSet, writeG2o)
 }
 
 /* ************************************************************************* */
+TEST( dataSet, writeG2o3D)
+{
+  const string g2oFile = findExampleDataFile("pose3example");
+  NonlinearFactorGraph::shared_ptr expectedGraph;
+  Values::shared_ptr expectedValues;
+  bool is3D = true;
+  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile, is3D);
+
+  const string filenameToWrite = createRewrittenFileName(g2oFile);
+  writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
+
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite, is3D);
+  EXPECT(assert_equal(*expectedValues,*actualValues,1e-4));
+  EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-4));
+}
+
+/* ************************************************************************* */
 TEST( dataSet, readBAL_Dubrovnik)
 {
   ///< The structure where we will save the SfM data

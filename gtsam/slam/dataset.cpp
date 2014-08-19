@@ -85,7 +85,6 @@ string createRewrittenFileName(const string& name) {
   return newpath.string();
 }
 /* ************************************************************************* */
-
 #endif
 
 /* ************************************************************************* */
@@ -379,33 +378,66 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 
   // save 2D & 3D poses
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
-    const Pose2& pose2D = dynamic_cast<const Pose2&>(key_value.value);
-    if(&pose2D){
-    stream << "VERTEX_SE2 " << key_value.key << " " << pose2D.x() << " "
-        << pose2D.y() << " " << pose2D.theta() << endl;
+
+    const Pose2* pose2D = dynamic_cast<const Pose2*>(&key_value.value);
+    if(pose2D){
+    stream << "VERTEX_SE2 " << key_value.key << " " << pose2D->x() << " "
+        << pose2D->y() << " " << pose2D->theta() << endl;
+    }
+    const Pose3* pose3D = dynamic_cast<const Pose3*>(&key_value.value);
+    if(pose3D){
+      Point3 p = pose3D->translation();
+      Rot3 R = pose3D->rotation();
+      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
+        << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
+        << " " << R.toQuaternion().w() << endl;
     }
   }
 
-  // save edges
+  // save edges (2D or 3D)
   BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
-    if (!factor)
-      continue;
+    if (factor){
+      SharedNoiseModel model = factor->get_noiseModel();
+      boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+          boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+      if (!diagonalModel)
+        throw invalid_argument(
+            "writeG2o: invalid noise model (current version assumes diagonal noise model)!");
 
-    SharedNoiseModel model = factor->get_noiseModel();
-    boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
-        boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-    if (!diagonalModel)
-      throw invalid_argument(
-          "writeG2o: invalid noise model (current version assumes diagonal noise model)!");
+      Pose2 pose = factor->measured(); //.inverse();
+      stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
+          << pose.x() << " " << pose.y() << " " << pose.theta() << " "
+          << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " "
+          << diagonalModel->precision(1) << " " << 0.0 << " "
+          << diagonalModel->precision(2) << endl;
+    }
 
-    Pose2 pose = factor->measured(); //.inverse();
-    stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
-        << pose.x() << " " << pose.y() << " " << pose.theta() << " "
-        << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " "
-        << diagonalModel->precision(1) << " " << 0.0 << " "
-        << diagonalModel->precision(2) << endl;
+    boost::shared_ptr< BetweenFactor<Pose3> > factor3D =
+        boost::dynamic_pointer_cast< BetweenFactor<Pose3> >(factor_);
+
+    if (factor3D){
+      SharedNoiseModel model = factor3D->get_noiseModel();
+      boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+          boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+      if (!diagonalModel)
+        throw invalid_argument(
+            "writeG2o: invalid noise model (current version assumes diagonal noise model)!");
+
+      Pose3 pose3D = factor3D->measured();
+      Point3 p = pose3D.translation();
+      Rot3 R = pose3D.rotation();
+      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2() << " "
+          << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
+          << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w() << " "
+          << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
+          << diagonalModel->precision(1) << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
+          << diagonalModel->precision(2) << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
+          << diagonalModel->precision(3) << " " << 0.0 << " " << 0.0 << " "
+          << diagonalModel->precision(4) << " " << 0.0 << " "
+          << diagonalModel->precision(5) << endl;
+    }
   }
   stream.close();
 }
