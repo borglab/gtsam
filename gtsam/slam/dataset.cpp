@@ -250,7 +250,6 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
           new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
       graph->push_back(factor);
     }
-
     // Parse measurements
     double bearing, range, bearing_std, range_std;
 
@@ -358,12 +357,16 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
 }
 
 /* ************************************************************************* */
-GraphAndValues readG2o(const string& g2oFile,
+GraphAndValues readG2o(const string& g2oFile, const bool is3D,
     KernelFunctionType kernelFunctionType) {
   // just call load2D
   int maxID = 0;
   bool addNoise = false;
   bool smart = true;
+
+  if(is3D)
+    return load3D(g2oFile);
+
   return load2D(g2oFile, SharedNoiseModel(), maxID, addNoise, smart,
       NoiseFormatG2O, kernelFunctionType);
 }
@@ -374,11 +377,13 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 
   fstream stream(filename.c_str(), fstream::out);
 
-  // save poses
+  // save 2D & 3D poses
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
-    const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
-    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
-        << pose.y() << " " << pose.theta() << endl;
+    const Pose2& pose2D = dynamic_cast<const Pose2&>(key_value.value);
+    if(&pose2D){
+    stream << "VERTEX_SE2 " << key_value.key << " " << pose2D.x() << " "
+        << pose2D.y() << " " << pose2D.theta() << endl;
+    }
   }
 
   // save edges
@@ -406,10 +411,14 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 }
 
 /* ************************************************************************* */
-bool load3D(const string& filename) {
+GraphAndValues load3D(const string& filename) {
+
   ifstream is(filename.c_str());
   if (!is)
-    return false;
+    throw invalid_argument("load2D: can not find file " + filename);
+
+  Values::shared_ptr initial(new Values);
+  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
 
   while (is) {
     char buf[LINESIZE];
@@ -422,6 +431,17 @@ bool load3D(const string& filename) {
       int id;
       double x, y, z, roll, pitch, yaw;
       ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
+      Rot3 R = Rot3::ypr(yaw,pitch,roll);
+      Point3 t = Point3(x, y, z);
+      initial->insert(id, Pose3(R,t));
+    }
+    if (tag == "VERTEX_SE3:QUAT") {
+      int id;
+      double x, y, z, qx, qy, qz, qw;
+      ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
+      Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+      Point3 t = Point3(x, y, z);
+      initial->insert(id, Pose3(R,t));
     }
   }
   is.clear(); /* clears the end-of-file and error flags */
@@ -438,13 +458,38 @@ bool load3D(const string& filename) {
       int id1, id2;
       double x, y, z, roll, pitch, yaw;
       ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
+      Rot3 R = Rot3::ypr(yaw,pitch,roll);
+      Point3 t = Point3(x, y, z);
       Matrix m = eye(6);
       for (int i = 0; i < 6; i++)
         for (int j = i; j < 6; j++)
           ls >> m(i, j);
+      SharedNoiseModel model = noiseModel::Gaussian::Information(m);
+      NonlinearFactor::shared_ptr factor(
+          new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
+      graph->push_back(factor);
+    }
+    if (tag == "EDGE_SE3:QUAT") {
+      Matrix m = eye(6);
+      int id1, id2;
+      double x, y, z, qx, qy, qz, qw;
+      ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
+      Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+      Point3 t = Point3(x, y, z);
+      for (int i = 0; i < 6; i++){
+        for (int j = i; j < 6; j++){
+          ls >> m(i, j);
+          if( j > i && m(i, j)!= 0)
+            throw invalid_argument("load3D: current version assumes diagonal noise!");
+        }
+      }
+      SharedNoiseModel model = noiseModel::Gaussian::Information(m);
+      NonlinearFactor::shared_ptr factor(
+          new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
+      graph->push_back(factor);
     }
   }
-  return true;
+  return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */

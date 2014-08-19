@@ -117,12 +117,75 @@ TEST( dataSet, readG2o)
 }
 
 /* ************************************************************************* */
+TEST( dataSet, readG2o3D)
+{
+  const string g2oFile = findExampleDataFile("pose3example");
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  bool is3D = true;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
+
+  Values expectedValues;
+  Rot3 R0 = Rot3::quaternion(1.000000, 0.000000, 0.000000, 0.000000 );
+  Point3 p0 = Point3(0.000000, 0.000000, 0.000000);
+  expectedValues.insert(0, Pose3(R0, p0));
+
+  Rot3 R1 = Rot3::quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
+  Point3 p1 = Point3(1.001367, 0.015390, 0.004948);
+  expectedValues.insert(1, Pose3(R1, p1));
+
+  Rot3 R2 = Rot3::quaternion(0.421446, -0.351729, -0.597838, 0.584174 );
+  Point3 p2 = Point3(1.993500, 0.023275, 0.003793);
+  expectedValues.insert(2, Pose3(R2, p2));
+
+  Rot3 R3 = Rot3::quaternion(0.067024, 0.331798, -0.200659, 0.919323);
+  Point3 p3 = Point3(2.004291, 1.024305, 0.018047);
+  expectedValues.insert(3, Pose3(R3, p3));
+
+  Rot3 R4 = Rot3::quaternion(0.765488, -0.035697, -0.462490, 0.445933);
+  Point3 p4 = Point3(0.999908, 1.055073, 0.020212);
+  expectedValues.insert(4, Pose3(R4, p4));
+
+  EXPECT(assert_equal(expectedValues,*actualValues,1e-5));
+
+  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions((Vector(6) << 10000.0,10000.0,10000.0,10000.0,10000.0,10000.0));
+  NonlinearFactorGraph expectedGraph;
+
+  Point3 p01 = Point3(1.001367, 0.015390, 0.004948);
+  Rot3 R01 = Rot3::quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
+  expectedGraph.add(BetweenFactor<Pose3>(0, 1, Pose3(R01,p01), model));
+
+  Point3 p12 = Point3(0.523923, 0.776654, 0.326659);
+  Rot3 R12 = Rot3::quaternion(0.105373 , 0.311512, 0.656877, -0.678505 );
+  expectedGraph.add(BetweenFactor<Pose3>(1, 2, Pose3(R12,p12), model));
+
+  Point3 p23 = Point3(0.910927, 0.055169, -0.411761);
+  Rot3 R23 = Rot3::quaternion(0.568551 , 0.595795, -0.561677, 0.079353 );
+  expectedGraph.add(BetweenFactor<Pose3>(2, 3, Pose3(R23,p23), model));
+
+  Point3 p34 = Point3(0.775288, 0.228798, -0.596923);
+  Rot3 R34 = Rot3::quaternion(0.542221 , -0.592077, 0.303380, -0.513226 );
+  expectedGraph.add(BetweenFactor<Pose3>(3, 4, Pose3(R34,p34), model));
+
+  Point3 p14 = Point3(-0.577841, 0.628016, -0.543592);
+  Rot3 R14 = Rot3::quaternion(0.327419 , -0.125250, -0.534379, 0.769122  );
+  expectedGraph.add(BetweenFactor<Pose3>(1, 4, Pose3(R14,p14), model));
+
+  Point3 p30 = Point3(-0.623267, 0.086928, 0.773222);
+  Rot3 R30 = Rot3::quaternion(0.083672 ,  0.104639, 0.627755, 0.766795  );
+  expectedGraph.add(BetweenFactor<Pose3>(3, 0, Pose3(R30,p30), model));
+
+  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
+}
+
+/* ************************************************************************* */
 TEST( dataSet, readG2oHuber)
 {
   const string g2oFile = findExampleDataFile("pose2example");
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, KernelFunctionTypeHUBER);
+  bool is3D = false;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D, KernelFunctionTypeHUBER);
 
   noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), baseModel);
@@ -149,7 +212,8 @@ TEST( dataSet, readG2oTukey)
   const string g2oFile = findExampleDataFile("pose2example");
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, KernelFunctionTypeTUKEY);
+  bool is3D = false;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D, KernelFunctionTypeTUKEY);
 
   noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699));
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
