@@ -170,6 +170,7 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
   }
   // add prior
   noiseModel::Unit::shared_ptr priorModel = noiseModel::Unit::Create(6);
+  initialPose.insert(keyAnchor, Pose3());
   pose3graph.add(PriorFactor<Pose3>(keyAnchor, Pose3(), priorModel));
 
   // Create optimizer
@@ -180,10 +181,10 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
 
   // put into Values structure
   Values estimate;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, GNresult) {
     Key key = key_value.key;
     if (key != keyAnchor) {
-      const Pose3& pose = estimate.at<Pose3>(key);
+      const Pose3& pose = GNresult.at<Pose3>(key);
       estimate.insert(key, pose);
     }
   }

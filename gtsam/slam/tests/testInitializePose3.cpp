@@ -103,6 +103,21 @@ TEST( InitializePose3, posesWithGivenGuess ) {
   EXPECT(assert_equal(givenPoses, initial, 1e-6));
 }
 
+/* ************************************************************************* */
+TEST( InitializePose3, initializePoses )
+{
+  const string g2oFile = findExampleDataFile("pose3example-grid");
+  NonlinearFactorGraph::shared_ptr inputGraph;
+  Values::shared_ptr expectedValues;
+  bool is3D = true;
+  boost::tie(inputGraph, expectedValues) = readG2o(g2oFile, is3D);
+  noiseModel::Unit::shared_ptr priorModel = noiseModel::Unit::Create(6);
+  inputGraph->add(PriorFactor<Pose3>(0, Pose3(), priorModel));
+
+  Values initial = InitializePose3::initialize(*inputGraph);
+  EXPECT(assert_equal(*expectedValues,initial,1e-4));
+}
+
 
 /* ************************************************************************* */
 int main() {
