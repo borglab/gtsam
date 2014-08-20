@@ -19,6 +19,7 @@
 #include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/timing.h>
@@ -156,92 +157,56 @@ Values initializeOrientations(const NonlinearFactorGraph& graph) {
 }
 
 ///* ************************************************************************* */
-//Values computePoses(const NonlinearFactorGraph& pose2graph,
-//    VectorValues& orientationsLago) {
-//  gttic(lago_computePoses);
-//
-//  // Linearized graph on full poses
-//  GaussianFactorGraph linearPose2graph;
-//
-//  // We include the linear version of each between factor
-//  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, pose2graph) {
-//
-//    boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-//        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
-//
-//    if (pose2Between) {
-//      Key key1 = pose2Between->keys()[0];
-//      double theta1 = orientationsLago.at(key1)(0);
-//      double s1 = sin(theta1);
-//      double c1 = cos(theta1);
-//
-//      Key key2 = pose2Between->keys()[1];
-//      double theta2 = orientationsLago.at(key2)(0);
-//
-//      double linearDeltaRot = theta2 - theta1
-//          - pose2Between->measured().theta();
-//      linearDeltaRot = Rot2(linearDeltaRot).theta(); // to normalize
-//
-//      double dx = pose2Between->measured().x();
-//      double dy = pose2Between->measured().y();
-//
-//      Vector globalDeltaCart = //
-//          (Vector(2) << c1 * dx - s1 * dy, s1 * dx + c1 * dy);
-//      Vector b = (Vector(3) << globalDeltaCart, linearDeltaRot); // rhs
-//      Matrix J1 = -I3;
-//      J1(0, 2) = s1 * dx + c1 * dy;
-//      J1(1, 2) = -c1 * dx + s1 * dy;
-//      // Retrieve the noise model for the relative rotation
-//      boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
-//          boost::dynamic_pointer_cast<noiseModel::Diagonal>(
-//              pose2Between->get_noiseModel());
-//
-//      linearPose2graph.add(key1, J1, key2, I3, b, diagonalModel);
-//    } else {
-//      throw invalid_argument(
-//          "computeLagoPoses: cannot manage non between factor here!");
-//    }
-//  }
-//  // add prior
-//  linearPose2graph.add(keyAnchor, I3, (Vector(3) << 0.0, 0.0, 0.0),
-//      priorPose2Noise);
-//
-//  // optimize
-//  VectorValues posesLago = linearPose2graph.optimize();
-//
-//  // put into Values structure
-//  Values initialGuessLago;
-//  BOOST_FOREACH(const VectorValues::value_type& it, posesLago) {
-//    Key key = it.first;
-//    if (key != keyAnchor) {
-//      const Vector& poseVector = it.second;
-//      Pose2 poseLago = Pose2(poseVector(0), poseVector(1),
-//          orientationsLago.at(key)(0) + poseVector(2));
-//      initialGuessLago.insert(key, poseLago);
-//    }
-//  }
-//  return initialGuessLago;
-//}
+Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
+  gttic(InitializePose3_computePoses);
 
-///* ************************************************************************* */
-//Values initialize(const NonlinearFactorGraph& graph, bool useOdometricPath) {
-//  gttic(lago_initialize);
-//
-//  // We "extract" the Pose2 subgraph of the original graph: this
-//  // is done to properly model priors and avoiding operating on a larger graph
-//  NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
-//
-//  // Get orientations from relative orientation measurements
-//  VectorValues orientationsLago = computeOrientations(pose2Graph,
-//      useOdometricPath);
-//
-//  // Compute the full poses
-//  return computePoses(pose2Graph, orientationsLago);
-//}
-//
+  // put into Values structure
+  Values initialPose;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, initialRot){
+    Key key = key_value.key;
+    const Rot3& rot = initialRot.at<Rot3>(key);
+    Pose3 initializedPose = Pose3(rot, Point3());
+    initialPose.insert(key, initializedPose);
+  }
+  // add prior
+  noiseModel::Unit::shared_ptr priorModel = noiseModel::Unit::Create(6);
+  pose3graph.add(PriorFactor<Pose3>(keyAnchor, Pose3(), priorModel));
+
+  // Create optimizer
+  GaussNewtonParams params;
+  params.maxIterations = 1;
+  GaussNewtonOptimizer optimizer(pose3graph, initialPose, params);
+  Values GNresult = optimizer.optimize();
+
+  // put into Values structure
+  Values estimate;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
+    Key key = key_value.key;
+    if (key != keyAnchor) {
+      const Pose3& pose = estimate.at<Pose3>(key);
+      estimate.insert(key, pose);
+    }
+  }
+  return estimate;
+}
+
 /* ************************************************************************* */
-Values initialize(const NonlinearFactorGraph& graph,
-    const Values& givenGuess) {
+Values initialize(const NonlinearFactorGraph& graph) {
+  gttic(InitializePose3_initialize);
+
+  // We "extract" the Pose3 subgraph of the original graph: this
+  // is done to properly model priors and avoiding operating on a larger graph
+  NonlinearFactorGraph pose3Graph = buildPose3graph(graph);
+
+  // Get orientations from relative orientation measurements
+  Values valueRot3 = computeOrientations(pose3Graph);
+
+  // Compute the full poses (1 GN iteration on full poses)
+  return computePoses(pose3Graph, valueRot3);
+}
+
+/* ************************************************************************* */
+Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess) {
   Values initialValues;
 
   // get the orientation estimates from LAGO

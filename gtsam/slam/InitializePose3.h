@@ -38,25 +38,11 @@ GTSAM_EXPORT Values initializeOrientations(const NonlinearFactorGraph& graph);
 
 GTSAM_EXPORT NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph);
 
-GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess);
+GTSAM_EXPORT Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot);
 
-///** Linear factor graph with regularized orientation measurements */
-//GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(
-//    const std::vector<size_t>& spanningTreeIds,
-//    const std::vector<size_t>& chordsIds, const NonlinearFactorGraph& g,
-//    const key2doubleMap& orientationsToRoot, const PredecessorMap<Key>& tree);
-//
-///** LAGO: Return the orientations of the Pose2 in a generic factor graph */
-//GTSAM_EXPORT VectorValues initializeOrientations(
-//    const NonlinearFactorGraph& graph, bool useOdometricPath = true);
-//
-///** Return the values for the Pose2 in a generic factor graph */
-//GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph,
-//    bool useOdometricPath = true);
-//
-///** Only correct the orientation part in initialGuess */
-//GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph,
-//    const Values& initialGuess);
+GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph);
+
+GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess);
 
 } // end of namespace lago
 } // end of namespace gtsam
