@@ -400,18 +400,22 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (factor){
       SharedNoiseModel model = factor->get_noiseModel();
-      boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
-          boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-      if (!diagonalModel)
-        throw invalid_argument(
-            "writeG2o: invalid noise model (current version assumes diagonal noise model)!");
-
+      boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
+          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+      if (!gaussianModel){
+        model->print("model\n");
+        throw invalid_argument("writeG2o: invalid noise model!");
+      }
+      Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
       Pose2 pose = factor->measured(); //.inverse();
       stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
-          << pose.x() << " " << pose.y() << " " << pose.theta() << " "
-          << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " "
-          << diagonalModel->precision(1) << " " << 0.0 << " "
-          << diagonalModel->precision(2) << endl;
+          << pose.x() << " " << pose.y() << " " << pose.theta();
+      for (int i = 0; i < 3; i++){
+        for (int j = i; j < 3; j++){
+          stream << " " << Info(i, j);
+        }
+      }
+      stream << endl;
     }
 
     boost::shared_ptr< BetweenFactor<Pose3> > factor3D =
@@ -419,24 +423,28 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 
     if (factor3D){
       SharedNoiseModel model = factor3D->get_noiseModel();
-      boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
-          boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-      if (!diagonalModel)
-        throw invalid_argument(
-            "writeG2o: invalid noise model (current version assumes diagonal noise model)!");
 
+      boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
+          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+      if (!gaussianModel){
+        model->print("model\n");
+        throw invalid_argument("writeG2o: invalid noise model!");
+      }
+      Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
       Pose3 pose3D = factor3D->measured();
       Point3 p = pose3D.translation();
       Rot3 R = pose3D.rotation();
+
       stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2() << " "
           << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
-          << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w() << " "
-          << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
-          << diagonalModel->precision(1) << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
-          << diagonalModel->precision(2) << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
-          << diagonalModel->precision(3) << " " << 0.0 << " " << 0.0 << " "
-          << diagonalModel->precision(4) << " " << 0.0 << " "
-          << diagonalModel->precision(5) << endl;
+          << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
+
+      for (int i = 0; i < 6; i++){
+        for (int j = i; j < 6; j++){
+          stream << " " << Info(i, j);
+        }
+      }
+      stream << endl;
     }
   }
   stream.close();
@@ -510,14 +518,14 @@ GraphAndValues load3D(const string& filename) {
       Point3 t = Point3(x, y, z);
       for (int i = 0; i < 6; i++){
         for (int j = i; j < 6; j++){
-          ls >> m(i, j);
-          if( j > i && m(i, j)!= 0)
-            throw invalid_argument("load3D: current version assumes diagonal noise!");
+          double mij;
+          ls >> mij;
+          m(i, j) = mij;
+          m(j, i) = mij;
         }
       }
       SharedNoiseModel model = noiseModel::Gaussian::Information(m);
-      NonlinearFactor::shared_ptr factor(
-          new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
+      NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
       graph->push_back(factor);
     }
   }

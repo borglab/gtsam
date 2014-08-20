@@ -179,6 +179,46 @@ TEST( dataSet, readG2o3D)
 }
 
 /* ************************************************************************* */
+TEST( dataSet, readG2o3DNonDiagonalNoise)
+{
+  const string g2oFile = findExampleDataFile("pose3example-offdiagonal.txt");
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  bool is3D = true;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
+
+  Values expectedValues;
+  Rot3 R0 = Rot3::quaternion(1.000000, 0.000000, 0.000000, 0.000000 );
+  Point3 p0 = Point3(0.000000, 0.000000, 0.000000);
+  expectedValues.insert(0, Pose3(R0, p0));
+
+  Rot3 R1 = Rot3::quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
+  Point3 p1 = Point3(1.001367, 0.015390, 0.004948);
+  expectedValues.insert(1, Pose3(R1, p1));
+
+  EXPECT(assert_equal(expectedValues,*actualValues,1e-5));
+
+  Matrix Info = Matrix(6,6);
+  for (int i = 0; i < 6; i++){
+    for (int j = i; j < 6; j++){
+      if(i==j)
+        Info(i, j) = 10000;
+      else{
+        Info(i, j) = i+1; // arbitrary nonzero number
+        Info(j, i) = i+1;
+      }
+    }
+  }
+  noiseModel::Gaussian::shared_ptr model = noiseModel::Gaussian::Covariance(Info.inverse());
+  NonlinearFactorGraph expectedGraph;
+  Point3 p01 = Point3(1.001367, 0.015390, 0.004948);
+  Rot3 R01 = Rot3::quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
+  expectedGraph.add(BetweenFactor<Pose3>(0, 1, Pose3(R01,p01), model));
+
+  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-2));
+}
+
+/* ************************************************************************* */
 TEST( dataSet, readG2oHuber)
 {
   const string g2oFile = findExampleDataFile("pose2example");
@@ -256,6 +296,25 @@ TEST( dataSet, writeG2o)
 TEST( dataSet, writeG2o3D)
 {
   const string g2oFile = findExampleDataFile("pose3example");
+  NonlinearFactorGraph::shared_ptr expectedGraph;
+  Values::shared_ptr expectedValues;
+  bool is3D = true;
+  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile, is3D);
+
+  const string filenameToWrite = createRewrittenFileName(g2oFile);
+  writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
+
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite, is3D);
+  EXPECT(assert_equal(*expectedValues,*actualValues,1e-4));
+  EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-4));
+}
+
+/* ************************************************************************* */
+TEST( dataSet, writeG2o3DNonDiagonalNoise)
+{
+  const string g2oFile = findExampleDataFile("pose3example-offdiagonal");
   NonlinearFactorGraph::shared_ptr expectedGraph;
   Values::shared_ptr expectedValues;
   bool is3D = true;
