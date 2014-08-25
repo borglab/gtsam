@@ -182,7 +182,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
       break;
 
     if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
-      int id;
+      Key id;
       double x, y, yaw;
       is >> id >> x >> y >> yaw;
 
@@ -468,7 +468,7 @@ GraphAndValues load3D(const string& filename) {
     ls >> tag;
 
     if (tag == "VERTEX3") {
-      int id;
+      Key id;
       double x, y, z, roll, pitch, yaw;
       ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
       Rot3 R = Rot3::ypr(yaw,pitch,roll);
@@ -476,7 +476,7 @@ GraphAndValues load3D(const string& filename) {
       initial->insert(id, Pose3(R,t));
     }
     if (tag == "VERTEX_SE3:QUAT") {
-      int id;
+      Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
       Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
@@ -495,7 +495,7 @@ GraphAndValues load3D(const string& filename) {
     ls >> tag;
 
     if (tag == "EDGE3") {
-      int id1, id2;
+      Key id1, id2;
       double x, y, z, roll, pitch, yaw;
       ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
       Rot3 R = Rot3::ypr(yaw,pitch,roll);
@@ -511,7 +511,7 @@ GraphAndValues load3D(const string& filename) {
     }
     if (tag == "EDGE_SE3:QUAT") {
       Matrix m = eye(6);
-      int id1, id2;
+      Key id1, id2;
       double x, y, z, qx, qy, qz, qw;
       ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
       Rot3 R = Rot3::quaternion(qw, qx, qy, qz);

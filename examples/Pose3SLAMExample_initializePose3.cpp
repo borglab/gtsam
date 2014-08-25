@@ -19,6 +19,7 @@
 
 #include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <fstream>
 
@@ -39,12 +40,17 @@ int main(const int argc, const char *argv[]) {
   bool is3D = true;
   boost::tie(graph, initial) = readG2o(g2oFile, is3D);
 
-  // Add prior on the pose having index (key) = 0
+  // Add prior on the first key
   NonlinearFactorGraph graphWithPrior = *graph;
   noiseModel::Diagonal::shared_ptr priorModel = //
       noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4));
-  graphWithPrior.add(PriorFactor<Pose3>(0, Pose3(), priorModel));
-  // graphWithPrior.print();
+  Key firstKey = 0;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, *initial) {
+    std::cout << "Adding prior to g2o file " << std::endl;
+    firstKey = key_value.key;
+    graphWithPrior.add(PriorFactor<Pose3>(firstKey, Pose3(), priorModel));
+    break;
+  }
 
   std::cout << "Initializing Pose3" << std::endl;
   Values initialization = InitializePose3::initialize(graphWithPrior);
@@ -54,10 +60,34 @@ int main(const int argc, const char *argv[]) {
     initialization.print("initialization");
   } else {
     const string outputFile = argv[2];
-    std::cout << "Writing results to file: " << outputFile << std::endl;
+    std::cout << "Writing results to file: " << outputFile << argc << std::endl;
     writeG2o(*graph, initialization, outputFile);
     std::cout << "done! " << std::endl;
-  }
 
+    // This should be deleted: only for debug
+    if (argc == 4){
+      const string inputFileRewritten = argv[3];
+      std::cout << "Rewriting input to file: " << inputFileRewritten << std::endl;
+      // Additional: rewrite input with simplified keys 0,1,...
+      Values simpleInitial;
+      BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, *initial) {
+        Key key = key_value.key - firstKey;
+        simpleInitial.insert(key, initial->at(key_value.key));
+      }
+      NonlinearFactorGraph simpleGraph;
+      BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, *graph) {
+        boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
+            boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+        if (pose3Between){
+          Key key1 = pose3Between->key1() - firstKey;
+          Key key2 = pose3Between->key2() - firstKey;
+          NonlinearFactor::shared_ptr simpleFactor(
+              new BetweenFactor<Pose3>(key1, key2, pose3Between->measured(), pose3Between->get_noiseModel()));
+          simpleGraph.add(simpleFactor);
+        }
+      }
+      writeG2o(simpleGraph, simpleInitial, inputFileRewritten);
+    }
+  }
   return 0;
 }
