@@ -60,7 +60,7 @@ int main(const int argc, const char *argv[]) {
     initialization.print("initialization");
   } else {
     const string outputFile = argv[2];
-    std::cout << "Writing results to file: " << outputFile << argc << std::endl;
+    std::cout << "Writing results to file: " << outputFile  << std::endl;
     writeG2o(*graph, initialization, outputFile);
     std::cout << "done! " << std::endl;
 
