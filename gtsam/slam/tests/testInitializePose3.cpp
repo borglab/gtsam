@@ -92,6 +92,25 @@ TEST( InitializePose3, orientations ) {
 }
 
 /* *************************************************************************** */
+TEST( InitializePose3, orientationsGradient ) {
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
+
+  // Wrong initial guess - initialization should fix the rotations
+  Values givenPoses;
+  givenPoses.insert(x0,simple::pose0);
+  givenPoses.insert(x1,simple::pose0);
+  givenPoses.insert(x2,simple::pose0);
+  givenPoses.insert(x3,simple::pose0);
+  Values initial = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses);
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
+  EXPECT(assert_equal(simple::R1, initial.at<Rot3>(x1), 1e-6));
+  EXPECT(assert_equal(simple::R2, initial.at<Rot3>(x2), 1e-6));
+  EXPECT(assert_equal(simple::R3, initial.at<Rot3>(x3), 1e-6));
+}
+
+/* *************************************************************************** */
 TEST( InitializePose3, posesWithGivenGuess ) {
   Values givenPoses;
   givenPoses.insert(x0,simple::pose0);

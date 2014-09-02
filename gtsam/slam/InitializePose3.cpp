@@ -38,6 +38,8 @@ static const Matrix zero33= Matrix::Zero(3,3);
 
 static const Key keyAnchor = symbol('Z', 9999999);
 
+typedef std::map<Key, vector<size_t> > KeyVectorMap;
+
 /* ************************************************************************* */
 GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
 
@@ -150,16 +152,31 @@ Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph) {
 Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess) {
   gttic(InitializePose3_computeOrientationsGradient);
 
+  // this works on the inverse rotations, according to Tron&Vidal,2011
+  Values inverseRot;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, givenGuess) {
+    Key key = key_value.key;
+    const Pose3& pose = givenGuess.at<Pose3>(key);
+    inverseRot.insert(key, pose.rotation().inverse());
+  }
 
+  // Create the map of edges incident on each node
+  KeyVectorMap adjEdgesMap;
+//
+//  // regularize measurements and plug everything in a factor graph
+//  GaussianFactorGraph relaxedGraph = buildLinearOrientationGraph(pose3Graph);
+//
+//  // Solve the LFG
+//  VectorValues relaxedRot3 = relaxedGraph.optimize();
 
-  // regularize measurements and plug everything in a factor graph
-  GaussianFactorGraph relaxedGraph = buildLinearOrientationGraph(pose3Graph);
-
-  // Solve the LFG
-  VectorValues relaxedRot3 = relaxedGraph.optimize();
-
-  // normalize and compute Rot3
-  return normalizeRelaxedRotations(relaxedRot3);
+  // Return correct rotations
+    Values estimateRot;
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
+      Key key = key_value.key;
+      const Rot3& R = inverseRot.at<Rot3>(key);
+      estimateRot.insert(key, R.inverse());
+    }
+  return estimateRot;
 }
 
 /* ************************************************************************* */

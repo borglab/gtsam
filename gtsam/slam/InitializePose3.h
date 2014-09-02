@@ -34,6 +34,8 @@ GTSAM_EXPORT Values normalizeRelaxedRotations(const VectorValues& relaxedRot3);
 
 GTSAM_EXPORT Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph);
 
+GTSAM_EXPORT Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess);
+
 GTSAM_EXPORT NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph);
 
 GTSAM_EXPORT Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot);
