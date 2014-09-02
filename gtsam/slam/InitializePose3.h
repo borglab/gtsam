@@ -32,9 +32,7 @@ GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFact
 
 GTSAM_EXPORT Values normalizeRelaxedRotations(const VectorValues& relaxedRot3);
 
-GTSAM_EXPORT Values computeOrientations(const NonlinearFactorGraph& pose3Graph);
-
-GTSAM_EXPORT Values initializeOrientations(const NonlinearFactorGraph& graph);
+GTSAM_EXPORT Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph);
 
 GTSAM_EXPORT NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph);
 
@@ -42,7 +40,7 @@ GTSAM_EXPORT Values computePoses(NonlinearFactorGraph& pose3graph,  Values& init
 
 GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph);
 
-GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess);
+GTSAM_EXPORT Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess, bool useGradient = false);
 
 } // end of namespace lago
 } // end of namespace gtsam

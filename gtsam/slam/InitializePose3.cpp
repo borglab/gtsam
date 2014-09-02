@@ -72,7 +72,7 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
 /* ************************************************************************* */
 // Transform VectorValues into valid Rot3
 Values normalizeRelaxedRotations(const VectorValues& relaxedRot3) {
-  gttic(InitializePose3_computeOrientations);
+  gttic(InitializePose3_computeOrientationsChordal);
 
   Matrix ppm = Matrix::Zero(3,3); // plus plus minus
   ppm(0,0) = 1; ppm(1,1) = 1; ppm(2,2) = -1;
@@ -131,9 +131,26 @@ NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph) {
 }
 
 /* ************************************************************************* */
-// Return the orientations of a graph including only BetweenFactors<Pose2>
-Values computeOrientations(const NonlinearFactorGraph& pose3Graph) {
-  gttic(InitializePose3_computeOrientations);
+// Return the orientations of a graph including only BetweenFactors<Pose3>
+Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph) {
+  gttic(InitializePose3_computeOrientationsChordal);
+
+  // regularize measurements and plug everything in a factor graph
+  GaussianFactorGraph relaxedGraph = buildLinearOrientationGraph(pose3Graph);
+
+  // Solve the LFG
+  VectorValues relaxedRot3 = relaxedGraph.optimize();
+
+  // normalize and compute Rot3
+  return normalizeRelaxedRotations(relaxedRot3);
+}
+
+/* ************************************************************************* */
+// Return the orientations of a graph including only BetweenFactors<Pose3>
+Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess) {
+  gttic(InitializePose3_computeOrientationsGradient);
+
+
 
   // regularize measurements and plug everything in a factor graph
   GaussianFactorGraph relaxedGraph = buildLinearOrientationGraph(pose3Graph);
@@ -153,7 +170,7 @@ Values initializeOrientations(const NonlinearFactorGraph& graph) {
   NonlinearFactorGraph pose3Graph = buildPose3graph(graph);
 
   // Get orientations from relative orientation measurements
-  return computeOrientations(pose3Graph);
+  return computeOrientationsChordal(pose3Graph);
 }
 
 ///* ************************************************************************* */
@@ -200,18 +217,26 @@ Values initialize(const NonlinearFactorGraph& graph) {
   NonlinearFactorGraph pose3Graph = buildPose3graph(graph);
 
   // Get orientations from relative orientation measurements
-  Values valueRot3 = computeOrientations(pose3Graph);
+  Values valueRot3 = computeOrientationsChordal(pose3Graph);
 
   // Compute the full poses (1 GN iteration on full poses)
   return computePoses(pose3Graph, valueRot3);
 }
 
 /* ************************************************************************* */
-Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess) {
+Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess, bool useGradient) {
   Values initialValues;
 
-  // get the orientation estimates from LAGO
-  Values orientations = initializeOrientations(graph);
+  // We "extract" the Pose3 subgraph of the original graph: this
+  // is done to properly model priors and avoiding operating on a larger graph
+  NonlinearFactorGraph pose3Graph = buildPose3graph(graph);
+
+  // Get orientations from relative orientation measurements
+  Values orientations;
+  if(useGradient)
+    orientations = computeOrientationsGradient(pose3Graph, givenGuess);
+  else
+    orientations = computeOrientationsChordal(pose3Graph);
 
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, orientations) {
     Key key = key_value.key;

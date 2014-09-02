@@ -80,7 +80,9 @@ TEST( InitializePose3, buildPose3graph ) {
 
 /* *************************************************************************** */
 TEST( InitializePose3, orientations ) {
-  Values initial = InitializePose3::initializeOrientations(simple::graph());
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
+
+  Values initial = InitializePose3::computeOrientationsChordal(pose3Graph);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
