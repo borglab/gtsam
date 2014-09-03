@@ -92,6 +92,38 @@ TEST( InitializePose3, orientations ) {
 }
 
 /* *************************************************************************** */
+TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
+
+  KeyVectorMap adjEdgesMap;
+  KeyRotMap factorId2RotMap;
+
+  InitializePose3::createSymbolicGraph(adjEdgesMap, factorId2RotMap, pose3Graph);
+
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0)[0], 0, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0)[1], 3, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0)[2], 4, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0)[3], 5, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0).size(), 4, 1e-9);
+
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x1)[0], 0, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x1)[1], 1, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x1).size(), 2, 1e-9);
+
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x2)[0], 1, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x2)[1], 2, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x2)[2], 3, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x2).size(), 3, 1e-9);
+
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x3)[0], 2, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x3)[1], 4, 1e-9);
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x3).size(), 2, 1e-9);
+
+  // This includes the anchor
+  EXPECT_DOUBLES_EQUAL(adjEdgesMap.size(), 5, 1e-9);
+}
+
+/* *************************************************************************** */
 TEST( InitializePose3, orientationsGradient ) {
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 

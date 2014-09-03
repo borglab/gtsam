@@ -24,8 +24,13 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/graph.h>
+#include <gtsam/geometry/Rot3.h>
 
 namespace gtsam {
+
+typedef std::map<Key, std::vector<size_t> > KeyVectorMap;
+typedef std::map<Key, Rot3 > KeyRotMap;
+
 namespace InitializePose3 {
 
 GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g);
@@ -35,6 +40,11 @@ GTSAM_EXPORT Values normalizeRelaxedRotations(const VectorValues& relaxedRot3);
 GTSAM_EXPORT Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph);
 
 GTSAM_EXPORT Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess);
+
+GTSAM_EXPORT void createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap,
+    const NonlinearFactorGraph& pose3Graph);
+
+GTSAM_EXPORT Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a, const double b);
 
 GTSAM_EXPORT NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph);
 
