@@ -123,6 +123,42 @@ TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
   EXPECT_DOUBLES_EQUAL(adjEdgesMap.size(), 5, 1e-9);
 }
 
+/* *************************************************************************** *
+TEST( InitializePose3, orientationsCheckGradient ) {
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
+
+  // Wrong initial guess - initialization should fix the rotations
+  Values givenPoses;
+  givenPoses.insert(x0,simple::pose0);
+  givenPoses.insert(x1,simple::pose0);
+  givenPoses.insert(x2,simple::pose0);
+  givenPoses.insert(x3,simple::pose0);
+  Values initial = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses);
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
+  EXPECT(assert_equal(simple::R1, initial.at<Rot3>(x1), 1e-6));
+  EXPECT(assert_equal(simple::R2, initial.at<Rot3>(x2), 1e-6));
+  EXPECT(assert_equal(simple::R3, initial.at<Rot3>(x3), 1e-6));
+}
+
+/* *************************************************************************** */
+TEST( InitializePose3, singleGradient ) {
+  Rot3 R1 = Rot3();
+  Matrix M = Matrix3::Zero();
+  M(0,1) = -1; M(1,0) = 1; M(2,2) = 1;
+  Rot3 R2 = Rot3(M);
+  double a = 6.010534238540223;
+  double b = 1.0;
+
+  Vector actual = InitializePose3::gradientTron(R1, R2, a, b);
+  Vector expected = Vector3::Zero();
+  expected(2) = 1.962658662803917;
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal(expected, actual, 1e-6));
+}
+
 /* *************************************************************************** */
 TEST( InitializePose3, orientationsGradient ) {
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
@@ -134,6 +170,11 @@ TEST( InitializePose3, orientationsGradient ) {
   givenPoses.insert(x2,simple::pose0);
   givenPoses.insert(x3,simple::pose0);
   Values initial = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses);
+
+  const Key keyAnchor = symbol('Z', 9999999);
+  givenPoses.insert(keyAnchor,simple::pose0);
+  string g2oFile = "/home/aspn/Desktop/toyExample.g2o";
+  writeG2o(pose3Graph, givenPoses, g2oFile);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
