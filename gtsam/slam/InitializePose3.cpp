@@ -188,8 +188,8 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   for(size_t it=0; it < maxIter; it++){
     //////////////////////////////////////////////////////////////////////////
     // compute the gradient at each node
-    std::cout << "it  " << it <<" b " << b <<" f0 " << f0 <<" a " << a
-        <<" rho " << rho <<" stepsize " << stepsize << " maxNodeDeg "<< maxNodeDeg << std::endl;
+    //std::cout << "it  " << it <<" b " << b <<" f0 " << f0 <<" a " << a
+    //   <<" rho " << rho <<" stepsize " << stepsize << " maxNodeDeg "<< maxNodeDeg << std::endl;
     double maxGrad = 0;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
       Key key = key_value.key;
@@ -216,7 +216,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
       grad.at(key) = stepsize *  gradKey;
 
       double normGradKey = (gradKey).norm();
-      std::cout << "key  " << DefaultKeyFormatter(key) <<" \n grad \n" << grad.at(key) << std::endl;
+      //std::cout << "key  " << DefaultKeyFormatter(key) <<" \n grad \n" << grad.at(key) << std::endl;
       if(normGradKey>maxGrad)
         maxGrad = normGradKey;
     } // end of loop over nodes
@@ -224,8 +224,6 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
     //////////////////////////////////////////////////////////////////////////
     // update estimates
     inverseRot = inverseRot.retract(grad);
-
-    inverseRot.print("inverseRot \n");
 
     //////////////////////////////////////////////////////////////////////////
     // check stopping condition
