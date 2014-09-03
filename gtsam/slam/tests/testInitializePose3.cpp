@@ -206,7 +206,7 @@ TEST( InitializePose3, iterationGradient ) {
   EXPECT(assert_equal(R3Expected, orientations.at<Rot3>(x3), 1e-5));
 }
 
-/* *************************************************************************** *
+/* *************************************************************************** */
 TEST( InitializePose3, orientationsGradient ) {
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
@@ -217,18 +217,44 @@ TEST( InitializePose3, orientationsGradient ) {
   givenPoses.insert(x1,(simple::pose0).compose( Pose3(Rpert,Point3()) ));
   givenPoses.insert(x2, (simple::pose0).compose( Pose3(Rpert.inverse(),Point3()) ));
   givenPoses.insert(x3, (simple::pose0).compose( Pose3(Rpert,Point3()) ));
-  Values initial = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses);
+  // do 10 gradient iterations
+  Values orientations = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses, 10);
+
+  //  const Key keyAnchor = symbol('Z', 9999999);
+  //  givenPoses.insert(keyAnchor,simple::pose0);
+  //  string g2oFile = "/home/aspn/Desktop/toyExample.g2o";
+  //  writeG2o(pose3Graph, givenPoses, g2oFile);
 
   const Key keyAnchor = symbol('Z', 9999999);
-  givenPoses.insert(keyAnchor,simple::pose0);
-  string g2oFile = "/home/aspn/Desktop/toyExample.g2o";
-  writeG2o(pose3Graph, givenPoses, g2oFile);
+  Matrix Mz = (Matrix(3,3) <<  0.983348036379704,  -0.181672808000167,   0.004650825895948,
+      0.181688570817424,   0.983350839452522,  -0.003223318529546,
+     -0.003987804220587,   0.004014645856811,   0.999983989889910);
+  Rot3 RzExpected = Rot3(Mz);
+  EXPECT(assert_equal(RzExpected, orientations.at<Rot3>(keyAnchor), 1e-4));
 
-  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
-  EXPECT(assert_equal(simple::R1, initial.at<Rot3>(x1), 1e-6));
-  EXPECT(assert_equal(simple::R2, initial.at<Rot3>(x2), 1e-6));
-  EXPECT(assert_equal(simple::R3, initial.at<Rot3>(x3), 1e-6));
+  Matrix M0 = (Matrix(3,3) <<  0.946965375724015,  -0.321288672646614,   0.005492359133630,
+      0.321308000189570,   0.946969747977338,  -0.003076593882320,
+     -0.004212623179851,   0.004678166811270,   0.999980184084280);
+  Rot3 R0Expected = Rot3(M0);
+  EXPECT(assert_equal(R0Expected, orientations.at<Rot3>(x0), 1e-4));
+
+  Matrix M1 = (Matrix(3,3) <<     0.998716651908197,  -0.050557818750367,   0.002992685163299,
+      0.050577444118653,   0.998696360370342,  -0.006892164352146,
+     -0.002640330984207,   0.007034681672788,   0.999971770554577);
+  Rot3 R1Expected = Rot3(M1);
+  EXPECT(assert_equal(R1Expected, orientations.at<Rot3>(x1), 1e-4));
+
+  Matrix M2 = (Matrix(3,3) <<      0.837033946147607,   0.547150466557869,   0.000734807505930,
+      -0.547150098128722,   0.837029489230720,  0.002899012916604,
+       0.000971140718506, -0.002828622220494,   0.999995527881019);
+  Rot3 R2Expected = Rot3(M2);
+  EXPECT(assert_equal(R2Expected, orientations.at<Rot3>(x2), 1e-3));
+
+  Matrix M3 = (Matrix(3,3) <<      0.999422151199602,  -0.033471815469964,   0.005916186331164,
+      0.033474965560969,   0.999439461971174,  -0.000434206705656,
+     -0.005898336397012,   0.000631999933520,   0.999982404947123);
+  Rot3 R3Expected = Rot3(M3);
+  EXPECT(assert_equal(R3Expected, orientations.at<Rot3>(x3), 1e-4));
 }
 
 /* *************************************************************************** */
