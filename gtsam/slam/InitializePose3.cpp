@@ -366,16 +366,19 @@ Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess, b
   else
     orientations = computeOrientationsChordal(pose3Graph);
 
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, orientations) {
-    Key key = key_value.key;
-    if (key != keyAnchor) {
-      const Point3& pos = givenGuess.at<Pose3>(key).translation();
-      const Rot3& rot = orientations.at<Rot3>(key);
-      Pose3 initializedPoses = Pose3(rot, pos);
-      initialValues.insert(key, initializedPoses);
-    }
-  }
-  return initialValues;
+  // Compute the full poses (1 GN iteration on full poses)
+  return computePoses(pose3Graph, orientations);
+
+  //  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, orientations) {
+  //    Key key = key_value.key;
+  //    if (key != keyAnchor) {
+  //      const Point3& pos = givenGuess.at<Pose3>(key).translation();
+  //      const Rot3& rot = orientations.at<Rot3>(key);
+  //      Pose3 initializedPoses = Pose3(rot, pos);
+  //      initialValues.insert(key, initializedPoses);
+  //    }
+  //  }
+  //  return initialValues;
 }
 
 } // end of namespace lago

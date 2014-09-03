@@ -65,29 +65,29 @@ int main(const int argc, const char *argv[]) {
     std::cout << "done! " << std::endl;
 
     // This should be deleted: only for debug
-    if (argc == 4){
-      const string inputFileRewritten = argv[3];
-      std::cout << "Rewriting input to file: " << inputFileRewritten << std::endl;
-      // Additional: rewrite input with simplified keys 0,1,...
-      Values simpleInitial;
-      BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, *initial) {
-        Key key = key_value.key - firstKey;
-        simpleInitial.insert(key, initial->at(key_value.key));
-      }
-      NonlinearFactorGraph simpleGraph;
-      BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, *graph) {
-        boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
-            boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
-        if (pose3Between){
-          Key key1 = pose3Between->key1() - firstKey;
-          Key key2 = pose3Between->key2() - firstKey;
-          NonlinearFactor::shared_ptr simpleFactor(
-              new BetweenFactor<Pose3>(key1, key2, pose3Between->measured(), pose3Between->get_noiseModel()));
-          simpleGraph.add(simpleFactor);
-        }
-      }
-      writeG2o(simpleGraph, simpleInitial, inputFileRewritten);
-    }
+    //    if (argc == 4){
+    //      const string inputFileRewritten = argv[3];
+    //      std::cout << "Rewriting input to file: " << inputFileRewritten << std::endl;
+    //      // Additional: rewrite input with simplified keys 0,1,...
+    //      Values simpleInitial;
+    //      BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, *initial) {
+    //        Key key = key_value.key - firstKey;
+    //        simpleInitial.insert(key, initial->at(key_value.key));
+    //      }
+    //      NonlinearFactorGraph simpleGraph;
+    //      BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, *graph) {
+    //        boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
+    //            boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+    //        if (pose3Between){
+    //          Key key1 = pose3Between->key1() - firstKey;
+    //          Key key2 = pose3Between->key2() - firstKey;
+    //          NonlinearFactor::shared_ptr simpleFactor(
+    //              new BetweenFactor<Pose3>(key1, key2, pose3Between->measured(), pose3Between->get_noiseModel()));
+    //          simpleGraph.add(simpleFactor);
+    //        }
+    //      }
+    //      writeG2o(simpleGraph, simpleInitial, inputFileRewritten);
+    //    }
   }
   return 0;
 }
