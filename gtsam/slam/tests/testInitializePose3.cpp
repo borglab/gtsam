@@ -160,15 +160,63 @@ TEST( InitializePose3, singleGradient ) {
 }
 
 /* *************************************************************************** */
+TEST( InitializePose3, iterationGradient ) {
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
+
+  // Wrong initial guess - initialization should fix the rotations
+  Rot3 Rpert = Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01));
+  Values givenPoses;
+  givenPoses.insert(x0,simple::pose0);
+  givenPoses.insert(x1,(simple::pose0).compose( Pose3(Rpert,Point3()) ));
+  givenPoses.insert(x2, (simple::pose0).compose( Pose3(Rpert.inverse(),Point3()) ));
+  givenPoses.insert(x3, (simple::pose0).compose( Pose3(Rpert,Point3()) ));
+
+  size_t maxIter = 1; // test gradient at the first iteration
+  Values orientations = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses, maxIter);
+
+  const Key keyAnchor = symbol('Z', 9999999);
+  Matrix Mz = (Matrix(3,3) << 0.999993962808392,  -0.002454045561375,   0.002460082752984,
+      0.002460082752984,   0.999993962808392,  -0.002454045561375,
+     -0.002454045561375,   0.002460082752984,   0.999993962808392);
+  Rot3 RzExpected = Rot3(Mz);
+  EXPECT(assert_equal(RzExpected, orientations.at<Rot3>(keyAnchor), 1e-6));
+
+  Matrix M0 = (Matrix(3,3) << 0.999344848920642,  -0.036021919324717,   0.003506317718352,
+      0.036032601656108,   0.999346013522419,  -0.003032634950127,
+     -0.003394783302464,   0.003156989865691,   0.999989254372924);
+  Rot3 R0Expected = Rot3(M0);
+  EXPECT(assert_equal(R0Expected, orientations.at<Rot3>(x0), 1e-5));
+
+  Matrix M1 = (Matrix(3,3) <<  0.999905367545392,  -0.010866391403031,   0.008436675399114,
+      0.010943459008004,   0.999898317528125,  -0.009143047050380,
+     -0.008336465609239,   0.009234508232789,   0.999922610604863);
+  Rot3 R1Expected = Rot3(M1);
+  EXPECT(assert_equal(R1Expected, orientations.at<Rot3>(x1), 1e-5));
+
+  Matrix M2 = (Matrix(3,3) <<   0.998936644682875,   0.045376417678595,  -0.008158469732553,
+      -0.045306446926148,   0.998936408933058,   0.008566024448664,
+       0.008538487960253,  -0.008187284445083,   0.999930028850403);
+  Rot3 R2Expected = Rot3(M2);
+  EXPECT(assert_equal(R2Expected, orientations.at<Rot3>(x2), 1e-5));
+
+  Matrix M3 = (Matrix(3,3) <<   0.999898767273093,  -0.010834701971459,   0.009223038487275,
+      0.010911315499947,   0.999906044037258,  -0.008297366559388,
+     -0.009132272433995,   0.008397162077148,   0.999923041673329);
+  Rot3 R3Expected = Rot3(M3);
+  EXPECT(assert_equal(R3Expected, orientations.at<Rot3>(x3), 1e-5));
+}
+
+/* *************************************************************************** *
 TEST( InitializePose3, orientationsGradient ) {
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
   // Wrong initial guess - initialization should fix the rotations
+  Rot3 Rpert = Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01));
   Values givenPoses;
   givenPoses.insert(x0,simple::pose0);
-  givenPoses.insert(x1,simple::pose0);
-  givenPoses.insert(x2,simple::pose0);
-  givenPoses.insert(x3,simple::pose0);
+  givenPoses.insert(x1,(simple::pose0).compose( Pose3(Rpert,Point3()) ));
+  givenPoses.insert(x2, (simple::pose0).compose( Pose3(Rpert.inverse(),Point3()) ));
+  givenPoses.insert(x3, (simple::pose0).compose( Pose3(Rpert,Point3()) ));
   Values initial = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses);
 
   const Key keyAnchor = symbol('Z', 9999999);

@@ -147,7 +147,7 @@ Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph) {
 
 /* ************************************************************************* */
 // Return the orientations of a graph including only BetweenFactors<Pose3>
-Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess) {
+Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess, const size_t maxIter) {
   gttic(InitializePose3_computeOrientationsGradient);
 
   // this works on the inverse rotations, according to Tron&Vidal,2011
@@ -183,7 +183,6 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   double rho = 2*a*b;
   double mu_max = maxNodeDeg * rho;
   double stepsize = 2/mu_max; // = 1/(a b dG)
-  size_t maxIter = 1;
 
   // gradient iterations
   for(size_t it=0; it < maxIter; it++){
@@ -194,8 +193,8 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
     double maxGrad = 0;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
       Key key = key_value.key;
-      grad.at(key) = Vector3::Zero(); // reset gradient
-
+      //std::cout << "---------------------------key  " << DefaultKeyFormatter(key) << std::endl;
+      Vector gradKey = Vector3::Zero();
       // collect the gradient for each edge incident on key
       BOOST_FOREACH(const size_t& factorId, adjEdgesMap.at(key)){
         Rot3 Rij = factorId2RotMap.at(factorId);
@@ -203,18 +202,21 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
         if( key == (pose3Graph.at(factorId))->keys()[0] ){
           Key key1 = (pose3Graph.at(factorId))->keys()[1];
           Rot3 Rj = inverseRot.at<Rot3>(key1);
-          grad.at(key) = grad.at(key) + stepsize * gradientTron(Ri, Rij  * Rj, a, b);
+          gradKey = gradKey + gradientTron(Ri, Rij  * Rj, a, b);
+          //std::cout << "key1 " << DefaultKeyFormatter(key1) << " gradientTron(Ri, Rij  * Rj, a, b) \n " << gradientTron(Ri, Rij  * Rj, a, b) << std::endl;
         }else if( key == (pose3Graph.at(factorId))->keys()[1] ){
           Key key0 = (pose3Graph.at(factorId))->keys()[0];
           Rot3 Rj = inverseRot.at<Rot3>(key0);
-          grad.at(key) = grad.at(key) + stepsize *  gradientTron(Ri, Rij.inverse()  * Rj, a, b);
+          gradKey = gradKey + gradientTron(Ri, Rij.between(Rj), a, b);
+          //std::cout << "key0 " << DefaultKeyFormatter(key0) << " gradientTron(Ri, Rij.inverse()  * Rj, a, b) \n " << gradientTron(Ri, Rij.between(Rj), a, b) << std::endl;
         }else{
           std::cout << "Error in gradient computation" << std::endl;
         }
       } // end of i-th gradient computation
+      grad.at(key) = stepsize *  gradKey;
 
-      double normGradKey = (grad.at(key)).norm();
-      std::cout << "key  " << DefaultKeyFormatter(key) <<" grad " << grad.at(key) << std::endl;
+      double normGradKey = (gradKey).norm();
+      std::cout << "key  " << DefaultKeyFormatter(key) <<" \n grad \n" << grad.at(key) << std::endl;
       if(normGradKey>maxGrad)
         maxGrad = normGradKey;
     } // end of loop over nodes
@@ -223,6 +225,8 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
     // update estimates
     inverseRot = inverseRot.retract(grad);
 
+    inverseRot.print("inverseRot \n");
+
     //////////////////////////////////////////////////////////////////////////
     // check stopping condition
     if (it>20 && maxGrad < 5e-3)
@@ -230,12 +234,12 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   } // enf of gradient iterations
 
   // Return correct rotations
-    Values estimateRot;
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
-      Key key = key_value.key;
-      const Rot3& R = inverseRot.at<Rot3>(key);
-      estimateRot.insert(key, R.inverse());
-    }
+  Values estimateRot;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
+    Key key = key_value.key;
+    const Rot3& R = inverseRot.at<Rot3>(key);
+    estimateRot.insert(key, R.inverse());
+  }
   return estimateRot;
 }
 
@@ -275,6 +279,7 @@ void createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap, 
 /* ************************************************************************* */
 Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a, const double b) {
   Vector3 logRot = Rot3::Logmap(R1.between(R2));
+
   if(logRot.norm()<1e-4){ // some tolerance
     Rot3 R1pert = R1.compose( Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01)) ); // some perturbation
     logRot = Rot3::Logmap(R1pert.between(R2));

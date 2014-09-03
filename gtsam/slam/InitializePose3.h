@@ -39,7 +39,7 @@ GTSAM_EXPORT Values normalizeRelaxedRotations(const VectorValues& relaxedRot3);
 
 GTSAM_EXPORT Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph);
 
-GTSAM_EXPORT Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess);
+GTSAM_EXPORT Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess, size_t maxIter = 1000);
 
 GTSAM_EXPORT void createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap,
     const NonlinearFactorGraph& pose3Graph);
