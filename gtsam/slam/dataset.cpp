@@ -182,7 +182,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
       break;
 
     if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
-      int id;
+      Key id;
       double x, y, yaw;
       is >> id >> x >> y >> yaw;
 
@@ -439,9 +439,15 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
           << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
           << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
 
+      Matrix InfoG2o = eye(6);
+      InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
+      InfoG2o.block(3,3,3,3) = Info.block(0,0,3,3); // cov rotation
+      InfoG2o.block(0,3,3,3) = Info.block(0,3,3,3); // off diagonal
+      InfoG2o.block(3,0,3,3) = Info.block(3,0,3,3); // off diagonal
+
       for (int i = 0; i < 6; i++){
         for (int j = i; j < 6; j++){
-          stream << " " << Info(i, j);
+          stream << " " << InfoG2o(i, j);
         }
       }
       stream << endl;
@@ -468,7 +474,7 @@ GraphAndValues load3D(const string& filename) {
     ls >> tag;
 
     if (tag == "VERTEX3") {
-      int id;
+      Key id;
       double x, y, z, roll, pitch, yaw;
       ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
       Rot3 R = Rot3::ypr(yaw,pitch,roll);
@@ -476,7 +482,7 @@ GraphAndValues load3D(const string& filename) {
       initial->insert(id, Pose3(R,t));
     }
     if (tag == "VERTEX_SE3:QUAT") {
-      int id;
+      Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
       Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
@@ -495,7 +501,7 @@ GraphAndValues load3D(const string& filename) {
     ls >> tag;
 
     if (tag == "EDGE3") {
-      int id1, id2;
+      Key id1, id2;
       double x, y, z, roll, pitch, yaw;
       ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
       Rot3 R = Rot3::ypr(yaw,pitch,roll);
@@ -511,7 +517,7 @@ GraphAndValues load3D(const string& filename) {
     }
     if (tag == "EDGE_SE3:QUAT") {
       Matrix m = eye(6);
-      int id1, id2;
+      Key id1, id2;
       double x, y, z, qx, qy, qz, qw;
       ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
       Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
@@ -524,7 +530,12 @@ GraphAndValues load3D(const string& filename) {
           m(j, i) = mij;
         }
       }
-      SharedNoiseModel model = noiseModel::Gaussian::Information(m);
+      Matrix mgtsam = eye(6);
+      mgtsam.block(0,0,3,3) = m.block(3,3,3,3); // cov rotation
+      mgtsam.block(3,3,3,3) = m.block(0,0,3,3); // cov translation
+      mgtsam.block(0,3,3,3) = m.block(0,3,3,3); // off diagonal
+      mgtsam.block(3,0,3,3) = m.block(3,0,3,3); // off diagonal
+      SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
       NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
       graph->push_back(factor);
     }
