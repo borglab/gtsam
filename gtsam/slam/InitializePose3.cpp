@@ -235,7 +235,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   std::cout << "nr of gradient iterations " << it <<  std::endl;
 
   // Return correct rotations
-  const Rot3& Rref = inverseRot.at<Rot3>(keyAnchor);
+  const Rot3& Rref = Rot3(); // inverseRot.at<Rot3>(keyAnchor);
   Values estimateRot;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
     Key key = key_value.key;
