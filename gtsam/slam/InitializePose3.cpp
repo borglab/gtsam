@@ -185,7 +185,8 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   double stepsize = 2/mu_max; // = 1/(a b dG)
 
   // gradient iterations
-  for(size_t it=0; it < maxIter; it++){
+  size_t it;
+  for(it=0; it < maxIter; it++){
     //////////////////////////////////////////////////////////////////////////
     // compute the gradient at each node
     //std::cout << "it  " << it <<" b " << b <<" f0 " << f0 <<" a " << a
@@ -231,12 +232,17 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
       break;
   } // enf of gradient iterations
 
+  std::cout << "nr of gradient iterations " << it <<  std::endl;
+
   // Return correct rotations
+  const Rot3& Rref = inverseRot.at<Rot3>(keyAnchor);
   Values estimateRot;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
     Key key = key_value.key;
-    const Rot3& R = inverseRot.at<Rot3>(key);
-    estimateRot.insert(key, R.inverse());
+    if (key != keyAnchor) {
+      const Rot3& R = inverseRot.at<Rot3>(key);
+      estimateRot.insert(key, Rref.compose(R.inverse()));
+    }
   }
   return estimateRot;
 }

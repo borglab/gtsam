@@ -76,6 +76,9 @@ void NonlinearOptimizer::defaultOptimize() {
       !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol,
             params.errorTol, currentError, this->error(), params.verbosity));
 
+  if (params.verbosity >= NonlinearOptimizerParams::TERMINATION)
+    cout << "Number of iterations: " << this->iterations() << endl;
+
   // Printing if verbose
   if (params.verbosity >= NonlinearOptimizerParams::TERMINATION &&
       this->iterations() >= params.maxIterations)

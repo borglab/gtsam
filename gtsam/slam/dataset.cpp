@@ -439,9 +439,15 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
           << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
           << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
 
+      Matrix InfoG2o = eye(6);
+      InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
+      InfoG2o.block(3,3,3,3) = Info.block(0,0,3,3); // cov rotation
+      InfoG2o.block(0,3,3,3) = Info.block(0,3,3,3); // off diagonal
+      InfoG2o.block(3,0,3,3) = Info.block(3,0,3,3); // off diagonal
+
       for (int i = 0; i < 6; i++){
         for (int j = i; j < 6; j++){
-          stream << " " << Info(i, j);
+          stream << " " << InfoG2o(i, j);
         }
       }
       stream << endl;
@@ -524,7 +530,12 @@ GraphAndValues load3D(const string& filename) {
           m(j, i) = mij;
         }
       }
-      SharedNoiseModel model = noiseModel::Gaussian::Information(m);
+      Matrix mgtsam = eye(6);
+      mgtsam.block(0,0,3,3) = m.block(3,3,3,3); // cov rotation
+      mgtsam.block(3,3,3,3) = m.block(0,0,3,3); // cov translation
+      mgtsam.block(0,3,3,3) = m.block(0,3,3,3); // off diagonal
+      mgtsam.block(3,0,3,3) = m.block(3,0,3,3); // off diagonal
+      SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
       NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
       graph->push_back(factor);
     }

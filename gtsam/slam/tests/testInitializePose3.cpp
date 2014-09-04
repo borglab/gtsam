@@ -123,25 +123,6 @@ TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
   EXPECT_DOUBLES_EQUAL(adjEdgesMap.size(), 5, 1e-9);
 }
 
-/* *************************************************************************** *
-TEST( InitializePose3, orientationsCheckGradient ) {
-  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
-
-  // Wrong initial guess - initialization should fix the rotations
-  Values givenPoses;
-  givenPoses.insert(x0,simple::pose0);
-  givenPoses.insert(x1,simple::pose0);
-  givenPoses.insert(x2,simple::pose0);
-  givenPoses.insert(x3,simple::pose0);
-  Values initial = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses);
-
-  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
-  EXPECT(assert_equal(simple::R1, initial.at<Rot3>(x1), 1e-6));
-  EXPECT(assert_equal(simple::R2, initial.at<Rot3>(x2), 1e-6));
-  EXPECT(assert_equal(simple::R3, initial.at<Rot3>(x3), 1e-6));
-}
-
 /* *************************************************************************** */
 TEST( InitializePose3, singleGradient ) {
   Rot3 R1 = Rot3();
@@ -174,12 +155,12 @@ TEST( InitializePose3, iterationGradient ) {
   size_t maxIter = 1; // test gradient at the first iteration
   Values orientations = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses, maxIter);
 
-  const Key keyAnchor = symbol('Z', 9999999);
-  Matrix Mz = (Matrix(3,3) << 0.999993962808392,  -0.002454045561375,   0.002460082752984,
-      0.002460082752984,   0.999993962808392,  -0.002454045561375,
-     -0.002454045561375,   0.002460082752984,   0.999993962808392);
-  Rot3 RzExpected = Rot3(Mz);
-  EXPECT(assert_equal(RzExpected, orientations.at<Rot3>(keyAnchor), 1e-6));
+  //  const Key keyAnchor = symbol('Z', 9999999);
+  //  Matrix Mz = (Matrix(3,3) << 0.999993962808392,  -0.002454045561375,   0.002460082752984,
+  //      0.002460082752984,   0.999993962808392,  -0.002454045561375,
+  //     -0.002454045561375,   0.002460082752984,   0.999993962808392);
+  //  Rot3 RzExpected = Rot3(Mz);
+  //  EXPECT(assert_equal(RzExpected, orientations.at<Rot3>(keyAnchor), 1e-6));
 
   Matrix M0 = (Matrix(3,3) << 0.999344848920642,  -0.036021919324717,   0.003506317718352,
       0.036032601656108,   0.999346013522419,  -0.003032634950127,
@@ -225,12 +206,12 @@ TEST( InitializePose3, orientationsGradient ) {
   //  string g2oFile = "/home/aspn/Desktop/toyExample.g2o";
   //  writeG2o(pose3Graph, givenPoses, g2oFile);
 
-  const Key keyAnchor = symbol('Z', 9999999);
-  Matrix Mz = (Matrix(3,3) <<  0.983348036379704,  -0.181672808000167,   0.004650825895948,
-      0.181688570817424,   0.983350839452522,  -0.003223318529546,
-     -0.003987804220587,   0.004014645856811,   0.999983989889910);
-  Rot3 RzExpected = Rot3(Mz);
-  EXPECT(assert_equal(RzExpected, orientations.at<Rot3>(keyAnchor), 1e-4));
+  //  const Key keyAnchor = symbol('Z', 9999999);
+  //  Matrix Mz = (Matrix(3,3) <<  0.983348036379704,  -0.181672808000167,   0.004650825895948,
+  //      0.181688570817424,   0.983350839452522,  -0.003223318529546,
+  //     -0.003987804220587,   0.004014645856811,   0.999983989889910);
+  //  Rot3 RzExpected = Rot3(Mz);
+  //  EXPECT(assert_equal(RzExpected, orientations.at<Rot3>(keyAnchor), 1e-4));
 
   Matrix M0 = (Matrix(3,3) <<  0.946965375724015,  -0.321288672646614,   0.005492359133630,
       0.321308000189570,   0.946969747977338,  -0.003076593882320,
