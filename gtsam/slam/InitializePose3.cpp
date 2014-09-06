@@ -185,7 +185,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   double stepsize = 2/mu_max; // = 1/(a b dG)
 
   std::cout <<" b " << b <<" f0 " << f0 <<" a " << a <<" rho " << rho <<" stepsize " << stepsize << " maxNodeDeg "<< maxNodeDeg << std::endl;
-
+  double maxGrad;
   // gradient iterations
   size_t it;
   for(it=0; it < maxIter; it++){
@@ -193,7 +193,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
     // compute the gradient at each node
     //std::cout << "it  " << it <<" b " << b <<" f0 " << f0 <<" a " << a
     //   <<" rho " << rho <<" stepsize " << stepsize << " maxNodeDeg "<< maxNodeDeg << std::endl;
-    double maxGrad = 0;
+    maxGrad = 0;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
       Key key = key_value.key;
       //std::cout << "---------------------------key  " << DefaultKeyFormatter(key) << std::endl;
@@ -234,7 +234,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
       break;
   } // enf of gradient iterations
 
-  std::cout << "nr of gradient iterations " << it <<  std::endl;
+  std::cout << "nr of gradient iterations " << it << "maxGrad " << maxGrad <<  std::endl;
 
   // Return correct rotations
   const Rot3& Rref = inverseRot.at<Rot3>(keyAnchor); // This will be set to the identity as so far we included no prior
@@ -287,13 +287,13 @@ Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a, const doubl
   Vector3 logRot = Rot3::Logmap(R1.between(R2));
 
   double th = logRot.norm();
-  if(th < 1e-4 || th != th){ // the second case means that th = nan (logRot does not work well for +/-pi)
+  if(th != th){ // the second case means that th = nan (logRot does not work well for +/-pi)
     Rot3 R1pert = R1.compose( Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01)) ); // some perturbation
     logRot = Rot3::Logmap(R1pert.between(R2));
     th = logRot.norm();
   }
   // exclude small or invalid rotations
-  if (th > 1e-5 || th == th){ // the second case means that th = nan (logRot does not work well for +/-pi)
+  if (th > 1e-5 && th == th){ // nonzero valid rotations
     logRot = logRot / th;
   }else{
     logRot = Vector3::Zero();
@@ -334,7 +334,13 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
 
   // Create optimizer
   GaussNewtonParams params;
-  params.maxIterations = 1;
+  bool singleIter = false;
+  if(singleIter){
+    params.maxIterations = 1;
+  }else{
+    std::cout << " \n\n\n\n  performing more than 1 GN iterations \n\n\n" <<std::endl;
+    params.setVerbosity("TERMINATION");
+  }
   GaussNewtonOptimizer optimizer(pose3graph, initialPose, params);
   Values GNresult = optimizer.optimize();
 
