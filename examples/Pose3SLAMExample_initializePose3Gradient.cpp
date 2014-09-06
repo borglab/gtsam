@@ -57,6 +57,9 @@ int main(const int argc, const char *argv[]) {
   Values initialization = InitializePose3::initialize(graphWithPrior, *initial, useGradient);
   std::cout << "done!" << std::endl;
 
+  std::cout << "initial error=" <<graph->error(*initial)<< std::endl;
+  std::cout << "initialization error=" <<graph->error(initialization)<< std::endl;
+
   if (argc < 3) {
     initialization.print("initialization");
   } else {

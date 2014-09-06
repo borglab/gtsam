@@ -184,6 +184,8 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   double mu_max = maxNodeDeg * rho;
   double stepsize = 2/mu_max; // = 1/(a b dG)
 
+  std::cout <<" b " << b <<" f0 " << f0 <<" a " << a <<" rho " << rho <<" stepsize " << stepsize << " maxNodeDeg "<< maxNodeDeg << std::endl;
+
   // gradient iterations
   size_t it;
   for(it=0; it < maxIter; it++){
@@ -217,7 +219,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
       grad.at(key) = stepsize *  gradKey;
 
       double normGradKey = (gradKey).norm();
-      //std::cout << "key  " << DefaultKeyFormatter(key) <<" \n grad \n" << grad.at(key) << std::endl;
+      // std::cout << "key  " << DefaultKeyFormatter(key) <<" \n grad \n" << grad.at(key) << std::endl;
       if(normGradKey>maxGrad)
         maxGrad = normGradKey;
     } // end of loop over nodes
@@ -235,7 +237,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   std::cout << "nr of gradient iterations " << it <<  std::endl;
 
   // Return correct rotations
-  const Rot3& Rref = Rot3(); // inverseRot.at<Rot3>(keyAnchor);
+  const Rot3& Rref = inverseRot.at<Rot3>(keyAnchor); // This will be set to the identity as so far we included no prior
   Values estimateRot;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
     Key key = key_value.key;
@@ -284,13 +286,19 @@ void createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap, 
 Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a, const double b) {
   Vector3 logRot = Rot3::Logmap(R1.between(R2));
 
-  if(logRot.norm()<1e-4){ // some tolerance
+  double th = logRot.norm();
+  if(th < 1e-4 || th != th){ // the second case means that th = nan (logRot does not work well for +/-pi)
     Rot3 R1pert = R1.compose( Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01)) ); // some perturbation
     logRot = Rot3::Logmap(R1pert.between(R2));
+    th = logRot.norm();
   }
-  double th = logRot.norm();
-  if (th > 1e-5)
+  // exclude small or invalid rotations
+  if (th > 1e-5 || th == th){ // the second case means that th = nan (logRot does not work well for +/-pi)
     logRot = logRot / th;
+  }else{
+    logRot = Vector3::Zero();
+    th = 0.0;
+  }
 
   double fdot = a*b*th*exp(-b*th);
   return fdot*logRot;
@@ -371,6 +379,8 @@ Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess, b
     orientations = computeOrientationsGradient(pose3Graph, givenGuess);
   else
     orientations = computeOrientationsChordal(pose3Graph);
+
+//  orientations.print("orientations\n");
 
   // Compute the full poses (1 GN iteration on full poses)
   return computePoses(pose3Graph, orientations);
