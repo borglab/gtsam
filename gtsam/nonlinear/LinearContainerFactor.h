@@ -117,7 +117,7 @@ public:
 
   // casting syntactic sugar
 
-  inline bool hasLinearizationPoint() const { return linearizationPoint_; }
+  inline bool hasLinearizationPoint() const { return linearizationPoint_.is_initialized(); }
 
   /**
    * Simple checks whether this is a Jacobian or Hessian factor
