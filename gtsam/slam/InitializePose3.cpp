@@ -334,7 +334,7 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
 
   // Create optimizer
   GaussNewtonParams params;
-  bool singleIter = false;
+  bool singleIter = true;
   if(singleIter){
     params.maxIterations = 1;
   }else{

@@ -45,10 +45,20 @@ int main(const int argc, const char *argv[]) {
       noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
+  GaussNewtonParams params;
+  params.setVerbosity("TERMINATION");
+  if (argc == 4) {
+    params.maxIterations = atoi(argv[3]);
+    std::cout << "User required to perform " << params.maxIterations << " iterations "<< std::endl;
+  }
+
   std::cout << "Optimizing the factor graph" << std::endl;
-  GaussNewtonOptimizer optimizer(graphWithPrior, *initial);
+  GaussNewtonOptimizer optimizer(graphWithPrior, *initial, params);
   Values result = optimizer.optimize();
   std::cout << "Optimization complete" << std::endl;
+
+  std::cout << "initial error=" <<graph->error(*initial)<< std::endl;
+  std::cout << "final error=" <<graph->error(result)<< std::endl;
 
   if (argc < 3) {
     result.print("result");
