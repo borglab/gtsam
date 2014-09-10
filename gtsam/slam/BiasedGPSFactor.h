@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  GPSFactor.h
+ *  @file  BiasedGPSFactor.h
  *  @author Luca Carlone
  **/
 #pragma once
@@ -27,11 +27,11 @@ namespace gtsam {
    * common-mode errors and that can be partially corrected if other sensors are used
    * @addtogroup SLAM
    */
-  class GPSFactor: public NoiseModelFactor2<Pose3, Point3> {
+  class BiasedGPSFactor: public NoiseModelFactor2<Pose3, Point3> {
 
   private:
 
-    typedef GPSFactor This;
+    typedef BiasedGPSFactor This;
     typedef NoiseModelFactor2<Pose3, Point3> Base;
 
     Point3 measured_; /** The measurement */
@@ -39,24 +39,24 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<GPSFactor> shared_ptr;
+    typedef typename boost::shared_ptr<BiasedGPSFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
-    GPSFactor() {}
+    BiasedGPSFactor() {}
 
     /** Constructor */
-    GPSFactor(Key posekey, Key biaskey, const Point3 measured,
+    BiasedGPSFactor(Key posekey, Key biaskey, const Point3 measured,
         const SharedNoiseModel& model) :
       Base(model, posekey, biaskey), measured_(measured) {
     }
 
-    virtual ~GPSFactor() {}
+    virtual ~BiasedGPSFactor() {}
 
     /** implement functions needed for Testable */
 
     /** print */
     virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      std::cout << s << "GPSFactor("
+      std::cout << s << "BiasedGPSFactor("
           << keyFormatter(this->key1()) << ","
           << keyFormatter(this->key2()) << ")\n";
       measured_.print("  measured: ");
@@ -100,6 +100,6 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
-  }; // \class GPSFactor
+  }; // \class BiasedGPSFactor
 
 } /// namespace gtsam
