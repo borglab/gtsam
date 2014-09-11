@@ -55,7 +55,7 @@ int main(const int argc, const char *argv[]) {
 
   std::cout << "Optimizing the factor graph" << std::endl;
   GaussNewtonParams params;
-  params.setVerbosity("TERMINATION");
+  params.setVerbosity("TERMINATION"); // this will show info about stopping conditions
   GaussNewtonOptimizer optimizer(graphWithPrior, *initial, params);
   Values result = optimizer.optimize();
   std::cout << "Optimization complete" << std::endl;
