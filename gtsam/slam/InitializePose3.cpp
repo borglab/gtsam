@@ -147,7 +147,7 @@ Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph) {
 
 /* ************************************************************************* */
 // Return the orientations of a graph including only BetweenFactors<Pose3>
-Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess, const size_t maxIter) {
+Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const Values& givenGuess, const size_t maxIter, const bool setRefFrame) {
   gttic(InitializePose3_computeOrientationsGradient);
 
   // this works on the inverse rotations, according to Tron&Vidal,2011
@@ -219,7 +219,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
       grad.at(key) = stepsize *  gradKey;
 
       double normGradKey = (gradKey).norm();
-      // std::cout << "key  " << DefaultKeyFormatter(key) <<" \n grad \n" << grad.at(key) << std::endl;
+      //std::cout << "key  " << DefaultKeyFormatter(key) <<" \n grad \n" << grad.at(key) << std::endl;
       if(normGradKey>maxGrad)
         maxGrad = normGradKey;
     } // end of loop over nodes
@@ -243,7 +243,10 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
     Key key = key_value.key;
     if (key != keyAnchor) {
       const Rot3& R = inverseRot.at<Rot3>(key);
-      estimateRot.insert(key, Rref.compose(R.inverse()));
+      if(setRefFrame)
+        estimateRot.insert(key, Rref.compose(R.inverse()));
+      else
+        estimateRot.insert(key, R.inverse());
     }
   }
   return estimateRot;
