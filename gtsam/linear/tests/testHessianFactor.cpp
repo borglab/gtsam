@@ -446,6 +446,12 @@ TEST(HessianFactor, gradientAtZero)
   EXPECT(assert_equal(-A.transpose()*b, expectedG.vector(keys)));
   VectorValues actualG = factor.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
+
+  // test gradient at zero scaled with a dual variable
+  Vector dual = (Vector(1) << 5.0);
+  VectorValues actualGscaled = factor.gradientAtZero(dual);
+  VectorValues expectedGscaled = pair_list_of<Key, Vector>(0, -g1*dual[0]) (1, -g2*dual[0]);
+  EXPECT(assert_equal(expectedGscaled, actualGscaled));
 }
 
 /* ************************************************************************* */

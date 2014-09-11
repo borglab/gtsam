@@ -300,7 +300,7 @@ namespace gtsam {
     void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
 
     /// A'*b for Jacobian
-    VectorValues gradientAtZero() const;
+    VectorValues gradientAtZero(const boost::optional<Vector&> dual = boost::none) const;
 
     /* ************************************************************************* */
     virtual void gradientAtZero(double* d) const;

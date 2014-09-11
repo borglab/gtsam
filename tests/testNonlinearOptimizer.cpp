@@ -273,11 +273,11 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
     // test convergence
     Values actual = optimizer.optimize();
-    EXPECT(assert_equal(expected, actual));
+    EXPECT(assert_equal(expected, actual, 1e-6));
 
     // Check that the gradient is zero
     GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
-    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero(), 1e-7));
   }
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
 

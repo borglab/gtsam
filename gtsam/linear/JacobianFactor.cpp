@@ -144,8 +144,9 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor) :
   boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
   // Check for indefinite system
-  if (!success)
+  if (!success) {
     throw IndeterminantLinearSystemException(factor.keys().front());
+  }
 
   // Zero out lower triangle
   Ab_.matrix().topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
@@ -591,12 +592,18 @@ void JacobianFactor::multiplyHessianAdd(double alpha, const double* x,
 }
 
 /* ************************************************************************* */
-VectorValues JacobianFactor::gradientAtZero() const {
+VectorValues JacobianFactor::gradientAtZero(const boost::optional<Vector&> dual) const {
   VectorValues g;
   Vector b = getb();
   // Gradient is really -A'*b / sigma^2
   // transposeMultiplyAdd will divide by sigma once, so we need one more
   Vector b_sigma = model_ ? model_->whiten(b) : b;
+  // scale b by the dual vector if it exists
+  if (dual) {
+    if (dual->size() != b_sigma.size())
+      throw std::runtime_error("Fail to scale the gradient with the dual vector: Size mismatch!");
+    b_sigma = b_sigma.cwiseProduct(*dual);
+  }
   this->transposeMultiplyAdd(-1.0, b_sigma, g); // g -= A'*b/sigma^2
   return g;
 }
@@ -748,12 +755,11 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(
   keys_.erase(begin(), begin() + nrFrontals);
   // Set sigmas with the right model
   if (model_) {
-    if (model_->isConstrained())
-      model_ = noiseModel::Constrained::MixedSigmas(
-          model_->sigmas().tail(remainingRows));
+    Vector sigmas = model_->sigmas().tail(remainingRows);
+    if (sigmas.size() > 0 && sigmas.minCoeff() == 0.0)
+      model_ = noiseModel::Constrained::MixedSigmas(sigmas);
     else
-      model_ = noiseModel::Diagonal::Sigmas(
-          model_->sigmas().tail(remainingRows));
+      model_ = noiseModel::Diagonal::Sigmas(sigmas, false); // I don't want to be smart here
     assert(model_->dim() == (size_t)Ab_.rows());
   }
   gttoc(remaining_factor);

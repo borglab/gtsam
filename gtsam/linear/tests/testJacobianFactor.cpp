@@ -326,6 +326,14 @@ TEST(JacobianFactor, operators )
   EXPECT(assert_equal(-A.transpose()*b2, expectedG.vector(keys)));
   VectorValues actualG = lf.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
+
+  // test gradient at zero scaled by a dual vector
+  Vector dual = (Vector(2) << 3.0, 5.0);
+  VectorValues actualGscaled = lf.gradientAtZero(dual);
+  VectorValues expectedGscaled;
+  expectedGscaled.insert(1, (Vector(2) << 60,-50));
+  expectedGscaled.insert(2, (Vector(2) << -60, 50));
+  EXPECT(assert_equal(expectedGscaled, actualGscaled));
 }
 
 /* ************************************************************************* */

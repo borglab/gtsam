@@ -392,19 +392,26 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::pair<GaussianFactorGraph, GaussianFactorGraph> GaussianFactorGraph::splitConstraints() const {
+  boost::tuple<GaussianFactorGraph, GaussianFactorGraph, GaussianFactorGraph> GaussianFactorGraph::splitConstraints() const {
+    typedef HessianFactor H;
     typedef JacobianFactor J;
-    GaussianFactorGraph unconstraints, constraints;
+
+    GaussianFactorGraph hessians, jacobians, constraints;
     BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, *this) {
-      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
-      if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
-        constraints.push_back(jacobian);
-      }
+      H::shared_ptr hessian(boost::dynamic_pointer_cast<H>(factor));
+      if (hessian)
+        hessians.push_back(factor);
       else {
-        unconstraints.push_back(factor);
+        J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
+        if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
+          constraints.push_back(jacobian);
+        }
+        else {
+          jacobians.push_back(factor);
+        }
       }
     }
-    return make_pair(unconstraints, constraints);
+    return boost::make_tuple(hessians, jacobians, constraints);
   }
 
   /* ************************************************************************* */

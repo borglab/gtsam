@@ -591,11 +591,17 @@ void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
 
 
 /* ************************************************************************* */
-VectorValues HessianFactor::gradientAtZero() const {
+VectorValues HessianFactor::gradientAtZero(const boost::optional<Vector&> dual) const {
   VectorValues g;
   size_t n = size();
   for (size_t j = 0; j < n; ++j)
     g.insert(keys_[j], -info_(j,n).knownOffDiagonal());
+  if (dual) {
+    if (dual->size() != 1) {
+      throw std::runtime_error("Fail to scale the gradient with the dual vector: Size mismatch!");
+    }
+    g = (*dual)[0] * g;
+  }
   return g;
 }
 
@@ -626,6 +632,7 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
   HessianFactor::shared_ptr jointFactor;
   try {
     jointFactor = boost::make_shared<HessianFactor>(factors, Scatter(factors, keys));
+//    jointFactor->print("jointFactor: ");
   } catch(std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateCholesky was called with a request to eliminate variables that are not\n"
@@ -640,6 +647,7 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
     // Erase the eliminated keys in the remaining factor
     jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + keys.size());
   } catch(CholeskyFailed&) {
+//    std::cout << "Problematic Hessian: " << jointFactor->information() << std::endl;
     throw IndeterminantLinearSystemException(keys.front());
   }
 
@@ -675,23 +683,92 @@ EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys
    * and (2) large strange value of lambdas might cause the joint factor non-positive
    * definite [is this true?]. But at least, this will help in typical cases.
    */
-  GaussianFactorGraph unconstraints, constraints;
-  boost::tie(unconstraints, constraints) = factors.splitConstraints();
+  GaussianFactorGraph hessians, jacobians, constraints;
+//  factors.print("factors: ");
+  boost::tie(hessians, jacobians, constraints) = factors.splitConstraints();
+//  keys.print("Frontal variables to eliminate: ");
+//  hessians.print("Hessians: ");
+//  jacobians.print("Jacobians: ");
+//  constraints.print("Constraints: ");
+
+  bool hasHessians = hessians.size() > 0;
+
+  // Add all jacobians to gather as much info as we can
+  hessians.push_back(jacobians);
+
   if (constraints.size()>0) {
-    // Build joint factor
-    HessianFactor::shared_ptr jointFactor;
-    try {
-      jointFactor = boost::make_shared<HessianFactor>(unconstraints, Scatter(factors, keys));
-    } catch(std::invalid_argument&) {
-      throw InvalidDenseElimination(
-          "EliminateCholesky was called with a request to eliminate variables that are not\n"
-          "involved in the provided factors.");
+//    // Build joint factor
+//    HessianFactor::shared_ptr jointFactor;
+//    try {
+//      jointFactor = boost::make_shared<HessianFactor>(hessians, Scatter(factors, keys));
+//    } catch(std::invalid_argument&) {
+//      throw InvalidDenseElimination(
+//          "EliminateCholesky was called with a request to eliminate variables that are not\n"
+//          "involved in the provided factors.");
+//    }
+//    constraints.push_back(jointFactor);
+//    return EliminateQR(constraints, keys);
+
+    // If there are hessian factors, turn them into conditional
+    // by doing partial elimination, then use those jacobians when eliminating the constraints
+    GaussianFactor::shared_ptr unconstrainedNewFactor;
+    if (hessians.size() > 0) {
+      bool hasSeparator = false;
+      GaussianFactorGraph::Keys unconstrainedKeys = hessians.keys();
+      BOOST_FOREACH(Key key, unconstrainedKeys) {
+        if (find(keys.begin(), keys.end(), key) == keys.end()) {
+          hasSeparator = true;
+          break;
+        }
+      }
+
+      if (hasSeparator) {
+        // find frontal keys in the unconstrained factor to eliminate
+        Ordering subkeys;
+        BOOST_FOREACH(Key key, keys) {
+          if (unconstrainedKeys.exists(key))
+            subkeys.push_back(key);
+        }
+        GaussianConditional::shared_ptr unconstrainedConditional;
+        boost::tie(unconstrainedConditional, unconstrainedNewFactor)
+            = EliminateCholesky(hessians, subkeys);
+        constraints.push_back(unconstrainedConditional);
+      }
+      else {
+        if (hasHessians) {
+          HessianFactor::shared_ptr jointFactor = boost::make_shared<
+              HessianFactor>(hessians, Scatter(factors, keys));
+          constraints.push_back(jointFactor);
+        }
+        else {
+          constraints.push_back(hessians);
+        }
+      }
     }
-    constraints.push_back(jointFactor);
-    return EliminateQR(constraints, keys);
+
+    // Now eliminate the constraints
+    GaussianConditional::shared_ptr constrainedConditional;
+    GaussianFactor::shared_ptr constrainedNewFactor;
+    boost::tie(constrainedConditional, constrainedNewFactor) = EliminateQR(
+        constraints, keys);
+//    constraints.print("constraints: ");
+//    constrainedConditional->print("constrainedConditional: ");
+//    constrainedNewFactor->print("constrainedNewFactor: ");
+
+    if (unconstrainedNewFactor) {
+      GaussianFactorGraph newFactors;
+      newFactors.push_back(unconstrainedNewFactor);
+      newFactors.push_back(constrainedNewFactor);
+//      newFactors.print("newFactors: ");
+      HessianFactor::shared_ptr newFactor(new HessianFactor(newFactors));
+      return make_pair(constrainedConditional, newFactor);
+    } else {
+      return make_pair(constrainedConditional, constrainedNewFactor);
+    }
   }
-  else
+  else {
     return EliminateCholesky(factors, keys);
+  }
 }
 
 } // gtsam
