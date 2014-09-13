@@ -328,6 +328,18 @@ namespace gtsam {
      */
     boost::tuple<GaussianFactorGraph, GaussianFactorGraph, GaussianFactorGraph> splitConstraints() const;
 
+    /**
+     * Build a dual graph to estimate dual variables associated with constrained factors
+     */
+    GaussianFactorGraph::shared_ptr buildDualGraph(
+        const KeySet& constrainedVariables, const VariableIndex& variableIndex,
+        const VectorValues& delta) const;
+
+    /**
+     * Create a dual factor from a constrained key
+     */
+    JacobianFactor::shared_ptr createDualFactor(Key key,
+      const VariableIndex& variableIndex, const VectorValues& delta) const;
 
   private:
     /** Serialization function */

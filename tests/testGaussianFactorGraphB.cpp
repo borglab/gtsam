@@ -594,5 +594,54 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, buildDualGraph1 )
+{
+  GaussianFactorGraph fgc1 = createSimpleConstraintGraph();
+  KeySet constrainedVariables1 = list_of(0)(1);
+  VariableIndex variableIndex1(fgc1);
+  VectorValues delta1 = createSimpleConstraintValues();
+  GaussianFactorGraph::shared_ptr dualGraph1 = fgc1.buildDualGraph(
+      constrainedVariables1, variableIndex1, delta1);
+  GaussianFactorGraph expectedDualGraph1;
+  expectedDualGraph1.push_back(JacobianFactor(3, eye(2), zero(2)));
+  expectedDualGraph1.push_back(JacobianFactor(3, -eye(2), zero(2)));
+  EXPECT(assert_equal(expectedDualGraph1, *dualGraph1));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, buildDualGraph2 )
+{
+  GaussianFactorGraph fgc2 = createSingleConstraintGraph();
+  KeySet constrainedVariables2 = list_of(0)(1);
+  VariableIndex variableIndex2(fgc2);
+  VectorValues delta2 = createSingleConstraintValues();
+  GaussianFactorGraph::shared_ptr dualGraph2 = fgc2.buildDualGraph(
+      constrainedVariables2, variableIndex2, delta2);
+  GaussianFactorGraph expectedDualGraph2;
+  expectedDualGraph2.push_back(JacobianFactor(3, (Matrix(2,2) << 1,2,2,1), zero(2)));
+  expectedDualGraph2.push_back(JacobianFactor(3, 10*eye(2), zero(2)));
+  EXPECT(assert_equal(expectedDualGraph2, *dualGraph2));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, buildDualGraph3 )
+{
+  GaussianFactorGraph fgc3 = createMultiConstraintGraph();
+  KeySet constrainedVariables3 = list_of(0)(1)(2);
+  VariableIndex variableIndex3(fgc3);
+  VectorValues delta3 = createMultiConstraintValues();
+  GaussianFactorGraph::shared_ptr dualGraph3 = fgc3.buildDualGraph(
+      constrainedVariables3, variableIndex3, delta3);
+  GaussianFactorGraph expectedDualGraph3;
+  expectedDualGraph3.push_back(
+      JacobianFactor(3, (Matrix(2, 2) << 1, 2, 2, 1), 4,
+          (Matrix(2, 2) << 3, -1, 4, -2), zero(2)));
+  expectedDualGraph3.push_back(JacobianFactor(3, 10*eye(2), zero(2)));
+  expectedDualGraph3.push_back(
+      JacobianFactor(4, (Matrix(2, 2) << 1, 1, 1, 2), zero(2)));
+  EXPECT(assert_equal(expectedDualGraph3, *dualGraph3));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

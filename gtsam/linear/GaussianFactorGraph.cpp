@@ -392,6 +392,46 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  JacobianFactor::shared_ptr GaussianFactorGraph::createDualFactor(Key key,
+      const VariableIndex& variableIndex, const VectorValues& delta) const {
+    typedef GaussianFactor G;
+    typedef JacobianFactor J;
+    std::vector<std::pair<Key, Matrix> > Aterms;
+    Vector b = zero(delta.at(key).size());
+    BOOST_FOREACH(size_t factorIx, variableIndex[key]) {
+      // If it is a constraint, transpose the A matrix to have the jacobian of the dual key
+      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(this->at(factorIx)));
+      if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
+        Matrix Ai = jacobian->getA(jacobian->find(key)).transpose();
+        boost::optional<Key> dualKey = jacobian->dualKey();
+        if (!dualKey) {
+          throw std::runtime_error("Fail to create dual factor! " \
+            "Constrained JacobianFactor doesn't have a dual key!");
+        }
+        Aterms.push_back(make_pair(*(dualKey), Ai));
+      }
+      else {
+        // If it is unconstrained, collect the gradient to the b vector
+        G::shared_ptr factor(boost::dynamic_pointer_cast<G>(this->at(factorIx)));
+        b += factor->gradient(key, delta);
+      }
+    }
+    return boost::make_shared<JacobianFactor>(Aterms, b);
+  }
+
+  /* ************************************************************************* */
+  GaussianFactorGraph::shared_ptr GaussianFactorGraph::buildDualGraph(
+      const KeySet& constrainedVariables,
+      const VariableIndex& variableIndex,
+      const VectorValues& delta) const {
+    GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
+    BOOST_FOREACH(const Key key, constrainedVariables) {
+      dualGraph->push_back(createDualFactor(key, variableIndex, delta));
+    }
+    return dualGraph;
+  }
+
+  /* ************************************************************************* */
   boost::tuple<GaussianFactorGraph, GaussianFactorGraph, GaussianFactorGraph> GaussianFactorGraph::splitConstraints() const {
     typedef HessianFactor H;
     typedef JacobianFactor J;
