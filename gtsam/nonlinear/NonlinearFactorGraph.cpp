@@ -366,6 +366,22 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
 }
 
 /* ************************************************************************* */
+boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph::multipliedHessians(
+        const Values& linearizationPoint, const VectorValues& duals) const {
+  GaussianFactorGraph::shared_ptr hessianFG = boost::make_shared<GaussianFactorGraph>();
+  hessianFG->reserve(this->size());
+
+  // create multiplied Hessians for all factors
+  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+    if(factor) {
+      (*hessianFG) += factor->multipliedHessian(linearizationPoint, duals);
+    } else
+      (*hessianFG) += GaussianFactor::shared_ptr();
+  }
+  return hessianFG;
+}
+
+/* ************************************************************************* */
 NonlinearFactorGraph NonlinearFactorGraph::clone() const {
   NonlinearFactorGraph result;
   BOOST_FOREACH(const sharedFactor& f, *this) {

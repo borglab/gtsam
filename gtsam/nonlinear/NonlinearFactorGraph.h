@@ -135,6 +135,13 @@ namespace gtsam {
     boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
     /**
+     * Produce a graph of dual-scaled Hessians of each factor: lambda*H,
+     * used for solving nonlinear equality constraints using SQP.
+     */
+    boost::shared_ptr<GaussianFactorGraph> multipliedHessians(
+        const Values& linearizationPoint, const VectorValues& duals) const;
+
+    /**
      * Clone() performs a deep-copy of the graph, including all of the factors
      */
     NonlinearFactorGraph clone() const;
