@@ -21,8 +21,11 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+
 
 namespace gtsam {
 
