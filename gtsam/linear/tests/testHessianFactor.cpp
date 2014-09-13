@@ -455,6 +455,32 @@ TEST(HessianFactor, gradientAtZero)
 }
 
 /* ************************************************************************* */
+TEST(HessianFactor, gradient)
+{
+  Matrix G11 = (Matrix(1, 1) << 1);
+  Matrix G12 = (Matrix(1, 2) << 0, 0);
+  Matrix G22 = (Matrix(2, 2) << 1, 0, 0, 1);
+  Vector g1 = (Vector(1) << -7);
+  Vector g2 = (Vector(2) << -8, -9);
+  double f = 194;
+
+  HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
+
+  // test gradient
+  Vector x0 = (Vector(1) << 3.0);
+  Vector x1 = (Vector(2) << -3.5, 7.1);
+  VectorValues x = pair_list_of<Key, Vector>(0, x0) (1, x1);
+
+  Vector expectedGrad0 = (Vector(1) << 10.0);
+  Vector expectedGrad1 = (Vector(2) << 4.5, 16.1);
+  Vector grad0 = factor.gradient(0, x);
+  Vector grad1 = factor.gradient(1, x);
+
+  EXPECT(assert_equal(expectedGrad0, grad0));
+  EXPECT(assert_equal(expectedGrad1, grad1));
+}
+
+/* ************************************************************************* */
 TEST(HessianFactor, hessianDiagonal)
 {
   Matrix G11 = (Matrix(1, 1) << 1);
