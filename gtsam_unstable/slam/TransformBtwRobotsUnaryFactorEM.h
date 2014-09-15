@@ -26,7 +26,6 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
-
 namespace gtsam {
 
   /**
@@ -325,6 +324,20 @@ namespace gtsam {
       return (model_outlier_->R().transpose()*model_outlier_->R()).inverse();
     }
 
+    /* ************************************************************************* */
+    void updateNoiseModels(const gtsam::Values& values, const gtsam::Marginals& marginals) {
+      /* given marginals version, don't need to marginal multiple times if update a lot */
+
+      std::vector<gtsam::Key> Keys;
+      Keys.push_back(keyA_);
+      Keys.push_back(keyB_);
+      JointMarginal joint_marginal12 = marginals.jointMarginalCovariance(Keys);
+      Matrix cov1 = joint_marginal12(keyA_, keyA_);
+      Matrix cov2 = joint_marginal12(keyB_, keyB_);
+      Matrix cov12 = joint_marginal12(keyA_, keyB_);
+
+      updateNoiseModels_givenCovs(values, cov1, cov2, cov12);
+    }
 
     /* ************************************************************************* */
     void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph){
@@ -338,18 +351,11 @@ namespace gtsam {
        */
 
        // get joint covariance of the involved states
-       std::vector<gtsam::Key> Keys;
-       Keys.push_back(keyA_);
-       Keys.push_back(keyB_);
-       Marginals marginals( graph, values, Marginals::QR );
-       JointMarginal joint_marginal12 = marginals.jointMarginalCovariance(Keys);
-       Matrix cov1 = joint_marginal12(keyA_, keyA_);
-       Matrix cov2 = joint_marginal12(keyB_, keyB_);
-       Matrix cov12 = joint_marginal12(keyA_, keyB_);
 
-       updateNoiseModels_givenCovs(values, cov1, cov2, cov12);
+       Marginals marginals(graph, values, Marginals::QR);
+
+       this->updateNoiseModels(values, marginals);
     }
-
 
     /* ************************************************************************* */
     void updateNoiseModels_givenCovs(const gtsam::Values& values, const Matrix& cov1, const Matrix& cov2, const Matrix& cov12){
