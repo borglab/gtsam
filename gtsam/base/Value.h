@@ -36,18 +36,19 @@ namespace gtsam {
    * Values can operate generically on Value objects, retracting or computing
    * local coordinates for many Value objects of different types.
    *
-   * When you implement retract_(), localCoordinates_(), and equals_(), we
-   * suggest first implementing versions of these functions that work directly
-   * with derived objects, then using the provided helper functions to
-   * implement the generic Value versions.  This makes your implementation
-   * easier, and also improves performance in situations where the derived type
-   * is in fact known, such as in most implementations of \c evaluateError() in
-   * classes derived from NonlinearFactor.
+   * Inhereting from the DerivedValue class templated provides a generic implementation of
+   * the pure virtual functions retract_(), localCoordinates_(), and equals_(), eliminating
+   * the need to implement these functions in your class. Note that you must inheret from 
+   * DerivedValue templated on the class you are defining. For example you cannot define
+   * the following
+   * \code
+   * class Rot3 : public DerivedValue<Point3>{ \\classdef }
+   * \endcode
    *
    * Using the above practice, here is an example of implementing a typical
    * class derived from Value:
    * \code
-     class Rot3 : public Value {
+     class GTSAM_EXPORT Rot3 : public DerivedValue<Rot3> {
      public:
        // Constructor, there is never a need to call the Value base class constructor.
        Rot3() { ... }
@@ -73,27 +74,6 @@ namespace gtsam {
        Vector localCoordinates(const Rot3& r2) const {
          // Math to implement 3D rotation localCoordinates, e.g. logarithm map
          return Vector(result);
-       }
-
-       // Equals implementing the generic Value interface (virtual, implements Value::equals_())
-       virtual bool equals_(const Value& other, double tol = 1e-9) const {
-         // Call our provided helper function to call your Rot3-specific
-         // equals with appropriate casting.
-         return CallDerivedEquals(this, other, tol);
-       }
-
-       // retract implementing the generic Value interface (virtual, implements Value::retract_())
-       virtual std::auto_ptr<Value> retract_(const Vector& delta) const {
-         // Call our provided helper function to call your Rot3-specific
-         // retract and do the appropriate casting and allocation.
-         return CallDerivedRetract(this, delta);
-       }
-
-       // localCoordinates implementing the generic Value interface (virtual, implements Value::localCoordinates_())
-       virtual Vector localCoordinates_(const Value& value) const {
-         // Call our provided helper function to call your Rot3-specific
-         // localCoordinates and do the appropriate casting.
-         return CallDerivedLocalCoordinates(this, value);
        }
      };
      \endcode
