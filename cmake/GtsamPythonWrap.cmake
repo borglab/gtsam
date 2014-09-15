@@ -50,7 +50,8 @@ function(wrap_python TARGET_NAME PYTHON_MODULE_DIRECTORY)
 
   # On OSX and Linux, the python library must end in the extension .so. Build this
   # filename here.
-  get_property(PYLIB_OUTPUT_FILE TARGET ${TARGET_NAME} PROPERTY LOCATION)
+  #get_property(PYLIB_OUTPUT_FILE TARGET ${TARGET_NAME} PROPERTY LOCATION)
+  set(PYLIB_OUTPUT_FILE $<TARGET_FILE:${TARGET_NAME}>)
   get_filename_component(PYLIB_OUTPUT_NAME ${PYLIB_OUTPUT_FILE} NAME_WE)
   set(PYLIB_SO_NAME ${PYLIB_OUTPUT_NAME}.so)
 
