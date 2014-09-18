@@ -20,6 +20,9 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/base/Testable.h>
+
+#include <boost/make_shared.hpp>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -66,7 +69,7 @@ Expression<Point2> operator -(const Expression<Point2>& p,
 
 /// AD Factor
 template<class T>
-class BADFactor: NoiseModelFactor {
+class BADFactor: NonlinearFactor {
 
 public:
 
@@ -74,10 +77,22 @@ public:
   BADFactor(const Expression<T>& t) {
   }
 
-  Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if (H) H->push_back(zeros(2,2));
-    return Vector();
+  /**
+   * Calculate the error of the factor
+   * This is typically equal to log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/sigma^2 \f$
+   */
+  double error(const Values& c) const {
+    return 0;
+  }
+
+  /// get the dimension of the factor (number of rows on linearization)
+  size_t dim() const {
+    return 0;
+  }
+
+  /// linearize to a GaussianFactor
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
+    return boost::shared_ptr<JacobianFactor>(new JacobianFactor());
   }
 
 };
@@ -101,18 +116,25 @@ TEST(BAD, test) {
   // Create factor
   BADFactor<Point2> f(e);
 
-  // evaluate, with derivatives
+  // Create some values
   Values values;
-  vector<Matrix> jacobians;
-  Vector actual = f.unwhitenedError(values, jacobians);
 
   // Check value
-  Vector expected = (Vector(2) << 0, 0);
-  EXPECT(assert_equal(expected, actual));
+  EXPECT_DOUBLES_EQUAL(0, f.error(values), 1e-9);
 
-  // Check derivatives
-  Matrix expectedHx = zeros(2,3);
-  EXPECT(assert_equal(expectedHx, jacobians[0]));
+  // Check dimension
+  EXPECT_LONGS_EQUAL(0, f.dim());
+
+  // Check linearization
+  JacobianFactor expected( //
+      1, (Matrix(2, 6) << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), //
+      2, (Matrix(2, 3) << 1, 2, 3, 4, 5, 6), //
+      3, (Matrix(2, 5) << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), //
+      (Vector(2) << 1, 2));
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf,1e-9));
 }
 
 /* ************************************************************************* */
