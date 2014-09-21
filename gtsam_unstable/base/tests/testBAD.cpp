@@ -93,7 +93,13 @@ public:
 
   /// linearize to a GaussianFactor
   boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
-    return boost::shared_ptr<JacobianFactor>(new JacobianFactor());
+    // We will construct an n-ary factor below, where  terms is a container whose
+    // value type is std::pair<Key, Matrix>, specifying the
+    // collection of keys and matrices making up the factor.
+    std::map<Key,Matrix> terms;
+    Vector b;
+    SharedDiagonal model = SharedDiagonal();
+    return boost::shared_ptr<JacobianFactor>(new JacobianFactor(terms,b,model));
   }
 
 };
