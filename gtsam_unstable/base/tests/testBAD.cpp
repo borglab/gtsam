@@ -24,7 +24,7 @@
 #include <gtsam/base/Testable.h>
 
 #include <boost/make_shared.hpp>
-#include <boost/lambda/lambda.hpp>
+#include <boost/foreach.hpp>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -119,6 +119,12 @@ public:
   /// Get the Jacobians from the subtree and apply the chain rule
   std::map<Key, Matrix> jacobians(const Values& values) const {
     std::map<Key, Matrix> terms = expression_.jacobians(values);
+    Matrix H;
+    // TODO, wasted value calculation, create a combined call
+    f_(expression_.value(values), H);
+    typedef std::pair<Key, Matrix> Pair;
+    BOOST_FOREACH(const Pair& term, terms)
+      terms[term.first] = H * term.second;
     return terms;
   }
 };
@@ -158,7 +164,17 @@ public:
   std::map<Key, Matrix> jacobians(const Values& values) const {
     std::map<Key, Matrix> terms1 = expression1_.jacobians(values);
     std::map<Key, Matrix> terms2 = expression2_.jacobians(values);
-    return terms2;
+    Matrix H1, H2;
+    // TODO, wasted value calculation, create a combined call
+    f_(expression1_.value(values), expression2_.value(values), H1, H2);
+    std::map<Key, Matrix> terms;
+    // TODO if Key already exists, add !
+    typedef std::pair<Key, Matrix> Pair;
+    BOOST_FOREACH(const Pair& term, terms1)
+      terms[term.first] = H1 * term.second;
+    BOOST_FOREACH(const Pair& term, terms2)
+      terms[term.first] = H2 * term.second;
+    return terms;
   }
 };
 
@@ -167,6 +183,7 @@ public:
 void printPair(std::pair<Key, Matrix> pair) {
   std::cout << pair.first << ": " << pair.second << std::endl;
 }
+// usage: std::for_each(terms.begin(), terms.end(), printPair);
 
 //-----------------------------------------------------------------------------
 /// AD Factor
@@ -179,7 +196,7 @@ class BADFactor: NonlinearFactor {
   /// get value from expression and calculate error with respect to measurement
   Vector unwhitenedError(const Values& values) const {
     const T& value = expression_.value(values);
-    return measurement_.localCoordinates(value);
+    return value.localCoordinates(measurement_);
   }
 
 public:
@@ -215,7 +232,6 @@ public:
     // value type is std::pair<Key, Matrix>, specifying the
     // collection of keys and matrices making up the factor.
     std::map<Key, Matrix> terms = expression_.jacobians(values);
-    std::for_each(terms.begin(), terms.end(), printPair);
     Vector b = unwhitenedError(values);
     SharedDiagonal model = SharedDiagonal();
     return boost::shared_ptr<JacobianFactor>(
