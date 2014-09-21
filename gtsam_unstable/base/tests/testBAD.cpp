@@ -19,6 +19,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Testable.h>
@@ -72,6 +73,34 @@ public:
 };
 
 //-----------------------------------------------------------------------------
+/// Unary Expression
+template<class T, class E>
+class UnaryExpression {
+
+public:
+
+  typedef T (*function)(const typename E::type&);
+
+private:
+
+  const E expression_;
+  function f_;
+
+public:
+
+  typedef T type;
+
+  /// Constructor with a single key
+  UnaryExpression(function f, const E& expression) :
+      expression_(expression), f_(f) {
+  }
+
+  T value(const Values& values) const {
+    return f_(expression_.value(values));
+  }
+};
+
+//-----------------------------------------------------------------------------
 /// Binary Expression
 template<class T, class E1, class E2>
 class BinaryExpression {
@@ -106,10 +135,8 @@ Point3 transformTo(const Pose3& x, const Point3& p) {
   return x.transform_to(p);
 }
 
-/// Expression version of project
-template<class E>
-LeafExpression<Point2> project(const E& p) {
-  return LeafExpression<Point2>(0);
+Point2 project(const Point3& p) {
+  return PinholeCamera<Cal3_S2>::project_to_camera(p);
 }
 
 /// Expression version of uncalibrate
@@ -206,8 +233,10 @@ TEST(BAD, test) {
 
   // Create expression tree
   typedef BinaryExpression<Point3, LeafExpression<Pose3>, LeafExpression<Point3> > Binary1;
-  Binary1 p_cam = Binary1(transformTo, x, p);
-  LeafExpression<Point2> projection = project(p_cam);
+  Binary1 p_cam(transformTo, x, p);
+
+  typedef UnaryExpression<Point2, Binary1> Unary1;
+  Unary1 projection(project, p_cam);
   LeafExpression<Point2> uv_hat = uncalibrate(K, projection);
 
   // Create factor
