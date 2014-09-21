@@ -24,6 +24,8 @@
 #include <gtsam/base/Testable.h>
 
 #include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -45,8 +47,15 @@ public:
       value_(value) {
   }
 
+  /// The value is just the stored constant
   T value(const Values& values) const {
     return value_;
+  }
+
+  /// A constant does not have a Jacobian
+  std::map<Key, Matrix> jacobians(const Values& values) const {
+    std::map<Key, Matrix> terms;
+    return terms;
   }
 };
 
@@ -66,8 +75,17 @@ public:
       key_(key) {
   }
 
+  /// The value of a leaf is just a lookup in values
   T value(const Values& values) const {
     return values.at<T>(key_);
+  }
+
+  /// There is only a single identity Jacobian in a leaf
+  std::map<Key, Matrix> jacobians(const Values& values) const {
+    std::map<Key, Matrix> terms;
+    const T& value = values.at<T>(key_);
+    terms[key_] = eye(value.dim());
+    return terms;
   }
 };
 
@@ -94,8 +112,15 @@ public:
       expression_(expression), f_(f) {
   }
 
+  /// Evaluate the values of the subtree and call unary function on result
   T value(const Values& values) const {
     return f_(expression_.value(values));
+  }
+
+  /// Get the Jacobians from the subtree and apply the chain rule
+  std::map<Key, Matrix> jacobians(const Values& values) const {
+    std::map<Key, Matrix> terms = expression_.jacobians(values);
+    return terms;
   }
 };
 
@@ -123,10 +148,24 @@ public:
       expression1_(expression1), expression2_(expression2), f_(f) {
   }
 
+  /// Evaluate the values of the subtrees and call binary function on result
   T value(const Values& values) const {
     return f_(expression1_.value(values), expression2_.value(values));
   }
+
+  /// Get the Jacobians from the subtrees and apply the chain rule
+  std::map<Key, Matrix> jacobians(const Values& values) const {
+    std::map<Key, Matrix> terms1 = expression1_.jacobians(values);
+    std::map<Key, Matrix> terms2 = expression2_.jacobians(values);
+    return terms2;
+  }
 };
+
+//-----------------------------------------------------------------------------
+
+void printPair(std::pair<Key,Matrix> pair) {
+  std::cout << pair.first << ": " << pair.second << std::endl;
+}
 
 //-----------------------------------------------------------------------------
 /// AD Factor
@@ -174,7 +213,8 @@ public:
     // We will construct an n-ary factor below, where  terms is a container whose
     // value type is std::pair<Key, Matrix>, specifying the
     // collection of keys and matrices making up the factor.
-    std::map<Key, Matrix> terms;
+    std::map<Key, Matrix> terms = expression_.jacobians(values);
+    std::for_each(terms.begin(), terms.end(),printPair);
     Vector b = unwhitenedError(values);
     SharedDiagonal model = SharedDiagonal();
     return boost::shared_ptr<JacobianFactor>(
@@ -187,7 +227,7 @@ public:
 using namespace std;
 using namespace gtsam;
 
-//-----------------------------------------------------------------------------
+/* ************************************************************************* */
 
 Point3 transformTo(const Pose3& x, const Point3& p) {
   return x.transform_to(p);
