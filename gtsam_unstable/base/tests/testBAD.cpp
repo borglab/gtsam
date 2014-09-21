@@ -29,6 +29,7 @@
 
 namespace gtsam {
 
+//-----------------------------------------------------------------------------
 /// Constant Expression
 template<class T>
 class ConstantExpression {
@@ -36,6 +37,8 @@ class ConstantExpression {
   T value_;
 
 public:
+
+  typedef T type;
 
   /// Constructor with a value, yielding a constant
   ConstantExpression(const T& value) :
@@ -47,6 +50,7 @@ public:
   }
 };
 
+//-----------------------------------------------------------------------------
 /// Leaf Expression
 template<class T>
 class LeafExpression {
@@ -55,8 +59,11 @@ class LeafExpression {
 
 public:
 
+  typedef T type;
+
   /// Constructor with a single key
-  LeafExpression(Key key):key_(key) {
+  LeafExpression(Key key) :
+      key_(key) {
   }
 
   T value(const Values& values) const {
@@ -64,10 +71,39 @@ public:
   }
 };
 
-/// Expression version of transform
-template<class E1, class E2>
-LeafExpression<Point3> transformTo(const E1& x, const E2& p) {
-  return LeafExpression<Point3>(0);
+//-----------------------------------------------------------------------------
+/// Binary Expression
+template<class T, class E1, class E2>
+class BinaryExpression {
+
+public:
+
+  typedef T (*function)(const typename E1::type&, const typename E2::type&);
+
+private:
+
+  const E1 expression1_;
+  const E2 expression2_;
+  function f_;
+
+public:
+
+  typedef T type;
+
+  /// Constructor with a single key
+  BinaryExpression(function f, const E1& expression1, const E2& expression2) :
+      expression1_(expression1), expression2_(expression2), f_(f) {
+  }
+
+  T value(const Values& values) const {
+    return f_(expression1_.value(values), expression2_.value(values));
+  }
+};
+
+//-----------------------------------------------------------------------------
+
+Point3 transformTo(const Pose3& x, const Point3& p) {
+  return x.transform_to(p);
 }
 
 /// Expression version of project
@@ -169,7 +205,8 @@ TEST(BAD, test) {
   LeafExpression<Cal3_S2> K(3);
 
   // Create expression tree
-  LeafExpression<Point3> p_cam = transformTo(x, p);
+  typedef BinaryExpression<Point3, LeafExpression<Pose3>, LeafExpression<Point3> > Binary1;
+  Binary1 p_cam = Binary1(transformTo, x, p);
   LeafExpression<Point2> projection = project(p_cam);
   LeafExpression<Point2> uv_hat = uncalibrate(K, projection);
 
