@@ -56,7 +56,7 @@ class LeafExpression {
 public:
 
   /// Constructor with a single key
-  LeafExpression(Key key) {
+  LeafExpression(Key key):key_(key) {
   }
 
   T value(const Values& values) const {
@@ -95,6 +95,12 @@ class BADFactor: NonlinearFactor {
   const T measurement_;
   const E expression_;
 
+  /// get value from expression and calculate error with respect to measurement
+  Vector unwhitenedError(const Values& values) const {
+    const T& value = expression_.value(values);
+    return measurement_.localCoordinates(value);
+  }
+
 public:
 
   /// Constructor
@@ -103,11 +109,18 @@ public:
   }
 
   /**
-   * Calculate the error of the factor
-   * This is typically equal to log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/sigma^2 \f$
+   * Calculate the error of the factor.
+   * This is the log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/\sigma^2 \f$ in case of Gaussian.
+   * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
+   * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
-  double error(const Values& c) const {
-    return 0;
+  virtual double error(const Values& values) const {
+    if (this->active(values)) {
+      const Vector e = unwhitenedError(values);
+      return 0.5 * e.norm();
+    } else {
+      return 0.0;
+    }
   }
 
   /// get the dimension of the factor (number of rows on linearization)
@@ -121,8 +134,7 @@ public:
     // value type is std::pair<Key, Matrix>, specifying the
     // collection of keys and matrices making up the factor.
     std::map<Key, Matrix> terms;
-    const T& value = expression_.value(values);
-    Vector b = measurement_.localCoordinates(value);
+    Vector b = unwhitenedError(values);
     SharedDiagonal model = SharedDiagonal();
     return boost::shared_ptr<JacobianFactor>(
         new JacobianFactor(terms, b, model));
@@ -148,6 +160,7 @@ TEST(BAD, test) {
   Point2 measured(0, 1);
   SharedNoiseModel model = noiseModel::Unit::Create(2);
   GeneralSFMFactor2<Cal3_S2> old(measured, model, 1, 2, 3);
+  double expected_error = old.error(values);
   GaussianFactor::shared_ptr expected = old.linearize(values);
 
   // Create leaves
@@ -164,7 +177,7 @@ TEST(BAD, test) {
   BADFactor<Point2, LeafExpression<Point2> > f(measured, uv_hat);
 
   // Check value
-  EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
 
   // Check dimension
   EXPECT_LONGS_EQUAL(0, f.dim());
