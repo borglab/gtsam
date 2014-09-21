@@ -19,7 +19,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Testable.h>
@@ -130,27 +129,6 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-
-Point3 transformTo(const Pose3& x, const Point3& p) {
-  return x.transform_to(p);
-}
-
-Point2 project(const Point3& p) {
-  return PinholeCamera<Cal3_S2>::project_to_camera(p);
-}
-
-/// Expression version of uncalibrate
-template<class E1, class E2>
-LeafExpression<Point2> uncalibrate(const E1& K, const E2& p) {
-  return LeafExpression<Point2>(0);
-}
-
-/// Expression version of Point2.sub
-template<class E1, class E2>
-LeafExpression<Point2> operator -(const E1& p, const E2& q) {
-  return LeafExpression<Point2>(0);
-}
-
 /// AD Factor
 template<class T, class E>
 class BADFactor: NonlinearFactor {
@@ -180,7 +158,7 @@ public:
   virtual double error(const Values& values) const {
     if (this->active(values)) {
       const Vector e = unwhitenedError(values);
-      return 0.5 * e.norm();
+      return 0.5 * e.squaredNorm();
     } else {
       return 0.0;
     }
@@ -209,6 +187,21 @@ public:
 using namespace std;
 using namespace gtsam;
 
+//-----------------------------------------------------------------------------
+
+Point3 transformTo(const Pose3& x, const Point3& p) {
+  return x.transform_to(p);
+}
+
+Point2 project(const Point3& p) {
+  return PinholeCamera<Cal3_S2>::project_to_camera(p);
+}
+
+template<class CAL>
+Point2 uncalibrate(const CAL& K, const Point2& p) {
+  return K.uncalibrate(p);
+}
+
 /* ************************************************************************* */
 
 TEST(BAD, test) {
@@ -220,7 +213,7 @@ TEST(BAD, test) {
   values.insert(3, Cal3_S2());
 
   // Create old-style factor to create expected value and derivatives
-  Point2 measured(0, 1);
+  Point2 measured(-17, 30);
   SharedNoiseModel model = noiseModel::Unit::Create(2);
   GeneralSFMFactor2<Cal3_S2> old(measured, model, 1, 2, 3);
   double expected_error = old.error(values);
@@ -237,10 +230,12 @@ TEST(BAD, test) {
 
   typedef UnaryExpression<Point2, Binary1> Unary1;
   Unary1 projection(project, p_cam);
-  LeafExpression<Point2> uv_hat = uncalibrate(K, projection);
+
+  typedef BinaryExpression<Point2, LeafExpression<Cal3_S2>, Unary1> Binary2;
+  Binary2 uv_hat(uncalibrate, K, projection);
 
   // Create factor
-  BADFactor<Point2, LeafExpression<Point2> > f(measured, uv_hat);
+  BADFactor<Point2, Binary2> f(measured, uv_hat);
 
   // Check value
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
