@@ -15,24 +15,25 @@
  * @date    Dec 15, 2010
  */
 
-#include <vector>
-#include <utility>
-
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
-
-#include <gtsam/base/debug.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>
-
+#include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
+
 #include <CppUnitLite/TestHarness.h>
 
-using namespace std;
+#include <boost/assign/list_of.hpp>
+#include <boost/assign/std/vector.hpp>
+#include <boost/assign/std/map.hpp>
 using namespace boost::assign;
+
+#include <vector>
+#include <utility>
+
+using namespace std;
 using namespace gtsam;
 
 const double tol = 1e-5;
