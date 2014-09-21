@@ -29,21 +29,9 @@
 
 namespace gtsam {
 
-/// Base class
-template<class T>
-class Expression {
-
-public:
-
-  typedef Expression<T> This;
-  typedef boost::shared_ptr<This> shared_ptr;
-
-  virtual T value(const Values& values) const = 0;
-};
-
 /// Constant Expression
 template<class T>
-class ConstantExpression: public Expression<T> {
+class ConstantExpression {
 
   T value_;
 
@@ -61,7 +49,7 @@ public:
 
 /// Leaf Expression
 template<class T>
-class LeafExpression: public Expression<T> {
+class LeafExpression {
 
   Key key_;
 
@@ -77,25 +65,26 @@ public:
 };
 
 /// Expression version of transform
-LeafExpression<Point3> transformTo(const Expression<Pose3>& x,
-    const Expression<Point3>& p) {
+template<class E1, class E2>
+LeafExpression<Point3> transformTo(const E1& x, const E2& p) {
   return LeafExpression<Point3>(0);
 }
 
 /// Expression version of project
-LeafExpression<Point2> project(const Expression<Point3>& p) {
+template<class E>
+LeafExpression<Point2> project(const E& p) {
   return LeafExpression<Point2>(0);
 }
 
 /// Expression version of uncalibrate
-LeafExpression<Point2> uncalibrate(const Expression<Cal3_S2>& K,
-    const Expression<Point2>& p) {
+template<class E1, class E2>
+LeafExpression<Point2> uncalibrate(const E1& K, const E2& p) {
   return LeafExpression<Point2>(0);
 }
 
 /// Expression version of Point2.sub
-LeafExpression<Point2> operator -(const Expression<Point2>& p,
-    const Expression<Point2>& q) {
+template<class E1, class E2>
+LeafExpression<Point2> operator -(const E1& p, const E2& q) {
   return LeafExpression<Point2>(0);
 }
 
