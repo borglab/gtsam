@@ -24,7 +24,6 @@
 #include <gtsam/base/Testable.h>
 
 #include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lambda/lambda.hpp>
 
 #include <CppUnitLite/TestHarness.h>
@@ -96,7 +95,7 @@ class UnaryExpression {
 
 public:
 
-  typedef T (*function)(const typename E::type&);
+  typedef T (*function)(const typename E::type&, boost::optional<Matrix&>);
 
 private:
 
@@ -114,7 +113,7 @@ public:
 
   /// Evaluate the values of the subtree and call unary function on result
   T value(const Values& values) const {
-    return f_(expression_.value(values));
+    return f_(expression_.value(values), boost::none);
   }
 
   /// Get the Jacobians from the subtree and apply the chain rule
@@ -131,7 +130,8 @@ class BinaryExpression {
 
 public:
 
-  typedef T (*function)(const typename E1::type&, const typename E2::type&);
+  typedef T (*function)(const typename E1::type&, const typename E2::type&,
+      boost::optional<Matrix&>, boost::optional<Matrix&>);
 
 private:
 
@@ -150,7 +150,8 @@ public:
 
   /// Evaluate the values of the subtrees and call binary function on result
   T value(const Values& values) const {
-    return f_(expression1_.value(values), expression2_.value(values));
+    return f_(expression1_.value(values), expression2_.value(values),
+        boost::none, boost::none);
   }
 
   /// Get the Jacobians from the subtrees and apply the chain rule
@@ -163,7 +164,7 @@ public:
 
 //-----------------------------------------------------------------------------
 
-void printPair(std::pair<Key,Matrix> pair) {
+void printPair(std::pair<Key, Matrix> pair) {
   std::cout << pair.first << ": " << pair.second << std::endl;
 }
 
@@ -214,7 +215,7 @@ public:
     // value type is std::pair<Key, Matrix>, specifying the
     // collection of keys and matrices making up the factor.
     std::map<Key, Matrix> terms = expression_.jacobians(values);
-    std::for_each(terms.begin(), terms.end(),printPair);
+    std::for_each(terms.begin(), terms.end(), printPair);
     Vector b = unwhitenedError(values);
     SharedDiagonal model = SharedDiagonal();
     return boost::shared_ptr<JacobianFactor>(
@@ -229,17 +230,19 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 
-Point3 transformTo(const Pose3& x, const Point3& p) {
-  return x.transform_to(p);
+Point3 transformTo(const Pose3& x, const Point3& p,
+    boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) {
+  return x.transform_to(p, Dpose, Dpoint);
 }
 
-Point2 project(const Point3& p) {
-  return PinholeCamera<Cal3_S2>::project_to_camera(p);
+Point2 project(const Point3& p, boost::optional<Matrix&> Dpoint) {
+  return PinholeCamera<Cal3_S2>::project_to_camera(p, Dpoint);
 }
 
 template<class CAL>
-Point2 uncalibrate(const CAL& K, const Point2& p) {
-  return K.uncalibrate(p);
+Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
+    boost::optional<Matrix&> Dp) {
+  return K.uncalibrate(p, Dcal, Dp);
 }
 
 /* ************************************************************************* */
