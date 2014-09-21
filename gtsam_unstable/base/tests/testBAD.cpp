@@ -27,55 +27,90 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-using namespace std;
-using namespace gtsam;
+namespace gtsam {
 
-/// This class might have to become a class hierarchy ?
+/// Base class
 template<class T>
 class Expression {
 
 public:
 
-  /// Constructor with a single key
-  Expression(Key key) {
-  }
+  typedef Expression<T> This;
+  typedef boost::shared_ptr<This> shared_ptr;
+
+  virtual T value(const Values& values) const = 0;
+};
+
+/// Constant Expression
+template<class T>
+class ConstantExpression: public Expression<T> {
+
+  T value_;
+
+public:
 
   /// Constructor with a value, yielding a constant
-  Expression(const T& t) {
+  ConstantExpression(const T& value) :
+      value_(value) {
+  }
+
+  T value(const Values& values) const {
+    return value_;
+  }
+};
+
+/// Leaf Expression
+template<class T>
+class LeafExpression: public Expression<T> {
+
+  Key key_;
+
+public:
+
+  /// Constructor with a single key
+  LeafExpression(Key key) {
+  }
+
+  T value(const Values& values) const {
+    return values.at<T>(key_);
   }
 };
 
 /// Expression version of transform
-Expression<Point3> transformTo(const Expression<Pose3>& x,
+LeafExpression<Point3> transformTo(const Expression<Pose3>& x,
     const Expression<Point3>& p) {
-  return Expression<Point3>(0);
+  return LeafExpression<Point3>(0);
 }
 
 /// Expression version of project
-Expression<Point2> project(const Expression<Point3>& p) {
-  return Expression<Point2>(0);
+LeafExpression<Point2> project(const Expression<Point3>& p) {
+  return LeafExpression<Point2>(0);
 }
 
 /// Expression version of uncalibrate
-Expression<Point2> uncalibrate(const Expression<Cal3_S2>& K,
+LeafExpression<Point2> uncalibrate(const Expression<Cal3_S2>& K,
     const Expression<Point2>& p) {
-  return Expression<Point2>(0);
+  return LeafExpression<Point2>(0);
 }
 
 /// Expression version of Point2.sub
-Expression<Point2> operator -(const Expression<Point2>& p,
+LeafExpression<Point2> operator -(const Expression<Point2>& p,
     const Expression<Point2>& q) {
-  return Expression<Point2>(0);
+  return LeafExpression<Point2>(0);
 }
 
 /// AD Factor
-template<class T>
+template<class T, class E>
 class BADFactor: NonlinearFactor {
+
+  const T measurement_;
+  const E expression_;
 
 public:
 
   /// Constructor
-  BADFactor(const Expression<T>& t) {
+  BADFactor(const T& measurement, const E& expression) :
+      measurement_(measurement), expression_(expression) {
   }
 
   /**
@@ -92,17 +127,23 @@ public:
   }
 
   /// linearize to a GaussianFactor
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
     // We will construct an n-ary factor below, where  terms is a container whose
     // value type is std::pair<Key, Matrix>, specifying the
     // collection of keys and matrices making up the factor.
-    std::map<Key,Matrix> terms;
-    Vector b;
+    std::map<Key, Matrix> terms;
+    const T& value = expression_.value(values);
+    Vector b = measurement_.localCoordinates(value);
     SharedDiagonal model = SharedDiagonal();
-    return boost::shared_ptr<JacobianFactor>(new JacobianFactor(terms,b,model));
+    return boost::shared_ptr<JacobianFactor>(
+        new JacobianFactor(terms, b, model));
   }
 
 };
+}
+
+using namespace std;
+using namespace gtsam;
 
 /* ************************************************************************* */
 
@@ -110,30 +151,28 @@ TEST(BAD, test) {
 
   // Create some values
   Values values;
-  values.insert(1,Pose3());
-  values.insert(2,Point3(0,0,1));
-  values.insert(3,Cal3_S2());
+  values.insert(1, Pose3());
+  values.insert(2, Point3(0, 0, 1));
+  values.insert(3, Cal3_S2());
 
   // Create old-style factor to create expected value and derivatives
-  Point2 measured(0,1);
+  Point2 measured(0, 1);
   SharedNoiseModel model = noiseModel::Unit::Create(2);
   GeneralSFMFactor2<Cal3_S2> old(measured, model, 1, 2, 3);
   GaussianFactor::shared_ptr expected = old.linearize(values);
 
   // Create leaves
-  Expression<Pose3> x(1);
-  Expression<Point3> p(2);
-  Expression<Cal3_S2> K(3);
-  Expression<Point2> uv(measured);
+  LeafExpression<Pose3> x(1);
+  LeafExpression<Point3> p(2);
+  LeafExpression<Cal3_S2> K(3);
 
   // Create expression tree
-  Expression<Point3> p_cam = transformTo(x, p);
-  Expression<Point2> projection = project(p_cam);
-  Expression<Point2> uv_hat = uncalibrate(K, projection);
-  Expression<Point2> e = uv - uv_hat;
+  LeafExpression<Point3> p_cam = transformTo(x, p);
+  LeafExpression<Point2> projection = project(p_cam);
+  LeafExpression<Point2> uv_hat = uncalibrate(K, projection);
 
   // Create factor
-  BADFactor<Point2> f(e);
+  BADFactor<Point2, LeafExpression<Point2> > f(measured, uv_hat);
 
   // Check value
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
