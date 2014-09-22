@@ -25,14 +25,10 @@ namespace Eigen {
   * \sa \ref MatrixBaseCommaInitRef "MatrixBase::operator<<", CommaInitializer::finished()
   */
 template<typename XprType>
-struct CommaInitializer :
-  public internal::dense_xpr_base<CommaInitializer<XprType> >::type
+struct CommaInitializer
 {
-  typedef typename internal::dense_xpr_base<CommaInitializer<XprType> >::type Base;
-  EIGEN_DENSE_PUBLIC_INTERFACE(CommaInitializer)
-  typedef typename internal::conditional<internal::must_nest_by_value<XprType>::ret,
-    XprType, const XprType&>::type ExpressionTypeNested;
-  typedef typename XprType::InnerIterator InnerIterator;
+  typedef typename XprType::Scalar Scalar;
+  typedef typename XprType::Index Index;
 
   inline CommaInitializer(XprType& xpr, const Scalar& s)
     : m_xpr(xpr), m_row(0), m_col(1), m_currentBlockRows(1)
@@ -119,81 +115,11 @@ struct CommaInitializer :
     */
   inline XprType& finished() { return m_xpr; }
 
-  // The following implement the DenseBase interface
-
-  inline Index rows() const { return m_xpr.rows(); }
-  inline Index cols() const { return m_xpr.cols(); }
-  inline Index outerStride() const { return m_xpr.outerStride(); }
-  inline Index innerStride() const { return m_xpr.innerStride(); }
-
-  inline CoeffReturnType coeff(Index row, Index col) const
-  {
-    return m_xpr.coeff(row, col);
-  }
-
-  inline CoeffReturnType coeff(Index index) const
-  {
-    return m_xpr.coeff(index);
-  }
-
-  inline const Scalar& coeffRef(Index row, Index col) const
-  {
-    return m_xpr.const_cast_derived().coeffRef(row, col);
-  }
-
-  inline const Scalar& coeffRef(Index index) const
-  {
-    return m_xpr.const_cast_derived().coeffRef(index);
-  }
-
-  inline Scalar& coeffRef(Index row, Index col)
-  {
-    return m_xpr.const_cast_derived().coeffRef(row, col);
-  }
-
-  inline Scalar& coeffRef(Index index)
-  {
-    return m_xpr.const_cast_derived().coeffRef(index);
-  }
-
-  template<int LoadMode>
-  inline const PacketScalar packet(Index row, Index col) const
-  {
-    return m_xpr.template packet<LoadMode>(row, col);
-  }
-
-  template<int LoadMode>
-  inline void writePacket(Index row, Index col, const PacketScalar& x)
-  {
-    m_xpr.const_cast_derived().template writePacket<LoadMode>(row, col, x);
-  }
-
-  template<int LoadMode>
-  inline const PacketScalar packet(Index index) const
-  {
-    return m_xpr.template packet<LoadMode>(index);
-  }
-
-  template<int LoadMode>
-  inline void writePacket(Index index, const PacketScalar& x)
-  {
-    m_xpr.const_cast_derived().template writePacket<LoadMode>(index, x);
-  }
-
-  const XprType& _expression() const { return m_xpr; }
-
   XprType& m_xpr;   // target expression
   Index m_row;              // current row id
   Index m_col;              // current col id
   Index m_currentBlockRows; // current block height
 };
-
-namespace internal {
-  template<typename XprType>
-  struct traits<CommaInitializer<XprType> > : traits<XprType>
-  {
-  };
-}
 
 /** \anchor MatrixBaseCommaInitRef
   * Convenient operator to set the coefficients of a matrix.

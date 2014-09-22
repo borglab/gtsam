@@ -53,7 +53,7 @@ void check_aligned_new()
 
 void check_aligned_stack_alloc()
 {
-  for(int i = 1; i < 1000; i++)
+  for(int i = 1; i < 400; i++)
   {
     ei_declare_aligned_stack_constructed_variable(float,p,i,0);
     VERIFY(size_t(p)%ALIGNMENT==0);
