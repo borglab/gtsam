@@ -18,19 +18,20 @@
  *  @author Richard Roberts
  **/
 
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/VariableSlots.h>
+#include <gtsam/inference/VariableIndex.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/VerticalBlockMatrix.h>
+
+#include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
-
-#include <gtsam/base/debug.h>
-#include <gtsam/base/VerticalBlockMatrix.h>
-#include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/VariableIndex.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/GaussianBayesNet.h>
 
 using namespace std;
 using namespace gtsam;

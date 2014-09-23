@@ -25,13 +25,15 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
-#include <iostream>
-#include <sstream>
-#include <vector>
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_inserter.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/assign/list_of.hpp>
+
+#include <iostream>
+#include <sstream>
+#include <vector>
 
 using namespace gtsam;
 using namespace std;
