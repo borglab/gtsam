@@ -42,11 +42,6 @@ typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
 
 /**
- * An auxiliary function to printf for Win32 compatibility, added by Kai
- */
-GTSAM_EXPORT void odprintf(const char *format, ...);
-
-/**
  * Create vector initialized to a constant value
  * @param n is the size of the vector
  * @param value is a constant value to insert into the vector
