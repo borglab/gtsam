@@ -305,6 +305,7 @@ VectorValues GaussianFactorGraph::gradientAtZero(
     // Zero-out the gradient
     VectorValues g;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if (!factor) continue;
       VectorValues gi = factor->gradientAtZero(negDuals);
       g.addInPlace_(gi);
     }
