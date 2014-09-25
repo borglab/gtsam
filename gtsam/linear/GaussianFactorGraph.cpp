@@ -254,6 +254,7 @@ namespace gtsam {
   map<Key,Matrix> GaussianFactorGraph::hessianBlockDiagonal() const {
     map<Key,Matrix> blocks;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if (!factor) continue;
       map<Key,Matrix> BD = factor->hessianBlockDiagonal();
       map<Key,Matrix>::const_iterator it = BD.begin();
       for(;it!=BD.end();it++) {
@@ -299,11 +300,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues GaussianFactorGraph::gradientAtZero() const {
+VectorValues GaussianFactorGraph::gradientAtZero(
+    const boost::optional<const VectorValues&> negDuals) const {
     // Zero-out the gradient
     VectorValues g;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
-      VectorValues gi = factor->gradientAtZero();
+      VectorValues gi = factor->gradientAtZero(negDuals);
       g.addInPlace_(gi);
     }
     return g;
@@ -426,6 +428,7 @@ namespace gtsam {
       const VectorValues& delta) const {
     GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
     BOOST_FOREACH(const Key key, constrainedVariables) {
+      // Each constrained key becomes a factor in the dual graph
       dualGraph->push_back(createDualFactor(key, variableIndex, delta));
     }
     return dualGraph;

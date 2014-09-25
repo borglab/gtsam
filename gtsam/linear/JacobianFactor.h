@@ -342,9 +342,13 @@ public:
   }
   ;
 
-  /// A'*b for Jacobian
+  /**
+   * A'*b for Jacobian,
+   * with the option to scale with the corresponding negative dual variable
+   * for constrained factor, -\lambda*\nabla c
+   */
   VectorValues gradientAtZero(
-      const boost::optional<Vector&> dual = boost::none) const;
+      const boost::optional<const VectorValues&> negDuals = boost::none) const;
 
   /* ************************************************************************* */
   virtual void gradientAtZero(double* d) const;

@@ -128,7 +128,7 @@ namespace gtsam {
     virtual void multiplyHessianAdd(double alpha, const double* x, double* y) const = 0;
 
     /// A'*b for Jacobian, eta for Hessian
-    virtual VectorValues gradientAtZero(const boost::optional<Vector&> dual = boost::none) const = 0;
+    virtual VectorValues gradientAtZero(const boost::optional<const VectorValues&> negDuals = boost::none) const = 0;
 
     /// A'*b for Jacobian, eta for Hessian (raw memory version)
     virtual void gradientAtZero(double* d) const = 0;

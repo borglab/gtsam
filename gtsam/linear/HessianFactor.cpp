@@ -591,17 +591,11 @@ void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
 
 
 /* ************************************************************************* */
-VectorValues HessianFactor::gradientAtZero(const boost::optional<Vector&> dual) const {
+VectorValues HessianFactor::gradientAtZero(const boost::optional<const VectorValues&> negDuals) const {
   VectorValues g;
   size_t n = size();
   for (size_t j = 0; j < n; ++j)
     g.insert(keys_[j], -info_(j,n).knownOffDiagonal());
-  if (dual) {
-    if (dual->size() != 1) {
-      throw std::runtime_error("Fail to scale the gradient with the dual vector: Size mismatch!");
-    }
-    g = (*dual)[0] * g;
-  }
   return g;
 }
 

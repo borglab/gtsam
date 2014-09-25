@@ -152,8 +152,8 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor) :
   bool success;
   boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
-  factor.print("HessianFactor to convert: ");
-  cout << "Maxrank: " << maxrank << ", success: " << int(success) << endl;
+//  factor.print("HessianFactor to convert: ");
+//  cout << "Maxrank: " << maxrank << ", success: " << int(success) << endl;
 
   // Check for indefinite system
   if (!success) {
@@ -606,20 +606,36 @@ void JacobianFactor::multiplyHessianAdd(double alpha, const double* x,
 
 /* ************************************************************************* */
 VectorValues JacobianFactor::gradientAtZero(
-    const boost::optional<Vector&> dual) const {
+    const boost::optional<const VectorValues&> negDuals) const {
   VectorValues g;
-  Vector b = getb();
-  // Gradient is really -A'*b / sigma^2
-  // transposeMultiplyAdd will divide by sigma once, so we need one more
-  Vector b_sigma = model_ ? model_->whiten(b) : b;
-  // scale b by the dual vector if it exists
-  if (dual) {
-    if (dual->size() != b_sigma.size())
+
+  /* We treat linear constraints differently: They are not least square terms, 0.5*||Ax-b||^2,
+   * but simply linear constraints: Ax-b=0.
+   * The constraint function is c(x) = Ax-b. It's Jacobian is A,
+   * and the gradient is the sum of columns of A', each optionally scaled by the
+   * corresponding element of negDual vector.
+   */
+  if (isConstrained()) {
+    Vector scale = ones(rows());
+    if (negDuals && dualKey_) {
+      scale = negDuals->at(dualKey());
+      if (scale.size() != rows())
+        throw std::runtime_error(
+            "Fail to scale the gradient with the dual vector: Size mismatch!");
+    }
+    if (negDuals && !dualKey_) {
       throw std::runtime_error(
-          "Fail to scale the gradient with the dual vector: Size mismatch!");
-    b_sigma = b_sigma.cwiseProduct(*dual);
+          "Fail to scale the gradient with the dual vector: No dual key!");
+    }
+    this->transposeMultiplyAdd(1.0, scale, g); // g = A'*scale
   }
-  this->transposeMultiplyAdd(-1.0, b_sigma, g); // g -= A'*b/sigma^2
+  else {
+    Vector b = getb();
+    // Gradient is really -A'*b / sigma^2
+    // transposeMultiplyAdd will divide by sigma once, so we need one more
+    Vector b_sigma = model_ ? model_->whiten(b) : b;
+    this->transposeMultiplyAdd(-1.0, b_sigma, g); // g -= A'*b/sigma^2
+  }
   return g;
 }
 
@@ -630,6 +646,10 @@ void JacobianFactor::gradientAtZero(double* d) const {
 
 /* ************************************************************************* */
 Vector JacobianFactor::gradient(Key key, const VectorValues& x) const {
+  if (isConstrained()) { // Untested. But see the explaination in gradientAtZero()
+    Matrix A = getA(find(key));
+    return A.transpose()*ones(rows());
+  }
   // TODO: optimize it for JacobianFactor without converting to a HessianFactor
   HessianFactor hessian(*this);
   return hessian.gradient(key, x);

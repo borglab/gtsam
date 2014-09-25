@@ -262,11 +262,11 @@ namespace gtsam {
     /**
      * Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b
      * \right\Vert^2 \f$, centered around zero. The gradient is \f$ A^T(Ax-b) \f$.
-     * @param fg The Jacobian factor graph $(A,b)$
+     * @param duals[optional] Values of dual variables to scale constrained gradients, \lambda*\nabla c(x)
      * @param [output] g A VectorValues to store the gradient, which must be preallocated,
      *        see allocateVectorValues
      * @return The gradient as a VectorValues */
-    virtual VectorValues gradientAtZero() const;
+    virtual VectorValues gradientAtZero(const boost::optional<const VectorValues&> duals = boost::none) const;
 
     /** Optimize along the gradient direction, with a closed-form computation to perform the line
      *  search.  The gradient is computed about \f$ \delta x=0 \f$.

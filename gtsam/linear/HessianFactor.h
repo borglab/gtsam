@@ -384,8 +384,11 @@ namespace gtsam {
 
     void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
 
-    /// eta for Hessian
-    VectorValues gradientAtZero(const boost::optional<Vector&> dual = boost::none) const;
+    /**
+     * eta for Hessian
+     * Ignore duals parameters. It's only valid for constraints, which need to be JacobianFactor
+     */
+    VectorValues gradientAtZero(const boost::optional<const VectorValues&> negDuals = boost::none) const;
 
     virtual void gradientAtZero(double* d) const;
 
