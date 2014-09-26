@@ -89,6 +89,23 @@ TEST (Point3, normalize) {
 }
 
 /* ************************************************************************* */
+double testFunc(const Point3& P, const Point3& Q) {
+  return P.distance(Q);
+}
+
+TEST (Point3, distance) {
+  Point3 P(1., 12.8, -32.), Q(52.7, 4.9, -13.3);
+  Matrix H1, H2;
+  double d = P.distance(Q, H1, H2);
+  double expectedDistance = 55.542686;
+  Matrix numH1 = numericalDerivative21(testFunc, P, Q);
+  Matrix numH2 = numericalDerivative22(testFunc, P, Q);
+  DOUBLES_EQUAL(expectedDistance, d, 1e-5);
+  EXPECT(assert_equal(numH1, H1, 1e-8));
+  EXPECT(assert_equal(numH2, H2, 1e-8));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

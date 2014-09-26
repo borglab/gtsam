@@ -164,8 +164,17 @@ namespace gtsam {
     Point3 operator / (double s) const;
 
     /** distance between two points */
-    inline double distance(const Point3& p2) const {
-      return (p2 - *this).norm();
+    inline double distance(const Point3& p2,
+        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+      double d = (p2 - *this).norm();
+      if (H1) {
+        *H1 = (Matrix(1, 3) << x_-p2.x(), y_-p2.y(), z_-p2.z())*(1./d);
+      }
+
+      if (H2) {
+        *H2 = (Matrix(1, 3) << -x_+p2.x(), -y_+p2.y(), -z_+p2.z())*(1./d);
+      }
+      return d;
     }
 
     /** @deprecated The following function has been deprecated, use distance above */
