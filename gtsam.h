@@ -2098,6 +2098,16 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 };
 
 
+#include <gtsam/slam/DistanceFactor.h>
+template<T = {gtsam::Point2, gtsam::Point3}>
+virtual class DistanceFactor : gtsam::NoiseModelFactor {
+  DistanceFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
