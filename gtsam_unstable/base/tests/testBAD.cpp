@@ -44,8 +44,10 @@ class ExpressionNode {
   virtual void getKeys(std::set<Key>& keys) const = 0;
   virtual T value(const Values& values,
                   boost::optional<std::map<Key, Matrix>&> = boost::none) const = 0;
-  virtual ExpressionNode<T>* clone() const = 0;
 };
+
+template<typename T>
+class Expression;
 
 /// Constant Expression
 template<class T>
@@ -68,7 +70,6 @@ class ConstantExpression : public ExpressionNode<T> {
                   boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     return value_;
   }
-  virtual ExpressionNode<T>* clone() const { return new ConstantExpression(*this); }
 };
 
 //-----------------------------------------------------------------------------
@@ -103,7 +104,6 @@ class LeafExpression : public ExpressionNode<T> {
     return value;
   }
 
-  virtual ExpressionNode<T>* clone() const { return new LeafExpression(*this); }
 };
 
 //-----------------------------------------------------------------------------
@@ -125,8 +125,8 @@ class UnaryExpression : public ExpressionNode<T> {
   typedef T type;
 
   /// Constructor with a single key
-  UnaryExpression(function f, const ExpressionNode<E>& expression) :
-    expression_(expression.clone()), f_(f) {
+  UnaryExpression(function f, const Expression<E>& expression) :
+    expression_(expression.root()), f_(f) {
   }
   virtual ~UnaryExpression(){}
 
@@ -148,7 +148,6 @@ class UnaryExpression : public ExpressionNode<T> {
     return value;
   }
 
-  virtual ExpressionNode<T>* clone() const { return new UnaryExpression(*this); }
 };
 
 //-----------------------------------------------------------------------------
@@ -173,8 +172,8 @@ class BinaryExpression : public ExpressionNode<T> {
   typedef T type;
 
   /// Constructor with a single key
-  BinaryExpression(function f, const ExpressionNode<E1>& expression1, const ExpressionNode<E2>& expression2) :
-    expression1_(expression1.clone()), expression2_(expression2.clone()), f_(f) {
+  BinaryExpression(function f, const Expression<E1>& expression1, const Expression<E2>& expression2) :
+    expression1_(expression1.root()), expression2_(expression2.root()), f_(f) {
   }
   virtual ~BinaryExpression(){}
 
@@ -216,15 +215,11 @@ class BinaryExpression : public ExpressionNode<T> {
     return val;
   }
 
-  virtual ExpressionNode<T>* clone() const { return new BinaryExpression(*this); }
 };
 
 template<typename T>
 class Expression {
  public:
-  Expression(const ExpressionNode<T>& root) {
-    root_.reset(root.clone());
-  }
 
   // Initialize a constant expression
   Expression(const T& value) :
@@ -239,7 +234,7 @@ class Expression {
   Expression(typename UnaryExpression<T,E>::function f,
              const Expression<E>& expression) {
     // TODO Assert that root of expression is not null.
-    root_.reset(new UnaryExpression<T,E>(f, *expression.root()));
+    root_.reset(new UnaryExpression<T,E>(f, expression));
   }
 
   /// Initialize a binary expression
@@ -248,8 +243,8 @@ class Expression {
              const Expression<E1>& expression1,
              const Expression<E2>& expression2) {
     // TODO Assert that root of expressions 1 and 2 are not null.
-    root_.reset(new BinaryExpression<T,E1,E2>(f, *expression1.root(),
-                                              *expression2.root()));
+    root_.reset(new BinaryExpression<T,E1,E2>(f, expression1,
+                                              expression2));
   }
 
   void getKeys(std::set<Key>& keys) const { root_->getKeys(keys); }
