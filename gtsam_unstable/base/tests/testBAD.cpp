@@ -30,154 +30,238 @@
 
 namespace gtsam {
 
-//-----------------------------------------------------------------------------
+///-----------------------------------------------------------------------------
+/// Expression node. The superclass for objects that do the heavy lifting
+/// An Expression<T> has a pointer to an ExpressionNode<T> underneath
+/// allowing Expressions to have polymorphic behaviour even though they
+/// are passed by value. This is the same way boost::function works.
+/// http://loki-lib.sourceforge.net/html/a00652.html
+template<class T>
+class ExpressionNode {
+ public:
+  ExpressionNode(){}
+  virtual ~ExpressionNode(){}
+  virtual void getKeys(std::set<Key>& keys) const = 0;
+  virtual T value(const Values& values,
+                  boost::optional<std::map<Key, Matrix>&> = boost::none) const = 0;
+  virtual ExpressionNode<T>* clone() const = 0;
+};
+
 /// Constant Expression
 template<class T>
-class ConstantExpression {
+class ConstantExpression : public ExpressionNode<T> {
 
   T value_;
 
-public:
+ public:
 
   typedef T type;
 
   /// Constructor with a value, yielding a constant
   ConstantExpression(const T& value) :
-      value_(value) {
+    value_(value) {
   }
+  virtual ~ConstantExpression(){}
 
-  /// The value is just the stored constant
-  T value(const Values& values) const {
+  virtual void getKeys(std::set<Key>& /* keys */) const {}
+  virtual T value(const Values& values,
+                  boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     return value_;
   }
-
-  /// A constant does not have a Jacobian
-  std::map<Key, Matrix> jacobians(const Values& values) const {
-    std::map<Key, Matrix> terms;
-    return terms;
-  }
+  virtual ExpressionNode<T>* clone() const { return new ConstantExpression(*this); }
 };
 
 //-----------------------------------------------------------------------------
 /// Leaf Expression
 template<class T>
-class LeafExpression {
+class LeafExpression : public ExpressionNode<T> {
 
   Key key_;
 
-public:
+ public:
 
   typedef T type;
 
   /// Constructor with a single key
   LeafExpression(Key key) :
-      key_(key) {
+    key_(key) {
   }
+  virtual ~LeafExpression(){}
 
-  /// The value of a leaf is just a lookup in values
-  T value(const Values& values) const {
-    return values.at<T>(key_);
-  }
-
-  /// There is only a single identity Jacobian in a leaf
-  std::map<Key, Matrix> jacobians(const Values& values) const {
-    std::map<Key, Matrix> terms;
+  virtual void getKeys(std::set<Key>& keys) const { keys.insert(key_); }
+  virtual T value(const Values& values,
+                  boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     const T& value = values.at<T>(key_);
-    terms[key_] = eye(value.dim());
-    return terms;
+    if( jacobians ) {
+      std::map<Key, Matrix>::iterator it = jacobians->find(key_);
+      if(it != jacobians->end()) {
+        it->second += Eigen::MatrixXd::Identity(value.dim(), value.dim());
+      } else {
+        (*jacobians)[key_] = Eigen::MatrixXd::Identity(value.dim(), value.dim());
+      }
+    }
+    return value;
   }
+
+  virtual ExpressionNode<T>* clone() const { return new LeafExpression(*this); }
 };
 
 //-----------------------------------------------------------------------------
 /// Unary Expression
 template<class T, class E>
-class UnaryExpression {
+class UnaryExpression : public ExpressionNode<T> {
 
-public:
+ public:
 
-  typedef T (*function)(const typename E::type&, boost::optional<Matrix&>);
+  typedef T (*function)(const E&, boost::optional<Matrix&>);
 
-private:
+ private:
 
-  const E expression_;
+  boost::shared_ptr< ExpressionNode<E> > expression_;
   function f_;
 
-public:
+ public:
 
   typedef T type;
 
   /// Constructor with a single key
-  UnaryExpression(function f, const E& expression) :
-      expression_(expression), f_(f) {
+  UnaryExpression(function f, const ExpressionNode<E>& expression) :
+    expression_(expression.clone()), f_(f) {
+  }
+  virtual ~UnaryExpression(){}
+
+  virtual void getKeys(std::set<Key>& keys) const{ expression_->getKeys(keys); }
+  virtual T value(const Values& values,
+                  boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+
+    T value;
+    if(jacobians) {
+      Eigen::MatrixXd H;
+      value = f_(expression_->value(values, jacobians), H);
+      std::map<Key, Matrix>::iterator it = jacobians->begin();
+      for( ; it != jacobians->end(); ++it) {
+        it->second = H * it->second;
+      }
+    } else {
+      value = f_(expression_->value(values), boost::none);
+    }
+    return value;
   }
 
-  /// Evaluate the values of the subtree and call unary function on result
-  T value(const Values& values) const {
-    return f_(expression_.value(values), boost::none);
-  }
-
-  /// Get the Jacobians from the subtree and apply the chain rule
-  std::map<Key, Matrix> jacobians(const Values& values) const {
-    std::map<Key, Matrix> terms = expression_.jacobians(values);
-    Matrix H;
-    // TODO, wasted value calculation, create a combined call
-    f_(expression_.value(values), H);
-    typedef std::pair<Key, Matrix> Pair;
-    BOOST_FOREACH(const Pair& term, terms)
-      terms[term.first] = H * term.second;
-    return terms;
-  }
+  virtual ExpressionNode<T>* clone() const { return new UnaryExpression(*this); }
 };
 
 //-----------------------------------------------------------------------------
 /// Binary Expression
+
 template<class T, class E1, class E2>
-class BinaryExpression {
+class BinaryExpression : public ExpressionNode<T> {
 
-public:
+ public:
 
-  typedef T (*function)(const typename E1::type&, const typename E2::type&,
+  typedef T (*function)(const E1&, const E2&,
       boost::optional<Matrix&>, boost::optional<Matrix&>);
 
-private:
+ private:
 
-  const E1 expression1_;
-  const E2 expression2_;
+  boost::shared_ptr< ExpressionNode<E1> > expression1_;
+  boost::shared_ptr< ExpressionNode<E2> > expression2_;
   function f_;
 
-public:
+ public:
 
   typedef T type;
 
   /// Constructor with a single key
-  BinaryExpression(function f, const E1& expression1, const E2& expression2) :
-      expression1_(expression1), expression2_(expression2), f_(f) {
+  BinaryExpression(function f, const ExpressionNode<E1>& expression1, const ExpressionNode<E2>& expression2) :
+    expression1_(expression1.clone()), expression2_(expression2.clone()), f_(f) {
+  }
+  virtual ~BinaryExpression(){}
+
+  virtual void getKeys(std::set<Key>& keys) const{
+    expression1_->getKeys(keys);
+    expression2_->getKeys(keys);
+  }
+  virtual T value(const Values& values,
+                  boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+    T val;
+    if(jacobians) {
+      std::map<Key, Matrix> terms1;
+      std::map<Key, Matrix> terms2;
+      Matrix H1, H2;
+      val = f_(expression1_->value(values, terms1), expression2_->value(values, terms2), H1, H2);
+      // TODO: both Jacobians and terms are sorted. There must be a simple
+      //       but fast algorithm that does this.
+      typedef std::pair<Key, Matrix> Pair;
+      BOOST_FOREACH(const Pair& term, terms1) {
+        std::map<Key, Matrix>::iterator it = jacobians->find(term.first);
+        if(it != jacobians->end()) {
+          it->second += H1 * term.second;
+        } else {
+          (*jacobians)[term.first] = H1 * term.second;
+        }
+      }
+      BOOST_FOREACH(const Pair& term, terms2) {
+        std::map<Key, Matrix>::iterator it = jacobians->find(term.first);
+        if(it != jacobians->end()) {
+          it->second += H2 * term.second;
+        } else {
+          (*jacobians)[term.first] = H2 * term.second;
+        }
+      }
+    } else {
+      val = f_(expression1_->value(values), expression2_->value(values),
+               boost::none, boost::none);
+    }
+    return val;
   }
 
-  /// Evaluate the values of the subtrees and call binary function on result
-  T value(const Values& values) const {
-    return f_(expression1_.value(values), expression2_.value(values),
-        boost::none, boost::none);
-  }
-
-  /// Get the Jacobians from the subtrees and apply the chain rule
-  std::map<Key, Matrix> jacobians(const Values& values) const {
-    std::map<Key, Matrix> terms1 = expression1_.jacobians(values);
-    std::map<Key, Matrix> terms2 = expression2_.jacobians(values);
-    Matrix H1, H2;
-    // TODO, wasted value calculation, create a combined call
-    f_(expression1_.value(values), expression2_.value(values), H1, H2);
-    std::map<Key, Matrix> terms;
-    // TODO if Key already exists, add !
-    typedef std::pair<Key, Matrix> Pair;
-    BOOST_FOREACH(const Pair& term, terms1)
-      terms[term.first] = H1 * term.second;
-    BOOST_FOREACH(const Pair& term, terms2)
-      terms[term.first] = H2 * term.second;
-    return terms;
-  }
+  virtual ExpressionNode<T>* clone() const { return new BinaryExpression(*this); }
 };
 
+template<typename T>
+class Expression {
+ public:
+  Expression(const ExpressionNode<T>& root) {
+    root_.reset(root.clone());
+  }
+
+  // Initialize a constant expression
+  Expression(const T& value) :
+    root_(new ConstantExpression<T>(value)){ }
+
+  // Initialize a leaf expression
+  Expression(const Key& key) :
+    root_(new LeafExpression<T>(key)) {}
+
+  /// Initialize a unary expression
+  template<typename E>
+  Expression(typename UnaryExpression<T,E>::function f,
+             const Expression<E>& expression) {
+    // TODO Assert that root of expression is not null.
+    root_.reset(new UnaryExpression<T,E>(f, *expression.root()));
+  }
+
+  /// Initialize a binary expression
+  template<typename E1, typename E2>
+  Expression(typename BinaryExpression<T,E1,E2>::function f,
+             const Expression<E1>& expression1,
+             const Expression<E2>& expression2) {
+    // TODO Assert that root of expressions 1 and 2 are not null.
+    root_.reset(new BinaryExpression<T,E1,E2>(f, *expression1.root(),
+                                              *expression2.root()));
+  }
+
+  void getKeys(std::set<Key>& keys) const { root_->getKeys(); }
+  T value(const Values& values,
+          boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+    return root_->value(values, jacobians);
+  }
+
+  const boost::shared_ptr<ExpressionNode<T> >& root() const{ return root_; }
+ private:
+  boost::shared_ptr<ExpressionNode<T> > root_;
+};
 //-----------------------------------------------------------------------------
 
 void printPair(std::pair<Key, Matrix> pair) {
@@ -187,11 +271,11 @@ void printPair(std::pair<Key, Matrix> pair) {
 
 //-----------------------------------------------------------------------------
 /// AD Factor
-template<class T, class E>
+template<class T>
 class BADFactor: NonlinearFactor {
 
   const T measurement_;
-  const E expression_;
+  const Expression<T> expression_;
 
   /// get value from expression and calculate error with respect to measurement
   Vector unwhitenedError(const Values& values) const {
@@ -199,13 +283,16 @@ class BADFactor: NonlinearFactor {
     return value.localCoordinates(measurement_);
   }
 
-public:
+ public:
 
   /// Constructor
-  BADFactor(const T& measurement, const E& expression) :
-      measurement_(measurement), expression_(expression) {
+  BADFactor(const T& measurement, const Expression<T>& expression) :
+    measurement_(measurement), expression_(expression) {
   }
-
+  /// Constructor
+  BADFactor(const T& measurement, const ExpressionNode<T>& expression) :
+    measurement_(measurement), expression_(expression) {
+  }
   /**
    * Calculate the error of the factor.
    * This is the log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/\sigma^2 \f$ in case of Gaussian.
@@ -231,7 +318,8 @@ public:
     // We will construct an n-ary factor below, where  terms is a container whose
     // value type is std::pair<Key, Matrix>, specifying the
     // collection of keys and matrices making up the factor.
-    std::map<Key, Matrix> terms = expression_.jacobians(values);
+    std::map<Key, Matrix> terms;
+    expression_.value(values, terms);
     Vector b = unwhitenedError(values);
     SharedDiagonal model = SharedDiagonal();
     return boost::shared_ptr<JacobianFactor>(
@@ -247,7 +335,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 
 Point3 transformTo(const Pose3& x, const Point3& p,
-    boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) {
+                   boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) {
   return x.transform_to(p, Dpose, Dpoint);
 }
 
@@ -257,7 +345,7 @@ Point2 project(const Point3& p, boost::optional<Matrix&> Dpoint) {
 
 template<class CAL>
 Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
-    boost::optional<Matrix&> Dp) {
+                   boost::optional<Matrix&> Dp) {
   return K.uncalibrate(p, Dcal, Dp);
 }
 
@@ -279,22 +367,19 @@ TEST(BAD, test) {
   GaussianFactor::shared_ptr expected = old.linearize(values);
 
   // Create leaves
-  LeafExpression<Pose3> x(1);
-  LeafExpression<Point3> p(2);
-  LeafExpression<Cal3_S2> K(3);
+  Expression<Pose3> x(1);
+  Expression<Point3> p(2);
+  Expression<Cal3_S2> K(3);
 
   // Create expression tree
-  typedef BinaryExpression<Point3, LeafExpression<Pose3>, LeafExpression<Point3> > Binary1;
-  Binary1 p_cam(transformTo, x, p);
+  Expression<Point3> p_cam(transformTo, x, p);
 
-  typedef UnaryExpression<Point2, Binary1> Unary1;
-  Unary1 projection(project, p_cam);
+  Expression<Point2> projection(project, p_cam);
 
-  typedef BinaryExpression<Point2, LeafExpression<Cal3_S2>, Unary1> Binary2;
-  Binary2 uv_hat(uncalibrate, K, projection);
+  Expression<Point2> uv_hat(uncalibrate, K, projection);
 
   // Create factor
-  BADFactor<Point2, Binary2> f(measured, uv_hat);
+  BADFactor<Point2> f(measured, uv_hat);
 
   // Check value
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
@@ -305,6 +390,7 @@ TEST(BAD, test) {
   // Check linearization
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   EXPECT( assert_equal(*expected, *gf, 1e-9));
+
 }
 
 /* ************************************************************************* */
