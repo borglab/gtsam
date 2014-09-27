@@ -38,9 +38,10 @@ namespace gtsam {
 /// http://loki-lib.sourceforge.net/html/a00652.html
 template<class T>
 class ExpressionNode {
-public:
+protected:
   ExpressionNode() {
   }
+public:
   virtual ~ExpressionNode() {
   }
   virtual void getKeys(std::set<Key>& keys) const = 0;
@@ -57,12 +58,15 @@ class ConstantExpression: public ExpressionNode<T> {
 
   T value_;
 
-public:
-
   /// Constructor with a value, yielding a constant
   ConstantExpression(const T& value) :
       value_(value) {
   }
+
+  friend class Expression<T> ;
+
+public:
+
   virtual ~ConstantExpression() {
   }
 
@@ -81,12 +85,15 @@ class LeafExpression: public ExpressionNode<T> {
 
   Key key_;
 
-public:
-
   /// Constructor with a single key
   LeafExpression(Key key) :
       key_(key) {
   }
+
+  friend class Expression<T> ;
+
+public:
+
   virtual ~LeafExpression() {
   }
 
@@ -124,12 +131,15 @@ private:
   boost::shared_ptr<ExpressionNode<E> > expression_;
   function f_;
 
+  /// Constructor with a unary function f, and input argument e
+  UnaryExpression(function f, const Expression<E>& e) :
+      expression_(e.root()), f_(f) {
+  }
+
+  friend class Expression<T> ;
+
 public:
 
-  /// Constructor with a single key
-  UnaryExpression(function f, const Expression<E>& expression) :
-      expression_(expression.root()), f_(f) {
-  }
   virtual ~UnaryExpression() {
   }
 
@@ -172,13 +182,16 @@ private:
   boost::shared_ptr<ExpressionNode<E2> > expression2_;
   function f_;
 
+  /// Constructor with a binary function f, and two input arguments
+  BinaryExpression(function f, //
+      const Expression<E1>& e1, const Expression<E2>& e2) :
+      expression1_(e1.root()), expression2_(e2.root()), f_(f) {
+  }
+
+  friend class Expression<T> ;
+
 public:
 
-  /// Constructor with a single key
-  BinaryExpression(function f, const Expression<E1>& expression1,
-      const Expression<E2>& expression2) :
-      expression1_(expression1.root()), expression2_(expression2.root()), f_(f) {
-  }
   virtual ~BinaryExpression() {
   }
 
@@ -370,6 +383,9 @@ TEST(BAD, test) {
   GeneralSFMFactor2<Cal3_S2> old(measured, model, 1, 2, 3);
   double expected_error = old.error(values);
   GaussianFactor::shared_ptr expected = old.linearize(values);
+
+  // Test Constant expression
+  Expression<int> c(0);
 
   // Create leaves
   Expression<Pose3> x(1);
