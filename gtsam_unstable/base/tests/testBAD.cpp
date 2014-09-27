@@ -38,12 +38,14 @@ namespace gtsam {
 /// http://loki-lib.sourceforge.net/html/a00652.html
 template<class T>
 class ExpressionNode {
- public:
-  ExpressionNode(){}
-  virtual ~ExpressionNode(){}
+public:
+  ExpressionNode() {
+  }
+  virtual ~ExpressionNode() {
+  }
   virtual void getKeys(std::set<Key>& keys) const = 0;
   virtual T value(const Values& values,
-                  boost::optional<std::map<Key, Matrix>&> = boost::none) const = 0;
+      boost::optional<std::map<Key, Matrix>&> = boost::none) const = 0;
 };
 
 template<typename T>
@@ -51,23 +53,25 @@ class Expression;
 
 /// Constant Expression
 template<class T>
-class ConstantExpression : public ExpressionNode<T> {
+class ConstantExpression: public ExpressionNode<T> {
 
   T value_;
 
- public:
+public:
 
   typedef T type;
 
   /// Constructor with a value, yielding a constant
   ConstantExpression(const T& value) :
-    value_(value) {
+      value_(value) {
   }
-  virtual ~ConstantExpression(){}
+  virtual ~ConstantExpression() {
+  }
 
-  virtual void getKeys(std::set<Key>& /* keys */) const {}
+  virtual void getKeys(std::set<Key>& /* keys */) const {
+  }
   virtual T value(const Values& values,
-                  boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     return value_;
   }
 };
@@ -75,30 +79,34 @@ class ConstantExpression : public ExpressionNode<T> {
 //-----------------------------------------------------------------------------
 /// Leaf Expression
 template<class T>
-class LeafExpression : public ExpressionNode<T> {
+class LeafExpression: public ExpressionNode<T> {
 
   Key key_;
 
- public:
+public:
 
   typedef T type;
 
   /// Constructor with a single key
   LeafExpression(Key key) :
-    key_(key) {
+      key_(key) {
   }
-  virtual ~LeafExpression(){}
+  virtual ~LeafExpression() {
+  }
 
-  virtual void getKeys(std::set<Key>& keys) const { keys.insert(key_); }
+  virtual void getKeys(std::set<Key>& keys) const {
+    keys.insert(key_);
+  }
   virtual T value(const Values& values,
-                  boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     const T& value = values.at<T>(key_);
-    if( jacobians ) {
+    if (jacobians) {
       std::map<Key, Matrix>::iterator it = jacobians->find(key_);
-      if(it != jacobians->end()) {
+      if (it != jacobians->end()) {
         it->second += Eigen::MatrixXd::Identity(value.dim(), value.dim());
       } else {
-        (*jacobians)[key_] = Eigen::MatrixXd::Identity(value.dim(), value.dim());
+        (*jacobians)[key_] = Eigen::MatrixXd::Identity(value.dim(),
+            value.dim());
       }
     }
     return value;
@@ -109,37 +117,40 @@ class LeafExpression : public ExpressionNode<T> {
 //-----------------------------------------------------------------------------
 /// Unary Expression
 template<class T, class E>
-class UnaryExpression : public ExpressionNode<T> {
+class UnaryExpression: public ExpressionNode<T> {
 
- public:
+public:
 
   typedef T (*function)(const E&, boost::optional<Matrix&>);
 
- private:
+private:
 
-  boost::shared_ptr< ExpressionNode<E> > expression_;
+  boost::shared_ptr<ExpressionNode<E> > expression_;
   function f_;
 
- public:
+public:
 
   typedef T type;
 
   /// Constructor with a single key
   UnaryExpression(function f, const Expression<E>& expression) :
-    expression_(expression.root()), f_(f) {
+      expression_(expression.root()), f_(f) {
   }
-  virtual ~UnaryExpression(){}
+  virtual ~UnaryExpression() {
+  }
 
-  virtual void getKeys(std::set<Key>& keys) const{ expression_->getKeys(keys); }
+  virtual void getKeys(std::set<Key>& keys) const {
+    expression_->getKeys(keys);
+  }
   virtual T value(const Values& values,
-                  boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
 
     T value;
-    if(jacobians) {
+    if (jacobians) {
       Eigen::MatrixXd H;
       value = f_(expression_->value(values, jacobians), H);
       std::map<Key, Matrix>::iterator it = jacobians->begin();
-      for( ; it != jacobians->end(); ++it) {
+      for (; it != jacobians->end(); ++it) {
         it->second = H * it->second;
       }
     } else {
@@ -154,47 +165,50 @@ class UnaryExpression : public ExpressionNode<T> {
 /// Binary Expression
 
 template<class T, class E1, class E2>
-class BinaryExpression : public ExpressionNode<T> {
+class BinaryExpression: public ExpressionNode<T> {
 
- public:
+public:
 
-  typedef T (*function)(const E1&, const E2&,
-      boost::optional<Matrix&>, boost::optional<Matrix&>);
+  typedef T (*function)(const E1&, const E2&, boost::optional<Matrix&>,
+      boost::optional<Matrix&>);
 
- private:
+private:
 
-  boost::shared_ptr< ExpressionNode<E1> > expression1_;
-  boost::shared_ptr< ExpressionNode<E2> > expression2_;
+  boost::shared_ptr<ExpressionNode<E1> > expression1_;
+  boost::shared_ptr<ExpressionNode<E2> > expression2_;
   function f_;
 
- public:
+public:
 
   typedef T type;
 
   /// Constructor with a single key
-  BinaryExpression(function f, const Expression<E1>& expression1, const Expression<E2>& expression2) :
-    expression1_(expression1.root()), expression2_(expression2.root()), f_(f) {
+  BinaryExpression(function f, const Expression<E1>& expression1,
+      const Expression<E2>& expression2) :
+      expression1_(expression1.root()), expression2_(expression2.root()), f_(f) {
   }
-  virtual ~BinaryExpression(){}
+  virtual ~BinaryExpression() {
+  }
 
-  virtual void getKeys(std::set<Key>& keys) const{
+  virtual void getKeys(std::set<Key>& keys) const {
     expression1_->getKeys(keys);
     expression2_->getKeys(keys);
   }
   virtual T value(const Values& values,
-                  boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     T val;
-    if(jacobians) {
+    if (jacobians) {
       std::map<Key, Matrix> terms1;
       std::map<Key, Matrix> terms2;
       Matrix H1, H2;
-      val = f_(expression1_->value(values, terms1), expression2_->value(values, terms2), H1, H2);
+      val = f_(expression1_->value(values, terms1),
+          expression2_->value(values, terms2), H1, H2);
       // TODO: both Jacobians and terms are sorted. There must be a simple
       //       but fast algorithm that does this.
       typedef std::pair<Key, Matrix> Pair;
       BOOST_FOREACH(const Pair& term, terms1) {
         std::map<Key, Matrix>::iterator it = jacobians->find(term.first);
-        if(it != jacobians->end()) {
+        if (it != jacobians->end()) {
           it->second += H1 * term.second;
         } else {
           (*jacobians)[term.first] = H1 * term.second;
@@ -202,7 +216,7 @@ class BinaryExpression : public ExpressionNode<T> {
       }
       BOOST_FOREACH(const Pair& term, terms2) {
         std::map<Key, Matrix>::iterator it = jacobians->find(term.first);
-        if(it != jacobians->end()) {
+        if (it != jacobians->end()) {
           it->second += H2 * term.second;
         } else {
           (*jacobians)[term.first] = H2 * term.second;
@@ -210,7 +224,7 @@ class BinaryExpression : public ExpressionNode<T> {
       }
     } else {
       val = f_(expression1_->value(values), expression2_->value(values),
-               boost::none, boost::none);
+          boost::none, boost::none);
     }
     return val;
   }
@@ -219,42 +233,46 @@ class BinaryExpression : public ExpressionNode<T> {
 
 template<typename T>
 class Expression {
- public:
+public:
 
   // Initialize a constant expression
   Expression(const T& value) :
-    root_(new ConstantExpression<T>(value)){ }
+      root_(new ConstantExpression<T>(value)) {
+  }
 
   // Initialize a leaf expression
   Expression(const Key& key) :
-    root_(new LeafExpression<T>(key)) {}
+      root_(new LeafExpression<T>(key)) {
+  }
 
   /// Initialize a unary expression
   template<typename E>
-  Expression(typename UnaryExpression<T,E>::function f,
-             const Expression<E>& expression) {
+  Expression(typename UnaryExpression<T, E>::function f,
+      const Expression<E>& expression) {
     // TODO Assert that root of expression is not null.
-    root_.reset(new UnaryExpression<T,E>(f, expression));
+    root_.reset(new UnaryExpression<T, E>(f, expression));
   }
 
   /// Initialize a binary expression
   template<typename E1, typename E2>
-  Expression(typename BinaryExpression<T,E1,E2>::function f,
-             const Expression<E1>& expression1,
-             const Expression<E2>& expression2) {
+  Expression(typename BinaryExpression<T, E1, E2>::function f,
+      const Expression<E1>& expression1, const Expression<E2>& expression2) {
     // TODO Assert that root of expressions 1 and 2 are not null.
-    root_.reset(new BinaryExpression<T,E1,E2>(f, expression1,
-                                              expression2));
+    root_.reset(new BinaryExpression<T, E1, E2>(f, expression1, expression2));
   }
 
-  void getKeys(std::set<Key>& keys) const { root_->getKeys(keys); }
+  void getKeys(std::set<Key>& keys) const {
+    root_->getKeys(keys);
+  }
   T value(const Values& values,
-          boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     return root_->value(values, jacobians);
   }
 
-  const boost::shared_ptr<ExpressionNode<T> >& root() const{ return root_; }
- private:
+  const boost::shared_ptr<ExpressionNode<T> >& root() const {
+    return root_;
+  }
+private:
   boost::shared_ptr<ExpressionNode<T> > root_;
 };
 //-----------------------------------------------------------------------------
@@ -278,15 +296,15 @@ class BADFactor: NonlinearFactor {
     return value.localCoordinates(measurement_);
   }
 
- public:
+public:
 
   /// Constructor
   BADFactor(const T& measurement, const Expression<T>& expression) :
-    measurement_(measurement), expression_(expression) {
+      measurement_(measurement), expression_(expression) {
   }
   /// Constructor
   BADFactor(const T& measurement, const ExpressionNode<T>& expression) :
-    measurement_(measurement), expression_(expression) {
+      measurement_(measurement), expression_(expression) {
   }
   /**
    * Calculate the error of the factor.
@@ -330,7 +348,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 
 Point3 transformTo(const Pose3& x, const Point3& p,
-                   boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) {
+    boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) {
   return x.transform_to(p, Dpose, Dpoint);
 }
 
@@ -340,7 +358,7 @@ Point2 project(const Point3& p, boost::optional<Matrix&> Dpoint) {
 
 template<class CAL>
 Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
-                   boost::optional<Matrix&> Dp) {
+    boost::optional<Matrix&> Dp) {
   return K.uncalibrate(p, Dcal, Dp);
 }
 
