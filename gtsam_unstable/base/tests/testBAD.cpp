@@ -25,6 +25,7 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -258,21 +259,24 @@ public:
 
 };
 
+/**
+ * Expression class that supports automatic differentiation
+ */
 template<typename T>
 class Expression {
 public:
 
-  // Initialize a constant expression
+  // Construct a constant expression
   Expression(const T& value) :
       root_(new ConstantExpression<T>(value)) {
   }
 
-  // Initialize a leaf expression
+  // Construct a leaf expression
   Expression(const Key& key) :
       root_(new LeafExpression<T>(key)) {
   }
 
-  /// Initialize a unary expression
+  /// Construct a unary expression
   template<typename E>
   Expression(typename UnaryExpression<T, E>::function f,
       const Expression<E>& expression) {
@@ -280,7 +284,7 @@ public:
     root_.reset(new UnaryExpression<T, E>(f, expression));
   }
 
-  /// Initialize a binary expression
+  /// Construct a binary expression
   template<typename E1, typename E2>
   Expression(typename BinaryExpression<T, E1, E2>::function f,
       const Expression<E1>& expression1, const Expression<E2>& expression2) {
@@ -288,9 +292,30 @@ public:
     root_.reset(new BinaryExpression<T, E1, E2>(f, expression1, expression2));
   }
 
+  // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
+  template<class R>
+  struct apply_product {
+    typedef R result_type;
+    template<class E1, class E2>
+    R operator()(E1 const& x, E2 const& y) const {
+      return x * y;
+    }
+  };
+
+  /// Construct a product expression, assumes E1::operator*() exists
+  template<typename E1, typename E2>
+  friend Expression<T> operator*(const Expression<E1>& expression1, const Expression<E2>& expression2) {
+    using namespace boost;
+    boost::bind(apply_product<T>,_1,_2);
+    return Expression<T>(boost::bind(apply_product<T>,_1,_2),expression1, expression2);
+  }
+
+  /// Return keys that play in this expression
   std::set<Key> keys() const {
     return root_->keys();
   }
+
+  /// Return value and optional derivatives
   T value(const Values& values,
       boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     return root_->value(values, jacobians);
@@ -439,6 +464,14 @@ TEST(BAD, test) {
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   EXPECT( assert_equal(*expected, *gf, 1e-9));
 
+}
+
+/* ************************************************************************* */
+
+TEST(BAD, rotate) {
+  Expression<Rot3> R(1);
+  Expression<Point3> p(2);
+  Expression<Point3> q = R * p;
 }
 
 /* ************************************************************************* */
