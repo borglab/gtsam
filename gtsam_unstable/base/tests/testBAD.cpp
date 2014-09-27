@@ -252,7 +252,7 @@ class Expression {
                                               *expression2.root()));
   }
 
-  void getKeys(std::set<Key>& keys) const { root_->getKeys(); }
+  void getKeys(std::set<Key>& keys) const { root_->getKeys(keys); }
   T value(const Values& values,
           boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     return root_->value(values, jacobians);
@@ -373,10 +373,13 @@ TEST(BAD, test) {
 
   // Create expression tree
   Expression<Point3> p_cam(transformTo, x, p);
-
   Expression<Point2> projection(project, p_cam);
-
   Expression<Point2> uv_hat(uncalibrate, K, projection);
+
+  // Check getKeys
+  std::set<Key> keys;
+  uv_hat.getKeys(keys);
+  EXPECT_LONGS_EQUAL(3, keys.size());
 
   // Create factor
   BADFactor<Point2> f(measured, uv_hat);
