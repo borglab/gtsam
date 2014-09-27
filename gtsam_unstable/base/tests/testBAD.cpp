@@ -44,7 +44,11 @@ protected:
 public:
   virtual ~ExpressionNode() {
   }
-  virtual void getKeys(std::set<Key>& keys) const = 0;
+
+  /// Return keys that play in this expression as a set
+  virtual std::set<Key> keys() const = 0;
+
+  /// Return value and optional derivatives
   virtual T value(const Values& values,
       boost::optional<std::map<Key, Matrix>&> = boost::none) const = 0;
 };
@@ -70,8 +74,13 @@ public:
   virtual ~ConstantExpression() {
   }
 
-  virtual void getKeys(std::set<Key>& /* keys */) const {
+  /// Return keys that play in this expression, i.e., the empty set
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys;
+    return keys;
   }
+
+  /// Return value and optional derivatives
   virtual T value(const Values& values,
       boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     return value_;
@@ -97,9 +106,14 @@ public:
   virtual ~LeafExpression() {
   }
 
-  virtual void getKeys(std::set<Key>& keys) const {
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys;
     keys.insert(key_);
+    return keys;
   }
+
+  /// Return value and optional derivatives
   virtual T value(const Values& values,
       boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     const T& value = values.at<T>(key_);
@@ -143,9 +157,12 @@ public:
   virtual ~UnaryExpression() {
   }
 
-  virtual void getKeys(std::set<Key>& keys) const {
-    expression_->getKeys(keys);
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    return expression_->keys();
   }
+
+  /// Return value and optional derivatives
   virtual T value(const Values& values,
       boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
 
@@ -195,10 +212,15 @@ public:
   virtual ~BinaryExpression() {
   }
 
-  virtual void getKeys(std::set<Key>& keys) const {
-    expression1_->getKeys(keys);
-    expression2_->getKeys(keys);
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys1 = expression1_->keys();
+    std::set<Key> keys2 = expression2_->keys();
+    keys1.insert(keys2.begin(), keys2.end());
+    return keys1;
   }
+
+  /// Return value and optional derivatives
   virtual T value(const Values& values,
       boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
     T val;
@@ -266,8 +288,8 @@ public:
     root_.reset(new BinaryExpression<T, E1, E2>(f, expression1, expression2));
   }
 
-  void getKeys(std::set<Key>& keys) const {
-    root_->getKeys(keys);
+  std::set<Key> keys() const {
+    return root_->keys();
   }
   T value(const Values& values,
       boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
@@ -397,10 +419,12 @@ TEST(BAD, test) {
   Expression<Point2> projection(project, p_cam);
   Expression<Point2> uv_hat(uncalibrate, K, projection);
 
-  // Check getKeys
-  std::set<Key> keys;
-  uv_hat.getKeys(keys);
-  EXPECT_LONGS_EQUAL(3, keys.size());
+  // Check keys
+  std::set<Key> expectedKeys;
+  expectedKeys.insert(1);
+  expectedKeys.insert(2);
+  expectedKeys.insert(3);
+  EXPECT(expectedKeys == uv_hat.keys());
 
   // Create factor
   BADFactor<Point2> f(measured, uv_hat);
