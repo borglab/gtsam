@@ -59,8 +59,6 @@ class ConstantExpression: public ExpressionNode<T> {
 
 public:
 
-  typedef T type;
-
   /// Constructor with a value, yielding a constant
   ConstantExpression(const T& value) :
       value_(value) {
@@ -84,8 +82,6 @@ class LeafExpression: public ExpressionNode<T> {
   Key key_;
 
 public:
-
-  typedef T type;
 
   /// Constructor with a single key
   LeafExpression(Key key) :
@@ -129,8 +125,6 @@ private:
   function f_;
 
 public:
-
-  typedef T type;
 
   /// Constructor with a single key
   UnaryExpression(function f, const Expression<E>& expression) :
@@ -179,8 +173,6 @@ private:
   function f_;
 
 public:
-
-  typedef T type;
 
   /// Constructor with a single key
   BinaryExpression(function f, const Expression<E1>& expression1,
