@@ -292,24 +292,6 @@ public:
     root_.reset(new BinaryExpression<T, E1, E2>(f, expression1, expression2));
   }
 
-  // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
-  template<class R>
-  struct apply_product {
-    typedef R result_type;
-    template<class E1, class E2>
-    R operator()(E1 const& x, E2 const& y) const {
-      return x * y;
-    }
-  };
-
-  /// Construct a product expression, assumes E1::operator*() exists
-  template<typename E1, typename E2>
-  friend Expression<T> operator*(const Expression<E1>& expression1, const Expression<E2>& expression2) {
-    using namespace boost;
-    boost::bind(apply_product<T>,_1,_2);
-    return Expression<T>(boost::bind(apply_product<T>,_1,_2),expression1, expression2);
-  }
-
   /// Return keys that play in this expression
   std::set<Key> keys() const {
     return root_->keys();
@@ -327,6 +309,23 @@ public:
 private:
   boost::shared_ptr<ExpressionNode<T> > root_;
 };
+
+// http://stackoverflow.com/questions/16260445/boost-bind-to-operator
+template<class E1, class E2>
+struct apply_product {
+  typedef E2 result_type;
+  E2 operator()(E1 const& x, E2 const& y) const {
+    return x * y;
+  }
+};
+
+/// Construct a product expression, assumes E1 * E2 -> E1
+template<typename E1, typename E2>
+Expression<E2> operator*(const Expression<E1>& expression1, const Expression<E2>& expression2) {
+  using namespace boost;
+  return Expression<E2>(boost::bind(apply_product<E1,E2>(),_1,_2),expression1, expression2);
+}
+
 //-----------------------------------------------------------------------------
 
 void printPair(std::pair<Key, Matrix> pair) {
@@ -471,7 +470,9 @@ TEST(BAD, test) {
 TEST(BAD, rotate) {
   Expression<Rot3> R(1);
   Expression<Point3> p(2);
-  Expression<Point3> q = R * p;
+  // fails because optional derivatives can't be delivered by the operator
+  // Need a convention for products like these. "act" ?
+  // Expression<Point3> q = R * p;
 }
 
 /* ************************************************************************* */
