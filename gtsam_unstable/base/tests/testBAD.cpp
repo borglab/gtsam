@@ -311,6 +311,24 @@ private:
 };
 
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
+template<class T>
+struct apply_compose {
+  typedef T result_type;
+  T operator()(const T& x, const T& y, boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) const {
+    return x.compose(y, H1, H2);
+  }
+};
+
+/// Construct a product expression, assumes T::compose(T) -> T
+template<typename T>
+Expression<T> operator*(const Expression<T>& expression1,
+    const Expression<T>& expression2) {
+  return Expression<T>(boost::bind(apply_compose<T>(), _1, _2, _3, _4),
+      expression1, expression2);
+}
+
+// http://stackoverflow.com/questions/16260445/boost-bind-to-operator
 template<class E1, class E2>
 struct apply_product {
   typedef E2 result_type;
@@ -321,9 +339,11 @@ struct apply_product {
 
 /// Construct a product expression, assumes E1 * E2 -> E1
 template<typename E1, typename E2>
-Expression<E2> operator*(const Expression<E1>& expression1, const Expression<E2>& expression2) {
+Expression<E2> operator*(const Expression<E1>& expression1,
+    const Expression<E2>& expression2) {
   using namespace boost;
-  return Expression<E2>(boost::bind(apply_product<E1,E2>(),_1,_2),expression1, expression2);
+  return Expression<E2>(boost::bind(apply_product<E1, E2>(), _1, _2),
+      expression1, expression2);
 }
 
 //-----------------------------------------------------------------------------
@@ -467,10 +487,17 @@ TEST(BAD, test) {
 
 /* ************************************************************************* */
 
+TEST(BAD, compose) {
+  Expression<Rot3> R1(1), R2(2);
+//  Expression<Rot3> R3 = R1 * R2;
+}
+
+/* ************************************************************************* */
+
 TEST(BAD, rotate) {
   Expression<Rot3> R(1);
   Expression<Point3> p(2);
-  // fails because optional derivatives can't be delivered by the operator
+  // fails because optional derivatives can't be delivered by the operator*()
   // Need a convention for products like these. "act" ?
   // Expression<Point3> q = R * p;
 }
