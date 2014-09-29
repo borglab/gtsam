@@ -139,7 +139,8 @@ class UnaryExpression: public ExpressionNode<T> {
 
 public:
 
-  typedef T (*function)(const E&, boost::optional<Matrix&>);
+  //typedef T (*function)(const E&, boost::optional<Matrix&>);
+  typedef boost::function<T(const E&, boost::optional<Matrix&>)> function;
 
 private:
 
@@ -191,9 +192,10 @@ class BinaryExpression: public ExpressionNode<T> {
 
 public:
 
-  typedef T (*function)(const E1&, const E2&, boost::optional<Matrix&>,
-      boost::optional<Matrix&>);
-
+  //typedef T (*function)(const E1&, const E2&, boost::optional<Matrix&>,
+  //    boost::optional<Matrix&>);
+  typedef boost::function<T(const E1&, const E2&, boost::optional<Matrix&>,
+      boost::optional<Matrix&>)> function;
 private:
 
   boost::shared_ptr<ExpressionNode<E1> > expression1_;
@@ -461,7 +463,7 @@ TEST(BAD, test) {
   // Create expression tree
   Expression<Point3> p_cam(transformTo, x, p);
   Expression<Point2> projection(project, p_cam);
-  Expression<Point2> uv_hat(uncalibrate, K, projection);
+  Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 
   // Check keys
   std::set<Key> expectedKeys;
@@ -489,7 +491,7 @@ TEST(BAD, test) {
 
 TEST(BAD, compose) {
   Expression<Rot3> R1(1), R2(2);
-//  Expression<Rot3> R3 = R1 * R2;
+  Expression<Rot3> R3 = R1 * R2;
 }
 
 /* ************************************************************************* */
