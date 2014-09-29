@@ -94,8 +94,48 @@ TEST(BAD, test) {
 /* ************************************************************************* */
 
 TEST(BAD, compose) {
+
+  // Create expression
   Expression<Rot3> R1(1), R2(2);
   Expression<Rot3> R3 = R1 * R2;
+
+  // Create factor
+  BADFactor<Rot3> f(Rot3(), R3);
+
+  // Create some values
+  Values values;
+  values.insert(1, Rot3());
+  values.insert(2, Rot3());
+
+  // Check linearization
+  JacobianFactor expected(1, eye(3), 2, eye(3), zero(3));
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf,1e-9));
+}
+
+/* ************************************************************************* */
+// Test compose with arguments referring to the same rotation
+TEST(BAD, compose2) {
+
+  // Create expression
+  Expression<Rot3> R1(1), R2(1);
+  Expression<Rot3> R3 = R1 * R2;
+
+  // Create factor
+  BADFactor<Rot3> f(Rot3(), R3);
+
+  // Create some values
+  Values values;
+  values.insert(1, Rot3());
+
+  // Check linearization
+  JacobianFactor expected(1, 2*eye(3), zero(3));
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf,1e-9));
 }
 
 /* ************************************************************************* */
