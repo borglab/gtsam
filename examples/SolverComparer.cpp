@@ -13,6 +13,22 @@
 * @brief   Incremental and batch solving, timing, and accuracy comparisons
 * @author  Richard Roberts
 * @date    August, 2013
+*
+* Here is an example. Below, to run in batch mode, we first generate an initialization in incremental mode.
+*
+* Solve in incremental and write to file w_inc:
+* ./SolverComparer --incremental -d w10000 -o w_inc
+*
+* You can then perturb that initialization to get batch something to optimize.
+* Read in w_inc, perturb it with noise of stddev 0.6, and write to w_pert:
+* ./SolverComparer --perturb 0.6 -i w_inc -o w_pert
+*
+* Then optimize with batch, read in w_pert, solve in batch, and write to w_batch:
+* ./SolverComparer --batch -d w10000 -i w_pert -o w_batch
+*
+* And finally compare solutions in w_inc and w_batch to check that batch converged to the global minimum
+* ./SolverComparer --compare w_inc w_batch
+*
 */
 
 #include <gtsam/base/timing.h>
