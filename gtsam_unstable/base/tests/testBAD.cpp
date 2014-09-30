@@ -17,7 +17,12 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam_unstable/base/Expression.h>
+#include <gtsam/base/Testable.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

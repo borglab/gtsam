@@ -18,11 +18,7 @@
  */
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/base/Testable.h>
 
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
@@ -324,24 +320,6 @@ template<typename T>
 Expression<T> operator*(const Expression<T>& expression1,
     const Expression<T>& expression2) {
   return Expression<T>(boost::bind(apply_compose<T>(), _1, _2, _3, _4),
-      expression1, expression2);
-}
-
-// http://stackoverflow.com/questions/16260445/boost-bind-to-operator
-template<class E1, class E2>
-struct apply_product {
-  typedef E2 result_type;
-  E2 operator()(E1 const& x, E2 const& y) const {
-    return x * y;
-  }
-};
-
-/// Construct a product expression, assumes E1 * E2 -> E1
-template<typename E1, typename E2>
-Expression<E2> operator*(const Expression<E1>& expression1,
-    const Expression<E2>& expression2) {
-  using namespace boost;
-  return Expression<E2>(boost::bind(apply_product<E1, E2>(), _1, _2),
       expression1, expression2);
 }
 
