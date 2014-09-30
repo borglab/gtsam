@@ -26,6 +26,8 @@ namespace gtsam {
 
 template<typename T>
 class Expression;
+template<typename T, typename E1, typename E2>
+class MethodExpression;
 
 /**
  * Expression node. The superclass for objects that do the heavy lifting
@@ -218,8 +220,8 @@ private:
       expression1_(e1.root()), expression2_(e2.root()), f_(f) {
   }
 
-  friend class Expression<T> ;
-
+  friend class Expression<T>;
+public:
   /// Combine Jacobians
   static void combine(const Matrix& H1, const Matrix& H2,
       const JacobianMap& terms1, const JacobianMap& terms2,
@@ -288,9 +290,9 @@ public:
 
   typedef std::map<Key, Matrix> JacobianMap;
 
-  typedef boost::function<
-      T(const E1*, const E2&, boost::optional<Matrix&>,
-          boost::optional<Matrix&>)> method;
+  typedef 
+      T (E1::*method)(const E2&, boost::optional<Matrix&>,
+          boost::optional<Matrix&>) const;
 
 private:
 
@@ -326,11 +328,11 @@ public:
     if (jacobians) {
       JacobianMap terms1, terms2;
       Matrix H1, H2;
-      val = f_(expression1_->value(values, terms1),
+      val = (expression1_->value(values, terms1).*(f_))(
           expression2_->value(values, terms2), H1, H2);
       BinaryExpression<T, E1, E2>::combine(H1, H2, terms1, terms2, *jacobians);
     } else {
-      val = f_(expression1_->value(values), expression2_->value(values),
+      val = (expression1_->value(values).*(f_))(expression2_->value(values),
           boost::none, boost::none);
     }
     return val;

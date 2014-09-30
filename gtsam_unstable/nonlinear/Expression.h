@@ -63,7 +63,7 @@ public:
       typename MethodExpression<T, E1, E2>::method f,
       const Expression<E2>& expression2) {
     // TODO Assert that root of expressions 1 and 2 are not null.
-    root_.reset(new MethodExpression<T, E1, E2>(f, expression1, expression2));
+    root_.reset(new MethodExpression<T, E1, E2>(expression1, f, expression2));
   }
 
   /// Return keys that play in this expression
