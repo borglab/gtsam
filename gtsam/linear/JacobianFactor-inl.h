@@ -68,6 +68,7 @@ namespace gtsam {
 
     // Get dimensions of matrices
     std::vector<size_t> dimensions;
+    dimensions.reserve(terms.size());
     for(typename TERMS::const_iterator it = terms.begin(); it != terms.end(); ++it) {
       const std::pair<Key, Matrix>& term = *it;
       const Matrix& Ai = term.second;
