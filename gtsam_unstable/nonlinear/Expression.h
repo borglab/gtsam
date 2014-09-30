@@ -57,6 +57,15 @@ public:
     root_.reset(new BinaryExpression<T, E1, E2>(f, expression1, expression2));
   }
 
+  /// Construct a binary expression, where a method is passed
+  template<typename E1, typename E2>
+  Expression(const Expression<E1>& expression1,
+      typename MethodExpression<T, E1, E2>::method f,
+      const Expression<E2>& expression2) {
+    // TODO Assert that root of expressions 1 and 2 are not null.
+    root_.reset(new MethodExpression<T, E1, E2>(f, expression1, expression2));
+  }
+
   /// Return keys that play in this expression
   std::set<Key> keys() const {
     return root_->keys();

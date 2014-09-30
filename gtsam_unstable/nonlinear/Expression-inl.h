@@ -53,8 +53,8 @@ public:
   virtual std::set<Key> keys() const = 0;
 
   /// Return value and optional derivatives
-  virtual T value(const Values& values,
-      boost::optional<JacobianMap&> = boost::none) const = 0;
+  virtual T value(const Values& values, boost::optional<JacobianMap&> =
+      boost::none) const = 0;
 };
 
 /// Constant Expression
@@ -205,6 +205,7 @@ public:
   typedef boost::function<
       T(const E1&, const E2&, boost::optional<Matrix&>,
           boost::optional<Matrix&>)> function;
+
 private:
 
   boost::shared_ptr<ExpressionNode<E1> > expression1_;
@@ -268,6 +269,66 @@ public:
       val = f_(expression1_->value(values, terms1),
           expression2_->value(values, terms2), H1, H2);
       combine(H1, H2, terms1, terms2, *jacobians);
+    } else {
+      val = f_(expression1_->value(values), expression2_->value(values),
+          boost::none, boost::none);
+    }
+    return val;
+  }
+
+};
+
+//-----------------------------------------------------------------------------
+/// Binary Expression
+
+template<class T, class E1, class E2>
+class MethodExpression: public ExpressionNode<T> {
+
+public:
+
+  typedef std::map<Key, Matrix> JacobianMap;
+
+  typedef boost::function<
+      T(const E1*, const E2&, boost::optional<Matrix&>,
+          boost::optional<Matrix&>)> method;
+
+private:
+
+  boost::shared_ptr<ExpressionNode<E1> > expression1_;
+  boost::shared_ptr<ExpressionNode<E2> > expression2_;
+  method f_;
+
+  /// Constructor with a binary function f, and two input arguments
+  MethodExpression(const Expression<E1>& e1, method f, const Expression<E2>& e2) :
+      expression1_(e1.root()), expression2_(e2.root()), f_(f) {
+  }
+
+  friend class Expression<T> ;
+
+public:
+
+  /// Destructor
+  virtual ~MethodExpression() {
+  }
+
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys1 = expression1_->keys();
+    std::set<Key> keys2 = expression2_->keys();
+    keys1.insert(keys2.begin(), keys2.end());
+    return keys1;
+  }
+
+  /// Return value and optional derivatives
+  virtual T value(const Values& values,
+      boost::optional<JacobianMap&> jacobians = boost::none) const {
+    T val;
+    if (jacobians) {
+      JacobianMap terms1, terms2;
+      Matrix H1, H2;
+      val = f_(expression1_->value(values, terms1),
+          expression2_->value(values, terms2), H1, H2);
+      BinaryExpression<T, E1, E2>::combine(H1, H2, terms1, terms2, *jacobians);
     } else {
       val = f_(expression1_->value(values), expression2_->value(values),
           boost::none, boost::none);

@@ -58,6 +58,9 @@ TEST(BAD, test) {
   Expression<Cal3_S2> K(3);
 
   // Create expression tree
+//  MethodExpression<Point3,Pose3,Point3>::method m = &Pose3::transform_to;
+//  MethodExpression<Point3,Pose3,Point3> methodExpression(x, &Pose3::transform_to, p);
+//  Expression<Point3> p_cam(x, &Pose3::transform_to, p);
   Expression<Point3> p_cam(transformTo, x, p);
   Expression<Point2> projection(project, p_cam);
   Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
