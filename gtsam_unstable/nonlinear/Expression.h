@@ -17,8 +17,9 @@
  * @brief Expressions for Block Automatic Differentiation
  */
 
+#pragma once
+
 #include "Expression-inl.h"
-#include <gtsam/inference/Key.h>
 #include <boost/bind.hpp>
 
 namespace gtsam {

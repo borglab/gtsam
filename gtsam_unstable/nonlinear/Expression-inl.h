@@ -17,6 +17,8 @@
  * @brief Internals for Expression.h, not for general consumption
  */
 
+#pragma once
+
 #include <gtsam/nonlinear/Values.h>
 #include <boost/foreach.hpp>
 
@@ -34,10 +36,16 @@ class Expression;
  */
 template<class T>
 class ExpressionNode {
+
 protected:
   ExpressionNode() {
   }
+
 public:
+
+  typedef std::map<Key, Matrix> JacobianMap;
+
+  /// Destructor
   virtual ~ExpressionNode() {
   }
 
@@ -46,7 +54,7 @@ public:
 
   /// Return value and optional derivatives
   virtual T value(const Values& values,
-      boost::optional<std::map<Key, Matrix>&> = boost::none) const = 0;
+      boost::optional<JacobianMap&> = boost::none) const = 0;
 };
 
 /// Constant Expression
@@ -64,6 +72,9 @@ class ConstantExpression: public ExpressionNode<T> {
 
 public:
 
+  typedef std::map<Key, Matrix> JacobianMap;
+
+  /// Destructor
   virtual ~ConstantExpression() {
   }
 
@@ -75,7 +86,7 @@ public:
 
   /// Return value and optional derivatives
   virtual T value(const Values& values,
-      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<JacobianMap&> jacobians = boost::none) const {
     return value_;
   }
 };
@@ -96,6 +107,9 @@ class LeafExpression: public ExpressionNode<T> {
 
 public:
 
+  typedef std::map<Key, Matrix> JacobianMap;
+
+  /// Destructor
   virtual ~LeafExpression() {
   }
 
@@ -108,10 +122,10 @@ public:
 
   /// Return value and optional derivatives
   virtual T value(const Values& values,
-      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<JacobianMap&> jacobians = boost::none) const {
     const T& value = values.at<T>(key_);
     if (jacobians) {
-      std::map<Key, Matrix>::iterator it = jacobians->find(key_);
+      JacobianMap::iterator it = jacobians->find(key_);
       if (it != jacobians->end()) {
         it->second += Eigen::MatrixXd::Identity(value.dim(), value.dim());
       } else {
@@ -147,6 +161,9 @@ private:
 
 public:
 
+  typedef std::map<Key, Matrix> JacobianMap;
+
+  /// Destructor
   virtual ~UnaryExpression() {
   }
 
@@ -157,13 +174,13 @@ public:
 
   /// Return value and optional derivatives
   virtual T value(const Values& values,
-      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<JacobianMap&> jacobians = boost::none) const {
 
     T value;
     if (jacobians) {
       Eigen::MatrixXd H;
       value = f_(expression_->value(values, jacobians), H);
-      std::map<Key, Matrix>::iterator it = jacobians->begin();
+      JacobianMap::iterator it = jacobians->begin();
       for (; it != jacobians->end(); ++it) {
         it->second = H * it->second;
       }
@@ -183,6 +200,8 @@ class BinaryExpression: public ExpressionNode<T> {
 
 public:
 
+  typedef std::map<Key, Matrix> JacobianMap;
+
   typedef boost::function<
       T(const E1&, const E2&, boost::optional<Matrix&>,
           boost::optional<Matrix&>)> function;
@@ -200,8 +219,34 @@ private:
 
   friend class Expression<T> ;
 
+  /// Combine Jacobians
+  static void combine(const Matrix& H1, const Matrix& H2,
+      const JacobianMap& terms1, const JacobianMap& terms2,
+      JacobianMap& jacobians) {
+    // TODO: both Jacobians and terms are sorted. There must be a simple
+    //       but fast algorithm that does this.
+    typedef std::pair<Key, Matrix> Pair;
+    BOOST_FOREACH(const Pair& term, terms1) {
+      JacobianMap::iterator it = jacobians.find(term.first);
+      if (it != jacobians.end()) {
+        it->second += H1 * term.second;
+      } else {
+        jacobians[term.first] = H1 * term.second;
+      }
+    }
+    BOOST_FOREACH(const Pair& term, terms2) {
+      JacobianMap::iterator it = jacobians.find(term.first);
+      if (it != jacobians.end()) {
+        it->second += H2 * term.second;
+      } else {
+        jacobians[term.first] = H2 * term.second;
+      }
+    }
+  }
+
 public:
 
+  /// Destructor
   virtual ~BinaryExpression() {
   }
 
@@ -215,33 +260,14 @@ public:
 
   /// Return value and optional derivatives
   virtual T value(const Values& values,
-      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
+      boost::optional<JacobianMap&> jacobians = boost::none) const {
     T val;
     if (jacobians) {
-      std::map<Key, Matrix> terms1;
-      std::map<Key, Matrix> terms2;
+      JacobianMap terms1, terms2;
       Matrix H1, H2;
       val = f_(expression1_->value(values, terms1),
           expression2_->value(values, terms2), H1, H2);
-      // TODO: both Jacobians and terms are sorted. There must be a simple
-      //       but fast algorithm that does this.
-      typedef std::pair<Key, Matrix> Pair;
-      BOOST_FOREACH(const Pair& term, terms1) {
-        std::map<Key, Matrix>::iterator it = jacobians->find(term.first);
-        if (it != jacobians->end()) {
-          it->second += H1 * term.second;
-        } else {
-          (*jacobians)[term.first] = H1 * term.second;
-        }
-      }
-      BOOST_FOREACH(const Pair& term, terms2) {
-        std::map<Key, Matrix>::iterator it = jacobians->find(term.first);
-        if (it != jacobians->end()) {
-          it->second += H2 * term.second;
-        } else {
-          (*jacobians)[term.first] = H2 * term.second;
-        }
-      }
+      combine(H1, H2, terms1, terms2, *jacobians);
     } else {
       val = f_(expression1_->value(values), expression2_->value(values),
           boost::none, boost::none);
