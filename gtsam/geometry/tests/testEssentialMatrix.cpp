@@ -182,8 +182,9 @@ TEST (EssentialMatrix, epipoles) {
   // Check epipoles
 
   // Epipole in image 1 is just E.direction()
-  Unit3 e1(U(0, 2), U(1, 2), U(2, 2));
-  EXPECT(assert_equal(e1, E.epipole_a()));
+  Unit3 e1(-U(0, 2), -U(1, 2), -U(2, 2));
+  Unit3 actual = E.epipole_a();
+  EXPECT(assert_equal(e1, actual));
 
   // Epipole in image 2 is E.rotation().unrotate(E.direction())
   Unit3 e2(V(0, 2), V(1, 2), V(2, 2));
