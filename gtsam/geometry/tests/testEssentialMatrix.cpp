@@ -173,6 +173,12 @@ TEST (EssentialMatrix, epipoles) {
   Vector S;
   gtsam::svd(E.matrix(), U, S, V);
 
+  // take care of SVD sign ambiguity
+  if (U(0, 2) > 0) {
+    U = -U;
+    V = -V;
+  }
+
   // check rank 2 constraint
   CHECK(fabs(S(2))<1e-10);
 
@@ -185,6 +191,12 @@ TEST (EssentialMatrix, epipoles) {
   Unit3 e1(-U(0, 2), -U(1, 2), -U(2, 2));
   Unit3 actual = E.epipole_a();
   EXPECT(assert_equal(e1, actual));
+
+  // take care of SVD sign ambiguity
+  if (V(0, 2) < 0) {
+    U = -U;
+    V = -V;
+  }
 
   // Epipole in image 2 is E.rotation().unrotate(E.direction())
   Unit3 e2(V(0, 2), V(1, 2), V(2, 2));
