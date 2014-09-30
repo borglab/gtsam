@@ -17,7 +17,7 @@
  * @brief Internals for Expression.h, not for general consumption
  */
 
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Values.h>
 #include <boost/foreach.hpp>
 
 namespace gtsam {
