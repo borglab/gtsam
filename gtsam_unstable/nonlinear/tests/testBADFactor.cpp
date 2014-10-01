@@ -30,24 +30,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 
-Point3 transformTo(const Pose3& x, const Point3& p,
-    boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) {
-  return x.transform_to(p, Dpose, Dpoint);
-}
-
-Point2 project(const Point3& p, boost::optional<Matrix&> Dpoint) {
-  return PinholeCamera<Cal3_S2>::project_to_camera(p, Dpoint);
-}
-
-template<class CAL>
-Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
-    boost::optional<Matrix&> Dp) {
-  return K.uncalibrate(p, Dcal, Dp);
-}
-
-/* ************************************************************************* */
-
-TEST(BAD, test) {
+TEST(BADFactor, test) {
 
   // Create some values
   Values values;
@@ -71,27 +54,21 @@ TEST(BAD, test) {
   Expression<Cal3_S2> K(3);
 
   // Create expression tree
-  Expression<Point3> p_cam(transformTo, x, p);
-  Expression<Point2> projection(project, p_cam);
-  Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
+  Expression<Point3> p_cam(x, &Pose3::transform_to, p);
+  Expression<Point2> projection(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Expression<Point2> uv_hat(K, &Cal3_S2::uncalibrate, projection);
 
-  // Create factor
+  // Create factor and check value, dimension, linearization
   BADFactor<Point2> f(measured, uv_hat);
-
-  // Check value
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
-
-  // Check dimension
   EXPECT_LONGS_EQUAL(0, f.dim());
-
-  // Check linearization
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   EXPECT( assert_equal(*expected, *gf, 1e-9));
 }
 
 /* ************************************************************************* */
 
-TEST(BAD, compose) {
+TEST(BADFactor, compose) {
 
   // Create expression
   Expression<Rot3> R1(1), R2(2);
@@ -115,7 +92,7 @@ TEST(BAD, compose) {
 
 /* ************************************************************************* */
 // Test compose with arguments referring to the same rotation
-TEST(BAD, compose2) {
+TEST(BADFactor, compose2) {
 
   // Create expression
   Expression<Rot3> R1(1), R2(1);
@@ -129,7 +106,7 @@ TEST(BAD, compose2) {
   values.insert(1, Rot3());
 
   // Check linearization
-  JacobianFactor expected(1, 2*eye(3), zero(3));
+  JacobianFactor expected(1, 2 * eye(3), zero(3));
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
