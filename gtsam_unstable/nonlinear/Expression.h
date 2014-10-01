@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Expression-inl.h"
+#include <gtsam/inference/Symbol.h>
 #include <boost/bind.hpp>
 
 namespace gtsam {
@@ -36,9 +37,19 @@ public:
       root_(new ConstantExpression<T>(value)) {
   }
 
-  // Construct a leaf expression
+  // Construct a leaf expression, with Key
   Expression(const Key& key) :
       root_(new LeafExpression<T>(key)) {
+  }
+
+  // Construct a leaf expression, with Symbol
+  Expression(const Symbol& symbol) :
+      root_(new LeafExpression<T>(symbol)) {
+  }
+
+  // Construct a leaf expression, creating Symbol
+  Expression(unsigned char c, size_t j) :
+      root_(new LeafExpression<T>(Symbol(c, j))) {
   }
 
   /// Construct a unary expression
