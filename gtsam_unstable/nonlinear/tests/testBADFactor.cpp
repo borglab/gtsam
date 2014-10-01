@@ -29,20 +29,28 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
+// Proposed naming convention
+/* ************************************************************************* */
+typedef Expression<Point2> Point2_;
+typedef Expression<Point3> Point3_;
+typedef Expression<Rot3> Rot3_;
+typedef Expression<Pose3> Pose3_;
+typedef Expression<Cal3_S2> Cal3_S2_;
+
+/* ************************************************************************* */
 // Functions that allow creating concise expressions
-Expression<Point3> transform_to(const Expression<Pose3>& x,
-    const Expression<Point3>& p) {
-  return Expression<Point3>(x, &Pose3::transform_to, p);
+/* ************************************************************************* */
+Point3_ transform_to(const Pose3_& x, const Point3_& p) {
+  return Point3_(x, &Pose3::transform_to, p);
 }
 
-Expression<Point2> project(const Expression<Point3>& p_cam) {
-  return Expression<Point2>(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+Point2_ project(const Point3_& p_cam) {
+  return Point2_(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
 }
 
 template<class CAL>
-Expression<Point2> uncalibrate(const Expression<CAL>& K,
-    const Expression<Point2>& xy_hat) {
-  return Expression<Point2>(K, &CAL::uncalibrate, xy_hat);
+Point2_ uncalibrate(const Expression<CAL>& K, const Point2_& xy_hat) {
+  return Point2_(K, &CAL::uncalibrate, xy_hat);
 }
 
 /* ************************************************************************* */
@@ -66,14 +74,14 @@ TEST(BADFactor, test) {
   Expression<int> c(0);
 
   // Create leaves
-  Expression<Pose3> x(1);
-  Expression<Point3> p(2);
-  Expression<Cal3_S2> K(3);
+  Pose3_ x(1);
+  Point3_ p(2);
+  Cal3_S2_ K(3);
 
   // Create expression tree
-  Expression<Point3> p_cam(x, &Pose3::transform_to, p);
-  Expression<Point2> xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
-  Expression<Point2> uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
+  Point3_ p_cam(x, &Pose3::transform_to, p);
+  Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   // Create factor and check value, dimension, linearization
   BADFactor<Point2> f(measured, uv_hat);
@@ -95,8 +103,8 @@ TEST(BADFactor, test) {
 TEST(BADFactor, compose) {
 
   // Create expression
-  Expression<Rot3> R1(1), R2(2);
-  Expression<Rot3> R3 = R1 * R2;
+  Rot3_ R1(1), R2(2);
+  Rot3_ R3 = R1 * R2;
 
   // Create factor
   BADFactor<Rot3> f(Rot3(), R3);
@@ -119,8 +127,8 @@ TEST(BADFactor, compose) {
 TEST(BADFactor, compose2) {
 
   // Create expression
-  Expression<Rot3> R1(1), R2(1);
-  Expression<Rot3> R3 = R1 * R2;
+  Rot3_ R1(1), R2(1);
+  Rot3_ R3 = R1 * R2;
 
   // Create factor
   BADFactor<Rot3> f(Rot3(), R3);
