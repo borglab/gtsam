@@ -64,7 +64,7 @@ public:
 
   /// get the dimension of the factor (number of rows on linearization)
   size_t dim() const {
-    return 0;
+    return measurement_.dim();
   }
 
   /// linearize to a GaussianFactor
