@@ -17,41 +17,17 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
+#include <gtsam_unstable/slam/expressions.h>
+#include <gtsam_unstable/nonlinear/BADFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam_unstable/nonlinear/BADFactor.h>
 #include <gtsam/base/Testable.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
-
-/* ************************************************************************* */
-// Proposed naming convention
-/* ************************************************************************* */
-typedef Expression<Point2> Point2_;
-typedef Expression<Point3> Point3_;
-typedef Expression<Rot3> Rot3_;
-typedef Expression<Pose3> Pose3_;
-typedef Expression<Cal3_S2> Cal3_S2_;
-
-/* ************************************************************************* */
-// Functions that allow creating concise expressions
-/* ************************************************************************* */
-Point3_ transform_to(const Pose3_& x, const Point3_& p) {
-  return Point3_(x, &Pose3::transform_to, p);
-}
-
-Point2_ project(const Point3_& p_cam) {
-  return Point2_(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
-}
-
-template<class CAL>
-Point2_ uncalibrate(const Expression<CAL>& K, const Point2_& xy_hat) {
-  return Point2_(K, &CAL::uncalibrate, xy_hat);
-}
 
 /* ************************************************************************* */
 

@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/base/Matrix.h>
 #include <boost/foreach.hpp>
 
 namespace gtsam {
