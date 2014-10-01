@@ -29,6 +29,23 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
+// Functions that allow creating concise expressions
+Expression<Point3> transform_to(const Expression<Pose3>& x,
+    const Expression<Point3>& p) {
+  return Expression<Point3>(x, &Pose3::transform_to, p);
+}
+
+Expression<Point2> project(const Expression<Point3>& p_cam) {
+  return Expression<Point2>(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+}
+
+template<class CAL>
+Expression<Point2> uncalibrate(const Expression<CAL>& K,
+    const Expression<Point2>& xy_hat) {
+  return Expression<Point2>(K, &CAL::uncalibrate, xy_hat);
+}
+
+/* ************************************************************************* */
 
 TEST(BADFactor, test) {
 
@@ -55,15 +72,22 @@ TEST(BADFactor, test) {
 
   // Create expression tree
   Expression<Point3> p_cam(x, &Pose3::transform_to, p);
-  Expression<Point2> projection(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
-  Expression<Point2> uv_hat(K, &Cal3_S2::uncalibrate, projection);
+  Expression<Point2> xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Expression<Point2> uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   // Create factor and check value, dimension, linearization
   BADFactor<Point2> f(measured, uv_hat);
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
-  EXPECT_LONGS_EQUAL(0, f.dim());
+  EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   EXPECT( assert_equal(*expected, *gf, 1e-9));
+
+  // Try concise version
+  BADFactor<Point2> f2(measured, uncalibrate(K, project(transform_to(x, p))));
+  EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
+  EXPECT_LONGS_EQUAL(2, f2.dim());
+  boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
+  EXPECT( assert_equal(*expected, *gf2, 1e-9));
 }
 
 /* ************************************************************************* */
