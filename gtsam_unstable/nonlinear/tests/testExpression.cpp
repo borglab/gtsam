@@ -30,15 +30,6 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 
-Point3 transformTo(const Pose3& x, const Point3& p,
-    boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) {
-  return x.transform_to(p, Dpose, Dpoint);
-}
-
-Point2 project(const Point3& p, boost::optional<Matrix&> Dpoint) {
-  return PinholeCamera<Cal3_S2>::project_to_camera(p, Dpoint);
-}
-
 template<class CAL>
 Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
     boost::optional<Matrix&> Dp) {
@@ -47,7 +38,7 @@ Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
 
 /* ************************************************************************* */
 
-TEST(BAD, test) {
+TEST(Expression, test) {
 
   // Test Constant expression
   Expression<int> c(0);
@@ -58,11 +49,8 @@ TEST(BAD, test) {
   Expression<Cal3_S2> K(3);
 
   // Create expression tree
-//  MethodExpression<Point3,Pose3,Point3>::method m = &Pose3::transform_to;
-//  MethodExpression<Point3,Pose3,Point3> methodExpression(x, &Pose3::transform_to, p);
   Expression<Point3> p_cam(x, &Pose3::transform_to, p);
-  //Expression<Point3> p_cam(transformTo, x, p);
-  Expression<Point2> projection(project, p_cam);
+  Expression<Point2> projection(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
   Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 
   // Check keys
@@ -75,7 +63,7 @@ TEST(BAD, test) {
 
 /* ************************************************************************* */
 
-TEST(BAD, compose) {
+TEST(Expression, compose) {
 
   // Create expression
   Expression<Rot3> R1(1), R2(2);
@@ -90,7 +78,7 @@ TEST(BAD, compose) {
 
 /* ************************************************************************* */
 // Test compose with arguments referring to the same rotation
-TEST(BAD, compose2) {
+TEST(Expression, compose2) {
 
   // Create expression
   Expression<Rot3> R1(1), R2(1);
