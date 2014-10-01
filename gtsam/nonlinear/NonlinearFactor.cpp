@@ -128,7 +128,7 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
       size_t d_ = terms[0].second.rows() - constrained->dim();
       Vector zero_ = zero(d_);
       Vector b_ = concatVectors(2, &b, &zero_);
-      Constrained::shared_ptr model = constrained->unit(d_);
+      noiseModel::Constrained::shared_ptr model = constrained->unit(d_);
       return boost::make_shared<JacobianFactor>(terms, b_, model);
     } else
       return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
