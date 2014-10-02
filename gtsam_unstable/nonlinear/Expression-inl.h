@@ -58,6 +58,33 @@ public:
   /// Return value and optional derivatives
   virtual T value(const Values& values, boost::optional<JacobianMap&> =
       boost::none) const = 0;
+
+protected:
+
+  typedef std::pair<Key, Matrix> Pair;
+
+  /// Insert terms into Jacobians, premultiplying by H, adding if already exists
+  static void add(const Matrix& H, const JacobianMap& terms,
+      JacobianMap& jacobians) {
+    BOOST_FOREACH(const Pair& term, terms) {
+      JacobianMap::iterator it = jacobians.find(term.first);
+      if (it != jacobians.end()) {
+        it->second += H * term.second;
+      } else {
+        jacobians[term.first] = H * term.second;
+      }
+    }
+  }
+
+  /// debugging
+  static void print(const JacobianMap& terms, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) {
+    BOOST_FOREACH(const Pair& term, terms) {
+      std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
+          << "x" << term.second.cols() << ") ";
+    }
+    std::cout << std::endl;
+  }
 };
 
 /// Constant Expression
@@ -127,13 +154,13 @@ public:
   virtual T value(const Values& values,
       boost::optional<JacobianMap&> jacobians = boost::none) const {
     const T& value = values.at<T>(key_);
+    size_t n = value.dim();
     if (jacobians) {
       JacobianMap::iterator it = jacobians->find(key_);
       if (it != jacobians->end()) {
-        it->second += Eigen::MatrixXd::Identity(value.dim(), value.dim());
+        it->second += Eigen::MatrixXd::Identity(n, n);
       } else {
-        (*jacobians)[key_] = Eigen::MatrixXd::Identity(value.dim(),
-            value.dim());
+        (*jacobians)[key_] = Eigen::MatrixXd::Identity(n, n);
       }
     }
     return value;
@@ -221,32 +248,7 @@ private:
       expression1_(e1.root()), expression2_(e2.root()), f_(f) {
   }
 
-  friend class Expression<T>;
-public:
-  /// Combine Jacobians
-  static void combine(const Matrix& H1, const Matrix& H2,
-      const JacobianMap& terms1, const JacobianMap& terms2,
-      JacobianMap& jacobians) {
-    // TODO: both Jacobians and terms are sorted. There must be a simple
-    //       but fast algorithm that does this.
-    typedef std::pair<Key, Matrix> Pair;
-    BOOST_FOREACH(const Pair& term, terms1) {
-      JacobianMap::iterator it = jacobians.find(term.first);
-      if (it != jacobians.end()) {
-        it->second += H1 * term.second;
-      } else {
-        jacobians[term.first] = H1 * term.second;
-      }
-    }
-    BOOST_FOREACH(const Pair& term, terms2) {
-      JacobianMap::iterator it = jacobians.find(term.first);
-      if (it != jacobians.end()) {
-        it->second += H2 * term.second;
-      } else {
-        jacobians[term.first] = H2 * term.second;
-      }
-    }
-  }
+  friend class Expression<T> ;
 
 public:
 
@@ -268,10 +270,14 @@ public:
     T val;
     if (jacobians) {
       JacobianMap terms1, terms2;
+      E1 arg1 = expression1_->value(values, terms1);
+      E2 arg2 = expression2_->value(values, terms2);
       Matrix H1, H2;
-      val = f_(expression1_->value(values, terms1),
-          expression2_->value(values, terms2), H1, H2);
-      combine(H1, H2, terms1, terms2, *jacobians);
+      val = f_(arg1, arg2,
+          terms1.empty() ? boost::none : boost::optional<Matrix&>(H1),
+          terms2.empty() ? boost::none : boost::optional<Matrix&>(H2));
+      ExpressionNode<T>::add(H1, terms1, *jacobians);
+      ExpressionNode<T>::add(H2, terms2, *jacobians);
     } else {
       val = f_(expression1_->value(values), expression2_->value(values),
           boost::none, boost::none);
@@ -291,9 +297,8 @@ public:
 
   typedef std::map<Key, Matrix> JacobianMap;
 
-  typedef 
-      T (E1::*method)(const E2&, boost::optional<Matrix&>,
-          boost::optional<Matrix&>) const;
+  typedef T (E1::*method)(const E2&, boost::optional<Matrix&>,
+      boost::optional<Matrix&>) const;
 
 private:
 
@@ -328,10 +333,14 @@ public:
     T val;
     if (jacobians) {
       JacobianMap terms1, terms2;
+      E1 arg1 = expression1_->value(values, terms1);
+      E2 arg2 = expression2_->value(values, terms2);
       Matrix H1, H2;
-      val = (expression1_->value(values, terms1).*(f_))(
-          expression2_->value(values, terms2), H1, H2);
-      BinaryExpression<T, E1, E2>::combine(H1, H2, terms1, terms2, *jacobians);
+      val = (arg1.*(f_))(arg2,
+          terms1.empty() ? boost::none : boost::optional<Matrix&>(H1),
+          terms2.empty() ? boost::none : boost::optional<Matrix&>(H2));
+      ExpressionNode<T>::add(H1, terms1, *jacobians);
+      ExpressionNode<T>::add(H2, terms2, *jacobians);
     } else {
       val = (expression1_->value(values).*(f_))(expression2_->value(values),
           boost::none, boost::none);
