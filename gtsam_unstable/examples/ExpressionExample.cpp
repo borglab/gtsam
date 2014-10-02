@@ -67,11 +67,11 @@ int main(int argc, char* argv[]) {
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t i = 0; i < poses.size(); ++i) {
+    Pose3_ x('x', i);
+    SimpleCamera camera(poses[i], K);
     for (size_t j = 0; j < points.size(); ++j) {
-      SimpleCamera camera(poses[i], K);
       Point2 measurement = camera.project(points[j]);
       // Below an expression for the prediction of the measurement:
-      Pose3_ x('x', i);
       Point3_ p('l', j);
       Expression<Point2> prediction = uncalibrate(cK, project(transform_to(x, p)));
       // Again, here we use a BADFactor
