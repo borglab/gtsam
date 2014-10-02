@@ -135,6 +135,35 @@ TEST(BADFactor, compose2) {
 }
 
 /* ************************************************************************* */
+// Test compose with one arguments referring to a constant same rotation
+TEST(BADFactor, compose3) {
+
+  // Create expression
+  Rot3_ R1(Rot3::identity()), R2(3);
+  Rot3_ R3 = R1 * R2;
+
+  // Create factor
+  BADFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
+
+  // Create some values
+  Values values;
+  values.insert(3, Rot3());
+
+  // Check unwhitenedError
+  std::vector<Matrix> H(1);
+  Vector actual = f.unwhitenedError(values, H);
+  EXPECT_LONGS_EQUAL(1, H.size());
+  EXPECT( assert_equal(eye(3), H[0],1e-9));
+
+  // Check linearization
+  JacobianFactor expected(3, eye(3), zero(3));
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf,1e-9));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
