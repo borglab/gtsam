@@ -77,7 +77,7 @@ TEST(BADFactor, test) {
 
 /* ************************************************************************* */
 
-TEST(BADFactor, compose) {
+TEST(BADFactor, compose1) {
 
   // Create expression
   Rot3_ R1(1), R2(2);

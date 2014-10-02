@@ -63,7 +63,7 @@ TEST(Expression, test) {
 
 /* ************************************************************************* */
 
-TEST(Expression, compose) {
+TEST(Expression, compose1) {
 
   // Create expression
   Expression<Rot3> R1(1), R2(2);
@@ -87,6 +87,20 @@ TEST(Expression, compose2) {
   // Check keys
   std::set<Key> expectedKeys;
   expectedKeys.insert(1);
+  EXPECT(expectedKeys == R3.keys());
+}
+
+/* ************************************************************************* */
+// Test compose with one arguments referring to a constant same rotation
+TEST(Expression, compose3) {
+
+  // Create expression
+  Expression<Rot3> R1(Rot3::identity()), R2(3);
+  Expression<Rot3> R3 = R1 * R2;
+
+  // Check keys
+  std::set<Key> expectedKeys;
+  expectedKeys.insert(3);
   EXPECT(expectedKeys == R3.keys());
 }
 
