@@ -19,6 +19,7 @@
 
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -26,40 +27,18 @@ namespace gtsam {
  * BAD Factor that supports arbitrary expressions via AD
  */
 template<class T>
-class BADFactor: NonlinearFactor {
+class BADFactor: public NoiseModelFactor {
 
   const T measurement_;
   const Expression<T> expression_;
 
-  /// get value from expression and calculate error with respect to measurement
-  Vector unwhitenedError(const Values& values) const {
-    const T& value = expression_.value(values);
-    return value.localCoordinates(measurement_);
-  }
-
 public:
 
   /// Constructor
-  BADFactor(const T& measurement, const Expression<T>& expression) :
+  BADFactor(const SharedNoiseModel& noiseModel, //
+      const T& measurement, const Expression<T>& expression) :
+      NoiseModelFactor(noiseModel, expression.keys()), //
       measurement_(measurement), expression_(expression) {
-  }
-  /// Constructor
-  BADFactor(const T& measurement, const ExpressionNode<T>& expression) :
-      measurement_(measurement), expression_(expression) {
-  }
-  /**
-   * Calculate the error of the factor.
-   * This is the log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/\sigma^2 \f$ in case of Gaussian.
-   * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
-   * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
-   */
-  virtual double error(const Values& values) const {
-    if (this->active(values)) {
-      const Vector e = unwhitenedError(values);
-      return 0.5 * e.squaredNorm();
-    } else {
-      return 0.0;
-    }
   }
 
   /// get the dimension of the factor (number of rows on linearization)
@@ -67,17 +46,27 @@ public:
     return measurement_.dim();
   }
 
-  /// linearize to a GaussianFactor
-  boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
-    // We will construct an n-ary factor below, where  terms is a container whose
-    // value type is std::pair<Key, Matrix>, specifying the
-    // collection of keys and matrices making up the factor.
-    std::map<Key, Matrix> terms;
-    expression_.value(values, terms);
-    Vector b = unwhitenedError(values);
-    SharedDiagonal model = SharedDiagonal();
-    return boost::shared_ptr<JacobianFactor>(
-        new JacobianFactor(terms, b, model));
+  /**
+   * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
+   * We override this method to provide
+   * both the function evaluation and its derivative(s) in H.
+   */
+  virtual Vector unwhitenedError(const Values& x,
+      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if (H) {
+      typedef std::map<Key, Matrix> MapType;
+      MapType terms;
+      const T& value = expression_.value(x, terms);
+      // copy terms to H
+      H->clear();
+      H->reserve(terms.size());
+      for (MapType::iterator it = terms.begin(); it != terms.end(); ++it)
+        H->push_back(it->second);
+      return measurement_.localCoordinates(value);
+    } else {
+      const T& value = expression_.value(x);
+      return measurement_.localCoordinates(value);
+    }
   }
 
 };
