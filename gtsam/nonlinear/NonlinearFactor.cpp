@@ -73,20 +73,26 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
 }
 
 Vector NoiseModelFactor::whitenedError(const Values& c) const {
-  const Vector unwhitenedErrorVec = unwhitenedError(c);
-  if ((size_t) unwhitenedErrorVec.size() != noiseModel_->dim())
+  const Vector b = unwhitenedError(c);
+  if ((size_t) b.size() != noiseModel_->dim())
     throw std::invalid_argument(
         "This factor was created with a NoiseModel of incorrect dimension.");
-  return noiseModel_->whiten(unwhitenedErrorVec);
+  return noiseModel_->whiten(b);
+}
+
+static void check(const SharedNoiseModel& noiseModel, const Vector& b) {
+  if (!noiseModel)
+    throw std::invalid_argument("NoiseModelFactor: no NoiseModel.");
+  if ((size_t) b.size() != noiseModel->dim())
+    throw std::invalid_argument(
+        "NoiseModelFactor was created with a NoiseModel of incorrect dimension.");
 }
 
 double NoiseModelFactor::error(const Values& c) const {
   if (this->active(c)) {
-    const Vector unwhitenedErrorVec = unwhitenedError(c);
-    if ((size_t) unwhitenedErrorVec.size() != noiseModel_->dim())
-      throw std::invalid_argument(
-          "This factor was created with a NoiseModel of incorrect dimension.");
-    return 0.5 * noiseModel_->distance(unwhitenedErrorVec);
+    const Vector b = unwhitenedError(c);
+    check(noiseModel_, b);
+    return 0.5 * noiseModel_->distance(b);
   } else {
     return 0.0;
   }
@@ -102,14 +108,10 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
   // Call evaluate error to get Jacobians and RHS vector b
   std::vector<Matrix> A(this->size());
   Vector b = -unwhitenedError(x, A);
+  check(noiseModel_, b);
 
-  // If a noiseModel is given, whiten the corresponding system now
-  if (noiseModel_) {
-    if ((size_t) b.size() != noiseModel_->dim())
-      throw std::invalid_argument(
-          "This factor was created with a NoiseModel of incorrect dimension.");
-    this->noiseModel_->WhitenSystem(A, b);
-  }
+  // Whiten the corresponding system now
+  this->noiseModel_->WhitenSystem(A, b);
 
   // Fill in terms, needed to create JacobianFactor below
   std::vector<std::pair<Key, Matrix> > terms(this->size());
@@ -120,18 +122,15 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
 
   // TODO pass unwhitened + noise model to Gaussian factor
   // For now, only linearized constrained factors have noise model at linear level!!!
-  if (noiseModel_) {
-    noiseModel::Constrained::shared_ptr constrained =
-        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained) {
-      // Create a factor of reduced row dimension d_
-      size_t d_ = terms[0].second.rows() - constrained->dim();
-      Vector zero_ = zero(d_);
-      Vector b_ = concatVectors(2, &b, &zero_);
-      noiseModel::Constrained::shared_ptr model = constrained->unit(d_);
-      return boost::make_shared<JacobianFactor>(terms, b_, model);
-    } else
-      return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
+  noiseModel::Constrained::shared_ptr constrained = //
+      boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
+  if (constrained) {
+    // Create a factor of reduced row dimension d_
+    size_t d_ = terms[0].second.rows() - constrained->dim();
+    Vector zero_ = zero(d_);
+    Vector b_ = concatVectors(2, &b, &zero_);
+    noiseModel::Constrained::shared_ptr model = constrained->unit(d_);
+    return boost::make_shared<JacobianFactor>(terms, b_, model);
   } else
     return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
 }
