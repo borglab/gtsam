@@ -72,20 +72,18 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
               && noiseModel_->equals(*e->noiseModel_, tol)));
 }
 
-Vector NoiseModelFactor::whitenedError(const Values& c) const {
-  const Vector b = unwhitenedError(c);
-  if ((size_t) b.size() != noiseModel_->dim())
-    throw std::invalid_argument(
-        "This factor was created with a NoiseModel of incorrect dimension.");
-  return noiseModel_->whiten(b);
-}
-
 static void check(const SharedNoiseModel& noiseModel, const Vector& b) {
   if (!noiseModel)
     throw std::invalid_argument("NoiseModelFactor: no NoiseModel.");
   if ((size_t) b.size() != noiseModel->dim())
     throw std::invalid_argument(
         "NoiseModelFactor was created with a NoiseModel of incorrect dimension.");
+}
+
+Vector NoiseModelFactor::whitenedError(const Values& c) const {
+  const Vector b = unwhitenedError(c);
+  check(noiseModel_, b);
+  return noiseModel_->whiten(b);
 }
 
 double NoiseModelFactor::error(const Values& c) const {

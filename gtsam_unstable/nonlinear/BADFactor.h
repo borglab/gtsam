@@ -41,11 +41,6 @@ public:
       measurement_(measurement), expression_(expression) {
   }
 
-  /// get the dimension of the factor (number of rows on linearization)
-  size_t dim() const {
-    return measurement_.dim();
-  }
-
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    * We override this method to provide
@@ -54,14 +49,14 @@ public:
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if (H) {
+      assert(H->size()==size());
       typedef std::map<Key, Matrix> MapType;
       MapType terms;
       const T& value = expression_.value(x, terms);
-      // copy terms to H
-      H->clear();
-      H->reserve(terms.size());
+      // move terms to H, which is pre-allocated to correct size
+      size_t j = 0;
       for (MapType::iterator it = terms.begin(); it != terms.end(); ++it)
-        H->push_back(it->second);
+        it->second.swap((*H)[j++]);
       return measurement_.localCoordinates(value);
     } else {
       const T& value = expression_.value(x);

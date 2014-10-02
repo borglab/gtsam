@@ -59,13 +59,8 @@ TEST(BADFactor, test) {
   Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
-  // Create factor and check unwhitenedError
+  // Create factor and check value, dimension, linearization
   BADFactor<Point2> f(model, measured, uv_hat);
-  std::vector<Matrix> H;
-  Vector actual = f.unwhitenedError(values, H);
-  EXPECT_LONGS_EQUAL(3, H.size());
-
-  // Check value, dimension, linearization
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
@@ -97,9 +92,8 @@ TEST(BADFactor, compose) {
   values.insert(2, Rot3());
 
   // Check unwhitenedError
-  std::vector<Matrix> H;
+  std::vector<Matrix> H(2);
   Vector actual = f.unwhitenedError(values, H);
-  EXPECT_LONGS_EQUAL(2, H.size());
   EXPECT( assert_equal(eye(3), H[0],1e-9));
   EXPECT( assert_equal(eye(3), H[1],1e-9));
 
@@ -127,7 +121,7 @@ TEST(BADFactor, compose2) {
   values.insert(1, Rot3());
 
   // Check unwhitenedError
-  std::vector<Matrix> H;
+  std::vector<Matrix> H(1);
   Vector actual = f.unwhitenedError(values, H);
   EXPECT_LONGS_EQUAL(1, H.size());
   EXPECT( assert_equal(2*eye(3), H[0],1e-9));
