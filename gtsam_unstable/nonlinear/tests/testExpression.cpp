@@ -50,7 +50,8 @@ TEST(Expression, test) {
 
   // Create expression tree
   Expression<Point3> p_cam(x, &Pose3::transform_to, p);
-  Expression<Point2> projection(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Expression<Point2> projection(PinholeCamera<Cal3_S2>::project_to_camera,
+      p_cam);
   Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 
   // Check keys
@@ -91,7 +92,7 @@ TEST(Expression, compose2) {
 }
 
 /* ************************************************************************* */
-// Test compose with one arguments referring to a constant same rotation
+// Test compose with one arguments referring to constant rotation
 TEST(Expression, compose3) {
 
   // Create expression
@@ -103,6 +104,35 @@ TEST(Expression, compose3) {
   expectedKeys.insert(3);
   EXPECT(expectedKeys == R3.keys());
 }
+
+/* ************************************************************************* */
+// Test with ternary function
+Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
+    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
+    boost::optional<Matrix&> H3) {
+  // return dummy derivatives (not correct, but that's ok for testing here)
+  if (H1)
+    *H1 = eye(3);
+  if (H2)
+    *H2 = eye(3);
+  if (H3)
+    *H3 = eye(3);
+  return R1 * (R2 * R3);
+}
+
+//TEST(Expression, ternary) {
+//
+//  // Create expression
+//  Expression<Rot3> A(1), B(2), C(3);
+//  Expression<Rot3> ABC(composeThree, A, B, C);
+//
+//  // Check keys
+//  std::set<Key> expectedKeys;
+//  expectedKeys.insert(1);
+//  expectedKeys.insert(2);
+//  expectedKeys.insert(3);
+//  EXPECT(expectedKeys == ABC.keys());
+//}
 
 /* ************************************************************************* */
 int main() {
