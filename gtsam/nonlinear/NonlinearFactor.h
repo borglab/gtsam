@@ -211,10 +211,11 @@ public:
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    * Override this method to finish implementing an N-way factor.
-   * If any of the optional Matrix reference arguments are specified, it should compute
-   * both the function evaluation and its derivative(s) in X1 (and/or X2, X3...).
+   * If the optional arguments is specified, it should compute
+   * both the function evaluation and its derivative(s) in H.
    */
-  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
+  virtual Vector unwhitenedError(const Values& x,
+      boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
 
   /**
    * Vector of errors, whitened
