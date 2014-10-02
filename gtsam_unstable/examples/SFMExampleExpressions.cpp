@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    ExpressionExample.cpp
+ * @file    SFMExampleExpressions.cpp
  * @brief   A structure-from-motion example done with Expressions
  * @author  Frank Dellaert
  * @author  Duy-Nguyen Ta
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
       Point2 measurement = camera.project(points[j]);
       // Below an expression for the prediction of the measurement:
       Point3_ p('l', j);
-      Expression<Point2> prediction = uncalibrate(cK, project(transform_to(x, p)));
+      Point2_ prediction = uncalibrate(cK, project(transform_to(x, p)));
       // Again, here we use a BADFactor
       graph.push_back(BADFactor<Point2>(measurementNoise, measurement, prediction));
     }
