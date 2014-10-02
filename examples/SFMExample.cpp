@@ -111,6 +111,8 @@ int main(int argc, char* argv[]) {
   /* Optimize the graph and print results */
   Values result = DoglegOptimizer(graph, initialEstimate).optimize();
   result.print("Final results:\n");
+  cout << "initial error = " << graph.error(initialEstimate) << endl;
+  cout << "final error = " << graph.error(result) << endl;
 
   return 0;
 }
