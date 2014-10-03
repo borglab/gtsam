@@ -27,9 +27,87 @@ namespace gtsam {
 
 template<typename T>
 class Expression;
-template<typename T, typename E1, typename E2>
-class MethodExpression;
 
+typedef std::map<Key, Matrix> JacobianMap;
+
+//-----------------------------------------------------------------------------
+/**
+ * Value and Jacobians
+ */
+template<class T>
+class Augmented {
+
+private:
+
+  T value_;
+  JacobianMap jacobians_;
+
+  typedef std::pair<Key, Matrix> Pair;
+
+  /// Insert terms into jacobians_, premultiplying by H, adding if already exists
+  void add(const Matrix& H, const JacobianMap& terms) {
+    BOOST_FOREACH(const Pair& term, terms) {
+      JacobianMap::iterator it = jacobians_.find(term.first);
+      if (it != jacobians_.end())
+        it->second += H * term.second;
+      else
+        jacobians_[term.first] = H * term.second;
+    }
+  }
+
+public:
+
+  /// Construct value that does not depend on anything
+  Augmented(const T& t) :
+      value_(t) {
+  }
+
+  /// Construct value dependent on a single key
+  Augmented(const T& t, Key key) :
+      value_(t) {
+    size_t n = t.dim();
+    jacobians_[key] = Eigen::MatrixXd::Identity(n, n);
+  }
+
+  /// Construct value, pre-multiply jacobians by H
+  Augmented(const T& t, const Matrix& H, const JacobianMap& jacobians) :
+      value_(t) {
+    add(H, jacobians);
+  }
+
+  /// Construct value, pre-multiply jacobians by H
+  Augmented(const T& t, const Matrix& H1, const JacobianMap& jacobians1,
+      const Matrix& H2, const JacobianMap& jacobians2) :
+      value_(t) {
+    add(H1, jacobians1);
+    add(H2, jacobians2);
+  }
+
+  /// Return value
+  const T& value() const {
+    return value_;
+  }
+
+  /// Return jacobians
+  const JacobianMap& jacobians() const {
+    return jacobians_;
+  }
+
+  /// Not dependent on any key
+  bool constant() const {
+    return jacobians_.empty();
+  }
+
+  /// debugging
+  void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
+    BOOST_FOREACH(const Pair& term, jacobians_)
+      std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
+          << "x" << term.second.cols() << ") ";
+    std::cout << std::endl;
+  }
+};
+
+//-----------------------------------------------------------------------------
 /**
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
@@ -46,8 +124,6 @@ protected:
 
 public:
 
-  typedef std::map<Key, Matrix> JacobianMap;
-
   /// Destructor
   virtual ~ExpressionNode() {
   }
@@ -55,54 +131,30 @@ public:
   /// Return keys that play in this expression as a set
   virtual std::set<Key> keys() const = 0;
 
-  /// Return value and optional derivatives
-  virtual T value(const Values& values, boost::optional<JacobianMap&> =
-      boost::none) const = 0;
+  /// Return value
+  virtual T value(const Values& values) const = 0;
 
-protected:
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const = 0;
 
-  typedef std::pair<Key, Matrix> Pair;
-
-  /// Insert terms into Jacobians, premultiplying by H, adding if already exists
-  static void add(const Matrix& H, const JacobianMap& terms,
-      JacobianMap& jacobians) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      JacobianMap::iterator it = jacobians.find(term.first);
-      if (it != jacobians.end()) {
-        it->second += H * term.second;
-      } else {
-        jacobians[term.first] = H * term.second;
-      }
-    }
-  }
-
-  /// debugging
-  static void print(const JacobianMap& terms, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
-          << "x" << term.second.cols() << ") ";
-    }
-    std::cout << std::endl;
-  }
 };
 
+//-----------------------------------------------------------------------------
 /// Constant Expression
 template<class T>
 class ConstantExpression: public ExpressionNode<T> {
 
-  T value_;
+  /// The constant value
+  T constant_;
 
   /// Constructor with a value, yielding a constant
   ConstantExpression(const T& value) :
-      value_(value) {
+      constant_(value) {
   }
 
   friend class Expression<T> ;
 
 public:
-
-  typedef std::map<Key, Matrix> JacobianMap;
 
   /// Destructor
   virtual ~ConstantExpression() {
@@ -114,11 +166,17 @@ public:
     return keys;
   }
 
-  /// Return value and optional derivatives
-  virtual T value(const Values& values,
-      boost::optional<JacobianMap&> jacobians = boost::none) const {
-    return value_;
+  /// Return value
+  virtual T value(const Values& values) const {
+    return constant_;
   }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const {
+    T t = value(values);
+    return Augmented<T>(t);
+  }
+
 };
 
 //-----------------------------------------------------------------------------
@@ -126,6 +184,7 @@ public:
 template<class T>
 class LeafExpression: public ExpressionNode<T> {
 
+  /// The key into values
   Key key_;
 
   /// Constructor with a single key
@@ -136,8 +195,6 @@ class LeafExpression: public ExpressionNode<T> {
   friend class Expression<T> ;
 
 public:
-
-  typedef std::map<Key, Matrix> JacobianMap;
 
   /// Destructor
   virtual ~LeafExpression() {
@@ -150,48 +207,41 @@ public:
     return keys;
   }
 
-  /// Return value and optional derivatives
-  virtual T value(const Values& values,
-      boost::optional<JacobianMap&> jacobians = boost::none) const {
-    const T& value = values.at<T>(key_);
-    size_t n = value.dim();
-    if (jacobians) {
-      JacobianMap::iterator it = jacobians->find(key_);
-      if (it != jacobians->end()) {
-        it->second += Eigen::MatrixXd::Identity(n, n);
-      } else {
-        (*jacobians)[key_] = Eigen::MatrixXd::Identity(n, n);
-      }
-    }
-    return value;
+  /// Return value
+  virtual T value(const Values& values) const {
+    return values.at<T>(key_);
+  }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const {
+    T t = value(values);
+    return Augmented<T>(t, key_);
   }
 
 };
 
 //-----------------------------------------------------------------------------
 /// Unary Expression
-template<class T, class E>
+template<class T, class A>
 class UnaryExpression: public ExpressionNode<T> {
 
 public:
 
-  typedef boost::function<T(const E&, boost::optional<Matrix&>)> function;
+  typedef boost::function<T(const A&, boost::optional<Matrix&>)> function;
 
 private:
 
-  boost::shared_ptr<ExpressionNode<E> > expression_;
+  boost::shared_ptr<ExpressionNode<A> > expressionA_;
   function f_;
 
   /// Constructor with a unary function f, and input argument e
-  UnaryExpression(function f, const Expression<E>& e) :
-      expression_(e.root()), f_(f) {
+  UnaryExpression(function f, const Expression<A>& e) :
+      expressionA_(e.root()), f_(f) {
   }
 
   friend class Expression<T> ;
 
 public:
-
-  typedef std::map<Key, Matrix> JacobianMap;
 
   /// Destructor
   virtual ~UnaryExpression() {
@@ -199,25 +249,22 @@ public:
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
-    return expression_->keys();
+    return expressionA_->keys();
   }
 
-  /// Return value and optional derivatives
-  virtual T value(const Values& values,
-      boost::optional<JacobianMap&> jacobians = boost::none) const {
+  /// Return value
+  virtual T value(const Values& values) const {
+    return f_(expressionA_->value(values), boost::none);
+  }
 
-    T value;
-    if (jacobians) {
-      Eigen::MatrixXd H;
-      value = f_(expression_->value(values, jacobians), H);
-      JacobianMap::iterator it = jacobians->begin();
-      for (; it != jacobians->end(); ++it) {
-        it->second = H * it->second;
-      }
-    } else {
-      value = f_(expression_->value(values), boost::none);
-    }
-    return value;
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const {
+    using boost::none;
+    Augmented<A> argument = expressionA_->augmented(values);
+    Matrix H;
+    T t = f_(argument.value(),
+        argument.constant() ? none : boost::optional<Matrix&>(H));
+    return Augmented<T>(t, H, argument.jacobians());
   }
 
 };
@@ -225,27 +272,25 @@ public:
 //-----------------------------------------------------------------------------
 /// Binary Expression
 
-template<class T, class E1, class E2>
+template<class T, class A1, class A2>
 class BinaryExpression: public ExpressionNode<T> {
 
 public:
 
-  typedef std::map<Key, Matrix> JacobianMap;
-
   typedef boost::function<
-      T(const E1&, const E2&, boost::optional<Matrix&>,
+      T(const A1&, const A2&, boost::optional<Matrix&>,
           boost::optional<Matrix&>)> function;
 
 private:
 
-  boost::shared_ptr<ExpressionNode<E1> > expression1_;
-  boost::shared_ptr<ExpressionNode<E2> > expression2_;
+  boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
+  boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
   function f_;
 
   /// Constructor with a binary function f, and two input arguments
   BinaryExpression(function f, //
-      const Expression<E1>& e1, const Expression<E2>& e2) :
-      expression1_(e1.root()), expression2_(e2.root()), f_(f) {
+      const Expression<A1>& e1, const Expression<A2>& e2) :
+      expressionA1_(e1.root()), expressionA2_(e2.root()), f_(f) {
   }
 
   friend class Expression<T> ;
@@ -258,31 +303,29 @@ public:
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
-    std::set<Key> keys1 = expression1_->keys();
-    std::set<Key> keys2 = expression2_->keys();
+    std::set<Key> keys1 = expressionA1_->keys();
+    std::set<Key> keys2 = expressionA2_->keys();
     keys1.insert(keys2.begin(), keys2.end());
     return keys1;
   }
 
-  /// Return value and optional derivatives
-  virtual T value(const Values& values,
-      boost::optional<JacobianMap&> jacobians = boost::none) const {
-    T val;
-    if (jacobians) {
-      JacobianMap terms1, terms2;
-      E1 arg1 = expression1_->value(values, terms1);
-      E2 arg2 = expression2_->value(values, terms2);
-      Matrix H1, H2;
-      val = f_(arg1, arg2,
-          terms1.empty() ? boost::none : boost::optional<Matrix&>(H1),
-          terms2.empty() ? boost::none : boost::optional<Matrix&>(H2));
-      ExpressionNode<T>::add(H1, terms1, *jacobians);
-      ExpressionNode<T>::add(H2, terms2, *jacobians);
-    } else {
-      val = f_(expression1_->value(values), expression2_->value(values),
-          boost::none, boost::none);
-    }
-    return val;
+  /// Return value
+  virtual T value(const Values& values) const {
+    using boost::none;
+    return f_(expressionA1_->value(values), expressionA2_->value(values), none,
+        none);
+  }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const {
+    using boost::none;
+    Augmented<A1> argument1 = expressionA1_->augmented(values);
+    Augmented<A2> argument2 = expressionA2_->augmented(values);
+    Matrix H1, H2;
+    T t = f_(argument1.value(), argument2.value(),
+        argument1.constant() ? none : boost::optional<Matrix&>(H1),
+        argument2.constant() ? none : boost::optional<Matrix&>(H2));
+    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
   }
 
 };
@@ -290,25 +333,23 @@ public:
 //-----------------------------------------------------------------------------
 /// Binary Expression
 
-template<class T, class E1, class E2>
+template<class T, class A1, class A2>
 class MethodExpression: public ExpressionNode<T> {
 
 public:
 
-  typedef std::map<Key, Matrix> JacobianMap;
-
-  typedef T (E1::*method)(const E2&, boost::optional<Matrix&>,
+  typedef T (A1::*method)(const A2&, boost::optional<Matrix&>,
       boost::optional<Matrix&>) const;
 
 private:
 
-  boost::shared_ptr<ExpressionNode<E1> > expression1_;
-  boost::shared_ptr<ExpressionNode<E2> > expression2_;
+  boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
+  boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
   method f_;
 
   /// Constructor with a binary function f, and two input arguments
-  MethodExpression(const Expression<E1>& e1, method f, const Expression<E2>& e2) :
-      expression1_(e1.root()), expression2_(e2.root()), f_(f) {
+  MethodExpression(const Expression<A1>& e1, method f, const Expression<A2>& e2) :
+      expressionA1_(e1.root()), expressionA2_(e2.root()), f_(f) {
   }
 
   friend class Expression<T> ;
@@ -321,31 +362,29 @@ public:
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
-    std::set<Key> keys1 = expression1_->keys();
-    std::set<Key> keys2 = expression2_->keys();
+    std::set<Key> keys1 = expressionA1_->keys();
+    std::set<Key> keys2 = expressionA2_->keys();
     keys1.insert(keys2.begin(), keys2.end());
     return keys1;
   }
 
-  /// Return value and optional derivatives
-  virtual T value(const Values& values,
-      boost::optional<JacobianMap&> jacobians = boost::none) const {
-    T val;
-    if (jacobians) {
-      JacobianMap terms1, terms2;
-      E1 arg1 = expression1_->value(values, terms1);
-      E2 arg2 = expression2_->value(values, terms2);
-      Matrix H1, H2;
-      val = (arg1.*(f_))(arg2,
-          terms1.empty() ? boost::none : boost::optional<Matrix&>(H1),
-          terms2.empty() ? boost::none : boost::optional<Matrix&>(H2));
-      ExpressionNode<T>::add(H1, terms1, *jacobians);
-      ExpressionNode<T>::add(H2, terms2, *jacobians);
-    } else {
-      val = (expression1_->value(values).*(f_))(expression2_->value(values),
-          boost::none, boost::none);
-    }
-    return val;
+  /// Return value
+  virtual T value(const Values& values) const {
+    using boost::none;
+    return (expressionA1_->value(values).*(f_))(expressionA2_->value(values),
+        none, none);
+  }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const {
+    using boost::none;
+    Augmented<A1> argument1 = expressionA1_->augmented(values);
+    Augmented<A2> argument2 = expressionA2_->augmented(values);
+    Matrix H1, H2;
+    T t = (argument1.value().*(f_))(argument2.value(),
+        argument1.constant() ? none : boost::optional<Matrix&>(H1),
+        argument2.constant() ? none : boost::optional<Matrix&>(H2));
+    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
   }
 
 };

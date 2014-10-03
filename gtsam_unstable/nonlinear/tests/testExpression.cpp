@@ -38,6 +38,30 @@ Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
 
 /* ************************************************************************* */
 
+TEST(Expression, constant) {
+  Expression<Rot3> R(Rot3::identity());
+  Values values;
+  Augmented<Rot3> a = R.augmented(values);
+  EXPECT(assert_equal(Rot3::identity(), a.value()));
+  JacobianMap expected;
+  EXPECT(a.jacobians() == expected);
+}
+
+/* ************************************************************************* */
+
+TEST(Expression, leaf) {
+  Expression<Rot3> R(100);
+  Values values;
+  values.insert(100,Rot3::identity());
+  Augmented<Rot3> a = R.augmented(values);
+  EXPECT(assert_equal(Rot3::identity(), a.value()));
+  JacobianMap expected;
+  expected[100] = eye(3);
+  EXPECT(a.jacobians() == expected);
+}
+
+/* ************************************************************************* */
+
 TEST(Expression, test) {
 
   // Test Constant expression

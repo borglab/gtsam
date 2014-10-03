@@ -83,9 +83,13 @@ public:
   }
 
   /// Return value and optional derivatives
-  T value(const Values& values,
-      boost::optional<std::map<Key, Matrix>&> jacobians = boost::none) const {
-    return root_->value(values, jacobians);
+  T value(const Values& values) const {
+    return root_->value(values);
+  }
+
+  /// Return value and derivatives
+  Augmented<T> augmented(const Values& values) const {
+    return root_->augmented(values);
   }
 
   const boost::shared_ptr<ExpressionNode<T> >& root() const {

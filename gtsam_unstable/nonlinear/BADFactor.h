@@ -52,12 +52,14 @@ public:
       assert(H->size()==size());
       typedef std::map<Key, Matrix> MapType;
       MapType terms;
-      const T& value = expression_.value(x, terms);
-      // move terms to H, which is pre-allocated to correct size
+      Augmented<T> augmented = expression_.augmented(x);
+      // copy terms to H, which is pre-allocated to correct size
+      // TODO apply move semantics
       size_t j = 0;
-      for (MapType::iterator it = terms.begin(); it != terms.end(); ++it)
-        it->second.swap((*H)[j++]);
-      return measurement_.localCoordinates(value);
+      MapType::const_iterator it = augmented.jacobians().begin();
+      for (; it != augmented.jacobians().end(); ++it)
+        (*H)[j++] = it->second;
+      return measurement_.localCoordinates(augmented.value());
     } else {
       const T& value = expression_.value(x);
       return measurement_.localCoordinates(value);
