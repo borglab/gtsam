@@ -16,6 +16,7 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/LieScalar.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -85,6 +86,20 @@ TEST (Point3, normalize) {
   EXPECT(assert_equal(expected, point.normalize(actualH), 1e-8));
   Matrix expectedH = numericalDerivative11<Point3, Point3>(
       boost::bind(&Point3::normalize, _1, boost::none), point);
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+//*************************************************************************
+LieScalar norm_proxy(const Point3& point) {
+  return LieScalar(point.norm());
+}
+
+TEST (Point3, norm) {
+  Matrix actualH;
+  Point3 point(3,4,5); // arbitrary point
+  double expected = sqrt(50);
+  EXPECT_DOUBLES_EQUAL(expected, point.norm(actualH), 1e-8);
+  Matrix expectedH = numericalDerivative11<LieScalar, Point3>(norm_proxy, point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
