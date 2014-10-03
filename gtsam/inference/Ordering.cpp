@@ -22,6 +22,7 @@
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
+#include <gtsam/3rdparty/metis-5.1.0/include/metis.h>
 
 using namespace std;
 
@@ -194,6 +195,12 @@ namespace gtsam {
     }
 
     return Ordering::COLAMDConstrained(variableIndex, cmember);
+  }
+
+  /* ************************************************************************* */
+  Ordering Ordering::METIS(const VariableIndex& variableIndex)
+  {
+      gttic(Ordering_METIS);
   }
 
   /* ************************************************************************* */

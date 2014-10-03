@@ -146,6 +146,14 @@ namespace gtsam {
       return Ordering(keys);
     }
 
+
+    /// Compute an ordering determined by METIS from a VariableIndex
+    static GTSAM_EXPORT Ordering METIS(const VariableIndex& variableIndex);
+
+    template<class FACTOR>
+    static Ordering METIS(const FactorGraph<FACTOR>& graph){
+        return METIS(VariableIndex(graph)); }
+
     /// @}
 
     /// @name Testable @{
