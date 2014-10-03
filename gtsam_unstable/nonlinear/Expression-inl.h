@@ -135,7 +135,7 @@ public:
   virtual T value(const Values& values) const = 0;
 
   /// Return value and derivatives
-  virtual Augmented<T> augmented(const Values& values) const = 0;
+  virtual Augmented<T> forward(const Values& values) const = 0;
 
 };
 
@@ -172,7 +172,7 @@ public:
   }
 
   /// Return value and derivatives
-  virtual Augmented<T> augmented(const Values& values) const {
+  virtual Augmented<T> forward(const Values& values) const {
     T t = value(values);
     return Augmented<T>(t);
   }
@@ -213,7 +213,7 @@ public:
   }
 
   /// Return value and derivatives
-  virtual Augmented<T> augmented(const Values& values) const {
+  virtual Augmented<T> forward(const Values& values) const {
     T t = value(values);
     return Augmented<T>(t, key_);
   }
@@ -258,9 +258,9 @@ public:
   }
 
   /// Return value and derivatives
-  virtual Augmented<T> augmented(const Values& values) const {
+  virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
-    Augmented<A> argument = this->expressionA_->augmented(values);
+    Augmented<A> argument = this->expressionA_->forward(values);
     Matrix H;
     T t = function_(argument.value(),
         argument.constant() ? none : boost::optional<Matrix&>(H));
@@ -317,10 +317,10 @@ public:
   }
 
   /// Return value and derivatives
-  virtual Augmented<T> augmented(const Values& values) const {
+  virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
-    Augmented<A1> argument1 = this->expressionA1_->augmented(values);
-    Augmented<A2> argument2 = this->expressionA2_->augmented(values);
+    Augmented<A1> argument1 = this->expressionA1_->forward(values);
+    Augmented<A2> argument2 = this->expressionA2_->forward(values);
     Matrix H1, H2;
     T t = function_(argument1.value(), argument2.value(),
         argument1.constant() ? none : boost::optional<Matrix&>(H1),

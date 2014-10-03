@@ -103,7 +103,7 @@ public:
 
   /// Return value and derivatives
   Augmented<T> augmented(const Values& values) const {
-    return root_->augmented(values);
+    return root_->forward(values);
   }
 
   const boost::shared_ptr<ExpressionNode<T> >& root() const {
