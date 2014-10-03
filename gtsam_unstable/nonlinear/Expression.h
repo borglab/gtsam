@@ -68,21 +68,21 @@ public:
     root_.reset(new UnaryFunctionExpression<T, E>(f, expression));
   }
 
-  /// Construct a binary expression
-  template<typename E1, typename E2>
-  Expression(typename BinaryExpression<T, E1, E2>::function f,
-      const Expression<E1>& expression1, const Expression<E2>& expression2) {
-    // TODO Assert that root of expressions 1 and 2 are not null.
-    root_.reset(new BinaryExpression<T, E1, E2>(f, expression1, expression2));
-  }
-
-  /// Construct a binary expression, where a method is passed
+  /// Construct a unary method expression
   template<typename E1, typename E2>
   Expression(const Expression<E1>& expression1,
-      typename MethodExpression<T, E1, E2>::method f,
+      typename UnaryMethodExpression<T, E1, E2>::method f,
       const Expression<E2>& expression2) {
     // TODO Assert that root of expressions 1 and 2 are not null.
-    root_.reset(new MethodExpression<T, E1, E2>(expression1, f, expression2));
+    root_.reset(new UnaryMethodExpression<T, E1, E2>(expression1, f, expression2));
+  }
+
+  /// Construct a binary function expression
+  template<typename E1, typename E2>
+  Expression(typename BinaryFunctionExpression<T, E1, E2>::function f,
+      const Expression<E1>& expression1, const Expression<E2>& expression2) {
+    // TODO Assert that root of expressions 1 and 2 are not null.
+    root_.reset(new BinaryFunctionExpression<T, E1, E2>(f, expression1, expression2));
   }
 
   /// Return keys that play in this expression

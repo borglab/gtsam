@@ -335,30 +335,20 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-/// Binary function Expression
+/// Binary Expression
 
 template<class T, class A1, class A2>
 class BinaryExpression: public ExpressionNode<T> {
 
-public:
-
-  typedef boost::function<
-      T(const A1&, const A2&, boost::optional<Matrix&>,
-          boost::optional<Matrix&>)> function;
-
-private:
+protected:
 
   boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
   boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
-  function function_;
 
   /// Constructor with a binary function f, and two input arguments
-  BinaryExpression(function f, //
-      const Expression<A1>& e1, const Expression<A2>& e2) :
-      expressionA1_(e1.root()), expressionA2_(e2.root()), function_(f) {
+  BinaryExpression(const Expression<A1>& e1, const Expression<A2>& e2) :
+      expressionA1_(e1.root()), expressionA2_(e2.root()) {
   }
-
-  friend class Expression<T> ;
 
 public:
 
@@ -374,32 +364,13 @@ public:
     return keys1;
   }
 
-  /// Return value
-  virtual T value(const Values& values) const {
-    using boost::none;
-    return function_(expressionA1_->value(values), expressionA2_->value(values),
-        none, none);
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> augmented(const Values& values) const {
-    using boost::none;
-    Augmented<A1> argument1 = expressionA1_->augmented(values);
-    Augmented<A2> argument2 = expressionA2_->augmented(values);
-    Matrix H1, H2;
-    T t = function_(argument1.value(), argument2.value(),
-        argument1.constant() ? none : boost::optional<Matrix&>(H1),
-        argument2.constant() ? none : boost::optional<Matrix&>(H2));
-    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
-  }
-
 };
 
 //-----------------------------------------------------------------------------
 /// Binary Expression
 
 template<class T, class A1, class A2>
-class MethodExpression: public ExpressionNode<T> {
+class UnaryMethodExpression: public BinaryExpression<T, A1, A2> {
 
 public:
 
@@ -408,13 +379,12 @@ public:
 
 private:
 
-  boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
-  boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
   method method_;
 
   /// Constructor with a binary function f, and two input arguments
-  MethodExpression(const Expression<A1>& e1, method f, const Expression<A2>& e2) :
-      expressionA1_(e1.root()), expressionA2_(e2.root()), method_(f) {
+  UnaryMethodExpression(const Expression<A1>& e1, method f,
+      const Expression<A2>& e2) :
+      BinaryExpression<T, A1, A2>(e1, e2), method_(f) {
   }
 
   friend class Expression<T> ;
@@ -422,29 +392,21 @@ private:
 public:
 
   /// Destructor
-  virtual ~MethodExpression() {
-  }
-
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys1 = expressionA1_->keys();
-    std::set<Key> keys2 = expressionA2_->keys();
-    keys1.insert(keys2.begin(), keys2.end());
-    return keys1;
+  virtual ~UnaryMethodExpression() {
   }
 
   /// Return value
   virtual T value(const Values& values) const {
     using boost::none;
-    return (expressionA1_->value(values).*(method_))(expressionA2_->value(values),
-        none, none);
+    return (this->expressionA1_->value(values).*(method_))(
+        this->expressionA2_->value(values), none, none);
   }
 
   /// Return value and derivatives
   virtual Augmented<T> augmented(const Values& values) const {
     using boost::none;
-    Augmented<A1> argument1 = expressionA1_->augmented(values);
-    Augmented<A2> argument2 = expressionA2_->augmented(values);
+    Augmented<A1> argument1 = this->expressionA1_->augmented(values);
+    Augmented<A2> argument2 = this->expressionA2_->augmented(values);
     Matrix H1, H2;
     T t = (argument1.value().*(method_))(argument2.value(),
         argument1.constant() ? none : boost::optional<Matrix&>(H1),
@@ -453,6 +415,58 @@ public:
   }
 
 };
+
+//-----------------------------------------------------------------------------
+/// Binary function Expression
+
+template<class T, class A1, class A2>
+class BinaryFunctionExpression: public BinaryExpression<T, A1, A2> {
+
+public:
+
+  typedef boost::function<
+      T(const A1&, const A2&, boost::optional<Matrix&>,
+          boost::optional<Matrix&>)> function;
+
+private:
+
+  function function_;
+
+  /// Constructor with a binary function f, and two input arguments
+  BinaryFunctionExpression(function f, //
+      const Expression<A1>& e1, const Expression<A2>& e2) :
+      BinaryExpression<T, A1, A2>(e1, e2), function_(f) {
+  }
+
+  friend class Expression<T> ;
+
+public:
+
+  /// Destructor
+  virtual ~BinaryFunctionExpression() {
+  }
+
+  /// Return value
+  virtual T value(const Values& values) const {
+    using boost::none;
+    return function_(this->expressionA1_->value(values),
+        this->expressionA2_->value(values), none, none);
+  }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const {
+    using boost::none;
+    Augmented<A1> argument1 = this->expressionA1_->augmented(values);
+    Augmented<A2> argument2 = this->expressionA2_->augmented(values);
+    Matrix H1, H2;
+    T t = function_(argument1.value(), argument2.value(),
+        argument1.constant() ? none : boost::optional<Matrix&>(H1),
+        argument2.constant() ? none : boost::optional<Matrix&>(H2));
+    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
+  }
+
+};
+//-----------------------------------------------------------------------------
 
 }
 
