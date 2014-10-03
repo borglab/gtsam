@@ -30,6 +30,12 @@ namespace gtsam {
  */
 template<typename T>
 class Expression {
+
+private:
+
+  // Paul's trick shared pointer, polymorphic root of entire expression tree
+  boost::shared_ptr<ExpressionNode<T> > root_;
+
 public:
 
   // Construct a constant expression
@@ -53,36 +59,36 @@ public:
   }
 
   /// Construct a nullary method expression
-  template<typename E>
-  Expression(const Expression<E>& expression,
-      typename NullaryMethodExpression<T, E>::Method f) {
-    // TODO Assert that root of expression is not null.
-    root_.reset(new NullaryMethodExpression<T, E>(expression, f));
+  template<typename A>
+  Expression(const Expression<A>& expression,
+      T (A::*method)(boost::optional<Matrix&>) const) {
+    root_.reset(
+        new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression));
   }
 
   /// Construct a unary function expression
-  template<typename E>
-  Expression(typename UnaryFunctionExpression<T, E>::Function f,
-      const Expression<E>& expression) {
-    // TODO Assert that root of expression is not null.
-    root_.reset(new UnaryFunctionExpression<T, E>(f, expression));
+  template<typename A>
+  Expression(typename UnaryExpression<T, A>::Function function,
+      const Expression<A>& expression) {
+    root_.reset(new UnaryExpression<T, A>(function, expression));
   }
 
   /// Construct a unary method expression
-  template<typename E1, typename E2>
-  Expression(const Expression<E1>& expression1,
-      typename UnaryMethodExpression<T, E1, E2>::Method f,
-      const Expression<E2>& expression2) {
-    // TODO Assert that root of expressions 1 and 2 are not null.
-    root_.reset(new UnaryMethodExpression<T, E1, E2>(expression1, f, expression2));
+  template<typename A1, typename A2>
+  Expression(const Expression<A1>& expression1,
+      T (A1::*method)(const A2&, boost::optional<Matrix&>,
+          boost::optional<Matrix&>) const, const Expression<A2>& expression2) {
+    root_.reset(
+        new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
+            expression1, expression2));
   }
 
   /// Construct a binary function expression
-  template<typename E1, typename E2>
-  Expression(typename BinaryFunctionExpression<T, E1, E2>::Function f,
-      const Expression<E1>& expression1, const Expression<E2>& expression2) {
-    // TODO Assert that root of expressions 1 and 2 are not null.
-    root_.reset(new BinaryFunctionExpression<T, E1, E2>(f, expression1, expression2));
+  template<typename A1, typename A2>
+  Expression(typename BinaryExpression<T, A1, A2>::Function function,
+      const Expression<A1>& expression1, const Expression<A2>& expression2) {
+    root_.reset(
+        new BinaryExpression<T, A1, A2>(function, expression1, expression2));
   }
 
   /// Return keys that play in this expression
@@ -103,8 +109,7 @@ public:
   const boost::shared_ptr<ExpressionNode<T> >& root() const {
     return root_;
   }
-private:
-  boost::shared_ptr<ExpressionNode<T> > root_;
+
 };
 
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
