@@ -254,14 +254,14 @@ class NullaryMethodExpression: public UnaryExpression<T, A> {
 
 public:
 
-  typedef T (A::*method)(boost::optional<Matrix&>) const;
+  typedef T (A::*Method)(boost::optional<Matrix&>) const;
 
 private:
 
-  method method_;
+  Method method_;
 
   /// Constructor with a unary function f, and input argument e
-  NullaryMethodExpression(const Expression<A>& e, method f) :
+  NullaryMethodExpression(const Expression<A>& e, Method f) :
       UnaryExpression<T, A>(e), method_(f) {
   }
 
@@ -298,14 +298,14 @@ class UnaryFunctionExpression: public UnaryExpression<T, A> {
 
 public:
 
-  typedef boost::function<T(const A&, boost::optional<Matrix&>)> function;
+  typedef boost::function<T(const A&, boost::optional<Matrix&>)> Function;
 
 private:
 
-  function function_;
+  Function function_;
 
   /// Constructor with a unary function f, and input argument e
-  UnaryFunctionExpression(function f, const Expression<A>& e) :
+  UnaryFunctionExpression(Function f, const Expression<A>& e) :
       UnaryExpression<T, A>(e), function_(f) {
   }
 
@@ -374,15 +374,15 @@ class UnaryMethodExpression: public BinaryExpression<T, A1, A2> {
 
 public:
 
-  typedef T (A1::*method)(const A2&, boost::optional<Matrix&>,
+  typedef T (A1::*Method)(const A2&, boost::optional<Matrix&>,
       boost::optional<Matrix&>) const;
 
 private:
 
-  method method_;
+  Method method_;
 
   /// Constructor with a binary function f, and two input arguments
-  UnaryMethodExpression(const Expression<A1>& e1, method f,
+  UnaryMethodExpression(const Expression<A1>& e1, Method f,
       const Expression<A2>& e2) :
       BinaryExpression<T, A1, A2>(e1, e2), method_(f) {
   }
@@ -426,14 +426,14 @@ public:
 
   typedef boost::function<
       T(const A1&, const A2&, boost::optional<Matrix&>,
-          boost::optional<Matrix&>)> function;
+          boost::optional<Matrix&>)> Function;
 
 private:
 
-  function function_;
+  Function function_;
 
   /// Constructor with a binary function f, and two input arguments
-  BinaryFunctionExpression(function f, //
+  BinaryFunctionExpression(Function f, //
       const Expression<A1>& e1, const Expression<A2>& e2) :
       BinaryExpression<T, A1, A2>(e1, e2), function_(f) {
   }

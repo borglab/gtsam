@@ -55,14 +55,14 @@ public:
   /// Construct a nullary method expression
   template<typename E>
   Expression(const Expression<E>& expression,
-      typename NullaryMethodExpression<T, E>::method f) {
+      typename NullaryMethodExpression<T, E>::Method f) {
     // TODO Assert that root of expression is not null.
     root_.reset(new NullaryMethodExpression<T, E>(expression, f));
   }
 
   /// Construct a unary function expression
   template<typename E>
-  Expression(typename UnaryFunctionExpression<T, E>::function f,
+  Expression(typename UnaryFunctionExpression<T, E>::Function f,
       const Expression<E>& expression) {
     // TODO Assert that root of expression is not null.
     root_.reset(new UnaryFunctionExpression<T, E>(f, expression));
@@ -71,7 +71,7 @@ public:
   /// Construct a unary method expression
   template<typename E1, typename E2>
   Expression(const Expression<E1>& expression1,
-      typename UnaryMethodExpression<T, E1, E2>::method f,
+      typename UnaryMethodExpression<T, E1, E2>::Method f,
       const Expression<E2>& expression2) {
     // TODO Assert that root of expressions 1 and 2 are not null.
     root_.reset(new UnaryMethodExpression<T, E1, E2>(expression1, f, expression2));
@@ -79,7 +79,7 @@ public:
 
   /// Construct a binary function expression
   template<typename E1, typename E2>
-  Expression(typename BinaryFunctionExpression<T, E1, E2>::function f,
+  Expression(typename BinaryFunctionExpression<T, E1, E2>::Function f,
       const Expression<E1>& expression1, const Expression<E2>& expression2) {
     // TODO Assert that root of expressions 1 and 2 are not null.
     root_.reset(new BinaryFunctionExpression<T, E1, E2>(f, expression1, expression2));
