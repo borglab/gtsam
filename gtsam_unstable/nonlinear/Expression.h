@@ -52,12 +52,20 @@ public:
       root_(new LeafExpression<T>(Symbol(c, j))) {
   }
 
-  /// Construct a unary expression
+  /// Construct a nullary method expression
   template<typename E>
-  Expression(typename UnaryExpression<T, E>::function f,
+  Expression(const Expression<E>& expression,
+      typename NullaryMethodExpression<T, E>::method f) {
+    // TODO Assert that root of expression is not null.
+    root_.reset(new NullaryMethodExpression<T, E>(expression, f));
+  }
+
+  /// Construct a unary function expression
+  template<typename E>
+  Expression(typename UnaryFunctionExpression<T, E>::function f,
       const Expression<E>& expression) {
     // TODO Assert that root of expression is not null.
-    root_.reset(new UnaryExpression<T, E>(f, expression));
+    root_.reset(new UnaryFunctionExpression<T, E>(f, expression));
   }
 
   /// Construct a binary expression

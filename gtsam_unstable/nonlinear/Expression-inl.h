@@ -225,21 +225,14 @@ public:
 template<class T, class A>
 class UnaryExpression: public ExpressionNode<T> {
 
-public:
-
-  typedef boost::function<T(const A&, boost::optional<Matrix&>)> function;
-
-private:
+protected:
 
   boost::shared_ptr<ExpressionNode<A> > expressionA_;
-  function f_;
 
-  /// Constructor with a unary function f, and input argument e
-  UnaryExpression(function f, const Expression<A>& e) :
-      expressionA_(e.root()), f_(f) {
+  /// Constructor with one input argument expression
+  UnaryExpression(const Expression<A>& e) :
+      expressionA_(e.root()) {
   }
-
-  friend class Expression<T> ;
 
 public:
 
@@ -252,17 +245,46 @@ public:
     return expressionA_->keys();
   }
 
+};
+
+//-----------------------------------------------------------------------------
+/// Nullary Method Expression
+template<class T, class A>
+class NullaryMethodExpression: public UnaryExpression<T, A> {
+
+public:
+
+  typedef T (A::*method)(boost::optional<Matrix&>) const;
+
+private:
+
+  method method_;
+
+  /// Constructor with a unary function f, and input argument e
+  NullaryMethodExpression(const Expression<A>& e, method f) :
+      UnaryExpression<T, A>(e), method_(f) {
+  }
+
+  friend class Expression<T> ;
+
+public:
+
+  /// Destructor
+  virtual ~NullaryMethodExpression() {
+  }
+
   /// Return value
   virtual T value(const Values& values) const {
-    return f_(expressionA_->value(values), boost::none);
+    using boost::none;
+    return (this->expressionA_->value(values).*(method_))(none);
   }
 
   /// Return value and derivatives
   virtual Augmented<T> augmented(const Values& values) const {
     using boost::none;
-    Augmented<A> argument = expressionA_->augmented(values);
+    Augmented<A> argument = this->expressionA_->augmented(values);
     Matrix H;
-    T t = f_(argument.value(),
+    T t = (argument.value().*(method_))(
         argument.constant() ? none : boost::optional<Matrix&>(H));
     return Augmented<T>(t, H, argument.jacobians());
   }
@@ -270,7 +292,50 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-/// Binary Expression
+/// Unary Function Expression
+template<class T, class A>
+class UnaryFunctionExpression: public UnaryExpression<T, A> {
+
+public:
+
+  typedef boost::function<T(const A&, boost::optional<Matrix&>)> function;
+
+private:
+
+  function function_;
+
+  /// Constructor with a unary function f, and input argument e
+  UnaryFunctionExpression(function f, const Expression<A>& e) :
+      UnaryExpression<T, A>(e), function_(f) {
+  }
+
+  friend class Expression<T> ;
+
+public:
+
+  /// Destructor
+  virtual ~UnaryFunctionExpression() {
+  }
+
+  /// Return value
+  virtual T value(const Values& values) const {
+    return function_(this->expressionA_->value(values), boost::none);
+  }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const {
+    using boost::none;
+    Augmented<A> argument = this->expressionA_->augmented(values);
+    Matrix H;
+    T t = function_(argument.value(),
+        argument.constant() ? none : boost::optional<Matrix&>(H));
+    return Augmented<T>(t, H, argument.jacobians());
+  }
+
+};
+
+//-----------------------------------------------------------------------------
+/// Binary function Expression
 
 template<class T, class A1, class A2>
 class BinaryExpression: public ExpressionNode<T> {
@@ -285,12 +350,12 @@ private:
 
   boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
   boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
-  function f_;
+  function function_;
 
   /// Constructor with a binary function f, and two input arguments
   BinaryExpression(function f, //
       const Expression<A1>& e1, const Expression<A2>& e2) :
-      expressionA1_(e1.root()), expressionA2_(e2.root()), f_(f) {
+      expressionA1_(e1.root()), expressionA2_(e2.root()), function_(f) {
   }
 
   friend class Expression<T> ;
@@ -312,8 +377,8 @@ public:
   /// Return value
   virtual T value(const Values& values) const {
     using boost::none;
-    return f_(expressionA1_->value(values), expressionA2_->value(values), none,
-        none);
+    return function_(expressionA1_->value(values), expressionA2_->value(values),
+        none, none);
   }
 
   /// Return value and derivatives
@@ -322,7 +387,7 @@ public:
     Augmented<A1> argument1 = expressionA1_->augmented(values);
     Augmented<A2> argument2 = expressionA2_->augmented(values);
     Matrix H1, H2;
-    T t = f_(argument1.value(), argument2.value(),
+    T t = function_(argument1.value(), argument2.value(),
         argument1.constant() ? none : boost::optional<Matrix&>(H1),
         argument2.constant() ? none : boost::optional<Matrix&>(H2));
     return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
@@ -345,11 +410,11 @@ private:
 
   boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
   boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
-  method f_;
+  method method_;
 
   /// Constructor with a binary function f, and two input arguments
   MethodExpression(const Expression<A1>& e1, method f, const Expression<A2>& e2) :
-      expressionA1_(e1.root()), expressionA2_(e2.root()), f_(f) {
+      expressionA1_(e1.root()), expressionA2_(e2.root()), method_(f) {
   }
 
   friend class Expression<T> ;
@@ -371,7 +436,7 @@ public:
   /// Return value
   virtual T value(const Values& values) const {
     using boost::none;
-    return (expressionA1_->value(values).*(f_))(expressionA2_->value(values),
+    return (expressionA1_->value(values).*(method_))(expressionA2_->value(values),
         none, none);
   }
 
@@ -381,7 +446,7 @@ public:
     Augmented<A1> argument1 = expressionA1_->augmented(values);
     Augmented<A2> argument2 = expressionA2_->augmented(values);
     Matrix H1, H2;
-    T t = (argument1.value().*(f_))(argument2.value(),
+    T t = (argument1.value().*(method_))(argument2.value(),
         argument1.constant() ? none : boost::optional<Matrix&>(H1),
         argument2.constant() ? none : boost::optional<Matrix&>(H2));
     return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
