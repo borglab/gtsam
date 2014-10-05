@@ -21,7 +21,6 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 
 namespace gtsam {
@@ -232,8 +231,6 @@ public:
   virtual boost::shared_ptr<BaseTrace> reverse(const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->t = constant_;
-    std::cout << "constant\n:";
-    GTSAM_PRINT(trace->t);
     return trace;
   }
 };
@@ -284,7 +281,6 @@ public:
     /// Return value and derivatives
     virtual Augmented<T> augmented(const Matrix& H) const {
       // Base case: just insert H in the JacobianMap with correct key
-      std::cout << "Inserting Jacobian " << DefaultKeyFormatter(key) << "\n";
       return Augmented<T>(this->t, key, H);
     }
   };
@@ -294,8 +290,6 @@ public:
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->t = value(values);
     trace->key = key_;
-    std::cout << "Leaf(" << DefaultKeyFormatter(key_) << "):\n";
-    GTSAM_PRINT(trace->t);
     return trace;
   }
 
@@ -367,10 +361,7 @@ public:
   virtual boost::shared_ptr<BaseTrace> reverse(const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->trace1 = this->expressionA_->reverse(values);
-    std::cout << "Unary:\n";
-    GTSAM_PRINT(trace->trace1->value());
     trace->t = function_(trace->trace1->value(), trace->H1);
-    GTSAM_PRINT(trace->t);
     return trace;
   }
 };
@@ -458,12 +449,8 @@ public:
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->trace1 = this->expressionA1_->reverse(values);
     trace->trace2 = this->expressionA2_->reverse(values);
-    std::cout << "Binary:\n";
-    GTSAM_PRINT(trace->trace1->value());
-    GTSAM_PRINT(trace->trace2->value());
     trace->t = function_(trace->trace1->value(), trace->trace2->value(),
         trace->H1, trace->H2);
-    GTSAM_PRINT(trace->t);
     return trace;
   }
 
