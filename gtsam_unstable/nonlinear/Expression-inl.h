@@ -147,7 +147,7 @@ struct JacobianTrace {
   T value() const {
     return t;
   }
-  virtual void update(const Matrix& H, JacobianMap& jacobians) const = 0;
+  virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const = 0;
 
 //  /// Insert terms into jacobians_, adding if already exists
 //  static void add(const JacobianMap& terms) {
@@ -193,7 +193,7 @@ public:
   virtual Augmented<T> forward(const Values& values) const = 0;
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > reverse(
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
       const Values& values) const = 0;
 };
 
@@ -237,13 +237,13 @@ public:
   /// Trace structure for reverse AD
   struct Trace: public JacobianTrace<T> {
     /// Return value and derivatives
-    virtual void update(const Matrix& H, JacobianMap& jacobians) const {
+    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
       // Base case: don't touch jacobians
     }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > reverse(
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
       const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->t = constant_;
@@ -294,14 +294,14 @@ public:
   struct Trace: public JacobianTrace<T> {
     Key key;
     /// Return value and derivatives
-    virtual void update(const Matrix& H, JacobianMap& jacobians) const {
+    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
       // Base case: just insert a new H in the JacobianMap with correct key
       jacobians.add(key, H);
     }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > reverse(
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
       const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->t = value(values);
@@ -363,19 +363,19 @@ public:
     boost::shared_ptr<JacobianTrace<A> > trace1;
     Matrix H1;
     /// Return value and derivatives
-    virtual void update(const Matrix& H, JacobianMap& jacobians) const {
+    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
       // This is a top-down calculation
       // The end-result needs Jacobians to all leaf nodes.
       // Since this is not a leaf node, we compute what is needed for leaf nodes here
-      trace1->update(H * H1, jacobians);
+      trace1->reverseAD(H * H1, jacobians);
     }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > reverse(
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
       const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
-    trace->trace1 = this->expressionA_->reverse(values);
+    trace->trace1 = this->expressionA_->traceExecution(values);
     trace->t = function_(trace->trace1->value(), trace->H1);
     return trace;
   }
@@ -446,22 +446,22 @@ public:
     boost::shared_ptr<JacobianTrace<A2> > trace2;
     Matrix H1, H2;
     /// Return value and derivatives
-    virtual void update(const Matrix& H, JacobianMap& jacobians) const {
+    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
       // This is a top-down calculation
       // The end-result needs Jacobians to all leaf nodes.
       // Since this is not a leaf node, we compute what is needed for leaf nodes here
       // The binary node represents a fork in the tree, and hence we will get two Augmented maps
-      trace1->update(H * H1, jacobians);
-      trace2->update(H * H2, jacobians);
+      trace1->reverseAD(H * H1, jacobians);
+      trace2->reverseAD(H * H2, jacobians);
     }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > reverse(
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
       const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
-    trace->trace1 = this->expressionA1_->reverse(values);
-    trace->trace2 = this->expressionA2_->reverse(values);
+    trace->trace1 = this->expressionA1_->traceExecution(values);
+    trace->trace2 = this->expressionA2_->traceExecution(values);
     trace->t = function_(trace->trace1->value(), trace->trace2->value(),
         trace->H1, trace->H2);
     return trace;
