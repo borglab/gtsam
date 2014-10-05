@@ -28,7 +28,16 @@ namespace gtsam {
 template<typename T>
 class Expression;
 
-typedef std::map<Key, Matrix> JacobianMap;
+class JacobianMap: public std::map<Key, Matrix> {
+public:
+  void add(Key key, const Matrix& H) {
+    iterator it = find(key);
+    if (it != end())
+      it->second += H;
+    else
+      insert(std::make_pair(key, H));
+  }
+};
 
 //-----------------------------------------------------------------------------
 /**
@@ -45,14 +54,15 @@ private:
   typedef std::pair<Key, Matrix> Pair;
 
   /// Insert terms into jacobians_, premultiplying by H, adding if already exists
+  void add(const JacobianMap& terms) {
+    BOOST_FOREACH(const Pair& term, terms)
+      jacobians_.add(term.first, term.second);
+  }
+
+  /// Insert terms into jacobians_, premultiplying by H, adding if already exists
   void add(const Matrix& H, const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      JacobianMap::iterator it = jacobians_.find(term.first);
-      if (it != jacobians_.end())
-        it->second += H * term.second;
-      else
-        jacobians_[term.first] = H * term.second;
-    }
+    BOOST_FOREACH(const Pair& term, terms)
+      jacobians_.add(term.first, H * term.second);
   }
 
 public:
@@ -69,10 +79,28 @@ public:
     jacobians_[key] = Eigen::MatrixXd::Identity(n, n);
   }
 
+  /// Construct value dependent on a single key, with Jacobain H
+  Augmented(const T& t, Key key, const Matrix& H) :
+      value_(t) {
+    jacobians_[key] = H;
+  }
+
+  /// Construct from value and JacobianMap
+  Augmented(const T& t, const JacobianMap& jacobians) :
+      value_(t), jacobians_(jacobians) {
+  }
+
   /// Construct value, pre-multiply jacobians by H
   Augmented(const T& t, const Matrix& H, const JacobianMap& jacobians) :
       value_(t) {
     add(H, jacobians);
+  }
+
+  /// Construct from value and two disjoint JacobianMaps
+  Augmented(const T& t, const JacobianMap& jacobians1,
+      const JacobianMap& jacobians2) :
+      value_(t), jacobians_(jacobians1) {
+    add(jacobians2);
   }
 
   /// Construct value, pre-multiply jacobians by H
@@ -93,6 +121,11 @@ public:
     return jacobians_;
   }
 
+  /// Return jacobians
+  JacobianMap& jacobians() {
+    return jacobians_;
+  }
+
   /// Not dependent on any key
   bool constant() const {
     return jacobians_.empty();
@@ -105,6 +138,28 @@ public:
           << "x" << term.second.cols() << ") ";
     std::cout << std::endl;
   }
+};
+
+//-----------------------------------------------------------------------------
+template<class T>
+struct JacobianTrace {
+  T t;
+  T value() const {
+    return t;
+  }
+  virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const = 0;
+
+//  /// Insert terms into jacobians_, adding if already exists
+//  static void add(const JacobianMap& terms) {
+//    typedef std::pair<Key, Matrix> Pair;
+//    BOOST_FOREACH(const Pair& term, terms) {
+//      JacobianMap::iterator it = jacobians_.find(term.first);
+//      if (it != jacobians_.end())
+//        it->second += term.second;
+//      else
+//        jacobians_[term.first] = term.second;
+//    }
+//  }
 };
 
 //-----------------------------------------------------------------------------
@@ -137,6 +192,9 @@ public:
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const = 0;
 
+  /// Construct an execution trace for reverse AD
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
+      const Values& values) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -173,10 +231,24 @@ public:
 
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const {
-    T t = value(values);
-    return Augmented<T>(t);
+    return Augmented<T>(constant_);
   }
 
+  /// Trace structure for reverse AD
+  struct Trace: public JacobianTrace<T> {
+    /// Return value and derivatives
+    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
+      // Base case: don't touch jacobians
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
+      const Values& values) const {
+    boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
+    trace->t = constant_;
+    return trace;
+  }
 };
 
 //-----------------------------------------------------------------------------
@@ -216,6 +288,25 @@ public:
   virtual Augmented<T> forward(const Values& values) const {
     T t = value(values);
     return Augmented<T>(t, key_);
+  }
+
+  /// Trace structure for reverse AD
+  struct Trace: public JacobianTrace<T> {
+    Key key;
+    /// Return value and derivatives
+    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
+      // Base case: just insert a new H in the JacobianMap with correct key
+      jacobians.add(key, H);
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
+      const Values& values) const {
+    boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
+    trace->t = value(values);
+    trace->key = key_;
+    return trace;
   }
 
 };
@@ -267,6 +358,27 @@ public:
     return Augmented<T>(t, H, argument.jacobians());
   }
 
+  /// Trace structure for reverse AD
+  struct Trace: public JacobianTrace<T> {
+    boost::shared_ptr<JacobianTrace<A> > trace1;
+    Matrix H1;
+    /// Return value and derivatives
+    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
+      // This is a top-down calculation
+      // The end-result needs Jacobians to all leaf nodes.
+      // Since this is not a leaf node, we compute what is needed for leaf nodes here
+      trace1->reverseAD(H * H1, jacobians);
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
+      const Values& values) const {
+    boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
+    trace->trace1 = this->expressionA_->traceExecution(values);
+    trace->t = function_(trace->trace1->value(), trace->H1);
+    return trace;
+  }
 };
 
 //-----------------------------------------------------------------------------
@@ -328,7 +440,35 @@ public:
     return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
   }
 
-};
+  /// Trace structure for reverse AD
+  struct Trace: public JacobianTrace<T> {
+    boost::shared_ptr<JacobianTrace<A1> > trace1;
+    boost::shared_ptr<JacobianTrace<A2> > trace2;
+    Matrix H1, H2;
+    /// Return value and derivatives
+    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
+      // This is a top-down calculation
+      // The end-result needs Jacobians to all leaf nodes.
+      // Since this is not a leaf node, we compute what is needed for leaf nodes here
+      // The binary node represents a fork in the tree, and hence we will get two Augmented maps
+      trace1->reverseAD(H * H1, jacobians);
+      trace2->reverseAD(H * H2, jacobians);
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
+      const Values& values) const {
+    boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
+    trace->trace1 = this->expressionA1_->traceExecution(values);
+    trace->trace2 = this->expressionA2_->traceExecution(values);
+    trace->t = function_(trace->trace1->value(), trace->trace2->value(),
+        trace->H1, trace->H2);
+    return trace;
+  }
+
+}
+;
 //-----------------------------------------------------------------------------
 
 }
