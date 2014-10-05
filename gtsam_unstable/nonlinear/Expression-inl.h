@@ -85,22 +85,10 @@ public:
     jacobians_[key] = H;
   }
 
-  /// Construct from value and JacobianMap
-  Augmented(const T& t, const JacobianMap& jacobians) :
-      value_(t), jacobians_(jacobians) {
-  }
-
   /// Construct value, pre-multiply jacobians by H
   Augmented(const T& t, const Matrix& H, const JacobianMap& jacobians) :
       value_(t) {
     add(H, jacobians);
-  }
-
-  /// Construct from value and two disjoint JacobianMaps
-  Augmented(const T& t, const JacobianMap& jacobians1,
-      const JacobianMap& jacobians2) :
-      value_(t), jacobians_(jacobians1) {
-    add(jacobians2);
   }
 
   /// Construct value, pre-multiply jacobians by H
@@ -148,18 +136,6 @@ struct JacobianTrace {
     return t;
   }
   virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const = 0;
-
-//  /// Insert terms into jacobians_, adding if already exists
-//  static void add(const JacobianMap& terms) {
-//    typedef std::pair<Key, Matrix> Pair;
-//    BOOST_FOREACH(const Pair& term, terms) {
-//      JacobianMap::iterator it = jacobians_.find(term.first);
-//      if (it != jacobians_.end())
-//        it->second += term.second;
-//      else
-//        jacobians_[term.first] = term.second;
-//    }
-//  }
 };
 
 //-----------------------------------------------------------------------------
@@ -467,8 +443,8 @@ public:
     return trace;
   }
 
-}
-;
+};
+
 //-----------------------------------------------------------------------------
 
 }
