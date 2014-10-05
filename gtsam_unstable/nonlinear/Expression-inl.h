@@ -520,17 +520,17 @@ public:
   }
 
   /// Return value and derivatives
-  virtual Augmented<T> augmented(const Values& values) const {
+  virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
-    Augmented<A1> argument1 = this->expressionA1_->augmented(values);
-    Augmented<A2> argument2 = this->expressionA2_->augmented(values);
-    Augmented<A2> argument3 = this->expressionA3_->augmented(values);
+    Augmented<A1> argument1 = this->expressionA1_->forward(values);
+    Augmented<A2> argument2 = this->expressionA2_->forward(values);
+    Augmented<A3> argument3 = this->expressionA3_->forward(values);
     Matrix H1, H2, H3;
     T t = function_(argument1.value(), argument2.value(), argument3.value(),
         argument1.constant() ? none : boost::optional<Matrix&>(H1),
         argument2.constant() ? none : boost::optional<Matrix&>(H2),
         argument3.constant() ? none : boost::optional<Matrix&>(H3));
-    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
+    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians(), H3, argument3.jacobians());
   }
 
 };
