@@ -69,6 +69,12 @@ public:
     jacobians_[key] = Eigen::MatrixXd::Identity(n, n);
   }
 
+  /// Construct value dependent on a single key, with Jacobain H
+  Augmented(const T& t, Key key, const Matrix& H) :
+      value_(t) {
+    jacobians_[key] = H;
+  }
+
   /// Construct from value and JacobianMap
   Augmented(const T& t, const JacobianMap& jacobians) :
       value_(t), jacobians_(jacobians) {
@@ -243,6 +249,28 @@ public:
   virtual Augmented<T> forward(const Values& values) const {
     T t = value(values);
     return Augmented<T>(t, key_);
+  }
+
+  /// Trace structure for reverse AD
+  typedef typename ExpressionNode<T>::Trace BaseTrace;
+  struct Trace: public BaseTrace {
+    T t;
+    Key key;
+    /// Return value and derivatives
+    virtual Augmented<T> augmented(const Matrix& H) const {
+      // This is a top-down calculation
+      // The end-result needs Jacobians to all leaf nodes.
+      // Since this is a leaf node, we are done and just insert H in the JacobianMap
+      return Augmented<T>(t, key, H);
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  virtual boost::shared_ptr<BaseTrace> reverse(const Values& values) const {
+    boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
+    trace->t = value(values);
+    trace->key = key_;
+    return trace;
   }
 
 };
