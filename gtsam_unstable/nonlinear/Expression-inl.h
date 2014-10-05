@@ -21,6 +21,7 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 
 namespace gtsam {
@@ -43,6 +44,17 @@ private:
   JacobianMap jacobians_;
 
   typedef std::pair<Key, Matrix> Pair;
+
+  /// Insert terms into jacobians_, premultiplying by H, adding if already exists
+  void add(const JacobianMap& terms) {
+    BOOST_FOREACH(const Pair& term, terms) {
+      JacobianMap::iterator it = jacobians_.find(term.first);
+      if (it != jacobians_.end())
+        it->second += term.second;
+      else
+        jacobians_[term.first] = term.second;
+    }
+  }
 
   /// Insert terms into jacobians_, premultiplying by H, adding if already exists
   void add(const Matrix& H, const JacobianMap& terms) {
@@ -90,7 +102,7 @@ public:
   Augmented(const T& t, const JacobianMap& jacobians1,
       const JacobianMap& jacobians2) :
       value_(t), jacobians_(jacobians1) {
-    jacobians_.insert(jacobians2.begin(), jacobians2.end());
+    add(jacobians2);
   }
 
   /// Construct value, pre-multiply jacobians by H
@@ -143,8 +155,9 @@ protected:
 public:
 
   struct Trace {
+    T t;
     T value() const {
-      return T();
+      return t;
     }
     virtual Augmented<T> augmented(const Matrix& H) const = 0;
   };
@@ -208,11 +221,10 @@ public:
   /// Trace structure for reverse AD
   typedef typename ExpressionNode<T>::Trace BaseTrace;
   struct Trace: public BaseTrace {
-    T t;
     /// Return value and derivatives
     virtual Augmented<T> augmented(const Matrix& H) const {
       // Base case: just return value and empty map
-      return Augmented<T>(t);
+      return Augmented<T>(this->t);
     }
   };
 
@@ -220,6 +232,8 @@ public:
   virtual boost::shared_ptr<BaseTrace> reverse(const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->t = constant_;
+    std::cout << "constant\n:";
+    GTSAM_PRINT(trace->t);
     return trace;
   }
 };
@@ -266,14 +280,12 @@ public:
   /// Trace structure for reverse AD
   typedef typename ExpressionNode<T>::Trace BaseTrace;
   struct Trace: public BaseTrace {
-    T t;
     Key key;
     /// Return value and derivatives
     virtual Augmented<T> augmented(const Matrix& H) const {
-      // This is a top-down calculation
-      // The end-result needs Jacobians to all leaf nodes.
-      // Since this is a leaf node, we are done and just insert H in the JacobianMap
-      return Augmented<T>(t, key, H);
+      // Base case: just insert H in the JacobianMap with correct key
+      std::cout << "Inserting Jacobian " << DefaultKeyFormatter(key) << "\n";
+      return Augmented<T>(this->t, key, H);
     }
   };
 
@@ -282,6 +294,8 @@ public:
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->t = value(values);
     trace->key = key_;
+    std::cout << "Leaf(" << DefaultKeyFormatter(key_) << "):\n";
+    GTSAM_PRINT(trace->t);
     return trace;
   }
 
@@ -339,14 +353,13 @@ public:
   struct Trace: public BaseTrace {
     boost::shared_ptr<typename ExpressionNode<A>::Trace> trace1;
     Matrix H1;
-    T t;
     /// Return value and derivatives
     virtual Augmented<T> augmented(const Matrix& H) const {
       // This is a top-down calculation
       // The end-result needs Jacobians to all leaf nodes.
       // Since this is not a leaf node, we compute what is needed for leaf nodes here
       Augmented<A> augmented1 = trace1->augmented(H * H1);
-      return Augmented<T>(t, augmented1.jacobians());
+      return Augmented<T>(this->t, augmented1.jacobians());
     }
   };
 
@@ -354,7 +367,10 @@ public:
   virtual boost::shared_ptr<BaseTrace> reverse(const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->trace1 = this->expressionA_->reverse(values);
+    std::cout << "Unary:\n";
+    GTSAM_PRINT(trace->trace1->value());
     trace->t = function_(trace->trace1->value(), trace->H1);
+    GTSAM_PRINT(trace->t);
     return trace;
   }
 };
@@ -424,7 +440,6 @@ public:
     boost::shared_ptr<typename ExpressionNode<A1>::Trace> trace1;
     boost::shared_ptr<typename ExpressionNode<A2>::Trace> trace2;
     Matrix H1, H2;
-    T t;
     /// Return value and derivatives
     virtual Augmented<T> augmented(const Matrix& H) const {
       // This is a top-down calculation
@@ -432,8 +447,9 @@ public:
       // Since this is not a leaf node, we compute what is needed for leaf nodes here
       // The binary node represents a fork in the tree, and hence we will get two Augmented maps
       Augmented<A1> augmented1 = trace1->augmented(H * H1);
-      Augmented<A1> augmented2 = trace1->augmented(H * H2);
-      return Augmented<T>(t, augmented1.jacobians(), augmented2.jacobians());
+      Augmented<A2> augmented2 = trace2->augmented(H * H2);
+      return Augmented<T>(this->t, augmented1.jacobians(),
+          augmented2.jacobians());
     }
   };
 
@@ -442,8 +458,12 @@ public:
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->trace1 = this->expressionA1_->reverse(values);
     trace->trace2 = this->expressionA2_->reverse(values);
+    std::cout << "Binary:\n";
+    GTSAM_PRINT(trace->trace1->value());
+    GTSAM_PRINT(trace->trace2->value());
     trace->t = function_(trace->trace1->value(), trace->trace2->value(),
         trace->H1, trace->H2);
+    GTSAM_PRINT(trace->t);
     return trace;
   }
 

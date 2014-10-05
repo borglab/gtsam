@@ -103,10 +103,14 @@ public:
 
   /// Return value and derivatives
   Augmented<T> augmented(const Values& values) const {
+#define REVERSE_AD
+#ifdef REVERSE_AD
     boost::shared_ptr<typename ExpressionNode<T>::Trace> trace = root_->reverse(values);
     size_t n = T::Dim();
     return trace->augmented(Eigen::MatrixXd::Identity(n, n));
-//    return root_->forward(values);
+#else
+    return root_->forward(values);
+#endif
   }
 
   const boost::shared_ptr<ExpressionNode<T> >& root() const {
