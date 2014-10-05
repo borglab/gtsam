@@ -135,6 +135,7 @@ struct JacobianTrace {
   T value() const {
     return t;
   }
+  virtual void reverseAD(JacobianMap& jacobians) const = 0;
   virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const = 0;
 };
 
@@ -212,9 +213,11 @@ public:
 
   /// Trace structure for reverse AD
   struct Trace: public JacobianTrace<T> {
-    /// Return value and derivatives
+    /// If the expression is just a constant, we do nothing
+    virtual void reverseAD(JacobianMap& jacobians) const {
+    }
+    /// Base case: we simply ignore the given df/dT
     virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
-      // Base case: don't touch jacobians
     }
   };
 
@@ -269,9 +272,13 @@ public:
   /// Trace structure for reverse AD
   struct Trace: public JacobianTrace<T> {
     Key key;
-    /// Return value and derivatives
+    /// If the expression is just a leaf, we just insert an identity matrix
+    virtual void reverseAD(JacobianMap& jacobians) const {
+      size_t n = T::Dim();
+      jacobians.add(key, Eigen::MatrixXd::Identity(n, n));
+    }
+    /// Base case: given df/dT, add it jacobians with correct key and we are done
     virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
-      // Base case: just insert a new H in the JacobianMap with correct key
       jacobians.add(key, H);
     }
   };
@@ -338,11 +345,12 @@ public:
   struct Trace: public JacobianTrace<T> {
     boost::shared_ptr<JacobianTrace<A> > trace1;
     Matrix H1;
-    /// Return value and derivatives
+    /// Start the reverse AD process
+    virtual void reverseAD(JacobianMap& jacobians) const {
+      trace1->reverseAD(H1, jacobians);
+    }
+    /// Given df/dT, multiply in dT/dA and continue reverse AD process
     virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
-      // This is a top-down calculation
-      // The end-result needs Jacobians to all leaf nodes.
-      // Since this is not a leaf node, we compute what is needed for leaf nodes here
       trace1->reverseAD(H * H1, jacobians);
     }
   };
@@ -421,12 +429,13 @@ public:
     boost::shared_ptr<JacobianTrace<A1> > trace1;
     boost::shared_ptr<JacobianTrace<A2> > trace2;
     Matrix H1, H2;
-    /// Return value and derivatives
+    /// Start the reverse AD process
+    virtual void reverseAD(JacobianMap& jacobians) const {
+      trace1->reverseAD(H1, jacobians);
+      trace2->reverseAD(H2, jacobians);
+    }
+    /// Given df/dT, multiply in dT/dA and continue reverse AD process
     virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
-      // This is a top-down calculation
-      // The end-result needs Jacobians to all leaf nodes.
-      // Since this is not a leaf node, we compute what is needed for leaf nodes here
-      // The binary node represents a fork in the tree, and hence we will get two Augmented maps
       trace1->reverseAD(H * H1, jacobians);
       trace2->reverseAD(H * H2, jacobians);
     }

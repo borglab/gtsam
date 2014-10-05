@@ -107,8 +107,7 @@ public:
 #ifdef REVERSE_AD
     boost::shared_ptr<JacobianTrace<T> > trace = root_->traceExecution(values);
     Augmented<T> augmented(trace->value());
-    size_t n = T::Dim();
-    trace->reverseAD(Eigen::MatrixXd::Identity(n, n), augmented.jacobians());
+    trace->reverseAD(augmented.jacobians());
     return augmented;
 #else
     return root_->forward(values);
