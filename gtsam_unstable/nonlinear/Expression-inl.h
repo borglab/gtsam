@@ -83,6 +83,16 @@ public:
     add(H2, jacobians2);
   }
 
+  /// Construct value, pre-multiply jacobians by H
+  Augmented(const T& t, const Matrix& H1, const JacobianMap& jacobians1,
+      const Matrix& H2, const JacobianMap& jacobians2,
+      const Matrix& H3, const JacobianMap& jacobians3) :
+      value_(t) {
+    add(H2, jacobians2);
+    add(H3, jacobians3);
+    add(H1, jacobians1);
+  }
+
   /// Return value
   const T& value() const {
     return value_;
@@ -330,6 +340,70 @@ public:
 
 };
 //-----------------------------------------------------------------------------
+/// Ternary Expression
 
+template<class T, class A1, class A2, class A3>
+class TernaryExpression: public ExpressionNode<T> {
+
+public:
+
+  typedef boost::function<
+      T(const A1&, const A2&, const A3&, boost::optional<Matrix&>,
+          boost::optional<Matrix&>, boost::optional<Matrix&>)> Function;
+
+private:
+
+  Function function_;
+  boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
+  boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
+  boost::shared_ptr<ExpressionNode<A3> > expressionA3_;
+
+  /// Constructor with a ternary function f, and three input arguments
+  TernaryExpression(Function f, //
+      const Expression<A1>& e1, const Expression<A2>& e2, const Expression<A3>& e3) :
+      function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()), expressionA3_(e3.root()) {
+  }
+
+  friend class Expression<T> ;
+
+public:
+
+  /// Destructor
+  virtual ~TernaryExpression() {
+  }
+
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys1 = expressionA1_->keys();
+    std::set<Key> keys2 = expressionA2_->keys();
+    std::set<Key> keys3 = expressionA3_->keys();
+    keys2.insert(keys3.begin(), keys3.end());
+    keys1.insert(keys2.begin(), keys2.end());
+    return keys1;
+  }
+
+  /// Return value
+  virtual T value(const Values& values) const {
+    using boost::none;
+    return function_(this->expressionA1_->value(values),
+        this->expressionA2_->value(values), this->expressionA3_->value(values), none, none, none);
+  }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented(const Values& values) const {
+    using boost::none;
+    Augmented<A1> argument1 = this->expressionA1_->augmented(values);
+    Augmented<A2> argument2 = this->expressionA2_->augmented(values);
+    Augmented<A2> argument3 = this->expressionA3_->augmented(values);
+    Matrix H1, H2, H3;
+    T t = function_(argument1.value(), argument2.value(), argument3.value(),
+        argument1.constant() ? none : boost::optional<Matrix&>(H1),
+        argument2.constant() ? none : boost::optional<Matrix&>(H2),
+        argument3.constant() ? none : boost::optional<Matrix&>(H3));
+    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
+  }
+
+};
+//-----------------------------------------------------------------------------
 }
 

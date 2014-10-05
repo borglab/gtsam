@@ -91,6 +91,14 @@ public:
         new BinaryExpression<T, A1, A2>(function, expression1, expression2));
   }
 
+  /// Construct a ternary function expression
+  template<typename A1, typename A2, typename A3>
+  Expression(typename TernaryExpression<T, A1, A2, A3>::Function function,
+      const Expression<A1>& expression1, const Expression<A2>& expression2,  const Expression<A3>& expression3) {
+    root_.reset(
+        new TernaryExpression<T, A1, A2, A3>(function, expression1, expression2, expression3));
+  }
+
   /// Return keys that play in this expression
   std::set<Key> keys() const {
     return root_->keys();

@@ -158,19 +158,19 @@ Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
   return R1 * (R2 * R3);
 }
 
-//TEST(Expression, ternary) {
-//
-//  // Create expression
-//  Expression<Rot3> A(1), B(2), C(3);
-//  Expression<Rot3> ABC(composeThree, A, B, C);
-//
-//  // Check keys
-//  std::set<Key> expectedKeys;
-//  expectedKeys.insert(1);
-//  expectedKeys.insert(2);
-//  expectedKeys.insert(3);
-//  EXPECT(expectedKeys == ABC.keys());
-//}
+TEST(Expression, ternary) {
+
+  // Create expression
+  Expression<Rot3> A(1), B(2), C(3);
+  Expression<Rot3> ABC(composeThree, A, B, C);
+
+  // Check keys
+  std::set<Key> expectedKeys;
+  expectedKeys.insert(1);
+  expectedKeys.insert(2);
+  expectedKeys.insert(3);
+  EXPECT(expectedKeys == ABC.keys());
+}
 
 /* ************************************************************************* */
 int main() {
