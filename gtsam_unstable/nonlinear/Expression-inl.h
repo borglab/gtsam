@@ -109,6 +109,84 @@ public:
 
 //-----------------------------------------------------------------------------
 /**
+ * Execution trace for reverse AD
+ */
+template<class T>
+class JacobianTrace {
+
+public:
+
+  /// Constructor
+  JacobianTrace() {
+  }
+
+  virtual ~JacobianTrace() {
+  }
+
+  /// Return value
+  const T& value() const = 0;
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented() const = 0;
+};
+
+template<class T>
+class JacobianTraceConstant : public JacobianTrace<T> {
+
+protected:
+
+  T constant_;
+
+public:
+
+  /// Constructor
+  JacobianTraceConstant(const T& constant) :
+    constant_(constant) {
+  }
+
+  virtual ~JacobianTraceConstant() {
+  }
+
+  /// Return value
+  const T& value() const {
+    return constant_;
+  }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented() const {
+    return Augmented<T>(constant_);
+  }
+};
+
+template<class T>
+class JacobianTraceLeaf : public JacobianTrace<T> {
+
+protected:
+
+  T value_;
+
+public:
+
+  /// Constructor
+  JacobianTraceLeaf(const T& value) :
+      value_(value) {
+  }
+
+  virtual ~JacobianTraceLeaf() {
+  }
+
+  /// Return value
+  const T& value() const {
+    return value_;
+  }
+
+  /// Return value and derivatives
+  virtual Augmented<T> augmented() const {
+    return Augmented<T>(value_);
+  }
+};
+//-----------------------------------------------------------------------------
+/**
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
  * allowing Expressions to have polymorphic behaviour even though they
@@ -137,6 +215,10 @@ public:
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const = 0;
 
+  /// Construct an execution trace for reverse AD
+  virtual JacobianTrace<T> reverse(const Values& values) const {
+    return JacobianTrace<T>(T());
+  }
 };
 
 //-----------------------------------------------------------------------------
@@ -173,10 +255,13 @@ public:
 
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const {
-    T t = value(values);
-    return Augmented<T>(t);
+    return Augmented<T>(constant_);
   }
 
+  /// Construct an execution trace for reverse AD
+  virtual JacobianTrace<T> reverse(const Values& values) const {
+    return JacobianTrace<T>(constant_);
+  }
 };
 
 //-----------------------------------------------------------------------------

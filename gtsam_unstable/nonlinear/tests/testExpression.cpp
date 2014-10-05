@@ -36,13 +36,15 @@ Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
   return K.uncalibrate(p, Dcal, Dp);
 }
 
+static const Rot3 someR = Rot3::RzRyRx(1,2,3);
+
 /* ************************************************************************* */
 
 TEST(Expression, constant) {
-  Expression<Rot3> R(Rot3::identity());
+  Expression<Rot3> R(someR);
   Values values;
   Augmented<Rot3> a = R.augmented(values);
-  EXPECT(assert_equal(Rot3::identity(), a.value()));
+  EXPECT(assert_equal(someR, a.value()));
   JacobianMap expected;
   EXPECT(a.jacobians() == expected);
 }
@@ -52,9 +54,9 @@ TEST(Expression, constant) {
 TEST(Expression, leaf) {
   Expression<Rot3> R(100);
   Values values;
-  values.insert(100,Rot3::identity());
+  values.insert(100,someR);
   Augmented<Rot3> a = R.augmented(values);
-  EXPECT(assert_equal(Rot3::identity(), a.value()));
+  EXPECT(assert_equal(someR, a.value()));
   JacobianMap expected;
   expected[100] = eye(3);
   EXPECT(a.jacobians() == expected);

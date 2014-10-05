@@ -103,7 +103,9 @@ public:
 
   /// Return value and derivatives
   Augmented<T> augmented(const Values& values) const {
-    return root_->forward(values);
+    JacobianTrace<T> trace = root_->reverse(values);
+    return trace.augmented();
+//    return root_->forward(values);
   }
 
   const boost::shared_ptr<ExpressionNode<T> >& root() const {
