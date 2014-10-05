@@ -105,9 +105,11 @@ public:
   Augmented<T> augmented(const Values& values) const {
 #define REVERSE_AD
 #ifdef REVERSE_AD
-    boost::shared_ptr<typename ExpressionNode<T>::Trace> trace = root_->reverse(values);
+    boost::shared_ptr<JacobianTrace<T> > trace = root_->reverse(values);
+    Augmented<T> augmented(trace->value());
     size_t n = T::Dim();
-    return trace->augmented(Eigen::MatrixXd::Identity(n, n));
+    trace->update(Eigen::MatrixXd::Identity(n, n), augmented.jacobians());
+    return augmented;
 #else
     return root_->forward(values);
 #endif
