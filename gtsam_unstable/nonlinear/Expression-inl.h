@@ -205,10 +205,22 @@ public:
     return Augmented<T>(constant_);
   }
 
+  /// Trace structure for reverse AD
+  typedef typename ExpressionNode<T>::Trace BaseTrace;
+  struct Trace: public BaseTrace {
+    T t;
+    /// Return value and derivatives
+    virtual Augmented<T> augmented(const Matrix& H) const {
+      // Base case: just return value and empty map
+      return Augmented<T>(t);
+    }
+  };
+
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<typename ExpressionNode<T>::Trace> reverse(
-      const Values& values) const {
-    return boost::shared_ptr<typename ExpressionNode<T>::Trace>();
+  virtual boost::shared_ptr<BaseTrace> reverse(const Values& values) const {
+    boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
+    trace->t = constant_;
+    return trace;
   }
 };
 
