@@ -111,7 +111,15 @@ public:
 
   /// Return value and derivatives
   Augmented<T> augmented(const Values& values) const {
-    return root_->augmented(values);
+#define REVERSE_AD
+#ifdef REVERSE_AD
+    boost::shared_ptr<JacobianTrace<T> > trace = root_->traceExecution(values);
+    Augmented<T> augmented(trace->value());
+    trace->reverseAD(augmented.jacobians());
+    return augmented;
+#else
+    return root_->forward(values);
+#endif
   }
 
   const boost::shared_ptr<ExpressionNode<T> >& root() const {
