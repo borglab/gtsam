@@ -75,6 +75,12 @@ public:
     add(H, jacobians);
   }
 
+  /// Construct from value and two disjoint JacobianMaps
+  Augmented(const T& t, const JacobianMap& jacobians1, const JacobianMap& jacobians2) :
+      value_(t), jacobians_(jacobians1) {
+    jacobians_.insert(jacobians2.begin(), jacobians2.end());
+  }
+
   /// Construct value, pre-multiply jacobians by H
   Augmented(const T& t, const Matrix& H1, const JacobianMap& jacobians1,
       const Matrix& H2, const JacobianMap& jacobians2) :
@@ -109,84 +115,6 @@ public:
 
 //-----------------------------------------------------------------------------
 /**
- * Execution trace for reverse AD
- */
-template<class T>
-class JacobianTrace {
-
-public:
-
-  /// Constructor
-  JacobianTrace() {
-  }
-
-  virtual ~JacobianTrace() {
-  }
-
-  /// Return value
-  const T& value() const = 0;
-
-  /// Return value and derivatives
-  virtual Augmented<T> augmented() const = 0;
-};
-
-template<class T>
-class JacobianTraceConstant : public JacobianTrace<T> {
-
-protected:
-
-  T constant_;
-
-public:
-
-  /// Constructor
-  JacobianTraceConstant(const T& constant) :
-    constant_(constant) {
-  }
-
-  virtual ~JacobianTraceConstant() {
-  }
-
-  /// Return value
-  const T& value() const {
-    return constant_;
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> augmented() const {
-    return Augmented<T>(constant_);
-  }
-};
-
-template<class T>
-class JacobianTraceLeaf : public JacobianTrace<T> {
-
-protected:
-
-  T value_;
-
-public:
-
-  /// Constructor
-  JacobianTraceLeaf(const T& value) :
-      value_(value) {
-  }
-
-  virtual ~JacobianTraceLeaf() {
-  }
-
-  /// Return value
-  const T& value() const {
-    return value_;
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> augmented() const {
-    return Augmented<T>(value_);
-  }
-};
-//-----------------------------------------------------------------------------
-/**
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
  * allowing Expressions to have polymorphic behaviour even though they
@@ -202,6 +130,13 @@ protected:
 
 public:
 
+  struct Trace {
+    T value() const {
+      return T();
+    }
+    virtual Augmented<T> augmented(const Matrix& H) const = 0;
+  };
+
   /// Destructor
   virtual ~ExpressionNode() {
   }
@@ -216,8 +151,8 @@ public:
   virtual Augmented<T> forward(const Values& values) const = 0;
 
   /// Construct an execution trace for reverse AD
-  virtual JacobianTrace<T> reverse(const Values& values) const {
-    return JacobianTrace<T>(T());
+  virtual boost::shared_ptr<Trace> reverse(const Values& values) const {
+    return boost::shared_ptr<Trace>();
   }
 };
 
@@ -259,8 +194,9 @@ public:
   }
 
   /// Construct an execution trace for reverse AD
-  virtual JacobianTrace<T> reverse(const Values& values) const {
-    return JacobianTrace<T>(constant_);
+  virtual boost::shared_ptr<typename ExpressionNode<T>::Trace> reverse(
+      const Values& values) const {
+    return boost::shared_ptr<typename ExpressionNode<T>::Trace>();
   }
 };
 
@@ -413,7 +349,37 @@ public:
     return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
   }
 
-};
+  /// Trace structure for reverse AD
+  typedef typename ExpressionNode<T>::Trace BaseTrace;
+  struct Trace: public BaseTrace {
+    boost::shared_ptr<typename ExpressionNode<A1>::Trace> trace1;
+    boost::shared_ptr<typename ExpressionNode<A2>::Trace> trace2;
+    Matrix H1, H2;
+    T t;
+    /// Return value and derivatives
+    virtual Augmented<T> augmented(const Matrix& H) const {
+      // This is a top-down calculation
+      // The end-result needs Jacobians to all leaf nodes.
+      // Since this is not a leaf node, we compute what is needed for leaf nodes here
+      // The binary node represents a fork in the tree, and hence we will get two Augmented maps
+      Augmented<A1> augmented1 = trace1->augmented(H*H1);
+      Augmented<A1> augmented2 = trace1->augmented(H*H2);
+      return Augmented<T>(t, augmented1.jacobians(), augmented2.jacobians());
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  virtual boost::shared_ptr<BaseTrace> reverse(const Values& values) const {
+    boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
+    trace->trace1 = this->expressionA1_->reverse(values);
+    trace->trace2 = this->expressionA2_->reverse(values);
+    trace->t = function_(trace->trace1->value(), trace->trace2->value(),
+        trace->H1, trace->H2);
+    return trace;
+  }
+
+}
+;
 //-----------------------------------------------------------------------------
 
 }
