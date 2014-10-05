@@ -28,21 +28,7 @@ namespace gtsam {
 template<typename T>
 class Expression;
 
-//#define NEW_CLASS
-#ifdef NEW_CLASS
-class JacobianMap: public std::map<Key, Matrix> {
-public:
-  void add(Key key, const Matrix& H) {
-    iterator it = find(key);
-    if (it != end())
-    it->second += H;
-    else
-    insert(std::make_pair(key, H));
-  }
-};
-#else
 typedef std::map<Key, Matrix> JacobianMap;
-#endif
 
 //-----------------------------------------------------------------------------
 /**
@@ -60,34 +46,24 @@ private:
 
   /// Insert terms into jacobians_, premultiplying by H, adding if already exists
   void add(const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms)
-#ifdef NEW_CLASS
-    jacobians_.add(term.first, term.second);
-#else
-    {
+    BOOST_FOREACH(const Pair& term, terms) {
       JacobianMap::iterator it = jacobians_.find(term.first);
       if (it != jacobians_.end())
         it->second += term.second;
       else
         jacobians_[term.first] = term.second;
     }
-#endif
   }
 
   /// Insert terms into jacobians_, premultiplying by H, adding if already exists
   void add(const Matrix& H, const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms)
-#ifdef NEW_CLASS
-    jacobians_.add(term.first, H * term.second);
-#else
-    {
+    BOOST_FOREACH(const Pair& term, terms) {
       JacobianMap::iterator it = jacobians_.find(term.first);
       if (it != jacobians_.end())
         it->second += H * term.second;
       else
         jacobians_[term.first] = H * term.second;
     }
-#endif
   }
 
 public:
@@ -304,15 +280,11 @@ public:
     }
     /// Base case: given df/dT, add it jacobians with correct key and we are done
     virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
-#ifdef NEW_CLASS
-      jacobians.add(key, H);
-#else
       JacobianMap::iterator it = jacobians.find(key);
       if (it != jacobians.end())
         it->second += H;
       else
         jacobians[key] = H;
-#endif
     }
   };
 
