@@ -553,6 +553,18 @@ public:
     }
   };
 
+  /// Construct an execution trace for reverse AD
+  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
+      const Values& values) const {
+    boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
+    trace->trace1 = this->expressionA1_->traceExecution(values);
+    trace->trace2 = this->expressionA2_->traceExecution(values);
+    trace->trace3 = this->expressionA3_->traceExecution(values);
+    trace->t = function_(trace->trace1->value(), trace->trace2->value(), trace->trace3->value(),
+        trace->H1, trace->H2, trace->H3);
+    return trace;
+  }
+
 };
 //-----------------------------------------------------------------------------
 }
