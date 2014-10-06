@@ -214,6 +214,52 @@ TEST(BADFactor, test) {
  }
 
  /* ************************************************************************* */
+ // Test compose with three arguments
+ Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
+     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
+     boost::optional<Matrix&> H3) {
+   // return dummy derivatives (not correct, but that's ok for testing here)
+   if (H1)
+     *H1 = eye(3);
+   if (H2)
+     *H2 = eye(3);
+   if (H3)
+     *H3 = eye(3);
+   return R1 * (R2 * R3);
+ }
+
+ TEST(BADFactor, composeTernary) {
+
+ // Create expression
+ Rot3_ A(1), B(2), C(3);
+ Rot3_ ABC(composeThree, A, B, C);
+
+ // Create factor
+ BADFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), ABC);
+
+ // Create some values
+ Values values;
+ values.insert(1, Rot3());
+ values.insert(2, Rot3());
+ values.insert(3, Rot3());
+
+ // Check unwhitenedError
+ std::vector<Matrix> H(3);
+ Vector actual = f.unwhitenedError(values, H);
+ EXPECT_LONGS_EQUAL(3, H.size());
+ EXPECT( assert_equal(eye(3), H[0],1e-9));
+ EXPECT( assert_equal(eye(3), H[1],1e-9));
+ EXPECT( assert_equal(eye(3), H[2],1e-9));
+
+ // Check linearization
+ JacobianFactor expected(1, eye(3), 2, eye(3), 3, eye(3), zero(3));
+ boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+ boost::shared_ptr<JacobianFactor> jf = //
+ boost::dynamic_pointer_cast<JacobianFactor>(gf);
+ EXPECT( assert_equal(expected, *jf,1e-9));
+ }
+
+ /* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
