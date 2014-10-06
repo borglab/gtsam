@@ -278,7 +278,8 @@ public:
     double d = 1.0 / P.z();
     const double u = P.x() * d, v = P.y() * d;
     if (Dpoint) {
-      *Dpoint = (Matrix(2, 3) << d, 0.0, -u * d, 0.0, d, -v * d);
+      Dpoint->resize(2,3);
+      *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
     }
     return Point2(u, v);
   }
