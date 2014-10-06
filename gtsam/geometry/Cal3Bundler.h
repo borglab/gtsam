@@ -36,6 +36,8 @@ private:
   double u0_, v0_; ///< image center, not a parameter to be optimized but a constant
 
 public:
+  /// dimension of the variable - used to autodetect sizes
+  static const size_t dimension = 3;
 
   /// @name Standard Constructors
   /// @{

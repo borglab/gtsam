@@ -50,8 +50,9 @@ private:
   double xi_;  // mirror parameter
 
 public:
-  //Matrix K() const ;
-  //Eigen::Vector4d k() const { return Base::k(); }
+  /// dimension of the variable - used to autodetect sizes
+  static const size_t dimension = 10;
+
   Vector vector() const ;
 
   /// @name Standard Constructors
