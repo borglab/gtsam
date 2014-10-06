@@ -17,7 +17,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/slam/GaussMarkov1stOrderFactor.h>
+#include <gtsam_unstable/slam/GaussMarkov1stOrderFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/numericalDerivative.h>
