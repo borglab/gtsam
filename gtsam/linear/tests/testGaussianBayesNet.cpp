@@ -15,22 +15,23 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/LieVector.h>
+#include <gtsam/base/numericalDerivative.h>
+
+#include <boost/assign/list_of.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
 // STL/C++
 #include <iostream>
 #include <sstream>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
-
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;

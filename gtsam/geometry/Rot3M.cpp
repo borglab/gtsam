@@ -240,7 +240,7 @@ Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
     return retractCayley(omega);
   } else if(mode == Rot3::SLOW_CAYLEY) {
     Matrix Omega = skewSymmetric(omega);
-    return (*this)*Cayley<3>(-Omega/2);
+    return (*this)*CayleyFixed<3>(-Omega/2);
   } else {
     assert(false);
     exit(1);
@@ -269,7 +269,7 @@ Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const 
     // Create a fixed-size matrix
     Eigen::Matrix3d A(between(T).matrix());
     // using templated version of Cayley
-    Eigen::Matrix3d Omega = Cayley<3>(A);
+    Eigen::Matrix3d Omega = CayleyFixed<3>(A);
     return -2*Vector3(Omega(2,1),Omega(0,2),Omega(1,0));
   } else {
     assert(false);

@@ -58,6 +58,7 @@ FIND_PATH(MKL_ROOT_DIR
     /opt/intel/mkl/*/
     /opt/intel/cmkl/
     /opt/intel/cmkl/*/
+    /opt/intel/*/mkl/
     /Library/Frameworks/Intel_MKL.framework/Versions/Current/lib/universal
         "C:/Program Files (x86)/Intel/ComposerXE-2011/mkl"
         "C:/Program Files (x86)/Intel/Composer XE 2013/mkl"
