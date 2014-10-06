@@ -174,12 +174,14 @@ public:
     } else {
 
       // Calculate derivatives. TODO if slow: optimize with Mathematica
-      //     3*2        3*3       3*3        2*3
-      Matrix D_1T2_dir, DdP2_rot, DP2_point, Dpn_dP2;
+      //     3*2        3*3       3*3
+      Matrix D_1T2_dir, DdP2_rot, DP2_point;
 
       Point3 _1T2 = E.direction().point3(D_1T2_dir);
       Point3 d1T2 = d * _1T2;
       Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2, DdP2_rot, DP2_point);
+
+      Matrix23 Dpn_dP2;
       pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
 
       if (DE) {

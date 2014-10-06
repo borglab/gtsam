@@ -270,17 +270,15 @@ public:
    * @param Dpoint is the 2*3 Jacobian w.r.t. P
    */
   inline static Point2 project_to_camera(const Point3& P,
-      boost::optional<Matrix&> Dpoint = boost::none) {
+      boost::optional<Matrix23&> Dpoint = boost::none) {
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (P.z() <= 0)
       throw CheiralityException();
 #endif
     double d = 1.0 / P.z();
     const double u = P.x() * d, v = P.y() * d;
-    if (Dpoint) {
-      Dpoint->resize(2,3);
+    if (Dpoint)
       *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
-    }
     return Point2(u, v);
   }
 
@@ -356,7 +354,7 @@ public:
     Dpc_pose.block(0, 0, 3, 3) = Dpc_rot;
 
     // camera to normalized image coordinate
-    Matrix Dpn_pc; // 2*3
+    Matrix23 Dpn_pc; // 2*3
     const Point2 pn = project_to_camera(pc, Dpn_pc);
 
     // uncalibration

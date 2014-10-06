@@ -41,6 +41,10 @@ typedef Eigen::Matrix3d Matrix3;
 typedef Eigen::Matrix4d Matrix4;
 typedef Eigen::Matrix<double,6,6> Matrix6;
 
+typedef Eigen::Matrix<double,2,3> Matrix23;
+typedef Eigen::Matrix<double,2,5> Matrix25;
+typedef Eigen::Matrix<double,3,6> Matrix36;
+
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
