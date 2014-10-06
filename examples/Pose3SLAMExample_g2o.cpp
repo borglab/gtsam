@@ -10,15 +10,15 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose2SLAMExample_g2o.cpp
- * @brief A 2D Pose SLAM example that reads input from g2o, converts it to a factor graph and does the
- * optimization. Output is written on a file, in g2o format
- * Syntax for the script is ./Pose2SLAMExample_g2o input.g2o output.g2o
- * @date May 15, 2014
+ * @file Pose3SLAMExample_initializePose3.cpp
+ * @brief A 3D Pose SLAM example that reads input from g2o, and initializes the Pose3 using InitializePose3
+ * Syntax for the script is ./Pose3SLAMExample_initializePose3 input.g2o output.g2o
+ * @date Aug 25, 2014
  * @author Luca Carlone
  */
 
 #include <gtsam/slam/dataset.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <fstream>
@@ -31,28 +31,30 @@ int main(const int argc, const char *argv[]) {
   // Read graph from file
   string g2oFile;
   if (argc < 2)
-    g2oFile = findExampleDataFile("noisyToyGraph.txt");
+    g2oFile = findExampleDataFile("pose3example.txt");
   else
     g2oFile = argv[1];
 
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
-  boost::tie(graph, initial) = readG2o(g2oFile);
+  bool is3D = true;
+  boost::tie(graph, initial) = readG2o(g2oFile, is3D);
 
-  // Add prior on the pose having index (key) = 0
+  // Add prior on the first key
   NonlinearFactorGraph graphWithPrior = *graph;
   noiseModel::Diagonal::shared_ptr priorModel = //
-      noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
-  graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
-
-  GaussNewtonParams params;
-  params.setVerbosity("TERMINATION");
-  if (argc == 4) {
-    params.maxIterations = atoi(argv[3]);
-    std::cout << "User required to perform " << params.maxIterations << " iterations "<< std::endl;
+      noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4));
+  Key firstKey = 0;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, *initial) {
+    std::cout << "Adding prior to g2o file " << std::endl;
+    firstKey = key_value.key;
+    graphWithPrior.add(PriorFactor<Pose3>(firstKey, Pose3(), priorModel));
+    break;
   }
 
   std::cout << "Optimizing the factor graph" << std::endl;
+  GaussNewtonParams params;
+  params.setVerbosity("TERMINATION"); // this will show info about stopping conditions
   GaussNewtonOptimizer optimizer(graphWithPrior, *initial, params);
   Values result = optimizer.optimize();
   std::cout << "Optimization complete" << std::endl;
