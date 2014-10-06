@@ -41,8 +41,8 @@ MatrixXd::Ones(rows,cols)           // ones(rows,cols)
 C.setOnes(rows,cols)                // C = ones(rows,cols)
 MatrixXd::Random(rows,cols)         // rand(rows,cols)*2-1        // MatrixXd::Random returns uniform random numbers in (-1, 1).
 C.setRandom(rows,cols)              // C = rand(rows,cols)*2-1
-VectorXd::LinSpace(size,low,high)   // linspace(low,high,size)'
-v.setLinSpace(size,low,high)        // v = linspace(low,high,size)'
+VectorXd::LinSpaced(size,low,high)   // linspace(low,high,size)'
+v.setLinSpaced(size,low,high)        // v = linspace(low,high,size)'
 
 
 // Matrix slicing and blocks. All expressions listed here are read/write.
@@ -91,6 +91,8 @@ R.adjoint()                        // R'
 R.transpose()                      // R.' or conj(R')
 R.diagonal()                       // diag(R)
 x.asDiagonal()                     // diag(x)
+R.transpose().colwise().reverse(); // rot90(R)
+R.conjugate()                      // conj(R)
 
 // All the same as Matlab, but matlab doesn't have *= style operators.
 // Matrix-vector.  Matrix-matrix.   Matrix-scalar.
@@ -167,6 +169,8 @@ x.cross(y)                // cross(x, y) Requires #include <Eigen/Geometry>
 A.cast<double>();                  // double(A)
 A.cast<float>();                   // single(A)
 A.cast<int>();                     // int32(A)
+A.real();                          // real(A)
+A.imag();                          // imag(A)
 // if the original type equals destination type, no work is done
 
 // Note that for most operations Eigen requires all operands to have the same type:

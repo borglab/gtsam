@@ -18,46 +18,45 @@
  * @author Luca Carlone
  */
 
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/Key.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/nonlinear/Values.h>
 #include <fstream>
-#include <sstream>
 
 using namespace std;
 using namespace gtsam;
 
+int main(const int argc, const char *argv[]) {
 
-int main(const int argc, const char *argv[]){
-
+  // Read graph from file
+  string g2oFile;
   if (argc < 2)
-    std::cout << "Please specify: 1st argument: input file (in g2o format) and 2nd argument: output file" << std::endl;
-  const string g2oFile = argv[1];
+    g2oFile = findExampleDataFile("noisyToyGraph.txt");
+  else
+    g2oFile = argv[1];
 
-  NonlinearFactorGraph graph;
-  Values initial;
-  readG2o(g2oFile, graph, initial);
+  NonlinearFactorGraph::shared_ptr graph;
+  Values::shared_ptr initial;
+  boost::tie(graph, initial) = readG2o(g2oFile);
 
   // Add prior on the pose having index (key) = 0
-  NonlinearFactorGraph graphWithPrior = graph;
-  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
+  NonlinearFactorGraph graphWithPrior = *graph;
+  noiseModel::Diagonal::shared_ptr priorModel = //
+      noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
   std::cout << "Optimizing the factor graph" << std::endl;
-  GaussNewtonOptimizer optimizer(graphWithPrior, initial); // , parameters);
+  GaussNewtonOptimizer optimizer(graphWithPrior, *initial);
   Values result = optimizer.optimize();
   std::cout << "Optimization complete" << std::endl;
 
-  const string outputFile = argv[2];
-  std::cout << "Writing results to file: " << outputFile << std::endl;
-  writeG2o(outputFile, graph, result);
-  std::cout << "done! " << std::endl;
-
+  if (argc < 3) {
+    result.print("result");
+  } else {
+    const string outputFile = argv[2];
+    std::cout << "Writing results to file: " << outputFile << std::endl;
+    writeG2o(*graph, result, outputFile);
+    std::cout << "done! " << std::endl;
+  }
   return 0;
 }

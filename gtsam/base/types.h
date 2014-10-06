@@ -299,6 +299,8 @@ namespace gtsam {
 
 // Define some common g++ functions and macros we use that MSVC does not have
 
+#if (_MSC_VER < 1800)
+
 #include <boost/math/special_functions/fpclassify.hpp>
 namespace std {
   template<typename T> inline int isfinite(T a) {
@@ -308,6 +310,8 @@ namespace std {
   template<typename T> inline int isinf(T a) {
     return (int)boost::math::isinf(a); }
 }
+
+#endif
 
 #include <boost/math/constants/constants.hpp>
 #ifndef M_PI

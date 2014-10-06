@@ -28,13 +28,13 @@ endif()
 # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
 # on the system path.
 list(REVERSE matlab_bin_directories) # Reverse list so the highest version (sorted alphabetically) is preferred
-find_program(mex_command ${mex_program_name}
+find_program(MEX_COMMAND ${mex_program_name}
 	PATHS ${matlab_bin_directories} ENV PATH
 	NO_DEFAULT_PATH)
-mark_as_advanced(FORCE mex_command)
+mark_as_advanced(FORCE MEX_COMMAND)
 # Now that we have mex, trace back to find the Matlab installation root
-get_filename_component(mex_command "${mex_command}" REALPATH)
-get_filename_component(mex_path "${mex_command}" PATH)
+get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
+get_filename_component(mex_path "${MEX_COMMAND}" PATH)
 get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
 set(MATLAB_ROOT "${MATLAB_ROOT}" CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
 
@@ -93,7 +93,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	
 	# Paths for generated files
 	set(generated_files_path "${PROJECT_BINARY_DIR}/wrap/${moduleName}")
-	set(generated_cpp_file "${PROJECT_BINARY_DIR}/wrap/${moduleName}/${moduleName}_wrapper.cpp")
+	set(generated_cpp_file "${generated_files_path}/${moduleName}_wrapper.cpp")
 	set(compiled_mex_modules_root "${PROJECT_BINARY_DIR}/wrap/${moduleName}_mex")
 	
 	message(STATUS "Building wrap module ${moduleName}")
@@ -108,24 +108,87 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 		list(GET GTSAM_INCLUDE_DIR 0 installed_includes_path)
 		set(matlab_h_path "${installed_includes_path}/wrap")
 	endif()
-	
-	# Add -shared or -static suffix to targets
+
+	# If building a static mex module, add all cmake-linked libraries to the
+	# explicit link libraries list so that the next block of code can unpack
+	# any static libraries
+	set(automaticDependencies "")
+	foreach(lib ${moduleName} ${linkLibraries})
+	  #message("MODULE NAME: ${moduleName}")
+		if(TARGET "${lib}")
+            get_target_property(dependentLibraries ${lib} INTERFACE_LINK_LIBRARIES)
+           # message("DEPENDENT LIBRARIES:  ${dependentLibraries}")
+            if(dependentLibraries)
+               list(APPEND automaticDependencies ${dependentLibraries})
+            endif()
+        endif()
+    endforeach()
+    
+    ## CHRIS: Temporary fix. On my system the get_target_property above returned Not-found for gtsam module
+    ## This needs to be fixed!!
+    if(UNIX AND NOT APPLE)
+      list(APPEND automaticDependencies ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE}
+        ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_DATE_TIME_LIBRARY_RELEASE}
+        ${Boost_REGEX_LIBRARY_RELEASE})
+      if(Boost_TIMER_LIBRARY_RELEASE AND NOT GTSAM_DISABLE_NEW_TIMERS) # Only present in Boost >= 1.48.0
+        list(APPEND automaticDependencies ${Boost_TIMER_LIBRARY_RELEASE} ${Boost_CHRONO_LIBRARY_RELEASE})
+        if(GTSAM_MEX_BUILD_STATIC_MODULE)
+          #list(APPEND automaticDependencies -Wl,--no-as-needed -lrt)
+        endif()
+      endif()
+    endif()
+    
+    #message("AUTOMATIC DEPENDENCIES:  ${automaticDependencies}")
+    ## CHRIS: End temporary fix
+
+	# Separate dependencies
 	set(correctedOtherLibraries "")
 	set(otherLibraryTargets "")
     set(otherLibraryNontargets "")
-	foreach(lib ${moduleName} ${linkLibraries})
-		if(TARGET ${lib})
-			list(APPEND correctedOtherLibraries ${lib})
-			list(APPEND otherLibraryTargets ${lib})
-		elseif(TARGET ${lib}-shared) # Prefer the shared library if we have both shared and static)
-			list(APPEND correctedOtherLibraries ${lib}-shared)
-			list(APPEND otherLibraryTargets ${lib}-shared)
-		elseif(TARGET ${lib}-static)
-			list(APPEND correctedOtherLibraries ${lib}-static)
-			list(APPEND otherLibraryTargets ${lib}-static)
+    set(otherSourcesAndObjects "")
+	foreach(lib ${moduleName} ${linkLibraries} ${automaticDependencies})
+		if(TARGET "${lib}")
+		    if(GTSAM_MEX_BUILD_STATIC_MODULE)
+		    	get_target_property(target_sources ${lib} SOURCES)
+		    	list(APPEND otherSourcesAndObjects ${target_sources})
+		    else()
+				list(APPEND correctedOtherLibraries ${lib})
+				list(APPEND otherLibraryTargets ${lib})
+		    endif()
 		else()
-			list(APPEND correctedOtherLibraries ${lib})
-            list(APPEND otherLibraryNontargets ${lib})
+			get_filename_component(file_extension "${lib}" EXT)
+			get_filename_component(lib_name "${lib}" NAME_WE)
+			if(file_extension STREQUAL ".a" AND GTSAM_MEX_BUILD_STATIC_MODULE)
+				# For building a static MEX module, unpack the static library
+				# and compile its object files into our module
+				file(MAKE_DIRECTORY "${generated_files_path}/${lib_name}_objects")
+				execute_process(COMMAND ar -x "${lib}"
+				                WORKING_DIRECTORY "${generated_files_path}/${lib_name}_objects"
+				                RESULT_VARIABLE ar_result)
+				if(NOT ar_result EQUAL 0)
+					message(FATAL_ERROR "Failed extracting ${lib}")
+				endif()
+
+				# Get list of object files
+				execute_process(COMMAND ar -t "${lib}"
+								OUTPUT_VARIABLE object_files
+				                RESULT_VARIABLE ar_result)
+				if(NOT ar_result EQUAL 0)
+					message(FATAL_ERROR "Failed listing ${lib}")
+				endif()
+
+				# Add directory to object files
+				string(REPLACE "\n" ";" object_files_list "${object_files}")
+				foreach(object_file ${object_files_list})
+					get_filename_component(file_extension "${object_file}" EXT)
+					if(file_extension STREQUAL ".o")
+						list(APPEND otherSourcesAndObjects "${generated_files_path}/${lib_name}_objects/${object_file}")
+					endif()
+				endforeach()
+			else()
+				list(APPEND correctedOtherLibraries ${lib})
+	            list(APPEND otherLibraryNontargets ${lib})
+            endif()
 		endif()
 	endforeach()
     
@@ -144,7 +207,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	file(MAKE_DIRECTORY "${generated_files_path}")
 	add_custom_command(
 		OUTPUT ${generated_cpp_file}
-		DEPENDS ${interfaceHeader} wrap ${module_library_target} ${otherLibraryTargets}
+		DEPENDS ${interfaceHeader} wrap ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
         COMMAND 
             wrap
             ${modulePath}
@@ -157,7 +220,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	# Set up building of mex module
 	string(REPLACE ";" " " extraMexFlagsSpaced "${extraMexFlags}")
 	string(REPLACE ";" " " mexFlagsSpaced "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-	add_library(${moduleName}_wrapper MODULE ${generated_cpp_file} ${interfaceHeader})
+	add_library(${moduleName}_wrapper MODULE ${generated_cpp_file} ${interfaceHeader} ${otherSourcesAndObjects})
 	target_link_libraries(${moduleName}_wrapper ${correctedOtherLibraries})
 	set_target_properties(${moduleName}_wrapper PROPERTIES
 		OUTPUT_NAME              "${moduleName}_wrapper"

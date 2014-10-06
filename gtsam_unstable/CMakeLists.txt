@@ -28,7 +28,7 @@ set (excluded_headers # "")
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
 )
 
-# assemble core libaries
+# assemble core libraries
 foreach(subdir ${gtsam_unstable_subdirs})
     # Build convenience libraries
     file(GLOB subdir_srcs "${subdir}/*.cpp")
@@ -63,7 +63,7 @@ set(gtsam_unstable_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM_UNSTABLE Version: ${gtsam_unstable_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
-# build shared and static versions of the library
+# build shared or static versions of the library
 if (GTSAM_BUILD_STATIC_LIBRARY)
 	message(STATUS "Building GTSAM_UNSTABLE - static")
 	add_library(gtsam_unstable STATIC ${gtsam_unstable_srcs})
@@ -116,8 +116,8 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     wrap_and_install_library(gtsam_unstable.h "gtsam" "" "${mexFlags}")
 endif(GTSAM_INSTALL_MATLAB_TOOLBOX)
 
-
 # Build examples
-if (GTSAM_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif(GTSAM_BUILD_EXAMPLES)
+add_subdirectory(examples)
+
+# Build timing
+add_subdirectory(timing)

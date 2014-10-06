@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 3)
-set (GTSAM_VERSION_MINOR 0)
+set (GTSAM_VERSION_MINOR 1)
 set (GTSAM_VERSION_PATCH 0)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
@@ -34,7 +34,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
-# See whether gtsam_unstable is available (it will be present only if we're using an SVN checkout)
+# See whether gtsam_unstable is available (it will be present only if we're using a git checkout)
 if(EXISTS "${PROJECT_SOURCE_DIR}/gtsam_unstable" AND IS_DIRECTORY "${PROJECT_SOURCE_DIR}/gtsam_unstable")
     set(GTSAM_UNSTABLE_AVAILABLE 1)
 else()
@@ -46,7 +46,6 @@ endif()
 # Set up options
 
 # Configurable Options
-option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" OFF) # These do not currently work
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
@@ -94,7 +93,7 @@ if(MSVC)
 	# Disable autolinking
 	if(NOT Boost_USE_STATIC_LIBS)
 		add_definitions(-DBOOST_ALL_NO_LIB)
-	    add_definitions(-DBOOST_ALL_DYN_LINK)
+	  add_definitions(-DBOOST_ALL_DYN_LINK)
 	endif()
 endif()
 
@@ -123,6 +122,11 @@ else()
     endif()
 endif()
 
+
+if(${Boost_VERSION} EQUAL 105600)
+	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
+	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
+endif()
 
 ###############################################################################
 # Find TBB
@@ -156,23 +160,23 @@ find_package(GooglePerfTools)
 
 ###############################################################################
 # Find MKL
-if(GTSAM_USE_EIGEN_MKL)
-    find_package(MKL)
+find_package(MKL)
 
-    if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
-        set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
-        set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
-        include_directories(${MKL_INCLUDE_DIR})
-        list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
-    endif()
+if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
+    set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
+    set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
+    include_directories(${MKL_INCLUDE_DIR})
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+else()
+    set(GTSAM_USE_EIGEN_MKL 0)
+    set(EIGEN_USE_MKL_ALL 0)
 endif()
-
 
 ###############################################################################
 # Find OpenMP (if we're also using MKL)
-if(GTSAM_USE_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
-    find_package(OpenMP)
+find_package(OpenMP)  # do this here to generate correct message if disabled
 
+if(GTSAM_WITH_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
     if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
         set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -273,6 +277,13 @@ if(MSVC)
 	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344) # Disable non-DLL-exported base class and other warnings
 endif()
 
+# GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+    add_definitions(-Wno-unused-local-typedefs)
+  endif()
+endif()
+
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
@@ -296,6 +307,9 @@ add_subdirectory(tests)
 
 # Build examples
 add_subdirectory(examples)
+
+# Build timing
+add_subdirectory(timing)
 
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
@@ -354,7 +368,7 @@ message(STATUS "================  Configuration Options  ======================"
 message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
-print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
+print_config_flag(${GTSAM_BUILD_TIMING_ALWAYS}         "Build timing scripts with 'make all'")
 if (DOXYGEN_FOUND)
     print_config_flag(${GTSAM_BUILD_DOCS}              "Build Docs                     ")
 endif()
