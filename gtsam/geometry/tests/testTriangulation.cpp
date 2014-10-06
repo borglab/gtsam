@@ -268,7 +268,7 @@ TEST( triangulation, TriangulationFactor ) {
   Key pointKey(1);
   SharedNoiseModel model;
   typedef TriangulationFactor<> Factor;
-  Factor factor(camera1, z1, model, pointKey, sharedCal);
+  Factor factor(camera1, z1, model, pointKey);
 
   // Use the factor to calculate the Jacobians
   Matrix HActual;

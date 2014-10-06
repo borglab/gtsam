@@ -17,7 +17,6 @@
  * @author Luca Carlone
  */
 
-#include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>

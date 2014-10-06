@@ -94,6 +94,17 @@ TEST( Cal3_S2, retract)
 }
 
 /* ************************************************************************* */
+TEST(Cal3_S2, between) {
+  Cal3_S2 k1(5, 5, 5, 5, 5), k2(5, 6, 7, 8, 9);
+  Matrix H1, H2;
+
+  EXPECT(assert_equal(Cal3_S2(0,1,2,3,4), k1.between(k2, H1, H2)));
+  EXPECT(assert_equal(-eye(5), H1));
+  EXPECT(assert_equal(eye(5), H2));
+
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

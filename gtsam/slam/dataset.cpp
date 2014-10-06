@@ -177,7 +177,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
   string tag;
 
   // load the poses
-  while (is) {
+  while (!is.eof()) {
     if (!(is >> tag))
       break;
 
@@ -213,7 +213,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
   // Parse the pose constraints
   int id1, id2;
   bool haveLandmark = false;
-  while (is) {
+  while (!is.eof()) {
     if (!(is >> tag))
       break;
 
@@ -461,12 +461,12 @@ GraphAndValues load3D(const string& filename) {
 
   ifstream is(filename.c_str());
   if (!is)
-    throw invalid_argument("load2D: can not find file " + filename);
+    throw invalid_argument("load3D: can not find file " + filename);
 
   Values::shared_ptr initial(new Values);
   NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
 
-  while (is) {
+  while (!is.eof()) {
     char buf[LINESIZE];
     is.getline(buf, LINESIZE);
     istringstream ls(buf);
@@ -493,7 +493,7 @@ GraphAndValues load3D(const string& filename) {
   is.clear(); /* clears the end-of-file and error flags */
   is.seekg(0, ios::beg);
 
-  while (is) {
+  while (!is.eof()) {
     char buf[LINESIZE];
     is.getline(buf, LINESIZE);
     istringstream ls(buf);

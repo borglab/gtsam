@@ -359,6 +359,11 @@ virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
   Vector calcIndicatorProb(const gtsam::Values& x);
   void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
 
+  void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph);
+  void updateNoiseModels_givenCovs(const gtsam::Values& values, Matrix cov1, Matrix cov2, Matrix cov12);
+  Matrix get_model_inlier_cov();
+  Matrix get_model_outlier_cov();
+
   void serializable() const; // enabling serialization functionality
 };
 

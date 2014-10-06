@@ -123,6 +123,11 @@ else()
 endif()
 
 
+if(${Boost_VERSION} EQUAL 105600)
+	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
+	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
+endif()
+
 ###############################################################################
 # Find TBB
 find_package(TBB)
@@ -169,9 +174,9 @@ endif()
 
 ###############################################################################
 # Find OpenMP (if we're also using MKL)
-if(GTSAM_WITH_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
-    find_package(OpenMP)
+find_package(OpenMP)  # do this here to generate correct message if disabled
 
+if(GTSAM_WITH_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
     if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
         set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")

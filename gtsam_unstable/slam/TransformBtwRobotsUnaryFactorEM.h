@@ -21,6 +21,8 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -301,6 +303,101 @@ namespace gtsam {
 
       return currA_T_currB_msr.localCoordinates(currA_T_currB_pred);
     }
+
+    /* ************************************************************************* */
+    SharedGaussian get_model_inlier() const {
+      return model_inlier_;
+    }
+
+    /* ************************************************************************* */
+    SharedGaussian get_model_outlier() const {
+      return model_outlier_;
+    }
+
+    /* ************************************************************************* */
+    Matrix get_model_inlier_cov() const {
+      return (model_inlier_->R().transpose()*model_inlier_->R()).inverse();
+    }
+
+    /* ************************************************************************* */
+    Matrix get_model_outlier_cov() const {
+      return (model_outlier_->R().transpose()*model_outlier_->R()).inverse();
+    }
+
+    /* ************************************************************************* */
+    void updateNoiseModels(const gtsam::Values& values, const gtsam::Marginals& marginals) {
+      /* given marginals version, don't need to marginal multiple times if update a lot */
+
+      std::vector<gtsam::Key> Keys;
+      Keys.push_back(keyA_);
+      Keys.push_back(keyB_);
+      JointMarginal joint_marginal12 = marginals.jointMarginalCovariance(Keys);
+      Matrix cov1 = joint_marginal12(keyA_, keyA_);
+      Matrix cov2 = joint_marginal12(keyB_, keyB_);
+      Matrix cov12 = joint_marginal12(keyA_, keyB_);
+
+      updateNoiseModels_givenCovs(values, cov1, cov2, cov12);
+    }
+
+    /* ************************************************************************* */
+    void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph){
+      /* Update model_inlier_ and model_outlier_ to account for uncertainty in robot trajectories
+       * (note these are given in the E step, where indicator probabilities are calculated).
+       *
+       * Principle: R += [H1 H2] * joint_cov12 * [H1 H2]', where H1, H2 are Jacobians of the
+       * unwhitened error w.r.t. states, and R is the measurement covariance (inlier or outlier modes).
+       *
+       * TODO: improve efficiency (info form)
+       */
+
+       // get joint covariance of the involved states
+
+       Marginals marginals(graph, values, Marginals::QR);
+
+       this->updateNoiseModels(values, marginals);
+    }
+
+    /* ************************************************************************* */
+    void updateNoiseModels_givenCovs(const gtsam::Values& values, const Matrix& cov1, const Matrix& cov2, const Matrix& cov12){
+      /* Update model_inlier_ and model_outlier_ to account for uncertainty in robot trajectories
+       * (note these are given in the E step, where indicator probabilities are calculated).
+       *
+       * Principle: R += [H1 H2] * joint_cov12 * [H1 H2]', where H1, H2 are Jacobians of the
+       * unwhitened error w.r.t. states, and R is the measurement covariance (inlier or outlier modes).
+       *
+       * TODO: improve efficiency (info form)
+       */
+
+      const T& p1 = values.at<T>(keyA_);
+      const T& p2 = values.at<T>(keyB_);
+
+      Matrix H1, H2;
+      T hx = p1.between(p2, H1, H2); // h(x)
+
+      Matrix H;
+      H.resize(H1.rows(), H1.rows()+H2.rows());
+      H << H1, H2; // H = [H1 H2]
+
+      Matrix joint_cov;
+      joint_cov.resize(cov1.rows()+cov2.rows(), cov1.cols()+cov2.cols());
+      joint_cov << cov1, cov12,
+          cov12.transpose(), cov2;
+
+      Matrix cov_state = H*joint_cov*H.transpose();
+
+      //       model_inlier_->print("before:");
+
+      // update inlier and outlier noise models
+      Matrix covRinlier = (model_inlier_->R().transpose()*model_inlier_->R()).inverse();
+      model_inlier_ = gtsam::noiseModel::Gaussian::Covariance(covRinlier + cov_state);
+
+      Matrix covRoutlier = (model_outlier_->R().transpose()*model_outlier_->R()).inverse();
+      model_outlier_ = gtsam::noiseModel::Gaussian::Covariance(covRoutlier + cov_state);
+
+      //       model_inlier_->print("after:");
+      //       std::cout<<"covRinlier + cov_state: "<<covRinlier + cov_state<<std::endl;
+    }
+
 
     /* ************************************************************************* */
 

@@ -253,12 +253,15 @@ SparseMatrix<double> A, B;
 B = SparseMatrix<double>(A.transpose()) + A;
 \endcode
 
-Binary coefficient wise operators can also mix sparse and dense expressions:
+Some binary coefficient-wise operators can also mix sparse and dense expressions:
 \code
 sm2 = sm1.cwiseProduct(dm1);
-dm2 = sm1 + dm1;
+dm1 += sm1;
 \endcode
 
+However, it is not yet possible to add a sparse and a dense matrix as in <tt>dm2 = sm1 + dm1</tt>.
+Please write this as the equivalent <tt>dm2 = dm1; dm2 += sm1</tt> (we plan to lift this restriction
+in the next release of %Eigen).
 
 %Sparse expressions also support transposition:
 \code
