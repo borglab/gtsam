@@ -310,7 +310,8 @@ class UnaryExpression: public ExpressionNode<T> {
 
 public:
 
-  typedef boost::function<T(const A&, boost::optional<Matrix&>)> Function;
+  typedef Eigen::Matrix<double,T::dimension,A::dimension> JacobianTA;
+  typedef boost::function<T(const A&, boost::optional<JacobianTA&>)> Function;
 
 private:
 
@@ -344,16 +345,16 @@ public:
   virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
     Augmented<A> argument = this->expressionA_->forward(values);
-    Matrix dTdA;
+    JacobianTA dTdA;
     T t = function_(argument.value(),
-        argument.constant() ? none : boost::optional<Matrix&>(dTdA));
+        argument.constant() ? none : boost::optional<JacobianTA&>(dTdA));
     return Augmented<T>(t, dTdA, argument.jacobians());
   }
 
   /// Trace structure for reverse AD
   struct Trace: public JacobianTrace<T> {
     boost::shared_ptr<JacobianTrace<A> > trace1;
-    Matrix dTdA;
+    JacobianTA dTdA;
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
       trace1->reverseAD(dTdA, jacobians);
