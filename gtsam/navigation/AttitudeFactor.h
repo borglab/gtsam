@@ -46,7 +46,7 @@ public:
   /**
    * @brief Constructor
    * @param nZ measured direction in navigation frame
-   * @param bRef reference direction in body frame (default Z-axis)
+   * @param bRef reference direction in body frame (default Z-axis in NED frame, i.e., [0; 0; 1])
    */
   AttitudeFactor(const Unit3& nZ, const Unit3& bRef = Unit3(0, 0, 1)) :
       nZ_(nZ), bRef_(bRef) {

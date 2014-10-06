@@ -22,7 +22,7 @@
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
-#pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
+//#pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
 #endif
 #include <boost/graph/breadth_first_search.hpp>
 #ifdef __GNUC__
@@ -73,34 +73,41 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
   SDGraph<KEY> g;
   typedef typename boost::graph_traits<SDGraph<KEY> >::vertex_descriptor BoostVertex;
   std::map<KEY, BoostVertex> key2vertex;
-  BoostVertex v1, v2;
   typename G::const_iterator itFactor;
 
+  // Loop over the factors
   for(itFactor=graph.begin(); itFactor!=graph.end(); itFactor++) {
-    if ((*itFactor)->keys().size() > 2)
-      throw(std::invalid_argument("toBoostGraph: only support factors with at most two keys"));
 
-    if ((*itFactor)->keys().size() == 1)
+    // Ignore factors that are not binary
+    if ((*itFactor)->keys().size() != 2)
       continue;
 
+    // Cast the factor to the user-specified factor type F
     boost::shared_ptr<F> factor = boost::dynamic_pointer_cast<F>(*itFactor);
+    // Ignore factors that are not of type F
     if (!factor) continue;
 
-    KEY key1 = factor->key1();
-    KEY key2 = factor->key2();
+    // Retrieve the 2 keys (nodes) the factor (edge) is incident on
+    KEY key1 = factor->keys()[0];
+    KEY key2 = factor->keys()[1];
 
+    BoostVertex v1, v2;
+
+    // If key1 is a new key, add it to the key2vertex map, else get the corresponding vertex id
     if (key2vertex.find(key1) == key2vertex.end()) {
          v1 = add_vertex(key1, g);
-         key2vertex.insert(make_pair(key1, v1));
+         key2vertex.insert(std::pair<KEY,KEY>(key1, v1));
        } else
          v1 = key2vertex[key1];
 
+    // If key2 is a new key, add it to the key2vertex map, else get the corresponding vertex id
     if (key2vertex.find(key2) == key2vertex.end()) {
        v2 = add_vertex(key2, g);
-       key2vertex.insert(make_pair(key2, v2));
+       key2vertex.insert(std::pair<KEY,KEY>(key2, v2));
      } else
        v2 = key2vertex[key2];
 
+    // Add an edge with weight 1.0
     boost::property<boost::edge_weight_t, double> edge_property(1.0);  // assume constant edge weight here
     boost::add_edge(v1, v2, edge_property, g);
   }
@@ -223,11 +230,10 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
 }
 
 /* ************************************************************************* */
-
-/* ************************************************************************* */
 template<class G, class KEY, class FACTOR2>
 PredecessorMap<KEY> findMinimumSpanningTree(const G& fg) {
 
+  // Convert to a graph that boost understands
   SDGraph<KEY> g = gtsam::toBoostGraph<G, FACTOR2, KEY>(fg);
 
   // find minimum spanning tree
@@ -237,13 +243,12 @@ PredecessorMap<KEY> findMinimumSpanningTree(const G& fg) {
   // convert edge to string pairs
   PredecessorMap<KEY> tree;
   typename SDGraph<KEY>::vertex_iterator itVertex = boost::vertices(g).first;
-  typename std::vector<typename SDGraph<KEY>::Vertex>::iterator vi;
-  for (vi = p_map.begin(); vi != p_map.end(); itVertex++, vi++) {
+  BOOST_FOREACH(const typename SDGraph<KEY>::Vertex& vi, p_map){
     KEY key = boost::get(boost::vertex_name, g, *itVertex);
-    KEY parent = boost::get(boost::vertex_name, g, *vi);
+    KEY parent = boost::get(boost::vertex_name, g, vi);
     tree.insert(key, parent);
+    itVertex++;
   }
-
   return tree;
 }
 

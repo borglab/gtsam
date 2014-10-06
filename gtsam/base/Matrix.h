@@ -467,7 +467,7 @@ GTSAM_EXPORT Matrix Cayley(const Matrix& A);
 /// Implementation of Cayley transform using fixed size matrices to let
 /// Eigen do more optimization
 template<int N>
-Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
+Eigen::Matrix<double, N, N> CayleyFixed(const Eigen::Matrix<double, N, N>& A) {
   typedef Eigen::Matrix<double, N, N> FMat;
   return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
 }

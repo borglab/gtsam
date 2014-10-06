@@ -1127,6 +1127,12 @@ TEST( matrix, svd2 )
 
   svd(sampleA, U, s, V);
 
+  // take care of sign ambiguity
+  if (U(0, 1) > 0) {
+    U = -U;
+    V = -V;
+  }
+
   EXPECT(assert_equal(expectedU,U));
   EXPECT(assert_equal(expected_s,s,1e-9));
   EXPECT(assert_equal(expectedV,V));
@@ -1143,6 +1149,13 @@ TEST( matrix, svd3 )
   Matrix expectedV = (Matrix(3, 2) << 0.,1.,0.,0.,-1.,0.);
 
   svd(sampleAt, U, s, V);
+
+  // take care of sign ambiguity
+  if (U(0, 0) > 0) {
+    U = -U;
+    V = -V;
+  }
+
   Matrix S = diag(s);
   Matrix t = U * S;
   Matrix Vt = trans(V);
@@ -1176,6 +1189,17 @@ TEST( matrix, svd4 )
      0.6723,   0.7403);
 
   svd(A, U, s, V);
+
+  // take care of sign ambiguity
+  if (U(0, 0) < 0) {
+    U.col(0) = -U.col(0);
+    V.col(0) = -V.col(0);
+  }
+  if (U(0, 1) < 0) {
+    U.col(1) = -U.col(1);
+    V.col(1) = -V.col(1);
+  }
+
   Matrix reconstructed = U * diag(s) * trans(V);
 
   EXPECT(assert_equal(A, reconstructed, 1e-4));

@@ -635,10 +635,11 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
   // Do dense elimination
   GaussianConditional::shared_ptr conditional;
   try {
-    VerticalBlockMatrix Ab = jointFactor->info_.choleskyPartial(keys.size());
-    conditional = boost::make_shared<GaussianConditional>(jointFactor->keys(), keys.size(), Ab);
+    size_t numberOfKeysToEliminate = keys.size();
+    VerticalBlockMatrix Ab = jointFactor->info_.choleskyPartial(numberOfKeysToEliminate);
+    conditional = boost::make_shared<GaussianConditional>(jointFactor->keys(), numberOfKeysToEliminate, Ab);
     // Erase the eliminated keys in the remaining factor
-    jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + keys.size());
+    jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + numberOfKeysToEliminate);
   } catch(CholeskyFailed&) {
     throw IndeterminantLinearSystemException(keys.front());
   }

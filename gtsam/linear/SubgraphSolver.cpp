@@ -14,6 +14,7 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/iterative-inl.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/graph-inl.h>
@@ -143,4 +144,11 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
   return boost::tie(At, Ac);
 }
 
+/****************************************************************************/
+VectorValues SubgraphSolver::optimize (
+  const GaussianFactorGraph &gfg,
+  const KeyInfo &keyInfo,
+  const std::map<Key, Vector> &lambda,
+  const VectorValues &initial
+) { return VectorValues(); }
 } // \namespace gtsam

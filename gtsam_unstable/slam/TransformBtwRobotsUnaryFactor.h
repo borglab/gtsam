@@ -68,7 +68,7 @@ namespace gtsam {
 
     /** Constructor */
     TransformBtwRobotsUnaryFactor(Key key, const VALUE& measured, Key keyA, Key keyB,
-        const gtsam::Values valA, const gtsam::Values valB,
+        const gtsam::Values& valA, const gtsam::Values& valB,
         const SharedGaussian& model) :
           Base(cref_list_of<1>(key)), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
           model_(model){
@@ -111,7 +111,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /* ************************************************************************* */
-    void setValAValB(const gtsam::Values valA, const gtsam::Values valB){
+    void setValAValB(const gtsam::Values& valA, const gtsam::Values& valB){
       if ( (!valA.exists(keyA_)) && (!valB.exists(keyA_)) && (!valA.exists(keyB_)) && (!valB.exists(keyB_)) )
         throw("something is wrong!");
 

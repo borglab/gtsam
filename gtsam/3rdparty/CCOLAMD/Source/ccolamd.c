@@ -617,11 +617,12 @@
 
 #include "ccolamd.h"
 
-#include <stdlib.h>
 #include <math.h>
 #include <limits.h>
 
 #ifdef MATLAB_MEX_FILE
+#include <stdint.h>
+typedef uint16_t char16_t;
 #include "mex.h"
 #include "matrix.h"
 #endif

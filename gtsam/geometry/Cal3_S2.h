@@ -165,6 +165,16 @@ public:
    */
   Vector3 calibrate(const Vector3& p) const;
 
+  /// "Between", subtracts calibrations. between(p,q) == compose(inverse(p),q)
+  inline Cal3_S2 between(const Cal3_S2& q,
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none) const {
+    if(H1) *H1 = -eye(5);
+    if(H2) *H2 = eye(5);
+    return Cal3_S2(q.fx_-fx_, q.fy_-fy_, q.s_-s_, q.u0_-u0_, q.v0_-v0_);
+  }
+
+
   /// @}
   /// @name Manifold
   /// @{
