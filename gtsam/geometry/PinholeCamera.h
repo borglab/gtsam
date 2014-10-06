@@ -291,15 +291,68 @@ public:
 
   /** project a point from world coordinate to the image
    *  @param pw is a point in world coordinates
+   */
+  inline Point2 project(const Point3& pw) const {
+
+    // Transform to camera coordinates and check cheirality
+    const Point3 pc = pose_.transform_to(pw);
+
+    // Project to normalized image coordinates
+    const Point2 pn = project_to_camera(pc);
+
+    return K_.uncalibrate(pn);
+  }
+
+  typedef Eigen::Matrix<double,2,Calibration::dimension> Matrix2K;
+
+  /** project a point from world coordinate to the image
+   *  @param pw is a point in world coordinates
    *  @param Dpose is the Jacobian w.r.t. pose3
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
   inline Point2 project(
       const Point3& pw, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none,
-      boost::optional<Matrix&> Dcal = boost::none) const {
+      boost::optional<Matrix26&> Dpose,
+      boost::optional<Matrix23&> Dpoint,
+      boost::optional<Matrix2K&> Dcal) const {
+
+    // Transform to camera coordinates and check cheirality
+    const Point3 pc = pose_.transform_to(pw);
+
+    // Project to normalized image coordinates
+    const Point2 pn = project_to_camera(pc);
+
+    if (Dpose || Dpoint) {
+      const double z = pc.z(), d = 1.0 / z;
+
+      // uncalibration
+      Matrix2 Dpi_pn;
+      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
+
+      // chain the Jacobian matrices
+      if (Dpose) {
+        calculateDpose(pn, d, Dpi_pn, *Dpose);
+      }
+      if (Dpoint) {
+        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
+      }
+      return pi;
+    } else
+      return K_.uncalibrate(pn, Dcal, boost::none);
+  }
+
+  /** project a point from world coordinate to the image
+   *  @param pw is a point in world coordinates
+   *  @param Dpose is the Jacobian w.r.t. pose3
+   *  @param Dpoint is the Jacobian w.r.t. point3
+   *  @param Dcal is the Jacobian w.r.t. calibration
+   */
+  inline Point2 project(
+      const Point3& pw, //
+      boost::optional<Matrix&> Dpose,
+      boost::optional<Matrix&> Dpoint,
+      boost::optional<Matrix&> Dcal) const {
 
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
