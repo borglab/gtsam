@@ -44,7 +44,7 @@ private:
 
   typedef std::pair<Key, Matrix> Pair;
 
-  /// Insert terms into jacobians_, premultiplying by H, adding if already exists
+  /// Insert terms into jacobians_, adding if already exists
   void add(const JacobianMap& terms) {
     BOOST_FOREACH(const Pair& term, terms) {
       JacobianMap::iterator it = jacobians_.find(term.first);
@@ -80,34 +80,28 @@ public:
     jacobians_[key] = Eigen::MatrixXd::Identity(n, n);
   }
 
-  /// Construct value dependent on a single key, with Jacobain H
-  Augmented(const T& t, Key key, const Matrix& H) :
+  /// Construct value, pre-multiply jacobians by dTdA
+  Augmented(const T& t, const Matrix& dTdA, const JacobianMap& jacobians) :
       value_(t) {
-    jacobians_[key] = H;
+    add(dTdA, jacobians);
   }
 
-  /// Construct value, pre-multiply jacobians by H
-  Augmented(const T& t, const Matrix& H, const JacobianMap& jacobians) :
+  /// Construct value, pre-multiply jacobians
+  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
+      const Matrix& dTdA2, const JacobianMap& jacobians2) :
       value_(t) {
-    add(H, jacobians);
+    add(dTdA1, jacobians1);
+    add(dTdA2, jacobians2);
   }
 
-  /// Construct value, pre-multiply jacobians by H
-  Augmented(const T& t, const Matrix& H1, const JacobianMap& jacobians1,
-      const Matrix& H2, const JacobianMap& jacobians2) :
+  /// Construct value, pre-multiply jacobians
+  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
+      const Matrix& dTdA2, const JacobianMap& jacobians2, const Matrix& dTdA3,
+      const JacobianMap& jacobians3) :
       value_(t) {
-    add(H1, jacobians1);
-    add(H2, jacobians2);
-  }
-
-  /// Construct value, pre-multiply jacobians by H
-  Augmented(const T& t, const Matrix& H1, const JacobianMap& jacobians1,
-      const Matrix& H2, const JacobianMap& jacobians2,
-      const Matrix& H3, const JacobianMap& jacobians3) :
-      value_(t) {
-    add(H2, jacobians2);
-    add(H3, jacobians3);
-    add(H1, jacobians1);
+    add(dTdA1, jacobians1);
+    add(dTdA2, jacobians2);
+    add(dTdA3, jacobians3);
   }
 
   /// Return value
@@ -147,7 +141,7 @@ struct JacobianTrace {
     return t;
   }
   virtual void reverseAD(JacobianMap& jacobians) const = 0;
-  virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const = 0;
+  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -228,7 +222,7 @@ public:
     virtual void reverseAD(JacobianMap& jacobians) const {
     }
     /// Base case: we simply ignore the given df/dT
-    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
+    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
     }
   };
 
@@ -289,12 +283,12 @@ public:
       jacobians[key] = Eigen::MatrixXd::Identity(n, n);
     }
     /// Base case: given df/dT, add it jacobians with correct key and we are done
-    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
+    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
       JacobianMap::iterator it = jacobians.find(key);
       if (it != jacobians.end())
-        it->second += H;
+        it->second += dFdT;
       else
-        jacobians[key] = H;
+        jacobians[key] = dFdT;
     }
   };
 
@@ -350,23 +344,23 @@ public:
   virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
     Augmented<A> argument = this->expressionA_->forward(values);
-    Matrix H;
+    Matrix dTdA;
     T t = function_(argument.value(),
-        argument.constant() ? none : boost::optional<Matrix&>(H));
-    return Augmented<T>(t, H, argument.jacobians());
+        argument.constant() ? none : boost::optional<Matrix&>(dTdA));
+    return Augmented<T>(t, dTdA, argument.jacobians());
   }
 
   /// Trace structure for reverse AD
   struct Trace: public JacobianTrace<T> {
     boost::shared_ptr<JacobianTrace<A> > trace1;
-    Matrix H1;
+    Matrix dTdA;
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
-      trace1->reverseAD(H1, jacobians);
+      trace1->reverseAD(dTdA, jacobians);
     }
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
-      trace1->reverseAD(H * H1, jacobians);
+    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+      trace1->reverseAD(dFdT * dTdA, jacobians);
     }
   };
 
@@ -375,7 +369,7 @@ public:
       const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
     trace->trace1 = this->expressionA_->traceExecution(values);
-    trace->t = function_(trace->trace1->value(), trace->H1);
+    trace->t = function_(trace->trace1->value(), trace->dTdA);
     return trace;
   }
 };
@@ -430,29 +424,29 @@ public:
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
-    Augmented<A1> argument1 = this->expressionA1_->forward(values);
-    Augmented<A2> argument2 = this->expressionA2_->forward(values);
-    Matrix H1, H2;
-    T t = function_(argument1.value(), argument2.value(),
-        argument1.constant() ? none : boost::optional<Matrix&>(H1),
-        argument2.constant() ? none : boost::optional<Matrix&>(H2));
-    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians());
+    Augmented<A1> a1 = this->expressionA1_->forward(values);
+    Augmented<A2> a2 = this->expressionA2_->forward(values);
+    Matrix dTdA1, dTdA2;
+    T t = function_(a1.value(), a2.value(),
+        a1.constant() ? none : boost::optional<Matrix&>(dTdA1),
+        a2.constant() ? none : boost::optional<Matrix&>(dTdA2));
+    return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians());
   }
 
   /// Trace structure for reverse AD
   struct Trace: public JacobianTrace<T> {
     boost::shared_ptr<JacobianTrace<A1> > trace1;
     boost::shared_ptr<JacobianTrace<A2> > trace2;
-    Matrix H1, H2;
+    Matrix dTdA1, dTdA2;
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
-      trace1->reverseAD(H1, jacobians);
-      trace2->reverseAD(H2, jacobians);
+      trace1->reverseAD(dTdA1, jacobians);
+      trace2->reverseAD(dTdA2, jacobians);
     }
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
-      trace1->reverseAD(H * H1, jacobians);
-      trace2->reverseAD(H * H2, jacobians);
+    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+      trace1->reverseAD(dFdT * dTdA1, jacobians);
+      trace2->reverseAD(dFdT * dTdA2, jacobians);
     }
   };
 
@@ -463,7 +457,7 @@ public:
     trace->trace1 = this->expressionA1_->traceExecution(values);
     trace->trace2 = this->expressionA2_->traceExecution(values);
     trace->t = function_(trace->trace1->value(), trace->trace2->value(),
-        trace->H1, trace->H2);
+        trace->dTdA1, trace->dTdA2);
     return trace;
   }
 
@@ -489,9 +483,12 @@ private:
   boost::shared_ptr<ExpressionNode<A3> > expressionA3_;
 
   /// Constructor with a ternary function f, and three input arguments
-  TernaryExpression(Function f, //
-      const Expression<A1>& e1, const Expression<A2>& e2, const Expression<A3>& e3) :
-      function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()), expressionA3_(e3.root()) {
+  TernaryExpression(
+      Function f, //
+      const Expression<A1>& e1, const Expression<A2>& e2,
+      const Expression<A3>& e3) :
+      function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()), expressionA3_(
+          e3.root()) {
   }
 
   friend class Expression<T> ;
@@ -516,21 +513,23 @@ public:
   virtual T value(const Values& values) const {
     using boost::none;
     return function_(this->expressionA1_->value(values),
-        this->expressionA2_->value(values), this->expressionA3_->value(values), none, none, none);
+        this->expressionA2_->value(values), this->expressionA3_->value(values),
+        none, none, none);
   }
 
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
-    Augmented<A1> argument1 = this->expressionA1_->forward(values);
-    Augmented<A2> argument2 = this->expressionA2_->forward(values);
-    Augmented<A3> argument3 = this->expressionA3_->forward(values);
-    Matrix H1, H2, H3;
-    T t = function_(argument1.value(), argument2.value(), argument3.value(),
-        argument1.constant() ? none : boost::optional<Matrix&>(H1),
-        argument2.constant() ? none : boost::optional<Matrix&>(H2),
-        argument3.constant() ? none : boost::optional<Matrix&>(H3));
-    return Augmented<T>(t, H1, argument1.jacobians(), H2, argument2.jacobians(), H3, argument3.jacobians());
+    Augmented<A1> a1 = this->expressionA1_->forward(values);
+    Augmented<A2> a2 = this->expressionA2_->forward(values);
+    Augmented<A3> a3 = this->expressionA3_->forward(values);
+    Matrix dTdA1, dTdA2, dTdA3;
+    T t = function_(a1.value(), a2.value(), a3.value(),
+        a1.constant() ? none : boost::optional<Matrix&>(dTdA1),
+        a2.constant() ? none : boost::optional<Matrix&>(dTdA2),
+        a3.constant() ? none : boost::optional<Matrix&>(dTdA3));
+    return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians(), dTdA3,
+        a3.jacobians());
   }
 
   /// Trace structure for reverse AD
@@ -538,18 +537,18 @@ public:
     boost::shared_ptr<JacobianTrace<A1> > trace1;
     boost::shared_ptr<JacobianTrace<A2> > trace2;
     boost::shared_ptr<JacobianTrace<A3> > trace3;
-    Matrix H1, H2, H3;
+    Matrix dTdA1, dTdA2, dTdA3;
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
-      trace1->reverseAD(H1, jacobians);
-      trace2->reverseAD(H2, jacobians);
-      trace3->reverseAD(H3, jacobians);
+      trace1->reverseAD(dTdA1, jacobians);
+      trace2->reverseAD(dTdA2, jacobians);
+      trace3->reverseAD(dTdA3, jacobians);
     }
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    virtual void reverseAD(const Matrix& H, JacobianMap& jacobians) const {
-      trace1->reverseAD(H * H1, jacobians);
-      trace2->reverseAD(H * H2, jacobians);
-      trace3->reverseAD(H * H3, jacobians);
+    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+      trace1->reverseAD(dFdT * dTdA1, jacobians);
+      trace2->reverseAD(dFdT * dTdA2, jacobians);
+      trace3->reverseAD(dFdT * dTdA3, jacobians);
     }
   };
 
@@ -560,8 +559,8 @@ public:
     trace->trace1 = this->expressionA1_->traceExecution(values);
     trace->trace2 = this->expressionA2_->traceExecution(values);
     trace->trace3 = this->expressionA3_->traceExecution(values);
-    trace->t = function_(trace->trace1->value(), trace->trace2->value(), trace->trace3->value(),
-        trace->H1, trace->H2, trace->H3);
+    trace->t = function_(trace->trace1->value(), trace->trace2->value(),
+        trace->trace3->value(), trace->dTdA1, trace->dTdA2, trace->dTdA3);
     return trace;
   }
 
