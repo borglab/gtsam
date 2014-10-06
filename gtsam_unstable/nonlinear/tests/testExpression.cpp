@@ -32,8 +32,8 @@ using namespace gtsam;
 /* ************************************************************************* */
 
 template<class CAL>
-Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
-    boost::optional<Matrix&> Dp) {
+Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix25&> Dcal,
+    boost::optional<Matrix2&> Dp) {
   return K.uncalibrate(p, Dcal, Dp);
 }
 

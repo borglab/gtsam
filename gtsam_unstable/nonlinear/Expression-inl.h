@@ -386,8 +386,8 @@ public:
   typedef Eigen::Matrix<double,T::dimension,A1::dimension> JacobianTA1;
   typedef Eigen::Matrix<double,T::dimension,A2::dimension> JacobianTA2;
   typedef boost::function<
-      T(const A1&, const A2&, boost::optional<Matrix&>,
-          boost::optional<Matrix&>)> Function;
+      T(const A1&, const A2&, boost::optional<JacobianTA1&>,
+          boost::optional<JacobianTA2&>)> Function;
 
 private:
 
@@ -429,10 +429,11 @@ public:
     using boost::none;
     Augmented<A1> a1 = this->expressionA1_->forward(values);
     Augmented<A2> a2 = this->expressionA2_->forward(values);
-    Matrix dTdA1, dTdA2;
+    JacobianTA1 dTdA1;
+    JacobianTA2 dTdA2;
     T t = function_(a1.value(), a2.value(),
-        a1.constant() ? none : boost::optional<Matrix&>(dTdA1),
-        a2.constant() ? none : boost::optional<Matrix&>(dTdA2));
+        a1.constant() ? none : boost::optional<JacobianTA1&>(dTdA1),
+        a2.constant() ? none : boost::optional<JacobianTA2&>(dTdA2));
     return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians());
   }
 
@@ -440,7 +441,8 @@ public:
   struct Trace: public JacobianTrace<T> {
     boost::shared_ptr<JacobianTrace<A1> > trace1;
     boost::shared_ptr<JacobianTrace<A2> > trace2;
-    Matrix dTdA1, dTdA2;
+    JacobianTA1 dTdA1;
+    JacobianTA2 dTdA2;
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
       trace1->reverseAD(dTdA1, jacobians);
