@@ -295,7 +295,7 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
     // test the diagonal
     GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
-    GaussianFactorGraph damped = optimizer.buildDampedSystem(*linear);
+    GaussianFactorGraph damped = *optimizer.buildDampedSystem(*linear);
     VectorValues d = linear->hessianDiagonal(), //
     expectedDiagonal = d + params.lambdaInitial * d;
     EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
@@ -309,7 +309,7 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
     EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
 
     // Check that the gradient is zero for damped system (it is not!)
-    damped = optimizer.buildDampedSystem(*linear);
+    damped = *optimizer.buildDampedSystem(*linear);
     VectorValues actualGradient = damped.gradientAtZero();
     EXPECT(assert_equal(expectedGradient,actualGradient));
 

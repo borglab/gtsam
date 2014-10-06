@@ -4,7 +4,30 @@ For more information, see
 
     http://geographiclib.sourceforge.net/
 
-The current version of the library is 1.34.
+The current version of the library is 1.35.
+
+Changes between 1.35 (released 2014-03-13) and 1.34 versions:
+
+   * Fix blunder in UTMUPS::EncodeEPSG (found by Ben Adler).
+
+   * Matlab wrapper routines geodesic{direct,inverse,line} switch to
+     "exact" routes if |f| > 0.02.
+
+   * GeodSolve.cgi allows ellipsoid to be set (and uses the -E option
+     for GeodSolve).
+
+   * Set title in HTML versions of man pages for the utility programs.
+
+   * Changes in cmake support:
+     + add _d to names of executables in debug mode of Visual Studio;
+     + add support for Android (cmake-only), thanks to Pullan Yu;
+     + check CPACK version numbers supplied on command line;
+     + configured version of project-config.cmake.in is
+       project-config.cmake (instead of geographiclib-config.cmake), to
+       prevent find_package incorrectly using this file;
+     + fix tests with multi-line output;
+     + this release includes a file, pom.xml, which is used by an
+       experimental build system (based on maven) at SRI.
 
 Changes between 1.34 (released 2013-12-11) and 1.33 versions:
 

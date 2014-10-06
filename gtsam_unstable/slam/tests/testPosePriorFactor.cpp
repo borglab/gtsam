@@ -90,12 +90,23 @@ TEST( PosePriorFactor, Error ) {
 
   // The expected error
   Vector expectedError(6);
+  // TODO: The solution depends on choice of Pose3 and Rot3 Expmap mode!
+#if defined(GTSAM_ROT3_EXPMAP)
+  expectedError << -0.182948257976108,
+                    0.13851858011118,
+                   -0.157375974517456,
+                    0.766913166076379,
+                   -1.22976117053126,
+                    0.949345561430261;
+#else
   expectedError << -0.184137861505414,
                     0.139419283914526,
                    -0.158399296722242,
                     0.740211733817804,
                    -1.198210282560946,
                     1.008156093015192;
+#endif
+
 
   // Create a factor and calculate the error
   Key poseKey(1);
@@ -116,12 +127,22 @@ TEST( PosePriorFactor, ErrorWithTransform ) {
 
   // The expected error
   Vector expectedError(6);
+  // TODO: The solution depends on choice of Pose3 and Rot3 Expmap mode!
+#if defined(GTSAM_ROT3_EXPMAP)
+  expectedError << -0.0224998729281528,
+                    0.191947887288328,
+                    0.273826035236257,
+                    1.36483391560855,
+                   -0.754590051075035,
+                    0.585710674473659;
+#else
   expectedError << -0.022712885347328,
                     0.193765110165872,
                     0.276418420819283,
                     1.497519863757366,
                    -0.549375791422721,
                     0.452761203187666;
+#endif
 
   // Create a factor and calculate the error
   Key poseKey(1);
@@ -152,7 +173,7 @@ TEST( PosePriorFactor, Jacobian ) {
   factor.evaluateError(pose, actualH1);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH1, actualH1, 1e-9));
+  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -176,7 +197,7 @@ TEST( PosePriorFactor, JacobianWithTransform ) {
   factor.evaluateError(pose, actualH1);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH1, actualH1, 1e-9));
+  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
 /* ************************************************************************* */

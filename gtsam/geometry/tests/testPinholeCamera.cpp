@@ -183,12 +183,11 @@ TEST( PinholeCamera, Dproject)
 }
 
 /* ************************************************************************* */
-static Point2 projectInfinity3(const Pose3& pose, const Point2& point2D, const Cal3_S2& cal) {
-  Point3 point(point2D.x(), point2D.y(), 1.0);
-  return Camera(pose,cal).projectPointAtInfinity(point);
-}
-
-/* ************************************************************************* */
+//static Point2 projectInfinity3(const Pose3& pose, const Point2& point2D, const Cal3_S2& cal) {
+//  Point3 point(point2D.x(), point2D.y(), 1.0);
+//  return Camera(pose,cal).projectPointAtInfinity(point);
+//}
+//
 //TEST( PinholeCamera, Dproject_Infinity)
 //{
 //  Matrix Dpose, Dpoint, Dcal;
@@ -202,7 +201,7 @@ static Point2 projectInfinity3(const Pose3& pose, const Point2& point2D, const C
 //  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
 //  CHECK(assert_equal(numerical_cal,   Dcal,   1e-7));
 //}
-
+//
 /* ************************************************************************* */
 static Point2 project4(const Camera& camera, const Point3& point) {
   return camera.project2(point);

@@ -35,7 +35,7 @@ namespace gtsam {
 /**
  * Find the full path to an example dataset distributed with gtsam.  The name
  * may be specified with or without a file extension - if no extension is
- * give, this function first looks for the .graph extension, then .txt.  We
+ * given, this function first looks for the .graph extension, then .txt.  We
  * first check the gtsam source tree for the file, followed by the installed
  * example dataset location.  Both the source tree and installed locations
  * are obtained from CMake during compilation.
@@ -44,7 +44,29 @@ namespace gtsam {
  * search process described above.
  */
 GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
+
+/**
+ * Creates a temporary file name that needs to be ignored in .gitingnore
+ * for checking read-write oprations
+ */
+GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
 #endif
+
+/// Indicates how noise parameters are stored in file
+enum NoiseFormat {
+  NoiseFormatG2O, ///< Information matrix I11, I12, I13, I22, I23, I33
+  NoiseFormatTORO, ///< Information matrix, but inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
+  NoiseFormatGRAPH, ///< default: toro-style order, but covariance matrix !
+  NoiseFormatCOV ///< Covariance matrix C11, C12, C13, C22, C23, C33
+};
+
+/// Robust kernel type to wrap around quadratic noise model
+enum KernelFunctionType {
+  KernelFunctionTypeNONE, KernelFunctionTypeHUBER, KernelFunctionTypeTUKEY
+};
+
+/// Return type for load functions
+typedef std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> GraphAndValues;
 
 /**
  * Load TORO 2D Graph
@@ -53,59 +75,90 @@ GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
  * @param addNoise add noise to the edges
  * @param smart try to reduce complexity of covariance to cheapest model
  */
-GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-    std::pair<std::string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
-    int maxID = 0, bool addNoise = false, bool smart = true);
+GTSAM_EXPORT GraphAndValues load2D(
+    std::pair<std::string, SharedNoiseModel> dataset, int maxID = 0,
+    bool addNoise = false,
+    bool smart = true, //
+    NoiseFormat noiseFormat = NoiseFormatGRAPH,
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /**
- * Load TORO 2D Graph
+ * Load TORO/G2O style graph files
  * @param filename
  * @param model optional noise model to use instead of one specified by file
  * @param maxID if non-zero cut out vertices >= maxID
  * @param addNoise add noise to the edges
  * @param smart try to reduce complexity of covariance to cheapest model
+ * @param noiseFormat how noise parameters are stored
+ * @param kernelFunctionType whether to wrap the noise model in a robust kernel
+ * @return graph and initial values
  */
-GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-    const std::string& filename,
-    boost::optional<gtsam::SharedDiagonal> model = boost::optional<
-    noiseModel::Diagonal::shared_ptr>(), int maxID = 0, bool addNoise = false,
-    bool smart = true);
+GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
+    SharedNoiseModel model = SharedNoiseModel(), int maxID = 0, bool addNoise =
+        false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatGRAPH, //
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
-GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
-    const std::string& filename,
-    gtsam::noiseModel::Base::shared_ptr& model, int maxID = 0);
+/// @deprecated load2D now allows for arbitrary models and wrapping a robust kernel
+GTSAM_EXPORT GraphAndValues load2D_robust(const std::string& filename,
+    noiseModel::Base::shared_ptr& model, int maxID = 0);
 
 /** save 2d graph */
-GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph, const Values& config,
-    const noiseModel::Diagonal::shared_ptr model, const std::string& filename);
+GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
+    const Values& config, const noiseModel::Diagonal::shared_ptr model,
+    const std::string& filename);
+
+/**
+ * @brief This function parses a g2o file and stores the measurements into a
+ * NonlinearFactorGraph and the initial guess in a Values structure
+ * @param filename The name of the g2o file\
+ * @param is3D indicates if the file describes a 2D or 3D problem
+ * @param kernelFunctionType whether to wrap the noise model in a robust kernel
+ * @return graph and initial values
+ */
+GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D = false,
+    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
+
+/**
+ * @brief This function writes a g2o file from
+ * NonlinearFactorGraph and a Values structure
+ * @param filename The name of the g2o file to write
+ * @param graph NonlinearFactor graph storing the measurements
+ * @param estimate Values
+ */
+GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
+    const Values& estimate, const std::string& filename);
 
 /**
  * Load TORO 3D Graph
  */
-GTSAM_EXPORT bool load3D(const std::string& filename);
+GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
 /// A measurement with its camera index
-typedef std::pair<size_t,gtsam::Point2> SfM_Measurement;
+typedef std::pair<size_t, Point2> SfM_Measurement;
 
 /// Define the structure for the 3D points
-struct SfM_Track
-{
-  gtsam::Point3 p; ///< 3D position of the point
-  float r,g,b; ///< RGB color of the 3D point
+struct SfM_Track {
+  Point3 p; ///< 3D position of the point
+  float r, g, b; ///< RGB color of the 3D point
   std::vector<SfM_Measurement> measurements; ///< The 2D image projections (id,(u,v))
-  size_t number_measurements() const { return measurements.size();}
+  size_t number_measurements() const {
+    return measurements.size();
+  }
 };
 
 /// Define the structure for the camera poses
-typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> SfM_Camera;
+typedef PinholeCamera<Cal3Bundler> SfM_Camera;
 
 /// Define the structure for SfM data
-struct SfM_data
-{
-  std::vector<SfM_Camera> cameras;    ///< Set of cameras
+struct SfM_data {
+  std::vector<SfM_Camera> cameras; ///< Set of cameras
   std::vector<SfM_Track> tracks; ///< Sparse set of points
-  size_t number_cameras() const { return cameras.size();}   ///< The number of camera poses
-  size_t number_tracks()  const { return tracks.size();}  ///< The number of reconstructed 3D points
+  size_t number_cameras() const {
+    return cameras.size();
+  } ///< The number of camera poses
+  size_t number_tracks() const {
+    return tracks.size();
+  } ///< The number of reconstructed 3D points
 };
 
 /**
@@ -146,7 +199,8 @@ GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
  * assumes that the keys are "x1" for pose 1 (or "c1" for camera 1) and "l1" for landmark 1
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool writeBALfromValues(const std::string& filename, const SfM_data &data, Values& values);
+GTSAM_EXPORT bool writeBALfromValues(const std::string& filename,
+    const SfM_data &data, Values& values);
 
 /**
  * @brief This function converts an openGL camera pose to an GTSAM camera pose
@@ -188,6 +242,5 @@ GTSAM_EXPORT Values initialCamerasEstimate(const SfM_data& db);
  * @return Values
  */
 GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfM_data& db);
-
 
 } // namespace gtsam

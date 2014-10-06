@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/linear/VectorValues.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 class NonlinearOptimizerMoreOptimizationTest;
@@ -40,9 +41,8 @@ public:
     SILENT = 0, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
   };
 
-private:
-  VerbosityLM verbosityLMTranslator(const std::string &s) const;
-  std::string verbosityLMTranslator(VerbosityLM value) const;
+  static VerbosityLM verbosityLMTranslator(const std::string &s);
+  static std::string verbosityLMTranslator(VerbosityLM value);
 
 public:
 
@@ -113,7 +113,6 @@ public:
   inline void setDiagonalDamping(bool flag) {
     diagonalDamping = flag;
   }
-
   inline void setUseFixedLambdaFactor(bool flag) {
     useFixedLambdaFactor_ = flag;
   }
@@ -255,8 +254,10 @@ public:
   }
 
   /** Build a damped system for a specific lambda */
-  GaussianFactorGraph buildDampedSystem(const GaussianFactorGraph& linear);
+  GaussianFactorGraph::shared_ptr buildDampedSystem(const GaussianFactorGraph& linear);
   friend class ::NonlinearOptimizerMoreOptimizationTest;
+
+  void writeLogFile(double currentError);
 
   /// @}
 

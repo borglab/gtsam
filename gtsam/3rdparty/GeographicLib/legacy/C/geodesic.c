@@ -700,7 +700,7 @@ real geod_geninverse(const struct geod_geodesic* g,
     /* Add the check for sig12 since zero length geodesics might yield m12 <
      * 0.  Test case was
      *
-     *    echo 20.001 0 20.001 0 | Geod -i
+     *    echo 20.001 0 20.001 0 | GeodSolve -i
      *
      * In fact, we will have sig12 > pi/2 for meridional geodesic which is
      * not a shortest path. */

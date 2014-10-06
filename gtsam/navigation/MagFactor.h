@@ -37,7 +37,15 @@ class MagFactor: public NoiseModelFactor1<Rot2> {
 
 public:
 
-  /** Constructor */
+  /**
+   * Constructor of factor that estimates nav to body rotation bRn
+   * @param key of the unknown rotation bRn in the factor graph
+   * @param measured magnetometer reading, a 3-vector
+   * @param scale by which a unit vector is scaled to yield a magnetometer reading
+   * @param direction of the local magnetic field, see e.g. http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
+   * @param bias of the magnetometer, modeled as purely additive (after scaling)
+   * @param model of the additive Gaussian noise that is assumed
+   */
   MagFactor(Key key, const Point3& measured, double scale,
       const Unit3& direction, const Point3& bias,
       const SharedNoiseModel& model) :
@@ -54,8 +62,11 @@ public:
   static Point3 unrotate(const Rot2& R, const Point3& p,
       boost::optional<Matrix&> HR = boost::none) {
     Point3 q = Rot3::yaw(R.theta()).unrotate(p, HR);
-    if (HR)
-      *HR = HR->col(2);
+    if (HR) {
+      // assign to temporary first to avoid error in Win-Debug mode
+      Matrix H = HR->col(2);
+      *HR = H;
+    }
     return q;
   }
 

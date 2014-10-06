@@ -58,7 +58,7 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 /* ************************************************************************* */
-Matrix Unit3::basis() const {
+const Matrix& Unit3::basis() const {
 
   // Return cached version if exists
   if (B_.rows() == 3)
@@ -101,6 +101,7 @@ Matrix Unit3::skew() const {
 
 /* ************************************************************************* */
 Vector Unit3::error(const Unit3& q, boost::optional<Matrix&> H) const {
+  // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
   Matrix Bt = basis().transpose();
   Vector xi = Bt * q.p_.vector();
   if (H)
@@ -151,9 +152,9 @@ Vector Unit3::localCoordinates(const Unit3& y) const {
   double dot = p.dot(q);
 
   // Check for special cases
-  if (std::abs(dot - 1.0) < 1e-20)
+  if (std::abs(dot - 1.0) < 1e-16)
     return (Vector(2) << 0, 0);
-  else if (std::abs(dot + 1.0) < 1e-20)
+  else if (std::abs(dot + 1.0) < 1e-16)
     return (Vector(2) << M_PI, 0);
   else {
     // no special case

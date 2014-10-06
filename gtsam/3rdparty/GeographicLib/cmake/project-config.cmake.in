@@ -30,7 +30,7 @@ if (IS_ABSOLUTE "@PROJECT_ROOT_DIR@")
   set (_ROOT "@PROJECT_ROOT_DIR@")
   set (@PROJECT_NAME@_INCLUDE_DIRS "@PROJECT_INCLUDE_DIRS@")
   set (@PROJECT_NAME@_LIBRARY_DIRS "${_ROOT}/src")
-  set (@PROJECT_NAME@_BINARY_DIRS "${_ROOT}/src")
+  set (@PROJECT_NAME@_BINARY_DIRS "${_ROOT}/tools")
 else ()
   # This is an installed package; figure out the paths relative to the
   # current directory.

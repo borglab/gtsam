@@ -81,7 +81,7 @@ TEST( Point3, stream) {
 TEST (Point3, normalize) {
   Matrix actualH;
   Point3 point(1, -2, 3); // arbitrary point
-  Point3 expected(point / sqrt(14));
+  Point3 expected(point / sqrt(14.0));
   EXPECT(assert_equal(expected, point.normalize(actualH), 1e-8));
   Matrix expectedH = numericalDerivative11<Point3, Point3>(
       boost::bind(&Point3::normalize, _1, boost::none), point);

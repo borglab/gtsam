@@ -398,7 +398,7 @@ TEST( Pose2, matrix )
 TEST( Pose2, compose_matrix )
 {
   Pose2 gT1(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
-  Pose2 _1T2(M_PI, Point2(-1,4));  // local robot at (-1,4) loooking at negative x
+  Pose2 _1T2(M_PI, Point2(-1,4));  // local robot at (-1,4) looking at negative x
   Matrix gM1(matrix(gT1)),_1M2(matrix(_1T2));
   EXPECT(assert_equal(gM1*_1M2,matrix(gT1.compose(_1T2)))); // RIGHT DOES NOT
 }
@@ -412,7 +412,7 @@ TEST( Pose2, between )
   //
   // *--0--*--*
   Pose2 gT1(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
-  Pose2 gT2(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
+  Pose2 gT2(M_PI, Point2(-1,4));  // robot at (-1,4) looking at negative x
 
   Matrix actualH1,actualH2;
   Pose2 expected(M_PI/2.0, Point2(2,2));

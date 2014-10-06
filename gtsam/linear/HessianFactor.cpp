@@ -367,13 +367,12 @@ void HessianFactor::hessianDiagonal(double* d) const {
   typedef Eigen::Map<DVector> DMap;
 
   // Loop over all variables in the factor
-    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
-      Key j = keys_[pos];
-      // Get the diagonal block, and insert its diagonal
-      Matrix B = info_(pos, pos).selfadjointView();
-      DVector dj =  B.diagonal();
-      DMap(d + 9 * j) += dj;
-    }
+  for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
+    Key j = keys_[pos];
+    // Get the diagonal block, and insert its diagonal
+    const Matrix& B = info_(pos, pos).selfadjointView();
+    DMap(d + 9 * j) += B.diagonal();
+  }
 }
 
 /* ************************************************************************* */
@@ -601,6 +600,23 @@ VectorValues HessianFactor::gradientAtZero() const {
 }
 
 /* ************************************************************************* */
+// TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
+void HessianFactor::gradientAtZero(double* d) const {
+
+  // Use eigen magic to access raw memory
+  typedef Eigen::Matrix<double, 9, 1> DVector;
+  typedef Eigen::Map<DVector> DMap;
+
+  // Loop over all variables in the factor
+    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
+      Key j = keys_[pos];
+      // Get the diagonal block, and insert its diagonal
+      DVector dj =  -info_(pos,size()).knownOffDiagonal();
+      DMap(d + 9 * j) += dj;
+    }
+}
+
+/* ************************************************************************* */
 std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
 EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
 {
@@ -619,10 +635,11 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
   // Do dense elimination
   GaussianConditional::shared_ptr conditional;
   try {
-    VerticalBlockMatrix Ab = jointFactor->info_.choleskyPartial(keys.size());
-    conditional = boost::make_shared<GaussianConditional>(jointFactor->keys(), keys.size(), Ab);
+    size_t numberOfKeysToEliminate = keys.size();
+    VerticalBlockMatrix Ab = jointFactor->info_.choleskyPartial(numberOfKeysToEliminate);
+    conditional = boost::make_shared<GaussianConditional>(jointFactor->keys(), numberOfKeysToEliminate, Ab);
     // Erase the eliminated keys in the remaining factor
-    jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + keys.size());
+    jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + numberOfKeysToEliminate);
   } catch(CholeskyFailed&) {
     throw IndeterminantLinearSystemException(keys.front());
   }

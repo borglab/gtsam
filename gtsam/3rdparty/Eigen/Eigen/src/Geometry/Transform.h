@@ -194,9 +194,9 @@ public:
   /** type of the matrix used to represent the linear part of the transformation */
   typedef Matrix<Scalar,Dim,Dim,Options> LinearMatrixType;
   /** type of read/write reference to the linear part of the transformation */
-  typedef Block<MatrixType,Dim,Dim,int(Mode)==(AffineCompact)> LinearPart;
+  typedef Block<MatrixType,Dim,Dim,int(Mode)==(AffineCompact) && (Options&RowMajor)==0> LinearPart;
   /** type of read reference to the linear part of the transformation */
-  typedef const Block<ConstMatrixType,Dim,Dim,int(Mode)==(AffineCompact)> ConstLinearPart;
+  typedef const Block<ConstMatrixType,Dim,Dim,int(Mode)==(AffineCompact) && (Options&RowMajor)==0> ConstLinearPart;
   /** type of read/write reference to the affine part of the transformation */
   typedef typename internal::conditional<int(Mode)==int(AffineCompact),
                               MatrixType&,
@@ -530,9 +530,9 @@ public:
 
   inline Transform& operator=(const UniformScaling<Scalar>& t);
   inline Transform& operator*=(const UniformScaling<Scalar>& s) { return scale(s.factor()); }
-  inline Transform<Scalar,Dim,(int(Mode)==int(Isometry)?Affine:Isometry)> operator*(const UniformScaling<Scalar>& s) const
+  inline Transform<Scalar,Dim,(int(Mode)==int(Isometry)?int(Affine):int(Mode))> operator*(const UniformScaling<Scalar>& s) const
   {
-    Transform<Scalar,Dim,(int(Mode)==int(Isometry)?Affine:Isometry),Options> res = *this;
+    Transform<Scalar,Dim,(int(Mode)==int(Isometry)?int(Affine):int(Mode)),Options> res = *this;
     res.scale(s.factor());
     return res;
   }

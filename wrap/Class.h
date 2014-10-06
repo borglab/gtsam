@@ -27,7 +27,6 @@
 #include "Method.h"
 #include "StaticMethod.h"
 #include "TypeAttributesTable.h"
-#include <boost/algorithm/string.hpp>
 
 namespace wrap {
 

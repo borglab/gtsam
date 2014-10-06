@@ -27,7 +27,7 @@
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class Unit3: public DerivedValue<Unit3> {
+class GTSAM_EXPORT Unit3: public DerivedValue<Unit3> {
 
 private:
 
@@ -84,7 +84,7 @@ public:
    * It is a 3*2 matrix [b1 b2] composed of two orthogonal directions
    * tangent to the sphere at the current direction.
    */
-  Matrix basis() const;
+  const Matrix& basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
   Matrix skew() const;
@@ -136,6 +136,24 @@ public:
   Vector localCoordinates(const Unit3& s) const;
 
   /// @}
+
+private:
+
+  /// @name Advanced Interface
+  /// @{
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+      ar & boost::serialization::make_nvp("Unit3",
+          boost::serialization::base_object<Value>(*this));
+      ar & BOOST_SERIALIZATION_NVP(p_);
+      ar & BOOST_SERIALIZATION_NVP(B_);
+    }
+
+  /// @}
+
 };
 
 } // namespace gtsam

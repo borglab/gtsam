@@ -46,7 +46,7 @@ public:
   /**
    * @brief Constructor
    * @param nZ measured direction in navigation frame
-   * @param bRef reference direction in body frame (default Z-axis)
+   * @param bRef reference direction in body frame (default Z-axis in NED frame, i.e., [0; 0; 1])
    */
   AttitudeFactor(const Unit3& nZ, const Unit3& bRef = Unit3(0, 0, 1)) :
       nZ_(nZ), bRef_(bRef) {
@@ -61,7 +61,7 @@ public:
  * Version of AttitudeFactor for Rot3
  * @addtogroup Navigation
  */
-class Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public AttitudeFactor {
+class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public AttitudeFactor {
 
   typedef NoiseModelFactor1<Rot3> Base;
 
@@ -129,7 +129,7 @@ private:
  * Version of AttitudeFactor for Pose3
  * @addtogroup Navigation
  */
-class Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
+class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
     public AttitudeFactor {
 
   typedef NoiseModelFactor1<Pose3> Base;

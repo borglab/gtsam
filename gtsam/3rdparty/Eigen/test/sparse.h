@@ -154,16 +154,16 @@ initSparse(double density,
   sparseMat.finalize();
 }
 
-template<typename Scalar> void
+template<typename Scalar,int Options,typename Index> void
 initSparse(double density,
            Matrix<Scalar,Dynamic,1>& refVec,
-           SparseVector<Scalar>& sparseVec,
+           SparseVector<Scalar,Options,Index>& sparseVec,
            std::vector<int>* zeroCoords = 0,
            std::vector<int>* nonzeroCoords = 0)
 {
   sparseVec.reserve(int(refVec.size()*density));
   sparseVec.setZero();
-  for(int i=0; i<refVec.size(); i++)
+  for(Index i=0; i<refVec.size(); i++)
   {
     Scalar v = (internal::random<double>(0,1) < density) ? internal::random<Scalar>() : Scalar(0);
     if (v!=Scalar(0))
@@ -178,10 +178,10 @@ initSparse(double density,
   }
 }
 
-template<typename Scalar> void
+template<typename Scalar,int Options,typename Index> void
 initSparse(double density,
            Matrix<Scalar,1,Dynamic>& refVec,
-           SparseVector<Scalar,RowMajor>& sparseVec,
+           SparseVector<Scalar,Options,Index>& sparseVec,
            std::vector<int>* zeroCoords = 0,
            std::vector<int>* nonzeroCoords = 0)
 {

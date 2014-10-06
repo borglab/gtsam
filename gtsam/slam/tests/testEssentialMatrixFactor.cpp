@@ -128,7 +128,11 @@ TEST (EssentialMatrixFactor, minimization) {
   EssentialMatrix initialE = trueE.retract(
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
   initial.insert(1, initialE);
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
+#else
   EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
+#endif
 
   // Optimize
   LevenbergMarquardtParams parameters;
@@ -339,7 +343,12 @@ TEST (EssentialMatrixFactor, extraMinimization) {
   EssentialMatrix initialE = trueE.retract(
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
   initial.insert(1, initialE);
+
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
+#else
   EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
+#endif
 
   // Optimize
   LevenbergMarquardtParams parameters;

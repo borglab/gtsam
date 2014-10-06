@@ -19,6 +19,8 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/extended_type_info.hpp>
+#include <boost/serialization/singleton.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/optional.hpp>
 #include <gtsam/base/Matrix.h>
@@ -159,10 +161,17 @@ namespace gtsam {
 
       /**
        * A Gaussian noise model created by specifying a square root information matrix.
+       * @param R The (upper-triangular) square root information matrix
+       * @param smart check if can be simplified to derived class
        */
-      static shared_ptr SqrtInformation(const Matrix& R) {
-        return shared_ptr(new Gaussian(R.rows(),R));
-      }
+      static shared_ptr SqrtInformation(const Matrix& R, bool smart = true);
+
+      /**
+       * A Gaussian noise model created by specifying an information matrix.
+       * @param M The information matrix
+       * @param smart check if can be simplified to derived class
+       */
+      static shared_ptr Information(const Matrix& M, bool smart = true);
 
       /**
        * A Gaussian noise model created by specifying a covariance matrix.
@@ -864,6 +873,9 @@ namespace gtsam {
         ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
       }
     };
+    
+    // Helper function
+    GTSAM_EXPORT boost::optional<Vector> checkIfDiagonal(const Matrix M);
 
   } // namespace noiseModel
 

@@ -286,6 +286,9 @@ namespace gtsam {
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;
 
+    /* ************************************************************************* */
+    virtual void gradientAtZero(double* d) const;
+
     /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactor whiten() const;
 

@@ -24,7 +24,7 @@ Optional dependent libraries:
    may be installed from the Ubuntu repositories, and for other platforms it
    may be downloaded from https://www.threadingbuildingblocks.org/
 
-Tested compilers
+Tested compilers:
 
 - GCC 4.2-4.7
 - OSX Clang 2.9-5.0
@@ -35,7 +35,12 @@ Tested systems:
 
 - Ubuntu 11.04 - 13.10
 - MacOS 10.6 - 10.9
-- Windows 7, 8
+- Windows 7, 8, 8.1
+
+Known issues:
+
+- MSVC 2013 is not yet supported because it cannot build the serialization module
+  of Boost 1.55 (or earlier). 
 
 2)
 GTSAM makes extensive use of debug assertions, and we highly recommend you work

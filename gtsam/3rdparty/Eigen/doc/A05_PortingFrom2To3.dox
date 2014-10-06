@@ -2,6 +2,8 @@ namespace Eigen {
 
 /** \page Eigen2ToEigen3 Porting from Eigen2 to Eigen3
 
+<div class="bigwarning">Eigen2 support is deprecated in Eigen 3.2.x and it will be removed in Eigen 3.3.</div>
+
 This page lists the most important API changes between Eigen2 and Eigen3,
 and gives tips to help porting your application from Eigen2 to Eigen3.
 

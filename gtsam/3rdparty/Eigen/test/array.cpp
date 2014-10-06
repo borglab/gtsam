@@ -167,21 +167,14 @@ template<typename ArrayType> void array_real(const ArrayType& m)
   Scalar  s1 = internal::random<Scalar>();
 
   // these tests are mostly to check possible compilation issues.
-//   VERIFY_IS_APPROX(m1.sin(), std::sin(m1));
   VERIFY_IS_APPROX(m1.sin(), sin(m1));
-//   VERIFY_IS_APPROX(m1.cos(), std::cos(m1));
   VERIFY_IS_APPROX(m1.cos(), cos(m1));
-//   VERIFY_IS_APPROX(m1.asin(), std::asin(m1));
   VERIFY_IS_APPROX(m1.asin(), asin(m1));
-//   VERIFY_IS_APPROX(m1.acos(), std::acos(m1));
   VERIFY_IS_APPROX(m1.acos(), acos(m1));
-//   VERIFY_IS_APPROX(m1.tan(), std::tan(m1));
   VERIFY_IS_APPROX(m1.tan(), tan(m1));
   
   VERIFY_IS_APPROX(cos(m1+RealScalar(3)*m2), cos((m1+RealScalar(3)*m2).eval()));
-//   VERIFY_IS_APPROX(std::cos(m1+RealScalar(3)*m2), std::cos((m1+RealScalar(3)*m2).eval()));
 
-//   VERIFY_IS_APPROX(m1.abs().sqrt(), std::sqrt(std::abs(m1)));
   VERIFY_IS_APPROX(m1.abs().sqrt(), sqrt(abs(m1)));
   VERIFY_IS_APPROX(m1.abs(), sqrt(numext::abs2(m1)));
 
@@ -190,9 +183,10 @@ template<typename ArrayType> void array_real(const ArrayType& m)
   if(!NumTraits<Scalar>::IsComplex)
     VERIFY_IS_APPROX(numext::real(m1), m1);
 
-  VERIFY_IS_APPROX(m1.abs().log() , log(abs(m1)));
+  // shift argument of logarithm so that it is not zero
+  Scalar smallNumber = NumTraits<Scalar>::dummy_precision();
+  VERIFY_IS_APPROX((m1.abs() + smallNumber).log() , log(abs(m1) + smallNumber));
 
-//   VERIFY_IS_APPROX(m1.exp(), std::exp(m1));
   VERIFY_IS_APPROX(m1.exp() * m2.exp(), exp(m1+m2));
   VERIFY_IS_APPROX(m1.exp(), exp(m1));
   VERIFY_IS_APPROX(m1.exp() / m2.exp(),(m1-m2).exp());
@@ -236,7 +230,6 @@ template<typename ArrayType> void array_complex(const ArrayType& m)
       m2(i,j) = sqrt(m1(i,j));
 
   VERIFY_IS_APPROX(m1.sqrt(), m2);
-//   VERIFY_IS_APPROX(m1.sqrt(), std::sqrt(m1));
   VERIFY_IS_APPROX(m1.sqrt(), Eigen::sqrt(m1));
 }
 

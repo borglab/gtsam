@@ -4,11 +4,20 @@ project(METIS)
 # Add flags for currect directory and below
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   add_definitions(-Wno-unused-variable)
-  add_definitions(-Wno-sometimes-uninitialized)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 5.0)
+    add_definitions(-Wno-sometimes-uninitialized)
+  endif()
 endif()
 
-add_definitions(-Wno-unknown-pragmas)
-add_definitions(-Wunused-but-set-variable)
+if(NOT ("${CMAKE_C_COMPILER_ID}" MATCHES "MSVC" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC"))
+  #add_definitions(-Wno-unknown-pragmas)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.6 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.6)
+    add_definitions(-Wno-unused-but-set-variable)
+  endif()
+endif()
 
 set(GKLIB_PATH ${PROJECT_SOURCE_DIR}/GKlib CACHE PATH "path to GKlib")
 set(SHARED FALSE CACHE BOOL "build a shared library")

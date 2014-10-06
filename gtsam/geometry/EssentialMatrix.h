@@ -20,7 +20,7 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class EssentialMatrix: public DerivedValue<EssentialMatrix> {
+class GTSAM_EXPORT EssentialMatrix: public DerivedValue<EssentialMatrix> {
 
 private:
 
@@ -112,6 +112,16 @@ public:
     return E_;
   }
 
+  /// Return epipole in image_a , as Unit3 to allow for infinity
+  inline const Unit3& epipole_a() const {
+    return aTb_; // == direction()
+  }
+
+  /// Return epipole in image_b, as Unit3 to allow for infinity
+  inline Unit3 epipole_b() const {
+    return aRb_.unrotate(aTb_); // == rotation.unrotate(direction())
+  }
+
   /**
    * @brief takes point in world coordinates and transforms it to pose with |t|==1
    * @param p point in world coordinates
@@ -150,10 +160,37 @@ public:
   /// @{
 
   /// stream to stream
-  friend std::ostream& operator <<(std::ostream& os, const EssentialMatrix& E);
+  GTSAM_EXPORT friend std::ostream& operator <<(std::ostream& os, const EssentialMatrix& E);
 
   /// stream from stream
-  friend std::istream& operator >>(std::istream& is, EssentialMatrix& E);
+  GTSAM_EXPORT friend std::istream& operator >>(std::istream& is, EssentialMatrix& E);
+
+  /// @}
+
+private:
+
+  /// @name Advanced Interface
+  /// @{
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+      ar & boost::serialization::make_nvp("EssentialMatrix",
+          boost::serialization::base_object<Value>(*this));
+      ar & BOOST_SERIALIZATION_NVP(aRb_);
+      ar & BOOST_SERIALIZATION_NVP(aTb_);
+
+      ar & boost::serialization::make_nvp("E11", E_(0,0));
+      ar & boost::serialization::make_nvp("E12", E_(0,1));
+      ar & boost::serialization::make_nvp("E13", E_(0,2));
+      ar & boost::serialization::make_nvp("E21", E_(1,0));
+      ar & boost::serialization::make_nvp("E22", E_(1,1));
+      ar & boost::serialization::make_nvp("E23", E_(1,2));
+      ar & boost::serialization::make_nvp("E31", E_(2,0));
+      ar & boost::serialization::make_nvp("E32", E_(2,1));
+      ar & boost::serialization::make_nvp("E33", E_(2,2));
+    }
 
   /// @}
 

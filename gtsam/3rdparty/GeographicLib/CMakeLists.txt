@@ -2,21 +2,48 @@ project (GeographicLib)
 
 # Version information
 set (PROJECT_VERSION_MAJOR 1)
-set (PROJECT_VERSION_MINOR 34)
+set (PROJECT_VERSION_MINOR 35)
 set (PROJECT_VERSION_PATCH 0)
 set (PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 if (PROJECT_VERSION_PATCH GREATER 0)
   set (PROJECT_VERSION "${PROJECT_VERSION}.${PROJECT_VERSION_PATCH}")
 endif ()
 
-set (CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+if (DEFINED CPACK_PACKAGE_VERSION_COUNT)
+
+  # majic (version 0.1.9 and later) invokes cmake defining, e.g.,
+  #   -D CPACK_PACKAGE_VERSION=1.35-SNAPSHOT
+  #   -D CPACK_PACKAGE_VERSION_COUNT=2
+  #   -D CPACK_PACKAGE_VERSION_MAJOR=1
+  #   -D CPACK_PACKAGE_VERSION_MINOR=35
+  #   -D CPACK_PACKAGE_VERSION_SUFFIX=-SNAPSHOT
+  # Check that the first two version numbers are consistent.
+  if (CPACK_PACKAGE_VERSION_COUNT EQUAL 2)
+    set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+  elseif (CPACK_PACKAGE_VERSION_COUNT LESS 2)
+    message (FATAL_ERROR "CPACK_PACKAGE_VERSION_COUNT must be 2 or more")
+  endif ()
+  if (NOT (
+        CPACK_PACKAGE_VERSION_MAJOR EQUAL PROJECT_VERSION_MAJOR AND
+        CPACK_PACKAGE_VERSION_MINOR EQUAL PROJECT_VERSION_MINOR))
+    message (FATAL_ERROR "Inconsistency in CPACK and PROJECT version numbers")
+  endif ()
+  set (PROJECT_VERSION_PATCH ${CPACK_PACKAGE_VERSION_PATCH})
+  set (PROJECT_VERSION ${CPACK_PACKAGE_VERSION})
+
+else ()
+
+  set (CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+  set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+  set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+  set (CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+
+endif ()
 
 # The library version tracks the numbering given by libtool in the
 # autoconf set up.
 set (LIBVERSION 10)
-set (LIBVERSIONFULL 10.1.1)
+set (LIBVERSIONFULL 10.1.2)
 string (TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 string (TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
 
@@ -201,8 +228,9 @@ if (NOT MSVC)
   endif ()
 endif ()
 
-if (NOT CYGWIN)
-  # cygwin has a long double but the support for ::cbrtl etc is missing
+if (NOT (CYGWIN OR ANDROID))
+  # cygwin and android have a long double but the support for ::cbrtl,
+  # etc., is missing
   include (CheckTypeSize)
   check_type_size ("long double" LONG_DOUBLE BUILTIN_TYPES_ONLY)
 endif ()
@@ -296,7 +324,12 @@ if (MSVC)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 else ()
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-  # check for C++11 support
+  # check for C++11 support.  If available, the C++11 static_assert and
+  # various math functions (std::atanh, etc.) are used.  This flag is
+  # *not* propagated to clients that use GeographicLib.  However, this
+  # is of no consequence.  When the client code is being compiled (and
+  # the GeographicLib headers being included), work-alike substitutions
+  # for static_assert and std::atanh are used.
   include (CheckCXXCompilerFlag)
   set (CXX11FLAG "-std=c++11")
   check_cxx_compiler_flag (${CXX11FLAG} CXX11TEST1)
@@ -388,7 +421,7 @@ set (CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/BUILD"
   "${PROJECT_SOURCE_DIR}/(tests|testdata|cgi-bin|.*\\\\.cache)/"
   "${PROJECT_SOURCE_DIR}/(distrib|.*-distrib|.*-installer|geodesic-papers)/"
-  "${PROJECT_SOURCE_DIR}/[^/]*\\\\.(html|kmz|pdf|xml)\$"
+  "${PROJECT_SOURCE_DIR}/[^/]*\\\\.(html|kmz|pdf)\$"
   "${PROJECT_SOURCE_DIR}/(autogen|biblio|js-compress)\\\\.sh\$"
   "${PROJECT_SOURCE_DIR}/(geodesic-biblio.txt|makefile-admin|[^/]*\\\\.png)\$"
   "${PROJECT_SOURCE_DIR}/matlab/matlab-.*blurb.txt\$" )

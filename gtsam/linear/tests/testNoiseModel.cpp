@@ -268,6 +268,35 @@ TEST(NoiseModel, QRNan )
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, SmartSqrtInformation )
+{
+  bool smart = true;
+  gtsam::SharedGaussian expected = Unit::Create(3);
+  gtsam::SharedGaussian actual = Gaussian::SqrtInformation(eye(3), smart);
+  EXPECT(assert_equal(*expected,*actual));
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, SmartSqrtInformation2 )
+{
+  bool smart = true;
+  gtsam::SharedGaussian expected = Unit::Isotropic::Sigma(3,2);
+  gtsam::SharedGaussian actual = Gaussian::SqrtInformation(0.5*eye(3), smart);
+  EXPECT(assert_equal(*expected,*actual));
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, SmartInformation )
+{
+  bool smart = true;
+  gtsam::SharedGaussian expected = Unit::Isotropic::Variance(3,2);
+  Matrix M = 0.5*eye(3);
+  EXPECT(checkIfDiagonal(M));
+  gtsam::SharedGaussian actual = Gaussian::Information(M, smart);
+  EXPECT(assert_equal(*expected,*actual));
+}
+
+/* ************************************************************************* */
 TEST(NoiseModel, SmartCovariance )
 {
   bool smart = true;

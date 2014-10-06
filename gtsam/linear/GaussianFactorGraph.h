@@ -138,6 +138,9 @@ namespace gtsam {
     typedef FastSet<Key> Keys;
     Keys keys() const;
 
+    /* return a map of (Key, dimension) */
+    std::map<Key, size_t> getKeyDimMap() const;
+
     std::vector<size_t> getkeydim() const;
 
     /** unnormalized error */
@@ -160,7 +163,13 @@ namespace gtsam {
      * Cloning preserves null factors so indices for the original graph are still
      * valid for the cloned graph.
      */
-    GaussianFactorGraph clone() const;
+    virtual GaussianFactorGraph clone() const;
+
+    /**
+     * CloneToPtr() performs a simple assignment to a new graph and returns it.
+     * There is no preservation of null factors!
+     */
+    virtual GaussianFactorGraph::shared_ptr cloneToPtr() const;
 
     /**
      * Returns the negation of all factors in this graph - corresponds to antifactors.
@@ -257,7 +266,7 @@ namespace gtsam {
      * @param [output] g A VectorValues to store the gradient, which must be preallocated,
      *        see allocateVectorValues
      * @return The gradient as a VectorValues */
-    VectorValues gradientAtZero() const;
+    virtual VectorValues gradientAtZero() const;
 
     /** Optimize along the gradient direction, with a closed-form computation to perform the line
      *  search.  The gradient is computed about \f$ \delta x=0 \f$.

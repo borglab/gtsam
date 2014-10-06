@@ -11,8 +11,8 @@
 /**
 \mainpage NETGeographicLib library
 \author Scott Heiman (mrmtdew2@outlook.com)
-\version 1.34
-\date 2013-12-11
+\version 1.35
+\date 2014-03-13
 
 \section abstract Abstract
 
@@ -26,14 +26,14 @@ to the GeographicLib classes.  GeographicLib and NETGeographicLib is an
 integrated product.
 
 The NETGeographic project in the GeographicLib-vc10.sln file located in
-\<install folder\>/GeographicLib-1.34/windows will create the NETGeographicLib
+\<install folder\>/GeographicLib-1.35/windows will create the NETGeographicLib
 DLL.  The source code for NETGeographicLib is located in
-\<install folder\>/GeographicLib-1.34/dotnet/NETGeographicLib.  NETGeographicLib
+\<install folder\>/GeographicLib-1.35/dotnet/NETGeographicLib.  NETGeographicLib
 is not available for older versions of Microsoft Visual Studio.
 
 NETGeographicLib has been tested with C#, Managed C++, and Visual Basic.
 Sample code snippets can be found in
-\<install folder\>/GeographicLib-1.34/dotnet/examples.
+\<install folder\>/GeographicLib-1.35/dotnet/examples.
 
 \section differences Differences between NETGeographicLib and GeographicLib
 
@@ -135,7 +135,7 @@ to any Visual Basic source that uses NETGeographicLib classes.
 
 A C# sample application is provided that demonstrates NETGeographicLib classes.
 The source code for the sample application is located in
-\<install folder\>/GeographicLib-1.34/dotnet/Projections.  The sample
+\<install folder\>/GeographicLib-1.35/dotnet/Projections.  The sample
 application creates a tabbed dialog.  Each tab provides data entry fields that
 allow the user to exercise one or more NETGeographicLib classes.
 
@@ -200,7 +200,7 @@ code using the installed library: \verbatim
 project (geodesictest)
 cmake_minimum_required (VERSION 2.8.7) # required for VS_DOTNET_REFERENCES
 
-find_package (GeographicLib 1.34 REQUIRED COMPONENTS NETGeographicLib)
+find_package (GeographicLib 1.35 REQUIRED COMPONENTS NETGeographicLib)
 
 add_executable (${PROJECT_NAME} example-Geodesic-small.cpp)
 set_target_properties (${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/clr")

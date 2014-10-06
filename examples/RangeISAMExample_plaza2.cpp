@@ -40,6 +40,7 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/RangeFactor.h>
+#include <gtsam/slam/dataset.h>
 
 // Standard headers, added last, so we know headers above work on their own
 #include <boost/foreach.hpp>
@@ -59,9 +60,8 @@ namespace NM = gtsam::noiseModel;
 typedef pair<double, Pose2> TimedOdometry;
 list<TimedOdometry> readOdometry() {
   list<TimedOdometry> odometryList;
-  ifstream is("../../examples/Data/Plaza2_DR.txt");
-  if (!is)
-    throw runtime_error("../../examples/Data/Plaza2_DR.txt file not found");
+  string data_file = findExampleDataFile("Plaza2_DR.txt");
+  ifstream is(data_file.c_str());
 
   while (is) {
     double t, distance_traveled, delta_heading;
@@ -78,9 +78,8 @@ list<TimedOdometry> readOdometry() {
 typedef boost::tuple<double, size_t, double> RangeTriple;
 vector<RangeTriple> readTriples() {
   vector<RangeTriple> triples;
-  ifstream is("../../examples/Data/Plaza2_TD.txt");
-  if (!is)
-    throw runtime_error("../../examples/Data/Plaza2_TD.txt file not found");
+  string data_file = findExampleDataFile("Plaza2_TD.txt");
+  ifstream is(data_file.c_str());
 
   while (is) {
     double t, sender, receiver, range;

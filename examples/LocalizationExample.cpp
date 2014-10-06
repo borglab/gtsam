@@ -120,15 +120,15 @@ int main(int argc, char** argv) {
   // For simplicity, we will use the same noise model for each odometry factor
   noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1));
   // Create odometry (Between) factors between consecutive poses
-  graph.push_back(BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise));
-  graph.push_back(BetweenFactor<Pose2>(2, 3, Pose2(2.0, 0.0, 0.0), odometryNoise));
+  graph.add(BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise));
+  graph.add(BetweenFactor<Pose2>(2, 3, Pose2(2.0, 0.0, 0.0), odometryNoise));
 
   // 2b. Add "GPS-like" measurements
   // We will use our custom UnaryFactor for this.
   noiseModel::Diagonal::shared_ptr unaryNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1)); // 10cm std on x,y
-  graph.push_back(boost::make_shared<UnaryFactor>(1, 0.0, 0.0, unaryNoise));
-  graph.push_back(boost::make_shared<UnaryFactor>(2, 2.0, 0.0, unaryNoise));
-  graph.push_back(boost::make_shared<UnaryFactor>(3, 4.0, 0.0, unaryNoise));
+  graph.add(boost::make_shared<UnaryFactor>(1, 0.0, 0.0, unaryNoise));
+  graph.add(boost::make_shared<UnaryFactor>(2, 2.0, 0.0, unaryNoise));
+  graph.add(boost::make_shared<UnaryFactor>(3, 4.0, 0.0, unaryNoise));
   graph.print("\nFactor Graph:\n"); // print
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution

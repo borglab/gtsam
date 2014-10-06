@@ -269,21 +269,19 @@ namespace GeographicLib {
   }
 
   void UTMUPS::DecodeEPSG(int epsg, int& zone, bool& northp) throw() {
+    northp = false;
     if (epsg >= epsg01N && epsg <= epsg60N) {
-      zone = epsg - epsg01N + 1;
+      zone = (epsg - epsg01N) + MINUTMZONE;
       northp = true;
     } else if (epsg == epsgN) {
       zone = UPS;
       northp = true;
     } else if (epsg >= epsg01S && epsg <= epsg60S) {
-      zone = epsg - epsg01S + 1;
-      northp = false;
+      zone = (epsg - epsg01S) + MINUTMZONE;
     } else if (epsg == epsgS) {
       zone = UPS;
-      northp = false;
     } else {
       zone = INVALID;
-      northp = false;
     }
   }
 
@@ -292,7 +290,7 @@ namespace GeographicLib {
     if (zone == UPS)
       epsg = epsgS;
     else if (zone >= MINUTMZONE && zone <= MAXUTMZONE)
-      epsg = epsg + (zone - MINUTMZONE) + epsg01S;
+      epsg = (zone - MINUTMZONE) + epsg01S;
     if (epsg >= 0 && northp)
       epsg += epsgN - epsgS;
     return epsg;

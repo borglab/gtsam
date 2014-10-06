@@ -55,6 +55,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  std::map<Key, size_t> GaussianFactorGraph::getKeyDimMap() const {
+    map<Key, size_t> spec;
+    BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, *this ) {
+      for ( GaussianFactor::const_iterator it = gf->begin() ; it != gf->end() ; it++ ) {
+        map<Key,size_t>::iterator it2 = spec.find(*it);
+        if ( it2 == spec.end() ) {
+          spec.insert(make_pair(*it, gf->getDim(it)));
+        }
+      }
+    }
+    return spec;
+  }
+
+  /* ************************************************************************* */
     vector<size_t> GaussianFactorGraph::getkeydim() const {
       // First find dimensions of each variable
       vector<size_t> dims;
@@ -70,10 +84,17 @@ namespace gtsam {
       vector<size_t> dims_accumulated;
       dims_accumulated.resize(dims.size()+1,0);
       dims_accumulated[0]=0;
-      for (int i=1; i<dims_accumulated.size(); i++)
+      for (size_t i=1; i<dims_accumulated.size(); i++)
     	  dims_accumulated[i] = dims_accumulated[i-1]+dims[i-1];
       return dims_accumulated;
     }
+
+  /* ************************************************************************* */
+  GaussianFactorGraph::shared_ptr GaussianFactorGraph::cloneToPtr() const {
+    gtsam::GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
+    *result = *this;
+    return result;
+  }
 
   /* ************************************************************************* */
   GaussianFactorGraph GaussianFactorGraph::clone() const {

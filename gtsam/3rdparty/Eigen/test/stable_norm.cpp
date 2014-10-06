@@ -55,8 +55,16 @@ template<typename MatrixType> void stable_norm(const MatrixType& m)
   Index rows = m.rows();
   Index cols = m.cols();
 
-  Scalar big = internal::random<Scalar>() * ((std::numeric_limits<RealScalar>::max)() * RealScalar(1e-4));
-  Scalar small = internal::random<Scalar>() * ((std::numeric_limits<RealScalar>::min)() * RealScalar(1e4));
+  // get a non-zero random factor
+  Scalar factor = internal::random<Scalar>();
+  while(numext::abs2(factor)<RealScalar(1e-4))
+    factor = internal::random<Scalar>();
+  Scalar big = factor * ((std::numeric_limits<RealScalar>::max)() * RealScalar(1e-4));
+  
+  factor = internal::random<Scalar>();
+  while(numext::abs2(factor)<RealScalar(1e-4))
+    factor = internal::random<Scalar>();
+  Scalar small = factor * ((std::numeric_limits<RealScalar>::min)() * RealScalar(1e4));
 
   MatrixType  vzero = MatrixType::Zero(rows, cols),
               vrand = MatrixType::Random(rows, cols),
@@ -91,7 +99,7 @@ template<typename MatrixType> void stable_norm(const MatrixType& m)
   VERIFY_IS_APPROX(vsmall.blueNorm(),   sqrt(size)*abs(small));
   VERIFY_IS_APPROX(vsmall.hypotNorm(),  sqrt(size)*abs(small));
 
-// Test compilation of cwise() version
+  // Test compilation of cwise() version
   VERIFY_IS_APPROX(vrand.colwise().stableNorm(),      vrand.colwise().norm());
   VERIFY_IS_APPROX(vrand.colwise().blueNorm(),        vrand.colwise().norm());
   VERIFY_IS_APPROX(vrand.colwise().hypotNorm(),       vrand.colwise().norm());

@@ -275,11 +275,12 @@ public:
     if (P.z() <= 0)
       throw CheiralityException();
 #endif
+    double d = 1.0 / P.z();
+    const double u = P.x() * d, v = P.y() * d;
     if (Dpoint) {
-      double d = 1.0 / P.z(), d2 = d * d;
-      *Dpoint = (Matrix(2, 3) << d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
+      *Dpoint = (Matrix(2, 3) << d, 0.0, -u * d, 0.0, d, -v * d);
     }
-    return Point2(P.x() / P.z(), P.y() / P.z());
+    return Point2(u, v);
   }
 
   /// Project a point into the image and check depth

@@ -47,22 +47,73 @@ void updateAb(MATRIX& Ab, int j, const Vector& a, const Vector& rd) {
   Ab.middleCols(j+1,n-j) -= a * rd.segment(j+1, n-j).transpose();
 }
 
+/* ************************************************************************* */
+// check *above the diagonal* for non-zero entries
+boost::optional<Vector> checkIfDiagonal(const Matrix M) {
+  size_t m = M.rows(), n = M.cols();
+  // check all non-diagonal entries
+  bool full = false;
+  size_t i, j;
+  for (i = 0; i < m; i++)
+    if (!full)
+      for (j = i + 1; j < n; j++)
+        if (fabs(M(i, j)) > 1e-9) {
+          full = true;
+          break;
+        }
+  if (full) {
+    return boost::none;
+  } else {
+    Vector diagonal(n);
+    for (j = 0; j < n; j++)
+      diagonal(j) = M(j, j);
+    return diagonal;
+  }
+}
 
 /* ************************************************************************* */
-Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance, bool smart) {
-  size_t m = covariance.rows(), n = covariance.cols();
-  if (m != n) throw invalid_argument("Gaussian::Covariance: covariance not square");
-  if (smart) {
-    // check all non-diagonal entries
-    size_t i,j;
-    for (i = 0; i < m; i++)
-      for (j = 0; j < n; j++)
-        if (i != j && fabs(covariance(i, j)) > 1e-9) goto full;
-    Vector variances(n);
-    for (j = 0; j < n; j++) variances(j) = covariance(j,j);
-    return Diagonal::Variances(variances,true);
+Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
+  size_t m = R.rows(), n = R.cols();
+  if (m != n)
+    throw invalid_argument("Gaussian::SqrtInformation: R not square");
+  boost::optional<Vector> diagonal = boost::none;
+  if (smart)
+    diagonal = checkIfDiagonal(R);
+  if (diagonal)
+    return Diagonal::Sigmas(reciprocal(*diagonal), true);
+  else
+    return shared_ptr(new Gaussian(R.rows(), R));
+}
+
+/* ************************************************************************* */
+Gaussian::shared_ptr Gaussian::Information(const Matrix& M, bool smart) {
+  size_t m = M.rows(), n = M.cols();
+  if (m != n)
+    throw invalid_argument("Gaussian::Information: R not square");
+  boost::optional<Vector> diagonal = boost::none;
+  if (smart)
+    diagonal = checkIfDiagonal(M);
+  if (diagonal)
+    return Diagonal::Precisions(*diagonal, true);
+  else {
+    Matrix R = RtR(M);
+    return shared_ptr(new Gaussian(R.rows(), R));
   }
-  full: return shared_ptr(new Gaussian(n, inverse_square_root(covariance)));
+}
+
+/* ************************************************************************* */
+Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
+    bool smart) {
+  size_t m = covariance.rows(), n = covariance.cols();
+  if (m != n)
+    throw invalid_argument("Gaussian::Covariance: covariance not square");
+  boost::optional<Vector> variances = boost::none;
+  if (smart)
+    variances = checkIfDiagonal(covariance);
+  if (variances)
+    return Diagonal::Variances(*variances, true);
+  else
+    return shared_ptr(new Gaussian(n, inverse_square_root(covariance)));
 }
 
 /* ************************************************************************* */
@@ -166,7 +217,7 @@ void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const
 // Diagonal
 /* ************************************************************************* */
 Diagonal::Diagonal() :
-    Gaussian(1)//, sigmas_(ones(1)), invsigmas_(ones(1)), precisions_(ones(1))
+    Gaussian(1) // TODO: Frank asks: really sure about this?
 {
 }
 
@@ -180,8 +231,8 @@ Diagonal::Diagonal(const Vector& sigmas) :
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
   if (smart) {
     // check whether all the same entry
-    DenseIndex j, n = variances.size();
-    for (j = 1; j < n; j++)
+    size_t n = variances.size();
+    for (size_t j = 1; j < n; j++)
       if (variances(j) != variances(0)) goto full;
     return Isotropic::Variance(n, variances(0), true);
   }
@@ -191,12 +242,18 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
   if (smart) {
+    size_t n = sigmas.size();
+    if (n==0) goto full;
     // look for zeros to make a constraint
-    for (size_t i=0; i< (size_t) sigmas.size(); ++i)
-      if (sigmas(i)<1e-8)
+    for (size_t j=0; j< n; ++j)
+      if (sigmas(j)<1e-8)
         return Constrained::MixedSigmas(sigmas);
+    // check whether all the same entry
+    for (size_t j = 1; j < n; j++)
+      if (sigmas(j) != sigmas(0)) goto full;
+    return Isotropic::Sigma(n, sigmas(0), true);
   }
-  return Diagonal::shared_ptr(new Diagonal(sigmas));
+  full: return Diagonal::shared_ptr(new Diagonal(sigmas));
 }
 
 /* ************************************************************************* */

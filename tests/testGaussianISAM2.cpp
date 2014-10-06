@@ -35,8 +35,6 @@ using namespace std;
 using namespace gtsam;
 using boost::shared_ptr;
 
-const double tol = 1e-4;
-
 //  SETDEBUG("ISAM2 update", true);
 //  SETDEBUG("ISAM2 update verbose", true);
 //  SETDEBUG("ISAM2 recalculate", true);

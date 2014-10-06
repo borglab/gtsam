@@ -418,7 +418,7 @@ GTSAM_EXPORT Matrix3 skewSymmetric(double wx, double wy, double wz);
 template<class Derived>
 inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) { return skewSymmetric(w(0),w(1),w(2));}
 
-/** Use SVD to calculate inverse square root of a matrix */
+/** Use Cholesky to calculate inverse square root of a matrix */
 GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
 
 /** Calculate the LL^t decomposition of a S.P.D matrix */
@@ -467,7 +467,7 @@ GTSAM_EXPORT Matrix Cayley(const Matrix& A);
 /// Implementation of Cayley transform using fixed size matrices to let
 /// Eigen do more optimization
 template<int N>
-Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
+Eigen::Matrix<double, N, N> CayleyFixed(const Eigen::Matrix<double, N, N>& A) {
   typedef Eigen::Matrix<double, N, N> FMat;
   return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
 }

@@ -13,8 +13,9 @@ template<typename SparseMatrixType, typename DenseMatrix, bool IsRowMajor=Sparse
 
 template<typename SparseMatrixType, typename DenseMatrix> struct test_outer<SparseMatrixType,DenseMatrix,false> {
   static void run(SparseMatrixType& m2, SparseMatrixType& m4, DenseMatrix& refMat2, DenseMatrix& refMat4) {
-    int c  = internal::random(0,m2.cols()-1);
-    int c1 = internal::random(0,m2.cols()-1);
+    typedef typename SparseMatrixType::Index Index;
+    Index c  = internal::random<Index>(0,m2.cols()-1);
+    Index c1 = internal::random<Index>(0,m2.cols()-1);
     VERIFY_IS_APPROX(m4=m2.col(c)*refMat2.col(c1).transpose(), refMat4=refMat2.col(c)*refMat2.col(c1).transpose());
     VERIFY_IS_APPROX(m4=refMat2.col(c1)*m2.col(c).transpose(), refMat4=refMat2.col(c1)*refMat2.col(c).transpose());
   }
@@ -22,8 +23,9 @@ template<typename SparseMatrixType, typename DenseMatrix> struct test_outer<Spar
 
 template<typename SparseMatrixType, typename DenseMatrix> struct test_outer<SparseMatrixType,DenseMatrix,true> {
   static void run(SparseMatrixType& m2, SparseMatrixType& m4, DenseMatrix& refMat2, DenseMatrix& refMat4) {
-    int r  = internal::random(0,m2.rows()-1);
-    int c1 = internal::random(0,m2.cols()-1);
+    typedef typename SparseMatrixType::Index Index;
+    Index r  = internal::random<Index>(0,m2.rows()-1);
+    Index c1 = internal::random<Index>(0,m2.cols()-1);
     VERIFY_IS_APPROX(m4=m2.row(r).transpose()*refMat2.col(c1).transpose(), refMat4=refMat2.row(r).transpose()*refMat2.col(c1).transpose());
     VERIFY_IS_APPROX(m4=refMat2.col(c1)*m2.row(r), refMat4=refMat2.col(c1)*refMat2.row(r));
   }
@@ -37,9 +39,9 @@ template<typename SparseMatrixType> void sparse_product()
 {
   typedef typename SparseMatrixType::Index Index;
   Index n = 100;
-  const Index rows  = internal::random<int>(1,n);
-  const Index cols  = internal::random<int>(1,n);
-  const Index depth = internal::random<int>(1,n);
+  const Index rows  = internal::random<Index>(1,n);
+  const Index cols  = internal::random<Index>(1,n);
+  const Index depth = internal::random<Index>(1,n);
   typedef typename SparseMatrixType::Scalar Scalar;
   enum { Flags = SparseMatrixType::Flags };
 
@@ -244,6 +246,7 @@ void test_sparse_product()
     CALL_SUBTEST_1( (sparse_product<SparseMatrix<double,RowMajor> >()) );
     CALL_SUBTEST_2( (sparse_product<SparseMatrix<std::complex<double>, ColMajor > >()) );
     CALL_SUBTEST_2( (sparse_product<SparseMatrix<std::complex<double>, RowMajor > >()) );
+    CALL_SUBTEST_3( (sparse_product<SparseMatrix<float,ColMajor,long int> >()) );
     CALL_SUBTEST_4( (sparse_product_regression_test<SparseMatrix<double,RowMajor>, Matrix<double, Dynamic, Dynamic, RowMajor> >()) );
   }
 }

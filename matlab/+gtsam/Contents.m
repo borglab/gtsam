@@ -173,3 +173,20 @@
 %   symbol                            - create a Symbol key
 %   symbolChr                         - get character from a symbol key
 %   symbolIndex                       - get index from a symbol key
+%
+%% Wrapped C++ Convenience Functions for use within MATLAB
+%   utilities.createKeyList           - Create KeyList from indices
+%   utilities.createKeyVector         - Create KeyVector from indices
+%   utilities.createKeySet            - Create KeySet from indices
+%   utilities.extractPoint2           - Extract all Point2 values into a single matrix [x y]
+%   utilities.extractPoint3           - Extract all Point3 values into a single matrix [x y z]
+%   utilities.extractPose2            - Extract all Pose2 values into a single matrix [x y theta]
+%   utilities.allPose3s               - Extract all Pose3 values
+%   utilities.extractPose3            - Extract all Pose3 values into a single matrix [r11 r12 r13 r21 r22 r23 r31 r32 r33 x y z]
+%   utilities.perturbPoint2           - Perturb all Point2 values using normally distributed noise
+%   utilities.perturbPose2            - Perturb all Pose2 values using normally distributed noise
+%   utilities.perturbPoint3           - Perturb all Point3 values using normally distributed noise
+%   utilities.insertBackprojections   - Insert a number of initial point values by backprojecting
+%   utilities.insertProjectionFactors - Insert multiple projection factors for a single pose key
+%   utilities.reprojectionErrors      - Calculate the errors of all projection factors in a graph
+%   utilities.localToWorld            - Convert from local to world coordinates
