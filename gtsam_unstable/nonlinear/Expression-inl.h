@@ -383,6 +383,8 @@ class BinaryExpression: public ExpressionNode<T> {
 
 public:
 
+  typedef Eigen::Matrix<double,T::dimension,A1::dimension> JacobianTA1;
+  typedef Eigen::Matrix<double,T::dimension,A2::dimension> JacobianTA2;
   typedef boost::function<
       T(const A1&, const A2&, boost::optional<Matrix&>,
           boost::optional<Matrix&>)> Function;

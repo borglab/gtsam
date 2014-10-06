@@ -36,6 +36,8 @@ private:
   double fx_, fy_, s_, u0_, v0_;
 
 public:
+  /// dimension of the variable - used to autodetect sizes
+  static const size_t dimension = 5;
 
   typedef boost::shared_ptr<Cal3_S2> shared_ptr; ///< shared pointer to calibration object
 
@@ -151,6 +153,9 @@ public:
   Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal =
       boost::none, boost::optional<Matrix&> Dp = boost::none) const;
 
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal =
+      boost::none, boost::optional<Matrix2&> Dp = boost::none) const;
+
   /**
    * convert image coordinates uv to intrinsic coordinates xy
    * @param p point in image coordinates
@@ -181,12 +186,12 @@ public:
 
   /// return DOF, dimensionality of tangent space
   inline size_t dim() const {
-    return 5;
+    return dimension;
   }
 
   /// return DOF, dimensionality of tangent space
   static size_t Dim() {
-    return 5;
+    return dimension;
   }
 
   /// Given 5-dim tangent vector, create new calibration
