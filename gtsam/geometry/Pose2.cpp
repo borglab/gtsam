@@ -183,6 +183,62 @@ Point2 Pose2::transform_from(const Point2& p,
 }
 
 /* ************************************************************************* */
+Pose2 Pose2::between(const Pose2& p2) const {
+  // get cosines and sines from rotation matrices
+  const Rot2& R1 = r_, R2 = p2.r();
+  double c1=R1.c(), s1=R1.s(), c2=R2.c(), s2=R2.s();
+
+  // Assert that R1 and R2 are normalized
+  assert(std::abs(c1*c1 + s1*s1 - 1.0) < 1e-5 && std::abs(c2*c2 + s2*s2 - 1.0) < 1e-5);
+
+  // Calculate delta rotation = between(R1,R2)
+  double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
+  Rot2 R(Rot2::atan2(s,c)); // normalizes
+
+  // Calculate delta translation = unrotate(R1, dt);
+  Point2 dt = p2.t() - t_;
+  double x = dt.x(), y = dt.y();
+  // t = R1' * (t2-t1)
+  Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
+
+  return Pose2(R,t);
+}
+
+/* ************************************************************************* */
+Pose2 Pose2::between(const Pose2& p2, boost::optional<Matrix3&> H1,
+    boost::optional<Matrix3&> H2) const {
+  // get cosines and sines from rotation matrices
+  const Rot2& R1 = r_, R2 = p2.r();
+  double c1=R1.c(), s1=R1.s(), c2=R2.c(), s2=R2.s();
+
+  // Assert that R1 and R2 are normalized
+  assert(std::abs(c1*c1 + s1*s1 - 1.0) < 1e-5 && std::abs(c2*c2 + s2*s2 - 1.0) < 1e-5);
+
+  // Calculate delta rotation = between(R1,R2)
+  double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
+  Rot2 R(Rot2::atan2(s,c)); // normalizes
+
+  // Calculate delta translation = unrotate(R1, dt);
+  Point2 dt = p2.t() - t_;
+  double x = dt.x(), y = dt.y();
+  // t = R1' * (t2-t1)
+  Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
+
+  // FD: This is just -AdjointMap(between(p2,p1)) inlined and re-using above
+  if (H1) {
+    double dt1 = -s2 * x + c2 * y;
+    double dt2 = -c2 * x - s2 * y;
+    *H1 <<
+        -c,  -s,  dt1,
+        s,  -c,  dt2,
+        0.0, 0.0,-1.0;
+  }
+  if (H2) *H2 = I3;
+
+  return Pose2(R,t);
+}
+
+/* ************************************************************************* */
 Pose2 Pose2::between(const Pose2& p2, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
   // get cosines and sines from rotation matrices

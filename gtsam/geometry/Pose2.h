@@ -123,10 +123,19 @@ public:
   /**
    * Return relative pose between p1 and p2, in p1 coordinate frame
    */
-  Pose2 between(const Pose2& p2,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+  Pose2 between(const Pose2& p2) const;
 
+  /**
+   * Return relative pose between p1 and p2, in p1 coordinate frame
+   */
+  Pose2 between(const Pose2& p2, boost::optional<Matrix3&> H1,
+      boost::optional<Matrix3&> H2) const;
+
+  /**
+   * Return relative pose between p1 and p2, in p1 coordinate frame
+   */
+  Pose2 between(const Pose2& p2, boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) const;
 
   /// @}
   /// @name Manifold
