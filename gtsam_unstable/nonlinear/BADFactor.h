@@ -53,12 +53,11 @@ public:
       typedef std::map<Key, Matrix> MapType;
       MapType terms;
       Augmented<T> augmented = expression_.augmented(x);
-      // copy terms to H, which is pre-allocated to correct size
-      // TODO apply move semantics
+      // move terms to H, which is pre-allocated to correct size
       size_t j = 0;
-      MapType::const_iterator it = augmented.jacobians().begin();
+      MapType::iterator it = augmented.jacobians().begin();
       for (; it != augmented.jacobians().end(); ++it)
-        (*H)[j++] = it->second;
+        it->second.swap((*H)[j++]);
       return measurement_.localCoordinates(augmented.value());
     } else {
       const T& value = expression_.value(x);
