@@ -150,11 +150,13 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal =
-      boost::none, boost::optional<Matrix&> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal,
+      boost::optional<Matrix&> Dp) const;
 
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal =
-      boost::none, boost::optional<Matrix2&> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal,
+      boost::optional<Matrix2&> Dp) const;
+
+  Point2 uncalibrate(const Point2& p) const;
 
   /**
    * convert image coordinates uv to intrinsic coordinates xy

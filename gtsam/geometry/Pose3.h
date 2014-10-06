@@ -250,8 +250,13 @@ public:
      * @param Dpoint optional 3*3 Jacobian wrpt point
      * @return point in Pose coordinates
      */
+    Point3 transform_to(const Point3& p) const;
+
     Point3 transform_to(const Point3& p,
-        boost::optional<Matrix&> Dpose=boost::none, boost::optional<Matrix&> Dpoint=boost::none) const;
+        boost::optional<Matrix36&> Dpose, boost::optional<Matrix3&> Dpoint) const;
+
+    Point3 transform_to(const Point3& p,
+        boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) const;
 
     /// @}
     /// @name Standard Interface

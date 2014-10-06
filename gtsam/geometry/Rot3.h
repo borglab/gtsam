@@ -219,8 +219,15 @@ namespace gtsam {
     Rot3 inverse(boost::optional<Matrix&> H1=boost::none) const;
 
     /// Compose two rotations i.e., R= (*this) * R2
-    Rot3 compose(const Rot3& R2,
-    boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+    Rot3 compose(const Rot3& R2) const;
+
+    /// Compose two rotations i.e., R= (*this) * R2
+    Rot3 compose(const Rot3& R2, boost::optional<Matrix3&> H1,
+        boost::optional<Matrix3&> H2) const;
+
+    /// Compose two rotations i.e., R= (*this) * R2
+    Rot3 compose(const Rot3& R2, boost::optional<Matrix&> H1,
+        boost::optional<Matrix&> H2) const;
 
     /** compose two rotations */
     Rot3 operator*(const Rot3& R2) const;

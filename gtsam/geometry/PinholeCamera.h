@@ -325,7 +325,7 @@ public:
       }
       return pi;
     } else
-      return K_.uncalibrate(pn, Dcal);
+      return K_.uncalibrate(pn, Dcal, boost::none);
   }
 
   /** project a point at infinity from world coordinate to the image

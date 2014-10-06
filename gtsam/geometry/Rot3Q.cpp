@@ -83,6 +83,19 @@ namespace gtsam {
     return Quaternion(Eigen::AngleAxisd(theta, w)); }
 
   /* ************************************************************************* */
+  Rot3 Rot3::compose(const Rot3& R2) const {
+    return Rot3(quaternion_ * R2.quaternion_);
+  }
+
+  /* ************************************************************************* */
+  Rot3 Rot3::compose(const Rot3& R2,
+  boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2) const {
+    if (H1) *H1 = R2.transpose();
+    if (H2) *H2 = I3;
+    return Rot3(quaternion_ * R2.quaternion_);
+  }
+
+  /* ************************************************************************* */
   Rot3 Rot3::compose(const Rot3& R2,
   boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
     if (H1) *H1 = R2.transpose();
