@@ -256,16 +256,23 @@ Point3 Pose3::transform_from(const Point3& p, boost::optional<Matrix&> Dpose,
 /* ************************************************************************* */
 Point3 Pose3::transform_to(const Point3& p, boost::optional<Matrix&> Dpose,
     boost::optional<Matrix&> Dpoint) const {
-  const Point3 result = R_.unrotate(p - t_);
+  // Only get transpose once, to avoid multiple allocations,
+  // as well as multiple conversions in the Quaternion case
+  Matrix3 Rt(R_.transpose());
+  const Point3 q(Rt*(p - t_).vector());
   if (Dpose) {
-    const Point3& q = result;
-    Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
+    double wx = q.x();
+    double wy = q.y();
+    double wz = q.z();
     Dpose->resize(3, 6);
-    (*Dpose) << DR, _I3;
+    (*Dpose) <<
+        0.0, -wz, +wy,-1.0, 0.0, 0.0,
+        +wz, 0.0, -wx, 0.0,-1.0, 0.0,
+        -wy, +wx, 0.0, 0.0, 0.0,-1.0;
   }
   if (Dpoint)
-    *Dpoint = R_.transpose();
-  return result;
+    *Dpoint = Rt;
+  return q;
 }
 
 /* ************************************************************************* */
