@@ -104,7 +104,7 @@ public:
     }
     else {
       gtsam::Matrix J2;
-      gtsam::Point2 uv= camera.project(landmark,H1, J2);
+      gtsam::Point2 uv= camera.project(landmark,H1, J2, boost::none);
       if (H1) {
         *H1 = (*H1) * gtsam::eye(6);
       }
