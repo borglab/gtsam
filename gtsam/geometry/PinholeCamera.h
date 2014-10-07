@@ -331,12 +331,10 @@ public:
       const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
       // chain the Jacobian matrices
-      if (Dpose) {
+      if (Dpose)
         calculateDpose(pn, d, Dpi_pn, *Dpose);
-      }
-      if (Dpoint) {
+      if (Dpoint)
         calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
-      }
       return pi;
     } else
       return K_.uncalibrate(pn, Dcal, boost::none);
@@ -442,12 +440,12 @@ public:
       const double z = pc.z(), d = 1.0 / z;
 
       // uncalibration
-      Matrix Dcal, Dpi_pn(2, 2);
+      Matrix Dcal, Dpi_pn(2,2);
       const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
       if (Dcamera) {
         Dcamera->resize(2, this->dim());
-        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols<6>());
+        calculateDpose(pn, d, Dpi_pn.block<2,2>(0,0), Dcamera->leftCols<6>());
         Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
       }
       if (Dpoint) {
@@ -569,16 +567,16 @@ private:
    * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
    */
   template<typename Derived>
-  static void calculateDpose(const Point2& pn, double d, const Matrix& Dpi_pn,
+  static void calculateDpose(const Point2& pn, double d, const Matrix2& Dpi_pn,
       Eigen::MatrixBase<Derived> const & Dpose) {
     // optimized version of derivatives, see CalibratedCamera.nb
     const double u = pn.x(), v = pn.y();
     double uv = u * v, uu = u * u, vv = v * v;
-    Eigen::Matrix<double, 2, 6> Dpn_pose;
+    Matrix26 Dpn_pose;
     Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
     assert(Dpose.rows()==2 && Dpose.cols()==6);
     const_cast<Eigen::MatrixBase<Derived>&>(Dpose) = //
-        Dpi_pn.block<2, 2>(0, 0) * Dpn_pose;
+        Dpi_pn * Dpn_pose;
   }
 
   /**
@@ -590,18 +588,18 @@ private:
    * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
    */
   template<typename Derived>
-  static void calculateDpoint(const Point2& pn, double d, const Matrix& R,
-      const Matrix& Dpi_pn, Eigen::MatrixBase<Derived> const & Dpoint) {
+  static void calculateDpoint(const Point2& pn, double d, const Matrix3& R,
+      const Matrix2& Dpi_pn, Eigen::MatrixBase<Derived> const & Dpoint) {
     // optimized version of derivatives, see CalibratedCamera.nb
     const double u = pn.x(), v = pn.y();
-    Eigen::Matrix<double, 2, 3> Dpn_point;
+    Matrix23 Dpn_point;
     Dpn_point << //
         R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
     /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
     Dpn_point *= d;
     assert(Dpoint.rows()==2 && Dpoint.cols()==3);
     const_cast<Eigen::MatrixBase<Derived>&>(Dpoint) = //
-        Dpi_pn.block<2, 2>(0, 0) * Dpn_point;
+        Dpi_pn * Dpn_point;
   }
 
   /// @}
