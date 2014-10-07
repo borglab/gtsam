@@ -25,7 +25,7 @@
 using namespace std;
 using namespace gtsam;
 
-static const int n = 500000;
+static const int n = 1000000;
 
 void time(const NonlinearFactor& f, const Values& values) {
   long timeLog = clock();
