@@ -117,9 +117,8 @@ public:
   Augmented<T> augmented(const Values& values) const {
 #define REVERSE_AD
 #ifdef REVERSE_AD
-    T value;
     TracePtr trace;
-    boost::tie(value,trace) = root_->traceExecution(values);
+    T value = root_->traceExecution(values,trace);
     Augmented<T> augmented(value);
     trace->reverseAD(augmented.jacobians());
     delete trace;
