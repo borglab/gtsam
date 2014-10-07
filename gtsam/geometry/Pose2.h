@@ -123,10 +123,19 @@ public:
   /**
    * Return relative pose between p1 and p2, in p1 coordinate frame
    */
-  Pose2 between(const Pose2& p2,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+  Pose2 between(const Pose2& p2) const;
 
+  /**
+   * Return relative pose between p1 and p2, in p1 coordinate frame
+   */
+  Pose2 between(const Pose2& p2, boost::optional<Matrix3&> H1,
+      boost::optional<Matrix3&> H2) const;
+
+  /**
+   * Return relative pose between p1 and p2, in p1 coordinate frame
+   */
+  Pose2 between(const Pose2& p2, boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) const;
 
   /// @}
   /// @name Manifold
@@ -183,9 +192,17 @@ public:
   /// @{
 
   /** Return point coordinates in pose coordinate frame */
+  Point2 transform_to(const Point2& point) const;
+
+  /** Return point coordinates in pose coordinate frame */
   Point2 transform_to(const Point2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      boost::optional<Matrix23&> H1,
+      boost::optional<Matrix2&> H2) const;
+
+  /** Return point coordinates in pose coordinate frame */
+  Point2 transform_to(const Point2& point,
+      boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) const;
 
   /** Return point coordinates in global frame */
   Point2 transform_from(const Point2& point,

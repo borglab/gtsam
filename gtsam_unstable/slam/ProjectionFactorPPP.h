@@ -127,13 +127,13 @@ namespace gtsam {
           if(H1 || H2 || H3) {
             gtsam::Matrix H0, H02;
             PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), *K_);
-            Point2 reprojectionError(camera.project(point, H1, H3) - measured_);
+            Point2 reprojectionError(camera.project(point, H1, H3, boost::none) - measured_);
             *H2 = *H1 * H02;
             *H1 = *H1 * H0;
             return reprojectionError.vector();
           } else {
             PinholeCamera<CALIBRATION> camera(pose.compose(transform), *K_);
-            Point2 reprojectionError(camera.project(point, H1, H3) - measured_);
+            Point2 reprojectionError(camera.project(point, H1, H3, boost::none) - measured_);
             return reprojectionError.vector();
           }
       } catch( CheiralityException& e) {

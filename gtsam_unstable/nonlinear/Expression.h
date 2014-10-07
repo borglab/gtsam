@@ -76,8 +76,10 @@ public:
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
-      T (A1::*method)(const A2&, boost::optional<Matrix&>,
-          boost::optional<Matrix&>) const, const Expression<A2>& expression2) {
+      T (A1::*method)(const A2&,
+          boost::optional<typename BinaryExpression<T, A1, A2>::JacobianTA1&>,
+          boost::optional<typename BinaryExpression<T, A1, A2>::JacobianTA2&>) const,
+      const Expression<A2>& expression2) {
     root_.reset(
         new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
             expression1, expression2));
@@ -94,9 +96,11 @@ public:
   /// Construct a ternary function expression
   template<typename A1, typename A2, typename A3>
   Expression(typename TernaryExpression<T, A1, A2, A3>::Function function,
-      const Expression<A1>& expression1, const Expression<A2>& expression2,  const Expression<A3>& expression3) {
+      const Expression<A1>& expression1, const Expression<A2>& expression2,
+      const Expression<A3>& expression3) {
     root_.reset(
-        new TernaryExpression<T, A1, A2, A3>(function, expression1, expression2, expression3));
+        new TernaryExpression<T, A1, A2, A3>(function, expression1, expression2,
+            expression3));
   }
 
   /// Return keys that play in this expression
@@ -113,9 +117,11 @@ public:
   Augmented<T> augmented(const Values& values) const {
 #define REVERSE_AD
 #ifdef REVERSE_AD
-    boost::shared_ptr<JacobianTrace<T> > trace(root_->traceExecution(values));
-    Augmented<T> augmented(trace->value());
+    TracePtr trace;
+    T value = root_->traceExecution(values,trace);
+    Augmented<T> augmented(value);
     trace->reverseAD(augmented.jacobians());
+    delete trace;
     return augmented;
 #else
     return root_->forward(values);
@@ -132,8 +138,9 @@ public:
 template<class T>
 struct apply_compose {
   typedef T result_type;
-  T operator()(const T& x, const T& y, boost::optional<Matrix&> H1,
-      boost::optional<Matrix&> H2) const {
+  typedef Eigen::Matrix<double, T::dimension, T::dimension> Jacobian;
+  T operator()(const T& x, const T& y, boost::optional<Jacobian&> H1,
+      boost::optional<Jacobian&> H2) const {
     return x.compose(y, H1, H2);
   }
 };

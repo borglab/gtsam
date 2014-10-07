@@ -37,9 +37,27 @@ namespace gtsam {
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
+typedef Eigen::Matrix2d Matrix2;
 typedef Eigen::Matrix3d Matrix3;
 typedef Eigen::Matrix4d Matrix4;
+typedef Eigen::Matrix<double,5,5> Matrix5;
 typedef Eigen::Matrix<double,6,6> Matrix6;
+
+typedef Eigen::Matrix<double,2,3> Matrix23;
+typedef Eigen::Matrix<double,2,4> Matrix24;
+typedef Eigen::Matrix<double,2,5> Matrix25;
+typedef Eigen::Matrix<double,2,6> Matrix26;
+typedef Eigen::Matrix<double,2,7> Matrix27;
+typedef Eigen::Matrix<double,2,8> Matrix28;
+typedef Eigen::Matrix<double,2,9> Matrix29;
+
+typedef Eigen::Matrix<double,3,2> Matrix32;
+typedef Eigen::Matrix<double,3,4> Matrix34;
+typedef Eigen::Matrix<double,3,5> Matrix35;
+typedef Eigen::Matrix<double,3,6> Matrix36;
+typedef Eigen::Matrix<double,3,7> Matrix37;
+typedef Eigen::Matrix<double,3,8> Matrix38;
+typedef Eigen::Matrix<double,3,9> Matrix39;
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;

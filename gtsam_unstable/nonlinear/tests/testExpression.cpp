@@ -32,12 +32,12 @@ using namespace gtsam;
 /* ************************************************************************* */
 
 template<class CAL>
-Point2 uncalibrate(const CAL& K, const Point2& p, boost::optional<Matrix&> Dcal,
-    boost::optional<Matrix&> Dp) {
+Point2 uncalibrate(const CAL& K, const Point2& p,
+    boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
   return K.uncalibrate(p, Dcal, Dp);
 }
 
-static const Rot3 someR = Rot3::RzRyRx(1,2,3);
+static const Rot3 someR = Rot3::RzRyRx(1, 2, 3);
 
 /* ************************************************************************* */
 
@@ -55,7 +55,7 @@ TEST(Expression, constant) {
 TEST(Expression, leaf) {
   Expression<Rot3> R(100);
   Values values;
-  values.insert(100,someR);
+  values.insert(100, someR);
   Augmented<Rot3> a = R.augmented(values);
   EXPECT(assert_equal(someR, a.value()));
   JacobianMap expected;
@@ -76,7 +76,6 @@ TEST(Expression, leaf) {
 //  expected[67] = (Matrix(1,3) << 3/sqrt(50),4/sqrt(50),5/sqrt(50));
 //  EXPECT(assert_equal(expected.at(67),a.jacobians().at(67)));
 //}
-
 /* ************************************************************************* */
 
 TEST(Expression, test) {
@@ -149,8 +148,8 @@ TEST(Expression, compose3) {
 /* ************************************************************************* */
 // Test with ternary function
 Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
-    boost::optional<Matrix&> H3) {
+    boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2,
+    boost::optional<Matrix3&> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
     *H1 = eye(3);

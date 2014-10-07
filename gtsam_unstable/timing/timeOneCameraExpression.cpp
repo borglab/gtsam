@@ -25,7 +25,7 @@
 using namespace std;
 using namespace gtsam;
 
-static const int n = 500000;
+static const int n = 1000000;
 
 void time(const NonlinearFactor& f, const Values& values) {
   long timeLog = clock();
@@ -58,9 +58,13 @@ int main() {
   // BADFactor
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
-  BADFactor<Point2> newFactor2(model, z,
-      uncalibrate(K, project(transform_to(x, p))));
-  time(newFactor2, values);
+#define TERNARY
+#ifdef TERNARY
+  BADFactor<Point2> f(model, z, project3(x, p, K));
+#else
+  BADFactor<Point2> f(model, z, uncalibrate(K, project(transform_to(x, p))));
+#endif
+  time(f, values);
 
   return 0;
 }

@@ -46,6 +46,9 @@ protected:
   double p1_, p2_ ; // tangential distortion
 
 public:
+  /// dimension of the variable - used to autodetect sizes
+  static const size_t dimension = 9;
+
   Matrix K() const ;
   Eigen::Vector4d k() const { return Eigen::Vector4d(k1_, k2_, p1_, p2_); }
   Vector vector() const ;
