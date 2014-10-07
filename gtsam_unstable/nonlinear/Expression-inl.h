@@ -22,6 +22,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/Matrix.h>
 #include <boost/foreach.hpp>
+#include <boost/tuple/tuple.hpp>
 
 namespace gtsam {
 
@@ -134,15 +135,22 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-template<class T>
 struct JacobianTrace {
-  T t;
-  T value() const {
-    return t;
-  }
   virtual void reverseAD(JacobianMap& jacobians) const = 0;
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
+//  template<class JacobianFT>
+//  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
 };
+
+typedef boost::shared_ptr<JacobianTrace> TracePtr;
+
+//template <class Derived>
+//struct TypedTrace {
+//  virtual void reverseAD(JacobianMap& jacobians) const = 0;
+//  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
+////  template<class JacobianFT>
+////  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
+//};
 
 //-----------------------------------------------------------------------------
 /**
@@ -175,8 +183,7 @@ public:
   virtual Augmented<T> forward(const Values& values) const = 0;
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
-      const Values& values) const = 0;
+  virtual std::pair<T, TracePtr> traceExecution(const Values& values) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -217,7 +224,7 @@ public:
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace<T> {
+  struct Trace: public JacobianTrace {
     /// If the expression is just a constant, we do nothing
     virtual void reverseAD(JacobianMap& jacobians) const {
     }
@@ -227,11 +234,9 @@ public:
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
-      const Values& values) const {
+  virtual std::pair<T, TracePtr> traceExecution(const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
-    trace->t = constant_;
-    return trace;
+    return std::make_pair(constant_, trace);
   }
 };
 
@@ -270,12 +275,11 @@ public:
 
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const {
-    T t = value(values);
-    return Augmented<T>(t, key_);
+    return Augmented<T>(values.at<T>(key_), key_);
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace<T> {
+  struct Trace: public JacobianTrace {
     Key key;
     /// If the expression is just a leaf, we just insert an identity matrix
     virtual void reverseAD(JacobianMap& jacobians) const {
@@ -293,12 +297,10 @@ public:
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
-      const Values& values) const {
+  virtual std::pair<T, TracePtr> traceExecution(const Values& values) const {
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
-    trace->t = value(values);
     trace->key = key_;
-    return trace;
+    return std::make_pair(values.at<T>(key_), trace);
   }
 
 };
@@ -352,26 +354,25 @@ public:
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace<T> {
-    boost::shared_ptr<JacobianTrace<A> > trace1;
+  struct Trace: public JacobianTrace {
+    TracePtr trace;
     JacobianTA dTdA;
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
-      trace1->reverseAD(dTdA, jacobians);
+      trace->reverseAD(dTdA, jacobians);
     }
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-      trace1->reverseAD(dFdT * dTdA, jacobians);
+      trace->reverseAD(dFdT * dTdA, jacobians);
     }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
-      const Values& values) const {
+  virtual std::pair<T, TracePtr> traceExecution(const Values& values) const {
+    A a;
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
-    trace->trace1 = this->expressionA_->traceExecution(values);
-    trace->t = function_(trace->trace1->value(), trace->dTdA);
-    return trace;
+    boost::tie(a, trace->trace) = this->expressionA_->traceExecution(values);
+    return std::make_pair(function_(a, trace->dTdA),trace);
   }
 };
 
@@ -438,9 +439,8 @@ public:
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace<T> {
-    boost::shared_ptr<JacobianTrace<A1> > trace1;
-    boost::shared_ptr<JacobianTrace<A2> > trace2;
+  struct Trace: public JacobianTrace {
+    TracePtr trace1, trace2;
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
     /// Start the reverse AD process
@@ -456,14 +456,13 @@ public:
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
-      const Values& values) const {
+  virtual std::pair<T, TracePtr> traceExecution(const Values& values) const {
+    A1 a1;
+    A2 a2;
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
-    trace->trace1 = this->expressionA1_->traceExecution(values);
-    trace->trace2 = this->expressionA2_->traceExecution(values);
-    trace->t = function_(trace->trace1->value(), trace->trace2->value(),
-        trace->dTdA1, trace->dTdA2);
-    return trace;
+    boost::tie(a1, trace->trace1) = this->expressionA1_->traceExecution(values);
+    boost::tie(a2, trace->trace2) = this->expressionA2_->traceExecution(values);
+    return std::make_pair(function_(a1, a2, trace->dTdA1, trace->dTdA2), trace);
   }
 
 };
@@ -543,10 +542,10 @@ public:
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace<T> {
-    boost::shared_ptr<JacobianTrace<A1> > trace1;
-    boost::shared_ptr<JacobianTrace<A2> > trace2;
-    boost::shared_ptr<JacobianTrace<A3> > trace3;
+  struct Trace: public JacobianTrace {
+    TracePtr trace1;
+    TracePtr trace2;
+    TracePtr trace3;
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
     JacobianTA3 dTdA3;
@@ -565,15 +564,16 @@ public:
   };
 
   /// Construct an execution trace for reverse AD
-  virtual boost::shared_ptr<JacobianTrace<T> > traceExecution(
-      const Values& values) const {
+  virtual std::pair<T, TracePtr> traceExecution(const Values& values) const {
+    A1 a1;
+    A2 a2;
+    A3 a3;
     boost::shared_ptr<Trace> trace = boost::make_shared<Trace>();
-    trace->trace1 = this->expressionA1_->traceExecution(values);
-    trace->trace2 = this->expressionA2_->traceExecution(values);
-    trace->trace3 = this->expressionA3_->traceExecution(values);
-    trace->t = function_(trace->trace1->value(), trace->trace2->value(),
-        trace->trace3->value(), trace->dTdA1, trace->dTdA2, trace->dTdA3);
-    return trace;
+    boost::tie(a1, trace->trace1) = this->expressionA1_->traceExecution(values);
+    boost::tie(a2, trace->trace2) = this->expressionA2_->traceExecution(values);
+    boost::tie(a3, trace->trace3) = this->expressionA3_->traceExecution(values);
+    return std::make_pair(
+        function_(a1, a2, a3, trace->dTdA1, trace->dTdA2, trace->dTdA3), trace);
   }
 
 };

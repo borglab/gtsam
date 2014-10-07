@@ -124,7 +124,7 @@ TEST(BADFactor, test2) {
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
   EXPECT( assert_equal(*expected, *gf2, 1e-9));
 
-  TernaryExpression<Point2,Pose3,Point3,Cal3_S2>::Function fff = project6;
+  TernaryExpression<Point2, Pose3, Point3, Cal3_S2>::Function fff = project6;
 
   // Try ternary version
   BADFactor<Point2> f3(model, measured, project3(x, p, K));
