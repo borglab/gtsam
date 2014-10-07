@@ -335,11 +335,16 @@ namespace gtsam {
     /// rotate point from rotated coordinate frame to world = R*p
     Point3 operator*(const Point3& p) const;
 
-    /**
-     * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-     */
-    Point3 unrotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
+    Point3 unrotate(const Point3& p) const;
+
+    /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
+    Point3 unrotate(const Point3& p, boost::optional<Matrix3&> H1,
+        boost::optional<Matrix3&> H2) const;
+
+    /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
+    Point3 unrotate(const Point3& p, boost::optional<Matrix&> H1,
+        boost::optional<Matrix&> H2) const;
 
     /// @}
     /// @name Group Action on Unit3
