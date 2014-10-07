@@ -122,6 +122,7 @@ public:
     boost::tie(value,trace) = root_->traceExecution(values);
     Augmented<T> augmented(value);
     trace->reverseAD(augmented.jacobians());
+    delete trace;
     return augmented;
 #else
     return root_->forward(values);
