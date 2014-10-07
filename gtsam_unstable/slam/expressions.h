@@ -10,6 +10,7 @@
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <boost/bind.hpp>
 
 namespace gtsam {
 
@@ -46,6 +47,16 @@ typedef Expression<Cal3_S2> Cal3_S2_;
 
 Point2_ project(const Point3_& p_cam) {
   return Point2_(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+}
+
+Point2 project6(const Pose3& x, const Point3& p, const Cal3_S2& K,
+    boost::optional<Matrix26&> Dpose, boost::optional<Matrix23&> Dpoint,
+    boost::optional<Matrix25&> Dcal) {
+  return PinholeCamera<Cal3_S2>(x, K).project(p, Dpose, Dpoint, Dcal);
+}
+
+Point2_ project3(const Pose3_& x, const Point3_& p, const Cal3_S2_& K) {
+  return Point2_(project6, x, p, K);
 }
 
 template<class CAL>

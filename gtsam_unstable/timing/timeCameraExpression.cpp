@@ -26,7 +26,6 @@
 #include <time.h>
 #include <iostream>
 #include <iomanip>      // std::setprecision
-
 using namespace std;
 using namespace gtsam;
 
@@ -74,37 +73,43 @@ int main() {
   // Dedicated factor
   // Oct 3, 2014, Macbook Air
   // 4.2 musecs/call
-  GeneralSFMFactor2<Cal3_S2> oldFactor2(z, model, 1, 2, 3);
-  time(oldFactor2, values);
+  GeneralSFMFactor2<Cal3_S2> f1(z, model, 1, 2, 3);
+  time(f1, values);
 
   // BADFactor
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
-  BADFactor<Point2> newFactor2(model, z,
+  BADFactor<Point2> f2(model, z,
       uncalibrate(K, project(transform_to(x, p))));
-  time(newFactor2, values);
+  time(f2, values);
+
+  // BADFactor ternary
+  // Oct 3, 2014, Macbook Air
+  // 20.3 musecs/call
+  BADFactor<Point2> f3(model, z, project3(x, p, K));
+  time(f3, values);
 
   // CALIBRATED
 
   // Dedicated factor
   // Oct 3, 2014, Macbook Air
   // 3.4 musecs/call
-  GenericProjectionFactor<Pose3, Point3> oldFactor1(z, model, 1, 2, fixedK);
-  time(oldFactor1, values);
+  GenericProjectionFactor<Pose3, Point3> g1(z, model, 1, 2, fixedK);
+  time(g1, values);
 
   // BADFactor
   // Oct 3, 2014, Macbook Air
   // 16.0 musecs/call
-  BADFactor<Point2> newFactor1(model, z,
+  BADFactor<Point2> g2(model, z,
       uncalibrate(Cal3_S2_(*fixedK), project(transform_to(x, p))));
-  time(newFactor1, values);
+  time(g2, values);
 
   // BADFactor, optimized
   // Oct 3, 2014, Macbook Air
   // 9.0 musecs/call
   typedef PinholeCamera<Cal3_S2> Camera;
   typedef Expression<Camera> Camera_;
-  BADFactor<Point2> newFactor3(model, z, Point2_(myProject, x, p));
-  time(newFactor3, values);
+  BADFactor<Point2> g3(model, z, Point2_(myProject, x, p));
+  time(g3, values);
   return 0;
 }
