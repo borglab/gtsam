@@ -53,7 +53,7 @@ public:
 
   static Point3 unrotate(const Rot2& R, const Point3& p,
       boost::optional<Matrix&> HR = boost::none) {
-    Point3 q = Rot3::yaw(R.theta()).unrotate(p, HR);
+    Point3 q = Rot3::yaw(R.theta()).unrotate(p, HR, boost::none);
     if (HR) {
       // assign to temporary first to avoid error in Win-Debug mode
       Matrix H = HR->col(2);
@@ -106,7 +106,7 @@ public:
   Vector evaluateError(const Rot3& nRb,
       boost::optional<Matrix&> H = boost::none) const {
     // measured bM = nRb’ * nM + b
-    Point3 hx = nRb.unrotate(nM_, H) + bias_;
+    Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
     return (hx - measured_).vector();
   }
 };
