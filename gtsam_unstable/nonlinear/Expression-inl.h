@@ -32,6 +32,26 @@ class Expression;
 typedef std::map<Key, Matrix> JacobianMap;
 
 //-----------------------------------------------------------------------------
+struct JacobianTrace {
+  virtual ~JacobianTrace() {
+  }
+  virtual void reverseAD(JacobianMap& jacobians) const = 0;
+  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
+//  template<class JacobianFT>
+//  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
+};
+
+typedef JacobianTrace* TracePtr;
+
+//template <class Derived>
+//struct TypedTrace {
+//  virtual void reverseAD(JacobianMap& jacobians) const = 0;
+//  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
+////  template<class JacobianFT>
+////  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
+//};
+
+//-----------------------------------------------------------------------------
 /**
  * Value and Jacobians
  */
@@ -133,26 +153,6 @@ public:
     std::cout << std::endl;
   }
 };
-
-//-----------------------------------------------------------------------------
-struct JacobianTrace {
-  virtual ~JacobianTrace() {
-  }
-  virtual void reverseAD(JacobianMap& jacobians) const = 0;
-  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
-//  template<class JacobianFT>
-//  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
-};
-
-typedef JacobianTrace* TracePtr;
-
-//template <class Derived>
-//struct TypedTrace {
-//  virtual void reverseAD(JacobianMap& jacobians) const = 0;
-//  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
-////  template<class JacobianFT>
-////  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
-//};
 
 //-----------------------------------------------------------------------------
 /**
