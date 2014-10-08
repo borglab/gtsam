@@ -31,7 +31,7 @@ using namespace gtsam;
 
 static const int n = 100000;
 
-void time(const NonlinearFactor& f, const Values& values) {
+void time(const string& str, const NonlinearFactor& f, const Values& values) {
   long timeLog = clock();
   GaussianFactor::shared_ptr gf;
   for (int i = 0; i < n; i++)
@@ -40,7 +40,7 @@ void time(const NonlinearFactor& f, const Values& values) {
   double seconds = (double) (timeLog2 - timeLog) / CLOCKS_PER_SEC;
   // cout << ((double) n / seconds) << " calls/second" << endl;
   cout << setprecision(3);
-  cout << ((double) seconds * 1000000 / n) << " musecs/call" << endl;
+  cout << str << ((double) seconds * 1000000 / n) << " musecs/call" << endl;
 }
 
 boost::shared_ptr<Cal3_S2> fixedK(new Cal3_S2());
@@ -74,20 +74,20 @@ int main() {
   // Oct 3, 2014, Macbook Air
   // 4.2 musecs/call
   GeneralSFMFactor2<Cal3_S2> f1(z, model, 1, 2, 3);
-  time(f1, values);
+  time("GeneralSFMFactor2<Cal3_S2>  : ", f1, values);
 
   // BADFactor
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
   BADFactor<Point2> f2(model, z,
       uncalibrate(K, project(transform_to(x, p))));
-  time(f2, values);
+  time("Bin(Leaf,Un(Bin(Leaf,Leaf))): ", f2, values);
 
   // BADFactor ternary
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
   BADFactor<Point2> f3(model, z, project3(x, p, K));
-  time(f3, values);
+  time("Ternary(Leaf,Leaf,Leaf)     : ", f3, values);
 
   // CALIBRATED
 
@@ -95,14 +95,14 @@ int main() {
   // Oct 3, 2014, Macbook Air
   // 3.4 musecs/call
   GenericProjectionFactor<Pose3, Point3> g1(z, model, 1, 2, fixedK);
-  time(g1, values);
+  time("GenericProjectionFactor<P,P>: ", g1, values);
 
   // BADFactor
   // Oct 3, 2014, Macbook Air
   // 16.0 musecs/call
   BADFactor<Point2> g2(model, z,
       uncalibrate(Cal3_S2_(*fixedK), project(transform_to(x, p))));
-  time(g2, values);
+  time("Bin(Cnst,Un(Bin(Leaf,Leaf))): ", g2, values);
 
   // BADFactor, optimized
   // Oct 3, 2014, Macbook Air
@@ -110,6 +110,6 @@ int main() {
   typedef PinholeCamera<Cal3_S2> Camera;
   typedef Expression<Camera> Camera_;
   BADFactor<Point2> g3(model, z, Point2_(myProject, x, p));
-  time(g3, values);
+  time("Binary(Leaf,Leaf)           : ", g3, values);
   return 0;
 }
