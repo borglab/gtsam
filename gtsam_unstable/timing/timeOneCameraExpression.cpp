@@ -58,7 +58,7 @@ int main() {
   // BADFactor
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
-#define TERNARY
+//#define TERNARY
 #ifdef TERNARY
   BADFactor<Point2> f(model, z, project3(x, p, K));
 #else
