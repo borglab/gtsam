@@ -115,6 +115,7 @@ struct JacobianTrace {
       JacobianMap& jacobians) const = 0;
 };
 
+/// Primary template calls the generic Matrix reverseAD pipeline
 template<size_t M, class A>
 struct Select {
   typedef Eigen::Matrix<double, M, A::dimension> Jacobian;
@@ -124,6 +125,7 @@ struct Select {
   }
 };
 
+/// Partially specialized template calls the 2-dimensional output version
 template<class A>
 struct Select<2, A> {
   typedef Eigen::Matrix<double, 2, A::dimension> Jacobian;
