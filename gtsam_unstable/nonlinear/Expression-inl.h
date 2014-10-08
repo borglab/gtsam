@@ -263,10 +263,6 @@ class ConstantExpression: public ExpressionNode<T> {
 
 public:
 
-  /// Destructor
-  virtual ~ConstantExpression() {
-  }
-
   /// Return keys that play in this expression, i.e., the empty set
   virtual std::set<Key> keys() const {
     std::set<Key> keys;
@@ -305,10 +301,6 @@ class LeafExpression: public ExpressionNode<T> {
   friend class Expression<T> ;
 
 public:
-
-  /// Destructor
-  virtual ~LeafExpression() {
-  }
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
@@ -359,10 +351,6 @@ private:
 
 public:
 
-  /// Destructor
-  virtual ~UnaryExpression() {
-  }
-
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
     return expressionA_->keys();
@@ -387,8 +375,7 @@ public:
   struct Trace: public JacobianTrace {
     TracePtr trace;
     JacobianTA dTdA;
-    virtual ~Trace() {
-    }
+
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
       trace.reverseAD(dTdA, jacobians);
@@ -438,10 +425,6 @@ private:
 
 public:
 
-  /// Destructor
-  virtual ~BinaryExpression() {
-  }
-
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
     std::set<Key> keys1 = expressionA1_->keys();
@@ -475,8 +458,7 @@ public:
     TracePtr trace1, trace2;
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
-    virtual ~Trace() {
-    }
+
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
       trace1.reverseAD(dTdA1, jacobians);
@@ -535,10 +517,6 @@ private:
 
 public:
 
-  /// Destructor
-  virtual ~TernaryExpression() {
-  }
-
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
     std::set<Key> keys1 = expressionA1_->keys();
@@ -580,8 +558,7 @@ public:
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
     JacobianTA3 dTdA3;
-    virtual ~Trace() {
-    }
+
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
       trace1.reverseAD(dTdA1, jacobians);
