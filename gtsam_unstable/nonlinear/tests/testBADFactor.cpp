@@ -34,6 +34,56 @@ Point2 measured(-17, 30);
 SharedNoiseModel model = noiseModel::Unit::Create(2);
 
 /* ************************************************************************* */
+// Leaf
+TEST(BADFactor, leaf) {
+
+  // Create some values
+  Values values;
+  values.insert(2, Point2(3, 5));
+
+  JacobianFactor expected( //
+      2, (Matrix(2, 2) << 1, 0, 0, 1), //
+      (Vector(2) << -3, -5));
+
+  // Create leaves
+  Point2_ p(2);
+
+  // Try concise version
+  BADFactor<Point2> f(model, Point2(0, 0), p);
+  EXPECT_LONGS_EQUAL(2, f.dim());
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf, 1e-9));
+}
+
+/* ************************************************************************* */
+// non-zero noise model
+TEST(BADFactor, model) {
+
+  // Create some values
+  Values values;
+  values.insert(2, Point2(3, 5));
+
+  JacobianFactor expected( //
+      2, (Matrix(2, 2) << 10, 0, 0, 100), //
+      (Vector(2) << -30, -500));
+
+  // Create leaves
+  Point2_ p(2);
+
+  // Try concise version
+  SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
+
+  BADFactor<Point2> f(model, Point2(0, 0), p);
+  EXPECT_LONGS_EQUAL(2, f.dim());
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf, 1e-9));
+}
+
+/* ************************************************************************* */
 // Unary(Leaf))
 TEST(BADFactor, test) {
 
