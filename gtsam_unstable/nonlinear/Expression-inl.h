@@ -33,7 +33,12 @@ typedef std::map<Key, Matrix> JacobianMap;
 
 //-----------------------------------------------------------------------------
 /// The JacobinaTrace class records a tree-structured expression's execution
+template<class T>
 struct JacobianTrace {
+
+  // Some fixed matrix sizes we need
+  typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
+
   /**
    *  The Pointer class is a tagged union that obviates the need to create
    *  a JacobianTrace subclass for Constants and Leaf Expressions. Instead
@@ -70,7 +75,6 @@ struct JacobianTrace {
       content.ptr = trace;
     }
     // Either insert identity into Jacobians (Leaf) or propagate (Function)
-    template<class T>
     void reverseAD(JacobianMap& jacobians) const {
       if (type == Leaf) {
         size_t n = T::Dim();
@@ -89,17 +93,45 @@ struct JacobianTrace {
       } else if (type == Function)
         content.ptr->reverseAD(dTdA, jacobians);
     }
+    // Either add to Jacobians (Leaf) or propagate (Function)
+    void reverseAD2(const Jacobian2T& dTdA, JacobianMap& jacobians) const {
+      if (type == Leaf) {
+        JacobianMap::iterator it = jacobians.find(content.key);
+        if (it != jacobians.end())
+          it->second += dTdA;
+        else
+          jacobians[content.key] = dTdA;
+      } else if (type == Function)
+        content.ptr->reverseAD2(dTdA, jacobians);
+    }
   };
+
   /// Make sure destructor is virtual
   virtual ~JacobianTrace() {
   }
   virtual void reverseAD(JacobianMap& jacobians) const = 0;
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
-//  template<class JacobianFT>
-//  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
+  virtual void reverseAD2(const Jacobian2T& dFdT,
+      JacobianMap& jacobians) const = 0;
 };
 
-typedef JacobianTrace::Pointer TracePtr;
+template<size_t M, class A>
+struct Select {
+  typedef Eigen::Matrix<double, M, A::dimension> Jacobian;
+  static void reverseAD(const typename JacobianTrace<A>::Pointer& trace,
+      const Jacobian& dTdA, JacobianMap& jacobians) {
+    trace.reverseAD(dTdA, jacobians);
+  }
+};
+
+template<class A>
+struct Select<2, A> {
+  typedef Eigen::Matrix<double, 2, A::dimension> Jacobian;
+  static void reverseAD(const typename JacobianTrace<A>::Pointer& trace,
+      const Jacobian& dTdA, JacobianMap& jacobians) {
+    trace.reverseAD2(dTdA, jacobians);
+  }
+};
 
 //template <class Derived>
 //struct TypedTrace {
@@ -243,7 +275,8 @@ public:
   virtual Augmented<T> forward(const Values& values) const = 0;
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, TracePtr& p) const = 0;
+  virtual T traceExecution(const Values& values,
+      typename JacobianTrace<T>::Pointer& p) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -280,7 +313,8 @@ public:
   }
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, TracePtr& p) const {
+  virtual T traceExecution(const Values& values,
+      typename JacobianTrace<T>::Pointer& p) const {
     return constant_;
   }
 };
@@ -320,7 +354,8 @@ public:
   }
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, TracePtr& p) const {
+  virtual T traceExecution(const Values& values,
+      typename JacobianTrace<T>::Pointer& p) const {
     p.setLeaf(key_);
     return values.at<T>(key_);
   }
@@ -329,22 +364,22 @@ public:
 
 //-----------------------------------------------------------------------------
 /// Unary Function Expression
-template<class T, class A>
+template<class T, class A1>
 class UnaryExpression: public ExpressionNode<T> {
 
 public:
 
-  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
-  typedef boost::function<T(const A&, boost::optional<JacobianTA&>)> Function;
+  typedef Eigen::Matrix<double, T::dimension, A1::dimension> JacobianTA;
+  typedef boost::function<T(const A1&, boost::optional<JacobianTA&>)> Function;
 
 private:
 
   Function function_;
-  boost::shared_ptr<ExpressionNode<A> > expressionA_;
+  boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
 
   /// Constructor with a unary function f, and input argument e
-  UnaryExpression(Function f, const Expression<A>& e) :
-      function_(f), expressionA_(e.root()) {
+  UnaryExpression(Function f, const Expression<A1>& e) :
+      function_(f), expressionA1_(e.root()) {
   }
 
   friend class Expression<T> ;
@@ -353,18 +388,18 @@ public:
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
-    return expressionA_->keys();
+    return expressionA1_->keys();
   }
 
   /// Return value
   virtual T value(const Values& values) const {
-    return function_(this->expressionA_->value(values), boost::none);
+    return function_(this->expressionA1_->value(values), boost::none);
   }
 
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
-    Augmented<A> argument = this->expressionA_->forward(values);
+    Augmented<A1> argument = this->expressionA1_->forward(values);
     JacobianTA dTdA;
     T t = function_(argument.value(),
         argument.constant() ? none : boost::optional<JacobianTA&>(dTdA));
@@ -372,26 +407,33 @@ public:
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace {
-    TracePtr trace;
-    JacobianTA dTdA;
+  struct Trace: public JacobianTrace<T> {
+    typename JacobianTrace<A1>::Pointer trace1;
+    JacobianTA dTdA1;
 
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
-      trace.reverseAD(dTdA, jacobians);
+      Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
     }
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-      trace.reverseAD(dFdT * dTdA, jacobians);
+      trace1.reverseAD(dFdT * dTdA1, jacobians);
+    }
+    /// Version specialized to 2-dimensional output
+    typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
+    virtual void reverseAD2(const Jacobian2T& dFdT,
+        JacobianMap& jacobians) const {
+      trace1.reverseAD2(dFdT * dTdA1, jacobians);
     }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, TracePtr& p) const {
+  virtual T traceExecution(const Values& values,
+      typename JacobianTrace<T>::Pointer& p) const {
     Trace* trace = new Trace();
     p.setFunction(trace);
-    A a = this->expressionA_->traceExecution(values, trace->trace);
-    return function_(a, trace->dTdA);
+    A1 a = this->expressionA1_->traceExecution(values, trace->trace1);
+    return function_(a, trace->dTdA1);
   }
 };
 
@@ -454,25 +496,34 @@ public:
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace {
-    TracePtr trace1, trace2;
+  struct Trace: public JacobianTrace<T> {
+    typename JacobianTrace<A1>::Pointer trace1;
+    typename JacobianTrace<A2>::Pointer trace2;
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
 
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
-      trace1.reverseAD(dTdA1, jacobians);
-      trace2.reverseAD(dTdA2, jacobians);
+      Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
+      Select<T::dimension, A2>::reverseAD(trace2, dTdA2, jacobians);
     }
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
       trace1.reverseAD(dFdT * dTdA1, jacobians);
       trace2.reverseAD(dFdT * dTdA2, jacobians);
     }
+    /// Version specialized to 2-dimensional output
+    typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
+    virtual void reverseAD2(const Jacobian2T& dFdT,
+        JacobianMap& jacobians) const {
+      trace1.reverseAD2(dFdT * dTdA1, jacobians);
+      trace2.reverseAD2(dFdT * dTdA2, jacobians);
+    }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, TracePtr& p) const {
+  virtual T traceExecution(const Values& values,
+      typename JacobianTrace<T>::Pointer& p) const {
     Trace* trace = new Trace();
     p.setFunction(trace);
     A1 a1 = this->expressionA1_->traceExecution(values, trace->trace1);
@@ -553,17 +604,19 @@ public:
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace {
-    TracePtr trace1, trace2, trace3;
+  struct Trace: public JacobianTrace<T> {
+    typename JacobianTrace<A1>::Pointer trace1;
+    typename JacobianTrace<A2>::Pointer trace2;
+    typename JacobianTrace<A3>::Pointer trace3;
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
     JacobianTA3 dTdA3;
 
     /// Start the reverse AD process
     virtual void reverseAD(JacobianMap& jacobians) const {
-      trace1.reverseAD(dTdA1, jacobians);
-      trace2.reverseAD(dTdA2, jacobians);
-      trace3.reverseAD(dTdA3, jacobians);
+      Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
+      Select<T::dimension, A2>::reverseAD(trace2, dTdA2, jacobians);
+      Select<T::dimension, A3>::reverseAD(trace3, dTdA3, jacobians);
     }
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
@@ -571,10 +624,19 @@ public:
       trace2.reverseAD(dFdT * dTdA2, jacobians);
       trace3.reverseAD(dFdT * dTdA3, jacobians);
     }
+    /// Version specialized to 2-dimensional output
+    typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
+    virtual void reverseAD2(const Jacobian2T& dFdT,
+        JacobianMap& jacobians) const {
+      trace1.reverseAD2(dFdT * dTdA1, jacobians);
+      trace2.reverseAD2(dFdT * dTdA2, jacobians);
+      trace3.reverseAD2(dFdT * dTdA3, jacobians);
+    }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, TracePtr& p) const {
+  virtual T traceExecution(const Values& values,
+      typename JacobianTrace<T>::Pointer& p) const {
     Trace* trace = new Trace();
     p.setFunction(trace);
     A1 a1 = this->expressionA1_->traceExecution(values, trace->trace1);

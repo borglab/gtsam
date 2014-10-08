@@ -81,7 +81,7 @@ TEST(Expression, leaf) {
 TEST(Expression, test) {
 
   // Test Constant expression
-  Expression<int> c(0);
+  Expression<Rot3> c(Rot3::identity());
 
   // Create leaves
   Expression<Pose3> x(1);
