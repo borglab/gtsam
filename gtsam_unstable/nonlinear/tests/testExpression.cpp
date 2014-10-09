@@ -77,7 +77,7 @@ TEST(Expression, leaf) {
 //  EXPECT(assert_equal(expected.at(67),a.jacobians().at(67)));
 //}
 /* ************************************************************************* */
-
+// Binary(Leaf,Unary(Binary(Leaf,Leaf)))
 TEST(Expression, test) {
 
   // Test Constant expression
@@ -95,7 +95,7 @@ TEST(Expression, test) {
   Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 
   // Check keys
-  std::set<Key> expectedKeys;
+  set<Key> expectedKeys;
   expectedKeys.insert(1);
   expectedKeys.insert(2);
   expectedKeys.insert(3);
@@ -111,7 +111,7 @@ TEST(Expression, compose1) {
   Expression<Rot3> R3 = R1 * R2;
 
   // Check keys
-  std::set<Key> expectedKeys;
+  set<Key> expectedKeys;
   expectedKeys.insert(1);
   expectedKeys.insert(2);
   EXPECT(expectedKeys == R3.keys());
@@ -126,7 +126,7 @@ TEST(Expression, compose2) {
   Expression<Rot3> R3 = R1 * R2;
 
   // Check keys
-  std::set<Key> expectedKeys;
+  set<Key> expectedKeys;
   expectedKeys.insert(1);
   EXPECT(expectedKeys == R3.keys());
 }
@@ -140,7 +140,7 @@ TEST(Expression, compose3) {
   Expression<Rot3> R3 = R1 * R2;
 
   // Check keys
-  std::set<Key> expectedKeys;
+  set<Key> expectedKeys;
   expectedKeys.insert(3);
   EXPECT(expectedKeys == R3.keys());
 }
@@ -167,7 +167,7 @@ TEST(Expression, ternary) {
   Expression<Rot3> ABC(composeThree, A, B, C);
 
   // Check keys
-  std::set<Key> expectedKeys;
+  set<Key> expectedKeys;
   expectedKeys.insert(1);
   expectedKeys.insert(2);
   expectedKeys.insert(3);

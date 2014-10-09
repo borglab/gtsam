@@ -17,7 +17,7 @@
  */
 
 #include <gtsam_unstable/slam/expressions.h>
-#include <gtsam_unstable/nonlinear/BADFactor.h>
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 
 #include <time.h>
 #include <iostream>
@@ -55,14 +55,14 @@ int main() {
   values.insert(2, Point3(0, 0, 1));
   values.insert(3, Cal3_S2());
 
-  // BADFactor
+  // ExpressionFactor
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
 //#define TERNARY
 #ifdef TERNARY
-  BADFactor<Point2> f(model, z, project3(x, p, K));
+  ExpressionFactor<Point2> f(model, z, project3(x, p, K));
 #else
-  BADFactor<Point2> f(model, z, uncalibrate(K, project(transform_to(x, p))));
+  ExpressionFactor<Point2> f(model, z, uncalibrate(K, project(transform_to(x, p))));
 #endif
   time(f, values);
 

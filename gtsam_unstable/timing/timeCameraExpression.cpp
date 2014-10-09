@@ -17,7 +17,7 @@
  */
 
 #include <gtsam_unstable/slam/expressions.h>
-#include <gtsam_unstable/nonlinear/BADFactor.h>
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Pose3.h>
@@ -76,17 +76,17 @@ int main() {
   GeneralSFMFactor2<Cal3_S2> f1(z, model, 1, 2, 3);
   time("GeneralSFMFactor2<Cal3_S2>  : ", f1, values);
 
-  // BADFactor
+  // ExpressionFactor
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
-  BADFactor<Point2> f2(model, z,
+  ExpressionFactor<Point2> f2(model, z,
       uncalibrate(K, project(transform_to(x, p))));
   time("Bin(Leaf,Un(Bin(Leaf,Leaf))): ", f2, values);
 
-  // BADFactor ternary
+  // ExpressionFactor ternary
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
-  BADFactor<Point2> f3(model, z, project3(x, p, K));
+  ExpressionFactor<Point2> f3(model, z, project3(x, p, K));
   time("Ternary(Leaf,Leaf,Leaf)     : ", f3, values);
 
   // CALIBRATED
@@ -97,19 +97,19 @@ int main() {
   GenericProjectionFactor<Pose3, Point3> g1(z, model, 1, 2, fixedK);
   time("GenericProjectionFactor<P,P>: ", g1, values);
 
-  // BADFactor
+  // ExpressionFactor
   // Oct 3, 2014, Macbook Air
   // 16.0 musecs/call
-  BADFactor<Point2> g2(model, z,
+  ExpressionFactor<Point2> g2(model, z,
       uncalibrate(Cal3_S2_(*fixedK), project(transform_to(x, p))));
   time("Bin(Cnst,Un(Bin(Leaf,Leaf))): ", g2, values);
 
-  // BADFactor, optimized
+  // ExpressionFactor, optimized
   // Oct 3, 2014, Macbook Air
   // 9.0 musecs/call
   typedef PinholeCamera<Cal3_S2> Camera;
   typedef Expression<Camera> Camera_;
-  BADFactor<Point2> g3(model, z, Point2_(myProject, x, p));
+  ExpressionFactor<Point2> g3(model, z, Point2_(myProject, x, p));
   time("Binary(Leaf,Leaf)           : ", g3, values);
   return 0;
 }

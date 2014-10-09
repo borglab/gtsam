@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testBADFactor.cpp
+ * @file testExpressionFactor.cpp
  * @date September 18, 2014
  * @author Frank Dellaert
  * @author Paul Furgale
@@ -18,7 +18,7 @@
  */
 
 #include <gtsam_unstable/slam/expressions.h>
-#include <gtsam_unstable/nonlinear/BADFactor.h>
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/geometry/Pose3.h>
@@ -35,7 +35,7 @@ SharedNoiseModel model = noiseModel::Unit::Create(2);
 
 /* ************************************************************************* */
 // Leaf
-TEST(BADFactor, leaf) {
+TEST(ExpressionFactor, leaf) {
 
   // Create some values
   Values values;
@@ -49,7 +49,7 @@ TEST(BADFactor, leaf) {
   Point2_ p(2);
 
   // Try concise version
-  BADFactor<Point2> f(model, Point2(0, 0), p);
+  ExpressionFactor<Point2> f(model, Point2(0, 0), p);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
@@ -59,7 +59,7 @@ TEST(BADFactor, leaf) {
 
 /* ************************************************************************* */
 // non-zero noise model
-TEST(BADFactor, model) {
+TEST(ExpressionFactor, model) {
 
   // Create some values
   Values values;
@@ -75,7 +75,7 @@ TEST(BADFactor, model) {
   // Try concise version
   SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
 
-  BADFactor<Point2> f(model, Point2(0, 0), p);
+  ExpressionFactor<Point2> f(model, Point2(0, 0), p);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
@@ -85,7 +85,7 @@ TEST(BADFactor, model) {
 
 /* ************************************************************************* */
 // Unary(Leaf))
-TEST(BADFactor, test) {
+TEST(ExpressionFactor, test) {
 
   // Create some values
   Values values;
@@ -99,7 +99,7 @@ TEST(BADFactor, test) {
   Point3_ p(2);
 
   // Try concise version
-  BADFactor<Point2> f(model, measured, project(p));
+  ExpressionFactor<Point2> f(model, measured, project(p));
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
@@ -109,7 +109,7 @@ TEST(BADFactor, test) {
 
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
-TEST(BADFactor, test1) {
+TEST(ExpressionFactor, test1) {
 
   // Create some values
   Values values;
@@ -127,7 +127,7 @@ TEST(BADFactor, test1) {
   Point3_ p(2);
 
   // Try concise version
-  BADFactor<Point2> f2(model, measured, project(transform_to(x, p)));
+  ExpressionFactor<Point2> f2(model, measured, project(transform_to(x, p)));
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
@@ -136,7 +136,7 @@ TEST(BADFactor, test1) {
 
 /* ************************************************************************* */
 // Binary(Leaf,Unary(Binary(Leaf,Leaf)))
-TEST(BADFactor, test2) {
+TEST(ExpressionFactor, test2) {
 
   // Create some values
   Values values;
@@ -160,14 +160,14 @@ TEST(BADFactor, test2) {
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   // Create factor and check value, dimension, linearization
-  BADFactor<Point2> f(model, measured, uv_hat);
+  ExpressionFactor<Point2> f(model, measured, uv_hat);
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   EXPECT( assert_equal(*expected, *gf, 1e-9));
 
   // Try concise version
-  BADFactor<Point2> f2(model, measured,
+  ExpressionFactor<Point2> f2(model, measured,
       uncalibrate(K, project(transform_to(x, p))));
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
@@ -177,7 +177,7 @@ TEST(BADFactor, test2) {
   TernaryExpression<Point2, Pose3, Point3, Cal3_S2>::Function fff = project6;
 
   // Try ternary version
-  BADFactor<Point2> f3(model, measured, project3(x, p, K));
+  ExpressionFactor<Point2> f3(model, measured, project3(x, p, K));
   EXPECT_DOUBLES_EQUAL(expected_error, f3.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f3.dim());
   boost::shared_ptr<GaussianFactor> gf3 = f3.linearize(values);
@@ -186,14 +186,14 @@ TEST(BADFactor, test2) {
 
 /* ************************************************************************* */
 
-TEST(BADFactor, compose1) {
+TEST(ExpressionFactor, compose1) {
 
   // Create expression
   Rot3_ R1(1), R2(2);
   Rot3_ R3 = R1 * R2;
 
   // Create factor
-  BADFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
+  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
 
   // Create some values
   Values values;
@@ -216,14 +216,14 @@ TEST(BADFactor, compose1) {
 
 /* ************************************************************************* */
 // Test compose with arguments referring to the same rotation
-TEST(BADFactor, compose2) {
+TEST(ExpressionFactor, compose2) {
 
   // Create expression
   Rot3_ R1(1), R2(1);
   Rot3_ R3 = R1 * R2;
 
   // Create factor
-  BADFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
+  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
 
   // Create some values
   Values values;
@@ -245,14 +245,14 @@ TEST(BADFactor, compose2) {
 
 /* ************************************************************************* */
 // Test compose with one arguments referring to a constant same rotation
-TEST(BADFactor, compose3) {
+TEST(ExpressionFactor, compose3) {
 
   // Create expression
   Rot3_ R1(Rot3::identity()), R2(3);
   Rot3_ R3 = R1 * R2;
 
   // Create factor
-  BADFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
+  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
 
   // Create some values
   Values values;
@@ -287,14 +287,14 @@ Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
   return R1 * (R2 * R3);
 }
 
-TEST(BADFactor, composeTernary) {
+TEST(ExpressionFactor, composeTernary) {
 
   // Create expression
   Rot3_ A(1), B(2), C(3);
   Rot3_ ABC(composeThree, A, B, C);
 
   // Create factor
-  BADFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), ABC);
+  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), ABC);
 
   // Create some values
   Values values;

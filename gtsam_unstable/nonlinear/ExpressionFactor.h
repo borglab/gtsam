@@ -24,10 +24,10 @@
 namespace gtsam {
 
 /**
- * BAD Factor that supports arbitrary expressions via AD
+ * Factor that supports arbitrary expressions via AD
  */
 template<class T>
-class BADFactor: public NoiseModelFactor {
+class ExpressionFactor: public NoiseModelFactor {
 
   const T measurement_;
   const Expression<T> expression_;
@@ -35,7 +35,7 @@ class BADFactor: public NoiseModelFactor {
 public:
 
   /// Constructor
-  BADFactor(const SharedNoiseModel& noiseModel, //
+  ExpressionFactor(const SharedNoiseModel& noiseModel, //
       const T& measurement, const Expression<T>& expression) :
       NoiseModelFactor(noiseModel, expression.keys()), //
       measurement_(measurement), expression_(expression) {
@@ -61,7 +61,7 @@ public:
   }
 
 };
-// BADFactor
+// ExpressionFactor
 
 }
 

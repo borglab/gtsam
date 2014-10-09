@@ -19,7 +19,7 @@
 
 // The two new headers that allow using our Automatic Differentiation Expression framework
 #include <gtsam_unstable/slam/expressions.h>
-#include <gtsam_unstable/nonlinear/BADFactor.h>
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 
 // Header order is close to far
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -42,19 +42,19 @@ int main(int argc, char** argv) {
 
   // 2a. Add a prior on the first pose, setting it to the origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1));
-  graph.push_back(BADFactor<Pose2>(priorNoise, Pose2(0, 0, 0), x1));
+  graph.push_back(ExpressionFactor<Pose2>(priorNoise, Pose2(0, 0, 0), x1));
 
   // For simplicity, we will use the same noise model for odometry and loop closures
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
-  graph.push_back(BADFactor<Pose2>(model, Pose2(2, 0, 0     ), between(x1,x2)));
-  graph.push_back(BADFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x2,x3)));
-  graph.push_back(BADFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x3,x4)));
-  graph.push_back(BADFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x4,x5)));
+  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, 0     ), between(x1,x2)));
+  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x2,x3)));
+  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x3,x4)));
+  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x4,x5)));
 
   // 2c. Add the loop closure constraint
-  graph.push_back(BADFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x5,x2)));
+  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x5,x2)));
   graph.print("\nFactor Graph:\n"); // print
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution

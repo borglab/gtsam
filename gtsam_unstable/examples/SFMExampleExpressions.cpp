@@ -24,7 +24,7 @@
 
 // The two new headers that allow using our Automatic Differentiation Expression framework
 #include <gtsam_unstable/slam/expressions.h>
-#include <gtsam_unstable/nonlinear/BADFactor.h>
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 
 // Header order is close to far
 #include <examples/SFMdata.h>
@@ -57,10 +57,10 @@ int main(int argc, char* argv[]) {
   // Specify uncertainty on first pose prior
   noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)));
 
-  // Here we don't use a PriorFactor but directly the BADFactor class
+  // Here we don't use a PriorFactor but directly the ExpressionFactor class
   // The object x0 is an Expression, and we create a factor wanting it to be equal to poses[0]
   Pose3_ x0('x',0);
-  graph.push_back(BADFactor<Pose3>(poseNoise, poses[0], x0));
+  graph.push_back(ExpressionFactor<Pose3>(poseNoise, poses[0], x0));
 
   // We create a constant Expression for the calibration here
   Cal3_S2_ cK(K);
@@ -74,14 +74,14 @@ int main(int argc, char* argv[]) {
       // Below an expression for the prediction of the measurement:
       Point3_ p('l', j);
       Point2_ prediction = uncalibrate(cK, project(transform_to(x, p)));
-      // Again, here we use a BADFactor
-      graph.push_back(BADFactor<Point2>(measurementNoise, measurement, prediction));
+      // Again, here we use a ExpressionFactor
+      graph.push_back(ExpressionFactor<Point2>(measurementNoise, measurement, prediction));
     }
   }
 
-  // Add prior on first point to constrain scale, again with BADFActor
+  // Add prior on first point to constrain scale, again with ExpressionFactor
   noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-  graph.push_back(BADFactor<Point3>(pointNoise, points[0], Point3_('l', 0)));
+  graph.push_back(ExpressionFactor<Point3>(pointNoise, points[0], Point3_('l', 0)));
 
   // Create perturbed initial
   Values initialEstimate;
