@@ -50,14 +50,9 @@ public:
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if (H) {
       assert(H->size()==size());
-      typedef std::map<Key, Matrix> MapType;
-      MapType terms;
       Augmented<T> augmented = expression_.augmented(x);
       // move terms to H, which is pre-allocated to correct size
-      size_t j = 0;
-      MapType::iterator it = augmented.jacobians().begin();
-      for (; it != augmented.jacobians().end(); ++it)
-        it->second.swap((*H)[j++]);
+      augmented.move(*H);
       return measurement_.localCoordinates(augmented.value());
     } else {
       const T& value = expression_.value(x);

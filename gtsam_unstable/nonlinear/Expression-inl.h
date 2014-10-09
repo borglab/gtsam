@@ -244,6 +244,16 @@ public:
           << "x" << term.second.cols() << ") ";
     std::cout << std::endl;
   }
+
+  /// Move terms to array, destroys content
+  void move(std::vector<Matrix>& H) {
+    assert(H.size()==jacobains.size());
+    size_t j = 0;
+    JacobianMap::iterator it = jacobians_.begin();
+    for (; it != jacobians_.end(); ++it)
+      it->second.swap(H[j++]);
+  }
+
 };
 
 //-----------------------------------------------------------------------------
