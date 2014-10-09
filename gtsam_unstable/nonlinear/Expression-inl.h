@@ -74,13 +74,17 @@ struct JacobianTrace {
       type = Function;
       content.ptr = trace;
     }
-    // Either insert identity into Jacobians (Leaf) or propagate (Function)
-    void reverseAD(JacobianMap& jacobians) const {
+    // *** This is the main entry point for reverseAD, called from Expression::augmented ***
+    // Called only once, either inserts identity into Jacobians (Leaf) or starts AD (Function)
+    void startReverseAD(JacobianMap& jacobians) const {
       if (type == Leaf) {
+        // This branch will only be called on trivial Leaf expressions, i.e. Priors
         size_t n = T::Dim();
         jacobians[content.key] = Eigen::MatrixXd::Identity(n, n);
       } else if (type == Function)
-        content.ptr->reverseAD(jacobians);
+        // This is the more typical entry point, starting the AD pipeline
+        // It is inside the startReverseAD that the correctly dimensioned pipeline is chosen.
+        content.ptr->startReverseAD(jacobians);
     }
     // Either add to Jacobians (Leaf) or propagate (Function)
     void reverseAD(const Matrix& dTdA, JacobianMap& jacobians) const {
@@ -109,7 +113,7 @@ struct JacobianTrace {
   /// Make sure destructor is virtual
   virtual ~JacobianTrace() {
   }
-  virtual void reverseAD(JacobianMap& jacobians) const = 0;
+  virtual void startReverseAD(JacobianMap& jacobians) const = 0;
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
   virtual void reverseAD2(const Jacobian2T& dFdT,
       JacobianMap& jacobians) const = 0;
@@ -137,7 +141,7 @@ struct Select<2, A> {
 
 //template <class Derived>
 //struct TypedTrace {
-//  virtual void reverseAD(JacobianMap& jacobians) const = 0;
+//  virtual void startReverseAD(JacobianMap& jacobians) const = 0;
 //  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
 ////  template<class JacobianFT>
 ////  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
@@ -424,7 +428,7 @@ public:
     JacobianTA dTdA1;
 
     /// Start the reverse AD process
-    virtual void reverseAD(JacobianMap& jacobians) const {
+    virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
     }
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
@@ -515,7 +519,7 @@ public:
     JacobianTA2 dTdA2;
 
     /// Start the reverse AD process
-    virtual void reverseAD(JacobianMap& jacobians) const {
+    virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
       Select<T::dimension, A2>::reverseAD(trace2, dTdA2, jacobians);
     }
@@ -625,7 +629,7 @@ public:
     JacobianTA3 dTdA3;
 
     /// Start the reverse AD process
-    virtual void reverseAD(JacobianMap& jacobians) const {
+    virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
       Select<T::dimension, A2>::reverseAD(trace2, dTdA2, jacobians);
       Select<T::dimension, A3>::reverseAD(trace3, dTdA3, jacobians);

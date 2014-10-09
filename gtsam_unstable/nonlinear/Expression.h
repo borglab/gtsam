@@ -120,7 +120,7 @@ public:
     typename JacobianTrace<T>::Pointer pointer;
     T value = root_->traceExecution(values,pointer);
     Augmented<T> augmented(value);
-    pointer.reverseAD(augmented.jacobians());
+    pointer.startReverseAD(augmented.jacobians());
     return augmented;
 #else
     return root_->forward(values);
