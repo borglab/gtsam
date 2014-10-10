@@ -117,10 +117,10 @@ public:
   Augmented<T> augmented(const Values& values) const {
 #define REVERSE_AD
 #ifdef REVERSE_AD
-    typename JacobianTrace<T>::Pointer pointer;
-    T value = root_->traceExecution(values,pointer);
+    ExecutionTrace<T> trace;
+    T value = root_->traceExecution(values, trace);
     Augmented<T> augmented(value);
-    pointer.startReverseAD(augmented.jacobians());
+    trace.startReverseAD(augmented.jacobians());
     return augmented;
 #else
     return root_->forward(values);
