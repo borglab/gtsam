@@ -339,15 +339,18 @@ struct Trace: More {
 
   /// Start the reverse AD process
   virtual void startReverseAD(JacobianMap& jacobians) const {
+    More::startReverseAD(jacobians);
     Select<T::dimension, A>::reverseAD(trace, dTdA, jacobians);
   }
   /// Given df/dT, multiply in dT/dA and continue reverse AD process
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+    More::reverseAD(dFdT, jacobians);
     trace.reverseAD(dFdT * dTdA, jacobians);
   }
   /// Version specialized to 2-dimensional output
   virtual void reverseAD2(const Jacobian2T& dFdT,
       JacobianMap& jacobians) const {
+    More::reverseAD2(dFdT, jacobians);
     trace.reverseAD2(dFdT * dTdA, jacobians);
   }
 };

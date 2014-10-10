@@ -120,10 +120,13 @@ struct JacobianTrace {
   /// Make sure destructor is virtual
   virtual ~JacobianTrace() {
   }
-  virtual void startReverseAD(JacobianMap& jacobians) const = 0;
-  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
+  virtual void startReverseAD(JacobianMap& jacobians) const {
+  }
+  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+  }
   virtual void reverseAD2(const Jacobian2T& dFdT,
-      JacobianMap& jacobians) const = 0;
+      JacobianMap& jacobians) const {
+  }
 };
 
 /// Primary template calls the generic Matrix reverseAD pipeline
