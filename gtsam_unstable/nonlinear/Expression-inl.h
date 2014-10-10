@@ -30,8 +30,9 @@
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/pop_front.hpp>
 #include <boost/mpl/fold.hpp>
-#include<boost/mpl/empty_base.hpp>
-#include<boost/mpl/placeholders.hpp>
+#include <boost/mpl/empty_base.hpp>
+#include <boost/mpl/placeholders.hpp>
+
 namespace MPL = boost::mpl::placeholders;
 
 namespace gtsam {
@@ -153,40 +154,51 @@ struct Select<2, A> {
 };
 
 /**
+ * Record the evaluation of a single argument in a functional expression
+ */
+template<class T, class A>
+struct SingleTrace {
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
+  typename JacobianTrace<A>::Pointer trace;
+  JacobianTA dTdA;
+};
+
+/**
  * Recursive Trace Class for Functional Expressions
  * Abrahams, David; Gurtovoy, Aleksey (2004-12-10).
  * C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
- * and Beyond (Kindle Location 1244). Pearson Education.
+ * and Beyond. Pearson Education.
  */
 template<class T, class A, class More>
-struct Trace: More {
-  // define dimensions
-  static const size_t m = T::dimension;
-  static const size_t n = A::dimension;
+struct Trace: SingleTrace<T, A>, More {
 
-  // define fixed size Jacobian matrix types
-  typedef Eigen::Matrix<double, m, n> JacobianTA;
-  typedef Eigen::Matrix<double, 2, m> Jacobian2T;
+  typename JacobianTrace<A>::Pointer const & myTrace() const {
+    return static_cast<const SingleTrace<T, A>*>(this)->trace;
+  }
 
-  // declare trace that produces value A, and corresponding Jacobian
-  typename JacobianTrace<A>::Pointer trace;
-  JacobianTA dTdA;
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
+  const JacobianTA& myJacobian() const {
+    return static_cast<const SingleTrace<T, A>*>(this)->dTdA;
+  }
 
   /// Start the reverse AD process
   virtual void startReverseAD(JacobianMap& jacobians) const {
     More::startReverseAD(jacobians);
-    Select<T::dimension, A>::reverseAD(trace, dTdA, jacobians);
+    Select<T::dimension, A>::reverseAD(myTrace(), myJacobian(), jacobians);
   }
+
   /// Given df/dT, multiply in dT/dA and continue reverse AD process
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
     More::reverseAD(dFdT, jacobians);
-    trace.reverseAD(dFdT * dTdA, jacobians);
+    myTrace().reverseAD(dFdT * myJacobian(), jacobians);
   }
+
   /// Version specialized to 2-dimensional output
+  typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
   virtual void reverseAD2(const Jacobian2T& dFdT,
       JacobianMap& jacobians) const {
     More::reverseAD2(dFdT, jacobians);
-    trace.reverseAD2(dFdT * dTdA, jacobians);
+    myTrace().reverseAD2(dFdT * myJacobian(), jacobians);
   }
 };
 
@@ -195,6 +207,7 @@ template<class T, class TYPES>
 struct GenerateTrace {
   typedef typename boost::mpl::fold<TYPES, JacobianTrace<T>,
       Trace<T, MPL::_2, MPL::_1> >::type type;
+
 };
 
 //-----------------------------------------------------------------------------
@@ -545,39 +558,20 @@ public:
   }
 
   /// Trace structure for reverse AD
-  struct Trace: public JacobianTrace<T> {
-    typename JacobianTrace<A1>::Pointer trace1;
-    typename JacobianTrace<A2>::Pointer trace2;
-    JacobianTA1 dTdA1;
-    JacobianTA2 dTdA2;
-
-    /// Start the reverse AD process
-    virtual void startReverseAD(JacobianMap& jacobians) const {
-      Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
-      Select<T::dimension, A2>::reverseAD(trace2, dTdA2, jacobians);
-    }
-    /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-      trace1.reverseAD(dFdT * dTdA1, jacobians);
-      trace2.reverseAD(dFdT * dTdA2, jacobians);
-    }
-    /// Version specialized to 2-dimensional output
-    typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
-    virtual void reverseAD2(const Jacobian2T& dFdT,
-        JacobianMap& jacobians) const {
-      trace1.reverseAD2(dFdT * dTdA1, jacobians);
-      trace2.reverseAD2(dFdT * dTdA2, jacobians);
-    }
-  };
+  typedef boost::mpl::vector<A1, A2> Arguments;
+  typedef typename GenerateTrace<T, Arguments>::type Trace;
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values,
       typename JacobianTrace<T>::Pointer& p) const {
     Trace* trace = new Trace();
     p.setFunction(trace);
-    A1 a1 = this->expressionA1_->traceExecution(values, trace->trace1);
-    A2 a2 = this->expressionA2_->traceExecution(values, trace->trace2);
-    return function_(a1, a2, trace->dTdA1, trace->dTdA2);
+    A1 a1 = this->expressionA1_->traceExecution(values,
+        static_cast<SingleTrace<T, A1>*>(trace)->trace);
+    A2 a2 = this->expressionA2_->traceExecution(values,
+        static_cast<SingleTrace<T, A2>*>(trace)->trace);
+    return function_(a1, a2, static_cast<SingleTrace<T, A1>*>(trace)->dTdA,
+        static_cast<SingleTrace<T, A2>*>(trace)->dTdA);
   }
 
 };
