@@ -22,26 +22,9 @@
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include "timeLinearize.h"
 
-#include <time.h>
-#include <iostream>
-#include <iomanip>      // std::setprecision
-using namespace std;
-using namespace gtsam;
-
-static const int n = 100000;
-
-void time(const string& str, const NonlinearFactor& f, const Values& values) {
-  long timeLog = clock();
-  GaussianFactor::shared_ptr gf;
-  for (int i = 0; i < n; i++)
-    gf = f.linearize(values);
-  long timeLog2 = clock();
-  double seconds = (double) (timeLog2 - timeLog) / CLOCKS_PER_SEC;
-  // cout << ((double) n / seconds) << " calls/second" << endl;
-  cout << setprecision(3);
-  cout << str << ((double) seconds * 1000000 / n) << " musecs/call" << endl;
-}
+#define time timeMultiThreaded
 
 boost::shared_ptr<Cal3_S2> fixedK(new Cal3_S2());
 
@@ -73,20 +56,24 @@ int main() {
   // Dedicated factor
   // Oct 3, 2014, Macbook Air
   // 4.2 musecs/call
-  GeneralSFMFactor2<Cal3_S2> f1(z, model, 1, 2, 3);
+  NonlinearFactor::shared_ptr f1 =
+      boost::make_shared<GeneralSFMFactor2<Cal3_S2> >(z, model, 1, 2, 3);
   time("GeneralSFMFactor2<Cal3_S2>  : ", f1, values);
 
   // ExpressionFactor
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
-  ExpressionFactor<Point2> f2(model, z,
-      uncalibrate(K, project(transform_to(x, p))));
+  NonlinearFactor::shared_ptr f2 =
+      boost::make_shared<ExpressionFactor<Point2> >(model, z,
+          uncalibrate(K, project(transform_to(x, p))));
   time("Bin(Leaf,Un(Bin(Leaf,Leaf))): ", f2, values);
 
   // ExpressionFactor ternary
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
-  ExpressionFactor<Point2> f3(model, z, project3(x, p, K));
+  NonlinearFactor::shared_ptr f3 =
+      boost::make_shared<ExpressionFactor<Point2> >(model, z,
+          project3(x, p, K));
   time("Ternary(Leaf,Leaf,Leaf)     : ", f3, values);
 
   // CALIBRATED
@@ -94,14 +81,16 @@ int main() {
   // Dedicated factor
   // Oct 3, 2014, Macbook Air
   // 3.4 musecs/call
-  GenericProjectionFactor<Pose3, Point3> g1(z, model, 1, 2, fixedK);
+  NonlinearFactor::shared_ptr g1 = boost::make_shared<
+      GenericProjectionFactor<Pose3, Point3> >(z, model, 1, 2, fixedK);
   time("GenericProjectionFactor<P,P>: ", g1, values);
 
   // ExpressionFactor
   // Oct 3, 2014, Macbook Air
   // 16.0 musecs/call
-  ExpressionFactor<Point2> g2(model, z,
-      uncalibrate(Cal3_S2_(*fixedK), project(transform_to(x, p))));
+  NonlinearFactor::shared_ptr g2 =
+      boost::make_shared<ExpressionFactor<Point2> >(model, z,
+          uncalibrate(Cal3_S2_(*fixedK), project(transform_to(x, p))));
   time("Bin(Cnst,Un(Bin(Leaf,Leaf))): ", g2, values);
 
   // ExpressionFactor, optimized
@@ -109,7 +98,9 @@ int main() {
   // 9.0 musecs/call
   typedef PinholeCamera<Cal3_S2> Camera;
   typedef Expression<Camera> Camera_;
-  ExpressionFactor<Point2> g3(model, z, Point2_(myProject, x, p));
+  NonlinearFactor::shared_ptr g3 =
+      boost::make_shared<ExpressionFactor<Point2> >(model, z,
+          Point2_(myProject, x, p));
   time("Binary(Leaf,Leaf)           : ", g3, values);
   return 0;
 }

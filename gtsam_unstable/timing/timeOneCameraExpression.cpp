@@ -18,25 +18,9 @@
 
 #include <gtsam_unstable/slam/expressions.h>
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include "timeLinearize.h"
 
-#include <time.h>
-#include <iostream>
-#include <iomanip>      // std::setprecision
-using namespace std;
-using namespace gtsam;
-
-static const int n = 1000000;
-
-void time(const NonlinearFactor& f, const Values& values) {
-  long timeLog = clock();
-  GaussianFactor::shared_ptr gf;
-  for (int i = 0; i < n; i++)
-    gf = f.linearize(values);
-  long timeLog2 = clock();
-  double seconds = (double) (timeLog2 - timeLog) / CLOCKS_PER_SEC;
-  cout << setprecision(3);
-  cout << ((double) seconds * 1000000 / n) << " musecs/call" << endl;
-}
+#define time timeMultiThreaded
 
 int main() {
 
@@ -59,12 +43,13 @@ int main() {
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
 //#define TERNARY
+  NonlinearFactor::shared_ptr f = boost::make_shared<ExpressionFactor<Point2> >
 #ifdef TERNARY
-  ExpressionFactor<Point2> f(model, z, project3(x, p, K));
+      (model, z, project3(x, p, K));
 #else
-  ExpressionFactor<Point2> f(model, z, uncalibrate(K, project(transform_to(x, p))));
+      (model, z, uncalibrate(K, project(transform_to(x, p))));
 #endif
-  time(f, values);
+  time("timing:", f, values);
 
   return 0;
 }
