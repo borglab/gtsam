@@ -24,6 +24,13 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
+// template meta-programming headers
+#include <boost/mpl/vector.hpp>
+#include <boost/mpl/plus.hpp>
+#include <boost/mpl/front.hpp>
+#include <boost/mpl/pop_front.hpp>
+#include <boost/mpl/fold.hpp>
+
 namespace gtsam {
 
 template<typename T>
@@ -380,31 +387,40 @@ public:
 
 //-----------------------------------------------------------------------------
 
-#include <boost/mpl/list.hpp>
+// Abrahams, David; Gurtovoy, Aleksey (2004-12-10).
+// C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
+// and Beyond (Kindle Location 1244). Pearson Education.
 
 /// Recursive Trace Class
 template<class T, class LIST>
 struct MakeTrace: public JacobianTrace<T> {
-  typedef boost::mpl::front<LIST> A1;
-  static const size_t dimA = A1::dimension;
-  typedef Eigen::Matrix<double, T::dimension, A1::dimension> JacobianTA;
-  typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
 
-  typename JacobianTrace<A1>::Pointer trace1;
-  JacobianTA dTdA1;
+  typedef typename boost::mpl::front<LIST>::type A;
+
+  // define dimensions
+  static const size_t m = T::dimension;
+  static const size_t n = A::dimension;
+
+  // define fixed size Jacobian matrix types
+  typedef Eigen::Matrix<double, m, n> JacobianTA;
+  typedef Eigen::Matrix<double, 2, m> Jacobian2T;
+
+  // declare trace that produces value A, and corresponding Jacobian
+  typename JacobianTrace<A>::Pointer trace;
+  JacobianTA dTdA;
 
   /// Start the reverse AD process
   virtual void startReverseAD(JacobianMap& jacobians) const {
-    Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
+    Select<T::dimension, A>::reverseAD(trace, dTdA, jacobians);
   }
   /// Given df/dT, multiply in dT/dA and continue reverse AD process
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-    trace1.reverseAD(dFdT * dTdA1, jacobians);
+    trace.reverseAD(dFdT * dTdA, jacobians);
   }
   /// Version specialized to 2-dimensional output
   virtual void reverseAD2(const Jacobian2T& dFdT,
       JacobianMap& jacobians) const {
-    trace1.reverseAD2(dFdT * dTdA1, jacobians);
+    trace.reverseAD2(dFdT * dTdA, jacobians);
   }
 };
 
@@ -460,8 +476,8 @@ public:
       typename JacobianTrace<T>::Pointer& p) const {
     Trace* trace = new Trace();
     p.setFunction(trace);
-    A1 a = this->expressionA1_->traceExecution(values, trace->trace1);
-    return function_(a, trace->dTdA1);
+    A1 a = this->expressionA1_->traceExecution(values, trace->trace);
+    return function_(a, trace->dTdA);
   }
 };
 

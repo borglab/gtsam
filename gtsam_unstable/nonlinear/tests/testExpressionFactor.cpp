@@ -319,6 +319,80 @@ TEST(ExpressionFactor, composeTernary) {
 }
 
 /* ************************************************************************* */
+
+namespace mpl = boost::mpl;
+
+template<class TYPES>
+struct ProtoTrace: public ProtoTrace<typename mpl::pop_front<TYPES>::type> {
+
+  typedef typename mpl::front<TYPES>::type A;
+
+};
+
+/// Recursive Trace Class, Base case
+template<>
+struct ProtoTrace<mpl::vector0<> > {
+};
+
+template<>
+struct ProtoTrace<int> {
+};
+
+/// Recursive Trace Class, Primary Template
+template<class A, class More>
+struct store: More {
+  // define dimensions
+  static const size_t m = 3;
+  static const size_t n = A::dimension;
+
+  // define fixed size Jacobian matrix types
+  typedef Eigen::Matrix<double, m, n> JacobianTA;
+  typedef Eigen::Matrix<double, 2, m> Jacobian2T;
+
+  // declare trace that produces value A, and corresponding Jacobian
+  typename JacobianTrace<A>::Pointer trace;
+  JacobianTA dTdA;
+
+};
+typedef mpl::vector<Pose3, Point3, Cal3_S2> MyTypes;
+
+template<class T> struct Incomplete;
+
+#include<boost/mpl/empty_base.hpp>
+#include<boost/mpl/placeholders.hpp>
+#include<boost/mpl/reverse_fold.hpp>
+namespace MPL = mpl::placeholders;
+typedef mpl::reverse_fold<MyTypes, mpl::empty_base, store<MPL::_2, MPL::_1> >::type Generated;
+Generated generated;
+//Incomplete<Generated> incomplete;
+#include <boost/mpl/assert.hpp>
+
+typedef mpl::vector1<Point3> OneType;
+typedef mpl::pop_front<OneType>::type Empty;
+typedef mpl::pop_front<Empty>::type Bad;
+//typedef ProtoTrace<OneType> UnaryTrace;
+//BOOST_MPL_ASSERT((boost::is_same< UnaryTrace::A, Point3 >));
+
+#include <boost/static_assert.hpp>
+#include <boost/mpl/plus.hpp>
+#include <boost/mpl/int.hpp>
+#include <boost/mpl/assert.hpp>
+//#include <boost/mpl/print.hpp>
+
+BOOST_STATIC_ASSERT((mpl::plus<mpl::int_<2>,mpl::int_<3> >::type::value==5));
+
+typedef mpl::vector0<> List0;
+typedef ProtoTrace<int> Proto0;
+//typedef ProtoTrace<mpl::vec/tor0<> > Proto0;
+//typedef mpl::print<Proto0>::type Dbg;
+//incomplete<ProtoTrace<List0> > proto0;
+
+typedef struct {
+} Expected0;
+BOOST_MPL_ASSERT((boost::is_same< Expected0, Expected0 >));
+//BOOST_MPL_ASSERT((boost::is_same< ProtoTrace<int>, ProtoTrace<List0> >));
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
