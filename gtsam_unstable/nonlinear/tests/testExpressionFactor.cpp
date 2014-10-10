@@ -323,10 +323,10 @@ TEST(ExpressionFactor, composeTernary) {
 namespace mpl = boost::mpl;
 
 /// Recursive Trace Class
-template<class A, class More>
+template<class T, class A, class More>
 struct Trace: More {
   // define dimensions
-  static const size_t m = 2;
+  static const size_t m = T::dimension;
   static const size_t n = A::dimension;
 
   // define fixed size Jacobian matrix types
@@ -337,6 +337,19 @@ struct Trace: More {
   typename JacobianTrace<A>::Pointer trace;
   JacobianTA dTdA;
 
+  /// Start the reverse AD process
+  virtual void startReverseAD(JacobianMap& jacobians) const {
+    Select<T::dimension, A>::reverseAD(trace, dTdA, jacobians);
+  }
+  /// Given df/dT, multiply in dT/dA and continue reverse AD process
+  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+    trace.reverseAD(dFdT * dTdA, jacobians);
+  }
+  /// Version specialized to 2-dimensional output
+  virtual void reverseAD2(const Jacobian2T& dFdT,
+      JacobianMap& jacobians) const {
+    trace.reverseAD2(dFdT * dTdA, jacobians);
+  }
 };
 
 #include<boost/mpl/empty_base.hpp>
@@ -344,18 +357,19 @@ struct Trace: More {
 namespace MPL = mpl::placeholders;
 
 /// Recursive Trace Class Generator
-template<class TYPES>
+template<class T, class TYPES>
 struct GenerateTrace {
-  typedef typename mpl::fold<TYPES, mpl::empty_base, Trace<MPL::_2, MPL::_1> >::type type;
+  typedef typename mpl::fold<TYPES, JacobianTrace<T>, Trace<T, MPL::_2, MPL::_1> >::type type;
 };
 
 #include <boost/mpl/assert.hpp>
 template<class T> struct Incomplete;
 
 typedef mpl::vector<Pose3, Point3, Cal3_S2> MyTypes;
-typedef GenerateTrace<MyTypes>::type Generated;
-Incomplete<Generated> incomplete;
+typedef GenerateTrace<Point2, MyTypes>::type Generated;
+//Incomplete<Generated> incomplete;
 BOOST_MPL_ASSERT((boost::is_same< Matrix25, Generated::JacobianTA >));
+BOOST_MPL_ASSERT((boost::is_same< Matrix2, Generated::Jacobian2T >));
 
 Generated generated;
 
