@@ -41,7 +41,7 @@ typedef std::map<Key, Matrix> JacobianMap;
  *
  * It is sub-classed in the function-style ExpressionNode sub-classes below.
  */
-template<class T>
+template<int COLS>
 struct CallRecord {
 
   /// Make sure destructor is virtual
@@ -49,7 +49,7 @@ struct CallRecord {
   }
   virtual void startReverseAD(JacobianMap& jacobians) const = 0;
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
-  typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
+  typedef Eigen::Matrix<double, 2, COLS> Jacobian2T;
   virtual void reverseAD2(const Jacobian2T& dFdT,
       JacobianMap& jacobians) const = 0;
 };
@@ -69,7 +69,7 @@ class ExecutionTrace {
   } type;
   union {
     Key key;
-    CallRecord<T>* ptr;
+    CallRecord<T::dimension>* ptr;
   } content;
 public:
   /// Pointer always starts out as a Constant
@@ -87,7 +87,7 @@ public:
     content.key = key;
   }
   /// Take ownership of pointer to a Function Record
-  void setFunction(CallRecord<T>* record) {
+  void setFunction(CallRecord<T::dimension>* record) {
     type = Function;
     content.ptr = record;
   }
@@ -440,7 +440,7 @@ public:
   }
 
   /// Record structure for reverse AD
-  struct Record: public CallRecord<T> {
+  struct Record: public CallRecord<T::dimension> {
     ExecutionTrace<A1> trace1;
     JacobianTA dTdA1;
 
@@ -529,7 +529,7 @@ public:
   }
 
   /// Record structure for reverse AD
-  struct Record: public CallRecord<T> {
+  struct Record: public CallRecord<T::dimension> {
     ExecutionTrace<A1> trace1;
     ExecutionTrace<A2> trace2;
     JacobianTA1 dTdA1;
@@ -636,7 +636,7 @@ public:
   }
 
   /// Record structure for reverse AD
-  struct Record: public CallRecord<T> {
+  struct Record: public CallRecord<T::dimension> {
     ExecutionTrace<A1> trace1;
     ExecutionTrace<A2> trace2;
     ExecutionTrace<A3> trace3;
