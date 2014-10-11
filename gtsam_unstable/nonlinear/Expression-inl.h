@@ -21,9 +21,10 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-
+#include <new> // for placement new
 struct TestBinaryExpression;
 
 namespace gtsam {
@@ -43,10 +44,7 @@ typedef std::map<Key, Matrix> JacobianMap;
  */
 template<int COLS>
 struct CallRecord {
-
-  /// Make sure destructor is virtual
-  virtual ~CallRecord() {
-  }
+  virtual void print(const std::string& indent) const = 0;
   virtual void startReverseAD(JacobianMap& jacobians) const = 0;
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
   typedef Eigen::Matrix<double, 2, COLS> Jacobian2T;
@@ -76,11 +74,6 @@ public:
   ExecutionTrace() :
       type(Constant) {
   }
-  /// Destructor cleans up pointer if Function
-  ~ExecutionTrace() {
-    if (type == Function)
-      delete content.ptr;
-  }
   /// Change pointer to a Leaf Record
   void setLeaf(Key key) {
     type = Leaf;
@@ -90,6 +83,17 @@ public:
   void setFunction(CallRecord<T::dimension>* record) {
     type = Function;
     content.ptr = record;
+  }
+  /// Print
+  void print(const std::string& indent = "") const {
+    if (type == Constant)
+      std::cout << indent << "Constant" << std::endl;
+    else if (type == Leaf)
+      std::cout << indent << "Leaf, key = " << content.key << std::endl;
+    else if (type == Function) {
+      std::cout << indent << "Function" << std::endl;
+      content.ptr->print(indent + "  ");
+    }
   }
   /// Return record pointer, quite unsafe, used only for testing
   template<class Record>
@@ -157,14 +161,6 @@ struct Select<2, A> {
     trace.reverseAD2(dTdA, jacobians);
   }
 };
-
-//template <class Derived>
-//struct TypedTrace {
-//  virtual void startReverseAD(JacobianMap& jacobians) const = 0;
-//  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
-////  template<class JacobianFT>
-////  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
-//};
 
 //-----------------------------------------------------------------------------
 /**
@@ -261,7 +257,7 @@ public:
   }
 
   /// debugging
-  void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
+  virtual void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
     BOOST_FOREACH(const Pair& term, jacobians_)
       std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
           << "x" << term.second.cols() << ") ";
@@ -291,6 +287,7 @@ template<class T>
 class ExpressionNode {
 
 protected:
+
   ExpressionNode() {
   }
 
@@ -309,9 +306,14 @@ public:
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const = 0;
 
+  // Return size needed for memory buffer in traceExecution
+  virtual size_t traceSize() const {
+    return 0;
+  }
+
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values,
-      ExecutionTrace<T>& p) const = 0;
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* raw) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -348,7 +350,8 @@ public:
   }
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* raw) const {
     return constant_;
   }
 };
@@ -388,8 +391,9 @@ public:
   }
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    p.setLeaf(key_);
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* raw) const {
+    trace.setLeaf(key_);
     return values.at<T>(key_);
   }
 
@@ -443,7 +447,12 @@ public:
   struct Record: public CallRecord<T::dimension> {
     ExecutionTrace<A1> trace1;
     JacobianTA dTdA1;
-
+    /// print to std::cout
+    virtual void print(const std::string& indent) const {
+      static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
+      std::cout << dTdA1.format(matlab) << std::endl;
+      trace1.print(indent);
+    }
     /// Start the reverse AD process
     virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
@@ -460,12 +469,19 @@ public:
     }
   };
 
+  // Return size needed for memory buffer in traceExecution
+  virtual size_t traceSize() const {
+    return sizeof(Record) + expressionA1_->traceSize();
+  }
+
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    Record* record = new Record();
-    p.setFunction(record);
-    A1 a = this->expressionA1_->traceExecution(values, record->trace1);
-    return function_(a, record->dTdA1);
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* raw) const {
+    Record* record = new (raw) Record();
+    trace.setFunction(record);
+    raw = (char*) (record + 1);
+    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
+    return function_(a1, record->dTdA1);
   }
 };
 
@@ -534,7 +550,14 @@ public:
     ExecutionTrace<A2> trace2;
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
-
+    /// print to std::cout
+    virtual void print(const std::string& indent) const {
+      static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
+      std::cout << indent << dTdA1.format(matlab) << std::endl;
+      trace1.print(indent);
+      std::cout << indent << dTdA2.format(matlab) << std::endl;
+      trace2.print(indent);
+    }
     /// Start the reverse AD process
     virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
@@ -554,12 +577,22 @@ public:
     }
   };
 
+  // Return size needed for memory buffer in traceExecution
+  virtual size_t traceSize() const {
+    return sizeof(Record) + expressionA1_->traceSize()
+        + expressionA2_->traceSize();
+  }
+
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    Record* record = new Record();
-    p.setFunction(record);
-    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1);
-    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2);
+  /// The raw buffer is [Record | A1 raw | A2 raw]
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* raw) const {
+    Record* record = new (raw) Record();
+    trace.setFunction(record);
+    raw = (char*) (record + 1);
+    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
+    raw = raw + expressionA1_->traceSize();
+    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2, raw);
     return function_(a1, a2, record->dTdA1, record->dTdA2);
   }
 
@@ -643,7 +676,16 @@ public:
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
     JacobianTA3 dTdA3;
-
+    /// print to std::cout
+    virtual void print(const std::string& indent) const {
+      static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
+      std::cout << dTdA1.format(matlab) << std::endl;
+      trace1.print(indent);
+      std::cout << dTdA2.format(matlab) << std::endl;
+      trace2.print(indent);
+      std::cout << dTdA3.format(matlab) << std::endl;
+      trace3.print(indent);
+    }
     /// Start the reverse AD process
     virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
@@ -666,13 +708,23 @@ public:
     }
   };
 
+  // Return size needed for memory buffer in traceExecution
+  virtual size_t traceSize() const {
+    return sizeof(Record) + expressionA1_->traceSize()
+        + expressionA2_->traceSize() + expressionA2_->traceSize();
+  }
+
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    Record* record = new Record();
-    p.setFunction(record);
-    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1);
-    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2);
-    A3 a3 = this->expressionA3_->traceExecution(values, record->trace3);
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* raw) const {
+    Record* record = new (raw) Record();
+    trace.setFunction(record);
+    raw = (char*) (record + 1);
+    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
+    raw = raw + expressionA1_->traceSize();
+    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2, raw);
+    raw = raw + expressionA2_->traceSize();
+    A3 a3 = this->expressionA3_->traceExecution(values, record->trace3, raw);
     return function_(a1, a2, a3, record->dTdA1, record->dTdA2, record->dTdA3);
   }
 

@@ -131,31 +131,37 @@ TEST(ExpressionFactor, binary) {
   values.insert(1, Cal3_S2());
   values.insert(2, Point2(0, 0));
 
+  // traceRaw will fill raw with [Trace<Point2> | Binary::Record]
+  EXPECT_LONGS_EQUAL(8, sizeof(double));
+  EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Point2>));
+  EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Cal3_S2>));
+  EXPECT_LONGS_EQUAL(2*5*8, sizeof(Binary::JacobianTA1));
+  EXPECT_LONGS_EQUAL(2*2*8, sizeof(Binary::JacobianTA2));
+  size_t expectedRecordSize = 16 + 2 * 16 + 80 + 32;
+  EXPECT_LONGS_EQUAL(expectedRecordSize, sizeof(Binary::Record));
+
+  // Check size
+  size_t size = tester.binary_.traceSize();
+  CHECK(size);
+  EXPECT_LONGS_EQUAL(expectedRecordSize, size);
+  // Use Variable Length Array, allocated on stack by gcc
+  // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
+  char raw[size];
+  ExecutionTrace<Point2> trace;
+  Point2 value = tester.binary_.traceExecution(values, trace, raw);
+  // trace.print();
+
   // Expected Jacobians
   Matrix25 expected25;
   expected25 << 0, 0, 0, 1, 0, 0, 0, 0, 0, 1;
   Matrix2 expected22;
   expected22 << 1, 0, 0, 1;
 
-  // Do old trace
-  ExecutionTrace<Point2> trace;
-  tester.binary_.traceExecution(values, trace);
-
   // Check matrices
   boost::optional<Binary::Record*> p = trace.record<Binary::Record>();
   CHECK(p);
   EXPECT( assert_equal(expected25, (Matrix)(*p)->dTdA1, 1e-9));
   EXPECT( assert_equal(expected22, (Matrix)(*p)->dTdA2, 1e-9));
-
-//  // Check raw memory trace
-//  double raw[10];
-//  tester.binary_.traceRaw(values, 0);
-//
-//  // Check matrices
-//  boost::optional<Binary::Record*> p = trace.record<Binary::Record>();
-//  CHECK(p);
-//  EXPECT( assert_equal(expected25, (Matrix)(*p)->dTdA1, 1e-9));
-//  EXPECT( assert_equal(expected22, (Matrix)(*p)->dTdA2, 1e-9));
 }
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
@@ -173,11 +179,38 @@ TEST(ExpressionFactor, shallow) {
   GaussianFactor::shared_ptr expected = old.linearize(values);
 
   // Create leaves
-  Pose3_ x(1);
-  Point3_ p(2);
+  Pose3_ x_(1);
+  Point3_ p_(2);
 
-  // Concise version
-  ExpressionFactor<Point2> f2(model, measured, project(transform_to(x, p)));
+  // Construct expression, concise evrsion
+  Point2_ expression = project(transform_to(x_, p_));
+
+  // traceExecution of shallow tree
+  typedef UnaryExpression<Point2, Point3> Unary;
+  typedef BinaryExpression<Point3, Pose3, Point3> Binary;
+  EXPECT_LONGS_EQUAL(80, sizeof(Unary::Record));
+  EXPECT_LONGS_EQUAL(272, sizeof(Binary::Record));
+  size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
+  LONGS_EQUAL(352, expectedTraceSize);
+  size_t size = expression.traceSize();
+  CHECK(size);
+  EXPECT_LONGS_EQUAL(expectedTraceSize, size);
+  char raw[size];
+  ExecutionTrace<Point2> trace;
+  Point2 value = expression.traceExecution(values, trace, raw);
+  // trace.print();
+
+  // Expected Jacobians
+  Matrix23 expected23;
+  expected23 << 1, 0, 0, 0, 1, 0;
+
+  // Check matrices
+  boost::optional<Unary::Record*> p = trace.record<Unary::Record>();
+  CHECK(p);
+  EXPECT( assert_equal(expected23, (Matrix)(*p)->dTdA1, 1e-9));
+
+  // Linearization
+  ExpressionFactor<Point2> f2(model, measured, expression);
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
