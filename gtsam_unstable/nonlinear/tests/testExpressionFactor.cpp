@@ -139,7 +139,11 @@ TEST(ExpressionFactor, binary) {
   EXPECT_LONGS_EQUAL(2*2*8, sizeof(Binary::JacobianTA2));
   size_t expectedRecordSize = 16 + 2 * 16 + 80 + 32;
   EXPECT_LONGS_EQUAL(expectedRecordSize, sizeof(Binary::Record));
-  size_t size = sizeof(Binary::Record);
+
+  // Check size
+  size_t size = tester.binary_.traceSize();
+  CHECK(size);
+  EXPECT_LONGS_EQUAL(expectedRecordSize, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
   char raw[size];
@@ -186,8 +190,11 @@ TEST(ExpressionFactor, shallow) {
   typedef BinaryExpression<Point3, Pose3, Point3> Binary;
   EXPECT_LONGS_EQUAL(80, sizeof(Unary::Record));
   EXPECT_LONGS_EQUAL(272, sizeof(Binary::Record));
-  size_t size = sizeof(Unary::Record) + sizeof(Binary::Record);
-  LONGS_EQUAL(352, size);
+  size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
+  LONGS_EQUAL(352, expectedTraceSize);
+  size_t size = expression.traceSize();
+  CHECK(size);
+  EXPECT_LONGS_EQUAL(expectedTraceSize, size);
   char raw[size];
   ExecutionTrace<Point2> trace;
   Point2 value = expression.traceExecution(values, trace, raw);

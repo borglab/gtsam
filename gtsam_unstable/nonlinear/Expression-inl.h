@@ -257,7 +257,7 @@ public:
   }
 
   /// debugging
-  void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
+  virtual void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
     BOOST_FOREACH(const Pair& term, jacobians_)
       std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
           << "x" << term.second.cols() << ") ";
@@ -287,6 +287,7 @@ template<class T>
 class ExpressionNode {
 
 protected:
+
   ExpressionNode() {
   }
 
@@ -304,6 +305,11 @@ public:
 
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const = 0;
+
+  // Return size needed for memory buffer in traceExecution
+  virtual size_t traceSize() const {
+    return 0;
+  }
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
@@ -463,6 +469,11 @@ public:
     }
   };
 
+  // Return size needed for memory buffer in traceExecution
+  virtual size_t traceSize() const {
+    return sizeof(Record) + expressionA1_->traceSize();
+  }
+
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       void* raw) const {
@@ -565,6 +576,12 @@ public:
       trace2.reverseAD2(dFdT * dTdA2, jacobians);
     }
   };
+
+  // Return size needed for memory buffer in traceExecution
+  virtual size_t traceSize() const {
+    return sizeof(Record) + expressionA1_->traceSize()
+        + expressionA2_->traceSize();
+  }
 
   /// Construct an execution trace for reverse AD
   /// The raw buffer is [Record | A1 raw | A2 raw]
@@ -688,6 +705,12 @@ public:
       trace3.reverseAD2(dFdT * dTdA3, jacobians);
     }
   };
+
+  // Return size needed for memory buffer in traceExecution
+  virtual size_t traceSize() const {
+    return sizeof(Record) + expressionA1_->traceSize()
+        + expressionA2_->traceSize() + expressionA2_->traceSize();
+  }
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,

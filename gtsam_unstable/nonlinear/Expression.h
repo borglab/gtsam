@@ -118,6 +118,11 @@ public:
     return root_->forward(values);
   }
 
+  // Return size needed for memory buffer in traceExecution
+  size_t traceSize() const {
+    return root_->traceSize();
+  }
+
   /// trace execution, very unsafe, for testing purposes only
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       void* raw) const {
@@ -126,9 +131,10 @@ public:
 
   /// Return value and derivatives, reverse AD version
   Augmented<T> reverse(const Values& values) const {
-    char raw[352];
+    size_t size = traceSize();
+    char raw[size];
     ExecutionTrace<T> trace;
-    T value(root_->traceExecution(values, trace, raw));
+    T value(traceExecution(values, trace, raw));
     Augmented<T> augmented(value);
     trace.startReverseAD(augmented.jacobians());
     return augmented;
