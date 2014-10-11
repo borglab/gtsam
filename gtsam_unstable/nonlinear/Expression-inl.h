@@ -466,11 +466,11 @@ public:
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       void* raw) const {
-//    Record* record = new Record();
-//    p.setFunction(record);
-//    A1 a = this->expressionA1_->traceExecution(values, record->trace1);
-//    return function_(a, record->dTdA1);
-    return T();
+    Record* record = new (raw) Record();
+    trace.setFunction(record);
+    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1,
+        record + 1);
+    return function_(a1, record->dTdA1);
   }
 };
 
@@ -692,13 +692,12 @@ public:
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       void* raw) const {
-//    Record* record = new Record();
-//    p.setFunction(record);
-//    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1);
-//    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2);
-//    A3 a3 = this->expressionA3_->traceExecution(values, record->trace3);
-//    return function_(a1, a2, a3, record->dTdA1, record->dTdA2, record->dTdA3);
-    return T();
+    Record* record = new (raw) Record();
+    trace.setFunction(record);
+    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
+    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2, raw);
+    A3 a3 = this->expressionA3_->traceExecution(values, record->trace3, raw);
+    return function_(a1, a2, a3, record->dTdA1, record->dTdA2, record->dTdA3);
   }
 
 };

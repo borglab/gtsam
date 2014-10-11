@@ -131,12 +131,6 @@ TEST(ExpressionFactor, binary) {
   values.insert(1, Cal3_S2());
   values.insert(2, Point2(0, 0));
 
-  // Expected Jacobians
-  Matrix25 expected25;
-  expected25 << 0, 0, 0, 1, 0, 0, 0, 0, 0, 1;
-  Matrix2 expected22;
-  expected22 << 1, 0, 0, 1;
-
   // traceRaw will fill raw with [Trace<Point2> | Binary::Record]
   EXPECT_LONGS_EQUAL(8, sizeof(double));
   EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Point2>));
@@ -153,39 +147,69 @@ TEST(ExpressionFactor, binary) {
   Point2 value = tester.binary_.traceExecution(values, trace, raw);
   // trace.print();
 
+  // Expected Jacobians
+  Matrix25 expected25;
+  expected25 << 0, 0, 0, 1, 0, 0, 0, 0, 0, 1;
+  Matrix2 expected22;
+  expected22 << 1, 0, 0, 1;
+
   // Check matrices
   boost::optional<Binary::Record*> p = trace.record<Binary::Record>();
   CHECK(p);
   EXPECT( assert_equal(expected25, (Matrix)(*p)->dTdA1, 1e-9));
   EXPECT( assert_equal(expected22, (Matrix)(*p)->dTdA2, 1e-9));
 }
-///* ************************************************************************* */
-//// Unary(Binary(Leaf,Leaf))
-//TEST(ExpressionFactor, shallow) {
-//
-//  // Create some values
-//  Values values;
-//  values.insert(1, Pose3());
-//  values.insert(2, Point3(0, 0, 1));
-//
-//  // Create old-style factor to create expected value and derivatives
-//  GenericProjectionFactor<Pose3, Point3> old(measured, model, 1, 2,
-//      boost::make_shared<Cal3_S2>());
-//  double expected_error = old.error(values);
-//  GaussianFactor::shared_ptr expected = old.linearize(values);
-//
-//  // Create leaves
-//  Pose3_ x(1);
-//  Point3_ p(2);
-//
-//  // Concise version
-//  ExpressionFactor<Point2> f2(model, measured, project(transform_to(x, p)));
-//  EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
-//  EXPECT_LONGS_EQUAL(2, f2.dim());
-//  boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
-//  EXPECT( assert_equal(*expected, *gf2, 1e-9));
-//}
-//
+/* ************************************************************************* */
+// Unary(Binary(Leaf,Leaf))
+TEST(ExpressionFactor, shallow) {
+
+  // Create some values
+  Values values;
+  values.insert(1, Pose3());
+  values.insert(2, Point3(0, 0, 1));
+
+  // Create old-style factor to create expected value and derivatives
+  GenericProjectionFactor<Pose3, Point3> old(measured, model, 1, 2,
+      boost::make_shared<Cal3_S2>());
+  double expected_error = old.error(values);
+  GaussianFactor::shared_ptr expected = old.linearize(values);
+
+  // Create leaves
+  Pose3_ x_(1);
+  Point3_ p_(2);
+
+  // Construct expression, concise evrsion
+  Point2_ expression = project(transform_to(x_, p_));
+
+  // traceExecution of shallow tree
+  typedef UnaryExpression<Point2, Point3> Unary;
+  typedef BinaryExpression<Point3, Pose3, Point3> Binary;
+  EXPECT_LONGS_EQUAL(80, sizeof(Unary::Record));
+  EXPECT_LONGS_EQUAL(272, sizeof(Binary::Record));
+  size_t size = sizeof(Unary::Record) + sizeof(Binary::Record);
+  LONGS_EQUAL(352, size);
+  char raw[size];
+  ExecutionTrace<Point2> trace;
+  Point2 value = expression.traceExecution(values, trace, raw);
+  trace.print();
+
+  // Expected Jacobians
+  Matrix23 expected23;
+  expected23 << 1, 0, 0, 0, 1, 0;
+
+  // Check matrices
+  boost::optional<Unary::Record*> p = trace.record<Unary::Record>();
+  CHECK(p);
+  EXPECT( assert_equal(expected23, (Matrix)(*p)->dTdA1, 1e-9));
+
+  // Linearization
+  ExpressionFactor<Point2> f2(model, measured, expression);
+  EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
+  EXPECT_LONGS_EQUAL(2, f2.dim());
+  boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
+  EXPECT( assert_equal(*expected, *gf2, 1e-9));
+}
+
 ///* ************************************************************************* */
 //// Binary(Leaf,Unary(Binary(Leaf,Leaf)))
 //TEST(ExpressionFactor, tree) {
