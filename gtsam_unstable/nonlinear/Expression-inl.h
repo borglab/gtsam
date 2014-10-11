@@ -21,6 +21,7 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
@@ -43,10 +44,7 @@ typedef std::map<Key, Matrix> JacobianMap;
  */
 template<int COLS>
 struct CallRecord {
-
-  /// Make sure destructor is virtual
-  virtual ~CallRecord() {
-  }
+  virtual void print() const = 0;
   virtual void startReverseAD(JacobianMap& jacobians) const = 0;
   virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
   typedef Eigen::Matrix<double, 2, COLS> Jacobian2T;
@@ -72,14 +70,10 @@ class ExecutionTrace {
     CallRecord<T::dimension>* ptr;
   } content;
 public:
+  T value;
   /// Pointer always starts out as a Constant
   ExecutionTrace() :
       type(Constant) {
-  }
-  /// Destructor cleans up pointer if Function
-  ~ExecutionTrace() {
-    if (type == Function)
-      delete content.ptr;
   }
   /// Change pointer to a Leaf Record
   void setLeaf(Key key) {
@@ -90,6 +84,14 @@ public:
   void setFunction(CallRecord<T::dimension>* record) {
     type = Function;
     content.ptr = record;
+  }
+  /// Print
+  virtual void print() const {
+    GTSAM_PRINT(value);
+    if (type == Leaf)
+      std::cout << "Leaf, key = " << content.key << std::endl;
+    else if (type == Function)
+      content.ptr->print();
   }
   /// Return record pointer, quite unsafe, used only for testing
   template<class Record>
@@ -157,14 +159,6 @@ struct Select<2, A> {
     trace.reverseAD2(dTdA, jacobians);
   }
 };
-
-//template <class Derived>
-//struct TypedTrace {
-//  virtual void startReverseAD(JacobianMap& jacobians) const = 0;
-//  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
-////  template<class JacobianFT>
-////  void reverseAD(const JacobianFT& dFdT, JacobianMap& jacobians) const {
-//};
 
 //-----------------------------------------------------------------------------
 /**
@@ -310,8 +304,8 @@ public:
   virtual Augmented<T> forward(const Values& values) const = 0;
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values,
-      ExecutionTrace<T>& p) const = 0;
+  virtual ExecutionTrace<T> traceExecution(const Values& values,
+      void* raw) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -348,8 +342,11 @@ public:
   }
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    return constant_;
+  virtual ExecutionTrace<T> traceExecution(const Values& values,
+      void* raw) const {
+    ExecutionTrace<T> trace;
+    trace.value = constant_;
+    return trace;
   }
 };
 
@@ -388,9 +385,12 @@ public:
   }
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    p.setLeaf(key_);
-    return values.at<T>(key_);
+  virtual ExecutionTrace<T> traceExecution(const Values& values,
+      void* raw) const {
+    ExecutionTrace<T> trace;
+    trace.setLeaf(key_);
+    trace.value = values.at<T>(key_);
+    return trace;
   }
 
 };
@@ -443,7 +443,11 @@ public:
   struct Record: public CallRecord<T::dimension> {
     ExecutionTrace<A1> trace1;
     JacobianTA dTdA1;
-
+    /// print to std::cout
+    virtual void print() const {
+      std::cout << dTdA1 << std::endl;
+      trace1.print();
+    }
     /// Start the reverse AD process
     virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
@@ -461,11 +465,14 @@ public:
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    Record* record = new Record();
-    p.setFunction(record);
-    A1 a = this->expressionA1_->traceExecution(values, record->trace1);
-    return function_(a, record->dTdA1);
+  virtual ExecutionTrace<T> traceExecution(const Values& values,
+      void* raw) const {
+    ExecutionTrace<T> trace;
+//    Record* record = new Record();
+//    p.setFunction(record);
+//    A1 a = this->expressionA1_->traceExecution(values, record->trace1);
+//    return function_(a, record->dTdA1);
+    return trace;
   }
 };
 
@@ -534,7 +541,13 @@ public:
     ExecutionTrace<A2> trace2;
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
-
+    /// print to std::cout
+    virtual void print() const {
+      std::cout << dTdA1 << std::endl;
+      trace1.print();
+      std::cout << dTdA2 << std::endl;
+      trace2.print();
+    }
     /// Start the reverse AD process
     virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
@@ -555,12 +568,18 @@ public:
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    Record* record = new Record();
-    p.setFunction(record);
-    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1);
-    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2);
-    return function_(a1, a2, record->dTdA1, record->dTdA2);
+  /// The raw buffer is [Record | A1 raw | A2 raw]
+  virtual ExecutionTrace<T> traceExecution(const Values& values,
+      void* raw) const {
+    ExecutionTrace<T> trace;
+    Record* record = static_cast<Record*>(raw);
+    trace.setFunction(record);
+    record->trace1 = this->expressionA1_->traceExecution(values, raw);
+    record->trace2 = this->expressionA2_->traceExecution(values, raw);
+    trace.value = function_(record->trace1.value, record->trace2.value,
+        record->dTdA1, record->dTdA2);
+    trace.print();
+    return trace;
   }
 
 };
@@ -643,7 +662,15 @@ public:
     JacobianTA1 dTdA1;
     JacobianTA2 dTdA2;
     JacobianTA3 dTdA3;
-
+    /// print to std::cout
+    virtual void print() const {
+      std::cout << dTdA1 << std::endl;
+      trace1.print();
+      std::cout << dTdA2 << std::endl;
+      trace2.print();
+      std::cout << dTdA3 << std::endl;
+      trace3.print();
+    }
     /// Start the reverse AD process
     virtual void startReverseAD(JacobianMap& jacobians) const {
       Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
@@ -667,13 +694,16 @@ public:
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& p) const {
-    Record* record = new Record();
-    p.setFunction(record);
-    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1);
-    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2);
-    A3 a3 = this->expressionA3_->traceExecution(values, record->trace3);
-    return function_(a1, a2, a3, record->dTdA1, record->dTdA2, record->dTdA3);
+  virtual ExecutionTrace<T> traceExecution(const Values& values,
+      void* raw) const {
+    ExecutionTrace<T> trace;
+//    Record* record = new Record();
+//    p.setFunction(record);
+//    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1);
+//    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2);
+//    A3 a3 = this->expressionA3_->traceExecution(values, record->trace3);
+//    return function_(a1, a2, a3, record->dTdA1, record->dTdA2, record->dTdA3);
+    return trace;
   }
 
 };

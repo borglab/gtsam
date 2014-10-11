@@ -117,9 +117,9 @@ public:
   Augmented<T> augmented(const Values& values) const {
 #define REVERSE_AD
 #ifdef REVERSE_AD
-    ExecutionTrace<T> trace;
-    T value = root_->traceExecution(values, trace);
-    Augmented<T> augmented(value);
+    char raw[10];
+    ExecutionTrace<T> trace = root_->traceExecution(values, raw);
+    Augmented<T> augmented(trace.value);
     trace.startReverseAD(augmented.jacobians());
     return augmented;
 #else
