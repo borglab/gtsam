@@ -91,11 +91,15 @@ public:
     type = Function;
     content.ptr = record;
   }
-  /// Return record pointer, highly unsafe, used only for testing
-  boost::optional<CallRecord<T>*> record() {
-    return
-        (type == Function) ? boost::optional<CallRecord<T>*>(content.ptr) :
-            boost::none;
+  /// Return record pointer, quite unsafe, used only for testing
+  template<class Record>
+  boost::optional<Record*> record() {
+    if (type != Function)
+      return boost::none;
+    else {
+      Record* p = dynamic_cast<Record*>(content.ptr);
+      return p ? boost::optional<Record*>(p) : boost::none;
+    }
   }
   // *** This is the main entry point for reverseAD, called from Expression::augmented ***
   // Called only once, either inserts identity into Jacobians (Leaf) or starts AD (Function)
