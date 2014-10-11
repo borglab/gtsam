@@ -24,6 +24,8 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
+struct TestBinaryExpression;
+
 namespace gtsam {
 
 template<typename T>
@@ -483,7 +485,8 @@ private:
       function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()) {
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
+  friend struct ::TestBinaryExpression;
 
 public:
 

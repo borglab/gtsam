@@ -48,7 +48,7 @@ TEST(ExpressionFactor, leaf) {
   // Create leaves
   Point2_ p(2);
 
-  // Try concise version
+  // Concise version
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
@@ -72,7 +72,7 @@ TEST(ExpressionFactor, model) {
   // Create leaves
   Point2_ p(2);
 
-  // Try concise version
+  // Concise version
   SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
 
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
@@ -85,7 +85,7 @@ TEST(ExpressionFactor, model) {
 
 /* ************************************************************************* */
 // Unary(Leaf))
-TEST(ExpressionFactor, test) {
+TEST(ExpressionFactor, unary) {
 
   // Create some values
   Values values;
@@ -98,7 +98,7 @@ TEST(ExpressionFactor, test) {
   // Create leaves
   Point3_ p(2);
 
-  // Try concise version
+  // Concise version
   ExpressionFactor<Point2> f(model, measured, project(p));
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
@@ -106,10 +106,30 @@ TEST(ExpressionFactor, test) {
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf, 1e-9));
 }
+/* ************************************************************************* */
+struct TestBinaryExpression {
+  static Point2 myUncal(const Cal3_S2& K, const Point2& p,
+      boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
+    return K.uncalibrate(p, Dcal, Dp);
+  }
+  Cal3_S2_ K_;
+  Point2_ p_;
+  BinaryExpression<Point2, Cal3_S2, Point2> binary_;
+  TestBinaryExpression() :
+      K_(1), p_(2), binary_(myUncal, K_, p_) {
+  }
+};
+/* ************************************************************************* */
+// Binary(Leaf,Leaf)
+TEST(ExpressionFactor, binary) {
 
+  TestBinaryExpression tester;
+
+  // Check raw memory trace
+}
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
-TEST(ExpressionFactor, test1) {
+TEST(ExpressionFactor, shallow) {
 
   // Create some values
   Values values;
@@ -126,7 +146,7 @@ TEST(ExpressionFactor, test1) {
   Pose3_ x(1);
   Point3_ p(2);
 
-  // Try concise version
+  // Concise version
   ExpressionFactor<Point2> f2(model, measured, project(transform_to(x, p)));
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
@@ -136,7 +156,7 @@ TEST(ExpressionFactor, test1) {
 
 /* ************************************************************************* */
 // Binary(Leaf,Unary(Binary(Leaf,Leaf)))
-TEST(ExpressionFactor, test2) {
+TEST(ExpressionFactor, tree) {
 
   // Create some values
   Values values;
@@ -166,7 +186,7 @@ TEST(ExpressionFactor, test2) {
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   EXPECT( assert_equal(*expected, *gf, 1e-9));
 
-  // Try concise version
+  // Concise version
   ExpressionFactor<Point2> f2(model, measured,
       uncalibrate(K, project(transform_to(x, p))));
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
