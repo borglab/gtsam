@@ -27,6 +27,17 @@
 #include <new> // for placement new
 struct TestBinaryExpression;
 
+// template meta-programming headers
+#include <boost/mpl/vector.hpp>
+#include <boost/mpl/plus.hpp>
+#include <boost/mpl/front.hpp>
+#include <boost/mpl/pop_front.hpp>
+#include <boost/mpl/fold.hpp>
+#include <boost/mpl/empty_base.hpp>
+#include <boost/mpl/placeholders.hpp>
+
+namespace MPL = boost::mpl::placeholders;
+
 namespace gtsam {
 
 template<typename T>
@@ -44,12 +55,16 @@ typedef std::map<Key, Matrix> JacobianMap;
  */
 template<int COLS>
 struct CallRecord {
-  virtual void print(const std::string& indent) const = 0;
-  virtual void startReverseAD(JacobianMap& jacobians) const = 0;
-  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const = 0;
+  virtual void print(const std::string& indent) const {
+  }
+  virtual void startReverseAD(JacobianMap& jacobians) const {
+  }
+  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+  }
   typedef Eigen::Matrix<double, 2, COLS> Jacobian2T;
   virtual void reverseAD2(const Jacobian2T& dFdT,
-      JacobianMap& jacobians) const = 0;
+      JacobianMap& jacobians) const {
+  }
 };
 
 //-----------------------------------------------------------------------------
@@ -164,6 +179,84 @@ struct Select<2, A> {
 
 //-----------------------------------------------------------------------------
 /**
+ * Record the evaluation of a single argument in a functional expression
+ * Building block for Recursive Record Class
+ */
+template<class T, class A, size_t N>
+struct Argument {
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
+  ExecutionTrace<A> trace;
+  JacobianTA dTdA;
+};
+
+/**
+ * Recursive Record Class for Functional Expressions
+ * Abrahams, David; Gurtovoy, Aleksey (2004-12-10).
+ * C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
+ * and Beyond. Pearson Education.
+ */
+template<class T, class AN, class More>
+struct Record: Argument<T, typename AN::type, AN::value>, More {
+
+  typedef typename AN::type A;
+  const static size_t N = AN::value;
+
+  ExecutionTrace<A> const & myTrace() const {
+    return static_cast<const Argument<T, A, AN::value>*>(this)->trace;
+  }
+
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
+  const JacobianTA& myJacobian() const {
+    return static_cast<const Argument<T, A, AN::value>*>(this)->dTdA;
+  }
+
+  /// Print to std::cout
+  virtual void print(const std::string& indent) const {
+    More::print(indent);
+    static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
+    std::cout << myJacobian().format(matlab) << std::endl;
+    myTrace().print(indent);
+  }
+
+  /// Start the reverse AD process
+  virtual void startReverseAD(JacobianMap& jacobians) const {
+    More::startReverseAD(jacobians);
+    Select<T::dimension, A>::reverseAD(myTrace(), myJacobian(), jacobians);
+  }
+
+  /// Given df/dT, multiply in dT/dA and continue reverse AD process
+  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+    More::reverseAD(dFdT, jacobians);
+    myTrace().reverseAD(dFdT * myJacobian(), jacobians);
+  }
+
+  /// Version specialized to 2-dimensional output
+  typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
+  virtual void reverseAD2(const Jacobian2T& dFdT,
+      JacobianMap& jacobians) const {
+    More::reverseAD2(dFdT, jacobians);
+    myTrace().reverseAD2(dFdT * myJacobian(), jacobians);
+  }
+};
+
+/// Meta-function for generating a numbered type
+template<class A, size_t N>
+struct Numbered {
+  typedef A type;
+  typedef size_t value_type;
+  static const size_t value = N;
+};
+
+/// Recursive Record class Generator
+template<class T, class TYPES>
+struct GenerateRecord {
+  typedef typename boost::mpl::fold<TYPES, CallRecord<T::dimension>,
+      Record<T, MPL::_2, MPL::_1> >::type type;
+
+};
+
+//-----------------------------------------------------------------------------
+/**
  * Value and Jacobians
  */
 template<class T>
@@ -257,7 +350,7 @@ public:
   }
 
   /// debugging
-  virtual void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
+  void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
     BOOST_FOREACH(const Pair& term, jacobians_)
       std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
           << "x" << term.second.cols() << ") ";
@@ -443,31 +536,9 @@ public:
     return Augmented<T>(t, dTdA, argument.jacobians());
   }
 
-  /// Record structure for reverse AD
-  struct Record: public CallRecord<T::dimension> {
-    ExecutionTrace<A1> trace1;
-    JacobianTA dTdA1;
-    /// print to std::cout
-    virtual void print(const std::string& indent) const {
-      static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
-      std::cout << dTdA1.format(matlab) << std::endl;
-      trace1.print(indent);
-    }
-    /// Start the reverse AD process
-    virtual void startReverseAD(JacobianMap& jacobians) const {
-      Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
-    }
-    /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-      trace1.reverseAD(dFdT * dTdA1, jacobians);
-    }
-    /// Version specialized to 2-dimensional output
-    typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
-    virtual void reverseAD2(const Jacobian2T& dFdT,
-        JacobianMap& jacobians) const {
-      trace1.reverseAD2(dFdT * dTdA1, jacobians);
-    }
-  };
+  /// CallRecord structure for reverse AD
+  typedef boost::mpl::vector<Numbered<A1, 1> > Arguments;
+  typedef typename GenerateRecord<T, Arguments>::type Record;
 
   // Return size needed for memory buffer in traceExecution
   virtual size_t traceSize() const {
@@ -479,9 +550,12 @@ public:
       char* raw) const {
     Record* record = new (raw) Record();
     trace.setFunction(record);
+
     raw = (char*) (record + 1);
-    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
-    return function_(a1, record->dTdA1);
+    A1 a1 = this->expressionA1_->traceExecution(values,
+        static_cast<Argument<T, A1, 1>*>(record)->trace, raw);
+
+    return function_(a1, static_cast<Argument<T, A1, 1>*>(record)->dTdA);
   }
 };
 
@@ -544,38 +618,9 @@ public:
     return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians());
   }
 
-  /// Record structure for reverse AD
-  struct Record: public CallRecord<T::dimension> {
-    ExecutionTrace<A1> trace1;
-    ExecutionTrace<A2> trace2;
-    JacobianTA1 dTdA1;
-    JacobianTA2 dTdA2;
-    /// print to std::cout
-    virtual void print(const std::string& indent) const {
-      static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
-      std::cout << indent << dTdA1.format(matlab) << std::endl;
-      trace1.print(indent);
-      std::cout << indent << dTdA2.format(matlab) << std::endl;
-      trace2.print(indent);
-    }
-    /// Start the reverse AD process
-    virtual void startReverseAD(JacobianMap& jacobians) const {
-      Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
-      Select<T::dimension, A2>::reverseAD(trace2, dTdA2, jacobians);
-    }
-    /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-      trace1.reverseAD(dFdT * dTdA1, jacobians);
-      trace2.reverseAD(dFdT * dTdA2, jacobians);
-    }
-    /// Version specialized to 2-dimensional output
-    typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
-    virtual void reverseAD2(const Jacobian2T& dFdT,
-        JacobianMap& jacobians) const {
-      trace1.reverseAD2(dFdT * dTdA1, jacobians);
-      trace2.reverseAD2(dFdT * dTdA2, jacobians);
-    }
-  };
+  /// CallRecord structure for reverse AD
+  typedef boost::mpl::vector<Numbered<A1, 1>, Numbered<A2, 2> > Arguments;
+  typedef typename GenerateRecord<T, Arguments>::type Record;
 
   // Return size needed for memory buffer in traceExecution
   virtual size_t traceSize() const {
@@ -589,11 +634,17 @@ public:
       char* raw) const {
     Record* record = new (raw) Record();
     trace.setFunction(record);
+
     raw = (char*) (record + 1);
-    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
+    A1 a1 = this->expressionA1_->traceExecution(values,
+        static_cast<Argument<T, A1, 1>*>(record)->trace, raw);
+
     raw = raw + expressionA1_->traceSize();
-    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2, raw);
-    return function_(a1, a2, record->dTdA1, record->dTdA2);
+    A2 a2 = this->expressionA2_->traceExecution(values,
+        static_cast<Argument<T, A2, 2>*>(record)->trace, raw);
+
+    return function_(a1, a2, static_cast<Argument<T, A1, 1>*>(record)->dTdA,
+        static_cast<Argument<T, A2, 2>*>(record)->dTdA);
   }
 
 };
@@ -668,45 +719,9 @@ public:
         a3.jacobians());
   }
 
-  /// Record structure for reverse AD
-  struct Record: public CallRecord<T::dimension> {
-    ExecutionTrace<A1> trace1;
-    ExecutionTrace<A2> trace2;
-    ExecutionTrace<A3> trace3;
-    JacobianTA1 dTdA1;
-    JacobianTA2 dTdA2;
-    JacobianTA3 dTdA3;
-    /// print to std::cout
-    virtual void print(const std::string& indent) const {
-      static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
-      std::cout << dTdA1.format(matlab) << std::endl;
-      trace1.print(indent);
-      std::cout << dTdA2.format(matlab) << std::endl;
-      trace2.print(indent);
-      std::cout << dTdA3.format(matlab) << std::endl;
-      trace3.print(indent);
-    }
-    /// Start the reverse AD process
-    virtual void startReverseAD(JacobianMap& jacobians) const {
-      Select<T::dimension, A1>::reverseAD(trace1, dTdA1, jacobians);
-      Select<T::dimension, A2>::reverseAD(trace2, dTdA2, jacobians);
-      Select<T::dimension, A3>::reverseAD(trace3, dTdA3, jacobians);
-    }
-    /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-      trace1.reverseAD(dFdT * dTdA1, jacobians);
-      trace2.reverseAD(dFdT * dTdA2, jacobians);
-      trace3.reverseAD(dFdT * dTdA3, jacobians);
-    }
-    /// Version specialized to 2-dimensional output
-    typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
-    virtual void reverseAD2(const Jacobian2T& dFdT,
-        JacobianMap& jacobians) const {
-      trace1.reverseAD2(dFdT * dTdA1, jacobians);
-      trace2.reverseAD2(dFdT * dTdA2, jacobians);
-      trace3.reverseAD2(dFdT * dTdA3, jacobians);
-    }
-  };
+  /// CallRecord structure for reverse AD
+  typedef boost::mpl::vector<Numbered<A1, 1>, Numbered<A2, 2>, Numbered<A3, 3> > Arguments;
+  typedef typename GenerateRecord<T, Arguments>::type Record;
 
   // Return size needed for memory buffer in traceExecution
   virtual size_t traceSize() const {
@@ -719,13 +734,22 @@ public:
       char* raw) const {
     Record* record = new (raw) Record();
     trace.setFunction(record);
+
     raw = (char*) (record + 1);
-    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
+    A1 a1 = this->expressionA1_->traceExecution(values,
+        static_cast<Argument<T, A1, 1>*>(record)->trace, raw);
+
     raw = raw + expressionA1_->traceSize();
-    A2 a2 = this->expressionA2_->traceExecution(values, record->trace2, raw);
+    A2 a2 = this->expressionA2_->traceExecution(values,
+        static_cast<Argument<T, A2, 2>*>(record)->trace, raw);
+
     raw = raw + expressionA2_->traceSize();
-    A3 a3 = this->expressionA3_->traceExecution(values, record->trace3, raw);
-    return function_(a1, a2, a3, record->dTdA1, record->dTdA2, record->dTdA3);
+    A3 a3 = this->expressionA3_->traceExecution(values,
+        static_cast<Argument<T, A3, 3>*>(record)->trace, raw);
+
+    return function_(a1, a2, a3, static_cast<Argument<T, A1, 1>*>(record)->dTdA,
+        static_cast<Argument<T, A2, 2>*>(record)->dTdA,
+        static_cast<Argument<T, A3, 3>*>(record)->dTdA);
   }
 
 };

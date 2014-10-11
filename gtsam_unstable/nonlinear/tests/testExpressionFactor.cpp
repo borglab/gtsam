@@ -158,10 +158,12 @@ TEST(ExpressionFactor, binary) {
   expected22 << 1, 0, 0, 1;
 
   // Check matrices
-  boost::optional<Binary::Record*> p = trace.record<Binary::Record>();
-  CHECK(p);
-  EXPECT( assert_equal(expected25, (Matrix)(*p)->dTdA1, 1e-9));
-  EXPECT( assert_equal(expected22, (Matrix)(*p)->dTdA2, 1e-9));
+  boost::optional<Binary::Record*> r = trace.record<Binary::Record>();
+  CHECK(r);
+  EXPECT(
+      assert_equal(expected25, (Matrix) static_cast<Argument<Point2, Cal3_S2, 1>*> (*r)->dTdA, 1e-9));
+  EXPECT(
+      assert_equal(expected22, (Matrix) static_cast<Argument<Point2, Point2, 2>*> (*r)->dTdA, 1e-9));
 }
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
@@ -205,9 +207,10 @@ TEST(ExpressionFactor, shallow) {
   expected23 << 1, 0, 0, 0, 1, 0;
 
   // Check matrices
-  boost::optional<Unary::Record*> p = trace.record<Unary::Record>();
-  CHECK(p);
-  EXPECT( assert_equal(expected23, (Matrix)(*p)->dTdA1, 1e-9));
+  boost::optional<Unary::Record*> r = trace.record<Unary::Record>();
+  CHECK(r);
+  EXPECT(
+      assert_equal(expected23, (Matrix)static_cast<Argument<Point2, Point3, 1>*>(*r)->dTdA, 1e-9));
 
   // Linearization
   ExpressionFactor<Point2> f2(model, measured, expression);
@@ -400,6 +403,37 @@ TEST(ExpressionFactor, composeTernary) {
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf,1e-9));
 }
+
+/* ************************************************************************* */
+
+namespace mpl = boost::mpl;
+
+#include <boost/mpl/assert.hpp>
+template<class T> struct Incomplete;
+
+typedef mpl::vector<Numbered<Pose3, 1>, Numbered<Point3, 2>,
+    Numbered<Cal3_S2, 3> > MyTypes;
+typedef GenerateRecord<Point2, MyTypes>::type Generated;
+//Incomplete<Generated> incomplete;
+//BOOST_MPL_ASSERT((boost::is_same< Matrix25, Generated::JacobianTA >));
+BOOST_MPL_ASSERT((boost::is_same< Matrix2, Generated::Jacobian2T >));
+
+Generated generated;
+
+typedef mpl::vector1<Point3> OneType;
+typedef mpl::pop_front<OneType>::type Empty;
+typedef mpl::pop_front<Empty>::type Bad;
+//typedef ProtoTrace<OneType> UnaryTrace;
+//BOOST_MPL_ASSERT((boost::is_same< UnaryTrace::A, Point3 >));
+
+#include <boost/static_assert.hpp>
+#include <boost/mpl/plus.hpp>
+#include <boost/mpl/int.hpp>
+//#include <boost/mpl/print.hpp>
+
+typedef struct {
+} Expected0;
+BOOST_MPL_ASSERT((boost::is_same< Expected0, Expected0 >));
 
 /* ************************************************************************* */
 int main() {
