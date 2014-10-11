@@ -122,8 +122,31 @@ struct TestBinaryExpression {
 /* ************************************************************************* */
 // Binary(Leaf,Leaf)
 TEST(ExpressionFactor, binary) {
-
   TestBinaryExpression tester;
+
+  // Create some values
+  Values values;
+  values.insert(1, Cal3_S2());
+  values.insert(2, Point2(0, 0));
+
+  // Do old trace
+  ExecutionTrace<Point2> trace;
+  tester.binary_.traceExecution(values, trace);
+
+  // Extract record :-(
+  boost::optional<CallRecord<Point2>*> r = trace.record();
+  CHECK(r);
+  typedef BinaryExpression<Point2, Cal3_S2, Point2> Binary;
+  Binary::Record* p = dynamic_cast<Binary::Record*>(*r);
+  CHECK(p);
+
+  // Check matrices
+  Matrix25 expected25;
+  expected25 << 0, 0, 0, 1, 0, 0, 0, 0, 0, 1;
+  EXPECT( assert_equal(expected25, (Matrix)p->dTdA1, 1e-9));
+  Matrix2 expected22;
+  expected22 << 1, 0, 0, 1;
+  EXPECT( assert_equal(expected22, (Matrix)p->dTdA2, 1e-9));
 
   // Check raw memory trace
 }

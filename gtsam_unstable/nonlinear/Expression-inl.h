@@ -91,6 +91,12 @@ public:
     type = Function;
     content.ptr = record;
   }
+  /// Return record pointer, highly unsafe, used only for testing
+  boost::optional<CallRecord<T>*> record() {
+    return
+        (type == Function) ? boost::optional<CallRecord<T>*>(content.ptr) :
+            boost::none;
+  }
   // *** This is the main entry point for reverseAD, called from Expression::augmented ***
   // Called only once, either inserts identity into Jacobians (Leaf) or starts AD (Function)
   void startReverseAD(JacobianMap& jacobians) const {
@@ -485,7 +491,7 @@ private:
       function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()) {
   }
 
-  friend class Expression<T>;
+  friend class Expression<T> ;
   friend struct ::TestBinaryExpression;
 
 public:
