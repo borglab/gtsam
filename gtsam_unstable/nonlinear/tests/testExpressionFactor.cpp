@@ -139,17 +139,19 @@ TEST(ExpressionFactor, binary) {
 
   // traceRaw will fill raw with [Trace<Point2> | Binary::Record]
   EXPECT_LONGS_EQUAL(8, sizeof(double));
-  EXPECT_LONGS_EQUAL(48, sizeof(ExecutionTrace<Point2>));
-  EXPECT_LONGS_EQUAL(72, sizeof(ExecutionTrace<Cal3_S2>));
+  EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Point2>));
+  EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Cal3_S2>));
   EXPECT_LONGS_EQUAL(2*5*8, sizeof(Binary::JacobianTA1));
   EXPECT_LONGS_EQUAL(2*2*8, sizeof(Binary::JacobianTA2));
-  size_t expectedRecordSize = 8 + 48 + 72 + 80 + 32; // 240
+  size_t expectedRecordSize = 16 + 2*16 + 80 + 32;
   EXPECT_LONGS_EQUAL(expectedRecordSize, sizeof(Binary::Record));
   size_t size = sizeof(Binary::Record);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
   char raw[size];
-  ExecutionTrace<Point2> trace = tester.binary_.traceExecution(values, raw);
+  ExecutionTrace<Point2> trace;
+  Point2 value = tester.binary_.traceExecution(values, trace, raw);
+  trace.print();
 
   // Check matrices
 //  boost::optional<Binary::Record*> p = trace.record<Binary::Record>();

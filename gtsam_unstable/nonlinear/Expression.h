@@ -118,8 +118,9 @@ public:
 #define REVERSE_AD
 #ifdef REVERSE_AD
     char raw[10];
-    ExecutionTrace<T> trace = root_->traceExecution(values, raw);
-    Augmented<T> augmented(trace.value);
+    ExecutionTrace<T> trace;
+    T value (root_->traceExecution(values, trace, raw));
+    Augmented<T> augmented(value);
     trace.startReverseAD(augmented.jacobians());
     return augmented;
 #else
