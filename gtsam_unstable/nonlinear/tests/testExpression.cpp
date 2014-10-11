@@ -40,7 +40,7 @@ Point2 uncalibrate(const CAL& K, const Point2& p,
 static const Rot3 someR = Rot3::RzRyRx(1, 2, 3);
 
 /* ************************************************************************* */
-
+// Constant
 TEST(Expression, constant) {
   Expression<Rot3> R(someR);
   Values values;
@@ -51,7 +51,7 @@ TEST(Expression, constant) {
 }
 
 /* ************************************************************************* */
-
+// Leaf
 TEST(Expression, leaf) {
   Expression<Rot3> R(100);
   Values values;
@@ -77,31 +77,55 @@ TEST(Expression, leaf) {
 //  EXPECT(assert_equal(expected.at(67),a.jacobians().at(67)));
 //}
 /* ************************************************************************* */
+// Binary(Leaf,Leaf)
+namespace binary {
+// Create leaves
+Expression<Pose3> x(1);
+Expression<Point3> p(2);
+Expression<Point3> p_cam(x, &Pose3::transform_to, p);
+}
+/* ************************************************************************* */
+// keys
+TEST(Expression, keys_binary) {
+
+  // Check keys
+  set<Key> expectedKeys;
+  expectedKeys.insert(1);
+  expectedKeys.insert(2);
+  EXPECT(expectedKeys == binary::p_cam.keys());
+}
+/* ************************************************************************* */
 // Binary(Leaf,Unary(Binary(Leaf,Leaf)))
-TEST(Expression, test) {
+namespace tree {
+using namespace binary;
+// Create leaves
+Expression<Cal3_S2> K(3);
 
-  // Test Constant expression
-  Expression<Rot3> c(Rot3::identity());
-
-  // Create leaves
-  Expression<Pose3> x(1);
-  Expression<Point3> p(2);
-  Expression<Cal3_S2> K(3);
-
-  // Create expression tree
-  Expression<Point3> p_cam(x, &Pose3::transform_to, p);
-  Expression<Point2> projection(PinholeCamera<Cal3_S2>::project_to_camera,
-      p_cam);
-  Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
+// Create expression tree
+Expression<Point2> projection(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
+}
+/* ************************************************************************* */
+// keys
+TEST(Expression, keys_tree) {
 
   // Check keys
   set<Key> expectedKeys;
   expectedKeys.insert(1);
   expectedKeys.insert(2);
   expectedKeys.insert(3);
-  EXPECT(expectedKeys == uv_hat.keys());
+  EXPECT(expectedKeys == tree::uv_hat.keys());
 }
-
+/* ************************************************************************* */
+// keys
+TEST(Expression, block_tree) {
+//  // Check VerticalBlockMatrix
+//  size_t dimensions[3] = { 6, 3, 5 };
+//  Matrix matrix(2, 14);
+//  VerticalBlockMatrix expected(dimensions, matrix), actual =
+//      tree::uv_hat.verticalBlockMatrix();
+//  EXPECT( assert_equal(expected, *jf, 1e-9));
+}
 /* ************************************************************************* */
 
 TEST(Expression, compose1) {
