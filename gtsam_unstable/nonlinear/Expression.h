@@ -113,18 +113,33 @@ public:
     return root_->value(values);
   }
 
-  /// Return value and derivatives
-  Augmented<T> augmented(const Values& values) const {
-#define REVERSE_AD
-#ifdef REVERSE_AD
+  /// Return value and derivatives, forward AD version
+  Augmented<T> forward(const Values& values) const {
+    return root_->forward(values);
+  }
+
+  /// trace execution, very unsafe, for testing purposes only
+  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      void* raw) const {
+    return root_->traceExecution(values, trace, raw);
+  }
+
+  /// Return value and derivatives, reverse AD version
+  Augmented<T> reverse(const Values& values) const {
     char raw[10];
     ExecutionTrace<T> trace;
-    T value (root_->traceExecution(values, trace, raw));
+    T value(root_->traceExecution(values, trace, raw));
     Augmented<T> augmented(value);
     trace.startReverseAD(augmented.jacobians());
     return augmented;
+  }
+
+  /// Return value and derivatives
+  Augmented<T> augmented(const Values& values) const {
+#ifdef EXPRESSION_FORWARD_AD
+    return forward(values);
 #else
-    return root_->forward(values);
+    return reverse(values);
 #endif
   }
 
