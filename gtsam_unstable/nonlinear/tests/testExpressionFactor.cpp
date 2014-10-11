@@ -184,139 +184,139 @@ TEST(ExpressionFactor, test2) {
   EXPECT( assert_equal(*expected, *gf3, 1e-9));
 }
 
-///* ************************************************************************* */
-//
-//TEST(ExpressionFactor, compose1) {
-//
-//  // Create expression
-//  Rot3_ R1(1), R2(2);
-//  Rot3_ R3 = R1 * R2;
-//
-//  // Create factor
-//  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
-//
-//  // Create some values
-//  Values values;
-//  values.insert(1, Rot3());
-//  values.insert(2, Rot3());
-//
-//  // Check unwhitenedError
-//  std::vector<Matrix> H(2);
-//  Vector actual = f.unwhitenedError(values, H);
-//  EXPECT( assert_equal(eye(3), H[0],1e-9));
-//  EXPECT( assert_equal(eye(3), H[1],1e-9));
-//
-//  // Check linearization
-//  JacobianFactor expected(1, eye(3), 2, eye(3), zero(3));
-//  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-//  boost::shared_ptr<JacobianFactor> jf = //
-//      boost::dynamic_pointer_cast<JacobianFactor>(gf);
-//  EXPECT( assert_equal(expected, *jf,1e-9));
-//}
-//
-///* ************************************************************************* */
-//// Test compose with arguments referring to the same rotation
-//TEST(ExpressionFactor, compose2) {
-//
-//  // Create expression
-//  Rot3_ R1(1), R2(1);
-//  Rot3_ R3 = R1 * R2;
-//
-//  // Create factor
-//  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
-//
-//  // Create some values
-//  Values values;
-//  values.insert(1, Rot3());
-//
-//  // Check unwhitenedError
-//  std::vector<Matrix> H(1);
-//  Vector actual = f.unwhitenedError(values, H);
-//  EXPECT_LONGS_EQUAL(1, H.size());
-//  EXPECT( assert_equal(2*eye(3), H[0],1e-9));
-//
-//  // Check linearization
-//  JacobianFactor expected(1, 2 * eye(3), zero(3));
-//  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-//  boost::shared_ptr<JacobianFactor> jf = //
-//      boost::dynamic_pointer_cast<JacobianFactor>(gf);
-//  EXPECT( assert_equal(expected, *jf,1e-9));
-//}
-//
-///* ************************************************************************* */
-//// Test compose with one arguments referring to a constant same rotation
-//TEST(ExpressionFactor, compose3) {
-//
-//  // Create expression
-//  Rot3_ R1(Rot3::identity()), R2(3);
-//  Rot3_ R3 = R1 * R2;
-//
-//  // Create factor
-//  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
-//
-//  // Create some values
-//  Values values;
-//  values.insert(3, Rot3());
-//
-//  // Check unwhitenedError
-//  std::vector<Matrix> H(1);
-//  Vector actual = f.unwhitenedError(values, H);
-//  EXPECT_LONGS_EQUAL(1, H.size());
-//  EXPECT( assert_equal(eye(3), H[0],1e-9));
-//
-//  // Check linearization
-//  JacobianFactor expected(3, eye(3), zero(3));
-//  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-//  boost::shared_ptr<JacobianFactor> jf = //
-//      boost::dynamic_pointer_cast<JacobianFactor>(gf);
-//  EXPECT( assert_equal(expected, *jf,1e-9));
-//}
-//
-///* ************************************************************************* */
-//// Test compose with three arguments
-//Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
-//    boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2,
-//    boost::optional<Matrix3&> H3) {
-//  // return dummy derivatives (not correct, but that's ok for testing here)
-//  if (H1)
-//    *H1 = eye(3);
-//  if (H2)
-//    *H2 = eye(3);
-//  if (H3)
-//    *H3 = eye(3);
-//  return R1 * (R2 * R3);
-//}
-//
-//TEST(ExpressionFactor, composeTernary) {
-//
-//  // Create expression
-//  Rot3_ A(1), B(2), C(3);
-//  Rot3_ ABC(composeThree, A, B, C);
-//
-//  // Create factor
-//  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), ABC);
-//
-//  // Create some values
-//  Values values;
-//  values.insert(1, Rot3());
-//  values.insert(2, Rot3());
-//  values.insert(3, Rot3());
-//
-//  // Check unwhitenedError
-//  std::vector<Matrix> H(3);
-//  Vector actual = f.unwhitenedError(values, H);
-//  EXPECT_LONGS_EQUAL(3, H.size());
-//  EXPECT( assert_equal(eye(3), H[0],1e-9));
-//  EXPECT( assert_equal(eye(3), H[1],1e-9));
-//  EXPECT( assert_equal(eye(3), H[2],1e-9));
-//
-//  // Check linearization
-//  JacobianFactor expected(1, eye(3), 2, eye(3), 3, eye(3), zero(3));
-//  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-//  boost::shared_ptr<JacobianFactor> jf = //
-//      boost::dynamic_pointer_cast<JacobianFactor>(gf);
-//  EXPECT( assert_equal(expected, *jf,1e-9));
-//}
+/* ************************************************************************* */
+
+TEST(ExpressionFactor, compose1) {
+
+  // Create expression
+  Rot3_ R1(1), R2(2);
+  Rot3_ R3 = R1 * R2;
+
+  // Create factor
+  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
+
+  // Create some values
+  Values values;
+  values.insert(1, Rot3());
+  values.insert(2, Rot3());
+
+  // Check unwhitenedError
+  std::vector<Matrix> H(2);
+  Vector actual = f.unwhitenedError(values, H);
+  EXPECT( assert_equal(eye(3), H[0],1e-9));
+  EXPECT( assert_equal(eye(3), H[1],1e-9));
+
+  // Check linearization
+  JacobianFactor expected(1, eye(3), 2, eye(3), zero(3));
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf,1e-9));
+}
+
+/* ************************************************************************* */
+// Test compose with arguments referring to the same rotation
+TEST(ExpressionFactor, compose2) {
+
+  // Create expression
+  Rot3_ R1(1), R2(1);
+  Rot3_ R3 = R1 * R2;
+
+  // Create factor
+  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
+
+  // Create some values
+  Values values;
+  values.insert(1, Rot3());
+
+  // Check unwhitenedError
+  std::vector<Matrix> H(1);
+  Vector actual = f.unwhitenedError(values, H);
+  EXPECT_LONGS_EQUAL(1, H.size());
+  EXPECT( assert_equal(2*eye(3), H[0],1e-9));
+
+  // Check linearization
+  JacobianFactor expected(1, 2 * eye(3), zero(3));
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf,1e-9));
+}
+
+/* ************************************************************************* */
+// Test compose with one arguments referring to a constant same rotation
+TEST(ExpressionFactor, compose3) {
+
+  // Create expression
+  Rot3_ R1(Rot3::identity()), R2(3);
+  Rot3_ R3 = R1 * R2;
+
+  // Create factor
+  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), R3);
+
+  // Create some values
+  Values values;
+  values.insert(3, Rot3());
+
+  // Check unwhitenedError
+  std::vector<Matrix> H(1);
+  Vector actual = f.unwhitenedError(values, H);
+  EXPECT_LONGS_EQUAL(1, H.size());
+  EXPECT( assert_equal(eye(3), H[0],1e-9));
+
+  // Check linearization
+  JacobianFactor expected(3, eye(3), zero(3));
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf,1e-9));
+}
+
+/* ************************************************************************* */
+// Test compose with three arguments
+Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
+    boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2,
+    boost::optional<Matrix3&> H3) {
+  // return dummy derivatives (not correct, but that's ok for testing here)
+  if (H1)
+    *H1 = eye(3);
+  if (H2)
+    *H2 = eye(3);
+  if (H3)
+    *H3 = eye(3);
+  return R1 * (R2 * R3);
+}
+
+TEST(ExpressionFactor, composeTernary) {
+
+  // Create expression
+  Rot3_ A(1), B(2), C(3);
+  Rot3_ ABC(composeThree, A, B, C);
+
+  // Create factor
+  ExpressionFactor<Rot3> f(noiseModel::Unit::Create(3), Rot3(), ABC);
+
+  // Create some values
+  Values values;
+  values.insert(1, Rot3());
+  values.insert(2, Rot3());
+  values.insert(3, Rot3());
+
+  // Check unwhitenedError
+  std::vector<Matrix> H(3);
+  Vector actual = f.unwhitenedError(values, H);
+  EXPECT_LONGS_EQUAL(3, H.size());
+  EXPECT( assert_equal(eye(3), H[0],1e-9));
+  EXPECT( assert_equal(eye(3), H[1],1e-9));
+  EXPECT( assert_equal(eye(3), H[2],1e-9));
+
+  // Check linearization
+  JacobianFactor expected(1, eye(3), 2, eye(3), 3, eye(3), zero(3));
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf,1e-9));
+}
 
 /* ************************************************************************* */
 
@@ -325,7 +325,8 @@ namespace mpl = boost::mpl;
 #include <boost/mpl/assert.hpp>
 template<class T> struct Incomplete;
 
-typedef mpl::vector<Pose3, Point3, Cal3_S2> MyTypes;
+typedef mpl::vector<Numbered<Pose3, 1>, Numbered<Point3, 2>,
+    Numbered<Cal3_S2, 3> > MyTypes;
 typedef GenerateTrace<Point2, MyTypes>::type Generated;
 //Incomplete<Generated> incomplete;
 //BOOST_MPL_ASSERT((boost::is_same< Matrix25, Generated::JacobianTA >));

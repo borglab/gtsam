@@ -156,7 +156,7 @@ struct Select<2, A> {
 /**
  * Record the evaluation of a single argument in a functional expression
  */
-template<class T, class A>
+template<class T, class A, size_t N>
 struct SingleTrace {
   typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
   typename JacobianTrace<A>::Pointer trace;
@@ -169,16 +169,19 @@ struct SingleTrace {
  * C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
  * and Beyond. Pearson Education.
  */
-template<class T, class A, class More>
-struct Trace: SingleTrace<T, A>, More {
+template<class T, class AN, class More>
+struct Trace: SingleTrace<T, typename AN::type, AN::value>, More {
+
+  typedef typename AN::type A;
+  const static size_t N = AN::value;
 
   typename JacobianTrace<A>::Pointer const & myTrace() const {
-    return static_cast<const SingleTrace<T, A>*>(this)->trace;
+    return static_cast<const SingleTrace<T, A, AN::value>*>(this)->trace;
   }
 
   typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
   const JacobianTA& myJacobian() const {
-    return static_cast<const SingleTrace<T, A>*>(this)->dTdA;
+    return static_cast<const SingleTrace<T, A, AN::value>*>(this)->dTdA;
   }
 
   /// Start the reverse AD process
@@ -200,6 +203,14 @@ struct Trace: SingleTrace<T, A>, More {
     More::reverseAD2(dFdT, jacobians);
     myTrace().reverseAD2(dFdT * myJacobian(), jacobians);
   }
+};
+
+/// Meta-function for generating a numbered type
+template<class A, size_t N>
+struct Numbered {
+  typedef A type;
+  typedef size_t value_type;
+  static const size_t value = N;
 };
 
 /// Recursive Trace Class Generator
@@ -486,7 +497,7 @@ public:
   }
 
   /// Trace structure for reverse AD
-  typedef boost::mpl::vector<A1> Arguments;
+  typedef boost::mpl::vector<Numbered<A1, 1> > Arguments;
   typedef typename GenerateTrace<T, Arguments>::type Trace;
 
   /// Construct an execution trace for reverse AD
@@ -558,7 +569,7 @@ public:
   }
 
   /// Trace structure for reverse AD
-  typedef boost::mpl::vector<A1, A2> Arguments;
+  typedef boost::mpl::vector<Numbered<A1, 1>, Numbered<A2, 2> > Arguments;
   typedef typename GenerateTrace<T, Arguments>::type Trace;
 
   /// Construct an execution trace for reverse AD
@@ -567,11 +578,11 @@ public:
     Trace* trace = new Trace();
     p.setFunction(trace);
     A1 a1 = this->expressionA1_->traceExecution(values,
-        static_cast<SingleTrace<T, A1>*>(trace)->trace);
+        static_cast<SingleTrace<T, A1, 1>*>(trace)->trace);
     A2 a2 = this->expressionA2_->traceExecution(values,
-        static_cast<SingleTrace<T, A2>*>(trace)->trace);
-    return function_(a1, a2, static_cast<SingleTrace<T, A1>*>(trace)->dTdA,
-        static_cast<SingleTrace<T, A2>*>(trace)->dTdA);
+        static_cast<SingleTrace<T, A2, 2>*>(trace)->trace);
+    return function_(a1, a2, static_cast<SingleTrace<T, A1, 1>*>(trace)->dTdA,
+        static_cast<SingleTrace<T, A2, 2>*>(trace)->dTdA);
   }
 
 };
@@ -647,7 +658,7 @@ public:
   }
 
   /// Trace structure for reverse AD
-  typedef boost::mpl::vector<A1, A2, A3> Arguments;
+  typedef boost::mpl::vector<Numbered<A1, 1>, Numbered<A2, 2>, Numbered<A3, 3> > Arguments;
   typedef typename GenerateTrace<T, Arguments>::type Trace;
 
   /// Construct an execution trace for reverse AD
@@ -656,14 +667,15 @@ public:
     Trace* trace = new Trace();
     p.setFunction(trace);
     A1 a1 = this->expressionA1_->traceExecution(values,
-        static_cast<SingleTrace<T, A1>*>(trace)->trace);
+        static_cast<SingleTrace<T, A1, 1>*>(trace)->trace);
     A2 a2 = this->expressionA2_->traceExecution(values,
-        static_cast<SingleTrace<T, A2>*>(trace)->trace);
+        static_cast<SingleTrace<T, A2, 2>*>(trace)->trace);
     A3 a3 = this->expressionA3_->traceExecution(values,
-        static_cast<SingleTrace<T, A3>*>(trace)->trace);
-    return function_(a1, a2, a3, static_cast<SingleTrace<T, A1>*>(trace)->dTdA,
-        static_cast<SingleTrace<T, A2>*>(trace)->dTdA,
-        static_cast<SingleTrace<T, A3>*>(trace)->dTdA);
+        static_cast<SingleTrace<T, A3, 3>*>(trace)->trace);
+    return function_(a1, a2, a3,
+        static_cast<SingleTrace<T, A1, 1>*>(trace)->dTdA,
+        static_cast<SingleTrace<T, A2, 2>*>(trace)->dTdA,
+        static_cast<SingleTrace<T, A3, 3>*>(trace)->dTdA);
   }
 
 };
