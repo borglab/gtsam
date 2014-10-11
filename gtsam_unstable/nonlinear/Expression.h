@@ -125,7 +125,7 @@ public:
 
   /// trace execution, very unsafe, for testing purposes only
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      void* raw) const {
+      char* raw) const {
     return root_->traceExecution(values, trace, raw);
   }
 

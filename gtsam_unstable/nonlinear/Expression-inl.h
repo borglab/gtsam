@@ -313,7 +313,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      void* raw) const = 0;
+      char* raw) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -351,7 +351,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      void* raw) const {
+      char* raw) const {
     return constant_;
   }
 };
@@ -392,7 +392,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      void* raw) const {
+      char* raw) const {
     trace.setLeaf(key_);
     return values.at<T>(key_);
   }
@@ -476,11 +476,11 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      void* raw) const {
+      char* raw) const {
     Record* record = new (raw) Record();
     trace.setFunction(record);
-    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1,
-        record + 1);
+    raw = (char*) (record + 1);
+    A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
     return function_(a1, record->dTdA1);
   }
 };
@@ -586,10 +586,12 @@ public:
   /// Construct an execution trace for reverse AD
   /// The raw buffer is [Record | A1 raw | A2 raw]
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      void* raw) const {
+      char* raw) const {
     Record* record = new (raw) Record();
     trace.setFunction(record);
+    raw = (char*) (record + 1);
     A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
+    raw = raw + expressionA1_->traceSize();
     A2 a2 = this->expressionA2_->traceExecution(values, record->trace2, raw);
     return function_(a1, a2, record->dTdA1, record->dTdA2);
   }
@@ -714,11 +716,14 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      void* raw) const {
+      char* raw) const {
     Record* record = new (raw) Record();
     trace.setFunction(record);
+    raw = (char*) (record + 1);
     A1 a1 = this->expressionA1_->traceExecution(values, record->trace1, raw);
+    raw = raw + expressionA1_->traceSize();
     A2 a2 = this->expressionA2_->traceExecution(values, record->trace2, raw);
+    raw = raw + expressionA2_->traceSize();
     A3 a3 = this->expressionA3_->traceExecution(values, record->trace3, raw);
     return function_(a1, a2, a3, record->dTdA1, record->dTdA2, record->dTdA3);
   }
