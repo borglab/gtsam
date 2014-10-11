@@ -60,6 +60,37 @@ public:
     }
   }
 
+  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
+
+    // Only linearize if the factor is active
+    if (!this->active(x))
+      return boost::shared_ptr<JacobianFactor>();
+
+    // Evaluate error to get Jacobians and RHS vector b
+    Augmented<T> augmented = expression_.augmented(x);
+    Vector b = - measurement_.localCoordinates(augmented.value());
+    // check(noiseModel_, b); // TODO: use, but defined in NonlinearFactor.cpp
+
+    // Whiten the corresponding system now
+    // TODO ! this->noiseModel_->WhitenSystem(A, b);
+
+    // Terms, needed to create JacobianFactor below, are already here!
+    const JacobianMap& terms = augmented.jacobians();
+
+    // TODO pass unwhitened + noise model to Gaussian factor
+    // For now, only linearized constrained factors have noise model at linear level!!!
+    noiseModel::Constrained::shared_ptr constrained = //
+        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
+    if (constrained) {
+      // Create a factor of reduced row dimension d_
+      size_t d_ = b.size() - constrained->dim();
+      Vector zero_ = zero(d_);
+      Vector b_ = concatVectors(2, &b, &zero_);
+      noiseModel::Constrained::shared_ptr model = constrained->unit(d_);
+      return boost::make_shared<JacobianFactor>(terms, b_, model);
+    } else
+      return boost::make_shared<JacobianFactor>(terms, b);
+  }
 };
 // ExpressionFactor
 

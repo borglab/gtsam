@@ -124,7 +124,7 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
       boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
   if (constrained) {
     // Create a factor of reduced row dimension d_
-    size_t d_ = terms[0].second.rows() - constrained->dim();
+    size_t d_ = b.size() - constrained->dim();
     Vector zero_ = zero(d_);
     Vector b_ = concatVectors(2, &b, &zero_);
     noiseModel::Constrained::shared_ptr model = constrained->unit(d_);
