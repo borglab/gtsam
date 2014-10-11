@@ -197,8 +197,7 @@ TEST( NonlinearFactor, size )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_constraint1 )
 {
-  Vector sigmas = (Vector(2) << 0.2, 0.0);
-  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
+  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(Vector2(0.2,0));
 
   Point2 mu(1., -1.);
   NonlinearFactorGraph::sharedFactor f0(new simulated2D::Prior(mu, constraint, X(1)));
@@ -208,17 +207,16 @@ TEST( NonlinearFactor, linearize_constraint1 )
   GaussianFactor::shared_ptr actual = f0->linearize(config);
 
   // create expected
-  Vector b = (Vector(2) << 0., -3.);
+  Vector2 b(0., -3.);
   JacobianFactor expected(X(1), (Matrix(2, 2) << 5.0, 0.0, 0.0, 1.0), b,
-    noiseModel::Constrained::MixedSigmas((Vector(2) << 1.0, 0.0)));
+    noiseModel::Constrained::MixedSigmas(Vector2(1,0)));
   CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_constraint2 )
 {
-  Vector sigmas = (Vector(2) << 0.2, 0.0);
-  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
+  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(Vector2(0.2,0));
 
   Point2 z3(1.,-1.);
   simulated2D::Measurement f0(z3, constraint, X(1),L(1));
@@ -229,10 +227,10 @@ TEST( NonlinearFactor, linearize_constraint2 )
   GaussianFactor::shared_ptr actual = f0.linearize(config);
 
   // create expected
-  Matrix A = (Matrix(2, 2) << 5.0, 0.0, 0.0, 1.0);
-  Vector b = (Vector(2) << -15., -3.);
+  Matrix2 A; A << 5.0, 0.0, 0.0, 1.0;
+  Vector2 b(-15., -3.);
   JacobianFactor expected(X(1), -1*A, L(1), A, b,
-    noiseModel::Constrained::MixedSigmas((Vector(2) << 1.0, 0.0)));
+    noiseModel::Constrained::MixedSigmas(Vector2(1,0)));
   CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
