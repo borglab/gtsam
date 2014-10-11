@@ -143,7 +143,7 @@ TEST(ExpressionFactor, binary) {
   EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Cal3_S2>));
   EXPECT_LONGS_EQUAL(2*5*8, sizeof(Binary::JacobianTA1));
   EXPECT_LONGS_EQUAL(2*2*8, sizeof(Binary::JacobianTA2));
-  size_t expectedRecordSize = 16 + 2*16 + 80 + 32;
+  size_t expectedRecordSize = 16 + 2 * 16 + 80 + 32;
   EXPECT_LONGS_EQUAL(expectedRecordSize, sizeof(Binary::Record));
   size_t size = sizeof(Binary::Record);
   // Use Variable Length Array, allocated on stack by gcc
@@ -151,13 +151,13 @@ TEST(ExpressionFactor, binary) {
   char raw[size];
   ExecutionTrace<Point2> trace;
   Point2 value = tester.binary_.traceExecution(values, trace, raw);
-  trace.print();
+  // trace.print();
 
   // Check matrices
-//  boost::optional<Binary::Record*> p = trace.record<Binary::Record>();
-//  CHECK(p);
-//  EXPECT( assert_equal(expected25, (Matrix)(*p)->dTdA1, 1e-9));
-//  EXPECT( assert_equal(expected22, (Matrix)(*p)->dTdA2, 1e-9));
+  boost::optional<Binary::Record*> p = trace.record<Binary::Record>();
+  CHECK(p);
+  EXPECT( assert_equal(expected25, (Matrix)(*p)->dTdA1, 1e-9));
+  EXPECT( assert_equal(expected22, (Matrix)(*p)->dTdA2, 1e-9));
 }
 ///* ************************************************************************* */
 //// Unary(Binary(Leaf,Leaf))
