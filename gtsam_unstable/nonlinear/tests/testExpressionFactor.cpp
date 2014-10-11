@@ -191,7 +191,7 @@ TEST(ExpressionFactor, shallow) {
   char raw[size];
   ExecutionTrace<Point2> trace;
   Point2 value = expression.traceExecution(values, trace, raw);
-  trace.print();
+  // trace.print();
 
   // Expected Jacobians
   Matrix23 expected23;

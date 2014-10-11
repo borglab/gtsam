@@ -126,7 +126,7 @@ public:
 
   /// Return value and derivatives, reverse AD version
   Augmented<T> reverse(const Values& values) const {
-    char raw[10];
+    char raw[352];
     ExecutionTrace<T> trace;
     T value(root_->traceExecution(values, trace, raw));
     Augmented<T> augmented(value);
