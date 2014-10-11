@@ -45,7 +45,7 @@ TEST(ExpressionFactor, leaf) {
       2, (Matrix(2, 2) << 1, 0, 0, 1), //
       (Vector(2) << -3, -5));
 
-  // Create leaves
+  // Create leaf
   Point2_ p(2);
 
   // Concise version
@@ -61,6 +61,8 @@ TEST(ExpressionFactor, leaf) {
 // non-zero noise model
 TEST(ExpressionFactor, model) {
 
+  SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
+
   // Create some values
   Values values;
   values.insert(2, Point2(3, 5));
@@ -69,12 +71,36 @@ TEST(ExpressionFactor, model) {
       2, (Matrix(2, 2) << 10, 0, 0, 100), //
       (Vector(2) << -30, -500));
 
-  // Create leaves
+  // Create leaf
   Point2_ p(2);
 
   // Concise version
-  SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
+  ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+  EXPECT_LONGS_EQUAL(2, f.dim());
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  EXPECT( assert_equal(expected, *jf, 1e-9));
+}
 
+/* ************************************************************************* */
+// Constrained noise model
+TEST(ExpressionFactor, constrained) {
+
+  SharedDiagonal model = noiseModel::Constrained::MixedSigmas(Vector2(0.2,0));
+
+  // Create some values
+  Values values;
+  values.insert(2, Point2(3, 5));
+
+  vector<pair<Key, Matrix> > terms;
+  terms.push_back(make_pair(2, (Matrix(2, 2) << 1, 0, 0, 1)));
+  JacobianFactor expected(terms, (Vector(2) << -3, -5), model);
+
+  // Create leaf
+  Point2_ p(2);
+
+  // Concise version
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
