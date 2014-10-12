@@ -26,7 +26,7 @@ using namespace gtsam;
 
 int main()
 {
-  int n = 1000000;
+  int n = 1e6;
 
   const Pose3 pose1((Matrix)(Matrix(3,3) <<
       1., 0., 0.,
@@ -35,8 +35,6 @@ int main()
   ),
   Point3(0,0,0.5));
 
-//  static Cal3_S2 K(500, 100, 0.1, 320, 240);
-//  static Cal3DS2 K(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
   static Cal3Bundler K(500, 1e-3, 2.0*1e-3);
   const PinholeCamera<Cal3Bundler> camera(pose1,K);
   const Point3 point1(-0.08,-0.08, 0.0);
@@ -63,8 +61,18 @@ int main()
       camera.project(point1);
     long timeLog2 = clock();
     double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-    cout << ((double)n/seconds) << " calls/second" << endl;
-    cout << ((double)seconds*1000000/n) << " musecs/call" << endl;
+    cout << ((double)seconds*1e9/n) << " nanosecs/call" << endl;
+  }
+
+  // Oct 12 2014, Macbook Air
+  {
+    long timeLog = clock();
+    Point2 measurement(0,0);
+    for(int i = 0; i < n; i++)
+      measurement.localCoordinates(camera.project(point1));
+    long timeLog2 = clock();
+    double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
+    cout << ((double)seconds*1e9/n) << " nanosecs/call" << endl;
   }
 
   // Oct 12 2013, iMac 3.06GHz Core i3
@@ -84,8 +92,7 @@ int main()
       camera.project(point1, Dpose, Dpoint);
     long timeLog2 = clock();
     double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-    cout << ((double)n/seconds) << " calls/second" << endl;
-    cout << ((double)seconds*1000000/n) << " musecs/call" << endl;
+    cout << ((double)seconds*1e9/n) << " nanosecs/call" << endl;
   }
 
   // Oct 12 2013, iMac 3.06GHz Core i3
@@ -97,7 +104,7 @@ int main()
   // Cal3Bundler fix:   2.0946 musecs/call
   // June 24 2014, Macbook Pro 2.3GHz Core i7
   // GTSAM 3.1:         0.2294 musecs/call
-  // After project fix: 0.2093 musecs/call
+  // After project fix: 0.2093 nanosecs/call
   {
     Matrix Dpose, Dpoint, Dcal;
     long timeLog = clock();
@@ -105,8 +112,7 @@ int main()
       camera.project(point1, Dpose, Dpoint, Dcal);
     long timeLog2 = clock();
     double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-    cout << ((double)n/seconds) << " calls/second" << endl;
-    cout << ((double)seconds*1000000/n) << " musecs/call" << endl;
+    cout << ((double)seconds*1e9/n) << " nanosecs/call" << endl;
   }
 
   return 0;
