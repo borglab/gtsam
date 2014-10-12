@@ -108,14 +108,11 @@ public:
     return root_->keys();
   }
 
-  /// Return value and optional derivatives
-  T value(const Values& values) const {
-    return root_->value(values);
-  }
-
   /// Return value and derivatives, forward AD version
-  Augmented<T> forward(const Values& values) const {
-    return root_->forward(values);
+  T forward(const Values& values, JacobianMap& jacobians) const {
+    Augmented<T> augmented = root_->forward(values);
+    jacobians = augmented.jacobians();
+    return augmented.value();
   }
 
   // Return size needed for memory buffer in traceExecution
@@ -130,22 +127,26 @@ public:
   }
 
   /// Return value and derivatives, reverse AD version
-  Augmented<T> reverse(const Values& values) const {
+  T reverse(const Values& values, JacobianMap& jacobians) const {
     size_t size = traceSize();
     char raw[size];
     ExecutionTrace<T> trace;
     T value(traceExecution(values, trace, raw));
-    Augmented<T> augmented(value);
-    trace.startReverseAD(augmented.jacobians());
-    return augmented;
+    trace.startReverseAD(jacobians);
+    return value;
+  }
+
+  /// Return value
+  T value(const Values& values) const {
+    return root_->value(values);
   }
 
   /// Return value and derivatives
-  Augmented<T> augmented(const Values& values) const {
+  T value(const Values& values, JacobianMap& jacobians) const {
 #ifdef EXPRESSION_FORWARD_AD
-    return forward(values);
+    return forward(values, jacobians);
 #else
-    return reverse(values);
+    return reverse(values, jacobians);
 #endif
   }
 

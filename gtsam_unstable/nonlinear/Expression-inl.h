@@ -45,6 +45,16 @@ class Expression;
 
 typedef std::map<Key, Matrix> JacobianMap;
 
+/// Move terms to array, destroys content
+void move(JacobianMap& jacobians, std::vector<Matrix>& H) {
+  assert(H.size()==jacobians.size());
+  size_t j = 0;
+  JacobianMap::iterator it = jacobians.begin();
+  for (; it != jacobians.end(); ++it)
+    it->second.swap(H[j++]);
+}
+
+
 //-----------------------------------------------------------------------------
 /**
  * The CallRecord class stores the Jacobians of applying a function
@@ -370,11 +380,7 @@ public:
 
   /// Move terms to array, destroys content
   void move(std::vector<Matrix>& H) {
-    assert(H.size()==jacobians_.size());
-    size_t j = 0;
-    JacobianMap::iterator it = jacobians_.begin();
-    for (; it != jacobians_.end(); ++it)
-      it->second.swap(H[j++]);
+    move(jacobians_, H);
   }
 
 };

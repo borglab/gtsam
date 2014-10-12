@@ -50,10 +50,11 @@ public:
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if (H) {
       assert(H->size()==size());
-      Augmented<T> augmented = expression_.augmented(x);
+      JacobianMap jacobians;
+      T value = expression_.value(x, jacobians);
       // move terms to H, which is pre-allocated to correct size
-      augmented.move(*H);
-      return measurement_.localCoordinates(augmented.value());
+      move(jacobians, *H);
+      return measurement_.localCoordinates(value);
     } else {
       const T& value = expression_.value(x);
       return measurement_.localCoordinates(value);
@@ -67,15 +68,15 @@ public:
       return boost::shared_ptr<JacobianFactor>();
 
     // Evaluate error to get Jacobians and RHS vector b
-    Augmented<T> augmented = expression_.augmented(x);
-    Vector b = -measurement_.localCoordinates(augmented.value());
+    JacobianMap terms;
+    T value = expression_.value(x, terms);
+    Vector b = -measurement_.localCoordinates(value);
     // check(noiseModel_, b); // TODO: use, but defined in NonlinearFactor.cpp
 
     // Whiten the corresponding system now
     // TODO ! this->noiseModel_->WhitenSystem(A, b);
 
     // Terms, needed to create JacobianFactor below, are already here!
-    const JacobianMap& terms = augmented.jacobians();
     size_t n = terms.size();
 
     // Get dimensions of matrices

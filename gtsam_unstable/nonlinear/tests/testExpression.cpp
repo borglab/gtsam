@@ -44,10 +44,11 @@ static const Rot3 someR = Rot3::RzRyRx(1, 2, 3);
 TEST(Expression, constant) {
   Expression<Rot3> R(someR);
   Values values;
-  Augmented<Rot3> a = R.augmented(values);
-  EXPECT(assert_equal(someR, a.value()));
+  JacobianMap actualMap;
+  Rot3 actual = R.value(values, actualMap);
+  EXPECT(assert_equal(someR, actual));
   JacobianMap expected;
-  EXPECT(a.jacobians() == expected);
+  EXPECT(actualMap == expected);
 }
 
 /* ************************************************************************* */
@@ -56,11 +57,19 @@ TEST(Expression, leaf) {
   Expression<Rot3> R(100);
   Values values;
   values.insert(100, someR);
-  Augmented<Rot3> a = R.augmented(values);
-  EXPECT(assert_equal(someR, a.value()));
+
   JacobianMap expected;
   expected[100] = eye(3);
-  EXPECT(a.jacobians() == expected);
+
+  JacobianMap actualMap1;
+  Rot3 actual1 = R.forward(values, actualMap1);
+  EXPECT(assert_equal(someR, actual1));
+  EXPECT(actualMap1 == expected);
+
+  JacobianMap actualMap2;
+  Rot3 actual2 = R.reverse(values, actualMap2);
+  EXPECT(assert_equal(someR, actual2));
+  EXPECT(actualMap2 == expected);
 }
 
 /* ************************************************************************* */
