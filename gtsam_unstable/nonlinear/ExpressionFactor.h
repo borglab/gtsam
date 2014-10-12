@@ -68,7 +68,7 @@ public:
 
     // Evaluate error to get Jacobians and RHS vector b
     Augmented<T> augmented = expression_.augmented(x);
-    Vector b = - measurement_.localCoordinates(augmented.value());
+    Vector b = -measurement_.localCoordinates(augmented.value());
     // check(noiseModel_, b); // TODO: use, but defined in NonlinearFactor.cpp
 
     // Whiten the corresponding system now
@@ -76,15 +76,44 @@ public:
 
     // Terms, needed to create JacobianFactor below, are already here!
     const JacobianMap& terms = augmented.jacobians();
+    size_t n = terms.size();
+
+    // Get dimensions of matrices
+    std::vector<size_t> dimensions;
+    dimensions.reserve(n);
+    std::vector<Key> keys;
+    keys.reserve(n);
+    for (JacobianMap::const_iterator it = terms.begin(); it != terms.end();
+        ++it) {
+      const std::pair<Key, Matrix>& term = *it;
+      Key key = term.first;
+      const Matrix& Ai = term.second;
+      dimensions.push_back(Ai.cols());
+      keys.push_back(key);
+    }
+
+    // Construct block matrix
+    VerticalBlockMatrix Ab(dimensions, b.size(), true);
+
+    // Check and add terms
+    DenseIndex i = 0; // For block index
+    for (JacobianMap::const_iterator it = terms.begin(); it != terms.end();
+        ++it) {
+      const std::pair<Key, Matrix>& term = *it;
+      const Matrix& Ai = term.second;
+      Ab(i++) = Ai;
+    }
+
+    Ab(n).col(0) = b;
 
     // TODO pass unwhitened + noise model to Gaussian factor
     // For now, only linearized constrained factors have noise model at linear level!!!
     noiseModel::Constrained::shared_ptr constrained = //
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained) {
-      return boost::make_shared<JacobianFactor>(terms, b, constrained->unit());
+      return boost::make_shared<JacobianFactor>(keys, Ab, constrained->unit());
     } else
-      return boost::make_shared<JacobianFactor>(terms, b);
+      return boost::make_shared<JacobianFactor>(keys, Ab);
   }
 };
 // ExpressionFactor
