@@ -260,6 +260,15 @@ TEST(ExpressionFactor, tree) {
   Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
+  // Compare reverse and forward
+  {
+  JacobianMap expectedMap; // via reverse
+  Point2 expectedValue = uv_hat.reverse(values, expectedMap);
+  Augmented<Point2> actual = uv_hat.forward(values);
+  EXPECT(assert_equal(expectedValue, actual.value()));
+  EXPECT(actual.jacobians() == expectedMap);
+  }
+
   // Create factor and check value, dimension, linearization
   ExpressionFactor<Point2> f(model, measured, uv_hat);
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);

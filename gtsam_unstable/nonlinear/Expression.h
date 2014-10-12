@@ -109,10 +109,8 @@ public:
   }
 
   /// Return value and derivatives, forward AD version
-  T forward(const Values& values, JacobianMap& jacobians) const {
-    Augmented<T> augmented = root_->forward(values);
-    jacobians = augmented.jacobians();
-    return augmented.value();
+  Augmented<T> forward(const Values& values) const {
+    return root_->forward(values);
   }
 
   // Return size needed for memory buffer in traceExecution
@@ -143,11 +141,7 @@ public:
 
   /// Return value and derivatives
   T value(const Values& values, JacobianMap& jacobians) const {
-#ifdef EXPRESSION_FORWARD_AD
-    return forward(values, jacobians);
-#else
     return reverse(values, jacobians);
-#endif
   }
 
   const boost::shared_ptr<ExpressionNode<T> >& root() const {

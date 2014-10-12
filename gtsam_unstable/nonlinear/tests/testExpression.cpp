@@ -61,10 +61,9 @@ TEST(Expression, leaf) {
   JacobianMap expected;
   expected[100] = eye(3);
 
-  JacobianMap actualMap1;
-  Rot3 actual1 = R.forward(values, actualMap1);
-  EXPECT(assert_equal(someR, actual1));
-  EXPECT(actualMap1 == expected);
+  Augmented<Rot3> actual1 = R.forward(values);
+  EXPECT(assert_equal(someR, actual1.value()));
+  EXPECT(actual1.jacobians() == expected);
 
   JacobianMap actualMap2;
   Rot3 actual2 = R.reverse(values, actualMap2);
@@ -124,16 +123,6 @@ TEST(Expression, keys_tree) {
   expectedKeys.insert(2);
   expectedKeys.insert(3);
   EXPECT(expectedKeys == tree::uv_hat.keys());
-}
-/* ************************************************************************* */
-// keys
-TEST(Expression, block_tree) {
-//  // Check VerticalBlockMatrix
-//  size_t dimensions[3] = { 6, 3, 5 };
-//  Matrix matrix(2, 14);
-//  VerticalBlockMatrix expected(dimensions, matrix), actual =
-//      tree::uv_hat.verticalBlockMatrix();
-//  EXPECT( assert_equal(expected, *jf, 1e-9));
 }
 /* ************************************************************************* */
 
