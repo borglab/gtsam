@@ -327,7 +327,11 @@ public:
   }
 
   /// Return keys that play in this expression as a set
-  virtual std::set<Key> keys() const = 0;
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys;
+    return keys;
+  }
+
 
   // Return size needed for memory buffer in traceExecution
   size_t traceSize() const {
@@ -361,12 +365,6 @@ class ConstantExpression: public ExpressionNode<T> {
   friend class Expression<T> ;
 
 public:
-
-  /// Return keys that play in this expression, i.e., the empty set
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
-    return keys;
-  }
 
   /// Return value
   virtual T value(const Values& values) const {
@@ -522,6 +520,14 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   static size_t const N = Base::N + 1;
   typedef Argument<T, A, N> This;
 
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys = Base::keys();
+    std::set<Key> myKeys = This::expression->keys();
+    keys.insert(myKeys.begin(), myKeys.end());
+    return keys;
+  }
+
 };
 
 /// Recursive GenerateFunctionalNode class Generator
@@ -568,11 +574,6 @@ private:
   friend class Expression<T> ;
 
 public:
-
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    return this->template expression<A1, 1>()->keys();
-  }
 
   /// Return value
   virtual T value(const Values& values) const {
@@ -639,14 +640,6 @@ private:
   friend struct ::TestBinaryExpression;
 
 public:
-
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys1 = this->template expression<A1, 1>()->keys();
-    std::set<Key> keys2 = this->template expression<A2, 2>()->keys();
-    keys1.insert(keys2.begin(), keys2.end());
-    return keys1;
-  }
 
   /// Return value
   virtual T value(const Values& values) const {
@@ -725,16 +718,6 @@ private:
   friend class Expression<T> ;
 
 public:
-
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys1 = this->template expression<A1, 1>()->keys();
-    std::set<Key> keys2 = this->template expression<A2, 2>()->keys();
-    std::set<Key> keys3 = this->template expression<A3, 3>()->keys();
-    keys2.insert(keys3.begin(), keys3.end());
-    keys1.insert(keys2.begin(), keys2.end());
-    return keys1;
-  }
 
   /// Return value
   virtual T value(const Values& values) const {
