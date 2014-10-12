@@ -433,7 +433,7 @@ namespace mpl = boost::mpl;
 template<class T> struct Incomplete;
 
 typedef mpl::vector<Pose3, Point3, Cal3_S2> MyTypes;
-typedef GenerateRecord<Point2, MyTypes>::type Generated;
+typedef Record<Point2, MyTypes> Generated;
 //Incomplete<Generated> incomplete;
 //BOOST_MPL_ASSERT((boost::is_same< Matrix25, Generated::JacobianTA >));
 BOOST_MPL_ASSERT((boost::is_same< Matrix2, Generated::Jacobian2T >));

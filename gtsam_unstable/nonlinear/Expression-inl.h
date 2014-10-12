@@ -449,7 +449,7 @@ struct JacobianTrace {
  * and Beyond. Pearson Education.
  */
 template<class T, class A, class Base>
-struct Record: JacobianTrace<T, A, Base::N + 1>, Base {
+struct GenerateRecord: JacobianTrace<T, A, Base::N + 1>, Base {
 
   typedef T return_type;
   static size_t const N = Base::N + 1;
@@ -486,9 +486,8 @@ struct Record: JacobianTrace<T, A, Base::N + 1>, Base {
 
 /// Recursive Record class Generator
 template<class T, class TYPES>
-struct GenerateRecord {
-  typedef typename boost::mpl::fold<TYPES, CallRecord<T::dimension>,
-      Record<T, MPL::_2, MPL::_1> >::type type;
+struct Record: public boost::mpl::fold<TYPES, CallRecord<T::dimension>,
+    GenerateRecord<T, MPL::_2, MPL::_1> >::type {
 };
 
 /// Access JacobianTrace
@@ -517,14 +516,14 @@ Eigen::Matrix<double, Record::return_type::dimension, A::dimension>& jacobian(
  */
 template<class T, class A, size_t N>
 struct Argument {
-  boost::shared_ptr<ExpressionNode<A> > expressionA_;
+  boost::shared_ptr<ExpressionNode<A> > expression;
 };
 
 /**
  * Recursive Definition of Functional ExpressionNode
  */
 template<class T, class A, class Base>
-struct FunctionalNode: Argument<T, A, Base::N + 1>, Base {
+struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
   typedef T return_type;
   static size_t const N = Base::N + 1;
@@ -534,9 +533,8 @@ struct FunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
 /// Recursive GenerateFunctionalNode class Generator
 template<class T, class TYPES>
-struct GenerateFunctionalNode {
-  typedef typename boost::mpl::fold<TYPES, ExpressionNode<T>,
-      Record<T, MPL::_2, MPL::_1> >::type type;
+struct FunctionalNode: public boost::mpl::fold<TYPES, ExpressionNode<T>,
+    GenerateFunctionalNode<T, MPL::_2, MPL::_1> >::type {
 };
 
 /// Access Argument
@@ -545,10 +543,17 @@ Argument<typename Record::return_type, A, N>& argument(Record& record) {
   return static_cast<Argument<typename Record::return_type, A, N>&>(record);
 }
 
+/// Access Expression
+template<class A, size_t N, class Record>
+ExecutionTrace<A>& expression(Record* record) {
+  return argument<A, N>(*record).expression;
+}
+
 //-----------------------------------------------------------------------------
+
 /// Unary Function Expression
 template<class T, class A1>
-class UnaryExpression: public ExpressionNode<T> {
+class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> > {
 
 public:
 
@@ -562,8 +567,8 @@ private:
 
   /// Constructor with a unary function f, and input argument e
   UnaryExpression(Function f, const Expression<A1>& e1) :
-      ExpressionNode<T>(sizeof(Record) + e1.traceSize()), //
       function_(f), expressionA1_(e1.root()) {
+    ExpressionNode<T>::traceSize_ = sizeof(Record) + e1.traceSize();
   }
 
   friend class Expression<T> ;
@@ -592,7 +597,7 @@ public:
 
   /// CallRecord structure for reverse AD
   typedef boost::mpl::vector<A1> Arguments;
-  typedef typename GenerateRecord<T, Arguments>::type Record;
+  typedef Record<T, Arguments> Record;
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
@@ -630,8 +635,9 @@ private:
   /// Constructor with a binary function f, and two input arguments
   BinaryExpression(Function f, //
       const Expression<A1>& e1, const Expression<A2>& e2) :
-      ExpressionNode<T>(sizeof(Record) + e1.traceSize() + e2.traceSize()), function_(
-          f), expressionA1_(e1.root()), expressionA2_(e2.root()) {
+      function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()) {
+    ExpressionNode<T>::traceSize_ = //
+        sizeof(Record) + e1.traceSize() + e2.traceSize();
   }
 
   friend class Expression<T> ;
@@ -669,7 +675,7 @@ public:
 
   /// CallRecord structure for reverse AD
   typedef boost::mpl::vector<A1, A2> Arguments;
-  typedef typename GenerateRecord<T, Arguments>::type Record;
+  typedef Record<T, Arguments> Record;
 
   /// Construct an execution trace for reverse AD
   /// The raw buffer is [Record | A1 raw | A2 raw]
@@ -711,14 +717,12 @@ private:
   boost::shared_ptr<ExpressionNode<A3> > expressionA3_;
 
   /// Constructor with a ternary function f, and three input arguments
-  TernaryExpression(
-      Function f, //
-      const Expression<A1>& e1, const Expression<A2>& e2,
-      const Expression<A3>& e3) :
-      ExpressionNode<T>(
-          sizeof(Record) + e1.traceSize() + e2.traceSize() + e3.traceSize()), function_(
-          f), expressionA1_(e1.root()), expressionA2_(e2.root()), expressionA3_(
+  TernaryExpression(Function f, const Expression<A1>& e1,
+      const Expression<A2>& e2, const Expression<A3>& e3) :
+      function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()), expressionA3_(
           e3.root()) {
+    ExpressionNode<T>::traceSize_ = //
+        sizeof(Record) + e1.traceSize() + e2.traceSize() + e3.traceSize();
   }
 
   friend class Expression<T> ;
@@ -762,7 +766,7 @@ public:
 
   /// CallRecord structure for reverse AD
   typedef boost::mpl::vector<A1, A2, A3> Arguments;
-  typedef typename GenerateRecord<T, Arguments>::type Record;
+  typedef Record<T, Arguments> Record;
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
