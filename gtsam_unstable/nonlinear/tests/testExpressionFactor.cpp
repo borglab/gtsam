@@ -262,11 +262,11 @@ TEST(ExpressionFactor, tree) {
 
   // Compare reverse and forward
   {
-  JacobianMap expectedMap; // via reverse
-  Point2 expectedValue = uv_hat.reverse(values, expectedMap);
-  Augmented<Point2> actual = uv_hat.forward(values);
-  EXPECT(assert_equal(expectedValue, actual.value()));
-  EXPECT(actual.jacobians() == expectedMap);
+    JacobianMap expectedMap; // via reverse
+    Point2 expectedValue = uv_hat.reverse(values, expectedMap);
+    Augmented<Point2> actual = uv_hat.forward(values);
+    EXPECT(assert_equal(expectedValue, actual.value()));
+    EXPECT(actual.jacobians() == expectedMap);
   }
 
   // Create factor and check value, dimension, linearization
@@ -435,8 +435,7 @@ namespace mpl = boost::mpl;
 #include <boost/mpl/assert.hpp>
 template<class T> struct Incomplete;
 
-typedef mpl::vector<Numbered<Pose3, 1>, Numbered<Point3, 2>,
-    Numbered<Cal3_S2, 3> > MyTypes;
+typedef mpl::vector<Pose3, Point3, Cal3_S2> MyTypes;
 typedef GenerateRecord<Point2, MyTypes>::type Generated;
 //Incomplete<Generated> incomplete;
 //BOOST_MPL_ASSERT((boost::is_same< Matrix25, Generated::JacobianTA >));

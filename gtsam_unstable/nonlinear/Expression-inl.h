@@ -65,6 +65,7 @@ void move(JacobianMap& jacobians, std::vector<Matrix>& H) {
  */
 template<int COLS>
 struct CallRecord {
+  static size_t const N = 0;
   virtual void print(const std::string& indent) const {
   }
   virtual void startReverseAD(JacobianMap& jacobians) const {
@@ -205,12 +206,11 @@ struct Argument {
  * C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
  * and Beyond. Pearson Education.
  */
-template<class T, class AN, class More>
-struct Record: Argument<T, typename AN::type, AN::value>, More {
+template<class T, class A, class More>
+struct Record: Argument<T, A, More::N+1>, More {
 
   typedef T return_type;
-  typedef typename AN::type A;
-  const static size_t N = AN::value;
+  static size_t const N = More::N + 1;
   typedef Argument<T, A, N> This;
 
   /// Print to std::cout
@@ -240,14 +240,6 @@ struct Record: Argument<T, typename AN::type, AN::value>, More {
     More::reverseAD2(dFdT, jacobians);
     This::trace.reverseAD2(dFdT * This::dTdA, jacobians);
   }
-};
-
-/// Meta-function for generating a numbered type
-template<class A, size_t N>
-struct Numbered {
-  typedef A type;
-  typedef size_t value_type;
-  static const size_t value = N;
 };
 
 /// Recursive Record class Generator
@@ -559,7 +551,7 @@ public:
   }
 
   /// CallRecord structure for reverse AD
-  typedef boost::mpl::vector<Numbered<A1, 1> > Arguments;
+  typedef boost::mpl::vector<A1> Arguments;
   typedef typename GenerateRecord<T, Arguments>::type Record;
 
   /// Construct an execution trace for reverse AD
@@ -636,7 +628,7 @@ public:
   }
 
   /// CallRecord structure for reverse AD
-  typedef boost::mpl::vector<Numbered<A1, 1>, Numbered<A2, 2> > Arguments;
+  typedef boost::mpl::vector<A1, A2> Arguments;
   typedef typename GenerateRecord<T, Arguments>::type Record;
 
   /// Construct an execution trace for reverse AD
@@ -729,7 +721,7 @@ public:
   }
 
   /// CallRecord structure for reverse AD
-  typedef boost::mpl::vector<Numbered<A1, 1>, Numbered<A2, 2>, Numbered<A3, 3> > Arguments;
+  typedef boost::mpl::vector<A1, A2, A3> Arguments;
   typedef typename GenerateRecord<T, Arguments>::type Record;
 
   /// Construct an execution trace for reverse AD
