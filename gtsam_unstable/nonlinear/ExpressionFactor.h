@@ -82,12 +82,7 @@ public:
     noiseModel::Constrained::shared_ptr constrained = //
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained) {
-      // Create a factor of reduced row dimension d_
-      size_t d_ = b.size() - constrained->dim();
-      Vector zero_ = zero(d_);
-      Vector b_ = concatVectors(2, &b, &zero_);
-      noiseModel::Constrained::shared_ptr model = constrained->unit(d_);
-      return boost::make_shared<JacobianFactor>(terms, b_, model);
+      return boost::make_shared<JacobianFactor>(terms, b, constrained->unit());
     } else
       return boost::make_shared<JacobianFactor>(terms, b);
   }

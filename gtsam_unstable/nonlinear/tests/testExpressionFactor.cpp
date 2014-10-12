@@ -21,6 +21,7 @@
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/Testable.h>
@@ -33,80 +34,68 @@ using namespace gtsam;
 Point2 measured(-17, 30);
 SharedNoiseModel model = noiseModel::Unit::Create(2);
 
+namespace leaf {
+// Create some values
+struct MyValues: public Values {
+  MyValues() {
+    insert(2, Point2(3, 5));
+  }
+} values;
+
+// Create leaf
+Point2_ p(2);
+}
+
 /* ************************************************************************* */
 // Leaf
 TEST(ExpressionFactor, leaf) {
+  using namespace leaf;
 
-  // Create some values
-  Values values;
-  values.insert(2, Point2(3, 5));
-
-  JacobianFactor expected( //
-      2, (Matrix(2, 2) << 1, 0, 0, 1), //
-      (Vector(2) << -3, -5));
-
-  // Create leaf
-  Point2_ p(2);
+  // Create old-style factor to create expected value and derivatives
+  PriorFactor<Point2> old(2, Point2(0, 0), model);
 
   // Concise version
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+  EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
-  EXPECT( assert_equal(expected, *jf, 1e-9));
+  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
+  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
 }
 
 /* ************************************************************************* */
 // non-zero noise model
 TEST(ExpressionFactor, model) {
+  using namespace leaf;
 
   SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
 
-  // Create some values
-  Values values;
-  values.insert(2, Point2(3, 5));
-
-  JacobianFactor expected( //
-      2, (Matrix(2, 2) << 10, 0, 0, 100), //
-      (Vector(2) << -30, -500));
-
-  // Create leaf
-  Point2_ p(2);
+  // Create old-style factor to create expected value and derivatives
+  PriorFactor<Point2> old(2, Point2(0, 0), model);
 
   // Concise version
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+  EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
-  EXPECT( assert_equal(expected, *jf, 1e-9));
+  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
+  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
 }
 
 /* ************************************************************************* */
 // Constrained noise model
 TEST(ExpressionFactor, constrained) {
+  using namespace leaf;
 
-  SharedDiagonal model = noiseModel::Constrained::MixedSigmas(Vector2(0.2,0));
+  SharedDiagonal model = noiseModel::Constrained::MixedSigmas(Vector2(0.2, 0));
 
-  // Create some values
-  Values values;
-  values.insert(2, Point2(3, 5));
-
-  vector<pair<Key, Matrix> > terms;
-  terms.push_back(make_pair(2, (Matrix(2, 2) << 1, 0, 0, 1)));
-  JacobianFactor expected(terms, (Vector(2) << -3, -5), model);
-
-  // Create leaf
-  Point2_ p(2);
+  // Create old-style factor to create expected value and derivatives
+  PriorFactor<Point2> old(2, Point2(0, 0), model);
 
   // Concise version
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+  EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
-  EXPECT( assert_equal(expected, *jf, 1e-9));
+  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
+  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
 }
 
 /* ************************************************************************* */
