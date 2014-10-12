@@ -332,7 +332,6 @@ public:
     return keys;
   }
 
-
   // Return size needed for memory buffer in traceExecution
   size_t traceSize() const {
     return traceSize_;
@@ -537,8 +536,8 @@ struct FunctionalNode: public boost::mpl::fold<TYPES, ExpressionNode<T>,
 
   /// Access Expression
   template<class A, size_t N>
-  boost::shared_ptr<ExpressionNode<A> > expression() {
-    return static_cast<Argument<T, A, N> &>(*this).expression;
+  void reset(const boost::shared_ptr<ExpressionNode<A> >& ptr) {
+    static_cast<Argument<T, A, N> &>(*this).expression = ptr;
   }
 
   /// Access Expression, const version
@@ -567,7 +566,7 @@ private:
   /// Constructor with a unary function f, and input argument e
   UnaryExpression(Function f, const Expression<A1>& e1) :
       function_(f) {
-    this->template expression<A1, 1>() = e1.root();
+    this->template reset<A1, 1>(e1.root());
     ExpressionNode<T>::traceSize_ = sizeof(Record) + e1.traceSize();
   }
 
@@ -630,8 +629,8 @@ private:
   BinaryExpression(Function f, const Expression<A1>& e1,
       const Expression<A2>& e2) :
       function_(f) {
-    this->template expression<A1, 1>() = e1.root();
-    this->template expression<A2, 2>() = e2.root();
+    this->template reset<A1, 1>(e1.root());
+    this->template reset<A2, 2>(e2.root());
     ExpressionNode<T>::traceSize_ = //
         sizeof(Record) + e1.traceSize() + e2.traceSize();
   }
@@ -645,8 +644,8 @@ public:
   virtual T value(const Values& values) const {
     using boost::none;
     return function_(this->template expression<A1, 1>()->value(values),
-        this->template expression<A2, 2>()->value(values),
-        none, none);
+    this->template expression<A2, 2>()->value(values),
+    none, none);
   }
 
   /// Return value and derivatives
@@ -678,7 +677,6 @@ public:
     raw = raw + this->template expression<A1, 1>()->traceSize();
     A2 a2 = this->template expression<A2, 2>()->traceExecution(values,
         record->template trace<A2, 2>(), raw);
-    raw = raw + this->template expression<A2, 2>()->traceSize();
 
     return function_(a1, a2, record->template jacobian<A1, 1>(),
         record->template jacobian<A2, 2>());
@@ -708,9 +706,9 @@ private:
   TernaryExpression(Function f, const Expression<A1>& e1,
       const Expression<A2>& e2, const Expression<A3>& e3) :
       function_(f) {
-    this->template expression<A1, 1>() = e1.root();
-    this->template expression<A2, 2>() = e2.root();
-    this->template expression<A3, 3>() = e3.root();
+    this->template reset<A1, 1>(e1.root());
+    this->template reset<A2, 2>(e2.root());
+    this->template reset<A3, 3>(e3.root());
     ExpressionNode<T>::traceSize_ = //
         sizeof(Record) + e1.traceSize() + e2.traceSize() + e3.traceSize();
   }
@@ -723,9 +721,9 @@ public:
   virtual T value(const Values& values) const {
     using boost::none;
     return function_(this->template expression<A1, 1>()->value(values),
-        this->template expression<A2, 2>()->value(values),
-        this->template expression<A3, 3>()->value(values),
-        none, none, none);
+    this->template expression<A2, 2>()->value(values),
+    this->template expression<A3, 3>()->value(values),
+    none, none, none);
   }
 
   /// Return value and derivatives
