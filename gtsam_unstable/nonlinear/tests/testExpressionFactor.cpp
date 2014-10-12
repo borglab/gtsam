@@ -175,8 +175,9 @@ TEST(ExpressionFactor, binary) {
   // Check matrices
   boost::optional<Binary::Record*> r = trace.record<Binary::Record>();
   CHECK(r);
-  EXPECT(assert_equal(expected25, (Matrix) jacobian<Cal3_S2, 1>(*r), 1e-9));
-  EXPECT(assert_equal(expected22, (Matrix) jacobian<Point2, 2>(*r), 1e-9));
+  EXPECT(
+      assert_equal(expected25, (Matrix) (*r)-> jacobian<Cal3_S2, 1>(), 1e-9));
+  EXPECT( assert_equal(expected22, (Matrix) (*r)->jacobian<Point2, 2>(), 1e-9));
 }
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
@@ -222,7 +223,7 @@ TEST(ExpressionFactor, shallow) {
   // Check matrices
   boost::optional<Unary::Record*> r = trace.record<Unary::Record>();
   CHECK(r);
-  EXPECT(assert_equal(expected23, (Matrix)jacobian<Point3, 1>(*r), 1e-9));
+  EXPECT(assert_equal(expected23, (Matrix)(*r)->jacobian<Point3, 1>(), 1e-9));
 
   // Linearization
   ExpressionFactor<Point2> f2(model, measured, expression);

@@ -488,27 +488,26 @@ struct GenerateRecord: JacobianTrace<T, A, Base::N + 1>, Base {
 template<class T, class TYPES>
 struct Record: public boost::mpl::fold<TYPES, CallRecord<T::dimension>,
     GenerateRecord<T, MPL::_2, MPL::_1> >::type {
+
+  /// Access JacobianTrace
+  template<class A, size_t N>
+  JacobianTrace<typename Record::return_type, A, N>& jacobianTrace() {
+    return static_cast<JacobianTrace<T, A, N>&>(*this);
+  }
+
+  /// Access Trace
+  template<class A, size_t N>
+  ExecutionTrace<A>& trace() {
+    return jacobianTrace<A, N>().trace;
+  }
+
+  /// Access Jacobian
+  template<class A, size_t N>
+  Eigen::Matrix<double, T::dimension, A::dimension>& jacobian() {
+    return jacobianTrace<A, N>().dTdA;
+  }
+
 };
-
-/// Access JacobianTrace
-template<class A, size_t N, class Record>
-JacobianTrace<typename Record::return_type, A, N>& jacobianTrace(
-    Record& record) {
-  return static_cast<JacobianTrace<typename Record::return_type, A, N>&>(record);
-}
-
-/// Access Trace
-template<class A, size_t N, class Record>
-ExecutionTrace<A>& getTrace(Record* record) {
-  return jacobianTrace<A, N>(*record).trace;
-}
-
-/// Access Jacobian
-template<class A, size_t N, class Record>
-Eigen::Matrix<double, Record::return_type::dimension, A::dimension>& jacobian(
-    Record* record) {
-  return jacobianTrace<A, N>(*record).dTdA;
-}
 
 //-----------------------------------------------------------------------------
 /**
@@ -606,9 +605,10 @@ public:
     trace.setFunction(record);
 
     raw = (char*) (record + 1);
-    A1 a1 = expressionA1_->traceExecution(values, getTrace<A1, 1>(record), raw);
+    A1 a1 = expressionA1_->traceExecution(values,
+        record->template trace<A1, 1>(), raw);
 
-    return function_(a1, jacobian<A1, 1>(record));
+    return function_(a1, record->template jacobian<A1, 1>());
   }
 };
 
@@ -685,11 +685,14 @@ public:
     trace.setFunction(record);
 
     raw = (char*) (record + 1);
-    A1 a1 = expressionA1_->traceExecution(values, getTrace<A1, 1>(record), raw);
+    A1 a1 = expressionA1_->traceExecution(values,
+        record->template trace<A1, 1>(), raw);
     raw = raw + expressionA1_->traceSize();
-    A2 a2 = expressionA2_->traceExecution(values, getTrace<A2, 2>(record), raw);
+    A2 a2 = expressionA2_->traceExecution(values,
+        record->template trace<A2, 2>(), raw);
 
-    return function_(a1, a2, jacobian<A1, 1>(record), jacobian<A2, 2>(record));
+    return function_(a1, a2, record->template jacobian<A1, 1>(),
+        record->template jacobian<A2, 2>());
   }
 
 };
@@ -775,14 +778,17 @@ public:
     trace.setFunction(record);
 
     raw = (char*) (record + 1);
-    A1 a1 = expressionA1_->traceExecution(values, getTrace<A1, 1>(record), raw);
+    A1 a1 = expressionA1_->traceExecution(values,
+        record->template trace<A1, 1>(), raw);
     raw = raw + expressionA1_->traceSize();
-    A2 a2 = expressionA2_->traceExecution(values, getTrace<A2, 2>(record), raw);
+    A2 a2 = expressionA2_->traceExecution(values,
+        record->template trace<A2, 2>(), raw);
     raw = raw + expressionA2_->traceSize();
-    A3 a3 = expressionA3_->traceExecution(values, getTrace<A3, 3>(record), raw);
+    A3 a3 = expressionA3_->traceExecution(values,
+        record->template trace<A3, 3>(), raw);
 
-    return function_(a1, a2, a3, jacobian<A1, 1>(record),
-        jacobian<A2, 2>(record), jacobian<A3, 3>(record));
+    return function_(a1, a2, a3, record->template jacobian<A1, 1>(),
+        record->template jacobian<A2, 2>(), record->template jacobian<A3, 3>());
   }
 
 };
