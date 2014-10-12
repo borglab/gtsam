@@ -54,6 +54,114 @@ void move(JacobianMap& jacobians, std::vector<Matrix>& H) {
     it->second.swap(H[j++]);
 }
 
+//-----------------------------------------------------------------------------
+/**
+ * Value and Jacobians
+ */
+template<class T>
+class Augmented {
+
+private:
+
+  T value_;
+  JacobianMap jacobians_;
+
+  typedef std::pair<Key, Matrix> Pair;
+
+  /// Insert terms into jacobians_, adding if already exists
+  void add(const JacobianMap& terms) {
+    BOOST_FOREACH(const Pair& term, terms) {
+      JacobianMap::iterator it = jacobians_.find(term.first);
+      if (it != jacobians_.end())
+        it->second += term.second;
+      else
+        jacobians_[term.first] = term.second;
+    }
+  }
+
+  /// Insert terms into jacobians_, premultiplying by H, adding if already exists
+  void add(const Matrix& H, const JacobianMap& terms) {
+    BOOST_FOREACH(const Pair& term, terms) {
+      JacobianMap::iterator it = jacobians_.find(term.first);
+      if (it != jacobians_.end())
+        it->second += H * term.second;
+      else
+        jacobians_[term.first] = H * term.second;
+    }
+  }
+
+public:
+
+  /// Construct value that does not depend on anything
+  Augmented(const T& t) :
+      value_(t) {
+  }
+
+  /// Construct value dependent on a single key
+  Augmented(const T& t, Key key) :
+      value_(t) {
+    size_t n = t.dim();
+    jacobians_[key] = Eigen::MatrixXd::Identity(n, n);
+  }
+
+  /// Construct value, pre-multiply jacobians by dTdA
+  Augmented(const T& t, const Matrix& dTdA, const JacobianMap& jacobians) :
+      value_(t) {
+    add(dTdA, jacobians);
+  }
+
+  /// Construct value, pre-multiply jacobians
+  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
+      const Matrix& dTdA2, const JacobianMap& jacobians2) :
+      value_(t) {
+    add(dTdA1, jacobians1);
+    add(dTdA2, jacobians2);
+  }
+
+  /// Construct value, pre-multiply jacobians
+  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
+      const Matrix& dTdA2, const JacobianMap& jacobians2, const Matrix& dTdA3,
+      const JacobianMap& jacobians3) :
+      value_(t) {
+    add(dTdA1, jacobians1);
+    add(dTdA2, jacobians2);
+    add(dTdA3, jacobians3);
+  }
+
+  /// Return value
+  const T& value() const {
+    return value_;
+  }
+
+  /// Return jacobians
+  const JacobianMap& jacobians() const {
+    return jacobians_;
+  }
+
+  /// Return jacobians
+  JacobianMap& jacobians() {
+    return jacobians_;
+  }
+
+  /// Not dependent on any key
+  bool constant() const {
+    return jacobians_.empty();
+  }
+
+  /// debugging
+  void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
+    BOOST_FOREACH(const Pair& term, jacobians_)
+      std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
+          << "x" << term.second.cols() << ") ";
+    std::cout << std::endl;
+  }
+
+  /// Move terms to array, destroys content
+  void move(std::vector<Matrix>& H) {
+    move(jacobians_, H);
+  }
+
+};
 
 //-----------------------------------------------------------------------------
 /**
@@ -190,195 +298,6 @@ struct Select<2, A> {
 
 //-----------------------------------------------------------------------------
 /**
- * Record the evaluation of a single argument in a functional expression
- * Building block for Recursive Record Class
- */
-template<class T, class A, size_t N>
-struct Argument {
-  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
-  ExecutionTrace<A> trace;
-  JacobianTA dTdA;
-};
-
-/**
- * Recursive Record Class for Functional Expressions
- * Abrahams, David; Gurtovoy, Aleksey (2004-12-10).
- * C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
- * and Beyond. Pearson Education.
- */
-template<class T, class A, class More>
-struct Record: Argument<T, A, More::N+1>, More {
-
-  typedef T return_type;
-  static size_t const N = More::N + 1;
-  typedef Argument<T, A, N> This;
-
-  /// Print to std::cout
-  virtual void print(const std::string& indent) const {
-    More::print(indent);
-    static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
-    std::cout << This::dTdA.format(matlab) << std::endl;
-    This::trace.print(indent);
-  }
-
-  /// Start the reverse AD process
-  virtual void startReverseAD(JacobianMap& jacobians) const {
-    More::startReverseAD(jacobians);
-    Select<T::dimension, A>::reverseAD(This::trace, This::dTdA, jacobians);
-  }
-
-  /// Given df/dT, multiply in dT/dA and continue reverse AD process
-  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-    More::reverseAD(dFdT, jacobians);
-    This::trace.reverseAD(dFdT * This::dTdA, jacobians);
-  }
-
-  /// Version specialized to 2-dimensional output
-  typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
-  virtual void reverseAD2(const Jacobian2T& dFdT,
-      JacobianMap& jacobians) const {
-    More::reverseAD2(dFdT, jacobians);
-    This::trace.reverseAD2(dFdT * This::dTdA, jacobians);
-  }
-};
-
-/// Recursive Record class Generator
-template<class T, class TYPES>
-struct GenerateRecord {
-  typedef typename boost::mpl::fold<TYPES, CallRecord<T::dimension>,
-      Record<T, MPL::_2, MPL::_1> >::type type;
-};
-
-/// Access Argument
-template<class A, size_t N, class Record>
-Argument<typename Record::return_type, A, N>& argument(Record& record) {
-  return static_cast<Argument<typename Record::return_type, A, N>&>(record);
-}
-
-/// Access Trace
-template<class A, size_t N, class Record>
-ExecutionTrace<A>& getTrace(Record* record) {
-  return argument<A, N>(*record).trace;
-}
-
-/// Access Jacobian
-template<class A, size_t N, class Record>
-Eigen::Matrix<double, Record::return_type::dimension, A::dimension>& jacobian(
-    Record* record) {
-  return argument<A, N>(*record).dTdA;
-}
-
-//-----------------------------------------------------------------------------
-/**
- * Value and Jacobians
- */
-template<class T>
-class Augmented {
-
-private:
-
-  T value_;
-  JacobianMap jacobians_;
-
-  typedef std::pair<Key, Matrix> Pair;
-
-  /// Insert terms into jacobians_, adding if already exists
-  void add(const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      JacobianMap::iterator it = jacobians_.find(term.first);
-      if (it != jacobians_.end())
-        it->second += term.second;
-      else
-        jacobians_[term.first] = term.second;
-    }
-  }
-
-  /// Insert terms into jacobians_, premultiplying by H, adding if already exists
-  void add(const Matrix& H, const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      JacobianMap::iterator it = jacobians_.find(term.first);
-      if (it != jacobians_.end())
-        it->second += H * term.second;
-      else
-        jacobians_[term.first] = H * term.second;
-    }
-  }
-
-public:
-
-  /// Construct value that does not depend on anything
-  Augmented(const T& t) :
-      value_(t) {
-  }
-
-  /// Construct value dependent on a single key
-  Augmented(const T& t, Key key) :
-      value_(t) {
-    size_t n = t.dim();
-    jacobians_[key] = Eigen::MatrixXd::Identity(n, n);
-  }
-
-  /// Construct value, pre-multiply jacobians by dTdA
-  Augmented(const T& t, const Matrix& dTdA, const JacobianMap& jacobians) :
-      value_(t) {
-    add(dTdA, jacobians);
-  }
-
-  /// Construct value, pre-multiply jacobians
-  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
-      const Matrix& dTdA2, const JacobianMap& jacobians2) :
-      value_(t) {
-    add(dTdA1, jacobians1);
-    add(dTdA2, jacobians2);
-  }
-
-  /// Construct value, pre-multiply jacobians
-  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
-      const Matrix& dTdA2, const JacobianMap& jacobians2, const Matrix& dTdA3,
-      const JacobianMap& jacobians3) :
-      value_(t) {
-    add(dTdA1, jacobians1);
-    add(dTdA2, jacobians2);
-    add(dTdA3, jacobians3);
-  }
-
-  /// Return value
-  const T& value() const {
-    return value_;
-  }
-
-  /// Return jacobians
-  const JacobianMap& jacobians() const {
-    return jacobians_;
-  }
-
-  /// Return jacobians
-  JacobianMap& jacobians() {
-    return jacobians_;
-  }
-
-  /// Not dependent on any key
-  bool constant() const {
-    return jacobians_.empty();
-  }
-
-  /// debugging
-  void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
-    BOOST_FOREACH(const Pair& term, jacobians_)
-      std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
-          << "x" << term.second.cols() << ") ";
-    std::cout << std::endl;
-  }
-
-  /// Move terms to array, destroys content
-  void move(std::vector<Matrix>& H) {
-    move(jacobians_, H);
-  }
-
-};
-
-//-----------------------------------------------------------------------------
-/**
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
  * allowing Expressions to have polymorphic behaviour even though they
@@ -387,6 +306,10 @@ public:
  */
 template<class T>
 class ExpressionNode {
+
+public:
+
+  static size_t const N = 0; // number of arguments
 
 protected:
 
@@ -504,6 +427,123 @@ public:
   }
 
 };
+
+//-----------------------------------------------------------------------------
+/**
+ * Building block for Recursive Record Class
+ * Records the evaluation of a single argument in a functional expression
+ * The integer argument N is to guarantee a unique type signature,
+ * so we are guaranteed to be able to extract their values by static cast.
+ */
+template<class T, class A, size_t N>
+struct JacobianTrace {
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
+  ExecutionTrace<A> trace;
+  JacobianTA dTdA;
+};
+
+/**
+ * Recursive Record Class for Functional Expressions
+ * Abrahams, David; Gurtovoy, Aleksey (2004-12-10).
+ * C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
+ * and Beyond. Pearson Education.
+ */
+template<class T, class A, class Base>
+struct Record: JacobianTrace<T, A, Base::N + 1>, Base {
+
+  typedef T return_type;
+  static size_t const N = Base::N + 1;
+  typedef JacobianTrace<T, A, N> This;
+
+  /// Print to std::cout
+  virtual void print(const std::string& indent) const {
+    Base::print(indent);
+    static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
+    std::cout << This::dTdA.format(matlab) << std::endl;
+    This::trace.print(indent);
+  }
+
+  /// Start the reverse AD process
+  virtual void startReverseAD(JacobianMap& jacobians) const {
+    Base::startReverseAD(jacobians);
+    Select<T::dimension, A>::reverseAD(This::trace, This::dTdA, jacobians);
+  }
+
+  /// Given df/dT, multiply in dT/dA and continue reverse AD process
+  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+    Base::reverseAD(dFdT, jacobians);
+    This::trace.reverseAD(dFdT * This::dTdA, jacobians);
+  }
+
+  /// Version specialized to 2-dimensional output
+  typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
+  virtual void reverseAD2(const Jacobian2T& dFdT,
+      JacobianMap& jacobians) const {
+    Base::reverseAD2(dFdT, jacobians);
+    This::trace.reverseAD2(dFdT * This::dTdA, jacobians);
+  }
+};
+
+/// Recursive Record class Generator
+template<class T, class TYPES>
+struct GenerateRecord {
+  typedef typename boost::mpl::fold<TYPES, CallRecord<T::dimension>,
+      Record<T, MPL::_2, MPL::_1> >::type type;
+};
+
+/// Access JacobianTrace
+template<class A, size_t N, class Record>
+JacobianTrace<typename Record::return_type, A, N>& jacobianTrace(
+    Record& record) {
+  return static_cast<JacobianTrace<typename Record::return_type, A, N>&>(record);
+}
+
+/// Access Trace
+template<class A, size_t N, class Record>
+ExecutionTrace<A>& getTrace(Record* record) {
+  return jacobianTrace<A, N>(*record).trace;
+}
+
+/// Access Jacobian
+template<class A, size_t N, class Record>
+Eigen::Matrix<double, Record::return_type::dimension, A::dimension>& jacobian(
+    Record* record) {
+  return jacobianTrace<A, N>(*record).dTdA;
+}
+
+//-----------------------------------------------------------------------------
+/**
+ * Building block for Recursive FunctionalNode Class
+ */
+template<class T, class A, size_t N>
+struct Argument {
+  boost::shared_ptr<ExpressionNode<A> > expressionA_;
+};
+
+/**
+ * Recursive Definition of Functional ExpressionNode
+ */
+template<class T, class A, class Base>
+struct FunctionalNode: Argument<T, A, Base::N + 1>, Base {
+
+  typedef T return_type;
+  static size_t const N = Base::N + 1;
+  typedef Argument<T, A, N> This;
+
+};
+
+/// Recursive GenerateFunctionalNode class Generator
+template<class T, class TYPES>
+struct GenerateFunctionalNode {
+  typedef typename boost::mpl::fold<TYPES, ExpressionNode<T>,
+      Record<T, MPL::_2, MPL::_1> >::type type;
+};
+
+/// Access Argument
+template<class A, size_t N, class Record>
+Argument<typename Record::return_type, A, N>& argument(Record& record) {
+  return static_cast<Argument<typename Record::return_type, A, N>&>(record);
+}
 
 //-----------------------------------------------------------------------------
 /// Unary Function Expression
