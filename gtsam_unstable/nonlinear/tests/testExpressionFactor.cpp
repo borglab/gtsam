@@ -462,9 +462,23 @@ typedef mpl::transform<MyTypes,Jacobian<Point2,MPL::_1> >::type Jacobians;
 BOOST_MPL_ASSERT((mpl::equal< ExpectedJacobians, Jacobians >));
 
 // Try accessing a Jacobian
-typedef mpl::int_<1> one;
-typedef mpl::at<Jacobians,one>::type Jacobian23; // base zero !
+typedef mpl::at_c<Jacobians,1>::type Jacobian23; // base zero !
 BOOST_MPL_ASSERT((boost::is_same< Matrix23, Jacobian23>));
+
+#include <boost/fusion/adapted/mpl.hpp>
+#include <boost/fusion/include/mpl.hpp>
+#include <boost/fusion/include/at_c.hpp>
+
+// Create a value and access it
+TEST(ExpressionFactor, JacobiansValue) {
+  Matrix23 expected;
+  ExpectedJacobians jacobians;
+  using boost::fusion::at_c;
+
+  Matrix23 actual = at_c<1>(jacobians);
+  CHECK(actual.cols() == expected.cols());
+  CHECK(actual.rows() == expected.rows());
+}
 
 /* ************************************************************************* */
 int main() {
