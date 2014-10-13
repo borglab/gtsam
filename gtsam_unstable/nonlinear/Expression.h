@@ -76,9 +76,8 @@ public:
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
-      T (A1::*method)(const A2&,
-          boost::optional<typename BinaryExpression<T, A1, A2>::JacobianTA1&>,
-          boost::optional<typename BinaryExpression<T, A1, A2>::JacobianTA2&>) const,
+      T (A1::*method)(const A2&, typename Jacobian<T, A1>::optional,
+          typename Jacobian<T, A2>::optional) const,
       const Expression<A2>& expression2) {
     root_.reset(
         new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),

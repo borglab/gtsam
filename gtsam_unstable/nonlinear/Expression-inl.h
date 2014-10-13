@@ -277,9 +277,9 @@ public:
 };
 
 /// Primary template calls the generic Matrix reverseAD pipeline
-template<size_t M, class A>
+template<size_t ROWS, class A>
 struct Select {
-  typedef Eigen::Matrix<double, M, A::dimension> Jacobian;
+  typedef Eigen::Matrix<double, ROWS, A::dimension> Jacobian;
   static void reverseAD(const ExecutionTrace<A>& trace, const Jacobian& dTdA,
       JacobianMap& jacobians) {
     trace.reverseAD(dTdA, jacobians);
@@ -426,6 +426,13 @@ public:
 };
 
 //-----------------------------------------------------------------------------
+/// meta-function to generate fixed-size JacobianTA type
+template<class T, class A>
+struct Jacobian {
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> type;
+  typedef boost::optional<type&> optional;
+};
+
 /**
  * Building block for Recursive Record Class
  * Records the evaluation of a single argument in a functional expression
@@ -434,9 +441,8 @@ public:
  */
 template<class T, class A, size_t N>
 struct JacobianTrace {
-  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
   ExecutionTrace<A> trace;
-  JacobianTA dTdA;
+  typename Jacobian<T, A>::type dTdA;
 };
 
 /**
@@ -491,7 +497,7 @@ struct Record: public boost::mpl::fold<TYPES, CallRecord<T::dimension>,
 
   /// Access Jacobian
   template<class A, size_t N>
-  Eigen::Matrix<double, T::dimension, A::dimension>& jacobian() {
+  typename Jacobian<T, A>::type& jacobian() {
     return static_cast<JacobianTrace<T, A, N>&>(*this).dTdA;
   }
 
@@ -535,17 +541,8 @@ struct Record: public boost::mpl::fold<TYPES, CallRecord<T::dimension>,
  */
 template<class T, class A, size_t N>
 struct Argument {
-  /// Fixed size Jacobian type for the argument A
-  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
-
   /// Expression that will generate value/derivatives for argument
   boost::shared_ptr<ExpressionNode<A> > expression;
-};
-
-/// meta-function to access JacobianTA type
-template<class T, class A, size_t N>
-struct Jacobian {
-  typedef typename Argument<T, A, N>::JacobianTA type;
 };
 
 /**
@@ -599,8 +596,7 @@ class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> > {
 
 public:
 
-  typedef typename Jacobian<T,A1,1>::type JacobianTA1;
-  typedef boost::function<T(const A1&, boost::optional<JacobianTA1&>)> Function;
+  typedef boost::function<T(const A1&, typename Jacobian<T, A1>::optional)> Function;
 
 private:
 
@@ -625,11 +621,10 @@ public:
   /// Return value and derivatives
   virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
-    Augmented<A1> argument = this->template expression<A1, 1>()->forward(values);
-    JacobianTA1 dTdA;
-    T t = function_(argument.value(),
-        argument.constant() ? none : boost::optional<JacobianTA1&>(dTdA));
-    return Augmented<T>(t, dTdA, argument.jacobians());
+    Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
+    typename Jacobian<T, A1>::type dTdA1;
+    T t = function_(a1.value(), a1.constant() ? none : typename Jacobian<T,A1>::optional(dTdA1));
+    return Augmented<T>(t, dTdA1, a1.jacobians());
   }
 
   /// CallRecord structure for reverse AD
@@ -658,11 +653,9 @@ class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> > {
 
 public:
 
-  typedef typename Jacobian<T,A1,1>::type JacobianTA1;
-  typedef typename Jacobian<T,A2,2>::type JacobianTA2;
   typedef boost::function<
-      T(const A1&, const A2&, boost::optional<JacobianTA1&>,
-          boost::optional<JacobianTA2&>)> Function;
+      T(const A1&, const A2&, typename Jacobian<T, A1>::optional,
+          typename Jacobian<T, A2>::optional)> Function;
 
 private:
 
@@ -696,11 +689,11 @@ public:
     using boost::none;
     Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
     Augmented<A2> a2 = this->template expression<A2, 2>()->forward(values);
-    JacobianTA1 dTdA1;
-    JacobianTA2 dTdA2;
+    typename Jacobian<T, A1>::type dTdA1;
+    typename Jacobian<T, A2>::type dTdA2;
     T t = function_(a1.value(), a2.value(),
-        a1.constant() ? none : boost::optional<JacobianTA1&>(dTdA1),
-        a2.constant() ? none : boost::optional<JacobianTA2&>(dTdA2));
+        a1.constant() ? none : typename Jacobian<T, A1>::optional(dTdA1),
+        a2.constant() ? none : typename Jacobian<T, A2>::optional(dTdA2));
     return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians());
   }
 
@@ -734,12 +727,10 @@ class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3>
 
 public:
 
-  typedef typename Jacobian<T,A1,1>::type JacobianTA1;
-  typedef typename Jacobian<T,A2,2>::type JacobianTA2;
-  typedef typename Jacobian<T,A3,3>::type JacobianTA3;
   typedef boost::function<
-      T(const A1&, const A2&, const A3&, boost::optional<JacobianTA1&>,
-          boost::optional<JacobianTA2&>, boost::optional<JacobianTA3&>)> Function;
+      T(const A1&, const A2&, const A3&, typename Jacobian<T, A1>::optional,
+          typename Jacobian<T, A2>::optional,
+          typename Jacobian<T, A3>::optional)> Function;
 
 private:
 
@@ -775,13 +766,13 @@ public:
     Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
     Augmented<A2> a2 = this->template expression<A2, 2>()->forward(values);
     Augmented<A3> a3 = this->template expression<A3, 3>()->forward(values);
-    JacobianTA1 dTdA1;
-    JacobianTA2 dTdA2;
-    JacobianTA3 dTdA3;
+    typename Jacobian<T, A1>::type dTdA1;
+    typename Jacobian<T, A2>::type dTdA2;
+    typename Jacobian<T, A3>::type dTdA3;
     T t = function_(a1.value(), a2.value(), a3.value(),
-        a1.constant() ? none : boost::optional<JacobianTA1&>(dTdA1),
-        a2.constant() ? none : boost::optional<JacobianTA2&>(dTdA2),
-        a3.constant() ? none : boost::optional<JacobianTA3&>(dTdA3));
+        a1.constant() ? none : typename Jacobian<T, A1>::optional(dTdA1),
+        a2.constant() ? none : typename Jacobian<T, A2>::optional(dTdA2),
+        a3.constant() ? none : typename Jacobian<T, A3>::optional(dTdA3));
     return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians(), dTdA3,
         a3.jacobians());
   }

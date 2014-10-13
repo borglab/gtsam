@@ -150,8 +150,8 @@ TEST(ExpressionFactor, binary) {
   EXPECT_LONGS_EQUAL(8, sizeof(double));
   EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Point2>));
   EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Cal3_S2>));
-  EXPECT_LONGS_EQUAL(2*5*8, sizeof(Binary::JacobianTA1));
-  EXPECT_LONGS_EQUAL(2*2*8, sizeof(Binary::JacobianTA2));
+  EXPECT_LONGS_EQUAL(2*5*8, sizeof(Jacobian<Point2,Cal3_S2>::type));
+  EXPECT_LONGS_EQUAL(2*2*8, sizeof(Jacobian<Point2,Point2>::type));
   size_t expectedRecordSize = 16 + 2 * 16 + 80 + 32;
   EXPECT_LONGS_EQUAL(expectedRecordSize, sizeof(Binary::Record));
 
