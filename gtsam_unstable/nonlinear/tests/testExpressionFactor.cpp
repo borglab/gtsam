@@ -429,12 +429,34 @@ TEST(ExpressionFactor, composeTernary) {
 namespace mpl = boost::mpl;
 
 #include <boost/mpl/assert.hpp>
+#include <boost/mpl/transform.hpp>
+#include <boost/mpl/equal.hpp>
 template<class T> struct Incomplete;
 
-typedef mpl::vector<Pose3, Point3, Cal3_S2> MyTypes;
+// Check generation of FunctionalNode
+typedef mpl::vector<Pose3, Point3> MyTypes;
 typedef FunctionalNode<Point2, MyTypes>::type Generated;
 //Incomplete<Generated> incomplete;
 BOOST_MPL_ASSERT((boost::is_same< Matrix2, Generated::Record::Jacobian2T >));
+
+// Try generating vectors of ExecutionTrace
+typedef mpl::vector<ExecutionTrace<Pose3>, ExecutionTrace<Point3> > ExpectedTraces;
+
+typedef mpl::transform<MyTypes,ExecutionTrace<MPL::_1> >::type MyTraces;
+BOOST_MPL_ASSERT((boost::mpl::equal< ExpectedTraces, MyTraces >));
+
+template <class T>
+struct MakeTrace {
+  typedef ExecutionTrace<T> type;
+};
+typedef mpl::transform<MyTypes,MakeTrace<MPL::_1> >::type MyTraces1;
+BOOST_MPL_ASSERT((boost::mpl::equal< ExpectedTraces, MyTraces1 >));
+
+// Try generating vectors of Expression types
+typedef mpl::vector<Expression<Pose3>, Expression<Point3> > ExpectedExpressions;
+
+typedef mpl::transform<MyTypes,Expression<MPL::_1> >::type Expressions;
+BOOST_MPL_ASSERT((boost::mpl::equal< ExpectedExpressions, Expressions >));
 
 /* ************************************************************************* */
 int main() {

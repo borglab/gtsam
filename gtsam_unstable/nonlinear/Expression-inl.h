@@ -201,7 +201,7 @@ template<class T>
 class ExecutionTrace {
   enum {
     Constant, Leaf, Function
-  } type;
+  } kind;
   union {
     Key key;
     CallRecord<T::dimension>* ptr;
@@ -209,25 +209,25 @@ class ExecutionTrace {
 public:
   /// Pointer always starts out as a Constant
   ExecutionTrace() :
-      type(Constant) {
+      kind(Constant) {
   }
   /// Change pointer to a Leaf Record
   void setLeaf(Key key) {
-    type = Leaf;
+    kind = Leaf;
     content.key = key;
   }
   /// Take ownership of pointer to a Function Record
   void setFunction(CallRecord<T::dimension>* record) {
-    type = Function;
+    kind = Function;
     content.ptr = record;
   }
   /// Print
   void print(const std::string& indent = "") const {
-    if (type == Constant)
+    if (kind == Constant)
       std::cout << indent << "Constant" << std::endl;
-    else if (type == Leaf)
+    else if (kind == Leaf)
       std::cout << indent << "Leaf, key = " << content.key << std::endl;
-    else if (type == Function) {
+    else if (kind == Function) {
       std::cout << indent << "Function" << std::endl;
       content.ptr->print(indent + "  ");
     }
@@ -235,7 +235,7 @@ public:
   /// Return record pointer, quite unsafe, used only for testing
   template<class Record>
   boost::optional<Record*> record() {
-    if (type != Function)
+    if (kind != Function)
       return boost::none;
     else {
       Record* p = dynamic_cast<Record*>(content.ptr);
@@ -245,38 +245,41 @@ public:
   // *** This is the main entry point for reverseAD, called from Expression::augmented ***
   // Called only once, either inserts identity into Jacobians (Leaf) or starts AD (Function)
   void startReverseAD(JacobianMap& jacobians) const {
-    if (type == Leaf) {
+    if (kind == Leaf) {
       // This branch will only be called on trivial Leaf expressions, i.e. Priors
       size_t n = T::Dim();
       jacobians[content.key] = Eigen::MatrixXd::Identity(n, n);
-    } else if (type == Function)
+    } else if (kind == Function)
       // This is the more typical entry point, starting the AD pipeline
       // It is inside the startReverseAD that the correctly dimensioned pipeline is chosen.
       content.ptr->startReverseAD(jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
   void reverseAD(const Matrix& dTdA, JacobianMap& jacobians) const {
-    if (type == Leaf) {
+    if (kind == Leaf) {
       JacobianMap::iterator it = jacobians.find(content.key);
       if (it != jacobians.end())
         it->second += dTdA;
       else
         jacobians[content.key] = dTdA;
-    } else if (type == Function)
+    } else if (kind == Function)
       content.ptr->reverseAD(dTdA, jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
   typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
   void reverseAD2(const Jacobian2T& dTdA, JacobianMap& jacobians) const {
-    if (type == Leaf) {
+    if (kind == Leaf) {
       JacobianMap::iterator it = jacobians.find(content.key);
       if (it != jacobians.end())
         it->second += dTdA;
       else
         jacobians[content.key] = dTdA;
-    } else if (type == Function)
+    } else if (kind == Function)
       content.ptr->reverseAD2(dTdA, jacobians);
   }
+
+  /// Define type so we can apply it as a meta-function
+  typedef ExecutionTrace<T> type;
 };
 
 /// Primary template calls the generic Matrix reverseAD pipeline

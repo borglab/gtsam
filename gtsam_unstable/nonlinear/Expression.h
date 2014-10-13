@@ -147,6 +147,8 @@ public:
     return root_;
   }
 
+  /// Define type so we can apply it as a meta-function
+  typedef Expression<T> type;
 };
 
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
