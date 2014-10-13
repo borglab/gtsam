@@ -441,9 +441,6 @@ struct JacobianTrace {
 
 /**
  * Recursive Record Class for Functional Expressions
- * Abrahams, David; Gurtovoy, Aleksey (2004-12-10).
- * C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
- * and Beyond. Pearson Education.
  */
 template<class T, class A, class Base>
 struct GenerateRecord: JacobianTrace<T, A, Base::N + 1>, Base {
@@ -501,12 +498,54 @@ struct Record: public boost::mpl::fold<TYPES, CallRecord<T::dimension>,
 };
 
 //-----------------------------------------------------------------------------
+// Below we use the "Class Composition" technique described in the book
+//   C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
+//   and Beyond. Abrahams, David; Gurtovoy, Aleksey. Pearson Education.
+// to recursively generate a class, that will be the base for function nodes.
+// The class generated, for two arguments A1, A2, and A3 will be
+//
+// struct Base1 : Argument<T,A1,1>, ExpressionNode<T> {
+//   ... storage related to A1 ...
+//   ... methods that work on A1 ...
+// };
+//
+// struct Base2 : Argument<T,A2,2>, Base1 {
+//   ... storage related to A2 ...
+//   ... methods that work on A2 and (recursively) on A2 ...
+// };
+//
+// struct Base2 : Argument<T,A3,3>, Base2 {
+//   ... storage related to A3 ...
+//   ... methods that work on A3 and (recursively) on A2 and A3 ...
+// };
+//
+// struct FunctionalNode : Base3 {
+//   Provides convenience access to storage in hierarchy by using
+//   static_cast<Argument<T, A, N> &>(*this)
+// }
+//
+// All this magic happens when  we generate the Base3 base class of FunctionalNode
+// by invoking boost::mpl::fold over the meta-function GenerateFunctionalNode
+//-----------------------------------------------------------------------------
+
 /**
  * Building block for Recursive FunctionalNode Class
+ * The integer argument N is to guarantee a unique type signature,
+ * so we are guaranteed to be able to extract their values by static cast.
  */
 template<class T, class A, size_t N>
 struct Argument {
+  /// Fixed size Jacobian type for the argument A
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
+
+  /// Expression that will generate value/derivatives for argument
   boost::shared_ptr<ExpressionNode<A> > expression;
+};
+
+/// meta-function to access JacobianTA type
+template<class T, class A, size_t N>
+struct Jacobian {
+  typedef typename Argument<T, A, N>::JacobianTA type;
 };
 
 /**
@@ -515,9 +554,8 @@ struct Argument {
 template<class T, class A, class Base>
 struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
-  typedef T return_type;
-  static size_t const N = Base::N + 1;
-  typedef Argument<T, A, N> This;
+  static size_t const N = Base::N + 1; ///< Number of arguments in hierarchy
+  typedef Argument<T, A, N> This; ///< The storage we have direct access to
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
@@ -529,18 +567,20 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
 };
 
-/// Recursive GenerateFunctionalNode class Generator
+/**
+ *  Recursive GenerateFunctionalNode class Generator
+ */
 template<class T, class TYPES>
 struct FunctionalNode: public boost::mpl::fold<TYPES, ExpressionNode<T>,
     GenerateFunctionalNode<T, MPL::_2, MPL::_1> >::type {
 
-  /// Access Expression
+  /// Reset expression shared pointer
   template<class A, size_t N>
   void reset(const boost::shared_ptr<ExpressionNode<A> >& ptr) {
     static_cast<Argument<T, A, N> &>(*this).expression = ptr;
   }
 
-  /// Access Expression, const version
+  /// Access Expression shared pointer
   template<class A, size_t N>
   boost::shared_ptr<ExpressionNode<A> > expression() const {
     return static_cast<Argument<T, A, N> const &>(*this).expression;
@@ -554,10 +594,13 @@ struct FunctionalNode: public boost::mpl::fold<TYPES, ExpressionNode<T>,
 template<class T, class A1>
 class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> > {
 
+  /// The automatically generated Base class
+  typedef FunctionalNode<T, boost::mpl::vector<A1> > Base;
+
 public:
 
-  typedef Eigen::Matrix<double, T::dimension, A1::dimension> JacobianTA;
-  typedef boost::function<T(const A1&, boost::optional<JacobianTA&>)> Function;
+  typedef typename Jacobian<T,A1,1>::type JacobianTA1;
+  typedef boost::function<T(const A1&, boost::optional<JacobianTA1&>)> Function;
 
 private:
 
@@ -583,9 +626,9 @@ public:
   virtual Augmented<T> forward(const Values& values) const {
     using boost::none;
     Augmented<A1> argument = this->template expression<A1, 1>()->forward(values);
-    JacobianTA dTdA;
+    JacobianTA1 dTdA;
     T t = function_(argument.value(),
-        argument.constant() ? none : boost::optional<JacobianTA&>(dTdA));
+        argument.constant() ? none : boost::optional<JacobianTA1&>(dTdA));
     return Augmented<T>(t, dTdA, argument.jacobians());
   }
 
@@ -615,8 +658,8 @@ class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> > {
 
 public:
 
-  typedef Eigen::Matrix<double, T::dimension, A1::dimension> JacobianTA1;
-  typedef Eigen::Matrix<double, T::dimension, A2::dimension> JacobianTA2;
+  typedef typename Jacobian<T,A1,1>::type JacobianTA1;
+  typedef typename Jacobian<T,A2,2>::type JacobianTA2;
   typedef boost::function<
       T(const A1&, const A2&, boost::optional<JacobianTA1&>,
           boost::optional<JacobianTA2&>)> Function;
@@ -691,9 +734,9 @@ class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3>
 
 public:
 
-  typedef Eigen::Matrix<double, T::dimension, A1::dimension> JacobianTA1;
-  typedef Eigen::Matrix<double, T::dimension, A2::dimension> JacobianTA2;
-  typedef Eigen::Matrix<double, T::dimension, A3::dimension> JacobianTA3;
+  typedef typename Jacobian<T,A1,1>::type JacobianTA1;
+  typedef typename Jacobian<T,A2,2>::type JacobianTA2;
+  typedef typename Jacobian<T,A3,3>::type JacobianTA3;
   typedef boost::function<
       T(const A1&, const A2&, const A3&, boost::optional<JacobianTA1&>,
           boost::optional<JacobianTA2&>, boost::optional<JacobianTA3&>)> Function;
