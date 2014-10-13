@@ -429,7 +429,6 @@ TEST(ExpressionFactor, composeTernary) {
 namespace mpl = boost::mpl;
 
 #include <boost/mpl/assert.hpp>
-#include <boost/mpl/transform.hpp>
 #include <boost/mpl/equal.hpp>
 template<class T> struct Incomplete;
 
@@ -443,20 +442,29 @@ BOOST_MPL_ASSERT((boost::is_same< Matrix2, Generated::Record::Jacobian2T >));
 typedef mpl::vector<ExecutionTrace<Pose3>, ExecutionTrace<Point3> > ExpectedTraces;
 
 typedef mpl::transform<MyTypes,ExecutionTrace<MPL::_1> >::type MyTraces;
-BOOST_MPL_ASSERT((boost::mpl::equal< ExpectedTraces, MyTraces >));
+BOOST_MPL_ASSERT((mpl::equal< ExpectedTraces, MyTraces >));
 
 template <class T>
 struct MakeTrace {
   typedef ExecutionTrace<T> type;
 };
 typedef mpl::transform<MyTypes,MakeTrace<MPL::_1> >::type MyTraces1;
-BOOST_MPL_ASSERT((boost::mpl::equal< ExpectedTraces, MyTraces1 >));
+BOOST_MPL_ASSERT((mpl::equal< ExpectedTraces, MyTraces1 >));
 
 // Try generating vectors of Expression types
 typedef mpl::vector<Expression<Pose3>, Expression<Point3> > ExpectedExpressions;
-
 typedef mpl::transform<MyTypes,Expression<MPL::_1> >::type Expressions;
-BOOST_MPL_ASSERT((boost::mpl::equal< ExpectedExpressions, Expressions >));
+BOOST_MPL_ASSERT((mpl::equal< ExpectedExpressions, Expressions >));
+
+// Try generating vectors of Jacobian types
+typedef mpl::vector<Matrix26, Matrix23 > ExpectedJacobians;
+typedef mpl::transform<MyTypes,Jacobian<Point2,MPL::_1> >::type Jacobians;
+BOOST_MPL_ASSERT((mpl::equal< ExpectedJacobians, Jacobians >));
+
+// Try accessing a Jacobian
+typedef mpl::int_<1> one;
+typedef mpl::at<Jacobians,one>::type Jacobian23; // base zero !
+BOOST_MPL_ASSERT((boost::is_same< Matrix23, Jacobian23>));
 
 /* ************************************************************************* */
 int main() {
