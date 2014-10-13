@@ -21,7 +21,16 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
 #include <boost/random/mersenne_twister.hpp>
+
+#ifdef __clang__
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/random/uniform_on_sphere.hpp>
+#ifdef __clang__
+#  pragma clang diagnostic pop
+#endif
+
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
 
