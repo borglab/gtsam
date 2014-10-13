@@ -35,6 +35,12 @@ struct TestBinaryExpression;
 #include <boost/mpl/fold.hpp>
 #include <boost/mpl/empty_base.hpp>
 #include <boost/mpl/placeholders.hpp>
+#include <boost/mpl/transform.hpp>
+#include <boost/mpl/at.hpp>
+
+// Boost Fusion includes allow us to create/access values from MPL vectors
+#include <boost/fusion/include/mpl.hpp>
+#include <boost/fusion/include/at_c.hpp>
 
 namespace MPL = boost::mpl::placeholders;
 
@@ -462,7 +468,13 @@ public:
 template<class T, class A>
 struct Jacobian {
   typedef Eigen::Matrix<double, T::dimension, A::dimension> type;
-  typedef boost::optional<type&> optional;
+};
+
+/// meta-function to generate JacobianTA optional reference
+template<class T, class A>
+struct Optional {
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> Jacobian;
+  typedef boost::optional<Jacobian&> type;
 };
 
 /**
@@ -573,10 +585,16 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
  */
 template<class T, class TYPES>
 struct FunctionalNode {
+
   typedef typename boost::mpl::fold<TYPES, FunctionalBase<T>,
       GenerateFunctionalNode<T, MPL::_2, MPL::_1> >::type Base;
 
   struct type: public Base {
+
+    // Argument types and derived, note these are base 0 !
+    typedef TYPES Arguments;
+    typedef typename boost::mpl::transform<TYPES, Jacobian<T, MPL::_1> >::type Jacobians;
+    typedef typename boost::mpl::transform<TYPES, Optional<T, MPL::_1> >::type Optionals;
 
     /// Reset expression shared pointer
     template<class A, size_t N>
@@ -631,7 +649,7 @@ class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
 public:
 
-  typedef boost::function<T(const A1&, typename Jacobian<T, A1>::optional)> Function;
+  typedef boost::function<T(const A1&, typename Optional<T, A1>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
   typedef typename Base::Record Record;
 
@@ -661,7 +679,7 @@ public:
     Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
     typename Jacobian<T, A1>::type dTdA1;
     T t = function_(a1.value(),
-        a1.constant() ? none : typename Jacobian<T,A1>::optional(dTdA1));
+        a1.constant() ? none : typename Optional<T,A1>::type(dTdA1));
     return Augmented<T>(t, dTdA1, a1.jacobians());
   }
 
@@ -686,8 +704,8 @@ class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::t
 public:
 
   typedef boost::function<
-      T(const A1&, const A2&, typename Jacobian<T, A1>::optional,
-          typename Jacobian<T, A2>::optional)> Function;
+      T(const A1&, const A2&, typename Optional<T, A1>::type,
+          typename Optional<T, A2>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
 
@@ -726,8 +744,8 @@ public:
     typename Jacobian<T, A1>::type dTdA1;
     typename Jacobian<T, A2>::type dTdA2;
     T t = function_(a1.value(), a2.value(),
-        a1.constant() ? none : typename Jacobian<T, A1>::optional(dTdA1),
-        a2.constant() ? none : typename Jacobian<T, A2>::optional(dTdA2));
+        a1.constant() ? none : typename Optional<T, A1>::type(dTdA1),
+        a2.constant() ? none : typename Optional<T, A2>::type(dTdA2));
     return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians());
   }
 
@@ -753,9 +771,8 @@ class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3>
 public:
 
   typedef boost::function<
-      T(const A1&, const A2&, const A3&, typename Jacobian<T, A1>::optional,
-          typename Jacobian<T, A2>::optional,
-          typename Jacobian<T, A3>::optional)> Function;
+      T(const A1&, const A2&, const A3&, typename Optional<T, A1>::type,
+          typename Optional<T, A2>::type, typename Optional<T, A3>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;
 
@@ -793,15 +810,17 @@ public:
     Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
     Augmented<A2> a2 = this->template expression<A2, 2>()->forward(values);
     Augmented<A3> a3 = this->template expression<A3, 3>()->forward(values);
-    typename Jacobian<T, A1>::type dTdA1;
-    typename Jacobian<T, A2>::type dTdA2;
-    typename Jacobian<T, A3>::type dTdA3;
-    T t = function_(a1.value(), a2.value(), a3.value(),
-        a1.constant() ? none : typename Jacobian<T, A1>::optional(dTdA1),
-        a2.constant() ? none : typename Jacobian<T, A2>::optional(dTdA2),
-        a3.constant() ? none : typename Jacobian<T, A3>::optional(dTdA3));
-    return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians(), dTdA3,
-        a3.jacobians());
+
+    typedef typename Base::Jacobians Jacobians;
+
+    using boost::fusion::at_c;
+    Jacobians H;
+    typename boost::mpl::at_c<Jacobians,0>::type H1;
+    typename boost::mpl::at_c<Jacobians,1>::type H2;
+    typename boost::mpl::at_c<Jacobians,2>::type H3;
+    T t = function_(a1.value(), a2.value(), a3.value(),H1,H2,H3);
+    return Augmented<T>(t, H1, a1.jacobians(), H2, a2.jacobians(),
+        H3, a3.jacobians());
   }
 
   /// Construct an execution trace for reverse AD
@@ -819,5 +838,5 @@ public:
 
 };
 //-----------------------------------------------------------------------------
-}
+      }
 

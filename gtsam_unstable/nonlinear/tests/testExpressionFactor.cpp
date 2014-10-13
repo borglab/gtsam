@@ -465,15 +465,13 @@ BOOST_MPL_ASSERT((mpl::equal< ExpectedJacobians, Jacobians >));
 typedef mpl::at_c<Jacobians,1>::type Jacobian23; // base zero !
 BOOST_MPL_ASSERT((boost::is_same< Matrix23, Jacobian23>));
 
-#include <boost/fusion/adapted/mpl.hpp>
-#include <boost/fusion/include/mpl.hpp>
-#include <boost/fusion/include/at_c.hpp>
-
 // Create a value and access it
 TEST(ExpressionFactor, JacobiansValue) {
   Matrix23 expected;
-  ExpectedJacobians jacobians;
+  Jacobians jacobians;
   using boost::fusion::at_c;
+
+  at_c<1>(jacobians) << 1,2,3,4,5,6;
 
   Matrix23 actual = at_c<1>(jacobians);
   CHECK(actual.cols() == expected.cols());
