@@ -493,6 +493,7 @@ struct Argument {
  */
 template<class T, class A, size_t N>
 struct JacobianTrace {
+  A value;
   ExecutionTrace<A> trace;
   typename Jacobian<T, A>::type dTdA;
 };
@@ -552,8 +553,8 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   /// Construct an execution trace for reverse AD
   void trace(const Values& values, Record* record, char*& raw) const {
     Base::trace(values, record, raw);
-    A a = This::expression->traceExecution(values, record->Record::This::trace,
-        raw);
+    record->Record::This::value = This::expression->traceExecution(values,
+        record->Record::This::trace, raw);
     raw = raw + This::expression->traceSize();
   }
 };
@@ -583,6 +584,12 @@ struct FunctionalNode {
     /// Provide convenience access to Record storage
     struct Record: public Base::Record {
 
+      /// Access Value
+      template<class A, size_t N>
+      const A& value() const {
+        return static_cast<JacobianTrace<T, A, N> const &>(*this).value;
+      }
+
       /// Access Trace
       template<class A, size_t N>
       ExecutionTrace<A>& trace() {
@@ -598,15 +605,18 @@ struct FunctionalNode {
     };
 
     /// Construct an execution trace for reverse AD
-    virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-        char* raw) const {
+    Record* trace(const Values& values, char* raw) const {
+
+      // Create the record and advance the pointer
       Record* record = new (raw) Record();
-      trace.setFunction(record);
       raw = (char*) (record + 1);
 
-      this->trace(values, record, raw);
+      // Record the traces for all arguments
+      // After this, the raw pointer is set to after what was written
+      Base::trace(values, record, raw);
 
-      return T(); // TODO
+      // Return the record for this function evaluation
+      return record;
     }
   };
 };
@@ -647,22 +657,20 @@ public:
     using boost::none;
     Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
     typename Jacobian<T, A1>::type dTdA1;
-    T t = function_(a1.value(), a1.constant() ? none : typename Jacobian<T,A1>::optional(dTdA1));
+    T t = function_(a1.value(),
+        a1.constant() ? none : typename Jacobian<T,A1>::optional(dTdA1));
     return Augmented<T>(t, dTdA1, a1.jacobians());
   }
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
-    Record* record = new (raw) Record();
+
+    Record* record = Base::trace(values, raw);
     trace.setFunction(record);
-    raw = (char*) (record + 1);
 
-    A1 a1 = this->template expression<A1, 1>()->traceExecution(values,
-        record->template trace<A1, 1>(), raw);
-    raw = raw + this->template expression<A1, 1>()->traceSize();
-
-    return function_(a1, record->template jacobian<A1, 1>());
+    return function_(record->template value<A1, 1>(),
+        record->template jacobian<A1, 1>());
   }
 };
 
@@ -723,19 +731,12 @@ public:
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
-    Record* record = new (raw) Record();
+
+    Record* record = Base::trace(values, raw);
     trace.setFunction(record);
-    raw = (char*) (record + 1);
 
-    A1 a1 = this->template expression<A1, 1>()->traceExecution(values,
-        record->template trace<A1, 1>(), raw);
-    raw = raw + this->template expression<A1, 1>()->traceSize();
-
-    A2 a2 = this->template expression<A2, 2>()->traceExecution(values,
-        record->template trace<A2, 2>(), raw);
-    raw = raw + this->template expression<A2, 2>()->traceSize();
-
-    return function_(a1, a2, record->template jacobian<A1, 1>(),
+    return function_(record->template value<A1, 1>(),
+        record->template value<A2,2>(), record->template jacobian<A1, 1>(),
         record->template jacobian<A2, 2>());
   }
 };
@@ -803,23 +804,13 @@ public:
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
-    Record* record = new (raw) Record();
+
+    Record* record = Base::trace(values, raw);
     trace.setFunction(record);
-    raw = (char*) (record + 1);
 
-    A1 a1 = this->template expression<A1, 1>()->traceExecution(values,
-        record->template trace<A1, 1>(), raw);
-    raw = raw + this->template expression<A1, 1>()->traceSize();
-
-    A2 a2 = this->template expression<A2, 2>()->traceExecution(values,
-        record->template trace<A2, 2>(), raw);
-    raw = raw + this->template expression<A2, 2>()->traceSize();
-
-    A3 a3 = this->template expression<A3, 3>()->traceExecution(values,
-        record->template trace<A3, 3>(), raw);
-    raw = raw + this->template expression<A3, 3>()->traceSize();
-
-    return function_(a1, a2, a3, record->template jacobian<A1, 1>(),
+    return function_(
+        record->template value<A1, 1>(), record->template value<A2, 2>(),
+        record->template value<A3, 3>(), record->template jacobian<A1, 1>(),
         record->template jacobian<A2, 2>(), record->template jacobian<A3, 3>());
   }
 

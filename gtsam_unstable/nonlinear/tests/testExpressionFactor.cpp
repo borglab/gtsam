@@ -144,11 +144,13 @@ TEST(ExpressionFactor, Binary) {
 
   // traceRaw will fill raw with [Trace<Point2> | Binary::Record]
   EXPECT_LONGS_EQUAL(8, sizeof(double));
+  EXPECT_LONGS_EQUAL(24, sizeof(Point2));
+  EXPECT_LONGS_EQUAL(48, sizeof(Cal3_S2));
   EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Point2>));
   EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Cal3_S2>));
   EXPECT_LONGS_EQUAL(2*5*8, sizeof(Jacobian<Point2,Cal3_S2>::type));
   EXPECT_LONGS_EQUAL(2*2*8, sizeof(Jacobian<Point2,Point2>::type));
-  size_t expectedRecordSize = 16 + 2 * 16 + 80 + 32;
+  size_t expectedRecordSize = 24 + 24 + 48 + 2 * 16 + 80 + 32;
   EXPECT_LONGS_EQUAL(expectedRecordSize, sizeof(Binary::Record));
 
   // Check size
@@ -200,10 +202,10 @@ TEST(ExpressionFactor, Shallow) {
   // traceExecution of shallow tree
   typedef UnaryExpression<Point2, Point3> Unary;
   typedef BinaryExpression<Point3, Pose3, Point3> Binary;
-  EXPECT_LONGS_EQUAL(80, sizeof(Unary::Record));
-  EXPECT_LONGS_EQUAL(272, sizeof(Binary::Record));
+  EXPECT_LONGS_EQUAL(112, sizeof(Unary::Record));
+  EXPECT_LONGS_EQUAL(432, sizeof(Binary::Record));
   size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
-  LONGS_EQUAL(352, expectedTraceSize);
+  LONGS_EQUAL(112+432, expectedTraceSize);
   size_t size = expression.traceSize();
   CHECK(size);
   EXPECT_LONGS_EQUAL(expectedTraceSize, size);
