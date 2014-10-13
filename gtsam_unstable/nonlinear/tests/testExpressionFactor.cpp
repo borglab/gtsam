@@ -464,6 +464,11 @@ BOOST_MPL_ASSERT((mpl::equal< ExpectedJacobians, Jacobians >));
 typedef mpl::at_c<Jacobians, 1>::type Jacobian23; // base zero !
 BOOST_MPL_ASSERT((boost::is_same< Matrix23, Jacobian23>));
 
+/* ************************************************************************* */
+// Boost Fusion includes allow us to create/access values from MPL vectors
+#include <boost/fusion/include/mpl.hpp>
+#include <boost/fusion/include/at_c.hpp>
+
 // Create a value and access it
 TEST(ExpressionFactor, JacobiansValue) {
   using boost::fusion::at_c;
@@ -478,7 +483,11 @@ TEST(ExpressionFactor, JacobiansValue) {
 }
 
 /* ************************************************************************* */
+// Test out polymorphic transform
+
 #include <boost/fusion/include/make_vector.hpp>
+#include <boost/fusion/include/transform.hpp>
+#include <boost/utility/result_of.hpp>
 
 struct triple {
   template<class> struct result; // says we will provide result
@@ -489,19 +498,27 @@ struct triple {
   };
 
   template<class F>
+  struct result<F(const int&)> {
+      typedef double type; // result for int argument
+  };
+
+  template<class F>
+  struct result<F(const double &)> {
+      typedef double type; // result for double argument
+  };
+
+  template<class F>
   struct result<F(double)> {
       typedef double type; // result for double argument
   };
 
   // actual function
   template<typename T>
-  typename result<triple(T)>::type operator()(T& x) const {
+  typename result<triple(T)>::type operator()(const T& x) const {
     return (double) x;
   }
 };
 
-
-// Test out polymorphic transform
 TEST(ExpressionFactor, Triple) {
   typedef boost::fusion::vector<int, double> IntDouble;
   IntDouble H = boost::fusion::make_vector(1, 2.0);
