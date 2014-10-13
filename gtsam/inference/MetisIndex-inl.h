@@ -1,0 +1,59 @@
+/* ----------------------------------------------------------------------------
+
+* GTSAM Copyright 2010, Georgia Tech Research Corporation,
+* Atlanta, Georgia 30332-0415
+* All Rights Reserved
+* Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+* See LICENSE for the license information
+
+* -------------------------------------------------------------------------- */
+
+/**
+* @file    MetisIndex-inl.h
+* @author  Andrew Melim
+* @date    Oct. 10, 2014
+*/
+
+#include <gtsam/inference/MetisIndex.h>
+#include <map>
+
+namespace gtsam {
+
+    MetisIndex::~MetisIndex(){}
+
+    std::vector<int>  MetisIndex::xadj() const { return xadj_; }
+    std::vector<int>  MetisIndex::adj() const { return  adj_; }
+
+    /* ************************************************************************* */
+    template<class FACTOR>
+    void MetisIndex::augment(const FactorGraph<FACTOR>& factors)
+    {
+        std::map<int, FastSet<int> > adjMap;
+        std::map<int, FastSet<int> >::iterator adjMapIt;
+        
+        /* ********** Convert to CSR format ********** */
+        // Assuming that vertex numbering starts from 0 (C style),
+        // then the adjacency list of vertex i is stored in array adjncy
+        // starting at index xadj[i] and ending at(but not including)
+        // index xadj[i + 1](i.e., adjncy[xadj[i]] through
+        // and including adjncy[xadj[i + 1] - 1]).
+        for (size_t i = 0; i < factors.size(); i++){
+            if (factors[i])
+                BOOST_FOREACH(const Key& k1, *factors[i])
+                    BOOST_FOREACH(const Key& k2, *factors[i])
+                        if (k1 != k2)
+                            adjMap[k1].insert(adjMap[k1].end(), k2); // Insert at the end
+        }
+
+        
+        xadj_.push_back(0);// Always set the first index to zero
+        for (adjMapIt = adjMap.begin(); adjMapIt != adjMap.end(); ++adjMapIt) {
+            vector<int> temp;
+            copy(adjMapIt->second.begin(), adjMapIt->second.end(), std::back_inserter(temp));
+            adj_.insert(adj_.end(), temp.begin(), temp.end());
+            //adj_.push_back(temp);
+            xadj_.push_back(adj_.size());
+        }
+    }
+}

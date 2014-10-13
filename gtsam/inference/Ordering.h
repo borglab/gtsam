@@ -146,13 +146,15 @@ namespace gtsam {
       return Ordering(keys);
     }
 
+    /// METIS Formatting function
+    template<class FACTOR>
+    static GTSAM_EXPORT void CSRFormat(std::vector<int>& xadj, std::vector<int>& adj, const FactorGraph<FACTOR>& graph);
 
     /// Compute an ordering determined by METIS from a VariableIndex
-    static GTSAM_EXPORT Ordering METIS(const VariableIndex& variableIndex);
+    //static GTSAM_EXPORT Ordering METIS(const VariableIndex& variableIndex);
 
     template<class FACTOR>
-    static Ordering METIS(const FactorGraph<FACTOR>& graph){
-        return METIS(VariableIndex(graph)); }
+    static GTSAM_EXPORT Ordering METIS(const FactorGraph<FACTOR>& graph);
 
     /// @}
 
@@ -168,6 +170,7 @@ namespace gtsam {
     /// Internal COLAMD function
     static GTSAM_EXPORT Ordering COLAMDConstrained(
       const VariableIndex& variableIndex, std::vector<int>& cmember);
+
 
     /** Serialization function */
     friend class boost::serialization::access;

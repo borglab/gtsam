@@ -197,10 +197,21 @@ namespace gtsam {
     return Ordering::COLAMDConstrained(variableIndex, cmember);
   }
 
+
   /* ************************************************************************* */
-  Ordering Ordering::METIS(const VariableIndex& variableIndex)
+  template<class FACTOR>
+  Ordering Ordering::METIS(const FactorGraph<FACTOR>& graph)
   {
       gttic(Ordering_METIS);
+      // First develop the adjacency matrix for the 
+      // graph as described in Section 5.5 of the METIS manual
+      // CSR Format
+      // xadj is of size n+1
+      // metis vars
+
+
+      //METIS_NodeND(graph.keys().size(), xadj, adj);
+      
   }
 
   /* ************************************************************************* */

@@ -17,6 +17,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/MetisIndex.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -78,7 +79,46 @@ TEST(Ordering, grouped_constrained_ordering) {
 }
 
 /* ************************************************************************* */
-TEST(Ordering, metis_ordering) {
+TEST(Ordering, csr_format) {
+
+
+    // Example in METIS manual
+    SymbolicFactorGraph sfg;
+    sfg.push_factor(0, 1);
+    sfg.push_factor(1, 2);
+    sfg.push_factor(2, 3);
+    sfg.push_factor(3, 4);
+    sfg.push_factor(5, 6);
+    sfg.push_factor(6, 7);
+    sfg.push_factor(7, 8);
+    sfg.push_factor(8, 9);
+    sfg.push_factor(10, 11);
+    sfg.push_factor(11, 12);
+    sfg.push_factor(12, 13);
+    sfg.push_factor(13, 14);
+
+    sfg.push_factor(0, 5);
+    sfg.push_factor(5, 10);
+    sfg.push_factor(1, 6);
+    sfg.push_factor(6, 11);
+    sfg.push_factor(2, 7);
+    sfg.push_factor(7, 12);
+    sfg.push_factor(3, 8);
+    sfg.push_factor(8, 13);
+    sfg.push_factor(4, 9);
+    sfg.push_factor(9, 14);
+
+    MetisIndex mi(sfg);
+
+    vector<int> xadjExpected{ 0, 2, 5, 8, 11, 13, 16, 20, 24, 28, 31, 33, 36, 39, 42, 44};
+    vector<int> adjExpected{ 1, 5, 0, 2, 6, 1, 3, 7, 2, 4, 8, 3, 9, 0, 6, 10, 1, 5, 7, 11,
+                             2, 6, 8, 12, 3, 7, 9, 13, 4, 8, 14, 5, 11, 6, 10, 12, 7, 11, 
+                             13, 8, 12, 14, 9, 13 };
+
+    EXPECT(xadjExpected  == mi.xadj());
+    EXPECT(adjExpected.size() == mi.adj().size());
+    EXPECT( adjExpected  == mi.adj());
+
 
 }
 
