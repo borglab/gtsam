@@ -48,7 +48,7 @@ Point2_ p(2);
 
 /* ************************************************************************* */
 // Leaf
-TEST(ExpressionFactor, leaf) {
+TEST(ExpressionFactor, Leaf) {
   using namespace leaf;
 
   // Create old-style factor to create expected value and derivatives
@@ -64,7 +64,7 @@ TEST(ExpressionFactor, leaf) {
 
 /* ************************************************************************* */
 // non-zero noise model
-TEST(ExpressionFactor, model) {
+TEST(ExpressionFactor, Model) {
   using namespace leaf;
 
   SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
@@ -82,7 +82,7 @@ TEST(ExpressionFactor, model) {
 
 /* ************************************************************************* */
 // Constrained noise model
-TEST(ExpressionFactor, constrained) {
+TEST(ExpressionFactor, Constrained) {
   using namespace leaf;
 
   SharedDiagonal model = noiseModel::Constrained::MixedSigmas(Vector2(0.2, 0));
@@ -100,7 +100,7 @@ TEST(ExpressionFactor, constrained) {
 
 /* ************************************************************************* */
 // Unary(Leaf))
-TEST(ExpressionFactor, unary) {
+TEST(ExpressionFactor, Unary) {
 
   // Create some values
   Values values;
@@ -121,25 +121,21 @@ TEST(ExpressionFactor, unary) {
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf, 1e-9));
 }
+
 /* ************************************************************************* */
-struct TestBinaryExpression {
-  static Point2 myUncal(const Cal3_S2& K, const Point2& p,
-      boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
-    return K.uncalibrate(p, Dcal, Dp);
-  }
-  Cal3_S2_ K_;
-  Point2_ p_;
-  BinaryExpression<Point2, Cal3_S2, Point2> binary_;
-  TestBinaryExpression() :
-      K_(1), p_(2), binary_(myUncal, K_, p_) {
-  }
-};
-/* ************************************************************************* */
+static Point2 myUncal(const Cal3_S2& K, const Point2& p,
+    boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
+  return K.uncalibrate(p, Dcal, Dp);
+}
+
 // Binary(Leaf,Leaf)
-TEST(ExpressionFactor, binary) {
+TEST(ExpressionFactor, Binary) {
 
   typedef BinaryExpression<Point2, Cal3_S2, Point2> Binary;
-  TestBinaryExpression tester;
+
+  Cal3_S2_ K_(1);
+  Point2_ p_(2);
+  Binary binary(myUncal, K_, p_);
 
   // Create some values
   Values values;
@@ -156,14 +152,14 @@ TEST(ExpressionFactor, binary) {
   EXPECT_LONGS_EQUAL(expectedRecordSize, sizeof(Binary::Record));
 
   // Check size
-  size_t size = tester.binary_.traceSize();
+  size_t size = binary.traceSize();
   CHECK(size);
   EXPECT_LONGS_EQUAL(expectedRecordSize, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
   char raw[size];
   ExecutionTrace<Point2> trace;
-  Point2 value = tester.binary_.traceExecution(values, trace, raw);
+  Point2 value = binary.traceExecution(values, trace, raw);
   // trace.print();
 
   // Expected Jacobians
@@ -181,7 +177,7 @@ TEST(ExpressionFactor, binary) {
 }
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
-TEST(ExpressionFactor, shallow) {
+TEST(ExpressionFactor, Shallow) {
 
   // Create some values
   Values values;
@@ -434,27 +430,9 @@ namespace mpl = boost::mpl;
 template<class T> struct Incomplete;
 
 typedef mpl::vector<Pose3, Point3, Cal3_S2> MyTypes;
-typedef Record<Point2, MyTypes> Generated;
+typedef FunctionalNode<Point2, MyTypes>::type Generated;
 //Incomplete<Generated> incomplete;
-//BOOST_MPL_ASSERT((boost::is_same< Matrix25, Generated::JacobianTA >));
-BOOST_MPL_ASSERT((boost::is_same< Matrix2, Generated::Jacobian2T >));
-
-Generated generated;
-
-typedef mpl::vector1<Point3> OneType;
-typedef mpl::pop_front<OneType>::type Empty;
-typedef mpl::pop_front<Empty>::type Bad;
-//typedef ProtoTrace<OneType> UnaryTrace;
-//BOOST_MPL_ASSERT((boost::is_same< UnaryTrace::A, Point3 >));
-
-#include <boost/static_assert.hpp>
-#include <boost/mpl/plus.hpp>
-#include <boost/mpl/int.hpp>
-//#include <boost/mpl/print.hpp>
-
-typedef struct {
-} Expected0;
-BOOST_MPL_ASSERT((boost::is_same< Expected0, Expected0 >));
+BOOST_MPL_ASSERT((boost::is_same< Matrix2, Generated::Record::Jacobian2T >));
 
 /* ************************************************************************* */
 int main() {
