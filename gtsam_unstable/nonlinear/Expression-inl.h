@@ -552,10 +552,16 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
   /// Construct an execution trace for reverse AD
   void trace(const Values& values, Record* record, char*& raw) const {
-    Base::trace(values, record, raw);
+    Base::trace(values, record, raw); // recurse
+    // Write an Expression<A> execution trace in record->trace
+    // Iff Constant or Leaf, this will not write to raw, only to trace.
+    // Iff the expression is functional, write all Records in raw buffer
+    // Return value of type T is recorded in record->value
     record->Record::This::value = This::expression->traceExecution(values,
         record->Record::This::trace, raw);
-    raw = raw + This::expression->traceSize();
+    // raw is never modified by traceExecution, but if traceExecution has
+    // written in the buffer, the next caller expects we advance the pointer
+    raw += This::expression->traceSize();
   }
 };
 
@@ -588,12 +594,6 @@ struct FunctionalNode {
       template<class A, size_t N>
       const A& value() const {
         return static_cast<JacobianTrace<T, A, N> const &>(*this).value;
-      }
-
-      /// Access Trace
-      template<class A, size_t N>
-      ExecutionTrace<A>& trace() {
-        return static_cast<JacobianTrace<T, A, N>&>(*this).trace;
       }
 
       /// Access Jacobian
