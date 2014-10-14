@@ -112,11 +112,6 @@ public:
     return root_->dimensions();
   }
 
-  /// Return value and derivatives, forward AD version
-  Augmented<T> forward(const Values& values) const {
-    return root_->forward(values);
-  }
-
   // Return size needed for memory buffer in traceExecution
   size_t traceSize() const {
     return root_->traceSize();

@@ -65,13 +65,11 @@ TEST(Expression, leaf) {
   values.insert(100, someR);
 
   JacobianMap expected;
-  expected[100] = eye(3);
-
-  Augmented<Rot3> actual1 = R.forward(values);
-  EXPECT(assert_equal(someR, actual1.value()));
-  EXPECT(actual1.jacobians() == expected);
+  Matrix H = eye(3);
+  expected.insert(make_pair(100,H.block(0,0,3,3)));
 
   JacobianMap actualMap2;
+  actualMap2.insert(make_pair(100,H.block(0,0,3,3)));
   Rot3 actual2 = R.reverse(values, actualMap2);
   EXPECT(assert_equal(someR, actual2));
   EXPECT(actualMap2 == expected);

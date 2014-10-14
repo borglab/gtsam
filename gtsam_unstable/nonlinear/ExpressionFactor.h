@@ -57,11 +57,26 @@ public:
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if (H) {
+      // H should be pre-allocated
       assert(H->size()==size());
-      JacobianMap jacobians;
-      T value = expression_.value(x, jacobians);
-      // move terms to H, which is pre-allocated to correct size
-      move(jacobians, *H);
+
+      // Get dimensions of Jacobian matrices
+      std::map<Key, size_t> map = expression_.dimensions();
+
+      // Create and zero out blocks to be passed to expression_
+      DenseIndex i = 0; // For block index
+      typedef std::pair<Key, size_t> Pair;
+      std::map<Key, VerticalBlockMatrix::Block> blocks;
+      BOOST_FOREACH(const Pair& pair, map) {
+        Matrix& Hi = H->at(i++);
+        size_t mi = pair.second; // width of i'th Jacobian
+        Hi.resize(T::dimension, mi);
+        Hi.setZero(); // zero out
+        Eigen::Block<Matrix> block = Hi.block(0,0,T::dimension, mi);
+        blocks.insert(std::make_pair(pair.first, block));
+      }
+
+      T value = expression_.value(x, blocks);
       return measurement_.localCoordinates(value);
     } else {
       const T& value = expression_.value(x);
@@ -77,7 +92,7 @@ public:
     if (!this->active(x))
       return boost::shared_ptr<JacobianFactor>();
 
-    // Get dimensions of matrices
+    // Get dimensions of Jacobian matrices
     std::map<Key, size_t> map = expression_.dimensions();
     size_t n = map.size();
 
@@ -87,17 +102,18 @@ public:
 
     // Construct block matrix, is of right size but un-initialized
     VerticalBlockMatrix Ab(dims, T::dimension, true);
+    Ab.matrix().setZero(); // zero out
 
-    // Create and zero out blocks to be passed to expression_
+    // Create blocks to be passed to expression_
     DenseIndex i = 0; // For block index
     typedef std::pair<Key, size_t> Pair;
-    BOOST_FOREACH(const Pair& keyValue, map) {
-      Ab(i++) = zeros(T::dimension, keyValue.second);
+    std::map<Key, VerticalBlockMatrix::Block> blocks;
+    BOOST_FOREACH(const Pair& pair, map) {
+      blocks.insert(std::make_pair(pair.first, Ab(i++)));
     }
 
     // Evaluate error to get Jacobians and RHS vector b
-    // JacobianMap terms;
-    T value = expression_.value(x);
+    T value = expression_.value(x, blocks);
     Vector b = -measurement_.localCoordinates(value);
 
     // Whiten the corresponding system now

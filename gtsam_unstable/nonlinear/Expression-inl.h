@@ -48,125 +48,7 @@ namespace gtsam {
 template<typename T>
 class Expression;
 
-typedef std::map<Key, Matrix> JacobianMap;
-
-/// Move terms to array, destroys content
-void move(JacobianMap& jacobians, std::vector<Matrix>& H) {
-  assert(H.size()==jacobians.size());
-  size_t j = 0;
-  JacobianMap::iterator it = jacobians.begin();
-  for (; it != jacobians.end(); ++it)
-    it->second.swap(H[j++]);
-}
-
-//-----------------------------------------------------------------------------
-/**
- * Value and Jacobians
- */
-template<class T>
-class Augmented {
-
-private:
-
-  T value_;
-  JacobianMap jacobians_;
-
-  typedef std::pair<Key, Matrix> Pair;
-
-  /// Insert terms into jacobians_, adding if already exists
-  void add(const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      JacobianMap::iterator it = jacobians_.find(term.first);
-      if (it != jacobians_.end())
-        it->second += term.second;
-      else
-        jacobians_[term.first] = term.second;
-    }
-  }
-
-  /// Insert terms into jacobians_, premultiplying by H, adding if already exists
-  void add(const Matrix& H, const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      JacobianMap::iterator it = jacobians_.find(term.first);
-      if (it != jacobians_.end())
-        it->second += H * term.second;
-      else
-        jacobians_[term.first] = H * term.second;
-    }
-  }
-
-public:
-
-  /// Construct value that does not depend on anything
-  Augmented(const T& t) :
-      value_(t) {
-  }
-
-  /// Construct value dependent on a single key
-  Augmented(const T& t, Key key) :
-      value_(t) {
-    size_t n = t.dim();
-    jacobians_[key] = Eigen::MatrixXd::Identity(n, n);
-  }
-
-  /// Construct value, pre-multiply jacobians by dTdA
-  Augmented(const T& t, const Matrix& dTdA, const JacobianMap& jacobians) :
-      value_(t) {
-    add(dTdA, jacobians);
-  }
-
-  /// Construct value, pre-multiply jacobians
-  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
-      const Matrix& dTdA2, const JacobianMap& jacobians2) :
-      value_(t) {
-    add(dTdA1, jacobians1);
-    add(dTdA2, jacobians2);
-  }
-
-  /// Construct value, pre-multiply jacobians
-  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
-      const Matrix& dTdA2, const JacobianMap& jacobians2, const Matrix& dTdA3,
-      const JacobianMap& jacobians3) :
-      value_(t) {
-    add(dTdA1, jacobians1);
-    add(dTdA2, jacobians2);
-    add(dTdA3, jacobians3);
-  }
-
-  /// Return value
-  const T& value() const {
-    return value_;
-  }
-
-  /// Return jacobians
-  const JacobianMap& jacobians() const {
-    return jacobians_;
-  }
-
-  /// Return jacobians
-  JacobianMap& jacobians() {
-    return jacobians_;
-  }
-
-  /// Not dependent on any key
-  bool constant() const {
-    return jacobians_.empty();
-  }
-
-  /// debugging
-  void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
-    BOOST_FOREACH(const Pair& term, jacobians_)
-      std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
-          << "x" << term.second.cols() << ") ";
-    std::cout << std::endl;
-  }
-
-  /// Move terms to array, destroys content
-  void move(std::vector<Matrix>& H) {
-    move(jacobians_, H);
-  }
-
-};
+typedef std::map<Key, Eigen::Block<Matrix> > JacobianMap;
 
 //-----------------------------------------------------------------------------
 /**
@@ -244,39 +126,46 @@ public:
       return p ? boost::optional<Record*>(p) : boost::none;
     }
   }
-  // *** This is the main entry point for reverseAD, called from Expression::augmented ***
-  // Called only once, either inserts identity into Jacobians (Leaf) or starts AD (Function)
+  /// reverseAD in case of Leaf
+  template<class Derived>
+  static void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
+      JacobianMap& jacobians, Key key) {
+    JacobianMap::iterator it = jacobians.find(key);
+    if (it == jacobians.end()) {
+      std::cout << "No block for key " << key << std::endl;
+      throw std::runtime_error("Reverse AD internal error");
+    }
+    // we have pre-loaded them with zeros
+    Eigen::Block<Matrix>& block = it->second;
+    block += dTdA;
+  }
+  /**
+   *  *** This is the main entry point for reverseAD, called from Expression ***
+   * Called only once, either inserts I into Jacobians (Leaf) or starts AD (Function)
+   */
   void startReverseAD(JacobianMap& jacobians) const {
     if (kind == Leaf) {
       // This branch will only be called on trivial Leaf expressions, i.e. Priors
       size_t n = T::Dim();
-      jacobians[content.key] = Eigen::MatrixXd::Identity(n, n);
+      handleLeafCase(Eigen::MatrixXd::Identity(n, n), jacobians, content.key);
     } else if (kind == Function)
       // This is the more typical entry point, starting the AD pipeline
-      // It is inside the startReverseAD that the correctly dimensioned pipeline is chosen.
+      // Inside the startReverseAD that the correctly dimensioned pipeline is chosen.
       content.ptr->startReverseAD(jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
   void reverseAD(const Matrix& dTdA, JacobianMap& jacobians) const {
-    if (kind == Leaf) {
-      JacobianMap::iterator it = jacobians.find(content.key);
-      if (it != jacobians.end())
-        it->second += dTdA;
-      else
-        jacobians[content.key] = dTdA;
-    } else if (kind == Function)
+    if (kind == Leaf)
+      handleLeafCase(dTdA, jacobians, content.key);
+    else if (kind == Function)
       content.ptr->reverseAD(dTdA, jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
   typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
   void reverseAD2(const Jacobian2T& dTdA, JacobianMap& jacobians) const {
-    if (kind == Leaf) {
-      JacobianMap::iterator it = jacobians.find(content.key);
-      if (it != jacobians.end())
-        it->second += dTdA;
-      else
-        jacobians[content.key] = dTdA;
-    } else if (kind == Function)
+    if (kind == Leaf)
+      handleLeafCase(dTdA, jacobians, content.key);
+    else if (kind == Function)
       content.ptr->reverseAD2(dTdA, jacobians);
   }
 
@@ -337,8 +226,8 @@ public:
   }
 
   /// Return dimensions for each argument
-  virtual std::map<Key,size_t> dimensions() const {
-    std::map<Key,size_t> map;
+  virtual std::map<Key, size_t> dimensions() const {
+    std::map<Key, size_t> map;
     return map;
   }
 
@@ -349,9 +238,6 @@ public:
 
   /// Return value
   virtual T value(const Values& values) const = 0;
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const = 0;
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
@@ -378,11 +264,6 @@ public:
   /// Return value
   virtual T value(const Values& values) const {
     return constant_;
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    return Augmented<T>(constant_);
   }
 
   /// Construct an execution trace for reverse AD
@@ -417,8 +298,8 @@ public:
   }
 
   /// Return dimensions for each argument
-  virtual std::map<Key,size_t> dimensions() const {
-    std::map<Key,size_t> map;
+  virtual std::map<Key, size_t> dimensions() const {
+    std::map<Key, size_t> map;
     map[key_] = T::dimension;
     return map;
   }
@@ -426,11 +307,6 @@ public:
   /// Return value
   virtual T value(const Values& values) const {
     return values.at<T>(key_);
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    return Augmented<T>(values.at<T>(key_), key_);
   }
 
   /// Construct an execution trace for reverse AD
@@ -540,9 +416,9 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   }
 
   /// Return dimensions for each argument
-  virtual std::map<Key,size_t> dimensions() const {
-    std::map<Key,size_t> map = Base::dimensions();
-    std::map<Key,size_t> myMap = This::expression->dimensions();
+  virtual std::map<Key, size_t> dimensions() const {
+    std::map<Key, size_t> map = Base::dimensions();
+    std::map<Key, size_t> myMap = This::expression->dimensions();
     map.insert(myMap.begin(), myMap.end());
     return map;
   }
@@ -690,19 +566,6 @@ public:
     return function_(this->template expression<A1, 1>()->value(values), boost::none);
   }
 
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    using boost::none;
-    Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
-
-    // Declare Jacobians
-    using boost::mpl::at_c;
-    typename at_c<typename Base::Jacobians,0>::type H1;
-
-    T t = function_(a1.value(), H1);
-    return Augmented<T>(t, H1, a1.jacobians());
-  }
-
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
@@ -754,21 +617,6 @@ public:
     return function_(this->template expression<A1, 1>()->value(values),
     this->template expression<A2, 2>()->value(values),
     none, none);
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    using boost::none;
-    Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
-    Augmented<A2> a2 = this->template expression<A2, 2>()->forward(values);
-
-    // Declare Jacobians
-    using boost::mpl::at_c;
-    typename at_c<typename Base::Jacobians,0>::type H1;
-    typename at_c<typename Base::Jacobians,1>::type H2;
-
-    T t = function_(a1.value(), a2.value(),H1,H2);
-    return Augmented<T>(t, H1, a1.jacobians(), H2, a2.jacobians());
   }
 
   /// Construct an execution trace for reverse AD
@@ -826,24 +674,6 @@ public:
     none, none, none);
   }
 
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    using boost::none;
-    Augmented<A1> a1 = this->template expression<A1, 1>()->forward(values);
-    Augmented<A2> a2 = this->template expression<A2, 2>()->forward(values);
-    Augmented<A3> a3 = this->template expression<A3, 3>()->forward(values);
-
-    // Declare Jacobians
-    using boost::mpl::at_c;
-    typename at_c<typename Base::Jacobians,0>::type H1;
-    typename at_c<typename Base::Jacobians,1>::type H2;
-    typename at_c<typename Base::Jacobians,2>::type H3;
-
-    T t = function_(a1.value(), a2.value(), a3.value(),H1,H2,H3);
-    return Augmented<T>(t, H1, a1.jacobians(), H2, a2.jacobians(),
-        H3, a3.jacobians());
-  }
-
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
@@ -859,5 +689,5 @@ public:
 
 };
 //-----------------------------------------------------------------------------
-      }
+}
 
