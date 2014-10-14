@@ -42,6 +42,11 @@ public:
       const T& measurement, const Expression<T>& expression) :
       NoiseModelFactor(noiseModel, expression.keys()), //
       measurement_(measurement), expression_(expression) {
+    if (!noiseModel)
+      throw std::invalid_argument("ExpressionFactor: no NoiseModel.");
+    if (noiseModel->dim() != T::dimension)
+      throw std::invalid_argument(
+          "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
   }
 
   /**
@@ -72,34 +77,31 @@ public:
     if (!this->active(x))
       return boost::shared_ptr<JacobianFactor>();
 
-    // Evaluate error to get Jacobians and RHS vector b
-    JacobianMap terms;
-    T value = expression_.value(x, terms);
-    Vector b = -measurement_.localCoordinates(value);
-    // check(noiseModel_, b); // TODO: use, but defined in NonlinearFactor.cpp
-
-    // Whiten the corresponding system now
-    // TODO ! this->noiseModel_->WhitenSystem(A, b);
-
     // Get dimensions of matrices
-    std::map<Key,size_t> map = expression_.dimensions();
+    std::map<Key, size_t> map = expression_.dimensions();
     size_t n = map.size();
 
-    // Get actual diemnsions. TODO: why can't we pass map | map_values directly?
+    // Get actual dimensions. TODO: why can't we pass map | map_values directly?
     std::vector<size_t> dims(n);
     boost::copy(map | map_values, dims.begin());
 
     // Construct block matrix, is of right size but un-initialized
-    VerticalBlockMatrix Ab(dims, b.size(), true);
+    VerticalBlockMatrix Ab(dims, T::dimension, true);
 
-    // Check and add terms
+    // Create and zero out blocks to be passed to expression_
     DenseIndex i = 0; // For block index
-    for (JacobianMap::const_iterator it = terms.begin(); it != terms.end();
-        ++it) {
-      const std::pair<Key, Matrix>& term = *it;
-      const Matrix& Ai = term.second;
-      Ab(i++) = Ai;
+    typedef std::pair<Key, size_t> Pair;
+    BOOST_FOREACH(const Pair& keyValue, map) {
+      Ab(i++) = zeros(T::dimension, keyValue.second);
     }
+
+    // Evaluate error to get Jacobians and RHS vector b
+    // JacobianMap terms;
+    T value = expression_.value(x);
+    Vector b = -measurement_.localCoordinates(value);
+
+    // Whiten the corresponding system now
+    // TODO ! this->noiseModel_->WhitenSystem(A, b);
 
     // Fill in RHS
     Ab(n).col(0) = b;
@@ -109,7 +111,8 @@ public:
     noiseModel::Constrained::shared_ptr constrained = //
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained) {
-      return boost::make_shared<JacobianFactor>(map | map_keys, Ab, constrained->unit());
+      return boost::make_shared<JacobianFactor>(map | map_keys, Ab,
+          constrained->unit());
     } else
       return boost::make_shared<JacobianFactor>(map | map_keys, Ab);
   }
