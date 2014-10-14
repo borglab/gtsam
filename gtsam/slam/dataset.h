@@ -94,7 +94,7 @@ GTSAM_EXPORT GraphAndValues load2D(
  * @return graph and initial values
  */
 GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
-    SharedNoiseModel model = SharedNoiseModel(), int maxID = 0, bool addNoise =
+    SharedNoiseModel model = SharedNoiseModel(), Key maxID = 0, bool addNoise =
         false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatGRAPH, //
     KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 

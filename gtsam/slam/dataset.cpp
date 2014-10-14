@@ -163,7 +163,7 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
+GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
     bool addNoise, bool smart, NoiseFormat noiseFormat,
     KernelFunctionType kernelFunctionType) {
 
@@ -211,7 +211,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
   }
 
   // Parse the pose constraints
-  int id1, id2;
+  Key id1, id2;
   bool haveLandmark = false;
   while (!is.eof()) {
     if (!(is >> tag))
