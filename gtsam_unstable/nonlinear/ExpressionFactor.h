@@ -21,6 +21,9 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
 
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm.hpp>
+
 namespace gtsam {
 
 /**
@@ -63,6 +66,8 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
+    using namespace boost::adaptors;
+
     // Only linearize if the factor is active
     if (!this->active(x))
       return boost::shared_ptr<JacobianFactor>();
@@ -76,21 +81,16 @@ public:
     // Whiten the corresponding system now
     // TODO ! this->noiseModel_->WhitenSystem(A, b);
 
-    // Terms, needed to create JacobianFactor below, are already here!
-    size_t n = terms.size();
-
     // Get dimensions of matrices
-    std::vector<size_t> dimensions;
-    dimensions.reserve(n);
-    for (JacobianMap::const_iterator it = terms.begin(); it != terms.end();
-        ++it) {
-      const std::pair<Key, Matrix>& term = *it;
-      const Matrix& Ai = term.second;
-      dimensions.push_back(Ai.cols());
-    }
+    std::map<Key,size_t> map = expression_.dimensions();
+    size_t n = map.size();
+
+    // Get actual diemnsions. TODO: why can't we pass map | map_values directly?
+    std::vector<size_t> dims(n);
+    boost::copy(map | map_values, dims.begin());
 
     // Construct block matrix, is of right size but un-initialized
-    VerticalBlockMatrix Ab(dimensions, b.size(), true);
+    VerticalBlockMatrix Ab(dims, b.size(), true);
 
     // Check and add terms
     DenseIndex i = 0; // For block index
@@ -101,19 +101,17 @@ public:
       Ab(i++) = Ai;
     }
 
+    // Fill in RHS
     Ab(n).col(0) = b;
-
-    // Get keys to construct factor
-    std::set<Key> keys = expression_.keys();
 
     // TODO pass unwhitened + noise model to Gaussian factor
     // For now, only linearized constrained factors have noise model at linear level!!!
     noiseModel::Constrained::shared_ptr constrained = //
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained) {
-      return boost::make_shared<JacobianFactor>(keys, Ab, constrained->unit());
+      return boost::make_shared<JacobianFactor>(map | map_keys, Ab, constrained->unit());
     } else
-      return boost::make_shared<JacobianFactor>(keys, Ab);
+      return boost::make_shared<JacobianFactor>(map | map_keys, Ab);
   }
 };
 // ExpressionFactor
