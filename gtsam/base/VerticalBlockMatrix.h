@@ -74,8 +74,8 @@ namespace gtsam {
     }
 
     /** Construct from a container of the sizes of each vertical block and a pre-prepared matrix. */
-    template<typename CONTAINER>
-    VerticalBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix, bool appendOneDimension = false) :
+    template<typename CONTAINER, typename DERIVED>
+    VerticalBlockMatrix(const CONTAINER& dimensions, const Eigen::MatrixBase<DERIVED>& matrix, bool appendOneDimension = false) :
       matrix_(matrix), rowStart_(0), rowEnd_(matrix.rows()), blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);

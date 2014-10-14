@@ -20,6 +20,7 @@
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
+#include <numeric>
 
 namespace gtsam {
 
@@ -78,30 +79,26 @@ public:
     }
   }
 
-  // Internal function to allocate a VerticalBlockMatrix and
-  // create Eigen::Block<Matrix> views into it
-  VerticalBlockMatrix prepareBlocks(JacobianMap& blocks) const {
+  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
+
+    // Construct VerticalBlockMatrix and views into it
 
     // Get dimensions of Jacobian matrices
     std::vector<size_t> dims = expression_.dimensions();
 
+    // Allocate memory on stack and create a view on it (saves a malloc)
+    size_t m1 = std::accumulate(dims.begin(),dims.end(),1);
+    double memory[T::dimension*m1];
+    Eigen::Map<Eigen::Matrix<double,T::dimension,Eigen::Dynamic> > matrix(memory,T::dimension,m1);
+    matrix.setZero(); // zero out
+
     // Construct block matrix, is of right size but un-initialized
-    VerticalBlockMatrix Ab(dims, T::dimension, true);
-    Ab.matrix().setZero(); // zero out
+    VerticalBlockMatrix Ab(dims, matrix, true);
 
     // Create blocks to be passed to expression_
+    JacobianMap blocks;
     for(DenseIndex i=0;i<size();i++)
       blocks.insert(std::make_pair(keys_[i], Ab(i)));
-
-    return Ab;
-  }
-
-  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
-
-    // Construct VerticalBlockMatrix and views into it
-    JacobianMap blocks;
-    VerticalBlockMatrix Ab = prepareBlocks(blocks);
-
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, blocks);
     Ab(size()).col(0) = -measurement_.localCoordinates(value);
