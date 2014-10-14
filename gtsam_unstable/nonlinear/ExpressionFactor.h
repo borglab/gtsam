@@ -82,18 +82,14 @@ public:
     // Get dimensions of matrices
     std::vector<size_t> dimensions;
     dimensions.reserve(n);
-    std::vector<Key> keys;
-    keys.reserve(n);
     for (JacobianMap::const_iterator it = terms.begin(); it != terms.end();
         ++it) {
       const std::pair<Key, Matrix>& term = *it;
-      Key key = term.first;
       const Matrix& Ai = term.second;
       dimensions.push_back(Ai.cols());
-      keys.push_back(key);
     }
 
-    // Construct block matrix
+    // Construct block matrix, is of right size but un-initialized
     VerticalBlockMatrix Ab(dimensions, b.size(), true);
 
     // Check and add terms
@@ -106,6 +102,9 @@ public:
     }
 
     Ab(n).col(0) = b;
+
+    // Get keys to construct factor
+    std::set<Key> keys = expression_.keys();
 
     // TODO pass unwhitened + noise model to Gaussian factor
     // For now, only linearized constrained factors have noise model at linear level!!!
