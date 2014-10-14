@@ -85,8 +85,8 @@ public:
 
     // Get dimensions of Jacobian matrices
     std::vector<size_t> dims = expression_.dimensions();
-    size_t m = std::accumulate(dims.rend(),dims.rbegin(),0);
-    Matrix matrix(T::dimension,m);
+    size_t m1 = std::accumulate(dims.begin(),dims.end(),1);
+    Matrix matrix = Matrix::Identity(T::dimension,m1);
 
     // Construct block matrix, is of right size but un-initialized
     VerticalBlockMatrix Ab(dims, matrix, true);
