@@ -1,7 +1,7 @@
 // ISO C9x  compliant stdint.h for Microsoft Visual Studio
 // Based on ISO/IEC 9899:TC2 Committee draft (May 6, 2005) WG14/N1124 
 // 
-//  Copyright (c) 2006 Alexander Chemeris
+//  Copyright (c) 2006-2013 Alexander Chemeris
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -13,8 +13,9 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 // 
-//   3. The name of the author may be used to endorse or promote products
-//      derived from this software without specific prior written permission.
+//   3. Neither the name of the product nor the names of its contributors may
+//      be used to endorse or promote products derived from this software
+//      without specific prior written permission.
 // 
 // THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
 // WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -40,30 +41,59 @@
 #pragma once
 #endif
 
+#if _MSC_VER >= 1600 // [
+#include <stdint.h>
+#else // ] _MSC_VER >= 1600 [
+
 #include <limits.h>
 
-// For Visual Studio 6 in C++ mode wrap <wchar.h> include with 'extern "C++" {}'
+// For Visual Studio 6 in C++ mode and for many Visual Studio versions when
+// compiling for ARM we should wrap <wchar.h> include with 'extern "C++" {}'
 // or compiler give many errors like this:
 //   error C2733: second C linkage of overloaded function 'wmemchr' not allowed
-#if (_MSC_VER < 1300) && defined(__cplusplus)
-   extern "C++" {
-#endif 
-#     include <wchar.h>
-#if (_MSC_VER < 1300) && defined(__cplusplus)
-   }
+#ifdef __cplusplus
+extern "C" {
 #endif
+#  include <wchar.h>
+#ifdef __cplusplus
+}
+#endif
+
+// Define _W64 macros to mark types changing their size, like intptr_t.
+#ifndef _W64
+#  if !defined(__midl) && (defined(_X86_) || defined(_M_IX86)) && _MSC_VER >= 1300
+#     define _W64 __w64
+#  else
+#     define _W64
+#  endif
+#endif
+
 
 // 7.18.1 Integer types
 
 // 7.18.1.1 Exact-width integer types
-typedef __int8            int8_t;
-typedef __int16           int16_t;
-typedef __int32           int32_t;
-typedef __int64           int64_t;
+
+// Visual Studio 6 and Embedded Visual C++ 4 doesn't
+// realize that, e.g. char has the same size as __int8
+// so we give up on __intX for them.
+#if (_MSC_VER < 1300)
+typedef signed char       int8_t;
+typedef signed short      int16_t;
+typedef signed int        int32_t;
+typedef unsigned char     uint8_t;
+typedef unsigned short    uint16_t;
+typedef unsigned int      uint32_t;
+#else
+typedef signed __int8     int8_t;
+typedef signed __int16    int16_t;
+typedef signed __int32    int32_t;
 typedef unsigned __int8   uint8_t;
 typedef unsigned __int16  uint16_t;
 typedef unsigned __int32  uint32_t;
-typedef unsigned __int64  uint64_t;
+#endif
+typedef signed __int64       int64_t;
+typedef unsigned __int64     uint64_t;
+
 
 // 7.18.1.2 Minimum-width integer types
 typedef int8_t    int_least8_t;
@@ -87,11 +117,11 @@ typedef uint64_t  uint_fast64_t;
 
 // 7.18.1.4 Integer types capable of holding object pointers
 #ifdef _WIN64 // [
-   typedef __int64           intptr_t;
-   typedef unsigned __int64  uintptr_t;
+typedef signed __int64    intptr_t;
+typedef unsigned __int64  uintptr_t;
 #else // _WIN64 ][
-   typedef int               intptr_t;
-   typedef unsigned int      uintptr_t;
+typedef _W64 signed int   intptr_t;
+typedef _W64 unsigned int uintptr_t;
 #endif // _WIN64 ]
 
 // 7.18.1.5 Greatest-width integer types
@@ -213,10 +243,17 @@ typedef uint64_t  uintmax_t;
 #define UINT64_C(val) val##ui64
 
 // 7.18.4.2 Macros for greatest-width integer constants
-#define INTMAX_C   INT64_C
-#define UINTMAX_C  UINT64_C
+// These #ifndef's are needed to prevent collisions with <boost/cstdint.hpp>.
+// Check out Issue 9 for the details.
+#ifndef INTMAX_C //   [
+#  define INTMAX_C   INT64_C
+#endif // INTMAX_C    ]
+#ifndef UINTMAX_C //  [
+#  define UINTMAX_C  UINT64_C
+#endif // UINTMAX_C   ]
 
 #endif // __STDC_CONSTANT_MACROS ]
 
+#endif // _MSC_VER >= 1600 ]
 
 #endif // _MSC_STDINT_H_ ]

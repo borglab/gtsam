@@ -155,7 +155,7 @@ namespace gtsam {
     static GTSAM_EXPORT Ordering METIS(const MetisIndex& met);
 
     template<class FACTOR>
-    static GTSAM_EXPORT Ordering METIS(const FactorGraph<FACTOR>& graph)
+    static Ordering METIS(const FactorGraph<FACTOR>& graph)
     {
         return METIS(MetisIndex(graph));
     }

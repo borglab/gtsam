@@ -14,4 +14,7 @@ install(TARGETS metis
   RUNTIME DESTINATION include/gtsam/3rdparty/metis/lib
   ARCHIVE DESTINATION include/gtsam/3rdparty/metis/lib)
 
+install(TARGETS metis EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
 
+list(APPEND GTSAM_EXPORTED_TARGETS metis)
+set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
