@@ -127,6 +127,26 @@ namespace gtsam {
             && equal_with_abs_tol(delVdelBiasOmega, expected.delVdelBiasOmega, tol)
             && equal_with_abs_tol(delRdelBiasOmega, expected.delRdelBiasOmega, tol);
       }
+      Matrix MeasurementCovariance() const {
+        return measurementCovariance;
+      }
+      Matrix getDeltaRij() const {
+        return deltaRij.matrix();
+      }
+      double getDeltaTij() const{
+        return deltaTij;
+      }
+
+      Vector getDeltaPij() const {
+        return deltaPij;
+      }
+      Vector getDeltaVij() const {
+        return deltaVij;
+      }
+      Vector getBiasHat() const {
+        return biasHat.vector();
+      }
+
 
       void resetIntegration(){
         deltaPij = Vector3::Zero();

@@ -31,19 +31,16 @@ public:
 
     PreintegratedMeasurements(const imuBias::ConstantBias& bias,
         const Matrix3& measuredOmegaCovariance) :
-          biasHat(bias), measurementCovariance(3,3), delRdelBiasOmega(
-              Matrix3::Zero()), PreintMeasCov(3,3) {
+          biasHat(bias), measurementCovariance(3,3), deltaTij(0.0),
+          delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(3,3) {
 //      measurementCovariance << integrationErrorCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measurementAccCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measuredOmegaCovariance;
       measurementCovariance <<measuredOmegaCovariance;
       PreintMeasCov = Matrix::Zero(3,3);
     }
 
     PreintegratedMeasurements() :
-      biasHat(imuBias::ConstantBias()), measurementCovariance(3,3), delRdelBiasOmega(
-          Matrix3::Zero()), PreintMeasCov(3,3) {
-      measurementCovariance = Matrix::Zero(3,3);
-      PreintMeasCov = Matrix::Zero(3,3);
-    }
+      biasHat(imuBias::ConstantBias()), measurementCovariance(Matrix::Zero(3,3)), deltaTij(0.0),
+      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(3,3)) {}
 
     void print(const std::string& s = "Preintegrated Measurements: ") const {
       std::cout << s << std::endl;
@@ -64,8 +61,18 @@ public:
               && equal_with_abs_tol(delRdelBiasOmega, expected.delRdelBiasOmega,
                   tol);
     }
-    Matrix MeasurementCovariance(){
+    Matrix MeasurementCovariance() const {
       return measurementCovariance;
+    }
+    Matrix deltaRij_() const {
+      return deltaRij.matrix();
+    }
+    double deltaTij_() const {
+      return deltaTij;
+    }
+
+    Vector biasHat_() const {
+      return biasHat.vector();
     }
 
     void resetIntegration() {
@@ -226,48 +233,43 @@ public:
       boost::optional<Matrix&> H3 = boost::none) const
   {
 
-    const double& deltaTij = preintegratedMeasurements_.deltaTij;
-//    const Vector3 biasAccIncr = bias.accelerometer()
-                - preintegratedMeasurements_.biasHat.accelerometer();
-    const Vector3 biasOmegaIncr = bias.gyroscope()
+    double deltaTij = preintegratedMeasurements_.deltaTij;
+
+    Vector3 biasOmegaIncr = bias.gyroscope()
                 - preintegratedMeasurements_.biasHat.gyroscope();
 
-    // we give some shorter name to rotations and translations
-    const Rot3 Rot_i = rot_i;
-    const Rot3 Rot_j = rot_j;
     // We compute factor's Jacobians
     /* ---------------------------------------------------------------------------------------------------- */
-    const Rot3 deltaRij_biascorrected =
+    Rot3 deltaRij_biascorrected =
         preintegratedMeasurements_.deltaRij.retract(
             preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr,
             Rot3::EXPMAP);
-    // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
 
     Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
 
     Vector3 theta_biascorrected_corioliscorrected = theta_biascorrected
-        - Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij; // Coriolis term
+        - rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij; // Coriolis term
 
-    const Rot3 deltaRij_biascorrected_corioliscorrected = Rot3::Expmap(
+    Rot3 deltaRij_biascorrected_corioliscorrected = Rot3::Expmap(
         theta_biascorrected_corioliscorrected);
 
-    const Rot3 fRhat = deltaRij_biascorrected_corioliscorrected.between(
-        Rot_i.between(Rot_j));
+    Rot3 fRhat = deltaRij_biascorrected_corioliscorrected.between(
+        rot_i.between(rot_j));
 
-    const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(
+    Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(
         theta_biascorrected_corioliscorrected);
 
-    const Matrix3 Jtheta = -Jr_theta_bcc
-        * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
+    Matrix3 Jtheta = -Jr_theta_bcc
+        * skewSymmetric(rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
 
-    const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(
+    Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(
         Rot3::Logmap(fRhat));
 
     if (H1) {
       H1->resize(3, 3);
       (*H1) << // dfR/dRi
           Jrinv_fRhat
-          * (-Rot_j.between(Rot_i).matrix()
+          * (-rot_j.between(rot_i).matrix()
               - fRhat.inverse().matrix() * Jtheta);
     }
     if(H2) {
@@ -280,11 +282,11 @@ public:
 
     if (H3) {
 
-      const Matrix3 Jrinv_theta_bc = Rot3::rightJacobianExpMapSO3inverse(
+      Matrix3 Jrinv_theta_bc = Rot3::rightJacobianExpMapSO3inverse(
           theta_biascorrected);
-      const Matrix3 Jr_JbiasOmegaIncr = Rot3::rightJacobianExpMapSO3(
+      Matrix3 Jr_JbiasOmegaIncr = Rot3::rightJacobianExpMapSO3(
           preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr);
-      const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc
+      Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc
           * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega;
 
       H3->resize(3, 6);
@@ -294,7 +296,7 @@ public:
           Jrinv_fRhat * (-fRhat.inverse().matrix() * JbiasOmega);
     }
 
-    const Vector3 fR = Rot3::Logmap(fRhat);
+    Vector3 fR = Rot3::Logmap(fRhat);
 
     Vector r(3);
     r << fR;

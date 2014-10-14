@@ -191,6 +191,12 @@ public:
     }
     return e;
   }
+  Unit3 nZ() const {
+    return nZ_;
+  }
+  Unit3 bRef() const {
+    return bRef_;
+  }
 
 private:
 

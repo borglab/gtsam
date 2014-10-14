@@ -38,10 +38,38 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
 
   // Compute BayesTree
   factorization_ = factorization;
-  if(factorization_ == CHOLESKY)
+  if(factorization_ == CHOLESKY) {
     bayesTree_ = *graph_.eliminateMultifrontal(boost::none, EliminatePreferCholesky);
-  else if(factorization_ == QR)
+  std::cout<<"performing Cholesky"<<std::endl;
+  }
+  else if(factorization_ == QR) {
     bayesTree_ = *graph_.eliminateMultifrontal(boost::none, EliminateQR);
+    std::cout<<"performing QR"<<std::endl;
+  }
+}
+
+Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, const std::string& str) {
+  Factorization factorization;
+  if (str == "QR") factorization = QR;
+  else if (str == "CHOLESKY") factorization = CHOLESKY;
+  gttic(MarginalsConstructor);
+
+  // Linearize graph
+  graph_ = *graph.linearize(solution);
+
+  // Store values
+  values_ = solution;
+
+  // Compute BayesTree
+  factorization_ = factorization;
+  if(factorization_ == CHOLESKY) {
+    bayesTree_ = *graph_.eliminateMultifrontal(boost::none, EliminatePreferCholesky);
+  std::cout<<"performing Cholesky"<<std::endl;
+  }
+  else if(factorization_ == QR) {
+    bayesTree_ = *graph_.eliminateMultifrontal(boost::none, EliminateQR);
+    std::cout<<"performing QR"<<std::endl;
+  }
 }
 
 /* ************************************************************************* */
@@ -141,6 +169,26 @@ void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) c
     cout << formatter(key);
   }
   cout << ".  Use 'at' or 'operator()' to query matrix blocks." << endl;
+}
+
+Marginals::Factorization Marginals::factorizationTranslator(const std::string& str) const {
+//  std::string s = str;  boost::algorithm::to_upper(s);
+  if (str == "QR") return Marginals::QR;
+  if (str == "CHOLESKY") return Marginals::CHOLESKY;
+
+  /* default is CHOLESKY */
+  return Marginals::CHOLESKY;
+}
+
+/* ************************************************************************* */
+std::string Marginals::factorizationTranslator(const Marginals::Factorization& value) const {
+  std::string s;
+  switch (value) {
+  case Marginals::QR:         s = "QR"; break;
+  case Marginals::CHOLESKY:   s = "CHOLESKY"; break;
+  default:                      s = "UNDEFINED"; break;
+  }
+  return s;
 }
 
 } /* namespace gtsam */

@@ -640,6 +640,7 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
     // Erase the eliminated keys in the remaining factor
     jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + keys.size());
   } catch(CholeskyFailed&) {
+    std::cout << "EliminateCholesky failed!"  << std::endl;
     throw IndeterminantLinearSystemException(keys.front());
   }
 

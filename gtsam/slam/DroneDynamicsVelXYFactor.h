@@ -60,9 +60,9 @@ namespace gtsam {
     // M = [sum(sqrt(m))ax 1 0 0; 0 0 sum(sqrt(m))ay 1; 0 0 0 0]
     Matrix computeM(const Vector& motors, const Vector& acc) const {
       Matrix M = zeros(3,4);
-      double sqrtSumMotors = sqrt(motors(0)) + sqrt(motors(1)) + sqrt(motors(2)) + sqrt(motors(3));
-      M(0,0) = sqrtSumMotors*acc(0); M(0, 1) = 1.0;
-      M(1,2) = 1.0; M(1, 3) = sqrtSumMotors*acc(1);
+      double sumMotors = (motors(0)) + (motors(1)) + (motors(2)) + (motors(3));
+      M(0,0) = acc(0)/sumMotors; M(0, 1) = 1.0/sumMotors;
+      M(1,2) = 1.0/sumMotors; M(1, 3) = acc(1)/sumMotors;
       return M;
     }
 

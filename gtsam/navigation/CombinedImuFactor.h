@@ -299,6 +299,23 @@ namespace gtsam {
           return Rot3::Logmap(R_t_to_t0);
       }
       /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+      Matrix getDeltaRij() const {
+        return deltaRij.matrix();
+      }
+      double getDeltaTij() const{
+        return deltaTij;
+      }
+
+      Vector getDeltaPij() const {
+        return deltaPij;
+      }
+      Vector getDeltaVij() const {
+        return deltaVij;
+      }
+      Vector getBiasHat() const {
+        return biasHat.vector();
+      }
+
 
     private:
       /** Serialization function */
@@ -672,6 +689,61 @@ namespace gtsam {
       pose_j = Pose3( Rot_j, Point3(pos_j) );
 
       bias_j = bias_i;
+    }
+
+
+    static Pose3 PredictPose(const Pose3& pose_i, const LieVector& vel_i,
+            const imuBias::ConstantBias& bias_i,
+            const CombinedPreintegratedMeasurements& preintegratedMeasurements,
+            const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
+            const bool use2ndOrderCoriolis = false) {
+      Pose3 pose_j = Pose3();
+      LieVector vel_j = LieVector();
+      imuBias::ConstantBias bias_j = imuBias::ConstantBias();
+
+      Predict(pose_i, vel_i, pose_j, vel_j,
+              bias_i, bias_j,
+              preintegratedMeasurements,
+              gravity, omegaCoriolis, body_P_sensor,
+              use2ndOrderCoriolis);
+
+      return pose_j;
+    }
+
+    static LieVector PredictVelocity(const Pose3& pose_i, const LieVector& vel_i,
+            const imuBias::ConstantBias& bias_i,
+            const CombinedPreintegratedMeasurements& preintegratedMeasurements,
+            const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
+            const bool use2ndOrderCoriolis = false) {
+      Pose3 pose_j = Pose3();
+      LieVector vel_j = LieVector();
+      imuBias::ConstantBias bias_j = imuBias::ConstantBias();
+
+      Predict(pose_i, vel_i, pose_j, vel_j,
+              bias_i, bias_j,
+              preintegratedMeasurements,
+              gravity, omegaCoriolis, body_P_sensor,
+              use2ndOrderCoriolis);
+
+      return vel_j;
+    }
+
+    static imuBias::ConstantBias PredictImuBias(const Pose3& pose_i, const LieVector& vel_i,
+            const imuBias::ConstantBias& bias_i,
+            const CombinedPreintegratedMeasurements& preintegratedMeasurements,
+            const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
+            const bool use2ndOrderCoriolis = false) {
+      Pose3 pose_j = Pose3();
+      LieVector vel_j = LieVector();
+      imuBias::ConstantBias bias_j = imuBias::ConstantBias();
+
+      Predict(pose_i, vel_i, pose_j, vel_j,
+              bias_i, bias_j,
+              preintegratedMeasurements,
+              gravity, omegaCoriolis, body_P_sensor,
+              use2ndOrderCoriolis);
+
+      return bias_j;
     }
 
 
