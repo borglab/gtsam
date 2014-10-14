@@ -61,6 +61,11 @@ namespace gtsam {
       Base(size_t dim = 1):dim_(dim) {}
       virtual ~Base() {}
 
+      /** true if a constrained noise mode, saves slow/clumsy dynamic casting */
+      virtual bool is_constrained() const {
+        return false;
+      }
+
       /// Dimensionality
       inline size_t dim() const { return dim_;}
 
@@ -384,6 +389,11 @@ namespace gtsam {
       typedef boost::shared_ptr<Constrained> shared_ptr;
 
       virtual ~Constrained() {}
+
+      /** true if a constrained noise mode, saves slow/clumsy dynamic casting */
+      virtual bool is_constrained() const {
+        return true;
+      }
 
       /// Access mu as a vector
       const Vector& mu() const { return mu_; }

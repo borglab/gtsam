@@ -63,11 +63,11 @@ public:
 
       // Create and zero out blocks to be passed to expression_
       JacobianMap blocks;
-      for(DenseIndex i=0;i<size();i++) {
+      for (DenseIndex i = 0; i < size(); i++) {
         Matrix& Hi = H->at(i);
         Hi.resize(T::dimension, dims[i]);
         Hi.setZero(); // zero out
-        Eigen::Block<Matrix> block = Hi.block(0,0,T::dimension, dims[i]);
+        Eigen::Block<Matrix> block = Hi.block(0, 0, T::dimension, dims[i]);
         blocks.insert(std::make_pair(keys_[i], block));
       }
 
@@ -87,17 +87,18 @@ public:
     std::vector<size_t> dims = expression_.dimensions();
 
     // Allocate memory on stack and create a view on it (saves a malloc)
-    size_t m1 = std::accumulate(dims.begin(),dims.end(),1);
-    double memory[T::dimension*m1];
-    Eigen::Map<Eigen::Matrix<double,T::dimension,Eigen::Dynamic> > matrix(memory,T::dimension,m1);
+    size_t m1 = std::accumulate(dims.begin(), dims.end(), 1);
+    double memory[T::dimension * m1];
+    Eigen::Map<Eigen::Matrix<double, T::dimension, Eigen::Dynamic> > matrix(
+        memory, T::dimension, m1);
     matrix.setZero(); // zero out
 
-    // Construct block matrix, is of right size but un-initialized
+    // Construct block matrix, is then of right and initialized to zero
     VerticalBlockMatrix Ab(dims, matrix, true);
 
     // Create blocks to be passed to expression_
     JacobianMap blocks;
-    for(DenseIndex i=0;i<size();i++)
+    for (DenseIndex i = 0; i < size(); i++)
       blocks.insert(std::make_pair(keys_[i], Ab(i)));
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, blocks);
@@ -108,11 +109,13 @@ public:
 
     // TODO pass unwhitened + noise model to Gaussian factor
     // For now, only linearized constrained factors have noise model at linear level!!!
-    noiseModel::Constrained::shared_ptr constrained = //
-        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained) {
-      return boost::make_shared<JacobianFactor>(this->keys(), Ab,
-          constrained->unit());
+    if (noiseModel_->is_constrained()) {
+      noiseModel::Constrained::shared_ptr p = //
+          boost::dynamic_pointer_cast<noiseModel::Constrained>(noiseModel_);
+      if (!p)
+        throw std::invalid_argument(
+            "ExpressionFactor: constrained NoiseModel cast failed.");
+      return boost::make_shared<JacobianFactor>(this->keys(), Ab, p->unit());
     } else
       return boost::make_shared<JacobianFactor>(this->keys(), Ab);
   }
