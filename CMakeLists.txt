@@ -216,7 +216,6 @@ configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eig
 # Install the configuration file for Eigen
 install(FILES ${PROJECT_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
 
-
 ###############################################################################
 # Global compile options
 

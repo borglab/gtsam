@@ -19,7 +19,6 @@ set(gtsam_srcs)
 message(STATUS "Building 3rdparty") 
 add_subdirectory(3rdparty)
 
-# build convenience library
 set (3rdparty_srcs 
  ${eigen_headers} # Set by 3rdparty/CMakeLists.txt
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c 
@@ -91,12 +90,12 @@ set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSIO
 set(gtsam_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM Version: ${gtsam_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
- 
+message(STATUS "GTSAM Additional: ${GTSAM_ADDITIONAL_LIBRARIES}")
 # build shared and static versions of the library
 if (GTSAM_BUILD_STATIC_LIBRARY)
     message(STATUS "Building GTSAM - static")
     add_library(gtsam STATIC ${gtsam_srcs})
-	target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
+	target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} metis ${GTSAM_ADDITIONAL_LIBRARIES})
     set_target_properties(gtsam PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
@@ -113,7 +112,7 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
 else()
     message(STATUS "Building GTSAM - shared")
     add_library(gtsam SHARED ${gtsam_srcs})
-    target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
+    target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} metis ${GTSAM_ADDITIONAL_LIBRARIES})
     set_target_properties(gtsam PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1

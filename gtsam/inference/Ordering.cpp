@@ -199,19 +199,27 @@ namespace gtsam {
 
 
   /* ************************************************************************* */
-  template<class FACTOR>
-  Ordering Ordering::METIS(const FactorGraph<FACTOR>& graph)
+  Ordering Ordering::METIS(const MetisIndex& met)
   {
       gttic(Ordering_METIS);
-      // First develop the adjacency matrix for the 
-      // graph as described in Section 5.5 of the METIS manual
-      // CSR Format
-      // xadj is of size n+1
-      // metis vars
+
+      vector<int> xadj = met.xadj();
+      vector<int>  adj = met.adj();
+
+      vector<int> perm, iperm;
+      int outputError;
+      idx_t size = xadj.size();
+      outputError = METIS_NodeND(&size, xadj.data(), adj.data(), NULL, NULL, perm.data(), iperm.data());
+      Ordering result;
+
+      if (outputError != METIS_OK)
+      {
+          std::cout << "METIS ordering error!\n";
+          return result;
+      }
 
 
-      //METIS_NodeND(graph.keys().size(), xadj, adj);
-      
+      return result;
   }
 
   /* ************************************************************************* */

@@ -24,6 +24,7 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/VariableIndex.h>
+#include <gtsam/inference/MetisIndex.h>
 #include <gtsam/inference/FactorGraph.h>
 
 namespace gtsam {
@@ -151,10 +152,13 @@ namespace gtsam {
     static GTSAM_EXPORT void CSRFormat(std::vector<int>& xadj, std::vector<int>& adj, const FactorGraph<FACTOR>& graph);
 
     /// Compute an ordering determined by METIS from a VariableIndex
-    //static GTSAM_EXPORT Ordering METIS(const VariableIndex& variableIndex);
+    static GTSAM_EXPORT Ordering METIS(const MetisIndex& met);
 
     template<class FACTOR>
-    static GTSAM_EXPORT Ordering METIS(const FactorGraph<FACTOR>& graph);
+    static GTSAM_EXPORT Ordering METIS(const FactorGraph<FACTOR>& graph)
+    {
+        return METIS(MetisIndex(graph));
+    }
 
     /// @}
 

@@ -15,15 +15,12 @@
 * @date    Oct. 10, 2014
 */
 
-#include <gtsam/inference/MetisIndex.h>
+#pragma once
+
 #include <map>
 
 namespace gtsam {
 
-    MetisIndex::~MetisIndex(){}
-
-    std::vector<int>  MetisIndex::xadj() const { return xadj_; }
-    std::vector<int>  MetisIndex::adj() const { return  adj_; }
 
     /* ************************************************************************* */
     template<class FACTOR>
@@ -50,10 +47,13 @@ namespace gtsam {
         xadj_.push_back(0);// Always set the first index to zero
         for (adjMapIt = adjMap.begin(); adjMapIt != adjMap.end(); ++adjMapIt) {
             vector<int> temp;
+            // Copy from the FastSet into a temporary vector
             copy(adjMapIt->second.begin(), adjMapIt->second.end(), std::back_inserter(temp));
+            // Insert each index's set in order by appending them to the end of adj_
             adj_.insert(adj_.end(), temp.begin(), temp.end());
             //adj_.push_back(temp);
             xadj_.push_back(adj_.size());
         }
     }
+
 }

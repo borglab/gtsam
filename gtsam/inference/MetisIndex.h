@@ -25,6 +25,7 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/inference/FactorGraph.h>
 
 namespace gtsam {
     /**
@@ -56,7 +57,7 @@ public:
     MetisIndex(const FG& factorGraph) : nFactors_(0), nValues_(0) {
         augment(factorGraph); }
 
-    ~MetisIndex();
+    ~MetisIndex(){}
     /// @}
     /// @name Advanced Interface
     /// @{
@@ -68,11 +69,12 @@ public:
     template<class FACTOR>
     void augment(const FactorGraph<FACTOR>& factors);
 
-    std::vector<int> xadj() const;
-    std::vector<int>  adj() const;
+    std::vector<int> xadj() const { return xadj_; }
+    std::vector<int>  adj() const { return  adj_; }
 
     /// @}
 };
+
 }
 
 #include <gtsam/inference/MetisIndex-inl.h>

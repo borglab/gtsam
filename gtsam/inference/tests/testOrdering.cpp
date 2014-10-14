@@ -80,8 +80,6 @@ TEST(Ordering, grouped_constrained_ordering) {
 
 /* ************************************************************************* */
 TEST(Ordering, csr_format) {
-
-
     // Example in METIS manual
     SymbolicFactorGraph sfg;
     sfg.push_factor(0, 1);
@@ -118,10 +116,18 @@ TEST(Ordering, csr_format) {
     EXPECT(xadjExpected  == mi.xadj());
     EXPECT(adjExpected.size() == mi.adj().size());
     EXPECT( adjExpected  == mi.adj());
-
-
 }
+/* ************************************************************************* */
+TEST(Ordering, metis) {
 
+    SymbolicFactorGraph sfg;
+    sfg.push_factor(0, 1);
+    sfg.push_factor(1, 2);
+    sfg.push_factor(2, 3);
+    sfg.push_factor(3, 4);
+
+    Ordering::METIS(sfg);
+}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
