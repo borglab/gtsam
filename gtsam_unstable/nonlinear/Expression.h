@@ -34,73 +34,83 @@ class Expression {
 private:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
-  boost::shared_ptr<ExpressionNode<T> > root_;
+  const boost::shared_ptr<ExpressionNode<T> > root_;
+
+  // Fixed dimensions: an Expression is assumed unmutable
+  const std::vector<size_t> dimensions_;
 
 public:
 
   // Construct a constant expression
   Expression(const T& value) :
-      root_(new ConstantExpression<T>(value)) {
+      root_(new ConstantExpression<T>(value)), //
+      dimensions_(root_->dimensions()) {
   }
 
   // Construct a leaf expression, with Key
   Expression(const Key& key) :
-      root_(new LeafExpression<T>(key)) {
+      root_(new LeafExpression<T>(key)), //
+      dimensions_(root_->dimensions()) {
   }
 
   // Construct a leaf expression, with Symbol
   Expression(const Symbol& symbol) :
-      root_(new LeafExpression<T>(symbol)) {
+      root_(new LeafExpression<T>(symbol)), //
+      dimensions_(root_->dimensions()) {
   }
 
   // Construct a leaf expression, creating Symbol
   Expression(unsigned char c, size_t j) :
-      root_(new LeafExpression<T>(Symbol(c, j))) {
+      root_(new LeafExpression<T>(Symbol(c, j))), //
+      dimensions_(root_->dimensions()) {
   }
 
   /// Construct a nullary method expression
   template<typename A>
   Expression(const Expression<A>& expression,
-      T (A::*method)(boost::optional<Matrix&>) const) {
-    root_.reset(
-        new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression));
+      T (A::*method)(typename Optional<T, A>::type) const) :
+      root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)), //
+      dimensions_(root_->dimensions()) {
   }
 
   /// Construct a unary function expression
   template<typename A>
   Expression(typename UnaryExpression<T, A>::Function function,
-      const Expression<A>& expression) {
-    root_.reset(new UnaryExpression<T, A>(function, expression));
+      const Expression<A>& expression) :
+      root_(new UnaryExpression<T, A>(function, expression)), //
+      dimensions_(root_->dimensions()) {
   }
 
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
-      T (A1::*method)(const A2&,
-          boost::optional<typename BinaryExpression<T, A1, A2>::JacobianTA1&>,
-          boost::optional<typename BinaryExpression<T, A1, A2>::JacobianTA2&>) const,
-      const Expression<A2>& expression2) {
-    root_.reset(
-        new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
-            expression1, expression2));
+      T (A1::*method)(const A2&, typename Optional<T, A1>::type,
+          typename Optional<T, A2>::type) const,
+      const Expression<A2>& expression2) :
+      root_(
+          new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
+              expression1, expression2)), //
+      dimensions_(root_->dimensions()) {
   }
 
   /// Construct a binary function expression
   template<typename A1, typename A2>
   Expression(typename BinaryExpression<T, A1, A2>::Function function,
-      const Expression<A1>& expression1, const Expression<A2>& expression2) {
-    root_.reset(
-        new BinaryExpression<T, A1, A2>(function, expression1, expression2));
+      const Expression<A1>& expression1, const Expression<A2>& expression2) :
+      root_(
+          new BinaryExpression<T, A1, A2>(function, expression1, expression2)), //
+      dimensions_(root_->dimensions()) {
   }
 
   /// Construct a ternary function expression
   template<typename A1, typename A2, typename A3>
   Expression(typename TernaryExpression<T, A1, A2, A3>::Function function,
       const Expression<A1>& expression1, const Expression<A2>& expression2,
-      const Expression<A3>& expression3) {
-    root_.reset(
-        new TernaryExpression<T, A1, A2, A3>(function, expression1, expression2,
-            expression3));
+      const Expression<A3>& expression3) :
+      root_(
+          new TernaryExpression<T, A1, A2, A3>(function, expression1,
+              expression2, expression3)), //
+      dimensions_(root_->dimensions()) {
   }
 
   /// Return keys that play in this expression
@@ -108,14 +118,9 @@ public:
     return root_->keys();
   }
 
-  /// Return value and optional derivatives
-  T value(const Values& values) const {
-    return root_->value(values);
-  }
-
-  /// Return value and derivatives, forward AD version
-  Augmented<T> forward(const Values& values) const {
-    return root_->forward(values);
+  /// Return dimensions for each argument, must be same order as keys
+  const std::vector<size_t>& dimensions() const {
+    return dimensions_;
   }
 
   // Return size needed for memory buffer in traceExecution
@@ -130,29 +135,31 @@ public:
   }
 
   /// Return value and derivatives, reverse AD version
-  Augmented<T> reverse(const Values& values) const {
+  T reverse(const Values& values, JacobianMap& jacobians) const {
     size_t size = traceSize();
     char raw[size];
     ExecutionTrace<T> trace;
     T value(traceExecution(values, trace, raw));
-    Augmented<T> augmented(value);
-    trace.startReverseAD(augmented.jacobians());
-    return augmented;
+    trace.startReverseAD(jacobians);
+    return value;
+  }
+
+  /// Return value
+  T value(const Values& values) const {
+    return root_->value(values);
   }
 
   /// Return value and derivatives
-  Augmented<T> augmented(const Values& values) const {
-#ifdef EXPRESSION_FORWARD_AD
-    return forward(values);
-#else
-    return reverse(values);
-#endif
+  T value(const Values& values, JacobianMap& jacobians) const {
+    return reverse(values, jacobians);
   }
 
   const boost::shared_ptr<ExpressionNode<T> >& root() const {
     return root_;
   }
 
+  /// Define type so we can apply it as a meta-function
+  typedef Expression<T> type;
 };
 
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator

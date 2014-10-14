@@ -24,8 +24,8 @@
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <new> // for placement new
-struct TestBinaryExpression;
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm.hpp>
 
 // template meta-programming headers
 #include <boost/mpl/vector.hpp>
@@ -35,15 +35,21 @@ struct TestBinaryExpression;
 #include <boost/mpl/fold.hpp>
 #include <boost/mpl/empty_base.hpp>
 #include <boost/mpl/placeholders.hpp>
-
+#include <boost/mpl/transform.hpp>
+#include <boost/mpl/at.hpp>
 namespace MPL = boost::mpl::placeholders;
+
+#include <new> // for placement new
+
+class ExpressionFactorBinaryTest;
+// Forward declare for testing
 
 namespace gtsam {
 
 template<typename T>
 class Expression;
 
-typedef std::map<Key, Matrix> JacobianMap;
+typedef std::map<Key, Eigen::Block<Matrix> > JacobianMap;
 
 //-----------------------------------------------------------------------------
 /**
@@ -55,6 +61,7 @@ typedef std::map<Key, Matrix> JacobianMap;
  */
 template<int COLS>
 struct CallRecord {
+  static size_t const N = 0;
   virtual void print(const std::string& indent) const {
   }
   virtual void startReverseAD(JacobianMap& jacobians) const {
@@ -79,7 +86,7 @@ template<class T>
 class ExecutionTrace {
   enum {
     Constant, Leaf, Function
-  } type;
+  } kind;
   union {
     Key key;
     CallRecord<T::dimension>* ptr;
@@ -87,25 +94,25 @@ class ExecutionTrace {
 public:
   /// Pointer always starts out as a Constant
   ExecutionTrace() :
-      type(Constant) {
+      kind(Constant) {
   }
   /// Change pointer to a Leaf Record
   void setLeaf(Key key) {
-    type = Leaf;
+    kind = Leaf;
     content.key = key;
   }
   /// Take ownership of pointer to a Function Record
   void setFunction(CallRecord<T::dimension>* record) {
-    type = Function;
+    kind = Function;
     content.ptr = record;
   }
   /// Print
   void print(const std::string& indent = "") const {
-    if (type == Constant)
+    if (kind == Constant)
       std::cout << indent << "Constant" << std::endl;
-    else if (type == Leaf)
+    else if (kind == Leaf)
       std::cout << indent << "Leaf, key = " << content.key << std::endl;
-    else if (type == Function) {
+    else if (kind == Function) {
       std::cout << indent << "Function" << std::endl;
       content.ptr->print(indent + "  ");
     }
@@ -113,54 +120,64 @@ public:
   /// Return record pointer, quite unsafe, used only for testing
   template<class Record>
   boost::optional<Record*> record() {
-    if (type != Function)
+    if (kind != Function)
       return boost::none;
     else {
       Record* p = dynamic_cast<Record*>(content.ptr);
       return p ? boost::optional<Record*>(p) : boost::none;
     }
   }
-  // *** This is the main entry point for reverseAD, called from Expression::augmented ***
-  // Called only once, either inserts identity into Jacobians (Leaf) or starts AD (Function)
+  /// reverseAD in case of Leaf
+  template<class Derived>
+  static void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
+      JacobianMap& jacobians, Key key) {
+    JacobianMap::iterator it = jacobians.find(key);
+    if (it == jacobians.end()) {
+      std::cout << "No block for key " << key << std::endl;
+      throw std::runtime_error("Reverse AD internal error");
+    }
+    // we have pre-loaded them with zeros
+    Eigen::Block<Matrix>& block = it->second;
+    block += dTdA;
+  }
+  /**
+   *  *** This is the main entry point for reverseAD, called from Expression ***
+   * Called only once, either inserts I into Jacobians (Leaf) or starts AD (Function)
+   */
   void startReverseAD(JacobianMap& jacobians) const {
-    if (type == Leaf) {
+    if (kind == Leaf) {
       // This branch will only be called on trivial Leaf expressions, i.e. Priors
       size_t n = T::Dim();
-      jacobians[content.key] = Eigen::MatrixXd::Identity(n, n);
-    } else if (type == Function)
+      handleLeafCase(Eigen::MatrixXd::Identity(n, n), jacobians, content.key);
+    } else if (kind == Function)
       // This is the more typical entry point, starting the AD pipeline
-      // It is inside the startReverseAD that the correctly dimensioned pipeline is chosen.
+      // Inside the startReverseAD that the correctly dimensioned pipeline is chosen.
       content.ptr->startReverseAD(jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
   void reverseAD(const Matrix& dTdA, JacobianMap& jacobians) const {
-    if (type == Leaf) {
-      JacobianMap::iterator it = jacobians.find(content.key);
-      if (it != jacobians.end())
-        it->second += dTdA;
-      else
-        jacobians[content.key] = dTdA;
-    } else if (type == Function)
+    if (kind == Leaf)
+      handleLeafCase(dTdA, jacobians, content.key);
+    else if (kind == Function)
       content.ptr->reverseAD(dTdA, jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
   typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
   void reverseAD2(const Jacobian2T& dTdA, JacobianMap& jacobians) const {
-    if (type == Leaf) {
-      JacobianMap::iterator it = jacobians.find(content.key);
-      if (it != jacobians.end())
-        it->second += dTdA;
-      else
-        jacobians[content.key] = dTdA;
-    } else if (type == Function)
+    if (kind == Leaf)
+      handleLeafCase(dTdA, jacobians, content.key);
+    else if (kind == Function)
       content.ptr->reverseAD2(dTdA, jacobians);
   }
+
+  /// Define type so we can apply it as a meta-function
+  typedef ExecutionTrace<T> type;
 };
 
 /// Primary template calls the generic Matrix reverseAD pipeline
-template<size_t M, class A>
+template<size_t ROWS, class A>
 struct Select {
-  typedef Eigen::Matrix<double, M, A::dimension> Jacobian;
+  typedef Eigen::Matrix<double, ROWS, A::dimension> Jacobian;
   static void reverseAD(const ExecutionTrace<A>& trace, const Jacobian& dTdA,
       JacobianMap& jacobians) {
     trace.reverseAD(dTdA, jacobians);
@@ -179,208 +196,6 @@ struct Select<2, A> {
 
 //-----------------------------------------------------------------------------
 /**
- * Record the evaluation of a single argument in a functional expression
- * Building block for Recursive Record Class
- */
-template<class T, class A, size_t N>
-struct Argument {
-  typedef Eigen::Matrix<double, T::dimension, A::dimension> JacobianTA;
-  ExecutionTrace<A> trace;
-  JacobianTA dTdA;
-};
-
-/**
- * Recursive Record Class for Functional Expressions
- * Abrahams, David; Gurtovoy, Aleksey (2004-12-10).
- * C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
- * and Beyond. Pearson Education.
- */
-template<class T, class AN, class More>
-struct Record: Argument<T, typename AN::type, AN::value>, More {
-
-  typedef T return_type;
-  typedef typename AN::type A;
-  const static size_t N = AN::value;
-  typedef Argument<T, A, N> This;
-
-  /// Print to std::cout
-  virtual void print(const std::string& indent) const {
-    More::print(indent);
-    static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
-    std::cout << This::dTdA.format(matlab) << std::endl;
-    This::trace.print(indent);
-  }
-
-  /// Start the reverse AD process
-  virtual void startReverseAD(JacobianMap& jacobians) const {
-    More::startReverseAD(jacobians);
-    Select<T::dimension, A>::reverseAD(This::trace, This::dTdA, jacobians);
-  }
-
-  /// Given df/dT, multiply in dT/dA and continue reverse AD process
-  virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
-    More::reverseAD(dFdT, jacobians);
-    This::trace.reverseAD(dFdT * This::dTdA, jacobians);
-  }
-
-  /// Version specialized to 2-dimensional output
-  typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
-  virtual void reverseAD2(const Jacobian2T& dFdT,
-      JacobianMap& jacobians) const {
-    More::reverseAD2(dFdT, jacobians);
-    This::trace.reverseAD2(dFdT * This::dTdA, jacobians);
-  }
-};
-
-/// Meta-function for generating a numbered type
-template<class A, size_t N>
-struct Numbered {
-  typedef A type;
-  typedef size_t value_type;
-  static const size_t value = N;
-};
-
-/// Recursive Record class Generator
-template<class T, class TYPES>
-struct GenerateRecord {
-  typedef typename boost::mpl::fold<TYPES, CallRecord<T::dimension>,
-      Record<T, MPL::_2, MPL::_1> >::type type;
-};
-
-/// Access Argument
-template<class A, size_t N, class Record>
-Argument<typename Record::return_type, A, N>& argument(Record& record) {
-  return static_cast<Argument<typename Record::return_type, A, N>&>(record);
-}
-
-/// Access Trace
-template<class A, size_t N, class Record>
-ExecutionTrace<A>& getTrace(Record* record) {
-  return argument<A, N>(*record).trace;
-}
-
-/// Access Jacobian
-template<class A, size_t N, class Record>
-Eigen::Matrix<double, Record::return_type::dimension, A::dimension>& jacobian(
-    Record* record) {
-  return argument<A, N>(*record).dTdA;
-}
-
-//-----------------------------------------------------------------------------
-/**
- * Value and Jacobians
- */
-template<class T>
-class Augmented {
-
-private:
-
-  T value_;
-  JacobianMap jacobians_;
-
-  typedef std::pair<Key, Matrix> Pair;
-
-  /// Insert terms into jacobians_, adding if already exists
-  void add(const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      JacobianMap::iterator it = jacobians_.find(term.first);
-      if (it != jacobians_.end())
-        it->second += term.second;
-      else
-        jacobians_[term.first] = term.second;
-    }
-  }
-
-  /// Insert terms into jacobians_, premultiplying by H, adding if already exists
-  void add(const Matrix& H, const JacobianMap& terms) {
-    BOOST_FOREACH(const Pair& term, terms) {
-      JacobianMap::iterator it = jacobians_.find(term.first);
-      if (it != jacobians_.end())
-        it->second += H * term.second;
-      else
-        jacobians_[term.first] = H * term.second;
-    }
-  }
-
-public:
-
-  /// Construct value that does not depend on anything
-  Augmented(const T& t) :
-      value_(t) {
-  }
-
-  /// Construct value dependent on a single key
-  Augmented(const T& t, Key key) :
-      value_(t) {
-    size_t n = t.dim();
-    jacobians_[key] = Eigen::MatrixXd::Identity(n, n);
-  }
-
-  /// Construct value, pre-multiply jacobians by dTdA
-  Augmented(const T& t, const Matrix& dTdA, const JacobianMap& jacobians) :
-      value_(t) {
-    add(dTdA, jacobians);
-  }
-
-  /// Construct value, pre-multiply jacobians
-  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
-      const Matrix& dTdA2, const JacobianMap& jacobians2) :
-      value_(t) {
-    add(dTdA1, jacobians1);
-    add(dTdA2, jacobians2);
-  }
-
-  /// Construct value, pre-multiply jacobians
-  Augmented(const T& t, const Matrix& dTdA1, const JacobianMap& jacobians1,
-      const Matrix& dTdA2, const JacobianMap& jacobians2, const Matrix& dTdA3,
-      const JacobianMap& jacobians3) :
-      value_(t) {
-    add(dTdA1, jacobians1);
-    add(dTdA2, jacobians2);
-    add(dTdA3, jacobians3);
-  }
-
-  /// Return value
-  const T& value() const {
-    return value_;
-  }
-
-  /// Return jacobians
-  const JacobianMap& jacobians() const {
-    return jacobians_;
-  }
-
-  /// Return jacobians
-  JacobianMap& jacobians() {
-    return jacobians_;
-  }
-
-  /// Not dependent on any key
-  bool constant() const {
-    return jacobians_.empty();
-  }
-
-  /// debugging
-  void print(const KeyFormatter& keyFormatter = DefaultKeyFormatter) {
-    BOOST_FOREACH(const Pair& term, jacobians_)
-      std::cout << "(" << keyFormatter(term.first) << ", " << term.second.rows()
-          << "x" << term.second.cols() << ") ";
-    std::cout << std::endl;
-  }
-
-  /// Move terms to array, destroys content
-  void move(std::vector<Matrix>& H) {
-    assert(H.size()==jacobains.size());
-    size_t j = 0;
-    JacobianMap::iterator it = jacobians_.begin();
-    for (; it != jacobians_.end(); ++it)
-      it->second.swap(H[j++]);
-  }
-
-};
-
-//-----------------------------------------------------------------------------
-/**
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
  * allowing Expressions to have polymorphic behaviour even though they
@@ -392,7 +207,11 @@ class ExpressionNode {
 
 protected:
 
-  ExpressionNode() {
+  size_t traceSize_;
+
+  /// Constructor, traceSize is size of the execution trace of expression rooted here
+  ExpressionNode(size_t traceSize = 0) :
+      traceSize_(traceSize) {
   }
 
 public:
@@ -402,18 +221,32 @@ public:
   }
 
   /// Return keys that play in this expression as a set
-  virtual std::set<Key> keys() const = 0;
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys;
+    return keys;
+  }
+
+  /// Return dimensions for each argument, as a map
+  virtual std::map<Key, size_t> dims() const {
+    std::map<Key, size_t> map;
+    return map;
+  }
+
+  /// Return dimensions as vector, ordered as keys
+  std::vector<size_t> dimensions() const {
+    std::map<Key,size_t> map = dims();
+    std::vector<size_t> dims(map.size());
+    boost::copy(map | boost::adaptors::map_values, dims.begin());
+    return dims;
+  }
+
+  // Return size needed for memory buffer in traceExecution
+  size_t traceSize() const {
+    return traceSize_;
+  }
 
   /// Return value
   virtual T value(const Values& values) const = 0;
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const = 0;
-
-  // Return size needed for memory buffer in traceExecution
-  virtual size_t traceSize() const {
-    return 0;
-  }
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
@@ -437,20 +270,9 @@ class ConstantExpression: public ExpressionNode<T> {
 
 public:
 
-  /// Return keys that play in this expression, i.e., the empty set
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
-    return keys;
-  }
-
   /// Return value
   virtual T value(const Values& values) const {
     return constant_;
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    return Augmented<T>(constant_);
   }
 
   /// Construct an execution trace for reverse AD
@@ -484,14 +306,16 @@ public:
     return keys;
   }
 
+  /// Return dimensions for each argument
+  virtual std::map<Key, size_t> dims() const {
+    std::map<Key, size_t> map;
+    map[key_] = T::dimension;
+    return map;
+  }
+
   /// Return value
   virtual T value(const Values& values) const {
     return values.at<T>(key_);
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    return Augmented<T>(values.at<T>(key_), key_);
   }
 
   /// Construct an execution trace for reverse AD
@@ -504,68 +328,262 @@ public:
 };
 
 //-----------------------------------------------------------------------------
+// Below we use the "Class Composition" technique described in the book
+//   C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
+//   and Beyond. Abrahams, David; Gurtovoy, Aleksey. Pearson Education.
+// to recursively generate a class, that will be the base for function nodes.
+// The class generated, for two arguments A1, A2, and A3 will be
+//
+// struct Base1 : Argument<T,A1,1>, FunctionalBase<T> {
+//   ... storage related to A1 ...
+//   ... methods that work on A1 ...
+// };
+//
+// struct Base2 : Argument<T,A2,2>, Base1 {
+//   ... storage related to A2 ...
+//   ... methods that work on A2 and (recursively) on A2 ...
+// };
+//
+// struct Base2 : Argument<T,A3,3>, Base2 {
+//   ... storage related to A3 ...
+//   ... methods that work on A3 and (recursively) on A2 and A3 ...
+// };
+//
+// struct FunctionalNode : Base3 {
+//   Provides convenience access to storage in hierarchy by using
+//   static_cast<Argument<T, A, N> &>(*this)
+// }
+//
+// All this magic happens when  we generate the Base3 base class of FunctionalNode
+// by invoking boost::mpl::fold over the meta-function GenerateFunctionalNode
+//-----------------------------------------------------------------------------
+
+/// meta-function to generate fixed-size JacobianTA type
+template<class T, class A>
+struct Jacobian {
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> type;
+};
+
+/// meta-function to generate JacobianTA optional reference
+template<class T, class A>
+struct Optional {
+  typedef Eigen::Matrix<double, T::dimension, A::dimension> Jacobian;
+  typedef boost::optional<Jacobian&> type;
+};
+
+/**
+ * Base case for recursive FunctionalNode class
+ */
+template<class T>
+struct FunctionalBase: ExpressionNode<T> {
+  static size_t const N = 0; // number of arguments
+
+  typedef CallRecord<T::dimension> Record;
+
+  /// Construct an execution trace for reverse AD
+  void trace(const Values& values, Record* record, char*& raw) const {
+  }
+};
+
+/**
+ * Building block for recursive FunctionalNode class
+ * The integer argument N is to guarantee a unique type signature,
+ * so we are guaranteed to be able to extract their values by static cast.
+ */
+template<class T, class A, size_t N>
+struct Argument {
+  /// Expression that will generate value/derivatives for argument
+  boost::shared_ptr<ExpressionNode<A> > expression;
+};
+
+/**
+ * Building block for Recursive Record Class
+ * Records the evaluation of a single argument in a functional expression
+ */
+template<class T, class A, size_t N>
+struct JacobianTrace {
+  A value;
+  ExecutionTrace<A> trace;
+  typename Jacobian<T, A>::type dTdA;
+};
+
+/**
+ * Recursive Definition of Functional ExpressionNode
+ */
+template<class T, class A, class Base>
+struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
+
+  static size_t const N = Base::N + 1; ///< Number of arguments in hierarchy
+  typedef Argument<T, A, N> This; ///< The storage we have direct access to
+
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys = Base::keys();
+    std::set<Key> myKeys = This::expression->keys();
+    keys.insert(myKeys.begin(), myKeys.end());
+    return keys;
+  }
+
+  /// Return dimensions for each argument
+  virtual std::map<Key, size_t> dims() const {
+    std::map<Key, size_t> map = Base::dims();
+    std::map<Key, size_t> myMap = This::expression->dims();
+    map.insert(myMap.begin(), myMap.end());
+    return map;
+  }
+
+  /// Recursive Record Class for Functional Expressions
+  struct Record: JacobianTrace<T, A, N>, Base::Record {
+
+    typedef T return_type;
+    typedef JacobianTrace<T, A, N> This;
+
+    /// Print to std::cout
+    virtual void print(const std::string& indent) const {
+      Base::Record::print(indent);
+      static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
+      std::cout << This::dTdA.format(matlab) << std::endl;
+      This::trace.print(indent);
+    }
+
+    /// Start the reverse AD process
+    virtual void startReverseAD(JacobianMap& jacobians) const {
+      Base::Record::startReverseAD(jacobians);
+      Select<T::dimension, A>::reverseAD(This::trace, This::dTdA, jacobians);
+    }
+
+    /// Given df/dT, multiply in dT/dA and continue reverse AD process
+    virtual void reverseAD(const Matrix& dFdT, JacobianMap& jacobians) const {
+      Base::Record::reverseAD(dFdT, jacobians);
+      This::trace.reverseAD(dFdT * This::dTdA, jacobians);
+    }
+
+    /// Version specialized to 2-dimensional output
+    typedef Eigen::Matrix<double, 2, T::dimension> Jacobian2T;
+    virtual void reverseAD2(const Jacobian2T& dFdT,
+        JacobianMap& jacobians) const {
+      Base::Record::reverseAD2(dFdT, jacobians);
+      This::trace.reverseAD2(dFdT * This::dTdA, jacobians);
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  void trace(const Values& values, Record* record, char*& raw) const {
+    Base::trace(values, record, raw); // recurse
+    // Write an Expression<A> execution trace in record->trace
+    // Iff Constant or Leaf, this will not write to raw, only to trace.
+    // Iff the expression is functional, write all Records in raw buffer
+    // Return value of type T is recorded in record->value
+    record->Record::This::value = This::expression->traceExecution(values,
+        record->Record::This::trace, raw);
+    // raw is never modified by traceExecution, but if traceExecution has
+    // written in the buffer, the next caller expects we advance the pointer
+    raw += This::expression->traceSize();
+  }
+};
+
+/**
+ *  Recursive GenerateFunctionalNode class Generator
+ */
+template<class T, class TYPES>
+struct FunctionalNode {
+
+  typedef typename boost::mpl::fold<TYPES, FunctionalBase<T>,
+      GenerateFunctionalNode<T, MPL::_2, MPL::_1> >::type Base;
+
+  struct type: public Base {
+
+    // Argument types and derived, note these are base 0 !
+    typedef TYPES Arguments;
+    typedef typename boost::mpl::transform<TYPES, Jacobian<T, MPL::_1> >::type Jacobians;
+    typedef typename boost::mpl::transform<TYPES, Optional<T, MPL::_1> >::type Optionals;
+
+    /// Reset expression shared pointer
+    template<class A, size_t N>
+    void reset(const boost::shared_ptr<ExpressionNode<A> >& ptr) {
+      static_cast<Argument<T, A, N> &>(*this).expression = ptr;
+    }
+
+    /// Access Expression shared pointer
+    template<class A, size_t N>
+    boost::shared_ptr<ExpressionNode<A> > expression() const {
+      return static_cast<Argument<T, A, N> const &>(*this).expression;
+    }
+
+    /// Provide convenience access to Record storage
+    struct Record: public Base::Record {
+
+      /// Access Value
+      template<class A, size_t N>
+      const A& value() const {
+        return static_cast<JacobianTrace<T, A, N> const &>(*this).value;
+      }
+
+      /// Access Jacobian
+      template<class A, size_t N>
+      typename Jacobian<T, A>::type& jacobian() {
+        return static_cast<JacobianTrace<T, A, N>&>(*this).dTdA;
+      }
+
+    };
+
+    /// Construct an execution trace for reverse AD
+    Record* trace(const Values& values, char* raw) const {
+
+      // Create the record and advance the pointer
+      Record* record = new (raw) Record();
+      raw = (char*) (record + 1);
+
+      // Record the traces for all arguments
+      // After this, the raw pointer is set to after what was written
+      Base::trace(values, record, raw);
+
+      // Return the record for this function evaluation
+      return record;
+    }
+  };
+};
+//-----------------------------------------------------------------------------
+
 /// Unary Function Expression
 template<class T, class A1>
-class UnaryExpression: public ExpressionNode<T> {
+class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
 public:
 
-  typedef Eigen::Matrix<double, T::dimension, A1::dimension> JacobianTA;
-  typedef boost::function<T(const A1&, boost::optional<JacobianTA&>)> Function;
+  typedef boost::function<T(const A1&, typename Optional<T, A1>::type)> Function;
+  typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
+  typedef typename Base::Record Record;
 
 private:
 
   Function function_;
-  boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
 
   /// Constructor with a unary function f, and input argument e
-  UnaryExpression(Function f, const Expression<A1>& e) :
-      function_(f), expressionA1_(e.root()) {
+  UnaryExpression(Function f, const Expression<A1>& e1) :
+      function_(f) {
+    this->template reset<A1, 1>(e1.root());
+    ExpressionNode<T>::traceSize_ = sizeof(Record) + e1.traceSize();
   }
 
   friend class Expression<T> ;
 
 public:
 
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    return expressionA1_->keys();
-  }
-
   /// Return value
   virtual T value(const Values& values) const {
-    return function_(this->expressionA1_->value(values), boost::none);
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    using boost::none;
-    Augmented<A1> argument = this->expressionA1_->forward(values);
-    JacobianTA dTdA;
-    T t = function_(argument.value(),
-        argument.constant() ? none : boost::optional<JacobianTA&>(dTdA));
-    return Augmented<T>(t, dTdA, argument.jacobians());
-  }
-
-  /// CallRecord structure for reverse AD
-  typedef boost::mpl::vector<Numbered<A1, 1> > Arguments;
-  typedef typename GenerateRecord<T, Arguments>::type Record;
-
-  // Return size needed for memory buffer in traceExecution
-  virtual size_t traceSize() const {
-    return sizeof(Record) + expressionA1_->traceSize();
+    return function_(this->template expression<A1, 1>()->value(values), boost::none);
   }
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
-    Record* record = new (raw) Record();
+
+    Record* record = Base::trace(values, raw);
     trace.setFunction(record);
 
-    raw = (char*) (record + 1);
-    A1 a1 = expressionA1_->traceExecution(values, getTrace<A1, 1>(record), raw);
-
-    return function_(a1, jacobian<A1, 1>(record));
+    return function_(record->template value<A1, 1>(),
+        record->template jacobian<A1, 1>());
   }
 };
 
@@ -573,183 +591,109 @@ public:
 /// Binary Expression
 
 template<class T, class A1, class A2>
-class BinaryExpression: public ExpressionNode<T> {
+class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
 
 public:
 
-  typedef Eigen::Matrix<double, T::dimension, A1::dimension> JacobianTA1;
-  typedef Eigen::Matrix<double, T::dimension, A2::dimension> JacobianTA2;
   typedef boost::function<
-      T(const A1&, const A2&, boost::optional<JacobianTA1&>,
-          boost::optional<JacobianTA2&>)> Function;
+      T(const A1&, const A2&, typename Optional<T, A1>::type,
+          typename Optional<T, A2>::type)> Function;
+  typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
+  typedef typename Base::Record Record;
 
 private:
 
   Function function_;
-  boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
-  boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
 
-  /// Constructor with a binary function f, and two input arguments
-  BinaryExpression(Function f, //
-      const Expression<A1>& e1, const Expression<A2>& e2) :
-      function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()) {
+  /// Constructor with a ternary function f, and three input arguments
+  BinaryExpression(Function f, const Expression<A1>& e1,
+      const Expression<A2>& e2) :
+      function_(f) {
+    this->template reset<A1, 1>(e1.root());
+    this->template reset<A2, 2>(e2.root());
+    ExpressionNode<T>::traceSize_ = //
+        sizeof(Record) + e1.traceSize() + e2.traceSize();
   }
 
   friend class Expression<T> ;
-  friend struct ::TestBinaryExpression;
+  friend class ::ExpressionFactorBinaryTest;
 
 public:
-
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys1 = expressionA1_->keys();
-    std::set<Key> keys2 = expressionA2_->keys();
-    keys1.insert(keys2.begin(), keys2.end());
-    return keys1;
-  }
 
   /// Return value
   virtual T value(const Values& values) const {
     using boost::none;
-    return function_(this->expressionA1_->value(values),
-        this->expressionA2_->value(values), none, none);
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    using boost::none;
-    Augmented<A1> a1 = this->expressionA1_->forward(values);
-    Augmented<A2> a2 = this->expressionA2_->forward(values);
-    JacobianTA1 dTdA1;
-    JacobianTA2 dTdA2;
-    T t = function_(a1.value(), a2.value(),
-        a1.constant() ? none : boost::optional<JacobianTA1&>(dTdA1),
-        a2.constant() ? none : boost::optional<JacobianTA2&>(dTdA2));
-    return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians());
-  }
-
-  /// CallRecord structure for reverse AD
-  typedef boost::mpl::vector<Numbered<A1, 1>, Numbered<A2, 2> > Arguments;
-  typedef typename GenerateRecord<T, Arguments>::type Record;
-
-  // Return size needed for memory buffer in traceExecution
-  virtual size_t traceSize() const {
-    return sizeof(Record) + expressionA1_->traceSize()
-        + expressionA2_->traceSize();
+    return function_(this->template expression<A1, 1>()->value(values),
+    this->template expression<A2, 2>()->value(values),
+    none, none);
   }
 
   /// Construct an execution trace for reverse AD
-  /// The raw buffer is [Record | A1 raw | A2 raw]
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
-    Record* record = new (raw) Record();
+
+    Record* record = Base::trace(values, raw);
     trace.setFunction(record);
 
-    raw = (char*) (record + 1);
-    A1 a1 = expressionA1_->traceExecution(values, getTrace<A1, 1>(record), raw);
-    raw = raw + expressionA1_->traceSize();
-    A2 a2 = expressionA2_->traceExecution(values, getTrace<A2, 2>(record), raw);
-
-    return function_(a1, a2, jacobian<A1, 1>(record), jacobian<A2, 2>(record));
+    return function_(record->template value<A1, 1>(),
+        record->template value<A2,2>(), record->template jacobian<A1, 1>(),
+        record->template jacobian<A2, 2>());
   }
-
 };
 
 //-----------------------------------------------------------------------------
 /// Ternary Expression
 
 template<class T, class A1, class A2, class A3>
-class TernaryExpression: public ExpressionNode<T> {
+class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
 
 public:
 
-  typedef Eigen::Matrix<double, T::dimension, A1::dimension> JacobianTA1;
-  typedef Eigen::Matrix<double, T::dimension, A2::dimension> JacobianTA2;
-  typedef Eigen::Matrix<double, T::dimension, A3::dimension> JacobianTA3;
   typedef boost::function<
-      T(const A1&, const A2&, const A3&, boost::optional<JacobianTA1&>,
-          boost::optional<JacobianTA2&>, boost::optional<JacobianTA3&>)> Function;
+      T(const A1&, const A2&, const A3&, typename Optional<T, A1>::type,
+          typename Optional<T, A2>::type, typename Optional<T, A3>::type)> Function;
+  typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
+  typedef typename Base::Record Record;
 
 private:
 
   Function function_;
-  boost::shared_ptr<ExpressionNode<A1> > expressionA1_;
-  boost::shared_ptr<ExpressionNode<A2> > expressionA2_;
-  boost::shared_ptr<ExpressionNode<A3> > expressionA3_;
 
   /// Constructor with a ternary function f, and three input arguments
-  TernaryExpression(
-      Function f, //
-      const Expression<A1>& e1, const Expression<A2>& e2,
-      const Expression<A3>& e3) :
-      function_(f), expressionA1_(e1.root()), expressionA2_(e2.root()), expressionA3_(
-          e3.root()) {
+  TernaryExpression(Function f, const Expression<A1>& e1,
+      const Expression<A2>& e2, const Expression<A3>& e3) :
+      function_(f) {
+    this->template reset<A1, 1>(e1.root());
+    this->template reset<A2, 2>(e2.root());
+    this->template reset<A3, 3>(e3.root());
+    ExpressionNode<T>::traceSize_ = //
+        sizeof(Record) + e1.traceSize() + e2.traceSize() + e3.traceSize();
   }
 
   friend class Expression<T> ;
 
 public:
 
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys1 = expressionA1_->keys();
-    std::set<Key> keys2 = expressionA2_->keys();
-    std::set<Key> keys3 = expressionA3_->keys();
-    keys2.insert(keys3.begin(), keys3.end());
-    keys1.insert(keys2.begin(), keys2.end());
-    return keys1;
-  }
-
   /// Return value
   virtual T value(const Values& values) const {
     using boost::none;
-    return function_(this->expressionA1_->value(values),
-        this->expressionA2_->value(values), this->expressionA3_->value(values),
-        none, none, none);
-  }
-
-  /// Return value and derivatives
-  virtual Augmented<T> forward(const Values& values) const {
-    using boost::none;
-    Augmented<A1> a1 = this->expressionA1_->forward(values);
-    Augmented<A2> a2 = this->expressionA2_->forward(values);
-    Augmented<A3> a3 = this->expressionA3_->forward(values);
-    JacobianTA1 dTdA1;
-    JacobianTA2 dTdA2;
-    JacobianTA3 dTdA3;
-    T t = function_(a1.value(), a2.value(), a3.value(),
-        a1.constant() ? none : boost::optional<JacobianTA1&>(dTdA1),
-        a2.constant() ? none : boost::optional<JacobianTA2&>(dTdA2),
-        a3.constant() ? none : boost::optional<JacobianTA3&>(dTdA3));
-    return Augmented<T>(t, dTdA1, a1.jacobians(), dTdA2, a2.jacobians(), dTdA3,
-        a3.jacobians());
-  }
-
-  /// CallRecord structure for reverse AD
-  typedef boost::mpl::vector<Numbered<A1, 1>, Numbered<A2, 2>, Numbered<A3, 3> > Arguments;
-  typedef typename GenerateRecord<T, Arguments>::type Record;
-
-  // Return size needed for memory buffer in traceExecution
-  virtual size_t traceSize() const {
-    return sizeof(Record) + expressionA1_->traceSize()
-        + expressionA2_->traceSize() + expressionA2_->traceSize();
+    return function_(this->template expression<A1, 1>()->value(values),
+    this->template expression<A2, 2>()->value(values),
+    this->template expression<A3, 3>()->value(values),
+    none, none, none);
   }
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
-    Record* record = new (raw) Record();
+
+    Record* record = Base::trace(values, raw);
     trace.setFunction(record);
 
-    raw = (char*) (record + 1);
-    A1 a1 = expressionA1_->traceExecution(values, getTrace<A1, 1>(record), raw);
-    raw = raw + expressionA1_->traceSize();
-    A2 a2 = expressionA2_->traceExecution(values, getTrace<A2, 2>(record), raw);
-    raw = raw + expressionA2_->traceSize();
-    A3 a3 = expressionA3_->traceExecution(values, getTrace<A3, 3>(record), raw);
-
-    return function_(a1, a2, a3, jacobian<A1, 1>(record),
-        jacobian<A2, 2>(record), jacobian<A3, 3>(record));
+    return function_(
+        record->template value<A1, 1>(), record->template value<A2, 2>(),
+        record->template value<A3, 3>(), record->template jacobian<A1, 1>(),
+        record->template jacobian<A2, 2>(), record->template jacobian<A3, 3>());
   }
 
 };

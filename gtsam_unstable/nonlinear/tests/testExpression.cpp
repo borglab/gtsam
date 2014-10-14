@@ -26,6 +26,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/list_of.hpp>
+using boost::assign::list_of;
+using boost::assign::map_list_of;
+
 using namespace std;
 using namespace gtsam;
 
@@ -44,10 +48,11 @@ static const Rot3 someR = Rot3::RzRyRx(1, 2, 3);
 TEST(Expression, constant) {
   Expression<Rot3> R(someR);
   Values values;
-  Augmented<Rot3> a = R.augmented(values);
-  EXPECT(assert_equal(someR, a.value()));
+  JacobianMap actualMap;
+  Rot3 actual = R.value(values, actualMap);
+  EXPECT(assert_equal(someR, actual));
   JacobianMap expected;
-  EXPECT(a.jacobians() == expected);
+  EXPECT(actualMap == expected);
 }
 
 /* ************************************************************************* */
@@ -56,11 +61,16 @@ TEST(Expression, leaf) {
   Expression<Rot3> R(100);
   Values values;
   values.insert(100, someR);
-  Augmented<Rot3> a = R.augmented(values);
-  EXPECT(assert_equal(someR, a.value()));
+
   JacobianMap expected;
-  expected[100] = eye(3);
-  EXPECT(a.jacobians() == expected);
+  Matrix H = eye(3);
+  expected.insert(make_pair(100, H.block(0, 0, 3, 3)));
+
+  JacobianMap actualMap2;
+  actualMap2.insert(make_pair(100, H.block(0, 0, 3, 3)));
+  Rot3 actual2 = R.reverse(values, actualMap2);
+  EXPECT(assert_equal(someR, actual2));
+  EXPECT(actualMap2 == expected);
 }
 
 /* ************************************************************************* */
@@ -86,13 +96,16 @@ Expression<Point3> p_cam(x, &Pose3::transform_to, p);
 }
 /* ************************************************************************* */
 // keys
-TEST(Expression, keys_binary) {
-
-  // Check keys
-  set<Key> expectedKeys;
-  expectedKeys.insert(1);
-  expectedKeys.insert(2);
-  EXPECT(expectedKeys == binary::p_cam.keys());
+TEST(Expression, BinaryKeys) {
+  set<Key> expected = list_of(1)(2);
+  EXPECT(expected == binary::p_cam.keys());
+}
+/* ************************************************************************* */
+// dimensions
+TEST(Expression, BinaryDimensions) {
+  vector<size_t> expected = list_of(6)(3), //
+  actual = binary::p_cam.dimensions();
+  EXPECT(expected==actual);
 }
 /* ************************************************************************* */
 // Binary(Leaf,Unary(Binary(Leaf,Leaf)))
@@ -107,24 +120,16 @@ Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 }
 /* ************************************************************************* */
 // keys
-TEST(Expression, keys_tree) {
-
-  // Check keys
-  set<Key> expectedKeys;
-  expectedKeys.insert(1);
-  expectedKeys.insert(2);
-  expectedKeys.insert(3);
-  EXPECT(expectedKeys == tree::uv_hat.keys());
+TEST(Expression, TreeKeys) {
+  set<Key> expected = list_of(1)(2)(3);
+  EXPECT(expected == tree::uv_hat.keys());
 }
 /* ************************************************************************* */
-// keys
-TEST(Expression, block_tree) {
-//  // Check VerticalBlockMatrix
-//  size_t dimensions[3] = { 6, 3, 5 };
-//  Matrix matrix(2, 14);
-//  VerticalBlockMatrix expected(dimensions, matrix), actual =
-//      tree::uv_hat.verticalBlockMatrix();
-//  EXPECT( assert_equal(expected, *jf, 1e-9));
+// dimensions
+TEST(Expression, TreeDimensions) {
+  vector<size_t> expected = list_of(6)(3)(5), //
+  actual = tree::uv_hat.dimensions();
+  EXPECT(expected==actual);
 }
 /* ************************************************************************* */
 
@@ -135,10 +140,8 @@ TEST(Expression, compose1) {
   Expression<Rot3> R3 = R1 * R2;
 
   // Check keys
-  set<Key> expectedKeys;
-  expectedKeys.insert(1);
-  expectedKeys.insert(2);
-  EXPECT(expectedKeys == R3.keys());
+  set<Key> expected = list_of(1)(2);
+  EXPECT(expected == R3.keys());
 }
 
 /* ************************************************************************* */
@@ -150,9 +153,8 @@ TEST(Expression, compose2) {
   Expression<Rot3> R3 = R1 * R2;
 
   // Check keys
-  set<Key> expectedKeys;
-  expectedKeys.insert(1);
-  EXPECT(expectedKeys == R3.keys());
+  set<Key> expected = list_of(1);
+  EXPECT(expected == R3.keys());
 }
 
 /* ************************************************************************* */
@@ -164,9 +166,8 @@ TEST(Expression, compose3) {
   Expression<Rot3> R3 = R1 * R2;
 
   // Check keys
-  set<Key> expectedKeys;
-  expectedKeys.insert(3);
-  EXPECT(expectedKeys == R3.keys());
+  set<Key> expected = list_of(3);
+  EXPECT(expected == R3.keys());
 }
 
 /* ************************************************************************* */
@@ -191,11 +192,8 @@ TEST(Expression, ternary) {
   Expression<Rot3> ABC(composeThree, A, B, C);
 
   // Check keys
-  set<Key> expectedKeys;
-  expectedKeys.insert(1);
-  expectedKeys.insert(2);
-  expectedKeys.insert(3);
-  EXPECT(expectedKeys == ABC.keys());
+  set<Key> expected = list_of(1)(2)(3);
+  EXPECT(expected == ABC.keys());
 }
 
 /* ************************************************************************* */
