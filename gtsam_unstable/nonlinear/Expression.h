@@ -22,6 +22,8 @@
 #include "Expression-inl.h"
 #include <gtsam/inference/Symbol.h>
 #include <boost/bind.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm.hpp>
 
 namespace gtsam {
 
@@ -107,9 +109,12 @@ public:
     return root_->keys();
   }
 
-  /// Return dimensions for each argument, as a map (allows order to change later)
-  std::map<Key,size_t> dimensions() const {
-    return root_->dimensions();
+  /// Return dimensions for each argument, must be same order as keys
+  std::vector<size_t> dimensions() const {
+    std::map<Key,size_t> map = root_->dimensions();
+    std::vector<size_t> dims(map.size());
+    boost::copy(map | boost::adaptors::map_values, dims.begin());
+    return dims;
   }
 
   // Return size needed for memory buffer in traceExecution

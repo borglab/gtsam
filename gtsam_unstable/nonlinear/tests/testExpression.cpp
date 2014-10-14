@@ -33,8 +33,6 @@ using boost::assign::map_list_of;
 using namespace std;
 using namespace gtsam;
 
-typedef pair<Key,size_t> Pair;
-
 /* ************************************************************************* */
 
 template<class CAL>
@@ -66,10 +64,10 @@ TEST(Expression, leaf) {
 
   JacobianMap expected;
   Matrix H = eye(3);
-  expected.insert(make_pair(100,H.block(0,0,3,3)));
+  expected.insert(make_pair(100, H.block(0, 0, 3, 3)));
 
   JacobianMap actualMap2;
-  actualMap2.insert(make_pair(100,H.block(0,0,3,3)));
+  actualMap2.insert(make_pair(100, H.block(0, 0, 3, 3)));
   Rot3 actual2 = R.reverse(values, actualMap2);
   EXPECT(assert_equal(someR, actual2));
   EXPECT(actualMap2 == expected);
@@ -105,11 +103,9 @@ TEST(Expression, BinaryKeys) {
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, BinaryDimensions) {
-  map<Key, size_t> expected = map_list_of(1, 6)(2, 3), //
+  vector<size_t> expected = list_of(6)(3), //
   actual = binary::p_cam.dimensions();
-  EXPECT_LONGS_EQUAL(expected.size(),actual.size());
-  BOOST_FOREACH(Pair pair, actual)
-    EXPECT_LONGS_EQUAL(expected[pair.first],pair.second);
+  EXPECT(expected==actual);
 }
 /* ************************************************************************* */
 // Binary(Leaf,Unary(Binary(Leaf,Leaf)))
@@ -131,11 +127,9 @@ TEST(Expression, TreeKeys) {
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, TreeDimensions) {
-  map<Key, size_t> expected = map_list_of(1, 6)(2, 3)(3, 5), //
+  vector<size_t> expected = list_of(6)(3)(5), //
   actual = tree::uv_hat.dimensions();
-  EXPECT_LONGS_EQUAL(expected.size(),actual.size());
-  BOOST_FOREACH(Pair pair, actual)
-    EXPECT_LONGS_EQUAL(expected[pair.first],pair.second);
+  EXPECT(expected==actual);
 }
 /* ************************************************************************* */
 

@@ -21,9 +21,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm.hpp>
-
 namespace gtsam {
 
 /**
@@ -61,19 +58,16 @@ public:
       assert(H->size()==size());
 
       // Get dimensions of Jacobian matrices
-      std::map<Key, size_t> map = expression_.dimensions();
+      std::vector<size_t> dims = expression_.dimensions();
 
       // Create and zero out blocks to be passed to expression_
-      DenseIndex i = 0; // For block index
-      typedef std::pair<Key, size_t> Pair;
-      std::map<Key, VerticalBlockMatrix::Block> blocks;
-      BOOST_FOREACH(const Pair& pair, map) {
-        Matrix& Hi = H->at(i++);
-        size_t mi = pair.second; // width of i'th Jacobian
-        Hi.resize(T::dimension, mi);
+      JacobianMap blocks;
+      for(DenseIndex i=0;i<size();i++) {
+        Matrix& Hi = H->at(i);
+        Hi.resize(T::dimension, dims[i]);
         Hi.setZero(); // zero out
-        Eigen::Block<Matrix> block = Hi.block(0,0,T::dimension, mi);
-        blocks.insert(std::make_pair(pair.first, block));
+        Eigen::Block<Matrix> block = Hi.block(0,0,T::dimension, dims[i]);
+        blocks.insert(std::make_pair(keys_[i], block));
       }
 
       T value = expression_.value(x, blocks);
@@ -84,53 +78,46 @@ public:
     }
   }
 
-  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
-
-    using namespace boost::adaptors;
-
-    // Only linearize if the factor is active
-    if (!this->active(x))
-      return boost::shared_ptr<JacobianFactor>();
+  // Internal function to allocate a VerticalBlockMatrix and
+  // create Eigen::Block<Matrix> views into it
+  VerticalBlockMatrix prepareBlocks(JacobianMap& blocks) const {
 
     // Get dimensions of Jacobian matrices
-    std::map<Key, size_t> map = expression_.dimensions();
-    size_t n = map.size();
-
-    // Get actual dimensions. TODO: why can't we pass map | map_values directly?
-    std::vector<size_t> dims(n);
-    boost::copy(map | map_values, dims.begin());
+    std::vector<size_t> dims = expression_.dimensions();
 
     // Construct block matrix, is of right size but un-initialized
     VerticalBlockMatrix Ab(dims, T::dimension, true);
     Ab.matrix().setZero(); // zero out
 
     // Create blocks to be passed to expression_
-    DenseIndex i = 0; // For block index
-    typedef std::pair<Key, size_t> Pair;
-    std::map<Key, VerticalBlockMatrix::Block> blocks;
-    BOOST_FOREACH(const Pair& pair, map) {
-      blocks.insert(std::make_pair(pair.first, Ab(i++)));
-    }
+    for(DenseIndex i=0;i<size();i++)
+      blocks.insert(std::make_pair(keys_[i], Ab(i)));
+
+    return Ab;
+  }
+
+  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
+
+    // Construct VerticalBlockMatrix and views into it
+    JacobianMap blocks;
+    VerticalBlockMatrix Ab = prepareBlocks(blocks);
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, blocks);
-    Vector b = -measurement_.localCoordinates(value);
+    Ab(size()).col(0) = -measurement_.localCoordinates(value);
 
     // Whiten the corresponding system now
-    // TODO ! this->noiseModel_->WhitenSystem(A, b);
-
-    // Fill in RHS
-    Ab(n).col(0) = b;
+    // TODO ! this->noiseModel_->WhitenSystem(Ab);
 
     // TODO pass unwhitened + noise model to Gaussian factor
     // For now, only linearized constrained factors have noise model at linear level!!!
     noiseModel::Constrained::shared_ptr constrained = //
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained) {
-      return boost::make_shared<JacobianFactor>(map | map_keys, Ab,
+      return boost::make_shared<JacobianFactor>(this->keys(), Ab,
           constrained->unit());
     } else
-      return boost::make_shared<JacobianFactor>(map | map_keys, Ab);
+      return boost::make_shared<JacobianFactor>(this->keys(), Ab);
   }
 };
 // ExpressionFactor
