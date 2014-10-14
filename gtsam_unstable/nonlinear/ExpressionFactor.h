@@ -85,12 +85,15 @@ public:
 
     // Get dimensions of Jacobian matrices
     std::vector<size_t> dims = expression_.dimensions();
+
+    // Allocate memory on stack and create a view on it (saves a malloc)
     size_t m1 = std::accumulate(dims.begin(),dims.end(),1);
-    Matrix matrix = Matrix::Identity(T::dimension,m1);
+    double memory[T::dimension*m1];
+    Eigen::Map<Eigen::Matrix<double,T::dimension,Eigen::Dynamic> > matrix(memory,T::dimension,m1);
+    matrix.setZero(); // zero out
 
     // Construct block matrix, is of right size but un-initialized
     VerticalBlockMatrix Ab(dims, matrix, true);
-    Ab.matrix().setZero(); // zero out
 
     // Create blocks to be passed to expression_
     JacobianMap blocks;
