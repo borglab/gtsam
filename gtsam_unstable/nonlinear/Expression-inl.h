@@ -24,8 +24,8 @@
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <new> // for placement new
-struct TestBinaryExpression;
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm.hpp>
 
 // template meta-programming headers
 #include <boost/mpl/vector.hpp>
@@ -37,8 +37,9 @@ struct TestBinaryExpression;
 #include <boost/mpl/placeholders.hpp>
 #include <boost/mpl/transform.hpp>
 #include <boost/mpl/at.hpp>
-
 namespace MPL = boost::mpl::placeholders;
+
+#include <new> // for placement new
 
 class ExpressionFactorBinaryTest;
 // Forward declare for testing
@@ -225,10 +226,18 @@ public:
     return keys;
   }
 
-  /// Return dimensions for each argument
-  virtual std::map<Key, size_t> dimensions() const {
+  /// Return dimensions for each argument, as a map
+  virtual std::map<Key, size_t> dims() const {
     std::map<Key, size_t> map;
     return map;
+  }
+
+  /// Return dimensions as vector, ordered as keys
+  std::vector<size_t> dimensions() const {
+    std::map<Key,size_t> map = dims();
+    std::vector<size_t> dims(map.size());
+    boost::copy(map | boost::adaptors::map_values, dims.begin());
+    return dims;
   }
 
   // Return size needed for memory buffer in traceExecution
@@ -298,7 +307,7 @@ public:
   }
 
   /// Return dimensions for each argument
-  virtual std::map<Key, size_t> dimensions() const {
+  virtual std::map<Key, size_t> dims() const {
     std::map<Key, size_t> map;
     map[key_] = T::dimension;
     return map;
@@ -416,9 +425,9 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   }
 
   /// Return dimensions for each argument
-  virtual std::map<Key, size_t> dimensions() const {
-    std::map<Key, size_t> map = Base::dimensions();
-    std::map<Key, size_t> myMap = This::expression->dimensions();
+  virtual std::map<Key, size_t> dims() const {
+    std::map<Key, size_t> map = Base::dims();
+    std::map<Key, size_t> myMap = This::expression->dims();
     map.insert(myMap.begin(), myMap.end());
     return map;
   }
