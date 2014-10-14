@@ -107,6 +107,11 @@ public:
     return root_->keys();
   }
 
+  /// Return dimensions for each argument, as a map (allows order to change later)
+  std::map<Key,size_t> dimensions() const {
+    return root_->dimensions();
+  }
+
   /// Return value and derivatives, forward AD version
   Augmented<T> forward(const Values& values) const {
     return root_->forward(values);

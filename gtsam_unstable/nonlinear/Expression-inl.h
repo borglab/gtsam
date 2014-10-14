@@ -336,6 +336,12 @@ public:
     return keys;
   }
 
+  /// Return dimensions for each argument
+  virtual std::map<Key,size_t> dimensions() const {
+    std::map<Key,size_t> map;
+    return map;
+  }
+
   // Return size needed for memory buffer in traceExecution
   size_t traceSize() const {
     return traceSize_;
@@ -408,6 +414,13 @@ public:
     std::set<Key> keys;
     keys.insert(key_);
     return keys;
+  }
+
+  /// Return dimensions for each argument
+  virtual std::map<Key,size_t> dimensions() const {
+    std::map<Key,size_t> map;
+    map[key_] = T::dimension;
+    return map;
   }
 
   /// Return value
@@ -524,6 +537,14 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     std::set<Key> myKeys = This::expression->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     return keys;
+  }
+
+  /// Return dimensions for each argument
+  virtual std::map<Key,size_t> dimensions() const {
+    std::map<Key,size_t> map = Base::dimensions();
+    std::map<Key,size_t> myMap = This::expression->dimensions();
+    map.insert(myMap.begin(), myMap.end());
+    return map;
   }
 
   /// Recursive Record Class for Functional Expressions
