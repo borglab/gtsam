@@ -75,6 +75,22 @@ struct CallRecord {
 };
 
 //-----------------------------------------------------------------------------
+/// Handle Leaf Case: reverseAD ends here, by writing a matrix into Jacobians
+template<int ROWS, int COLS>
+void handleLeafCase(const Eigen::Matrix<double,ROWS,COLS>& dTdA,
+    JacobianMap& jacobians, Key key) {
+  JacobianMap::iterator it = jacobians.find(key);
+  it->second.block<ROWS,COLS>(0,0) += dTdA; // block makes HUGE difference
+}
+/// Handle Leaf Case for Dynamic Matrix type (slower)
+template<>
+void handleLeafCase(const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>& dTdA,
+    JacobianMap& jacobians, Key key) {
+  JacobianMap::iterator it = jacobians.find(key);
+  it->second += dTdA;
+}
+
+//-----------------------------------------------------------------------------
 /**
  * The ExecutionTrace class records a tree-structured expression's execution
  * It is a tagged union that obviates the need to create
@@ -127,28 +143,16 @@ public:
       return p ? boost::optional<Record*>(p) : boost::none;
     }
   }
-  /// reverseAD in case of Leaf
-  template<class Derived>
-  static void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
-      JacobianMap& jacobians, Key key) {
-    JacobianMap::iterator it = jacobians.find(key);
-    if (it == jacobians.end()) {
-      std::cout << "No block for key " << key << std::endl;
-      throw std::runtime_error("Reverse AD internal error");
-    }
-    // we have pre-loaded them with zeros
-    Eigen::Block<Matrix>& block = it->second;
-    block += dTdA;
-  }
   /**
    *  *** This is the main entry point for reverseAD, called from Expression ***
    * Called only once, either inserts I into Jacobians (Leaf) or starts AD (Function)
    */
+  typedef Eigen::Matrix<double, T::dimension, T::dimension> JacobianTT;
   void startReverseAD(JacobianMap& jacobians) const {
     if (kind == Leaf) {
       // This branch will only be called on trivial Leaf expressions, i.e. Priors
-      size_t n = T::Dim();
-      handleLeafCase(Eigen::MatrixXd::Identity(n, n), jacobians, content.key);
+      static const JacobianTT I = JacobianTT::Identity();
+      handleLeafCase(I, jacobians, content.key);
     } else if (kind == Function)
       // This is the more typical entry point, starting the AD pipeline
       // Inside the startReverseAD that the correctly dimensioned pipeline is chosen.
