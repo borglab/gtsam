@@ -207,18 +207,28 @@ namespace gtsam {
       vector<int>  adj = met.adj();
 
       vector<int> perm, iperm;
+
+	  idx_t size = xadj.size() - 1;
+	  for (int i = 0; i < size; i++)
+	  {
+		  perm.push_back(0);
+		  iperm.push_back(0);
+	  }
+
       int outputError;
-      idx_t size = xadj.size();
-      outputError = METIS_NodeND(&size, xadj.data(), adj.data(), NULL, NULL, perm.data(), iperm.data());
+      
+      outputError = METIS_NodeND(&size, &xadj[0], &adj[0], NULL, NULL, &perm[0], &iperm[0]);
       Ordering result;
 
       if (outputError != METIS_OK)
       {
-          std::cout << "METIS ordering error!\n";
+          std::cout << "METIS failed during Nested Dissection ordering!\n";
           return result;
       }
 
-
+	  result.resize(size);
+	  for (size_t j = 0; j < size; ++j)
+		  result[j] = perm[j];
       return result;
   }
 
