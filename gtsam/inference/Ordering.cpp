@@ -209,7 +209,7 @@ namespace gtsam {
       vector<int> perm, iperm;
 
 	  idx_t size = xadj.size() - 1;
-	  for (int i = 0; i < size; i++)
+	  for (idx_t i = 0; i < size; i++)
 	  {
 		  perm.push_back(0);
 		  iperm.push_back(0);
