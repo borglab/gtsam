@@ -23,36 +23,34 @@
 
 #include <time.h>
 #include <iostream>
-#include <iomanip>      // std::setprecision
-using namespace std;
-using namespace gtsam;
+#include <iomanip>
 
 static const int n = 1000000;
 
-void timeSingleThreaded(const string& str, const NonlinearFactor::shared_ptr& f,
-    const Values& values) {
+void timeSingleThreaded(const std::string& str,
+    const gtsam::NonlinearFactor::shared_ptr& f, const gtsam::Values& values) {
   long timeLog = clock();
-  GaussianFactor::shared_ptr gf;
+  gtsam::GaussianFactor::shared_ptr gf;
   for (int i = 0; i < n; i++)
     gf = f->linearize(values);
   long timeLog2 = clock();
   double seconds = (double) (timeLog2 - timeLog) / CLOCKS_PER_SEC;
-  // cout << ((double) n / seconds) << " calls/second" << endl;
-  cout << setprecision(3);
-  cout << str << ((double) seconds * 1000000 / n) << " musecs/call" << endl;
+  std::cout << std::setprecision(3);
+  std::cout << str << ((double) seconds * 1000000 / n) << " musecs/call"
+      << std::endl;
 }
 
-void timeMultiThreaded(const string& str, const NonlinearFactor::shared_ptr& f,
-    const Values& values) {
-  NonlinearFactorGraph graph;
+void timeMultiThreaded(const std::string& str,
+    const gtsam::NonlinearFactor::shared_ptr& f, const gtsam::Values& values) {
+  gtsam::NonlinearFactorGraph graph;
   for (int i = 0; i < n; i++)
     graph.push_back(f);
   long timeLog = clock();
-  GaussianFactorGraph::shared_ptr gfg = graph.linearize(values);
+  gtsam::GaussianFactorGraph::shared_ptr gfg = graph.linearize(values);
   long timeLog2 = clock();
   double seconds = (double) (timeLog2 - timeLog) / CLOCKS_PER_SEC;
-  // cout << ((double) n / seconds) << " calls/second" << endl;
-  cout << setprecision(3);
-  cout << str << ((double) seconds * 1000000 / n) << " musecs/call" << endl;
+  std::cout << std::setprecision(3);
+  std::cout << str << ((double) seconds * 1000000 / n) << " musecs/call"
+      << std::endl;
 }
 

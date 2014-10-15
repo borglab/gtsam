@@ -20,6 +20,9 @@
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include "timeLinearize.h"
 
+using namespace std;
+using namespace gtsam;
+
 #define time timeMultiThreaded
 
 int main() {

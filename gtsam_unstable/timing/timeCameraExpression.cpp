@@ -24,6 +24,9 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include "timeLinearize.h"
 
+using namespace std;
+using namespace gtsam;
+
 #define time timeMultiThreaded
 
 boost::shared_ptr<Cal3_S2> fixedK(new Cal3_S2());
