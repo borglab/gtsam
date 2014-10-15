@@ -33,13 +33,14 @@ namespace gtsam {
 static const Matrix3 I3 = Matrix3::Identity();
 
 /* ************************************************************************* */
-Rot3::Rot3() : rot_(Matrix3::Identity()) {}
+Rot3::Rot3() : rot_(Matrix3::Identity()), transpose_(Matrix3::Identity()) {}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
   rot_.col(0) = col1.vector();
   rot_.col(1) = col2.vector();
   rot_.col(2) = col3.vector();
+  transpose_ = rot_.transpose();
 }
 
 /* ************************************************************************* */
@@ -49,11 +50,13 @@ Rot3::Rot3(double R11, double R12, double R13,
     rot_ << R11, R12, R13,
         R21, R22, R23,
         R31, R32, R33;
+    transpose_ = rot_.transpose();
 }
 
 /* ************************************************************************* */
 Rot3::Rot3(const Matrix3& R) {
   rot_ = R;
+  transpose_ = rot_.transpose();
 }
 
 /* ************************************************************************* */
@@ -61,13 +64,13 @@ Rot3::Rot3(const Matrix& R) {
   if (R.rows()!=3 || R.cols()!=3)
     throw invalid_argument("Rot3 constructor expects 3*3 matrix");
   rot_ = R;
+  transpose_ = rot_.transpose();
 }
 
-///* ************************************************************************* */
-//Rot3::Rot3(const Matrix3& R) : rot_(R) {}
-
 /* ************************************************************************* */
-Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {}
+Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {
+  transpose_ = rot_.transpose();
+}
 
 /* ************************************************************************* */
 Rot3 Rot3::Rx(double t) {
@@ -172,7 +175,7 @@ Rot3 Rot3::operator*(const Rot3& R2) const {
 /* ************************************************************************* */
 Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
   if (H1) *H1 = -rot_;
-  return Rot3(Matrix3(rot_.transpose()));
+  return Rot3(transpose());
 }
 
 /* ************************************************************************* */
@@ -180,7 +183,8 @@ Rot3 Rot3::between (const Rot3& R2,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   if (H1) *H1 = -(R2.transpose()*rot_);
   if (H2) *H2 = I3;
-  return Rot3(Matrix3(rot_.transpose()*R2.rot_));
+  Matrix3 R12 = transpose()*R2.rot_;
+  return Rot3(R12);
 }
 
 /* ************************************************************************* */
@@ -312,7 +316,7 @@ Quaternion Rot3::toQuaternion() const {
 /* ************************************************************************* */
 Point3 Rot3::unrotate(const Point3& p) const {
   // Eigen expression
-  return Point3(rot_.transpose()*p.vector()); // q = Rt*p
+  return Point3(transpose()*p.vector()); // q = Rt*p
 }
 
 /* ************************************************************************* */

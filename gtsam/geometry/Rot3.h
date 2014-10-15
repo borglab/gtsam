@@ -74,7 +74,7 @@ namespace gtsam {
      * transpose() is used millions of times in linearize, so cache it
      * This also avoids multiple expensive conversions in the quaternion case
      */
-    mutable boost::optional<Matrix3> transpose_; ///< Cached R_.transpose()
+    Matrix3 transpose_; ///< Cached R_.transpose()
 
   public:
 
@@ -376,12 +376,10 @@ namespace gtsam {
 
     /**
      * Return 3*3 transpose (inverse) rotation matrix
-     * Actually returns cached transpose, or computes it if not yet done
+     * Actually returns cached transpose
      */
     const Matrix3& transpose() const {
-      if (!transpose_)
-        transpose_.reset(inverse().matrix());
-      return *transpose_;
+      return transpose_;
     }
 
     /// @deprecated, this is base 1, and was just confusing
