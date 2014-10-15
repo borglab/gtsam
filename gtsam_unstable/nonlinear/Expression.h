@@ -181,5 +181,15 @@ Expression<T> operator*(const Expression<T>& expression1,
       expression1, expression2);
 }
 
+/// Construct an array of leaves
+template<typename T>
+std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start = 0) {
+  std::vector<Expression<T> > unknowns;
+  unknowns.reserve(n);
+  for (size_t i = start; i < start + n; i++)
+    unknowns.push_back(Expression<T>(c, i));
+  return unknowns;
+}
+
 }
 

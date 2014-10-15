@@ -34,7 +34,6 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-
 template<class CAL>
 Point2 uncalibrate(const CAL& K, const Point2& p,
     boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
@@ -57,7 +56,7 @@ TEST(Expression, constant) {
 
 /* ************************************************************************* */
 // Leaf
-TEST(Expression, leaf) {
+TEST(Expression, Leaf) {
   Expression<Rot3> R(100);
   Values values;
   values.insert(100, someR);
@@ -74,8 +73,18 @@ TEST(Expression, leaf) {
 }
 
 /* ************************************************************************* */
+// Many Leaves
+TEST(Expression, Leaves) {
+  Values values;
+  Point3 somePoint(1, 2, 3);
+  values.insert(Symbol('p', 10), somePoint);
+  std::vector<Expression<Point3> > points = createUnknowns<Point3>(10, 'p', 1);
+  EXPECT(assert_equal(somePoint,points.back().value(values)));
+}
 
-//TEST(Expression, nullaryMethod) {
+/* ************************************************************************* */
+
+//TEST(Expression, NullaryMethod) {
 //  Expression<Point3> p(67);
 //  Expression<LieScalar> norm(p, &Point3::norm);
 //  Values values;
