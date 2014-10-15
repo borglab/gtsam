@@ -101,7 +101,7 @@ Unit3 Rot3::operator*(const Unit3& p) const {
 // see doc/math.lyx, SO(3) section
 Point3 Rot3::unrotate(const Point3& p, boost::optional<Matrix3&> H1,
     boost::optional<Matrix3&> H2) const {
-  Matrix3 Rt(transpose());
+  const Matrix3& Rt = transpose();
   Point3 q(Rt * p.vector()); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
   if (H1)
@@ -115,7 +115,7 @@ Point3 Rot3::unrotate(const Point3& p, boost::optional<Matrix3&> H1,
 // see doc/math.lyx, SO(3) section
 Point3 Rot3::unrotate(const Point3& p,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  Matrix3 Rt(transpose());
+  const Matrix3& Rt = transpose();
   Point3 q(Rt * p.vector()); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
   if (H1) {

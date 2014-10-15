@@ -157,9 +157,6 @@ namespace gtsam {
   Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
 
   /* ************************************************************************* */
-  Matrix3 Rot3::transpose() const {return quaternion_.toRotationMatrix().transpose();}
-
-  /* ************************************************************************* */
   Point3 Rot3::r1() const { return Point3(quaternion_.toRotationMatrix().col(0)); }
 
   /* ************************************************************************* */

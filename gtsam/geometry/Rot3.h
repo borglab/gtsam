@@ -70,6 +70,12 @@ namespace gtsam {
     Matrix3 rot_;
 #endif
 
+    /**
+     * transpose() is used millions of times in linearize, so cache it
+     * This also avoids multiple expensive conversions in the quaternion case
+     */
+    mutable boost::optional<Matrix3> transpose_; ///< Cached R_.transpose()
+
   public:
 
     /// @name Constructors and named constructors
@@ -368,8 +374,15 @@ namespace gtsam {
     /** return 3*3 rotation matrix */
     Matrix3 matrix() const;
 
-    /** return 3*3 transpose (inverse) rotation matrix   */
-    Matrix3 transpose() const;
+    /**
+     * Return 3*3 transpose (inverse) rotation matrix
+     * Actually returns cached transpose, or computes it if not yet done
+     */
+    const Matrix3& transpose() const {
+      if (!transpose_)
+        transpose_.reset(inverse().matrix());
+      return *transpose_;
+    }
 
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
@@ -439,6 +452,7 @@ namespace gtsam {
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
   private:
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -463,6 +477,7 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("z", quaternion_.z());
 #endif
     }
+
   };
 
   /// @}
