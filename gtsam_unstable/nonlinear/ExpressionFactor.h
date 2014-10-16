@@ -30,8 +30,10 @@ namespace gtsam {
 template<class T>
 class ExpressionFactor: public NoiseModelFactor {
 
-  const T measurement_;
-  const Expression<T> expression_;
+  T measurement_; ///< the measurement to be compared with the expression
+  Expression<T> expression_; ///< the expression that is AD enabled
+  std::vector<size_t> dimensions_; ///< dimensions of the Jacobian matrices
+  size_t augmentedCols_; ///< total number of columns + 1 (for RHS)
 
 public:
 
@@ -45,6 +47,19 @@ public:
     if (noiseModel->dim() != T::dimension)
       throw std::invalid_argument(
           "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
+
+    // Get dimensions of Jacobian matrices
+    // An Expression is assumed unmutable, so we do this now
+    dimensions_ = expression_.dimensions();
+
+    // Add sizes to know how much memory to allocate on stack in linearize
+    augmentedCols_ = std::accumulate(dimensions_.begin(), dimensions_.end(), 1);
+
+#ifdef DEBUG_ExpressionFactor
+    BOOST_FOREACH(size_t d, dimensions_)
+    std::cout << d << " ";
+    std::cout << " -> " << T::dimension << "x" << augmentedCols_ << std::endl;
+#endif
   }
 
   /**
@@ -58,16 +73,14 @@ public:
       // H should be pre-allocated
       assert(H->size()==size());
 
-      // Get dimensions of Jacobian matrices
-      std::vector<size_t> dims = expression_.dimensions();
-
       // Create and zero out blocks to be passed to expression_
       JacobianMap blocks;
-      for(DenseIndex i=0;i<size();i++) {
+      for (DenseIndex i = 0; i < size(); i++) {
         Matrix& Hi = H->at(i);
-        Hi.resize(T::dimension, dims[i]);
+        Hi.resize(T::dimension, dimensions_[i]);
         Hi.setZero(); // zero out
-        Eigen::Block<Matrix> block = Hi.block(0,0,T::dimension, dims[i]);
+        Eigen::Block<Matrix> block = Hi.block(0, 0, T::dimension,
+            dimensions_[i]);
         blocks.insert(std::make_pair(keys_[i], block));
       }
 
@@ -81,23 +94,18 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
-    // Construct VerticalBlockMatrix and views into it
-
-    // Get dimensions of Jacobian matrices
-    std::vector<size_t> dims = expression_.dimensions();
-
     // Allocate memory on stack and create a view on it (saves a malloc)
-    size_t m1 = std::accumulate(dims.begin(),dims.end(),1);
-    double memory[T::dimension*m1];
-    Eigen::Map<Eigen::Matrix<double,T::dimension,Eigen::Dynamic> > matrix(memory,T::dimension,m1);
+    double memory[T::dimension * augmentedCols_];
+    Eigen::Map<Eigen::Matrix<double, T::dimension, Eigen::Dynamic> > //
+    matrix(memory, T::dimension, augmentedCols_);
     matrix.setZero(); // zero out
 
     // Construct block matrix, is of right size but un-initialized
-    VerticalBlockMatrix Ab(dims, matrix, true);
+    VerticalBlockMatrix Ab(dimensions_, matrix, true);
 
-    // Create blocks to be passed to expression_
+    // Create blocks into Ab_ to be passed to expression_
     JacobianMap blocks;
-    for(DenseIndex i=0;i<size();i++)
+    for (DenseIndex i = 0; i < size(); i++)
       blocks.insert(std::make_pair(keys_[i], Ab(i)));
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, blocks);

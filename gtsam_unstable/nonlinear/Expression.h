@@ -34,51 +34,42 @@ class Expression {
 private:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
-  const boost::shared_ptr<ExpressionNode<T> > root_;
-
-  // Fixed dimensions: an Expression is assumed unmutable
-  const std::vector<size_t> dimensions_;
+  boost::shared_ptr<ExpressionNode<T> > root_;
 
 public:
 
   // Construct a constant expression
   Expression(const T& value) :
-      root_(new ConstantExpression<T>(value)), //
-      dimensions_(root_->dimensions()) {
+      root_(new ConstantExpression<T>(value)) {
   }
 
   // Construct a leaf expression, with Key
   Expression(const Key& key) :
-      root_(new LeafExpression<T>(key)), //
-      dimensions_(root_->dimensions()) {
+      root_(new LeafExpression<T>(key)) {
   }
 
   // Construct a leaf expression, with Symbol
   Expression(const Symbol& symbol) :
-      root_(new LeafExpression<T>(symbol)), //
-      dimensions_(root_->dimensions()) {
+      root_(new LeafExpression<T>(symbol)) {
   }
 
   // Construct a leaf expression, creating Symbol
   Expression(unsigned char c, size_t j) :
-      root_(new LeafExpression<T>(Symbol(c, j))), //
-      dimensions_(root_->dimensions()) {
+      root_(new LeafExpression<T>(Symbol(c, j)))  {
   }
 
   /// Construct a nullary method expression
   template<typename A>
   Expression(const Expression<A>& expression,
       T (A::*method)(typename Optional<T, A>::type) const) :
-      root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)), //
-      dimensions_(root_->dimensions()) {
+      root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
   }
 
   /// Construct a unary function expression
   template<typename A>
   Expression(typename UnaryExpression<T, A>::Function function,
       const Expression<A>& expression) :
-      root_(new UnaryExpression<T, A>(function, expression)), //
-      dimensions_(root_->dimensions()) {
+      root_(new UnaryExpression<T, A>(function, expression)) {
   }
 
   /// Construct a unary method expression
@@ -89,8 +80,7 @@ public:
       const Expression<A2>& expression2) :
       root_(
           new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
-              expression1, expression2)), //
-      dimensions_(root_->dimensions()) {
+              expression1, expression2)) {
   }
 
   /// Construct a binary function expression
@@ -98,8 +88,7 @@ public:
   Expression(typename BinaryExpression<T, A1, A2>::Function function,
       const Expression<A1>& expression1, const Expression<A2>& expression2) :
       root_(
-          new BinaryExpression<T, A1, A2>(function, expression1, expression2)), //
-      dimensions_(root_->dimensions()) {
+          new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
   }
 
   /// Construct a ternary function expression
@@ -109,8 +98,7 @@ public:
       const Expression<A3>& expression3) :
       root_(
           new TernaryExpression<T, A1, A2, A3>(function, expression1,
-              expression2, expression3)), //
-      dimensions_(root_->dimensions()) {
+              expression2, expression3)) {
   }
 
   /// Return keys that play in this expression
@@ -119,8 +107,8 @@ public:
   }
 
   /// Return dimensions for each argument, must be same order as keys
-  const std::vector<size_t>& dimensions() const {
-    return dimensions_;
+  std::vector<size_t> dimensions() const {
+    return root_->dimensions();
   }
 
   // Return size needed for memory buffer in traceExecution
