@@ -52,6 +52,7 @@ TEST(Expression, constant) {
   EXPECT(assert_equal(someR, actual));
   JacobianMap expected;
   EXPECT(actualMap == expected);
+  EXPECT_LONGS_EQUAL(0, R.traceSize())
 }
 
 /* ************************************************************************* */
@@ -112,9 +113,16 @@ TEST(Expression, BinaryKeys) {
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, BinaryDimensions) {
-  map<Key,size_t> actual, expected = map_list_of<Key,size_t>(1,6)(2,3);
+  map<Key, size_t> actual, expected = map_list_of<Key, size_t>(1, 6)(2, 3);
   binary::p_cam.dims(actual);
   EXPECT(actual==expected);
+}
+/* ************************************************************************* */
+// dimensions
+TEST(Expression, BinaryTraceSize) {
+  typedef BinaryExpression<Point3, Pose3, Point3> Binary;
+  size_t expectedTraceSize = sizeof(Binary::Record);
+  EXPECT_LONGS_EQUAL(expectedTraceSize, binary::p_cam.traceSize());
 }
 /* ************************************************************************* */
 // Binary(Leaf,Unary(Binary(Leaf,Leaf)))
@@ -136,9 +144,20 @@ TEST(Expression, TreeKeys) {
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, TreeDimensions) {
-  map<Key,size_t> actual, expected = map_list_of<Key,size_t>(1,6)(2,3)(3,5);
+  map<Key, size_t> actual, expected = map_list_of<Key, size_t>(1, 6)(2, 3)(3,
+      5);
   tree::uv_hat.dims(actual);
   EXPECT(actual==expected);
+}
+/* ************************************************************************* */
+// TraceSize
+TEST(Expression, TreeTraceSize) {
+  typedef UnaryExpression<Point2, Point3> Unary;
+  typedef BinaryExpression<Point3, Pose3, Point3> Binary1;
+  typedef BinaryExpression<Point2, Point2, Cal3_S2> Binary2;
+  size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary1::Record)
+      + sizeof(Binary2::Record);
+  EXPECT_LONGS_EQUAL(expectedTraceSize, tree::uv_hat.traceSize());
 }
 /* ************************************************************************* */
 
