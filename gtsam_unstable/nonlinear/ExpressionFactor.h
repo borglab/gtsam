@@ -20,6 +20,8 @@
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm.hpp>
 #include <numeric>
 
 namespace gtsam {
@@ -40,17 +42,25 @@ public:
   /// Constructor
   ExpressionFactor(const SharedNoiseModel& noiseModel, //
       const T& measurement, const Expression<T>& expression) :
-      NoiseModelFactor(noiseModel, expression.keys()), //
       measurement_(measurement), expression_(expression) {
     if (!noiseModel)
       throw std::invalid_argument("ExpressionFactor: no NoiseModel.");
     if (noiseModel->dim() != T::dimension)
       throw std::invalid_argument(
           "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
+    noiseModel_ = noiseModel;
 
     // Get dimensions of Jacobian matrices
     // An Expression is assumed unmutable, so we do this now
-    dimensions_ = expression_.dimensions();
+    std::map<Key, size_t> map;
+    expression_.dims(map);
+    size_t n = map.size();
+
+    keys_.resize(n);
+    boost::copy(map | boost::adaptors::map_keys, keys_.begin());
+
+    dimensions_.resize(n);
+    boost::copy(map | boost::adaptors::map_values, dimensions_.begin());
 
     // Add sizes to know how much memory to allocate on stack in linearize
     augmentedCols_ = std::accumulate(dimensions_.begin(), dimensions_.end(), 1);

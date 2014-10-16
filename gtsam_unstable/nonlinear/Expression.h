@@ -106,9 +106,9 @@ public:
     return root_->keys();
   }
 
-  /// Return dimensions for each argument, must be same order as keys
-  std::vector<size_t> dimensions() const {
-    return root_->dimensions();
+  /// Return dimensions for each argument, as a map
+  void dims(std::map<Key, size_t>& map) const {
+    root_->dims(map);
   }
 
   // Return size needed for memory buffer in traceExecution

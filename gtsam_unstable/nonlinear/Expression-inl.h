@@ -24,8 +24,6 @@
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm.hpp>
 
 // template meta-programming headers
 #include <boost/mpl/vector.hpp>
@@ -231,17 +229,7 @@ public:
   }
 
   /// Return dimensions for each argument, as a map
-  virtual std::map<Key, size_t> dims() const {
-    std::map<Key, size_t> map;
-    return map;
-  }
-
-  /// Return dimensions as vector, ordered as keys
-  std::vector<size_t> dimensions() const {
-    std::map<Key,size_t> map = dims();
-    std::vector<size_t> dims(map.size());
-    boost::copy(map | boost::adaptors::map_values, dims.begin());
-    return dims;
+  virtual void dims(std::map<Key, size_t>& map) const {
   }
 
   // Return size needed for memory buffer in traceExecution
@@ -311,10 +299,8 @@ public:
   }
 
   /// Return dimensions for each argument
-  virtual std::map<Key, size_t> dims() const {
-    std::map<Key, size_t> map;
+  virtual void dims(std::map<Key, size_t>& map) const {
     map[key_] = T::dimension;
-    return map;
   }
 
   /// Return value
@@ -429,11 +415,9 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   }
 
   /// Return dimensions for each argument
-  virtual std::map<Key, size_t> dims() const {
-    std::map<Key, size_t> map = Base::dims();
-    std::map<Key, size_t> myMap = This::expression->dims();
-    map.insert(myMap.begin(), myMap.end());
-    return map;
+  virtual void dims(std::map<Key, size_t>& map) const {
+    Base::dims(map);
+    This::expression->dims(map);
   }
 
   /// Recursive Record Class for Functional Expressions

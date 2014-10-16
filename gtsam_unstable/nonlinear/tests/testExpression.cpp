@@ -112,9 +112,9 @@ TEST(Expression, BinaryKeys) {
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, BinaryDimensions) {
-  vector<size_t> expected = list_of(6)(3), //
-  actual = binary::p_cam.dimensions();
-  EXPECT(expected==actual);
+  map<Key,size_t> actual, expected = map_list_of<Key,size_t>(1,6)(2,3);
+  binary::p_cam.dims(actual);
+  EXPECT(actual==expected);
 }
 /* ************************************************************************* */
 // Binary(Leaf,Unary(Binary(Leaf,Leaf)))
@@ -136,9 +136,9 @@ TEST(Expression, TreeKeys) {
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, TreeDimensions) {
-  vector<size_t> expected = list_of(6)(3)(5), //
-  actual = tree::uv_hat.dimensions();
-  EXPECT(expected==actual);
+  map<Key,size_t> actual, expected = map_list_of<Key,size_t>(1,6)(2,3)(3,5);
+  tree::uv_hat.dims(actual);
+  EXPECT(actual==expected);
 }
 /* ************************************************************************* */
 
