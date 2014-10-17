@@ -397,6 +397,11 @@ public:
     return *dualKey_;
   }
 
+  /// return true if this factor has a dual key
+  bool hasDualKey() const {
+    return dualKey_ != boost::none;
+  }
+
 protected:
 
   /// Internal function to fill blocks and set dimensions
