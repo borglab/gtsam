@@ -225,6 +225,60 @@ TEST(Expression, ternary) {
 }
 
 /* ************************************************************************* */
+// Some Ceres Snippets copied for testing
+// Copyright 2010, 2011, 2012 Google Inc. All rights reserved.
+template<typename T> inline T &RowMajorAccess(T *base, int rows, int cols,
+    int i, int j) {
+  return base[cols * i + j];
+}
+
+inline double RandDouble() {
+  double r = static_cast<double>(rand());
+  return r / RAND_MAX;
+}
+
+// A structure for projecting a 3x4 camera matrix and a
+// homogeneous 3D point, to a 2D inhomogeneous point.
+struct Projective {
+  // Function that takes P and X as separate vectors:
+  //   P, X -> x
+  template<typename A>
+  bool operator()(A const P[12], A const X[4], A x[2]) const {
+    A PX[3];
+    for (int i = 0; i < 3; ++i) {
+      PX[i] = RowMajorAccess(P, 3, 4, i, 0) * X[0]
+          + RowMajorAccess(P, 3, 4, i, 1) * X[1]
+          + RowMajorAccess(P, 3, 4, i, 2) * X[2]
+          + RowMajorAccess(P, 3, 4, i, 3) * X[3];
+    }
+    if (PX[2] != 0.0) {
+      x[0] = PX[0] / PX[2];
+      x[1] = PX[1] / PX[2];
+      return true;
+    }
+    return false;
+  }
+};
+
+/* ************************************************************************* */
+//#include "/Users/frank/include/ceres/autodiff_cost_function.h"
+// Test Ceres AutoDiff
+TEST(Expression, AutoDiff) {
+
+  MatrixRowMajor P(3, 4);
+  P << 1, 0, 0, 0, 0, 1, 0, 5, 0, 0, 1, 0;
+  Vector4 X(10, 0, 5, 1);
+
+  // Apply the mapping, to get image point b_x.
+  Projective projective;
+  Vector2 actual;
+  EXPECT(projective(P.data(), X.data(), actual.data()));
+
+  Vector expected = Vector2(2, 1);
+  EXPECT(assert_equal(expected,actual,1e-9));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
