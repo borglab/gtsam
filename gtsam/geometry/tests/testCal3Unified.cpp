@@ -19,6 +19,9 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3Unified.h>
 
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/inference/Key.h>
+
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Cal3Unified)
@@ -95,6 +98,19 @@ TEST( Cal3Unified, retract)
   Cal3Unified actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-9));
   CHECK(assert_equal(d,K.localCoordinates(actual),1e-9));
+}
+
+/* ************************************************************************* */
+TEST( Cal3Unified, DerivedValue)
+{
+  Values values;
+  Cal3Unified cal(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Key key = 1;
+  values.insert(key, cal);
+
+  Cal3Unified calafter = values.at<Cal3Unified>(key);
+
+  CHECK(assert_equal(cal,calafter,1e-9));
 }
 
 /* ************************************************************************* */
