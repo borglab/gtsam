@@ -208,6 +208,7 @@ public:
      * and in [Hairer06book] in formula (4.5), pg. 84, Lemma 4.2
      *    Ernst Hairer, et al., Geometric Numerical Integration,
      *      Structure-Preserving Algorithms for Ordinary Differential Equations, 2nd edition, Springer-Verlag, 2006.
+   * See also Iserles05an, pg. 33, formula 2.46
      */
     static Matrix6 dExpInv_exp(const Vector&  xi);
 
