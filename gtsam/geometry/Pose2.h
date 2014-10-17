@@ -162,6 +162,11 @@ public:
   Vector Adjoint(const Vector& xi) const;
 
   /**
+   * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
+   */
+  static Matrix3 adjointMap(const Vector& v);
+
+  /**
    * wedge for SE(2):
    * @param xi 3-dim twist (v,omega) where
    *  omega is angular velocity
@@ -174,6 +179,13 @@ public:
         w,  0., vy,
         0., 0.,  0.);
   }
+
+  /// Left-trivialized derivative of the exponential map
+  static Matrix3 dexpL(const Vector3& v);
+
+  /// Left-trivialized derivative inverse of the exponential map
+  static Matrix3 dexpInvL(const Vector3& v);
+
 
   /// @}
   /// @name Group Action on Point2

@@ -32,7 +32,7 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
-// #define SLOW_BUT_CORRECT_EXPMAP
+#define SLOW_BUT_CORRECT_EXPMAP
 
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
 GTSAM_CONCEPT_LIE_INST(Pose2)
@@ -190,6 +190,28 @@ TEST(Pose2, logmap_full) {
   Vector expected = (Vector(3) << 0.00986473, -0.0150896, 0.018);
   Vector actual = logmap_default<Pose2>(pose0, pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+Vector w = (Vector(3) << 0.1, 0.27, -0.2);
+
+// Left trivialization Derivative of exp(w) over w: How exp(w) changes when w changes?
+// We find y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
+// => y = log (exp(-w) * exp(w+dw))
+Vector testDexpL(const LieVector& dw) {
+  Vector y = Pose2::Logmap(Pose2::Expmap(-w) * Pose2::Expmap(w + dw));
+  return y;
+}
+
+TEST( Pose2, dexpL) {
+  Matrix actualDexpL = Pose2::dexpL(w);
+  Matrix expectedDexpL = numericalDerivative11(
+      boost::function<Vector(const LieVector&)>(
+          boost::bind(testDexpL, _1)), LieVector(zero(3)), 1e-2);
+  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
+
+  Matrix actualDexpInvL = Pose2::dexpInvL(w);
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
 }
 
 /* ************************************************************************* */
