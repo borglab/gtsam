@@ -90,7 +90,7 @@ public:
   /**
    * convert intrinsic coordinates xy to image coordinates uv
    * @param p point in intrinsic coordinates
-   * @param Dcal optional 2*9 Jacobian wrpt Cal3DS2 parameters
+   * @param Dcal optional 2*10 Jacobian wrpt Cal3Unified parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
