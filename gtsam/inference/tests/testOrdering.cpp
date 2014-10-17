@@ -12,6 +12,7 @@
 /**
  * @file testOrdering
  * @author Alex Cunningham
+ * @author Andrew Melim
  */
 
 #include <gtsam/inference/Symbol.h>

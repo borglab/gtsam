@@ -12,6 +12,7 @@
 /**
  * @file    Ordering.h
  * @author  Richard Roberts
+ * @author  Andrew Melim
  * @date    Sep 2, 2010
  */
 

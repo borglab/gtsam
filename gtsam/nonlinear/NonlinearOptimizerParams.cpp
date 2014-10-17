@@ -107,10 +107,17 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
     break;
   }
 
-  if (ordering)
-    std::cout << "                   ordering: custom\n";
-  else
-    std::cout << "                   ordering: COLAMD\n";
+  switch (orderingType){
+  case COLAMD:
+	  std::cout << "                   ordering: COLAMD\n";
+	  break;
+  case METIS:
+	  std::cout << "                   ordering: METIS\n";
+	  break;
+  default:
+	  std::cout << "                   ordering: custom\n";
+	  break;
+  }
 
   std::cout.flush();
 }
@@ -155,6 +162,34 @@ NonlinearOptimizerParams::LinearSolverType NonlinearOptimizerParams::linearSolve
   throw std::invalid_argument(
       "Unknown linear solver type in SuccessiveLinearizationOptimizer");
 }
+
 /* ************************************************************************* */
+std::string NonlinearOptimizerParams::orderingTypeTranslator(NonlinearOptimizerParams::OrderingType type) const
+{
+	switch (type) {
+	case METIS:
+		return "METIS";
+	case COLAMD:
+		return "COLAMD";
+	default:
+		if (ordering)
+			return "CUSTOM";
+		else
+			throw std::invalid_argument(
+			"Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
+	}
+}
+
+/* ************************************************************************* */
+NonlinearOptimizerParams::OrderingType NonlinearOptimizerParams::orderingTypeTranslator(const std::string& type) const
+{
+	if (type == "METIS")
+		return METIS;
+	if (type == "COLAMD")
+		return COLAMD;
+	throw std::invalid_argument(
+		"Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
+}
+
 
 } // namespace
