@@ -319,18 +319,13 @@ public:
       terms[j].second.swap(A[j]);
     }
 
-    // TODO pass unwhitened + noise model to Gaussian factor
-    // For now, only linearized constrained factors have noise model at linear level!!!
     if(noiseModel_)
     {
+      // TODO pass unwhitened + noise model to Gaussian factor
       noiseModel::Constrained::shared_ptr constrained =
-        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-      if(constrained) {
-        size_t augmentedDim = terms[0].second.rows() - constrained->dim();
-        Vector augmentedZero = zero(augmentedDim);
-        Vector augmentedb = concatVectors(2, &b, &augmentedZero);
-        return GaussianFactor::shared_ptr(new JacobianFactor(terms, augmentedb, constrained->unit(augmentedDim)));
-      }
+          boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
+      if(constrained)
+        return GaussianFactor::shared_ptr(new JacobianFactor(terms, b, constrained->unit()));
       else
         return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
     }
