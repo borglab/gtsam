@@ -324,13 +324,38 @@ struct SnavelyReprojectionError {
 
 /* ************************************************************************* */
 // manifold_traits prototype
+// Same style as Boost.TypeTraits
+// All meta-functions below ever only declare a single type
+// or a type/value/value_type
 #include <boost/static_assert.hpp>
+#include <type_traits>
+
+// is manifold
+template<typename T>
+struct is_manifold: public false_type {
+};
+
+// dimension
+template<typename T>
+struct dimension: public integral_constant<size_t, T::dimension> {
+};
+
+// Fixed size Eigen::Matrix type
+template<int M, int N, int Options>
+struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public true_type {
+};
+
+template<int M, int N, int Options>
+struct dimension<Eigen::Matrix<double, M, N, Options> > : public integral_constant<
+    size_t, M * N> {
+  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
+};
 
 template<typename T>
 struct manifold_traits {
   typedef T type;
-  static const size_t dimension = T::dimension;
-  typedef Eigen::Matrix<double, dimension, 1> tangent;
+  static const size_t dim = dimension<T>::value;
+  typedef Eigen::Matrix<double, dim, 1> tangent;
   static tangent localCoordinates(const T& t1, const T& t2) {
     return t1.localCoordinates(t2);
   }
@@ -344,8 +369,8 @@ template<int M, int N, int Options>
 struct manifold_traits<Eigen::Matrix<double, M, N, Options> > {
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
   typedef Eigen::Matrix<double, M, N, Options> type;
-  static const size_t dimension = M * N;
-  typedef Eigen::Matrix<double, dimension, 1> tangent;
+  static const size_t dim = dimension<type>::value;
+  typedef Eigen::Matrix<double, dim, 1> tangent;
   static tangent localCoordinates(const type& t1, const type& t2) {
     type diff = t2 - t1;
     return tangent(Eigen::Map<tangent>(diff.data()));
@@ -358,8 +383,8 @@ struct manifold_traits<Eigen::Matrix<double, M, N, Options> > {
 
 // Test dimension traits
 TEST(Expression, Traits) {
-  EXPECT_LONGS_EQUAL(2, manifold_traits<Point2>::dimension);
-  EXPECT_LONGS_EQUAL(8, manifold_traits<Matrix24>::dimension);
+  EXPECT_LONGS_EQUAL(2, dimension<Point2>::value);
+  EXPECT_LONGS_EQUAL(8, dimension<Matrix24>::value);
 }
 
 /* ************************************************************************* */
@@ -367,10 +392,12 @@ TEST(Expression, Traits) {
 template<typename Y, typename X>
 Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
     double delta = 1e-5) {
+  BOOST_STATIC_ASSERT(is_manifold<Y>::value);
+  BOOST_STATIC_ASSERT(is_manifold<X>::value);
   Y hx = h(x);
   double factor = 1.0 / (2.0 * delta);
-  static const size_t M = manifold_traits<Y>::dimension;
-  static const size_t N = manifold_traits<X>::dimension;
+  static const size_t M = dimension<Y>::value;
+  static const size_t N = dimension<X>::value;
   Eigen::Matrix<double, N, 1> d;
   Matrix H = zeros(M, N);
   for (size_t j = 0; j < N; j++) {
@@ -441,9 +468,9 @@ TEST(Expression, AutoDiff2) {
   SnavelyReprojectionError snavely;
 
   // Make arguments
-  Vector9 P;
+  Vector9 P; // zero rotation, (0,5,0) translation, focal length 1
   P << 0, 0, 0, 0, 5, 0, 1, 0, 0;
-  Vector3 X(10, 0, -5);
+  Vector3 X(10, 0, -5); // negative Z-axis convention of Snavely!
 
   // Apply the mapping, to get image point b_x.
   Vector expected = Vector2(2, 1);
