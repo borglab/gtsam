@@ -324,137 +324,8 @@ struct SnavelyReprojectionError {
 
 /* ************************************************************************* */
 
-/**
- * A manifold defines a space in which there is a notion of a linear tangent space
- * that can be centered around a given point on the manifold.  These nonlinear
- * spaces may have such properties as wrapping around (as is the case with rotations),
- * which might make linear operations on parameters not return a viable element of
- * the manifold.
- *
- * We perform optimization by computing a linear delta in the tangent space of the
- * current estimate, and then apply this change using a retraction operation, which
- * maps the change in tangent space back to the manifold itself.
- *
- * There may be multiple possible retractions for a given manifold, which can be chosen
- * between depending on the computational complexity.  The important criteria for
- * the creation for the retract and localCoordinates functions is that they be
- * inverse operations.
- *
- */
-
-// Traits, same style as Boost.TypeTraits
-// All meta-functions below ever only declare a single type
-// or a type/value/value_type
-// is manifold, by default this is false
-template<typename T>
-struct is_manifold: public std::false_type {
-};
-
-// dimension, can return Eigen::Dynamic (-1) if not known at compile time
-template<typename T>
-struct dimension;
-//: public std::integral_constant<int, T::dimension> {
-//  BOOST_STATIC_ASSERT(is_manifold<T>::value);
-//};
-
-// Chart is a map from T -> vector, retract is its inverse
-template<typename T>
-struct DefaultChart {
-  BOOST_STATIC_ASSERT(is_manifold<T>::value);
-  typedef Eigen::Matrix<double, dimension<T>::value, 1> vector;
-  DefaultChart(const T& t) :
-      t_(t) {
-  }
-  vector apply(const T& other) {
-    return t_.localCoordinates(other);
-  }
-  T retract(const vector& d) {
-    return t_.retract(d);
-  }
-private:
-  T const & t_;
-};
-
-// double
-
-template<>
-struct is_manifold<double> : public true_type {
-};
-
-template<>
-struct dimension<double> : public integral_constant<size_t, 1> {
-};
-
-template<>
-struct DefaultChart<double> {
-  typedef Eigen::Matrix<double, 1, 1> vector;
-  DefaultChart(double t) :
-      t_(t) {
-  }
-  vector apply(double other) {
-    vector d;
-    d << other - t_;
-    return d;
-  }
-  double retract(const vector& d) {
-    return t_ + d[0];
-  }
-private:
-  double t_;
-};
-
-// Fixed size Eigen::Matrix type
-
-template<int M, int N, int Options>
-struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public true_type {
-};
-
-// TODO: Could be more sophisticated using Eigen traits and SFINAE?
-
-template<int Options>
-struct dimension<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Options> > : public integral_constant<
-    size_t, Eigen::Dynamic> {
-};
-
-template<int M, int Options>
-struct dimension<Eigen::Matrix<double, M, Eigen::Dynamic, Options> > : public integral_constant<
-    size_t, Eigen::Dynamic> {
-  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic);
-};
-
-template<int N, int Options>
-struct dimension<Eigen::Matrix<double, Eigen::Dynamic, N, Options> > : public integral_constant<
-    size_t, Eigen::Dynamic> {
-  BOOST_STATIC_ASSERT(N!=Eigen::Dynamic);
-};
-
-template<int M, int N, int Options>
-struct dimension<Eigen::Matrix<double, M, N, Options> > : public integral_constant<
-    size_t, M * N> {
-  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
-};
-
-template<int M, int N, int Options>
-struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
-  typedef Eigen::Matrix<double, M, N, Options> T;
-  typedef Eigen::Matrix<double, dimension<T>::value, 1> vector;
-  DefaultChart(const T& t) :
-      t_(t) {
-  }
-  vector apply(const T& other) {
-    T diff = other - t_;
-    Eigen::Map<vector> map(diff.data());
-    return vector(map);
-  }
-  T retract(const vector& d) {
-    Eigen::Map<const T> map(d.data());
-    return t_ + map;
-  }
-private:
-  T const & t_;
-};
-
 // Point2
+namespace gtsam {
 
 template<>
 struct is_manifold<Point2> : public true_type {
@@ -463,6 +334,8 @@ struct is_manifold<Point2> : public true_type {
 template<>
 struct dimension<Point2> : public integral_constant<size_t, 2> {
 };
+
+}
 
 // is_manifold
 TEST(Expression, is_manifold) {
@@ -495,7 +368,8 @@ TEST(Expression, Charts) {
   EXPECT(chart2.retract(Vector2(1,0))==Vector2(1,0));
 
   DefaultChart<double> chart3(0);
-  Eigen::Matrix<double, 1, 1> v1; v1<<1;
+  Eigen::Matrix<double, 1, 1> v1;
+  v1 << 1;
   EXPECT(chart3.apply(1)==v1);
   EXPECT(chart3.retract(v1)==1);
 
