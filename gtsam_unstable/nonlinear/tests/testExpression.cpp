@@ -323,23 +323,39 @@ struct SnavelyReprojectionError {
 };
 
 /* ************************************************************************* */
-// manifold_traits prototype
-// Same style as Boost.TypeTraits
+
+/**
+ * A manifold defines a space in which there is a notion of a linear tangent space
+ * that can be centered around a given point on the manifold.  These nonlinear
+ * spaces may have such properties as wrapping around (as is the case with rotations),
+ * which might make linear operations on parameters not return a viable element of
+ * the manifold.
+ *
+ * We perform optimization by computing a linear delta in the tangent space of the
+ * current estimate, and then apply this change using a retraction operation, which
+ * maps the change in tangent space back to the manifold itself.
+ *
+ * There may be multiple possible retractions for a given manifold, which can be chosen
+ * between depending on the computational complexity.  The important criteria for
+ * the creation for the retract and localCoordinates functions is that they be
+ * inverse operations.
+ *
+ */
+
+// Traits, same style as Boost.TypeTraits
 // All meta-functions below ever only declare a single type
 // or a type/value/value_type
-#include <boost/static_assert.hpp>
-#include <type_traits>
-
-// is manifold
+// is manifold, by default this is false
 template<typename T>
-struct is_manifold: public false_type {
+struct is_manifold: public std::false_type {
 };
 
-// dimension
+// dimension, can return Eigen::Dynamic (-1) if not known at compile time
 template<typename T>
-struct dimension;
+struct dimension: public std::integral_constant<int, T::dimension> {
+};
 
-// TangentVector is eigen::Matrix type in tangent space
+// TangentVector is Eigen::Matrix type in tangent space, can be Dynamic...
 template<typename T>
 struct TangentVector {
   BOOST_STATIC_ASSERT(is_manifold<T>::value);
@@ -348,7 +364,7 @@ struct TangentVector {
 
 // default localCoordinates
 template<typename T>
-struct localCoordinates {
+struct LocalCoordinates {
   typename TangentVector<T>::type operator()(const T& t1, const T& t2) {
     return t1.localCoordinates(t2);
   }
@@ -356,7 +372,7 @@ struct localCoordinates {
 
 // default retract
 template<typename T>
-struct retract {
+struct Retract {
   T operator()(const T& t, const typename TangentVector<T>::type& d) {
     return t.retract(d);
   }
@@ -375,7 +391,7 @@ struct dimension<Eigen::Matrix<double, M, N, Options> > : public integral_consta
 };
 
 template<int M, int N, int Options>
-struct localCoordinates<Eigen::Matrix<double, M, N, Options> > {
+struct LocalCoordinates<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, M, N, Options> T;
   typedef typename TangentVector<T>::type result_type;
   result_type operator()(const T& t1, const T& t2) {
@@ -385,7 +401,7 @@ struct localCoordinates<Eigen::Matrix<double, M, N, Options> > {
 };
 
 template<int M, int N, int Options>
-struct retract<Eigen::Matrix<double, M, N, Options> > {
+struct Retract<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, M, N, Options> T;
   T operator()(const T& t, const typename TangentVector<T>::type& d) {
     return t + Eigen::Map<const T>(d.data());
@@ -417,8 +433,14 @@ TEST(Expression, dimension) {
 
 // localCoordinates
 TEST(Expression, localCoordinates) {
-  EXPECT(localCoordinates<Point2>()(Point2(0,0),Point2(1,0))==Vector2(1,0));
-  EXPECT(localCoordinates<Vector2>()(Vector2(0,0),Vector2(1,0))==Vector2(1,0));
+  EXPECT(LocalCoordinates<Point2>()(Point2(0,0),Point2(1,0))==Vector2(1,0));
+  EXPECT(LocalCoordinates<Vector2>()(Vector2(0,0),Vector2(1,0))==Vector2(1,0));
+}
+
+// retract
+TEST(Expression, retract) {
+  EXPECT(Retract<Point2>()(Point2(0,0),Vector2(1,0))==Point2(1,0));
+  EXPECT(Retract<Vector2>()(Vector2(0,0),Vector2(1,0))==Vector2(1,0));
 }
 
 /* ************************************************************************* */
@@ -426,21 +448,34 @@ TEST(Expression, localCoordinates) {
 template<typename Y, typename X>
 Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
     double delta = 1e-5) {
+
   BOOST_STATIC_ASSERT(is_manifold<Y>::value);
-  BOOST_STATIC_ASSERT(is_manifold<X>::value);
-  Y hx = h(x);
-  double factor = 1.0 / (2.0 * delta);
   static const size_t M = dimension<Y>::value;
+  typedef typename TangentVector<Y>::type TangentY;
+  LocalCoordinates<Y> localCoordinates;
+
+  BOOST_STATIC_ASSERT(is_manifold<X>::value);
   static const size_t N = dimension<X>::value;
-  Eigen::Matrix<double, N, 1> d;
+  typedef typename TangentVector<X>::type TangentX;
+  Retract<X> retract;
+
+  // get value at x
+  Y hx = h(x);
+
+  // Prepare a tangent vector to perturb x with
+  TangentX d;
+  d.setZero();
+
+  // Fill in Jacobian H
   Matrix H = zeros(M, N);
+  double factor = 1.0 / (2.0 * delta);
   for (size_t j = 0; j < N; j++) {
-    d.setZero();
     d(j) = delta;
-    Vector hxplus = localCoordinates<Y>()(hx, h(retract<X>()(x, d)));
+    TangentY hxplus = localCoordinates(hx, h(retract(x, d)));
     d(j) = -delta;
-    Vector hxmin = localCoordinates<Y>()(hx, h(retract<X>()(x, d)));
+    TangentY hxmin = localCoordinates(hx, h(retract(x, d)));
     H.block<M, 1>(0, j) << (hxplus - hxmin) * factor;
+    d(j) = 0;
   }
   return H;
 }
