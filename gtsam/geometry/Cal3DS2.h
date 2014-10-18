@@ -46,8 +46,6 @@ protected:
   double p1_, p2_ ; // tangential distortion
 
 public:
-  /// dimension of the variable - used to autodetect sizes
-  static const size_t dimension = 9;
 
   Matrix K() const ;
   Eigen::Vector4d k() const { return Eigen::Vector4d(k1_, k2_, p1_, p2_); }
@@ -146,11 +144,9 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 9; }  //TODO: make a final dimension variable
 
-private:
-
   /// @}
-  /// @name Advanced Interface
-  /// @{
+
+private:
 
   /** Serialization function */
   friend class boost::serialization::access;
@@ -170,10 +166,14 @@ private:
     ar & BOOST_SERIALIZATION_NVP(p2_);
   }
 
-
-  /// @}
-
 };
 
+template<>
+struct is_manifold<Cal3DS2> : public std::true_type {
+};
+
+template<>
+struct dimension<Cal3DS2> : public std::integral_constant<size_t, 9> {
+};
 }
 
