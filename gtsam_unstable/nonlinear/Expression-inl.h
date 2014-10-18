@@ -322,7 +322,7 @@ public:
 //   C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost
 //   and Beyond. Abrahams, David; Gurtovoy, Aleksey. Pearson Education.
 // to recursively generate a class, that will be the base for function nodes.
-// The class generated, for two arguments A1, A2, and A3 will be
+// The class generated, for three arguments A1, A2, and A3 will be
 //
 // struct Base1 : Argument<T,A1,1>, FunctionalBase<T> {
 //   ... storage related to A1 ...
@@ -331,12 +331,12 @@ public:
 //
 // struct Base2 : Argument<T,A2,2>, Base1 {
 //   ... storage related to A2 ...
-//   ... methods that work on A2 and (recursively) on A2 ...
+//   ... methods that work on A2 and (recursively) on A1 ...
 // };
 //
-// struct Base2 : Argument<T,A3,3>, Base2 {
+// struct Base3 : Argument<T,A3,3>, Base2 {
 //   ... storage related to A3 ...
-//   ... methods that work on A3 and (recursively) on A2 and A3 ...
+//   ... methods that work on A3 and (recursively) on A2 and A1 ...
 // };
 //
 // struct FunctionalNode : Base3 {
