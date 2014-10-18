@@ -339,7 +339,15 @@ struct is_manifold: public false_type {
 template<typename T>
 struct dimension;
 
+// TangentVector is eigen::Matrix type in tangent space
+template<typename T>
+struct TangentVector {
+  BOOST_STATIC_ASSERT(is_manifold<T>::value);
+  typedef Eigen::Matrix<double, dimension<T>::value, 1> type;
+};
+
 // Fixed size Eigen::Matrix type
+
 template<int M, int N, int Options>
 struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public true_type {
 };
@@ -363,12 +371,11 @@ struct dimension<Point2> : public integral_constant<size_t, 2> {
 template<typename T>
 struct manifold_traits {
   typedef T type;
-  static const size_t dim = dimension<T>::value;
-  typedef Eigen::Matrix<double, dim, 1> tangent;
-  static tangent localCoordinates(const T& t1, const T& t2) {
+  static typename TangentVector<T>::type localCoordinates(const T& t1,
+      const T& t2) {
     return t1.localCoordinates(t2);
   }
-  static type retract(const type& t, const tangent& d) {
+  static type retract(const type& t, const typename TangentVector<T>::type& d) {
     return t.retract(d);
   }
 };
@@ -378,13 +385,14 @@ template<int M, int N, int Options>
 struct manifold_traits<Eigen::Matrix<double, M, N, Options> > {
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
   typedef Eigen::Matrix<double, M, N, Options> type;
-  static const size_t dim = dimension<type>::value;
-  typedef Eigen::Matrix<double, dim, 1> tangent;
-  static tangent localCoordinates(const type& t1, const type& t2) {
+  static typename TangentVector<type>::type localCoordinates(const type& t1,
+      const type& t2) {
     type diff = t2 - t1;
-    return tangent(Eigen::Map<tangent>(diff.data()));
+    return typename TangentVector<type>::type(
+        Eigen::Map<typename TangentVector<type>::type>(diff.data()));
   }
-  static type retract(const type& t, const tangent& d) {
+  static type retract(const type& t,
+      const typename TangentVector<type>::type& d) {
     type sum = t + Eigen::Map<const type>(d.data());
     return sum;
   }
