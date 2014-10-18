@@ -355,27 +355,22 @@ template<typename T>
 struct dimension: public std::integral_constant<int, T::dimension> {
 };
 
-// TangentVector is Eigen::Matrix type in tangent space, can be Dynamic...
+// Chart is a map from T -> vector, retract is its inverse
 template<typename T>
-struct TangentVector {
+struct DefaultChart {
   BOOST_STATIC_ASSERT(is_manifold<T>::value);
-  typedef Eigen::Matrix<double, dimension<T>::value, 1> type;
-};
-
-// default localCoordinates
-template<typename T>
-struct LocalCoordinates {
-  typename TangentVector<T>::type operator()(const T& t1, const T& t2) {
-    return t1.localCoordinates(t2);
+  typedef Eigen::Matrix<double, dimension<T>::value, 1> vector;
+  DefaultChart(const T& t) :
+      t_(t) {
   }
-};
-
-// default retract
-template<typename T>
-struct Retract {
-  T operator()(const T& t, const typename TangentVector<T>::type& d) {
-    return t.retract(d);
+  vector apply(const T& other) {
+    return t_.localCoordinates(other);
   }
+  T retract(const vector& d) {
+    return t_.retract(d);
+  }
+private:
+  T const & t_;
 };
 
 // Fixed size Eigen::Matrix type
@@ -384,28 +379,48 @@ template<int M, int N, int Options>
 struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public true_type {
 };
 
+// TODO: Could be more sophisticated using Eigen traits and SFINAE?
+
+template<int Options>
+struct dimension<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Options> > : public integral_constant<
+    size_t, Eigen::Dynamic> {
+};
+
+template<int M, int Options>
+struct dimension<Eigen::Matrix<double, M, Eigen::Dynamic, Options> > : public integral_constant<
+    size_t, Eigen::Dynamic> {
+  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic);
+};
+
+template<int N, int Options>
+struct dimension<Eigen::Matrix<double, Eigen::Dynamic, N, Options> > : public integral_constant<
+    size_t, Eigen::Dynamic> {
+  BOOST_STATIC_ASSERT(N!=Eigen::Dynamic);
+};
+
 template<int M, int N, int Options>
 struct dimension<Eigen::Matrix<double, M, N, Options> > : public integral_constant<
     size_t, M * N> {
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
 };
 
+// Chart is a map from T -> vector, retract is its inverse
 template<int M, int N, int Options>
-struct LocalCoordinates<Eigen::Matrix<double, M, N, Options> > {
+struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, M, N, Options> T;
-  typedef typename TangentVector<T>::type result_type;
-  result_type operator()(const T& t1, const T& t2) {
-    T diff = t2 - t1;
-    return result_type(Eigen::Map<result_type>(diff.data()));
+  typedef Eigen::Matrix<double, dimension<T>::value, 1> vector;
+  DefaultChart(const T& t) :
+      t_(t) {
   }
-};
-
-template<int M, int N, int Options>
-struct Retract<Eigen::Matrix<double, M, N, Options> > {
-  typedef Eigen::Matrix<double, M, N, Options> T;
-  T operator()(const T& t, const typename TangentVector<T>::type& d) {
-    return t + Eigen::Map<const T>(d.data());
+  vector apply(const T& other) {
+    T diff = other - t_;
+    return Eigen::Map<vector>(diff.data());
   }
+  T retract(const vector& d) {
+    return t_ + Eigen::Map<const T>(d.data());
+  }
+private:
+  T const & t_;
 };
 
 // Point2
@@ -431,16 +446,15 @@ TEST(Expression, dimension) {
   EXPECT_LONGS_EQUAL(8, dimension<Matrix24>::value);
 }
 
-// localCoordinates
-TEST(Expression, localCoordinates) {
-  EXPECT(LocalCoordinates<Point2>()(Point2(0,0),Point2(1,0))==Vector2(1,0));
-  EXPECT(LocalCoordinates<Vector2>()(Vector2(0,0),Vector2(1,0))==Vector2(1,0));
-}
+// charts
+TEST(Expression, Charts) {
+  DefaultChart<Point2> chart1(Point2(0, 0));
+  EXPECT(chart1.apply(Point2(1,0))==Vector2(1,0));
+  EXPECT(chart1.retract(Vector2(1,0))==Point2(1,0));
 
-// retract
-TEST(Expression, retract) {
-  EXPECT(Retract<Point2>()(Point2(0,0),Vector2(1,0))==Point2(1,0));
-  EXPECT(Retract<Vector2>()(Vector2(0,0),Vector2(1,0))==Vector2(1,0));
+  DefaultChart<Vector2> chart2(Vector2(0, 0));
+  EXPECT(chart2.apply(Vector2(1,0))==Vector2(1,0));
+  EXPECT(chart2.retract(Vector2(1,0))==Vector2(1,0));
 }
 
 /* ************************************************************************* */
@@ -451,31 +465,35 @@ Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
 
   BOOST_STATIC_ASSERT(is_manifold<Y>::value);
   static const size_t M = dimension<Y>::value;
-  typedef typename TangentVector<Y>::type TangentY;
-  LocalCoordinates<Y> localCoordinates;
+  typedef DefaultChart<Y> ChartY;
+  typedef typename ChartY::vector TangentY;
 
   BOOST_STATIC_ASSERT(is_manifold<X>::value);
   static const size_t N = dimension<X>::value;
-  typedef typename TangentVector<X>::type TangentX;
-  Retract<X> retract;
+  typedef DefaultChart<X> ChartX;
+  typedef typename ChartX::vector TangentX;
 
-  // get value at x
+  // get chart at x
+  ChartX chartX(x);
+
+  // get value at x, and corresponding chart
   Y hx = h(x);
+  ChartY chartY(hx);
 
   // Prepare a tangent vector to perturb x with
-  TangentX d;
-  d.setZero();
+  TangentX dx;
+  dx.setZero();
 
   // Fill in Jacobian H
   Matrix H = zeros(M, N);
   double factor = 1.0 / (2.0 * delta);
   for (size_t j = 0; j < N; j++) {
-    d(j) = delta;
-    TangentY hxplus = localCoordinates(hx, h(retract(x, d)));
-    d(j) = -delta;
-    TangentY hxmin = localCoordinates(hx, h(retract(x, d)));
-    H.block<M, 1>(0, j) << (hxplus - hxmin) * factor;
-    d(j) = 0;
+    dx(j) = delta;
+    TangentY dy1 = chartY.apply(h(chartX.retract(dx)));
+    dx(j) = -delta;
+    TangentY dy2 = chartY.apply(h(chartX.retract(dx)));
+    H.block<M, 1>(0, j) << (dy1 - dy2) * factor;
+    dx(j) = 0;
   }
   return H;
 }
