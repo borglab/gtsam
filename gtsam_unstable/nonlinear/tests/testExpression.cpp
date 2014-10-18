@@ -23,9 +23,9 @@
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieScalar.h>
-//#include <gtsam/base/numericalDerivative.h>
 
-#include <ceres/internal/autodiff.h>
+#include "ceres/ceres.h"
+#include "ceres/rotation.h"
 
 #undef CHECK
 #include <CppUnitLite/TestHarness.h>
@@ -272,7 +272,7 @@ struct Projective {
 };
 
 /* ************************************************************************* */
-
+// manifold_traits prototype
 #include <boost/static_assert.hpp>
 
 template<typename T>
@@ -311,51 +311,43 @@ TEST(Expression, Traits) {
   EXPECT_LONGS_EQUAL(8, manifold_traits<Matrix24>::dimension);
 }
 
-template<class Y, class X1, class X2>
-Matrix numericalDerivative21(boost::function<Y(const X1&, const X2&)> h,
-    const X1& x1, const X2& x2, double delta = 1e-5) {
-  Y hx = h(x1, x2);
+/* ************************************************************************* */
+// New-style numerical derivatives using manifold_traits
+template<typename Y, typename X>
+Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
+    double delta = 1e-5) {
+  Y hx = h(x);
   double factor = 1.0 / (2.0 * delta);
   static const size_t m = manifold_traits<Y>::dimension, n =
-      manifold_traits<X1>::dimension;
+      manifold_traits<X>::dimension;
   Eigen::Matrix<double, n, 1> d;
   d.setZero();
   Matrix H = zeros(m, n);
   for (size_t j = 0; j < n; j++) {
     d(j) += delta;
     Vector hxplus = manifold_traits<Y>::localCoordinates(hx,
-        h(manifold_traits<X1>::retract(x1, d), x2));
+        h(manifold_traits<X>::retract(x, d)));
     d(j) -= 2 * delta;
     Vector hxmin = manifold_traits<Y>::localCoordinates(hx,
-        h(manifold_traits<X1>::retract(x1, d), x2));
+        h(manifold_traits<X>::retract(x, d)));
     d(j) += delta;
     H.block<m, 1>(0, j) << (hxplus - hxmin) * factor;
   }
   return H;
 }
 
-template<class Y, class X1, class X2>
+template<typename Y, typename X1, typename X2>
+Matrix numericalDerivative21(boost::function<Y(const X1&, const X2&)> h,
+    const X1& x1, const X2& x2, double delta = 1e-5) {
+  return numericalDerivative<Y,X1>(boost::bind(h,_1,x2),x1,delta);
+}
+
+template<typename Y, typename X1, typename X2>
 Matrix numericalDerivative22(boost::function<Y(const X1&, const X2&)> h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
-  Y hx = h(x1, x2);
-  double factor = 1.0 / (2.0 * delta);
-  static const size_t m = manifold_traits<Y>::dimension, n =
-      manifold_traits<X2>::dimension;
-  Eigen::Matrix<double, n, 1> d;
-  d.setZero();
-  Matrix H = zeros(m, n);
-  for (size_t j = 0; j < n; j++) {
-    d(j) += delta;
-    Vector hxplus = manifold_traits<Y>::localCoordinates(hx,
-        h(x1, manifold_traits<X2>::retract(x2, d)));
-    d(j) -= 2 * delta;
-    Vector hxmin = manifold_traits<Y>::localCoordinates(hx,
-        h(x1, manifold_traits<X2>::retract(x2, d)));
-    d(j) += delta;
-    H.block<m, 1>(0, j) << (hxplus - hxmin) * factor;
-  }
-  return H;
+  return numericalDerivative<Y,X2>(boost::bind(h,x1,_1),x2,delta);
 }
+
 /* ************************************************************************* */
 // Test Ceres AutoDiff
 TEST(Expression, AutoDiff) {
