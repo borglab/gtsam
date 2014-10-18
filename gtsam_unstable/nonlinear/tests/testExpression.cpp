@@ -337,8 +337,7 @@ struct is_manifold: public false_type {
 
 // dimension
 template<typename T>
-struct dimension: public integral_constant<size_t, T::dimension> {
-};
+struct dimension;
 
 // Fixed size Eigen::Matrix type
 template<int M, int N, int Options>
@@ -349,6 +348,16 @@ template<int M, int N, int Options>
 struct dimension<Eigen::Matrix<double, M, N, Options> > : public integral_constant<
     size_t, M * N> {
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
+};
+
+// Point2
+
+template<>
+struct is_manifold<Point2> : public true_type {
+};
+
+template<>
+struct dimension<Point2> : public integral_constant<size_t, 2> {
 };
 
 template<typename T>
@@ -381,8 +390,15 @@ struct manifold_traits<Eigen::Matrix<double, M, N, Options> > {
   }
 };
 
-// Test dimension traits
-TEST(Expression, Traits) {
+// is_manifold
+TEST(Expression, is_manifold) {
+  EXPECT(!is_manifold<int>::value);
+  EXPECT(is_manifold<Point2>::value);
+  EXPECT(is_manifold<Matrix24>::value);
+}
+
+// dimension
+TEST(Expression, dimension) {
   EXPECT_LONGS_EQUAL(2, dimension<Point2>::value);
   EXPECT_LONGS_EQUAL(8, dimension<Matrix24>::value);
 }
