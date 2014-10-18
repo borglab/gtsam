@@ -352,8 +352,10 @@ struct is_manifold: public std::false_type {
 
 // dimension, can return Eigen::Dynamic (-1) if not known at compile time
 template<typename T>
-struct dimension: public std::integral_constant<int, T::dimension> {
-};
+struct dimension;
+//: public std::integral_constant<int, T::dimension> {
+//  BOOST_STATIC_ASSERT(is_manifold<T>::value);
+//};
 
 // Chart is a map from T -> vector, retract is its inverse
 template<typename T>
@@ -371,6 +373,34 @@ struct DefaultChart {
   }
 private:
   T const & t_;
+};
+
+// double
+
+template<>
+struct is_manifold<double> : public true_type {
+};
+
+template<>
+struct dimension<double> : public integral_constant<size_t, 1> {
+};
+
+template<>
+struct DefaultChart<double> {
+  typedef Eigen::Matrix<double, 1, 1> vector;
+  DefaultChart(double t) :
+      t_(t) {
+  }
+  vector apply(double other) {
+    vector d;
+    d << other - t_;
+    return d;
+  }
+  double retract(const vector& d) {
+    return t_ + d[0];
+  }
+private:
+  double t_;
 };
 
 // Fixed size Eigen::Matrix type
@@ -404,7 +434,6 @@ struct dimension<Eigen::Matrix<double, M, N, Options> > : public integral_consta
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
 };
 
-// Chart is a map from T -> vector, retract is its inverse
 template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, M, N, Options> T;
@@ -414,10 +443,12 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   }
   vector apply(const T& other) {
     T diff = other - t_;
-    return Eigen::Map<vector>(diff.data());
+    Eigen::Map<vector> map(diff.data());
+    return vector(map);
   }
   T retract(const vector& d) {
-    return t_ + Eigen::Map<const T>(d.data());
+    Eigen::Map<const T> map(d.data());
+    return t_ + map;
   }
 private:
   T const & t_;
@@ -438,16 +469,23 @@ TEST(Expression, is_manifold) {
   EXPECT(!is_manifold<int>::value);
   EXPECT(is_manifold<Point2>::value);
   EXPECT(is_manifold<Matrix24>::value);
+  EXPECT(is_manifold<double>::value);
+  EXPECT(is_manifold<Vector>::value);
+  EXPECT(is_manifold<Matrix>::value);
 }
 
 // dimension
 TEST(Expression, dimension) {
   EXPECT_LONGS_EQUAL(2, dimension<Point2>::value);
   EXPECT_LONGS_EQUAL(8, dimension<Matrix24>::value);
+  EXPECT_LONGS_EQUAL(1, dimension<double>::value);
+  EXPECT_LONGS_EQUAL(Eigen::Dynamic, dimension<Vector>::value);
+  EXPECT_LONGS_EQUAL(Eigen::Dynamic, dimension<Matrix>::value);
 }
 
 // charts
 TEST(Expression, Charts) {
+
   DefaultChart<Point2> chart1(Point2(0, 0));
   EXPECT(chart1.apply(Point2(1,0))==Vector2(1,0));
   EXPECT(chart1.retract(Vector2(1,0))==Point2(1,0));
@@ -455,6 +493,18 @@ TEST(Expression, Charts) {
   DefaultChart<Vector2> chart2(Vector2(0, 0));
   EXPECT(chart2.apply(Vector2(1,0))==Vector2(1,0));
   EXPECT(chart2.retract(Vector2(1,0))==Vector2(1,0));
+
+  DefaultChart<double> chart3(0);
+  Eigen::Matrix<double, 1, 1> v1; v1<<1;
+  EXPECT(chart3.apply(1)==v1);
+  EXPECT(chart3.retract(v1)==1);
+
+  // Dynamic does not work yet !
+//  Vector z = zero(2), v(2);
+//  v << 1, 0;
+//  DefaultChart<Vector> chart4(z);
+//  EXPECT(chart4.apply(v)==v);
+//  EXPECT(chart4.retract(v)==v);
 }
 
 /* ************************************************************************* */
