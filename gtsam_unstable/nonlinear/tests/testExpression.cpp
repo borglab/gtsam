@@ -346,6 +346,22 @@ struct TangentVector {
   typedef Eigen::Matrix<double, dimension<T>::value, 1> type;
 };
 
+// default localCoordinates
+template<typename T>
+struct localCoordinates {
+  typename TangentVector<T>::type operator()(const T& t1, const T& t2) {
+    return t1.localCoordinates(t2);
+  }
+};
+
+// default retract
+template<typename T>
+struct retract {
+  T operator()(const T& t, const typename TangentVector<T>::type& d) {
+    return t.retract(d);
+  }
+};
+
 // Fixed size Eigen::Matrix type
 
 template<int M, int N, int Options>
@@ -358,6 +374,24 @@ struct dimension<Eigen::Matrix<double, M, N, Options> > : public integral_consta
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
 };
 
+template<int M, int N, int Options>
+struct localCoordinates<Eigen::Matrix<double, M, N, Options> > {
+  typedef Eigen::Matrix<double, M, N, Options> T;
+  typedef typename TangentVector<T>::type result_type;
+  result_type operator()(const T& t1, const T& t2) {
+    T diff = t2 - t1;
+    return result_type(Eigen::Map<result_type>(diff.data()));
+  }
+};
+
+template<int M, int N, int Options>
+struct retract<Eigen::Matrix<double, M, N, Options> > {
+  typedef Eigen::Matrix<double, M, N, Options> T;
+  T operator()(const T& t, const typename TangentVector<T>::type& d) {
+    return t + Eigen::Map<const T>(d.data());
+  }
+};
+
 // Point2
 
 template<>
@@ -366,36 +400,6 @@ struct is_manifold<Point2> : public true_type {
 
 template<>
 struct dimension<Point2> : public integral_constant<size_t, 2> {
-};
-
-template<typename T>
-struct manifold_traits {
-  typedef T type;
-  static typename TangentVector<T>::type localCoordinates(const T& t1,
-      const T& t2) {
-    return t1.localCoordinates(t2);
-  }
-  static type retract(const type& t, const typename TangentVector<T>::type& d) {
-    return t.retract(d);
-  }
-};
-
-// Adapt constant size Eigen::Matrix types as manifold types
-template<int M, int N, int Options>
-struct manifold_traits<Eigen::Matrix<double, M, N, Options> > {
-  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
-  typedef Eigen::Matrix<double, M, N, Options> type;
-  static typename TangentVector<type>::type localCoordinates(const type& t1,
-      const type& t2) {
-    type diff = t2 - t1;
-    return typename TangentVector<type>::type(
-        Eigen::Map<typename TangentVector<type>::type>(diff.data()));
-  }
-  static type retract(const type& t,
-      const typename TangentVector<type>::type& d) {
-    type sum = t + Eigen::Map<const type>(d.data());
-    return sum;
-  }
 };
 
 // is_manifold
@@ -409,6 +413,12 @@ TEST(Expression, is_manifold) {
 TEST(Expression, dimension) {
   EXPECT_LONGS_EQUAL(2, dimension<Point2>::value);
   EXPECT_LONGS_EQUAL(8, dimension<Matrix24>::value);
+}
+
+// localCoordinates
+TEST(Expression, localCoordinates) {
+  EXPECT(localCoordinates<Point2>()(Point2(0,0),Point2(1,0))==Vector2(1,0));
+  EXPECT(localCoordinates<Vector2>()(Vector2(0,0),Vector2(1,0))==Vector2(1,0));
 }
 
 /* ************************************************************************* */
@@ -427,11 +437,9 @@ Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
   for (size_t j = 0; j < N; j++) {
     d.setZero();
     d(j) = delta;
-    Vector hxplus = manifold_traits<Y>::localCoordinates(hx,
-        h(manifold_traits<X>::retract(x, d)));
+    Vector hxplus = localCoordinates<Y>()(hx, h(retract<X>()(x, d)));
     d(j) = -delta;
-    Vector hxmin = manifold_traits<Y>::localCoordinates(hx,
-        h(manifold_traits<X>::retract(x, d)));
+    Vector hxmin = localCoordinates<Y>()(hx, h(retract<X>()(x, d)));
     H.block<M, 1>(0, j) << (hxplus - hxmin) * factor;
   }
   return H;
