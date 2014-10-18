@@ -23,7 +23,11 @@
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieScalar.h>
+//#include <gtsam/base/numericalDerivative.h>
 
+#include <ceres/internal/autodiff.h>
+
+#undef CHECK
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/list_of.hpp>
@@ -258,24 +262,132 @@ struct Projective {
     }
     return false;
   }
+  Vector2 operator()(const MatrixRowMajor& P, const Vector4& X) const {
+    Vector2 x;
+    if (operator()(P.data(), X.data(), x.data()))
+      return x;
+    else
+      throw std::runtime_error("Projective fails");
+  }
 };
 
 /* ************************************************************************* */
-//#include "/Users/frank/include/ceres/autodiff_cost_function.h"
+
+#include <boost/static_assert.hpp>
+
+template<typename T>
+struct manifold_traits {
+  typedef T type;
+  static const size_t dimension = T::dimension;
+  typedef Eigen::Matrix<double, dimension, 1> tangent;
+  static tangent localCoordinates(const T& t1, const T& t2) {
+    return t1.localCoordinates(t2);
+  }
+  static type retract(const type& t, const tangent& d) {
+    return t.retract(d);
+  }
+};
+
+// Adapt constant size Eigen::Matrix types as manifold types
+template<int M, int N, int Options>
+struct manifold_traits<Eigen::Matrix<double, M, N, Options> > {
+  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
+  typedef Eigen::Matrix<double, M, N, Options> type;
+  static const size_t dimension = M * N;
+  typedef Eigen::Matrix<double, dimension, 1> tangent;
+  static tangent localCoordinates(const type& t1, const type& t2) {
+    type diff = t2 - t1;
+    return tangent(Eigen::Map<tangent>(diff.data()));
+  }
+  static type retract(const type& t, const tangent& d) {
+    type sum = t + Eigen::Map<const type>(d.data());
+    return sum;
+  }
+};
+
+// Test dimension traits
+TEST(Expression, Traits) {
+  EXPECT_LONGS_EQUAL(2, manifold_traits<Point2>::dimension);
+  EXPECT_LONGS_EQUAL(8, manifold_traits<Matrix24>::dimension);
+}
+
+template<class Y, class X1, class X2>
+Matrix numericalDerivative21(boost::function<Y(const X1&, const X2&)> h,
+    const X1& x1, const X2& x2, double delta = 1e-5) {
+  Y hx = h(x1, x2);
+  double factor = 1.0 / (2.0 * delta);
+  static const size_t m = manifold_traits<Y>::dimension, n =
+      manifold_traits<X1>::dimension;
+  Eigen::Matrix<double, n, 1> d;
+  d.setZero();
+  Matrix H = zeros(m, n);
+  for (size_t j = 0; j < n; j++) {
+    d(j) += delta;
+    Vector hxplus = manifold_traits<Y>::localCoordinates(hx,
+        h(manifold_traits<X1>::retract(x1, d), x2));
+    d(j) -= 2 * delta;
+    Vector hxmin = manifold_traits<Y>::localCoordinates(hx,
+        h(manifold_traits<X1>::retract(x1, d), x2));
+    d(j) += delta;
+    H.block<m, 1>(0, j) << (hxplus - hxmin) * factor;
+  }
+  return H;
+}
+
+template<class Y, class X1, class X2>
+Matrix numericalDerivative22(boost::function<Y(const X1&, const X2&)> h,
+    const X1& x1, const X2& x2, double delta = 1e-5) {
+  Y hx = h(x1, x2);
+  double factor = 1.0 / (2.0 * delta);
+  static const size_t m = manifold_traits<Y>::dimension, n =
+      manifold_traits<X2>::dimension;
+  Eigen::Matrix<double, n, 1> d;
+  d.setZero();
+  Matrix H = zeros(m, n);
+  for (size_t j = 0; j < n; j++) {
+    d(j) += delta;
+    Vector hxplus = manifold_traits<Y>::localCoordinates(hx,
+        h(x1, manifold_traits<X2>::retract(x2, d)));
+    d(j) -= 2 * delta;
+    Vector hxmin = manifold_traits<Y>::localCoordinates(hx,
+        h(x1, manifold_traits<X2>::retract(x2, d)));
+    d(j) += delta;
+    H.block<m, 1>(0, j) << (hxplus - hxmin) * factor;
+  }
+  return H;
+}
+/* ************************************************************************* */
 // Test Ceres AutoDiff
 TEST(Expression, AutoDiff) {
+  using ceres::internal::AutoDiff;
 
-  MatrixRowMajor P(3, 4);
+  // Instantiate function
+  Projective projective;
+
+  // Make arguments
+  typedef Eigen::Matrix<double, 3, 4, Eigen::RowMajor> M;
+  M P;
   P << 1, 0, 0, 0, 0, 1, 0, 5, 0, 0, 1, 0;
   Vector4 X(10, 0, 5, 1);
 
   // Apply the mapping, to get image point b_x.
-  Projective projective;
-  Vector2 actual;
-  EXPECT(projective(P.data(), X.data(), actual.data()));
-
   Vector expected = Vector2(2, 1);
+  Vector2 actual = projective(P, X);
   EXPECT(assert_equal(expected,actual,1e-9));
+
+  // Get expected derivatives
+  Matrix E1 = numericalDerivative21<Vector2, M, Vector4>(Projective(), P, X);
+  Matrix E2 = numericalDerivative22<Vector2, M, Vector4>(Projective(), P, X);
+
+  // Get derivatives with AutoDiff
+  Vector2 actual2;
+  MatrixRowMajor H1(2, 12), H2(2, 4);
+  double *parameters[] = { P.data(), X.data() };
+  double *jacobians[] = { H1.data(), H2.data() };
+  CHECK(
+      (AutoDiff<Projective, double, 12, 4>::Differentiate( projective, parameters, 2, actual2.data(), jacobians)));
+  EXPECT(assert_equal(E1,H1,1e-8));
+  EXPECT(assert_equal(E2,H2,1e-8));
 }
 
 /* ************************************************************************* */
