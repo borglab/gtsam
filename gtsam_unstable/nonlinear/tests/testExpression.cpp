@@ -318,20 +318,19 @@ Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
     double delta = 1e-5) {
   Y hx = h(x);
   double factor = 1.0 / (2.0 * delta);
-  static const size_t m = manifold_traits<Y>::dimension, n =
-      manifold_traits<X>::dimension;
-  Eigen::Matrix<double, n, 1> d;
-  d.setZero();
-  Matrix H = zeros(m, n);
-  for (size_t j = 0; j < n; j++) {
-    d(j) += delta;
+  static const size_t M = manifold_traits<Y>::dimension;
+  static const size_t N = manifold_traits<X>::dimension;
+  Eigen::Matrix<double, N, 1> d;
+  Matrix H = zeros(M, N);
+  for (size_t j = 0; j < N; j++) {
+    d.setZero();
+    d(j) = delta;
     Vector hxplus = manifold_traits<Y>::localCoordinates(hx,
         h(manifold_traits<X>::retract(x, d)));
-    d(j) -= 2 * delta;
+    d(j) = -delta;
     Vector hxmin = manifold_traits<Y>::localCoordinates(hx,
         h(manifold_traits<X>::retract(x, d)));
-    d(j) += delta;
-    H.block<m, 1>(0, j) << (hxplus - hxmin) * factor;
+    H.block<M, 1>(0, j) << (hxplus - hxmin) * factor;
   }
   return H;
 }
@@ -339,13 +338,13 @@ Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
 template<typename Y, typename X1, typename X2>
 Matrix numericalDerivative21(boost::function<Y(const X1&, const X2&)> h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
-  return numericalDerivative<Y,X1>(boost::bind(h,_1,x2),x1,delta);
+  return numericalDerivative<Y, X1>(boost::bind(h, _1, x2), x1, delta);
 }
 
 template<typename Y, typename X1, typename X2>
 Matrix numericalDerivative22(boost::function<Y(const X1&, const X2&)> h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
-  return numericalDerivative<Y,X2>(boost::bind(h,x1,_1),x2,delta);
+  return numericalDerivative<Y, X2>(boost::bind(h, x1, _1), x2, delta);
 }
 
 /* ************************************************************************* */
