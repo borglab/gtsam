@@ -303,7 +303,7 @@ public:
     return K_.uncalibrate(pn);
   }
 
-  typedef Eigen::Matrix<double,2,Calibration::dimension> Matrix2K;
+  typedef Eigen::Matrix<double,2,dimension<Calibration>::value> Matrix2K;
 
   /** project a point from world coordinate to the image
    *  @param pw is a point in world coordinates

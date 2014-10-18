@@ -324,19 +324,6 @@ struct SnavelyReprojectionError {
 
 /* ************************************************************************* */
 
-// Point2
-namespace gtsam {
-
-template<>
-struct is_manifold<Point2> : public true_type {
-};
-
-template<>
-struct dimension<Point2> : public integral_constant<size_t, 2> {
-};
-
-}
-
 // is_manifold
 TEST(Expression, is_manifold) {
   EXPECT(!is_manifold<int>::value);
@@ -506,9 +493,9 @@ TEST(Expression, AutoDiff2) {
 /* ************************************************************************* */
 // keys
 TEST(Expression, SnavelyKeys) {
-//  Expression<Vector2> expression(1);
-//  set<Key> expected = list_of(1)(2);
-//  EXPECT(expected == expression.keys());
+  Expression<Vector2> expression(1);
+  set<Key> expected = list_of(1)(2);
+  EXPECT(expected == expression.keys());
 }
 /* ************************************************************************* */
 int main() {

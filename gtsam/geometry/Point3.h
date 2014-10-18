@@ -37,11 +37,9 @@ namespace gtsam {
    * \nosubgrouping
    */
   class GTSAM_EXPORT Point3 : public DerivedValue<Point3> {
-  public:
-    /// dimension of the variable - used to autodetect sizes
-    static const size_t dimension = 3;
 
   private:
+
     double x_, y_, z_;  
     
   public:
@@ -122,10 +120,10 @@ namespace gtsam {
     /// @{
 
     /// dimension of the variable - used to autodetect sizes
-    inline static size_t Dim() { return dimension; }
+    inline static size_t Dim() { return 3; }
 
     /// return dimensionality of tangent space, DOF = 3
-    inline size_t dim() const { return dimension; }
+    inline size_t dim() const { return 3; }
 
     /// Updates a with tangent space delta
     inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
@@ -243,5 +241,13 @@ namespace gtsam {
 
   /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
+
+  template<>
+  struct is_manifold<Point3> : public std::true_type {
+  };
+
+  template<>
+  struct dimension<Point3> : public std::integral_constant<size_t, 3> {
+  };
 
 }

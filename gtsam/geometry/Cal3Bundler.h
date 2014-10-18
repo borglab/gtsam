@@ -36,8 +36,6 @@ private:
   double u0_, v0_; ///< image center, not a parameter to be optimized but a constant
 
 public:
-  /// dimension of the variable - used to autodetect sizes
-  static const size_t dimension = 3;
 
   /// @name Standard Constructors
   /// @{
@@ -169,6 +167,14 @@ private:
 
   /// @}
 
-      };
+};
 
-      } // namespace gtsam
+template<>
+struct is_manifold<Cal3Bundler> : public std::true_type {
+};
+
+template<>
+struct dimension<Cal3Bundler> : public std::integral_constant<size_t, 3> {
+};
+
+} // namespace gtsam

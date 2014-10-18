@@ -53,9 +53,6 @@ struct is_manifold: public std::false_type {
 // dimension, can return Eigen::Dynamic (-1) if not known at compile time
 template<typename T>
 struct dimension;
-//: public std::integral_constant<int, T::dimension> {
-//  BOOST_STATIC_ASSERT(is_manifold<T>::value);
-//};
 
 // Chart is a map from T -> vector, retract is its inverse
 template<typename T>
@@ -82,7 +79,7 @@ struct is_manifold<double> : public std::true_type {
 };
 
 template<>
-struct dimension<double> : public std::integral_constant<size_t, 1> {
+struct dimension<double> : public std::integral_constant<int, 1> {
 };
 
 template<>
@@ -111,7 +108,7 @@ struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public std::true_typ
 
 // TODO: Could be more sophisticated using Eigen traits and SFINAE?
 
-typedef std::integral_constant<size_t, Eigen::Dynamic> Dynamic;
+typedef std::integral_constant<int, Eigen::Dynamic> Dynamic;
 
 template<int Options>
 struct dimension<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Options> > : public Dynamic {
@@ -129,7 +126,7 @@ struct dimension<Eigen::Matrix<double, Eigen::Dynamic, N, Options> > : public Dy
 
 template<int M, int N, int Options>
 struct dimension<Eigen::Matrix<double, M, N, Options> > : public std::integral_constant<
-    size_t, M * N> {
+    int, M * N> {
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
 };
 

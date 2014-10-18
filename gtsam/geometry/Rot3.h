@@ -59,10 +59,9 @@ namespace gtsam {
    * \nosubgrouping
    */
   class GTSAM_EXPORT Rot3 : public DerivedValue<Rot3> {
-  public:
-    static const size_t dimension = 3;
 
   private:
+
 #ifdef GTSAM_USE_QUATERNIONS
     /** Internal Eigen Quaternion */
     Quaternion quaternion_;
@@ -260,10 +259,10 @@ namespace gtsam {
     /// @{
 
     /// dimension of the variable - used to autodetect sizes
-    static size_t Dim() { return dimension; }
+    static size_t Dim() { return 3; }
 
     /// return dimensionality of tangent space, DOF = 3
-    size_t dim() const { return dimension; }
+    size_t dim() const { return 3; }
 
     /**
      * The method retract() is used to map from the tangent space back to the manifold.
@@ -449,6 +448,8 @@ namespace gtsam {
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
+    /// @}
+
   private:
 
     /** Serialization function */
@@ -478,8 +479,6 @@ namespace gtsam {
 
   };
 
-  /// @}
-
   /**
    * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
    * and 3 rotation angles corresponding to the rotation matrix Q=Qz'*Qy'*Qx'
@@ -491,4 +490,14 @@ namespace gtsam {
    * @return a vector [thetax, thetay, thetaz] in radians.
    */
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
+
+  template<>
+  struct is_manifold<Rot3> : public std::true_type {
+  };
+
+  template<>
+  struct dimension<Rot3> : public std::integral_constant<size_t, 3> {
+  };
+
+
 }

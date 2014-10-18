@@ -45,7 +45,7 @@ public:
       measurement_(measurement), expression_(expression) {
     if (!noiseModel)
       throw std::invalid_argument("ExpressionFactor: no NoiseModel.");
-    if (noiseModel->dim() != T::dimension)
+    if (noiseModel->dim() != dimension<T>::value)
       throw std::invalid_argument(
           "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
     noiseModel_ = noiseModel;
@@ -68,7 +68,7 @@ public:
 #ifdef DEBUG_ExpressionFactor
     BOOST_FOREACH(size_t d, dimensions_)
     std::cout << d << " ";
-    std::cout << " -> " << T::dimension << "x" << augmentedCols_ << std::endl;
+    std::cout << " -> " << dimension<T>::value << "x" << augmentedCols_ << std::endl;
 #endif
   }
 
@@ -87,9 +87,9 @@ public:
       JacobianMap blocks;
       for (DenseIndex i = 0; i < size(); i++) {
         Matrix& Hi = H->at(i);
-        Hi.resize(T::dimension, dimensions_[i]);
+        Hi.resize(dimension<T>::value, dimensions_[i]);
         Hi.setZero(); // zero out
-        Eigen::Block<Matrix> block = Hi.block(0, 0, T::dimension,
+        Eigen::Block<Matrix> block = Hi.block(0, 0, dimension<T>::value,
             dimensions_[i]);
         blocks.insert(std::make_pair(keys_[i], block));
       }
@@ -105,9 +105,9 @@ public:
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
     // Allocate memory on stack and create a view on it (saves a malloc)
-    double memory[T::dimension * augmentedCols_];
-    Eigen::Map<Eigen::Matrix<double, T::dimension, Eigen::Dynamic> > //
-    matrix(memory, T::dimension, augmentedCols_);
+    double memory[dimension<T>::value * augmentedCols_];
+    Eigen::Map<Eigen::Matrix<double, dimension<T>::value, Eigen::Dynamic> > //
+    matrix(memory, dimension<T>::value, augmentedCols_);
     matrix.setZero(); // zero out
 
     // Construct block matrix, is of right size but un-initialized
