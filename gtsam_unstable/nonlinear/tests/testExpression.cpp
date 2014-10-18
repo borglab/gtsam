@@ -262,12 +262,14 @@ struct Projective {
     }
     return false;
   }
+
+  // Adapt to eigen types
   Vector2 operator()(const MatrixRowMajor& P, const Vector4& X) const {
     Vector2 x;
     if (operator()(P.data(), X.data(), x.data()))
       return x;
     else
-      throw std::runtime_error("Projective fails");
+      throw std::runtime_error("Projective fail");
   }
 };
 
@@ -276,13 +278,10 @@ struct Projective {
 // focal length and 2 for radial distortion. The principal point is not modeled
 // (i.e. it is assumed be located at the image center).
 struct SnavelyReprojectionError {
-  SnavelyReprojectionError(double observed_x, double observed_y) :
-      observed_x(observed_x), observed_y(observed_y) {
-  }
 
   template<typename T>
   bool operator()(const T* const camera, const T* const point,
-      T* residuals) const {
+      T* predicted) const {
     // camera[0,1,2] are the angle-axis rotation.
     T p[3];
     ceres::AngleAxisRotatePoint(camera, point, p);
@@ -306,26 +305,21 @@ struct SnavelyReprojectionError {
 
     // Compute final projected point position.
     const T& focal = camera[6];
-    T predicted_x = focal * distortion * xp;
-    T predicted_y = focal * distortion * yp;
-
-    // The error is the difference between the predicted and observed position.
-    residuals[0] = predicted_x - T(observed_x);
-    residuals[1] = predicted_y - T(observed_y);
+    predicted[0] = focal * distortion * xp;
+    predicted[1] = focal * distortion * yp;
 
     return true;
   }
 
-  // Factory to hide the construction of the CostFunction object from
-  // the client code.
-  static ceres::CostFunction* Create(const double observed_x,
-      const double observed_y) {
-    return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>(
-        new SnavelyReprojectionError(observed_x, observed_y)));
+  // Adapt to GTSAM types
+  Vector2 operator()(const Vector9& P, const Vector3& X) const {
+    Vector2 x;
+    if (operator()(P.data(), X.data(), x.data()))
+      return x;
+    else
+      throw std::runtime_error("Snavely fail");
   }
 
-  double observed_x;
-  double observed_y;
 };
 
 /* ************************************************************************* */
@@ -438,6 +432,48 @@ TEST(Expression, AutoDiff) {
   EXPECT(assert_equal(E2,H2,1e-8));
 }
 
+/* ************************************************************************* */
+// Test Ceres AutoDiff on Snavely
+TEST(Expression, AutoDiff2) {
+  using ceres::internal::AutoDiff;
+
+  // Instantiate function
+  SnavelyReprojectionError snavely;
+
+  // Make arguments
+  Vector9 P;
+  P << 0, 0, 0, 0, 5, 0, 1, 0, 0;
+  Vector3 X(10, 0, -5);
+
+  // Apply the mapping, to get image point b_x.
+  Vector expected = Vector2(2, 1);
+  Vector2 actual = snavely(P, X);
+  EXPECT(assert_equal(expected,actual,1e-9));
+
+  // Get expected derivatives
+  Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(
+      SnavelyReprojectionError(), P, X);
+  Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(
+      SnavelyReprojectionError(), P, X);
+
+  // Get derivatives with AutoDiff
+  Vector2 actual2;
+  MatrixRowMajor H1(2, 9), H2(2, 3);
+  double *parameters[] = { P.data(), X.data() };
+  double *jacobians[] = { H1.data(), H2.data() };
+  CHECK(
+      (AutoDiff<SnavelyReprojectionError, double, 9, 3>::Differentiate( snavely, parameters, 2, actual2.data(), jacobians)));
+  EXPECT(assert_equal(E1,H1,1e-8));
+  EXPECT(assert_equal(E2,H2,1e-8));
+}
+
+/* ************************************************************************* */
+// keys
+TEST(Expression, SnavelyKeys) {
+//  Expression<Vector2> expression(1);
+//  set<Key> expected = list_of(1)(2);
+//  EXPECT(expected == expression.keys());
+}
 /* ************************************************************************* */
 int main() {
   TestResult tr;
