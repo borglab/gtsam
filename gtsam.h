@@ -1192,6 +1192,7 @@ class VectorValues {
 
 #include <gtsam/linear/GaussianFactor.h>
 virtual class GaussianFactor {
+  gtsam::KeyVector keys() const;
   void print(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   double error(const gtsam::VectorValues& c) const;
@@ -1632,6 +1633,7 @@ class NonlinearFactorGraph {
   void push_back(gtsam::NonlinearFactor* factor);
   void add(gtsam::NonlinearFactor* factor);
   bool exists(size_t idx) const;
+  gtsam::KeySet keys() const;
 
   // NonlinearFactorGraph
   double error(const gtsam::Values& values) const;
@@ -1639,6 +1641,7 @@ class NonlinearFactorGraph {
   gtsam::Ordering orderingCOLAMD() const;
   // Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
   gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values) const;
+  gtsam::GaussianFactorGraph* multipliedHessians(const gtsam::Values& values, const gtsam::VectorValues& duals) const;
   gtsam::NonlinearFactorGraph clone() const;
 
   // enabling serialization functionality
@@ -1649,6 +1652,7 @@ virtual class NonlinearFactor {
   // Factor base class
   size_t size() const;
   gtsam::KeyVector keys() const;
+  size_t dualKey() const;
   void print(string s) const;
   void printKeys(string s) const;
   // NonlinearFactor
