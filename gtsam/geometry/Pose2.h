@@ -326,7 +326,7 @@ struct is_manifold<Pose2> : public std::true_type {
 };
 
 template<>
-struct dimension<Pose2> : public std::integral_constant<size_t, 3> {
+struct dimension<Pose2> : public std::integral_constant<int, 3> {
 };
 
 } // namespace gtsam

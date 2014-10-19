@@ -619,7 +619,7 @@ struct is_manifold<PinholeCamera<Calibration> > : public std::true_type {
 
 template<typename Calibration>
 struct dimension<PinholeCamera<Calibration> > : public std::integral_constant<
-    size_t, dimension<Pose3>::value + dimension<Calibration>::value> {
+    int, dimension<Pose3>::value + dimension<Calibration>::value> {
 };
 
 }

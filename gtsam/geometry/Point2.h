@@ -255,7 +255,7 @@ struct is_manifold<Point2> : public std::true_type {
 };
 
 template<>
-struct dimension<Point2> : public std::integral_constant<size_t, 2> {
+struct dimension<Point2> : public std::integral_constant<int, 2> {
 };
 
 }

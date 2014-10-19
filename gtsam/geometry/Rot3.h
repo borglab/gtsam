@@ -496,7 +496,7 @@ namespace gtsam {
   };
 
   template<>
-  struct dimension<Rot3> : public std::integral_constant<size_t, 3> {
+  struct dimension<Rot3> : public std::integral_constant<int, 3> {
   };
 
 

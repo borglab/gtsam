@@ -173,7 +173,7 @@ struct is_manifold<Cal3DS2> : public std::true_type {
 };
 
 template<>
-struct dimension<Cal3DS2> : public std::integral_constant<size_t, 9> {
+struct dimension<Cal3DS2> : public std::integral_constant<int, 9> {
 };
 }
 
