@@ -92,11 +92,25 @@ void handleLeafCase(
 
 //-----------------------------------------------------------------------------
 /**
- * The ExecutionTrace class records a tree-structured expression's execution
+ * The ExecutionTrace class records a tree-structured expression's execution.
+ *
+ * The class looks a bit complicated but it is so for performance.
  * It is a tagged union that obviates the need to create
  * a ExecutionTrace subclass for Constants and Leaf Expressions. Instead
  * the key for the leaf is stored in the space normally used to store a
  * CallRecord*. Nothing is stored for a Constant.
+ *
+ * A full execution trace of a Binary(Unary(Binary(Leaf,Constant)),Leaf) would be:
+ * Trace(Function) ->
+ *   BinaryRecord with two traces in it
+ *     trace1(Function) ->
+ *       UnaryRecord with one trace in it
+ *         trace1(Function) ->
+ *           BinaryRecord with two traces in it
+ *             trace1(Leaf)
+ *             trace2(Constant)
+ *     trace2(Leaf)
+ * Hence, there are three Record structs, written to memory by traceExecution
  */
 template<class T>
 class ExecutionTrace {

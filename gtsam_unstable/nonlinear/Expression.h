@@ -124,6 +124,11 @@ public:
 
   /// Return value and derivatives, reverse AD version
   T reverse(const Values& values, JacobianMap& jacobians) const {
+    // The following piece of code is absolutely crucial for performance.
+    // We allocate a block of memory on the stack, which can be done at runtime
+    // with modern C++ compilers. The traceExecution then fills this memory
+    // with an execution trace, made up entirely of "Record" structs, see
+    // the FunctionalNode class in expression-inl.h
     size_t size = traceSize();
     char raw[size];
     ExecutionTrace<T> trace;

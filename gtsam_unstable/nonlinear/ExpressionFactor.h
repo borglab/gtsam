@@ -104,8 +104,14 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
-    // Allocate memory on stack and create a view on it (saves a malloc)
-    double memory[dimension<T>::value * augmentedCols_];
+    // This method has been heavily optimized for maximum performance.
+    // We allocate a VerticalBlockMatrix on the stack first, and then create
+    // Eigen::Block<Matrix> views on this piece of memory which is then passed
+    // to [expression_.value] below, which writes directly into Ab_.
+
+    // Another malloc saved by creating a Matrix on the stack
+    static const int Dim = dimension<T>::value;
+    double memory[Dim * augmentedCols_];
     Eigen::Map<Eigen::Matrix<double, dimension<T>::value, Eigen::Dynamic> > //
     matrix(memory, dimension<T>::value, augmentedCols_);
     matrix.setZero(); // zero out
@@ -117,8 +123,9 @@ public:
     JacobianMap blocks;
     for (DenseIndex i = 0; i < size(); i++)
       blocks.insert(std::make_pair(keys_[i], Ab(i)));
+
     // Evaluate error to get Jacobians and RHS vector b
-    T value = expression_.value(x, blocks);
+    T value = expression_.value(x, blocks); // <<< Reverse AD happens here !
     Ab(size()).col(0) = -measurement_.localCoordinates(value);
 
     // Whiten the corresponding system now
