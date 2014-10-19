@@ -493,25 +493,59 @@ TEST(Expression, AutoDiff2) {
 
 /* ************************************************************************* */
 // Adapt ceres-style autodiff
-template<typename T, typename A1, typename A2>
-struct AutoDiff: Expression<T> {
-  typedef boost::function<bool(double const *, double const *, double *)> Function;
-  AutoDiff(Function f, const Expression<A1>& e1, const Expression<A2>& e2) :
-      Expression<T>(3) {
+template<typename F, typename T, typename A1, typename A2>
+struct AutoDiff {
 
+  static const int N = dimension<T>::value;
+  static const int M1 = dimension<A1>::value;
+  static const int M2 = dimension<A2>::value;
+
+  typedef Eigen::Matrix<double, N, M1> JacobianTA1;
+  typedef Eigen::Matrix<double, N, M2> JacobianTA2;
+
+  Point2 operator()(const A1& a1, const A2& a2,
+      boost::optional<JacobianTA1&> H1, boost::optional<JacobianTA2&> H2) {
+
+    // Instantiate function
+    F f;
+
+    // Make arguments
+    Vector9 P; // zero rotation, (0,5,0) translation, focal length 1
+    P << 0, 0, 0, 0, 5, 0, 1, 0, 0;
+    Vector3 X(10, 0, -5); // negative Z-axis convention of Snavely!
+
+    bool success;
+    Vector2 result;
+
+    if (H1 || H2) {
+
+      // Get derivatives with AutoDiff
+      double *parameters[] = { P.data(), X.data() };
+      double *jacobians[] = { H1->data(), H2->data() };
+      success = ceres::internal::AutoDiff<F, double, 9, 3>::Differentiate(f,
+          parameters, 2, result.data(), jacobians);
+
+    } else {
+      // Apply the mapping, to get result
+      success = f(P.data(), X.data(), result.data());
+    }
+    return Point2();
   }
 };
 
-TEST(Expression, SnavelyKeys) {
+TEST(Expression, Snavely) {
   // The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
   typedef PinholeCamera<Cal3Bundler> Camera;
+
   Expression<Camera> P(1);
   Expression<Point3> X(2);
-  Expression<Point2> expression = //
-      AutoDiff<Point2, Camera, Point3>(SnavelyProjection(), P, X);
+//  AutoDiff<SnavelyProjection, 2, 9, 3> f;
+  Expression<Point2> expression(
+      AutoDiff<SnavelyProjection, Point2, Camera, Point3>(), P, X);
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
 }
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
