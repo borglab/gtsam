@@ -602,10 +602,6 @@ private:
         Dpi_pn * Dpn_point;
   }
 
-  /// @}
-  /// @name Advanced Interface
-  /// @{
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -614,6 +610,16 @@ private:
     ar & BOOST_SERIALIZATION_NVP(pose_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-  /// @}
-      }
-      ;}
+
+};
+
+template<typename Calibration>
+struct is_manifold<PinholeCamera<Calibration> > : public std::true_type {
+};
+
+template<typename Calibration>
+struct dimension<PinholeCamera<Calibration> > : public std::integral_constant<
+    size_t, dimension<Pose3>::value + dimension<Calibration>::value> {
+};
+
+}

@@ -20,6 +20,7 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieScalar.h>
@@ -277,7 +278,7 @@ struct Projective {
 // parameterized using 9 parameters: 3 for rotation, 3 for translation, 1 for
 // focal length and 2 for radial distortion. The principal point is not modeled
 // (i.e. it is assumed be located at the image center).
-struct SnavelyReprojectionError {
+struct SnavelyProjection {
 
   template<typename T>
   bool operator()(const T* const camera, const T* const point,
@@ -461,7 +462,7 @@ TEST(Expression, AutoDiff2) {
   using ceres::internal::AutoDiff;
 
   // Instantiate function
-  SnavelyReprojectionError snavely;
+  SnavelyProjection snavely;
 
   // Make arguments
   Vector9 P; // zero rotation, (0,5,0) translation, focal length 1
@@ -475,9 +476,9 @@ TEST(Expression, AutoDiff2) {
 
   // Get expected derivatives
   Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(
-      SnavelyReprojectionError(), P, X);
+      SnavelyProjection(), P, X);
   Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(
-      SnavelyReprojectionError(), P, X);
+      SnavelyProjection(), P, X);
 
   // Get derivatives with AutoDiff
   Vector2 actual2;
@@ -485,15 +486,29 @@ TEST(Expression, AutoDiff2) {
   double *parameters[] = { P.data(), X.data() };
   double *jacobians[] = { H1.data(), H2.data() };
   CHECK(
-      (AutoDiff<SnavelyReprojectionError, double, 9, 3>::Differentiate( snavely, parameters, 2, actual2.data(), jacobians)));
+      (AutoDiff<SnavelyProjection, double, 9, 3>::Differentiate( snavely, parameters, 2, actual2.data(), jacobians)));
   EXPECT(assert_equal(E1,H1,1e-8));
   EXPECT(assert_equal(E2,H2,1e-8));
 }
 
 /* ************************************************************************* */
-// keys
+// Adapt ceres-style autodiff
+template<typename T, typename A1, typename A2>
+struct AutoDiff: Expression<T> {
+  typedef boost::function<bool(double const *, double const *, double *)> Function;
+  AutoDiff(Function f, const Expression<A1>& e1, const Expression<A2>& e2) :
+      Expression<T>(3) {
+
+  }
+};
+
 TEST(Expression, SnavelyKeys) {
-  Expression<Vector2> expression(1);
+  // The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
+  typedef PinholeCamera<Cal3Bundler> Camera;
+  Expression<Camera> P(1);
+  Expression<Point3> X(2);
+  Expression<Point2> expression = //
+      AutoDiff<Point2, Camera, Point3>(SnavelyProjection(), P, X);
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
 }
