@@ -646,7 +646,7 @@ void JacobianFactor::gradientAtZero(double* d) const {
 
 /* ************************************************************************* */
 Vector JacobianFactor::gradient(Key key, const VectorValues& x) const {
-  if (isConstrained()) { // Untested. But see the explaination in gradientAtZero()
+  if (isConstrained()) { // Untested. But see the explanation in gradientAtZero()
     Matrix A = getA(find(key));
     return A.transpose()*ones(rows());
   }
