@@ -492,6 +492,25 @@ TEST(Expression, AutoDiff2) {
 }
 
 /* ************************************************************************* */
+// zero<T>::value is intended to be the origin of a canonical coordinate system
+// with canonical(t) == DefaultChart<T>(zero<T>::value).apply(t)
+template<typename T> struct zero;
+template<typename T> class Canonical {
+  DefaultChart<T> chart;
+public:
+  typedef T type;
+  typedef typename DefaultChart<T>::vector vector;
+  Canonical() :
+      chart(zero<T>::value) {
+  }
+  vector vee(const T& t) {
+    return chart.apply(t);
+  }
+  T hat(const vector& v) {
+    return chart.retract(v);
+  }
+};
+/* ************************************************************************* */
 // Adapt ceres-style autodiff
 template<typename F, typename T, typename A1, typename A2>
 struct AutoDiff {
@@ -500,12 +519,12 @@ struct AutoDiff {
   static const int M1 = dimension<A1>::value;
   static const int M2 = dimension<A2>::value;
 
-  typedef DefaultChart<T> ChartT;
-  typedef DefaultChart<A1> Chart1;
-  typedef DefaultChart<A2> Chart2;
-  typedef typename ChartT::vector VectorT;
-  typedef typename Chart1::vector Vector1;
-  typedef typename Chart2::vector Vector2;
+  typedef Canonical<T> CanonicalT;
+  typedef Canonical<A1> Canonical1;
+  typedef Canonical<A2> Canonical2;
+  typedef typename CanonicalT::vector VectorT;
+  typedef typename Canonical1::vector Vector1;
+  typedef typename Canonical2::vector Vector2;
 
   typedef Eigen::Matrix<double, N, M1> JacobianTA1;
   typedef Eigen::Matrix<double, N, M2> JacobianTA2;
@@ -513,20 +532,9 @@ struct AutoDiff {
   T operator()(const A1& a1, const A2& a2, boost::optional<JacobianTA1&> H1 =
       boost::none, boost::optional<JacobianTA2&> H2 = boost::none) {
 
-    // Instantiate function and charts
-    T z;
-    A1 z1;
-    A2 z2; // TODO, zero
-    ChartT chartT(z);
-    Chart1 chart1(z1);
-    Chart2 chart2(z2);
-    F f;
-
     // Make arguments
-    Vector1 v1 = chart1.apply(a1);
-    Vector2 v2 = chart2.apply(a2);
-    cout << v1 << endl;
-    cout << v2 << endl;
+    Vector1 v1 = chart1.vee(a1);
+    Vector2 v2 = chart2.vee(a2);
 
     bool success;
     VectorT result;
@@ -543,13 +551,39 @@ struct AutoDiff {
       // Apply the mapping, to get result
       success = f(v1.data(), v2.data(), result.data());
     }
-    cout << result << endl;
-    return chartT.retract(result);
+    return chartT.hat(result);
   }
+
+private:
+
+  // Instantiate function and charts
+  CanonicalT chartT;
+  Canonical1 chart1;
+  Canonical2 chart2;
+  F f;
+
 };
 
 // The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
 typedef PinholeCamera<Cal3Bundler> Camera;
+
+template<>
+struct zero<Camera> {
+  static const Camera value;
+};
+const Camera zero<Camera>::value(Camera(Pose3(),Cal3Bundler(0,0,0)));
+
+template<>
+struct zero<Point3> {
+  static const Point3 value;
+};
+const Point3 zero<Point3>::value(Point3(0,0,0));
+
+template<>
+struct zero<Point2> {
+  static const Point2 value;
+};
+const Point2 zero<Point2>::value(Point2(0,0));
 
 /* ************************************************************************* */
 // Test AutoDiff wrapper Snavely
