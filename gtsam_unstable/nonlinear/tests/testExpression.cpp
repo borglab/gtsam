@@ -492,6 +492,11 @@ TEST(Expression, AutoDiff2) {
 }
 
 /* ************************************************************************* */
+// zero for canonical coordinates
+template <typename T>
+struct zero;
+
+/* ************************************************************************* */
 // Adapt ceres-style autodiff
 template<typename F, typename T, typename A1, typename A2>
 struct AutoDiff {
@@ -500,43 +505,55 @@ struct AutoDiff {
   static const int M1 = dimension<A1>::value;
   static const int M2 = dimension<A2>::value;
 
+  typedef  DefaultChart<A1> Chart1;
+  typedef  DefaultChart<A2> Chart2;
+  typedef typename Chart1::vector Vector1;
+  typedef typename Chart2::vector Vector2;
+
   typedef Eigen::Matrix<double, N, M1> JacobianTA1;
   typedef Eigen::Matrix<double, N, M2> JacobianTA2;
 
-  Point2 operator()(const A1& a1, const A2& a2,
-      boost::optional<JacobianTA1&> H1, boost::optional<JacobianTA2&> H2) {
+  T operator()(const A1& a1, const A2& a2, boost::optional<JacobianTA1&> H1,
+      boost::optional<JacobianTA2&> H2) {
 
-    // Instantiate function
+    // Instantiate function and charts
+    A1 z1; A2 z2; // TODO, zero
+    Chart1 chart1(z1);
+    Chart2 chart2(z2);
     F f;
 
     // Make arguments
-    Vector9 P; // zero rotation, (0,5,0) translation, focal length 1
-    P << 0, 0, 0, 0, 5, 0, 1, 0, 0;
-    Vector3 X(10, 0, -5); // negative Z-axis convention of Snavely!
+    Vector1 v1 = chart1.apply(a1);
+    Vector2 v2 = chart2.apply(a2);
 
     bool success;
-    Vector2 result;
+    double result[N];
 
     if (H1 || H2) {
 
       // Get derivatives with AutoDiff
-      double *parameters[] = { P.data(), X.data() };
+      double *parameters[] = { v1.data(), v2.data() };
       double *jacobians[] = { H1->data(), H2->data() };
       success = ceres::internal::AutoDiff<F, double, 9, 3>::Differentiate(f,
-          parameters, 2, result.data(), jacobians);
+          parameters, 2, result, jacobians);
 
     } else {
       // Apply the mapping, to get result
-      success = f(P.data(), X.data(), result.data());
+      success = f(v1.data(), v2.data(), result);
     }
-    return Point2();
+    return T(result[0], result[1]);
   }
 };
 
-TEST(Expression, Snavely) {
-  // The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
-  typedef PinholeCamera<Cal3Bundler> Camera;
+// The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
+typedef PinholeCamera<Cal3Bundler> Camera;
 
+//template <>
+//zero<Camera> {
+//  static const Camera value = Camera();
+//}
+
+TEST(Expression, Snavely) {
   Expression<Camera> P(1);
   Expression<Point3> X(2);
 //  AutoDiff<SnavelyProjection, 2, 9, 3> f;
