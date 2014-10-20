@@ -303,7 +303,7 @@ public:
     return K_.uncalibrate(pn);
   }
 
-  typedef Eigen::Matrix<double,2,dimension<Calibration>::value> Matrix2K;
+  typedef Eigen::Matrix<double,2,traits::dimension<Calibration>::value> Matrix2K;
 
   /** project a point from world coordinate to the image
    *  @param pw is a point in world coordinates
@@ -613,6 +613,9 @@ private:
 
 };
 
+// Define GTSAM traits
+namespace traits {
+
 template<typename Calibration>
 struct is_manifold<PinholeCamera<Calibration> > : public std::true_type {
 };
@@ -622,4 +625,14 @@ struct dimension<PinholeCamera<Calibration> > : public std::integral_constant<
     int, dimension<Pose3>::value + dimension<Calibration>::value> {
 };
 
+template<typename Calibration>
+struct zero<PinholeCamera<Calibration> > {
+  static PinholeCamera<Calibration> value() {
+    return PinholeCamera<Calibration>(zero<Pose3>::value(),
+        zero<Calibration>::value());
+  }
+};
+
 }
+
+} // \ gtsam

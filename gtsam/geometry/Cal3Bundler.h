@@ -169,6 +169,9 @@ private:
 
 };
 
+// Define GTSAM traits
+namespace traits {
+
 template<>
 struct is_manifold<Cal3Bundler> : public std::true_type {
 };
@@ -176,5 +179,14 @@ struct is_manifold<Cal3Bundler> : public std::true_type {
 template<>
 struct dimension<Cal3Bundler> : public std::integral_constant<int, 3> {
 };
+
+template<>
+struct zero<Cal3Bundler> {
+  static Cal3Bundler value() {
+    return Cal3Bundler(0, 0, 0);
+  }
+};
+
+}
 
 } // namespace gtsam

@@ -112,6 +112,9 @@ namespace gtsam {
       double d_;
   };
 
+  // Define GTSAM traits
+  namespace traits {
+
   template<>
   struct is_manifold<LieScalar> : public std::true_type {
   };
@@ -119,5 +122,7 @@ namespace gtsam {
   template<>
   struct dimension<LieScalar> : public Dynamic {
   };
+
+  }
 
 } // \namespace gtsam

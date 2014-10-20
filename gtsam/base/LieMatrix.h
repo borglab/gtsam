@@ -174,6 +174,10 @@ private:
   }
 
 };
+
+// Define GTSAM traits
+namespace traits {
+
 template<>
 struct is_manifold<LieMatrix> : public std::true_type {
 };
@@ -181,5 +185,7 @@ struct is_manifold<LieMatrix> : public std::true_type {
 template<>
 struct dimension<LieMatrix> : public Dynamic {
 };
+
+}
 
 } // \namespace gtsam

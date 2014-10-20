@@ -240,6 +240,9 @@ private:
 
 };
 
+// Define GTSAM traits
+namespace traits {
+
 template<>
 struct is_manifold<Cal3_S2> : public std::true_type {
 };
@@ -248,5 +251,11 @@ template<>
 struct dimension<Cal3_S2> : public std::integral_constant<int, 5> {
 };
 
+template<>
+struct zero<Cal3_S2> {
+  static Cal3_S2 value() { return Cal3_S2();}
+};
+
+}
 
 } // \ namespace gtsam

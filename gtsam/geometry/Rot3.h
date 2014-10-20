@@ -491,6 +491,13 @@ namespace gtsam {
    */
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct is_group<Rot3> : public std::true_type {
+  };
+
   template<>
   struct is_manifold<Rot3> : public std::true_type {
   };
@@ -499,5 +506,5 @@ namespace gtsam {
   struct dimension<Rot3> : public std::integral_constant<int, 3> {
   };
 
-
+  }
 }

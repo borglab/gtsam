@@ -242,6 +242,13 @@ namespace gtsam {
   /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct is_group<Point3> : public std::true_type {
+  };
+
   template<>
   struct is_manifold<Point3> : public std::true_type {
   };
@@ -250,4 +257,5 @@ namespace gtsam {
   struct dimension<Point3> : public std::integral_constant<int, 3> {
   };
 
+  }
 }

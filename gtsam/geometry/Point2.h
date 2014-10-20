@@ -250,6 +250,13 @@ private:
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
 
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_group<Point2> : public std::true_type {
+};
+
 template<>
 struct is_manifold<Point2> : public std::true_type {
 };
@@ -257,6 +264,8 @@ struct is_manifold<Point2> : public std::true_type {
 template<>
 struct dimension<Point2> : public std::integral_constant<int, 2> {
 };
+
+}
 
 }
 

@@ -13,14 +13,15 @@
  * @file Manifold.h
  * @brief Base class and basic functions for Manifold types
  * @author Alex Cunningham
+ * @author Frank Dellaert
  */
 
 #pragma once
 
-#include <string>
 #include <gtsam/base/Matrix.h>
 #include <boost/static_assert.hpp>
 #include <type_traits>
+#include <string>
 
 namespace gtsam {
 
@@ -45,6 +46,21 @@ namespace gtsam {
 // Traits, same style as Boost.TypeTraits
 // All meta-functions below ever only declare a single type
 // or a type/value/value_type
+namespace traits {
+
+// is group, by default this is false
+template<typename T>
+struct is_group: public std::false_type {
+};
+
+// identity, no default provided, by default given by default constructor
+template<typename T>
+struct identity {
+  static T value() {
+    return T();
+  }
+};
+
 // is manifold, by default this is false
 template<typename T>
 struct is_manifold: public std::false_type {
@@ -54,22 +70,13 @@ struct is_manifold: public std::false_type {
 template<typename T>
 struct dimension;
 
-// Chart is a map from T -> vector, retract is its inverse
-template<typename T>
-struct DefaultChart {
-  BOOST_STATIC_ASSERT(is_manifold<T>::value);
-  typedef Eigen::Matrix<double, dimension<T>::value, 1> vector;
-  DefaultChart(const T& t) :
-      t_(t) {
-  }
-  vector apply(const T& other) {
-    return t_.localCoordinates(other);
-  }
-  T retract(const vector& d) {
-    return t_.retract(d);
-  }
-private:
-  T const & t_;
+/**
+ * zero<T>::value is intended to be the origin of a canonical coordinate system
+ * with canonical(t) == DefaultChart<T>(zero<T>::value).apply(t)
+ * Below we provide the group identity as zero *in case* it is a group
+ */
+template<typename T> struct zero: public identity<T> {
+  BOOST_STATIC_ASSERT(is_group<T>::value);
 };
 
 // double
@@ -80,24 +87,6 @@ struct is_manifold<double> : public std::true_type {
 
 template<>
 struct dimension<double> : public std::integral_constant<int, 1> {
-};
-
-template<>
-struct DefaultChart<double> {
-  typedef Eigen::Matrix<double, 1, 1> vector;
-  DefaultChart(double t) :
-      t_(t) {
-  }
-  vector apply(double other) {
-    vector d;
-    d << other - t_;
-    return d;
-  }
-  double retract(const vector& d) {
-    return t_ + d[0];
-  }
-private:
-  double t_;
 };
 
 // Fixed size Eigen::Matrix type
@@ -130,10 +119,74 @@ struct dimension<Eigen::Matrix<double, M, N, Options> > : public std::integral_c
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
 };
 
+} // \ namespace traits
+
+// Chart is a map from T -> vector, retract is its inverse
+template<typename T>
+struct DefaultChart {
+  BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
+  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
+  DefaultChart(const T& t) :
+      t_(t) {
+  }
+  vector apply(const T& other) {
+    return t_.localCoordinates(other);
+  }
+  T retract(const vector& d) {
+    return t_.retract(d);
+  }
+private:
+  T const & t_;
+};
+
+/**
+ * Canonical<T>::value is a chart around zero<T>::value
+ * An example is Canonical<Rot3>
+ */
+template<typename T> class Canonical {
+  DefaultChart<T> chart;
+public:
+  typedef T type;
+  typedef typename DefaultChart<T>::vector vector;
+  Canonical() :
+      chart(traits::zero<T>::value()) {
+  }
+  // Convert t of type T into canonical coordinates
+  vector apply(const T& t) {
+    return chart.apply(t);
+  }
+  // Convert back from canonical coordinates to T
+  T retract(const vector& v) {
+    return chart.retract(v);
+  }
+};
+
+// double
+
+template<>
+struct DefaultChart<double> {
+  typedef Eigen::Matrix<double, 1, 1> vector;
+  DefaultChart(double t) :
+      t_(t) {
+  }
+  vector apply(double other) {
+    vector d;
+    d << other - t_;
+    return d;
+  }
+  double retract(const vector& d) {
+    return t_ + d[0];
+  }
+private:
+  double t_;
+};
+
+// Fixed size Eigen::Matrix type
+
 template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, M, N, Options> T;
-  typedef Eigen::Matrix<double, dimension<T>::value, 1> vector;
+  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
   DefaultChart(const T& t) :
       t_(t) {
   }
@@ -202,7 +255,7 @@ private:
   }
 };
 
-} // namespace gtsam
+} // \ namespace gtsam
 
 /**
  * Macros for using the ManifoldConcept

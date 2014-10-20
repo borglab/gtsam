@@ -321,6 +321,9 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
+// Define GTSAM traits
+namespace traits {
+
 template<>
 struct is_manifold<Pose2> : public std::true_type {
 };
@@ -328,6 +331,8 @@ struct is_manifold<Pose2> : public std::true_type {
 template<>
 struct dimension<Pose2> : public std::integral_constant<int, 3> {
 };
+
+}
 
 } // namespace gtsam
 
