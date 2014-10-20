@@ -513,7 +513,7 @@ public:
 /* ************************************************************************* */
 // Adapt ceres-style autodiff
 template<typename F, typename T, typename A1, typename A2>
-struct AutoDiff {
+class AdaptAutoDiff {
 
   static const int N = dimension<T>::value;
   static const int M1 = dimension<A1>::value;
@@ -522,15 +522,26 @@ struct AutoDiff {
   typedef Canonical<T> CanonicalT;
   typedef Canonical<A1> Canonical1;
   typedef Canonical<A2> Canonical2;
+
   typedef typename CanonicalT::vector VectorT;
   typedef typename Canonical1::vector Vector1;
   typedef typename Canonical2::vector Vector2;
+
+  // Instantiate function and charts
+  CanonicalT chartT;
+  Canonical1 chart1;
+  Canonical2 chart2;
+  F f;
+
+public:
 
   typedef Eigen::Matrix<double, N, M1> JacobianTA1;
   typedef Eigen::Matrix<double, N, M2> JacobianTA2;
 
   T operator()(const A1& a1, const A2& a2, boost::optional<JacobianTA1&> H1 =
       boost::none, boost::optional<JacobianTA2&> H2 = boost::none) {
+
+    using ceres::internal::AutoDiff;
 
     // Make arguments
     Vector1 v1 = chart1.vee(a1);
@@ -540,27 +551,17 @@ struct AutoDiff {
     VectorT result;
 
     if (H1 || H2) {
-
       // Get derivatives with AutoDiff
       double *parameters[] = { v1.data(), v2.data() };
       double *jacobians[] = { H1->data(), H2->data() };
-      success = ceres::internal::AutoDiff<F, double, 9, 3>::Differentiate(f,
-          parameters, 2, result.data(), jacobians);
-
+      success = AutoDiff<F, double, 9, 3>::Differentiate(f, parameters, 2,
+          result.data(), jacobians);
     } else {
       // Apply the mapping, to get result
       success = f(v1.data(), v2.data(), result.data());
     }
     return chartT.hat(result);
   }
-
-private:
-
-  // Instantiate function and charts
-  CanonicalT chartT;
-  Canonical1 chart1;
-  Canonical2 chart2;
-  F f;
 
 };
 
@@ -571,19 +572,19 @@ template<>
 struct zero<Camera> {
   static const Camera value;
 };
-const Camera zero<Camera>::value(Camera(Pose3(),Cal3Bundler(0,0,0)));
+const Camera zero<Camera>::value(Camera(Pose3(), Cal3Bundler(0, 0, 0)));
 
 template<>
 struct zero<Point3> {
   static const Point3 value;
 };
-const Point3 zero<Point3>::value(Point3(0,0,0));
+const Point3 zero<Point3>::value(Point3(0, 0, 0));
 
 template<>
 struct zero<Point2> {
   static const Point2 value;
 };
-const Point2 zero<Point2>::value(Point2(0,0));
+const Point2 zero<Point2>::value(Point2(0, 0));
 
 /* ************************************************************************* */
 // Test AutoDiff wrapper Snavely
@@ -593,7 +594,8 @@ TEST(Expression, AutoDiff3) {
   Camera P(Pose3(Rot3(), Point3(0, 5, 0)), Cal3Bundler(1, 0, 0));
   Point3 X(10, 0, -5); // negative Z-axis convention of Snavely!
 
-  AutoDiff<SnavelyProjection, Point2, Camera, Point3> snavely;
+  typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
+  Adaptor snavely;
 
   // Apply the mapping, to get image point b_x.
   Point2 expected(2, 1);
@@ -601,20 +603,16 @@ TEST(Expression, AutoDiff3) {
   EXPECT(assert_equal(expected,actual,1e-9));
 
 //  // Get expected derivatives
-//  Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(
-//      SnavelyProjection(), P, X);
-//  Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(
-//      SnavelyProjection(), P, X);
-//
-//  // Get derivatives with AutoDiff
-//  Vector2 actual2;
-//  MatrixRowMajor H1(2, 9), H2(2, 3);
-//  double *parameters[] = { P.data(), X.data() };
-//  double *jacobians[] = { H1.data(), H2.data() };
-//  CHECK(
-//      (AutoDiff<SnavelyProjection, double, 9, 3>::Differentiate( snavely, parameters, 2, actual2.data(), jacobians)));
-//  EXPECT(assert_equal(E1,H1,1e-8));
-//  EXPECT(assert_equal(E2,H2,1e-8));
+  Matrix E1 = numericalDerivative21<Point2, Camera, Point3>(Adaptor(), P, X);
+  Matrix E2 = numericalDerivative22<Point2, Camera, Point3>(Adaptor(), P, X);
+
+  // Get derivatives with AutoDiff
+  Matrix29 H1;
+  Matrix23 H2;
+  Point2 actual2 = snavely(P, X, H1, H2);
+  EXPECT(assert_equal(expected,actual,1e-9));
+  EXPECT(assert_equal(E1,H1,1e-8));
+  EXPECT(assert_equal(E2,H2,1e-8));
 }
 
 TEST(Expression, Snavely) {
@@ -622,7 +620,7 @@ TEST(Expression, Snavely) {
   Expression<Point3> X(2);
 //  AutoDiff<SnavelyProjection, 2, 9, 3> f;
   Expression<Point2> expression(
-      AutoDiff<SnavelyProjection, Point2, Camera, Point3>(), P, X);
+      AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3>(), P, X);
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
 }
