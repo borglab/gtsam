@@ -25,8 +25,8 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieScalar.h>
 
-#include "ceres/ceres.h"
-#include "ceres/rotation.h"
+#include <gtsam_unstable/nonlinear/ceres_autodiff.h>
+#include <gtsam_unstable/nonlinear/ceres_rotation.h>
 
 #undef CHECK
 #include <CppUnitLite/TestHarness.h>
