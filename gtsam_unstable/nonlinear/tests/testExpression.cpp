@@ -492,11 +492,6 @@ TEST(Expression, AutoDiff2) {
 }
 
 /* ************************************************************************* */
-// zero for canonical coordinates
-template <typename T>
-struct zero;
-
-/* ************************************************************************* */
 // Adapt ceres-style autodiff
 template<typename F, typename T, typename A1, typename A2>
 struct AutoDiff {
@@ -505,19 +500,24 @@ struct AutoDiff {
   static const int M1 = dimension<A1>::value;
   static const int M2 = dimension<A2>::value;
 
-  typedef  DefaultChart<A1> Chart1;
-  typedef  DefaultChart<A2> Chart2;
+  typedef DefaultChart<T> ChartT;
+  typedef DefaultChart<A1> Chart1;
+  typedef DefaultChart<A2> Chart2;
+  typedef typename ChartT::vector VectorT;
   typedef typename Chart1::vector Vector1;
   typedef typename Chart2::vector Vector2;
 
   typedef Eigen::Matrix<double, N, M1> JacobianTA1;
   typedef Eigen::Matrix<double, N, M2> JacobianTA2;
 
-  T operator()(const A1& a1, const A2& a2, boost::optional<JacobianTA1&> H1,
-      boost::optional<JacobianTA2&> H2) {
+  T operator()(const A1& a1, const A2& a2, boost::optional<JacobianTA1&> H1 =
+      boost::none, boost::optional<JacobianTA2&> H2 = boost::none) {
 
     // Instantiate function and charts
-    A1 z1; A2 z2; // TODO, zero
+    T z;
+    A1 z1;
+    A2 z2; // TODO, zero
+    ChartT chartT(z);
     Chart1 chart1(z1);
     Chart2 chart2(z2);
     F f;
@@ -525,9 +525,11 @@ struct AutoDiff {
     // Make arguments
     Vector1 v1 = chart1.apply(a1);
     Vector2 v2 = chart2.apply(a2);
+    cout << v1 << endl;
+    cout << v2 << endl;
 
     bool success;
-    double result[N];
+    VectorT result;
 
     if (H1 || H2) {
 
@@ -535,23 +537,51 @@ struct AutoDiff {
       double *parameters[] = { v1.data(), v2.data() };
       double *jacobians[] = { H1->data(), H2->data() };
       success = ceres::internal::AutoDiff<F, double, 9, 3>::Differentiate(f,
-          parameters, 2, result, jacobians);
+          parameters, 2, result.data(), jacobians);
 
     } else {
       // Apply the mapping, to get result
-      success = f(v1.data(), v2.data(), result);
+      success = f(v1.data(), v2.data(), result.data());
     }
-    return T(result[0], result[1]);
+    cout << result << endl;
+    return chartT.retract(result);
   }
 };
 
 // The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
 typedef PinholeCamera<Cal3Bundler> Camera;
 
-//template <>
-//zero<Camera> {
-//  static const Camera value = Camera();
-//}
+/* ************************************************************************* */
+// Test AutoDiff wrapper Snavely
+TEST(Expression, AutoDiff3) {
+
+  // Make arguments
+  Camera P(Pose3(Rot3(), Point3(0, 5, 0)), Cal3Bundler(1, 0, 0));
+  Point3 X(10, 0, -5); // negative Z-axis convention of Snavely!
+
+  AutoDiff<SnavelyProjection, Point2, Camera, Point3> snavely;
+
+  // Apply the mapping, to get image point b_x.
+  Point2 expected(2, 1);
+  Point2 actual = snavely(P, X);
+  EXPECT(assert_equal(expected,actual,1e-9));
+
+//  // Get expected derivatives
+//  Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(
+//      SnavelyProjection(), P, X);
+//  Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(
+//      SnavelyProjection(), P, X);
+//
+//  // Get derivatives with AutoDiff
+//  Vector2 actual2;
+//  MatrixRowMajor H1(2, 9), H2(2, 3);
+//  double *parameters[] = { P.data(), X.data() };
+//  double *jacobians[] = { H1.data(), H2.data() };
+//  CHECK(
+//      (AutoDiff<SnavelyProjection, double, 9, 3>::Differentiate( snavely, parameters, 2, actual2.data(), jacobians)));
+//  EXPECT(assert_equal(E1,H1,1e-8));
+//  EXPECT(assert_equal(E2,H2,1e-8));
+}
 
 TEST(Expression, Snavely) {
   Expression<Camera> P(1);
