@@ -327,6 +327,7 @@ struct SnavelyProjection {
 
 // is_manifold
 TEST(Expression, is_manifold) {
+  using namespace traits;
   EXPECT(!is_manifold<int>::value);
   EXPECT(is_manifold<Point2>::value);
   EXPECT(is_manifold<Matrix24>::value);
@@ -337,6 +338,7 @@ TEST(Expression, is_manifold) {
 
 // dimension
 TEST(Expression, dimension) {
+  using namespace traits;
   EXPECT_LONGS_EQUAL(2, dimension<Point2>::value);
   EXPECT_LONGS_EQUAL(8, dimension<Matrix24>::value);
   EXPECT_LONGS_EQUAL(1, dimension<double>::value);
@@ -374,6 +376,7 @@ TEST(Expression, Charts) {
 template<typename Y, typename X>
 Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
     double delta = 1e-5) {
+  using namespace traits;
 
   BOOST_STATIC_ASSERT(is_manifold<Y>::value);
   static const size_t M = dimension<Y>::value;
@@ -492,32 +495,13 @@ TEST(Expression, AutoDiff2) {
 }
 
 /* ************************************************************************* */
-// zero<T>::value is intended to be the origin of a canonical coordinate system
-// with canonical(t) == DefaultChart<T>(zero<T>::value).apply(t)
-template<typename T> struct zero;
-template<typename T> class Canonical {
-  DefaultChart<T> chart;
-public:
-  typedef T type;
-  typedef typename DefaultChart<T>::vector vector;
-  Canonical() :
-      chart(zero<T>::value) {
-  }
-  vector vee(const T& t) {
-    return chart.apply(t);
-  }
-  T hat(const vector& v) {
-    return chart.retract(v);
-  }
-};
-/* ************************************************************************* */
 // Adapt ceres-style autodiff
 template<typename F, typename T, typename A1, typename A2>
 class AdaptAutoDiff {
 
-  static const int N = dimension<T>::value;
-  static const int M1 = dimension<A1>::value;
-  static const int M2 = dimension<A2>::value;
+  static const int N = traits::dimension<T>::value;
+  static const int M1 = traits::dimension<A1>::value;
+  static const int M2 = traits::dimension<A2>::value;
 
   typedef Eigen::Matrix<double, N, M1, Eigen::RowMajor> RowMajor1;
   typedef Eigen::Matrix<double, N, M2, Eigen::RowMajor> RowMajor2;
@@ -547,8 +531,8 @@ public:
     using ceres::internal::AutoDiff;
 
     // Make arguments
-    Vector1 v1 = chart1.vee(a1);
-    Vector2 v2 = chart2.vee(a2);
+    Vector1 v1 = chart1.apply(a1);
+    Vector2 v2 = chart2.apply(a2);
 
     bool success;
     VectorT result;
@@ -574,31 +558,13 @@ public:
     if (!success)
       throw std::runtime_error(
           "AdaptAutoDiff: function call resulted in failure");
-    return chartT.hat(result);
+    return chartT.retract(result);
   }
 
 };
 
 // The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
 typedef PinholeCamera<Cal3Bundler> Camera;
-
-template<>
-struct zero<Camera> {
-  static const Camera value;
-};
-const Camera zero<Camera>::value(Camera(Pose3(), Cal3Bundler(0, 0, 0)));
-
-template<>
-struct zero<Point3> {
-  static const Point3 value;
-};
-const Point3 zero<Point3>::value(Point3(0, 0, 0));
-
-template<>
-struct zero<Point2> {
-  static const Point2 value;
-};
-const Point2 zero<Point2>::value(Point2(0, 0));
 
 /* ************************************************************************* */
 // Test AutoDiff wrapper Snavely

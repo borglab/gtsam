@@ -114,7 +114,7 @@ void handleLeafCase(
  */
 template<class T>
 class ExecutionTrace {
-  static const int Dim = dimension<T>::value;
+  static const int Dim = traits::dimension<T>::value;
   enum {
     Constant, Leaf, Function
   } kind;
@@ -196,7 +196,7 @@ public:
 /// Primary template calls the generic Matrix reverseAD pipeline
 template<size_t ROWS, class A>
 struct Select {
-  typedef Eigen::Matrix<double, ROWS, dimension<A>::value> Jacobian;
+  typedef Eigen::Matrix<double, ROWS, traits::dimension<A>::value> Jacobian;
   static void reverseAD(const ExecutionTrace<A>& trace, const Jacobian& dTdA,
       JacobianMap& jacobians) {
     trace.reverseAD(dTdA, jacobians);
@@ -206,7 +206,7 @@ struct Select {
 /// Partially specialized template calls the 2-dimensional output version
 template<class A>
 struct Select<2, A> {
-  typedef Eigen::Matrix<double, 2, dimension<A>::value> Jacobian;
+  typedef Eigen::Matrix<double, 2, traits::dimension<A>::value> Jacobian;
   static void reverseAD(const ExecutionTrace<A>& trace, const Jacobian& dTdA,
       JacobianMap& jacobians) {
     trace.reverseAD2(dTdA, jacobians);
@@ -317,7 +317,7 @@ public:
 
   /// Return dimensions for each argument
   virtual void dims(std::map<Key, size_t>& map) const {
-    map[key_] = dimension<T>::value;
+    map[key_] = traits::dimension<T>::value;
   }
 
   /// Return value
@@ -368,13 +368,15 @@ public:
 /// meta-function to generate fixed-size JacobianTA type
 template<class T, class A>
 struct Jacobian {
-  typedef Eigen::Matrix<double, dimension<T>::value, dimension<A>::value> type;
+  typedef Eigen::Matrix<double, traits::dimension<T>::value,
+      traits::dimension<A>::value> type;
 };
 
 /// meta-function to generate JacobianTA optional reference
 template<class T, class A>
 struct Optional {
-  typedef Eigen::Matrix<double, dimension<T>::value, dimension<A>::value> Jacobian;
+  typedef Eigen::Matrix<double, traits::dimension<T>::value,
+      traits::dimension<A>::value> Jacobian;
   typedef boost::optional<Jacobian&> type;
 };
 
@@ -385,7 +387,7 @@ template<class T>
 struct FunctionalBase: ExpressionNode<T> {
   static size_t const N = 0; // number of arguments
 
-  typedef CallRecord<dimension<T>::value> Record;
+  typedef CallRecord<traits::dimension<T>::value> Record;
 
   /// Construct an execution trace for reverse AD
   void trace(const Values& values, Record* record, char*& raw) const {
@@ -454,7 +456,7 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     /// Start the reverse AD process
     virtual void startReverseAD(JacobianMap& jacobians) const {
       Base::Record::startReverseAD(jacobians);
-      Select<dimension<T>::value, A>::reverseAD(This::trace, This::dTdA,
+      Select<traits::dimension<T>::value, A>::reverseAD(This::trace, This::dTdA,
           jacobians);
     }
 
@@ -465,7 +467,7 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     }
 
     /// Version specialized to 2-dimensional output
-    typedef Eigen::Matrix<double, 2, dimension<T>::value> Jacobian2T;
+    typedef Eigen::Matrix<double, 2, traits::dimension<T>::value> Jacobian2T;
     virtual void reverseAD2(const Jacobian2T& dFdT,
         JacobianMap& jacobians) const {
       Base::Record::reverseAD2(dFdT, jacobians);

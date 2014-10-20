@@ -159,7 +159,7 @@ public:
 template<class T>
 struct apply_compose {
   typedef T result_type;
-  static const int Dim = dimension<T>::value;
+  static const int Dim = traits::dimension<T>::value;
   typedef Eigen::Matrix<double, Dim, Dim> Jacobian;
   T operator()(const T& x, const T& y, boost::optional<Jacobian&> H1,
       boost::optional<Jacobian&> H2) const {

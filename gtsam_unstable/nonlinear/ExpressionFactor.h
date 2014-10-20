@@ -37,6 +37,8 @@ class ExpressionFactor: public NoiseModelFactor {
   std::vector<size_t> dimensions_; ///< dimensions of the Jacobian matrices
   size_t augmentedCols_; ///< total number of columns + 1 (for RHS)
 
+  static const int Dim = traits::dimension<T>::value;
+
 public:
 
   /// Constructor
@@ -45,7 +47,7 @@ public:
       measurement_(measurement), expression_(expression) {
     if (!noiseModel)
       throw std::invalid_argument("ExpressionFactor: no NoiseModel.");
-    if (noiseModel->dim() != dimension<T>::value)
+    if (noiseModel->dim() != Dim)
       throw std::invalid_argument(
           "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
     noiseModel_ = noiseModel;
@@ -68,7 +70,7 @@ public:
 #ifdef DEBUG_ExpressionFactor
     BOOST_FOREACH(size_t d, dimensions_)
     std::cout << d << " ";
-    std::cout << " -> " << dimension<T>::value << "x" << augmentedCols_ << std::endl;
+    std::cout << " -> " << Dim << "x" << augmentedCols_ << std::endl;
 #endif
   }
 
@@ -87,10 +89,9 @@ public:
       JacobianMap blocks;
       for (DenseIndex i = 0; i < size(); i++) {
         Matrix& Hi = H->at(i);
-        Hi.resize(dimension<T>::value, dimensions_[i]);
+        Hi.resize(Dim, dimensions_[i]);
         Hi.setZero(); // zero out
-        Eigen::Block<Matrix> block = Hi.block(0, 0, dimension<T>::value,
-            dimensions_[i]);
+        Eigen::Block<Matrix> block = Hi.block(0, 0, Dim, dimensions_[i]);
         blocks.insert(std::make_pair(keys_[i], block));
       }
 
@@ -110,10 +111,9 @@ public:
     // to [expression_.value] below, which writes directly into Ab_.
 
     // Another malloc saved by creating a Matrix on the stack
-    static const int Dim = dimension<T>::value;
     double memory[Dim * augmentedCols_];
-    Eigen::Map<Eigen::Matrix<double, dimension<T>::value, Eigen::Dynamic> > //
-    matrix(memory, dimension<T>::value, augmentedCols_);
+    Eigen::Map<Eigen::Matrix<double, Dim, Eigen::Dynamic> > //
+    matrix(memory, Dim, augmentedCols_);
     matrix.setZero(); // zero out
 
     // Construct block matrix, is of right size but un-initialized
