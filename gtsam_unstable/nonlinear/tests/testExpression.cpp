@@ -519,6 +519,9 @@ class AdaptAutoDiff {
   static const int M1 = dimension<A1>::value;
   static const int M2 = dimension<A2>::value;
 
+  typedef Eigen::Matrix<double, N, M1, Eigen::RowMajor> RowMajor1;
+  typedef Eigen::Matrix<double, N, M2, Eigen::RowMajor> RowMajor2;
+
   typedef Canonical<T> CanonicalT;
   typedef Canonical<A1> Canonical1;
   typedef Canonical<A2> Canonical2;
@@ -535,8 +538,8 @@ class AdaptAutoDiff {
 
 public:
 
-  typedef Eigen::Matrix<double, N, M1, Eigen::RowMajor> JacobianTA1;
-  typedef Eigen::Matrix<double, N, M2, Eigen::RowMajor> JacobianTA2;
+  typedef Eigen::Matrix<double, N, M1> JacobianTA1;
+  typedef Eigen::Matrix<double, N, M2> JacobianTA2;
 
   T operator()(const A1& a1, const A2& a2, boost::optional<JacobianTA1&> H1 =
       boost::none, boost::optional<JacobianTA2&> H2 = boost::none) {
@@ -551,15 +554,26 @@ public:
     VectorT result;
 
     if (H1 || H2) {
+
       // Get derivatives with AutoDiff
       double *parameters[] = { v1.data(), v2.data() };
-      double *jacobians[] = { H1->data(), H2->data() };
+      double rowMajor1[N * M1], rowMajor2[N * M2]; // om the stack
+      double *jacobians[] = { rowMajor1, rowMajor2 };
       success = AutoDiff<F, double, 9, 3>::Differentiate(f, parameters, 2,
           result.data(), jacobians);
+
+      // Convert from row-major to columnn-major
+      // TODO: if this is a bottleneck (probably not!) fix Autodiff to be Column-Major
+      *H1 = Eigen::Map<RowMajor1>(rowMajor1);
+      *H2 = Eigen::Map<RowMajor2>(rowMajor2);
+
     } else {
       // Apply the mapping, to get result
       success = f(v1.data(), v2.data(), result.data());
     }
+    if (!success)
+      throw std::runtime_error(
+          "AdaptAutoDiff: function call resulted in failure");
     return chartT.hat(result);
   }
 
@@ -607,8 +621,8 @@ TEST(Expression, AutoDiff3) {
   Matrix E2 = numericalDerivative22<Point2, Camera, Point3>(Adaptor(), P, X);
 
   // Get derivatives with AutoDiff, not gives RowMajor results!
-  Eigen::Matrix<double, 2, 9, Eigen::RowMajor> H1;
-  Eigen::Matrix<double, 2, 3, Eigen::RowMajor> H2;
+  Matrix29 H1;
+  Matrix23 H2;
   Point2 actual2 = snavely(P, X, H1, H2);
   EXPECT(assert_equal(expected,actual,1e-9));
   EXPECT(assert_equal(E1,H1,1e-8));
@@ -616,13 +630,12 @@ TEST(Expression, AutoDiff3) {
 }
 
 TEST(Expression, Snavely) {
-//  Expression<Camera> P(1);
-//  Expression<Point3> X(2);
-////  AutoDiff<SnavelyProjection, 2, 9, 3> f;
-//  Expression<Point2> expression(
-//      AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3>(), P, X);
-//  set<Key> expected = list_of(1)(2);
-//  EXPECT(expected == expression.keys());
+  Expression<Camera> P(1);
+  Expression<Point3> X(2);
+  typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
+  Expression<Point2> expression(Adaptor(), P, X);
+  set<Key> expected = list_of(1)(2);
+  EXPECT(expected == expression.keys());
 }
 
 /* ************************************************************************* */
