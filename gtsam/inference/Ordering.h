@@ -37,6 +37,12 @@ namespace gtsam {
     typedef Ordering This; ///< Typedef to this class
     typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+	/** See NonlinearOptimizer::orderingType */
+	enum Type {
+		COLAMD_, METIS_, CUSTOM_ // Add underscores to prevent declaration errors
+	};
+
+
     /// Create an empty ordering
     GTSAM_EXPORT Ordering() {}
 

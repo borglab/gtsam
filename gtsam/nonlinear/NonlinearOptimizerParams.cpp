@@ -5,6 +5,7 @@
  * @author Yong-Dian Jian
  * @author Richard Roberts
  * @author Frank Dellaert
+ * @author Andrew Melim
  */
 
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
@@ -108,10 +109,10 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
   }
 
   switch (orderingType){
-  case COLAMD:
+  case Ordering::Type::COLAMD_:
 	  std::cout << "                   ordering: COLAMD\n";
 	  break;
-  case METIS:
+  case Ordering::Type::METIS_:
 	  std::cout << "                   ordering: METIS\n";
 	  break;
   default:
@@ -164,12 +165,12 @@ NonlinearOptimizerParams::LinearSolverType NonlinearOptimizerParams::linearSolve
 }
 
 /* ************************************************************************* */
-std::string NonlinearOptimizerParams::orderingTypeTranslator(NonlinearOptimizerParams::OrderingType type) const
+std::string NonlinearOptimizerParams::orderingTypeTranslator(Ordering::Type type) const
 {
 	switch (type) {
-	case METIS:
+	case Ordering::Type::METIS_:
 		return "METIS";
-	case COLAMD:
+	case Ordering::Type::COLAMD_:
 		return "COLAMD";
 	default:
 		if (ordering)
@@ -181,12 +182,12 @@ std::string NonlinearOptimizerParams::orderingTypeTranslator(NonlinearOptimizerP
 }
 
 /* ************************************************************************* */
-NonlinearOptimizerParams::OrderingType NonlinearOptimizerParams::orderingTypeTranslator(const std::string& type) const
+Ordering::Type NonlinearOptimizerParams::orderingTypeTranslator(const std::string& type) const
 {
 	if (type == "METIS")
-		return METIS;
+		return Ordering::Type::METIS_;
 	if (type == "COLAMD")
-		return COLAMD;
+		return Ordering::Type::COLAMD_;
 	throw std::invalid_argument(
 		"Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
 }
