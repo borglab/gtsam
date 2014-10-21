@@ -28,7 +28,6 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Manifold.h>
 
@@ -56,14 +55,6 @@ namespace gtsam {
  *     http://www.boost.org/doc/libs/release/libs/bind/bind.html
  */
 
-/** global functions for converting to a LieVector for use with numericalDerivative */
-inline LieVector makeLieVector(const Vector& v) {
-  return LieVector(v);
-}
-inline LieVector makeLieVectorD(double d) {
-  return LieVector((Vector) (Vector(1) << d));
-}
-
 /**
  * Numerically compute gradient of scalar function
  * Class X is the input argument
@@ -76,20 +67,20 @@ Vector numericalGradient(boost::function<double(const X&)> h, const X& x,
 
   BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X>::value,
       "Template argument X must be a manifold type.");
+  static const int N = traits::dimension<X>::value;
+  BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
   typedef DefaultChart<X> ChartX;
   typedef typename ChartX::vector TangentX;
 
   // get chart at x
   ChartX chartX(x);
-  TangentX zeroX = chartX.apply(x);
-  size_t n = zeroX.size(); // hack to get size if dynamic type
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
   TangentX d;
   d.setZero();
 
-  Vector g = zero(n);
-  for (int j = 0; j < n; j++) {
+  Vector g = zero(N); // Can be fixed size
+  for (int j = 0; j < N; j++) {
     d(j) = delta;
     double hxplus = h(chartX.retract(d));
     d(j) = -delta;
@@ -123,28 +114,30 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
 
   BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X>::value,
       "Template argument X must be a manifold type.");
+  static const int N = traits::dimension<X>::value;
+  BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
   typedef DefaultChart<X> ChartX;
   typedef typename ChartX::vector TangentX;
 
   // get value at x, and corresponding chart
   Y hx = h(x);
   ChartY chartY(hx);
+
+  // Bit of a hack for now to find number of rows
   TangentY zeroY = chartY.apply(hx);
   size_t m = zeroY.size();
 
   // get chart at x
   ChartX chartX(x);
-  TangentX zeroX = chartX.apply(x);
-  size_t n = zeroX.size();
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
   TangentX dx;
   dx.setZero();
 
   // Fill in Jacobian H
-  Matrix H = zeros(m,n);
+  Matrix H = zeros(m, N);
   double factor = 1.0 / (2.0 * delta);
-  for (int j = 0; j < n; j++) {
+  for (int j = 0; j < N; j++) {
     dx(j) = delta;
     TangentY dy1 = chartY.apply(h(chartX.retract(dx)));
     dx(j) = -delta;
@@ -345,7 +338,7 @@ inline Matrix numericalHessian212(
     boost::function<double(const X1&, const X2&)> f, const X1& x1, const X2& x2,
     double delta = 1e-5) {
   G_x1<X1, X2> g_x1(f, x1, delta);
-  return numericalDerivative11<Vector,X2>(
+  return numericalDerivative11<Vector, X2>(
       boost::function<Vector(const X2&)>(
           boost::bind<Vector>(boost::ref(g_x1), _1)), x2, delta);
 }
@@ -366,7 +359,7 @@ inline Matrix numericalHessian211(
       double) = &numericalGradient<X1>;
   boost::function<double(const X1&)> f2(boost::bind(f, _1, x2));
 
-  return numericalDerivative11<Vector,X1>(
+  return numericalDerivative11<Vector, X1>(
       boost::function<Vector(const X1&)>(boost::bind(numGrad, f2, _1, delta)),
       x1, delta);
 }
@@ -387,7 +380,7 @@ inline Matrix numericalHessian222(
       double) = &numericalGradient<X2>;
   boost::function<double(const X2&)> f2(boost::bind(f, x1, _1));
 
-  return numericalDerivative11<Vector,X2>(
+  return numericalDerivative11<Vector, X2>(
       boost::function<Vector(const X2&)>(boost::bind(numGrad, f2, _1, delta)),
       x2, delta);
 }
@@ -412,7 +405,7 @@ inline Matrix numericalHessian311(
       double) = &numericalGradient<X1>;
   boost::function<double(const X1&)> f2(boost::bind(f, _1, x2, x3));
 
-  return numericalDerivative11<Vector,X1>(
+  return numericalDerivative11<Vector, X1>(
       boost::function<Vector(const X1&)>(boost::bind(numGrad, f2, _1, delta)),
       x1, delta);
 }
@@ -435,7 +428,7 @@ inline Matrix numericalHessian322(
       double) = &numericalGradient<X2>;
   boost::function<double(const X2&)> f2(boost::bind(f, x1, _1, x3));
 
-  return numericalDerivative11<Vector,X2>(
+  return numericalDerivative11<Vector, X2>(
       boost::function<Vector(const X2&)>(boost::bind(numGrad, f2, _1, delta)),
       x2, delta);
 }
@@ -458,7 +451,7 @@ inline Matrix numericalHessian333(
       double) = &numericalGradient<X3>;
   boost::function<double(const X3&)> f2(boost::bind(f, x1, x2, _1));
 
-  return numericalDerivative11<Vector,X3>(
+  return numericalDerivative11<Vector, X3>(
       boost::function<Vector(const X3&)>(boost::bind(numGrad, f2, _1, delta)),
       x3, delta);
 }
