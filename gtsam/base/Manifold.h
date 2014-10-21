@@ -95,7 +95,9 @@ struct dimension<double> : public std::integral_constant<int, 1> {
 
 template<>
 struct zero<double> {
-  static double value() { return 0;}
+  static double value() {
+    return 0;
+  }
 };
 
 // Fixed size Eigen::Matrix type
@@ -118,24 +120,22 @@ struct dimension<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Options> 
 
 template<int M, int Options>
 struct dimension<Eigen::Matrix<double, M, Eigen::Dynamic, Options> > : public Dynamic {
-  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic);
 };
 
 template<int N, int Options>
 struct dimension<Eigen::Matrix<double, Eigen::Dynamic, N, Options> > : public Dynamic {
-  BOOST_STATIC_ASSERT(N!=Eigen::Dynamic);
 };
 
 template<int M, int N, int Options>
 struct dimension<Eigen::Matrix<double, M, N, Options> > : public std::integral_constant<
     int, M * N> {
-  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
 };
 
 template<int M, int N, int Options>
 struct zero<Eigen::Matrix<double, M, N, Options> > : public std::integral_constant<
     int, M * N> {
-  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
+  BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
+      "traits::zero is only supported for fixed-size matrices");
   static Eigen::Matrix<double, M, N, Options> value() {
     return Eigen::Matrix<double, M, N, Options>::Zero();
   }
@@ -206,6 +206,8 @@ template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, M, N, Options> T;
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
+  BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
+      "DefaultChart has not been implemented yet for dynamically sized matrices");
   T t_;
   DefaultChart(const T& t) :
       t_(t) {
@@ -218,6 +220,23 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   T retract(const vector& d) {
     Eigen::Map<const T> map(d.data());
     return t_ + map;
+  }
+};
+
+// Dynamically sized Vector
+template<>
+struct DefaultChart<Vector> {
+  typedef Vector T;
+  typedef T vector;
+  T t_;
+  DefaultChart(const T& t) :
+      t_(t) {
+  }
+  vector apply(const T& other) {
+    return other - t_;
+  }
+  T retract(const vector& d) {
+    return t_ + d;
   }
 };
 
