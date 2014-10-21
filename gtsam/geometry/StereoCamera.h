@@ -155,4 +155,22 @@ private:
 
 };
 
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<StereoCamera> : public std::true_type {
+};
+
+template<>
+struct dimension<StereoCamera> : public std::integral_constant<int, 6> {
+};
+
+template<>
+struct zero<StereoCamera> {
+  static StereoCamera value() { return StereoCamera();}
+};
+
+}
+
 }

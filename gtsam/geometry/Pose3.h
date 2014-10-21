@@ -41,7 +41,6 @@ class Pose2;
  */
 class GTSAM_EXPORT Pose3: public DerivedValue<Pose3> {
 public:
-  static const size_t dimension = 6;
 
   /** Pose Concept requirements */
   typedef Rot3 Rotation;
@@ -132,12 +131,12 @@ public:
 
   /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
   static size_t Dim() {
-    return dimension;
+    return 6;
   }
 
   /// Dimensionality of the tangent space = 6 DOF
   size_t dim() const {
-    return dimension;
+    return 6;
   }
 
   /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ from R^ with fast first-order approximation to the exponential map
@@ -354,5 +353,22 @@ inline Matrix wedge<Pose3>(const Vector& xi) {
  */
 typedef std::pair<Point3, Point3> Point3Pair;
 GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_group<Pose3> : public std::true_type {
+};
+
+template<>
+struct is_manifold<Pose3> : public std::true_type {
+};
+
+template<>
+struct dimension<Pose3> : public std::integral_constant<int, 6> {
+};
+
+}
 
 } // namespace gtsam

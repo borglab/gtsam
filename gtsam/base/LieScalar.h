@@ -111,4 +111,22 @@ namespace gtsam {
   private:
       double d_;
   };
+
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct is_group<LieScalar> : public std::true_type {
+  };
+
+  template<>
+  struct is_manifold<LieScalar> : public std::true_type {
+  };
+
+  template<>
+  struct dimension<LieScalar> : public std::integral_constant<int, 1> {
+  };
+
+  }
+
 } // \namespace gtsam

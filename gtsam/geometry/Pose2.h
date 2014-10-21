@@ -36,7 +36,6 @@ namespace gtsam {
 class GTSAM_EXPORT Pose2 : public DerivedValue<Pose2> {
 
 public:
-  static const size_t dimension = 3;
 
   /** Pose Concept requirements */
   typedef Rot2 Rotation;
@@ -142,10 +141,10 @@ public:
   /// @{
 
   /// Dimensionality of tangent space = 3 DOF - used to autodetect sizes
-  inline static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return 3; }
 
   /// Dimensionality of tangent space = 3 DOF
-  inline size_t dim() const { return dimension; }
+  inline size_t dim() const { return 3; }
 
   /// Retraction from R^3 \f$ [T_x,T_y,\theta] \f$ to Pose2 manifold neighborhood around current pose
   Pose2 retract(const Vector& v) const;
@@ -294,6 +293,8 @@ public:
    */
   static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(2, 2); }
 
+  /// @}
+
 private:
 
   // Serialization function
@@ -320,7 +321,18 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
-/// @}
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Pose2> : public std::true_type {
+};
+
+template<>
+struct dimension<Pose2> : public std::integral_constant<int, 3> {
+};
+
+}
 
 } // namespace gtsam
 

@@ -128,6 +128,19 @@ private:
     ar & boost::serialization::make_nvp("Vector",
        boost::serialization::base_object<Vector>(*this));
   }
-
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<LieVector> : public std::true_type {
+};
+
+template<>
+struct dimension<LieVector> : public Dynamic {
+};
+
+}
+
 } // \namespace gtsam

@@ -124,6 +124,11 @@ public:
 
   /// Return value and derivatives, reverse AD version
   T reverse(const Values& values, JacobianMap& jacobians) const {
+    // The following piece of code is absolutely crucial for performance.
+    // We allocate a block of memory on the stack, which can be done at runtime
+    // with modern C++ compilers. The traceExecution then fills this memory
+    // with an execution trace, made up entirely of "Record" structs, see
+    // the FunctionalNode class in expression-inl.h
     size_t size = traceSize();
     char raw[size];
     ExecutionTrace<T> trace;
@@ -154,7 +159,8 @@ public:
 template<class T>
 struct apply_compose {
   typedef T result_type;
-  typedef Eigen::Matrix<double, T::dimension, T::dimension> Jacobian;
+  static const int Dim = traits::dimension<T>::value;
+  typedef Eigen::Matrix<double, Dim, Dim> Jacobian;
   T operator()(const T& x, const T& y, boost::optional<Jacobian&> H1,
       boost::optional<Jacobian&> H2) const {
     return x.compose(y, H1, H2);

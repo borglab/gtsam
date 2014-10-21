@@ -37,6 +37,8 @@ class ExpressionFactor: public NoiseModelFactor {
   std::vector<size_t> dimensions_; ///< dimensions of the Jacobian matrices
   size_t augmentedCols_; ///< total number of columns + 1 (for RHS)
 
+  static const int Dim = traits::dimension<T>::value;
+
 public:
 
   /// Constructor
@@ -45,7 +47,7 @@ public:
       measurement_(measurement), expression_(expression) {
     if (!noiseModel)
       throw std::invalid_argument("ExpressionFactor: no NoiseModel.");
-    if (noiseModel->dim() != T::dimension)
+    if (noiseModel->dim() != Dim)
       throw std::invalid_argument(
           "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
     noiseModel_ = noiseModel;
@@ -68,7 +70,7 @@ public:
 #ifdef DEBUG_ExpressionFactor
     BOOST_FOREACH(size_t d, dimensions_)
     std::cout << d << " ";
-    std::cout << " -> " << T::dimension << "x" << augmentedCols_ << std::endl;
+    std::cout << " -> " << Dim << "x" << augmentedCols_ << std::endl;
 #endif
   }
 
@@ -87,10 +89,9 @@ public:
       JacobianMap blocks;
       for (DenseIndex i = 0; i < size(); i++) {
         Matrix& Hi = H->at(i);
-        Hi.resize(T::dimension, dimensions_[i]);
+        Hi.resize(Dim, dimensions_[i]);
         Hi.setZero(); // zero out
-        Eigen::Block<Matrix> block = Hi.block(0, 0, T::dimension,
-            dimensions_[i]);
+        Eigen::Block<Matrix> block = Hi.block(0, 0, Dim, dimensions_[i]);
         blocks.insert(std::make_pair(keys_[i], block));
       }
 
@@ -104,10 +105,15 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
-    // Allocate memory on stack and create a view on it (saves a malloc)
-    double memory[T::dimension * augmentedCols_];
-    Eigen::Map<Eigen::Matrix<double, T::dimension, Eigen::Dynamic> > //
-    matrix(memory, T::dimension, augmentedCols_);
+    // This method has been heavily optimized for maximum performance.
+    // We allocate a VerticalBlockMatrix on the stack first, and then create
+    // Eigen::Block<Matrix> views on this piece of memory which is then passed
+    // to [expression_.value] below, which writes directly into Ab_.
+
+    // Another malloc saved by creating a Matrix on the stack
+    double memory[Dim * augmentedCols_];
+    Eigen::Map<Eigen::Matrix<double, Dim, Eigen::Dynamic> > //
+    matrix(memory, Dim, augmentedCols_);
     matrix.setZero(); // zero out
 
     // Construct block matrix, is of right size but un-initialized
@@ -117,8 +123,9 @@ public:
     JacobianMap blocks;
     for (DenseIndex i = 0; i < size(); i++)
       blocks.insert(std::make_pair(keys_[i], Ab(i)));
+
     // Evaluate error to get Jacobians and RHS vector b
-    T value = expression_.value(x, blocks);
+    T value = expression_.value(x, blocks); // <<< Reverse AD happens here !
     Ab(size()).col(0) = -measurement_.localCoordinates(value);
 
     // Whiten the corresponding system now

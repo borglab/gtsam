@@ -36,8 +36,6 @@ private:
   double fx_, fy_, s_, u0_, v0_;
 
 public:
-  /// dimension of the variable - used to autodetect sizes
-  static const size_t dimension = 5;
 
   typedef boost::shared_ptr<Cal3_S2> shared_ptr; ///< shared pointer to calibration object
 
@@ -200,12 +198,12 @@ public:
 
   /// return DOF, dimensionality of tangent space
   inline size_t dim() const {
-    return dimension;
+    return 5;
   }
 
   /// return DOF, dimensionality of tangent space
   static size_t Dim() {
-    return dimension;
+    return 5;
   }
 
   /// Given 5-dim tangent vector, create new calibration
@@ -241,5 +239,23 @@ private:
   /// @}
 
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Cal3_S2> : public std::true_type {
+};
+
+template<>
+struct dimension<Cal3_S2> : public std::integral_constant<int, 5> {
+};
+
+template<>
+struct zero<Cal3_S2> {
+  static Cal3_S2 value() { return Cal3_S2();}
+};
+
+}
 
 } // \ namespace gtsam

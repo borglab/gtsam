@@ -303,7 +303,7 @@ public:
     return K_.uncalibrate(pn);
   }
 
-  typedef Eigen::Matrix<double,2,Calibration::dimension> Matrix2K;
+  typedef Eigen::Matrix<double,2,traits::dimension<Calibration>::value> Matrix2K;
 
   /** project a point from world coordinate to the image
    *  @param pw is a point in world coordinates
@@ -602,10 +602,6 @@ private:
         Dpi_pn * Dpn_point;
   }
 
-  /// @}
-  /// @name Advanced Interface
-  /// @{
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -614,6 +610,29 @@ private:
     ar & BOOST_SERIALIZATION_NVP(pose_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-  /// @}
-      }
-      ;}
+
+};
+
+// Define GTSAM traits
+namespace traits {
+
+template<typename Calibration>
+struct is_manifold<PinholeCamera<Calibration> > : public std::true_type {
+};
+
+template<typename Calibration>
+struct dimension<PinholeCamera<Calibration> > : public std::integral_constant<
+    int, dimension<Pose3>::value + dimension<Calibration>::value> {
+};
+
+template<typename Calibration>
+struct zero<PinholeCamera<Calibration> > {
+  static PinholeCamera<Calibration> value() {
+    return PinholeCamera<Calibration>(zero<Pose3>::value(),
+        zero<Calibration>::value());
+  }
+};
+
+}
+
+} // \ gtsam

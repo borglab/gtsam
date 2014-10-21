@@ -73,19 +73,18 @@ TEST( InvDepthFactorVariant2, optimize) {
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
   LieVector actual = result.at<LieVector>(landmarkKey);
   
-
-  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
-  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
-  pose1.print("Pose1 Truth:\n");
-  std::cout << std::endl << std::endl;
-  values.at<Pose3>(poseKey2).print("Pose2 Before:\n");
-  result.at<Pose3>(poseKey2).print("Pose2 After:\n");
-  pose2.print("Pose2 Truth:\n");
-  std::cout << std::endl << std::endl;
-  values.at<LieVector>(landmarkKey).print("Landmark Before:\n");
-  result.at<LieVector>(landmarkKey).print("Landmark After:\n");
-  expected.print("Landmark Truth:\n");
-  std::cout << std::endl << std::endl;
+//  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
+//  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
+//  pose1.print("Pose1 Truth:\n");
+//  std::cout << std::endl << std::endl;
+//  values.at<Pose3>(poseKey2).print("Pose2 Before:\n");
+//  result.at<Pose3>(poseKey2).print("Pose2 After:\n");
+//  pose2.print("Pose2 Truth:\n");
+//  std::cout << std::endl << std::endl;
+//  values.at<LieVector>(landmarkKey).print("Landmark Before:\n");
+//  result.at<LieVector>(landmarkKey).print("Landmark After:\n");
+//  expected.print("Landmark Truth:\n");
+//  std::cout << std::endl << std::endl;
 
   // Calculate world coordinates of landmark versions
   Point3 world_landmarkBefore;
@@ -101,12 +100,10 @@ TEST( InvDepthFactorVariant2, optimize) {
     world_landmarkAfter = referencePoint + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
   }
 
-  world_landmarkBefore.print("World Landmark Before:\n");
-  world_landmarkAfter.print("World Landmark After:\n");
-  landmark.print("World Landmark Truth:\n");
-  std::cout << std::endl << std::endl;
-
-
+//  world_landmarkBefore.print("World Landmark Before:\n");
+//  world_landmarkAfter.print("World Landmark After:\n");
+//  landmark.print("World Landmark Truth:\n");
+//  std::cout << std::endl << std::endl;
 
   // Test that the correct landmark parameters have been recovered
   EXPECT(assert_equal(expected, actual, 1e-9));

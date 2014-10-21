@@ -50,10 +50,10 @@ TEST( EssentialMatrixConstraint, test ) {
   CHECK(assert_equal(expected, actual, 1e-8));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Pose3>(
+  Matrix expectedH1 = numericalDerivative11<Vector,Pose3>(
       boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, _1, pose2,
           boost::none, boost::none), pose1);
-  Matrix expectedH2 = numericalDerivative11<Pose3>(
+  Matrix expectedH2 = numericalDerivative11<Vector,Pose3>(
       boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, pose1, _1,
           boost::none, boost::none), pose2);
 

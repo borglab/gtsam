@@ -19,7 +19,6 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <boost/assign/list_of.hpp>
@@ -149,8 +148,9 @@ TEST( GaussianBayesNet, DeterminantTest )
 }
 
 /* ************************************************************************* */
+typedef Eigen::Matrix<double,10,1> Vector10;
 namespace {
-  double computeError(const GaussianBayesNet& gbn, const LieVector& values)
+  double computeError(const GaussianBayesNet& gbn, const Vector10& values)
   {
     pair<Matrix,Vector> Rd = GaussianFactorGraph(gbn).jacobian();
     return 0.5 * (Rd.first * values - Rd.second).squaredNorm();
@@ -180,14 +180,12 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
     4, (Vector(2) << 49.0,50.0), (Matrix(2, 2) << 51.0,52.0,0.0,54.0)));
 
   // Compute the Hessian numerically
-  Matrix hessian = numericalHessian(
-    boost::function<double(const LieVector&)>(boost::bind(&computeError, gbn, _1)),
-    LieVector(Vector::Zero(GaussianFactorGraph(gbn).jacobian().first.cols())));
+  Matrix hessian = numericalHessian<Vector10>(
+      boost::bind(&computeError, gbn, _1), Vector10::Zero());
 
   // Compute the gradient numerically
-  Vector gradient = numericalGradient(
-    boost::function<double(const LieVector&)>(boost::bind(&computeError, gbn, _1)),
-    LieVector(Vector::Zero(GaussianFactorGraph(gbn).jacobian().first.cols())));
+  Vector gradient = numericalGradient<Vector10>(
+      boost::bind(&computeError, gbn, _1), Vector10::Zero());
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();

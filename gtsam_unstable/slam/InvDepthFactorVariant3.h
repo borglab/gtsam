@@ -108,10 +108,10 @@ public:
       boost::optional<gtsam::Matrix&> H2=boost::none) const {
 
     if(H1) {
-      (*H1) = numericalDerivative11<Pose3>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, _1, landmark), pose);
+      (*H1) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, _1, landmark), pose);
     }
     if(H2) {
-      (*H2) = numericalDerivative11<LieVector>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, pose, _1), landmark);
+      (*H2) = numericalDerivative11<Vector,Vector3>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, pose, _1), landmark);
     }
 
     return inverseDepthError(pose, landmark);
@@ -228,13 +228,13 @@ public:
       boost::optional<gtsam::Matrix&> H3=boost::none) const {
 
     if(H1) {
-      (*H1) = numericalDerivative11<Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, _1, pose2, landmark), pose1);
+      (*H1) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, _1, pose2, landmark), pose1);
     }
     if(H2) {
-      (*H2) = numericalDerivative11<Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1, _1, landmark), pose2);
+      (*H2) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1, _1, landmark), pose2);
     }
     if(H3) {
-      (*H3) = numericalDerivative11<LieVector>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1, pose2, _1), landmark);
+      (*H3) = numericalDerivative11<Vector,Vector3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1, pose2, _1), landmark);
     }
 
     return inverseDepthError(pose1, pose2, landmark);

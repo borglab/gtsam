@@ -24,8 +24,8 @@ using namespace gtsam;
 TEST( InvDepthFactorVariant1, optimize) {
 
   // Create two poses looking in the x-direction
-  Pose3 pose1(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.0));
-  Pose3 pose2(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.5));
+  Pose3 pose1(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1.0));
+  Pose3 pose2(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1.5));
 
   // Create a landmark 5 meters in front of pose1 (camera center at (0,0,1))
   Point3 landmark(5, 0, 1);
@@ -76,18 +76,18 @@ TEST( InvDepthFactorVariant1, optimize) {
   LieVector actual = result.at<LieVector>(landmarkKey);
   
 
-  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
-  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
-  pose1.print("Pose1 Truth:\n");
-  std::cout << std::endl << std::endl;
-  values.at<Pose3>(poseKey2).print("Pose2 Before:\n");
-  result.at<Pose3>(poseKey2).print("Pose2 After:\n");
-  pose2.print("Pose2 Truth:\n");
-  std::cout << std::endl << std::endl;
-  values.at<LieVector>(landmarkKey).print("Landmark Before:\n");
-  result.at<LieVector>(landmarkKey).print("Landmark After:\n");
-  expected.print("Landmark Truth:\n");
-  std::cout << std::endl << std::endl;
+//  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
+//  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
+//  pose1.print("Pose1 Truth:\n");
+//  cout << endl << endl;
+//  values.at<Pose3>(poseKey2).print("Pose2 Before:\n");
+//  result.at<Pose3>(poseKey2).print("Pose2 After:\n");
+//  pose2.print("Pose2 Truth:\n");
+//  cout << endl << endl;
+//  values.at<LieVector>(landmarkKey).print("Landmark Before:\n");
+//  result.at<LieVector>(landmarkKey).print("Landmark After:\n");
+//  expected.print("Landmark Truth:\n");
+//  cout << endl << endl;
 
   // Calculate world coordinates of landmark versions
   Point3 world_landmarkBefore;
@@ -105,10 +105,10 @@ TEST( InvDepthFactorVariant1, optimize) {
     world_landmarkAfter = Point3(x, y, z) + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
   }
 
-  world_landmarkBefore.print("World Landmark Before:\n");
-  world_landmarkAfter.print("World Landmark After:\n");
-  landmark.print("World Landmark Truth:\n");
-  std::cout << std::endl << std::endl;
+//  world_landmarkBefore.print("World Landmark Before:\n");
+//  world_landmarkAfter.print("World Landmark After:\n");
+//  landmark.print("World Landmark Truth:\n");
+//  cout << endl << endl;
 
 
 

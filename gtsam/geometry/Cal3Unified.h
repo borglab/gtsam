@@ -126,10 +126,6 @@ public:
 
 private:
 
-  /// @}
-  /// @name Advanced Interface
-  /// @{
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -140,9 +136,25 @@ private:
     ar & BOOST_SERIALIZATION_NVP(xi_);
   }
 
-  /// @}
-
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Cal3Unified> : public std::true_type {
+};
+
+template<>
+struct dimension<Cal3Unified> : public std::integral_constant<int, 10> {
+};
+
+template<>
+struct zero<Cal3Unified> {
+  static Cal3Unified value() { return Cal3Unified();}
+};
+
+}
 
 }
 

@@ -33,10 +33,9 @@ namespace gtsam {
  * \nosubgrouping
  */
 class GTSAM_EXPORT Point2 : public DerivedValue<Point2> {
-public:
-  /// dimension of the variable - used to autodetect sizes
-  static const size_t dimension = 2;
+
 private:
+
   double x_, y_;
 
 public:
@@ -153,10 +152,10 @@ public:
   /// @{
 
   /// dimension of the variable - used to autodetect sizes
-  inline static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return 2; }
 
   /// Dimensionality of tangent space = 2 DOF
-  inline size_t dim() const { return dimension; }
+  inline size_t dim() const { return 2; }
 
   /// Updates a with tangent space delta
   inline Point2 retract(const Vector& v) const { return *this + Point2(v); }
@@ -250,6 +249,23 @@ private:
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_group<Point2> : public std::true_type {
+};
+
+template<>
+struct is_manifold<Point2> : public std::true_type {
+};
+
+template<>
+struct dimension<Point2> : public std::integral_constant<int, 2> {
+};
+
+}
 
 }
 

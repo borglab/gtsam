@@ -242,8 +242,9 @@ public:
 
     // Jacobian w.r.t. Vel1
     if (H2){
-      Matrix H2_Pose = gtsam::numericalDerivative11<POSE, VELOCITY>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
-      Matrix H2_Vel = gtsam::numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      if (Vel1.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
+      Matrix H2_Pose = gtsam::numericalDerivative11<POSE, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      Matrix H2_Vel = gtsam::numericalDerivative11<Vector3, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
       *H2 = stack(2, &H2_Pose, &H2_Vel);
     }
 
@@ -263,8 +264,9 @@ public:
 
     // Jacobian w.r.t. Vel2
     if (H5){
-      Matrix H5_Pose = gtsam::numericalDerivative11<POSE, VELOCITY>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
-      Matrix H5_Vel = gtsam::numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      if (Vel2.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
+      Matrix H5_Pose = gtsam::numericalDerivative11<POSE, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      Matrix H5_Vel = gtsam::numericalDerivative11<Vector3, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
       *H5 = stack(2, &H5_Pose, &H5_Vel);
     }
 

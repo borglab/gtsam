@@ -29,31 +29,37 @@
 using namespace std;
 using namespace gtsam;
 
-gtsam::Rot3 world_R_ECEF(
+Rot3 world_R_ECEF(
     0.31686,      0.51505,      0.79645,
     0.85173,     -0.52399,            0,
     0.41733,      0.67835,     -0.60471);
 
-gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
 /* ************************************************************************* */
-gtsam::Pose3 predictionErrorPose(const Pose3& p1, const LieVector& v1, const imuBias::ConstantBias& b1, const Pose3& p2, const LieVector& v2, const InertialNavFactor_GlobalVelocity<Pose3, LieVector, imuBias::ConstantBias>& factor) {
+Pose3 predictionErrorPose(const Pose3& p1, const LieVector& v1,
+    const imuBias::ConstantBias& b1, const Pose3& p2, const LieVector& v2,
+    const InertialNavFactor_GlobalVelocity<Pose3, LieVector,
+        imuBias::ConstantBias>& factor) {
   return Pose3::Expmap(factor.evaluateError(p1, v1, b1, p2, v2).head(6));
 }
 
-gtsam::LieVector predictionErrorVel(const Pose3& p1, const LieVector& v1, const imuBias::ConstantBias& b1, const Pose3& p2, const LieVector& v2, const InertialNavFactor_GlobalVelocity<Pose3, LieVector, imuBias::ConstantBias>& factor) {
-  return LieVector::Expmap(factor.evaluateError(p1, v1, b1, p2, v2).tail(3));
+Vector predictionErrorVel(const Pose3& p1, const LieVector& v1,
+    const imuBias::ConstantBias& b1, const Pose3& p2, const LieVector& v2,
+    const InertialNavFactor_GlobalVelocity<Pose3, LieVector,
+        imuBias::ConstantBias>& factor) {
+  return factor.evaluateError(p1, v1, b1, p2, v2).tail(3);
 }
 
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, Constructor)
 {
-  gtsam::Key Pose1(11);
-  gtsam::Key Pose2(12);
-  gtsam::Key Vel1(21);
-  gtsam::Key Vel2(22);
-  gtsam::Key Bias1(31);
+  Key Pose1(11);
+  Key Pose2(12);
+  Key Vel1(21);
+  Key Vel2(22);
+  Key Bias1(31);
 
   Vector measurement_acc((Vector(3) << 0.1,0.2,0.4));
   Vector measurement_gyro((Vector(3) << -0.2, 0.5, 0.03));
@@ -61,8 +67,8 @@ TEST( InertialNavFactor_GlobalVelocity, Constructor)
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -72,11 +78,11 @@ TEST( InertialNavFactor_GlobalVelocity, Constructor)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, Equals)
 {
-  gtsam::Key Pose1(11);
-  gtsam::Key Pose2(12);
-  gtsam::Key Vel1(21);
-  gtsam::Key Vel2(22);
-  gtsam::Key Bias1(31);
+  Key Pose1(11);
+  Key Pose2(12);
+  Key Vel1(21);
+  Key Vel2(22);
+  Key Bias1(31);
 
   Vector measurement_acc((Vector(3) << 0.1,0.2,0.4));
   Vector measurement_gyro((Vector(3) << -0.2, 0.5, 0.03));
@@ -84,8 +90,8 @@ TEST( InertialNavFactor_GlobalVelocity, Equals)
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -97,17 +103,17 @@ TEST( InertialNavFactor_GlobalVelocity, Equals)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, Predict)
 {
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -134,17 +140,17 @@ TEST( InertialNavFactor_GlobalVelocity, Predict)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, ErrorPosVel)
 {
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -170,17 +176,17 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorPosVel)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, ErrorRot)
 {
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -205,17 +211,17 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorRot)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, ErrorRotPosVel)
 {
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -262,33 +268,33 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorRotPosVel)
 //      -q[1], q[0],0.0);
 //  Matrix J_hyp( -(R1*qx).matrix() );
 //
-//  gtsam::Matrix J_expected;
+//  Matrix J_expected;
 //
 //  LieVector v(predictionRq(angles, q));
 //
-//  J_expected = gtsam::numericalDerivative11<LieVector, LieVector>(boost::bind(&predictionRq, _1, q), angles);
+//  J_expected = numericalDerivative11<LieVector, LieVector>(boost::bind(&predictionRq, _1, q), angles);
 //
 //  cout<<"J_hyp"<<J_hyp<<endl;
 //  cout<<"J_expected"<<J_expected<<endl;
 //
-//  CHECK( gtsam::assert_equal(J_expected, J_hyp, 1e-6));
+//  CHECK( assert_equal(J_expected, J_hyp, 1e-6));
 //}
 ///* VADIM - END ************************************************************************* */
 
 /* ************************************************************************* */
 TEST (InertialNavFactor_GlobalVelocity, Jacobian ) {
 
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.01);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -324,19 +330,19 @@ TEST (InertialNavFactor_GlobalVelocity, Jacobian ) {
   Matrix H5_actualPose(H5_actual.block(0,0,6,H5_actual.cols()));
 
   // Calculate the Jacobian matrices H1 until H5 using the numerical derivative function
-  gtsam::Matrix H1_expectedPose, H2_expectedPose, H3_expectedPose, H4_expectedPose, H5_expectedPose;
-  H1_expectedPose = gtsam::numericalDerivative11<Pose3, Pose3>(boost::bind(&predictionErrorPose, _1, Vel1, Bias1, Pose2, Vel2, factor), Pose1);
-  H2_expectedPose = gtsam::numericalDerivative11<Pose3, LieVector>(boost::bind(&predictionErrorPose, Pose1, _1, Bias1, Pose2, Vel2, factor), Vel1);
-  H3_expectedPose = gtsam::numericalDerivative11<Pose3, imuBias::ConstantBias>(boost::bind(&predictionErrorPose, Pose1, Vel1, _1, Pose2, Vel2, factor), Bias1);
-  H4_expectedPose = gtsam::numericalDerivative11<Pose3, Pose3>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, _1, Vel2, factor), Pose2);
-  H5_expectedPose = gtsam::numericalDerivative11<Pose3, LieVector>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
+  Matrix H1_expectedPose, H2_expectedPose, H3_expectedPose, H4_expectedPose, H5_expectedPose;
+  H1_expectedPose = numericalDerivative11<Pose3, Pose3>(boost::bind(&predictionErrorPose, _1, Vel1, Bias1, Pose2, Vel2, factor), Pose1);
+  H2_expectedPose = numericalDerivative11<Pose3, Vector3>(boost::bind(&predictionErrorPose, Pose1, _1, Bias1, Pose2, Vel2, factor), Vel1);
+  H3_expectedPose = numericalDerivative11<Pose3, imuBias::ConstantBias>(boost::bind(&predictionErrorPose, Pose1, Vel1, _1, Pose2, Vel2, factor), Bias1);
+  H4_expectedPose = numericalDerivative11<Pose3, Pose3>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, _1, Vel2, factor), Pose2);
+  H5_expectedPose = numericalDerivative11<Pose3, Vector3>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( gtsam::assert_equal(H1_expectedPose, H1_actualPose, 1e-5));
-  CHECK( gtsam::assert_equal(H2_expectedPose, H2_actualPose, 1e-5));
-  CHECK( gtsam::assert_equal(H3_expectedPose, H3_actualPose, 2e-3));
-  CHECK( gtsam::assert_equal(H4_expectedPose, H4_actualPose, 1e-5));
-  CHECK( gtsam::assert_equal(H5_expectedPose, H5_actualPose, 1e-5));
+  CHECK( assert_equal(H1_expectedPose, H1_actualPose, 1e-5));
+  CHECK( assert_equal(H2_expectedPose, H2_actualPose, 1e-5));
+  CHECK( assert_equal(H3_expectedPose, H3_actualPose, 2e-3));
+  CHECK( assert_equal(H4_expectedPose, H4_actualPose, 1e-5));
+  CHECK( assert_equal(H5_expectedPose, H5_actualPose, 1e-5));
 
   // Checking for Vel part in the jacobians
   // ******
@@ -347,19 +353,19 @@ TEST (InertialNavFactor_GlobalVelocity, Jacobian ) {
   Matrix H5_actualVel(H5_actual.block(6,0,3,H5_actual.cols()));
 
   // Calculate the Jacobian matrices H1 until H5 using the numerical derivative function
-  gtsam::Matrix H1_expectedVel, H2_expectedVel, H3_expectedVel, H4_expectedVel, H5_expectedVel;
-  H1_expectedVel = gtsam::numericalDerivative11<LieVector, Pose3>(boost::bind(&predictionErrorVel, _1, Vel1, Bias1, Pose2, Vel2, factor), Pose1);
-  H2_expectedVel = gtsam::numericalDerivative11<LieVector, LieVector>(boost::bind(&predictionErrorVel, Pose1, _1, Bias1, Pose2, Vel2, factor), Vel1);
-  H3_expectedVel = gtsam::numericalDerivative11<LieVector, imuBias::ConstantBias>(boost::bind(&predictionErrorVel, Pose1, Vel1, _1, Pose2, Vel2, factor), Bias1);
-  H4_expectedVel = gtsam::numericalDerivative11<LieVector, Pose3>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, _1, Vel2, factor), Pose2);
-  H5_expectedVel = gtsam::numericalDerivative11<LieVector, LieVector>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
+  Matrix H1_expectedVel, H2_expectedVel, H3_expectedVel, H4_expectedVel, H5_expectedVel;
+  H1_expectedVel = numericalDerivative11<Vector, Pose3>(boost::bind(&predictionErrorVel, _1, Vel1, Bias1, Pose2, Vel2, factor), Pose1);
+  H2_expectedVel = numericalDerivative11<Vector, Vector3>(boost::bind(&predictionErrorVel, Pose1, _1, Bias1, Pose2, Vel2, factor), Vel1);
+  H3_expectedVel = numericalDerivative11<Vector, imuBias::ConstantBias>(boost::bind(&predictionErrorVel, Pose1, Vel1, _1, Pose2, Vel2, factor), Bias1);
+  H4_expectedVel = numericalDerivative11<Vector, Pose3>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, _1, Vel2, factor), Pose2);
+  H5_expectedVel = numericalDerivative11<Vector, Vector3>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( gtsam::assert_equal(H1_expectedVel, H1_actualVel, 1e-5));
-  CHECK( gtsam::assert_equal(H2_expectedVel, H2_actualVel, 1e-5));
-  CHECK( gtsam::assert_equal(H3_expectedVel, H3_actualVel, 1e-5));
-  CHECK( gtsam::assert_equal(H4_expectedVel, H4_actualVel, 1e-5));
-  CHECK( gtsam::assert_equal(H5_expectedVel, H5_actualVel, 1e-5));
+  CHECK( assert_equal(H1_expectedVel, H1_actualVel, 1e-5));
+  CHECK( assert_equal(H2_expectedVel, H2_actualVel, 1e-5));
+  CHECK( assert_equal(H3_expectedVel, H3_actualVel, 1e-5));
+  CHECK( assert_equal(H4_expectedVel, H4_actualVel, 1e-5));
+  CHECK( assert_equal(H5_expectedVel, H5_actualVel, 1e-5));
 }
 
 
@@ -368,11 +374,11 @@ TEST (InertialNavFactor_GlobalVelocity, Jacobian ) {
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, ConstructorWithTransform)
 {
-  gtsam::Key Pose1(11);
-  gtsam::Key Pose2(12);
-  gtsam::Key Vel1(21);
-  gtsam::Key Vel2(22);
-  gtsam::Key Bias1(31);
+  Key Pose1(11);
+  Key Pose2(12);
+  Key Vel1(21);
+  Key Vel2(22);
+  Key Bias1(31);
 
   Vector measurement_acc((Vector(3) << 0.1, 0.2, 0.4));
   Vector measurement_gyro((Vector(3) << -0.2, 0.5, 0.03));
@@ -380,8 +386,8 @@ TEST( InertialNavFactor_GlobalVelocity, ConstructorWithTransform)
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -394,11 +400,11 @@ TEST( InertialNavFactor_GlobalVelocity, ConstructorWithTransform)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, EqualsWithTransform)
 {
-  gtsam::Key Pose1(11);
-  gtsam::Key Pose2(12);
-  gtsam::Key Vel1(21);
-  gtsam::Key Vel2(22);
-  gtsam::Key Bias1(31);
+  Key Pose1(11);
+  Key Pose2(12);
+  Key Vel1(21);
+  Key Vel2(22);
+  Key Bias1(31);
 
   Vector measurement_acc((Vector(3) << 0.1, 0.2, 0.4));
   Vector measurement_gyro((Vector(3) << -0.2, 0.5, 0.03));
@@ -406,8 +412,8 @@ TEST( InertialNavFactor_GlobalVelocity, EqualsWithTransform)
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -422,17 +428,17 @@ TEST( InertialNavFactor_GlobalVelocity, EqualsWithTransform)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, PredictWithTransform)
 {
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -462,17 +468,17 @@ TEST( InertialNavFactor_GlobalVelocity, PredictWithTransform)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, ErrorPosVelWithTransform)
 {
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -501,17 +507,17 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorPosVelWithTransform)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, ErrorRotWithTransform)
 {
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -540,17 +546,17 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorRotWithTransform)
 /* ************************************************************************* */
 TEST( InertialNavFactor_GlobalVelocity, ErrorRotPosVelWithTransform)
 {
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.1);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -589,17 +595,17 @@ TEST( InertialNavFactor_GlobalVelocity, ErrorRotPosVelWithTransform)
 /* ************************************************************************* */
 TEST (InertialNavFactor_GlobalVelocity, JacobianWithTransform ) {
 
-  gtsam::Key PoseKey1(11);
-  gtsam::Key PoseKey2(12);
-  gtsam::Key VelKey1(21);
-  gtsam::Key VelKey2(22);
-  gtsam::Key BiasKey1(31);
+  Key PoseKey1(11);
+  Key PoseKey2(12);
+  Key VelKey1(21);
+  Key VelKey2(22);
+  Key BiasKey1(31);
 
   double measurement_dt(0.01);
   Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
   Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
-  gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
+  Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
@@ -640,19 +646,19 @@ TEST (InertialNavFactor_GlobalVelocity, JacobianWithTransform ) {
   Matrix H5_actualPose(H5_actual.block(0,0,6,H5_actual.cols()));
 
   // Calculate the Jacobian matrices H1 until H5 using the numerical derivative function
-  gtsam::Matrix H1_expectedPose, H2_expectedPose, H3_expectedPose, H4_expectedPose, H5_expectedPose;
-  H1_expectedPose = gtsam::numericalDerivative11<Pose3, Pose3>(boost::bind(&predictionErrorPose, _1, Vel1, Bias1, Pose2, Vel2, factor), Pose1);
-  H2_expectedPose = gtsam::numericalDerivative11<Pose3, LieVector>(boost::bind(&predictionErrorPose, Pose1, _1, Bias1, Pose2, Vel2, factor), Vel1);
-  H3_expectedPose = gtsam::numericalDerivative11<Pose3, imuBias::ConstantBias>(boost::bind(&predictionErrorPose, Pose1, Vel1, _1, Pose2, Vel2, factor), Bias1);
-  H4_expectedPose = gtsam::numericalDerivative11<Pose3, Pose3>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, _1, Vel2, factor), Pose2);
-  H5_expectedPose = gtsam::numericalDerivative11<Pose3, LieVector>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
+  Matrix H1_expectedPose, H2_expectedPose, H3_expectedPose, H4_expectedPose, H5_expectedPose;
+  H1_expectedPose = numericalDerivative11<Pose3, Pose3>(boost::bind(&predictionErrorPose, _1, Vel1, Bias1, Pose2, Vel2, factor), Pose1);
+  H2_expectedPose = numericalDerivative11<Pose3, Vector3>(boost::bind(&predictionErrorPose, Pose1, _1, Bias1, Pose2, Vel2, factor), Vel1);
+  H3_expectedPose = numericalDerivative11<Pose3, imuBias::ConstantBias>(boost::bind(&predictionErrorPose, Pose1, Vel1, _1, Pose2, Vel2, factor), Bias1);
+  H4_expectedPose = numericalDerivative11<Pose3, Pose3>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, _1, Vel2, factor), Pose2);
+  H5_expectedPose = numericalDerivative11<Pose3, Vector3>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( gtsam::assert_equal(H1_expectedPose, H1_actualPose, 1e-5));
-  CHECK( gtsam::assert_equal(H2_expectedPose, H2_actualPose, 1e-5));
-  CHECK( gtsam::assert_equal(H3_expectedPose, H3_actualPose, 2e-3));
-  CHECK( gtsam::assert_equal(H4_expectedPose, H4_actualPose, 1e-5));
-  CHECK( gtsam::assert_equal(H5_expectedPose, H5_actualPose, 1e-5));
+  CHECK( assert_equal(H1_expectedPose, H1_actualPose, 1e-5));
+  CHECK( assert_equal(H2_expectedPose, H2_actualPose, 1e-5));
+  CHECK( assert_equal(H3_expectedPose, H3_actualPose, 2e-3));
+  CHECK( assert_equal(H4_expectedPose, H4_actualPose, 1e-5));
+  CHECK( assert_equal(H5_expectedPose, H5_actualPose, 1e-5));
 
   // Checking for Vel part in the jacobians
   // ******
@@ -663,19 +669,19 @@ TEST (InertialNavFactor_GlobalVelocity, JacobianWithTransform ) {
   Matrix H5_actualVel(H5_actual.block(6,0,3,H5_actual.cols()));
 
   // Calculate the Jacobian matrices H1 until H5 using the numerical derivative function
-  gtsam::Matrix H1_expectedVel, H2_expectedVel, H3_expectedVel, H4_expectedVel, H5_expectedVel;
-  H1_expectedVel = gtsam::numericalDerivative11<LieVector, Pose3>(boost::bind(&predictionErrorVel, _1, Vel1, Bias1, Pose2, Vel2, factor), Pose1);
-  H2_expectedVel = gtsam::numericalDerivative11<LieVector, LieVector>(boost::bind(&predictionErrorVel, Pose1, _1, Bias1, Pose2, Vel2, factor), Vel1);
-  H3_expectedVel = gtsam::numericalDerivative11<LieVector, imuBias::ConstantBias>(boost::bind(&predictionErrorVel, Pose1, Vel1, _1, Pose2, Vel2, factor), Bias1);
-  H4_expectedVel = gtsam::numericalDerivative11<LieVector, Pose3>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, _1, Vel2, factor), Pose2);
-  H5_expectedVel = gtsam::numericalDerivative11<LieVector, LieVector>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
+  Matrix H1_expectedVel, H2_expectedVel, H3_expectedVel, H4_expectedVel, H5_expectedVel;
+  H1_expectedVel = numericalDerivative11<Vector, Pose3>(boost::bind(&predictionErrorVel, _1, Vel1, Bias1, Pose2, Vel2, factor), Pose1);
+  H2_expectedVel = numericalDerivative11<Vector, Vector3>(boost::bind(&predictionErrorVel, Pose1, _1, Bias1, Pose2, Vel2, factor), Vel1);
+  H3_expectedVel = numericalDerivative11<Vector, imuBias::ConstantBias>(boost::bind(&predictionErrorVel, Pose1, Vel1, _1, Pose2, Vel2, factor), Bias1);
+  H4_expectedVel = numericalDerivative11<Vector, Pose3>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, _1, Vel2, factor), Pose2);
+  H5_expectedVel = numericalDerivative11<Vector, Vector3>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( gtsam::assert_equal(H1_expectedVel, H1_actualVel, 1e-5));
-  CHECK( gtsam::assert_equal(H2_expectedVel, H2_actualVel, 1e-5));
-  CHECK( gtsam::assert_equal(H3_expectedVel, H3_actualVel, 1e-5));
-  CHECK( gtsam::assert_equal(H4_expectedVel, H4_actualVel, 1e-5));
-  CHECK( gtsam::assert_equal(H5_expectedVel, H5_actualVel, 1e-5));
+  CHECK( assert_equal(H1_expectedVel, H1_actualVel, 1e-5));
+  CHECK( assert_equal(H2_expectedVel, H2_actualVel, 1e-5));
+  CHECK( assert_equal(H3_expectedVel, H3_actualVel, 1e-5));
+  CHECK( assert_equal(H4_expectedVel, H4_actualVel, 1e-5));
+  CHECK( assert_equal(H5_expectedVel, H5_actualVel, 1e-5));
 }
 
 /* ************************************************************************* */

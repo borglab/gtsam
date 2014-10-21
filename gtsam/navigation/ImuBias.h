@@ -218,6 +218,23 @@ namespace imuBias {
 
 } // namespace ImuBias
 
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_group<imuBias::ConstantBias> : public std::true_type {
+};
+
+template<>
+struct is_manifold<imuBias::ConstantBias> : public std::true_type {
+};
+
+template<>
+struct dimension<imuBias::ConstantBias> : public std::integral_constant<int, 6> {
+};
+
+}
+
 } // namespace gtsam
 
 
