@@ -230,10 +230,6 @@ namespace gtsam {
     /** return 2*2 transpose (inverse) rotation matrix   */
     Matrix transpose() const;
 
-    /// @}
-    /// @name Advanced Interface
-    /// @{
-
   private:
     /** Serialization function */
     friend class boost::serialization::access;
@@ -245,8 +241,22 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(s_);
     }
 
-    /// @}
-
   };
 
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct is_group<Rot2> : public std::true_type {
+  };
+
+  template<>
+  struct is_manifold<Rot2> : public std::true_type {
+  };
+
+  template<>
+  struct dimension<Rot2> : public std::integral_constant<int, 1> {
+  };
+
+  }
 } // gtsam

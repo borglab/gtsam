@@ -183,4 +183,23 @@ private:
   }
 };
 
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<PoseRTV> : public std::true_type {
+};
+
+template<>
+struct dimension<PoseRTV> : public std::integral_constant<int, 9> {
+};
+
+template<>
+struct zero<PoseRTV> {
+  static PoseRTV value() {
+    return PoseRTV();
+  }
+};
+
+}
 } // \namespace gtsam

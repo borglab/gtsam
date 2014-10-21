@@ -196,5 +196,23 @@ private:
 
 };
 
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<EssentialMatrix> : public std::true_type {
+};
+
+template<>
+struct dimension<EssentialMatrix> : public std::integral_constant<int, 5> {
+};
+
+template<>
+struct zero<EssentialMatrix> {
+  static EssentialMatrix value() { return EssentialMatrix();}
+};
+
+}
+
 } // gtsam
 

@@ -156,5 +156,25 @@ private:
 
 };
 
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Unit3> : public std::true_type {
+};
+
+template<>
+struct dimension<Unit3> : public std::integral_constant<int, 2> {
+};
+
+template<>
+struct zero<Unit3> {
+  static Unit3 value() {
+    return Unit3();
+  }
+};
+
+}
+
 } // namespace gtsam
 
