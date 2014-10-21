@@ -9,12 +9,14 @@ if(UNIX)
 endif()
 
 
-install(TARGETS metis
-  LIBRARY DESTINATION include/gtsam/3rdparty/metis/lib
-  RUNTIME DESTINATION include/gtsam/3rdparty/metis/lib
-  ARCHIVE DESTINATION include/gtsam/3rdparty/metis/lib)
 
-install(TARGETS metis EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
+if(WIN32)
+		set_target_properties(metis PROPERTIES
+			PREFIX ""
+			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/../../../bin")
+endif()
 
+install(TARGETS metis EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 list(APPEND GTSAM_EXPORTED_TARGETS metis)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+
