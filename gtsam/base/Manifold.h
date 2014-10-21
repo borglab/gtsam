@@ -148,7 +148,7 @@ template<typename T>
 struct DefaultChart {
   BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
-  T const & t_;
+  T t_;
   DefaultChart(const T& t) :
       t_(t) {
   }
@@ -186,6 +186,7 @@ template<typename T> struct Canonical {
 template<>
 struct DefaultChart<double> {
   typedef Eigen::Matrix<double, 1, 1> vector;
+  double t_;
   DefaultChart(double t) :
       t_(t) {
   }
@@ -197,8 +198,6 @@ struct DefaultChart<double> {
   double retract(const vector& d) {
     return t_ + d[0];
   }
-private:
-  double t_;
 };
 
 // Fixed size Eigen::Matrix type
@@ -207,6 +206,7 @@ template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, M, N, Options> T;
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
+  T t_;
   DefaultChart(const T& t) :
       t_(t) {
   }
@@ -219,8 +219,6 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
     Eigen::Map<const T> map(d.data());
     return t_ + map;
   }
-private:
-  T const & t_;
 };
 
 /**

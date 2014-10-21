@@ -202,7 +202,7 @@ TEST(Manifold, Canonical) {
   EXPECT(chart1.retract(Vector2(1,0))==Point2(1,0));
 
   Canonical<Vector2> chart2;
-  EXPECT(chart2.apply(Vector2(1,0))==Vector2(1,0));
+  EXPECT(assert_equal((Vector)chart2.apply(Vector2(1,0)),Vector2(1,0)));
   EXPECT(chart2.retract(Vector2(1,0))==Vector2(1,0));
 
   Canonical<double> chart3;
@@ -211,12 +211,30 @@ TEST(Manifold, Canonical) {
   EXPECT(chart3.apply(1)==v1);
   EXPECT(chart3.retract(v1)==1);
 
-  // Dynamic does not work yet !
-//  Vector z = zero(2), v(2);
-//  v << 1, 0;
-//  Canonical<Vector> chart4(z);
-//  EXPECT(chart4.apply(v)==v);
-//  EXPECT(chart4.retract(v)==v);
+  Canonical<Point3> chart4;
+  Point3 point(1,2,3);
+  Vector3 v3(1,2,3);
+  EXPECT(assert_equal((Vector)chart4.apply(point),v3));
+  EXPECT(assert_equal(chart4.retract(v3),point));
+
+  Canonical<Pose3> chart5;
+  Pose3 pose(Rot3::identity(),point);
+  Vector6 v6; v6 << 0,0,0,1,2,3;
+  EXPECT(assert_equal((Vector)chart5.apply(pose),v6));
+  EXPECT(assert_equal(chart5.retract(v6),pose));
+
+  Canonical<Camera> chart6;
+  Cal3Bundler cal0(0,0,0);
+  Camera camera(Pose3(),cal0);
+  Vector9 z9 = Vector9::Zero();
+  EXPECT(assert_equal((Vector)chart6.apply(camera),z9));
+  EXPECT(assert_equal(chart6.retract(z9),camera));
+
+  Cal3Bundler cal; // Note !! Cal3Bundler() != zero<Cal3Bundler>::value()
+  Camera camera2(pose,cal);
+  Vector9 v9; v9 << 0,0,0,1,2,3,1,0,0;
+  EXPECT(assert_equal((Vector)chart6.apply(camera2),v9));
+  EXPECT(assert_equal(chart6.retract(v9),camera2));
 }
 
 /* ************************************************************************* */
