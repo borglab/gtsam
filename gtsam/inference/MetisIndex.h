@@ -71,6 +71,7 @@ public:
 
     std::vector<int> xadj() const { return xadj_; }
     std::vector<int>  adj() const { return  adj_; }
+    size_t        nValues() const { return nValues_; }
 
     /// @}
 };

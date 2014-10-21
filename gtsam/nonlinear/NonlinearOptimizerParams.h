@@ -154,7 +154,7 @@ public:
 
   void setOrdering(const Ordering& ordering) {
     this->ordering = ordering;
-	this->orderingType = Ordering::Type::CUSTOM_;
+	  this->orderingType = Ordering::Type::CUSTOM_;
   }
 
   std::string getOrderingType() const {

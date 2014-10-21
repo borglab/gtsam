@@ -116,17 +116,52 @@ TEST(Ordering, csr_format) {
 
     EXPECT(xadjExpected  == mi.xadj());
     EXPECT(adjExpected.size() == mi.adj().size());
-    EXPECT( adjExpected  == mi.adj());
+    EXPECT(adjExpected  == mi.adj());
 }
+/* ************************************************************************* */
+
+TEST(Ordering, csr_format_2) {
+  SymbolicFactorGraph sfg;
+
+  sfg.push_factor(0);
+  sfg.push_factor(0, 1);
+  sfg.push_factor(1, 2);
+  sfg.push_factor(2, 3);
+  sfg.push_factor(3, 4);
+  sfg.push_factor(4, 1);
+
+  MetisIndex mi(sfg);
+
+  vector<int> xadjExpected { 0, 1, 4, 6, 8, 10 };
+  vector<int> adjExpected  { 1, 0, 2, 4, 1, 3, 2, 4, 1, 3 };
+
+  EXPECT(xadjExpected == mi.xadj());
+  EXPECT(adjExpected.size() == mi.adj().size());
+  EXPECT(adjExpected == mi.adj());
+
+  //Ordering metis = Ordering::METIS(sfg);
+
+}
+
 /* ************************************************************************* */
 TEST(Ordering, metis) {
 	
-    SymbolicFactorGraph sfg;
+  SymbolicFactorGraph sfg;
 
-    sfg.push_factor(0, 1);
+  sfg.push_factor(0);
+  sfg.push_factor(0, 1);
 	sfg.push_factor(1, 2);
 
-    Ordering metis = Ordering::METIS(sfg);
+  MetisIndex mi(sfg);
+
+  vector<int> xadjExpected{ 0, 1, 3, 4 };
+  vector<int> adjExpected { 1, 0, 2, 1 };
+
+  EXPECT(xadjExpected == mi.xadj());
+  EXPECT(adjExpected.size() == mi.adj().size());
+  EXPECT(adjExpected == mi.adj());
+
+  Ordering metis = Ordering::METIS(sfg);
 }
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

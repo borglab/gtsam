@@ -29,6 +29,7 @@ namespace gtsam {
     {
         std::map<int, FastSet<int> > adjMap;
         std::map<int, FastSet<int> >::iterator adjMapIt;
+        std::set<int> values;
         
         /* ********** Convert to CSR format ********** */
         // Assuming that vertex numbering starts from 0 (C style),
@@ -37,13 +38,19 @@ namespace gtsam {
         // index xadj[i + 1](i.e., adjncy[xadj[i]] through
         // and including adjncy[xadj[i + 1] - 1]).
         for (size_t i = 0; i < factors.size(); i++){
-            if (factors[i])
-                BOOST_FOREACH(const Key& k1, *factors[i])
-                    BOOST_FOREACH(const Key& k2, *factors[i])
-                        if (k1 != k2)
-                            adjMap[k1].insert(adjMap[k1].end(), k2); // Insert at the end
+          if (factors[i]){
+            BOOST_FOREACH(const Key& k1, *factors[i]){
+              BOOST_FOREACH(const Key& k2, *factors[i]){
+                if (k1 != k2)
+                  adjMap[k1].insert(adjMap[k1].end(), k2); // Insert at the end
+              }
+              values.insert(values.end(), k1); // Keep a track of all unique values
+            }
+          }
         }
 
+        // Number of values referenced in this factorgraph
+        nValues_ = values.size();
         
         xadj_.push_back(0);// Always set the first index to zero
         for (adjMapIt = adjMap.begin(); adjMapIt != adjMap.end(); ++adjMapIt) {

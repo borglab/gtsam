@@ -202,30 +202,30 @@ namespace gtsam {
   /* ************************************************************************* */
   Ordering Ordering::METIS(const MetisIndex& met)
   {
-      gttic(Ordering_METIS);
+    gttic(Ordering_METIS);
 
-      vector<int> xadj = met.xadj();
-      vector<int>  adj = met.adj();
+    vector<idx_t> xadj = met.xadj();
+    vector<idx_t>  adj = met.adj();
 
-      vector<int> perm, iperm;
+    vector<idx_t> perm, iperm;
 
-	  idx_t size = xadj.size() - 1;
+	  idx_t size = met.nValues();
 	  for (idx_t i = 0; i < size; i++)
 	  {
 		  perm.push_back(0);
 		  iperm.push_back(0);
 	  }
 
-      int outputError;
+    int outputError;
       
-      outputError = METIS_NodeND(&size, &xadj[0], &adj[0], NULL, NULL, &perm[0], &iperm[0]);
-      Ordering result;
+    outputError = METIS_NodeND(&size, &xadj[0], &adj[0], NULL, NULL, &perm[0], &iperm[0]);
+    Ordering result;
 
-      if (outputError != METIS_OK)
-      {
-          std::cout << "METIS failed during Nested Dissection ordering!\n";
-          return result;
-      }
+    if (outputError != METIS_OK)
+    {
+        std::cout << "METIS failed during Nested Dissection ordering!\n";
+        return result;
+    }
 
 	  result.resize(size);
 	  for (size_t j = 0; j < size; ++j)

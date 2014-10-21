@@ -86,7 +86,10 @@ int main(int argc, char** argv) {
   initial.print("\nInitial Estimate:\n"); // print
 
   // optimize using Levenberg-Marquardt optimization
-  Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  LevenbergMarquardtParams params;
+  params.orderingType = Ordering::Type::METIS_;
+  LevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  Values result = optimizer.optimize();
   result.print("Final Result:\n");
 
   // Calculate and print marginal covariances for all variables
