@@ -217,7 +217,7 @@ TEST( Rot3, rightJacobianExpMapSO3 )
   // Linearization point
   Vector3 thetahat; thetahat << 0.1, 0, 0;
 
-  Matrix expectedJacobian = numericalDerivative11<Rot3, LieVector>(boost::bind(&evaluateRotation, _1), LieVector(thetahat));
+  Matrix expectedJacobian = numericalDerivative11<Rot3, Vector3>(boost::bind(&evaluateRotation, _1), thetahat);
   Matrix actualJacobian = Rot3::rightJacobianExpMapSO3(thetahat);
   EXPECT(assert_equal(expectedJacobian, actualJacobian));
 }

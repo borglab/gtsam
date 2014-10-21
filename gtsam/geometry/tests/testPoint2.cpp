@@ -84,8 +84,8 @@ namespace {
   Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
   /* ************************************************************************* */
-  LieVector norm_proxy(const Point2& point) {
-    return LieVector(point.norm());
+  double norm_proxy(const Point2& point) {
+    return point.norm();
   }
 }
 TEST( Point2, norm ) {
@@ -112,8 +112,8 @@ TEST( Point2, norm ) {
 
 /* ************************************************************************* */
 namespace {
-  LieVector distance_proxy(const Point2& location, const Point2& point) {
-    return LieVector(location.distance(point));
+  double distance_proxy(const Point2& location, const Point2& point) {
+    return location.distance(point);
   }
 }
 TEST( Point2, distance ) {

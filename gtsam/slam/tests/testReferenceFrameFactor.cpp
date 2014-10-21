@@ -53,9 +53,9 @@ TEST( ReferenceFrameFactor, equals ) {
 }
 
 /* ************************************************************************* */
-LieVector evaluateError_(const PointReferenceFrameFactor& c,
+Vector evaluateError_(const PointReferenceFrameFactor& c,
     const Point2& global, const Pose2& trans, const Point2& local) {
-  return LieVector(c.evaluateError(global, trans, local));
+  return Vector(c.evaluateError(global, trans, local));
 }
 TEST( ReferenceFrameFactor, jacobians ) {
 
@@ -68,13 +68,13 @@ TEST( ReferenceFrameFactor, jacobians ) {
   tc.evaluateError(global, trans, local, actualDF, actualDT, actualDL);
 
   Matrix numericalDT, numericalDL, numericalDF;
-  numericalDF = numericalDerivative31<LieVector,Point2,Pose2,Point2>(
+  numericalDF = numericalDerivative31<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
       global, trans, local, 1e-5);
-  numericalDT = numericalDerivative32<LieVector,Point2,Pose2,Point2>(
+  numericalDT = numericalDerivative32<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
       global, trans, local, 1e-5);
-  numericalDL = numericalDerivative33<LieVector,Point2,Pose2,Point2>(
+  numericalDL = numericalDerivative33<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
       global, trans, local, 1e-5);
 
@@ -100,13 +100,13 @@ TEST( ReferenceFrameFactor, jacobians_zero ) {
   tc.evaluateError(global, trans, local, actualDF, actualDT, actualDL);
 
   Matrix numericalDT, numericalDL, numericalDF;
-  numericalDF = numericalDerivative31<LieVector,Point2,Pose2,Point2>(
+  numericalDF = numericalDerivative31<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
       global, trans, local, 1e-5);
-  numericalDT = numericalDerivative32<LieVector,Point2,Pose2,Point2>(
+  numericalDT = numericalDerivative32<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
       global, trans, local, 1e-5);
-  numericalDL = numericalDerivative33<LieVector,Point2,Pose2,Point2>(
+  numericalDL = numericalDerivative33<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
       global, trans, local, 1e-5);
 

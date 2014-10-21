@@ -18,11 +18,11 @@ const double h = 0.01;
 //const double deg2rad = M_PI/180.0;
 //Pose3 g1(Rot3::ypr(deg2rad*10.0, deg2rad*20.0, deg2rad*30.0), Point3(100.0, 200.0, 300.0));
 Pose3 g1(Rot3(), Point3(100.0, 0.0, 300.0));
-//LieVector v1((Vector(6) << 0.1, 0.05, 0.02, 10.0, 20.0, 30.0));
-LieVector V1_w((Vector(6) << 0.0, 0.0, M_PI/3, 0.0, 0.0, 30.0));
-LieVector V1_g1 = g1.inverse().Adjoint(V1_w);
+//Vector6 v1((Vector(6) << 0.1, 0.05, 0.02, 10.0, 20.0, 30.0));
+Vector6 V1_w((Vector(6) << 0.0, 0.0, M_PI/3, 0.0, 0.0, 30.0));
+Vector6 V1_g1 = g1.inverse().Adjoint(V1_w);
 Pose3 g2(g1.retract(h*V1_g1, Pose3::EXPMAP));
-//LieVector v2 = Pose3::Logmap(g1.between(g2));
+//Vector6 v2 = Pose3::Logmap(g1.between(g2));
 
 double mass = 100.0;
 Vector gamma2 = (Vector(2) << 0.0, 0.0);  // no shape
@@ -46,16 +46,16 @@ Vector computeFu(const Vector& gamma, const Vector& control) {
 }
 
 /* ************************************************************************* */
-Vector testExpmapDeriv(const LieVector& v) {
+Vector testExpmapDeriv(const Vector6& v) {
   return Pose3::Logmap(Pose3::Expmap(-h*V1_g1)*Pose3::Expmap(h*V1_g1+v));
 }
 
 TEST(Reconstruction, ExpmapInvDeriv) {
   Matrix numericalExpmap = numericalDerivative11(
-      boost::function<Vector(const LieVector&)>(
+      boost::function<Vector(const Vector6&)>(
           boost::bind(testExpmapDeriv,  _1)
           ),
-      LieVector(Vector::Zero(6)), 1e-5
+      Vector6(Vector::Zero(6)), 1e-5
       );
   Matrix dExpInv = Pose3::dExpInv_exp(h*V1_g1);
   EXPECT(assert_equal(numericalExpmap, dExpInv, 1e-2));
@@ -72,21 +72,21 @@ TEST( Reconstruction, evaluateError) {
 
 
   Matrix numericalH1 = numericalDerivative31(
-      boost::function<Vector(const Pose3&, const Pose3&, const LieVector&)>(
+      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
           boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
       g2, g1, V1_g1, 1e-5
       );
 
   Matrix numericalH2 = numericalDerivative32(
-      boost::function<Vector(const Pose3&, const Pose3&, const LieVector&)>(
+      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
           boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
       g2, g1, V1_g1, 1e-5
       );
 
   Matrix numericalH3 = numericalDerivative33(
-      boost::function<Vector(const Pose3&, const Pose3&, const LieVector&)>(
+      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
           boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
       g2, g1, V1_g1, 1e-5
@@ -119,7 +119,7 @@ TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
   Pose3 g21 = g2.between(g1);
   Vector V2_g2 = g21.Adjoint(V2_g1);  // convert the new velocity to g2's frame
 
-  LieVector expectedv2(V2_g2);
+  Vector6 expectedv2(V2_g2);
 
   // hard constraints don't need a noise model
   DiscreteEulerPoincareHelicopter constraint(V(2), V(1), G(2), h,
@@ -130,21 +130,21 @@ TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
   EXPECT(assert_equal(zero(6), constraint.evaluateError(expectedv2, V1_g1, g2, H1, H2, H3), 1e0));
 
   Matrix numericalH1 = numericalDerivative31(
-      boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
           boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
           expectedv2, V1_g1, g2, 1e-5
       );
 
   Matrix numericalH2 = numericalDerivative32(
-      boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
           boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
           expectedv2, V1_g1, g2, 1e-5
       );
 
   Matrix numericalH3 = numericalDerivative33(
-      boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
           boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
           expectedv2, V1_g1, g2, 1e-5

@@ -148,8 +148,9 @@ TEST( GaussianBayesNet, DeterminantTest )
 }
 
 /* ************************************************************************* */
+typedef Eigen::Matrix<double,10,1> Vector10;
 namespace {
-  double computeError(const GaussianBayesNet& gbn, const Vector& values)
+  double computeError(const GaussianBayesNet& gbn, const Vector10& values)
   {
     pair<Matrix,Vector> Rd = GaussianFactorGraph(gbn).jacobian();
     return 0.5 * (Rd.first * values - Rd.second).squaredNorm();
@@ -179,12 +180,12 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
     4, (Vector(2) << 49.0,50.0), (Matrix(2, 2) << 51.0,52.0,0.0,54.0)));
 
   // Compute the Hessian numerically
-  Matrix hessian = numericalHessian<Vector>(boost::bind(&computeError, gbn, _1),
-    Vector::Zero(GaussianFactorGraph(gbn).jacobian().first.cols()));
+  Matrix hessian = numericalHessian<Vector10>(
+      boost::bind(&computeError, gbn, _1), Vector10::Zero());
 
   // Compute the gradient numerically
-  Vector gradient = numericalGradient<Vector>(boost::bind(&computeError, gbn, _1),
-    Vector::Zero(GaussianFactorGraph(gbn).jacobian().first.cols()));
+  Vector gradient = numericalGradient<Vector10>(
+      boost::bind(&computeError, gbn, _1), Vector10::Zero());
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();

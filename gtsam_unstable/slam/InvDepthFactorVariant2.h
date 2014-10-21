@@ -113,7 +113,7 @@ public:
               landmark), pose);
     }
     if (H2) {
-      (*H2) = numericalDerivative11<Vector, LieVector>(
+      (*H2) = numericalDerivative11<Vector, Vector3>(
           boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose,
               _1), landmark);
     }
