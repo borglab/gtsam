@@ -22,6 +22,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam_unstable/nonlinear/Expression.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieScalar.h>
 
@@ -134,60 +135,6 @@ struct SnavelyProjection {
   }
 
 };
-
-/* ************************************************************************* */
-// New-style numerical derivatives using manifold_traits
-template<typename Y, typename X>
-Matrix numericalDerivative(boost::function<Y(const X&)> h, const X& x,
-    double delta = 1e-5) {
-  using namespace traits;
-
-  BOOST_STATIC_ASSERT(is_manifold<Y>::value);
-  static const size_t M = dimension<Y>::value;
-  typedef DefaultChart<Y> ChartY;
-  typedef typename ChartY::vector TangentY;
-
-  BOOST_STATIC_ASSERT(is_manifold<X>::value);
-  static const size_t N = dimension<X>::value;
-  typedef DefaultChart<X> ChartX;
-  typedef typename ChartX::vector TangentX;
-
-  // get chart at x
-  ChartX chartX(x);
-
-  // get value at x, and corresponding chart
-  Y hx = h(x);
-  ChartY chartY(hx);
-
-  // Prepare a tangent vector to perturb x with
-  TangentX dx;
-  dx.setZero();
-
-  // Fill in Jacobian H
-  Matrix H = zeros(M, N);
-  double factor = 1.0 / (2.0 * delta);
-  for (size_t j = 0; j < N; j++) {
-    dx(j) = delta;
-    TangentY dy1 = chartY.apply(h(chartX.retract(dx)));
-    dx(j) = -delta;
-    TangentY dy2 = chartY.apply(h(chartX.retract(dx)));
-    H.block<M, 1>(0, j) << (dy1 - dy2) * factor;
-    dx(j) = 0;
-  }
-  return H;
-}
-
-template<typename Y, typename X1, typename X2>
-Matrix numericalDerivative21(boost::function<Y(const X1&, const X2&)> h,
-    const X1& x1, const X2& x2, double delta = 1e-5) {
-  return numericalDerivative<Y, X1>(boost::bind(h, _1, x2), x1, delta);
-}
-
-template<typename Y, typename X1, typename X2>
-Matrix numericalDerivative22(boost::function<Y(const X1&, const X2&)> h,
-    const X1& x1, const X2& x2, double delta = 1e-5) {
-  return numericalDerivative<Y, X2>(boost::bind(h, x1, _1), x2, delta);
-}
 
 /* ************************************************************************* */
 // Test Ceres AutoDiff

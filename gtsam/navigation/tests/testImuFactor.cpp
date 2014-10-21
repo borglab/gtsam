@@ -192,15 +192,15 @@ TEST( ImuFactor, Error )
   EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
 
   // Expected Jacobians
-  Matrix H1e = numericalDerivative11<Pose3>(
+  Matrix H1e = numericalDerivative11<Vector,Pose3>(
       boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, bias), x1);
-  Matrix H2e = numericalDerivative11<LieVector>(
+  Matrix H2e = numericalDerivative11<Vector,LieVector>(
       boost::bind(&callEvaluateError, factor, x1, _1, x2, v2, bias), v1);
-  Matrix H3e = numericalDerivative11<Pose3>(
+  Matrix H3e = numericalDerivative11<Vector,Pose3>(
       boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, bias), x2);
-  Matrix H4e = numericalDerivative11<LieVector>(
+  Matrix H4e = numericalDerivative11<Vector,LieVector>(
       boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, bias), v2);
-  Matrix H5e = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix H5e = numericalDerivative11<Vector,imuBias::ConstantBias>(
       boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
 
   // Check rotation Jacobians
@@ -276,15 +276,15 @@ TEST( ImuFactor, ErrorWithBiases )
 //    EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
 
     // Expected Jacobians
-    Matrix H1e = numericalDerivative11<Pose3>(
+    Matrix H1e = numericalDerivative11<Vector,Pose3>(
         boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, bias), x1);
-    Matrix H2e = numericalDerivative11<LieVector>(
+    Matrix H2e = numericalDerivative11<Vector,LieVector>(
         boost::bind(&callEvaluateError, factor, x1, _1, x2, v2, bias), v1);
-    Matrix H3e = numericalDerivative11<Pose3>(
+    Matrix H3e = numericalDerivative11<Vector,Pose3>(
         boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, bias), x2);
-    Matrix H4e = numericalDerivative11<LieVector>(
+    Matrix H4e = numericalDerivative11<Vector,LieVector>(
         boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, bias), v2);
-    Matrix H5e = numericalDerivative11<imuBias::ConstantBias>(
+    Matrix H5e = numericalDerivative11<Vector,imuBias::ConstantBias>(
         boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
 
     // Check rotation Jacobians
@@ -341,7 +341,7 @@ TEST( ImuFactor, PartialDerivativeLogmap )
 
 
   // Compute numerical derivatives
-  Matrix expectedDelFdeltheta = numericalDerivative11<LieVector>(boost::bind(
+  Matrix expectedDelFdeltheta = numericalDerivative11<Vector,LieVector>(boost::bind(
       &evaluateLogRotation, thetahat, _1), LieVector(deltatheta));
 
   const Vector3 x = thetahat; // parametrization of so(3)
@@ -417,12 +417,12 @@ TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0));
 
   // Compute numerical derivatives
-  Matrix expectedDelPdelBias = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix expectedDelPdelBias = numericalDerivative11<Vector,imuBias::ConstantBias>(
       boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
   Matrix expectedDelPdelBiasAcc   = expectedDelPdelBias.leftCols(3);
   Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
 
-  Matrix expectedDelVdelBias = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix expectedDelVdelBias = numericalDerivative11<Vector,imuBias::ConstantBias>(
       boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
   Matrix expectedDelVdelBiasAcc   = expectedDelVdelBias.leftCols(3);
   Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
@@ -531,15 +531,15 @@ TEST( ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement )
     ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
     // Expected Jacobians
-    Matrix H1e = numericalDerivative11<Pose3>(
+    Matrix H1e = numericalDerivative11<Vector,Pose3>(
         boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, bias), x1);
-    Matrix H2e = numericalDerivative11<LieVector>(
+    Matrix H2e = numericalDerivative11<Vector,LieVector>(
         boost::bind(&callEvaluateError, factor, x1, _1, x2, v2, bias), v1);
-    Matrix H3e = numericalDerivative11<Pose3>(
+    Matrix H3e = numericalDerivative11<Vector,Pose3>(
         boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, bias), x2);
-    Matrix H4e = numericalDerivative11<LieVector>(
+    Matrix H4e = numericalDerivative11<Vector,LieVector>(
         boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, bias), v2);
-    Matrix H5e = numericalDerivative11<imuBias::ConstantBias>(
+    Matrix H5e = numericalDerivative11<Vector,imuBias::ConstantBias>(
         boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
 
     // Check rotation Jacobians

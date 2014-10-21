@@ -107,11 +107,15 @@ public:
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none) const {
 
-    if(H1) {
-      (*H1) = numericalDerivative11<Pose3>(boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, _1, landmark), pose);
+    if (H1) {
+      (*H1) = numericalDerivative11<Vector, Pose3>(
+          boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, _1,
+              landmark), pose);
     }
-    if(H2) {
-      (*H2) = numericalDerivative11<LieVector>(boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose, _1), landmark);
+    if (H2) {
+      (*H2) = numericalDerivative11<Vector, LieVector>(
+          boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose,
+              _1), landmark);
     }
 
     return inverseDepthError(pose, landmark);

@@ -90,7 +90,7 @@ TEST( InvDepthFactor, Dproject_pose)
 {
   LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
   LieScalar inv_depth(1./4);
-  Matrix expected = numericalDerivative31<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
+  Matrix expected = numericalDerivative31(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
   Point2 uv = inv_camera.project(landmark, inv_depth, actual, boost::none, boost::none);
@@ -102,7 +102,7 @@ TEST( InvDepthFactor, Dproject_landmark)
 {
   LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
   LieScalar inv_depth(1./4);
-  Matrix expected = numericalDerivative32<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
+  Matrix expected = numericalDerivative32(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
   Point2 uv = inv_camera.project(landmark, inv_depth, boost::none, actual, boost::none);
@@ -114,7 +114,7 @@ TEST( InvDepthFactor, Dproject_inv_depth)
 {
   LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
   LieScalar inv_depth(1./4);
-  Matrix expected = numericalDerivative33<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
+  Matrix expected = numericalDerivative33(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
   Point2 uv = inv_camera.project(landmark, inv_depth, boost::none, boost::none, actual);

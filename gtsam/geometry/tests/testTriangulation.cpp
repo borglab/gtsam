@@ -274,11 +274,7 @@ TEST( triangulation, TriangulationFactor ) {
   Matrix HActual;
   factor.evaluateError(landmark, HActual);
 
-//  Matrix expectedH1 = numericalDerivative11<Pose3>(
-//      boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, _1, pose2,
-//          boost::none, boost::none), pose1);
-  // The expected Jacobian
-  Matrix HExpected = numericalDerivative11<Point3>(
+  Matrix HExpected = numericalDerivative11<Vector,Point3>(
       boost::bind(&Factor::evaluateError, &factor, _1, boost::none), landmark);
 
   // Verify the Jacobians are correct

@@ -239,12 +239,12 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements )
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0));
 
   // Compute numerical derivatives
-  Matrix expectedDelPdelBias = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix expectedDelPdelBias = numericalDerivative11<Vector,imuBias::ConstantBias>(
       boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
   Matrix expectedDelPdelBiasAcc   = expectedDelPdelBias.leftCols(3);
   Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
 
-  Matrix expectedDelVdelBias = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix expectedDelVdelBias = numericalDerivative11<Vector,imuBias::ConstantBias>(
       boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
   Matrix expectedDelVdelBiasAcc   = expectedDelVdelBias.leftCols(3);
   Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
