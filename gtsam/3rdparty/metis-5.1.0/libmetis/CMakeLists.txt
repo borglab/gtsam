@@ -8,8 +8,6 @@ if(UNIX)
   target_link_libraries(metis m)
 endif()
 
-
-
 if(WIN32)
 		set_target_properties(metis PROPERTIES
 			PREFIX ""
@@ -19,4 +17,3 @@ endif()
 install(TARGETS metis EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 list(APPEND GTSAM_EXPORTED_TARGETS metis)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
-
