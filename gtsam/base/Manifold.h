@@ -82,6 +82,10 @@ template<typename T> struct zero: public identity<T> {
 // double
 
 template<>
+struct is_group<double> : public std::true_type {
+};
+
+template<>
 struct is_manifold<double> : public std::true_type {
 };
 
@@ -89,7 +93,16 @@ template<>
 struct dimension<double> : public std::integral_constant<int, 1> {
 };
 
+template<>
+struct zero<double> {
+  static double value() { return 0;}
+};
+
 // Fixed size Eigen::Matrix type
+
+template<int M, int N, int Options>
+struct is_group<Eigen::Matrix<double, M, N, Options> > : public std::true_type {
+};
 
 template<int M, int N, int Options>
 struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public std::true_type {
@@ -119,6 +132,15 @@ struct dimension<Eigen::Matrix<double, M, N, Options> > : public std::integral_c
   BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
 };
 
+template<int M, int N, int Options>
+struct zero<Eigen::Matrix<double, M, N, Options> > : public std::integral_constant<
+    int, M * N> {
+  BOOST_STATIC_ASSERT(M!=Eigen::Dynamic && N!=Eigen::Dynamic);
+  static Eigen::Matrix<double, M, N, Options> value() {
+    return Eigen::Matrix<double, M, N, Options>::Zero();
+  }
+};
+
 } // \ namespace traits
 
 // Chart is a map from T -> vector, retract is its inverse
@@ -126,6 +148,7 @@ template<typename T>
 struct DefaultChart {
   BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
+  T const & t_;
   DefaultChart(const T& t) :
       t_(t) {
   }
@@ -135,19 +158,16 @@ struct DefaultChart {
   T retract(const vector& d) {
     return t_.retract(d);
   }
-private:
-  T const & t_;
 };
 
 /**
  * Canonical<T>::value is a chart around zero<T>::value
  * An example is Canonical<Rot3>
  */
-template<typename T> class Canonical {
-  DefaultChart<T> chart;
-public:
+template<typename T> struct Canonical {
   typedef T type;
   typedef typename DefaultChart<T>::vector vector;
+  DefaultChart<T> chart;
   Canonical() :
       chart(traits::zero<T>::value()) {
   }
