@@ -145,10 +145,15 @@ TEST( Rot3, rodriguez4)
 }
 
 /* ************************************************************************* */
-TEST( Rot3, expmap)
+TEST( Rot3, retract)
 {
   Vector v = zero(3);
-  CHECK(assert_equal(R.retract(v), R));
+  CHECK(assert_equal(R, R.retract(v)));
+
+  // test Canonical coordinates
+  Canonical<Rot3> chart;
+  Vector v2 = chart.apply(R);
+  CHECK(assert_equal(R, chart.retract(v2)));
 }
 
 /* ************************************************************************* */
