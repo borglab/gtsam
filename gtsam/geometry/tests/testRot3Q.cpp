@@ -285,8 +285,10 @@ TEST( Rot3, inverse )
 
   Rot3 I;
   Matrix actualH;
-  CHECK(assert_equal(I,R*R.inverse(actualH)));
-  CHECK(assert_equal(I,R.inverse()*R));
+  Rot3 actual = R.inverse(actualH);
+  CHECK(assert_equal(I,R*actual));
+  CHECK(assert_equal(I,actual*R));
+  CHECK(assert_equal((Matrix)actual.matrix(), R.transpose()));
 
   Matrix numericalH = numericalDerivative11(testing::inverse<Rot3>, R);
   CHECK(assert_equal(numericalH,actualH, 1e-4));

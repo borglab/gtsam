@@ -29,47 +29,52 @@ namespace gtsam {
   static const Matrix I3 = eye(3);
 
   /* ************************************************************************* */
-  Rot3::Rot3() : quaternion_(Quaternion::Identity()) {}
+  Rot3::Rot3() :
+      quaternion_(Quaternion::Identity()), transpose_(Matrix3::Identity()) {
+  }
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) :
-      quaternion_((Eigen::Matrix3d() <<
-          col1.x(), col2.x(), col3.x(),
-          col1.y(), col2.y(), col3.y(),
-          col1.z(), col2.z(), col3.z()).finished()) {}
+  Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
+    transpose_ << col1.x(), col1.y(), col1.z(), //
+        col2.x(), col2.y(), col2.z(), //
+        col3.x(), col3.y(), col3.z();
+    quaternion_ = Quaternion(transpose_.transpose());
+  }
 
   /* ************************************************************************* */
-  Rot3::Rot3(double R11, double R12, double R13,
-      double R21, double R22, double R23,
-      double R31, double R32, double R33) :
-        quaternion_((Eigen::Matrix3d() <<
-            R11, R12, R13,
-            R21, R22, R23,
-            R31, R32, R33).finished()) {}
+  Rot3::Rot3(double R11, double R12, double R13, double R21, double R22,
+      double R23, double R31, double R32, double R33) {
+    transpose_ << R11, R21, R31, R12, R22, R32, R13, R23, R33;
+    quaternion_ = Quaternion(transpose_.transpose());
+  }
 
   /* ************************************************************************* */
   Rot3::Rot3(const Matrix3& R) :
-      quaternion_(R) {}
+      quaternion_(R), transpose_(R.transpose()) {}
 
   /* ************************************************************************* */
   Rot3::Rot3(const Matrix& R) :
-      quaternion_(Matrix3(R)) {}
-
-//  /* ************************************************************************* */
-//   Rot3::Rot3(const Matrix3& R) :
-//       quaternion_(R) {}
+      quaternion_(Matrix3(R)), transpose_(R.transpose()) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Quaternion& q) : quaternion_(q) {}
+  Rot3::Rot3(const Quaternion& q) :
+      quaternion_(q), transpose_(q.toRotationMatrix().transpose()) {
+  }
 
   /* ************************************************************************* */
-  Rot3 Rot3::Rx(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX())); }
+  Rot3 Rot3::Rx(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX()));
+  }
 
   /* ************************************************************************* */
-  Rot3 Rot3::Ry(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY())); }
+  Rot3 Rot3::Ry(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY()));
+  }
 
   /* ************************************************************************* */
-  Rot3 Rot3::Rz(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ())); }
+  Rot3 Rot3::Rz(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ()));
+  }
 
   /* ************************************************************************* */
   Rot3 Rot3::RzRyRx(double x, double y, double z) { return Rot3(
