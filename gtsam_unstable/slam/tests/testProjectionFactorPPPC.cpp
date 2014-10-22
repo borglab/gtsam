@@ -50,19 +50,19 @@ using symbol_shorthand::K;
 typedef ProjectionFactorPPPC<Pose3, Point3, Cal3_S2> TestProjectionFactor;
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, nonStandard ) {
+TEST( ProjectionFactorPPPC, nonStandard ) {
   ProjectionFactorPPPC<Pose3, Point3, Cal3DS2> f;
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, Constructor) {
+TEST( ProjectionFactorPPPC, Constructor) {
   Point2 measurement(323.0, 240.0);
   TestProjectionFactor factor(measurement, model, X(1), T(1), L(1), K(1));
   // TODO: Actually check something
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, Equals ) {
+TEST( ProjectionFactorPPPC, Equals ) {
   // Create two identical factors and make sure they're equal
   Point2 measurement(323.0, 240.0);
 
@@ -73,7 +73,7 @@ TEST( ProjectionFactor, Equals ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, Error ) {
+TEST( ProjectionFactorPPPC, Error ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Point2 measurement(323.0, 240.0);
   TestProjectionFactor factor(measurement, model, X(1), T(1), L(1), K(1));
@@ -93,7 +93,7 @@ TEST( ProjectionFactor, Error ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, ErrorWithTransform ) {
+TEST( ProjectionFactorPPPC, ErrorWithTransform ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Point2 measurement(323.0, 240.0);
   Pose3 transform(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
@@ -114,7 +114,7 @@ TEST( ProjectionFactor, ErrorWithTransform ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, Jacobian ) {
+TEST( ProjectionFactorPPPC, Jacobian ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Point2 measurement(323.0, 240.0);
   TestProjectionFactor factor(measurement, model, X(1), T(1), L(1), K(1));
@@ -149,7 +149,7 @@ TEST( ProjectionFactor, Jacobian ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, JacobianWithTransform ) {
+TEST( ProjectionFactorPPPC, JacobianWithTransform ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Point2 measurement(323.0, 240.0);
   Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));

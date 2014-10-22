@@ -49,12 +49,12 @@ using symbol_shorthand::T;
 typedef ProjectionFactorPPP<Pose3, Point3> TestProjectionFactor;
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, nonStandard ) {
+TEST( ProjectionFactorPPP, nonStandard ) {
   ProjectionFactorPPP<Pose3, Point3, Cal3DS2> f;
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, Constructor) {
+TEST( ProjectionFactorPPP, Constructor) {
   Key poseKey(X(1));
   Key transformKey(T(1));
   Key pointKey(L(1));
@@ -65,7 +65,7 @@ TEST( ProjectionFactor, Constructor) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, ConstructorWithTransform) {
+TEST( ProjectionFactorPPP, ConstructorWithTransform) {
   Key poseKey(X(1));
   Key transformKey(T(1));
   Key pointKey(L(1));
@@ -75,7 +75,7 @@ TEST( ProjectionFactor, ConstructorWithTransform) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, Equals ) {
+TEST( ProjectionFactorPPP, Equals ) {
   // Create two identical factors and make sure they're equal
   Point2 measurement(323.0, 240.0);
 
@@ -86,7 +86,7 @@ TEST( ProjectionFactor, Equals ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, EqualsWithTransform ) {
+TEST( ProjectionFactorPPP, EqualsWithTransform ) {
   // Create two identical factors and make sure they're equal
   Point2 measurement(323.0, 240.0);
   Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
@@ -98,7 +98,7 @@ TEST( ProjectionFactor, EqualsWithTransform ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, Error ) {
+TEST( ProjectionFactorPPP, Error ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Key poseKey(X(1));
   Key transformKey(T(1));
@@ -121,7 +121,7 @@ TEST( ProjectionFactor, Error ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, ErrorWithTransform ) {
+TEST( ProjectionFactorPPP, ErrorWithTransform ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Key poseKey(X(1));
   Key transformKey(T(1));
@@ -145,7 +145,7 @@ TEST( ProjectionFactor, ErrorWithTransform ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, Jacobian ) {
+TEST( ProjectionFactorPPP, Jacobian ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Key poseKey(X(1));
   Key transformKey(T(1));
@@ -179,7 +179,7 @@ TEST( ProjectionFactor, Jacobian ) {
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, JacobianWithTransform ) {
+TEST( ProjectionFactorPPP, JacobianWithTransform ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Key poseKey(X(1));
   Key transformKey(T(1));
