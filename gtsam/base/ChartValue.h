@@ -25,10 +25,10 @@
 namespace gtsam {
 
 template<typename T>
-class ChartValue : DerivedValue< ChartValue<T> > {
+class ChartValue : public DerivedValue< ChartValue<T> > {
   DefaultChart<T> chart_;
  public:
-  enum { dimension = dimension<T>::value };
+  enum { dimension = traits::dimension<T>::value };
 
   typedef DefaultChart<T> Chart;
 
@@ -41,14 +41,15 @@ class ChartValue : DerivedValue< ChartValue<T> > {
     chart_.print(s);
   }
 
-  bool equals(const T& other, double tol = 1e-9) const {
-    Chart::vector delta = chart_.apply(other);
-    return delta.abs().maxCoeff() < tol;
+  bool equals(const ChartValue<T>& other, double tol = 1e-9) const {
+    typename Chart::vector delta = chart_.apply(other.chart_.t_);
+    return delta.cwiseAbs().maxCoeff() < tol;
   }
 
   // Tangent space dimensionality (virtual, implements Value::dim())
   virtual size_t dim() const {
     return dimension;
+    //todo: how should this work if the dimension is Dynamic?
   }
 
   // retract working directly with Rot3 objects (non-virtual, non-overriding!)
@@ -57,8 +58,8 @@ class ChartValue : DerivedValue< ChartValue<T> > {
   }
 
   // localCoordinates working directly with T objects (non-virtual, non-overriding!)
-  Vector localCoordinates(const T& other) const {
-    return chart_.apply(other);
+  Vector localCoordinates(const ChartValue<T>& other) const {
+    return chart_.apply(other.chart_.origin());
   }
 };
 

@@ -32,7 +32,7 @@ static Point2 p(2,3);
 TEST( Cal3Bundler, vector)
 {
   Cal3Bundler K;
-  CHECK(assert_equal((Vector(3)<<1,0,0),K.vector()));
+  CHECK(assert_equal((Vector(3)<<1,0,0).finished(),K.vector()));
 }
 
 /* ************************************************************************* */

@@ -431,7 +431,7 @@ public:
    *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
    *  @param Dpoint is the Jacobian w.r.t. point3
    */
-  Point2 project2(
+  Point2 project2fixed(
       const Point3& pw, //
       boost::optional<Matrix2K6&> Dcamera = boost::none,
       boost::optional<Matrix23&> Dpoint = boost::none) const {

@@ -159,7 +159,10 @@ struct DefaultChart {
     return t_.retract(d);
   }
   void print(const std::string& str = "") const {
-    std::cout << str << t_ << endl;
+    std::cout << str << t_ << std::endl;
+  }
+  const T& origin() const {
+    return t_;
   }
 };
 
@@ -175,11 +178,11 @@ template<typename T> struct Canonical {
       chart(traits::zero<T>::value()) {
   }
   // Convert t of type T into canonical coordinates
-  vector apply(const T& t) {
+  vector apply(const T& t) const {
     return chart.apply(t);
   }
   // Convert back from canonical coordinates to T
-  T retract(const vector& v) {
+  T retract(const vector& v) const {
     return chart.retract(v);
   }
 };
@@ -193,16 +196,19 @@ struct DefaultChart<double> {
   DefaultChart(double t) :
       t_(t) {
   }
-  vector apply(double other) {
+  vector apply(double other) const {
     vector d;
     d << other - t_;
     return d;
   }
-  double retract(const vector& d) {
+  double retract(const vector& d) const {
     return t_ + d[0];
   }
   void print(const std::string& str = "") const {
-    std::cout << str << t_ << endl;
+    std::cout << str << t_ << std::endl;
+  }
+  double origin() const {
+    return t_;
   }
 };
 
@@ -228,7 +234,10 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
     return t_ + map;
   }
   void print(const std::string& str = "") const {
-    std::cout << str << t_ << endl;
+    std::cout << str << t_ << std::endl;
+  }
+  const T& origin() const {
+    return t_;
   }
 };
 
@@ -248,7 +257,10 @@ struct DefaultChart<Vector> {
     return t_ + d;
   }
   void print(const std::string& str = "") const {
-    std::cout << str << t_ << endl;
+    std::cout << str << t_ << std::endl;
+  }
+  const T& origin() const {
+    return t_;
   }
 };
 
