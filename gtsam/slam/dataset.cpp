@@ -105,6 +105,23 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
   // Read matrix and check that diagonal entries are non-zero
   Matrix M(3, 3);
   switch (noiseFormat) {
+  case NoiseFormatAUTO:
+    // Try to guess covariance matrix layout
+    if(v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0 && v6 == 0.0)
+    {
+      // NoiseFormatGRAPH
+      M << v1, v2, v5, v2, v3, v6, v5, v6, v4;
+    }
+    else if(v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0 && v6 != 0.0)
+    {
+      // NoiseFormatCOV
+      M << v1, v2, v3, v2, v4, v5, v3, v5, v6;
+    }
+    else
+    {
+      throw std::invalid_argument("load2D: unrecognized covariance matrix format in dataset file. Please specify the noise format.");
+    }
+    break;
   case NoiseFormatG2O:
   case NoiseFormatCOV:
     // i.e., [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
@@ -136,6 +153,7 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
     // In both cases, what is stored in file is the information matrix
     model = noiseModel::Gaussian::Information(M, smart);
     break;
+  case NoiseFormatAUTO:
   case NoiseFormatGRAPH:
   case NoiseFormatCOV:
     // These cases expect covariance matrix
