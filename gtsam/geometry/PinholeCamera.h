@@ -42,6 +42,8 @@ private:
   Pose3 pose_;
   Calibration K_;
 
+  static const int DimK = traits::dimension<Calibration>::value;
+
 public:
 
   /// @name Standard Constructors
@@ -303,7 +305,7 @@ public:
     return K_.uncalibrate(pn);
   }
 
-  typedef Eigen::Matrix<double,2,traits::dimension<Calibration>::value> Matrix2K;
+  typedef Eigen::Matrix<double,2,DimK> Matrix2K;
 
   /** project a point from world coordinate to the image
    *  @param pw is a point in world coordinates
@@ -421,12 +423,48 @@ public:
     return pi;
   }
 
+  typedef Eigen::Matrix<double,2,6+DimK> Matrix2K6;
+
+  /** project a point from world coordinate to the image, fixed Jacobians
+   *  @param pw is a point in the world coordinate
+   *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
+   *  @param Dpoint is the Jacobian w.r.t. point3
+   */
+  Point2 project2(
+      const Point3& pw, //
+      boost::optional<Matrix2K6&> Dcamera = boost::none,
+      boost::optional<Matrix23&> Dpoint = boost::none) const {
+
+    const Point3 pc = pose_.transform_to(pw);
+    const Point2 pn = project_to_camera(pc);
+
+    if (!Dcamera && !Dpoint) {
+      return K_.uncalibrate(pn);
+    } else {
+      const double z = pc.z(), d = 1.0 / z;
+
+      // uncalibration
+      Matrix2K Dcal;
+      Matrix2 Dpi_pn;
+      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
+
+      if (Dcamera) { // TODO why does leftCols<6>() not compile ??
+        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols(6));
+        Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
+      }
+      if (Dpoint) {
+        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
+      }
+      return pi;
+    }
+  }
+
   /** project a point from world coordinate to the image
    *  @param pw is a point in the world coordinate
    *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
    *  @param Dpoint is the Jacobian w.r.t. point3
    */
-  inline Point2 project2(
+  Point2 project2(
       const Point3& pw, //
       boost::optional<Matrix&> Dcamera = boost::none,
       boost::optional<Matrix&> Dpoint = boost::none) const {
@@ -440,12 +478,13 @@ public:
       const double z = pc.z(), d = 1.0 / z;
 
       // uncalibration
-      Matrix Dcal, Dpi_pn(2,2);
+      Matrix2K Dcal;
+      Matrix2 Dpi_pn;
       const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
       if (Dcamera) {
         Dcamera->resize(2, this->dim());
-        calculateDpose(pn, d, Dpi_pn.block<2,2>(0,0), Dcamera->leftCols<6>());
+        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols<6>());
         Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
       }
       if (Dpoint) {
