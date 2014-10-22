@@ -46,7 +46,7 @@ Vector Cal3Bundler::k() const {
 }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::vector() const {
+Vector3 Cal3Bundler::vector() const {
   return (Vector(3) << f_, k1_, k2_);
 }
 
@@ -189,7 +189,7 @@ Cal3Bundler Cal3Bundler::retract(const Vector& d) const {
 }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
+Vector3 Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
   return T2.vector() - vector();
 }
 

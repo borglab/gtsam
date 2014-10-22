@@ -70,7 +70,7 @@ public:
   Matrix K() const; ///< Standard 3*3 calibration matrix
   Vector k() const; ///< Radial distortion parameters (4 of them, 2 0)
 
-  Vector vector() const;
+  Vector3 vector() const;
 
   /// focal length x
   inline double fx() const {
@@ -150,7 +150,7 @@ public:
   Cal3Bundler retract(const Vector& d) const;
 
   /// Calculate local coordinates to another calibration
-  Vector localCoordinates(const Cal3Bundler& T2) const;
+  Vector3 localCoordinates(const Cal3Bundler& T2) const;
 
   /// dimensionality
   virtual size_t dim() const {
