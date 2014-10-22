@@ -256,6 +256,12 @@ ostream &operator<<(ostream &os, const Rot3& R) {
 }
 
 /* ************************************************************************* */
+Point3 Rot3::unrotate(const Point3& p) const {
+  // Eigen expression
+  return Point3(transpose_*p.vector()); // q = Rt*p
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam
 
