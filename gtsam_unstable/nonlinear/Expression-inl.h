@@ -613,7 +613,7 @@ private:
 
   Function function_;
 
-  /// Constructor with a ternary function f, and three input arguments
+  /// Constructor with a binary function f, and two input arguments
   BinaryExpression(Function f, const Expression<A1>& e1,
       const Expression<A2>& e2) :
       function_(f) {

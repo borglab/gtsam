@@ -152,11 +152,14 @@ struct DefaultChart {
   DefaultChart(const T& t) :
       t_(t) {
   }
-  vector apply(const T& other) {
+  vector apply(const T& other) const {
     return t_.localCoordinates(other);
   }
-  T retract(const vector& d) {
+  T retract(const vector& d) const {
     return t_.retract(d);
+  }
+  void print(const std::string& str = "") const {
+    std::cout << str << t_ << endl;
   }
 };
 
@@ -198,6 +201,9 @@ struct DefaultChart<double> {
   double retract(const vector& d) {
     return t_ + d[0];
   }
+  void print(const std::string& str = "") const {
+    std::cout << str << t_ << endl;
+  }
 };
 
 // Fixed size Eigen::Matrix type
@@ -212,14 +218,17 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   DefaultChart(const T& t) :
       t_(t) {
   }
-  vector apply(const T& other) {
+  vector apply(const T& other) const {
     T diff = other - t_;
     Eigen::Map<vector> map(diff.data());
     return vector(map);
   }
-  T retract(const vector& d) {
+  T retract(const vector& d) const {
     Eigen::Map<const T> map(d.data());
     return t_ + map;
+  }
+  void print(const std::string& str = "") const {
+    std::cout << str << t_ << endl;
   }
 };
 
@@ -232,11 +241,14 @@ struct DefaultChart<Vector> {
   DefaultChart(const T& t) :
       t_(t) {
   }
-  vector apply(const T& other) {
+  vector apply(const T& other) const {
     return other - t_;
   }
-  T retract(const vector& d) {
+  T retract(const vector& d) const {
     return t_ + d;
+  }
+  void print(const std::string& str = "") const {
+    std::cout << str << t_ << endl;
   }
 };
 
