@@ -51,22 +51,21 @@ int main() {
   values.insert(1, Camera());
   values.insert(2, Point3(0, 0, 1));
 
+  NonlinearFactor::shared_ptr f1, f2, f3;
+
   // Dedicated factor
-  NonlinearFactor::shared_ptr f1 = boost::make_shared<
-      GeneralSFMFactor<Camera, Point3> >(z, model, 1, 2);
+  f1 = boost::make_shared<GeneralSFMFactor<Camera, Point3> >(z, model, 1, 2);
   time("GeneralSFMFactor<Camera>                : ", f1, values);
 
   // AdaptAutoDiff
-  typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> SnavelyAdaptor;
-  NonlinearFactor::shared_ptr f2 =
-      boost::make_shared<ExpressionFactor<Point2> >(model, z,
-          Point2_(SnavelyAdaptor(), camera, point));
-  time("Point2_(SnavelyAdaptor(), camera, point): ", f2, values);
+  typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> AdaptedSnavely;
+  Point2_ expression(AdaptedSnavely(), camera, point);
+  f2 = boost::make_shared<ExpressionFactor<Point2> >(model, z, expression);
+  time("Point2_(AdaptedSnavely(), camera, point): ", f2, values);
 
   // ExpressionFactor
-  NonlinearFactor::shared_ptr f3 =
-      boost::make_shared<ExpressionFactor<Point2> >(model, z,
-          Point2_(camera, &Camera::project2, point));
+  Point2_ expression2(camera, &Camera::project2, point);
+  f3 = boost::make_shared<ExpressionFactor<Point2> >(model, z, expression2);
   time("Point2_(camera, &Camera::project, point): ", f3, values);
 
   return 0;

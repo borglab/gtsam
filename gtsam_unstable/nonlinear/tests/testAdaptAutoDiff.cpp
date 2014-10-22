@@ -200,6 +200,7 @@ TEST(Expression, Snavely) {
   Expression<Point3> X(2);
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
   Expression<Point2> expression(Adaptor(), P, X);
+  EXPECT_LONGS_EQUAL(528,expression.traceSize()); // Todo, should be zero
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
 }

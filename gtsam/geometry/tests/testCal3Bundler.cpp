@@ -14,7 +14,6 @@
  * @brief Unit tests for transform derivatives
  */
 
-
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -32,7 +31,9 @@ static Point2 p(2,3);
 TEST( Cal3Bundler, vector)
 {
   Cal3Bundler K;
-  CHECK(assert_equal((Vector(3)<<1,0,0).finished(),K.vector()));
+  Vector expected(3);
+  expected << 1, 0, 0;
+  CHECK(assert_equal(expected,K.vector()));
 }
 
 /* ************************************************************************* */

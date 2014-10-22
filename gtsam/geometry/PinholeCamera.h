@@ -426,6 +426,15 @@ public:
 
   typedef Eigen::Matrix<double,2,6+DimK> Matrix2K6;
 
+  /** project a point from world coordinate to the image
+   *  @param pw is a point in the world coordinate
+   */
+  Point2 project2(const Point3& pw) const {
+    const Point3 pc = pose_.transform_to(pw);
+    const Point2 pn = project_to_camera(pc);
+    return K_.uncalibrate(pn);
+  }
+
   /** project a point from world coordinate to the image, fixed Jacobians
    *  @param pw is a point in the world coordinate
    *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
@@ -433,8 +442,8 @@ public:
    */
   Point2 project2fixed(
       const Point3& pw, //
-      boost::optional<Matrix2K6&> Dcamera = boost::none,
-      boost::optional<Matrix23&> Dpoint = boost::none) const {
+      boost::optional<Matrix2K6&> Dcamera,
+      boost::optional<Matrix23&> Dpoint) const {
 
     const Point3 pc = pose_.transform_to(pw);
     const Point2 pn = project_to_camera(pc);
@@ -465,10 +474,8 @@ public:
    *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
    *  @param Dpoint is the Jacobian w.r.t. point3
    */
-  Point2 project2(
-      const Point3& pw, //
-      boost::optional<Matrix&> Dcamera = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none) const {
+  Point2 project2(const Point3& pw, //
+      boost::optional<Matrix&> Dcamera, boost::optional<Matrix&> Dpoint) const {
 
     const Point3 pc = pose_.transform_to(pw);
     const Point2 pn = project_to_camera(pc);
