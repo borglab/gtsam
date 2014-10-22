@@ -7,7 +7,7 @@
 
  * See LICENSE for the license information
 
- * -------------------------------1------------------------------------------- */
+ * -------------------------------------------------------------------------- */
 
 /**
  * @file testExpression.cpp
@@ -27,7 +27,7 @@
 #include <gtsam/base/LieScalar.h>
 
 #include <gtsam_unstable/nonlinear/ceres_autodiff.h>
-#include <gtsam_unstable/nonlinear/ceres_rotation.h>
+#include <gtsam_unstable/nonlinear/ceres_example.h>
 
 #undef CHECK
 #include <CppUnitLite/TestHarness.h>
@@ -87,55 +87,6 @@ struct Projective {
   }
 };
 
-// Templated pinhole camera model for used with Ceres. The camera is
-// parameterized using 9 parameters: 3 for rotation, 3 for translation, 1 for
-// focal length and 2 for radial distortion. The principal point is not modeled
-// (i.e. it is assumed be located at the image center).
-struct SnavelyProjection {
-
-  template<typename T>
-  bool operator()(const T* const camera, const T* const point,
-      T* predicted) const {
-    // camera[0,1,2] are the angle-axis rotation.
-    T p[3];
-    ceres::AngleAxisRotatePoint(camera, point, p);
-
-    // camera[3,4,5] are the translation.
-    p[0] += camera[3];
-    p[1] += camera[4];
-    p[2] += camera[5];
-
-    // Compute the center of distortion. The sign change comes from
-    // the camera model that Noah Snavely's Bundler assumes, whereby
-    // the camera coordinate system has a negative z axis.
-    T xp = -p[0] / p[2];
-    T yp = -p[1] / p[2];
-
-    // Apply second and fourth order radial distortion.
-    const T& l1 = camera[7];
-    const T& l2 = camera[8];
-    T r2 = xp * xp + yp * yp;
-    T distortion = T(1.0) + r2 * (l1 + l2 * r2);
-
-    // Compute final projected point position.
-    const T& focal = camera[6];
-    predicted[0] = focal * distortion * xp;
-    predicted[1] = focal * distortion * yp;
-
-    return true;
-  }
-
-  // Adapt to GTSAM types
-  Vector2 operator()(const Vector9& P, const Vector3& X) const {
-    Vector2 x;
-    if (operator()(P.data(), X.data(), x.data()))
-      return x;
-    else
-      throw std::runtime_error("Snavely fail");
-  }
-
-};
-
 /* ************************************************************************* */
 // Test Ceres AutoDiff
 TEST(Expression, AutoDiff) {
@@ -171,7 +122,17 @@ TEST(Expression, AutoDiff) {
 }
 
 /* ************************************************************************* */
-// Test Ceres AutoDiff on Snavely
+// Test Ceres AutoDiff on Snavely, defined in ceres_example.h
+// Adapt to GTSAM types
+Vector2 adapted(const Vector9& P, const Vector3& X) {
+  SnavelyProjection snavely;
+  Vector2 x;
+  if (snavely(P.data(), X.data(), x.data()))
+    return x;
+  else
+    throw std::runtime_error("Snavely fail");
+}
+
 TEST(Expression, AutoDiff2) {
   using ceres::internal::AutoDiff;
 
@@ -185,14 +146,12 @@ TEST(Expression, AutoDiff2) {
 
   // Apply the mapping, to get image point b_x.
   Vector expected = Vector2(2, 1);
-  Vector2 actual = snavely(P, X);
+  Vector2 actual = adapted(P, X);
   EXPECT(assert_equal(expected,actual,1e-9));
 
   // Get expected derivatives
-  Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(
-      SnavelyProjection(), P, X);
-  Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(
-      SnavelyProjection(), P, X);
+  Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
+  Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
 
   // Get derivatives with AutoDiff
   Vector2 actual2;
