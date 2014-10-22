@@ -47,6 +47,7 @@
 
 #include <algorithm>
 #include <cmath>
+#define DCHECK assert
 
 namespace ceres {
 
