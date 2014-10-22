@@ -106,12 +106,29 @@ public:
   /**
    * convert intrinsic coordinates xy to image coordinates uv
    * @param p point in intrinsic coordinates
+   * @return point in image coordinates
+   */
+  Point2 uncalibrate(const Point2& p) const;
+
+  /**
+   * Version of uncalibrate with fixed derivatives
+   * @param p point in intrinsic coordinates
    * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal =
-      boost::none, boost::optional<Matrix&> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix23&> Dcal,
+      boost::optional<Matrix2&> Dp) const;
+
+  /**
+   * Version of uncalibrate with dynamic derivatives
+   * @param p point in intrinsic coordinates
+   * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in image coordinates
+   */
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal,
+      boost::optional<Matrix&> Dp) const;
 
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
