@@ -22,6 +22,7 @@
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieScalar.h>
+#include <gtsam/base/ChartValue.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -80,6 +81,55 @@ TEST(Expression, Leaves) {
   values.insert(Symbol('p', 10), somePoint);
   std::vector<Expression<Point3> > points = createUnknowns<Point3>(10, 'p', 1);
   EXPECT(assert_equal(somePoint,points.back().value(values)));
+}
+
+/* ************************************************************************* */
+// Chart Values
+TEST(Expression, ChartValue_Leaf) {
+  Values values;
+  Vector3 someVector; someVector << 1.0, 2.0, 3.0;
+  ChartValue<Vector3> chart(someVector);
+  values.insert(Symbol('v', 10), chart);
+  Expression<ChartValue<Vector3> > leaf('v', 10);
+
+  ChartValue<Vector3> value = leaf.value(values);
+  EXPECT(assert_equal(value,chart));
+
+  JacobianMap expected;
+  Matrix Hexpected = eye(3);
+  expected.insert(make_pair(Symbol('v', 10), Hexpected.block(0, 0, 3, 3)));
+
+  JacobianMap computedMap;
+  Matrix Hcomputed = zeros(3,3);
+  computedMap.insert(make_pair(Symbol('v', 10), Hcomputed.block(0, 0, 3, 3)));
+
+  value = leaf.reverse(values,computedMap);
+  EXPECT(assert_equal(value,chart));
+  EXPECT(computedMap == expected);
+}
+
+/* ************************************************************************* */
+// Chart Values
+TEST(Expression, ChartValue_origin) {
+  Values values;
+  ChartValue<Pose3> poseChart((Pose3(Rot3::quaternion(.25,.25,.25,.25),Point3(1.0,2.0,3.0))));
+  values.insert(100, poseChart);
+  Expression<ChartValue<Pose3> > leaf(100);
+
+  // would like to use a nullary expression for the method ChartValue<>::origin(), but it does not compile...
+  Expression<Pose3> poseExpression(&chart_origin<Pose3>, leaf);
+
+  JacobianMap expected;
+  Matrix Hexpected = eye(3);
+  expected.insert(make_pair(Symbol('v', 10), Hexpected.block(0, 0, 3, 3)));
+
+  JacobianMap computedMap;
+  Matrix Hcomputed = zeros(3,3);
+  computedMap.insert(make_pair(Symbol('v', 10), Hcomputed.block(0, 0, 3, 3)));
+
+  Pose3 pose = poseExpression.reverse(values,computedMap);
+  EXPECT(assert_equal(pose,poseChart.origin()));
+  EXPECT(computedMap == expected);
 }
 
 /* ************************************************************************* */

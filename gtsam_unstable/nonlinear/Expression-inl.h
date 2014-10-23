@@ -374,7 +374,7 @@ struct Jacobian {
 
 /// meta-function to generate JacobianTA optional reference
 template<class T, class A>
-struct Optional {
+struct OptionalJacobian {
   typedef Eigen::Matrix<double, traits::dimension<T>::value,
       traits::dimension<A>::value> Jacobian;
   typedef boost::optional<Jacobian&> type;
@@ -504,7 +504,7 @@ struct FunctionalNode {
     // Argument types and derived, note these are base 0 !
     typedef TYPES Arguments;
     typedef typename boost::mpl::transform<TYPES, Jacobian<T, MPL::_1> >::type Jacobians;
-    typedef typename boost::mpl::transform<TYPES, Optional<T, MPL::_1> >::type Optionals;
+    typedef typename boost::mpl::transform<TYPES, OptionalJacobian<T, MPL::_1> >::type Optionals;
 
     /// Reset expression shared pointer
     template<class A, size_t N>
@@ -559,7 +559,7 @@ class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
 public:
 
-  typedef boost::function<T(const A1&, typename Optional<T, A1>::type)> Function;
+  typedef boost::function<T(const A1&, typename OptionalJacobian<T, A1>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
   typedef typename Base::Record Record;
 
@@ -604,8 +604,8 @@ class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::t
 public:
 
   typedef boost::function<
-      T(const A1&, const A2&, typename Optional<T, A1>::type,
-          typename Optional<T, A2>::type)> Function;
+      T(const A1&, const A2&, typename OptionalJacobian<T, A1>::type,
+          typename OptionalJacobian<T, A2>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
 
@@ -658,8 +658,8 @@ class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3>
 public:
 
   typedef boost::function<
-      T(const A1&, const A2&, const A3&, typename Optional<T, A1>::type,
-          typename Optional<T, A2>::type, typename Optional<T, A3>::type)> Function;
+      T(const A1&, const A2&, const A3&, typename OptionalJacobian<T, A1>::type,
+          typename OptionalJacobian<T, A2>::type, typename OptionalJacobian<T, A3>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;
 

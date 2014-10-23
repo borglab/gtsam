@@ -59,7 +59,7 @@ TEST( testChartValue, construction_Pose3 ) {
 
 /* ************************************************************************* */
 TEST( testChartValue, addition_to_values ) {
-  ChartValue<Pose3> pose((Pose3()));
+  ChartValue<Pose3> pose((Pose3(Rot3::quaternion(.25,.25,.25,.25),Point3(1.0,2.0,3.0))));
   ChartValue<double> x(5.0);
   Vector4 v_; v_ << 1.0,2.0,3.0,4.0;
   ChartValue<Vector4> v(v_); 

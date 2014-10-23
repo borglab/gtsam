@@ -149,6 +149,7 @@ struct DefaultChart {
   BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
   T t_;
+  DefaultChart() {}
   DefaultChart(const T& t) :
       t_(t) {
   }
@@ -193,6 +194,7 @@ template<>
 struct DefaultChart<double> {
   typedef Eigen::Matrix<double, 1, 1> vector;
   double t_;
+  DefaultChart() : t_(0) {}
   DefaultChart(double t) :
       t_(t) {
   }
@@ -221,6 +223,7 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");
   T t_;
+  DefaultChart() {}
   DefaultChart(const T& t) :
       t_(t) {
   }
@@ -247,6 +250,7 @@ struct DefaultChart<Vector> {
   typedef Vector T;
   typedef T vector;
   T t_;
+  DefaultChart() {}
   DefaultChart(const T& t) :
       t_(t) {
   }

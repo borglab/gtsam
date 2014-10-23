@@ -32,11 +32,12 @@ class ChartValue : public DerivedValue< ChartValue<T> > {
 
   typedef DefaultChart<T> Chart;
 
+  ChartValue() {}
   ChartValue( const T& value) : chart_(value) {}
   ChartValue( const DefaultChart<T>& chart) : chart_(chart) {}
   virtual ~ChartValue() {}
 
-  /** print with optional string (virtual, implements Value::print() */
+  // print with optional string (virtual, implements Value::print()
   virtual void print(const std::string& s = "") const {
     chart_.print(s);
   }
@@ -61,6 +62,30 @@ class ChartValue : public DerivedValue< ChartValue<T> > {
   Vector localCoordinates(const ChartValue<T>& other) const {
     return chart_.apply(other.chart_.origin());
   }
-};
 
+  const T& origin(boost::optional<Eigen::Matrix<double,dimension,dimension>&> H=boost::none ) const {
+    if (H) {
+      H->setIdentity();
+    }
+    return chart_.origin();
+  }
+};
+// This is used for an expression to covert the chartvalue to the origin
+template<typename T>
+const T& chart_origin(const ChartValue<T>& value,boost::optional<Eigen::Matrix<double,ChartValue<T>::dimension,ChartValue<T>::dimension>&> H=boost::none) {
+  return value.origin(H);
+}
+
+// setup default traits specializations for a Chart Value
+namespace traits {
+template<typename T>
+struct is_group<ChartValue<T> > : public std::true_type {
+};
+template<typename T>
+struct is_manifold<ChartValue<T> > : public std::true_type {
+};
+template<typename T>
+struct dimension<ChartValue<T> > : public std::integral_constant<int, ChartValue<T>::dimension> {
+};
+}
 }
