@@ -2,6 +2,10 @@
 project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
+# new feature to Cmake Version > 2.8.12
+# turn off the MACOS Relative Path flag.
+set(CMAKE_MACOSX_RPATH 0)
+
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 3)
 set (GTSAM_VERSION_MINOR 1)
