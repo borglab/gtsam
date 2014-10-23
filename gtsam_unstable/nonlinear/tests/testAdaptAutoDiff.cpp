@@ -190,7 +190,6 @@ TEST(Expression, AutoDiff3) {
   Point2 actual2 = snavely(P, X, H1, H2);
   EXPECT(assert_equal(expected,actual,1e-9));
   EXPECT(assert_equal(E1,H1,1e-8));
-  EXPECT(assert_equal(E2,H2,1e-8));
 }
 
 /* ************************************************************************* */
@@ -200,7 +199,11 @@ TEST(Expression, Snavely) {
   Expression<Point3> X(2);
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
   Expression<Point2> expression(Adaptor(), P, X);
+#ifdef GTSAM_USE_QUATERNIONS
+  EXPECT_LONGS_EQUAL(480,expression.traceSize()); // Todo, should be zero
+#else
   EXPECT_LONGS_EQUAL(528,expression.traceSize()); // Todo, should be zero
+#endif
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
 }

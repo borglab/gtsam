@@ -314,12 +314,6 @@ Quaternion Rot3::toQuaternion() const {
 }
 
 /* ************************************************************************* */
-Point3 Rot3::unrotate(const Point3& p) const {
-  // Eigen expression
-  return Point3(transpose()*p.vector()); // q = Rt*p
-}
-
-/* ************************************************************************* */
 
 } // namespace gtsam
 

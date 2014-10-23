@@ -91,7 +91,7 @@ TEST(Manifold, DefaultChart) {
   Vector v3(3);
   v3 << 1, 1, 1;
   Rot3 I = Rot3::identity();
-  Rot3 R = I.retractCayley(v3);
+  Rot3 R = I.retract(v3);
   DefaultChart<Rot3> chart5(I);
   EXPECT(assert_equal(v3,chart5.apply(R)));
   EXPECT(assert_equal(chart5.retract(v3),R));
