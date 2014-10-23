@@ -575,6 +575,18 @@ TEST( Rot3, stream)
 }
 
 /* ************************************************************************* */
+TEST( Rot3, slerp)
+{
+  // A first simple test
+  Rot3 R1 = Rot3::Rz(1), R2 = Rot3::Rz(2), R3 = Rot3::Rz(1.5);
+  EXPECT(assert_equal(R1, R1.slerp(0.0,R2)));
+  EXPECT(assert_equal(R2, R1.slerp(1.0,R2)));
+  EXPECT(assert_equal(R3, R1.slerp(0.5,R2)));
+  // Make sure other can be *this
+  EXPECT(assert_equal(R1, R1.slerp(0.5,R1)));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

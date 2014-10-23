@@ -262,6 +262,15 @@ Point3 Rot3::unrotate(const Point3& p) const {
 }
 
 /* ************************************************************************* */
+Rot3 Rot3::slerp(double t, const Rot3& other) const {
+  // amazingly simple in GTSAM :-)
+  assert(t>=0 && t<=1);
+  cout << "slerp" << endl;
+  Vector3 omega = localCoordinates(other, Rot3::EXPMAP);
+  return retract(t * omega, Rot3::EXPMAP);
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam
 
