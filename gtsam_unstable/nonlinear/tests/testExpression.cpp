@@ -119,15 +119,22 @@ TEST(Expression, ChartValue_origin) {
   // would like to use a nullary expression for the method ChartValue<>::origin(), but it does not compile...
   Expression<Pose3> poseExpression(&chart_origin<Pose3>, leaf);
 
+  size_t expectedTraceSize = 6*8+ 6*6*8;
+  EXPECT_LONGS_EQUAL(expectedTraceSize, poseExpression.traceSize());
+
+  Pose3 p = poseExpression.value(values);
+  EXPECT(assert_equal(p,poseChart.origin()));
+
   JacobianMap expected;
-  Matrix Hexpected = eye(3);
-  expected.insert(make_pair(Symbol('v', 10), Hexpected.block(0, 0, 3, 3)));
+  Matrix Hexpected = eye(6);
+  expected.insert(make_pair(100, Hexpected.block(0, 0, 6, 6)));
 
   JacobianMap computedMap;
-  Matrix Hcomputed = zeros(3,3);
-  computedMap.insert(make_pair(Symbol('v', 10), Hcomputed.block(0, 0, 3, 3)));
+  Matrix Hcomputed = zeros(6,6);
+  computedMap.insert(make_pair(100, Hcomputed.block(0, 0, 6, 6)));
 
-  Pose3 pose = poseExpression.reverse(values,computedMap);
+  // if the key is not found in the Jacobian map, this segfaults
+  Pose3 pose = poseExpression.value(values,computedMap);
   EXPECT(assert_equal(pose,poseChart.origin()));
   EXPECT(computedMap == expected);
 }

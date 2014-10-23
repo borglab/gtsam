@@ -22,6 +22,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
+#include <gtsam/base/LieVector.h>
 
 #include <boost/math/constants/constants.hpp>
 
@@ -201,9 +202,9 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta){
 TEST( Rot3, rightJacobianExpMapSO3 )
 {
   // Linearization point
-  Vector thetahat = (Vector(3) << 0.1, 0, 0);
+  Vector3 thetahat = (Vector(3) << 0.1, 0, 0);
 
-  Matrix expectedJacobian = numericalDerivative11<Rot3, LieVector>(
+  Matrix expectedJacobian = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&Rot3::Expmap, _1), thetahat);
   Matrix actualJacobian = Rot3::rightJacobianExpMapSO3(thetahat);
   CHECK(assert_equal(expectedJacobian, actualJacobian));
@@ -213,10 +214,10 @@ TEST( Rot3, rightJacobianExpMapSO3 )
 TEST( Rot3, rightJacobianExpMapSO3inverse )
 {
   // Linearization point
-  Vector thetahat = (Vector(3) << 0.1,0.1,0); ///< Current estimate of rotation rate bias
-  Vector deltatheta = (Vector(3) << 0, 0, 0);
+  Vector3 thetahat = (Vector(3) << 0.1,0.1,0); ///< Current estimate of rotation rate bias
+  Vector3 deltatheta = (Vector(3) << 0, 0, 0);
 
-  Matrix expectedJacobian = numericalDerivative11<LieVector>(
+  Matrix expectedJacobian = numericalDerivative11<LieVector,Vector3>(
       boost::bind(&evaluateLogRotation, thetahat, _1), deltatheta);
   Matrix actualJacobian = Rot3::rightJacobianExpMapSO3inverse(thetahat);
   EXPECT(assert_equal(expectedJacobian, actualJacobian));
@@ -392,7 +393,7 @@ Vector3 testDexpL(const Vector3& dw) {
 
 TEST( Rot3, dexpL) {
   Matrix actualDexpL = Rot3::dexpL(w);
-  Matrix expectedDexpL = numericalDerivative11<LieVector>(testDexpL,
+  Matrix expectedDexpL = numericalDerivative11<LieVector,Vector3>(testDexpL,
       LieVector(zero(3)), 1e-2);
   EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
 

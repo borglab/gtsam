@@ -149,7 +149,6 @@ struct DefaultChart {
   BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
   T t_;
-  DefaultChart() {}
   DefaultChart(const T& t) :
       t_(t) {
   }

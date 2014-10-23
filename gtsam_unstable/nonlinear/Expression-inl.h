@@ -81,12 +81,17 @@ void handleLeafCase(const Eigen::Matrix<double, ROWS, COLS>& dTdA,
   JacobianMap::iterator it = jacobians.find(key);
   it->second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
 }
+
 /// Handle Leaf Case for Dynamic Matrix type (slower)
 template<>
 void handleLeafCase(
     const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& dTdA,
     JacobianMap& jacobians, Key key) {
   JacobianMap::iterator it = jacobians.find(key);
+  if (it == jacobians.end()) {
+    std::cout << "ERROR: could not find key " << key << std::endl;
+    return;
+  }
   it->second += dTdA;
 }
 

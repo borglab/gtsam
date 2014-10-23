@@ -32,7 +32,7 @@ class ChartValue : public DerivedValue< ChartValue<T> > {
 
   typedef DefaultChart<T> Chart;
 
-  ChartValue() {}
+  ChartValue() : chart_(traits::zero<T>::value()) {}
   ChartValue( const T& value) : chart_(value) {}
   ChartValue( const DefaultChart<T>& chart) : chart_(chart) {}
   virtual ~ChartValue() {}
