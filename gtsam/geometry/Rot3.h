@@ -69,12 +69,6 @@ namespace gtsam {
     Matrix3 rot_;
 #endif
 
-    /**
-     * transpose() is used millions of times in linearize, so cache it
-     * This also avoids multiple expensive conversions in the quaternion case
-     */
-    Matrix3 transpose_; ///< Cached R_.transpose()
-
   public:
 
     /// @name Constructors and named constructors
@@ -375,11 +369,9 @@ namespace gtsam {
 
     /**
      * Return 3*3 transpose (inverse) rotation matrix
-     * Actually returns cached transpose
      */
-    const Matrix3& transpose() const {
-      return transpose_;
-    }
+    Matrix3 transpose() const;
+    // TODO: const Eigen::Transpose<const Matrix3> transpose() const;
 
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
