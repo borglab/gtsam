@@ -90,14 +90,20 @@ TEST( PosePriorFactor, Error ) {
 
   // The expected error
   Vector expectedError(6);
-  // TODO: The solution depends on choice of Pose3 and Rot3 Expmap mode!
-#if defined(GTSAM_ROT3_EXPMAP)
+  // The solution depends on choice of Pose3 and Rot3 Expmap mode!
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   expectedError << -0.182948257976108,
                     0.13851858011118,
                    -0.157375974517456,
+#if defined(GTSAM_POSE3_EXPMAP)
                     0.766913166076379,
                    -1.22976117053126,
                     0.949345561430261;
+#else
+                    0.740211734,
+                   -1.19821028,
+                    1.00815609;
+#endif
 #else
   expectedError << -0.184137861505414,
                     0.139419283914526,
@@ -115,7 +121,7 @@ TEST( PosePriorFactor, Error ) {
   Vector actualError(factor.evaluateError(pose));
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedError, actualError, 1e-9));
+  CHECK(assert_equal(expectedError, actualError, 1e-8));
 }
 
 /* ************************************************************************* */
@@ -127,14 +133,20 @@ TEST( PosePriorFactor, ErrorWithTransform ) {
 
   // The expected error
   Vector expectedError(6);
-  // TODO: The solution depends on choice of Pose3 and Rot3 Expmap mode!
-#if defined(GTSAM_ROT3_EXPMAP)
+  // The solution depends on choice of Pose3 and Rot3 Expmap mode!
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   expectedError << -0.0224998729281528,
                     0.191947887288328,
                     0.273826035236257,
+#if defined(GTSAM_POSE3_EXPMAP)
                     1.36483391560855,
                    -0.754590051075035,
                     0.585710674473659;
+#else
+                    1.49751986,
+                   -0.549375791,
+                    0.452761203;
+#endif
 #else
   expectedError << -0.022712885347328,
                     0.193765110165872,
@@ -151,7 +163,7 @@ TEST( PosePriorFactor, ErrorWithTransform ) {
   Vector actualError(factor.evaluateError(pose));
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedError, actualError, 1e-9));
+  CHECK(assert_equal(expectedError, actualError, 1e-8));
 }
 
 /* ************************************************************************* */
