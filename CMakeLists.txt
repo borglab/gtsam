@@ -3,8 +3,10 @@ project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
 # new feature to Cmake Version > 2.8.12
-# turn off the MACOS Relative Path flag.
-set(CMAKE_MACOSX_RPATH 0)
+# Mac ONLY. Define Relative Path on Mac OS
+if(NOT DEFINED CMAKE_MACOSX_RPATH)
+  set(CMAKE_MACOSX_RPATH 0)
+endif()
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 3)
