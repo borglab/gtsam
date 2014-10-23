@@ -179,7 +179,15 @@ TEST(Rot3, log)
   CHECK_OMEGA(  PI,   0,   0)
   CHECK_OMEGA(   0,  PI,   0)
   CHECK_OMEGA(   0,   0,  PI)
+
+  // Windows and Linux have flipped sign in quaternion mode
+#if !defined(__APPLE__) && defined (GTSAM_USE_QUATERNIONS)
+  w = (Vector(3) << x*PI, y*PI, z*PI); 
+  R = Rot3::rodriguez(w); 
+  EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R),1e-12));
+#else
   CHECK_OMEGA(x*PI,y*PI,z*PI)
+#endif
 
   // Check 360 degree rotations
 #define CHECK_OMEGA_ZERO(X,Y,Z) \
