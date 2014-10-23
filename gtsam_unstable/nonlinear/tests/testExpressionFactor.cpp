@@ -206,10 +206,10 @@ TEST(ExpressionFactor, Shallow) {
   EXPECT_LONGS_EQUAL(112, sizeof(Unary::Record));
 #ifdef GTSAM_USE_QUATERNIONS
   EXPECT_LONGS_EQUAL(464, sizeof(Binary::Record));
-  LONGS_EQUAL(112+496, expectedTraceSize);
+  LONGS_EQUAL(112+464, expectedTraceSize);
 #else
   EXPECT_LONGS_EQUAL(496, sizeof(Binary::Record));
-  LONGS_EQUAL(112+464, expectedTraceSize);
+  LONGS_EQUAL(112+496, expectedTraceSize);
 #endif
   size_t size = expression.traceSize();
   CHECK(size);
