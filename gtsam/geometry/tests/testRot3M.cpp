@@ -34,7 +34,6 @@ using namespace gtsam;
 
 static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
-static double error = 1e-9, epsilon = 0.001;
 static const Matrix I3 = eye(3);
 
 /* ************************************************************************* */
