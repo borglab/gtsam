@@ -63,6 +63,7 @@ option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency c
 option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TBB) if available" ON)
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" ON)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
+option(GTSAM_WITH_GPERF                  "Use GooglePerfTools's tcmalloc as default allocator if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
 
 # Options relating to MATLAB wrapper
@@ -163,6 +164,9 @@ endif()
 # Find Google perftools
 find_package(GooglePerfTools)
 
+if(NOT GOOGLE_PERFTOOLS_FOUND)
+  message(STATUS "Cound NOT find GooglePerfTools")
+endif()
 
 ###############################################################################
 # Find MKL
@@ -229,18 +233,27 @@ install(FILES ${PROJECT_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTIN
 # Build list of possible allocators
 set(possible_allocators "")
 if(GTSAM_USE_TBB)
-	list(APPEND possible_allocators TBB)
-	set(preferred_allocator TBB)
+  list(APPEND possible_allocators TBB)
+  set(preferred_allocator TBB)
 else()
-	list(APPEND possible_allocators BoostPool STL)
-	set(preferred_allocator STL)
+  list(APPEND possible_allocators BoostPool STL)
+  if(GOOGLE_PERFTOOLS_FOUND)
+    list(APPEND possible_allocators tcmalloc)
+    if (GTSAM_WITH_GPERF)
+      set(preferred_allocator tcmalloc)
+    endif()
+  else()
+    if (GTSAM_WITH_GPERF)
+      message(WARNING "GooglePerfTools NOT found, will still use STL allocator")
+    endif()
+    set(preferred_allocator STL)
+  endif()
 endif()
-if(GOOGLE_PERFTOOLS_FOUND)
-	list(APPEND possible_allocators tcmalloc)
-endif()
+
 
 # Check if current allocator choice is valid and set cache option
 list(FIND possible_allocators "${GTSAM_DEFAULT_ALLOCATOR}" allocator_valid)
+
 if(allocator_valid EQUAL -1)
 	set(GTSAM_DEFAULT_ALLOCATOR ${preferred_allocator} CACHE STRING "Default allocator" FORCE)
 else()
