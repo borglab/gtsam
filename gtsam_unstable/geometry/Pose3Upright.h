@@ -22,7 +22,7 @@ namespace gtsam {
  * @ingroup geometry
  * \nosubgrouping
  */
-class GTSAM_UNSTABLE_EXPORT Pose3Upright : public DerivedValue<Pose3Upright> {
+class GTSAM_UNSTABLE_EXPORT Pose3Upright {
 public:
   static const size_t dimension = 4;
 

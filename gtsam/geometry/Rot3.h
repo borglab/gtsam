@@ -58,7 +58,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot3 : public DerivedValue<Rot3> {
+  class GTSAM_EXPORT Rot3 {
 
   private:
 
@@ -456,8 +456,7 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version)
     {
-       ar & boost::serialization::make_nvp("Rot3",
-           boost::serialization::base_object<Value>(*this));
+       ar & boost::serialization::make_nvp("Rot3",*this);
 #ifndef GTSAM_USE_QUATERNIONS
        ar & boost::serialization::make_nvp("rot11", rot_(0,0));
        ar & boost::serialization::make_nvp("rot12", rot_(0,1));

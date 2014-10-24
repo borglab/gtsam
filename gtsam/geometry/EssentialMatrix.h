@@ -20,7 +20,7 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class GTSAM_EXPORT EssentialMatrix: public DerivedValue<EssentialMatrix> {
+class GTSAM_EXPORT EssentialMatrix {
 
 private:
 
@@ -176,8 +176,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("EssentialMatrix",
-          boost::serialization::base_object<Value>(*this));
+      ar & boost::serialization::make_nvp("EssentialMatrix",*this);
       ar & BOOST_SERIALIZATION_NVP(aRb_);
       ar & BOOST_SERIALIZATION_NVP(aTb_);
 

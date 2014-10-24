@@ -19,7 +19,7 @@ typedef Point3 Velocity3;
  * Robot state for use with IMU measurements
  * - contains translation, translational velocity and rotation
  */
-class GTSAM_UNSTABLE_EXPORT PoseRTV : public DerivedValue<PoseRTV> {
+class GTSAM_UNSTABLE_EXPORT PoseRTV {
 protected:
 
   Pose3 Rt_;

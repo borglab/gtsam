@@ -31,7 +31,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3_S2: public DerivedValue<Cal3_S2> {
+class GTSAM_EXPORT Cal3_S2 {
 private:
   double fx_, fy_, s_, u0_, v0_;
 
@@ -227,8 +227,7 @@ private:
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
     ar
-        & boost::serialization::make_nvp("Cal3_S2",
-            boost::serialization::base_object<Value>(*this));
+        & boost::serialization::make_nvp("Cal3_S2",*this);
     ar & BOOST_SERIALIZATION_NVP(fx_);
     ar & BOOST_SERIALIZATION_NVP(fy_);
     ar & BOOST_SERIALIZATION_NVP(s_);

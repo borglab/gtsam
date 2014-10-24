@@ -37,7 +37,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename Calibration>
-class PinholeCamera: public DerivedValue<PinholeCamera<Calibration> > {
+class PinholeCamera {
 private:
   Pose3 pose_;
   Calibration K_;

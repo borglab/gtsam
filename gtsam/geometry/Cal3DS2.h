@@ -37,7 +37,7 @@ namespace gtsam {
  *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
  * pi = K*pn
  */
-class GTSAM_EXPORT Cal3DS2 : public DerivedValue<Cal3DS2> {
+class GTSAM_EXPORT Cal3DS2 {
 
 protected:
 
@@ -153,8 +153,7 @@ private:
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version)
   {
-    ar & boost::serialization::make_nvp("Cal3DS2",
-        boost::serialization::base_object<Value>(*this));
+    ar & boost::serialization::make_nvp("Cal3DS2",*this);
     ar & BOOST_SERIALIZATION_NVP(fx_);
     ar & BOOST_SERIALIZATION_NVP(fy_);
     ar & BOOST_SERIALIZATION_NVP(s_);

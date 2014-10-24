@@ -33,7 +33,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose2 : public DerivedValue<Pose2> {
+class GTSAM_EXPORT Pose2 {
 
 public:
 
@@ -301,8 +301,7 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("Pose2",
-        boost::serialization::base_object<Value>(*this));
+    ar & boost::serialization::make_nvp("Pose2",*this);
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(r_);
   }

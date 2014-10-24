@@ -39,7 +39,7 @@ namespace gtsam {
 /// All bias models live in the imuBias namespace
 namespace imuBias {
 
-  class ConstantBias : public DerivedValue<ConstantBias> {
+  class ConstantBias {
   private:
     Vector3 biasAcc_;
     Vector3 biasGyro_;
@@ -205,8 +205,7 @@ namespace imuBias {
     template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int version)
     {
-      ar & boost::serialization::make_nvp("imuBias::ConstantBias",
-          boost::serialization::base_object<Value>(*this));
+      ar & boost::serialization::make_nvp("imuBias::ConstantBias",*this);
       ar & BOOST_SERIALIZATION_NVP(biasAcc_);
       ar & BOOST_SERIALIZATION_NVP(biasGyro_);
     }

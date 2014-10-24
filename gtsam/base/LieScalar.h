@@ -26,7 +26,7 @@ namespace gtsam {
   /**
    * LieScalar is a wrapper around double to allow it to be a Lie type
    */
-  struct GTSAM_EXPORT LieScalar : public DerivedValue<LieScalar> {
+  struct GTSAM_EXPORT LieScalar {
 
     /** default constructor */
     LieScalar() : d_(0.0) {}

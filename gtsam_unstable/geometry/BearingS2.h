@@ -15,7 +15,7 @@
 
 namespace gtsam {
 
-class GTSAM_UNSTABLE_EXPORT BearingS2 : public DerivedValue<BearingS2> {
+class GTSAM_UNSTABLE_EXPORT BearingS2 {
 protected:
   Rot2 azimuth_, elevation_;
 

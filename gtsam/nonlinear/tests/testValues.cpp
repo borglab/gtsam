@@ -51,7 +51,7 @@ public:
 };
 int TestValueData::ConstructorCount = 0;
 int TestValueData::DestructorCount = 0;
-class TestValue : public DerivedValue<TestValue> {
+class TestValue {
   TestValueData data_;
 public:
   virtual void print(const std::string& str = "") const {}

@@ -39,7 +39,7 @@ public:
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT CalibratedCamera: public DerivedValue<CalibratedCamera> {
+class GTSAM_EXPORT CalibratedCamera {
 private:
   Pose3 pose_; // 6DOF pose
 
@@ -215,8 +215,7 @@ private:
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
     ar
-        & boost::serialization::make_nvp("CalibratedCamera",
-            boost::serialization::base_object<Value>(*this));
+        & boost::serialization::make_nvp("CalibratedCamera",*this);
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
 

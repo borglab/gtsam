@@ -27,7 +27,7 @@
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class GTSAM_EXPORT Unit3: public DerivedValue<Unit3> {
+class GTSAM_EXPORT Unit3{
 
 private:
 
@@ -146,8 +146,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("Unit3",
-          boost::serialization::base_object<Value>(*this));
+      ar & boost::serialization::make_nvp("Unit3",*this);
       ar & BOOST_SERIALIZATION_NVP(p_);
       ar & BOOST_SERIALIZATION_NVP(B_);
     }
