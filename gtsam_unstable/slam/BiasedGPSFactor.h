@@ -39,7 +39,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<BiasedGPSFactor> shared_ptr;
+    typedef boost::shared_ptr<BiasedGPSFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     BiasedGPSFactor() {}
