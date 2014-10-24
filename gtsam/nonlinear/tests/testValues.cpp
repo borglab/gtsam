@@ -54,9 +54,9 @@ int TestValueData::DestructorCount = 0;
 class TestValue {
   TestValueData data_;
 public:
-  virtual void print(const std::string& str = "") const {}
+  void print(const std::string& str = "") const {}
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
-  virtual size_t dim() const { return 0; }
+  size_t dim() const { return 0; }
   TestValue retract(const Vector&) const { return TestValue(); }
   Vector localCoordinates(const TestValue&) const { return Vector(); }
 };
@@ -353,12 +353,12 @@ TEST(Values, filter) {
   BOOST_FOREACH(const Values::Filtered<>::KeyValuePair& key_value, filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
-      EXPECT(typeid(Pose2) == typeid(key_value.value));
-      EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(key_value.value)));
+      EXPECT(typeid(GenericValue<Pose2>) == typeid(key_value.value));
+      EXPECT(assert_equal(pose2, dynamic_cast<const GenericValue<Pose2>&>(key_value.value).value()));
     } else if(i == 1) {
       LONGS_EQUAL(3, (long)key_value.key);
-      EXPECT(typeid(Pose3) == typeid(key_value.value));
-      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.value)));
+      EXPECT(typeid(GenericValue<Pose3>) == typeid(key_value.value));
+      EXPECT(assert_equal(pose3, dynamic_cast<const GenericValue<Pose3>&>(key_value.value).value()));
     } else {
       EXPECT(false);
     }
@@ -416,10 +416,10 @@ TEST(Values, Symbol_filter) {
   BOOST_FOREACH(const Values::Filtered<Value>::KeyValuePair& key_value, values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
-      EXPECT(assert_equal(pose1, dynamic_cast<const Pose3&>(key_value.value)));
+      EXPECT(assert_equal(pose1, dynamic_cast<const GenericValue<Pose3>&>(key_value.value).value()));
     } else if(i == 1) {
       LONGS_EQUAL(Symbol('y', 3), (long)key_value.key);
-      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.value)));
+      EXPECT(assert_equal(pose3, dynamic_cast<const GenericValue<Pose3>&>(key_value.value).value()));
     } else {
       EXPECT(false);
     }
@@ -441,11 +441,15 @@ TEST(Values, Destructors) {
       values.insert(0, value1);
       values.insert(1, value2);
     }
-    LONGS_EQUAL(4, (long)TestValueData::ConstructorCount);
-    LONGS_EQUAL(2, (long)TestValueData::DestructorCount);
+    // additional 2 con/destructor counts for the temporary
+    // GenericValue<TestValue> in insert()
+    // but I'm sure some advanced programmer can figure out
+    // a way to avoid the temporary, or optimize it out
+    LONGS_EQUAL(4+2, (long)TestValueData::ConstructorCount);
+    LONGS_EQUAL(2+2, (long)TestValueData::DestructorCount);
   }
-  LONGS_EQUAL(4, (long)TestValueData::ConstructorCount);
-  LONGS_EQUAL(4, (long)TestValueData::DestructorCount);
+  LONGS_EQUAL(4+2, (long)TestValueData::ConstructorCount);
+  LONGS_EQUAL(4+2, (long)TestValueData::DestructorCount);
 }
 
 /* ************************************************************************* */

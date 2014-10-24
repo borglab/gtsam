@@ -202,7 +202,7 @@ TEST(Expression, Snavely) {
 #ifdef GTSAM_USE_QUATERNIONS
   EXPECT_LONGS_EQUAL(480,expression.traceSize()); // Todo, should be zero
 #else
-  EXPECT_LONGS_EQUAL(528,expression.traceSize()); // Todo, should be zero
+  EXPECT_LONGS_EQUAL(432,expression.traceSize()); // Todo, should be zero
 #endif
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
