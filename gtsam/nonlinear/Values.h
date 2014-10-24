@@ -45,6 +45,7 @@
 #include <utility>
 
 #include <gtsam/base/Value.h>
+#include <gtsam/base/GenericValue.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/Key.h>
 
@@ -248,6 +249,12 @@ namespace gtsam {
     /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
     void insert(Key j, const Value& val);
 
+    /** Templated verion to add a variable with the given j,
+     * throws KeyAlreadyExists<J> if j is already present
+     * will wrap the val into a GenericValue<ValueType> to insert*/
+    template <typename ValueType> void insert(Key j, const ValueType& val);
+
+
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
     void insert(const Values& values);
 
@@ -259,6 +266,7 @@ namespace gtsam {
 
     /** single element change of existing element */
     void update(Key j, const Value& val);
+    template <typename T> void update(Key j, const T& val);
 
     /** update the current available values without adding new ones */
     void update(const Values& values);
@@ -369,15 +377,9 @@ namespace gtsam {
     // supplied \c filter function.
     template<class ValueType>
     static bool filterHelper(const boost::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
+      BOOST_STATIC_ASSERT((!std::is_same<ValueType,Value>::value));
       // Filter and check the type
-      return filter(key_value.key) && (typeid(ValueType) == typeid(key_value.value) || typeid(ValueType) == typeid(Value));
-    }
-
-    // Cast to the derived ValueType
-    template<class ValueType, class CastedKeyValuePairType, class KeyValuePairType>
-    static CastedKeyValuePairType castHelper(KeyValuePairType key_value) {
-      // Static cast because we already checked the type during filtering
-      return CastedKeyValuePairType(key_value.key, static_cast<ValueType&>(key_value.value));
+      return filter(key_value.key) && (typeid(GenericValue<ValueType>) == typeid(key_value.value) );
     }
 
     /** Serialization function */

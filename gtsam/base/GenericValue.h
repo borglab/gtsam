@@ -10,9 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file DerivedValue.h
+ * @file GenericValue.h
  * @date Jan 26, 2012
  * @author Duy Nguyen Ta
+ * @author Mike Bosse, Abel Gawel, Renaud Dube
  */
 
 #pragma once
@@ -40,15 +41,52 @@
 
 namespace gtsam {
 
-template<class DERIVED>
-class DerivedValue : public Value {
+namespace traits {
 
+// trait to wrap the default equals of types
+template<typename T>
+  bool equals(const T& a, const T& b, double tol) {
+    return a.equals(b,tol);
+  }
+
+// trait to compute the local coordinates of other with respect to origin
+template<typename T>
+Vector localCoordinates(const T& origin, const T& other) {
+  return origin.localCoordinates(other);
+}
+
+template<typename T>
+T retract(const T& origin, const Vector& delta) {
+  return origin.retract(delta);
+}
+
+template<typename T>
+void print(const T& obj, const std::string& str) {
+  obj.print(str);
+}
+
+template<typename T>
+size_t getDimension(const T& obj) {
+  return obj.dim();
+}
+}
+
+template<class T>
+class GenericValue : public Value {
+public:
+  typedef T ValueType;
+  typedef GenericValue This;
 protected:
-  DerivedValue() {}
+  T value_;
 
 public:
+  GenericValue() {}
+  GenericValue(const T& value) : value_(value) {}
 
-  virtual ~DerivedValue() {}
+  T& value() { return value_; }
+  const T& value() const { return value_; }
+
+  virtual ~GenericValue() {}
 
   /**
    * Create a duplicate object returned as a pointer to the generic Value interface.
@@ -56,8 +94,8 @@ public:
    * The result must be deleted with Value::deallocate_, not with the 'delete' operator.
    */
   virtual Value* clone_() const {
-    void *place = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
-    DERIVED* ptr = new(place) DERIVED(static_cast<const DERIVED&>(*this));
+    void *place = boost::singleton_pool<PoolTag, sizeof(This)>::malloc();
+    This* ptr = new(place) This(*this);
     return ptr;
   }
 
@@ -65,34 +103,35 @@ public:
    * Destroy and deallocate this object, only if it was originally allocated using clone_().
    */
   virtual void deallocate_() const {
-    this->~DerivedValue(); // Virtual destructor cleans up the derived object
-    boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free((void*)this); // Release memory from pool
+    this->~GenericValue(); // Virtual destructor cleans up the derived object
+    boost::singleton_pool<PoolTag, sizeof(This)>::free((void*)this); // Release memory from pool
   }
 
   /**
    * Clone this value (normal clone on the heap, delete with 'delete' operator)
    */
   virtual boost::shared_ptr<Value> clone() const {
-    return boost::make_shared<DERIVED>(static_cast<const DERIVED&>(*this));
+    return boost::make_shared<This>(*this);
   }
 
   /// equals implementing generic Value interface
   virtual bool equals_(const Value& p, double tol = 1e-9) const {
-    // Cast the base class Value pointer to a derived class pointer
-    const DERIVED& derivedValue2 = dynamic_cast<const DERIVED&>(p);
+    // Cast the base class Value pointer to a templated generic class pointer
+    const This& genericValue2 = dynamic_cast<const This&>(p);
 
-    // Return the result of calling equals on the derived class
-    return (static_cast<const DERIVED*>(this))->equals(derivedValue2, tol);
+    // Return the result of using the equals traits for the derived class
+    return traits::equals<T>(this->value_, genericValue2.value_, tol);
+
   }
 
   /// Generic Value interface version of retract
   virtual Value* retract_(const Vector& delta) const {
-    // Call retract on the derived class
-    const DERIVED retractResult = (static_cast<const DERIVED*>(this))->retract(delta);
+    // Call retract on the derived class using the retract trait function
+    const T retractResult = traits::retract<T>(value_,delta);
 
     // Create a Value pointer copy of the result
-    void* resultAsValuePlace = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
-    Value* resultAsValue = new(resultAsValuePlace) DERIVED(retractResult);
+    void* resultAsValuePlace = boost::singleton_pool<PoolTag, sizeof(This)>::malloc();
+    Value* resultAsValue = new(resultAsValuePlace) This(retractResult);
 
     // Return the pointer to the Value base class
     return resultAsValue;
@@ -100,44 +139,52 @@ public:
 
   /// Generic Value interface version of localCoordinates
   virtual Vector localCoordinates_(const Value& value2) const {
-    // Cast the base class Value pointer to a derived class pointer
-    const DERIVED& derivedValue2 = dynamic_cast<const DERIVED&>(value2);
+    // Cast the base class Value pointer to a templated generic class pointer
+    const This& genericValue2 = dynamic_cast<const This&>(value2);
 
-    // Return the result of calling localCoordinates on the derived class
-    return (static_cast<const DERIVED*>(this))->localCoordinates(derivedValue2);
+    // Return the result of calling localCoordinates trait on the derived class
+    return traits::localCoordinates<T>(value_,genericValue2.value_);
+  }
+
+  virtual void print(const std::string& str) const {
+    traits::print<T>(value_,str);
+  }
+  virtual size_t dim() const {
+    return traits::getDimension<T>(value_); // need functional form here since the dimension may be dynamic
   }
 
   /// Assignment operator
   virtual Value& operator=(const Value& rhs) {
     // Cast the base class Value pointer to a derived class pointer
-    const DERIVED& derivedRhs = dynamic_cast<const DERIVED&>(rhs);
+    const This& derivedRhs = dynamic_cast<const This&>(rhs);
 
     // Do the assignment and return the result
-    return (static_cast<DERIVED*>(this))->operator=(derivedRhs);
+    this->value_ = derivedRhs.value_;
+    return *this;
   }
 
   /// Conversion to the derived class
-  operator const DERIVED& () const {
-    return static_cast<const DERIVED&>(*this);
+  operator const T& () const {
+    return value_;
   }
 
   /// Conversion to the derived class
-  operator DERIVED& () {
-    return static_cast<DERIVED&>(*this);
+  operator T& () {
+    return value_;
   }
+
 
 protected:
   /// Assignment operator, protected because only the Value or DERIVED
   /// assignment operators should be used.
-  DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& rhs) {
-    // Nothing to do, do not call base class assignment operator
-    return *this;
-  }
+//  DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& rhs) {
+//    // Nothing to do, do not call base class assignment operator
+//    return *this;
+//  }
 
 private:
   /// Fake Tag struct for singleton pool allocator. In fact, it is never used!
   struct PoolTag { };
-
 };
 
 } /* namespace gtsam */
