@@ -205,7 +205,7 @@ namespace gtsam {
   Values::Values(const Values::Filtered<ValueType>& view) {
     BOOST_FOREACH(const typename Filtered<ValueType>::KeyValuePair& key_value, view) {
       Key key = key_value.key;
-      insert<ValueType>(key, key_value.value);
+      insert(key, static_cast<const ValueType&>(key_value.value));
     }
   }
 
@@ -281,7 +281,7 @@ namespace gtsam {
         throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
 
       // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
-      return static_cast<const GenericValue<ValueType>&>(*item->second).value_;
+      return static_cast<const GenericValue<ValueType>&>(*item->second).value();
     } else {
       return boost::none;
     }
@@ -293,4 +293,8 @@ namespace gtsam {
     insert(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
   }
 
+  template <typename ValueType>
+  void Values::update(Key j, const ValueType& val) {
+    update(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
+  }
 }
