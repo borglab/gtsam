@@ -187,4 +187,11 @@ private:
   struct PoolTag { };
 };
 
+// define Value::cast here since now GenericValue has been declared
+template<typename ValueType>
+ const ValueType& Value::cast() const {
+   return dynamic_cast<const GenericValue<ValueType>&>(*this).value();
+ }
+
+
 } /* namespace gtsam */

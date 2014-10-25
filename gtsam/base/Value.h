@@ -122,6 +122,10 @@ namespace gtsam {
     /** Assignment operator */
     virtual Value& operator=(const Value& rhs) = 0;
 
+    /** Cast to known ValueType */
+    template<typename ValueType>
+    const ValueType& cast() const;
+
     /** Virutal destructor */
     virtual ~Value() {}
 

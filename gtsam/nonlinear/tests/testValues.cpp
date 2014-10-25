@@ -353,12 +353,12 @@ TEST(Values, filter) {
   BOOST_FOREACH(const Values::Filtered<>::KeyValuePair& key_value, filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
-      EXPECT(typeid(GenericValue<Pose2>) == typeid(key_value.value));
-      EXPECT(assert_equal(pose2, dynamic_cast<const GenericValue<Pose2>&>(key_value.value).value()));
+      try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
+      EXPECT(assert_equal(pose2, key_value.value.cast<Pose2>()));
     } else if(i == 1) {
       LONGS_EQUAL(3, (long)key_value.key);
-      EXPECT(typeid(GenericValue<Pose3>) == typeid(key_value.value));
-      EXPECT(assert_equal(pose3, dynamic_cast<const GenericValue<Pose3>&>(key_value.value).value()));
+      try {key_value.value.cast<Pose3>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose3");}
+      EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
     } else {
       EXPECT(false);
     }
@@ -416,10 +416,10 @@ TEST(Values, Symbol_filter) {
   BOOST_FOREACH(const Values::Filtered<Value>::KeyValuePair& key_value, values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
-      EXPECT(assert_equal(pose1, dynamic_cast<const GenericValue<Pose3>&>(key_value.value).value()));
+      EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
     } else if(i == 1) {
       LONGS_EQUAL(Symbol('y', 3), (long)key_value.key);
-      EXPECT(assert_equal(pose3, dynamic_cast<const GenericValue<Pose3>&>(key_value.value).value()));
+      EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
     } else {
       EXPECT(false);
     }
