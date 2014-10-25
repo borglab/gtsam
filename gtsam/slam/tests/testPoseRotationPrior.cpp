@@ -62,17 +62,19 @@ TEST( testPoseRotationFactor, level3_zero_error ) {
 TEST( testPoseRotationFactor, level3_error ) {
   Pose3 pose1(rot3A, point3A);
   Pose3RotationPrior factor(poseKey, rot3C, model3);
-#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   Matrix actH1;
-  EXPECT(assert_equal((Vector(3) << 0.1,0.2,0.3), factor.evaluateError(pose1, actH1)));
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  EXPECT(assert_equal((Vector(3) << -0.1, -0.2,-0.3), factor.evaluateError(pose1, actH1)));
+#else
+  EXPECT(assert_equal((Vector(3) << -0.1, -0.2, -0.3), factor.evaluateError(pose1, actH1),1e-2));
+#endif
   // the derivative is more complex, but is close to the identity for Rot3 around the origin
   /*
   Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
       boost::bind(evalFactorError3, factor, _1), pose1, 1e-2);
   EXPECT(assert_equal(expH1, actH1, tol));*/
-#else
   // If not using true expmap will be close, but not exact around the origin
-#endif
+
 }
 
 /* ************************************************************************* */
