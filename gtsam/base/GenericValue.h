@@ -12,8 +12,8 @@
 /*
  * @file GenericValue.h
  * @date Jan 26, 2012
- * @author Duy Nguyen Ta
- * @author Mike Bosse, Abel Gawel, Renaud Dube
+ * @author Michael Bosse, Abel Gawel, Renaud Dube
+ * based on DrivedValue.h by Duy Nguyen Ta
  */
 
 #pragma once
@@ -117,7 +117,7 @@ public:
   /// equals implementing generic Value interface
   virtual bool equals_(const Value& p, double tol = 1e-9) const {
     // Cast the base class Value pointer to a templated generic class pointer
-    const This& genericValue2 = dynamic_cast<const This&>(p);
+    const This& genericValue2 = static_cast<const This&>(p);
 
     // Return the result of using the equals traits for the derived class
     return traits::equals<T>(this->value_, genericValue2.value_, tol);
@@ -140,7 +140,7 @@ public:
   /// Generic Value interface version of localCoordinates
   virtual Vector localCoordinates_(const Value& value2) const {
     // Cast the base class Value pointer to a templated generic class pointer
-    const This& genericValue2 = dynamic_cast<const This&>(value2);
+    const This& genericValue2 = static_cast<const This&>(value2);
 
     // Return the result of calling localCoordinates trait on the derived class
     return traits::localCoordinates<T>(value_,genericValue2.value_);
@@ -156,7 +156,7 @@ public:
   /// Assignment operator
   virtual Value& operator=(const Value& rhs) {
     // Cast the base class Value pointer to a derived class pointer
-    const This& derivedRhs = dynamic_cast<const This&>(rhs);
+    const This& derivedRhs = static_cast<const This&>(rhs);
 
     // Do the assignment and return the result
     this->value_ = derivedRhs.value_;

@@ -354,10 +354,12 @@ TEST(Values, filter) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
       try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
+      THROWS_EXCEPTION(key_value.value.cast<Pose3>());
       EXPECT(assert_equal(pose2, key_value.value.cast<Pose2>()));
     } else if(i == 1) {
       LONGS_EQUAL(3, (long)key_value.key);
       try {key_value.value.cast<Pose3>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose3");}
+      THROWS_EXCEPTION(key_value.value.cast<Pose2>());
       EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
     } else {
       EXPECT(false);
