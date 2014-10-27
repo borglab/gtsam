@@ -61,6 +61,15 @@ public:
   Vector localCoordinates(const TestValue&) const { return Vector(); }
 };
 
+namespace gtsam {
+namespace traits {
+template <>
+struct is_manifold<TestValue> : public std::true_type {};
+template <>
+struct dimension<TestValue> : public std::integral_constant<int, 0> {};
+}
+}
+
 /* ************************************************************************* */
 TEST( Values, equals1 )
 {

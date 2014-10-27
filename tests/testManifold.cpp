@@ -17,6 +17,7 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -65,39 +66,39 @@ TEST(Manifold, _dimension) {
 // charts
 TEST(Manifold, DefaultChart) {
 
-  DefaultChart<Point2> chart1(Point2(0, 0));
-  EXPECT(chart1.apply(Point2(1,0))==Vector2(1,0));
-  EXPECT(chart1.retract(Vector2(1,0))==Point2(1,0));
+  DefaultChart<Point2> chart1;
+  EXPECT(chart1.local(Point2(0, 0), Point2(1,0)) == Vector2(1, 0));
+  EXPECT(chart1.retract(Point2(0, 0), Vector2(1,0)) == Point2(1, 0));
 
   Vector v2(2);
   v2 << 1, 0;
-  DefaultChart<Vector2> chart2(Vector2(0, 0));
-  EXPECT(assert_equal(v2,chart2.apply(Vector2(1,0))));
-  EXPECT(chart2.retract(v2)==Vector2(1,0));
+  DefaultChart<Vector2> chart2;
+  EXPECT(assert_equal(v2, chart2.local(Vector2(0, 0), Vector2(1, 0))));
+  EXPECT(chart2.retract(Vector2(0, 0), v2) == Vector2(1, 0));
 
-  DefaultChart<double> chart3(0);
+  DefaultChart<double> chart3;
   Vector v1(1);
   v1 << 1;
-  EXPECT(assert_equal(v1,chart3.apply(1)));
-  EXPECT_DOUBLES_EQUAL(chart3.retract(v1), 1, 1e-9);
+  EXPECT(assert_equal(v1,chart3.local(0, 1)));
+  EXPECT_DOUBLES_EQUAL(chart3.retract(0, v1), 1, 1e-9);
 
   // Dynamic does not work yet !
   Vector z = zero(2), v(2);
   v << 1, 0;
-  DefaultChart<Vector> chart4(z);
-  EXPECT(assert_equal(chart4.apply(v),v));
-  EXPECT(assert_equal(chart4.retract(v),v));
+  DefaultChart<Vector> chart4;
+  EXPECT(assert_equal(chart4.local(z, v), v));
+  EXPECT(assert_equal(chart4.retract(z, v), v));
 
   Vector v3(3);
   v3 << 1, 1, 1;
   Rot3 I = Rot3::identity();
   Rot3 R = I.retract(v3);
-  DefaultChart<Rot3> chart5(I);
-  EXPECT(assert_equal(v3,chart5.apply(R)));
-  EXPECT(assert_equal(chart5.retract(v3),R));
+  DefaultChart<Rot3> chart5;
+  EXPECT(assert_equal(v3,chart5.local(I, R)));
+  EXPECT(assert_equal(chart5.retract(I, v3), R));
   // Check zero vector
-  DefaultChart<Rot3> chart6(R);
-  EXPECT(assert_equal(zero(3),chart6.apply(R)));
+  DefaultChart<Rot3> chart6;
+  EXPECT(assert_equal(zero(3),chart6.local(R, R)));
 }
 
 /* ************************************************************************* */
@@ -114,47 +115,47 @@ TEST(Manifold, _zero) {
 TEST(Manifold, Canonical) {
 
   Canonical<Point2> chart1;
-  EXPECT(chart1.apply(Point2(1,0))==Vector2(1,0));
+  EXPECT(chart1.local(Point2(1,0))==Vector2(1,0));
   EXPECT(chart1.retract(Vector2(1,0))==Point2(1,0));
 
   Vector v2(2);
   v2 << 1, 0;
   Canonical<Vector2> chart2;
-  EXPECT(assert_equal(v2,chart2.apply(Vector2(1,0))));
+  EXPECT(assert_equal(v2,chart2.local(Vector2(1,0))));
   EXPECT(chart2.retract(v2)==Vector2(1,0));
 
   Canonical<double> chart3;
   Eigen::Matrix<double, 1, 1> v1;
   v1 << 1;
-  EXPECT(chart3.apply(1)==v1);
+  EXPECT(chart3.local(1)==v1);
   EXPECT_DOUBLES_EQUAL(chart3.retract(v1), 1, 1e-9);
 
   Canonical<Point3> chart4;
   Point3 point(1, 2, 3);
   Vector v3(3);
   v3 << 1, 2, 3;
-  EXPECT(assert_equal(v3,chart4.apply(point)));
+  EXPECT(assert_equal(v3,chart4.local(point)));
   EXPECT(assert_equal(chart4.retract(v3),point));
 
   Canonical<Pose3> chart5;
   Pose3 pose(Rot3::identity(), point);
   Vector v6(6);
   v6 << 0, 0, 0, 1, 2, 3;
-  EXPECT(assert_equal(v6,chart5.apply(pose)));
+  EXPECT(assert_equal(v6,chart5.local(pose)));
   EXPECT(assert_equal(chart5.retract(v6),pose));
 
   Canonical<Camera> chart6;
   Cal3Bundler cal0(0, 0, 0);
   Camera camera(Pose3(), cal0);
   Vector z9 = Vector9::Zero();
-  EXPECT(assert_equal(z9,chart6.apply(camera)));
+  EXPECT(assert_equal(z9,chart6.local(camera)));
   EXPECT(assert_equal(chart6.retract(z9),camera));
 
   Cal3Bundler cal; // Note !! Cal3Bundler() != zero<Cal3Bundler>::value()
   Camera camera2(pose, cal);
   Vector v9(9);
   v9 << 0, 0, 0, 1, 2, 3, 1, 0, 0;
-  EXPECT(assert_equal(v9,chart6.apply(camera2)));
+  EXPECT(assert_equal(v9,chart6.local(camera2)));
   EXPECT(assert_equal(chart6.retract(v9),camera2));
 }
 

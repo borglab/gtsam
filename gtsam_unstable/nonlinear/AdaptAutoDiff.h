@@ -59,8 +59,8 @@ public:
     using ceres::internal::AutoDiff;
 
     // Make arguments
-    Vector1 v1 = chart1.apply(a1);
-    Vector2 v2 = chart2.apply(a2);
+    Vector1 v1 = chart1.local(a1);
+    Vector2 v2 = chart2.local(a2);
 
     bool success;
     VectorT result;

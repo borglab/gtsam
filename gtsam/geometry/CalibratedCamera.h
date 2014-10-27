@@ -220,5 +220,24 @@ private:
   }
 
   /// @}
-      };}
+};
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_group<CalibratedCamera> : public std::true_type {
+};
+
+template<>
+struct is_manifold<CalibratedCamera> : public std::true_type {
+};
+
+template<>
+struct dimension<CalibratedCamera> : public std::integral_constant<int, 6> {
+};
+
+}
+
+}
 
