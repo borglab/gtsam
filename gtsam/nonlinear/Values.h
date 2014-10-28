@@ -393,7 +393,7 @@ namespace gtsam {
     // supplied \c filter function.
     template<class ValueType>
     static bool filterHelper(const boost::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
-      BOOST_STATIC_ASSERT((!std::is_same<ValueType,Value>::value));
+      BOOST_STATIC_ASSERT((!std::is_same<ValueType, Value>::value));
       // Filter and check the type
       return filter(key_value.key) && (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value));
     }

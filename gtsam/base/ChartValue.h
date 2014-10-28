@@ -42,20 +42,20 @@
 
 namespace gtsam {
 
-// ChartValue is derived from GenericValue<T> and CHART so that CHART can be zero sized (as in DefaultChart<T>)
-// if the CHART is a member variable then it won't ever be zero sized.
-template<class T, class CHART=DefaultChart<T> >
-class ChartValue : public GenericValue<T>, public CHART {
-  BOOST_CONCEPT_ASSERT((ChartConcept<CHART>));
+// ChartValue is derived from GenericValue<T> and Chart so that Chart can be zero sized (as in DefaultChart<T>)
+// if the Chart is a member variable then it won't ever be zero sized.
+template<class T, class Chart_=DefaultChart<T> >
+class ChartValue : public GenericValue<T>, public Chart {
+  BOOST_CONCEPT_ASSERT((ChartConcept<Chart_>));
  public:
   typedef T type;
-  typedef CHART Chart;
+  typedef Chart_ Chart;
 
  public:
   ChartValue() : GenericValue<T>(T()) {}
   ChartValue(const T& value) : GenericValue<T>(value) {}
   template<typename C>
-  ChartValue(const T& value, C chart_initializer) : GenericValue<T>(value), CHART(chart_initializer) {}
+  ChartValue(const T& value, C chart_initializer) : GenericValue<T>(value), Chart(chart_initializer) {}
 
   virtual ~ChartValue() {}
 
@@ -96,7 +96,7 @@ class ChartValue : public GenericValue<T>, public CHART {
 
     // Create a Value pointer copy of the result
     void* resultAsValuePlace = boost::singleton_pool<PoolTag, sizeof(ChartValue)>::malloc();
-    Value* resultAsValue = new(resultAsValuePlace) ChartValue(retractResult, static_cast<const CHART&>(*this));
+    Value* resultAsValue = new(resultAsValuePlace) ChartValue(retractResult, static_cast<const Chart&>(*this));
 
     // Return the pointer to the Value base class
     return resultAsValue;
@@ -141,7 +141,7 @@ private:
 
 namespace traits {
 template <typename T, typename Chart>
-struct dimension<ChartValue<T,Chart> > : public dimension<Chart> {};
+struct dimension<ChartValue<T, Chart> > : public dimension<Chart> {};
 }
 
 template<typename Chart>

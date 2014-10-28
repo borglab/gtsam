@@ -181,12 +181,12 @@ struct ChartConcept {
     /**
      * Returns Retraction update of val_
      */
-    type retract_ret = C::retract(val_,vec_);
+    type retract_ret = C::retract(val_, vec_);
 
     /**
      * Returns local coordinates of another object
      */
-    vec_ = C::local(val_,retract_ret);
+    vec_ = C::local(val_, retract_ret);
 
     // a way to get the dimension that is compatible with dynamically sized types
     dim_ = C::getDimension(val_);

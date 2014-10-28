@@ -65,19 +65,19 @@ namespace gtsam {
   };
   // partial specialized version for ValueType == Value
   template<class CastedKeyValuePairType, class KeyValuePairType>
-  struct ValuesCastHelper<Value,CastedKeyValuePairType,KeyValuePairType> {
+  struct ValuesCastHelper<Value, CastedKeyValuePairType, KeyValuePairType> {
     static CastedKeyValuePairType cast(KeyValuePairType key_value) {
       // Static cast because we already checked the type during filtering
-      // in this case the casted and keyvalue pair are essentially the same type (key,Value&) so perhaps this could be done with just a cast of the key_value?
+      // in this case the casted and keyvalue pair are essentially the same type (key, Value&) so perhaps this could be done with just a cast of the key_value?
       return CastedKeyValuePairType(key_value.key, key_value.value);
     }
   };
   // partial specialized version for ValueType == Value
   template<class CastedKeyValuePairType, class KeyValuePairType>
-  struct ValuesCastHelper<const Value,CastedKeyValuePairType,KeyValuePairType> {
+  struct ValuesCastHelper<const Value, CastedKeyValuePairType, KeyValuePairType> {
     static CastedKeyValuePairType cast(KeyValuePairType key_value) {
       // Static cast because we already checked the type during filtering
-      // in this case the casted and keyvalue pair are essentially the same type (key,Value&) so perhaps this could be done with just a cast of the key_value?
+      // in this case the casted and keyvalue pair are essentially the same type (key, Value&) so perhaps this could be done with just a cast of the key_value?
       return CastedKeyValuePairType(key_value.key, key_value.value);
     }
   };
@@ -302,7 +302,7 @@ namespace gtsam {
   // overloaded insert with chart initializer
   template<typename ValueType, typename Chart, typename ChartInit>
   void Values::insert(Key j, const ValueType& val, ChartInit chart) {
-    insert(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val,chart)));
+    insert(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val, chart)));
   }
 
   // update with default chart
@@ -318,7 +318,7 @@ namespace gtsam {
   // update with chart initializer, /todo: perhaps there is a way to init chart from old value...
   template<typename ValueType, typename Chart, typename ChartInit>
   void Values::update(Key j, const ValueType& val, ChartInit chart) {
-    update(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val,chart)));
+    update(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val, chart)));
   }
 
 }

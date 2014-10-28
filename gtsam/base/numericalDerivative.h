@@ -124,7 +124,7 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
   ChartY chartY;
 
   // Bit of a hack for now to find number of rows
-  TangentY zeroY = chartY.local(hx,hx);
+  TangentY zeroY = chartY.local(hx, hx);
   size_t m = zeroY.size();
 
   // get chart at x
