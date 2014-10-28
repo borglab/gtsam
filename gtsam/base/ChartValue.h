@@ -139,6 +139,11 @@ private:
   struct PoolTag { };
 };
 
+namespace traits {
+template <typename T, typename Chart>
+struct dimension<ChartValue<T,Chart> > : public dimension<Chart> {};
+}
+
 template<typename Chart>
 const Chart& Value::getChart() const {
 // define Value::cast here since now ChartValue has been declared

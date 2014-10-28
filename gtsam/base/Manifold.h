@@ -161,8 +161,11 @@ struct DefaultChart {
     return origin.dim();
   }
 };
+
 namespace traits {
+// populate default traits
 template <typename T> struct is_chart<DefaultChart<T> > : public std::true_type {};
+template <typename T> struct dimension<DefaultChart<T> > : public dimension<T> {};
 }
 
 template<class C>
