@@ -45,7 +45,7 @@ namespace gtsam {
 // ChartValue is derived from GenericValue<T> and Chart so that Chart can be zero sized (as in DefaultChart<T>)
 // if the Chart is a member variable then it won't ever be zero sized.
 template<class T, class Chart_=DefaultChart<T> >
-class ChartValue : public GenericValue<T>, public Chart {
+class ChartValue : public GenericValue<T>, public Chart_ {
   BOOST_CONCEPT_ASSERT((ChartConcept<Chart_>));
  public:
   typedef T type;
