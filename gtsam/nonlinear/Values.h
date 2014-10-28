@@ -44,8 +44,7 @@
 #include <string>
 #include <utility>
 
-#include <gtsam/base/Value.h>
-#include <gtsam/base/GenericValue.h>
+#include <gtsam/base/ChartValue.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/Key.h>
 
@@ -249,14 +248,21 @@ namespace gtsam {
     /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
     void insert(Key j, const Value& val);
 
-    /** Templated verion to add a variable with the given j,
-     * throws KeyAlreadyExists<J> if j is already present
-     * will wrap the val into a GenericValue<ValueType> to insert*/
-    template <typename ValueType> void insert(Key j, const ValueType& val);
-
-
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
     void insert(const Values& values);
+
+    /** Templated verion to add a variable with the given j,
+     * throws KeyAlreadyExists<J> if j is already present
+     * if no chart is specified, the DefaultChart<ValueType> is used
+     */
+    template <typename ValueType>
+    void insert(Key j, const ValueType& val);
+    template <typename ValueType, typename Chart>
+    void insert(Key j, const ValueType& val);
+     // overloaded insert version that also specifies a chart initializer
+    template <typename ValueType, typename Chart, typename ChartInit>
+    void insert(Key j, const ValueType& val, ChartInit chart);
+
 
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
@@ -266,7 +272,17 @@ namespace gtsam {
 
     /** single element change of existing element */
     void update(Key j, const Value& val);
-    template <typename T> void update(Key j, const T& val);
+
+    /** Templated verion to update a variable with the given j,
+      * throws KeyAlreadyExists<J> if j is already present
+      * if no chart is specified, the DefaultChart<ValueType> is used
+      */
+    template <typename T>
+    void update(Key j, const T& val);
+    template <typename T, typename Chart>
+    void update(Key j, const T& val);
+    template <typename T, typename Chart, typename ChartInit>
+    void update(Key j, const T& val, ChartInit chart);
 
     /** update the current available values without adding new ones */
     void update(const Values& values);
@@ -377,9 +393,9 @@ namespace gtsam {
     // supplied \c filter function.
     template<class ValueType>
     static bool filterHelper(const boost::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
-      BOOST_STATIC_ASSERT((!std::is_same<ValueType,Value>::value));
+      BOOST_STATIC_ASSERT((!std::is_same<ValueType, Value>::value));
       // Filter and check the type
-      return filter(key_value.key) && (typeid(GenericValue<ValueType>) == typeid(key_value.value) );
+      return filter(key_value.key) && (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value));
     }
 
     /** Serialization function */

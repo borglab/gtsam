@@ -61,7 +61,7 @@ public:
   /// Construct a nullary method expression
   template<typename A>
   Expression(const Expression<A>& expression,
-      T (A::*method)(typename Optional<T, A>::type) const) :
+      T (A::*method)(typename OptionalJacobian<T, A>::type) const) :
       root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
   }
 
@@ -75,8 +75,8 @@ public:
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
-      T (A1::*method)(const A2&, typename Optional<T, A1>::type,
-          typename Optional<T, A2>::type) const,
+      T (A1::*method)(const A2&, typename OptionalJacobian<T, A1>::type,
+          typename OptionalJacobian<T, A2>::type) const,
       const Expression<A2>& expression2) :
       root_(
           new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),

@@ -38,7 +38,7 @@ static double inf = std::numeric_limits<double>::infinity();
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
-const Symbol key1('v',1), key2('v',2), key3('v',3), key4('v',4);
+const Symbol key1('v', 1), key2('v', 2), key3('v', 3), key4('v', 4);
 
 
 class TestValueData {
@@ -61,16 +61,25 @@ public:
   Vector localCoordinates(const TestValue&) const { return Vector(); }
 };
 
+namespace gtsam {
+namespace traits {
+template <>
+struct is_manifold<TestValue> : public std::true_type {};
+template <>
+struct dimension<TestValue> : public std::integral_constant<int, 0> {};
+}
+}
+
 /* ************************************************************************* */
 TEST( Values, equals1 )
 {
   Values expected;
   LieVector v((Vector(3) << 5.0, 6.0, 7.0));
 
-  expected.insert(key1,v);
+  expected.insert(key1, v);
   Values actual;
-  actual.insert(key1,v);
-  CHECK(assert_equal(expected,actual));
+  actual.insert(key1, v);
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -260,7 +269,7 @@ TEST(Values, expmap_d)
   CHECK(config0.equals(config0));
 
   Values poseconfig;
-  poseconfig.insert(key1, Pose2(1,2,3));
+  poseconfig.insert(key1, Pose2(1, 2, 3));
   poseconfig.insert(key2, Pose2(0.3, 0.4, 0.5));
 
   CHECK(equal(config0, config0));
@@ -330,7 +339,7 @@ TEST(Values, update)
   Values expected;
   expected.insert(key1, LieVector((Vector(1) << -1.)));
   expected.insert(key2, LieVector((Vector(1) << -2.)));
-  CHECK(assert_equal(expected,config0));
+  CHECK(assert_equal(expected, config0));
 }
 
 /* ************************************************************************* */
@@ -410,9 +419,9 @@ TEST(Values, Symbol_filter) {
 
   Values values;
   values.insert(X(0), pose0);
-  values.insert(Symbol('y',1), pose1);
+  values.insert(Symbol('y', 1), pose1);
   values.insert(X(2), pose2);
-  values.insert(Symbol('y',3), pose3);
+  values.insert(Symbol('y', 3), pose3);
 
   int i = 0;
   BOOST_FOREACH(const Values::Filtered<Value>::KeyValuePair& key_value, values.filter(Symbol::ChrTest('y'))) {

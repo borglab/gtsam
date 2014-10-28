@@ -73,7 +73,7 @@ Vector numericalGradient(boost::function<double(const X&)> h, const X& x,
   typedef typename ChartX::vector TangentX;
 
   // get chart at x
-  ChartX chartX(x);
+  ChartX chartX;
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
   TangentX d;
@@ -82,9 +82,9 @@ Vector numericalGradient(boost::function<double(const X&)> h, const X& x,
   Vector g = zero(N); // Can be fixed size
   for (int j = 0; j < N; j++) {
     d(j) = delta;
-    double hxplus = h(chartX.retract(d));
+    double hxplus = h(chartX.retract(x, d));
     d(j) = -delta;
-    double hxmin = h(chartX.retract(d));
+    double hxmin = h(chartX.retract(x, d));
     d(j) = 0;
     g(j) = (hxplus - hxmin) * factor;
   }
@@ -121,14 +121,14 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
 
   // get value at x, and corresponding chart
   Y hx = h(x);
-  ChartY chartY(hx);
+  ChartY chartY;
 
   // Bit of a hack for now to find number of rows
-  TangentY zeroY = chartY.apply(hx);
+  TangentY zeroY = chartY.local(hx, hx);
   size_t m = zeroY.size();
 
   // get chart at x
-  ChartX chartX(x);
+  ChartX chartX;
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
   TangentX dx;
@@ -139,9 +139,9 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
   double factor = 1.0 / (2.0 * delta);
   for (int j = 0; j < N; j++) {
     dx(j) = delta;
-    TangentY dy1 = chartY.apply(h(chartX.retract(dx)));
+    TangentY dy1 = chartY.local(hx, h(chartX.retract(x, dx)));
     dx(j) = -delta;
-    TangentY dy2 = chartY.apply(h(chartX.retract(dx)));
+    TangentY dy2 = chartY.local(hx, h(chartX.retract(x, dx)));
     dx(j) = 0;
     H.col(j) << (dy1 - dy2) * factor;
   }

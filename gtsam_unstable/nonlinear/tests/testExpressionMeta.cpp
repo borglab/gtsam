@@ -201,7 +201,7 @@ Pose3  pose;
   // Now, let's create the optional Jacobian arguments
   typedef Point3 T;
   typedef boost::mpl::vector<Pose3, Point3> TYPES;
-  typedef boost::mpl::transform<TYPES, Optional<T, MPL::_1> >::type Optionals;
+  typedef boost::mpl::transform<TYPES, OptionalJacobian<T, MPL::_1> >::type Optionals;
 
   // Unfortunately this is moot: we need a pointer to a function with the
   // optional derivatives; I don't see a way of calling a function that we
