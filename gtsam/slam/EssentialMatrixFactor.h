@@ -29,6 +29,7 @@ public:
 
   /**
    *  Constructor
+   *  @param key Essential Matrix variable key
    *  @param pA point in first camera, in calibrated coordinates
    *  @param pB point in second camera, in calibrated coordinates
    *  @param model noise model is about dot product in ideal, homogeneous coordinates
@@ -42,6 +43,7 @@ public:
 
   /**
    *  Constructor
+   *  @param key Essential Matrix variable key
    *  @param pA point in first camera, in pixel coordinates
    *  @param pB point in second camera, in pixel coordinates
    *  @param model noise model is about dot product in ideal, homogeneous coordinates
@@ -99,6 +101,8 @@ public:
 
   /**
    *  Constructor
+   *  @param key1 Essential Matrix variable key
+   *  @param key2 Inverse depth variable key
    *  @param pA point in first camera, in calibrated coordinates
    *  @param pB point in second camera, in calibrated coordinates
    *  @param model noise model should be in pixels, as well
@@ -113,6 +117,8 @@ public:
 
   /**
    *  Constructor
+   *  @param key1 Essential Matrix variable key
+   *  @param key2 Inverse depth variable key
    *  @param pA point in first camera, in pixel coordinates
    *  @param pB point in second camera, in pixel coordinates
    *  @param K calibration object, will be used only in constructor
@@ -216,6 +222,8 @@ public:
 
   /**
    *  Constructor
+   *  @param key1 Essential Matrix variable key
+   *  @param key2 Inverse depth variable key
    *  @param pA point in first camera, in calibrated coordinates
    *  @param pB point in second camera, in calibrated coordinates
    *  @param bRc extra rotation between "body" and "camera" frame
@@ -228,6 +236,8 @@ public:
 
   /**
    *  Constructor
+   *  @param key1 Essential Matrix variable key
+   *  @param key2 Inverse depth variable key
    *  @param pA point in first camera, in pixel coordinates
    *  @param pB point in second camera, in pixel coordinates
    *  @param K calibration object, will be used only in constructor
