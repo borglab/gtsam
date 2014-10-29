@@ -221,15 +221,15 @@ namespace imuBias {
 namespace traits {
 
 template<>
-struct is_group<imuBias::ConstantBias> : public std::true_type {
+struct is_group<imuBias::ConstantBias> : public boost::true_type {
 };
 
 template<>
-struct is_manifold<imuBias::ConstantBias> : public std::true_type {
+struct is_manifold<imuBias::ConstantBias> : public boost::true_type {
 };
 
 template<>
-struct dimension<imuBias::ConstantBias> : public std::integral_constant<int, 6> {
+struct dimension<imuBias::ConstantBias> : public boost::integral_constant<int, 6> {
 };
 
 }

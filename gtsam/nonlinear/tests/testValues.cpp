@@ -64,9 +64,9 @@ public:
 namespace gtsam {
 namespace traits {
 template <>
-struct is_manifold<TestValue> : public std::true_type {};
+struct is_manifold<TestValue> : public boost::true_type {};
 template <>
-struct dimension<TestValue> : public std::integral_constant<int, 0> {};
+struct dimension<TestValue> : public boost::integral_constant<int, 0> {};
 }
 }
 

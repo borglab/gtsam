@@ -663,11 +663,11 @@ private:
 namespace traits {
 
 template<typename Calibration>
-struct is_manifold<PinholeCamera<Calibration> > : public std::true_type {
+struct is_manifold<PinholeCamera<Calibration> > : public boost::true_type {
 };
 
 template<typename Calibration>
-struct dimension<PinholeCamera<Calibration> > : public std::integral_constant<
+struct dimension<PinholeCamera<Calibration> > : public boost::integral_constant<
     int, dimension<Pose3>::value + dimension<Calibration>::value> {
 };
 

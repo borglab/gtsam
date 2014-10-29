@@ -245,15 +245,15 @@ namespace gtsam {
   namespace traits {
 
   template<>
-  struct is_group<Point3> : public std::true_type {
+  struct is_group<Point3> : public boost::true_type {
   };
 
   template<>
-  struct is_manifold<Point3> : public std::true_type {
+  struct is_manifold<Point3> : public boost::true_type {
   };
 
   template<>
-  struct dimension<Point3> : public std::integral_constant<int, 3> {
+  struct dimension<Point3> : public boost::integral_constant<int, 3> {
   };
 
   }

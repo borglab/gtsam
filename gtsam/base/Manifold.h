@@ -20,7 +20,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <boost/static_assert.hpp>
-#include <type_traits>
+#include <boost/type_traits.hpp>
 #include <string>
 
 namespace gtsam {
@@ -50,7 +50,7 @@ namespace traits {
 
 // is group, by default this is false
 template<typename T>
-struct is_group: public std::false_type {
+struct is_group: public boost::false_type {
 };
 
 // identity, no default provided, by default given by default constructor
@@ -63,11 +63,11 @@ struct identity {
 
 // is manifold, by default this is false
 template<typename T>
-struct is_manifold: public std::false_type {
+struct is_manifold: public boost::false_type {
 };
 
 // dimension, can return Eigen::Dynamic (-1) if not known at compile time
-typedef std::integral_constant<int, Eigen::Dynamic> Dynamic;
+typedef boost::integral_constant<int, Eigen::Dynamic> Dynamic;
 template<typename T>
 struct dimension : public Dynamic {}; //default to dynamic
 
@@ -83,15 +83,15 @@ template<typename T> struct zero: public identity<T> {
 // double
 
 template<>
-struct is_group<double> : public std::true_type {
+struct is_group<double> : public boost::true_type {
 };
 
 template<>
-struct is_manifold<double> : public std::true_type {
+struct is_manifold<double> : public boost::true_type {
 };
 
 template<>
-struct dimension<double> : public std::integral_constant<int, 1> {
+struct dimension<double> : public boost::integral_constant<int, 1> {
 };
 
 template<>
@@ -104,11 +104,11 @@ struct zero<double> {
 // Fixed size Eigen::Matrix type
 
 template<int M, int N, int Options>
-struct is_group<Eigen::Matrix<double, M, N, Options> > : public std::true_type {
+struct is_group<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
 };
 
 template<int M, int N, int Options>
-struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public std::true_type {
+struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
 };
 
 // TODO: Could be more sophisticated using Eigen traits and SFINAE?
@@ -126,12 +126,12 @@ struct dimension<Eigen::Matrix<double, Eigen::Dynamic, N, Options> > : public Dy
 };
 
 template<int M, int N, int Options>
-struct dimension<Eigen::Matrix<double, M, N, Options> > : public std::integral_constant<
+struct dimension<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<
     int, M * N> {
 };
 
 template<int M, int N, int Options>
-struct zero<Eigen::Matrix<double, M, N, Options> > : public std::integral_constant<
+struct zero<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<
     int, M * N> {
   BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "traits::zero is only supported for fixed-size matrices");
@@ -140,7 +140,7 @@ struct zero<Eigen::Matrix<double, M, N, Options> > : public std::integral_consta
   }
 };
 
-template <typename T> struct is_chart : public std::false_type {};
+template <typename T> struct is_chart : public boost::false_type {};
 
 } // \ namespace traits
 
@@ -164,7 +164,7 @@ struct DefaultChart {
 
 namespace traits {
 // populate default traits
-template <typename T> struct is_chart<DefaultChart<T> > : public std::true_type {};
+template <typename T> struct is_chart<DefaultChart<T> > : public boost::true_type {};
 template <typename T> struct dimension<DefaultChart<T> > : public dimension<T> {};
 }
 

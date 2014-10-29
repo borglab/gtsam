@@ -142,11 +142,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3Unified> : public std::true_type {
+struct is_manifold<Cal3Unified> : public boost::true_type {
 };
 
 template<>
-struct dimension<Cal3Unified> : public std::integral_constant<int, 10> {
+struct dimension<Cal3Unified> : public boost::integral_constant<int, 10> {
 };
 
 template<>

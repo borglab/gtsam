@@ -158,11 +158,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<StereoCamera> : public std::true_type {
+struct is_manifold<StereoCamera> : public boost::true_type {
 };
 
 template<>
-struct dimension<StereoCamera> : public std::integral_constant<int, 6> {
+struct dimension<StereoCamera> : public boost::integral_constant<int, 6> {
 };
 
 template<>
