@@ -178,7 +178,7 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<LieMatrix> : public std::true_type {
+struct is_manifold<LieMatrix> : public boost::true_type {
 };
 
 template<>

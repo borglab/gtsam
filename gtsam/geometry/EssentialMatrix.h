@@ -199,11 +199,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<EssentialMatrix> : public std::true_type {
+struct is_manifold<EssentialMatrix> : public boost::true_type {
 };
 
 template<>
-struct dimension<EssentialMatrix> : public std::integral_constant<int, 5> {
+struct dimension<EssentialMatrix> : public boost::integral_constant<int, 5> {
 };
 
 template<>

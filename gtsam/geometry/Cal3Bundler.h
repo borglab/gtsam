@@ -189,11 +189,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3Bundler> : public std::true_type {
+struct is_manifold<Cal3Bundler> : public boost::true_type {
 };
 
 template<>
-struct dimension<Cal3Bundler> : public std::integral_constant<int, 3> {
+struct dimension<Cal3Bundler> : public boost::integral_constant<int, 3> {
 };
 
 template<>

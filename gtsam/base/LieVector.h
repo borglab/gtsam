@@ -133,7 +133,7 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<LieVector> : public std::true_type {
+struct is_manifold<LieVector> : public boost::true_type {
 };
 
 template<>

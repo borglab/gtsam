@@ -226,15 +226,15 @@ private:
 namespace traits {
 
 template<>
-struct is_group<CalibratedCamera> : public std::true_type {
+struct is_group<CalibratedCamera> : public boost::true_type {
 };
 
 template<>
-struct is_manifold<CalibratedCamera> : public std::true_type {
+struct is_manifold<CalibratedCamera> : public boost::true_type {
 };
 
 template<>
-struct dimension<CalibratedCamera> : public std::integral_constant<int, 6> {
+struct dimension<CalibratedCamera> : public boost::integral_constant<int, 6> {
 };
 
 }

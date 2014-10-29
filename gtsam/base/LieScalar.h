@@ -116,15 +116,15 @@ namespace gtsam {
   namespace traits {
 
   template<>
-  struct is_group<LieScalar> : public std::true_type {
+  struct is_group<LieScalar> : public boost::true_type {
   };
 
   template<>
-  struct is_manifold<LieScalar> : public std::true_type {
+  struct is_manifold<LieScalar> : public boost::true_type {
   };
 
   template<>
-  struct dimension<LieScalar> : public std::integral_constant<int, 1> {
+  struct dimension<LieScalar> : public boost::integral_constant<int, 1> {
   };
 
   }

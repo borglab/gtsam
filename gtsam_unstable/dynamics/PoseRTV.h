@@ -187,11 +187,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<PoseRTV> : public std::true_type {
+struct is_manifold<PoseRTV> : public boost::true_type {
 };
 
 template<>
-struct dimension<PoseRTV> : public std::integral_constant<int, 9> {
+struct dimension<PoseRTV> : public boost::integral_constant<int, 9> {
 };
 
 template<>
