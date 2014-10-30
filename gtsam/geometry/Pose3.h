@@ -326,7 +326,6 @@ public:
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("Pose3",*this);
       ar & BOOST_SERIALIZATION_NVP(R_);
       ar & BOOST_SERIALIZATION_NVP(t_);
     }

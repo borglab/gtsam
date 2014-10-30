@@ -228,7 +228,6 @@ namespace gtsam {
     template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int version)
     {
-      ar & boost::serialization::make_nvp("Point3",*this);
       ar & BOOST_SERIALIZATION_NVP(x_);
       ar & BOOST_SERIALIZATION_NVP(y_);
       ar & BOOST_SERIALIZATION_NVP(z_);

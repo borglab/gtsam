@@ -456,7 +456,6 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version)
     {
-       ar & boost::serialization::make_nvp("Rot3",*this);
 #ifndef GTSAM_USE_QUATERNIONS
        ar & boost::serialization::make_nvp("rot11", rot_(0,0));
        ar & boost::serialization::make_nvp("rot12", rot_(0,1));

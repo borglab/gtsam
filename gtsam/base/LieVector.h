@@ -123,7 +123,6 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("LieVector",*this);
     ar & boost::serialization::make_nvp("Vector",
        boost::serialization::base_object<Vector>(*this));
   }

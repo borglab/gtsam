@@ -176,7 +176,6 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("EssentialMatrix",*this);
       ar & BOOST_SERIALIZATION_NVP(aRb_);
       ar & BOOST_SERIALIZATION_NVP(aTb_);
 

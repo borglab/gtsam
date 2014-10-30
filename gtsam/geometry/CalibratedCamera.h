@@ -214,8 +214,6 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("CalibratedCamera",*this);
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
 
