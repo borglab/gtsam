@@ -111,6 +111,16 @@ class ChartValue : public GenericValue<T>, public Chart_ {
     return Chart::local(GenericValue<T>::value(), genericValue2.value());
   }
 
+  /// Non-virtual version of retract
+  ChartValue retract(const Vector& delta) const {
+    return ChartValue(Chart::retract(GenericValue<T>::value(), delta),static_cast<const Chart&>(*this));
+  }
+
+  /// Non-virtual version of localCoordinates
+  Vector localCoordinates(const ChartValue& value2) const {
+    return localCoordinates_(value2);
+  }
+
   virtual size_t dim() const {
     return Chart::getDimension(GenericValue<T>::value()); // need functional form here since the dimension may be dynamic
   }
@@ -150,5 +160,13 @@ const Chart& Value::getChart() const {
    return dynamic_cast<const Chart&>(*this);
  }
 
+/// Convenience function that can be used to make an expression to convert a value to a chart
+template <typename T>
+ChartValue<T> convertToChartValue(const T& value, boost::optional<Eigen::Matrix<double, traits::dimension<T>::value, traits::dimension<T>::value >& > H=boost::none) {
+  if (H) {
+    *H = Eigen::Matrix<double, traits::dimension<T>::value, traits::dimension<T>::value >::Identity();
+  }
+  return ChartValue<T>(value);
+}
 
 } /* namespace gtsam */
