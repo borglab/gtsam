@@ -28,9 +28,9 @@ namespace gtsam {
 
 /*
  * - The 1st order GaussMarkov factor relates two keys of the same type. This relation is given via
- *      		key_2 = exp(-1/tau*delta_t) * key1 + w_d
- * 		where tau is the time constant and delta_t is the time difference between the two keys.
- * 		w_d is the equivalent discrete noise, whose covariance is calculated from the continuous noise model and delta_t.
+ *          key_2 = exp(-1/tau*delta_t) * key1 + w_d
+ *     where tau is the time constant and delta_t is the time difference between the two keys.
+ *     w_d is the equivalent discrete noise, whose covariance is calculated from the continuous noise model and delta_t.
  * - w_d is approximated as a Gaussian noise.
  * - In the multi-dimensional case, tau is a vector, and the above equation is applied on each element
  *      in the state (represented by keys), using the appropriate time constant in the vector tau.
@@ -80,7 +80,7 @@ public:
 
   /** equals */
   virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
-    const This *e =	dynamic_cast<const This*> (&expected);
+    const This *e =  dynamic_cast<const This*> (&expected);
     return e != NULL && Base::equals(*e, tol);
   }
 

@@ -1,8 +1,8 @@
 /**
- * @file 	 testLoopyBelief.cpp
+ * @file    testLoopyBelief.cpp
  * @brief  
  * @author Duy-Nguyen Ta
- * @date 	 Oct 11, 2013
+ * @date    Oct 11, 2013
  */
 
 #include <gtsam/inference/VariableIndex.h>

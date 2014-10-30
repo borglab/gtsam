@@ -157,7 +157,7 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
         result.data(), p.rows(), p.cols()) = p;
     return result;
   }
-	
+  
   /// @}
 
 private:

@@ -16,29 +16,29 @@
 
 namespace gtsam { namespace partition {
 
-//	typedef std::map<size_t, size_t> PartitionTable; // from the key to the partition: 0 - separator, > 1: submap id
+//  typedef std::map<size_t, size_t> PartitionTable; // from the key to the partition: 0 - separator, > 1: submap id
 
-	/** the metis Nest dissection result */
-	struct MetisResult {
-		std::vector<size_t> A, B;  // frontals
-		std::vector<size_t> C;     // separator
-	};
+  /** the metis Nest dissection result */
+  struct MetisResult {
+    std::vector<size_t> A, B;  // frontals
+    std::vector<size_t> C;     // separator
+  };
 
-	/**
-	 * use Metis library to partition, return the size of separator and the optional partition table
-	 * the size of dictionary mush be equal to the number of variables in the original graph (the largest one)
-	 */
-	template<class GenericGraph>
-	boost::optional<MetisResult> separatorPartitionByMetis(const GenericGraph& graph, const std::vector<size_t>& keys,
-			WorkSpace& workspace, bool verbose);
+  /**
+   * use Metis library to partition, return the size of separator and the optional partition table
+   * the size of dictionary mush be equal to the number of variables in the original graph (the largest one)
+   */
+  template<class GenericGraph>
+  boost::optional<MetisResult> separatorPartitionByMetis(const GenericGraph& graph, const std::vector<size_t>& keys,
+      WorkSpace& workspace, bool verbose);
 
-	/**
-	 * return the number of submaps and the parition table of the partitioned graph (**stored in workspace.partitionTable**).
-	 * return 0 if failed Note that the original output of Metis is 0,1 for submap, and 2 for the separator.
-	 */
-	template<class GenericGraph>
-	int findSeparator(const GenericGraph& graph, const std::vector<size_t>& keys,
-			const int minNodesPerMap, WorkSpace& workspace, bool verbose, const boost::optional<std::vector<Symbol> >& int2symbol,
-			const bool reduceGraph, const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark);
+  /**
+   * return the number of submaps and the parition table of the partitioned graph (**stored in workspace.partitionTable**).
+   * return 0 if failed Note that the original output of Metis is 0,1 for submap, and 2 for the separator.
+   */
+  template<class GenericGraph>
+  int findSeparator(const GenericGraph& graph, const std::vector<size_t>& keys,
+      const int minNodesPerMap, WorkSpace& workspace, bool verbose, const boost::optional<std::vector<Symbol> >& int2symbol,
+      const bool reduceGraph, const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark);
 
 }} //namespace
