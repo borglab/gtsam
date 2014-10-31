@@ -61,6 +61,11 @@ public:
     return traits::equals<T>(this->value_, genericValue2.value_, tol);
   }
 
+  // non virtual equals function
+  bool equals(const GenericValue &other, double tol = 1e-9) const {
+    return traits::equals<T>(this->value(),other.value(),tol);
+  }
+
   virtual void print(const std::string& str) const {
     traits::print<T>(value_,str);
   }

@@ -147,6 +147,24 @@ protected:
 private:
   /// Fake Tag struct for singleton pool allocator. In fact, it is never used!
   struct PoolTag { };
+
+private:
+
+   /// @}
+   /// @name Advanced Interface
+   /// @{
+
+   /** Serialization function */
+   friend class boost::serialization::access;
+   template<class ARCHIVE>
+   void serialize(ARCHIVE & ar, const unsigned int version) {
+     ar & boost::serialization::make_nvp("value", GenericValue<T>::value());
+     // todo: implement a serialization for charts
+     //ar & boost::serialization::make_nvp("Chart", boost::serialization::base_object<typename Chart>(*this));
+   }
+
+   /// @}
+
 };
 
 namespace traits {
