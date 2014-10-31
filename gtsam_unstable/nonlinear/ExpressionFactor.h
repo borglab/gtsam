@@ -87,12 +87,13 @@ public:
 
       // Create and zero out blocks to be passed to expression_
       JacobianMap blocks;
+      blocks.reserve(size());
       for (DenseIndex i = 0; i < size(); i++) {
         Matrix& Hi = H->at(i);
         Hi.resize(Dim, dimensions_[i]);
         Hi.setZero(); // zero out
         Eigen::Block<Matrix> block = Hi.block(0, 0, Dim, dimensions_[i]);
-        blocks.insert(std::make_pair(keys_[i], block));
+        blocks.push_back(std::make_pair(keys_[i], block));
       }
 
       T value = expression_.value(x, blocks);
@@ -121,8 +122,9 @@ public:
 
     // Create blocks into Ab_ to be passed to expression_
     JacobianMap blocks;
+    blocks.reserve(size());
     for (DenseIndex i = 0; i < size(); i++)
-      blocks.insert(std::make_pair(keys_[i], Ab(i)));
+      blocks.push_back(std::make_pair(keys_[i], Ab(i)));
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, blocks); // <<< Reverse AD happens here !

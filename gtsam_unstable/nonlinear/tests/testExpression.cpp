@@ -63,10 +63,10 @@ TEST(Expression, Leaf) {
 
   JacobianMap expected;
   Matrix H = eye(3);
-  expected.insert(make_pair(100, H.block(0, 0, 3, 3)));
+  expected.push_back(make_pair(100, H.block(0, 0, 3, 3)));
 
   JacobianMap actualMap2;
-  actualMap2.insert(make_pair(100, H.block(0, 0, 3, 3)));
+  actualMap2.push_back(make_pair(100, H.block(0, 0, 3, 3)));
   Rot3 actual2 = R.reverse(values, actualMap2);
   EXPECT(assert_equal(someR, actual2));
   EXPECT(actualMap2 == expected);
