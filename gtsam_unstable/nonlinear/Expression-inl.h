@@ -27,7 +27,6 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/bind.hpp>
-#include <boost/lambda/lambda.hpp>
 
 // template meta-programming headers
 #include <boost/mpl/vector.hpp>
