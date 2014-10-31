@@ -26,6 +26,8 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 
 // template meta-programming headers
 #include <boost/mpl/vector.hpp>
@@ -48,7 +50,8 @@ namespace gtsam {
 template<typename T>
 class Expression;
 
-typedef std::vector<std::pair<Key, Eigen::Block<Matrix> > > JacobianMap;
+typedef std::pair<Key, Eigen::Block<Matrix> > JacobianPair;
+typedef std::vector<JacobianPair> JacobianMap;
 
 //-----------------------------------------------------------------------------
 /**
@@ -78,28 +81,20 @@ struct CallRecord {
 template<int ROWS, int COLS>
 void handleLeafCase(const Eigen::Matrix<double, ROWS, COLS>& dTdA,
     JacobianMap& jacobians, Key key) {
-  for(JacobianMap::iterator it = jacobians.begin(); it != jacobians.end(); ++it)
-  {
-    if(it->first == key)
-    {
-      it->second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
-      break;
-    }
-  }
+  JacobianMap::iterator it = std::find_if(jacobians.begin(), jacobians.end(),
+                                 boost::bind(&JacobianPair::first, _1)==key);
+  assert(it~= jacobians.end());
+  it->second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
 }
 /// Handle Leaf Case for Dynamic Matrix type (slower)
 template<>
 void handleLeafCase(
     const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& dTdA,
     JacobianMap& jacobians, Key key) {
-  for(JacobianMap::iterator it = jacobians.begin(); it != jacobians.end(); ++it)
-  {
-    if(it->first == key)
-    {
-      it->second += dTdA; // block makes HUGE difference
-      break;
-    }
-  }
+  JacobianMap::iterator it = std::find_if(jacobians.begin(), jacobians.end(),
+                                 boost::bind(&JacobianPair::first, _1)==key);
+  assert(it~= jacobians.end());
+  it->second += dTdA;
 }
 
 //-----------------------------------------------------------------------------
