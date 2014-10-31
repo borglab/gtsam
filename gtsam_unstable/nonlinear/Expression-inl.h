@@ -48,7 +48,8 @@ namespace gtsam {
 template<typename T>
 class Expression;
 
-typedef std::map<Key, Eigen::Block<Matrix> > JacobianMap;
+//typedef std::map<Key, Eigen::Block<Matrix> > JacobianMap;
+typedef std::vector<std::pair<Key, Eigen::Block<Matrix> > > JacobianMap;
 
 //-----------------------------------------------------------------------------
 /**
@@ -78,16 +79,28 @@ struct CallRecord {
 template<int ROWS, int COLS>
 void handleLeafCase(const Eigen::Matrix<double, ROWS, COLS>& dTdA,
     JacobianMap& jacobians, Key key) {
-  JacobianMap::iterator it = jacobians.find(key);
-  it->second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
+  for(JacobianMap::iterator it = jacobians.begin(); it != jacobians.end(); ++it)
+  {
+    if((*it).first == key)
+    {
+      (*it).second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
+      break;
+    }
+  }
 }
 /// Handle Leaf Case for Dynamic Matrix type (slower)
 template<>
 void handleLeafCase(
     const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& dTdA,
     JacobianMap& jacobians, Key key) {
-  JacobianMap::iterator it = jacobians.find(key);
-  it->second += dTdA;
+  for(JacobianMap::iterator it = jacobians.begin(); it != jacobians.end(); ++it)
+  {
+    if((*it).first == key)
+    {
+      (*it).second += dTdA; // block makes HUGE difference
+      break;
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------
