@@ -48,7 +48,6 @@ namespace gtsam {
 template<typename T>
 class Expression;
 
-//typedef std::map<Key, Eigen::Block<Matrix> > JacobianMap;
 typedef std::vector<std::pair<Key, Eigen::Block<Matrix> > > JacobianMap;
 
 //-----------------------------------------------------------------------------
