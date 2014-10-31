@@ -80,9 +80,9 @@ void handleLeafCase(const Eigen::Matrix<double, ROWS, COLS>& dTdA,
     JacobianMap& jacobians, Key key) {
   for(JacobianMap::iterator it = jacobians.begin(); it != jacobians.end(); ++it)
   {
-    if((*it).first == key)
+    if(it->first == key)
     {
-      (*it).second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
+      it->second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
       break;
     }
   }
@@ -94,9 +94,9 @@ void handleLeafCase(
     JacobianMap& jacobians, Key key) {
   for(JacobianMap::iterator it = jacobians.begin(); it != jacobians.end(); ++it)
   {
-    if((*it).first == key)
+    if(it->first == key)
     {
-      (*it).second += dTdA; // block makes HUGE difference
+      it->second += dTdA; // block makes HUGE difference
       break;
     }
   }
