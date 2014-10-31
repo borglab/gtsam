@@ -81,9 +81,9 @@ template<int ROWS, int COLS>
 void handleLeafCase(const Eigen::Matrix<double, ROWS, COLS>& dTdA,
     JacobianMap& jacobians, Key key) {
   JacobianMap::iterator it = std::find_if(jacobians.begin(), jacobians.end(),
-                                 boost::bind(&JacobianPair::first, _1)==key);
-  assert(it~= jacobians.end());
-  it->second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
+      boost::bind(&JacobianPair::first, _1) == key);
+  assert(it!=jacobians.end());
+  it->second.block < ROWS, COLS > (0, 0) += dTdA; // block makes HUGE difference
 }
 /// Handle Leaf Case for Dynamic Matrix type (slower)
 template<>
@@ -91,8 +91,8 @@ void handleLeafCase(
     const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& dTdA,
     JacobianMap& jacobians, Key key) {
   JacobianMap::iterator it = std::find_if(jacobians.begin(), jacobians.end(),
-                                 boost::bind(&JacobianPair::first, _1)==key);
-  assert(it~= jacobians.end());
+      boost::bind(&JacobianPair::first, _1) == key);
+  assert(it!=jacobians.end());
   it->second += dTdA;
 }
 
