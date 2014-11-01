@@ -75,7 +75,7 @@ public:
   }
 
   /**
-   * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
+   * Error function *without* the NoiseModel, \f$ h(x)-z \f$.
    * We override this method to provide
    * both the function evaluation and its derivative(s) in H.
    */
@@ -85,18 +85,19 @@ public:
       // H should be pre-allocated
       assert(H->size()==size());
 
-      // Create and zero out blocks to be passed to expression_
-      JacobianMap blocks;
-      blocks.reserve(size());
-      for (DenseIndex i = 0; i < size(); i++) {
-        Matrix& Hi = H->at(i);
-        Hi.resize(Dim, dimensions_[i]);
-        Hi.setZero(); // zero out
-        Eigen::Block<Matrix> block = Hi.block(0, 0, Dim, dimensions_[i]);
-        blocks.push_back(std::make_pair(keys_[i], block));
-      }
+      VerticalBlockMatrix Ab(dimensions_, Dim);
 
-      T value = expression_.value(x, blocks);
+      // Wrap keys and VerticalBlockMatrix into structure passed to expression_
+      JacobianMap map(keys_, Ab);
+      Ab.matrix().setZero();
+
+      // Evaluate error to get Jacobians and RHS vector b
+      T value = expression_.value(x, map); // <<< Reverse AD happens here !
+
+      // Copy blocks into the vector of jacobians passed in
+      for (DenseIndex i = 0; i < size(); i++)
+        H->at(i) = Ab(i);
+
       return measurement_.localCoordinates(value);
     } else {
       const T& value = expression_.value(x);
@@ -108,8 +109,8 @@ public:
 
     // This method has been heavily optimized for maximum performance.
     // We allocate a VerticalBlockMatrix on the stack first, and then create
-    // Eigen::Block<Matrix> views on this piece of memory which is then passed
-    // to [expression_.value] below, which writes directly into Ab_.
+    // a JacobianMap view onto it, which is then passed
+    // to [expression_.value] to allow it to write directly into Ab_.
 
     // Another malloc saved by creating a Matrix on the stack
     double memory[Dim * augmentedCols_];
@@ -120,14 +121,11 @@ public:
     // Construct block matrix, is of right size but un-initialized
     VerticalBlockMatrix Ab(dimensions_, matrix, true);
 
-    // Create blocks into Ab_ to be passed to expression_
-    JacobianMap blocks;
-    blocks.reserve(size());
-    for (DenseIndex i = 0; i < size(); i++)
-      blocks.push_back(std::make_pair(keys_[i], Ab(i)));
+    // Wrap keys and VerticalBlockMatrix into structure passed to expression_
+    JacobianMap map(keys_, Ab);
 
     // Evaluate error to get Jacobians and RHS vector b
-    T value = expression_.value(x, blocks); // <<< Reverse AD happens here !
+    T value = expression_.value(x, map); // <<< Reverse AD happens here !
     Ab(size()).col(0) = -measurement_.localCoordinates(value);
 
     // Whiten the corresponding system now
