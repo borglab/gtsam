@@ -158,9 +158,9 @@ private:
    friend class boost::serialization::access;
    template<class ARCHIVE>
    void serialize(ARCHIVE & ar, const unsigned int version) {
-     ar & boost::serialization::make_nvp("value", GenericValue<T>::value());
+     // ar & boost::serialization::make_nvp("value",);
      // todo: implement a serialization for charts
-     //ar & boost::serialization::make_nvp("Chart", boost::serialization::base_object<typename Chart>(*this));
+     ar & boost::serialization::make_nvp("GenericValue", boost::serialization::base_object< GenericValue<T> >(*this));
    }
 
    /// @}

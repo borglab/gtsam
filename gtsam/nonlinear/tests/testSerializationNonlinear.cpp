@@ -32,21 +32,36 @@ using namespace gtsam::serializationTestHelpers;
 
 /* ************************************************************************* */
 // Export all classes derived from Value
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2)
-BOOST_CLASS_EXPORT(gtsam::Cal3Bundler)
-BOOST_CLASS_EXPORT(gtsam::Point3)
-BOOST_CLASS_EXPORT(gtsam::Pose3)
-BOOST_CLASS_EXPORT(gtsam::Rot3)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3_S2>)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3DS2>)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3Bundler>)
+BOOST_CLASS_EXPORT(gtsam::Cal3_S2);
+BOOST_CLASS_EXPORT(gtsam::Cal3Bundler);
+BOOST_CLASS_EXPORT(gtsam::Point3);
+BOOST_CLASS_EXPORT(gtsam::Pose3);
+BOOST_CLASS_EXPORT(gtsam::Rot3);
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3_S2>);
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3DS2>);
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3Bundler>);
 
-BOOST_CLASS_EXPORT(gtsam::ChartValue<gtsam::Pose3>);
+namespace detail {
+template<class T> struct pack {
+ typedef T type;
+};
+}
+#define CHART_VALUE_EXPORT(UNIQUE_NAME, TYPE) \
+  typedef gtsam::ChartValue<TYPE,gtsam::DefaultChart<TYPE> > UNIQUE_NAME; \
+  BOOST_CLASS_EXPORT( UNIQUE_NAME );
+
 
 /* ************************************************************************* */
 typedef PinholeCamera<Cal3_S2>        PinholeCal3S2;
 typedef PinholeCamera<Cal3DS2>        PinholeCal3DS2;
 typedef PinholeCamera<Cal3Bundler>    PinholeCal3Bundler;
+
+CHART_VALUE_EXPORT(gtsamPoint3Chart, gtsam::Point3);
+CHART_VALUE_EXPORT(Cal3S2Chart, PinholeCal3S2);
+CHART_VALUE_EXPORT(Cal3DS2Chart, PinholeCal3DS2);
+CHART_VALUE_EXPORT(Cal3BundlerChart, PinholeCal3Bundler);
+
+
 
 /* ************************************************************************* */
 static Point3 pt3(1.0, 2.0, 3.0);
