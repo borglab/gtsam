@@ -75,41 +75,42 @@ public:
   }
 
   /**
-   * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
+   * Error function *without* the NoiseModel, \f$ h(x)-z \f$.
    * We override this method to provide
    * both the function evaluation and its derivative(s) in H.
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-//    if (H) {
-//      // H should be pre-allocated
-//      assert(H->size()==size());
-//
-//      // Create and zero out blocks to be passed to expression_
-//      JacobianMap blocks;
-//      blocks.reserve(size());
-//      for (DenseIndex i = 0; i < size(); i++) {
-//        Matrix& Hi = H->at(i);
-//        Hi.resize(Dim, dimensions_[i]);
-//        Hi.setZero(); // zero out
-//        Eigen::Block<Matrix> block = Hi.block(0, 0, Dim, dimensions_[i]);
-//        blocks.push_back(std::make_pair(keys_[i], block));
-//      }
-//
-//      T value = expression_.value(x, blocks);
-//      return measurement_.localCoordinates(value);
-//    } else {
+    if (H) {
+      // H should be pre-allocated
+      assert(H->size()==size());
+
+      VerticalBlockMatrix Ab(dimensions_, Dim);
+
+      // Wrap keys and VerticalBlockMatrix into structure passed to expression_
+      JacobianMap map(keys_, Ab);
+      Ab.matrix().setZero();
+
+      // Evaluate error to get Jacobians and RHS vector b
+      T value = expression_.value(x, map); // <<< Reverse AD happens here !
+
+      // Copy blocks into the vector of jacobians passed in
+      for (DenseIndex i = 0; i < size(); i++)
+        H->at(i) = Ab(i);
+
+      return measurement_.localCoordinates(value);
+    } else {
       const T& value = expression_.value(x);
       return measurement_.localCoordinates(value);
-//    }
+    }
   }
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
     // This method has been heavily optimized for maximum performance.
     // We allocate a VerticalBlockMatrix on the stack first, and then create
-    // Eigen::Block<Matrix> views on this piece of memory which is then passed
-    // to [expression_.value] below, which writes directly into Ab_.
+    // a JacobianMap view onto it, which is then passed
+    // to [expression_.value] to allow it to write directly into Ab_.
 
     // Another malloc saved by creating a Matrix on the stack
     double memory[Dim * augmentedCols_];
@@ -121,7 +122,7 @@ public:
     VerticalBlockMatrix Ab(dimensions_, matrix, true);
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
-    JacobianMap map(keys_,Ab);
+    JacobianMap map(keys_, Ab);
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, map); // <<< Reverse AD happens here !

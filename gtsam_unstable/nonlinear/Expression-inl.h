@@ -62,7 +62,7 @@ public:
   JacobianMap(const FastVector<Key>& keys, VerticalBlockMatrix& Ab) :
       keys_(keys), Ab_(Ab) {
   }
-  /** Access a single block in the underlying matrix with read/write access */
+  /// Access via key
   VerticalBlockMatrix::Block operator()(Key key) {
     FastVector<Key>::const_iterator it = std::find(keys_.begin(),keys_.end(),key);
     DenseIndex block = it - keys_.begin();
