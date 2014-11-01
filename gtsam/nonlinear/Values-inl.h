@@ -33,6 +33,7 @@
 
 namespace gtsam {
 
+
   /* ************************************************************************* */
   template<class ValueType>
   struct _ValuesKeyValuePair {
