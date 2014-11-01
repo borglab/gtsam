@@ -81,27 +81,27 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if (H) {
-      // H should be pre-allocated
-      assert(H->size()==size());
-
-      // Create and zero out blocks to be passed to expression_
-      JacobianMap blocks;
-      blocks.reserve(size());
-      for (DenseIndex i = 0; i < size(); i++) {
-        Matrix& Hi = H->at(i);
-        Hi.resize(Dim, dimensions_[i]);
-        Hi.setZero(); // zero out
-        Eigen::Block<Matrix> block = Hi.block(0, 0, Dim, dimensions_[i]);
-        blocks.push_back(std::make_pair(keys_[i], block));
-      }
-
-      T value = expression_.value(x, blocks);
-      return measurement_.localCoordinates(value);
-    } else {
+//    if (H) {
+//      // H should be pre-allocated
+//      assert(H->size()==size());
+//
+//      // Create and zero out blocks to be passed to expression_
+//      JacobianMap blocks;
+//      blocks.reserve(size());
+//      for (DenseIndex i = 0; i < size(); i++) {
+//        Matrix& Hi = H->at(i);
+//        Hi.resize(Dim, dimensions_[i]);
+//        Hi.setZero(); // zero out
+//        Eigen::Block<Matrix> block = Hi.block(0, 0, Dim, dimensions_[i]);
+//        blocks.push_back(std::make_pair(keys_[i], block));
+//      }
+//
+//      T value = expression_.value(x, blocks);
+//      return measurement_.localCoordinates(value);
+//    } else {
       const T& value = expression_.value(x);
       return measurement_.localCoordinates(value);
-    }
+//    }
   }
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
@@ -120,14 +120,11 @@ public:
     // Construct block matrix, is of right size but un-initialized
     VerticalBlockMatrix Ab(dimensions_, matrix, true);
 
-    // Create blocks into Ab_ to be passed to expression_
-    JacobianMap blocks;
-    blocks.reserve(size());
-    for (DenseIndex i = 0; i < size(); i++)
-      blocks.push_back(std::make_pair(keys_[i], Ab(i)));
+    // Wrap keys and VerticalBlockMatrix into structure passed to expression_
+    JacobianMap map(keys_,Ab);
 
     // Evaluate error to get Jacobians and RHS vector b
-    T value = expression_.value(x, blocks); // <<< Reverse AD happens here !
+    T value = expression_.value(x, map); // <<< Reverse AD happens here !
     Ab(size()).col(0) = -measurement_.localCoordinates(value);
 
     // Whiten the corresponding system now
