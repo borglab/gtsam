@@ -123,7 +123,7 @@ public:
   }
 
   /// Return value and derivatives, reverse AD version
-  T reverse(const Values& values, JacobianMap& jacobians) const {
+  T value(const Values& values, JacobianMap& jacobians) const {
     // The following piece of code is absolutely crucial for performance.
     // We allocate a block of memory on the stack, which can be done at runtime
     // with modern C++ compilers. The traceExecution then fills this memory
@@ -140,11 +140,6 @@ public:
   /// Return value
   T value(const Values& values) const {
     return root_->value(values);
-  }
-
-  /// Return value and derivatives
-  T value(const Values& values, JacobianMap& jacobians) const {
-    return reverse(values, jacobians);
   }
 
   const boost::shared_ptr<ExpressionNode<T> >& root() const {
