@@ -424,45 +424,6 @@ TEST(ExpressionFactor, composeTernary) {
 }
 
 /* ************************************************************************* */
-
-/**
- * Special version of JacobianFactor that allows Jacobians to be written
- */
-class WriteableJacobianFactor: public JacobianFactor {
-
-  /**
-   *  Constructor
-   *  @param keys in some order
-   *  @param diemnsions of the variables in same order
-   *  @param m output dimension
-   *  @param model noise model (default NULL)
-   */
-  template<class KEYS, class DIMENSIONS>
-  WriteableJacobianFactor(const KEYS& keys, const DIMENSIONS& dims,
-      DenseIndex m, const SharedDiagonal& model = SharedDiagonal()) {
-
-    // Check noise model dimension
-    if (model && (DenseIndex) model->dim() != m)
-      throw InvalidNoiseModel(m, model->dim());
-
-    // copy the keys
-    keys_.resize(keys.size());
-    std::copy(keys.begin(), keys.end(), keys_.begin());
-
-    // Check number of variables
-    if (dims.size() != keys_.size())
-      throw std::invalid_argument(
-          "WriteableJacobianFactor: size of dimensions and keys do not agree.");
-
-    Ab_ = VerticalBlockMatrix(dims.begin(), dims.end(), m, true);
-    Ab_.matrix().setZero();
-    model_ = model;
-  }
-  friend class ExpressionFactorWriteableJacobianFactorTest;
-  template<typename T>
-  friend class ExpressionFactor;
-};
-
 // Test Writeable JacobianFactor
 TEST(ExpressionFactor, WriteableJacobianFactor) {
   std::list<size_t> keys = list_of(1)(2);

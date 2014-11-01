@@ -24,7 +24,56 @@
 #include <boost/range/algorithm.hpp>
 #include <numeric>
 
+class ExpressionFactorWriteableJacobianFactorTest;
+
 namespace gtsam {
+
+/**
+ * Special version of JacobianFactor that allows Jacobians to be written
+ * Eliminates a large proportion of overhead
+ * Note all ExpressionFactor<T> are friends, not for general consumption.
+ */
+class WriteableJacobianFactor: public JacobianFactor {
+
+public:
+
+  /**
+   *  Constructor
+   *  @param keys in some order
+   *  @param diemnsions of the variables in same order
+   *  @param m output dimension
+   *  @param model noise model (default NULL)
+   */
+  template<class KEYS, class DIMENSIONS>
+  WriteableJacobianFactor(const KEYS& keys, const DIMENSIONS& dims,
+      DenseIndex m, const SharedDiagonal& model = SharedDiagonal()) {
+
+    // Check noise model dimension
+    if (model && (DenseIndex) model->dim() != m)
+      throw InvalidNoiseModel(m, model->dim());
+
+    // copy the keys
+    keys_.resize(keys.size());
+    std::copy(keys.begin(), keys.end(), keys_.begin());
+
+    // Check number of variables
+    if (dims.size() != keys_.size())
+      throw std::invalid_argument(
+          "WriteableJacobianFactor: size of dimensions and keys do not agree.");
+
+    Ab_ = VerticalBlockMatrix(dims.begin(), dims.end(), m, true);
+    Ab_.matrix().setZero();
+    model_ = model;
+  }
+
+  VerticalBlockMatrix& Ab() {
+    return Ab_;
+  }
+
+//  friend class ::ExpressionFactorWriteableJacobianFactorTest;
+//  template<typename T>
+//  friend class ExpressionFactor;
+};
 
 /**
  * Factor that supports arbitrary expressions via AD
@@ -106,42 +155,32 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
-    // This method has been heavily optimized for maximum performance.
-    // We allocate a VerticalBlockMatrix on the stack first, and then create
-    // Eigen::Block<Matrix> views on this piece of memory which is then passed
-    // to [expression_.value] below, which writes directly into Ab_.
+    // Create noise model
+    SharedDiagonal model;
+    noiseModel::Constrained::shared_ptr constrained = //
+        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
+    if (constrained)
+      model = constrained->unit();
 
-    // Another malloc saved by creating a Matrix on the stack
-    double memory[Dim * augmentedCols_];
-    Eigen::Map<Eigen::Matrix<double, Dim, Eigen::Dynamic> > //
-    matrix(memory, Dim, augmentedCols_);
-    matrix.setZero(); // zero out
-
-    // Construct block matrix, is of right size but un-initialized
-    VerticalBlockMatrix Ab(dimensions_, matrix, true);
+    // Create a writeable JacobianFactor in advance
+    boost::shared_ptr<WriteableJacobianFactor> factor = boost::make_shared<
+        WriteableJacobianFactor>(keys_, dimensions_,
+        traits::dimension<T>::value, model);
 
     // Create blocks into Ab_ to be passed to expression_
     JacobianMap blocks;
     blocks.reserve(size());
     for (DenseIndex i = 0; i < size(); i++)
-      blocks.push_back(std::make_pair(keys_[i], Ab(i)));
+      blocks.push_back(std::make_pair(keys_[i], factor->Ab()(i)));
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, blocks); // <<< Reverse AD happens here !
-    Ab(size()).col(0) = -measurement_.localCoordinates(value);
+    factor->Ab()(size()).col(0) = -measurement_.localCoordinates(value);
 
     // Whiten the corresponding system now
     // TODO ! this->noiseModel_->WhitenSystem(Ab);
 
-    // TODO pass unwhitened + noise model to Gaussian factor
-    // For now, only linearized constrained factors have noise model at linear level!!!
-    noiseModel::Constrained::shared_ptr constrained = //
-        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained) {
-      return boost::make_shared<JacobianFactor>(this->keys(), Ab,
-          constrained->unit());
-    } else
-      return boost::make_shared<JacobianFactor>(this->keys(), Ab);
+    return factor;
   }
 };
 // ExpressionFactor
