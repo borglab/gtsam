@@ -23,7 +23,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define time timeMultiThreaded
+#define time timeSingleThreaded
 
 int main() {
 
