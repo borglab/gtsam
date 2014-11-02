@@ -107,6 +107,10 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
+    // Only linearize if the factor is active
+    if (!this->active(x))
+      return boost::shared_ptr<JacobianFactor>();
+
     // Create a writeable JacobianFactor in advance
     // In case noise model is constrained, we need to provide a noise model
     bool constrained = noiseModel_->is_constrained();
