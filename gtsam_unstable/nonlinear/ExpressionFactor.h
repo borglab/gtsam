@@ -108,7 +108,7 @@ public:
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
     // Only linearize if the factor is active
-    if (!this->active(x))
+    if (!active(x))
       return boost::shared_ptr<JacobianFactor>();
 
     // Create a writeable JacobianFactor in advance
@@ -128,11 +128,13 @@ public:
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, map); // <<< Reverse AD happens here !
-    Ab(size()).col(0) = -measurement_.localCoordinates(value);
+    Vector b(-measurement_.localCoordinates(value));
 
-    // Whiten the corresponding system now
-    // TODO ! this->noiseModel_->WhitenSystem(Ab);
+    // Whiten the corresponding system
+    // Note the Ab.matrix() includes uninitialized RHS, but this beats taking it apart
+    noiseModel_->WhitenSystem(Ab.matrix(),b);
 
+    Ab(size()).col(0) = b;
     return factor;
   }
 };
