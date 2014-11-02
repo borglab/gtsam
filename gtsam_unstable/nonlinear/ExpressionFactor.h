@@ -107,24 +107,26 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
-    // Create noise model
-    SharedDiagonal model;
+    // Check whether noise model is constrained or not
     noiseModel::Constrained::shared_ptr constrained = //
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained)
-      model = constrained->unit();
 
     // Create a writeable JacobianFactor in advance
     boost::shared_ptr<JacobianFactor> factor(
-        new JacobianFactor(keys_, dimensions_, traits::dimension<T>::value,
-            model));
+        constrained ? new JacobianFactor(keys_, dimensions_, Dim,
+            constrained->unit()) :
+            new JacobianFactor(keys_, dimensions_, Dim));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
-    JacobianMap map(keys_, factor->Ab());
+    VerticalBlockMatrix& Ab = factor->matrixObject();
+    JacobianMap map(keys_, Ab);
+
+    // Zero out Jacobian so we can simply add to it
+    Ab.matrix().setZero();
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, map); // <<< Reverse AD happens here !
-    factor->Ab()(size()).col(0) = -measurement_.localCoordinates(value);
+    Ab(size()).col(0) = -measurement_.localCoordinates(value);
 
     // Whiten the corresponding system now
     // TODO ! this->noiseModel_->WhitenSystem(Ab);

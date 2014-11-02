@@ -82,20 +82,22 @@ namespace gtsam {
   class GTSAM_EXPORT JacobianFactor : public GaussianFactor
   {
   public:
+
     typedef JacobianFactor This; ///< Typedef to this class
     typedef GaussianFactor Base; ///< Typedef to base class
     typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
-  protected:
-    VerticalBlockMatrix Ab_;      // the block view of the full matrix
-    noiseModel::Diagonal::shared_ptr model_; // Gaussian noise model with diagonal covariance matrix
-
-  public:
     typedef VerticalBlockMatrix::Block ABlock;
     typedef VerticalBlockMatrix::constBlock constABlock;
     typedef ABlock::ColXpr BVector;
     typedef constABlock::ConstColXpr constBVector;
 
+  protected:
+
+    VerticalBlockMatrix Ab_;      // the block view of the full matrix
+    noiseModel::Diagonal::shared_ptr model_; // Gaussian noise model with diagonal covariance matrix
+
+  public:
 
     /** Convert from other GaussianFactor */
     explicit JacobianFactor(const GaussianFactor& gf);
@@ -139,25 +141,6 @@ namespace gtsam {
     template<typename KEYS>
     JacobianFactor(
       const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas = SharedDiagonal());
-
-    /**
-     *  Constructor
-     *  @param keys in some order
-     *  @param diemnsions of the variables in same order
-     *  @param m output dimension
-     *  @param model noise model (default NULL)
-     */
-    template<class KEYS, class DIMENSIONS>
-    JacobianFactor(const KEYS& keys, const DIMENSIONS& dims, DenseIndex m,
-        const SharedDiagonal& model = SharedDiagonal()) :
-        Base(keys), Ab_(dims.begin(), dims.end(), m, true), model_(model) {
-      Ab_.matrix().setZero();
-    }
-
-    /// Direct access to VerticalBlockMatrix
-    VerticalBlockMatrix& Ab() {
-      return Ab_;
-    }
 
     /**
      * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
@@ -346,6 +329,21 @@ namespace gtsam {
     void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
     
   private:
+
+    /** Unsafe Constructor that creates an uninitialized Jacobian of right size
+     *  @param keys in some order
+     *  @param diemnsions of the variables in same order
+     *  @param m output dimension
+     *  @param model noise model (default NULL)
+     */
+    template<class KEYS, class DIMENSIONS>
+    JacobianFactor(const KEYS& keys, const DIMENSIONS& dims, DenseIndex m,
+        const SharedDiagonal& model = SharedDiagonal()) :
+        Base(keys), Ab_(dims.begin(), dims.end(), m, true), model_(model) {
+    }
+
+    // be very selective on who can access these private methods:
+    template<typename T> friend class ExpressionFactor;
 
     /** Serialization function */
     friend class boost::serialization::access;
