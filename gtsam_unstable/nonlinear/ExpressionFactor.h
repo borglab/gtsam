@@ -128,13 +128,12 @@ public:
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, map); // <<< Reverse AD happens here !
-    Vector b(-measurement_.localCoordinates(value));
+    Ab(size()).col(0) = -measurement_.localCoordinates(value);
 
-    // Whiten the corresponding system
-    // Note the Ab.matrix() includes uninitialized RHS, but this beats taking it apart
-    noiseModel_->WhitenSystem(Ab.matrix(),b);
+    // Whiten the corresponding system, Ab already contains RHS
+    Vector dummy(Dim);
+    noiseModel_->WhitenSystem(Ab.matrix(),dummy);
 
-    Ab(size()).col(0) = b;
     return factor;
   }
 };
