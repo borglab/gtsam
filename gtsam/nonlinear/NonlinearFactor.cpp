@@ -25,7 +25,7 @@ namespace gtsam {
 void NonlinearFactor::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
   std::cout << s << "  keys = { ";
-  BOOST_FOREACH(Key key, this->keys()) {
+  BOOST_FOREACH(Key key, keys()) {
     std::cout << keyFormatter(key) << " ";
   }
   std::cout << "}" << std::endl;
@@ -52,7 +52,7 @@ NonlinearFactor::shared_ptr NonlinearFactor::rekey(
 /* ************************************************************************* */
 NonlinearFactor::shared_ptr NonlinearFactor::rekey(
     const std::vector<Key>& new_keys) const {
-  assert(new_keys.size() == this->keys().size());
+  assert(new_keys.size() == keys().size());
   shared_ptr new_factor = clone();
   new_factor->keys() = new_keys;
   return new_factor;
@@ -62,7 +62,7 @@ NonlinearFactor::shared_ptr NonlinearFactor::rekey(
 void NoiseModelFactor::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
   Base::print(s, keyFormatter);
-  this->noiseModel_->print("  noise model: ");
+  noiseModel_->print("  noise model: ");
 }
 
 /* ************************************************************************* */
@@ -92,7 +92,7 @@ Vector NoiseModelFactor::whitenedError(const Values& c) const {
 
 /* ************************************************************************* */
 double NoiseModelFactor::error(const Values& c) const {
-  if (this->active(c)) {
+  if (active(c)) {
     const Vector b = unwhitenedError(c);
     check(noiseModel_, b.size());
     return 0.5 * noiseModel_->distance(b);
@@ -106,21 +106,21 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
     const Values& x) const {
 
   // Only linearize if the factor is active
-  if (!this->active(x))
+  if (!active(x))
     return boost::shared_ptr<JacobianFactor>();
 
   // Call evaluate error to get Jacobians and RHS vector b
-  std::vector<Matrix> A(this->size());
+  std::vector<Matrix> A(size());
   Vector b = -unwhitenedError(x, A);
   check(noiseModel_, b.size());
 
   // Whiten the corresponding system now
-  this->noiseModel_->WhitenSystem(A, b);
+  noiseModel_->WhitenSystem(A, b);
 
   // Fill in terms, needed to create JacobianFactor below
-  std::vector<std::pair<Key, Matrix> > terms(this->size());
-  for (size_t j = 0; j < this->size(); ++j) {
-    terms[j].first = this->keys()[j];
+  std::vector<std::pair<Key, Matrix> > terms(size());
+  for (size_t j = 0; j < size(); ++j) {
+    terms[j].first = keys()[j];
     terms[j].second.swap(A[j]);
   }
 
