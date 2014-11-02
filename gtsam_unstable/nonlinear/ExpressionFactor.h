@@ -107,14 +107,12 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
-    // Check whether noise model is constrained or not
-    noiseModel::Constrained::shared_ptr constrained = //
-        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-
     // Create a writeable JacobianFactor in advance
+    // In case noise model is constrained, we need to provide a noise model
+    bool constrained = noiseModel_->is_constrained();
     boost::shared_ptr<JacobianFactor> factor(
         constrained ? new JacobianFactor(keys_, dimensions_, Dim,
-            constrained->unit()) :
+            boost::static_pointer_cast<noiseModel::Constrained>(noiseModel_)->unit()) :
             new JacobianFactor(keys_, dimensions_, Dim));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_

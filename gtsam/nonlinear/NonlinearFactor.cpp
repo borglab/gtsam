@@ -22,7 +22,6 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-
 void NonlinearFactor::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
   std::cout << s << "  keys = { ";
@@ -32,10 +31,12 @@ void NonlinearFactor::print(const std::string& s,
   std::cout << "}" << std::endl;
 }
 
+/* ************************************************************************* */
 bool NonlinearFactor::equals(const NonlinearFactor& f, double tol) const {
   return Base::equals(f);
 }
 
+/* ************************************************************************* */
 NonlinearFactor::shared_ptr NonlinearFactor::rekey(
     const std::map<Key, Key>& rekey_mapping) const {
   shared_ptr new_factor = clone();
@@ -48,6 +49,7 @@ NonlinearFactor::shared_ptr NonlinearFactor::rekey(
   return new_factor;
 }
 
+/* ************************************************************************* */
 NonlinearFactor::shared_ptr NonlinearFactor::rekey(
     const std::vector<Key>& new_keys) const {
   assert(new_keys.size() == this->keys().size());
@@ -57,13 +59,13 @@ NonlinearFactor::shared_ptr NonlinearFactor::rekey(
 }
 
 /* ************************************************************************* */
-
 void NoiseModelFactor::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
   Base::print(s, keyFormatter);
   this->noiseModel_->print("  noise model: ");
 }
 
+/* ************************************************************************* */
 bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
   const NoiseModelFactor* e = dynamic_cast<const NoiseModelFactor*>(&f);
   return e && Base::equals(f, tol)
@@ -72,6 +74,7 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
               && noiseModel_->equals(*e->noiseModel_, tol)));
 }
 
+/* ************************************************************************* */
 static void check(const SharedNoiseModel& noiseModel, size_t m) {
   if (!noiseModel)
     throw std::invalid_argument("NoiseModelFactor: no NoiseModel.");
@@ -80,12 +83,14 @@ static void check(const SharedNoiseModel& noiseModel, size_t m) {
         "NoiseModelFactor was created with a NoiseModel of incorrect dimension.");
 }
 
+/* ************************************************************************* */
 Vector NoiseModelFactor::whitenedError(const Values& c) const {
   const Vector b = unwhitenedError(c);
   check(noiseModel_, b.size());
   return noiseModel_->whiten(b);
 }
 
+/* ************************************************************************* */
 double NoiseModelFactor::error(const Values& c) const {
   if (this->active(c)) {
     const Vector b = unwhitenedError(c);
@@ -96,6 +101,7 @@ double NoiseModelFactor::error(const Values& c) const {
   }
 }
 
+/* ************************************************************************* */
 boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
     const Values& x) const {
 
@@ -119,18 +125,12 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
   }
 
   // TODO pass unwhitened + noise model to Gaussian factor
-  // For now, only linearized constrained factors have noise model at linear level!!!
-  noiseModel::Constrained::shared_ptr constrained = //
-      boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-  if (constrained) {
-    // Create a factor of reduced row dimension d_
-    size_t d_ = b.size() - constrained->dim();
-    Vector zero_ = zero(d_);
-    Vector b_ = concatVectors(2, &b, &zero_);
-    noiseModel::Constrained::shared_ptr model = constrained->unit(d_);
-    return boost::make_shared<JacobianFactor>(terms, b_, model);
-  } else
-    return boost::make_shared<JacobianFactor>(terms, b);
+  if (noiseModel_->is_constrained())
+    return GaussianFactor::shared_ptr(
+        new JacobianFactor(terms, b,
+            boost::static_pointer_cast<noiseModel::Constrained>(noiseModel_)->unit()));
+  else
+    return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
 }
 
 /* ************************************************************************* */

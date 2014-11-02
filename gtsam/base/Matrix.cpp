@@ -543,8 +543,7 @@ Matrix collect(size_t nrMatrices, ...)
 void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask) {
   const DenseIndex m = A.rows();
   if (inf_mask) {
-    // only scale the first v.size() rows of A to support augmented Matrix
-    for (DenseIndex i=0; i<v.size(); ++i) {
+    for (DenseIndex i=0; i<m; ++i) {
       const double& vi = v(i);
       if (std::isfinite(vi))
         A.row(i) *= vi;
