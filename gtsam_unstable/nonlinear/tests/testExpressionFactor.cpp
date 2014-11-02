@@ -28,6 +28,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/list_of.hpp>
+using boost::assign::list_of;
+
 using namespace std;
 using namespace gtsam;
 
@@ -62,41 +65,41 @@ TEST(ExpressionFactor, Leaf) {
   EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
 }
 
-///* ************************************************************************* */
-//// non-zero noise model
-//TEST(ExpressionFactor, Model) {
-//  using namespace leaf;
-//
-//  SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
-//
-//  // Create old-style factor to create expected value and derivatives
-//  PriorFactor<Point2> old(2, Point2(0, 0), model);
-//
-//  // Concise version
-//  ExpressionFactor<Point2> f(model, Point2(0, 0), p);
-//  EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
-//  EXPECT_LONGS_EQUAL(2, f.dim());
-//  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
-//  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
-//}
-//
-///* ************************************************************************* */
-//// Constrained noise model
-//TEST(ExpressionFactor, Constrained) {
-//  using namespace leaf;
-//
-//  SharedDiagonal model = noiseModel::Constrained::MixedSigmas(Vector2(0.2, 0));
-//
-//  // Create old-style factor to create expected value and derivatives
-//  PriorFactor<Point2> old(2, Point2(0, 0), model);
-//
-//  // Concise version
-//  ExpressionFactor<Point2> f(model, Point2(0, 0), p);
-//  EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
-//  EXPECT_LONGS_EQUAL(2, f.dim());
-//  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
-//  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
-//}
+/* ************************************************************************* */
+// non-zero noise model
+TEST(ExpressionFactor, Model) {
+  using namespace leaf;
+
+  SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
+
+  // Create old-style factor to create expected value and derivatives
+  PriorFactor<Point2> old(2, Point2(0, 0), model);
+
+  // Concise version
+  ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+  EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
+  EXPECT_LONGS_EQUAL(2, f.dim());
+  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
+  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
+}
+
+/* ************************************************************************* */
+// Constrained noise model
+TEST(ExpressionFactor, Constrained) {
+  using namespace leaf;
+
+  SharedDiagonal model = noiseModel::Constrained::MixedSigmas(Vector2(0.2, 0));
+
+  // Create old-style factor to create expected value and derivatives
+  PriorFactor<Point2> old(2, Point2(0, 0), model);
+
+  // Concise version
+  ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+  EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
+  EXPECT_LONGS_EQUAL(2, f.dim());
+  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
+  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
+}
 
 /* ************************************************************************* */
 // Unary(Leaf))

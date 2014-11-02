@@ -46,11 +46,8 @@ static const Rot3 someR = Rot3::RzRyRx(1, 2, 3);
 TEST(Expression, constant) {
   Expression<Rot3> R(someR);
   Values values;
-  JacobianMap actualMap;
-  Rot3 actual = R.value(values, actualMap);
+  Rot3 actual = R.value(values);
   EXPECT(assert_equal(someR, actual));
-  JacobianMap expected;
-  EXPECT(actualMap == expected);
   EXPECT_LONGS_EQUAL(0, R.traceSize())
 }
 
@@ -61,15 +58,8 @@ TEST(Expression, Leaf) {
   Values values;
   values.insert(100, someR);
 
-  JacobianMap expected;
-  Matrix H = eye(3);
-  expected.insert(make_pair(100, H.block(0, 0, 3, 3)));
-
-  JacobianMap actualMap2;
-  actualMap2.insert(make_pair(100, H.block(0, 0, 3, 3)));
-  Rot3 actual2 = R.reverse(values, actualMap2);
+  Rot3 actual2 = R.value(values);
   EXPECT(assert_equal(someR, actual2));
-  EXPECT(actualMap2 == expected);
 }
 
 /* ************************************************************************* */

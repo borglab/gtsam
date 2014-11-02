@@ -23,9 +23,11 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/VerticalBlockMatrix.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/bind.hpp>
 
 // template meta-programming headers
 #include <boost/mpl/vector.hpp>
@@ -48,7 +50,25 @@ namespace gtsam {
 template<typename T>
 class Expression;
 
-typedef std::map<Key, Eigen::Block<Matrix> > JacobianMap;
+/**
+ * Expressions are designed to write their derivatives into an already allocated
+ * Jacobian of the correct size, of type VerticalBlockMatrix.
+ * The JacobianMap provides a mapping from keys to the underlying blocks.
+ */
+class JacobianMap {
+  const FastVector<Key>& keys_;
+  VerticalBlockMatrix& Ab_;
+public:
+  JacobianMap(const FastVector<Key>& keys, VerticalBlockMatrix& Ab) :
+      keys_(keys), Ab_(Ab) {
+  }
+  /// Access via key
+  VerticalBlockMatrix::Block operator()(Key key) {
+    FastVector<Key>::const_iterator it = std::find(keys_.begin(),keys_.end(),key);
+    DenseIndex block = it - keys_.begin();
+    return Ab_(block);
+  }
+};
 
 //-----------------------------------------------------------------------------
 /**
@@ -78,16 +98,14 @@ struct CallRecord {
 template<int ROWS, int COLS>
 void handleLeafCase(const Eigen::Matrix<double, ROWS, COLS>& dTdA,
     JacobianMap& jacobians, Key key) {
-  JacobianMap::iterator it = jacobians.find(key);
-  it->second.block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
+  jacobians(key).block < ROWS, COLS > (0, 0) += dTdA; // block makes HUGE difference
 }
 /// Handle Leaf Case for Dynamic Matrix type (slower)
 template<>
 void handleLeafCase(
     const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& dTdA,
     JacobianMap& jacobians, Key key) {
-  JacobianMap::iterator it = jacobians.find(key);
-  it->second += dTdA;
+  jacobians(key) += dTdA;
 }
 
 //-----------------------------------------------------------------------------

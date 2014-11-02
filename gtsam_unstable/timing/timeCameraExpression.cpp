@@ -27,7 +27,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define time timeMultiThreaded
+#define time timeSingleThreaded
 
 boost::shared_ptr<Cal3_S2> fixedK(new Cal3_S2());
 

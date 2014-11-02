@@ -61,6 +61,11 @@ namespace gtsam {
       Base(size_t dim = 1):dim_(dim) {}
       virtual ~Base() {}
 
+      /** true if a constrained noise mode, saves slow/clumsy dynamic casting */
+      virtual bool is_constrained() const {
+        return false;
+      }
+
       /// Dimensionality
       inline size_t dim() const { return dim_;}
 
@@ -385,6 +390,11 @@ namespace gtsam {
 
       virtual ~Constrained() {}
 
+      /** true if a constrained noise mode, saves slow/clumsy dynamic casting */
+      virtual bool is_constrained() const {
+        return true;
+      }
+
       /// Access mu as a vector
       const Vector& mu() const { return mu_; }
 
@@ -481,9 +491,8 @@ namespace gtsam {
       /**
        * Returns a Unit version of a constrained noisemodel in which
        * constrained sigmas remain constrained and the rest are unit scaled
-       * Now support augmented part from the Lagrange multiplier.
        */
-      shared_ptr unit(size_t augmentedDim = 0) const;
+      shared_ptr unit() const;
 
     private:
       /** Serialization function */
@@ -732,7 +741,7 @@ namespace gtsam {
       };
 
       /// Cauchy implements the "Cauchy" robust error model (Lee2013IROS).  Contributed by:
-      ///   Dipl.-Inform. Jan Oberl�nder (M.Sc.), FZI Research Center for
+      ///   Dipl.-Inform. Jan Oberlaender (M.Sc.), FZI Research Center for
       ///   Information Technology, Karlsruhe, Germany.
       ///   oberlaender@fzi.de
       /// Thanks Jan!
