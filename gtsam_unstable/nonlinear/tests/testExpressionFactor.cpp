@@ -165,6 +165,7 @@ TEST(ExpressionFactor, Binary) {
   char raw[size];
   ExecutionTrace<Point2> trace;
   Point2 value = binary.traceExecution(values, trace, raw);
+  EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
 
   // Expected Jacobians
@@ -208,8 +209,8 @@ TEST(ExpressionFactor, Shallow) {
   size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
   EXPECT_LONGS_EQUAL(112, sizeof(Unary::Record));
 #ifdef GTSAM_USE_QUATERNIONS
-  EXPECT_LONGS_EQUAL(464, sizeof(Binary::Record));
-  LONGS_EQUAL(112+464, expectedTraceSize);
+  EXPECT_LONGS_EQUAL(352, sizeof(Binary::Record));
+  LONGS_EQUAL(112+352, expectedTraceSize);
 #else
   EXPECT_LONGS_EQUAL(400, sizeof(Binary::Record));
   LONGS_EQUAL(112+400, expectedTraceSize);
@@ -220,6 +221,7 @@ TEST(ExpressionFactor, Shallow) {
   char raw[size];
   ExecutionTrace<Point2> trace;
   Point2 value = expression.traceExecution(values, trace, raw);
+  EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
 
   // Expected Jacobians
