@@ -141,6 +141,25 @@ namespace gtsam {
       const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas = SharedDiagonal());
 
     /**
+     *  Constructor
+     *  @param keys in some order
+     *  @param diemnsions of the variables in same order
+     *  @param m output dimension
+     *  @param model noise model (default NULL)
+     */
+    template<class KEYS, class DIMENSIONS>
+    JacobianFactor(const KEYS& keys, const DIMENSIONS& dims, DenseIndex m,
+        const SharedDiagonal& model = SharedDiagonal()) :
+        Base(keys), Ab_(dims.begin(), dims.end(), m, true), model_(model) {
+      Ab_.matrix().setZero();
+    }
+
+    /// Direct access to VerticalBlockMatrix
+    VerticalBlockMatrix& Ab() {
+      return Ab_;
+    }
+
+    /**
      * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
      * structure computed for \c graph is already available, providing it will reduce the amount of
      * computation performed. */

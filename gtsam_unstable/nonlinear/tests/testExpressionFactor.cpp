@@ -431,9 +431,9 @@ TEST(ExpressionFactor, WriteableJacobianFactor) {
   dimensions[0] = 6;
   dimensions[1] = 3;
   SharedDiagonal model;
-  WriteableJacobianFactor actual(keys, dimensions, 2, model);
+  JacobianFactor actual(keys, dimensions, 2, model);
   JacobianFactor expected(1, zeros(2, 6), 2, zeros(2, 3), zero(2));
-  EXPECT( assert_equal(expected, *(JacobianFactor*)(&actual),1e-9));
+  EXPECT( assert_equal(expected, actual,1e-9));
 }
 
 /* ************************************************************************* */

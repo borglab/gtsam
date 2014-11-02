@@ -24,56 +24,7 @@
 #include <boost/range/algorithm.hpp>
 #include <numeric>
 
-class ExpressionFactorWriteableJacobianFactorTest;
-
 namespace gtsam {
-
-/**
- * Special version of JacobianFactor that allows Jacobians to be written
- * Eliminates a large proportion of overhead
- * Note all ExpressionFactor<T> are friends, not for general consumption.
- */
-class WriteableJacobianFactor: public JacobianFactor {
-
-public:
-
-  /**
-   *  Constructor
-   *  @param keys in some order
-   *  @param diemnsions of the variables in same order
-   *  @param m output dimension
-   *  @param model noise model (default NULL)
-   */
-  template<class KEYS, class DIMENSIONS>
-  WriteableJacobianFactor(const KEYS& keys, const DIMENSIONS& dims,
-      DenseIndex m, const SharedDiagonal& model = SharedDiagonal()) {
-
-    // Check noise model dimension
-    if (model && (DenseIndex) model->dim() != m)
-      throw InvalidNoiseModel(m, model->dim());
-
-    // copy the keys
-    keys_.resize(keys.size());
-    std::copy(keys.begin(), keys.end(), keys_.begin());
-
-    // Check number of variables
-    if (dims.size() != keys_.size())
-      throw std::invalid_argument(
-          "WriteableJacobianFactor: size of dimensions and keys do not agree.");
-
-    Ab_ = VerticalBlockMatrix(dims.begin(), dims.end(), m, true);
-    Ab_.matrix().setZero();
-    model_ = model;
-  }
-
-  VerticalBlockMatrix& Ab() {
-    return Ab_;
-  }
-
-//  friend class ::ExpressionFactorWriteableJacobianFactorTest;
-//  template<typename T>
-//  friend class ExpressionFactor;
-};
 
 /**
  * Factor that supports arbitrary expressions via AD
@@ -164,9 +115,9 @@ public:
       model = constrained->unit();
 
     // Create a writeable JacobianFactor in advance
-    boost::shared_ptr<WriteableJacobianFactor> factor = boost::make_shared<
-        WriteableJacobianFactor>(keys_, dimensions_,
-        traits::dimension<T>::value, model);
+    boost::shared_ptr<JacobianFactor> factor(
+        new JacobianFactor(keys_, dimensions_, traits::dimension<T>::value,
+            model));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
     JacobianMap map(keys_, factor->Ab());
