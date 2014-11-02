@@ -107,22 +107,22 @@ public:
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
 
-    // This method has been heavily optimized for maximum performance.
-    // We allocate a VerticalBlockMatrix on the stack first, and then create
-    // a JacobianMap view onto it, which is then passed
-    // to [expression_.value] to allow it to write directly into Ab_.
+    // Check whether noise model is constrained or not
+    noiseModel::Constrained::shared_ptr constrained = //
+        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
 
-    // Another malloc saved by creating a Matrix on the stack
-    double memory[Dim * augmentedCols_];
-    Eigen::Map<Eigen::Matrix<double, Dim, Eigen::Dynamic> > //
-    matrix(memory, Dim, augmentedCols_);
-    matrix.setZero(); // zero out
-
-    // Construct block matrix, is of right size but un-initialized
-    VerticalBlockMatrix Ab(dimensions_, matrix, true);
+    // Create a writeable JacobianFactor in advance
+    boost::shared_ptr<JacobianFactor> factor(
+        constrained ? new JacobianFactor(keys_, dimensions_, Dim,
+            constrained->unit()) :
+            new JacobianFactor(keys_, dimensions_, Dim));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
+    VerticalBlockMatrix& Ab = factor->matrixObject();
     JacobianMap map(keys_, Ab);
+
+    // Zero out Jacobian so we can simply add to it
+    Ab.matrix().setZero();
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, map); // <<< Reverse AD happens here !
@@ -131,15 +131,7 @@ public:
     // Whiten the corresponding system now
     // TODO ! this->noiseModel_->WhitenSystem(Ab);
 
-    // TODO pass unwhitened + noise model to Gaussian factor
-    // For now, only linearized constrained factors have noise model at linear level!!!
-    noiseModel::Constrained::shared_ptr constrained = //
-        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained) {
-      return boost::make_shared<JacobianFactor>(this->keys(), Ab,
-          constrained->unit());
-    } else
-      return boost::make_shared<JacobianFactor>(this->keys(), Ab);
+    return factor;
   }
 };
 // ExpressionFactor

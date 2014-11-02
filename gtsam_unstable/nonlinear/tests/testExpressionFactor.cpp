@@ -28,6 +28,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/list_of.hpp>
+using boost::assign::list_of;
+
 using namespace std;
 using namespace gtsam;
 
