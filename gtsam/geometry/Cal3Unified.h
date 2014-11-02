@@ -131,8 +131,6 @@ private:
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version)
   {
-    ar & boost::serialization::make_nvp("Cal3Unified",
-        boost::serialization::base_object<Cal3DS2>(*this));
     ar & BOOST_SERIALIZATION_NVP(xi_);
   }
 
@@ -142,11 +140,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3Unified> : public std::true_type {
+struct is_manifold<Cal3Unified> : public boost::true_type {
 };
 
 template<>
-struct dimension<Cal3Unified> : public std::integral_constant<int, 10> {
+struct dimension<Cal3Unified> : public boost::integral_constant<int, 10> {
 };
 
 template<>

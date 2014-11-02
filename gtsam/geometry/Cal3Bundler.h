@@ -28,7 +28,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3Bundler: public DerivedValue<Cal3Bundler> {
+class GTSAM_EXPORT Cal3Bundler {
 
 private:
   double f_; ///< focal length
@@ -172,9 +172,6 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("Cal3Bundler",
-            boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(f_);
     ar & BOOST_SERIALIZATION_NVP(k1_);
     ar & BOOST_SERIALIZATION_NVP(k2_);
@@ -190,11 +187,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3Bundler> : public std::true_type {
+struct is_manifold<Cal3Bundler> : public boost::true_type {
 };
 
 template<>
-struct dimension<Cal3Bundler> : public std::integral_constant<int, 3> {
+struct dimension<Cal3Bundler> : public boost::integral_constant<int, 3> {
 };
 
 template<>

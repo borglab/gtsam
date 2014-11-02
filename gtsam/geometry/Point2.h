@@ -32,7 +32,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Point2 : public DerivedValue<Point2> {
+class GTSAM_EXPORT Point2 {
 
 private:
 
@@ -237,8 +237,6 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version)
   {
-    ar & boost::serialization::make_nvp("Point2",
-        boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(x_);
     ar & BOOST_SERIALIZATION_NVP(y_);
   }
@@ -254,15 +252,15 @@ inline Point2 operator*(double s, const Point2& p) {return p*s;}
 namespace traits {
 
 template<>
-struct is_group<Point2> : public std::true_type {
+struct is_group<Point2> : public boost::true_type {
 };
 
 template<>
-struct is_manifold<Point2> : public std::true_type {
+struct is_manifold<Point2> : public boost::true_type {
 };
 
 template<>
-struct dimension<Point2> : public std::integral_constant<int, 2> {
+struct dimension<Point2> : public boost::integral_constant<int, 2> {
 };
 
 }

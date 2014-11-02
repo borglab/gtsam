@@ -29,7 +29,7 @@ namespace gtsam {
 /**
  * LieVector is a wrapper around vector to allow it to be a Lie type
  */
-struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
+struct LieMatrix : public Matrix {
 
   /// @name Constructors
   /// @{
@@ -166,8 +166,6 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("LieMatrix",
-       boost::serialization::base_object<Value>(*this));
     ar & boost::serialization::make_nvp("Matrix",
        boost::serialization::base_object<Matrix>(*this));
 
@@ -179,7 +177,7 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<LieMatrix> : public std::true_type {
+struct is_manifold<LieMatrix> : public boost::true_type {
 };
 
 template<>

@@ -311,8 +311,9 @@ public:
 
 //-----------------------------------------------------------------------------
 /// Leaf Expression
-template<class T>
+template<class T, class Chart=DefaultChart<T> >
 class LeafExpression: public ExpressionNode<T> {
+  typedef ChartValue<T,Chart> value_type; // perhaps this can be something else like a std::pair<T,Chart> ??
 
   /// The key into values
   Key key_;
@@ -321,6 +322,53 @@ class LeafExpression: public ExpressionNode<T> {
   LeafExpression(Key key) :
       key_(key) {
   }
+  // todo: do we need a virtual destructor here too?
+
+  friend class Expression<value_type> ;
+
+public:
+
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys;
+    keys.insert(key_);
+    return keys;
+  }
+
+  /// Return dimensions for each argument
+  virtual void dims(std::map<Key, size_t>& map) const {
+    // get dimension from the chart; only works for fixed dimension charts
+    map[key_] = traits::dimension<Chart>::value;
+  }
+
+  /// Return value
+  virtual const value_type& value(const Values& values) const {
+    return dynamic_cast<const value_type&>(values.at(key_));
+  }
+
+  /// Construct an execution trace for reverse AD
+  virtual const value_type& traceExecution(const Values& values, ExecutionTrace<value_type>& trace,
+      char* raw) const {
+    trace.setLeaf(key_);
+    return dynamic_cast<const value_type&>(values.at(key_));
+  }
+
+};
+
+//-----------------------------------------------------------------------------
+/// Leaf Expression, if no chart is given, assume default chart and value_type is just the plain value
+template<typename T>
+class LeafExpression<T, DefaultChart<T> >: public ExpressionNode<T> {
+  typedef T value_type;
+
+  /// The key into values
+  Key key_;
+
+  /// Constructor with a single key
+  LeafExpression(Key key) :
+      key_(key) {
+  }
+  // todo: do we need a virtual destructor here too?
 
   friend class Expression<T> ;
 
@@ -392,7 +440,7 @@ struct Jacobian {
 
 /// meta-function to generate JacobianTA optional reference
 template<class T, class A>
-struct Optional {
+struct OptionalJacobian {
   typedef Eigen::Matrix<double, traits::dimension<T>::value,
       traits::dimension<A>::value> Jacobian;
   typedef boost::optional<Jacobian&> type;
@@ -522,7 +570,7 @@ struct FunctionalNode {
     // Argument types and derived, note these are base 0 !
     typedef TYPES Arguments;
     typedef typename boost::mpl::transform<TYPES, Jacobian<T, MPL::_1> >::type Jacobians;
-    typedef typename boost::mpl::transform<TYPES, Optional<T, MPL::_1> >::type Optionals;
+    typedef typename boost::mpl::transform<TYPES, OptionalJacobian<T, MPL::_1> >::type Optionals;
 
     /// Reset expression shared pointer
     template<class A, size_t N>
@@ -577,7 +625,7 @@ class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
 public:
 
-  typedef boost::function<T(const A1&, typename Optional<T, A1>::type)> Function;
+  typedef boost::function<T(const A1&, typename OptionalJacobian<T, A1>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
   typedef typename Base::Record Record;
 
@@ -622,8 +670,8 @@ class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::t
 public:
 
   typedef boost::function<
-      T(const A1&, const A2&, typename Optional<T, A1>::type,
-          typename Optional<T, A2>::type)> Function;
+      T(const A1&, const A2&, typename OptionalJacobian<T, A1>::type,
+          typename OptionalJacobian<T, A2>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
 
@@ -676,8 +724,8 @@ class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3>
 public:
 
   typedef boost::function<
-      T(const A1&, const A2&, const A3&, typename Optional<T, A1>::type,
-          typename Optional<T, A2>::type, typename Optional<T, A3>::type)> Function;
+      T(const A1&, const A2&, const A3&, typename OptionalJacobian<T, A1>::type,
+          typename OptionalJacobian<T, A2>::type, typename OptionalJacobian<T, A3>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;
 

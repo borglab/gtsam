@@ -142,7 +142,7 @@ TEST( Rot3, retract)
 
   // test Canonical coordinates
   Canonical<Rot3> chart;
-  Vector v2 = chart.apply(R);
+  Vector v2 = chart.local(R);
   CHECK(assert_equal(R, chart.retract(v2)));
 }
 

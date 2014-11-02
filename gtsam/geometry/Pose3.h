@@ -39,7 +39,7 @@ class Pose2;
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose3: public DerivedValue<Pose3> {
+class GTSAM_EXPORT Pose3{
 public:
 
   /** Pose Concept requirements */
@@ -326,8 +326,6 @@ public:
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("Pose3",
-              boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(R_);
       ar & BOOST_SERIALIZATION_NVP(t_);
     }
@@ -358,15 +356,15 @@ GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 namespace traits {
 
 template<>
-struct is_group<Pose3> : public std::true_type {
+struct is_group<Pose3> : public boost::true_type {
 };
 
 template<>
-struct is_manifold<Pose3> : public std::true_type {
+struct is_manifold<Pose3> : public boost::true_type {
 };
 
 template<>
-struct dimension<Pose3> : public std::integral_constant<int, 6> {
+struct dimension<Pose3> : public boost::integral_constant<int, 6> {
 };
 
 }

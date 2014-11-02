@@ -19,7 +19,7 @@ typedef Point3 Velocity3;
  * Robot state for use with IMU measurements
  * - contains translation, translational velocity and rotation
  */
-class GTSAM_UNSTABLE_EXPORT PoseRTV : public DerivedValue<PoseRTV> {
+class GTSAM_UNSTABLE_EXPORT PoseRTV {
 protected:
 
   Pose3 Rt_;
@@ -187,11 +187,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<PoseRTV> : public std::true_type {
+struct is_manifold<PoseRTV> : public boost::true_type {
 };
 
 template<>
-struct dimension<PoseRTV> : public std::integral_constant<int, 9> {
+struct dimension<PoseRTV> : public boost::integral_constant<int, 9> {
 };
 
 template<>

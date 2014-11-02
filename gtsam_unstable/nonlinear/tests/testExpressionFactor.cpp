@@ -147,19 +147,19 @@ TEST(ExpressionFactor, Binary) {
 
   // traceRaw will fill raw with [Trace<Point2> | Binary::Record]
   EXPECT_LONGS_EQUAL(8, sizeof(double));
-  EXPECT_LONGS_EQUAL(24, sizeof(Point2));
-  EXPECT_LONGS_EQUAL(48, sizeof(Cal3_S2));
+  EXPECT_LONGS_EQUAL(16, sizeof(Point2));
+  EXPECT_LONGS_EQUAL(40, sizeof(Cal3_S2));
   EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Point2>));
   EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Cal3_S2>));
   EXPECT_LONGS_EQUAL(2*5*8, sizeof(Jacobian<Point2,Cal3_S2>::type));
   EXPECT_LONGS_EQUAL(2*2*8, sizeof(Jacobian<Point2,Point2>::type));
-  size_t expectedRecordSize = 24 + 24 + 48 + 2 * 16 + 80 + 32;
-  EXPECT_LONGS_EQUAL(expectedRecordSize, sizeof(Binary::Record));
+  size_t expectedRecordSize = 16 + 16 + 40 + 2 * 16 + 80 + 32;
+  EXPECT_LONGS_EQUAL(expectedRecordSize + 8, sizeof(Binary::Record));
 
   // Check size
   size_t size = binary.traceSize();
   CHECK(size);
-  EXPECT_LONGS_EQUAL(expectedRecordSize, size);
+  EXPECT_LONGS_EQUAL(expectedRecordSize + 8, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
   char raw[size];
@@ -211,8 +211,8 @@ TEST(ExpressionFactor, Shallow) {
   EXPECT_LONGS_EQUAL(464, sizeof(Binary::Record));
   LONGS_EQUAL(112+464, expectedTraceSize);
 #else
-  EXPECT_LONGS_EQUAL(432, sizeof(Binary::Record));
-  LONGS_EQUAL(112+432, expectedTraceSize);
+  EXPECT_LONGS_EQUAL(400, sizeof(Binary::Record));
+  LONGS_EQUAL(112+400, expectedTraceSize);
 #endif
   size_t size = expression.traceSize();
   CHECK(size);

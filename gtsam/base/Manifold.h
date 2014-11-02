@@ -20,7 +20,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <boost/static_assert.hpp>
-#include <type_traits>
+#include <boost/type_traits.hpp>
 #include <string>
 
 namespace gtsam {
@@ -50,7 +50,7 @@ namespace traits {
 
 // is group, by default this is false
 template<typename T>
-struct is_group: public std::false_type {
+struct is_group: public boost::false_type {
 };
 
 // identity, no default provided, by default given by default constructor
@@ -63,16 +63,17 @@ struct identity {
 
 // is manifold, by default this is false
 template<typename T>
-struct is_manifold: public std::false_type {
+struct is_manifold: public boost::false_type {
 };
 
 // dimension, can return Eigen::Dynamic (-1) if not known at compile time
+typedef boost::integral_constant<int, Eigen::Dynamic> Dynamic;
 template<typename T>
-struct dimension;
+struct dimension : public Dynamic {}; //default to dynamic
 
 /**
  * zero<T>::value is intended to be the origin of a canonical coordinate system
- * with canonical(t) == DefaultChart<T>(zero<T>::value).apply(t)
+ * with canonical(t) == DefaultChart<T>::local(zero<T>::value, t)
  * Below we provide the group identity as zero *in case* it is a group
  */
 template<typename T> struct zero: public identity<T> {
@@ -82,15 +83,15 @@ template<typename T> struct zero: public identity<T> {
 // double
 
 template<>
-struct is_group<double> : public std::true_type {
+struct is_group<double> : public boost::true_type {
 };
 
 template<>
-struct is_manifold<double> : public std::true_type {
+struct is_manifold<double> : public boost::true_type {
 };
 
 template<>
-struct dimension<double> : public std::integral_constant<int, 1> {
+struct dimension<double> : public boost::integral_constant<int, 1> {
 };
 
 template<>
@@ -103,16 +104,14 @@ struct zero<double> {
 // Fixed size Eigen::Matrix type
 
 template<int M, int N, int Options>
-struct is_group<Eigen::Matrix<double, M, N, Options> > : public std::true_type {
+struct is_group<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
 };
 
 template<int M, int N, int Options>
-struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public std::true_type {
+struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
 };
 
 // TODO: Could be more sophisticated using Eigen traits and SFINAE?
-
-typedef std::integral_constant<int, Eigen::Dynamic> Dynamic;
 
 template<int Options>
 struct dimension<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Options> > : public Dynamic {
@@ -127,12 +126,12 @@ struct dimension<Eigen::Matrix<double, Eigen::Dynamic, N, Options> > : public Dy
 };
 
 template<int M, int N, int Options>
-struct dimension<Eigen::Matrix<double, M, N, Options> > : public std::integral_constant<
+struct dimension<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<
     int, M * N> {
 };
 
 template<int M, int N, int Options>
-struct zero<Eigen::Matrix<double, M, N, Options> > : public std::integral_constant<
+struct zero<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<
     int, M * N> {
   BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "traits::zero is only supported for fixed-size matrices");
@@ -141,62 +140,105 @@ struct zero<Eigen::Matrix<double, M, N, Options> > : public std::integral_consta
   }
 };
 
+template <typename T> struct is_chart : public boost::false_type {};
+
 } // \ namespace traits
 
 // Chart is a map from T -> vector, retract is its inverse
 template<typename T>
 struct DefaultChart {
-  BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
+  //BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
+  typedef T type;
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
-  T t_;
-  DefaultChart(const T& t) :
-      t_(t) {
+
+  static vector local(const T& origin, const T& other) {
+    return origin.localCoordinates(other);
   }
-  vector apply(const T& other) {
-    return t_.localCoordinates(other);
+  static T retract(const T& origin, const vector& d) {
+    return origin.retract(d);
   }
-  T retract(const vector& d) {
-    return t_.retract(d);
+  static int getDimension(const T& origin) {
+    return origin.dim();
   }
 };
 
+namespace traits {
+// populate default traits
+template <typename T> struct is_chart<DefaultChart<T> > : public boost::true_type {};
+template <typename T> struct dimension<DefaultChart<T> > : public dimension<T> {};
+}
+
+template<class C>
+struct ChartConcept {
+ public:
+  typedef typename C::type type;
+  typedef typename C::vector vector;
+
+  BOOST_CONCEPT_USAGE(ChartConcept) {
+    // is_chart trait should be true
+    BOOST_STATIC_ASSERT((traits::is_chart<C>::value));
+
+    /**
+     * Returns Retraction update of val_
+     */
+    type retract_ret = C::retract(val_, vec_);
+
+    /**
+     * Returns local coordinates of another object
+     */
+    vec_ = C::local(val_, retract_ret);
+
+    // a way to get the dimension that is compatible with dynamically sized types
+    dim_ = C::getDimension(val_);
+  }
+
+ private:
+  type val_;
+  vector vec_;
+  int dim_;
+};
+
+
 /**
- * Canonical<T>::value is a chart around zero<T>::value
+ * CanonicalChart<Chart<T> > is a chart around zero<T>::value
+ * Canonical<T> is CanonicalChart<DefaultChart<T> >
  * An example is Canonical<Rot3>
  */
-template<typename T> struct Canonical {
-  typedef T type;
-  typedef typename DefaultChart<T>::vector vector;
-  DefaultChart<T> chart;
-  Canonical() :
-      chart(traits::zero<T>::value()) {
-  }
+template<typename C> struct CanonicalChart {
+ BOOST_CONCEPT_ASSERT((ChartConcept<C>));
+
+  typedef C Chart;
+  typedef typename Chart::type type;
+  typedef typename Chart::vector vector;
+
   // Convert t of type T into canonical coordinates
-  vector apply(const T& t) {
-    return chart.apply(t);
+  vector local(const type& t) {
+    return Chart::local(traits::zero<type>::value(), t);
   }
   // Convert back from canonical coordinates to T
-  T retract(const vector& v) {
-    return chart.retract(v);
+  type retract(const vector& v) {
+    return Chart::retract(traits::zero<type>::value(), v);
   }
 };
+template <typename T> struct Canonical : public CanonicalChart<DefaultChart<T> > {};
 
 // double
 
 template<>
 struct DefaultChart<double> {
+  typedef double type;
   typedef Eigen::Matrix<double, 1, 1> vector;
-  double t_;
-  DefaultChart(double t) :
-      t_(t) {
-  }
-  vector apply(double other) {
+
+  static vector local(double origin, double other) {
     vector d;
-    d << other - t_;
+    d << other - origin;
     return d;
   }
-  double retract(const vector& d) {
-    return t_ + d[0];
+  static double retract(double origin, const vector& d) {
+    return origin + d[0];
+  }
+  static const int getDimension(double) {
+    return 1;
   }
 };
 
@@ -204,22 +246,23 @@ struct DefaultChart<double> {
 
 template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
-  typedef Eigen::Matrix<double, M, N, Options> T;
+  typedef Eigen::Matrix<double, M, N, Options> type;
+  typedef type T;
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
   BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");
-  T t_;
-  DefaultChart(const T& t) :
-      t_(t) {
-  }
-  vector apply(const T& other) {
-    T diff = other - t_;
+  static vector local(const T& origin, const T& other) {
+    T diff = other - origin;
     Eigen::Map<vector> map(diff.data());
     return vector(map);
+    // Why is this function not : return other - origin; ?? what is the Eigen::Map used for?
   }
-  T retract(const vector& d) {
+  static T retract(const T& origin, const vector& d) {
     Eigen::Map<const T> map(d.data());
-    return t_ + map;
+    return origin + map;
+  }
+  static int getDimension(const T&origin) {
+    return origin.rows()*origin.cols();
   }
 };
 
@@ -227,16 +270,16 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
 template<>
 struct DefaultChart<Vector> {
   typedef Vector T;
+  typedef T type;
   typedef T vector;
-  T t_;
-  DefaultChart(const T& t) :
-      t_(t) {
+  static vector local(const T& origin, const T& other) {
+    return other - origin;
   }
-  vector apply(const T& other) {
-    return other - t_;
+  static T retract(const T& origin, const vector& d) {
+    return origin + d;
   }
-  T retract(const vector& d) {
-    return t_ + d;
+  static int getDimension(const T& origin) {
+    return origin.size();
   }
 };
 

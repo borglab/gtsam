@@ -38,7 +38,7 @@ static double inf = std::numeric_limits<double>::infinity();
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
-const Symbol key1('v',1), key2('v',2), key3('v',3), key4('v',4);
+const Symbol key1('v', 1), key2('v', 2), key3('v', 3), key4('v', 4);
 
 
 class TestValueData {
@@ -51,15 +51,24 @@ public:
 };
 int TestValueData::ConstructorCount = 0;
 int TestValueData::DestructorCount = 0;
-class TestValue : public DerivedValue<TestValue> {
+class TestValue {
   TestValueData data_;
 public:
-  virtual void print(const std::string& str = "") const {}
+  void print(const std::string& str = "") const {}
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
-  virtual size_t dim() const { return 0; }
+  size_t dim() const { return 0; }
   TestValue retract(const Vector&) const { return TestValue(); }
   Vector localCoordinates(const TestValue&) const { return Vector(); }
 };
+
+namespace gtsam {
+namespace traits {
+template <>
+struct is_manifold<TestValue> : public boost::true_type {};
+template <>
+struct dimension<TestValue> : public boost::integral_constant<int, 0> {};
+}
+}
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -67,10 +76,10 @@ TEST( Values, equals1 )
   Values expected;
   LieVector v((Vector(3) << 5.0, 6.0, 7.0));
 
-  expected.insert(key1,v);
+  expected.insert(key1, v);
   Values actual;
-  actual.insert(key1,v);
-  CHECK(assert_equal(expected,actual));
+  actual.insert(key1, v);
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -260,7 +269,7 @@ TEST(Values, expmap_d)
   CHECK(config0.equals(config0));
 
   Values poseconfig;
-  poseconfig.insert(key1, Pose2(1,2,3));
+  poseconfig.insert(key1, Pose2(1, 2, 3));
   poseconfig.insert(key2, Pose2(0.3, 0.4, 0.5));
 
   CHECK(equal(config0, config0));
@@ -330,7 +339,7 @@ TEST(Values, update)
   Values expected;
   expected.insert(key1, LieVector((Vector(1) << -1.)));
   expected.insert(key2, LieVector((Vector(1) << -2.)));
-  CHECK(assert_equal(expected,config0));
+  CHECK(assert_equal(expected, config0));
 }
 
 /* ************************************************************************* */
@@ -353,12 +362,14 @@ TEST(Values, filter) {
   BOOST_FOREACH(const Values::Filtered<>::KeyValuePair& key_value, filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
-      EXPECT(typeid(Pose2) == typeid(key_value.value));
-      EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(key_value.value)));
+      try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
+      THROWS_EXCEPTION(key_value.value.cast<Pose3>());
+      EXPECT(assert_equal(pose2, key_value.value.cast<Pose2>()));
     } else if(i == 1) {
       LONGS_EQUAL(3, (long)key_value.key);
-      EXPECT(typeid(Pose3) == typeid(key_value.value));
-      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.value)));
+      try {key_value.value.cast<Pose3>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose3");}
+      THROWS_EXCEPTION(key_value.value.cast<Pose2>());
+      EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
     } else {
       EXPECT(false);
     }
@@ -408,18 +419,18 @@ TEST(Values, Symbol_filter) {
 
   Values values;
   values.insert(X(0), pose0);
-  values.insert(Symbol('y',1), pose1);
+  values.insert(Symbol('y', 1), pose1);
   values.insert(X(2), pose2);
-  values.insert(Symbol('y',3), pose3);
+  values.insert(Symbol('y', 3), pose3);
 
   int i = 0;
   BOOST_FOREACH(const Values::Filtered<Value>::KeyValuePair& key_value, values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
-      EXPECT(assert_equal(pose1, dynamic_cast<const Pose3&>(key_value.value)));
+      EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
     } else if(i == 1) {
       LONGS_EQUAL(Symbol('y', 3), (long)key_value.key);
-      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.value)));
+      EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
     } else {
       EXPECT(false);
     }
@@ -441,11 +452,15 @@ TEST(Values, Destructors) {
       values.insert(0, value1);
       values.insert(1, value2);
     }
-    LONGS_EQUAL(4, (long)TestValueData::ConstructorCount);
-    LONGS_EQUAL(2, (long)TestValueData::DestructorCount);
+    // additional 2 con/destructor counts for the temporary
+    // GenericValue<TestValue> in insert()
+    // but I'm sure some advanced programmer can figure out
+    // a way to avoid the temporary, or optimize it out
+    LONGS_EQUAL(4+2, (long)TestValueData::ConstructorCount);
+    LONGS_EQUAL(2+2, (long)TestValueData::DestructorCount);
   }
-  LONGS_EQUAL(4, (long)TestValueData::ConstructorCount);
-  LONGS_EQUAL(4, (long)TestValueData::DestructorCount);
+  LONGS_EQUAL(4+2, (long)TestValueData::ConstructorCount);
+  LONGS_EQUAL(4+2, (long)TestValueData::DestructorCount);
 }
 
 /* ************************************************************************* */
