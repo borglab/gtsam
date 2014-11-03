@@ -53,6 +53,8 @@ public:
    */
   Cal3Bundler(double f, double k1, double k2, double u0 = 0, double v0 = 0);
 
+  virtual ~Cal3Bundler() {}
+
   /// @}
   /// @name Testable
   /// @{
