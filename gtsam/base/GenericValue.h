@@ -19,7 +19,10 @@
 
 #pragma once
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/Value.h>
+#include <cmath>
+#include <iostream>
 
 namespace gtsam {
 
@@ -28,15 +31,63 @@ namespace traits {
 
 // trait to wrap the default equals of types
 template<typename T>
-bool equals(const T& a, const T& b, double tol) {
-  return a.equals(b, tol);
-}
+struct equals {
+  typedef T type;
+  typedef bool result_type;
+  bool operator()(const T& a, const T& b, double tol) {
+    return a.equals(b, tol);
+  }
+};
 
 // trait to wrap the default print of types
 template<typename T>
-void print(const T& obj, const std::string& str) {
-  obj.print(str);
-}
+struct print {
+  typedef T type;
+  typedef void result_type;
+  void operator()(const T& obj, const std::string& str) {
+    obj.print(str);
+  }
+};
+
+// equals for scalars
+template<>
+struct equals<double> {
+  typedef double type;
+  typedef bool result_type;
+  bool operator()(double a, double b, double tol) {
+    return std::abs(a - b) <= tol;
+  }
+};
+
+// print for scalars
+template<>
+struct print<double> {
+  typedef double type;
+  typedef void result_type;
+  void operator()(double a, const std::string& str) {
+    std::cout << str << ": " << a << std::endl;
+  }
+};
+
+// equals for Matrix types
+template<int M, int N, int Options>
+struct equals<Eigen::Matrix<double, M, N, Options> > {
+  typedef Eigen::Matrix<double, M, N, Options> type;
+  typedef bool result_type;
+  bool operator()(const type& A, const type& B, double tol) {
+    return equal_with_abs_tol(A, B, tol);
+  }
+};
+
+// print for Matrix types
+template<int M, int N, int Options>
+struct print<Eigen::Matrix<double, M, N, Options> > {
+  typedef Eigen::Matrix<double, M, N, Options> type;
+  typedef void result_type;
+  void operator()(const type& A, const std::string& str) {
+    std::cout << str << ": " << A << std::endl;
+  }
+};
 
 }
 
@@ -80,17 +131,17 @@ public:
     // Cast the base class Value pointer to a templated generic class pointer
     const GenericValue& genericValue2 = static_cast<const GenericValue&>(p);
     // Return the result of using the equals traits for the derived class
-    return traits::equals<T>(this->value_, genericValue2.value_, tol);
+    return traits::equals<T>()(this->value_, genericValue2.value_, tol);
   }
 
   /// non virtual equals function, uses traits
   bool equals(const GenericValue &other, double tol = 1e-9) const {
-    return traits::equals<T>(this->value(), other.value(), tol);
+    return traits::equals<T>()(this->value(), other.value(), tol);
   }
 
   /// Virtual print function, uses traits
   virtual void print(const std::string& str) const {
-    traits::print<T>(value_, str);
+    traits::print<T>()(value_, str);
   }
 
   // Serialization below:
