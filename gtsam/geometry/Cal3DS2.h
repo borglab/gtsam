@@ -61,6 +61,8 @@ public:
       double k1, double k2, double p1 = 0.0, double p2 = 0.0) :
   fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0), k1_(k1), k2_(k2), p1_(p1), p2_(p2) {}
 
+  virtual ~Cal3DS2() {}
+
   /// @}
   /// @name Advanced Constructors
   /// @{
