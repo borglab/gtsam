@@ -11,9 +11,10 @@
 
 /*
  * @file ChartValue.h
- * @date Jan 26, 2012
+ * @brief
+ * @date October, 2014
  * @author Michael Bosse, Abel Gawel, Renaud Dube
- * based on DrivedValue.h by Duy Nguyen Ta
+ * based on DerivedValue.h by Duy Nguyen Ta
  */
 
 #pragma once
@@ -39,25 +40,44 @@
 #endif
 //////////////////
 
-
 namespace gtsam {
 
-// ChartValue is derived from GenericValue<T> and Chart so that Chart can be zero sized (as in DefaultChart<T>)
-// if the Chart is a member variable then it won't ever be zero sized.
-template<class T, class Chart_=DefaultChart<T> >
-class ChartValue : public GenericValue<T>, public Chart_ {
+/**
+ * ChartValue is derived from GenericValue<T> and Chart so that
+ * Chart can be zero sized (as in DefaultChart<T>)
+ * if the Chart is a member variable then it won't ever be zero sized.
+ */
+template<class T, class Chart_ = DefaultChart<T> >
+class ChartValue: public GenericValue<T>, public Chart_ {
+
   BOOST_CONCEPT_ASSERT((ChartConcept<Chart_>));
- public:
+
+public:
+
   typedef T type;
   typedef Chart_ Chart;
 
- public:
-  ChartValue() : GenericValue<T>(T()) {}
-  ChartValue(const T& value) : GenericValue<T>(value) {}
-  template<typename C>
-  ChartValue(const T& value, C chart_initializer) : GenericValue<T>(value), Chart(chart_initializer) {}
+public:
 
-  virtual ~ChartValue() {}
+  /// Default Constructor. TODO might not make sense for some types
+  ChartValue() :
+      GenericValue<T>(T()) {
+  }
+
+  /// Construct froma  value
+  ChartValue(const T& value) :
+      GenericValue<T>(value) {
+  }
+
+  /// Construct from a value and initialize the chart
+  template<typename C>
+  ChartValue(const T& value, C chart_initializer) :
+      GenericValue<T>(value), Chart(chart_initializer) {
+  }
+
+  /// Destructor
+  virtual ~ChartValue() {
+  }
 
   /**
    * Create a duplicate object returned as a pointer to the generic Value interface.
@@ -66,7 +86,7 @@ class ChartValue : public GenericValue<T>, public Chart_ {
    */
   virtual Value* clone_() const {
     void *place = boost::singleton_pool<PoolTag, sizeof(ChartValue)>::malloc();
-    ChartValue* ptr = new(place) ChartValue(*this); // calls copy constructor to fill in
+    ChartValue* ptr = new (place) ChartValue(*this); // calls copy constructor to fill in
     return ptr;
   }
 
@@ -75,7 +95,7 @@ class ChartValue : public GenericValue<T>, public Chart_ {
    */
   virtual void deallocate_() const {
     this->~ChartValue(); // Virtual destructor cleans up the derived object
-    boost::singleton_pool<PoolTag, sizeof(ChartValue)>::free((void*)this); // Release memory from pool
+    boost::singleton_pool<PoolTag, sizeof(ChartValue)>::free((void*) this); // Release memory from pool
   }
 
   /**
@@ -85,18 +105,16 @@ class ChartValue : public GenericValue<T>, public Chart_ {
     return boost::make_shared<ChartValue>(*this);
   }
 
-  /// just use the equals_ defined in GenericValue
-  // virtual bool equals_(const Value& p, double tol = 1e-9) const {
-  //  }
-
   /// Chart Value interface version of retract
   virtual Value* retract_(const Vector& delta) const {
     // Call retract on the derived class using the retract trait function
     const T retractResult = Chart::retract(GenericValue<T>::value(), delta);
 
     // Create a Value pointer copy of the result
-    void* resultAsValuePlace = boost::singleton_pool<PoolTag, sizeof(ChartValue)>::malloc();
-    Value* resultAsValue = new(resultAsValuePlace) ChartValue(retractResult, static_cast<const Chart&>(*this));
+    void* resultAsValuePlace =
+        boost::singleton_pool<PoolTag, sizeof(ChartValue)>::malloc();
+    Value* resultAsValue = new (resultAsValuePlace) ChartValue(retractResult,
+        static_cast<const Chart&>(*this));
 
     // Return the pointer to the Value base class
     return resultAsValue;
@@ -105,7 +123,8 @@ class ChartValue : public GenericValue<T>, public Chart_ {
   /// Generic Value interface version of localCoordinates
   virtual Vector localCoordinates_(const Value& value2) const {
     // Cast the base class Value pointer to a templated generic class pointer
-    const GenericValue<T>& genericValue2 = static_cast<const GenericValue<T>&>(value2);
+    const GenericValue<T>& genericValue2 =
+        static_cast<const GenericValue<T>&>(value2);
 
     // Return the result of calling localCoordinates trait on the derived class
     return Chart::local(GenericValue<T>::value(), genericValue2.value());
@@ -113,7 +132,8 @@ class ChartValue : public GenericValue<T>, public Chart_ {
 
   /// Non-virtual version of retract
   ChartValue retract(const Vector& delta) const {
-    return ChartValue(Chart::retract(GenericValue<T>::value(), delta),static_cast<const Chart&>(*this));
+    return ChartValue(Chart::retract(GenericValue<T>::value(), delta),
+        static_cast<const Chart&>(*this));
   }
 
   /// Non-virtual version of localCoordinates
@@ -121,8 +141,10 @@ class ChartValue : public GenericValue<T>, public Chart_ {
     return localCoordinates_(value2);
   }
 
+  /// Return run-time dimensionality
   virtual size_t dim() const {
-    return Chart::getDimension(GenericValue<T>::value()); // need functional form here since the dimension may be dynamic
+    // need functional form here since the dimension may be dynamic
+    return Chart::getDimension(GenericValue<T>::value());
   }
 
   /// Assignment operator
@@ -136,6 +158,7 @@ class ChartValue : public GenericValue<T>, public Chart_ {
   }
 
 protected:
+
   // implicit assignment operator for (const ChartValue& rhs) works fine here
   /// Assignment operator, protected because only the Value or DERIVED
   /// assignment operators should be used.
@@ -145,44 +168,52 @@ protected:
   //  }
 
 private:
+
   /// Fake Tag struct for singleton pool allocator. In fact, it is never used!
-  struct PoolTag { };
+  struct PoolTag {
+  };
 
 private:
 
-   /// @}
-   /// @name Advanced Interface
-   /// @{
-
-   /** Serialization function */
-   friend class boost::serialization::access;
-   template<class ARCHIVE>
-   void serialize(ARCHIVE & ar, const unsigned int version) {
-     // ar & boost::serialization::make_nvp("value",);
-     // todo: implement a serialization for charts
-     ar & boost::serialization::make_nvp("GenericValue", boost::serialization::base_object< GenericValue<T> >(*this));
-   }
-
-   /// @}
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    // ar & boost::serialization::make_nvp("value",);
+    // todo: implement a serialization for charts
+    ar
+        & boost::serialization::make_nvp("GenericValue",
+            boost::serialization::base_object<GenericValue<T> >(*this));
+  }
 
 };
 
+// Define
 namespace traits {
-template <typename T, typename Chart>
-struct dimension<ChartValue<T, Chart> > : public dimension<Chart> {};
-}
 
+/// The dimension of a ChartValue is the dimension of the chart
+template<typename T, typename Chart>
+struct dimension<ChartValue<T, Chart> > : public dimension<Chart> {
+  // TODO Frank thinks dimension is a property of type, chart should conform
+};
+
+} // \ traits
+
+/// Get the chart from a Value
 template<typename Chart>
 const Chart& Value::getChart() const {
-// define Value::cast here since now ChartValue has been declared
-   return dynamic_cast<const Chart&>(*this);
- }
+  return dynamic_cast<const Chart&>(*this);
+}
 
 /// Convenience function that can be used to make an expression to convert a value to a chart
-template <typename T>
-ChartValue<T> convertToChartValue(const T& value, boost::optional<Eigen::Matrix<double, traits::dimension<T>::value, traits::dimension<T>::value >& > H=boost::none) {
+template<typename T>
+ChartValue<T> convertToChartValue(const T& value,
+    boost::optional<
+        Eigen::Matrix<double, traits::dimension<T>::value,
+            traits::dimension<T>::value>&> H = boost::none) {
   if (H) {
-    *H = Eigen::Matrix<double, traits::dimension<T>::value, traits::dimension<T>::value >::Identity();
+    *H = Eigen::Matrix<double, traits::dimension<T>::value,
+        traits::dimension<T>::value>::Identity();
   }
   return ChartValue<T>(value);
 }

@@ -124,6 +124,7 @@ namespace gtsam {
       //needs a empty definition so recursion in implicit derived assignment operators work
      return *this;
     }
+
     /** Cast to known ValueType */
     template<typename ValueType>
     const ValueType& cast() const;
