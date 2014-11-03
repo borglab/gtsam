@@ -21,7 +21,6 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/inference/Key.h>
 
 using namespace std;

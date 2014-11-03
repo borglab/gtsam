@@ -15,8 +15,6 @@
 #include <boost/optional.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/LieScalar.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>

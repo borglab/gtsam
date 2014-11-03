@@ -22,7 +22,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
@@ -438,18 +437,18 @@ public:
     Matrix Z_3x3 = zeros(3,3);
     Matrix I_3x3 = eye(3,3);
 
-    Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
-    Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
+    Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
+    Matrix H_pos_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
     Matrix H_pos_bias = collect(2, &Z_3x3, &Z_3x3);
 
-    Matrix H_vel_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_vel_in_t0);
-    Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
-    Matrix H_vel_bias = numericalDerivative11<LieVector, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
+    Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_vel_in_t0);
+    Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
+    Matrix H_vel_bias = numericalDerivative11<Vector3, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
     Matrix H_vel_pos = Z_3x3;
 
-    Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
-    Matrix H_angles_bias = numericalDerivative11<LieVector, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, delta_angles, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
+    Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
+    Matrix H_angles_bias = numericalDerivative11<Vector3, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, delta_angles, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 

@@ -7,7 +7,6 @@
 #pragma once
 
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
@@ -89,9 +88,9 @@ public:
     z.head(3).operator=(accel_); // Strange syntax to work around ambiguous operator error with clang
     z.segment(3, 3).operator=(gyro_); // Strange syntax to work around ambiguous operator error with clang
     z.tail(3).operator=(x2.t().vector()); // Strange syntax to work around ambiguous operator error with clang
-    if (H1) *H1 = numericalDerivative21<LieVector, PoseRTV, PoseRTV>(
+    if (H1) *H1 = numericalDerivative21<Vector3, PoseRTV, PoseRTV>(
         boost::bind(This::predict_proxy, _1, _2, dt_), x1, x2, 1e-5);
-    if (H2) *H2 = numericalDerivative22<LieVector, PoseRTV, PoseRTV>(
+    if (H2) *H2 = numericalDerivative22<Vector3, PoseRTV, PoseRTV>(
         boost::bind(This::predict_proxy, _1, _2, dt_), x1, x2, 1e-5);
     return z - predict_proxy(x1, x2, dt_);
   }
@@ -107,11 +106,11 @@ public:
 private:
 
   /** copy of the measurement function formulated for numerical derivatives */
-  static LieVector predict_proxy(const PoseRTV& x1, const PoseRTV& x2, double dt) {
+  static Vector3 predict_proxy(const PoseRTV& x1, const PoseRTV& x2, double dt) {
     Vector hx(9);
     hx.head(6).operator=(x1.imuPrediction(x2, dt)); // Strange syntax to work around ambiguous operator error with clang
     hx.tail(3).operator=(x1.translationIntegration(x2, dt).vector()); // Strange syntax to work around ambiguous operator error with clang
-    return LieVector(hx);
+    return Vector3(hx);
   }
 };
 

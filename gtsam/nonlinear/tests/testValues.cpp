@@ -155,11 +155,11 @@ TEST( Values, update_element )
 
   cfg.insert(key1, v1);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v1, cfg.at<Vector3>(key1)));
+  CHECK(assert_equal((Vector)v1, cfg.at<Vector3>(key1)));
 
   cfg.update(key1, v2);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v2, cfg.at<Vector3>(key1)));
+  CHECK(assert_equal((Vector)v2, cfg.at<Vector3>(key1)));
 }
 
 /* ************************************************************************* */

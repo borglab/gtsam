@@ -27,7 +27,6 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/LieVector.h>
 #include <tests/smallExample.h>
 #include <tests/simulated2D.h>
 #include <gtsam/linear/GaussianFactor.h>
