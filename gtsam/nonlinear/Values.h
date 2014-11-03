@@ -251,15 +251,18 @@ namespace gtsam {
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
     void insert(const Values& values);
 
-    /** Templated verion to add a variable with the given j,
+    /** Templated version to add a variable with the given j,
      * throws KeyAlreadyExists<J> if j is already present
      * if no chart is specified, the DefaultChart<ValueType> is used
      */
     template <typename ValueType>
     void insert(Key j, const ValueType& val);
+
+    /// overloaded insert version that also specifies a chart
     template <typename ValueType, typename Chart>
     void insert(Key j, const ValueType& val);
-     // overloaded insert version that also specifies a chart initializer
+
+    /// overloaded insert version that also specifies a chart initializer
     template <typename ValueType, typename Chart, typename ChartInit>
     void insert(Key j, const ValueType& val, ChartInit chart);
 
@@ -273,14 +276,18 @@ namespace gtsam {
     /** single element change of existing element */
     void update(Key j, const Value& val);
 
-    /** Templated verion to update a variable with the given j,
+    /** Templated version to update a variable with the given j,
       * throws KeyAlreadyExists<J> if j is already present
       * if no chart is specified, the DefaultChart<ValueType> is used
       */
     template <typename T>
     void update(Key j, const T& val);
+
+    /// overloaded insert version that also specifies a chart
     template <typename T, typename Chart>
     void update(Key j, const T& val);
+
+    /// overloaded insert version that also specifies a chart initializer
     template <typename T, typename Chart, typename ChartInit>
     void update(Key j, const T& val, ChartInit chart);
 

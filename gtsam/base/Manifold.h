@@ -67,9 +67,12 @@ struct is_manifold: public boost::false_type {
 };
 
 // dimension, can return Eigen::Dynamic (-1) if not known at compile time
+// defaults to dynamic, TODO makes sense ?
 typedef boost::integral_constant<int, Eigen::Dynamic> Dynamic;
 template<typename T>
-struct dimension : public Dynamic {}; //default to dynamic
+struct dimension: public Dynamic {
+};
+
 
 /**
  * zero<T>::value is intended to be the origin of a canonical coordinate system
@@ -140,19 +143,8 @@ struct zero<Eigen::Matrix<double, M, N, Options> > : public boost::integral_cons
   }
 };
 
-// These functions should maybe be wrapped into a struct object?
-template<class T>
-bool equals(const Eigen::DenseBase<T>& A, const Eigen::DenseBase<T>& B,
-    double tol) {
-  return equal_with_abs_tol(A, B, tol);
-}
-
-template<typename T>
-void print(const Eigen::DenseBase<T>& A, const std::string& str) {
-  print(A,str);
-}
-
-template <typename T> struct is_chart : public boost::false_type {};
+template<typename T> struct is_chart: public boost::false_type {
+};
 
 } // \ namespace traits
 
@@ -176,13 +168,15 @@ struct DefaultChart {
 
 namespace traits {
 // populate default traits
-template <typename T> struct is_chart<DefaultChart<T> > : public boost::true_type {};
-template <typename T> struct dimension<DefaultChart<T> > : public dimension<T> {};
+template<typename T> struct is_chart<DefaultChart<T> > : public boost::true_type {
+};
+template<typename T> struct dimension<DefaultChart<T> > : public dimension<T> {
+};
 }
 
 template<class C>
 struct ChartConcept {
- public:
+public:
   typedef typename C::type type;
   typedef typename C::vector vector;
 
@@ -204,12 +198,11 @@ struct ChartConcept {
     dim_ = C::getDimension(val_);
   }
 
- private:
+private:
   type val_;
   vector vec_;
   int dim_;
 };
-
 
 /**
  * CanonicalChart<Chart<T> > is a chart around zero<T>::value
@@ -217,7 +210,7 @@ struct ChartConcept {
  * An example is Canonical<Rot3>
  */
 template<typename C> struct CanonicalChart {
- BOOST_CONCEPT_ASSERT((ChartConcept<C>));
+  BOOST_CONCEPT_ASSERT((ChartConcept<C>));
 
   typedef C Chart;
   typedef typename Chart::type type;
@@ -232,7 +225,8 @@ template<typename C> struct CanonicalChart {
     return Chart::retract(traits::zero<type>::value(), v);
   }
 };
-template <typename T> struct Canonical : public CanonicalChart<DefaultChart<T> > {};
+template<typename T> struct Canonical: public CanonicalChart<DefaultChart<T> > {
+};
 
 // double
 
@@ -260,8 +254,7 @@ template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, M, N, Options> type;
   typedef type T;
-  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
-  BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
+  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");
   static vector local(const T& origin, const T& other) {
     T diff = other - origin;
@@ -274,7 +267,7 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
     return origin + map;
   }
   static int getDimension(const T&origin) {
-    return origin.rows()*origin.cols();
+    return origin.rows() * origin.cols();
   }
 };
 
