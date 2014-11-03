@@ -140,6 +140,18 @@ struct zero<Eigen::Matrix<double, M, N, Options> > : public boost::integral_cons
   }
 };
 
+// These functions should maybe be wrapped into a struct object?
+template<class T>
+bool equals(const Eigen::DenseBase<T>& A, const Eigen::DenseBase<T>& B,
+    double tol) {
+  return equal_with_abs_tol(A, B, tol);
+}
+
+template<typename T>
+void print(const Eigen::DenseBase<T>& A, const std::string& str) {
+  print(A,str);
+}
+
 template <typename T> struct is_chart : public boost::false_type {};
 
 } // \ namespace traits
