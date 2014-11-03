@@ -78,9 +78,9 @@ public:
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const {
     const Vector meas = z();
-    if (H1) *H1 = numericalDerivative21<LieVector, PoseRTV, PoseRTV>(
+    if (H1) *H1 = numericalDerivative21<Vector, PoseRTV, PoseRTV>(
         boost::bind(This::predict_proxy, _1, _2, dt_, meas), x1, x2, 1e-5);
-    if (H2) *H2 = numericalDerivative22<LieVector, PoseRTV, PoseRTV>(
+    if (H2) *H2 = numericalDerivative22<Vector, PoseRTV, PoseRTV>(
         boost::bind(This::predict_proxy, _1, _2, dt_, meas), x1, x2, 1e-5);
     return predict_proxy(x1, x2, dt_, meas);
   }
@@ -95,10 +95,10 @@ public:
 
 private:
   /** copy of the measurement function formulated for numerical derivatives */
-  static LieVector predict_proxy(const PoseRTV& x1, const PoseRTV& x2,
+  static Vector predict_proxy(const PoseRTV& x1, const PoseRTV& x2,
       double dt, const Vector& meas) {
     Vector hx = x1.imuPrediction(x2, dt);
-    return LieVector(meas - hx);
+    return Vector(meas - hx);
   }
 };
 

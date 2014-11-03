@@ -211,7 +211,7 @@ TEST (EssentialMatrixFactor2, minimization) {
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(trueE, actual, 1e-1));
   for (size_t i = 0; i < 5; i++)
-    EXPECT(assert_equal(truth.at<double>(i), result.at<double>(i), 1e-1));
+    EXPECT_DOUBLES_EQUAL(truth.at<double>(i), result.at<double>(i), 1e-1);
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
@@ -284,7 +284,7 @@ TEST (EssentialMatrixFactor3, minimization) {
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(bodyE, actual, 1e-1));
   for (size_t i = 0; i < 5; i++)
-    EXPECT(assert_equal(truth.at<double>(i), result.at<double>(i), 1e-1));
+    EXPECT_DOUBLES_EQUAL(truth.at<double>(i), result.at<double>(i), 1e-1);
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
@@ -427,7 +427,7 @@ TEST (EssentialMatrixFactor2, extraMinimization) {
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(trueE, actual, 1e-1));
   for (size_t i = 0; i < data.number_tracks(); i++)
-    EXPECT(assert_equal(truth.at<double>(i), result.at<double>(i), 1e-1));
+    EXPECT_DOUBLES_EQUAL(truth.at<double>(i), result.at<double>(i), 1e-1);
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
