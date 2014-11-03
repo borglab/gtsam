@@ -23,7 +23,7 @@ namespace gtsam {
 /**
  * Binary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant2: public NoiseModelFactor2<Pose3, LieVector> {
+class InvDepthFactorVariant2: public NoiseModelFactor2<Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -34,7 +34,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor2<Pose3, LieVector> Base;
+  typedef NoiseModelFactor2<Pose3, Vector3> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant2 This;
@@ -82,7 +82,7 @@ public:
         && this->referencePoint_.equals(e->referencePoint_, tol);
   }
 
-  Vector inverseDepthError(const Pose3& pose, const LieVector& landmark) const {
+  Vector inverseDepthError(const Pose3& pose, const Vector3& landmark) const {
     try {
       // Calculate the 3D coordinates of the landmark in the world frame
       double theta = landmark(0), phi = landmark(1), rho = landmark(2);
@@ -102,7 +102,7 @@ public:
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose, const LieVector& landmark,
+  Vector evaluateError(const Pose3& pose, const Vector3& landmark,
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none) const {
 

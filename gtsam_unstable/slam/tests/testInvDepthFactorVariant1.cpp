@@ -45,7 +45,7 @@ TEST( InvDepthFactorVariant1, optimize) {
   double theta = atan2(ray.y(), ray.x());
   double phi = atan2(ray.z(), sqrt(ray.x()*ray.x()+ray.y()*ray.y()));
   double rho = 1./ray.norm();
-  LieVector expected((Vector(6) << x, y, z, theta, phi, rho));
+  Vector6 expected((Vector(6) << x, y, z, theta, phi, rho));
 
 
   
@@ -68,12 +68,12 @@ TEST( InvDepthFactorVariant1, optimize) {
   Values values;
   values.insert(poseKey1, pose1.retract((Vector(6) << +0.01, -0.02, +0.03, -0.10, +0.20, -0.30)));
   values.insert(poseKey2, pose2.retract((Vector(6) << +0.01, +0.02, -0.03, -0.10, +0.20, +0.30)));
-  values.insert(landmarkKey, expected.retract((Vector(6) << -0.20, +0.20, -0.35, +0.02, -0.04, +0.05)));
+  values.insert(landmarkKey, Vector6(expected + (Vector(6) << -0.20, +0.20, -0.35, +0.02, -0.04, +0.05)));
 
   // Optimize the graph to recover the actual landmark position
   LevenbergMarquardtParams params;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
-  LieVector actual = result.at<LieVector>(landmarkKey);
+  Vector6 actual = result.at<Vector6>(landmarkKey);
   
 
 //  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
@@ -84,22 +84,22 @@ TEST( InvDepthFactorVariant1, optimize) {
 //  result.at<Pose3>(poseKey2).print("Pose2 After:\n");
 //  pose2.print("Pose2 Truth:\n");
 //  cout << endl << endl;
-//  values.at<LieVector>(landmarkKey).print("Landmark Before:\n");
-//  result.at<LieVector>(landmarkKey).print("Landmark After:\n");
+//  values.at<Vector6>(landmarkKey).print("Landmark Before:\n");
+//  result.at<Vector6>(landmarkKey).print("Landmark After:\n");
 //  expected.print("Landmark Truth:\n");
 //  cout << endl << endl;
 
   // Calculate world coordinates of landmark versions
   Point3 world_landmarkBefore;
   {
-    LieVector landmarkBefore = values.at<LieVector>(landmarkKey);
+    Vector6 landmarkBefore = values.at<Vector6>(landmarkKey);
     double x = landmarkBefore(0), y = landmarkBefore(1), z = landmarkBefore(2);
     double theta = landmarkBefore(3), phi = landmarkBefore(4), rho = landmarkBefore(5);
     world_landmarkBefore = Point3(x, y, z) + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
   }
   Point3 world_landmarkAfter;
   {
-    LieVector landmarkAfter = result.at<LieVector>(landmarkKey);
+    Vector6 landmarkAfter = result.at<Vector6>(landmarkKey);
     double x = landmarkAfter(0), y = landmarkAfter(1), z = landmarkAfter(2);
     double theta = landmarkAfter(3), phi = landmarkAfter(4), rho = landmarkAfter(5);
     world_landmarkAfter = Point3(x, y, z) + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
