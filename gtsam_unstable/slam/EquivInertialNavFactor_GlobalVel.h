@@ -268,7 +268,7 @@ public:
     VelDelta -= 2*skewSymmetric(world_rho + world_omega_earth)*world_V1_body * dt12;
 
     // Predict
-    return Vel1.compose( VelDelta );
+    return Vel1 + VelDelta;
 
   }
 
@@ -294,7 +294,7 @@ public:
     VELOCITY Vel2Pred = predictVelocity(Pose1, Vel1, Bias1);
 
     // Calculate error
-    return Vel2.between(Vel2Pred);
+    return Vel2Pred-Vel2;
   }
 
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
@@ -343,7 +343,7 @@ public:
     }
 
     Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
-    Vector ErrVelVector(VELOCITY::Logmap(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2)));
+    Vector ErrVelVector(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2));
 
     return concatVectors(2, &ErrPoseVector, &ErrVelVector);
   }
