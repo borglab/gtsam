@@ -1,1 +1,0 @@
-install(FILES metis.h DESTINATION include/gtsam/3rdparty/metis)
