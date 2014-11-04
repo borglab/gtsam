@@ -18,6 +18,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <boost/make_shared.hpp>
+#include <boost/format.hpp>
 
 namespace gtsam {
 
@@ -79,7 +80,10 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
 static void check(const SharedNoiseModel& noiseModel, size_t m) {
   if (noiseModel && m != noiseModel->dim())
     throw std::invalid_argument(
-        "NoiseModelFactor was created with a NoiseModel of incorrect dimension.");
+        boost::str(
+            boost::format(
+                "NoiseModelFactor: NoiseModel has dimension %1% instead of %2%.")
+                % noiseModel->dim() % m));
 }
 
 /* ************************************************************************* */
