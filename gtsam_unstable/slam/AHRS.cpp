@@ -48,12 +48,12 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
 
   F_g_ = -I3 / tau_g;
   F_a_ = -I3 / tau_a;
-  Vector var_omega_w = 0 * ones(3); // TODO
-  Vector var_omega_g = (0.0034 * 0.0034) * ones(3);
-  Vector var_omega_a = (0.034 * 0.034) * ones(3);
-  Vector sigmas_v_g_sq = emul(sigmas_v_g, sigmas_v_g);
-  Vector vars = concatVectors(4, &var_omega_w, &var_omega_g, &sigmas_v_g_sq,
-      &var_omega_a);
+  Vector3 var_omega_w = 0 * ones(3); // TODO
+  Vector3 var_omega_g = (0.0034 * 0.0034) * ones(3);
+  Vector3 var_omega_a = (0.034 * 0.034) * ones(3);
+  Vector3 sigmas_v_g_sq = emul(sigmas_v_g, sigmas_v_g);
+  Vector vars(12);
+  vars << var_omega_w, var_omega_g, sigmas_v_g_sq, var_omega_a;
   var_w_ = diag(vars);
 
   // Quantities needed for aiding

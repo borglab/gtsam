@@ -276,8 +276,8 @@ TEST(HessianFactor, CombineAndEliminate)
       1.0, 0.0, 0.0,
       0.0, 1.0, 0.0,
       0.0, 0.0, 1.0);
-  Vector b0 = (Vector(3) << 1.5, 1.5, 1.5);
-  Vector s0 = (Vector(3) << 1.6, 1.6, 1.6);
+  Vector3 b0(1.5, 1.5, 1.5);
+  Vector3 s0(1.6, 1.6, 1.6);
 
   Matrix A10 = (Matrix(3,3) <<
       2.0, 0.0, 0.0,
@@ -287,15 +287,15 @@ TEST(HessianFactor, CombineAndEliminate)
       -2.0, 0.0, 0.0,
       0.0, -2.0, 0.0,
       0.0, 0.0, -2.0);
-  Vector b1 = (Vector(3) << 2.5, 2.5, 2.5);
-  Vector s1 = (Vector(3) << 2.6, 2.6, 2.6);
+  Vector3 b1(2.5, 2.5, 2.5);
+  Vector3 s1(2.6, 2.6, 2.6);
 
   Matrix A21 = (Matrix(3,3) <<
       3.0, 0.0, 0.0,
       0.0, 3.0, 0.0,
       0.0, 0.0, 3.0);
-  Vector b2 = (Vector(3) << 3.5, 3.5, 3.5);
-  Vector s2 = (Vector(3) << 3.6, 3.6, 3.6);
+  Vector3 b2(3.5, 3.5, 3.5);
+  Vector3 s2(3.6, 3.6, 3.6);
 
   GaussianFactorGraph gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
@@ -305,8 +305,8 @@ TEST(HessianFactor, CombineAndEliminate)
   Matrix zero3x3 = zeros(3,3);
   Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
   Matrix A1 = gtsam::stack(3, &A11, &A01, &A21);
-  Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
-  Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
+  Vector9 b; b << b1, b0, b2;
+  Vector9 sigmas; sigmas << s1, s0, s2;
 
   // create a full, uneliminated version of the factor
   JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
