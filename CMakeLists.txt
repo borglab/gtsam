@@ -271,9 +271,6 @@ include_directories(BEFORE ${Boost_INCLUDE_DIR})
 include_directories(BEFORE
   gtsam/3rdparty/UFconfig 
   gtsam/3rdparty/CCOLAMD/Include
-  gtsam/3rdparty/metis-5.1.0/include
-  gtsam/3rdparty/metis-5.1.0/libmetis
-  gtsam/3rdparty/metis-5.1.0/GKlib
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR} # So we can include generated config header files
   CppUnitLite)
