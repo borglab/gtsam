@@ -162,9 +162,9 @@ endif()
 
 ###############################################################################
 # Find Google perftools
-find_package(GooglePerfTools)
+find_library(GPERFTOOLS_TCMALLOC tcmalloc)
 
-if(NOT GOOGLE_PERFTOOLS_FOUND)
+if(NOT GPERFTOOLS_TCMALLOC)
   message(STATUS "Cound NOT find GooglePerfTools")
 endif()
 
@@ -237,7 +237,7 @@ if(GTSAM_USE_TBB)
   set(preferred_allocator TBB)
 else()
   list(APPEND possible_allocators BoostPool STL)
-  if(GOOGLE_PERFTOOLS_FOUND)
+  if(GPERFTOOLS_TCMALLOC)
     list(APPEND possible_allocators tcmalloc)
     if (GTSAM_WITH_GPERF)
       set(preferred_allocator tcmalloc)
@@ -271,7 +271,7 @@ elseif("${GTSAM_DEFAULT_ALLOCATOR}" STREQUAL "TBB")
 	set(GTSAM_ALLOCATOR_TBB 1)
 elseif("${GTSAM_DEFAULT_ALLOCATOR}" STREQUAL "tcmalloc")
 	set(GTSAM_ALLOCATOR_STL 1) # tcmalloc replaces malloc, so to use it we use the STL allocator
-	list(APPEND GTSAM_ADDITIONAL_LIBRARIES "tcmalloc")
+	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${GPERFTOOLS_TCMALLOC})
 endif()
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
