@@ -62,7 +62,8 @@ NonlinearFactor::shared_ptr NonlinearFactor::rekey(
 void NoiseModelFactor::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
   Base::print(s, keyFormatter);
-  noiseModel_->print("  noise model: ");
+  if (noiseModel_)
+    noiseModel_->print("  noise model: ");
 }
 
 /* ************************************************************************* */
@@ -76,9 +77,7 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
 
 /* ************************************************************************* */
 static void check(const SharedNoiseModel& noiseModel, size_t m) {
-  if (!noiseModel)
-    throw std::invalid_argument("NoiseModelFactor: no NoiseModel.");
-  if (m != noiseModel->dim())
+  if (noiseModel && m != noiseModel->dim())
     throw std::invalid_argument(
         "NoiseModelFactor was created with a NoiseModel of incorrect dimension.");
 }
@@ -87,7 +86,7 @@ static void check(const SharedNoiseModel& noiseModel, size_t m) {
 Vector NoiseModelFactor::whitenedError(const Values& c) const {
   const Vector b = unwhitenedError(c);
   check(noiseModel_, b.size());
-  return noiseModel_->whiten(b);
+  return noiseModel_ ? noiseModel_->whiten(b) : b;
 }
 
 /* ************************************************************************* */
@@ -95,7 +94,10 @@ double NoiseModelFactor::error(const Values& c) const {
   if (active(c)) {
     const Vector b = unwhitenedError(c);
     check(noiseModel_, b.size());
-    return 0.5 * noiseModel_->distance(b);
+    if (noiseModel_)
+      return 0.5 * noiseModel_->distance(b);
+    else
+      return 0.5 * b.squaredNorm();
   } else {
     return 0.0;
   }
@@ -115,7 +117,8 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
   check(noiseModel_, b.size());
 
   // Whiten the corresponding system now
-  noiseModel_->WhitenSystem(A, b);
+  if (noiseModel_)
+    noiseModel_->WhitenSystem(A, b);
 
   // Fill in terms, needed to create JacobianFactor below
   std::vector<std::pair<Key, Matrix> > terms(size());
@@ -125,7 +128,7 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
   }
 
   // TODO pass unwhitened + noise model to Gaussian factor
-  if (noiseModel_->is_constrained())
+  if (noiseModel_ && noiseModel_->is_constrained())
     return GaussianFactor::shared_ptr(
         new JacobianFactor(terms, b,
             boost::static_pointer_cast<noiseModel::Constrained>(noiseModel_)->unit()));
