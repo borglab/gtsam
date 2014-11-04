@@ -57,6 +57,17 @@ TEST( dataSet, load2D)
 }
 
 /* ************************************************************************* */
+TEST( dataSet, load2DVictoriaPark)
+{
+  const string filename = findExampleDataFile("victoria_park.txt");
+  NonlinearFactorGraph::shared_ptr graph;
+  Values::shared_ptr initial;
+  boost::tie(graph, initial) = load2D(filename);
+  EXPECT_LONGS_EQUAL(10608,graph->size());
+  EXPECT_LONGS_EQUAL(7120,initial->size());
+}
+
+/* ************************************************************************* */
 TEST( dataSet, Balbianello)
 {
   ///< The structure where we will save the SfM data

@@ -36,7 +36,7 @@ using namespace boost::assign;
 static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
 
-namespace simple {
+namespace simpleLago {
 // We consider a small graph:
 //                            symbolic FG
 //               x2               0  1
@@ -67,7 +67,7 @@ NonlinearFactorGraph graph() {
 
 /* *************************************************************************** */
 TEST( Lago, checkSTandChords ) {
-  NonlinearFactorGraph g = simple::graph();
+  NonlinearFactorGraph g = simpleLago::graph();
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
       BetweenFactor<Pose2> >(g);
 
@@ -84,7 +84,7 @@ TEST( Lago, checkSTandChords ) {
 
 /* *************************************************************************** */
 TEST( Lago, orientationsOverSpanningTree ) {
-  NonlinearFactorGraph g = simple::graph();
+  NonlinearFactorGraph g = simpleLago::graph();
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
       BetweenFactor<Pose2> >(g);
 
@@ -115,7 +115,7 @@ TEST( Lago, orientationsOverSpanningTree ) {
 
 /* *************************************************************************** */
 TEST( Lago, regularizedMeasurements ) {
-  NonlinearFactorGraph g = simple::graph();
+  NonlinearFactorGraph g = simpleLago::graph();
   PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
       BetweenFactor<Pose2> >(g);
 
@@ -141,7 +141,7 @@ TEST( Lago, regularizedMeasurements ) {
 /* *************************************************************************** */
 TEST( Lago, smallGraphVectorValues ) {
   bool useOdometricPath = false;
-  VectorValues initial = lago::initializeOrientations(simple::graph(), useOdometricPath);
+  VectorValues initial = lago::initializeOrientations(simpleLago::graph(), useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
@@ -153,7 +153,7 @@ TEST( Lago, smallGraphVectorValues ) {
 /* *************************************************************************** */
 TEST( Lago, smallGraphVectorValuesSP ) {
 
-  VectorValues initial = lago::initializeOrientations(simple::graph());
+  VectorValues initial = lago::initializeOrientations(simpleLago::graph());
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
@@ -165,8 +165,8 @@ TEST( Lago, smallGraphVectorValuesSP ) {
 /* *************************************************************************** */
 TEST( Lago, multiplePosePriors ) {
   bool useOdometricPath = false;
-  NonlinearFactorGraph g = simple::graph();
-  g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
+  NonlinearFactorGraph g = simpleLago::graph();
+  g.add(PriorFactor<Pose2>(x1, simpleLago::pose1, model));
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -178,8 +178,8 @@ TEST( Lago, multiplePosePriors ) {
 
 /* *************************************************************************** */
 TEST( Lago, multiplePosePriorsSP ) {
-  NonlinearFactorGraph g = simple::graph();
-  g.add(PriorFactor<Pose2>(x1, simple::pose1, model));
+  NonlinearFactorGraph g = simpleLago::graph();
+  g.add(PriorFactor<Pose2>(x1, simpleLago::pose1, model));
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -192,8 +192,8 @@ TEST( Lago, multiplePosePriorsSP ) {
 /* *************************************************************************** */
 TEST( Lago, multiplePoseAndRotPriors ) {
   bool useOdometricPath = false;
-  NonlinearFactorGraph g = simple::graph();
-  g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
+  NonlinearFactorGraph g = simpleLago::graph();
+  g.add(PriorFactor<Rot2>(x1, simpleLago::pose1.theta(), model));
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -205,8 +205,8 @@ TEST( Lago, multiplePoseAndRotPriors ) {
 
 /* *************************************************************************** */
 TEST( Lago, multiplePoseAndRotPriorsSP ) {
-  NonlinearFactorGraph g = simple::graph();
-  g.add(PriorFactor<Rot2>(x1, simple::pose1.theta(), model));
+  NonlinearFactorGraph g = simpleLago::graph();
+  g.add(PriorFactor<Rot2>(x1, simpleLago::pose1.theta(), model));
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -221,20 +221,20 @@ TEST( Lago, smallGraphValues ) {
 
   // we set the orientations in the initial guess to zero
   Values initialGuess;
-  initialGuess.insert(x0,Pose2(simple::pose0.x(),simple::pose0.y(),0.0));
-  initialGuess.insert(x1,Pose2(simple::pose1.x(),simple::pose1.y(),0.0));
-  initialGuess.insert(x2,Pose2(simple::pose2.x(),simple::pose2.y(),0.0));
-  initialGuess.insert(x3,Pose2(simple::pose3.x(),simple::pose3.y(),0.0));
+  initialGuess.insert(x0,Pose2(simpleLago::pose0.x(),simpleLago::pose0.y(),0.0));
+  initialGuess.insert(x1,Pose2(simpleLago::pose1.x(),simpleLago::pose1.y(),0.0));
+  initialGuess.insert(x2,Pose2(simpleLago::pose2.x(),simpleLago::pose2.y(),0.0));
+  initialGuess.insert(x3,Pose2(simpleLago::pose3.x(),simpleLago::pose3.y(),0.0));
 
   // lago does not touch the Cartesian part and only fixed the orientations
-  Values actual = lago::initialize(simple::graph(), initialGuess);
+  Values actual = lago::initialize(simpleLago::graph(), initialGuess);
 
   // we are in a noiseless case
   Values expected;
-  expected.insert(x0,simple::pose0);
-  expected.insert(x1,simple::pose1);
-  expected.insert(x2,simple::pose2);
-  expected.insert(x3,simple::pose3);
+  expected.insert(x0,simpleLago::pose0);
+  expected.insert(x1,simpleLago::pose1);
+  expected.insert(x2,simpleLago::pose2);
+  expected.insert(x3,simpleLago::pose3);
 
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
@@ -243,14 +243,14 @@ TEST( Lago, smallGraphValues ) {
 TEST( Lago, smallGraph2 ) {
 
   // lago does not touch the Cartesian part and only fixed the orientations
-  Values actual = lago::initialize(simple::graph());
+  Values actual = lago::initialize(simpleLago::graph());
 
   // we are in a noiseless case
   Values expected;
-  expected.insert(x0,simple::pose0);
-  expected.insert(x1,simple::pose1);
-  expected.insert(x2,simple::pose2);
-  expected.insert(x3,simple::pose3);
+  expected.insert(x0,simpleLago::pose0);
+  expected.insert(x1,simpleLago::pose1);
+  expected.insert(x2,simpleLago::pose2);
+  expected.insert(x3,simpleLago::pose3);
 
   EXPECT(assert_equal(expected, actual, 1e-6));
 }

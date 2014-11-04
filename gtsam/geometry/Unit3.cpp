@@ -21,7 +21,16 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
 #include <boost/random/mersenne_twister.hpp>
+
+#ifdef __clang__
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/random/uniform_on_sphere.hpp>
+#ifdef __clang__
+#  pragma clang diagnostic pop
+#endif
+
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
 
@@ -58,11 +67,11 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 /* ************************************************************************* */
-const Matrix& Unit3::basis() const {
+const Unit3::Matrix32& Unit3::basis() const {
 
   // Return cached version if exists
-  if (B_.rows() == 3)
-    return B_;
+  if (B_)
+    return *B_;
 
   // Get the axis of rotation with the minimum projected length of the point
   Point3 axis;
@@ -83,9 +92,9 @@ const Matrix& Unit3::basis() const {
   b2 = b2 / b2.norm();
 
   // Create the basis matrix
-  B_ = Matrix(3, 2);
-  B_ << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
-  return B_;
+  B_.reset(Unit3::Matrix32());
+  (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+  return *B_;
 }
 
 /* ************************************************************************* */

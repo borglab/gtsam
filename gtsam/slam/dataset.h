@@ -57,7 +57,8 @@ enum NoiseFormat {
   NoiseFormatG2O, ///< Information matrix I11, I12, I13, I22, I23, I33
   NoiseFormatTORO, ///< Information matrix, but inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
   NoiseFormatGRAPH, ///< default: toro-style order, but covariance matrix !
-  NoiseFormatCOV ///< Covariance matrix C11, C12, C13, C22, C23, C33
+  NoiseFormatCOV, ///< Covariance matrix C11, C12, C13, C22, C23, C33
+  NoiseFormatAUTO  ///< Try to guess covariance matrix layout
 };
 
 /// Robust kernel type to wrap around quadratic noise model
@@ -79,7 +80,7 @@ GTSAM_EXPORT GraphAndValues load2D(
     std::pair<std::string, SharedNoiseModel> dataset, int maxID = 0,
     bool addNoise = false,
     bool smart = true, //
-    NoiseFormat noiseFormat = NoiseFormatGRAPH,
+    NoiseFormat noiseFormat = NoiseFormatAUTO,
     KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /**
@@ -94,8 +95,8 @@ GTSAM_EXPORT GraphAndValues load2D(
  * @return graph and initial values
  */
 GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
-    SharedNoiseModel model = SharedNoiseModel(), int maxID = 0, bool addNoise =
-        false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatGRAPH, //
+    SharedNoiseModel model = SharedNoiseModel(), Key maxID = 0, bool addNoise =
+        false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatAUTO, //
     KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /// @deprecated load2D now allows for arbitrary models and wrapping a robust kernel

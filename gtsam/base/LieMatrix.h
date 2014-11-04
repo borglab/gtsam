@@ -157,7 +157,7 @@ struct LieMatrix : public Matrix {
         result.data(), p.rows(), p.cols()) = p;
     return result;
   }
-	
+  
   /// @}
 
 private:

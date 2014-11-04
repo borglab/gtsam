@@ -101,6 +101,25 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
   double v1, v2, v3, v4, v5, v6;
   is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
 
+   if (noiseFormat == NoiseFormatAUTO)
+   {
+     // Try to guess covariance matrix layout
+     if(v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0 && v6 == 0.0)
+     {
+       // NoiseFormatGRAPH
+       noiseFormat = NoiseFormatGRAPH;
+     }
+     else if(v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0 && v6 != 0.0)
+     {
+       // NoiseFormatCOV
+       noiseFormat = NoiseFormatCOV;
+     }
+     else
+     {
+       throw std::invalid_argument("load2D: unrecognized covariance matrix format in dataset file. Please specify the noise format.");
+     }
+  }
+
   // Read matrix and check that diagonal entries are non-zero
   Matrix M(3, 3);
   switch (noiseFormat) {
@@ -162,7 +181,7 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
+GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
     bool addNoise, bool smart, NoiseFormat noiseFormat,
     KernelFunctionType kernelFunctionType) {
 
@@ -210,7 +229,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
   }
 
   // Parse the pose constraints
-  int id1, id2;
+  Key id1, id2;
   bool haveLandmark = false;
   while (!is.eof()) {
     if (!(is >> tag))

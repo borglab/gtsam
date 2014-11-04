@@ -85,7 +85,7 @@ namespace gtsam {
       dims_accumulated.resize(dims.size()+1,0);
       dims_accumulated[0]=0;
       for (size_t i=1; i<dims_accumulated.size(); i++)
-    	  dims_accumulated[i] = dims_accumulated[i-1]+dims[i-1];
+        dims_accumulated[i] = dims_accumulated[i-1]+dims[i-1];
       return dims_accumulated;
     }
 
@@ -358,8 +358,8 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianFactorGraph::multiplyHessianAdd(double alpha,
       const double* x, double* y) const {
-	vector<size_t> FactorKeys = getkeydim();
-	BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
+  vector<size_t> FactorKeys = getkeydim();
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
       f->multiplyHessianAdd(alpha, x, y, FactorKeys);
 
   }
