@@ -12,11 +12,11 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * DroneDynamicsFactor.h
- *
- *  Created on: Oct 1, 2014
- *      Author: krunal
+ * @file DroneDynamicsFactor.h
+ * @author Duy-Nguyen Ta
+ * @date Sep 29, 2014
  */
+
 #pragma once
 
 #include <boost/lexical_cast.hpp>
