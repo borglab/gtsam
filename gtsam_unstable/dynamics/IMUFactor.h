@@ -7,7 +7,6 @@
 #pragma once
 
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
@@ -27,18 +26,18 @@ public:
 protected:
 
   /** measurements from the IMU */
-  Vector accel_, gyro_;
+  Vector3 accel_, gyro_;
   double dt_; /// time between measurements
 
 public:
 
   /** Standard constructor */
-  IMUFactor(const Vector& accel, const Vector& gyro,
+  IMUFactor(const Vector3& accel, const Vector3& gyro,
       double dt, const Key& key1, const Key& key2, const SharedNoiseModel& model)
   : Base(model, key1, key2), accel_(accel), gyro_(gyro), dt_(dt) {}
 
   /** Full IMU vector specification */
-  IMUFactor(const Vector& imu_vector,
+  IMUFactor(const Vector6& imu_vector,
       double dt, const Key& key1, const Key& key2, const SharedNoiseModel& model)
   : Base(model, key1, key2), accel_(imu_vector.head(3)), gyro_(imu_vector.tail(3)), dt_(dt) {}
 
@@ -61,15 +60,15 @@ public:
   void print(const std::string& s="", const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const {
     std::string a = "IMUFactor: " + s;
     Base::print(a, formatter);
-    gtsam::print(accel_, "accel");
-    gtsam::print(gyro_, "gyro");
+    gtsam::print((Vector)accel_, "accel");
+    gtsam::print((Vector)gyro_, "gyro");
     std::cout << "dt: " << dt_ << std::endl;
   }
 
   // access
-  const Vector& gyro() const { return gyro_; }
-  const Vector& accel() const { return accel_; }
-  Vector z() const { return concatVectors(2, &accel_, &gyro_); }
+  const Vector3& gyro() const { return gyro_; }
+  const Vector3& accel() const { return accel_; }
+  Vector6 z() const { return (Vector6() << accel_, gyro_);}
 
   /**
    * Error evaluation with optional derivatives - calculates
@@ -78,10 +77,10 @@ public:
   virtual Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const {
-    const Vector meas = z();
-    if (H1) *H1 = numericalDerivative21<LieVector, PoseRTV, PoseRTV>(
+    const Vector6 meas = z();
+    if (H1) *H1 = numericalDerivative21<Vector6, PoseRTV, PoseRTV>(
         boost::bind(This::predict_proxy, _1, _2, dt_, meas), x1, x2, 1e-5);
-    if (H2) *H2 = numericalDerivative22<LieVector, PoseRTV, PoseRTV>(
+    if (H2) *H2 = numericalDerivative22<Vector6, PoseRTV, PoseRTV>(
         boost::bind(This::predict_proxy, _1, _2, dt_, meas), x1, x2, 1e-5);
     return predict_proxy(x1, x2, dt_, meas);
   }
@@ -96,10 +95,10 @@ public:
 
 private:
   /** copy of the measurement function formulated for numerical derivatives */
-  static LieVector predict_proxy(const PoseRTV& x1, const PoseRTV& x2,
-      double dt, const Vector& meas) {
-    Vector hx = x1.imuPrediction(x2, dt);
-    return LieVector(meas - hx);
+  static Vector6 predict_proxy(const PoseRTV& x1, const PoseRTV& x2,
+      double dt, const Vector6& meas) {
+    Vector6 hx = x1.imuPrediction(x2, dt);
+    return meas - hx;
   }
 };
 

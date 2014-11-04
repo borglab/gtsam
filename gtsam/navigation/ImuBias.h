@@ -144,7 +144,7 @@ namespace imuBias {
     /// return dimensionality of tangent space
     inline size_t dim() const { return dimension; }
 
-    /** Update the LieVector with a tangent space update */
+    /** Update the bias with a tangent space update */
     inline ConstantBias retract(const Vector& v) const { return ConstantBias(biasAcc_ + v.head(3), biasGyro_ + v.tail(3)); }
 
     /** @return the local coordinates of another object */

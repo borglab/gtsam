@@ -25,7 +25,7 @@ static SharedNoiseModel sigma(noiseModel::Unit::Create(2));
 Pose3 level_pose = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
 SimpleCamera level_camera(level_pose, *K);
 
-typedef InvDepthFactor3<Pose3, LieVector, LieScalar> InverseDepthFactor;
+typedef InvDepthFactor3<Pose3, Vector5, double> InverseDepthFactor;
 typedef NonlinearEquality<Pose3> PoseConstraint;
 
 /* ************************************************************************* */
@@ -38,10 +38,10 @@ TEST( InvDepthFactor, optimize) {
   Point2 expected_uv = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector inv_landmark((Vector(5) << 0., 0., 1., 0., 0.));
+  Vector5 inv_landmark((Vector(5) << 0., 0., 1., 0., 0.));
   // initialize inverse depth with "incorrect" depth of 1/4
   // in reality this is 1/5, but initial depth is guessed
-  LieScalar inv_depth(1./4);
+  double inv_depth(1./4);
 
   gtsam::NonlinearFactorGraph graph;
   Values initial;
@@ -82,8 +82,8 @@ TEST( InvDepthFactor, optimize) {
   Values result2 = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
   
   Point3 result2_lmk = InvDepthCamera3<Cal3_S2>::invDepthTo3D(
-      result2.at<LieVector>(Symbol('l',1)),
-      result2.at<LieScalar>(Symbol('d',1)));
+      result2.at<Vector5>(Symbol('l',1)),
+      result2.at<double>(Symbol('d',1)));
   EXPECT(assert_equal(landmark, result2_lmk, 1e-9));
   
   // TODO: need to add priors to make this work with

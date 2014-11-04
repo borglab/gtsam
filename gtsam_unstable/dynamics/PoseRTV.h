@@ -86,8 +86,8 @@ public:
    * expmap/logmap are poor approximations that assume independence of components
    * Currently implemented using the poor retract/unretract approximations
    */
-  static PoseRTV Expmap(const Vector& v);
-  static Vector Logmap(const PoseRTV& p);
+  static PoseRTV Expmap(const Vector9& v);
+  static Vector9 Logmap(const PoseRTV& p);
 
   static PoseRTV identity() { return PoseRTV(); }
 
@@ -129,7 +129,7 @@ public:
   /// Dynamics predictor for both ground and flying robots, given states at 1 and 2
   /// Always move from time 1 to time 2
   /// @return imu measurement, as [accel, gyro]
-  Vector imuPrediction(const PoseRTV& x2, double dt) const;
+  Vector6 imuPrediction(const PoseRTV& x2, double dt) const;
 
   /// predict measurement and where Point3 for x2 should be, as a way
   /// of enforcing a velocity constraint

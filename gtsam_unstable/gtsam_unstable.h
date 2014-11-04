@@ -515,7 +515,6 @@ virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
   Vector evaluateError(const gtsam::LieScalar& pk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
 };
 
-#include <gtsam/base/LieVector.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 
 virtual class Reconstruction : gtsam::NonlinearFactor {

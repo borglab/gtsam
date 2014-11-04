@@ -21,7 +21,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
@@ -200,7 +199,7 @@ public:
     VELOCITY VelDelta(world_a_body*dt_);
 
     // Predict
-    return Vel1.compose(VelDelta);
+    return Vel1 + VelDelta;
   }
 
   void predict(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, POSE& Pose2, VELOCITY& Vel2) const {
@@ -221,7 +220,7 @@ public:
     VELOCITY Vel2Pred = predictVelocity(Pose1, Vel1, Bias1);
 
     // Calculate error
-    return Vel2.between(Vel2Pred);
+    return Vel2Pred - Vel2;
   }
 
   /** implement functions needed to derive from Factor */
@@ -271,7 +270,7 @@ public:
     }
 
     Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
-    Vector ErrVelVector(VELOCITY::Logmap(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2)));
+    Vector ErrVelVector(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2));
 
     return concatVectors(2, &ErrPoseVector, &ErrVelVector);
   }

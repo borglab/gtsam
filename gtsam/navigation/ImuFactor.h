@@ -21,7 +21,6 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/debug.h>
 
 /* External or standard includes */
@@ -46,7 +45,7 @@ namespace gtsam {
    * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor: Computation of the Jacobian Matrices", Tech. Report, 2013.
    */
 
-  class ImuFactor: public NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,imuBias::ConstantBias> {
+  class ImuFactor: public NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias> {
 
   public:
 
@@ -203,13 +202,13 @@ namespace gtsam {
         Matrix H_vel_vel    = I_3x3;
         Matrix H_vel_angles = - deltaRij.matrix() * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
         // analytic expression corresponding to the following numerical derivative
-        // Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
+        // Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
 
         Matrix H_angles_pos   = Z_3x3;
         Matrix H_angles_vel    = Z_3x3;
         Matrix H_angles_angles = Jrinv_theta_j * Rincr.inverse().matrix() * Jr_theta_i;
         // analytic expression corresponding to the following numerical derivative
-        // Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
+        // Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
 
         // overall Jacobian wrt preintegrated measurements (df/dx)
         Matrix F(9,9);
@@ -285,7 +284,7 @@ namespace gtsam {
   private:
 
     typedef ImuFactor This;
-    typedef NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,imuBias::ConstantBias> Base;
+    typedef NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias> Base;
 
     PreintegratedMeasurements preintegratedMeasurements_;
     Vector3 gravity_;
@@ -373,7 +372,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
+    Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
         const imuBias::ConstantBias& bias,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
@@ -525,7 +524,7 @@ namespace gtsam {
 
 
     /** predicted states from IMU */
-    static void Predict(const Pose3& pose_i, const LieVector& vel_i, Pose3& pose_j, LieVector& vel_j,
+    static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j, Vector3& vel_j,
         const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
         const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
         const bool use2ndOrderCoriolis = false)
@@ -547,7 +546,7 @@ namespace gtsam {
 		  - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
 		  + 0.5 * gravity * deltaTij*deltaTij;
 
-	  vel_j = LieVector(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij
+	  vel_j = Vector3(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij
 		  + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
 		  + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
 		  - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
