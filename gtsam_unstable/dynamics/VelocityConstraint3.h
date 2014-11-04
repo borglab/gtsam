@@ -27,7 +27,7 @@ public:
 
   ///TODO: comment
   VelocityConstraint3(Key key1, Key key2, Key velKey, double dt, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(double::Dim(), fabs(mu)), key1, key2, velKey), dt_(dt) {}
+  : Base(noiseModel::Constrained::All(1, fabs(mu)), key1, key2, velKey), dt_(dt) {}
   virtual ~VelocityConstraint3() {}
 
   /// @return a deep copy of this factor
@@ -36,15 +36,15 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint3(*this))); }
 
   /** x1 + v*dt - x2 = 0, with optional derivatives */
-  Vector evaluateError(double x1, double x2, double v,
+  Vector evaluateError(const double& x1, const double& x2, const double& v,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
-    const size_t p = double::Dim();
+    const size_t p = 1;
     if (H1) *H1 = eye(p);
     if (H2) *H2 = -eye(p);
     if (H3) *H3 = eye(p)*dt_;
-    return x2.localCoordinates(x1.compose(double(v*dt_)));
+    return (Vector(1) << x1+v*dt_-x2);
   }
 
 private:
