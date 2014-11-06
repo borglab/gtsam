@@ -164,10 +164,6 @@ endif()
 # Find Google perftools
 find_library(GPERFTOOLS_TCMALLOC tcmalloc)
 
-if(NOT GPERFTOOLS_TCMALLOC)
-  message(STATUS "Cound NOT find GooglePerfTools")
-endif()
-
 ###############################################################################
 # Find MKL
 find_package(MKL)
@@ -244,7 +240,7 @@ else()
     endif()
   else()
     if (GTSAM_WITH_GPERF)
-      message(WARNING "GooglePerfTools NOT found, will still use STL allocator")
+      message(WARNING "GooglePerfTools NOT found, will use STL allocator")
     endif()
     set(preferred_allocator STL)
   endif()
