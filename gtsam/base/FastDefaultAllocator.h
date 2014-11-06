@@ -31,14 +31,29 @@
 
 #if defined GTSAM_ALLOCATOR_BOOSTPOOL
 #  include <boost/pool/pool_alloc.hpp>
+#  include <boost/pool/singleton_pool.hpp>
 #elif defined GTSAM_ALLOCATOR_TBB
 #  include <tbb/tbb_allocator.h>
-#  undef min // TBB seems to include Windows.h which defines these macros that cause problems
-#  undef max
-#  undef ERROR
+#  include <tbb/scalable_allocator.h>
 #elif defined GTSAM_ALLOCATOR_STL
 #  include <memory>
 #endif
+
+//////////////////
+// TBB and boost singleton_pool include windows.h in some MSVC versions, so we undef min, max, and ERROR
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
+#ifdef ERROR
+#undef ERROR
+#endif
+//////////////////
+
 
 namespace gtsam
 {
@@ -83,6 +98,34 @@ namespace gtsam
       static const bool isSTL = true;
 #endif
     };
+
+    /// here is a pair of default C-like malloc/free functions, use default allocator type
+    template<unsigned SIZE>
+    inline void* fast_malloc() {
+#if defined GTSAM_ALLOCATOR_BOOSTPOOL
+      return boost::singleton_pool<PoolTag, SIZE>::malloc();
+#elif defined GTSAM_ALLOCATOR_TBB
+      return tbb::scalable_malloc(SIZE);
+#elif defined GTSAM_ALLOCATOR_STL
+      return std::malloc(SIZE);
+#endif
+    }
+
+    template<unsigned SIZE>
+    inline void fast_free(void* p) {
+#if defined GTSAM_ALLOCATOR_BOOSTPOOL
+      return boost::singleton_pool<PoolTag, SIZE>::free(p);
+#elif defined GTSAM_ALLOCATOR_TBB
+      return tbb::scalable_free(p);
+#elif defined GTSAM_ALLOCATOR_STL
+      return std::free(p);
+#endif
+    }
+
+#if defined GTSAM_ALLOCATOR_BOOSTPOOL
+    /// Fake Tag struct for singleton pool allocator. In fact, it is never used!
+    struct PoolTag { };
+#endif
   }
 
 }
