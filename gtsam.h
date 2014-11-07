@@ -157,7 +157,7 @@ virtual class Value {
 };
 
 #include <gtsam/base/LieScalar.h>
-virtual class LieScalar : gtsam::Value {
+class LieScalar {
   // Standard constructors
   LieScalar();
   LieScalar(double d);
@@ -186,7 +186,7 @@ virtual class LieScalar : gtsam::Value {
 };
 
 #include <gtsam/base/LieVector.h>
-virtual class LieVector : gtsam::Value {
+class LieVector {
   // Standard constructors
   LieVector();
   LieVector(Vector v);
@@ -218,7 +218,7 @@ virtual class LieVector : gtsam::Value {
 };
 
 #include <gtsam/base/LieMatrix.h>
-virtual class LieMatrix : gtsam::Value {
+class LieMatrix {
   // Standard constructors
   LieMatrix();
   LieMatrix(Matrix v);
@@ -253,7 +253,7 @@ virtual class LieMatrix : gtsam::Value {
 // geometry
 //*************************************************************************
 
-virtual class Point2 : gtsam::Value {
+class Point2 {
   // Standard Constructors
   Point2();
   Point2(double x, double y);
@@ -290,7 +290,7 @@ virtual class Point2 : gtsam::Value {
   void serialize() const;
 };
 
-virtual class StereoPoint2 : gtsam::Value {
+class StereoPoint2 {
   // Standard Constructors
   StereoPoint2();
   StereoPoint2(double uL, double uR, double v);
@@ -325,7 +325,7 @@ virtual class StereoPoint2 : gtsam::Value {
   void serialize() const;
 };
 
-virtual class Point3 : gtsam::Value {
+class Point3 {
   // Standard Constructors
   Point3();
   Point3(double x, double y, double z);
@@ -361,7 +361,7 @@ virtual class Point3 : gtsam::Value {
   void serialize() const;
 };
 
-virtual class Rot2 : gtsam::Value {
+class Rot2 {
   // Standard Constructors and Named Constructors
   Rot2();
   Rot2(double theta);
@@ -406,7 +406,7 @@ virtual class Rot2 : gtsam::Value {
   void serialize() const;
 };
 
-virtual class Rot3 : gtsam::Value {
+class Rot3 {
   // Standard Constructors and Named Constructors
   Rot3();
   Rot3(Matrix R);
@@ -462,7 +462,7 @@ virtual class Rot3 : gtsam::Value {
   void serialize() const;
 };
 
-virtual class Pose2 : gtsam::Value {
+class Pose2 {
   // Standard Constructor
   Pose2();
   Pose2(const gtsam::Pose2& pose);
@@ -512,7 +512,7 @@ virtual class Pose2 : gtsam::Value {
   void serialize() const;
 };
 
-virtual class Pose3 : gtsam::Value {
+class Pose3 {
   // Standard Constructors
   Pose3();
   Pose3(const gtsam::Pose3& pose);
@@ -564,7 +564,7 @@ virtual class Pose3 : gtsam::Value {
 };
 
 #include <gtsam/geometry/Unit3.h>
-virtual class Unit3 : gtsam::Value {
+class Unit3 {
   // Standard Constructors
   Unit3();
   Unit3(const gtsam::Point3& pose);
@@ -585,7 +585,7 @@ virtual class Unit3 : gtsam::Value {
 };
 
 #include <gtsam/geometry/EssentialMatrix.h>
-virtual class EssentialMatrix : gtsam::Value {
+class EssentialMatrix {
   // Standard Constructors
   EssentialMatrix(const gtsam::Rot3& aRb, const gtsam::Unit3& aTb);
 
@@ -606,7 +606,7 @@ virtual class EssentialMatrix : gtsam::Value {
   double error(Vector vA, Vector vB);
 };
 
-virtual class Cal3_S2 : gtsam::Value {
+class Cal3_S2 {
   // Standard Constructors
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
@@ -643,7 +643,7 @@ virtual class Cal3_S2 : gtsam::Value {
 };
 
 #include <gtsam/geometry/Cal3DS2.h>
-virtual class Cal3DS2 : gtsam::Value {
+class Cal3DS2 {
   // Standard Constructors
   Cal3DS2();
   Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4);
@@ -699,7 +699,7 @@ class Cal3_S2Stereo {
   double baseline() const;
 };
 
-virtual class CalibratedCamera : gtsam::Value {
+class CalibratedCamera {
   // Standard Constructors and Named Constructors
   CalibratedCamera();
   CalibratedCamera(const gtsam::Pose3& pose);
@@ -732,7 +732,7 @@ virtual class CalibratedCamera : gtsam::Value {
   void serialize() const;
 };
 
-virtual class SimpleCamera : gtsam::Value {
+class SimpleCamera {
   // Standard Constructors and Named Constructors
   SimpleCamera();
   SimpleCamera(const gtsam::Pose3& pose);
@@ -771,7 +771,7 @@ virtual class SimpleCamera : gtsam::Value {
 };
 
 template<CALIBRATION = {gtsam::Cal3DS2}>
-virtual class PinholeCamera : gtsam::Value {
+class PinholeCamera {
   // Standard Constructors and Named Constructors
   PinholeCamera();
   PinholeCamera(const gtsam::Pose3& pose);
@@ -809,7 +809,7 @@ virtual class PinholeCamera : gtsam::Value {
   void serialize() const;
 };
 
-virtual class StereoCamera : gtsam::Value {
+class StereoCamera {
   // Standard Constructors and Named Constructors
   StereoCamera();
   StereoCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2Stereo* K);
@@ -862,7 +862,7 @@ virtual class SymbolicFactor {
 };
 
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
-class SymbolicFactorGraph {
+virtual class SymbolicFactorGraph {
   SymbolicFactorGraph();
   SymbolicFactorGraph(const gtsam::SymbolicBayesNet& bayesNet);
   SymbolicFactorGraph(const gtsam::SymbolicBayesTree& bayesTree);
@@ -2280,7 +2280,7 @@ void writeG2o(const gtsam::NonlinearFactorGraph& graph,
 namespace imuBias {
 #include <gtsam/navigation/ImuBias.h>
 
-virtual class ConstantBias : gtsam::Value {
+class ConstantBias {
   // Standard Constructor
   ConstantBias();
   ConstantBias(Vector biasAcc, Vector biasGyro);
