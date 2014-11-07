@@ -40,7 +40,7 @@ namespace gtsam {
  *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
  * pi = K*pn
  */
-class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base, public DerivedValue<Cal3Unified> {
+class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
   typedef Cal3Unified This;
   typedef Cal3DS2_Base Base;
@@ -129,8 +129,6 @@ private:
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version)
   {
-    ar & boost::serialization::make_nvp("Cal3Unified",
-        boost::serialization::base_object<Value>(*this));
     ar & boost::serialization::make_nvp("Cal3Unified",
         boost::serialization::base_object<Cal3DS2_Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(xi_);

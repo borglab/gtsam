@@ -50,6 +50,7 @@ bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
 }
 
 /* ************************************************************************* */
+// todo: make a fixed sized jacobian version of this
 Point2 Cal3Unified::uncalibrate(const Point2& p,
        boost::optional<Matrix&> H1,
        boost::optional<Matrix&> H2) const {

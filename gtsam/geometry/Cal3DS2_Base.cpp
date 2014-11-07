@@ -90,8 +90,9 @@ static Eigen::Matrix<double, 2, 2> D2dintrinsic(double x, double y, double rr,
 }
 
 /* ************************************************************************* */
-Point2 Cal3DS2_Base::uncalibrate(const Point2& p, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
+    boost::optional<Eigen::Matrix<double, 2, 9>&> H1,
+    boost::optional<Eigen::Matrix<double, 2, 2>&> H2) const {
 
   //  rr = x^2 + y^2;
   //  g = (1 + k(1)*rr + k(2)*rr^2);
@@ -124,6 +125,17 @@ Point2 Cal3DS2_Base::uncalibrate(const Point2& p, boost::optional<Matrix&> H1,
   // Regular uncalibrate after distortion
   return Point2(fx_ * pnx + s_ * pny + u0_, fy_ * pny + v0_);
 }
+
+Point2 Cal3DS2_Base::uncalibrate(const Point2& p, boost::optional<Matrix&> H1,
+    boost::optional<Matrix&> H2) const {
+  Eigen::Matrix<double, 2, 9> H1f;
+  Eigen::Matrix<double, 2, 2> H2f;
+  Point2 u = uncalibrate(p,H1f,H2f);
+  *H1 = H1f;
+  *H2 = H2f;
+  return u;
+}
+
 
 /* ************************************************************************* */
 Point2 Cal3DS2_Base::calibrate(const Point2& pi, const double tol) const {
