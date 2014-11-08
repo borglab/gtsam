@@ -114,34 +114,26 @@ template<int M, int N, int Options>
 struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
 };
 
-// TODO: Could be more sophisticated using Eigen traits and SFINAE?
-
-template<int Options>
-struct dimension<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Options> > : public Dynamic {
-};
-
-template<int M, int Options>
-struct dimension<Eigen::Matrix<double, M, Eigen::Dynamic, Options> > : public Dynamic {
-};
-
-template<int N, int Options>
-struct dimension<Eigen::Matrix<double, Eigen::Dynamic, N, Options> > : public Dynamic {
+template<int M, int N, int Options>
+struct dimension<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<int,
+    M == Eigen::Dynamic ? Eigen::Dynamic : (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)> {
+    //TODO after switch to c++11 : the above should should be extracted to a constexpr function
+    // for readability and to reduce code duplication
 };
 
 template<int M, int N, int Options>
-struct dimension<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<
-    int, M * N> {
-};
-
-template<int M, int N, int Options>
-struct zero<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<
-    int, M * N> {
+struct zero<Eigen::Matrix<double, M, N, Options> > {
   BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "traits::zero is only supported for fixed-size matrices");
   static Eigen::Matrix<double, M, N, Options> value() {
     return Eigen::Matrix<double, M, N, Options>::Zero();
   }
 };
+
+template<int M, int N, int Options>
+struct identity<Eigen::Matrix<double, M, N, Options> > : public zero<Eigen::Matrix<double, M, N, Options> > {
+};
+
 
 template<typename T> struct is_chart: public boost::false_type {
 };

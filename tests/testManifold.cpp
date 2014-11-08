@@ -108,6 +108,20 @@ TEST(Manifold, _zero) {
   Cal3Bundler cal(0, 0, 0);
   EXPECT(assert_equal(cal, traits::zero<Cal3Bundler>::value()));
   EXPECT(assert_equal(Camera(Pose3(), cal), traits::zero<Camera>::value()));
+  EXPECT(assert_equal(Point2(), traits::zero<Point2>::value()));
+  EXPECT(assert_equal(Matrix(Matrix24::Zero().eval()), Matrix(traits::zero<Matrix24>::value())));
+  EXPECT_DOUBLES_EQUAL(0.0, traits::zero<double>::value(), 0.0);
+}
+
+/* ************************************************************************* */
+// identity
+TEST(Manifold, _identity) {
+  EXPECT(assert_equal(Pose3(), traits::identity<Pose3>::value()));
+  EXPECT(assert_equal(Cal3Bundler(), traits::identity<Cal3Bundler>::value()));
+  EXPECT(assert_equal(Camera(), traits::identity<Camera>::value()));
+  EXPECT(assert_equal(Point2(), traits::identity<Point2>::value()));
+  EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits::identity<Matrix24>::value())));
+  EXPECT_DOUBLES_EQUAL(0.0, traits::identity<double>::value(), 0.0);
 }
 
 /* ************************************************************************* */
