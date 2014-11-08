@@ -50,8 +50,8 @@ Vector Cal3DS2::localCoordinates(const Cal3DS2& T2) const {
 /* ************************************************************************* */
 Point2 Cal3DS2::uncalibrate(const Point2& p, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
-  Eigen::Matrix<double, 2, 9> H1f;
-  Eigen::Matrix<double, 2, 2> H2f;
+  Matrix29 H1f;
+  Matrix2 H2f;
   Point2 u = Base::uncalibrate(p,H1f,H2f);
   if (H1)
     *H1 = H1f;

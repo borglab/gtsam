@@ -115,8 +115,8 @@ public:
    * @return point in (distorted) image coordinates
    */
   Point2 uncalibrate(const Point2& p,
-       boost::optional<Eigen::Matrix<double, 2, 9>&> Dcal = boost::none,
-       boost::optional<Eigen::Matrix<double, 2, 2>&> Dp = boost::none) const ;
+       boost::optional<Matrix29&> Dcal = boost::none,
+       boost::optional<Matrix2&> Dp = boost::none) const ;
 
   /// Convert (distorted) image coordinates uv to intrinsic coordinates xy
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;

@@ -71,17 +71,16 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
 
   // Part2: project NPlane point to pixel plane: use Cal3DS2
   Point2 m(x,y);
-  Eigen::Matrix<double, 2, 9> H1base;
-  Eigen::Matrix<double, 2, 2> H2base;    // jacobians from Base class
+  Matrix29 H1base;
+  Matrix2 H2base;    // jacobians from Base class
   Point2 puncalib = Base::uncalibrate(m, H1base, H2base);
 
   // Inlined derivative for calibration
   if (H1) {
     // part1
-    Eigen::Matrix<double, 2, 1> DU;
+    Vector2 DU, DDS2U;
     DU << -xs * sqrt_nx * xi_sqrt_nx2, //
         -ys * sqrt_nx * xi_sqrt_nx2;
-    Eigen::Matrix<double, 2, 1> DDS2U;
     DDS2U = H2base * DU;
 
     //*H1 = collect(2, &H1base, &DDS2U);
@@ -93,7 +92,7 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
     // part1
     const double denom = 1.0 * xi_sqrt_nx2 / sqrt_nx;
     const double mid = -(xi * xs*ys) * denom;
-    Eigen::Matrix<double, 2, 2> DU;
+    Matrix2 DU;
     DU << (sqrt_nx + xi*(ys*ys + 1)) * denom, mid, //
         mid, (sqrt_nx + xi*(xs*xs + 1)) * denom;
 
