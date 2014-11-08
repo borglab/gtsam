@@ -29,7 +29,7 @@ namespace gtsam {
     {
         std::map<int, FastSet<int> > adjMap;
         std::map<int, FastSet<int> >::iterator adjMapIt;
-        std::set<int> values;
+        std::set<Key> keySet;
         
         /* ********** Convert to CSR format ********** */
         // Assuming that vertex numbering starts from 0 (C style),
@@ -44,17 +44,22 @@ namespace gtsam {
                 if (k1 != k2)
                   adjMap[k1].insert(adjMap[k1].end(), k2); // Insert at the end
               }
-              values.insert(values.end(), k1); // Keep a track of all unique values
+              keySet.insert(keySet.end(), k1); // Keep a track of all unique keySet
             }
           }
         }
 
-        // Number of values referenced in this factorgraph
-        nValues_ = values.size();
-        
+        // Number of keys referenced in this factor graph
+        nKeys_ = keySet.size();
+
+		
+		// Starting with a nonzero key crashes METIS
+		// Find the smallest key in the graph
+		size_t minKey = *keySet.begin(); // set is ordered
+		
         xadj_.push_back(0);// Always set the first index to zero
         for (adjMapIt = adjMap.begin(); adjMapIt != adjMap.end(); ++adjMapIt) {
-            std::vector<int> temp;
+            std::vector<Key> temp;
             // Copy from the FastSet into a temporary vector
             std::copy(adjMapIt->second.begin(), adjMapIt->second.end(), std::back_inserter(temp));
             // Insert each index's set in order by appending them to the end of adj_
@@ -62,6 +67,11 @@ namespace gtsam {
             //adj_.push_back(temp);
             xadj_.push_back(adj_.size());
         }
+
+		// Normalize, subtract the smallest key
+		std::transform(adj_.begin(), adj_.end(), adj_.begin(), std::bind2nd(std::minus<size_t>(), minKey));
+
+
     }
 
 }

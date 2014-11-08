@@ -43,18 +43,18 @@ public:
 private:
     FastVector<int> xadj_; // Index of node's adjacency list in adj
     FastVector<int>  adj_; // Stores ajacency lists of all nodes, appended into a single vector
-    size_t nFactors_;     // Number of factors in the original factor graph
-    size_t nValues_;      // 
+    size_t nFactors_;      // Number of factors in the original factor graph
+    size_t nKeys_;         // 
 
 public:
     /// @name Standard Constructors
     /// @{
 
     /** Default constructor, creates empty MetisIndex */
-    MetisIndex() : nFactors_(0), nValues_(0) {}
+    MetisIndex() : nFactors_(0), nKeys_(0) {}
 
     template<class FG>
-    MetisIndex(const FG& factorGraph) : nFactors_(0), nValues_(0) {
+    MetisIndex(const FG& factorGraph) : nFactors_(0), nKeys_(0) {
         augment(factorGraph); }
 
     ~MetisIndex(){}
@@ -69,9 +69,9 @@ public:
     template<class FACTOR>
     void augment(const FactorGraph<FACTOR>& factors);
 
-    std::vector<int> xadj() const { return xadj_; }
-    std::vector<int>  adj() const { return  adj_; }
-    size_t        nValues() const { return nValues_; }
+    std::vector<int> xadj() const { return  xadj_; }
+    std::vector<int>  adj() const { return   adj_; }
+    size_t        nValues() const { return nKeys_; }
 
     /// @}
 };

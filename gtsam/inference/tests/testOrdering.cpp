@@ -139,7 +139,27 @@ TEST(Ordering, csr_format_2) {
   EXPECT(adjExpected.size() == mi.adj().size());
   EXPECT(adjExpected == mi.adj());
 
-  //Ordering metis = Ordering::METIS(sfg);
+}
+/* ************************************************************************* */
+
+TEST(Ordering, csr_format_3) {
+  SymbolicFactorGraph sfg;
+
+  sfg.push_factor(100);
+  sfg.push_factor(100, 101);
+  sfg.push_factor(101, 102);
+  sfg.push_factor(102, 103);
+  sfg.push_factor(103, 104);
+  sfg.push_factor(104, 101);
+
+  MetisIndex mi(sfg);
+
+  vector<int> xadjExpected{ 0, 1, 4, 6, 8, 10 };
+  vector<int> adjExpected{ 1, 0, 2, 4, 1, 3, 2, 4, 1, 3 };
+
+  EXPECT(xadjExpected == mi.xadj());
+  EXPECT(adjExpected.size() == mi.adj().size());
+  EXPECT(adjExpected == mi.adj());
 
 }
 
