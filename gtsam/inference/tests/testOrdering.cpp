@@ -156,10 +156,16 @@ TEST(Ordering, csr_format_3) {
 
   vector<int> xadjExpected{ 0, 1, 4, 6, 8, 10 };
   vector<int> adjExpected{ 1, 0, 2, 4, 1, 3, 2, 4, 1, 3 };
+	size_t minKey = mi.minKey();
+
+	vector<int> adjAcutal = mi.adj();
+
+	// Normalize, subtract the smallest key
+	std::transform(adjAcutal.begin(), adjAcutal.end(), adjAcutal.begin(), std::bind2nd(std::minus<size_t>(), minKey));
 
   EXPECT(xadjExpected == mi.xadj());
   EXPECT(adjExpected.size() == mi.adj().size());
-  EXPECT(adjExpected == mi.adj());
+	EXPECT(adjExpected == adjAcutal);
 
 }
 

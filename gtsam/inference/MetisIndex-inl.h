@@ -55,21 +55,18 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors)
 		
 	// Starting with a nonzero key crashes METIS
 	// Find the smallest key in the graph
-	size_t minKey = *keySet.begin(); // set is ordered
+	minKey_ = *keySet.begin(); // set is ordered
 		
 	xadj_.push_back(0);// Always set the first index to zero
 	for (adjMapIt = adjMap.begin(); adjMapIt != adjMap.end(); ++adjMapIt) {
-			std::vector<Key> temp;
-			// Copy from the FastSet into a temporary vector
-			std::copy(adjMapIt->second.begin(), adjMapIt->second.end(), std::back_inserter(temp));
-			// Insert each index's set in order by appending them to the end of adj_
-			adj_.insert(adj_.end(), temp.begin(), temp.end());
-			//adj_.push_back(temp);
-			xadj_.push_back(adj_.size());
+		std::vector<Key> temp;
+		// Copy from the FastSet into a temporary vector
+		std::copy(adjMapIt->second.begin(), adjMapIt->second.end(), std::back_inserter(temp));
+		// Insert each index's set in order by appending them to the end of adj_
+		adj_.insert(adj_.end(), temp.begin(), temp.end());
+		//adj_.push_back(temp);
+		xadj_.push_back(adj_.size());
 	}
-
-	// Normalize, subtract the smallest key
-	std::transform(adj_.begin(), adj_.end(), adj_.begin(), std::bind2nd(std::minus<size_t>(), minKey));
 }
 
 }

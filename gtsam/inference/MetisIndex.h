@@ -45,6 +45,7 @@ namespace gtsam {
 		FastVector<int>  adj_; // Stores ajacency lists of all nodes, appended into a single vector
 		size_t nFactors_;      // Number of factors in the original factor graph
 		size_t nKeys_;         // 
+		size_t minKey_;
 
 	public:
 		/// @name Standard Constructors
@@ -69,9 +70,10 @@ namespace gtsam {
 		template<class FACTOR>
 		void augment(const FactorGraph<FACTOR>& factors);
 
-		std::vector<int> xadj() const { return  xadj_; }
-		std::vector<int>  adj() const { return   adj_; }
-		size_t        nValues() const { return nKeys_; }
+		std::vector<int> xadj() const { return   xadj_; }
+		std::vector<int>  adj() const { return    adj_; }
+		size_t        nValues() const { return  nKeys_; }
+		size_t         minKey() const { return minKey_; }
 
 		/// @}
 	};

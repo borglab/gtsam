@@ -206,6 +206,10 @@ namespace gtsam {
 
     vector<idx_t> xadj = met.xadj();
     vector<idx_t>  adj = met.adj();
+		size_t minKey = met.minKey();
+
+		// Normalize, subtract the smallest key
+		std::transform(adj.begin(), adj.end(), adj.begin(), std::bind2nd(std::minus<size_t>(), minKey));
 
     vector<idx_t> perm, iperm;
 
@@ -228,9 +232,11 @@ namespace gtsam {
     }
 
 	  result.resize(size);
-	  for (size_t j = 0; j < size; ++j)
-		  result[j] = perm[j];
-      return result;
+		for (size_t j = 0; j < size; ++j){
+			// We have to add the minKey value back to obtain the original key in the Values
+			result[j] = perm[j] + minKey;
+		}
+    return result;
   }
 
   /* ************************************************************************* */
