@@ -73,7 +73,7 @@ public:
 
   /**
    * Constructor
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
+   * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
   SmartFactorBase(boost::optional<POSE> body_P_sensor = boost::none) :
       body_P_sensor_(body_P_sensor) {
@@ -271,8 +271,13 @@ public:
 
       Vector bi;
       try {
-        bi =
-            -(cameras[i].project(point, Fi, Ei, Hcali) - this->measured_.at(i)).vector();
+        bi = -(cameras[i].project(point, Fi, Ei, Hcali) - this->measured_.at(i)).vector();
+        if(body_P_sensor_){
+          Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
+          Matrix J(6, 6);
+          Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+          Fi = Fi * J;
+        }
       } catch (CheiralityException&) {
         std::cout << "Cheirality exception " << std::endl;
         exit(EXIT_FAILURE);
