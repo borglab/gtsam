@@ -87,21 +87,6 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 9; }  //TODO: make a final dimension variable
 
-  /// @}
-  /// @name Standard Interface
-  /// @{
-
-  /**
-   * convert intrinsic coordinates xy to (distorted) image coordinates uv
-   * @param p point in intrinsic coordinates
-   * @param Dcal optional 2*9 Jacobian wrpt Cal3DS2 parameters
-   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
-   * @return point in (distorted) image coordinates
-   */
-
-  Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> Dcal = boost::none,
-      boost::optional<Matrix&> Dp = boost::none) const ;
 
 private:
 
