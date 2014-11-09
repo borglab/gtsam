@@ -120,7 +120,7 @@ public:
    * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
+   * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
   SmartProjectionFactor(const double rankTol, const double linThreshold,
       const bool manageDegeneracy, const bool enableEPI,
@@ -685,7 +685,7 @@ public:
   inline bool isPointBehindCamera() const {
     return cheiralityException_;
   }
-  /** return chirality verbosity */
+  /** return cheirality verbosity */
   inline bool verboseCheirality() const {
     return verboseCheirality_;
   }
