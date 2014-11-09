@@ -109,7 +109,7 @@ TEST(Manifold, _zero) {
   EXPECT(assert_equal(cal, traits::zero<Cal3Bundler>::value()));
   EXPECT(assert_equal(Camera(Pose3(), cal), traits::zero<Camera>::value()));
   EXPECT(assert_equal(Point2(), traits::zero<Point2>::value()));
-  EXPECT(assert_equal(Matrix(Matrix24::Zero().eval()), Matrix(traits::zero<Matrix24>::value())));
+  EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits::zero<Matrix24>::value())));
   EXPECT_DOUBLES_EQUAL(0.0, traits::zero<double>::value(), 0.0);
 }
 
