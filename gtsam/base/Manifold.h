@@ -242,21 +242,56 @@ struct DefaultChart<double> {
 
 // Fixed size Eigen::Matrix type
 
+namespace internal {
+
+template <int OutM, int OutN, int InM, int InN, int InOptions>
+struct Reshape {
+  //TODO replace this with Eigen's reshape function as soon as available. (There is a PR already pending : https://bitbucket.org/eigen/eigen/pull-request/41/reshape/diff)
+  typedef Eigen::Map<const Eigen::Matrix<double, OutM, OutN> > ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & in) {
+    return in.data();
+  }
+};
+
+template <int M, int N, int InOptions>
+struct Reshape<M, N, M, N, InOptions> {
+  typedef const Eigen::Matrix<double, M, N, InOptions> & ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
+    return in;
+  }
+};
+
+template <int M, int N, int InOptions>
+struct Reshape<N, M, M, N, InOptions> {
+  typedef typename Eigen::Matrix<double, M, N, InOptions>::ConstTransposeReturnType ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
+    return in.transpose();
+  }
+};
+
+template <int OutM, int OutN, int InM, int InN, int InOptions>
+inline typename Reshape<OutM, OutN, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
+  BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
+  return Reshape<OutM, OutN, InM, InN, InOptions>::reshape(m);
+}
+
+}
+
 template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
+  /**
+   * This chart for the vector space of M x N matrices (represented by Eigen matrices) chooses as basis the one with respect to which the coordinates are exactly the matrix entries as laid out in memory (as determined by Options).
+   * Computing coordinates for a matrix is then simply a reshape to the row vector of appropriate size.
+   */
   typedef Eigen::Matrix<double, M, N, Options> type;
   typedef type T;
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");
   static vector local(const T& origin, const T& other) {
-    T diff = other - origin;
-    Eigen::Map<vector> map(diff.data());
-    return vector(map);
-    // Why is this function not : return other - origin; ?? what is the Eigen::Map used for?
+    return internal::reshape<vector::RowsAtCompileTime, 1>(other) - internal::reshape<vector::RowsAtCompileTime, 1>(origin);
   }
   static T retract(const T& origin, const vector& d) {
-    Eigen::Map<const T> map(d.data());
-    return origin + map;
+    return origin + internal::reshape<M, N>(d);
   }
   static int getDimension(const T&origin) {
     return origin.rows() * origin.cols();
