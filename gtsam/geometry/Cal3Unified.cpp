@@ -78,13 +78,13 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
   // Inlined derivative for calibration
   if (H1) {
     // part1
-    Vector2 DU, DDS2U;
+    Vector2 DU;
     DU << -xs * sqrt_nx * xi_sqrt_nx2, //
         -ys * sqrt_nx * xi_sqrt_nx2;
-    DDS2U = H2base * DU;
 
-    //*H1 = collect(2, &H1base, &DDS2U);
-    *H1 = (Matrix(2,10) << H1base, DDS2U);
+    H1->resize(2,10);
+    H1->block<2,9>(0,0) = H1base;
+    H1->block<2,1>(0,9) = H2base * DU;
   }
 
   // Inlined derivative for points
