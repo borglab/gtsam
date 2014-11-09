@@ -112,14 +112,14 @@ class FixedArray {
   // REQUIRES: 0 <= i < size()
   // Returns a reference to the "i"th element.
   inline T& operator[](size_type i) {
-    DCHECK_LT(i, size_);
+    assert(i < size_);
     return array_[i].element;
   }
 
   // REQUIRES: 0 <= i < size()
   // Returns a reference to the "i"th element.
   inline const T& operator[](size_type i) const {
-    DCHECK_LT(i, size_);
+    assert(i < size_);
     return array_[i].element;
   }
 
