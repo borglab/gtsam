@@ -1670,17 +1670,6 @@ class Values {
   void print(string s) const;
   bool equals(const gtsam::Values& other, double tol) const;
 
-  void insert(size_t j, const gtsam::Value& value);
-  template<class T = {
-      gtsam::Point2,
-      gtsam::Point3,
-      gtsam::Rot2,
-      gtsam::Pose2,
-      gtsam::Rot3,
-      gtsam::Pose3,
-      gtsam::Cal3_S2,
-      gtsam::Cal3DS2}>
-  void insert(size_t j, const T& value);
   void insert(const gtsam::Values& values);
   void update(const gtsam::Values& values);
   void erase(size_t j);
@@ -1704,6 +1693,18 @@ class Values {
   // void update(size_t j, const gtsam::Value& val);
   void insert(size_t j, const gtsam::Pose2& t);
   void update(size_t j, const gtsam::Pose2& t);
+
+  // But it would be nice if this worked:
+  //  template<class T = {
+  //      gtsam::Point2,
+  //      gtsam::Point3,
+  //      gtsam::Rot2,
+  //      gtsam::Pose2,
+  //      gtsam::Rot3,
+  //      gtsam::Pose3,
+  //      gtsam::Cal3_S2,
+  //      gtsam::Cal3DS2}>
+  //  void insert(size_t j, const T& value);
 };
 
 // Actually a FastList<Key>
