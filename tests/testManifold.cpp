@@ -96,6 +96,15 @@ TEST(Manifold, DefaultChart) {
     EXPECT(chart.retract(m, Vector2(1, 2)) == 2 * m);
   }
 
+  {
+    typedef Eigen::Matrix<double, 1, 1> ManifoldPoint;
+    ManifoldPoint m;
+    DefaultChart<ManifoldPoint> chart;
+    m << 1;
+    EXPECT(assert_equal(Vector(ManifoldPoint::Ones()), Vector(chart.local(ManifoldPoint::Zero(), m))));
+    EXPECT(chart.retract(m, ManifoldPoint::Ones()) == 2 * m);
+  }
+
   DefaultChart<double> chart3;
   Vector v1(1);
   v1 << 1;

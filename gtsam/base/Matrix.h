@@ -303,6 +303,15 @@ struct Reshape {
   }
 };
 
+/// Reshape specialization that does nothing as shape stays the same (needed to not be ambiguous for square input equals square output)
+template <int M, int InOptions>
+struct Reshape<M, M, M, M, InOptions> {
+  typedef const Eigen::Matrix<double, M, M, InOptions> & ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, M, InOptions> & in) {
+    return in;
+  }
+};
+
 /// Reshape specialization that does nothing as shape stays the same
 template <int M, int N, int InOptions>
 struct Reshape<M, N, M, N, InOptions> {
