@@ -1671,6 +1671,16 @@ class Values {
   bool equals(const gtsam::Values& other, double tol) const;
 
   void insert(size_t j, const gtsam::Value& value);
+  template<class T = {
+      gtsam::Point2,
+      gtsam::Point3,
+      gtsam::Rot2,
+      gtsam::Pose2,
+      gtsam::Rot3,
+      gtsam::Pose3,
+      gtsam::Cal3_S2,
+      gtsam::Cal3DS2}>
+  void insert(size_t j, const T& value);
   void insert(const gtsam::Values& values);
   void update(size_t j, const gtsam::Value& val);
   void update(const gtsam::Values& values);
