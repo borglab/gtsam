@@ -110,10 +110,6 @@ void Module::parseMarkup(const std::string& data) {
   ForwardDeclaration fwDec0, fwDec; 
   vector<string> namespaces, /// current namespace tag 
                  namespaces_return; /// namespace for current return type 
-  string templateArgument; 
-  vector<string> templateInstantiationNamespace; 
-  vector<vector<string> > templateInstantiations; 
-  TemplateInstantiationTypedef singleInstantiation, singleInstantiation0; 
   string include_path = ""; 
   const string null_str = ""; 
  
@@ -166,12 +162,17 @@ void Module::parseMarkup(const std::string& data) {
     *(namespace_name_p[push_back_a(cls.qualifiedParent)] >> str_p("::")) >> 
     className_p[push_back_a(cls.qualifiedParent)]; 
  
+  // parse "gtsam::Pose2" and add to templateInstantiations
+  vector<string> templateArgumentValue;
+  vector<vector<string> > templateInstantiations;
   Rule templateInstantiation_p = 
-    (*(namespace_name_p[push_back_a(templateInstantiationNamespace)] >> str_p("::")) >> 
-    className_p[push_back_a(templateInstantiationNamespace)]) 
-    [push_back_a(templateInstantiations, templateInstantiationNamespace)] 
-    [clear_a(templateInstantiationNamespace)]; 
+    (*(namespace_name_p[push_back_a(templateArgumentValue)] >> str_p("::")) >>
+    className_p[push_back_a(templateArgumentValue)])
+    [push_back_a(templateInstantiations, templateArgumentValue)]
+    [clear_a(templateArgumentValue)];
  
+  // template<CALIBRATION = {gtsam::Cal3DS2}>
+  string templateArgument;
   Rule templateInstantiations_p = 
     (str_p("template") >> 
     '<' >> name_p[assign_a(templateArgument)] >> '=' >> '{' >> 
@@ -179,12 +180,16 @@ void Module::parseMarkup(const std::string& data) {
     '}' >> '>') 
     [push_back_a(cls.templateArgs, templateArgument)]; 
  
+  // parse "gtsam::Pose2" and add to singleInstantiation.typeList
+  TemplateInstantiationTypedef singleInstantiation;
   Rule templateSingleInstantiationArg_p = 
-    (*(namespace_name_p[push_back_a(templateInstantiationNamespace)] >> str_p("::")) >> 
-    className_p[push_back_a(templateInstantiationNamespace)]) 
-    [push_back_a(singleInstantiation.typeList, templateInstantiationNamespace)] 
-    [clear_a(templateInstantiationNamespace)]; 
+    (*(namespace_name_p[push_back_a(templateArgumentValue)] >> str_p("::")) >>
+    className_p[push_back_a(templateArgumentValue)])
+    [push_back_a(singleInstantiation.typeList, templateArgumentValue)]
+    [clear_a(templateArgumentValue)];
  
+  // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
+  TemplateInstantiationTypedef singleInstantiation0;
   Rule templateSingleInstantiation_p = 
     (str_p("typedef") >> 
     *(namespace_name_p[push_back_a(singleInstantiation.classNamespaces)] >> str_p("::")) >> 
@@ -197,6 +202,7 @@ void Module::parseMarkup(const std::string& data) {
     [push_back_a(templateInstantiationTypedefs, singleInstantiation)] 
     [assign_a(singleInstantiation, singleInstantiation0)]; 
  
+  // template<POSE, POINT>
   Rule templateList_p = 
     (str_p("template") >> 
     '<' >> name_p[push_back_a(cls.templateArgs)] >> *(',' >> name_p[push_back_a(cls.templateArgs)]) >> 
