@@ -244,19 +244,19 @@ struct DefaultChart<double> {
 
 template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
+  /**
+   * This chart for the vector space of M x N matrices (represented by Eigen matrices) chooses as basis the one with respect to which the coordinates are exactly the matrix entries as laid out in memory (as determined by Options).
+   * Computing coordinates for a matrix is then simply a reshape to the row vector of appropriate size.
+   */
   typedef Eigen::Matrix<double, M, N, Options> type;
   typedef type T;
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");
   static vector local(const T& origin, const T& other) {
-    T diff = other - origin;
-    Eigen::Map<vector> map(diff.data());
-    return vector(map);
-    // Why is this function not : return other - origin; ?? what is the Eigen::Map used for?
+    return reshape<vector::RowsAtCompileTime, 1>(other) - reshape<vector::RowsAtCompileTime, 1>(origin);
   }
   static T retract(const T& origin, const vector& d) {
-    Eigen::Map<const T> map(d.data());
-    return origin + map;
+    return origin + reshape<M, N>(d);
   }
   static int getDimension(const T&origin) {
     return origin.rows() * origin.cols();

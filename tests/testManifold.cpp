@@ -76,6 +76,35 @@ TEST(Manifold, DefaultChart) {
   EXPECT(assert_equal(v2, chart2.local(Vector2(0, 0), Vector2(1, 0))));
   EXPECT(chart2.retract(Vector2(0, 0), v2) == Vector2(1, 0));
 
+  {
+    typedef Matrix2 ManifoldPoint;
+    ManifoldPoint m;
+    DefaultChart<ManifoldPoint> chart;
+    m << 1, 3,
+         2, 4;
+    // m as per default is in column-major storage mode. So this yields a linear representation of (1, 2, 3, 4)!
+    EXPECT(assert_equal(Vector(Vector4(1, 2, 3, 4)), Vector(chart.local(ManifoldPoint::Zero(), m))));
+    EXPECT(chart.retract(m, Vector4(1, 2, 3, 4)) == 2 * m);
+  }
+
+  {
+    typedef Eigen::Matrix<double, 1, 2> ManifoldPoint;
+    ManifoldPoint m;
+    DefaultChart<ManifoldPoint> chart;
+    m << 1, 2;
+    EXPECT(assert_equal(Vector(Vector2(1, 2)), Vector(chart.local(ManifoldPoint::Zero(), m))));
+    EXPECT(chart.retract(m, Vector2(1, 2)) == 2 * m);
+  }
+
+  {
+    typedef Eigen::Matrix<double, 1, 1> ManifoldPoint;
+    ManifoldPoint m;
+    DefaultChart<ManifoldPoint> chart;
+    m << 1;
+    EXPECT(assert_equal(Vector(ManifoldPoint::Ones()), Vector(chart.local(ManifoldPoint::Zero(), m))));
+    EXPECT(chart.retract(m, ManifoldPoint::Ones()) == 2 * m);
+  }
+
   DefaultChart<double> chart3;
   Vector v1(1);
   v1 << 1;
@@ -109,7 +138,7 @@ TEST(Manifold, _zero) {
   EXPECT(assert_equal(cal, traits::zero<Cal3Bundler>::value()));
   EXPECT(assert_equal(Camera(Pose3(), cal), traits::zero<Camera>::value()));
   EXPECT(assert_equal(Point2(), traits::zero<Point2>::value()));
-  EXPECT(assert_equal(Matrix(Matrix24::Zero().eval()), Matrix(traits::zero<Matrix24>::value())));
+  EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits::zero<Matrix24>::value())));
   EXPECT_DOUBLES_EQUAL(0.0, traits::zero<double>::value(), 0.0);
 }
 
