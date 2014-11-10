@@ -98,21 +98,6 @@ TEST( implicitSchurFactor, addHessianMultiply ) {
     EXPECT(assert_equal(zero, yActual, 1e-8));
   }
 
-  typedef Eigen::Matrix<double, 24, 1> DeltaX;
-  typedef Eigen::Map<DeltaX> XMap;
-  double* y = new double[24];
-  double* xdata = x.data();
-
-  { // Raw memory Version
-    std::fill(y, y + 24, 0);// zero y !
-    implicitFactor.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(expected, XMap(y), 1e-8));
-    implicitFactor.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
-    implicitFactor.multiplyHessianAdd(-1, xdata, y);
-    EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
-  }
-
   // Create JacobianFactor with same error
   const SharedDiagonal model;
   JacobianFactorQ<6> jf(Fblocks, E, P, b, model);
@@ -148,16 +133,6 @@ TEST( implicitSchurFactor, addHessianMultiply ) {
     EXPECT(assert_equal(BD[3],actualBD[3]));
   }
 
-  { // Raw memory Version
-    std::fill(y, y + 24, 0);// zero y !
-    jf.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(expected, XMap(y), 1e-8));
-    jf.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
-    jf.multiplyHessianAdd(-1, xdata, y);
-    EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
-  }
-
   { // Check gradientAtZero
     VectorValues expected = jf.gradientAtZero();
     VectorValues actual = implicitFactor.gradientAtZero();
@@ -167,7 +142,6 @@ TEST( implicitSchurFactor, addHessianMultiply ) {
   // Create JacobianFactorQR
   JacobianFactorQR<6> jfq(Fblocks, E, P, b, model);
   {
-    const SharedDiagonal model;
     VectorValues yActual = zero;
     jfq.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(yExpected, yActual, 1e-8));
@@ -177,16 +151,6 @@ TEST( implicitSchurFactor, addHessianMultiply ) {
     EXPECT(assert_equal(zero, yActual, 1e-8));
   }
 
-  { // Raw memory Version
-    std::fill(y, y + 24, 0);// zero y !
-    jfq.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(expected, XMap(y), 1e-8));
-    jfq.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
-    jfq.multiplyHessianAdd(-1, xdata, y);
-    EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
-  }
-  delete [] y;
 }
 
 /* ************************************************************************* */

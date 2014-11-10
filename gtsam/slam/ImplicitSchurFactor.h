@@ -156,35 +156,6 @@ public:
     return d;
   }
 
-  /**
-   * @brief add the contribution of this factor to the diagonal of the hessian
-   * d(output) = d(input) + deltaHessianFactor
-   */
-  void hessianDiagonal(double* d) const {
-    // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
-    // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, D, 1> DVector;
-    typedef Eigen::Map<DVector> DMap;
-
-    for (size_t pos = 0; pos < size(); ++pos) { // for each camera in the factor
-      Key j = keys_[pos];
-
-      // Calculate Fj'*Ej for the current camera (observing a single point)
-      // D x 3 = (D x 2) * (2 x 3)
-      const Matrix2D& Fj = Fblocks_[pos].second;
-      Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-          * E_.block<2, 3>(2 * pos, 0);
-
-      DVector dj;
-      for (size_t k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
-        dj(k) = Fj.col(k).squaredNorm();
-        // (1 x 1) = (1 x 3) * (3 * 3) * (3 x 1)
-        dj(k) -= FtE.row(k) * PointCovariance_ * FtE.row(k).transpose();
-      }
-      DMap(d + D * j) += dj;
-    }
-  }
-
   /// Return the block diagonal of the Hessian for this factor
   virtual std::map<Key, Matrix> hessianBlockDiagonal() const {
     std::map<Key, Matrix> blocks;
@@ -330,43 +301,6 @@ public:
   mutable Error2s e1, e2;
 
   /**
-   * @brief double* Hessian-vector multiply, i.e. y += F'*alpha*(I - E*P*E')*F*x
-   * RAW memory access! Assumes keys start at 0 and go to M-1, and x and and y are laid out that way
-   */
-  void multiplyHessianAdd(double alpha, const double* x, double* y) const {
-
-    // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, D, 1> DVector;
-    typedef Eigen::Map<DVector> DMap;
-    typedef Eigen::Map<const DVector> ConstDMap;
-
-    // resize does not do malloc if correct size
-    e1.resize(size());
-    e2.resize(size());
-
-    // e1 = F * x = (2m*dm)*dm
-    size_t k = 0;
-    BOOST_FOREACH(const KeyMatrix2D& it, Fblocks_) {
-      Key key = it.first;
-      e1[k++] = it.second * ConstDMap(x + D * key);
-    }
-
-    projectError(e1, e2);
-
-    // y += F.transpose()*e2 = (2d*2m)*2m
-    k = 0;
-    BOOST_FOREACH(const KeyMatrix2D& it, Fblocks_) {
-      Key key = it.first;
-      DMap(y + D * key) += it.second.transpose() * alpha * e2[k++];
-    }
-  }
-
-  void multiplyHessianAdd(double alpha, const double* x, double* y,
-      std::vector<size_t> keys) const {
-  }
-  ;
-
-  /**
    * @brief Hessian-vector multiply, i.e. y += F'*alpha*(I - E*P*E')*F*x
    */
   void multiplyHessianAdd(double alpha, const VectorValues& x,
@@ -430,28 +364,6 @@ public:
 
     // return it
     return g;
-  }
-
-  /**
-   * Calculate gradient, which is -F'Q*b, see paper - RAW MEMORY ACCESS
-   */
-  void gradientAtZero(double* d) const {
-
-    // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, D, 1> DVector;
-    typedef Eigen::Map<DVector> DMap;
-
-    // calculate Q*b
-    e1.resize(size());
-    e2.resize(size());
-    for (size_t k = 0; k < size(); k++)
-      e1[k] = b_.segment < 2 > (2 * k);
-    projectError(e1, e2);
-
-    for (size_t k = 0; k < size(); ++k) { // for each camera in the factor
-      Key j = keys_[k];
-      DMap(d + D * j) += -Fblocks_[k].second.transpose() * e2[k];
-    }
   }
 
 };

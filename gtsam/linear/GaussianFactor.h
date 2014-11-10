@@ -99,9 +99,6 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const = 0;
 
-    /// Return the diagonal of the Hessian for this factor (raw memory version)
-    virtual void hessianDiagonal(double* d) const = 0;
-
     /// Return the block diagonal of the Hessian for this factor
     virtual std::map<Key,Matrix> hessianBlockDiagonal() const = 0;
 
@@ -121,17 +118,8 @@ namespace gtsam {
     /// y += alpha * A'*A*x
     virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const = 0;
 
-    /// y += alpha * A'*A*x
-    virtual void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const = 0;
-
-    /// y += alpha * A'*A*x
-    virtual void multiplyHessianAdd(double alpha, const double* x, double* y) const = 0;
-
     /// A'*b for Jacobian, eta for Hessian
     virtual VectorValues gradientAtZero() const = 0;
-
-    /// A'*b for Jacobian, eta for Hessian (raw memory version)
-    virtual void gradientAtZero(double* d) const = 0;
 
   private:
     /** Serialization function */
