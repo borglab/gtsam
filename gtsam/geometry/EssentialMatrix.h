@@ -58,6 +58,8 @@ public:
     return EssentialMatrix(Rot3::Random(rng), Unit3::Random(rng));
   }
 
+  virtual ~EssentialMatrix() {}
+
   /// @}
 
   /// @name Testable

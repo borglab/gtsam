@@ -1682,7 +1682,6 @@ class Values {
       gtsam::Cal3DS2}>
   void insert(size_t j, const T& value);
   void insert(const gtsam::Values& values);
-  void update(size_t j, const gtsam::Value& val);
   void update(const gtsam::Values& values);
   void erase(size_t j);
   void swap(gtsam::Values& values);
@@ -1698,6 +1697,13 @@ class Values {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // New in 4.0, we have to specialize every insert/update to generate wrappers
+  // Instead of the old:
+  // void insert(size_t j, const gtsam::Value& value);
+  // void update(size_t j, const gtsam::Value& val);
+  void insert(size_t j, const gtsam::Pose2& t);
+  void update(size_t j, const gtsam::Pose2& t);
 };
 
 // Actually a FastList<Key>
