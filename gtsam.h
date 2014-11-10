@@ -705,6 +705,42 @@ class Cal3_S2Stereo {
   double baseline() const;
 };
 
+#include <gtsam/geometry/Cal3Bundler.h>
+class Cal3Bundler {
+  // Standard Constructors
+  Cal3Bundler();
+  Cal3Bundler(double fx, double k1, double k2, double u0, double v0);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Cal3Bundler& rhs, double tol) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Cal3Bundler retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3Bundler& c) const;
+
+  // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+
+  // Standard Interface
+  double fx() const;
+  double fy() const;
+  double k1() const;
+  double k2() const;
+  double u0() const;
+  double v0() const;
+  Vector vector() const;
+  Vector k() const;
+  //Matrix K() const; //FIXME: Uppercase
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 class CalibratedCamera {
   // Standard Constructors and Named Constructors
   CalibratedCamera();
@@ -1691,8 +1727,26 @@ class Values {
   // Instead of the old:
   // void insert(size_t j, const gtsam::Value& value);
   // void update(size_t j, const gtsam::Value& val);
+  void insert(size_t j, const gtsam::Point2& t);
+  void update(size_t j, const gtsam::Point2& t);
+  void insert(size_t j, const gtsam::Point3& t);
+  void update(size_t j, const gtsam::Point3& t);
+  void insert(size_t j, const gtsam::Rot2& t);
+  void update(size_t j, const gtsam::Rot2& t);
   void insert(size_t j, const gtsam::Pose2& t);
   void update(size_t j, const gtsam::Pose2& t);
+  void insert(size_t j, const gtsam::Rot3& t);
+  void update(size_t j, const gtsam::Rot3& t);
+  void insert(size_t j, const gtsam::Pose3& t);
+  void update(size_t j, const gtsam::Pose3& t);
+  void insert(size_t j, const gtsam::Cal3_S2& t);
+  void update(size_t j, const gtsam::Cal3_S2& t);
+  void insert(size_t j, const gtsam::Cal3DS2& t);
+  void update(size_t j, const gtsam::Cal3DS2& t);
+  void insert(size_t j, const gtsam::Cal3Bundler& t);
+  void update(size_t j, const gtsam::Cal3Bundler& t);
+  void insert(size_t j, const gtsam::EssentialMatrix& t);
+  void update(size_t j, const gtsam::EssentialMatrix& t);
 
   // But it would be nice if this worked:
   //  template<class T = {
