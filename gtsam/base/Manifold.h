@@ -242,41 +242,6 @@ struct DefaultChart<double> {
 
 // Fixed size Eigen::Matrix type
 
-namespace internal {
-
-template <int OutM, int OutN, int InM, int InN, int InOptions>
-struct Reshape {
-  //TODO replace this with Eigen's reshape function as soon as available. (There is a PR already pending : https://bitbucket.org/eigen/eigen/pull-request/41/reshape/diff)
-  typedef Eigen::Map<const Eigen::Matrix<double, OutM, OutN> > ReshapedType;
-  static inline ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & in) {
-    return in.data();
-  }
-};
-
-template <int M, int N, int InOptions>
-struct Reshape<M, N, M, N, InOptions> {
-  typedef const Eigen::Matrix<double, M, N, InOptions> & ReshapedType;
-  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
-    return in;
-  }
-};
-
-template <int M, int N, int InOptions>
-struct Reshape<N, M, M, N, InOptions> {
-  typedef typename Eigen::Matrix<double, M, N, InOptions>::ConstTransposeReturnType ReshapedType;
-  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
-    return in.transpose();
-  }
-};
-
-template <int OutM, int OutN, int InM, int InN, int InOptions>
-inline typename Reshape<OutM, OutN, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
-  BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
-  return Reshape<OutM, OutN, InM, InN, InOptions>::reshape(m);
-}
-
-}
-
 template<int M, int N, int Options>
 struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   /**
@@ -288,10 +253,10 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");
   static vector local(const T& origin, const T& other) {
-    return internal::reshape<vector::RowsAtCompileTime, 1>(other) - internal::reshape<vector::RowsAtCompileTime, 1>(origin);
+    return reshape<vector::RowsAtCompileTime, 1>(other) - reshape<vector::RowsAtCompileTime, 1>(origin);
   }
   static T retract(const T& origin, const vector& d) {
-    return origin + internal::reshape<M, N>(d);
+    return origin + reshape<M, N>(d);
   }
   static int getDimension(const T&origin) {
     return origin.rows() * origin.cols();
