@@ -57,44 +57,6 @@ public:
     HessianFactor::multiplyHessianAdd(alpha, x, y);
   }
 
-  // Scratch space for multiplyHessianAdd
-  typedef Eigen::Matrix<double, D, 1> DVector;
-  mutable std::vector<DVector> y;
-
-  void multiplyHessianAdd(double alpha, const double* x,
-      double* yvalues) const {
-    // Create a vector of temporary y values, corresponding to rows i
-    y.resize(size());
-    BOOST_FOREACH(DVector & yi, y)
-      yi.setZero();
-
-    typedef Eigen::Map<DVector> DMap;
-    typedef Eigen::Map<const DVector> ConstDMap;
-
-    // Accessing the VectorValues one by one is expensive
-    // So we will loop over columns to access x only once per column
-    // And fill the above temporary y values, to be added into yvalues after
-    DVector xj(D);
-    for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
-      Key key = keys_[j];
-      const double* xj = x + key * D;
-      DenseIndex i = 0;
-      for (; i < j; ++i)
-        y[i] += info_(i, j).knownOffDiagonal() * ConstDMap(xj);
-      // blocks on the diagonal are only half
-      y[i] += info_(j, j).selfadjointView() * ConstDMap(xj);
-      // for below diagonal, we take transpose block from upper triangular part
-      for (i = j + 1; i < (DenseIndex) size(); ++i)
-        y[i] += info_(i, j).knownOffDiagonal() * ConstDMap(xj);
-    }
-
-    // copy to yvalues
-    for (DenseIndex i = 0; i < (DenseIndex) size(); ++i) {
-      Key key = keys_[i];
-      DMap(yvalues + key * D) += alpha * y[i];
-    }
-  }
-
 };
 
 }
