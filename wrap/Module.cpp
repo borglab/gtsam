@@ -62,17 +62,21 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 /* ************************************************************************* */ 
  
 /* ************************************************************************* */ 
-void handle_possible_template(vector<Class>& classes, const Class& cls, const string& templateArgument, const vector<vector<string> >& instantiations) { 
-  if(instantiations.empty()) { 
-    classes.push_back(cls); 
-  } else { 
-    vector<Class> classInstantiations = cls.expandTemplate(templateArgument, instantiations); 
-    BOOST_FOREACH(const Class& c, classInstantiations) { 
-      classes.push_back(c); 
-    } 
-  } 
-} 
- 
+// If a number of template arguments were given, generate a number of expanded
+// class names, e.g., PriorFactor -> PriorFactorPose2, and add those classes
+static void handle_possible_template(vector<Class>& classes, const Class& cls,
+    const string& templateArgument,
+    const vector<vector<string> >& instantiations) {
+  if (instantiations.empty()) {
+    classes.push_back(cls);
+  } else {
+    vector<Class> classInstantiations = //
+        cls.expandTemplate(templateArgument, instantiations);
+    BOOST_FOREACH(const Class& c, classInstantiations)
+      classes.push_back(c);
+  }
+}
+
 /* ************************************************************************* */
 Module::Module(const std::string& moduleName, bool enable_verbose)
 : name(moduleName), verbose(enable_verbose)
@@ -162,6 +166,8 @@ void Module::parseMarkup(const std::string& data) {
     *(namespace_name_p[push_back_a(cls.qualifiedParent)] >> str_p("::")) >> 
     className_p[push_back_a(cls.qualifiedParent)]; 
  
+  // TODO: get rid of copy/paste below?
+
   // parse "gtsam::Pose2" and add to templateInstantiations
   vector<string> templateArgumentValue;
   vector<vector<string> > templateInstantiations;
@@ -180,6 +186,22 @@ void Module::parseMarkup(const std::string& data) {
     '}' >> '>') 
     [push_back_a(cls.templateArgs, templateArgument)]; 
  
+  // parse "gtsam::Pose2" and add to methodInstantiations
+  vector<vector<string> > methodInstantiations;
+  Rule methodInstantiation_p =
+    (*(namespace_name_p[push_back_a(templateArgumentValue)] >> str_p("::")) >>
+    className_p[push_back_a(templateArgumentValue)])
+    [push_back_a(methodInstantiations, templateArgumentValue)]
+    [clear_a(templateArgumentValue)];
+
+  // template<CALIBRATION = {gtsam::Cal3DS2}>
+  string methodArgument;
+  Rule methodInstantiations_p =
+    (str_p("template") >>
+    '<' >> name_p[assign_a(methodArgument)] >> '=' >> '{' >>
+    !(methodInstantiation_p >> *(',' >> methodInstantiation_p)) >>
+    '}' >> '>');
+
   // parse "gtsam::Pose2" and add to singleInstantiation.typeList
   TemplateInstantiationTypedef singleInstantiation;
   Rule templateSingleInstantiationArg_p = 
@@ -261,6 +283,7 @@ void Module::parseMarkup(const std::string& data) {
  
   // gtsam::Values retract(const gtsam::VectorValues& delta) const;
   Rule method_p =  
+    !methodInstantiations_p >>
     (returnType_p >> methodName_p[assign_a(methodName)] >> 
      '(' >> argumentList_p >> ')' >>  
      !str_p("const")[assign_a(isConst,true)] >> ';' >> *comments_p) 

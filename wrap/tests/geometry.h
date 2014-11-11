@@ -100,6 +100,9 @@ virtual class MyBase {
 template<T = {Point2, Point3}>
 virtual class MyTemplate : MyBase {
   MyTemplate();
+
+  template<ARG = {Point2, Point3}>
+  void templatedMethod(const Test& t);
 };
 
 
