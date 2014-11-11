@@ -222,10 +222,12 @@ TEST( wrap, parse_geometry ) {
     EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
     EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
 
+#ifndef WRAP_DISABLE_SERIALIZE
     // check serialization flag
     EXPECT(cls.isSerializable);
     EXPECT(!cls.hasSerialization);
-  }
+#endif
+    }
 
   // check second class, Point3
   {
@@ -258,10 +260,12 @@ TEST( wrap, parse_geometry ) {
     EXPECT_LONGS_EQUAL(0, m1.argLists.front().size());
     EXPECT(m1.is_const_);
 
+#ifndef WRAP_DISABLE_SERIALIZE
     // check serialization flag
     EXPECT(cls.isSerializable);
     EXPECT(cls.hasSerialization);
-  }
+#endif
+    }
 
   // Test class is the third one
   {
@@ -443,7 +447,11 @@ TEST( wrap, matlab_code_geometry ) {
   // emit MATLAB code
   // make_geometry will not compile, use make testwrap to generate real make
   module.matlab_code("actual", headerPath);
+#ifndef WRAP_DISABLE_SERIALIZE
   string epath = path + "/tests/expected/";
+#else
+  string epath = path + "/tests/expected2/";
+#endif
   string apath = "actual/";
 
   EXPECT(files_equal(epath + "geometry_wrapper.cpp" , apath + "geometry_wrapper.cpp" ));
