@@ -105,6 +105,14 @@ virtual class MyTemplate : MyBase {
   void templatedMethod(const Test& t);
 };
 
+// A doubly templated class
+template<POSE, POINT>
+class MyFactor {
+  MyFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+};
+
+// and a typedef specializing it
+typedef MyFactor<gtsam::Pose2, gtsam::Point2> MyFactorPosePoint2;
 
 // comments at the end!
 
