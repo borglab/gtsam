@@ -1712,7 +1712,6 @@ class Values {
   void swap(gtsam::Values& values);
 
   bool exists(size_t j) const;
-  gtsam::Value at(size_t j) const;
   gtsam::KeyList keys() const;
 
   gtsam::VectorValues zeroVectors() const;
@@ -1723,29 +1722,31 @@ class Values {
   // enabling serialization functionality
   void serialize() const;
 
-  // New in 4.0, we have to specialize every insert/update to generate wrappers
+  // New in 4.0, we have to specialize every insert/update/at to generate wrappers
   // Instead of the old:
   // void insert(size_t j, const gtsam::Value& value);
   // void update(size_t j, const gtsam::Value& val);
+  // gtsam::Value at(size_t j) const;
   void insert(size_t j, const gtsam::Point2& t);
-  void update(size_t j, const gtsam::Point2& t);
   void insert(size_t j, const gtsam::Point3& t);
-  void update(size_t j, const gtsam::Point3& t);
   void insert(size_t j, const gtsam::Rot2& t);
-  void update(size_t j, const gtsam::Rot2& t);
   void insert(size_t j, const gtsam::Pose2& t);
-  void update(size_t j, const gtsam::Pose2& t);
   void insert(size_t j, const gtsam::Rot3& t);
-  void update(size_t j, const gtsam::Rot3& t);
   void insert(size_t j, const gtsam::Pose3& t);
-  void update(size_t j, const gtsam::Pose3& t);
   void insert(size_t j, const gtsam::Cal3_S2& t);
-  void update(size_t j, const gtsam::Cal3_S2& t);
   void insert(size_t j, const gtsam::Cal3DS2& t);
-  void update(size_t j, const gtsam::Cal3DS2& t);
   void insert(size_t j, const gtsam::Cal3Bundler& t);
-  void update(size_t j, const gtsam::Cal3Bundler& t);
   void insert(size_t j, const gtsam::EssentialMatrix& t);
+
+  void update(size_t j, const gtsam::Point2& t);
+  void update(size_t j, const gtsam::Point3& t);
+  void update(size_t j, const gtsam::Rot2& t);
+  void update(size_t j, const gtsam::Pose2& t);
+  void update(size_t j, const gtsam::Rot3& t);
+  void update(size_t j, const gtsam::Pose3& t);
+  void update(size_t j, const gtsam::Cal3_S2& t);
+  void update(size_t j, const gtsam::Cal3DS2& t);
+  void update(size_t j, const gtsam::Cal3Bundler& t);
   void update(size_t j, const gtsam::EssentialMatrix& t);
 
   // But it would be nice if this worked:
