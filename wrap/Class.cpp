@@ -250,7 +250,7 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
 vector<ArgumentList> expandArgumentListsTemplate(
     const vector<ArgumentList>& argLists, const string& templateArg,
     const vector<string>& instName,
-    const std::vector<string>& expandedClassNamespace,
+    const vector<string>& expandedClassNamespace,
     const string& expandedClassName) {
   vector<ArgumentList> result;
   BOOST_FOREACH(const ArgumentList& argList, argLists) {
@@ -276,7 +276,7 @@ vector<ArgumentList> expandArgumentListsTemplate(
 template<class METHOD>
 map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods,
     const string& templateArg, const vector<string>& instName,
-    const std::vector<string>& expandedClassNamespace,
+    const vector<string>& expandedClassNamespace,
     const string& expandedClassName) {
   map<string, METHOD> result;
   typedef pair<const string, METHOD> Name_Method;
@@ -312,30 +312,20 @@ map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods,
 }
 
 /* ************************************************************************* */
-Class expandClassTemplate(const Class& cls, const string& templateArg,
+Class Class::expandTemplate(const string& templateArg,
     const vector<string>& instName,
-    const std::vector<string>& expandedClassNamespace,
-    const string& expandedClassName) {
-  Class inst;
-  inst.name = cls.name;
-  inst.templateArgs = cls.templateArgs;
-  inst.typedefName = cls.typedefName;
-  inst.isVirtual = cls.isVirtual;
-  inst.isSerializable = cls.isSerializable;
-  inst.qualifiedParent = cls.qualifiedParent;
-  inst.methods = expandMethodTemplate(cls.methods, templateArg, instName,
+    const vector<string>& expandedClassNamespace,
+    const string& expandedClassName) const {
+  Class inst = *this;
+  inst.methods = expandMethodTemplate(methods, templateArg, instName,
       expandedClassNamespace, expandedClassName);
-  inst.static_methods = expandMethodTemplate(cls.static_methods, templateArg,
+  inst.static_methods = expandMethodTemplate(static_methods, templateArg,
       instName, expandedClassNamespace, expandedClassName);
-  inst.namespaces = cls.namespaces;
-  inst.constructor = cls.constructor;
   inst.constructor.args_list = expandArgumentListsTemplate(
-      cls.constructor.args_list, templateArg, instName, expandedClassNamespace,
+      constructor.args_list, templateArg, instName, expandedClassNamespace,
       expandedClassName);
   inst.constructor.name = inst.name;
-  inst.deconstructor = cls.deconstructor;
   inst.deconstructor.name = inst.name;
-  inst.verbose_ = cls.verbose_;
   return inst;
 }
 
@@ -345,8 +335,8 @@ vector<Class> Class::expandTemplate(const string& templateArg,
   vector<Class> result;
   BOOST_FOREACH(const vector<string>& instName, instantiations) {
     const string expandedName = name + instName.back();
-    Class inst = expandClassTemplate(*this, templateArg, instName,
-        this->namespaces, expandedName);
+    Class inst = expandTemplate(templateArg, instName, namespaces,
+        expandedName);
     inst.name = expandedName;
     inst.templateArgs.clear();
     inst.typedefName = qualifiedName("::") + "<"
@@ -357,16 +347,7 @@ vector<Class> Class::expandTemplate(const string& templateArg,
 }
 
 /* ************************************************************************* */
-Class Class::expandTemplate(const string& templateArg,
-    const vector<string>& instantiation,
-    const std::vector<string>& expandedClassNamespace,
-    const string& expandedClassName) const {
-  return expandClassTemplate(*this, templateArg, instantiation,
-      expandedClassNamespace, expandedClassName);
-}
-
-/* ************************************************************************* */
-std::string Class::getTypedef() const {
+string Class::getTypedef() const {
   string result;
   BOOST_FOREACH(const string& namesp, namespaces) {
     result += ("namespace " + namesp + " { ");
@@ -429,15 +410,15 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 
 /* ************************************************************************* */
 void Class::serialization_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const std::string& wrapperName,
-    std::vector<std::string>& functionNames) const {
+    FileWriter& wrapperFile, const string& wrapperName,
+    vector<string>& functionNames) const {
 
 //void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 //{
 //  typedef boost::shared_ptr<Point3> Shared;
 //  checkArguments("string_serialize",nargout,nargin-1,0);
 //  Shared obj = unwrap_shared_ptr<Point3>(in[0], "ptr_Point3");
-//  std::ostringstream out_archive_stream;
+//  ostringstream out_archive_stream;
 //  boost::archive::text_oarchive out_archive(out_archive_stream);
 //  out_archive << *obj;
 //  out[0] = wrap< string >(out_archive_stream.str());
@@ -469,7 +450,7 @@ void Class::serialization_fragments(FileWriter& proxyFile,
       << ">(in[0], \"ptr_" << matlabUniqueName << "\");" << endl;
 
   // Serialization boilerplate
-  wrapperFile.oss << "  std::ostringstream out_archive_stream;\n";
+  wrapperFile.oss << "  ostringstream out_archive_stream;\n";
   wrapperFile.oss
       << "  boost::archive::text_oarchive out_archive(out_archive_stream);\n";
   wrapperFile.oss << "  out_archive << *obj;\n";
@@ -520,14 +501,14 @@ void Class::serialization_fragments(FileWriter& proxyFile,
 
 /* ************************************************************************* */
 void Class::deserialization_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const std::string& wrapperName,
-    std::vector<std::string>& functionNames) const {
+    FileWriter& wrapperFile, const string& wrapperName,
+    vector<string>& functionNames) const {
   //void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   //{
   //  typedef boost::shared_ptr<Point3> Shared;
   //  checkArguments("Point3.string_deserialize",nargout,nargin,1);
   //  string serialized = unwrap< string >(in[0]);
-  //  std::istringstream in_archive_stream(serialized);
+  //  istringstream in_archive_stream(serialized);
   //  boost::archive::text_iarchive in_archive(in_archive_stream);
   //  Shared output(new Point3());
   //  in_archive >> *output;
@@ -553,7 +534,7 @@ void Class::deserialization_fragments(FileWriter& proxyFile,
 
   // string argument with deserialization boilerplate
   wrapperFile.oss << "  string serialized = unwrap< string >(in[0]);\n";
-  wrapperFile.oss << "  std::istringstream in_archive_stream(serialized);\n";
+  wrapperFile.oss << "  istringstream in_archive_stream(serialized);\n";
   wrapperFile.oss
       << "  boost::archive::text_iarchive in_archive(in_archive_stream);\n";
   wrapperFile.oss << "  Shared output(new " << cppClassName << "());\n";
@@ -604,7 +585,7 @@ void Class::deserialization_fragments(FileWriter& proxyFile,
 }
 
 /* ************************************************************************* */
-std::string Class::getSerializationExport() const {
+string Class::getSerializationExport() const {
   //BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsamSharedDiagonal");
   return "BOOST_CLASS_EXPORT_GUID(" + qualifiedName("::") + ", \""
       + qualifiedName() + "\");";
