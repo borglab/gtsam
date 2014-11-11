@@ -91,6 +91,18 @@ Vector aGlobalFunction();
 Vector overloadedGlobalFunction(int a);
 Vector overloadedGlobalFunction(int a, double b);
 
+// A base class
+virtual class MyBase {
+
+};
+
+// A templated class
+template<T = {Point2, Point3}>
+virtual class MyTemplate : MyBase {
+  MyTemplate();
+};
+
+
 // comments at the end!
 
 // even more comments at the end!

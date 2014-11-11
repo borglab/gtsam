@@ -4,6 +4,8 @@
 
 #include <folder/path/to/Test.h>
 
+typedef MyTemplate<Point2> MyTemplatePoint2;
+typedef MyTemplate<Point3> MyTemplatePoint3;
 
 typedef std::set<boost::shared_ptr<Point2>*> Collector_Point2;
 static Collector_Point2 collector_Point2;
@@ -11,6 +13,12 @@ typedef std::set<boost::shared_ptr<Point3>*> Collector_Point3;
 static Collector_Point3 collector_Point3;
 typedef std::set<boost::shared_ptr<Test>*> Collector_Test;
 static Collector_Test collector_Test;
+typedef std::set<boost::shared_ptr<MyBase>*> Collector_MyBase;
+static Collector_MyBase collector_MyBase;
+typedef std::set<boost::shared_ptr<MyTemplatePoint2>*> Collector_MyTemplatePoint2;
+static Collector_MyTemplatePoint2 collector_MyTemplatePoint2;
+typedef std::set<boost::shared_ptr<MyTemplatePoint3>*> Collector_MyTemplatePoint3;
+static Collector_MyTemplatePoint3 collector_MyTemplatePoint3;
 
 void _deleteAllObjects()
 {
@@ -36,6 +44,24 @@ void _deleteAllObjects()
     collector_Test.erase(iter++);
     anyDeleted = true;
   } }
+  { for(Collector_MyBase::iterator iter = collector_MyBase.begin();
+      iter != collector_MyBase.end(); ) {
+    delete *iter;
+    collector_MyBase.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_MyTemplatePoint2::iterator iter = collector_MyTemplatePoint2.begin();
+      iter != collector_MyTemplatePoint2.end(); ) {
+    delete *iter;
+    collector_MyTemplatePoint2.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_MyTemplatePoint3::iterator iter = collector_MyTemplatePoint3.begin();
+      iter != collector_MyTemplatePoint3.end(); ) {
+    delete *iter;
+    collector_MyTemplatePoint3.erase(iter++);
+    anyDeleted = true;
+  } }
   if(anyDeleted)
     cout <<
       "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
@@ -48,6 +74,9 @@ void _geometry_RTTIRegister() {
   const mxArray *alreadyCreated = mexGetVariablePtr("global", "gtsam_geometry_rttiRegistry_created");
   if(!alreadyCreated) {
     std::map<std::string, std::string> types;
+    types.insert(std::make_pair(typeid(MyBase).name(), "MyBase"));
+    types.insert(std::make_pair(typeid(MyTemplatePoint2).name(), "MyTemplatePoint2"));
+    types.insert(std::make_pair(typeid(MyTemplatePoint3).name(), "MyTemplatePoint3"));
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
     if(!registry)
@@ -469,18 +498,149 @@ void Test_return_vector2_39(int nargout, mxArray *out[], int nargin, const mxArr
   out[0] = wrap< Vector >(obj->return_vector2(value));
 }
 
-void aGlobalFunction_40(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyBase_collectorInsertAndMakeBase_40(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyBase> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_MyBase.insert(self);
+}
+
+void MyBase_upcastFromVoid_41(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyBase> Shared;
+  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(boost::static_pointer_cast<MyBase>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
+}
+
+void MyBase_deconstructor_42(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<MyBase> Shared;
+  checkArguments("delete_MyBase",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_MyBase::iterator item;
+  item = collector_MyBase.find(self);
+  if(item != collector_MyBase.end()) {
+    delete self;
+    collector_MyBase.erase(item);
+  }
+}
+
+void MyTemplatePoint2_collectorInsertAndMakeBase_43(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_MyTemplatePoint2.insert(self);
+
+  typedef boost::shared_ptr<MyBase> SharedBase;
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void MyTemplatePoint2_upcastFromVoid_44(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
+  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(boost::static_pointer_cast<MyTemplatePoint2>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
+}
+
+void MyTemplatePoint2_constructor_45(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
+
+  Shared *self = new Shared(new MyTemplatePoint2());
+  collector_MyTemplatePoint2.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+
+  typedef boost::shared_ptr<MyBase> SharedBase;
+  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);
+}
+
+void MyTemplatePoint2_deconstructor_46(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
+  checkArguments("delete_MyTemplatePoint2",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_MyTemplatePoint2::iterator item;
+  item = collector_MyTemplatePoint2.find(self);
+  if(item != collector_MyTemplatePoint2.end()) {
+    delete self;
+    collector_MyTemplatePoint2.erase(item);
+  }
+}
+
+void MyTemplatePoint3_collectorInsertAndMakeBase_47(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_MyTemplatePoint3.insert(self);
+
+  typedef boost::shared_ptr<MyBase> SharedBase;
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void MyTemplatePoint3_upcastFromVoid_48(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(boost::static_pointer_cast<MyTemplatePoint3>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
+}
+
+void MyTemplatePoint3_constructor_49(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+
+  Shared *self = new Shared(new MyTemplatePoint3());
+  collector_MyTemplatePoint3.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+
+  typedef boost::shared_ptr<MyBase> SharedBase;
+  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);
+}
+
+void MyTemplatePoint3_deconstructor_50(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  checkArguments("delete_MyTemplatePoint3",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_MyTemplatePoint3::iterator item;
+  item = collector_MyTemplatePoint3.find(self);
+  if(item != collector_MyTemplatePoint3.end()) {
+    delete self;
+    collector_MyTemplatePoint3.erase(item);
+  }
+}
+
+void aGlobalFunction_51(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("aGlobalFunction",nargout,nargin,0);
   out[0] = wrap< Vector >(aGlobalFunction());
 }
-void overloadedGlobalFunction_41(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void overloadedGlobalFunction_52(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("overloadedGlobalFunction",nargout,nargin,1);
   int a = unwrap< int >(in[0]);
   out[0] = wrap< Vector >(overloadedGlobalFunction(a));
 }
-void overloadedGlobalFunction_42(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void overloadedGlobalFunction_53(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("overloadedGlobalFunction",nargout,nargin,2);
   int a = unwrap< int >(in[0]);
@@ -620,13 +780,46 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       Test_return_vector2_39(nargout, out, nargin-1, in+1);
       break;
     case 40:
-      aGlobalFunction_40(nargout, out, nargin-1, in+1);
+      MyBase_collectorInsertAndMakeBase_40(nargout, out, nargin-1, in+1);
       break;
     case 41:
-      overloadedGlobalFunction_41(nargout, out, nargin-1, in+1);
+      MyBase_upcastFromVoid_41(nargout, out, nargin-1, in+1);
       break;
     case 42:
-      overloadedGlobalFunction_42(nargout, out, nargin-1, in+1);
+      MyBase_deconstructor_42(nargout, out, nargin-1, in+1);
+      break;
+    case 43:
+      MyTemplatePoint2_collectorInsertAndMakeBase_43(nargout, out, nargin-1, in+1);
+      break;
+    case 44:
+      MyTemplatePoint2_upcastFromVoid_44(nargout, out, nargin-1, in+1);
+      break;
+    case 45:
+      MyTemplatePoint2_constructor_45(nargout, out, nargin-1, in+1);
+      break;
+    case 46:
+      MyTemplatePoint2_deconstructor_46(nargout, out, nargin-1, in+1);
+      break;
+    case 47:
+      MyTemplatePoint3_collectorInsertAndMakeBase_47(nargout, out, nargin-1, in+1);
+      break;
+    case 48:
+      MyTemplatePoint3_upcastFromVoid_48(nargout, out, nargin-1, in+1);
+      break;
+    case 49:
+      MyTemplatePoint3_constructor_49(nargout, out, nargin-1, in+1);
+      break;
+    case 50:
+      MyTemplatePoint3_deconstructor_50(nargout, out, nargin-1, in+1);
+      break;
+    case 51:
+      aGlobalFunction_51(nargout, out, nargin-1, in+1);
+      break;
+    case 52:
+      overloadedGlobalFunction_52(nargout, out, nargin-1, in+1);
+      break;
+    case 53:
+      overloadedGlobalFunction_53(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

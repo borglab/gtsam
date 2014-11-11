@@ -401,7 +401,7 @@ void Module::parseMarkup(const std::string& data) {
 #ifndef WRAP_DISABLE_SERIALIZE
       cls.isSerializable = true;
 #else
-      cout << "Ignoring serializable() flag in class " << cls.name << endl;
+     // cout << "Ignoring serializable() flag in class " << cls.name << endl;
 #endif
       cls.methods.erase(serializable_it);
     }
@@ -412,7 +412,7 @@ void Module::parseMarkup(const std::string& data) {
       cls.isSerializable = true;
       cls.hasSerialization= true;
 #else
-      cout << "Ignoring serialize() flag in class " << cls.name << endl;
+      // cout << "Ignoring serialize() flag in class " << cls.name << endl;
 #endif
       cls.methods.erase(serialize_it);
     }
