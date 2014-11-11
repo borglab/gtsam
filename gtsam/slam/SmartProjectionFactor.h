@@ -298,7 +298,7 @@ public:
         || (!this->manageDegeneracy_
             && (this->cheiralityException_ || this->degenerate_))) {
       if (isDebug) {
-        std::cout << "createImplicitSchurFactor: degenerate configuration"
+        std::cout << "createRegularImplicitSchurFactor: degenerate configuration"
             << std::endl;
       }
       return false;
@@ -409,12 +409,12 @@ public:
   }
 
   // create factor
-  boost::shared_ptr<ImplicitSchurFactor<D> > createImplicitSchurFactor(
+  boost::shared_ptr<RegularImplicitSchurFactor<D> > createRegularImplicitSchurFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
-      return Base::createImplicitSchurFactor(cameras, point_, lambda);
+      return Base::createRegularImplicitSchurFactor(cameras, point_, lambda);
     else
-      return boost::shared_ptr<ImplicitSchurFactor<D> >();
+      return boost::shared_ptr<RegularImplicitSchurFactor<D> >();
   }
 
   /// create factor

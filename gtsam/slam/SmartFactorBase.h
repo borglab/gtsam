@@ -21,7 +21,7 @@
 
 #include "JacobianFactorQ.h"
 #include "JacobianFactorSVD.h"
-#include "ImplicitSchurFactor.h"
+#include "RegularImplicitSchurFactor.h"
 #include "RegularHessianFactor.h"
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -629,11 +629,11 @@ public:
   }
 
   // ****************************************************************************************************
-  boost::shared_ptr<ImplicitSchurFactor<D> > createImplicitSchurFactor(
+  boost::shared_ptr<RegularImplicitSchurFactor<D> > createRegularImplicitSchurFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
-    typename boost::shared_ptr<ImplicitSchurFactor<D> > f(
-        new ImplicitSchurFactor<D>());
+    typename boost::shared_ptr<RegularImplicitSchurFactor<D> > f(
+        new RegularImplicitSchurFactor<D>());
     computeJacobians(f->Fblocks(), f->E(), f->PointCovariance(), f->b(),
         cameras, point, lambda, diagonalDamping);
     f->initKeys();
