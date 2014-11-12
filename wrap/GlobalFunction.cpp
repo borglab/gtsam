@@ -16,14 +16,18 @@ namespace wrap {
 using namespace std;
 
 /* ************************************************************************* */
-void GlobalFunction::addOverload(bool verbose, const std::string& name,
-    const ArgumentList& args, const ReturnValue& retVal,
-    const StrVec& ns_stack) {
-  this->verbose_ = verbose;
-  this->name = name;
-  this->argLists.push_back(args);
-  this->returnVals.push_back(retVal);
-  this->namespaces.push_back(ns_stack);
+void GlobalFunction::addOverload(bool verbose, const Qualified& overload,
+    const ArgumentList& args, const ReturnValue& retVal) {
+  if (name.empty())
+    name = overload.name;
+  else if (overload.name != name)
+    throw std::runtime_error(
+        "GlobalFunction::addOverload: tried to add overload with name "
+            + overload.name + " instead of expected " + name);
+  verbose_ = verbose;
+  argLists.push_back(args);
+  returnVals.push_back(retVal);
+  overloads.push_back(overload);
 }
 
 /* ************************************************************************* */
@@ -36,9 +40,10 @@ void GlobalFunction::matlab_proxy(const std::string& toolboxPath,
   // map of namespace to global function
   typedef map<string, GlobalFunction> GlobalFunctionMap;
   GlobalFunctionMap grouped_functions;
-  for (size_t i = 0; i < namespaces.size(); ++i) {
-    StrVec ns = namespaces.at(i);
-    string str_ns = qualifiedName("", ns, "");
+  for (size_t i = 0; i < overloads.size(); ++i) {
+    Qualified overload = overloads.at(i);
+    // use concatenated namespaces as key
+    string str_ns = qualifiedName("", overload.namespaces);
     ReturnValue ret = returnVals.at(i);
     ArgumentList args = argLists.at(i);
 
@@ -47,7 +52,7 @@ void GlobalFunction::matlab_proxy(const std::string& toolboxPath,
 
     grouped_functions[str_ns].argLists.push_back(args);
     grouped_functions[str_ns].returnVals.push_back(ret);
-    grouped_functions[str_ns].namespaces.push_back(ns);
+    grouped_functions[str_ns].overloads.push_back(overload);
   }
 
   size_t lastcheck = grouped_functions.size();
@@ -65,19 +70,17 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath,
     FileWriter& file, std::vector<std::string>& functionNames) const {
 
   // create the folder for the namespace
-  const StrVec& ns = namespaces.front();
-  createNamespaceStructure(ns, toolboxPath);
+  const Qualified& overload1 = overloads.front();
+  createNamespaceStructure(overload1.namespaces, toolboxPath);
 
   // open destination mfunctionFileName
-  string mfunctionFileName = toolboxPath;
-  if (!ns.empty())
-    mfunctionFileName += "/+" + wrap::qualifiedName("/+", ns);
-  mfunctionFileName += "/" + name + ".m";
+  string mfunctionFileName = overload1.matlabName(toolboxPath);
   FileWriter mfunctionFile(mfunctionFileName, verbose_, "%");
 
   // get the name of actual matlab object
-  const string matlabQualName = qualifiedName(".", ns, name), matlabUniqueName =
-      qualifiedName("", ns, name), cppName = qualifiedName("::", ns, name);
+  const string matlabQualName = overload1.qualifiedName(".");
+  const string matlabUniqueName = overload1.qualifiedName("");
+  const string cppName = overload1.qualifiedName("::");
 
   mfunctionFile.oss << "function varargout = " << name << "(varargin)\n";
 
@@ -114,7 +117,7 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath,
     args.matlab_unwrap(file, 0); // We start at 0 because there is no self object
 
     // call method with default type and wrap result
-    if (returnVal.type1 != "void")
+    if (returnVal.type1.name != "void")
       returnVal.wrap_result(cppName + "(" + args.names() + ")", file,
           typeAttributes);
     else

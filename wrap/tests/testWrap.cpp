@@ -48,9 +48,9 @@ static const std::string headerPath = "/not_really_a_real_path/borg/gtsam/wrap";
 /* ************************************************************************* */
 TEST( wrap, ArgumentList ) {
   ArgumentList args;
-  Argument arg1; arg1.type = "double"; arg1.name = "x";
-  Argument arg2; arg2.type = "double"; arg2.name = "y";
-  Argument arg3; arg3.type = "double"; arg3.name = "z";
+  Argument arg1; arg1.type.name = "double"; arg1.name = "x";
+  Argument arg2; arg2.type.name = "double"; arg2.name = "y";
+  Argument arg3; arg3.type.name = "double"; arg3.name = "z";
   args.push_back(arg1);
   args.push_back(arg2);
   args.push_back(arg3);
@@ -105,7 +105,7 @@ TEST( wrap, small_parse ) {
   ReturnValue rv1 = m1.returnVals.front();
   EXPECT(!rv1.isPair);
   EXPECT(!rv1.isPtr1);
-  EXPECT(assert_equal("double", rv1.type1));
+  EXPECT(assert_equal("double", rv1.type1.name));
   EXPECT_LONGS_EQUAL(ReturnValue::BASIS, rv1.category1);
 
   // Method 2
@@ -118,7 +118,7 @@ TEST( wrap, small_parse ) {
   ReturnValue rv2 = m2.returnVals.front();
   EXPECT(!rv2.isPair);
   EXPECT(!rv2.isPtr1);
-  EXPECT(assert_equal("Matrix", rv2.type1));
+  EXPECT(assert_equal("Matrix", rv2.type1.name));
   EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, rv2.category1);
 
   // Method 3
@@ -131,7 +131,7 @@ TEST( wrap, small_parse ) {
   ReturnValue rv3 = m3.returnVals.front();
   EXPECT(!rv3.isPair);
   EXPECT(!rv3.isPtr1);
-  EXPECT(assert_equal("Point2", rv3.type1));
+  EXPECT(assert_equal("Point2", rv3.type1.name));
   EXPECT_LONGS_EQUAL(ReturnValue::CLASS, rv3.category1);
 
   // Static Method 1
@@ -144,7 +144,7 @@ TEST( wrap, small_parse ) {
   ReturnValue rv4 = sm1.returnVals.front();
   EXPECT(!rv4.isPair);
   EXPECT(!rv4.isPtr1);
-  EXPECT(assert_equal("Vector", rv4.type1));
+  EXPECT(assert_equal("Vector", rv4.type1.name));
   EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, rv4.category1);
 
 }
@@ -196,7 +196,7 @@ TEST( wrap, parse_geometry ) {
       CHECK(cls.methods.find("returnChar") != cls.methods.end());
       Method m1 = cls.methods.find("returnChar")->second;
       LONGS_EQUAL(1, m1.returnVals.size());
-      EXPECT(assert_equal("char", m1.returnVals.front().type1));
+      EXPECT(assert_equal("char", m1.returnVals.front().type1.name));
       EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1);
       EXPECT(!m1.returnVals.front().isPair);
       EXPECT(assert_equal("returnChar", m1.name));
@@ -210,7 +210,7 @@ TEST( wrap, parse_geometry ) {
       CHECK(cls.methods.find("vectorConfusion") != cls.methods.end());
       Method m1 = cls.methods.find("vectorConfusion")->second;
       LONGS_EQUAL(1, m1.returnVals.size());
-      EXPECT(assert_equal("VectorNotEigen", m1.returnVals.front().type1));
+      EXPECT(assert_equal("VectorNotEigen", m1.returnVals.front().type1.name));
       EXPECT_LONGS_EQUAL(ReturnValue::CLASS, m1.returnVals.front().category1);
       EXPECT(!m1.returnVals.front().isPair);
       EXPECT(assert_equal("vectorConfusion", m1.name));
@@ -245,7 +245,7 @@ TEST( wrap, parse_geometry ) {
     // check first double argument
     Argument a1 = c1.front();
     EXPECT(!a1.is_const);
-    EXPECT(assert_equal("double", a1.type));
+    EXPECT(assert_equal("double", a1.type.name));
     EXPECT(!a1.is_ref);
     EXPECT(assert_equal("x", a1.name));
 
@@ -253,7 +253,7 @@ TEST( wrap, parse_geometry ) {
     CHECK(cls.methods.find("norm") != cls.methods.end());
     Method m1 = cls.methods.find("norm")->second;
     LONGS_EQUAL(1, m1.returnVals.size());
-    EXPECT(assert_equal("double", m1.returnVals.front().type1));
+    EXPECT(assert_equal("double", m1.returnVals.front().type1.name));
     EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1);
     EXPECT(assert_equal("norm", m1.name));
     LONGS_EQUAL(1, m1.argLists.size());
@@ -281,9 +281,9 @@ TEST( wrap, parse_geometry ) {
     LONGS_EQUAL(1, m2.returnVals.size());
     EXPECT(m2.returnVals.front().isPair);
     EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category1);
-    EXPECT(assert_equal("Vector", m2.returnVals.front().type1));
+    EXPECT(assert_equal("Vector", m2.returnVals.front().type1.name));
     EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category2);
-    EXPECT(assert_equal("Matrix", m2.returnVals.front().type2));
+    EXPECT(assert_equal("Matrix", m2.returnVals.front().type2.name));
 
     // checking pointer args and return values
 //    pair<Test*,Test*> return_ptrs (Test* p1, Test* p2) const;
@@ -297,17 +297,17 @@ TEST( wrap, parse_geometry ) {
     EXPECT(arg1.is_ptr);
     EXPECT(!arg1.is_const);
     EXPECT(!arg1.is_ref);
-    EXPECT(assert_equal("Test", arg1.type));
+    EXPECT(assert_equal("Test", arg1.type.name));
     EXPECT(assert_equal("p1", arg1.name));
-    EXPECT(arg1.namespaces.empty());
+    EXPECT(arg1.type.namespaces.empty());
 
     Argument arg2 = args.at(1);
     EXPECT(arg2.is_ptr);
     EXPECT(!arg2.is_const);
     EXPECT(!arg2.is_ref);
-    EXPECT(assert_equal("Test", arg2.type));
+    EXPECT(assert_equal("Test", arg2.type.name));
     EXPECT(assert_equal("p2", arg2.name));
-    EXPECT(arg2.namespaces.empty());
+    EXPECT(arg2.type.namespaces.empty());
   }
 
   // evaluate global functions
@@ -318,10 +318,10 @@ TEST( wrap, parse_geometry ) {
     GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
     EXPECT(assert_equal("aGlobalFunction", gfunc.name));
     LONGS_EQUAL(1, gfunc.returnVals.size());
-    EXPECT(assert_equal("Vector", gfunc.returnVals.front().type1));
+    EXPECT(assert_equal("Vector", gfunc.returnVals.front().type1.name));
     EXPECT_LONGS_EQUAL(1, gfunc.argLists.size());
-    LONGS_EQUAL(1, gfunc.namespaces.size());
-    EXPECT(gfunc.namespaces.front().empty());
+    LONGS_EQUAL(1, gfunc.overloads.size());
+    EXPECT(gfunc.overloads.front().namespaces.empty());
   }
 }
 
@@ -392,16 +392,16 @@ TEST( wrap, parse_namespaces ) {
     GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
     EXPECT(assert_equal("aGlobalFunction", gfunc.name));
     LONGS_EQUAL(2, gfunc.returnVals.size());
-    EXPECT(assert_equal("Vector", gfunc.returnVals.front().type1));
+    EXPECT(assert_equal("Vector", gfunc.returnVals.front().type1.name));
     EXPECT_LONGS_EQUAL(2, gfunc.argLists.size());
 
     // check namespaces
-    LONGS_EQUAL(2, gfunc.namespaces.size());
+    LONGS_EQUAL(2, gfunc.overloads.size());
     strvec exp_namespaces1; exp_namespaces1 += "ns1";
-    EXPECT(assert_equal(exp_namespaces1, gfunc.namespaces.at(0)));
+    EXPECT(assert_equal(exp_namespaces1, gfunc.overloads.at(0).namespaces));
 
     strvec exp_namespaces2; exp_namespaces2 += "ns2";
-    EXPECT(assert_equal(exp_namespaces2, gfunc.namespaces.at(1)));
+    EXPECT(assert_equal(exp_namespaces2, gfunc.overloads.at(1).namespaces));
   }
 }
 

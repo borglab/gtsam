@@ -16,15 +16,13 @@ namespace wrap {
 
 struct GlobalFunction {
 
-  typedef std::vector<std::string> StrVec;
-
   bool verbose_;
   std::string name;
 
   // each overload, regardless of namespace
-  std::vector<ArgumentList> argLists; ///< arugments for each overload
+  std::vector<ArgumentList> argLists;  ///< arugments for each overload
   std::vector<ReturnValue> returnVals; ///< returnVals for each overload
-  std::vector<StrVec> namespaces; ///< Stack of namespaces
+  std::vector<Qualified> overloads;    ///< Stack of qualified names
 
   // Constructor only used in Module
   GlobalFunction(bool verbose = true) :
@@ -37,9 +35,8 @@ struct GlobalFunction {
   }
 
   // adds an overloaded version of this function
-  void addOverload(bool verbose, const std::string& name,
-      const ArgumentList& args, const ReturnValue& retVal,
-      const StrVec& ns_stack);
+  void addOverload(bool verbose, const Qualified& overload,
+      const ArgumentList& args, const ReturnValue& retVal);
 
   // codegen function called from Module to build the cpp and matlab versions of the function
   void matlab_proxy(const std::string& toolboxPath,

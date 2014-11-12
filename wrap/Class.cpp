@@ -41,17 +41,15 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
   createNamespaceStructure(namespaces, toolboxPath);
 
   // open destination classFile 
-  string classFile = toolboxPath;
-  if (!namespaces.empty())
-    classFile += "/+" + wrap::qualifiedName("/+", namespaces);
-  classFile += "/" + name + ".m";
+  string classFile = matlabName(toolboxPath);
   FileWriter proxyFile(classFile, verbose_, "%");
 
   // get the name of actual matlab object 
-  const string matlabQualName = qualifiedName("."), matlabUniqueName =
-      qualifiedName(), cppName = qualifiedName("::");
-  const string matlabBaseName = wrap::qualifiedName(".", qualifiedParent);
-  const string cppBaseName = wrap::qualifiedName("::", qualifiedParent);
+  const string matlabQualName = qualifiedName(".");
+  const string matlabUniqueName = qualifiedName();
+  const string cppName = qualifiedName("::");
+  const string matlabBaseName = qualifiedParent.qualifiedName(".");
+  const string cppBaseName = qualifiedParent.qualifiedName("::");
 
   // emit class proxy code 
   // we want our class to inherit the handle class for memory purposes 
@@ -145,18 +143,13 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 }
 
 /* ************************************************************************* */
-string Class::qualifiedName(const string& delim) const {
-  return ::wrap::qualifiedName(delim, namespaces, name);
-}
-
-/* ************************************************************************* */
 void Class::pointer_constructor_fragments(FileWriter& proxyFile,
     FileWriter& wrapperFile, const string& wrapperName,
     vector<string>& functionNames) const {
 
-  const string matlabUniqueName = qualifiedName(), cppName = qualifiedName(
-      "::");
-  const string baseCppName = wrap::qualifiedName("::", qualifiedParent);
+  const string matlabUniqueName = qualifiedName();
+  const string cppName = qualifiedName("::");
+  const string baseCppName = qualifiedParent.qualifiedName("::");
 
   const int collectorInsertId = (int) functionNames.size();
   const string collectorInsertFunctionName = matlabUniqueName
@@ -247,23 +240,18 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
 }
 
 /* ************************************************************************* */
-vector<ArgumentList> expandArgumentListsTemplate(
+static vector<ArgumentList> expandArgumentListsTemplate(
     const vector<ArgumentList>& argLists, const string& templateArg,
-    const vector<string>& instName,
-    const vector<string>& expandedClassNamespace,
-    const string& expandedClassName) {
+    const Qualified& qualifiedType, const Qualified& expandedClass) {
   vector<ArgumentList> result;
   BOOST_FOREACH(const ArgumentList& argList, argLists) {
     ArgumentList instArgList;
     BOOST_FOREACH(const Argument& arg, argList) {
       Argument instArg = arg;
-      if (arg.type == templateArg) {
-        instArg.namespaces.assign(instName.begin(), instName.end() - 1);
-        instArg.type = instName.back();
-      } else if (arg.type == "This") {
-        instArg.namespaces.assign(expandedClassNamespace.begin(),
-            expandedClassNamespace.end());
-        instArg.type = expandedClassName;
+      if (arg.type.name == templateArg) {
+        instArg.type = qualifiedType;
+      } else if (arg.type.name == "This") {
+        instArg.type = expandedClass;
       }
       instArgList.push_back(instArg);
     }
@@ -275,34 +263,27 @@ vector<ArgumentList> expandArgumentListsTemplate(
 /* ************************************************************************* */
 template<class METHOD>
 map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods,
-    const string& templateArg, const vector<string>& instName,
-    const vector<string>& expandedClassNamespace,
-    const string& expandedClassName) {
+    const string& templateArg, const Qualified& qualifiedType,
+    const Qualified& expandedClass) {
   map<string, METHOD> result;
   typedef pair<const string, METHOD> Name_Method;
   BOOST_FOREACH(const Name_Method& name_method, methods) {
     const METHOD& method = name_method.second;
     METHOD instMethod = method;
     instMethod.argLists = expandArgumentListsTemplate(method.argLists,
-        templateArg, instName, expandedClassNamespace, expandedClassName);
+        templateArg, qualifiedType, expandedClass);
     instMethod.returnVals.clear();
     BOOST_FOREACH(const ReturnValue& retVal, method.returnVals) {
       ReturnValue instRetVal = retVal;
-      if (retVal.type1 == templateArg) {
-        instRetVal.namespaces1.assign(instName.begin(), instName.end() - 1);
-        instRetVal.type1 = instName.back();
-      } else if (retVal.type1 == "This") {
-        instRetVal.namespaces1.assign(expandedClassNamespace.begin(),
-            expandedClassNamespace.end());
-        instRetVal.type1 = expandedClassName;
+      if (retVal.type1.name == templateArg) {
+        instRetVal.type1 = qualifiedType;
+      } else if (retVal.type1.name == "This") {
+        instRetVal.type1 = expandedClass;
       }
-      if (retVal.type2 == templateArg) {
-        instRetVal.namespaces2.assign(instName.begin(), instName.end() - 1);
-        instRetVal.type2 = instName.back();
-      } else if (retVal.type1 == "This") {
-        instRetVal.namespaces2.assign(expandedClassNamespace.begin(),
-            expandedClassNamespace.end());
-        instRetVal.type2 = expandedClassName;
+      if (retVal.type2.name == templateArg) {
+        instRetVal.type2 = qualifiedType;
+      } else if (retVal.type2.name == "This") {
+        instRetVal.type2 = expandedClass;
       }
       instMethod.returnVals.push_back(instRetVal);
     }
@@ -313,17 +294,14 @@ map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods,
 
 /* ************************************************************************* */
 Class Class::expandTemplate(const string& templateArg,
-    const vector<string>& instName,
-    const vector<string>& expandedClassNamespace,
-    const string& expandedClassName) const {
+    const Qualified& instName, const Qualified& expandedClass) const {
   Class inst = *this;
   inst.methods = expandMethodTemplate(methods, templateArg, instName,
-      expandedClassNamespace, expandedClassName);
+      expandedClass);
   inst.static_methods = expandMethodTemplate(static_methods, templateArg,
-      instName, expandedClassNamespace, expandedClassName);
+      instName, expandedClass);
   inst.constructor.args_list = expandArgumentListsTemplate(
-      constructor.args_list, templateArg, instName, expandedClassNamespace,
-      expandedClassName);
+      constructor.args_list, templateArg, instName, expandedClass);
   inst.constructor.name = inst.name;
   inst.deconstructor.name = inst.name;
   return inst;
@@ -331,16 +309,16 @@ Class Class::expandTemplate(const string& templateArg,
 
 /* ************************************************************************* */
 vector<Class> Class::expandTemplate(const string& templateArg,
-    const vector<vector<string> >& instantiations) const {
+    const vector<Qualified >& instantiations) const {
   vector<Class> result;
-  BOOST_FOREACH(const vector<string>& instName, instantiations) {
-    const string expandedName = name + instName.back();
-    Class inst = expandTemplate(templateArg, instName, namespaces,
-        expandedName);
-    inst.name = expandedName;
+  BOOST_FOREACH(const Qualified& instName, instantiations) {
+    Qualified expandedClass = (Qualified)(*this);
+    expandedClass.name += instName.name;
+    Class inst = expandTemplate(templateArg, instName, expandedClass);
+    inst.name = expandedClass.name;
     inst.templateArgs.clear();
-    inst.typedefName = qualifiedName("::") + "<"
-        + wrap::qualifiedName("::", instName) + ">";
+    inst.typedefName = qualifiedName("::") + "<" + instName.qualifiedName("::")
+        + ">";
     result.push_back(inst);
   }
   return result;
@@ -425,8 +403,9 @@ void Class::serialization_fragments(FileWriter& proxyFile,
 //}
 
   int serialize_id = functionNames.size();
-  const string matlabQualName = qualifiedName("."), matlabUniqueName =
-      qualifiedName(), cppClassName = qualifiedName("::");
+  const string matlabQualName = qualifiedName(".");
+  const string matlabUniqueName = qualifiedName();
+  const string cppClassName = qualifiedName("::");
   const string wrapFunctionNameSerialize = matlabUniqueName
       + "_string_serialize_" + boost::lexical_cast<string>(serialize_id);
   functionNames.push_back(wrapFunctionNameSerialize);
@@ -515,8 +494,9 @@ void Class::deserialization_fragments(FileWriter& proxyFile,
   //  out[0] = wrap_shared_ptr(output,"Point3", false);
   //}
   int deserialize_id = functionNames.size();
-  const string matlabQualName = qualifiedName("."), matlabUniqueName =
-      qualifiedName(), cppClassName = qualifiedName("::");
+  const string matlabQualName = qualifiedName(".");
+  const string matlabUniqueName = qualifiedName();
+  const string cppClassName = qualifiedName("::");
   const string wrapFunctionNameDeserialize = matlabUniqueName
       + "_string_deserialize_" + boost::lexical_cast<string>(deserialize_id);
   functionNames.push_back(wrapFunctionNameDeserialize);

@@ -19,20 +19,17 @@
 
 #pragma once
 
+#include "Qualified.h"
 #include "FileWriter.h"
 #include "ReturnValue.h"
-
-#include <string>
-#include <vector>
 
 namespace wrap {
 
 /// Argument class
 struct Argument {
+  Qualified type;
   bool is_const, is_ref, is_ptr;
-  std::string type;
   std::string name;
-  std::vector<std::string> namespaces;
 
   Argument() :
       is_const(false), is_ref(false), is_ptr(false) {
@@ -43,9 +40,6 @@ struct Argument {
 
   /// Check if will be unwrapped using scalar login in wrap/matlab.h
   bool isScalar() const;
-
-  /// adds namespaces to type
-  std::string qualifiedType(const std::string& delim = "") const;
 
   /// MATLAB code generation, MATLAB to C++
   void matlab_unwrap(FileWriter& file, const std::string& matlabName) const;

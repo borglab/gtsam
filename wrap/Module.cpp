@@ -65,8 +65,7 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 // If a number of template arguments were given, generate a number of expanded
 // class names, e.g., PriorFactor -> PriorFactorPose2, and add those classes
 static void handle_possible_template(vector<Class>& classes, const Class& cls,
-    const string& templateArgument,
-    const vector<vector<string> >& instantiations) {
+    const string& templateArgument, const vector<Qualified>& instantiations) {
   if (instantiations.empty()) {
     classes.push_back(cls);
   } else {
@@ -100,8 +99,8 @@ Module::Module(const string& interfacePath,
 void Module::parseMarkup(const std::string& data) {
   // these variables will be imperatively updated to gradually build [cls] 
   // The one with postfix 0 are used to reset the variables after parse. 
-  string methodName, methodName0; 
-  bool isConst, isConst0 = false; 
+  string methodName;
+  bool isConst, isConst0 = false;
   ReturnValue retVal0, retVal;
   Argument arg0, arg; 
   ArgumentList args0, args; 
@@ -144,38 +143,38 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p; 
  
-  Rule namespace_arg_p = namespace_name_p[push_back_a(arg.namespaces)] >> str_p("::"); 
+  Rule namespace_arg_p = namespace_name_p[push_back_a(arg.type.namespaces)] >> str_p("::");
  
   Rule argEigenType_p = 
-    eigenType_p[assign_a(arg.type)];
+    eigenType_p[assign_a(arg.type.name)];
  
   Rule eigenRef_p = 
       !str_p("const") [assign_a(arg.is_const,true)] >> 
-      eigenType_p     [assign_a(arg.type)] >> 
+      eigenType_p     [assign_a(arg.type.name)] >>
       ch_p('&')       [assign_a(arg.is_ref,true)]; 
  
   Rule classArg_p = 
     !str_p("const") [assign_a(arg.is_const,true)] >> 
     *namespace_arg_p >> 
-    className_p[assign_a(arg.type)] >> 
+    className_p[assign_a(arg.type.name)] >>
     !ch_p('&')[assign_a(arg.is_ref,true)];
  
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')]; 
  
   Rule classParent_p = 
-    *(namespace_name_p[push_back_a(cls.qualifiedParent)] >> str_p("::")) >> 
-    className_p[push_back_a(cls.qualifiedParent)]; 
+    *(namespace_name_p[push_back_a(cls.qualifiedParent.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(cls.qualifiedParent.name)];
  
   // TODO: get rid of copy/paste below?
 
   // parse "gtsam::Pose2" and add to templateInstantiations
-  vector<string> templateArgumentValue;
-  vector<vector<string> > templateInstantiations;
+  Qualified argValue;
+  vector<Qualified> templateInstantiations;
   Rule templateInstantiation_p = 
-    (*(namespace_name_p[push_back_a(templateArgumentValue)] >> str_p("::")) >>
-    className_p[push_back_a(templateArgumentValue)])
-    [push_back_a(templateInstantiations, templateArgumentValue)]
-    [clear_a(templateArgumentValue)];
+    (*(namespace_name_p[push_back_a(argValue.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(argValue.name)])
+    [push_back_a(templateInstantiations, argValue)]
+    [clear_a(argValue)];
  
   // template<CALIBRATION = {gtsam::Cal3DS2}>
   string templateArgument;
@@ -187,12 +186,12 @@ void Module::parseMarkup(const std::string& data) {
     [push_back_a(cls.templateArgs, templateArgument)]; 
  
   // parse "gtsam::Pose2" and add to methodInstantiations
-  vector<vector<string> > methodInstantiations;
+  vector<Qualified> methodInstantiations;
   Rule methodInstantiation_p =
-    (*(namespace_name_p[push_back_a(templateArgumentValue)] >> str_p("::")) >>
-    className_p[push_back_a(templateArgumentValue)])
-    [push_back_a(methodInstantiations, templateArgumentValue)]
-    [clear_a(templateArgumentValue)];
+    (*(namespace_name_p[push_back_a(argValue.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(argValue.name)])
+    [push_back_a(methodInstantiations, argValue)]
+    [clear_a(argValue)];
 
   // template<CALIBRATION = {gtsam::Cal3DS2}>
   string methodArgument;
@@ -205,17 +204,17 @@ void Module::parseMarkup(const std::string& data) {
   // parse "gtsam::Pose2" and add to singleInstantiation.typeList
   TemplateInstantiationTypedef singleInstantiation;
   Rule templateSingleInstantiationArg_p = 
-    (*(namespace_name_p[push_back_a(templateArgumentValue)] >> str_p("::")) >>
-    className_p[push_back_a(templateArgumentValue)])
-    [push_back_a(singleInstantiation.typeList, templateArgumentValue)]
-    [clear_a(templateArgumentValue)];
+    (*(namespace_name_p[push_back_a(argValue.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(argValue.name)])
+    [push_back_a(singleInstantiation.typeList, argValue)]
+    [clear_a(argValue)];
  
   // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
   TemplateInstantiationTypedef singleInstantiation0;
   Rule templateSingleInstantiation_p = 
     (str_p("typedef") >> 
-    *(namespace_name_p[push_back_a(singleInstantiation.classNamespaces)] >> str_p("::")) >> 
-    className_p[assign_a(singleInstantiation.className)] >> 
+    *(namespace_name_p[push_back_a(singleInstantiation.class_.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(singleInstantiation.class_.name)] >>
     '<' >> templateSingleInstantiationArg_p >> *(',' >> templateSingleInstantiationArg_p) >> 
     '>' >> 
     className_p[assign_a(singleInstantiation.name)] >> 
@@ -232,7 +231,7 @@ void Module::parseMarkup(const std::string& data) {
 
   // NOTE: allows for pointers to all types
   Rule argument_p =  
-    ((basisType_p[assign_a(arg.type)] | argEigenType_p | eigenRef_p | classArg_p) 
+    ((basisType_p[assign_a(arg.type.name)] | argEigenType_p | eigenRef_p | classArg_p)
         >> !ch_p('*')[assign_a(arg.is_ptr,true)]
         >> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)] 
@@ -258,24 +257,24 @@ void Module::parseMarkup(const std::string& data) {
   static const ReturnValue::return_category RETURN_VOID = ReturnValue::VOID;
 
   Rule returnType1_p =
-    (basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_BASIS)]) |
-    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
-        >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_CLASS)]) >>
+    (basisType_p[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_BASIS)]) |
+    ((*namespace_ret_p)[assign_a(retVal.type1.namespaces, namespaces_return)][clear_a(namespaces_return)]
+        >> (className_p[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_CLASS)]) >>
         !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
-    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_EIGEN)]);
+    (eigenType_p[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_EIGEN)]);
 
   Rule returnType2_p = 
-    (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_BASIS)]) |
-    ((*namespace_ret_p)[assign_a(retVal.namespaces2, namespaces_return)][clear_a(namespaces_return)] 
-        >> (className_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_CLASS)]) >>
+    (basisType_p[assign_a(retVal.type2.name)][assign_a(retVal.category2, RETURN_BASIS)]) |
+    ((*namespace_ret_p)[assign_a(retVal.type2.namespaces, namespaces_return)][clear_a(namespaces_return)]
+        >> (className_p[assign_a(retVal.type2.name)][assign_a(retVal.category2, RETURN_CLASS)]) >>
         !ch_p('*')  [assign_a(retVal.isPtr2,true)]) | 
-    (eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_EIGEN)]);
+    (eigenType_p[assign_a(retVal.type2.name)][assign_a(retVal.category2, RETURN_EIGEN)]);
 
   Rule pair_p =  
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>') 
     [assign_a(retVal.isPair,true)]; 
  
-  Rule void_p = str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_VOID)];
+  Rule void_p = str_p("void")[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_VOID)];
  
   Rule returnType_p = void_p | pair_p | returnType1_p;
  
@@ -295,7 +294,7 @@ void Module::parseMarkup(const std::string& data) {
       bl::var(args), 
       bl::var(retVal))] 
     [assign_a(isConst,isConst0)] 
-    [assign_a(methodName,methodName0)] 
+    [clear_a(methodName)]
     [assign_a(args,args0)] 
     [assign_a(retVal,retVal0)]; 
  
@@ -310,7 +309,7 @@ void Module::parseMarkup(const std::string& data) {
       bl::var(methodName), 
       bl::var(args), 
       bl::var(retVal))] 
-    [assign_a(methodName,methodName0)] 
+    [clear_a(methodName)]
     [assign_a(args,args0)] 
     [assign_a(retVal,retVal0)]; 
  
@@ -337,17 +336,18 @@ void Module::parseMarkup(const std::string& data) {
       [clear_a(templateArgument)] 
       [clear_a(templateInstantiations)]; 
  
+  Qualified globalFunction;
   Rule global_function_p = 
-      (returnType_p >> staticMethodName_p[assign_a(methodName)] >> 
+      (returnType_p >> staticMethodName_p[assign_a(globalFunction.name)] >>
        '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
+      [assign_a(globalFunction.namespaces,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
-        bl::var(global_functions)[bl::var(methodName)], 
+        bl::var(global_functions)[bl::var(globalFunction.name)],
         verbose, 
-        bl::var(methodName), 
+        bl::var(globalFunction),
         bl::var(args), 
-        bl::var(retVal), 
-        bl::var(namespaces))] 
-      [assign_a(methodName,methodName0)] 
+        bl::var(retVal))]
+      [clear_a(globalFunction)]
       [assign_a(args,args0)] 
       [assign_a(retVal,retVal0)]; 
  
@@ -457,7 +457,7 @@ void verifyArguments(const vector<string>& validArgs, const map<string,T>& vt) {
     const T& t = name_method.second; 
     BOOST_FOREACH(const ArgumentList& argList, t.argLists) { 
       BOOST_FOREACH(Argument arg, argList) { 
-        string fullType = arg.qualifiedType("::"); 
+        string fullType = arg.type.qualifiedName("::");
         if(find(validArgs.begin(), validArgs.end(), fullType) 
           == validArgs.end()) 
           throw DependencyMissing(fullType, t.name); 
@@ -528,8 +528,9 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
     verifyReturnTypes<Method>(validTypes, cls.methods);
 
     // verify parents
-    if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end())
-      throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::"));
+    Qualified parent = cls.qualifiedParent;
+    if(!parent.empty() && std::find(validTypes.begin(), validTypes.end(), parent.qualifiedName("::")) == validTypes.end())
+      throw DependencyMissing(parent.qualifiedName("::"), cls.qualifiedName("::"));
   }
 
   // Create type attributes table and check validity
@@ -606,7 +607,7 @@ map<string, Method> Module::appendInheretedMethods(const Class& cls, const vecto
     //Find Class
     BOOST_FOREACH(const Class& parent, classes) {
       //We found the class for our parent
-      if(parent.name == cls.qualifiedParent.back())
+      if(parent.name == cls.qualifiedParent.name)
       {
         Methods inhereted = appendInheretedMethods(parent, classes);
         methods.insert(inhereted.begin(), inhereted.end());

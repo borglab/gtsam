@@ -10,8 +10,7 @@
 
 #include "FileWriter.h"
 #include "TypeAttributesTable.h"
-
-#include <vector>
+#include "Qualified.h"
 
 #pragma once
 
@@ -29,8 +28,7 @@ struct ReturnValue {
 
   bool isPtr1, isPtr2, isPair;
   return_category category1, category2;
-  std::string type1, type2;
-  std::vector<std::string> namespaces1, namespaces2;
+  Qualified type1, type2;
 
   /// Constructor
   ReturnValue() :

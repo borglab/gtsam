@@ -131,7 +131,7 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
   args.matlab_unwrap(file, 0); // We start at 0 because there is no self object
 
   // call method with default type and wrap result
-  if (returnVal.type1 != "void")
+  if (returnVal.type1.name != "void")
     returnVal.wrap_result(cppClassName + "::" + name + "(" + args.names() + ")",
         file, typeAttributes);
   else

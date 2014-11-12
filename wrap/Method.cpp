@@ -140,15 +140,15 @@ string Method::wrapper_fragment(FileWriter& file, const string& cppClassName,
   if (returnVal.isPair) {
     if (returnVal.category1 == ReturnValue::CLASS)
       file.oss << "  typedef boost::shared_ptr<"
-          << returnVal.qualifiedType1("::") << "> Shared" << returnVal.type1
+          << returnVal.qualifiedType1("::") << "> Shared" << returnVal.type1.name
           << ";" << endl;
     if (returnVal.category2 == ReturnValue::CLASS)
       file.oss << "  typedef boost::shared_ptr<"
-          << returnVal.qualifiedType2("::") << "> Shared" << returnVal.type2
+          << returnVal.qualifiedType2("::") << "> Shared" << returnVal.type2.name
           << ";" << endl;
   } else if (returnVal.category1 == ReturnValue::CLASS)
     file.oss << "  typedef boost::shared_ptr<" << returnVal.qualifiedType1("::")
-        << "> Shared" << returnVal.type1 << ";" << endl;
+        << "> Shared" << returnVal.type1.name << ";" << endl;
 
   file.oss << "  typedef boost::shared_ptr<" << cppClassName << "> Shared;"
       << endl;
@@ -168,7 +168,7 @@ string Method::wrapper_fragment(FileWriter& file, const string& cppClassName,
 
   // call method and wrap result
   // example: out[0]=wrap<bool>(self->return_field(t));
-  if (returnVal.type1 != "void")
+  if (returnVal.type1.name != "void")
     returnVal.wrap_result("obj->" + name + "(" + args.names() + ")", file,
         typeAttributes);
   else
