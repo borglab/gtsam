@@ -156,36 +156,37 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   file.oss << ")";
 }
 /* ************************************************************************* */
-void ArgumentList::emit_call(FileWriter& file, const ReturnValue& returnVal,
-    const string& wrapperName, int id, bool staticMethod) const {
-  returnVal.emit_matlab(file);
-  file.oss << wrapperName << "(" << id;
+void ArgumentList::emit_call(FileWriter& proxyFile,
+    const ReturnValue& returnVal, const string& wrapperName, int id,
+    bool staticMethod) const {
+  returnVal.emit_matlab(proxyFile);
+  proxyFile.oss << wrapperName << "(" << id;
   if (!staticMethod)
-    file.oss << ", this";
-  file.oss << ", varargin{:});\n";
+    proxyFile.oss << ", this";
+  proxyFile.oss << ", varargin{:});\n";
 }
 /* ************************************************************************* */
-void ArgumentList::emit_conditional_call(FileWriter& file,
+void ArgumentList::emit_conditional_call(FileWriter& proxyFile,
     const ReturnValue& returnVal, const string& wrapperName, int id,
     bool staticMethod) const {
   // Check nr of arguments
-  file.oss << "if length(varargin) == " << size();
+  proxyFile.oss << "if length(varargin) == " << size();
   if (size() > 0)
-    file.oss << " && ";
+    proxyFile.oss << " && ";
   // ...and their type.names
   bool first = true;
   for (size_t i = 0; i < size(); i++) {
     if (!first)
-      file.oss << " && ";
-    file.oss << "isa(varargin{" << i + 1 << "},'" << (*this)[i].matlabClass(".")
-        << "')";
+      proxyFile.oss << " && ";
+    proxyFile.oss << "isa(varargin{" << i + 1 << "},'"
+        << (*this)[i].matlabClass(".") << "')";
     first = false;
   }
-  file.oss << "\n";
+  proxyFile.oss << "\n";
 
   // output call to C++ wrapper
-  file.oss << "        ";
-  emit_call(file, returnVal, wrapperName, id, staticMethod);
+  proxyFile.oss << "        ";
+  emit_call(proxyFile, returnVal, wrapperName, id, staticMethod);
 }
 /* ************************************************************************* */
 
