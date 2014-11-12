@@ -65,12 +65,12 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 // If a number of template arguments were given, generate a number of expanded
 // class names, e.g., PriorFactor -> PriorFactorPose2, and add those classes
 static void handle_possible_template(vector<Class>& classes, const Class& cls,
-    const string& templateArgument, const vector<Qualified>& instantiations) {
+    const string& templateArgName, const vector<Qualified>& instantiations) {
   if (instantiations.empty()) {
     classes.push_back(cls);
   } else {
     vector<Class> classInstantiations = //
-        cls.expandTemplate(templateArgument, instantiations);
+        cls.expandTemplate(templateArgName, instantiations);
     BOOST_FOREACH(const Class& c, classInstantiations)
       classes.push_back(c);
   }
@@ -99,11 +99,10 @@ Module::Module(const string& interfacePath,
 void Module::parseMarkup(const std::string& data) {
   // these variables will be imperatively updated to gradually build [cls] 
   // The one with postfix 0 are used to reset the variables after parse. 
-  string methodName;
   bool isConst, isConst0 = false;
   ReturnValue retVal0, retVal;
   Argument arg0, arg; 
-  ArgumentList args0, args; 
+  ArgumentList args;
   vector<string> arg_dup; ///keep track of duplicates 
   Constructor constructor0(verbose), constructor(verbose);
   Deconstructor deconstructor0(verbose), deconstructor(verbose);
@@ -165,49 +164,30 @@ void Module::parseMarkup(const std::string& data) {
     *(namespace_name_p[push_back_a(cls.qualifiedParent.namespaces)] >> str_p("::")) >>
     className_p[assign_a(cls.qualifiedParent.name)];
  
-  // TODO: get rid of copy/paste below?
-
-  // parse "gtsam::Pose2" and add to templateInstantiations
-  Qualified argValue;
-  vector<Qualified> templateInstantiations;
-  Rule templateInstantiation_p = 
-    (*(namespace_name_p[push_back_a(argValue.namespaces)] >> str_p("::")) >>
-    className_p[assign_a(argValue.name)])
-    [push_back_a(templateInstantiations, argValue)]
-    [clear_a(argValue)];
+  // parse "gtsam::Pose2" and add to templateArgValues
+  Qualified templateArgValue;
+  vector<Qualified> templateArgValues;
+  Rule templateArgValue_p =
+    (*(namespace_name_p[push_back_a(templateArgValue.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(templateArgValue.name)])
+    [push_back_a(templateArgValues, templateArgValue)]
+    [clear_a(templateArgValue)];
  
   // template<CALIBRATION = {gtsam::Cal3DS2}>
-  string templateArgument;
-  Rule templateInstantiations_p = 
+  string templateArgName;
+  Rule templateArgValues_p =
     (str_p("template") >> 
-    '<' >> name_p[assign_a(templateArgument)] >> '=' >> '{' >> 
-    !(templateInstantiation_p >> *(',' >> templateInstantiation_p)) >> 
-    '}' >> '>') 
-    [push_back_a(cls.templateArgs, templateArgument)]; 
+    '<' >> name_p[assign_a(templateArgName)] >> '=' >>
+    '{' >> !(templateArgValue_p >> *(',' >> templateArgValue_p)) >> '}' >>
+    '>');
  
-  // parse "gtsam::Pose2" and add to methodInstantiations
-  vector<Qualified> methodInstantiations;
-  Rule methodInstantiation_p =
-    (*(namespace_name_p[push_back_a(argValue.namespaces)] >> str_p("::")) >>
-    className_p[assign_a(argValue.name)])
-    [push_back_a(methodInstantiations, argValue)]
-    [clear_a(argValue)];
-
-  // template<CALIBRATION = {gtsam::Cal3DS2}>
-  string methodArgument;
-  Rule methodInstantiations_p =
-    (str_p("template") >>
-    '<' >> name_p[assign_a(methodArgument)] >> '=' >> '{' >>
-    !(methodInstantiation_p >> *(',' >> methodInstantiation_p)) >>
-    '}' >> '>');
-
   // parse "gtsam::Pose2" and add to singleInstantiation.typeList
   TemplateInstantiationTypedef singleInstantiation;
   Rule templateSingleInstantiationArg_p = 
-    (*(namespace_name_p[push_back_a(argValue.namespaces)] >> str_p("::")) >>
-    className_p[assign_a(argValue.name)])
-    [push_back_a(singleInstantiation.typeList, argValue)]
-    [clear_a(argValue)];
+    (*(namespace_name_p[push_back_a(templateArgValue.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(templateArgValue.name)])
+    [push_back_a(singleInstantiation.typeList, templateArgValue)]
+    [clear_a(templateArgValue)];
  
   // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
   TemplateInstantiationTypedef singleInstantiation0;
@@ -242,7 +222,7 @@ void Module::parseMarkup(const std::string& data) {
   Rule constructor_p =  
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p) 
     [push_back_a(constructor.args_list, args)] 
-    [assign_a(args,args0)]; 
+    [clear_a(args)];
     //[assign_a(constructor.args,args)] 
     //[assign_a(constructor.name,cls.name)] 
     //[push_back_a(cls.constructors, constructor)] 
@@ -281,21 +261,19 @@ void Module::parseMarkup(const std::string& data) {
   Rule methodName_p = lexeme_d[(upper_p | lower_p)  >> *(alnum_p | '_')];
  
   // gtsam::Values retract(const gtsam::VectorValues& delta) const;
+  string methodName;
+  vector<Qualified> methodInstantiations;
   Rule method_p =  
-    !methodInstantiations_p >>
+    !templateArgValues_p
+    [assign_a(methodInstantiations,templateArgValues)][clear_a(templateArgValues)] >>
     (returnType_p >> methodName_p[assign_a(methodName)] >> 
      '(' >> argumentList_p >> ')' >>  
      !str_p("const")[assign_a(isConst,true)] >> ';' >> *comments_p) 
     [bl::bind(&Method::addOverload, 
-      bl::var(cls.methods)[bl::var(methodName)], 
-      verbose, 
-      bl::var(isConst), 
-      bl::var(methodName), 
-      bl::var(args), 
-      bl::var(retVal))] 
+      bl::var(cls.methods)[bl::var(methodName)], verbose,
+      bl::var(isConst), bl::var(methodName), bl::var(args), bl::var(retVal))]
     [assign_a(isConst,isConst0)] 
-    [clear_a(methodName)]
-    [assign_a(args,args0)] 
+    [clear_a(args)]
     [assign_a(retVal,retVal0)]; 
  
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')]; 
@@ -309,15 +287,19 @@ void Module::parseMarkup(const std::string& data) {
       bl::var(methodName), 
       bl::var(args), 
       bl::var(retVal))] 
-    [clear_a(methodName)]
-    [assign_a(args,args0)] 
+    [clear_a(args)]
     [assign_a(retVal,retVal0)]; 
  
   Rule functions_p = constructor_p | method_p | static_method_p; 
  
+  vector<Qualified> templateInstantiations;
   Rule class_p = 
       (str_p("")[assign_a(cls,cls0)]) 
-      >> (!(templateInstantiations_p | templateList_p) 
+      >> (!(templateArgValues_p
+          [push_back_a(cls.templateArgs, templateArgName)]
+          [assign_a(templateInstantiations,templateArgValues)]
+          [clear_a(templateArgValues)]
+          | templateList_p)
       >> !(str_p("virtual")[assign_a(cls.isVirtual, true)]) 
       >> str_p("class") 
       >> className_p[assign_a(cls.name)] 
@@ -329,11 +311,11 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(cls.namespaces, namespaces)] 
       [assign_a(deconstructor.name,cls.name)] 
       [assign_a(cls.deconstructor, deconstructor)] 
-      [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls), bl::var(templateArgument), bl::var(templateInstantiations))] 
+      [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
+          bl::var(templateArgName), bl::var(templateInstantiations))]
       [assign_a(deconstructor,deconstructor0)] 
       [assign_a(constructor, constructor0)] 
       [assign_a(cls,cls0)] 
-      [clear_a(templateArgument)] 
       [clear_a(templateInstantiations)]; 
  
   Qualified globalFunction;
@@ -348,7 +330,7 @@ void Module::parseMarkup(const std::string& data) {
         bl::var(args), 
         bl::var(retVal))]
       [clear_a(globalFunction)]
-      [assign_a(args,args0)] 
+      [clear_a(args)]
       [assign_a(retVal,retVal0)]; 
  
   Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
