@@ -34,6 +34,11 @@ struct ReturnType: Qualified {
       isPtr(false), category(CLASS) {
   }
 
+  ReturnType(const std::string& name) :
+      isPtr(false), category(CLASS) {
+    Qualified::name = name;
+  }
+
   void rename(const Qualified& q) {
     name = q.name;
     namespaces = q.namespaces;
@@ -73,6 +78,11 @@ struct ReturnValue {
   /// Constructor
   ReturnValue() :
       isPair(false) {
+  }
+
+  /// Constructor
+  ReturnValue(const ReturnType& type) :
+      isPair(false), type1(type) {
   }
 
   std::string return_type(bool add_ptr) const;

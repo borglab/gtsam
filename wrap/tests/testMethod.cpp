@@ -17,19 +17,34 @@
  **/
 
 #include <wrap/Method.h>
-
 #include <CppUnitLite/TestHarness.h>
-
 #include <iostream>
 
 using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
+// Constructor
 TEST( Method, Constructor ) {
   Method method;
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+// addOverload
+TEST( Method, addOverload ) {
+  Method method;
+  method.name = "myName";
+  bool verbose = true, is_const = true;
+  ArgumentList args;
+  const ReturnValue retVal(ReturnType("return_type"));
+  method.addOverload(verbose, is_const, "myName", args, retVal);
+  EXPECT_LONGS_EQUAL(1,method.argLists.size());
+  EXPECT_LONGS_EQUAL(1,method.returnVals.size());
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

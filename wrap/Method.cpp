@@ -31,6 +31,12 @@ using namespace wrap;
 /* ************************************************************************* */
 void Method::addOverload(bool verbose, bool is_const, const std::string& name,
     const ArgumentList& args, const ReturnValue& retVal) {
+  if (name.empty())
+    this->name = name;
+  else if (this->name != name)
+    throw std::runtime_error(
+        "Method::addOverload: tried to add overload with name " + name
+            + " instead of expected " + this->name);
   this->verbose_ = verbose;
   this->is_const_ = is_const;
   this->name = name;
