@@ -7,11 +7,11 @@
 %-------Methods-------
 %accept_T(Point2 value) : returns void
 %accept_Tptr(Point2 value) : returns void
-%create_MixedPtrs() : returns pair< Point2, SharedPoint2 >
-%create_ptrs() : returns pair< SharedPoint2, SharedPoint2 >
+%create_MixedPtrs() : returns pair< Point2, Point2 >
+%create_ptrs() : returns pair< Point2, Point2 >
 %return_T(Point2 value) : returns Point2
 %return_Tptr(Point2 value) : returns Point2
-%return_ptrs(Point2 p1, Point2 p2) : returns pair< SharedPoint2, SharedPoint2 >
+%return_ptrs(Point2 p1, Point2 p2) : returns pair< Point2, Point2 >
 %templatedMethod(Test t) : returns void
 %
 classdef MyTemplatePoint2 < MyBase
@@ -65,13 +65,13 @@ classdef MyTemplatePoint2 < MyBase
     end
 
     function varargout = create_MixedPtrs(this, varargin)
-      % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< Point2, SharedPoint2 >
+      % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< Point2, Point2 >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       [ varargout{1} varargout{2} ] = geometry_wrapper(49, this, varargin{:});
     end
 
     function varargout = create_ptrs(this, varargin)
-      % CREATE_PTRS usage: create_ptrs() : returns pair< SharedPoint2, SharedPoint2 >
+      % CREATE_PTRS usage: create_ptrs() : returns pair< Point2, Point2 >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       [ varargout{1} varargout{2} ] = geometry_wrapper(50, this, varargin{:});
     end
@@ -97,7 +97,7 @@ classdef MyTemplatePoint2 < MyBase
     end
 
     function varargout = return_ptrs(this, varargin)
-      % RETURN_PTRS usage: return_ptrs(Point2 p1, Point2 p2) : returns pair< SharedPoint2, SharedPoint2 >
+      % RETURN_PTRS usage: return_ptrs(Point2 p1, Point2 p2) : returns pair< Point2, Point2 >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 2 && isa(varargin{1},'Point2') && isa(varargin{2},'Point2')
         [ varargout{1} varargout{2} ] = geometry_wrapper(53, this, varargin{:});
