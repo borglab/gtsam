@@ -276,14 +276,14 @@ map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods,
     BOOST_FOREACH(const ReturnValue& retVal, method.returnVals) {
       ReturnValue instRetVal = retVal;
       if (retVal.type1.name == templateArg) {
-        instRetVal.type1 = qualifiedType;
+        instRetVal.type1.rename(qualifiedType);
       } else if (retVal.type1.name == "This") {
-        instRetVal.type1 = expandedClass;
+        instRetVal.type1.rename(expandedClass);
       }
       if (retVal.type2.name == templateArg) {
-        instRetVal.type2 = qualifiedType;
+        instRetVal.type2.rename(qualifiedType);
       } else if (retVal.type2.name == "This") {
-        instRetVal.type2 = expandedClass;
+        instRetVal.type2.rename(expandedClass);
       }
       instMethod.returnVals.push_back(instRetVal);
     }
@@ -309,10 +309,10 @@ Class Class::expandTemplate(const string& templateArg,
 
 /* ************************************************************************* */
 vector<Class> Class::expandTemplate(const string& templateArg,
-    const vector<Qualified >& instantiations) const {
+    const vector<Qualified>& instantiations) const {
   vector<Class> result;
   BOOST_FOREACH(const Qualified& instName, instantiations) {
-    Qualified expandedClass = (Qualified)(*this);
+    Qualified expandedClass = (Qualified) (*this);
     expandedClass.name += instName.name;
     Class inst = expandTemplate(templateArg, instName, expandedClass);
     inst.name = expandedClass.name;
@@ -359,8 +359,8 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
     BOOST_FOREACH(ArgumentList argList, m.argLists) {
       proxyFile.oss << "%";
       argList.emit_prototype(proxyFile, m.name);
-      proxyFile.oss << " : returns "
-          << m.returnVals[0].return_type(false) << endl;
+      proxyFile.oss << " : returns " << m.returnVals[0].return_type(false)
+          << endl;
     }
   }
 
@@ -371,8 +371,8 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
     BOOST_FOREACH(ArgumentList argList, m.argLists) {
       proxyFile.oss << "%";
       argList.emit_prototype(proxyFile, m.name);
-      proxyFile.oss << " : returns "
-          << m.returnVals[0].return_type(false) << endl;
+      proxyFile.oss << " : returns " << m.returnVals[0].return_type(false)
+          << endl;
     }
   }
 

@@ -34,8 +34,9 @@ struct ReturnType: Qualified {
       isPtr(false), category(CLASS) {
   }
 
-  ReturnType(const Qualified& q) :
-      Qualified(q), isPtr(false), category(CLASS) {
+  void rename(const Qualified& q) {
+    name = q.name;
+    namespaces = q.namespaces;
   }
 
   /// Check if this type is in a set of valid types
@@ -78,12 +79,12 @@ struct ReturnValue {
 
   std::string matlab_returnType() const;
 
-  void wrap_result(const std::string& result, FileWriter& file,
+  void wrap_result(const std::string& result, FileWriter& wrapperFile,
       const TypeAttributesTable& typeAttributes) const;
 
   void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 
-  void emit_matlab(FileWriter& file) const;
+  void emit_matlab(FileWriter& proxyFile) const;
 };
 
 } // \namespace wrap
