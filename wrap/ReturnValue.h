@@ -97,4 +97,18 @@ struct ReturnValue {
   void emit_matlab(FileWriter& proxyFile) const;
 };
 
+template<class T>
+inline void verifyReturnTypes(const std::vector<std::string>& validtypes,
+    const std::map<std::string, T>& vt) {
+  typedef typename std::map<std::string, T>::value_type NamedMethod;
+  BOOST_FOREACH(const NamedMethod& namedMethod, vt) {
+    const T& t = namedMethod.second;
+    BOOST_FOREACH(const ReturnValue& retval, t.returnVals) {
+      retval.type1.verify(validtypes, t.name);
+      if (retval.isPair)
+        retval.type2.verify(validtypes, t.name);
+    }
+  }
+}
+
 } // \namespace wrap

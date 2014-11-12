@@ -97,5 +97,22 @@ struct ArgumentList: public std::vector<Argument> {
       const std::string& wrapperName, int id, bool staticMethod = false) const;
 };
 
+template<class T>
+inline void verifyArguments(const std::vector<std::string>& validArgs,
+    const std::map<std::string, T>& vt) {
+  typedef typename std::map<std::string, T>::value_type NamedMethod;
+  BOOST_FOREACH(const NamedMethod& namedMethod, vt) {
+    const T& t = namedMethod.second;
+    BOOST_FOREACH(const ArgumentList& argList, t.argLists) {
+      BOOST_FOREACH(Argument arg, argList) {
+        std::string fullType = arg.type.qualifiedName("::");
+        if (find(validArgs.begin(), validArgs.end(), fullType)
+            == validArgs.end())
+          throw DependencyMissing(fullType, t.name);
+      }
+    }
+  }
+}
+
 } // \namespace wrap
 

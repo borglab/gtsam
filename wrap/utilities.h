@@ -18,17 +18,20 @@
 
 #pragma once
 
+#include "FileWriter.h"
+
+#include <boost/format.hpp>
+#include <boost/foreach.hpp>
+
+#include <string>
 #include <vector>
 #include <exception>
 #include <fstream>
 #include <sstream>
+
 //#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags
 //#include <cinttypes>  // same failure as above
 #include <stdint.h> // works on Linux GCC
-#include <string>
-#include <boost/format.hpp>
-
-#include "FileWriter.h"
 
 namespace wrap {
 

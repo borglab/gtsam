@@ -254,18 +254,17 @@ void Module::parseMarkup(const std::string& data) {
   // gtsam::Values retract(const gtsam::VectorValues& delta) const;
   string methodName;
   bool isConst, isConst0 = false;
-  vector<Qualified> methodInstantiations;
   Rule method_p =  
-    !templateArgValues_p
-    [assign_a(methodInstantiations,templateArgValues)][clear_a(templateArgValues)] >>
+    !templateArgValues_p >>
     (returnValue_p >> methodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >>  
      !str_p("const")[assign_a(isConst,true)] >> ';' >> *comments_p) 
-    [bl::bind(&Method::addOverload, 
-      bl::var(cls.methods)[bl::var(methodName)], verbose,
-      bl::var(isConst), bl::var(methodName), bl::var(args), bl::var(retVal))]
+    [bl::bind(&Class::addMethod, bl::var(cls), verbose, bl::var(isConst),
+        bl::var(methodName), bl::var(args), bl::var(retVal),
+        bl::var(templateArgName), bl::var(templateArgValues))]
     [assign_a(retVal,retVal0)]
     [clear_a(args)]
+    [clear_a(templateArgValues)]
     [assign_a(isConst,isConst0)];
  
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')]; 
@@ -388,69 +387,14 @@ void Module::parseMarkup(const std::string& data) {
   }
 
   // Post-process classes for serialization markers
-  BOOST_FOREACH(Class& cls, classes) {
-    Class::Methods::iterator serializable_it = cls.methods.find("serializable");
-    if (serializable_it != cls.methods.end()) {
-#ifndef WRAP_DISABLE_SERIALIZE
-      cls.isSerializable = true;
-#else
-     // cout << "Ignoring serializable() flag in class " << cls.name << endl;
-#endif
-      cls.methods.erase(serializable_it);
-    }
-
-    Class::Methods::iterator serialize_it = cls.methods.find("serialize");
-    if (serialize_it != cls.methods.end()) {
-#ifndef WRAP_DISABLE_SERIALIZE
-      cls.isSerializable = true;
-      cls.hasSerialization= true;
-#else
-      // cout << "Ignoring serialize() flag in class " << cls.name << endl;
-#endif
-      cls.methods.erase(serialize_it);
-    }
-  }
+  BOOST_FOREACH(Class& cls, classes)
+    cls.erase_serialization();
 
   // Explicitly add methods to the classes from parents so it shows in documentation
   BOOST_FOREACH(Class& cls, classes)
-  {
-    map<string, Method> inhereted = appendInheretedMethods(cls, classes);
-    cls.methods.insert(inhereted.begin(), inhereted.end());
-  }
+    cls.appendInheritedMethods(cls, classes);
 } 
  
-/* ************************************************************************* */ 
-template<class T> 
-void verifyArguments(const vector<string>& validArgs, const map<string,T>& vt) { 
-  typedef typename map<string,T>::value_type Name_Method; 
-  BOOST_FOREACH(const Name_Method& name_method, vt) { 
-    const T& t = name_method.second; 
-    BOOST_FOREACH(const ArgumentList& argList, t.argLists) { 
-      BOOST_FOREACH(Argument arg, argList) { 
-        string fullType = arg.type.qualifiedName("::");
-        if(find(validArgs.begin(), validArgs.end(), fullType) 
-          == validArgs.end()) 
-          throw DependencyMissing(fullType, t.name); 
-      } 
-    } 
-  } 
-} 
- 
-/* ************************************************************************* */ 
-template<class T>
-void verifyReturnTypes(const vector<string>& validtypes,
-    const map<string, T>& vt) {
-  typedef typename map<string, T>::value_type Name_Method;
-  BOOST_FOREACH(const Name_Method& name_method, vt) {
-    const T& t = name_method.second;
-    BOOST_FOREACH(const ReturnValue& retval, t.returnVals) {
-      retval.type1.verify(validtypes, t.name);
-      if (retval.isPair)
-        retval.type2.verify(validtypes, t.name);
-    }
-  }
-}
-
 /* ************************************************************************* */ 
 void Module::generateIncludes(FileWriter& file) const { 
  
@@ -486,22 +430,8 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   verifyReturnTypes<GlobalFunction>(validTypes, global_functions);
 
   bool hasSerialiable = false;
-  BOOST_FOREACH(const Class& cls, expandedClasses) {
-    hasSerialiable |= cls.isSerializable;
-    // verify all of the function arguments
-    //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
-    verifyArguments<StaticMethod>(validTypes, cls.static_methods);
-    verifyArguments<Method>(validTypes, cls.methods);
-
-    // verify function return types
-    verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
-    verifyReturnTypes<Method>(validTypes, cls.methods);
-
-    // verify parents
-    Qualified parent = cls.qualifiedParent;
-    if(!parent.empty() && std::find(validTypes.begin(), validTypes.end(), parent.qualifiedName("::")) == validTypes.end())
-      throw DependencyMissing(parent.qualifiedName("::"), cls.qualifiedName("::"));
-  }
+  BOOST_FOREACH(const Class& cls, expandedClasses)
+    cls.verifyAll(validTypes,hasSerialiable);
 
   // Create type attributes table and check validity
   TypeAttributesTable typeAttributes;
@@ -568,28 +498,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 
   wrapperFile.emit(true);
 }
-/* ************************************************************************* */ 
-map<string, Method> Module::appendInheretedMethods(const Class& cls, const vector<Class>& classes)
-{
-  map<string, Method> methods;
-  if(!cls.qualifiedParent.empty())
-  {
-    //Find Class
-    BOOST_FOREACH(const Class& parent, classes) {
-      //We found the class for our parent
-      if(parent.name == cls.qualifiedParent.name)
-      {
-        Methods inhereted = appendInheretedMethods(parent, classes);
-        methods.insert(inhereted.begin(), inhereted.end());
-      }
-    }
-  } else {
-    methods.insert(cls.methods.begin(), cls.methods.end());
-  }
 
-  return methods;
-}
- 
 /* ************************************************************************* */ 
   void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const { 
     file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n"; 

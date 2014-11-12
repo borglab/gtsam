@@ -325,6 +325,76 @@ vector<Class> Class::expandTemplate(const string& templateArg,
 }
 
 /* ************************************************************************* */
+void Class::addMethod(bool verbose, bool is_const, const string& name,
+    const ArgumentList& args, const ReturnValue& retVal,
+    const string& templateArgName, const vector<Qualified>& templateArgValues) {
+  methods[name].addOverload(verbose, is_const, name, args, retVal);
+}
+
+/* ************************************************************************* */
+void Class::erase_serialization() {
+  Methods::iterator it = methods.find("serializable");
+  if (it != methods.end()) {
+#ifndef WRAP_DISABLE_SERIALIZE
+    isSerializable = true;
+#else
+    // cout << "Ignoring serializable() flag in class " << name << endl;
+#endif
+    methods.erase(it);
+  }
+
+  it = methods.find("serialize");
+  if (it != methods.end()) {
+#ifndef WRAP_DISABLE_SERIALIZE
+    isSerializable = true;
+    hasSerialization = true;
+#else
+    // cout << "Ignoring serialize() flag in class " << name << endl;
+#endif
+    methods.erase(it);
+  }
+}
+
+/* ************************************************************************* */
+void Class::verifyAll(vector<string>& validTypes, bool& hasSerialiable) const {
+
+  hasSerialiable |= isSerializable;
+
+  // verify all of the function arguments
+  //TODO:verifyArguments<ArgumentList>(validTypes, constructor.args_list);
+  verifyArguments<StaticMethod>(validTypes, static_methods);
+  verifyArguments<Method>(validTypes, methods);
+
+  // verify function return types
+  verifyReturnTypes<StaticMethod>(validTypes, static_methods);
+  verifyReturnTypes<Method>(validTypes, methods);
+
+  // verify parents
+  if (!qualifiedParent.empty()
+      && find(validTypes.begin(), validTypes.end(),
+          qualifiedParent.qualifiedName("::")) == validTypes.end())
+    throw DependencyMissing(qualifiedParent.qualifiedName("::"),
+        qualifiedName("::"));
+}
+
+/* ************************************************************************* */
+void Class::appendInheritedMethods(const Class& cls,
+    const vector<Class>& classes) {
+
+  if (!cls.qualifiedParent.empty()) {
+
+    // Find parent
+    BOOST_FOREACH(const Class& parent, classes) {
+      // We found a parent class for our parent, TODO improve !
+      if (parent.name == cls.qualifiedParent.name) {
+        methods.insert(parent.methods.begin(), parent.methods.end());
+        appendInheritedMethods(parent, classes);
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
 string Class::getTypedef() const {
   string result;
   BOOST_FOREACH(const string& namesp, namespaces) {

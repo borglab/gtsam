@@ -73,7 +73,7 @@ TEST( wrap, check_exception ) {
 }
 
 /* ************************************************************************* */
-TEST( wrap, small_parse ) {
+TEST( wrap, Small ) {
   string moduleName("gtsam");
   Module module(moduleName, true);
 
@@ -92,11 +92,11 @@ TEST( wrap, small_parse ) {
   EXPECT(assert_equal("Point2", cls.name));
   EXPECT(!cls.isVirtual);
   EXPECT(cls.namespaces.empty());
-  LONGS_EQUAL(3, cls.methods.size());
+  LONGS_EQUAL(3, cls.nrMethods());
   LONGS_EQUAL(1, cls.static_methods.size());
 
   // Method 1
-  Method m1 = cls.methods.at("x");
+  Method m1 = cls.method("x");
   EXPECT(assert_equal("x", m1.name));
   EXPECT(m1.is_const_);
   LONGS_EQUAL(1, m1.argLists.size());
@@ -109,7 +109,7 @@ TEST( wrap, small_parse ) {
   EXPECT_LONGS_EQUAL(ReturnType::BASIS, rv1.type1.category);
 
   // Method 2
-  Method m2 = cls.methods.at("returnMatrix");
+  Method m2 = cls.method("returnMatrix");
   EXPECT(assert_equal("returnMatrix", m2.name));
   EXPECT(m2.is_const_);
   LONGS_EQUAL(1, m2.argLists.size());
@@ -122,7 +122,7 @@ TEST( wrap, small_parse ) {
   EXPECT_LONGS_EQUAL(ReturnType::EIGEN, rv2.type1.category);
 
   // Method 3
-  Method m3 = cls.methods.at("returnPoint2");
+  Method m3 = cls.method("returnPoint2");
   EXPECT(assert_equal("returnPoint2", m3.name));
   EXPECT(m3.is_const_);
   LONGS_EQUAL(1, m3.argLists.size());
@@ -150,7 +150,7 @@ TEST( wrap, small_parse ) {
 }
 
 /* ************************************************************************* */
-TEST( wrap, parse_geometry ) {
+TEST( wrap, Geometry ) {
   string markup_header_path = topdir + "/wrap/tests";
   Module module(markup_header_path.c_str(), "geometry",enable_verbose);
   EXPECT_LONGS_EQUAL(7, module.classes.size());
@@ -189,12 +189,12 @@ TEST( wrap, parse_geometry ) {
     Class cls = module.classes.at(0);
     EXPECT(assert_equal("Point2", cls.name));
     EXPECT_LONGS_EQUAL(2, cls.constructor.args_list.size());
-    EXPECT_LONGS_EQUAL(7, cls.methods.size());
+    EXPECT_LONGS_EQUAL(7, cls.nrMethods());
 
     {
       //   char returnChar() const;
-      CHECK(cls.methods.find("returnChar") != cls.methods.end());
-      Method m1 = cls.methods.find("returnChar")->second;
+      CHECK(cls.exists("returnChar"));
+      Method m1 = cls.method("returnChar");
       LONGS_EQUAL(1, m1.returnVals.size());
       EXPECT(assert_equal("char", m1.returnVals.front().type1.name));
       EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnVals.front().type1.category);
@@ -207,8 +207,8 @@ TEST( wrap, parse_geometry ) {
 
     {
       //   VectorNotEigen vectorConfusion();
-      CHECK(cls.methods.find("vectorConfusion") != cls.methods.end());
-      Method m1 = cls.methods.find("vectorConfusion")->second;
+      CHECK(cls.exists("vectorConfusion"));
+      Method m1 = cls.method("vectorConfusion");
       LONGS_EQUAL(1, m1.returnVals.size());
       EXPECT(assert_equal("VectorNotEigen", m1.returnVals.front().type1.name));
       EXPECT_LONGS_EQUAL(ReturnType::CLASS, m1.returnVals.front().type1.category);
@@ -234,7 +234,7 @@ TEST( wrap, parse_geometry ) {
     Class cls = module.classes.at(1);
     EXPECT(assert_equal("Point3", cls.name));
     EXPECT_LONGS_EQUAL(1, cls.constructor.args_list.size());
-    EXPECT_LONGS_EQUAL(1, cls.methods.size());
+    EXPECT_LONGS_EQUAL(1, cls.nrMethods());
     EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
     EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
 
@@ -250,8 +250,8 @@ TEST( wrap, parse_geometry ) {
     EXPECT(assert_equal("x", a1.name));
 
     // check method
-    CHECK(cls.methods.find("norm") != cls.methods.end());
-    Method m1 = cls.methods.find("norm")->second;
+    CHECK(cls.exists("norm"));
+    Method m1 = cls.method("norm");
     LONGS_EQUAL(1, m1.returnVals.size());
     EXPECT(assert_equal("double", m1.returnVals.front().type1.name));
     EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnVals.front().type1.category);
@@ -271,13 +271,13 @@ TEST( wrap, parse_geometry ) {
   {
     Class testCls = module.classes.at(2);
     EXPECT_LONGS_EQUAL( 2, testCls.constructor.args_list.size());
-    EXPECT_LONGS_EQUAL(19, testCls.methods.size());
+    EXPECT_LONGS_EQUAL(19, testCls.nrMethods());
     EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
     EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
 
     // function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
-    CHECK(testCls.methods.find("return_pair") != testCls.methods.end());
-    Method m2 = testCls.methods.find("return_pair")->second;
+    CHECK(testCls.exists("return_pair"));
+    Method m2 = testCls.method("return_pair");
     LONGS_EQUAL(1, m2.returnVals.size());
     EXPECT(m2.returnVals.front().isPair);
     EXPECT_LONGS_EQUAL(ReturnType::EIGEN, m2.returnVals.front().type1.category);
@@ -287,8 +287,8 @@ TEST( wrap, parse_geometry ) {
 
     // checking pointer args and return values
 //    pair<Test*,Test*> return_ptrs (Test* p1, Test* p2) const;
-    CHECK(testCls.methods.find("return_ptrs") != testCls.methods.end());
-    Method m3 = testCls.methods.find("return_ptrs")->second;
+    CHECK(testCls.exists("return_ptrs"));
+    Method m3 = testCls.method("return_ptrs");
     LONGS_EQUAL(1, m3.argLists.size());
     ArgumentList args = m3.argLists.front();
     LONGS_EQUAL(2, args.size());
