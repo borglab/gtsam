@@ -99,10 +99,7 @@ Module::Module(const string& interfacePath,
 void Module::parseMarkup(const std::string& data) {
   // these variables will be imperatively updated to gradually build [cls] 
   // The one with postfix 0 are used to reset the variables after parse. 
-  bool isConst, isConst0 = false;
-  ReturnValue retVal0, retVal;
   Argument arg0, arg; 
-  ArgumentList args;
   vector<string> arg_dup; ///keep track of duplicates 
   Constructor constructor0(verbose), constructor(verbose);
   Deconstructor deconstructor0(verbose), deconstructor(verbose);
@@ -210,6 +207,7 @@ void Module::parseMarkup(const std::string& data) {
     '>'); 
 
   // NOTE: allows for pointers to all types
+  ArgumentList args;
   Rule argument_p =  
     ((basisType_p[assign_a(arg.type.name)] | argEigenType_p | eigenRef_p | classArg_p)
         >> !ch_p('*')[assign_a(arg.is_ptr,true)]
@@ -223,10 +221,6 @@ void Module::parseMarkup(const std::string& data) {
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p) 
     [push_back_a(constructor.args_list, args)] 
     [clear_a(args)];
-    //[assign_a(constructor.args,args)] 
-    //[assign_a(constructor.name,cls.name)] 
-    //[push_back_a(cls.constructors, constructor)] 
-    //[assign_a(constructor,constructor0)]; 
  
   Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::"); 
  
@@ -236,6 +230,8 @@ void Module::parseMarkup(const std::string& data) {
   static const ReturnValue::return_category RETURN_CLASS = ReturnValue::CLASS;
   static const ReturnValue::return_category RETURN_VOID = ReturnValue::VOID;
 
+  // TODO, eliminate copy/paste
+  ReturnValue retVal0, retVal;
   Rule returnType1_p =
     (basisType_p[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_BASIS)]) |
     ((*namespace_ret_p)[assign_a(retVal.type1.namespaces, namespaces_return)][clear_a(namespaces_return)]
@@ -262,6 +258,7 @@ void Module::parseMarkup(const std::string& data) {
  
   // gtsam::Values retract(const gtsam::VectorValues& delta) const;
   string methodName;
+  bool isConst, isConst0 = false;
   vector<Qualified> methodInstantiations;
   Rule method_p =  
     !templateArgValues_p
@@ -272,9 +269,9 @@ void Module::parseMarkup(const std::string& data) {
     [bl::bind(&Method::addOverload, 
       bl::var(cls.methods)[bl::var(methodName)], verbose,
       bl::var(isConst), bl::var(methodName), bl::var(args), bl::var(retVal))]
-    [assign_a(isConst,isConst0)] 
+    [assign_a(retVal,retVal0)]
     [clear_a(args)]
-    [assign_a(retVal,retVal0)]; 
+    [assign_a(isConst,isConst0)];
  
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')]; 
  
@@ -283,18 +280,16 @@ void Module::parseMarkup(const std::string& data) {
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
-      verbose, 
-      bl::var(methodName), 
-      bl::var(args), 
-      bl::var(retVal))] 
-    [clear_a(args)]
-    [assign_a(retVal,retVal0)]; 
+      verbose, bl::var(methodName), bl::var(args), bl::var(retVal))]
+    [assign_a(retVal,retVal0)]
+    [clear_a(args)];
  
   Rule functions_p = constructor_p | method_p | static_method_p; 
  
+  // parse a full class
   vector<Qualified> templateInstantiations;
   Rule class_p = 
-      (str_p("")[assign_a(cls,cls0)]) 
+      eps_p[assign_a(cls,cls0)]
       >> (!(templateArgValues_p
           [push_back_a(cls.templateArgs, templateArgName)]
           [assign_a(templateInstantiations,templateArgValues)]
@@ -313,11 +308,12 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(cls.deconstructor, deconstructor)] 
       [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
           bl::var(templateArgName), bl::var(templateInstantiations))]
+      [clear_a(templateInstantiations)]
       [assign_a(deconstructor,deconstructor0)] 
       [assign_a(constructor, constructor0)] 
-      [assign_a(cls,cls0)] 
-      [clear_a(templateInstantiations)]; 
+      [assign_a(cls,cls0)];
  
+  // parse a global function
   Qualified globalFunction;
   Rule global_function_p = 
       (returnType_p >> staticMethodName_p[assign_a(globalFunction.name)] >>
@@ -325,13 +321,10 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(globalFunction.namespaces,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
         bl::var(global_functions)[bl::var(globalFunction.name)],
-        verbose, 
-        bl::var(globalFunction),
-        bl::var(args), 
-        bl::var(retVal))]
+        verbose,  bl::var(globalFunction), bl::var(args), bl::var(retVal))]
+      [assign_a(retVal,retVal0)]
       [clear_a(globalFunction)]
-      [clear_a(args)]
-      [assign_a(retVal,retVal0)]; 
+      [clear_a(args)];
  
   Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
 

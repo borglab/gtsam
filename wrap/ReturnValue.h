@@ -19,21 +19,33 @@ namespace wrap {
 /**
  * Encapsulates return value of a method or function
  */
-struct ReturnValue {
+struct ReturnType : Qualified {
+
+  ReturnType(): isPtr(false), category(CLASS) {
+  }
+
+  ReturnType(const Qualified& q): Qualified(q), isPtr(false), category(CLASS) {
+  }
 
   /// the different supported return value categories
   typedef enum {
     CLASS = 1, EIGEN = 2, BASIS = 3, VOID = 4
   } return_category;
 
-  bool isPtr1, isPtr2, isPair;
-  return_category category1, category2;
-  Qualified type1, type2;
+  bool isPtr;
+  return_category category;
+};
+
+/**
+ * Encapsulates return value of a method or function, possibly a pair
+ */
+struct ReturnValue {
+
+  bool isPair;
+  ReturnType type1, type2;
 
   /// Constructor
-  ReturnValue() :
-      isPtr1(false), isPtr2(false), isPair(false), category1(CLASS), category2(
-          CLASS) {
+  ReturnValue() : isPair(false)  {
   }
 
   typedef enum {
