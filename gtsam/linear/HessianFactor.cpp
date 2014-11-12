@@ -359,23 +359,6 @@ VectorValues HessianFactor::hessianDiagonal() const {
 }
 
 /* ************************************************************************* */
-// TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
-void HessianFactor::hessianDiagonal(double* d) const {
-
-  // Use eigen magic to access raw memory
-  typedef Eigen::Matrix<double, 9, 1> DVector;
-  typedef Eigen::Map<DVector> DMap;
-
-  // Loop over all variables in the factor
-  for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
-    Key j = keys_[pos];
-    // Get the diagonal block, and insert its diagonal
-    const Matrix& B = info_(pos, pos).selfadjointView();
-    DMap(d + 9 * j) += B.diagonal();
-  }
-}
-
-/* ************************************************************************* */
 map<Key,Matrix> HessianFactor::hessianBlockDiagonal() const {
   map<Key,Matrix> blocks;
   // Loop over all variables
@@ -549,71 +532,12 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 }
 
 /* ************************************************************************* */
-void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
-    double* yvalues, vector<size_t> offsets) const {
-
-  // Use eigen magic to access raw memory
-  typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
-  typedef Eigen::Map<DVector> DMap;
-  typedef Eigen::Map<const DVector> ConstDMap;
-
-  // Create a vector of temporary y values, corresponding to rows i
-  vector<Vector> y;
-  y.reserve(size());
-  for (const_iterator it = begin(); it != end(); it++)
-    y.push_back(zero(getDim(it)));
-
-  // Accessing the VectorValues one by one is expensive
-  // So we will loop over columns to access x only once per column
-  // And fill the above temporary y values, to be added into yvalues after
-  for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
-    DenseIndex i = 0;
-    for (; i < j; ++i)
-      y[i] += info_(i, j).knownOffDiagonal()
-          * ConstDMap(x + offsets[keys_[j]],
-              offsets[keys_[j] + 1] - offsets[keys_[j]]);
-    // blocks on the diagonal are only half
-    y[i] += info_(j, j).selfadjointView()
-        * ConstDMap(x + offsets[keys_[j]],
-            offsets[keys_[j] + 1] - offsets[keys_[j]]);
-    // for below diagonal, we take transpose block from upper triangular part
-    for (i = j + 1; i < (DenseIndex) size(); ++i)
-      y[i] += info_(i, j).knownOffDiagonal()
-          * ConstDMap(x + offsets[keys_[j]],
-              offsets[keys_[j] + 1] - offsets[keys_[j]]);
-  }
-
-  // copy to yvalues
-  for (DenseIndex i = 0; i < (DenseIndex) size(); ++i)
-    DMap(yvalues + offsets[keys_[i]], offsets[keys_[i] + 1] - offsets[keys_[i]]) +=
-        alpha * y[i];
-}
-
-
-/* ************************************************************************* */
 VectorValues HessianFactor::gradientAtZero() const {
   VectorValues g;
   size_t n = size();
   for (size_t j = 0; j < n; ++j)
     g.insert(keys_[j], -info_(j,n).knownOffDiagonal());
   return g;
-}
-
-/* ************************************************************************* */
-// TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
-void HessianFactor::gradientAtZero(double* d) const {
-
-  // Use eigen magic to access raw memory
-  typedef Eigen::Matrix<double, 9, 1> DVector;
-  typedef Eigen::Map<DVector> DMap;
-
-  // Loop over all variables in the factor
-    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
-      Key j = keys_[pos];
-      // Get the diagonal block, and insert its diagonal
-      DVector dj =  -info_(pos,size()).knownOffDiagonal();
-      DMap(d + 9 * j) += dj;
-    }
 }
 
 /* ************************************************************************* */
