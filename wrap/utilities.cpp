@@ -112,8 +112,6 @@ string maybe_shared_ptr(bool add, const string& qtype, const string& type) {
   string str = add? "Shared" : "";
   if (add) str += type; 
   else str += qtype;
-
-  //if (add) str += ">";
   return str;
 }
 

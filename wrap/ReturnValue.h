@@ -8,9 +8,10 @@
  * @author Richard Roberts
  */
 
+#include "Qualified.h"
 #include "FileWriter.h"
 #include "TypeAttributesTable.h"
-#include "Qualified.h"
+#include "utilities.h"
 
 #pragma once
 
@@ -19,31 +20,61 @@ namespace wrap {
 /**
  * Encapsulates return value of a method or function
  */
-struct ReturnValue {
+struct ReturnType: Qualified {
 
   /// the different supported return value categories
   typedef enum {
     CLASS = 1, EIGEN = 2, BASIS = 3, VOID = 4
   } return_category;
 
-  bool isPtr1, isPtr2, isPair;
-  return_category category1, category2;
-  Qualified type1, type2;
+  bool isPtr;
+  return_category category;
+
+  ReturnType() :
+      isPtr(false), category(CLASS) {
+  }
+
+  ReturnType(const Qualified& q) :
+      Qualified(q), isPtr(false), category(CLASS) {
+  }
+
+  /// Check if this type is in a set of valid types
+  template<class TYPES>
+  void verify(TYPES validtypes, const std::string& s) const {
+    std::string key = qualifiedName("::");
+    if (find(validtypes.begin(), validtypes.end(), key) == validtypes.end())
+      throw DependencyMissing(key, s);
+  }
+
+private:
+
+  friend struct ReturnValue;
+
+  std::string str(bool add_ptr) const;
+
+  /// Example: out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
+  void wrap_result(const std::string& out, const std::string& result,
+      FileWriter& file, const TypeAttributesTable& typeAttributes) const;
+
+  /// Creates typedef
+  void wrapTypeUnwrap(FileWriter& wrapperFile) const;
+
+};
+
+/**
+ * Encapsulates return value of a method or function, possibly a pair
+ */
+struct ReturnValue {
+
+  bool isPair;
+  ReturnType type1, type2;
 
   /// Constructor
   ReturnValue() :
-      isPtr1(false), isPtr2(false), isPair(false), category1(CLASS), category2(
-          CLASS) {
+      isPair(false) {
   }
 
-  typedef enum {
-    arg1, arg2, pair
-  } pairing;
-
-  std::string return_type(bool add_ptr, pairing p) const;
-
-  std::string qualifiedType1(const std::string& delim = "") const;
-  std::string qualifiedType2(const std::string& delim = "") const;
+  std::string return_type(bool add_ptr) const;
 
   std::string matlab_returnType() const;
 

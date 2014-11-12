@@ -36,7 +36,10 @@ struct Class : public Qualified {
   typedef std::map<std::string, StaticMethod> StaticMethods;
 
   /// Constructor creates an empty class
-  Class(bool verbose=true) : isVirtual(false), isSerializable(false), hasSerialization(false), verbose_(verbose) {}
+  Class(bool verbose = true) :
+      isVirtual(false), isSerializable(false), hasSerialization(false), deconstructor(
+          verbose), verbose_(verbose) {
+  }
 
   // Then the instance variables are set directly by the Module constructor
   std::vector<std::string> templateArgs;    ///< Template arguments

@@ -58,7 +58,7 @@ void Method::proxy_wrapper_fragments(FileWriter& file, FileWriter& wrapperFile,
       file.oss << ", ";
     else
       file.oss << " : returns "
-          << returnVals[0].return_type(false, returnVals[0].pair) << endl;
+          << returnVals[0].return_type(false) << endl;
     argLCount++;
   }
 
@@ -137,18 +137,7 @@ string Method::wrapper_fragment(FileWriter& file, const string& cppClassName,
   // start
   file.oss << "{\n";
 
-  if (returnVal.isPair) {
-    if (returnVal.category1 == ReturnValue::CLASS)
-      file.oss << "  typedef boost::shared_ptr<"
-          << returnVal.qualifiedType1("::") << "> Shared" << returnVal.type1.name
-          << ";" << endl;
-    if (returnVal.category2 == ReturnValue::CLASS)
-      file.oss << "  typedef boost::shared_ptr<"
-          << returnVal.qualifiedType2("::") << "> Shared" << returnVal.type2.name
-          << ";" << endl;
-  } else if (returnVal.category1 == ReturnValue::CLASS)
-    file.oss << "  typedef boost::shared_ptr<" << returnVal.qualifiedType1("::")
-        << "> Shared" << returnVal.type1.name << ";" << endl;
+  returnVal.wrapTypeUnwrap(file);
 
   file.oss << "  typedef boost::shared_ptr<" << cppClassName << "> Shared;"
       << endl;

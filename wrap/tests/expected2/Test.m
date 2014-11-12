@@ -7,8 +7,8 @@
 %
 %-------Methods-------
 %arg_EigenConstRef(Matrix value) : returns void
-%create_MixedPtrs() : returns pair< Test, SharedTest >
-%create_ptrs() : returns pair< SharedTest, SharedTest >
+%create_MixedPtrs() : returns pair< Test, Test >
+%create_ptrs() : returns pair< Test, Test >
 %print() : returns void
 %return_Point2Ptr(bool value) : returns Point2
 %return_Test(Test value) : returns Test
@@ -20,7 +20,7 @@
 %return_matrix1(Matrix value) : returns Matrix
 %return_matrix2(Matrix value) : returns Matrix
 %return_pair(Vector v, Matrix A) : returns pair< Vector, Matrix >
-%return_ptrs(Test p1, Test p2) : returns pair< SharedTest, SharedTest >
+%return_ptrs(Test p1, Test p2) : returns pair< Test, Test >
 %return_size_t(size_t value) : returns size_t
 %return_string(string value) : returns string
 %return_vector1(Vector value) : returns Vector
@@ -64,13 +64,13 @@ classdef Test < handle
     end
 
     function varargout = create_MixedPtrs(this, varargin)
-      % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< Test, SharedTest >
+      % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< Test, Test >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       [ varargout{1} varargout{2} ] = geometry_wrapper(22, this, varargin{:});
     end
 
     function varargout = create_ptrs(this, varargin)
-      % CREATE_PTRS usage: create_ptrs() : returns pair< SharedTest, SharedTest >
+      % CREATE_PTRS usage: create_ptrs() : returns pair< Test, Test >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       [ varargout{1} varargout{2} ] = geometry_wrapper(23, this, varargin{:});
     end
@@ -166,7 +166,7 @@ classdef Test < handle
     end
 
     function varargout = return_ptrs(this, varargin)
-      % RETURN_PTRS usage: return_ptrs(Test p1, Test p2) : returns pair< SharedTest, SharedTest >
+      % RETURN_PTRS usage: return_ptrs(Test p1, Test p2) : returns pair< Test, Test >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 2 && isa(varargin{1},'Test') && isa(varargin{2},'Test')
         [ varargout{1} varargout{2} ] = geometry_wrapper(35, this, varargin{:});
