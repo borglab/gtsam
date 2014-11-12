@@ -355,14 +355,13 @@ namespace gtsam {
      f->multiplyHessianAdd(alpha, x, y);
   }
 
-  /* ************************************************************************* */
-  void GaussianFactorGraph::multiplyHessianAdd(double alpha,
-      const double* x, double* y) const {
-  vector<size_t> FactorKeys = getkeydim();
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
-      f->multiplyHessianAdd(alpha, x, y, FactorKeys);
-
-  }
+  ///* ************************************************************************* */
+  //void GaussianFactorGraph::multiplyHessianAdd(double alpha,
+  //    const double* x, double* y) const {
+  //vector<size_t> FactorKeys = getkeydim();
+  //BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
+  //    f->multiplyHessianAdd(alpha, x, y, FactorKeys);
+  //}
 
   /* ************************************************************************* */
   void GaussianFactorGraph::multiplyInPlace(const VectorValues& x, Errors& e) const {

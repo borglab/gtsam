@@ -311,8 +311,8 @@ namespace gtsam {
         VectorValues& y) const;
 
     ///** y += alpha*A'A*x */
-    void multiplyHessianAdd(double alpha, const double* x,
-        double* y) const;
+    //void multiplyHessianAdd(double alpha, const double* x,
+    //    double* y) const;
 
     ///** In-place version e <- A*x that overwrites e. */
     void multiplyInPlace(const VectorValues& x, Errors& e) const;
