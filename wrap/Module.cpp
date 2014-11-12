@@ -97,20 +97,9 @@ Module::Module(const string& interfacePath,
 
 /* ************************************************************************* */
 void Module::parseMarkup(const std::string& data) {
-  // these variables will be imperatively updated to gradually build [cls] 
+  // The parse imperatively :-( updates variables gradually during parse
   // The one with postfix 0 are used to reset the variables after parse. 
-  Argument arg0, arg; 
-  vector<string> arg_dup; ///keep track of duplicates 
-  Constructor constructor0(verbose), constructor(verbose);
-  Deconstructor deconstructor0(verbose), deconstructor(verbose);
-  StaticMethod static_method0(verbose), static_method(verbose);
-  Class cls0(verbose),cls(verbose);
-  GlobalFunction globalFunc0(verbose), globalFunc(verbose);
-  ForwardDeclaration fwDec0, fwDec; 
-  vector<string> namespaces, /// current namespace tag 
-                 namespaces_return; /// namespace for current return type 
-  string include_path = ""; 
-  const string null_str = ""; 
+  vector<string> namespaces; // current namespace tag
  
   //---------------------------------------------------------------------------- 
   // Grammar with actions that build the Class object. Actions are 
@@ -139,7 +128,9 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p; 
  
-  Rule namespace_arg_p = namespace_name_p[push_back_a(arg.type.namespaces)] >> str_p("::");
+  Argument arg0, arg;
+  Rule namespace_arg_p = namespace_name_p
+      [push_back_a(arg.type.namespaces)] >> str_p("::");
  
   Rule argEigenType_p = 
     eigenType_p[assign_a(arg.type.name)];
@@ -156,7 +147,9 @@ void Module::parseMarkup(const std::string& data) {
     !ch_p('&')[assign_a(arg.is_ref,true)];
  
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')]; 
- 
+
+  // TODO, do we really need cls here? Non-local
+  Class cls0(verbose),cls(verbose);
   Rule classParent_p = 
     *(namespace_name_p[push_back_a(cls.qualifiedParent.namespaces)] >> str_p("::")) >>
     className_p[assign_a(cls.qualifiedParent.name)];
@@ -216,12 +209,15 @@ void Module::parseMarkup(const std::string& data) {
     [assign_a(arg,arg0)]; 
  
   Rule argumentList_p = !argument_p >> * (',' >> argument_p); 
- 
+
+  // parse class constructor
+  Constructor constructor0(verbose), constructor(verbose);
   Rule constructor_p =  
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p) 
     [push_back_a(constructor.args_list, args)] 
     [clear_a(args)];
  
+  vector<string> namespaces_return; /// namespace for current return type
   Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::"); 
  
   // HACK: use const values instead of using enums themselves - somehow this doesn't result in values getting assigned to gibberish
@@ -300,12 +296,10 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(constructor.name, cls.name)] 
       [assign_a(cls.constructor, constructor)] 
       [assign_a(cls.namespaces, namespaces)] 
-      [assign_a(deconstructor.name,cls.name)] 
-      [assign_a(cls.deconstructor, deconstructor)] 
+      [assign_a(cls.deconstructor.name,cls.name)]
       [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
           bl::var(templateArgName), bl::var(templateInstantiations))]
       [clear_a(templateInstantiations)]
-      [assign_a(deconstructor,deconstructor0)] 
       [assign_a(constructor, constructor0)] 
       [assign_a(cls,cls0)];
  
@@ -328,19 +322,21 @@ void Module::parseMarkup(const std::string& data) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wuninitialized"
 #endif
- 
-  Rule namespace_def_p = 
-      (str_p("namespace") 
-      >> namespace_name_p[push_back_a(namespaces)] 
-      >> ch_p('{') 
-      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | comments_p) 
-      >> ch_p('}')) 
-      [pop_a(namespaces)]; 
+
+  Rule namespace_def_p =
+      (str_p("namespace")
+      >> namespace_name_p[push_back_a(namespaces)]
+      >> ch_p('{')
+      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | comments_p)
+      >> ch_p('}'))
+      [pop_a(namespaces)];
 
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
 
+  // parse forward declaration
+  ForwardDeclaration fwDec0, fwDec;
   Rule forward_declaration_p =
       !(str_p("virtual")[assign_a(fwDec.isVirtual, true)]) 
       >> str_p("class") 
