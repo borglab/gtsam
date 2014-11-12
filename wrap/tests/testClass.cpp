@@ -30,28 +30,52 @@ TEST( Class, Constructor ) {
 }
 
 /* ************************************************************************* */
-// addMethodOverloads
-TEST( Class, addMethod ) {
+// test method overloading
+TEST( Class, OverloadingMethod ) {
   Class cls;
   const string name = "method1";
   EXPECT(!cls.exists(name));
 
-  bool verbose=true, is_const=true;
+  bool verbose = true, is_const = true;
   ArgumentList args;
   const ReturnValue retVal;
   const string templateArgName;
   vector<Qualified> templateArgValues;
   cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
       templateArgValues);
-  EXPECT_LONGS_EQUAL(1,cls.nrMethods());
+  EXPECT_LONGS_EQUAL(1, cls.nrMethods());
   EXPECT(cls.exists(name));
   Method& method = cls.method(name);
-  EXPECT_LONGS_EQUAL(1,method.returnVals.size());
+  EXPECT_LONGS_EQUAL(1, method.returnVals.size());
 
   cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
       templateArgValues);
-  EXPECT_LONGS_EQUAL(1,cls.nrMethods());
-  EXPECT_LONGS_EQUAL(2,method.returnVals.size());
+  EXPECT_LONGS_EQUAL(1, cls.nrMethods());
+  EXPECT_LONGS_EQUAL(2, method.returnVals.size());
+}
+
+/* ************************************************************************* */
+// test templated methods
+TEST( Class, TemplatedMethods ) {
+  Class cls;
+  const string name = "method";
+  EXPECT(!cls.exists(name));
+
+  bool verbose = true, is_const = true;
+  ArgumentList args;
+  Argument arg;
+  arg.type.name = "T";
+  args.push_back(arg);
+  const ReturnValue retVal(ReturnType("T"));
+  const string templateArgName("T");
+  vector<Qualified> templateArgValues;
+  templateArgValues.push_back(Qualified("Point2"));
+  templateArgValues.push_back(Qualified("Point3"));
+  cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
+      templateArgValues);
+  EXPECT_LONGS_EQUAL(2, cls.nrMethods());
+  EXPECT(cls.exists(name+"Point2"));
+  EXPECT(cls.exists(name+"Point3"));
 }
 
 /* ************************************************************************* */

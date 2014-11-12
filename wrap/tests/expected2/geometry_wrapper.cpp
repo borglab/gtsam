@@ -664,16 +664,25 @@ void MyTemplatePoint2_return_ptrs_53(int nargout, mxArray *out[], int nargin, co
   out[1] = wrap_shared_ptr(pairResult.second,"Point2", false);
 }
 
-void MyTemplatePoint2_templatedMethod_54(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_templatedMethodPoint2_54(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
-  checkArguments("templatedMethod",nargout,nargin-1,1);
+  checkArguments("templatedMethodPoint2",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
-  Test& t = *unwrap_shared_ptr< Test >(in[1], "ptr_Test");
-  obj->templatedMethod(t);
+  Point2& t = *unwrap_shared_ptr< Point2 >(in[1], "ptr_Point2");
+  obj->templatedMethodPoint2(t);
 }
 
-void MyTemplatePoint3_collectorInsertAndMakeBase_55(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_templatedMethodPoint3_55(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
+  checkArguments("templatedMethodPoint3",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
+  Point3& t = *unwrap_shared_ptr< Point3 >(in[1], "ptr_Point3");
+  obj->templatedMethodPoint3(t);
+}
+
+void MyTemplatePoint3_collectorInsertAndMakeBase_56(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
@@ -686,7 +695,7 @@ void MyTemplatePoint3_collectorInsertAndMakeBase_55(int nargout, mxArray *out[],
   *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
 }
 
-void MyTemplatePoint3_upcastFromVoid_56(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+void MyTemplatePoint3_upcastFromVoid_57(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
   boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
@@ -695,7 +704,7 @@ void MyTemplatePoint3_upcastFromVoid_56(int nargout, mxArray *out[], int nargin,
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
-void MyTemplatePoint3_constructor_57(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_constructor_58(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
@@ -710,7 +719,7 @@ void MyTemplatePoint3_constructor_57(int nargout, mxArray *out[], int nargin, co
   *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);
 }
 
-void MyTemplatePoint3_deconstructor_58(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_deconstructor_59(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
   checkArguments("delete_MyTemplatePoint3",nargout,nargin,1);
@@ -723,7 +732,7 @@ void MyTemplatePoint3_deconstructor_58(int nargout, mxArray *out[], int nargin, 
   }
 }
 
-void MyTemplatePoint3_accept_T_59(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_accept_T_60(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
   checkArguments("accept_T",nargout,nargin-1,1);
@@ -732,7 +741,7 @@ void MyTemplatePoint3_accept_T_59(int nargout, mxArray *out[], int nargin, const
   obj->accept_T(value);
 }
 
-void MyTemplatePoint3_accept_Tptr_60(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_accept_Tptr_61(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
   checkArguments("accept_Tptr",nargout,nargin-1,1);
@@ -741,7 +750,7 @@ void MyTemplatePoint3_accept_Tptr_60(int nargout, mxArray *out[], int nargin, co
   obj->accept_Tptr(value);
 }
 
-void MyTemplatePoint3_create_MixedPtrs_61(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_create_MixedPtrs_62(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point3> SharedPoint3;
   typedef boost::shared_ptr<Point3> SharedPoint3;
@@ -753,7 +762,7 @@ void MyTemplatePoint3_create_MixedPtrs_61(int nargout, mxArray *out[], int nargi
   out[1] = wrap_shared_ptr(pairResult.second,"Point3", false);
 }
 
-void MyTemplatePoint3_create_ptrs_62(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_create_ptrs_63(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point3> SharedPoint3;
   typedef boost::shared_ptr<Point3> SharedPoint3;
@@ -765,7 +774,7 @@ void MyTemplatePoint3_create_ptrs_62(int nargout, mxArray *out[], int nargin, co
   out[1] = wrap_shared_ptr(pairResult.second,"Point3", false);
 }
 
-void MyTemplatePoint3_return_T_63(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_return_T_64(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point3> SharedPoint3;
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
@@ -775,7 +784,7 @@ void MyTemplatePoint3_return_T_63(int nargout, mxArray *out[], int nargin, const
   out[0] = wrap_shared_ptr(SharedPoint3(new Point3(obj->return_T(value))),"Point3", false);
 }
 
-void MyTemplatePoint3_return_Tptr_64(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_return_Tptr_65(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point3> SharedPoint3;
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
@@ -785,7 +794,7 @@ void MyTemplatePoint3_return_Tptr_64(int nargout, mxArray *out[], int nargin, co
   out[0] = wrap_shared_ptr(obj->return_Tptr(value),"Point3", false);
 }
 
-void MyTemplatePoint3_return_ptrs_65(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_return_ptrs_66(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point3> SharedPoint3;
   typedef boost::shared_ptr<Point3> SharedPoint3;
@@ -799,16 +808,25 @@ void MyTemplatePoint3_return_ptrs_65(int nargout, mxArray *out[], int nargin, co
   out[1] = wrap_shared_ptr(pairResult.second,"Point3", false);
 }
 
-void MyTemplatePoint3_templatedMethod_66(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_templatedMethodPoint2_67(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
-  checkArguments("templatedMethod",nargout,nargin-1,1);
+  checkArguments("templatedMethodPoint2",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
-  Test& t = *unwrap_shared_ptr< Test >(in[1], "ptr_Test");
-  obj->templatedMethod(t);
+  Point2& t = *unwrap_shared_ptr< Point2 >(in[1], "ptr_Point2");
+  obj->templatedMethodPoint2(t);
 }
 
-void MyFactorPosePoint2_collectorInsertAndMakeBase_67(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint3_templatedMethodPoint3_68(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  checkArguments("templatedMethodPoint3",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
+  Point3& t = *unwrap_shared_ptr< Point3 >(in[1], "ptr_Point3");
+  obj->templatedMethodPoint3(t);
+}
+
+void MyFactorPosePoint2_collectorInsertAndMakeBase_69(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyFactorPosePoint2> Shared;
@@ -817,7 +835,7 @@ void MyFactorPosePoint2_collectorInsertAndMakeBase_67(int nargout, mxArray *out[
   collector_MyFactorPosePoint2.insert(self);
 }
 
-void MyFactorPosePoint2_constructor_68(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_constructor_70(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyFactorPosePoint2> Shared;
@@ -832,7 +850,7 @@ void MyFactorPosePoint2_constructor_68(int nargout, mxArray *out[], int nargin, 
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 }
 
-void MyFactorPosePoint2_deconstructor_69(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_deconstructor_71(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyFactorPosePoint2> Shared;
   checkArguments("delete_MyFactorPosePoint2",nargout,nargin,1);
@@ -845,18 +863,18 @@ void MyFactorPosePoint2_deconstructor_69(int nargout, mxArray *out[], int nargin
   }
 }
 
-void aGlobalFunction_70(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void aGlobalFunction_72(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("aGlobalFunction",nargout,nargin,0);
   out[0] = wrap< Vector >(aGlobalFunction());
 }
-void overloadedGlobalFunction_71(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void overloadedGlobalFunction_73(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("overloadedGlobalFunction",nargout,nargin,1);
   int a = unwrap< int >(in[0]);
   out[0] = wrap< Vector >(overloadedGlobalFunction(a));
 }
-void overloadedGlobalFunction_72(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void overloadedGlobalFunction_74(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("overloadedGlobalFunction",nargout,nargin,2);
   int a = unwrap< int >(in[0]);
@@ -1038,61 +1056,67 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       MyTemplatePoint2_return_ptrs_53(nargout, out, nargin-1, in+1);
       break;
     case 54:
-      MyTemplatePoint2_templatedMethod_54(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_templatedMethodPoint2_54(nargout, out, nargin-1, in+1);
       break;
     case 55:
-      MyTemplatePoint3_collectorInsertAndMakeBase_55(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_templatedMethodPoint3_55(nargout, out, nargin-1, in+1);
       break;
     case 56:
-      MyTemplatePoint3_upcastFromVoid_56(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_collectorInsertAndMakeBase_56(nargout, out, nargin-1, in+1);
       break;
     case 57:
-      MyTemplatePoint3_constructor_57(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_upcastFromVoid_57(nargout, out, nargin-1, in+1);
       break;
     case 58:
-      MyTemplatePoint3_deconstructor_58(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_constructor_58(nargout, out, nargin-1, in+1);
       break;
     case 59:
-      MyTemplatePoint3_accept_T_59(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_deconstructor_59(nargout, out, nargin-1, in+1);
       break;
     case 60:
-      MyTemplatePoint3_accept_Tptr_60(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_accept_T_60(nargout, out, nargin-1, in+1);
       break;
     case 61:
-      MyTemplatePoint3_create_MixedPtrs_61(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_accept_Tptr_61(nargout, out, nargin-1, in+1);
       break;
     case 62:
-      MyTemplatePoint3_create_ptrs_62(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_create_MixedPtrs_62(nargout, out, nargin-1, in+1);
       break;
     case 63:
-      MyTemplatePoint3_return_T_63(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_create_ptrs_63(nargout, out, nargin-1, in+1);
       break;
     case 64:
-      MyTemplatePoint3_return_Tptr_64(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_return_T_64(nargout, out, nargin-1, in+1);
       break;
     case 65:
-      MyTemplatePoint3_return_ptrs_65(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_return_Tptr_65(nargout, out, nargin-1, in+1);
       break;
     case 66:
-      MyTemplatePoint3_templatedMethod_66(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_return_ptrs_66(nargout, out, nargin-1, in+1);
       break;
     case 67:
-      MyFactorPosePoint2_collectorInsertAndMakeBase_67(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_templatedMethodPoint2_67(nargout, out, nargin-1, in+1);
       break;
     case 68:
-      MyFactorPosePoint2_constructor_68(nargout, out, nargin-1, in+1);
+      MyTemplatePoint3_templatedMethodPoint3_68(nargout, out, nargin-1, in+1);
       break;
     case 69:
-      MyFactorPosePoint2_deconstructor_69(nargout, out, nargin-1, in+1);
+      MyFactorPosePoint2_collectorInsertAndMakeBase_69(nargout, out, nargin-1, in+1);
       break;
     case 70:
-      aGlobalFunction_70(nargout, out, nargin-1, in+1);
+      MyFactorPosePoint2_constructor_70(nargout, out, nargin-1, in+1);
       break;
     case 71:
-      overloadedGlobalFunction_71(nargout, out, nargin-1, in+1);
+      MyFactorPosePoint2_deconstructor_71(nargout, out, nargin-1, in+1);
       break;
     case 72:
-      overloadedGlobalFunction_72(nargout, out, nargin-1, in+1);
+      aGlobalFunction_72(nargout, out, nargin-1, in+1);
+      break;
+    case 73:
+      overloadedGlobalFunction_73(nargout, out, nargin-1, in+1);
+      break;
+    case 74:
+      overloadedGlobalFunction_74(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

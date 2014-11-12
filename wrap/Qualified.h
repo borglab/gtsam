@@ -29,7 +29,11 @@ namespace wrap {
 struct Qualified {
 
   std::vector<std::string> namespaces; ///< Stack of namespaces
-  std::string name;                    ///< type name
+  std::string name; ///< type name
+
+  Qualified(const std::string& name_ = "") :
+      name(name_) {
+  }
 
   bool empty() const {
     return namespaces.empty() && name.empty();

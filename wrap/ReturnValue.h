@@ -85,6 +85,10 @@ struct ReturnValue {
       isPair(false), type1(type) {
   }
 
+  /// Substitute template argument
+  ReturnValue substituteTemplate(const std::string& templateArg,
+      const Qualified& qualifiedType, const Qualified& expandedClass) const;
+
   std::string return_type(bool add_ptr) const;
 
   std::string matlab_returnType() const;
@@ -95,6 +99,7 @@ struct ReturnValue {
   void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 
   void emit_matlab(FileWriter& proxyFile) const;
+
 };
 
 template<class T>

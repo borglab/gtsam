@@ -59,6 +59,23 @@ void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
 }
 
 /* ************************************************************************* */
+ReturnValue ReturnValue::substituteTemplate(const string& templateArg,
+    const Qualified& qualifiedType, const Qualified& expandedClass) const {
+  ReturnValue instRetVal = *this;
+  if (type1.name == templateArg) {
+    instRetVal.type1.rename(qualifiedType);
+  } else if (type1.name == "This") {
+    instRetVal.type1.rename(expandedClass);
+  }
+  if (type2.name == templateArg) {
+    instRetVal.type2.rename(qualifiedType);
+  } else if (type2.name == "This") {
+    instRetVal.type2.rename(expandedClass);
+  }
+  return instRetVal;
+}
+
+/* ************************************************************************* */
 string ReturnValue::return_type(bool add_ptr) const {
   if (isPair)
     return "pair< " + type1.str(add_ptr) + ", " + type2.str(add_ptr) + " >";
@@ -78,8 +95,10 @@ void ReturnValue::wrap_result(const string& result, FileWriter& wrapperFile,
     // For a pair, store the returned pair so we do not evaluate the function twice
     wrapperFile.oss << "  " << return_type(true) << " pairResult = " << result
         << ";\n";
-    type1.wrap_result("  out[0]", "pairResult.first", wrapperFile, typeAttributes);
-    type2.wrap_result("  out[1]", "pairResult.second", wrapperFile, typeAttributes);
+    type1.wrap_result("  out[0]", "pairResult.first", wrapperFile,
+        typeAttributes);
+    type2.wrap_result("  out[1]", "pairResult.second", wrapperFile,
+        typeAttributes);
   } else { // Not a pair
     type1.wrap_result("  out[0]", result, wrapperFile, typeAttributes);
   }

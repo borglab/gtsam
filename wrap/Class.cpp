@@ -261,33 +261,37 @@ static vector<ArgumentList> expandArgumentListsTemplate(
 }
 
 /* ************************************************************************* */
+// TODO, Method, StaticMethod, and GlobalFunction should have common base ?
 template<class METHOD>
-map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods,
-    const string& templateArg, const Qualified& qualifiedType,
-    const Qualified& expandedClass) {
+METHOD expandMethodTemplate(const METHOD& method, const string& templateArg,
+    const Qualified& qualifiedType, const Qualified& expandedClass) {
+  // Create new instance
+  METHOD instMethod = method;
+  // substitute template in arguments
+  instMethod.argLists = expandArgumentListsTemplate(method.argLists,
+      templateArg, qualifiedType, expandedClass);
+  // do the same for return types
+  instMethod.returnVals.clear();
+  BOOST_FOREACH(const ReturnValue& retVal, method.returnVals) {
+    ReturnValue instRetVal = retVal.substituteTemplate(templateArg,
+        qualifiedType, expandedClass);
+    instMethod.returnVals.push_back(instRetVal);
+  }
+  // return new method
+  return instMethod;
+}
+
+/* ************************************************************************* */
+template<class METHOD>
+static map<string, METHOD> expandMethodTemplate(
+    const map<string, METHOD>& methods, const string& templateArg,
+    const Qualified& qualifiedType, const Qualified& expandedClass) {
   map<string, METHOD> result;
-  typedef pair<const string, METHOD> Name_Method;
-  BOOST_FOREACH(const Name_Method& name_method, methods) {
-    const METHOD& method = name_method.second;
-    METHOD instMethod = method;
-    instMethod.argLists = expandArgumentListsTemplate(method.argLists,
-        templateArg, qualifiedType, expandedClass);
-    instMethod.returnVals.clear();
-    BOOST_FOREACH(const ReturnValue& retVal, method.returnVals) {
-      ReturnValue instRetVal = retVal;
-      if (retVal.type1.name == templateArg) {
-        instRetVal.type1.rename(qualifiedType);
-      } else if (retVal.type1.name == "This") {
-        instRetVal.type1.rename(expandedClass);
-      }
-      if (retVal.type2.name == templateArg) {
-        instRetVal.type2.rename(qualifiedType);
-      } else if (retVal.type2.name == "This") {
-        instRetVal.type2.rename(expandedClass);
-      }
-      instMethod.returnVals.push_back(instRetVal);
-    }
-    result.insert(make_pair(name_method.first, instMethod));
+  typedef pair<const string, METHOD> NamedMethod;
+  BOOST_FOREACH(NamedMethod namedMethod, methods) {
+    namedMethod.second = expandMethodTemplate(namedMethod.second, templateArg,
+        qualifiedType, expandedClass);
+    result.insert(namedMethod);
   }
   return result;
 }
@@ -328,7 +332,24 @@ vector<Class> Class::expandTemplate(const string& templateArg,
 void Class::addMethod(bool verbose, bool is_const, const string& name,
     const ArgumentList& args, const ReturnValue& retVal,
     const string& templateArgName, const vector<Qualified>& templateArgValues) {
-  methods[name].addOverload(verbose, is_const, name, args, retVal);
+  // Check if templated
+  if (!templateArgName.empty() && templateArgValues.size() > 0) {
+    // Create method to expand
+    Method method;
+    method.addOverload(verbose, is_const, name, args, retVal);
+    // For all values of the template argument, create a new method
+    BOOST_FOREACH(const Qualified& instName, templateArgValues) {
+      Method expanded = //
+          expandMethodTemplate(method, templateArgName, instName, *this);
+      expanded.name += instName.name;
+      if (exists(expanded.name))
+        throw runtime_error(
+            "Class::addMethod: Overloading and templates are mutex, for now");
+      methods[expanded.name] = expanded;
+    }
+  } else
+    // just add overload
+    methods[name].addOverload(verbose, is_const, name, args, retVal);
 }
 
 /* ************************************************************************* */

@@ -102,7 +102,7 @@ virtual class MyTemplate : MyBase {
   MyTemplate();
 
   template<ARG = {Point2, Point3}>
-  void templatedMethod(const Test& t);
+  void templatedMethod(const ARG& t);
 
   // Stress test templates and pointer combinations
   void accept_T(const T& value) const;

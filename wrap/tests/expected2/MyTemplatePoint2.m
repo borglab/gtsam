@@ -12,7 +12,8 @@
 %return_T(Point2 value) : returns Point2
 %return_Tptr(Point2 value) : returns Point2
 %return_ptrs(Point2 p1, Point2 p2) : returns pair< Point2, Point2 >
-%templatedMethod(Test t) : returns void
+%templatedMethodPoint2(Point2 t) : returns void
+%templatedMethodPoint3(Point3 t) : returns void
 %
 classdef MyTemplatePoint2 < MyBase
   properties
@@ -106,13 +107,23 @@ classdef MyTemplatePoint2 < MyBase
       end
     end
 
-    function varargout = templatedMethod(this, varargin)
-      % TEMPLATEDMETHOD usage: templatedMethod(Test t) : returns void
+    function varargout = templatedMethodPoint2(this, varargin)
+      % TEMPLATEDMETHODPOINT2 usage: templatedMethodPoint2(Point2 t) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 1 && isa(varargin{1},'Test')
+      if length(varargin) == 1 && isa(varargin{1},'Point2')
         geometry_wrapper(54, this, varargin{:});
       else
-        error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethod');
+        error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethodPoint2');
+      end
+    end
+
+    function varargout = templatedMethodPoint3(this, varargin)
+      % TEMPLATEDMETHODPOINT3 usage: templatedMethodPoint3(Point3 t) : returns void
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'Point3')
+        geometry_wrapper(55, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethodPoint3');
       end
     end
 
