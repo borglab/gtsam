@@ -16,13 +16,13 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-string ReturnType::return_type(bool add_ptr) const {
-  return maybe_shared_ptr(add_ptr || isPtr, qualifiedName("::"), name);
+string ReturnType::str(bool add_ptr) const {
+  return maybe_shared_ptr(add_ptr && isPtr, qualifiedName("::"), name);
 }
 
 /* ************************************************************************* */
-void ReturnType::wrap_result(const string& result, FileWriter& file,
-    const TypeAttributesTable& typeAttributes) const {
+void ReturnType::wrap_result(const string& out, const string& result,
+    FileWriter& file, const TypeAttributesTable& typeAttributes) const {
 
   string cppType = qualifiedName("::"), matlabType = qualifiedName(".");
 
@@ -41,15 +41,14 @@ void ReturnType::wrap_result(const string& result, FileWriter& file,
       else
         objCopy = ptrType + "(new " + cppType + "(" + result + "))";
     }
-    file.oss << "  out[0] = wrap_shared_ptr(" << objCopy << ",\"" << matlabType
+    file.oss << out << " = wrap_shared_ptr(" << objCopy << ",\"" << matlabType
         << "\", " << (isVirtual ? "true" : "false") << ");\n";
   } else if (isPtr) {
     file.oss << "  Shared" << name << "* ret = new Shared" << name << "("
         << result << ");" << endl;
-    file.oss << "  out[0] = wrap_shared_ptr(ret,\"" << matlabType << "\");\n";
+    file.oss << out << " = wrap_shared_ptr(ret,\"" << matlabType << "\");\n";
   } else if (matlabType != "void")
-    file.oss << "  out[0] = wrap< " << return_type(true) << " >(" << result
-        << ");\n";
+    file.oss << out << " = wrap< " << str(false) << " >(" << result << ");\n";
 }
 
 /* ************************************************************************* */
@@ -61,8 +60,10 @@ void ReturnType::wrapTypeUnwrap(FileWriter& file) const {
 
 /* ************************************************************************* */
 string ReturnValue::return_type(bool add_ptr) const {
-  return "pair< " + type1.return_type(add_ptr) + ", "
-      + type2.return_type(add_ptr) + " >";
+  if (isPair)
+    return "pair< " + type1.str(add_ptr) + ", " + type2.str(add_ptr) + " >";
+  else
+    return type1.str(add_ptr);
 }
 
 /* ************************************************************************* */
@@ -75,12 +76,12 @@ void ReturnValue::wrap_result(const string& result, FileWriter& file,
     const TypeAttributesTable& typeAttributes) const {
   if (isPair) {
     // For a pair, store the returned pair so we do not evaluate the function twice
-    file.oss << "  " << return_type(false) << " pairResult = " << result
+    file.oss << "  " << return_type(true) << " pairResult = " << result
         << ";\n";
-    type1.wrap_result("pairResult.first", file, typeAttributes);
-    type2.wrap_result("pairResult.second", file, typeAttributes);
+    type1.wrap_result("  out[0]", "pairResult.first", file, typeAttributes);
+    type2.wrap_result("  out[1]", "pairResult.second", file, typeAttributes);
   } else { // Not a pair
-    type1.wrap_result(result, file, typeAttributes);
+    type1.wrap_result("  out[0]", result, file, typeAttributes);
   }
 }
 

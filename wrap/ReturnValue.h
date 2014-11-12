@@ -20,7 +20,7 @@ namespace wrap {
 /**
  * Encapsulates return value of a method or function
  */
-struct ReturnType : Qualified {
+struct ReturnType: Qualified {
 
   /// the different supported return value categories
   typedef enum {
@@ -30,26 +30,34 @@ struct ReturnType : Qualified {
   bool isPtr;
   return_category category;
 
-  ReturnType(): isPtr(false), category(CLASS) {
+  ReturnType() :
+      isPtr(false), category(CLASS) {
   }
 
-  ReturnType(const Qualified& q): Qualified(q), isPtr(false), category(CLASS) {
+  ReturnType(const Qualified& q) :
+      Qualified(q), isPtr(false), category(CLASS) {
   }
-
-  std::string return_type(bool add_ptr) const;
-
-  void wrap_result(const std::string& result, FileWriter& file,
-      const TypeAttributesTable& typeAttributes) const;
-
-  void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 
   /// Check if this type is in a set of valid types
-  template <class TYPES>
+  template<class TYPES>
   void verify(TYPES validtypes, const std::string& s) const {
     std::string key = qualifiedName("::");
     if (find(validtypes.begin(), validtypes.end(), key) == validtypes.end())
       throw DependencyMissing(key, s);
   }
+
+private:
+
+  friend struct ReturnValue;
+
+  std::string str(bool add_ptr) const;
+
+  /// Example: out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
+  void wrap_result(const std::string& out, const std::string& result,
+      FileWriter& file, const TypeAttributesTable& typeAttributes) const;
+
+  /// Creates typedef
+  void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 
 };
 
@@ -62,7 +70,8 @@ struct ReturnValue {
   ReturnType type1, type2;
 
   /// Constructor
-  ReturnValue() : isPair(false)  {
+  ReturnValue() :
+      isPair(false) {
   }
 
   std::string return_type(bool add_ptr) const;
