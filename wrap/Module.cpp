@@ -225,34 +225,30 @@ void Module::parseMarkup(const std::string& data) {
   Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::"); 
  
   // HACK: use const values instead of using enums themselves - somehow this doesn't result in values getting assigned to gibberish
-  static const ReturnValue::return_category RETURN_EIGEN = ReturnValue::EIGEN;
-  static const ReturnValue::return_category RETURN_BASIS = ReturnValue::BASIS;
-  static const ReturnValue::return_category RETURN_CLASS = ReturnValue::CLASS;
-  static const ReturnValue::return_category RETURN_VOID = ReturnValue::VOID;
+  static const ReturnType::return_category RETURN_EIGEN = ReturnType::EIGEN;
+  static const ReturnType::return_category RETURN_BASIS = ReturnType::BASIS;
+  static const ReturnType::return_category RETURN_CLASS = ReturnType::CLASS;
+  static const ReturnType::return_category RETURN_VOID = ReturnType::VOID;
 
-  // TODO, eliminate copy/paste
+  ReturnType retType0, retType;
+  Rule returnType_p =
+    (basisType_p[assign_a(retType.name)][assign_a(retType.category, RETURN_BASIS)]) |
+    ((*namespace_ret_p)[assign_a(retType.namespaces, namespaces_return)][clear_a(namespaces_return)]
+        >> (className_p[assign_a(retType.name)][assign_a(retType.category, RETURN_CLASS)]) >>
+        !ch_p('*')[assign_a(retType.isPtr,true)]) |
+    (eigenType_p[assign_a(retType.name)][assign_a(retType.category, RETURN_EIGEN)]);
+
   ReturnValue retVal0, retVal;
-  Rule returnType1_p =
-    (basisType_p[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_BASIS)]) |
-    ((*namespace_ret_p)[assign_a(retVal.type1.namespaces, namespaces_return)][clear_a(namespaces_return)]
-        >> (className_p[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_CLASS)]) >>
-        !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
-    (eigenType_p[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_EIGEN)]);
-
-  Rule returnType2_p = 
-    (basisType_p[assign_a(retVal.type2.name)][assign_a(retVal.category2, RETURN_BASIS)]) |
-    ((*namespace_ret_p)[assign_a(retVal.type2.namespaces, namespaces_return)][clear_a(namespaces_return)]
-        >> (className_p[assign_a(retVal.type2.name)][assign_a(retVal.category2, RETURN_CLASS)]) >>
-        !ch_p('*')  [assign_a(retVal.isPtr2,true)]) | 
-    (eigenType_p[assign_a(retVal.type2.name)][assign_a(retVal.category2, RETURN_EIGEN)]);
+  Rule returnType1_p = returnType_p[assign_a(retVal.type1,retType)][assign_a(retType,retType0)];
+  Rule returnType2_p = returnType_p[assign_a(retVal.type2,retType)][assign_a(retType,retType0)];
 
   Rule pair_p =  
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>') 
     [assign_a(retVal.isPair,true)]; 
  
-  Rule void_p = str_p("void")[assign_a(retVal.type1.name)][assign_a(retVal.category1, RETURN_VOID)];
+  Rule void_p = str_p("void")[assign_a(retVal.type1.name)][assign_a(retVal.type1.category, RETURN_VOID)];
  
-  Rule returnType_p = void_p | pair_p | returnType1_p;
+  Rule returnValue_p = void_p | pair_p | returnType1_p;
  
   Rule methodName_p = lexeme_d[(upper_p | lower_p)  >> *(alnum_p | '_')];
  
@@ -263,7 +259,7 @@ void Module::parseMarkup(const std::string& data) {
   Rule method_p =  
     !templateArgValues_p
     [assign_a(methodInstantiations,templateArgValues)][clear_a(templateArgValues)] >>
-    (returnType_p >> methodName_p[assign_a(methodName)] >> 
+    (returnValue_p >> methodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >>  
      !str_p("const")[assign_a(isConst,true)] >> ';' >> *comments_p) 
     [bl::bind(&Method::addOverload, 
@@ -276,7 +272,7 @@ void Module::parseMarkup(const std::string& data) {
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')]; 
  
   Rule static_method_p = 
-    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(methodName)] >> 
+    (str_p("static") >> returnValue_p >> staticMethodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
@@ -316,7 +312,7 @@ void Module::parseMarkup(const std::string& data) {
   // parse a global function
   Qualified globalFunction;
   Rule global_function_p = 
-      (returnType_p >> staticMethodName_p[assign_a(globalFunction.name)] >>
+      (returnValue_p >> staticMethodName_p[assign_a(globalFunction.name)] >>
        '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
       [assign_a(globalFunction.namespaces,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
@@ -372,7 +368,7 @@ void Module::parseMarkup(const std::string& data) {
   BOOST_SPIRIT_DEBUG_NODE(returnType2_p);
   BOOST_SPIRIT_DEBUG_NODE(pair_p);
   BOOST_SPIRIT_DEBUG_NODE(void_p);
-  BOOST_SPIRIT_DEBUG_NODE(returnType_p);
+  BOOST_SPIRIT_DEBUG_NODE(returnValue_p);
   BOOST_SPIRIT_DEBUG_NODE(methodName_p);
   BOOST_SPIRIT_DEBUG_NODE(method_p);
   BOOST_SPIRIT_DEBUG_NODE(class_p);
@@ -442,20 +438,20 @@ void verifyArguments(const vector<string>& validArgs, const map<string,T>& vt) {
 } 
  
 /* ************************************************************************* */ 
-template<class T> 
-void verifyReturnTypes(const vector<string>& validtypes, const map<string,T>& vt) { 
-  typedef typename map<string,T>::value_type Name_Method; 
-  BOOST_FOREACH(const Name_Method& name_method, vt) { 
-    const T& t = name_method.second; 
-    BOOST_FOREACH(const ReturnValue& retval, t.returnVals) { 
-      if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::")) == validtypes.end()) 
-        throw DependencyMissing(retval.qualifiedType1("::"), t.name); 
-      if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::")) == validtypes.end()) 
-        throw DependencyMissing(retval.qualifiedType2("::"), t.name); 
-    } 
-  } 
-} 
- 
+template<class T>
+void verifyReturnTypes(const vector<string>& validtypes,
+    const map<string, T>& vt) {
+  typedef typename map<string, T>::value_type Name_Method;
+  BOOST_FOREACH(const Name_Method& name_method, vt) {
+    const T& t = name_method.second;
+    BOOST_FOREACH(const ReturnValue& retval, t.returnVals) {
+      retval.type1.verify(validtypes, t.name);
+      if (retval.isPair)
+        retval.type2.verify(validtypes, t.name);
+    }
+  }
+}
+
 /* ************************************************************************* */ 
 void Module::generateIncludes(FileWriter& file) const { 
  

@@ -104,9 +104,9 @@ TEST( wrap, small_parse ) {
 
   ReturnValue rv1 = m1.returnVals.front();
   EXPECT(!rv1.isPair);
-  EXPECT(!rv1.isPtr1);
+  EXPECT(!rv1.type1.isPtr);
   EXPECT(assert_equal("double", rv1.type1.name));
-  EXPECT_LONGS_EQUAL(ReturnValue::BASIS, rv1.category1);
+  EXPECT_LONGS_EQUAL(ReturnType::BASIS, rv1.type1.category);
 
   // Method 2
   Method m2 = cls.methods.at("returnMatrix");
@@ -117,9 +117,9 @@ TEST( wrap, small_parse ) {
 
   ReturnValue rv2 = m2.returnVals.front();
   EXPECT(!rv2.isPair);
-  EXPECT(!rv2.isPtr1);
+  EXPECT(!rv2.type1.isPtr);
   EXPECT(assert_equal("Matrix", rv2.type1.name));
-  EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, rv2.category1);
+  EXPECT_LONGS_EQUAL(ReturnType::EIGEN, rv2.type1.category);
 
   // Method 3
   Method m3 = cls.methods.at("returnPoint2");
@@ -130,9 +130,9 @@ TEST( wrap, small_parse ) {
 
   ReturnValue rv3 = m3.returnVals.front();
   EXPECT(!rv3.isPair);
-  EXPECT(!rv3.isPtr1);
+  EXPECT(!rv3.type1.isPtr);
   EXPECT(assert_equal("Point2", rv3.type1.name));
-  EXPECT_LONGS_EQUAL(ReturnValue::CLASS, rv3.category1);
+  EXPECT_LONGS_EQUAL(ReturnType::CLASS, rv3.type1.category);
 
   // Static Method 1
   // static Vector returnVector();
@@ -143,9 +143,9 @@ TEST( wrap, small_parse ) {
 
   ReturnValue rv4 = sm1.returnVals.front();
   EXPECT(!rv4.isPair);
-  EXPECT(!rv4.isPtr1);
+  EXPECT(!rv4.type1.isPtr);
   EXPECT(assert_equal("Vector", rv4.type1.name));
-  EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, rv4.category1);
+  EXPECT_LONGS_EQUAL(ReturnType::EIGEN, rv4.type1.category);
 
 }
 
@@ -166,7 +166,7 @@ TEST( wrap, parse_geometry ) {
 
   LONGS_EQUAL(7, module.classes.size());
 
-  // Key for ReturnValue::return_category
+  // Key for ReturnType::return_category
 //  CLASS = 1,
 //  EIGEN = 2,
 //  BASIS = 3,
@@ -197,7 +197,7 @@ TEST( wrap, parse_geometry ) {
       Method m1 = cls.methods.find("returnChar")->second;
       LONGS_EQUAL(1, m1.returnVals.size());
       EXPECT(assert_equal("char", m1.returnVals.front().type1.name));
-      EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1);
+      EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnVals.front().type1.category);
       EXPECT(!m1.returnVals.front().isPair);
       EXPECT(assert_equal("returnChar", m1.name));
       LONGS_EQUAL(1, m1.argLists.size());
@@ -211,7 +211,7 @@ TEST( wrap, parse_geometry ) {
       Method m1 = cls.methods.find("vectorConfusion")->second;
       LONGS_EQUAL(1, m1.returnVals.size());
       EXPECT(assert_equal("VectorNotEigen", m1.returnVals.front().type1.name));
-      EXPECT_LONGS_EQUAL(ReturnValue::CLASS, m1.returnVals.front().category1);
+      EXPECT_LONGS_EQUAL(ReturnType::CLASS, m1.returnVals.front().type1.category);
       EXPECT(!m1.returnVals.front().isPair);
       EXPECT(assert_equal("vectorConfusion", m1.name));
       LONGS_EQUAL(1, m1.argLists.size());
@@ -254,7 +254,7 @@ TEST( wrap, parse_geometry ) {
     Method m1 = cls.methods.find("norm")->second;
     LONGS_EQUAL(1, m1.returnVals.size());
     EXPECT(assert_equal("double", m1.returnVals.front().type1.name));
-    EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1);
+    EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnVals.front().type1.category);
     EXPECT(assert_equal("norm", m1.name));
     LONGS_EQUAL(1, m1.argLists.size());
     EXPECT_LONGS_EQUAL(0, m1.argLists.front().size());
@@ -280,9 +280,9 @@ TEST( wrap, parse_geometry ) {
     Method m2 = testCls.methods.find("return_pair")->second;
     LONGS_EQUAL(1, m2.returnVals.size());
     EXPECT(m2.returnVals.front().isPair);
-    EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category1);
+    EXPECT_LONGS_EQUAL(ReturnType::EIGEN, m2.returnVals.front().type1.category);
     EXPECT(assert_equal("Vector", m2.returnVals.front().type1.name));
-    EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category2);
+    EXPECT_LONGS_EQUAL(ReturnType::EIGEN, m2.returnVals.front().type2.category);
     EXPECT(assert_equal("Matrix", m2.returnVals.front().type2.name));
 
     // checking pointer args and return values

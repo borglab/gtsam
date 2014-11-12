@@ -360,7 +360,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
       proxyFile.oss << "%";
       argList.emit_prototype(proxyFile, m.name);
       proxyFile.oss << " : returns "
-          << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl;
+          << m.returnVals[0].return_type(false) << endl;
     }
   }
 
@@ -372,7 +372,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
       proxyFile.oss << "%";
       argList.emit_prototype(proxyFile, m.name);
       proxyFile.oss << " : returns "
-          << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl;
+          << m.returnVals[0].return_type(false) << endl;
     }
   }
 
