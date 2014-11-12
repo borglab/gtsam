@@ -5,6 +5,13 @@
 %MyTemplatePoint2()
 %
 %-------Methods-------
+%accept_T(Point2 value) : returns void
+%accept_Tptr(Point2 value) : returns void
+%create_MixedPtrs() : returns pair< Point2, Point2 >
+%create_ptrs() : returns pair< Point2, Point2 >
+%return_T(Point2 value) : returns Point2
+%return_Tptr(Point2 value) : returns Point2
+%return_ptrs(Point2 p1, Point2 p2) : returns pair< Point2, Point2 >
 %templatedMethod(Test t) : returns void
 %
 classdef MyTemplatePoint2 < MyBase
@@ -37,11 +44,73 @@ classdef MyTemplatePoint2 < MyBase
     %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
     %DISP Calls print on the object
+    function varargout = accept_T(this, varargin)
+      % ACCEPT_T usage: accept_T(Point2 value) : returns void
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'Point2')
+        geometry_wrapper(47, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint2.accept_T');
+      end
+    end
+
+    function varargout = accept_Tptr(this, varargin)
+      % ACCEPT_TPTR usage: accept_Tptr(Point2 value) : returns void
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'Point2')
+        geometry_wrapper(48, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint2.accept_Tptr');
+      end
+    end
+
+    function varargout = create_MixedPtrs(this, varargin)
+      % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< Point2, Point2 >
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      [ varargout{1} varargout{2} ] = geometry_wrapper(49, this, varargin{:});
+    end
+
+    function varargout = create_ptrs(this, varargin)
+      % CREATE_PTRS usage: create_ptrs() : returns pair< Point2, Point2 >
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      [ varargout{1} varargout{2} ] = geometry_wrapper(50, this, varargin{:});
+    end
+
+    function varargout = return_T(this, varargin)
+      % RETURN_T usage: return_T(Point2 value) : returns Point2
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'Point2')
+        varargout{1} = geometry_wrapper(51, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint2.return_T');
+      end
+    end
+
+    function varargout = return_Tptr(this, varargin)
+      % RETURN_TPTR usage: return_Tptr(Point2 value) : returns Point2
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'Point2')
+        varargout{1} = geometry_wrapper(52, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint2.return_Tptr');
+      end
+    end
+
+    function varargout = return_ptrs(this, varargin)
+      % RETURN_PTRS usage: return_ptrs(Point2 p1, Point2 p2) : returns pair< Point2, Point2 >
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 2 && isa(varargin{1},'Point2') && isa(varargin{2},'Point2')
+        [ varargout{1} varargout{2} ] = geometry_wrapper(53, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint2.return_ptrs');
+      end
+    end
+
     function varargout = templatedMethod(this, varargin)
       % TEMPLATEDMETHOD usage: templatedMethod(Test t) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'Test')
-        geometry_wrapper(47, this, varargin{:});
+        geometry_wrapper(54, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethod');
       end

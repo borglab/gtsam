@@ -39,51 +39,51 @@ void Method::addOverload(bool verbose, bool is_const, const std::string& name,
 }
 
 /* ************************************************************************* */
-void Method::proxy_wrapper_fragments(FileWriter& file, FileWriter& wrapperFile,
-    const string& cppClassName, const std::string& matlabQualName,
-    const std::string& matlabUniqueName, const string& wrapperName,
-    const TypeAttributesTable& typeAttributes,
+void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
+    FileWriter& wrapperFile, const string& cppClassName,
+    const std::string& matlabQualName, const std::string& matlabUniqueName,
+    const string& wrapperName, const TypeAttributesTable& typeAttributes,
     vector<string>& functionNames) const {
 
   // Create function header
-  file.oss << "    function varargout = " << name << "(this, varargin)\n";
+  proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
 
   // Emit comments for documentation
   string up_name = boost::to_upper_copy(name);
-  file.oss << "      % " << up_name << " usage: ";
+  proxyFile.oss << "      % " << up_name << " usage: ";
   unsigned int argLCount = 0;
   BOOST_FOREACH(ArgumentList argList, argLists) {
-    argList.emit_prototype(file, name);
+    argList.emit_prototype(proxyFile, name);
     if (argLCount != argLists.size() - 1)
-      file.oss << ", ";
+      proxyFile.oss << ", ";
     else
-      file.oss << " : returns "
-          << returnVals[0].return_type(false) << endl;
+      proxyFile.oss << " : returns " << returnVals[0].return_type(false)
+          << endl;
     argLCount++;
   }
 
   // Emit URL to Doxygen page
-  file.oss << "      % "
+  proxyFile.oss << "      % "
       << "Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html"
       << endl;
 
   // Document all overloads, if any
   if (argLists.size() > 1) {
-    file.oss << "      % " << "" << endl;
-    file.oss << "      % " << "Method Overloads" << endl;
+    proxyFile.oss << "      % " << "" << endl;
+    proxyFile.oss << "      % " << "Method Overloads" << endl;
     BOOST_FOREACH(ArgumentList argList, argLists) {
-      file.oss << "      % ";
-      argList.emit_prototype(file, name);
-      file.oss << endl;
+      proxyFile.oss << "      % ";
+      argList.emit_prototype(proxyFile, name);
+      proxyFile.oss << endl;
     }
   }
 
   // Handle special case of single overload with all numeric arguments
   if (argLists.size() == 1 && argLists[0].allScalar()) {
     // Output proxy matlab code
-    file.oss << "      ";
+    proxyFile.oss << "      ";
     const int id = (int) functionNames.size();
-    argLists[0].emit_call(file, returnVals[0], wrapperName, id);
+    argLists[0].emit_call(proxyFile, returnVals[0], wrapperName, id);
 
     // Output C++ wrapper code
     const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
@@ -96,9 +96,9 @@ void Method::proxy_wrapper_fragments(FileWriter& file, FileWriter& wrapperFile,
     for (size_t overload = 0; overload < argLists.size(); ++overload) {
 
       // Output proxy matlab code
-      file.oss << "      " << (overload == 0 ? "" : "else");
+      proxyFile.oss << "      " << (overload == 0 ? "" : "else");
       const int id = (int) functionNames.size();
-      argLists[overload].emit_conditional_call(file, returnVals[overload],
+      argLists[overload].emit_conditional_call(proxyFile, returnVals[overload],
           wrapperName, id);
 
       // Output C++ wrapper code
@@ -108,20 +108,20 @@ void Method::proxy_wrapper_fragments(FileWriter& file, FileWriter& wrapperFile,
       // Add to function list
       functionNames.push_back(wrapFunctionName);
     }
-    file.oss << "      else\n";
-    file.oss
+    proxyFile.oss << "      else\n";
+    proxyFile.oss
         << "        error('Arguments do not match any overload of function "
         << matlabQualName << "." << name << "');" << endl;
-    file.oss << "      end\n";
+    proxyFile.oss << "      end\n";
   }
 
-  file.oss << "    end\n";
+  proxyFile.oss << "    end\n";
 }
 
 /* ************************************************************************* */
-string Method::wrapper_fragment(FileWriter& file, const string& cppClassName,
-    const string& matlabUniqueName, int overload, int id,
-    const TypeAttributesTable& typeAttributes) const {
+string Method::wrapper_fragment(FileWriter& wrapperFile,
+    const string& cppClassName, const string& matlabUniqueName, int overload,
+    int id, const TypeAttributesTable& typeAttributes) const {
 
   // generate code
 
@@ -132,39 +132,39 @@ string Method::wrapper_fragment(FileWriter& file, const string& cppClassName,
   const ReturnValue& returnVal = returnVals[overload];
 
   // call
-  file.oss << "void " << wrapFunctionName
+  wrapperFile.oss << "void " << wrapFunctionName
       << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
   // start
-  file.oss << "{\n";
+  wrapperFile.oss << "{\n";
 
-  returnVal.wrapTypeUnwrap(file);
+  returnVal.wrapTypeUnwrap(wrapperFile);
 
-  file.oss << "  typedef boost::shared_ptr<" << cppClassName << "> Shared;"
-      << endl;
+  wrapperFile.oss << "  typedef boost::shared_ptr<" << cppClassName
+      << "> Shared;" << endl;
 
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
-  file.oss << "  checkArguments(\"" << name << "\",nargout,nargin-1,"
+  wrapperFile.oss << "  checkArguments(\"" << name << "\",nargout,nargin-1,"
       << args.size() << ");\n";
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName
+  wrapperFile.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName
       << ">(in[0], \"ptr_" << matlabUniqueName << "\");" << endl;
   // unwrap arguments, see Argument.cpp
-  args.matlab_unwrap(file, 1);
+  args.matlab_unwrap(wrapperFile, 1);
 
   // call method and wrap result
   // example: out[0]=wrap<bool>(self->return_field(t));
   if (returnVal.type1.name != "void")
-    returnVal.wrap_result("obj->" + name + "(" + args.names() + ")", file,
-        typeAttributes);
+    returnVal.wrap_result("obj->" + name + "(" + args.names() + ")",
+        wrapperFile, typeAttributes);
   else
-    file.oss << "  obj->" + name + "(" + args.names() + ");\n";
+    wrapperFile.oss << "  obj->" + name + "(" + args.names() + ");\n";
 
   // finish
-  file.oss << "}\n";
+  wrapperFile.oss << "}\n";
 
   return wrapFunctionName;
 }

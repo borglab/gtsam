@@ -7,10 +7,10 @@
  * @author Richard Roberts
  */
 
-#include <boost/foreach.hpp>
-
 #include "ReturnValue.h"
 #include "utilities.h"
+#include <boost/foreach.hpp>
+#include <iostream>
 
 using namespace std;
 using namespace wrap;
@@ -52,9 +52,9 @@ void ReturnType::wrap_result(const string& out, const string& result,
 }
 
 /* ************************************************************************* */
-void ReturnType::wrapTypeUnwrap(FileWriter& file) const {
+void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
   if (category == CLASS)
-    file.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
+    wrapperFile.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
         << "> Shared" << name << ";" << endl;
 }
 
@@ -72,33 +72,33 @@ string ReturnValue::matlab_returnType() const {
 }
 
 /* ************************************************************************* */
-void ReturnValue::wrap_result(const string& result, FileWriter& file,
+void ReturnValue::wrap_result(const string& result, FileWriter& wrapperFile,
     const TypeAttributesTable& typeAttributes) const {
   if (isPair) {
     // For a pair, store the returned pair so we do not evaluate the function twice
-    file.oss << "  " << return_type(true) << " pairResult = " << result
+    wrapperFile.oss << "  " << return_type(true) << " pairResult = " << result
         << ";\n";
-    type1.wrap_result("  out[0]", "pairResult.first", file, typeAttributes);
-    type2.wrap_result("  out[1]", "pairResult.second", file, typeAttributes);
+    type1.wrap_result("  out[0]", "pairResult.first", wrapperFile, typeAttributes);
+    type2.wrap_result("  out[1]", "pairResult.second", wrapperFile, typeAttributes);
   } else { // Not a pair
-    type1.wrap_result("  out[0]", result, file, typeAttributes);
+    type1.wrap_result("  out[0]", result, wrapperFile, typeAttributes);
   }
 }
 
 /* ************************************************************************* */
-void ReturnValue::wrapTypeUnwrap(FileWriter& file) const {
-  type1.wrapTypeUnwrap(file);
+void ReturnValue::wrapTypeUnwrap(FileWriter& wrapperFile) const {
+  type1.wrapTypeUnwrap(wrapperFile);
   if (isPair)
-    type2.wrapTypeUnwrap(file);
+    type2.wrapTypeUnwrap(wrapperFile);
 }
 
 /* ************************************************************************* */
-void ReturnValue::emit_matlab(FileWriter& file) const {
+void ReturnValue::emit_matlab(FileWriter& proxyFile) const {
   string output;
   if (isPair)
-    file.oss << "[ varargout{1} varargout{2} ] = ";
+    proxyFile.oss << "[ varargout{1} varargout{2} ] = ";
   else if (type1.category != ReturnType::VOID)
-    file.oss << "varargout{1} = ";
+    proxyFile.oss << "varargout{1} = ";
 }
 
 /* ************************************************************************* */

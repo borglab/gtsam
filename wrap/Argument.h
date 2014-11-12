@@ -77,23 +77,23 @@ struct ArgumentList: public std::vector<Argument> {
   void emit_prototype(FileWriter& file, const std::string& name) const;
 
   /**
-   * emit emit MATLAB call to wrapper
-   * @param file output stream
+   * emit emit MATLAB call to proxy
+   * @param proxyFile output stream
    * @param returnVal the return value
    * @param wrapperName of method or function
    * @param staticMethod flag to emit "this" in call
    */
-  void emit_call(FileWriter& file, const ReturnValue& returnVal,
+  void emit_call(FileWriter& proxyFile, const ReturnValue& returnVal,
       const std::string& wrapperName, int id, bool staticMethod = false) const;
 
   /**
-   * emit conditional MATLAB call to wrapper (checking arguments first)
-   * @param file output stream
+   * emit conditional MATLAB call to proxy (checking arguments first)
+   * @param proxyFile output stream
    * @param returnVal the return value
    * @param wrapperName of method or function
    * @param staticMethod flag to emit "this" in call
    */
-  void emit_conditional_call(FileWriter& file, const ReturnValue& returnVal,
+  void emit_conditional_call(FileWriter& proxyFile, const ReturnValue& returnVal,
       const std::string& wrapperName, int id, bool staticMethod = false) const;
 };
 
