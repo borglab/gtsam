@@ -65,12 +65,15 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 // If a number of template arguments were given, generate a number of expanded
 // class names, e.g., PriorFactor -> PriorFactorPose2, and add those classes
 static void handle_possible_template(vector<Class>& classes, const Class& cls,
-    const string& templateArgName, const vector<Qualified>& instantiations) {
-  if (instantiations.empty()) {
+    const vector<Qualified>& instantiations) {
+  if (cls.templateArgs.empty() || instantiations.empty()) {
     classes.push_back(cls);
   } else {
+    if (cls.templateArgs.size() != 1)
+      throw std::runtime_error(
+          "In-line template instantiations only handle a single template argument");
     vector<Class> classInstantiations = //
-        cls.expandTemplate(templateArgName, instantiations);
+        cls.expandTemplate(cls.templateArgs.front(), instantiations);
     BOOST_FOREACH(const Class& c, classInstantiations)
       classes.push_back(c);
   }
@@ -312,7 +315,7 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(deconstructor.name,cls.name)] 
       [assign_a(cls.deconstructor, deconstructor)] 
       [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
-          bl::var(templateArgName), bl::var(templateInstantiations))]
+          bl::var(templateInstantiations))]
       [assign_a(deconstructor,deconstructor0)] 
       [assign_a(constructor, constructor0)] 
       [assign_a(cls,cls0)] 

@@ -103,6 +103,15 @@ virtual class MyTemplate : MyBase {
 
   template<ARG = {Point2, Point3}>
   void templatedMethod(const Test& t);
+
+  // Stress test templates and pointer combinations
+  void accept_T(const T& value) const;
+  void accept_Tptr(T* value) const;
+  T* return_Tptr(T* value) const;
+  T  return_T(T* value) const;
+  pair<T*,T*> create_ptrs () const;
+  pair<T ,T*> create_MixedPtrs () const;
+  pair<T*,T*> return_ptrs (T* p1, T* p2) const;
 };
 
 // A doubly templated class
