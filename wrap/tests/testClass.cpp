@@ -33,14 +33,25 @@ TEST( Class, Constructor ) {
 // addMethodOverloads
 TEST( Class, addMethod ) {
   Class cls;
+  const string name = "method1";
+  EXPECT(!cls.exists(name));
+
   bool verbose=true, is_const=true;
-  const string name;
   ArgumentList args;
   const ReturnValue retVal;
   const string templateArgName;
   vector<Qualified> templateArgValues;
   cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
       templateArgValues);
+  EXPECT_LONGS_EQUAL(1,cls.nrMethods());
+  EXPECT(cls.exists(name));
+  Method& method = cls.method(name);
+  EXPECT_LONGS_EQUAL(1,method.returnVals.size());
+
+  cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
+      templateArgValues);
+  EXPECT_LONGS_EQUAL(1,cls.nrMethods());
+  EXPECT_LONGS_EQUAL(2,method.returnVals.size());
 }
 
 /* ************************************************************************* */
