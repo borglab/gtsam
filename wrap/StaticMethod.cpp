@@ -59,7 +59,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& file,
       file.oss << ", ";
     else
       file.oss << " : returns "
-          << returnVals[0].return_type(false, returnVals[0].pair) << endl;
+          << returnVals[0].return_type(false) << endl;
     argLCount++;
   }
 
