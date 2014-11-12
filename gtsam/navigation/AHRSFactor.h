@@ -1,39 +1,57 @@
-/*
- * ImuFactor.h
- *
- *  Created on: Jun 29, 2014
- *      Author: krunal
- */
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ *  @file  AHRSFactor.h
+ *  @author Krunal Chande, Luca Carlone
+ **/
 
 #pragma once
 
+/* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/debug.h>
 
+/* External or standard includes */
 #include <ostream>
 
 namespace gtsam {
 
 class AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, imuBias::ConstantBias> {
 public:
+
+  /** Struct to store results of preintegrating IMU measurements.  Can be build
+   * incrementally so as to avoid costly integration at time of factor construction. */
+
+  /** CombinedPreintegratedMeasurements accumulates (integrates) the Gyroscope measurements (rotation rates)
+       * and the corresponding covariance matrix. The measurements are then used to build the Preintegrated AHRS factor*/
   class PreintegratedMeasurements {
   public:
-    imuBias::ConstantBias biasHat;
-    Matrix measurementCovariance;
+    imuBias::ConstantBias biasHat;///< Acceleration and angular rate bias values used during preintegration. Note that we won't be using the accelerometer
+    Matrix measurementCovariance;///< (Raw measurements uncertainty) Covariance of the vector [measuredOmega] in R^(3X3)
 
-    Rot3 deltaRij;
-    double deltaTij;
-    Matrix3 delRdelBiasOmega;
-    Matrix PreintMeasCov;
+    Rot3 deltaRij; ///< Preintegrated relative orientation (in frame i)
+    double deltaTij; ///< Time interval from i to j
+    Matrix3 delRdelBiasOmega; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
+    Matrix PreintMeasCov; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
 
-    PreintegratedMeasurements(const imuBias::ConstantBias& bias,
-        const Matrix3& measuredOmegaCovariance) :
-          biasHat(bias), measurementCovariance(3,3), deltaTij(0.0),
+    /** Default constructor, initialize with no measurements */
+    PreintegratedMeasurements(
+        const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
+        const Matrix3& measuredOmegaCovariance ///< Covariance matrix of measured angular rate
+        ) : biasHat(bias), measurementCovariance(3,3), deltaTij(0.0),
           delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(3,3) {
-//      measurementCovariance << integrationErrorCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measurementAccCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measuredOmegaCovariance;
       measurementCovariance <<measuredOmegaCovariance;
       PreintMeasCov = Matrix::Zero(3,3);
     }
@@ -42,6 +60,7 @@ public:
       biasHat(imuBias::ConstantBias()), measurementCovariance(Matrix::Zero(3,3)), deltaTij(0.0),
       delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(3,3)) {}
 
+    /** print */
     void print(const std::string& s = "Preintegrated Measurements: ") const {
       std::cout << s << std::endl;
       biasHat.print(" biasHat");
@@ -51,6 +70,7 @@ public:
       std::cout << " PreintMeasCov [ " << PreintMeasCov << " ]" << std::endl;
     }
 
+    /** equals */
     bool equals(const PreintegratedMeasurements& expected,
         double tol = 1e-9) const {
       return biasHat.equals(expected.biasHat, tol)
@@ -64,14 +84,14 @@ public:
     Matrix MeasurementCovariance() const {
       return measurementCovariance;
     }
-    Matrix deltaRij_() const {
+    Matrix DeltaRij() const {
       return deltaRij.matrix();
     }
-    double deltaTij_() const {
+    double DeltaTij() const {
       return deltaTij;
     }
 
-    Vector biasHat_() const {
+    Vector BiasHat() const {
       return biasHat.vector();
     }
 
@@ -82,43 +102,65 @@ public:
       PreintMeasCov = Matrix::Zero(9, 9);
     }
 
+    /** Add a single Gyroscope measurement to the preintegration. */
     void integrateMeasurement(
-        const Vector3& measuredOmega, double deltaT,
-        boost::optional<const Pose3&> body_P_sensor = boost::none) {
+        const Vector3& measuredOmega,  ///< Measured angular velocity (in body frame)
+        double deltaT, ///< Time step
+        boost::optional<const Pose3&> body_P_sensor = boost::none ///< Sensor frame
+        ) {
+
+      // NOTE: order is important here because each update uses old values.
+      // First we compensate the measurements for the bias
       Vector3 correctedOmega = biasHat.correctGyroscope(measuredOmega);
 
+      // Then compensate for sensor-body displacement: we express the quantities (originally in the IMU frame) into the body frame
       if (body_P_sensor) {
         Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
-        correctedOmega = body_R_sensor * correctedOmega;
+        correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
         Matrix3 body_omega_body_cross = skewSymmetric(correctedOmega);
+        // linear acceleration vector in the body frame
       }
-      const Vector3 theta_incr = correctedOmega * deltaT;
-      const Rot3 Rincr = Rot3::Expmap(theta_incr);
-      const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr);
+      const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
+      const Rot3 Rincr = Rot3::Expmap(theta_incr); // rotation increment computed from the current rotation rate measurement
+      const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr); // Right jacobian computed at theta_incr
 
+      // Update Jacobians
+      /* ----------------------------------------------------------------------------------------------------------------------- */
       delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega
           - Jr_theta_incr * deltaT;
 
-      //      Matrix3 Z_3x3 = Matrix::Zero();
-      //      Matrix3 I_3x3 = Matrix::Identity();
-      const Vector3 theta_i = Rot3::Logmap(deltaRij);
+      // Update preintegrated measurements covariance
+      /* ----------------------------------------------------------------------------------------------------------------------- */
+      const Vector3 theta_i = Rot3::Logmap(deltaRij); // parametrization of so(3)
       const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3inverse(theta_i);
 
       Rot3 Rot_j = deltaRij * Rincr;
-      const Vector3 theta_j = Rot3::Logmap(Rot_j);
+      const Vector3 theta_j = Rot3::Logmap(Rot_j); // parametrization of so(3)
       const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(
           theta_j);
 
+      // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
+      // can be seen as a prediction phase in an EKF framework
       Matrix H_angles_angles = Jrinv_theta_j * Rincr.inverse().matrix()
                   * Jr_theta_i;
+      // analytic expression corresponding to the following numerical derivative
+      // Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
+
+      // overall Jacobian wrt preintegrated measurements (df/dx)
       Matrix F(3, 3);
       F << H_angles_angles;
 
+      // first order uncertainty propagation
+      // the deltaT allows to pass from continuous time noise to discrete time noise
       PreintMeasCov = F * PreintMeasCov * F.transpose()
                   + measurementCovariance * deltaT;
+
+      // Update preintegrated measurements
+      /* ----------------------------------------------------------------------------------------------------------------------- */
       deltaRij = deltaRij * Rincr;
       deltaTij += deltaT;
     }
+
     /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
     // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
     static inline Vector PreIntegrateIMUObservations_delta_angles(const Vector& msr_gyro_t, const double msr_dt,
@@ -155,8 +197,8 @@ private:
 
   PreintegratedMeasurements preintegratedMeasurements_;
   Vector3 gravity_;
-  Vector3 omegaCoriolis_;
-  boost::optional<Pose3> body_P_sensor_;
+  Vector3 omegaCoriolis_; ///< Controls whether higher order terms are included when calculating the Coriolis Effect
+  boost::optional<Pose3> body_P_sensor_;///< The pose of the sensor in the body frame
 
 public:
 
@@ -171,20 +213,24 @@ public:
   AHRSFactor() :
     preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero()) {}
 
-  AHRSFactor(Key rot_i, Key rot_j, Key bias,
-      const PreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& omegaCoriolis,
-      boost::optional<const Pose3&> body_P_sensor = boost::none) :
-        Base(
-            noiseModel::Gaussian::Covariance(
-                preintegratedMeasurements.PreintMeasCov), rot_i, rot_j, bias), preintegratedMeasurements_(
-                    preintegratedMeasurements), omegaCoriolis_(
-                        omegaCoriolis), body_P_sensor_(body_P_sensor) {
+  AHRSFactor(
+      Key rot_i, ///< previous rot key
+      Key rot_j,  ///< current rot key
+      Key bias,///< previous bias key
+      const PreintegratedMeasurements& preintegratedMeasurements, ///< preintegrated measurements
+      const Vector3& omegaCoriolis, ///< rotation rate of the inertial frame
+      boost::optional<const Pose3&> body_P_sensor = boost::none  ///< The Pose of the sensor frame in the body frame
+      ) :
+      Base(
+          noiseModel::Gaussian::Covariance(
+              preintegratedMeasurements.PreintMeasCov), rot_i, rot_j, bias), preintegratedMeasurements_(
+          preintegratedMeasurements), omegaCoriolis_(omegaCoriolis), body_P_sensor_(
+          body_P_sensor) {
   }
 
   virtual ~AHRSFactor() {}
 
-
+  /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(
@@ -193,6 +239,9 @@ public:
         );
     }
 
+  /** implement functions needed for Testable */
+
+  /** print */
   virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "AHRSFactor(" << keyFormatter(this->key1()) << ","
@@ -206,6 +255,7 @@ public:
       this->body_P_sensor_->print("  sensor pose in body frame: ");
   }
 
+  /** equals */
   virtual bool equals(const NonlinearFactor& expected,
       double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&expected);
@@ -226,6 +276,9 @@ public:
     return omegaCoriolis_;
   }
 
+  /** implement functions needed to derive from Factor */
+
+  /** vector of errors */
   Vector evaluateError(const Rot3& rot_i, const Rot3& rot_j,
       const imuBias::ConstantBias& bias,
       boost::optional<Matrix&> H1 = boost::none,
@@ -321,7 +374,6 @@ public:
 
     // Predict state at time j
     /* ---------------------------------------------------------------------------------------------------- */
-
     const Rot3 deltaRij_biascorrected =
         preintegratedMeasurements.deltaRij.retract(
             preintegratedMeasurements.delRdelBiasOmega * biasOmegaIncr,
@@ -349,7 +401,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
-};
-// AHRSFactor
+}; // AHRSFactor
 typedef AHRSFactor::PreintegratedMeasurements AHRSFactorPreintegratedMeasurements;
 } //namespace gtsam

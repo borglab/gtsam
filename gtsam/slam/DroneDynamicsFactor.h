@@ -16,7 +16,7 @@
  * @author Duy-Nguyen Ta
  * @date Sep 29, 2014
  */
-
+// Implementation is incorrect use DroneDynamicsVelXYFactor instead.
 #pragma once
 
 #include <boost/lexical_cast.hpp>

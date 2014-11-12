@@ -13,7 +13,7 @@
  *  @file  testDistanceFactor.cpp
  *  @brief Unit tests for DistanceFactor Class
  *  @author Duy-Nguyen Ta
- *  @date Oct 2012
+ *  @date Oct 2014
  */
 
 #include <CppUnitLite/TestHarness.h>

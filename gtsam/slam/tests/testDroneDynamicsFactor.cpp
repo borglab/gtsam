@@ -12,8 +12,8 @@
 /**
  *  @file  testRangeFactor.cpp
  *  @brief Unit tests for DroneDynamicsFactor Class
- *  @author Stephen Williams
- *  @date Oct 2012
+ *  @author Duy-Nguyen Ta
+ *  @date Oct 2014
  */
 
 #include <CppUnitLite/TestHarness.h>

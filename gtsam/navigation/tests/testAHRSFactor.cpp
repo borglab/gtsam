@@ -12,7 +12,7 @@
 /**
  * @file    testImuFactor.cpp
  * @brief   Unit test for ImuFactor
- * @author  Luca Carlone, Stephen Williams, Richard Roberts
+ * @author  Krunal Chande, Luca Carlone
  */
 
 #include <gtsam/navigation/AHRSFactor.h>

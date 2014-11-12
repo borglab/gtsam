@@ -77,8 +77,8 @@ namespace gtsam {
       PreintegratedMeasurements(
           const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
           const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
-          const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
-          const Matrix3& integrationErrorCovariance, ///< Covariance matrix of measuredAcc
+          const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measured Angular Rate
+          const Matrix3& integrationErrorCovariance, ///< Covariance matrix of integration errors
           const bool use2ndOrderIntegration = false ///< Controls the order of integration
       ) : biasHat(bias), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
@@ -95,7 +95,7 @@ namespace gtsam {
       biasHat(imuBias::ConstantBias()), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
-      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(9,9)
+      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(9,9), use2ndOrderIntegration_(false)
       {
           measurementCovariance =  Matrix::Zero(9,9);
           PreintMeasCov = Matrix::Zero(9,9);
@@ -324,7 +324,7 @@ namespace gtsam {
 #endif
 
     /** Default constructor - only use for serialization */
-    ImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()) {}
+    ImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()), use2ndOrderCoriolis_(false){}
 
     /** Constructor */
     ImuFactor(
