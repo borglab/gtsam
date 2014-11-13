@@ -88,7 +88,7 @@ public:
         std::string fullType = arg.type.qualifiedName("::");
         if (find(validArgs.begin(), validArgs.end(), fullType)
             == validArgs.end())
-          throw DependencyMissing(fullType, s);
+          throw DependencyMissing(fullType, "checking argument of " + s);
       }
     }
   }
@@ -125,7 +125,7 @@ public:
   }
 
   // TODO use transform ?
-  std::vector<ReturnValue> ExpandReturnValuesTemplate(
+  std::vector<ReturnValue> expandReturnValuesTemplate(
       const TemplateSubstitution& ts) const {
     std::vector<ReturnValue> result;
     BOOST_FOREACH(const ReturnValue& retVal, returnVals_) {
@@ -140,7 +140,7 @@ public:
     // substitute template in arguments
     argLists_ = expandArgumentListsTemplate(ts);
     // do the same for return types
-    returnVals_ = ExpandReturnValuesTemplate(ts);
+    returnVals_ = expandReturnValuesTemplate(ts);
   }
 
   // emit a list of comments, one for each overload

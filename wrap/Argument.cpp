@@ -31,11 +31,7 @@ using namespace wrap;
 /* ************************************************************************* */
 Argument Argument::expandTemplate(const TemplateSubstitution& ts) const {
   Argument instArg = *this;
-  if (type.name == ts.templateArg) {
-    instArg.type = ts.qualifiedType;
-  } else if (type.name == "This") {
-    instArg.type = ts.expandedClass;
-  }
+  instArg.type = ts(type);
   return instArg;
 }
 

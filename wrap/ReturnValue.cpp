@@ -1,6 +1,5 @@
 /**
  * @file ReturnValue.cpp
- *
  * @date Dec 1, 2011
  * @author Alex Cunningham
  * @author Andrew Melim
@@ -16,61 +15,10 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-string ReturnType::str(bool add_ptr) const {
-  return maybe_shared_ptr(add_ptr && isPtr, qualifiedName("::"), name);
-}
-
-/* ************************************************************************* */
-void ReturnType::wrap_result(const string& out, const string& result,
-    FileWriter& file, const TypeAttributesTable& typeAttributes) const {
-
-  string cppType = qualifiedName("::"), matlabType = qualifiedName(".");
-
-  if (category == CLASS) {
-    string objCopy, ptrType;
-    ptrType = "Shared" + name;
-    const bool isVirtual = typeAttributes.at(cppType).isVirtual;
-    if (isVirtual) {
-      if (isPtr)
-        objCopy = result;
-      else
-        objCopy = result + ".clone()";
-    } else {
-      if (isPtr)
-        objCopy = result;
-      else
-        objCopy = ptrType + "(new " + cppType + "(" + result + "))";
-    }
-    file.oss << out << " = wrap_shared_ptr(" << objCopy << ",\"" << matlabType
-        << "\", " << (isVirtual ? "true" : "false") << ");\n";
-  } else if (isPtr) {
-    file.oss << "  Shared" << name << "* ret = new Shared" << name << "("
-        << result << ");" << endl;
-    file.oss << out << " = wrap_shared_ptr(ret,\"" << matlabType << "\");\n";
-  } else if (matlabType != "void")
-    file.oss << out << " = wrap< " << str(false) << " >(" << result << ");\n";
-}
-
-/* ************************************************************************* */
-void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
-  if (category == CLASS)
-    wrapperFile.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
-        << "> Shared" << name << ";" << endl;
-}
-
-/* ************************************************************************* */
 ReturnValue ReturnValue::expandTemplate(const TemplateSubstitution& ts) const {
   ReturnValue instRetVal = *this;
-  if (type1.name == ts.templateArg) {
-    instRetVal.type1.rename(ts.qualifiedType);
-  } else if (type1.name == "This") {
-    instRetVal.type1.rename(ts.expandedClass);
-  }
-  if (type2.name == ts.templateArg) {
-    instRetVal.type2.rename(ts.qualifiedType);
-  } else if (type2.name == "This") {
-    instRetVal.type2.rename(ts.expandedClass);
-  }
+  instRetVal.type1 = ts(type1);
+  if (isPair) instRetVal.type2 = ts(type2);
   return instRetVal;
 }
 

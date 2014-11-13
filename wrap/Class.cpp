@@ -274,13 +274,15 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
     Str templateArgName, const vector<Qualified>& templateArgValues) {
   // Check if templated
   if (!templateArgName.empty() && templateArgValues.size() > 0) {
+    cout << methodName << endl;
     // Create method to expand
     // For all values of the template argument, create a new method
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
       const TemplateSubstitution ts(templateArgName, instName, this->name);
+      cout << ts << endl;
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
-      // do the same for return types
+      // do the same for return type
       ReturnValue expandedRetVal = returnValue.expandTemplate(ts);
       // Now stick in new overload stack with expandedMethodName key
       // but note we use the same, unexpanded methodName in overload
