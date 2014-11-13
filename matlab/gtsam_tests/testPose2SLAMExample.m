@@ -57,6 +57,6 @@ result = optimizer.optimizeSafely();
 marginals = Marginals(graph, result);
 P = marginals.marginalCovariance(1);
 
-pose_1 = result.at(1);
+pose_1 = result.atPose2(1);
 CHECK('pose_1.equals(Pose2,1e-4)',pose_1.equals(Pose2,1e-4));
 
