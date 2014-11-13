@@ -2349,11 +2349,11 @@ class ImuFactorPreintegratedMeasurements {
   void print(string s) const;
   bool equals(const gtsam::ImuFactorPreintegratedMeasurements& expected, double tol);
   Matrix MeasurementCovariance() const;
-  Matrix getDeltaRij() const;
-  double getDeltaTij() const;
-  Vector getDeltaPij() const;
-  Vector getDeltaVij() const;
-  Vector getBiasHat() const;
+  Matrix DeltaRij() const;
+  double DeltaTij() const;
+  Vector DeltaPij() const;
+  Vector DeltaVij() const;
+  Vector BiasHat() const;
 
 
   // Standard Interface
@@ -2389,10 +2389,9 @@ class AHRSFactorPreintegratedMeasurements {
 
   // get Data
   Matrix MeasurementCovariance() const;
-  Matrix MeasurementCovariance() const;
-  Matrix deltaRij_() const;
-  double deltaTij_() const;
-  Vector biasHat_() const;
+  Matrix DeltaRij() const;
+  double DeltaTij() const;
+  Vector BiasHat() const;
 
   // Standard Interface
   void integrateMeasurement(Vector measuredOmega, double deltaT);
@@ -2447,11 +2446,11 @@ class CombinedImuFactorPreintegratedMeasurements {
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT);
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT, const gtsam::Pose3& body_P_sensor);
 
-  Matrix getDeltaRij() const;
-  double getDeltaTij() const;
-  Vector getDeltaPij() const;
-  Vector getDeltaVij() const;
-  Vector getBiasHat() const;
+  Matrix DeltaRij() const;
+  double DeltaTij() const;
+  Vector DeltaPij() const;
+  Vector DeltaVij() const;
+  Vector BiasHat() const;
 };
 
 virtual class CombinedImuFactor : gtsam::NonlinearFactor {
