@@ -19,43 +19,50 @@
 #include "TemplateInstantiationTypedef.h"
 
 #include "utilities.h"
+#include <iostream>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 using namespace std;
 
 namespace wrap {
 
-  Class TemplateInstantiationTypedef::findAndExpand(const vector<Class>& classes) const {
-    // Find matching class
-    std::vector<Class>::const_iterator clsIt = classes.end();
-    for(std::vector<Class>::const_iterator it = classes.begin(); it != classes.end(); ++it) {
-      if(it->name == className && it->namespaces == classNamespaces && it->templateArgs.size() == typeList.size()) {
-        clsIt = it;
-        break;
-      }
+Class TemplateInstantiationTypedef::findAndExpand(
+    const vector<Class>& classes) const {
+  // Find matching class
+  boost::optional<Class const &> matchedClass;
+  BOOST_FOREACH(const Class& cls, classes) {
+    if (cls.name == class_.name && cls.namespaces == class_.namespaces
+        && cls.templateArgs.size() == typeList.size()) {
+      matchedClass.reset(cls);
+      break;
     }
-
-    if(clsIt == classes.end())
-      throw DependencyMissing(wrap::qualifiedName("::", classNamespaces, className),
-      "instantiation into typedef name " + wrap::qualifiedName("::", namespaces, name) +
-      ".  Ensure that the typedef provides the correct number of template arguments.");
-
-    // Instantiate it
-    Class classInst = *clsIt;
-    for(size_t i = 0; i < typeList.size(); ++i)
-      classInst = classInst.expandTemplate(classInst.templateArgs[i], typeList[i], namespaces, name);
-
-    // Fix class properties
-    classInst.name = name;
-    classInst.templateArgs.clear();
-    classInst.typedefName = clsIt->qualifiedName("::") + "<";
-    if(typeList.size() > 0)
-      classInst.typedefName += wrap::qualifiedName("::", typeList[0]);
-    for(size_t i = 1; i < typeList.size(); ++i)
-      classInst.typedefName += (", " + wrap::qualifiedName("::", typeList[i]));
-    classInst.typedefName += ">";
-    classInst.namespaces = namespaces;
-
-    return classInst;
   }
+
+  if (!matchedClass)
+    throw DependencyMissing(class_.qualifiedName("::"),
+        "instantiation into typedef name " + qualifiedName("::")
+            + ".  Ensure that the typedef provides the correct number of template arguments.");
+
+  // Instantiate it
+  Class classInst = *matchedClass;
+  for (size_t i = 0; i < typeList.size(); ++i) {
+    TemplateSubstitution ts(classInst.templateArgs[i], typeList[i], *this);
+    classInst = classInst.expandTemplate(ts);
+  }
+
+  // Fix class properties
+  classInst.name = name;
+  classInst.templateArgs.clear();
+  classInst.typedefName = matchedClass->qualifiedName("::") + "<";
+  if (typeList.size() > 0)
+    classInst.typedefName += typeList[0].qualifiedName("::");
+  for (size_t i = 1; i < typeList.size(); ++i)
+    classInst.typedefName += (", " + typeList[i].qualifiedName("::"));
+  classInst.typedefName += ">";
+  classInst.namespaces = namespaces;
+
+  return classInst;
+}
 
 }

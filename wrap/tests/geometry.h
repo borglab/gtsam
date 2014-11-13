@@ -3,6 +3,8 @@
 class VectorNotEigen;
 class ns::OtherClass;
 
+namespace gtsam {
+
 class Point2 {
  Point2();
  Point2(double x, double y);
@@ -23,12 +25,13 @@ class Point3 {
 
   // static functions - use static keyword and uppercase
   static double staticFunction();
-  static Point3 StaticFunctionRet(double z);
+  static gtsam::Point3 StaticFunctionRet(double z);
 
   // enabling serialization functionality
   void serialize() const; // Just triggers a flag internally and removes actual function
 };
 
+}
 // another comment
 
 // another comment
@@ -71,7 +74,7 @@ class Test {
   Test* return_TestPtr(Test* value) const;
   Test  return_Test(Test* value) const;
 
-  Point2* return_Point2Ptr(bool value) const;
+  gtsam::Point2* return_Point2Ptr(bool value) const;
 
   pair<Test*,Test*> create_ptrs () const;
   pair<Test ,Test*> create_MixedPtrs () const;
@@ -90,6 +93,38 @@ Vector aGlobalFunction();
 // An overloaded global function
 Vector overloadedGlobalFunction(int a);
 Vector overloadedGlobalFunction(int a, double b);
+
+// A base class
+virtual class MyBase {
+
+};
+
+// A templated class
+template<T = {gtsam::Point2, gtsam::Point3}>
+virtual class MyTemplate : MyBase {
+  MyTemplate();
+
+  template<ARG = {gtsam::Point2, gtsam::Point3}>
+  void templatedMethod(const ARG& t);
+
+  // Stress test templates and pointer combinations
+  void accept_T(const T& value) const;
+  void accept_Tptr(T* value) const;
+  T* return_Tptr(T* value) const;
+  T  return_T(T* value) const;
+  pair<T*,T*> create_ptrs () const;
+  pair<T ,T*> create_MixedPtrs () const;
+  pair<T*,T*> return_ptrs (T* p1, T* p2) const;
+};
+
+// A doubly templated class
+template<POSE, POINT>
+class MyFactor {
+  MyFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+};
+
+// and a typedef specializing it
+typedef MyFactor<gtsam::Pose2, gtsam::Point2> MyFactorPosePoint2;
 
 // comments at the end!
 

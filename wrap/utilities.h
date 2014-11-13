@@ -18,17 +18,20 @@
 
 #pragma once
 
+#include "FileWriter.h"
+
+#include <boost/format.hpp>
+#include <boost/foreach.hpp>
+
+#include <string>
 #include <vector>
 #include <exception>
 #include <fstream>
 #include <sstream>
+
 //#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags
 //#include <cinttypes>  // same failure as above
 #include <stdint.h> // works on Linux GCC
-#include <string>
-#include <boost/format.hpp>
-
-#include "FileWriter.h"
 
 namespace wrap {
 
@@ -123,12 +126,12 @@ bool assert_equal(const std::vector<std::string>& expected, const std::vector<st
 std::string maybe_shared_ptr(bool add, const std::string& qtype, const std::string& type);
 
 /**
- * Return a qualified name, if finalName is empty, only the names vector will
- * be used (i.e. there won't be a trailing separator on the qualified name).
+ * Return a qualified name
  */
-std::string qualifiedName(const std::string& separator, const std::vector<std::string>& names, const std::string& finalName = "");
+std::string qualifiedName(const std::string& separator, const std::vector<std::string>& names);
 
 /** creates the necessary folders for namespaces, as specified by a namespace stack */
-void createNamespaceStructure(const std::vector<std::string>& namespaces, const std::string& toolboxPath);
+void createNamespaceStructure(const std::vector<std::string>& namespaces,
+    const std::string& toolboxPath);
 
 } // \namespace wrap

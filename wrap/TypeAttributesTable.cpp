@@ -46,12 +46,16 @@ namespace wrap {
   void TypeAttributesTable::checkValidity(const vector<Class>& classes) const {
     BOOST_FOREACH(const Class& cls, classes) {
       // Check that class is virtual if it has a parent
-      if(!cls.qualifiedParent.empty() && !cls.isVirtual)
-        throw AttributeError(cls.qualifiedName("::"), "Has a base class so needs to be declared virtual, change to 'virtual class "+cls.name+" ...'");
+      if (!cls.qualifiedParent.empty() && !cls.isVirtual)
+        throw AttributeError(cls.qualifiedName("::"),
+            "Has a base class so needs to be declared virtual, change to 'virtual class "
+                + cls.name + " ...'");
       // Check that parent is virtual as well
-      if(!cls.qualifiedParent.empty() && !at(wrap::qualifiedName("::", cls.qualifiedParent)).isVirtual)
-        throw AttributeError(wrap::qualifiedName("::", cls.qualifiedParent),
-        "Is the base class of " + cls.qualifiedName("::") + ", so needs to be declared virtual");
+      Qualified parent = cls.qualifiedParent;
+      if (!parent.empty() && !at(parent.qualifiedName("::")).isVirtual)
+        throw AttributeError(parent.qualifiedName("::"),
+            "Is the base class of " + cls.qualifiedName("::")
+                + ", so needs to be declared virtual");
     }
   }
 

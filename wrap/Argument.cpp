@@ -29,33 +29,52 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
+Argument Argument::expandTemplate(const TemplateSubstitution& ts) const {
+  Argument instArg = *this;
+  instArg.type = ts(type);
+  return instArg;
+}
+
+/* ************************************************************************* */
+ArgumentList ArgumentList::expandTemplate(const TemplateSubstitution& ts) const {
+  ArgumentList instArgList;
+  BOOST_FOREACH(const Argument& arg, *this) {
+    Argument instArg = arg.expandTemplate(ts);
+    instArgList.push_back(instArg);
+  }
+  return instArgList;
+}
+
+/* ************************************************************************* */
 string Argument::matlabClass(const string& delim) const {
   string result;
-  BOOST_FOREACH(const string& ns, namespaces)
+  BOOST_FOREACH(const string& ns, type.namespaces)
     result += ns + delim;
-  if (type == "string" || type == "unsigned char" || type == "char")
+  if (type.name == "string" || type.name == "unsigned char"
+      || type.name == "char")
     return result + "char";
-  if (type == "Vector" || type == "Matrix")
+  if (type.name == "Vector" || type.name == "Matrix")
     return result + "double";
-  if (type == "int" || type == "size_t")
+  if (type.name == "int" || type.name == "size_t")
     return result + "numeric";
-  if (type == "bool")
+  if (type.name == "bool")
     return result + "logical";
-  return result + type;
+  return result + type.name;
 }
 
 /* ************************************************************************* */
 bool Argument::isScalar() const {
-  return (type == "bool" || type == "char" || type == "unsigned char"
-      || type == "int" || type == "size_t" || type == "double");
+  return (type.name == "bool" || type.name == "char"
+      || type.name == "unsigned char" || type.name == "int"
+      || type.name == "size_t" || type.name == "double");
 }
 
 /* ************************************************************************* */
 void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   file.oss << "  ";
 
-  string cppType = qualifiedType("::");
-  string matlabUniqueType = qualifiedType();
+  string cppType = type.qualifiedName("::");
+  string matlabUniqueType = type.qualifiedName();
 
   if (is_ptr)
     // A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
@@ -79,21 +98,13 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 }
 
 /* ************************************************************************* */
-string Argument::qualifiedType(const string& delim) const {
-  string result;
-  BOOST_FOREACH(const string& ns, namespaces)
-    result += ns + delim;
-  return result + type;
-}
-
-/* ************************************************************************* */
 string ArgumentList::types() const {
   string str;
   bool first = true;
   BOOST_FOREACH(Argument arg, *this) {
     if (!first)
       str += ",";
-    str += arg.type;
+    str += arg.type.name;
     first = false;
   }
   return str;
@@ -105,14 +116,14 @@ string ArgumentList::signature() const {
   bool cap = false;
 
   BOOST_FOREACH(Argument arg, *this) {
-    BOOST_FOREACH(char ch, arg.type)
+    BOOST_FOREACH(char ch, arg.type.name)
       if (isupper(ch)) {
         sig += ch;
         //If there is a capital letter, we don't want to read it below
         cap = true;
       }
     if (!cap)
-      sig += arg.type[0];
+      sig += arg.type.name[0];
     //Reset to default
     cap = false;
   }
@@ -136,7 +147,8 @@ string ArgumentList::names() const {
 /* ************************************************************************* */
 bool ArgumentList::allScalar() const {
   BOOST_FOREACH(Argument arg, *this)
-      if (!arg.isScalar()) return false;
+    if (!arg.isScalar())
+      return false;
   return true;
 }
 
@@ -158,42 +170,43 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   BOOST_FOREACH(Argument arg, *this) {
     if (!first)
       file.oss << ", ";
-    file.oss << arg.type << " " << arg.name;
+    file.oss << arg.type.name << " " << arg.name;
     first = false;
   }
   file.oss << ")";
 }
 /* ************************************************************************* */
-void ArgumentList::emit_call(FileWriter& file, const ReturnValue& returnVal,
-    const string& wrapperName, int id, bool staticMethod) const {
-  returnVal.emit_matlab(file);
-  file.oss << wrapperName << "(" << id;
+void ArgumentList::emit_call(FileWriter& proxyFile,
+    const ReturnValue& returnVal, const string& wrapperName, int id,
+    bool staticMethod) const {
+  returnVal.emit_matlab(proxyFile);
+  proxyFile.oss << wrapperName << "(" << id;
   if (!staticMethod)
-    file.oss << ", this";
-  file.oss << ", varargin{:});\n";
+    proxyFile.oss << ", this";
+  proxyFile.oss << ", varargin{:});\n";
 }
 /* ************************************************************************* */
-void ArgumentList::emit_conditional_call(FileWriter& file,
+void ArgumentList::emit_conditional_call(FileWriter& proxyFile,
     const ReturnValue& returnVal, const string& wrapperName, int id,
     bool staticMethod) const {
   // Check nr of arguments
-  file.oss << "if length(varargin) == " << size();
+  proxyFile.oss << "if length(varargin) == " << size();
   if (size() > 0)
-    file.oss << " && ";
-  // ...and their types
+    proxyFile.oss << " && ";
+  // ...and their type.names
   bool first = true;
   for (size_t i = 0; i < size(); i++) {
     if (!first)
-      file.oss << " && ";
-    file.oss << "isa(varargin{" << i + 1 << "},'" << (*this)[i].matlabClass(".")
-        << "')";
+      proxyFile.oss << " && ";
+    proxyFile.oss << "isa(varargin{" << i + 1 << "},'"
+        << (*this)[i].matlabClass(".") << "')";
     first = false;
   }
-  file.oss << "\n";
+  proxyFile.oss << "\n";
 
   // output call to C++ wrapper
-  file.oss << "        ";
-  emit_call(file, returnVal, wrapperName, id, staticMethod);
+  proxyFile.oss << "        ";
+  emit_call(proxyFile, returnVal, wrapperName, id, staticMethod);
 }
 /* ************************************************************************* */
 
