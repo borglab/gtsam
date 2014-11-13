@@ -398,7 +398,6 @@ GTSAM_EXPORT Matrix collect(size_t nrMatrices, ...);
  * Arguments (Matrix, Vector) scales the columns,
  * (Vector, Matrix) scales the rows
  * @param inf_mask when true, will not scale with a NaN or inf value.
- * The inplace version also allows v.size()<A.rows() and only scales the first v.size() rows of A.
  */
 GTSAM_EXPORT void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask = false); // row
 GTSAM_EXPORT Matrix vector_scale(const Vector& v, const Matrix& A, bool inf_mask = false); // row
@@ -467,7 +466,7 @@ GTSAM_EXPORT Matrix Cayley(const Matrix& A);
 /// Implementation of Cayley transform using fixed size matrices to let
 /// Eigen do more optimization
 template<int N>
-Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
+Eigen::Matrix<double, N, N> CayleyFixed(const Eigen::Matrix<double, N, N>& A) {
   typedef Eigen::Matrix<double, N, N> FMat;
   return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
 }

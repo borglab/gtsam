@@ -328,10 +328,6 @@ TEST(Unit3, localCoordinates_retract_expmap) {
 //*******************************************************************************
 TEST(Unit3, Random) {
   boost::mt19937 rng(42);
-  // Check that is deterministic given same random seed
-  Point3 expected(-0.667578, 0.671447, 0.321713);
-  Point3 actual = Unit3::Random(rng).point3();
-  EXPECT(assert_equal(expected,actual,1e-5));
   // Check that means are all zero at least
   Point3 expectedMean, actualMean;
   for (size_t i = 0; i < 100; i++)

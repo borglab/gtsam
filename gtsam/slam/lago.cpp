@@ -223,7 +223,7 @@ static PredecessorMap<Key> findOdometricPath(
     const NonlinearFactorGraph& pose2Graph) {
 
   PredecessorMap<Key> tree;
-  Key minKey;
+  Key minKey = keyAnchor; // this initialization does not matter
   bool minUnassigned = true;
 
   BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, pose2Graph) {

@@ -72,23 +72,23 @@ int main(int argc, char** argv) {
   // 2a. Add a prior on the first pose, setting it to the origin
   // A prior factor consists of a mean and a noise model (covariance matrix)
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1));
-  graph.push_back(PriorFactor<Pose2>(1, Pose2(0, 0, 0), priorNoise));
+  graph.add(PriorFactor<Pose2>(1, Pose2(0, 0, 0), priorNoise));
 
   // For simplicity, we will use the same noise model for odometry and loop closures
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
   // Create odometry (Between) factors between consecutive poses
-  graph.push_back(BetweenFactor<Pose2>(1, 2, Pose2(2, 0, 0     ), model));
-  graph.push_back(BetweenFactor<Pose2>(2, 3, Pose2(2, 0, M_PI_2), model));
-  graph.push_back(BetweenFactor<Pose2>(3, 4, Pose2(2, 0, M_PI_2), model));
-  graph.push_back(BetweenFactor<Pose2>(4, 5, Pose2(2, 0, M_PI_2), model));
+  graph.add(BetweenFactor<Pose2>(1, 2, Pose2(2, 0, 0     ), model));
+  graph.add(BetweenFactor<Pose2>(2, 3, Pose2(2, 0, M_PI_2), model));
+  graph.add(BetweenFactor<Pose2>(3, 4, Pose2(2, 0, M_PI_2), model));
+  graph.add(BetweenFactor<Pose2>(4, 5, Pose2(2, 0, M_PI_2), model));
 
   // 2c. Add the loop closure constraint
   // This factor encodes the fact that we have returned to the same pose. In real systems,
   // these constraints may be identified in many ways, such as appearance-based techniques
   // with camera images. We will use another Between Factor to enforce this constraint:
-  graph.push_back(BetweenFactor<Pose2>(5, 2, Pose2(2, 0, M_PI_2), model));
+  graph.add(BetweenFactor<Pose2>(5, 2, Pose2(2, 0, M_PI_2), model));
   graph.print("\nFactor Graph:\n"); // print
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution
