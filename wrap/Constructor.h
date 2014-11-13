@@ -40,7 +40,7 @@ struct Constructor: public ArgumentOverloads {
   Constructor expandTemplate(const TemplateSubstitution& ts) const {
     Constructor inst = *this;
     inst.argLists_ = expandArgumentListsTemplate(ts);
-    inst.name = inst.name;
+    inst.name = ts.expandedClassName();
     return inst;
   }
 

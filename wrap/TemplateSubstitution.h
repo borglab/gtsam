@@ -39,6 +39,10 @@ public:
       templateArg_(a), qualifiedType_(t), expandedClass_(e) {
   }
 
+  std::string expandedClassName() const {
+    return expandedClass_.name;
+  }
+
   // Substitute if needed
   Qualified operator()(const Qualified& type) const {
     if (type.name == templateArg_ && type.namespaces.empty())
