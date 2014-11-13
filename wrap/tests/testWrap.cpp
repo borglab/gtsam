@@ -220,7 +220,7 @@ TEST( wrap, Geometry ) {
     }
 
     EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
-    EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
+    EXPECT_LONGS_EQUAL(1, cls.namespaces.size());
 
 #ifndef WRAP_DISABLE_SERIALIZE
     // check serialization flag
@@ -236,7 +236,7 @@ TEST( wrap, Geometry ) {
     EXPECT_LONGS_EQUAL(1, cls.constructor.args_list.size());
     EXPECT_LONGS_EQUAL(1, cls.nrMethods());
     EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
-    EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
+    EXPECT_LONGS_EQUAL(1, cls.namespaces.size());
 
     // first constructor takes 3 doubles
     ArgumentList c1 = cls.constructor.args_list.front();
@@ -455,8 +455,8 @@ TEST( wrap, matlab_code_geometry ) {
   string apath = "actual/";
 
   EXPECT(files_equal(epath + "geometry_wrapper.cpp" , apath + "geometry_wrapper.cpp" ));
-  EXPECT(files_equal(epath + "Point2.m"             , apath + "Point2.m"             ));
-  EXPECT(files_equal(epath + "Point3.m"             , apath + "Point3.m"             ));
+  EXPECT(files_equal(epath + "+gtsam/Point2.m"      , apath + "+gtsam/Point2.m"             ));
+  EXPECT(files_equal(epath + "+gtsam/Point3.m"      , apath + "+gtsam/Point3.m"             ));
   EXPECT(files_equal(epath + "Test.m"               , apath + "Test.m"               ));
   EXPECT(files_equal(epath + "MyBase.m"             , apath + "MyBase.m"             ));
   EXPECT(files_equal(epath + "MyTemplatePoint2.m"   , apath + "MyTemplatePoint2.m"   ));

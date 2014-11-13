@@ -41,12 +41,14 @@ struct Method {
   std::string name;
   std::vector<ArgumentList> argLists;
   std::vector<ReturnValue> returnVals;
+  std::vector<Qualified> templateArgValues; ///< value of template argument if applicable
 
   // The first time this function is called, it initializes the class members
   // with those in rhs, but in subsequent calls it adds additional argument
   // lists as function overloads.
   void addOverload(bool verbose, bool is_const, const std::string& name,
-      const ArgumentList& args, const ReturnValue& retVal);
+      const ArgumentList& args, const ReturnValue& retVal,
+      const Qualified& instName = Qualified());
 
   // MATLAB code generation
   // classPath is class directory, e.g., ../matlab/@Point2
@@ -57,9 +59,12 @@ struct Method {
       std::vector<std::string>& functionNames) const;
 
 private:
+
+  /// Emit C++ code
   std::string wrapper_fragment(FileWriter& wrapperFile,
       const std::string& cppClassName, const std::string& matlabUniqueName,
-      int overload, int id, const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
+      int overload, int id, const TypeAttributesTable& typeAttributes,
+      const Qualified& instName) const; ///< cpp wrapper
 };
 
 } // \namespace wrap

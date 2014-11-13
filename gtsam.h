@@ -1749,17 +1749,9 @@ class Values {
   void update(size_t j, const gtsam::Cal3Bundler& t);
   void update(size_t j, const gtsam::EssentialMatrix& t);
 
-  // But it would be nice if this worked:
-  //  template<class T = {
-  //      gtsam::Point2,
-  //      gtsam::Point3,
-  //      gtsam::Rot2,
-  //      gtsam::Pose2,
-  //      gtsam::Rot3,
-  //      gtsam::Pose3,
-  //      gtsam::Cal3_S2,
-  //      gtsam::Cal3DS2}>
-  //  void insert(size_t j, const T& value);
+  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2,
+      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2}>
+  T at(size_t j);
 };
 
 // Actually a FastList<Key>

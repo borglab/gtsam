@@ -341,11 +341,8 @@ void Class::addMethod(bool verbose, bool is_const, const string& name,
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
       Method expanded = //
           expandMethodTemplate(method, templateArgName, instName, *this);
-      expanded.name += instName.name;
-      if (exists(expanded.name))
-        throw runtime_error(
-            "Class::addMethod: Overloading and templates are mutex, for now");
-      methods[expanded.name] = expanded;
+      methods[name].addOverload(verbose, is_const, name, expanded.argLists[0],
+          expanded.returnVals[0], instName);
     }
   } else
     // just add overload

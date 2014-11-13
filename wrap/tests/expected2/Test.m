@@ -10,7 +10,7 @@
 %create_MixedPtrs() : returns pair< Test, Test >
 %create_ptrs() : returns pair< Test, Test >
 %print() : returns void
-%return_Point2Ptr(bool value) : returns Point2
+%return_Point2Ptr(bool value) : returns gtsam::Point2
 %return_Test(Test value) : returns Test
 %return_TestPtr(Test value) : returns Test
 %return_bool(bool value) : returns bool
@@ -82,7 +82,7 @@ classdef Test < handle
     end
 
     function varargout = return_Point2Ptr(this, varargin)
-      % RETURN_POINT2PTR usage: return_Point2Ptr(bool value) : returns Point2
+      % RETURN_POINT2PTR usage: return_Point2Ptr(bool value) : returns gtsam::Point2
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       varargout{1} = geometry_wrapper(25, this, varargin{:});
     end

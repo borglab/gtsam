@@ -30,17 +30,19 @@ using namespace wrap;
 
 /* ************************************************************************* */
 void Method::addOverload(bool verbose, bool is_const, const std::string& name,
-    const ArgumentList& args, const ReturnValue& retVal) {
+    const ArgumentList& args, const ReturnValue& retVal,
+    const Qualified& instName) {
   if (!this->name.empty() && this->name != name)
     throw std::runtime_error(
         "Method::addOverload: tried to add overload with name " + name
             + " instead of expected " + this->name);
   else
     this->name = name;
-  this->verbose_ = verbose;
-  this->is_const_ = is_const;
-  this->argLists.push_back(args);
-  this->returnVals.push_back(retVal);
+  verbose_ = verbose;
+  is_const_ = is_const;
+  argLists.push_back(args);
+  returnVals.push_back(retVal);
+  templateArgValues.push_back(instName);
 }
 
 /* ************************************************************************* */
@@ -92,7 +94,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
 
     // Output C++ wrapper code
     const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
-        matlabUniqueName, 0, id, typeAttributes);
+        matlabUniqueName, 0, id, typeAttributes, templateArgValues[0]);
 
     // Add to function list
     functionNames.push_back(wrapFunctionName);
@@ -108,7 +110,8 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
 
       // Output C++ wrapper code
       const string wrapFunctionName = wrapper_fragment(wrapperFile,
-          cppClassName, matlabUniqueName, overload, id, typeAttributes);
+          cppClassName, matlabUniqueName, overload, id, typeAttributes,
+          templateArgValues[overload]);
 
       // Add to function list
       functionNames.push_back(wrapFunctionName);
@@ -126,7 +129,8 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
 /* ************************************************************************* */
 string Method::wrapper_fragment(FileWriter& wrapperFile,
     const string& cppClassName, const string& matlabUniqueName, int overload,
-    int id, const TypeAttributesTable& typeAttributes) const {
+    int id, const TypeAttributesTable& typeAttributes,
+    const Qualified& instName) const {
 
   // generate code
 
@@ -162,11 +166,14 @@ string Method::wrapper_fragment(FileWriter& wrapperFile,
 
   // call method and wrap result
   // example: out[0]=wrap<bool>(self->return_field(t));
+  string expanded = "obj->" + name;
+  if (!instName.empty())
+    expanded += ("<" + instName.qualifiedName("::") + ">");
+  expanded += ("(" + args.names() + ")");
   if (returnVal.type1.name != "void")
-    returnVal.wrap_result("obj->" + name + "(" + args.names() + ")",
-        wrapperFile, typeAttributes);
+    returnVal.wrap_result(expanded, wrapperFile, typeAttributes);
   else
-    wrapperFile.oss << "  obj->" + name + "(" + args.names() + ");\n";
+    wrapperFile.oss << "  " + expanded + ";\n";
 
   // finish
   wrapperFile.oss << "}\n";
