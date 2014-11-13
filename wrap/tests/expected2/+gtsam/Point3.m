@@ -48,27 +48,13 @@ classdef Point3 < handle
     function varargout = StaticFunctionRet(varargin)
       % STATICFUNCTIONRET usage: StaticFunctionRet(double z) : returns gtsam::Point3
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Usage
-      % STATICFUNCTIONRET(double z)
-      if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(15, varargin{:});
-      else
-        error('Arguments do not match any overload of function gtsam.Point3.StaticFunctionRet');
-      end
+      varargout{1} = geometry_wrapper(15, varargin{:});
     end
 
     function varargout = StaticFunction(varargin)
       % STATICFUNCTION usage: staticFunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Usage
-      % STATICFUNCTION()
-      if length(varargin) == 0
-        varargout{1} = geometry_wrapper(16, varargin{:});
-      else
-        error('Arguments do not match any overload of function gtsam.Point3.StaticFunction');
-      end
+      varargout{1} = geometry_wrapper(16, varargin{:});
     end
 
   end

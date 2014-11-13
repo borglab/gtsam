@@ -33,6 +33,10 @@ struct StaticMethod: public Function, public SignatureOverloads {
       Function(verbosity) {
   }
 
+  virtual bool isStatic() const {
+    return true;
+  }
+
   void addOverload(bool verbose, Str name, const ArgumentList& args,
       const ReturnValue& retVal, const Qualified& instName);
 

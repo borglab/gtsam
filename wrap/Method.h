@@ -23,7 +23,11 @@
 namespace wrap {
 
 /// Method class
-struct Method: public StaticMethod {
+class Method: public StaticMethod {
+
+  bool is_const_;
+
+public:
 
   typedef const std::string& Str;
 
@@ -32,7 +36,13 @@ struct Method: public StaticMethod {
       StaticMethod(verbose), is_const_(false) {
   }
 
-  bool is_const_;
+  virtual bool isStatic() const {
+    return false;
+  }
+
+  virtual bool isConst() const {
+    return is_const_;
+  }
 
   // The first time this function is called, it initializes the class members
   // with those in rhs, but in subsequent calls it adds additional argument

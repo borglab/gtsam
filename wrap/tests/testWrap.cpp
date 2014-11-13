@@ -98,7 +98,7 @@ TEST( wrap, Small ) {
   // Method 1
   Method m1 = cls.method("x");
   EXPECT(assert_equal("x", m1.name()));
-  EXPECT(m1.is_const_);
+  EXPECT(m1.isConst());
   LONGS_EQUAL(1, m1.nrOverloads());
 
   ReturnValue rv1 = m1.returnValue(0);
@@ -110,7 +110,7 @@ TEST( wrap, Small ) {
   // Method 2
   Method m2 = cls.method("returnMatrix");
   EXPECT(assert_equal("returnMatrix", m2.name()));
-  EXPECT(m2.is_const_);
+  EXPECT(m2.isConst());
   LONGS_EQUAL(1, m2.nrOverloads());
 
   ReturnValue rv2 = m2.returnValue(0);
@@ -122,7 +122,7 @@ TEST( wrap, Small ) {
   // Method 3
   Method m3 = cls.method("returnPoint2");
   EXPECT(assert_equal("returnPoint2", m3.name()));
-  EXPECT(m3.is_const_);
+  EXPECT(m3.isConst());
   LONGS_EQUAL(1, m3.nrOverloads());
 
   ReturnValue rv3 = m3.returnValue(0);
@@ -198,7 +198,7 @@ TEST( wrap, Geometry ) {
       EXPECT(assert_equal("returnChar", m1.name()));
       LONGS_EQUAL(1, m1.nrOverloads());
       EXPECT_LONGS_EQUAL(0, m1.argumentList(0).size());
-      EXPECT(m1.is_const_);
+      EXPECT(m1.isConst());
     }
 
     {
@@ -212,7 +212,7 @@ TEST( wrap, Geometry ) {
       EXPECT(assert_equal("vectorConfusion", m1.name()));
       LONGS_EQUAL(1, m1.nrOverloads());
       EXPECT_LONGS_EQUAL(0, m1.argumentList(0).size());
-      EXPECT(!m1.is_const_);
+      EXPECT(!m1.isConst());
     }
 
     EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
@@ -254,7 +254,7 @@ TEST( wrap, Geometry ) {
     EXPECT(assert_equal("norm", m1.name()));
     LONGS_EQUAL(1, m1.nrOverloads());
     EXPECT_LONGS_EQUAL(0, m1.argumentList(0).size());
-    EXPECT(m1.is_const_);
+    EXPECT(m1.isConst());
 
 #ifndef WRAP_DISABLE_SERIALIZE
     // check serialization flag

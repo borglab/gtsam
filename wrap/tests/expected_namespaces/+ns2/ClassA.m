@@ -65,7 +65,7 @@ classdef ClassA < handle
     function varargout = Afunction(varargin)
       % AFUNCTION usage: afunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      varargout{1} = testNamespaces_wrapper(12, this, varargin{:});
+      varargout{1} = testNamespaces_wrapper(12, varargin{:});
     end
 
   end

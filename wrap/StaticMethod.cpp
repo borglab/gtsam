@@ -55,9 +55,9 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
   proxy_header(proxyFile);
 
   // Emit comments for documentation
-  string up_name = boost::to_upper_copy(name_);
+  string up_name = boost::to_upper_copy(matlabName());
   proxyFile.oss << "      % " << up_name << " usage: ";
-  usage_fragment(proxyFile, name_);
+  usage_fragment(proxyFile, matlabName());
 
   // Emit URL to Doxygen page
   proxyFile.oss << "      % "
@@ -67,9 +67,11 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
   // Handle special case of single overload with all numeric arguments
   if (nrOverloads() == 1 && argumentList(0).allScalar()) {
     // Output proxy matlab code
+    // TODO: document why is it OK to not check arguments in this case
     proxyFile.oss << "      ";
     const int id = (int) functionNames.size();
-    argumentList(0).emit_call(proxyFile, returnValue(0), wrapperName, id);
+    argumentList(0).emit_call(proxyFile, returnValue(0), wrapperName, id,
+        isStatic());
 
     // Output C++ wrapper code
     const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
@@ -85,7 +87,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
       proxyFile.oss << "      " << (i == 0 ? "" : "else");
       const int id = (int) functionNames.size();
       argumentList(i).emit_conditional_call(proxyFile, returnValue(i),
-          wrapperName, id);
+          wrapperName, id, isStatic());
 
       // Output C++ wrapper code
       const string wrapFunctionName = wrapper_fragment(wrapperFile,
