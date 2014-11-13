@@ -187,13 +187,6 @@ public:
 // Templated checking functions
 // TODO: do this via polymorphism ?
 
-template<class F>
-F expandMethodTemplate(F& method, const TemplateSubstitution& ts) {
-  F instMethod = method;
-  method.expandTemplate(ts);
-  return instMethod;
-}
-
 // TODO use transform
 template<class F>
 static std::map<std::string, F> expandMethodTemplate(
@@ -201,7 +194,9 @@ static std::map<std::string, F> expandMethodTemplate(
   std::map<std::string, F> result;
   typedef std::pair<const std::string, F> NamedMethod;
   BOOST_FOREACH(NamedMethod namedMethod, methods) {
-    namedMethod.second = expandMethodTemplate(namedMethod.second, ts);
+    F instMethod = namedMethod.second;
+    instMethod.expandTemplate(ts);
+    namedMethod.second = instMethod;
     result.insert(namedMethod);
   }
   return result;

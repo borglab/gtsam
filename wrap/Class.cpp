@@ -248,7 +248,6 @@ Class Class::expandTemplate(const TemplateSubstitution& ts) const {
   inst.static_methods = expandMethodTemplate(static_methods, ts);
   inst.constructor = constructor.expandTemplate(ts);
   inst.deconstructor.name = inst.name;
-  cout << inst << endl;
   return inst;
 }
 
@@ -256,12 +255,10 @@ Class Class::expandTemplate(const TemplateSubstitution& ts) const {
 vector<Class> Class::expandTemplate(Str templateArg,
     const vector<Qualified>& instantiations) const {
   vector<Class> result;
-  cout << *this << endl;
   BOOST_FOREACH(const Qualified& instName, instantiations) {
     Qualified expandedClass = (Qualified) (*this);
     expandedClass.name += instName.name;
     const TemplateSubstitution ts(templateArg, instName, expandedClass);
-    cout << ts << endl;
     Class inst = expandTemplate(ts);
     inst.name = expandedClass.name;
     inst.templateArgs.clear();

@@ -672,6 +672,7 @@ void MyTemplatePoint2_templatedMethod_54(int nargout, mxArray *out[], int nargin
   gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
   obj->templatedMethod<gtsam::Point2>(t);
 }
+
 void MyTemplatePoint2_templatedMethod_55(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
@@ -815,6 +816,7 @@ void MyTemplatePoint3_templatedMethod_67(int nargout, mxArray *out[], int nargin
   gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
   obj->templatedMethod<gtsam::Point2>(t);
 }
+
 void MyTemplatePoint3_templatedMethod_68(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
