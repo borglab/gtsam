@@ -29,24 +29,21 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-Argument Argument::expandTemplate(const string& templateArg,
-    const Qualified& qualifiedType, const Qualified& expandedClass) const {
+Argument Argument::expandTemplate(const TemplateSubstitution& ts) const {
   Argument instArg = *this;
-  if (type.name == templateArg) {
-    instArg.type = qualifiedType;
+  if (type.name == ts.templateArg) {
+    instArg.type = ts.qualifiedType;
   } else if (type.name == "This") {
-    instArg.type = expandedClass;
+    instArg.type = ts.expandedClass;
   }
   return instArg;
 }
 
 /* ************************************************************************* */
-ArgumentList ArgumentList::expandTemplate(const string& templateArg,
-    const Qualified& qualifiedType, const Qualified& expandedClass) const {
+ArgumentList ArgumentList::expandTemplate(const TemplateSubstitution& ts) const {
   ArgumentList instArgList;
   BOOST_FOREACH(const Argument& arg, *this) {
-    Argument instArg = arg.expandTemplate(templateArg, qualifiedType,
-        expandedClass);
+    Argument instArg = arg.expandTemplate(ts);
     instArgList.push_back(instArg);
   }
   return instArgList;

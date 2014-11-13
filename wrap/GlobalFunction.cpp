@@ -19,7 +19,8 @@ using namespace std;
 void GlobalFunction::addOverload(bool verbose, const Qualified& overload,
     const ArgumentList& args, const ReturnValue& retVal,
     const Qualified& instName) {
-  Function::addOverload(verbose, overload.name, args, retVal, instName);
+  Function::addOverload(verbose, overload.name, instName);
+  SignatureOverloads::addOverload(args, retVal);
   overloads.push_back(overload);
 }
 
@@ -37,15 +38,10 @@ void GlobalFunction::matlab_proxy(const std::string& toolboxPath,
     Qualified overload = overloads.at(i);
     // use concatenated namespaces as key
     string str_ns = qualifiedName("", overload.namespaces);
-    ReturnValue ret = returnVals.at(i);
-    ArgumentList args = argLists.at(i);
-
-    if (!grouped_functions.count(str_ns))
-      grouped_functions[str_ns] = GlobalFunction(name_, verbose_);
-
-    grouped_functions[str_ns].argLists.push_back(args);
-    grouped_functions[str_ns].returnVals.push_back(ret);
-    grouped_functions[str_ns].overloads.push_back(overload);
+    const ReturnValue& ret = returnValue(i);
+    const ArgumentList& args = argumentList(i);
+    grouped_functions[str_ns].addOverload(verbose_, overload, args, ret,
+        templateArgValue_);
   }
 
   size_t lastcheck = grouped_functions.size();
@@ -77,16 +73,15 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath,
 
   mfunctionFile.oss << "function varargout = " << name_ << "(varargin)\n";
 
-  for (size_t overload = 0; overload < argLists.size(); ++overload) {
-    const ArgumentList& args = argLists[overload];
-    const ReturnValue& returnVal = returnVals[overload];
+  for (size_t i = 0; i < nrOverloads(); ++i) {
+    const ArgumentList& args = argumentList(i);
+    const ReturnValue& returnVal = returnValue(i);
 
     const int id = functionNames.size();
 
     // Output proxy matlab code
-    mfunctionFile.oss << "      " << (overload == 0 ? "" : "else");
-    argLists[overload].emit_conditional_call(mfunctionFile,
-        returnVals[overload], wrapperName, id, true); // true omits "this"
+    mfunctionFile.oss << "      " << (i == 0 ? "" : "else");
+    args.emit_conditional_call(mfunctionFile, returnVal, wrapperName, id, true); // true omits "this"
 
     // Output C++ wrapper code
 

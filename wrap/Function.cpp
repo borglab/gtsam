@@ -30,7 +30,6 @@ using namespace wrap;
 
 /* ************************************************************************* */
 void Function::addOverload(bool verbose, const std::string& name,
-    const ArgumentList& args, const ReturnValue& retVal,
     const Qualified& instName) {
 
   // Check if this overload is give to the correct method
@@ -51,18 +50,14 @@ void Function::addOverload(bool verbose, const std::string& name,
             + templateArgValue_.qualifiedName(":"));
 
   verbose_ = verbose;
-  argLists.push_back(args);
-  returnVals.push_back(retVal);
 }
 
 /* ************************************************************************* */
-vector<ArgumentList> Function::expandArgumentListsTemplate(
-    const string& templateArg, const Qualified& qualifiedType,
-    const Qualified& expandedClass) const {
+vector<ArgumentList> ArgumentOverloads::expandArgumentListsTemplate(
+    const TemplateSubstitution& ts) const {
   vector<ArgumentList> result;
-  BOOST_FOREACH(const ArgumentList& argList, argLists) {
-    ArgumentList instArgList = argList.expandTemplate(templateArg,
-        qualifiedType, expandedClass);
+  BOOST_FOREACH(const ArgumentList& argList, argLists_) {
+    ArgumentList instArgList = argList.expandTemplate(ts);
     result.push_back(instArgList);
   }
   return result;

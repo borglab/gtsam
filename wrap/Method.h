@@ -18,16 +18,16 @@
 
 #pragma once
 
-#include "Function.h"
+#include "StaticMethod.h"
 
 namespace wrap {
 
 /// Method class
-struct Method : public Function {
+struct Method: public StaticMethod {
 
   /// Constructor creates empty object
   Method(bool verbose = true) :
-      Function(verbose), is_const_(false) {
+      StaticMethod(verbose), is_const_(false) {
   }
 
   bool is_const_;
@@ -39,21 +39,16 @@ struct Method : public Function {
       const ArgumentList& args, const ReturnValue& retVal,
       const Qualified& instName = Qualified());
 
-  // MATLAB code generation
-  // classPath is class directory, e.g., ../matlab/@Point2
-  void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
-      const std::string& cppClassName, const std::string& matlabQualName,
-      const std::string& matlabUniqueName, const std::string& wrapperName,
-      const TypeAttributesTable& typeAttributes,
-      std::vector<std::string>& functionNames) const;
-
 private:
 
-  /// Emit C++ code
-  std::string wrapper_fragment(FileWriter& wrapperFile,
+  // Emit method header
+  void proxy_header(FileWriter& proxyFile) const;
+
+  std::string wrapper_call(FileWriter& wrapperFile,
       const std::string& cppClassName, const std::string& matlabUniqueName,
-      int overload, int id, const TypeAttributesTable& typeAttributes,
-      const Qualified& instName) const; ///< cpp wrapper
+      const ArgumentList& args, const ReturnValue& returnVal,
+      const TypeAttributesTable& typeAttributes,
+      const Qualified& instName) const;
 };
 
 } // \namespace wrap

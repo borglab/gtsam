@@ -40,8 +40,7 @@ struct Constructor {
 
   // TODO eliminate copy/paste with function
   std::vector<ArgumentList> expandArgumentListsTemplate(
-      const std::string& templateArg, const Qualified& qualifiedType,
-      const Qualified& expandedClass) const;
+      const TemplateSubstitution& ts) const;
 
   // MATLAB code generation
   // toolboxPath is main toolbox directory, e.g., ../matlab

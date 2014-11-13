@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "Qualified.h"
+#include "TemplateSubstitution.h"
 #include "FileWriter.h"
 #include "ReturnValue.h"
 
@@ -35,8 +35,7 @@ struct Argument {
       is_const(false), is_ref(false), is_ptr(false) {
   }
 
-  Argument expandTemplate(const std::string& templateArg,
-      const Qualified& qualifiedType, const Qualified& expandedClass) const;
+  Argument expandTemplate(const TemplateSubstitution& ts) const;
 
   /// return MATLAB class for use in isa(x,class)
   std::string matlabClass(const std::string& delim = "") const;
@@ -63,8 +62,7 @@ struct ArgumentList: public std::vector<Argument> {
   /// Check if all arguments scalar
   bool allScalar() const;
 
-  ArgumentList expandTemplate(const std::string& templateArg,
-      const Qualified& qualifiedType, const Qualified& expandedClass) const;
+  ArgumentList expandTemplate(const TemplateSubstitution& ts) const;
 
   // MATLAB code generation:
 
@@ -110,14 +108,7 @@ inline void verifyArguments(const std::vector<std::string>& validArgs,
   typedef typename std::map<std::string, T>::value_type NamedMethod;
   BOOST_FOREACH(const NamedMethod& namedMethod, vt) {
     const T& t = namedMethod.second;
-    BOOST_FOREACH(const ArgumentList& argList, t.argLists) {
-      BOOST_FOREACH(Argument arg, argList) {
-        std::string fullType = arg.type.qualifiedName("::");
-        if (find(validArgs.begin(), validArgs.end(), fullType)
-            == validArgs.end())
-          throw DependencyMissing(fullType, t.name_);
-      }
-    }
+    t.verifyArguments(validArgs,t.name_);
   }
 }
 

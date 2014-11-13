@@ -38,12 +38,10 @@ string Constructor::matlab_wrapper_name(const string& className) const {
 
 /* ************************************************************************* */
 vector<ArgumentList> Constructor::expandArgumentListsTemplate(
-    const string& templateArg, const Qualified& qualifiedType,
-    const Qualified& expandedClass) const {
+    const TemplateSubstitution& ts) const {
   vector<ArgumentList> result;
   BOOST_FOREACH(const ArgumentList& argList, args_list) {
-    ArgumentList instArgList = argList.expandTemplate(templateArg,
-        qualifiedType, expandedClass);
+    ArgumentList instArgList = argList.expandTemplate(ts);
     result.push_back(instArgList);
   }
   return result;

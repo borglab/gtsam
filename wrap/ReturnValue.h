@@ -8,7 +8,7 @@
  * @author Richard Roberts
  */
 
-#include "Qualified.h"
+#include "TemplateSubstitution.h"
 #include "FileWriter.h"
 #include "TypeAttributesTable.h"
 #include "utilities.h"
@@ -86,21 +86,7 @@ struct ReturnValue {
   }
 
   /// Substitute template argument
-  ReturnValue expandTemplate(const std::string& templateArg,
-      const Qualified& qualifiedType, const Qualified& expandedClass) const;
-
-  // TODO use transform ?
-  static std::vector<ReturnValue> ExpandTemplate(
-      std::vector<ReturnValue> returnVals, const std::string& templateArg,
-      const Qualified& qualifiedType, const Qualified& expandedClass) {
-    std::vector<ReturnValue> result;
-    BOOST_FOREACH(const ReturnValue& retVal, returnVals) {
-      ReturnValue instRetVal = retVal.expandTemplate(templateArg,
-          qualifiedType, expandedClass);
-      result.push_back(instRetVal);
-    }
-    return result;
-  }
+  ReturnValue expandTemplate(const TemplateSubstitution& ts) const;
 
   std::string return_type(bool add_ptr) const;
 

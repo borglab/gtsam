@@ -13,7 +13,7 @@
 
 namespace wrap {
 
-struct GlobalFunction: public Function {
+struct GlobalFunction: public Function, public SignatureOverloads {
 
   std::vector<Qualified> overloads; ///< Stack of qualified names
 

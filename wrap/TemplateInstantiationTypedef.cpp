@@ -46,8 +46,10 @@ Class TemplateInstantiationTypedef::findAndExpand(
 
   // Instantiate it
   Class classInst = *matchedClass;
-  for (size_t i = 0; i < typeList.size(); ++i)
-    classInst = classInst.expandTemplate(classInst.templateArgs[i], typeList[i], *this);
+  for (size_t i = 0; i < typeList.size(); ++i) {
+    TemplateSubstitution ts(classInst.templateArgs[i], typeList[i], *this);
+    classInst = classInst.expandTemplate(ts);
+  }
 
   // Fix class properties
   classInst.name = name;

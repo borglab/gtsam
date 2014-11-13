@@ -67,8 +67,7 @@ public:
       const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
       FileWriter& wrapperFile, std::vector<std::string>& functionNames) const; ///< emit proxy class
 
-  Class expandTemplate(const std::string& templateArg,
-      const Qualified& instantiation, const Qualified& expandedClass) const;
+  Class expandTemplate(const TemplateSubstitution& ts) const;
 
   std::vector<Class> expandTemplate(const std::string& templateArg,
       const std::vector<Qualified>& instantiations) const;
