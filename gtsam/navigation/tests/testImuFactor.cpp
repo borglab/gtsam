@@ -81,7 +81,7 @@ Vector3 evaluatePreintegratedMeasurementsPosition(
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
 {
   return evaluatePreintegratedMeasurements(bias,
-      measuredAccs, measuredOmegas, deltaTs).deltaPij;
+      measuredAccs, measuredOmegas, deltaTs).deltaPij_;
 }
 
 Vector3 evaluatePreintegratedMeasurementsVelocity(
@@ -92,7 +92,7 @@ Vector3 evaluatePreintegratedMeasurementsVelocity(
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
 {
   return evaluatePreintegratedMeasurements(bias,
-      measuredAccs, measuredOmegas, deltaTs).deltaVij;
+      measuredAccs, measuredOmegas, deltaTs).deltaVij_;
 }
 
 Rot3 evaluatePreintegratedMeasurementsRotation(
@@ -103,7 +103,7 @@ Rot3 evaluatePreintegratedMeasurementsRotation(
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
 {
   return evaluatePreintegratedMeasurements(bias,
-      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaRij;
+      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaRij_;
 }
 
 Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega, const double deltaT)
@@ -141,10 +141,10 @@ TEST( ImuFactor, PreintegratedMeasurements )
   ImuFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), use2ndOrderIntegration);
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij), 1e-6));
-  EXPECT(assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij), 1e-6));
-  EXPECT(assert_equal(expectedDeltaR1, actual1.deltaRij, 1e-6));
-  DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij, 1e-6);
+  EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij_), 1e-6));
+  EXPECT(assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij_), 1e-6));
+  EXPECT(assert_equal(expectedDeltaR1, actual1.deltaRij_, 1e-6));
+  DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij_, 1e-6);
 
   // Integrate again
   Vector3 expectedDeltaP2; expectedDeltaP2 << 0.025 + expectedDeltaP1(0) + 0.5*0.1*0.5*0.5, 0, 0;
@@ -156,10 +156,10 @@ TEST( ImuFactor, PreintegratedMeasurements )
   ImuFactor::PreintegratedMeasurements actual2 = actual1;
   actual2.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  EXPECT(assert_equal(Vector(expectedDeltaP2), Vector(actual2.deltaPij), 1e-6));
-  EXPECT(assert_equal(Vector(expectedDeltaV2), Vector(actual2.deltaVij), 1e-6));
-  EXPECT(assert_equal(expectedDeltaR2, actual2.deltaRij, 1e-6));
-  DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij, 1e-6);
+  EXPECT(assert_equal(Vector(expectedDeltaP2), Vector(actual2.deltaPij_), 1e-6));
+  EXPECT(assert_equal(Vector(expectedDeltaV2), Vector(actual2.deltaVij_), 1e-6));
+  EXPECT(assert_equal(expectedDeltaR2, actual2.deltaRij_, 1e-6));
+  DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij_, 1e-6);
 }
 
 /* ************************************************************************* */

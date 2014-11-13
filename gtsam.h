@@ -2348,12 +2348,12 @@ class ImuFactorPreintegratedMeasurements {
   // Testable
   void print(string s) const;
   bool equals(const gtsam::ImuFactorPreintegratedMeasurements& expected, double tol);
-  Matrix MeasurementCovariance() const;
-  Matrix DeltaRij() const;
-  double DeltaTij() const;
-  Vector DeltaPij() const;
-  Vector DeltaVij() const;
-  Vector BiasHat() const;
+  Matrix measurementCovariance() const;
+  Matrix deltaRij() const;
+  double deltaTij() const;
+  Vector deltaPij() const;
+  Vector deltaVij() const;
+  Vector biasHat() const;
 
 
   // Standard Interface
@@ -2370,7 +2370,7 @@ virtual class ImuFactor : gtsam::NonlinearFactor {
 
   // Standard Interface
   gtsam::ImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
-  void Predict(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i, gtsam::Pose3& pose_j, gtsam::LieVector& vel_j,
+  void predict(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i, gtsam::Pose3& pose_j, gtsam::LieVector& vel_j,
       const gtsam::imuBias::ConstantBias& bias,
       const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector gravity, Vector omegaCoriolis) const;
@@ -2388,10 +2388,10 @@ class AHRSFactorPreintegratedMeasurements {
   bool equals(const gtsam::AHRSFactorPreintegratedMeasurements& expected, double tol);
 
   // get Data
-  Matrix MeasurementCovariance() const;
-  Matrix DeltaRij() const;
-  double DeltaTij() const;
-  Vector BiasHat() const;
+  Matrix measurementCovariance() const;
+  Matrix deltaRij() const;
+  double deltaTij() const;
+  Vector biasHat() const;
 
   // Standard Interface
   void integrateMeasurement(Vector measuredOmega, double deltaT);
@@ -2410,7 +2410,7 @@ virtual class AHRSFactor : gtsam::NonlinearFactor {
   gtsam::AHRSFactorPreintegratedMeasurements preintegratedMeasurements() const;
   Vector evaluateError(const gtsam::Rot3& rot_i, const gtsam::Rot3& rot_j,
         const gtsam::imuBias::ConstantBias& bias) const;
-  void Predict(const gtsam::Rot3& rot_i, gtsam::Rot3& rot_j,
+  void predict(const gtsam::Rot3& rot_i, gtsam::Rot3& rot_j,
       const gtsam::imuBias::ConstantBias& bias,
       const gtsam::AHRSFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector omegaCoriolis) const;
@@ -2446,11 +2446,11 @@ class CombinedImuFactorPreintegratedMeasurements {
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT);
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT, const gtsam::Pose3& body_P_sensor);
 
-  Matrix DeltaRij() const;
-  double DeltaTij() const;
-  Vector DeltaPij() const;
-  Vector DeltaVij() const;
-  Vector BiasHat() const;
+  Matrix deltaRij() const;
+  double deltaTij() const;
+  Vector deltaPij() const;
+  Vector deltaVij() const;
+  Vector biasHat() const;
 };
 
 virtual class CombinedImuFactor : gtsam::NonlinearFactor {
