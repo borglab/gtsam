@@ -29,11 +29,29 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
+Argument Argument::expandTemplate(const TemplateSubstitution& ts) const {
+  Argument instArg = *this;
+  instArg.type = ts(type);
+  return instArg;
+}
+
+/* ************************************************************************* */
+ArgumentList ArgumentList::expandTemplate(const TemplateSubstitution& ts) const {
+  ArgumentList instArgList;
+  BOOST_FOREACH(const Argument& arg, *this) {
+    Argument instArg = arg.expandTemplate(ts);
+    instArgList.push_back(instArg);
+  }
+  return instArgList;
+}
+
+/* ************************************************************************* */
 string Argument::matlabClass(const string& delim) const {
   string result;
   BOOST_FOREACH(const string& ns, type.namespaces)
     result += ns + delim;
-  if (type.name == "string" || type.name == "unsigned char" || type.name == "char")
+  if (type.name == "string" || type.name == "unsigned char"
+      || type.name == "char")
     return result + "char";
   if (type.name == "Vector" || type.name == "Matrix")
     return result + "double";
@@ -46,8 +64,9 @@ string Argument::matlabClass(const string& delim) const {
 
 /* ************************************************************************* */
 bool Argument::isScalar() const {
-  return (type.name == "bool" || type.name == "char" || type.name == "unsigned char"
-      || type.name == "int" || type.name == "size_t" || type.name == "double");
+  return (type.name == "bool" || type.name == "char"
+      || type.name == "unsigned char" || type.name == "int"
+      || type.name == "size_t" || type.name == "double");
 }
 
 /* ************************************************************************* */
@@ -128,7 +147,8 @@ string ArgumentList::names() const {
 /* ************************************************************************* */
 bool ArgumentList::allScalar() const {
   BOOST_FOREACH(Argument arg, *this)
-      if (!arg.isScalar()) return false;
+    if (!arg.isScalar())
+      return false;
   return true;
 }
 

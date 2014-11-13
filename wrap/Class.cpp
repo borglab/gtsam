@@ -33,7 +33,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
+void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
     const TypeAttributesTable& typeAttributes, FileWriter& wrapperFile,
     vector<string>& functionNames) const {
 
@@ -73,13 +73,15 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
   pointer_constructor_fragments(proxyFile, wrapperFile, wrapperName,
       functionNames);
   wrapperFile.oss << "\n";
+
   // Regular constructors 
-  BOOST_FOREACH(ArgumentList a, constructor.args_list) {
+  for (size_t i = 0; i < constructor.nrOverloads(); i++) {
+    ArgumentList args = constructor.argumentList(i);
     const int id = (int) functionNames.size();
     constructor.proxy_fragment(proxyFile, wrapperName, !qualifiedParent.empty(),
-        id, a);
+        id, args);
     const string wrapFunctionName = constructor.wrapper_fragment(wrapperFile,
-        cppName, matlabUniqueName, cppBaseName, id, a);
+        cppName, matlabUniqueName, cppBaseName, id, args);
     wrapperFile.oss << "\n";
     functionNames.push_back(wrapFunctionName);
   }
@@ -144,7 +146,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 
 /* ************************************************************************* */
 void Class::pointer_constructor_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const string& wrapperName,
+    FileWriter& wrapperFile, Str wrapperName,
     vector<string>& functionNames) const {
 
   const string matlabUniqueName = qualifiedName();
@@ -240,85 +242,24 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
 }
 
 /* ************************************************************************* */
-static vector<ArgumentList> expandArgumentListsTemplate(
-    const vector<ArgumentList>& argLists, const string& templateArg,
-    const Qualified& qualifiedType, const Qualified& expandedClass) {
-  vector<ArgumentList> result;
-  BOOST_FOREACH(const ArgumentList& argList, argLists) {
-    ArgumentList instArgList;
-    BOOST_FOREACH(const Argument& arg, argList) {
-      Argument instArg = arg;
-      if (arg.type.name == templateArg) {
-        instArg.type = qualifiedType;
-      } else if (arg.type.name == "This") {
-        instArg.type = expandedClass;
-      }
-      instArgList.push_back(instArg);
-    }
-    result.push_back(instArgList);
-  }
-  return result;
-}
-
-/* ************************************************************************* */
-// TODO, Method, StaticMethod, and GlobalFunction should have common base ?
-template<class METHOD>
-METHOD expandMethodTemplate(const METHOD& method, const string& templateArg,
-    const Qualified& qualifiedType, const Qualified& expandedClass) {
-  // Create new instance
-  METHOD instMethod = method;
-  // substitute template in arguments
-  instMethod.argLists = expandArgumentListsTemplate(method.argLists,
-      templateArg, qualifiedType, expandedClass);
-  // do the same for return types
-  instMethod.returnVals.clear();
-  BOOST_FOREACH(const ReturnValue& retVal, method.returnVals) {
-    ReturnValue instRetVal = retVal.substituteTemplate(templateArg,
-        qualifiedType, expandedClass);
-    instMethod.returnVals.push_back(instRetVal);
-  }
-  // return new method
-  return instMethod;
-}
-
-/* ************************************************************************* */
-template<class METHOD>
-static map<string, METHOD> expandMethodTemplate(
-    const map<string, METHOD>& methods, const string& templateArg,
-    const Qualified& qualifiedType, const Qualified& expandedClass) {
-  map<string, METHOD> result;
-  typedef pair<const string, METHOD> NamedMethod;
-  BOOST_FOREACH(NamedMethod namedMethod, methods) {
-    namedMethod.second = expandMethodTemplate(namedMethod.second, templateArg,
-        qualifiedType, expandedClass);
-    result.insert(namedMethod);
-  }
-  return result;
-}
-
-/* ************************************************************************* */
-Class Class::expandTemplate(const string& templateArg,
-    const Qualified& instName, const Qualified& expandedClass) const {
+Class Class::expandTemplate(const TemplateSubstitution& ts) const {
   Class inst = *this;
-  inst.methods = expandMethodTemplate(methods, templateArg, instName,
-      expandedClass);
-  inst.static_methods = expandMethodTemplate(static_methods, templateArg,
-      instName, expandedClass);
-  inst.constructor.args_list = expandArgumentListsTemplate(
-      constructor.args_list, templateArg, instName, expandedClass);
-  inst.constructor.name = inst.name;
+  inst.methods = expandMethodTemplate(methods, ts);
+  inst.static_methods = expandMethodTemplate(static_methods, ts);
+  inst.constructor = constructor.expandTemplate(ts);
   inst.deconstructor.name = inst.name;
   return inst;
 }
 
 /* ************************************************************************* */
-vector<Class> Class::expandTemplate(const string& templateArg,
+vector<Class> Class::expandTemplate(Str templateArg,
     const vector<Qualified>& instantiations) const {
   vector<Class> result;
   BOOST_FOREACH(const Qualified& instName, instantiations) {
     Qualified expandedClass = (Qualified) (*this);
     expandedClass.name += instName.name;
-    Class inst = expandTemplate(templateArg, instName, expandedClass);
+    const TemplateSubstitution ts(templateArg, instName, expandedClass);
+    Class inst = expandTemplate(ts);
     inst.name = expandedClass.name;
     inst.templateArgs.clear();
     inst.typedefName = qualifiedName("::") + "<" + instName.qualifiedName("::")
@@ -329,24 +270,29 @@ vector<Class> Class::expandTemplate(const string& templateArg,
 }
 
 /* ************************************************************************* */
-void Class::addMethod(bool verbose, bool is_const, const string& name,
-    const ArgumentList& args, const ReturnValue& retVal,
-    const string& templateArgName, const vector<Qualified>& templateArgValues) {
+void Class::addMethod(bool verbose, bool is_const, Str methodName,
+    const ArgumentList& argumentList, const ReturnValue& returnValue,
+    Str templateArgName, const vector<Qualified>& templateArgValues) {
   // Check if templated
   if (!templateArgName.empty() && templateArgValues.size() > 0) {
     // Create method to expand
-    Method method;
-    method.addOverload(verbose, is_const, name, args, retVal);
     // For all values of the template argument, create a new method
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
-      Method expanded = //
-          expandMethodTemplate(method, templateArgName, instName, *this);
-      methods[name].addOverload(verbose, is_const, name, expanded.argLists[0],
-          expanded.returnVals[0], instName);
+      const TemplateSubstitution ts(templateArgName, instName, this->name);
+      // substitute template in arguments
+      ArgumentList expandedArgs = argumentList.expandTemplate(ts);
+      // do the same for return type
+      ReturnValue expandedRetVal = returnValue.expandTemplate(ts);
+      // Now stick in new overload stack with expandedMethodName key
+      // but note we use the same, unexpanded methodName in overload
+      string expandedMethodName = methodName + instName.name;
+      methods[expandedMethodName].addOverload(verbose, is_const, methodName,
+          expandedArgs, expandedRetVal, instName);
     }
   } else
     // just add overload
-    methods[name].addOverload(verbose, is_const, name, args, retVal);
+    methods[methodName].addOverload(verbose, is_const, methodName, argumentList,
+        returnValue);
 }
 
 /* ************************************************************************* */
@@ -415,7 +361,7 @@ void Class::appendInheritedMethods(const Class& cls,
 /* ************************************************************************* */
 string Class::getTypedef() const {
   string result;
-  BOOST_FOREACH(const string& namesp, namespaces) {
+  BOOST_FOREACH(Str namesp, namespaces) {
     result += ("namespace " + namesp + " { ");
   }
   result += ("typedef " + typedefName + " " + name + ";");
@@ -426,43 +372,22 @@ string Class::getTypedef() const {
 }
 
 /* ************************************************************************* */
-
 void Class::comment_fragment(FileWriter& proxyFile) const {
   proxyFile.oss << "%class " << name << ", see Doxygen page for details\n";
   proxyFile.oss
       << "%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n";
 
-  if (!constructor.args_list.empty())
-    proxyFile.oss << "%\n%-------Constructors-------\n";
-  BOOST_FOREACH(ArgumentList argList, constructor.args_list) {
-    proxyFile.oss << "%";
-    argList.emit_prototype(proxyFile, name);
-    proxyFile.oss << "\n";
-  }
+  constructor.comment_fragment(proxyFile);
 
   if (!methods.empty())
     proxyFile.oss << "%\n%-------Methods-------\n";
-  BOOST_FOREACH(const Methods::value_type& name_m, methods) {
-    const Method& m = name_m.second;
-    BOOST_FOREACH(ArgumentList argList, m.argLists) {
-      proxyFile.oss << "%";
-      argList.emit_prototype(proxyFile, m.name);
-      proxyFile.oss << " : returns " << m.returnVals[0].return_type(false)
-          << endl;
-    }
-  }
+  BOOST_FOREACH(const Methods::value_type& name_m, methods)
+    name_m.second.comment_fragment(proxyFile);
 
   if (!static_methods.empty())
     proxyFile.oss << "%\n%-------Static Methods-------\n";
-  BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) {
-    const StaticMethod& m = name_m.second;
-    BOOST_FOREACH(ArgumentList argList, m.argLists) {
-      proxyFile.oss << "%";
-      argList.emit_prototype(proxyFile, m.name);
-      proxyFile.oss << " : returns " << m.returnVals[0].return_type(false)
-          << endl;
-    }
-  }
+  BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods)
+    name_m.second.comment_fragment(proxyFile);
 
   if (hasSerialization) {
     proxyFile.oss << "%\n%-------Serialization Interface-------\n";
@@ -476,7 +401,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 
 /* ************************************************************************* */
 void Class::serialization_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const string& wrapperName,
+    FileWriter& wrapperFile, Str wrapperName,
     vector<string>& functionNames) const {
 
 //void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -568,7 +493,7 @@ void Class::serialization_fragments(FileWriter& proxyFile,
 
 /* ************************************************************************* */
 void Class::deserialization_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const string& wrapperName,
+    FileWriter& wrapperFile, Str wrapperName,
     vector<string>& functionNames) const {
   //void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   //{
