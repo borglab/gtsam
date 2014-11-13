@@ -42,7 +42,7 @@ struct StaticMethod: public Function, public SignatureOverloads {
 
   // emit a list of comments, one for each overload
   void comment_fragment(FileWriter& proxyFile) const {
-    SignatureOverloads::comment_fragment(proxyFile, name_);
+    SignatureOverloads::comment_fragment(proxyFile, matlabName());
   }
 
   void verifyArguments(const std::vector<std::string>& validArgs) const {

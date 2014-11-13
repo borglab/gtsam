@@ -22,7 +22,7 @@ model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 2*pi/180]);
 [graph,initial] = load2D(datafile, model);
 
 %% Add a Gaussian prior on a pose in the middle
-priorMean = initial.at(40);
+priorMean = initial.atPose2(40);
 priorNoise = noiseModel.Diagonal.Sigmas([0.1; 0.1; 2*pi/180]);
 graph.add(PriorFactorPose2(40, priorMean, priorNoise)); % add directly to graph
 
