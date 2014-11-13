@@ -247,6 +247,7 @@ Class Class::expandTemplate(const TemplateSubstitution& ts) const {
   inst.constructor.args_list = inst.constructor.expandArgumentListsTemplate(ts);
   inst.constructor.name = inst.name;
   inst.deconstructor.name = inst.name;
+  cout << inst << endl;
   return inst;
 }
 
@@ -254,10 +255,12 @@ Class Class::expandTemplate(const TemplateSubstitution& ts) const {
 vector<Class> Class::expandTemplate(Str templateArg,
     const vector<Qualified>& instantiations) const {
   vector<Class> result;
+  cout << *this << endl;
   BOOST_FOREACH(const Qualified& instName, instantiations) {
     Qualified expandedClass = (Qualified) (*this);
     expandedClass.name += instName.name;
     const TemplateSubstitution ts(templateArg, instName, expandedClass);
+    cout << ts << endl;
     Class inst = expandTemplate(ts);
     inst.name = expandedClass.name;
     inst.templateArgs.clear();
@@ -274,12 +277,10 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
     Str templateArgName, const vector<Qualified>& templateArgValues) {
   // Check if templated
   if (!templateArgName.empty() && templateArgValues.size() > 0) {
-    cout << methodName << endl;
     // Create method to expand
     // For all values of the template argument, create a new method
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
       const TemplateSubstitution ts(templateArgName, instName, this->name);
-      cout << ts << endl;
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
       // do the same for return type

@@ -41,6 +41,12 @@ struct Method: public StaticMethod {
       const ArgumentList& args, const ReturnValue& retVal,
       const Qualified& instName = Qualified());
 
+  friend std::ostream& operator<<(std::ostream& os, const Method& m) {
+    for (size_t i = 0; i < m.nrOverloads(); i++)
+      os << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];
+    return os;
+  }
+
 private:
 
   // Emit method header

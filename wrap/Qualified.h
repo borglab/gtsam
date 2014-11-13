@@ -45,7 +45,7 @@ struct Qualified {
   }
 
   bool operator!=(const Qualified& other) const {
-    return other.name!=name || other.namespaces != namespaces;
+    return other.name != name || other.namespaces != namespaces;
   }
 
   /// Return a qualified string using given delimiter
@@ -64,6 +64,11 @@ struct Qualified {
       result += ("/+" + namespaces[i]);
     result += "/" + name + ".m";
     return result;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const Qualified& q) {
+    os << q.qualifiedName("::");
+    return os;
   }
 
 };

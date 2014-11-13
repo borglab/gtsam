@@ -93,6 +93,13 @@ public:
     }
   }
 
+  friend std::ostream& operator<<(std::ostream& os,
+      const ArgumentOverloads& overloads) {
+    BOOST_FOREACH(const ArgumentList& argList, overloads.argLists_)
+      os << argList << std::endl;
+    return os;
+  }
+
 };
 
 /**
@@ -166,6 +173,13 @@ public:
       proxyFile.oss << " : returns " << returnVals_[i++].return_type(false)
           << std::endl;
     }
+  }
+
+  friend std::ostream& operator<<(std::ostream& os,
+      const SignatureOverloads& overloads) {
+    for (size_t i = 0; i < overloads.nrOverloads(); i++)
+      os << overloads.returnVals_[i] << overloads.argLists_[i] << std::endl;
+    return os;
   }
 
 };

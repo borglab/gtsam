@@ -18,7 +18,8 @@ using namespace wrap;
 ReturnValue ReturnValue::expandTemplate(const TemplateSubstitution& ts) const {
   ReturnValue instRetVal = *this;
   instRetVal.type1 = ts(type1);
-  if (isPair) instRetVal.type2 = ts(type2);
+  if (isPair)
+    instRetVal.type2 = ts(type2);
   return instRetVal;
 }
 

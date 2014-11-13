@@ -45,6 +45,13 @@ struct Argument {
 
   /// MATLAB code generation, MATLAB to C++
   void matlab_unwrap(FileWriter& file, const std::string& matlabName) const;
+
+  friend std::ostream& operator<<(std::ostream& os, const Argument& arg) {
+    os << (arg.is_const ? "const " : "") << arg.type << (arg.is_ptr ? "*" : "")
+        << (arg.is_ref ? "&" : "");
+    return os;
+  }
+
 };
 
 /// Argument list is just a container with Arguments
@@ -100,6 +107,19 @@ struct ArgumentList: public std::vector<Argument> {
   void emit_conditional_call(FileWriter& proxyFile,
       const ReturnValue& returnVal, const std::string& wrapperName, int id,
       bool staticMethod = false) const;
+
+  friend std::ostream& operator<<(std::ostream& os,
+      const ArgumentList& argList) {
+    os << "(";
+    if (argList.size() > 0)
+      os << argList.front();
+    if (argList.size() > 1)
+      for (size_t i = 1; i < argList.size(); i++)
+        os << ", " << argList[i];
+    os << ")";
+    return os;
+  }
+
 };
 
 template<class T>
@@ -108,7 +128,7 @@ inline void verifyArguments(const std::vector<std::string>& validArgs,
   typedef typename std::map<std::string, T>::value_type NamedMethod;
   BOOST_FOREACH(const NamedMethod& namedMethod, vt) {
     const T& t = namedMethod.second;
-    t.verifyArguments(validArgs,t.name_);
+    t.verifyArguments(validArgs, t.name_);
   }
 }
 

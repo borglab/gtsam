@@ -19,14 +19,17 @@
 
 #pragma once
 
-#include <string>
-#include <map>
-
 #include "Constructor.h"
 #include "Deconstructor.h"
 #include "Method.h"
 #include "StaticMethod.h"
 #include "TypeAttributesTable.h"
+
+#include <boost/foreach.hpp>
+#include <boost/range/adaptor/map.hpp>
+
+#include <string>
+#include <map>
 
 namespace wrap {
 
@@ -107,6 +110,14 @@ public:
   /// Creates a static member function that performs deserialization
   void deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
       Str wrapperName, std::vector<std::string>& functionNames) const;
+
+  friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
+    os << "class " <<   cls.name << "{\n";
+    BOOST_FOREACH(const Method& m, cls.methods | boost::adaptors::map_values)
+      os << m << ";\n";
+    os << "};" << std::endl;
+    return os;
+  }
 
 private:
 

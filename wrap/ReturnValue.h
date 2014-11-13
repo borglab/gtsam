@@ -49,6 +49,14 @@ struct ReturnValue {
 
   void emit_matlab(FileWriter& proxyFile) const;
 
+  friend std::ostream& operator<<(std::ostream& os, const ReturnValue& r) {
+    if (!r.isPair && r.type1.category == ReturnType::VOID)
+      os << "void";
+    else
+      os << r.return_type(true);
+    return os;
+  }
+
 };
 
 } // \namespace wrap
