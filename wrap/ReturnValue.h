@@ -86,8 +86,21 @@ struct ReturnValue {
   }
 
   /// Substitute template argument
-  ReturnValue substituteTemplate(const std::string& templateArg,
+  ReturnValue expandTemplate(const std::string& templateArg,
       const Qualified& qualifiedType, const Qualified& expandedClass) const;
+
+  // TODO use transform ?
+  static std::vector<ReturnValue> ExpandTemplate(
+      std::vector<ReturnValue> returnVals, const std::string& templateArg,
+      const Qualified& qualifiedType, const Qualified& expandedClass) {
+    std::vector<ReturnValue> result;
+    BOOST_FOREACH(const ReturnValue& retVal, returnVals) {
+      ReturnValue instRetVal = retVal.expandTemplate(templateArg,
+          qualifiedType, expandedClass);
+      result.push_back(instRetVal);
+    }
+    return result;
+  }
 
   std::string return_type(bool add_ptr) const;
 
@@ -101,19 +114,5 @@ struct ReturnValue {
   void emit_matlab(FileWriter& proxyFile) const;
 
 };
-
-template<class T>
-inline void verifyReturnTypes(const std::vector<std::string>& validtypes,
-    const std::map<std::string, T>& vt) {
-  typedef typename std::map<std::string, T>::value_type NamedMethod;
-  BOOST_FOREACH(const NamedMethod& namedMethod, vt) {
-    const T& t = namedMethod.second;
-    BOOST_FOREACH(const ReturnValue& retval, t.returnVals) {
-      retval.type1.verify(validtypes, t.name);
-      if (retval.isPair)
-        retval.type2.verify(validtypes, t.name);
-    }
-  }
-}
 
 } // \namespace wrap

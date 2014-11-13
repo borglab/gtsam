@@ -274,7 +274,7 @@ void Module::parseMarkup(const std::string& data) {
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
-      verbose, bl::var(methodName), bl::var(args), bl::var(retVal))]
+      verbose, bl::var(methodName), bl::var(args), bl::var(retVal), Qualified())]
     [assign_a(retVal,retVal0)]
     [clear_a(args)];
  
@@ -313,7 +313,7 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(globalFunction.namespaces,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
         bl::var(global_functions)[bl::var(globalFunction.name)],
-        verbose,  bl::var(globalFunction), bl::var(args), bl::var(retVal))]
+        verbose,  bl::var(globalFunction), bl::var(args), bl::var(retVal), Qualified())]
       [assign_a(retVal,retVal0)]
       [clear_a(globalFunction)]
       [clear_a(args)];

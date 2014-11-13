@@ -240,63 +240,6 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
 }
 
 /* ************************************************************************* */
-static vector<ArgumentList> expandArgumentListsTemplate(
-    const vector<ArgumentList>& argLists, const string& templateArg,
-    const Qualified& qualifiedType, const Qualified& expandedClass) {
-  vector<ArgumentList> result;
-  BOOST_FOREACH(const ArgumentList& argList, argLists) {
-    ArgumentList instArgList;
-    BOOST_FOREACH(const Argument& arg, argList) {
-      Argument instArg = arg;
-      if (arg.type.name == templateArg) {
-        instArg.type = qualifiedType;
-      } else if (arg.type.name == "This") {
-        instArg.type = expandedClass;
-      }
-      instArgList.push_back(instArg);
-    }
-    result.push_back(instArgList);
-  }
-  return result;
-}
-
-/* ************************************************************************* */
-// TODO, Method, StaticMethod, and GlobalFunction should have common base ?
-template<class METHOD>
-METHOD expandMethodTemplate(const METHOD& method, const string& templateArg,
-    const Qualified& qualifiedType, const Qualified& expandedClass) {
-  // Create new instance
-  METHOD instMethod = method;
-  // substitute template in arguments
-  instMethod.argLists = expandArgumentListsTemplate(method.argLists,
-      templateArg, qualifiedType, expandedClass);
-  // do the same for return types
-  instMethod.returnVals.clear();
-  BOOST_FOREACH(const ReturnValue& retVal, method.returnVals) {
-    ReturnValue instRetVal = retVal.substituteTemplate(templateArg,
-        qualifiedType, expandedClass);
-    instMethod.returnVals.push_back(instRetVal);
-  }
-  // return new method
-  return instMethod;
-}
-
-/* ************************************************************************* */
-template<class METHOD>
-static map<string, METHOD> expandMethodTemplate(
-    const map<string, METHOD>& methods, const string& templateArg,
-    const Qualified& qualifiedType, const Qualified& expandedClass) {
-  map<string, METHOD> result;
-  typedef pair<const string, METHOD> NamedMethod;
-  BOOST_FOREACH(NamedMethod namedMethod, methods) {
-    namedMethod.second = expandMethodTemplate(namedMethod.second, templateArg,
-        qualifiedType, expandedClass);
-    result.insert(namedMethod);
-  }
-  return result;
-}
-
-/* ************************************************************************* */
 Class Class::expandTemplate(const string& templateArg,
     const Qualified& instName, const Qualified& expandedClass) const {
   Class inst = *this;
@@ -304,8 +247,8 @@ Class Class::expandTemplate(const string& templateArg,
       expandedClass);
   inst.static_methods = expandMethodTemplate(static_methods, templateArg,
       instName, expandedClass);
-  inst.constructor.args_list = expandArgumentListsTemplate(
-      constructor.args_list, templateArg, instName, expandedClass);
+  inst.constructor.args_list = inst.constructor.expandArgumentListsTemplate(
+      templateArg, instName, expandedClass);
   inst.constructor.name = inst.name;
   inst.deconstructor.name = inst.name;
   return inst;
@@ -335,14 +278,17 @@ void Class::addMethod(bool verbose, bool is_const, const string& name,
   // Check if templated
   if (!templateArgName.empty() && templateArgValues.size() > 0) {
     // Create method to expand
-    Method method;
-    method.addOverload(verbose, is_const, name, args, retVal);
     // For all values of the template argument, create a new method
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
-      Method expanded = //
-          expandMethodTemplate(method, templateArgName, instName, *this);
-      methods[name].addOverload(verbose, is_const, name, expanded.argLists[0],
-          expanded.returnVals[0], instName);
+      string expandedName = name + instName.name;
+      // substitute template in arguments
+      ArgumentList expandedArgs = args.expandTemplate(templateArgName, instName,
+          name);
+      // do the same for return types
+      ReturnValue expandedRetVal = retVal.expandTemplate(templateArgName,
+          instName, name);
+      methods[expandedName].addOverload(verbose, is_const, expandedName,
+          expandedArgs, expandedRetVal, instName);
     }
   } else
     // just add overload
@@ -446,7 +392,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
     const Method& m = name_m.second;
     BOOST_FOREACH(ArgumentList argList, m.argLists) {
       proxyFile.oss << "%";
-      argList.emit_prototype(proxyFile, m.name);
+      argList.emit_prototype(proxyFile, m.name_);
       proxyFile.oss << " : returns " << m.returnVals[0].return_type(false)
           << endl;
     }
@@ -458,7 +404,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
     const StaticMethod& m = name_m.second;
     BOOST_FOREACH(ArgumentList argList, m.argLists) {
       proxyFile.oss << "%";
-      argList.emit_prototype(proxyFile, m.name);
+      argList.emit_prototype(proxyFile, m.name_);
       proxyFile.oss << " : returns " << m.returnVals[0].return_type(false)
           << endl;
     }

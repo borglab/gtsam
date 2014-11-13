@@ -30,31 +30,22 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void StaticMethod::addOverload(bool verbose, const std::string& name,
-    const ArgumentList& args, const ReturnValue& retVal) {
-  this->verbose = verbose;
-  this->name = name;
-  this->argLists.push_back(args);
-  this->returnVals.push_back(retVal);
-}
-
-/* ************************************************************************* */
 void StaticMethod::proxy_wrapper_fragments(FileWriter& file,
     FileWriter& wrapperFile, const string& cppClassName,
     const std::string& matlabQualName, const std::string& matlabUniqueName,
     const string& wrapperName, const TypeAttributesTable& typeAttributes,
     vector<string>& functionNames) const {
 
-  string upperName = name;
+  string upperName = name_;
   upperName[0] = std::toupper(upperName[0], std::locale());
 
   file.oss << "    function varargout = " << upperName << "(varargin)\n";
   //Comments for documentation
-  string up_name = boost::to_upper_copy(name);
+  string up_name = boost::to_upper_copy(name_);
   file.oss << "      % " << up_name << " usage: ";
   unsigned int argLCount = 0;
   BOOST_FOREACH(ArgumentList argList, argLists) {
-    argList.emit_prototype(file, name);
+    argList.emit_prototype(file, name_);
     if (argLCount != argLists.size() - 1)
       file.oss << ", ";
     else
@@ -105,7 +96,7 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 
   // generate code
 
-  const string wrapFunctionName = matlabUniqueName + "_" + name + "_"
+  const string wrapFunctionName = matlabUniqueName + "_" + name_ + "_"
       + boost::lexical_cast<string>(id);
 
   const ArgumentList& args = argLists[overload];
@@ -124,7 +115,7 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 
   // check arguments
   // NOTE: for static functions, there is no object passed
-  file.oss << "  checkArguments(\"" << matlabUniqueName << "." << name
+  file.oss << "  checkArguments(\"" << matlabUniqueName << "." << name_
       << "\",nargout,nargin," << args.size() << ");\n";
 
   // unwrap arguments, see Argument.cpp
@@ -132,10 +123,10 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 
   // call method with default type and wrap result
   if (returnVal.type1.name != "void")
-    returnVal.wrap_result(cppClassName + "::" + name + "(" + args.names() + ")",
+    returnVal.wrap_result(cppClassName + "::" + name_ + "(" + args.names() + ")",
         file, typeAttributes);
   else
-    file.oss << cppClassName + "::" + name + "(" + args.names() + ");\n";
+    file.oss << cppClassName + "::" + name_ + "(" + args.names() + ");\n";
 
   // finish
   file.oss << "}\n";

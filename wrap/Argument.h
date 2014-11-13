@@ -35,6 +35,9 @@ struct Argument {
       is_const(false), is_ref(false), is_ptr(false) {
   }
 
+  Argument expandTemplate(const std::string& templateArg,
+      const Qualified& qualifiedType, const Qualified& expandedClass) const;
+
   /// return MATLAB class for use in isa(x,class)
   std::string matlabClass(const std::string& delim = "") const;
 
@@ -59,6 +62,9 @@ struct ArgumentList: public std::vector<Argument> {
 
   /// Check if all arguments scalar
   bool allScalar() const;
+
+  ArgumentList expandTemplate(const std::string& templateArg,
+      const Qualified& qualifiedType, const Qualified& expandedClass) const;
 
   // MATLAB code generation:
 
@@ -93,8 +99,9 @@ struct ArgumentList: public std::vector<Argument> {
    * @param wrapperName of method or function
    * @param staticMethod flag to emit "this" in call
    */
-  void emit_conditional_call(FileWriter& proxyFile, const ReturnValue& returnVal,
-      const std::string& wrapperName, int id, bool staticMethod = false) const;
+  void emit_conditional_call(FileWriter& proxyFile,
+      const ReturnValue& returnVal, const std::string& wrapperName, int id,
+      bool staticMethod = false) const;
 };
 
 template<class T>
@@ -108,7 +115,7 @@ inline void verifyArguments(const std::vector<std::string>& validArgs,
         std::string fullType = arg.type.qualifiedName("::");
         if (find(validArgs.begin(), validArgs.end(), fullType)
             == validArgs.end())
-          throw DependencyMissing(fullType, t.name);
+          throw DependencyMissing(fullType, t.name_);
       }
     }
   }

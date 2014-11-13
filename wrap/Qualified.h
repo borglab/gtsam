@@ -44,6 +44,10 @@ struct Qualified {
     name.clear();
   }
 
+  bool operator!=(const Qualified& other) const {
+    return other.name!=name || other.namespaces != namespaces;
+  }
+
   /// Return a qualified string using given delimiter
   std::string qualifiedName(const std::string& delimiter = "") const {
     std::string result;

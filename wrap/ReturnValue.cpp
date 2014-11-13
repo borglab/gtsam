@@ -59,7 +59,7 @@ void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
 }
 
 /* ************************************************************************* */
-ReturnValue ReturnValue::substituteTemplate(const string& templateArg,
+ReturnValue ReturnValue::expandTemplate(const string& templateArg,
     const Qualified& qualifiedType, const Qualified& expandedClass) const {
   ReturnValue instRetVal = *this;
   if (type1.name == templateArg) {

@@ -18,30 +18,19 @@
 
 #pragma once
 
-#include "Argument.h"
-#include "ReturnValue.h"
-#include "TypeAttributesTable.h"
-
-#include <string>
-#include <list>
+#include "Function.h"
 
 namespace wrap {
 
 /// Method class
-struct Method {
+struct Method : public Function {
 
   /// Constructor creates empty object
   Method(bool verbose = true) :
-      verbose_(verbose), is_const_(false) {
+      Function(verbose), is_const_(false) {
   }
 
-  // Then the instance variables are set directly by the Module constructor
-  bool verbose_;
   bool is_const_;
-  std::string name;
-  std::vector<ArgumentList> argLists;
-  std::vector<ReturnValue> returnVals;
-  std::vector<Qualified> templateArgValues; ///< value of template argument if applicable
 
   // The first time this function is called, it initializes the class members
   // with those in rhs, but in subsequent calls it adds additional argument

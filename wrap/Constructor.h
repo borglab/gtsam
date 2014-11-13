@@ -38,6 +38,11 @@ struct Constructor {
   std::string name;
   bool verbose_;
 
+  // TODO eliminate copy/paste with function
+  std::vector<ArgumentList> expandArgumentListsTemplate(
+      const std::string& templateArg, const Qualified& qualifiedType,
+      const Qualified& expandedClass) const;
+
   // MATLAB code generation
   // toolboxPath is main toolbox directory, e.g., ../matlab
   // classFile is class proxy file, e.g., ../matlab/@Point2/Point2.m

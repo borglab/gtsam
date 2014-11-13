@@ -19,31 +19,17 @@
 
 #pragma once
 
-#include "Argument.h"
-#include "ReturnValue.h"
-#include "TypeAttributesTable.h"
+#include "Function.h"
 
 namespace wrap {
 
 /// StaticMethod class
-struct StaticMethod {
+struct StaticMethod: public Function {
 
   /// Constructor creates empty object
   StaticMethod(bool verbosity = true) :
-      verbose(verbosity) {
+      Function(verbosity) {
   }
-
-  // Then the instance variables are set directly by the Module constructor
-  bool verbose;
-  std::string name;
-  std::vector<ArgumentList> argLists;
-  std::vector<ReturnValue> returnVals;
-
-  // The first time this function is called, it initializes the class members
-  // with those in rhs, but in subsequent calls it adds additional argument
-  // lists as function overloads.
-  void addOverload(bool verbose, const std::string& name,
-      const ArgumentList& args, const ReturnValue& retVal);
 
   // MATLAB code generation
   // classPath is class directory, e.g., ../matlab/@Point2

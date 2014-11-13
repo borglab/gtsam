@@ -17,16 +17,9 @@ using namespace std;
 
 /* ************************************************************************* */
 void GlobalFunction::addOverload(bool verbose, const Qualified& overload,
-    const ArgumentList& args, const ReturnValue& retVal) {
-  if (name.empty())
-    name = overload.name;
-  else if (overload.name != name)
-    throw std::runtime_error(
-        "GlobalFunction::addOverload: tried to add overload with name "
-            + overload.name + " instead of expected " + name);
-  verbose_ = verbose;
-  argLists.push_back(args);
-  returnVals.push_back(retVal);
+    const ArgumentList& args, const ReturnValue& retVal,
+    const Qualified& instName) {
+  Function::addOverload(verbose, overload.name, args, retVal, instName);
   overloads.push_back(overload);
 }
 
@@ -48,7 +41,7 @@ void GlobalFunction::matlab_proxy(const std::string& toolboxPath,
     ArgumentList args = argLists.at(i);
 
     if (!grouped_functions.count(str_ns))
-      grouped_functions[str_ns] = GlobalFunction(name, verbose_);
+      grouped_functions[str_ns] = GlobalFunction(name_, verbose_);
 
     grouped_functions[str_ns].argLists.push_back(args);
     grouped_functions[str_ns].returnVals.push_back(ret);
@@ -82,7 +75,7 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath,
   const string matlabUniqueName = overload1.qualifiedName("");
   const string cppName = overload1.qualifiedName("::");
 
-  mfunctionFile.oss << "function varargout = " << name << "(varargin)\n";
+  mfunctionFile.oss << "function varargout = " << name_ << "(varargin)\n";
 
   for (size_t overload = 0; overload < argLists.size(); ++overload) {
     const ArgumentList& args = argLists[overload];

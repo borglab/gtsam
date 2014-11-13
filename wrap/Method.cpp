@@ -29,20 +29,12 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Method::addOverload(bool verbose, bool is_const, const std::string& name,
+void Method::addOverload(bool verbose, bool is_const, const std::string& name_,
     const ArgumentList& args, const ReturnValue& retVal,
     const Qualified& instName) {
-  if (!this->name.empty() && this->name != name)
-    throw std::runtime_error(
-        "Method::addOverload: tried to add overload with name " + name
-            + " instead of expected " + this->name);
-  else
-    this->name = name;
-  verbose_ = verbose;
+
+  Function::addOverload(verbose, name_, args, retVal);
   is_const_ = is_const;
-  argLists.push_back(args);
-  returnVals.push_back(retVal);
-  templateArgValues.push_back(instName);
 }
 
 /* ************************************************************************* */
@@ -53,14 +45,14 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
     vector<string>& functionNames) const {
 
   // Create function header
-  proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
+  proxyFile.oss << "    function varargout = " << name_ << "(this, varargin)\n";
 
   // Emit comments for documentation
-  string up_name = boost::to_upper_copy(name);
+  string up_name = boost::to_upper_copy(name_);
   proxyFile.oss << "      % " << up_name << " usage: ";
   unsigned int argLCount = 0;
   BOOST_FOREACH(ArgumentList argList, argLists) {
-    argList.emit_prototype(proxyFile, name);
+    argList.emit_prototype(proxyFile, name_);
     if (argLCount != argLists.size() - 1)
       proxyFile.oss << ", ";
     else
@@ -80,7 +72,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
     proxyFile.oss << "      % " << "Method Overloads" << endl;
     BOOST_FOREACH(ArgumentList argList, argLists) {
       proxyFile.oss << "      % ";
-      argList.emit_prototype(proxyFile, name);
+      argList.emit_prototype(proxyFile, name_);
       proxyFile.oss << endl;
     }
   }
@@ -94,7 +86,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
 
     // Output C++ wrapper code
     const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
-        matlabUniqueName, 0, id, typeAttributes, templateArgValues[0]);
+        matlabUniqueName, 0, id, typeAttributes, templateArgValue_);
 
     // Add to function list
     functionNames.push_back(wrapFunctionName);
@@ -105,13 +97,16 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
       // Output proxy matlab code
       proxyFile.oss << "      " << (overload == 0 ? "" : "else");
       const int id = (int) functionNames.size();
+      string expanded = wrapperName;
+      if (!templateArgValue_.empty())
+        expanded += templateArgValue_.name;
       argLists[overload].emit_conditional_call(proxyFile, returnVals[overload],
-          wrapperName, id);
+          expanded, id);
 
       // Output C++ wrapper code
       const string wrapFunctionName = wrapper_fragment(wrapperFile,
           cppClassName, matlabUniqueName, overload, id, typeAttributes,
-          templateArgValues[overload]);
+          templateArgValue_);
 
       // Add to function list
       functionNames.push_back(wrapFunctionName);
@@ -119,7 +114,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile,
     proxyFile.oss << "      else\n";
     proxyFile.oss
         << "        error('Arguments do not match any overload of function "
-        << matlabQualName << "." << name << "');" << endl;
+        << matlabQualName << "." << name_ << "');" << endl;
     proxyFile.oss << "      end\n";
   }
 
@@ -134,7 +129,7 @@ string Method::wrapper_fragment(FileWriter& wrapperFile,
 
   // generate code
 
-  const string wrapFunctionName = matlabUniqueName + "_" + name + "_"
+  const string wrapFunctionName = matlabUniqueName + "_" + name_ + "_"
       + boost::lexical_cast<string>(id);
 
   const ArgumentList& args = argLists[overload];
@@ -154,7 +149,7 @@ string Method::wrapper_fragment(FileWriter& wrapperFile,
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
-  wrapperFile.oss << "  checkArguments(\"" << name << "\",nargout,nargin-1,"
+  wrapperFile.oss << "  checkArguments(\"" << name_ << "\",nargout,nargin-1,"
       << args.size() << ");\n";
 
   // get class pointer
@@ -166,7 +161,7 @@ string Method::wrapper_fragment(FileWriter& wrapperFile,
 
   // call method and wrap result
   // example: out[0]=wrap<bool>(self->return_field(t));
-  string expanded = "obj->" + name;
+  string expanded = "obj->" + name_;
   if (!instName.empty())
     expanded += ("<" + instName.qualifiedName("::") + ">");
   expanded += ("(" + args.names() + ")");
