@@ -25,6 +25,8 @@ namespace wrap {
 /// Method class
 struct Method: public StaticMethod {
 
+  typedef const std::string& Str;
+
   /// Constructor creates empty object
   Method(bool verbose = true) :
       StaticMethod(verbose), is_const_(false) {
@@ -35,7 +37,7 @@ struct Method: public StaticMethod {
   // The first time this function is called, it initializes the class members
   // with those in rhs, but in subsequent calls it adds additional argument
   // lists as function overloads.
-  void addOverload(bool verbose, bool is_const, const std::string& name,
+  void addOverload(bool verbose, bool is_const, Str name,
       const ArgumentList& args, const ReturnValue& retVal,
       const Qualified& instName = Qualified());
 
@@ -44,10 +46,9 @@ private:
   // Emit method header
   void proxy_header(FileWriter& proxyFile) const;
 
-  std::string wrapper_call(FileWriter& wrapperFile,
-      const std::string& cppClassName, const std::string& matlabUniqueName,
-      const ArgumentList& args, const ReturnValue& returnVal,
-      const TypeAttributesTable& typeAttributes,
+  virtual std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
+      Str matlabUniqueName, const ArgumentList& args,
+      const ReturnValue& returnVal, const TypeAttributesTable& typeAttributes,
       const Qualified& instName) const;
 };
 

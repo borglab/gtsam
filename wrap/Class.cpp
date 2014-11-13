@@ -33,7 +33,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
+void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
     const TypeAttributesTable& typeAttributes, FileWriter& wrapperFile,
     vector<string>& functionNames) const {
 
@@ -144,7 +144,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 
 /* ************************************************************************* */
 void Class::pointer_constructor_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const string& wrapperName,
+    FileWriter& wrapperFile, Str wrapperName,
     vector<string>& functionNames) const {
 
   const string matlabUniqueName = qualifiedName();
@@ -251,7 +251,7 @@ Class Class::expandTemplate(const TemplateSubstitution& ts) const {
 }
 
 /* ************************************************************************* */
-vector<Class> Class::expandTemplate(const string& templateArg,
+vector<Class> Class::expandTemplate(Str templateArg,
     const vector<Qualified>& instantiations) const {
   vector<Class> result;
   BOOST_FOREACH(const Qualified& instName, instantiations) {
@@ -269,26 +269,29 @@ vector<Class> Class::expandTemplate(const string& templateArg,
 }
 
 /* ************************************************************************* */
-void Class::addMethod(bool verbose, bool is_const, const string& name,
-    const ArgumentList& args, const ReturnValue& retVal,
-    const string& templateArgName, const vector<Qualified>& templateArgValues) {
+void Class::addMethod(bool verbose, bool is_const, Str methodName,
+    const ArgumentList& argumentList, const ReturnValue& returnValue,
+    Str templateArgName, const vector<Qualified>& templateArgValues) {
   // Check if templated
   if (!templateArgName.empty() && templateArgValues.size() > 0) {
     // Create method to expand
     // For all values of the template argument, create a new method
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
-      string expandedName = name + instName.name;
+      const TemplateSubstitution ts(templateArgName, instName, this->name);
       // substitute template in arguments
-      const TemplateSubstitution ts(templateArgName, instName, name);
-      ArgumentList expandedArgs = args.expandTemplate(ts);
+      ArgumentList expandedArgs = argumentList.expandTemplate(ts);
       // do the same for return types
-      ReturnValue expandedRetVal = retVal.expandTemplate(ts);
-      methods[expandedName].addOverload(verbose, is_const, name, expandedArgs,
-          expandedRetVal, instName);
+      ReturnValue expandedRetVal = returnValue.expandTemplate(ts);
+      // Now stick in new overload stack with expandedMethodName key
+      // but note we use the same, unexpanded methodName in overload
+      string expandedMethodName = methodName + instName.name;
+      methods[expandedMethodName].addOverload(verbose, is_const, methodName,
+          expandedArgs, expandedRetVal, instName);
     }
   } else
     // just add overload
-    methods[name].addOverload(verbose, is_const, name, args, retVal);
+    methods[methodName].addOverload(verbose, is_const, methodName, argumentList,
+        returnValue);
 }
 
 /* ************************************************************************* */
@@ -357,7 +360,7 @@ void Class::appendInheritedMethods(const Class& cls,
 /* ************************************************************************* */
 string Class::getTypedef() const {
   string result;
-  BOOST_FOREACH(const string& namesp, namespaces) {
+  BOOST_FOREACH(Str namesp, namespaces) {
     result += ("namespace " + namesp + " { ");
   }
   result += ("typedef " + typedefName + " " + name + ";");
@@ -408,7 +411,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 
 /* ************************************************************************* */
 void Class::serialization_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const string& wrapperName,
+    FileWriter& wrapperFile, Str wrapperName,
     vector<string>& functionNames) const {
 
 //void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -500,7 +503,7 @@ void Class::serialization_fragments(FileWriter& proxyFile,
 
 /* ************************************************************************* */
 void Class::deserialization_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const string& wrapperName,
+    FileWriter& wrapperFile, Str wrapperName,
     vector<string>& functionNames) const {
   //void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   //{

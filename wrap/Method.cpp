@@ -29,7 +29,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Method::addOverload(bool verbose, bool is_const, const std::string& name,
+void Method::addOverload(bool verbose, bool is_const, Str name,
     const ArgumentList& args, const ReturnValue& retVal,
     const Qualified& instName) {
 
@@ -43,8 +43,8 @@ void Method::proxy_header(FileWriter& proxyFile) const {
 }
 
 /* ************************************************************************* */
-string Method::wrapper_call(FileWriter& wrapperFile, const string& cppClassName,
-    const string& matlabUniqueName, const ArgumentList& args,
+string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
+    Str matlabUniqueName, const ArgumentList& args,
     const ReturnValue& returnVal, const TypeAttributesTable& typeAttributes,
     const Qualified& instName) const {
   // check arguments

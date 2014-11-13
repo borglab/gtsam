@@ -38,6 +38,7 @@ class Class: public Qualified {
 
 public:
 
+  typedef const std::string& Str;
   typedef std::map<std::string, StaticMethod> StaticMethods;
 
   // Then the instance variables are set directly by the Module constructor
@@ -58,25 +59,30 @@ public:
           verbose), verbose_(verbose) {
   }
 
-  size_t nrMethods() const { return methods.size(); }
-  Method& method(const std::string& name) { return methods.at(name); }
-  bool exists(const std::string& name) const { return methods.find(name) != methods.end(); }
+  size_t nrMethods() const {
+    return methods.size();
+  }
+  Method& method(Str name) {
+    return methods.at(name);
+  }
+  bool exists(Str name) const {
+    return methods.find(name) != methods.end();
+  }
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
-  void matlab_proxy(const std::string& toolboxPath,
-      const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
-      FileWriter& wrapperFile, std::vector<std::string>& functionNames) const; ///< emit proxy class
+  void matlab_proxy(Str toolboxPath, Str wrapperName,
+      const TypeAttributesTable& typeAttributes, FileWriter& wrapperFile,
+      std::vector<std::string>& functionNames) const; ///< emit proxy class
 
   Class expandTemplate(const TemplateSubstitution& ts) const;
 
-  std::vector<Class> expandTemplate(const std::string& templateArg,
+  std::vector<Class> expandTemplate(Str templateArg,
       const std::vector<Qualified>& instantiations) const;
 
   /// Add potentially overloaded, potentially templated method
-  void addMethod(bool verbose, bool is_const, const std::string& name,
-      const ArgumentList& args, const ReturnValue& retVal,
-      const std::string& templateArgName,
-      const std::vector<Qualified>& templateArgValues);
+  void addMethod(bool verbose, bool is_const, Str methodName,
+      const ArgumentList& argumentList, const ReturnValue& returnValue,
+      Str templateArgName, const std::vector<Qualified>& templateArgValues);
 
   /// Post-process classes for serialization markers
   void erase_serialization(); // non-const !
@@ -96,18 +102,16 @@ public:
 
   /// Creates a member function that performs serialization
   void serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
-      const std::string& wrapperName,
-      std::vector<std::string>& functionNames) const;
+      Str wrapperName, std::vector<std::string>& functionNames) const;
 
   /// Creates a static member function that performs deserialization
   void deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
-      const std::string& wrapperName,
-      std::vector<std::string>& functionNames) const;
+      Str wrapperName, std::vector<std::string>& functionNames) const;
 
 private:
 
   void pointer_constructor_fragments(FileWriter& proxyFile,
-      FileWriter& wrapperFile, const std::string& wrapperName,
+      FileWriter& wrapperFile, Str wrapperName,
       std::vector<std::string>& functionNames) const;
 
   void comment_fragment(FileWriter& proxyFile) const;

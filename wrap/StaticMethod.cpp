@@ -30,9 +30,8 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void StaticMethod::addOverload(bool verbose, const std::string& name,
-    const ArgumentList& args, const ReturnValue& retVal,
-    const Qualified& instName) {
+void StaticMethod::addOverload(bool verbose, Str name, const ArgumentList& args,
+    const ReturnValue& retVal, const Qualified& instName) {
 
   Function::addOverload(verbose, name, instName);
   SignatureOverloads::addOverload(args, retVal);
@@ -41,15 +40,15 @@ void StaticMethod::addOverload(bool verbose, const std::string& name,
 /* ************************************************************************* */
 void StaticMethod::proxy_header(FileWriter& proxyFile) const {
   string upperName = name_;
-  upperName[0] = std::toupper(upperName[0], std::locale());
+  upperName[0] = toupper(upperName[0], locale());
   proxyFile.oss << "    function varargout = " << upperName << "(varargin)\n";
 }
 
 /* ************************************************************************* */
 void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, const string& cppClassName,
-    const std::string& matlabQualName, const std::string& matlabUniqueName,
-    const string& wrapperName, const TypeAttributesTable& typeAttributes,
+    FileWriter& wrapperFile, Str cppClassName, Str matlabQualName,
+    Str matlabUniqueName, Str wrapperName,
+    const TypeAttributesTable& typeAttributes,
     vector<string>& functionNames) const {
 
   proxy_header(proxyFile);
@@ -109,9 +108,9 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
 }
 
 /* ************************************************************************* */
-string StaticMethod::wrapper_fragment(FileWriter& wrapperFile,
-    const string& cppClassName, const string& matlabUniqueName, int overload,
-    int id, const TypeAttributesTable& typeAttributes,
+string StaticMethod::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
+    Str matlabUniqueName, int overload, int id,
+    const TypeAttributesTable& typeAttributes,
     const Qualified& instName) const {
 
   // generate code
@@ -152,10 +151,9 @@ string StaticMethod::wrapper_fragment(FileWriter& wrapperFile,
 }
 
 /* ************************************************************************* */
-string StaticMethod::wrapper_call(FileWriter& wrapperFile,
-    const string& cppClassName, const string& matlabUniqueName,
-    const ArgumentList& args, const ReturnValue& returnVal,
-    const TypeAttributesTable& typeAttributes,
+string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
+    Str matlabUniqueName, const ArgumentList& args,
+    const ReturnValue& returnVal, const TypeAttributesTable& typeAttributes,
     const Qualified& instName) const {
   // check arguments
   // NOTE: for static functions, there is no object passed
