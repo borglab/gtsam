@@ -83,11 +83,8 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
       // Output proxy matlab code
       proxyFile.oss << "      " << (i == 0 ? "" : "else");
       const int id = (int) functionNames.size();
-      string expanded = wrapperName;
-      if (!templateArgValue_.empty())
-        expanded += templateArgValue_.name;
-      argumentList(i).emit_conditional_call(proxyFile, returnValue(i), expanded,
-          id);
+      argumentList(i).emit_conditional_call(proxyFile, returnValue(i),
+          wrapperName, id);
 
       // Output C++ wrapper code
       const string wrapFunctionName = wrapper_fragment(wrapperFile,
