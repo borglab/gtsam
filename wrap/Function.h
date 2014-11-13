@@ -28,7 +28,15 @@
 namespace wrap {
 
 /// Function class
-struct Function {
+class Function {
+
+protected:
+
+  bool verbose_;
+  std::string name_; ///< name of method
+  Qualified templateArgValue_; ///< value of template argument if applicable
+
+public:
 
   /// Constructor creates empty object
   Function(bool verbose = true) :
@@ -39,9 +47,16 @@ struct Function {
       verbose_(verbose), name_(name) {
   }
 
-  bool verbose_;
-  std::string name_; ///< name of method
-  Qualified templateArgValue_; ///< value of template argument if applicable
+  std::string name() const {
+    return name_;
+  }
+
+  std::string matlabName() const {
+    if (templateArgValue_.empty())
+      return name_;
+    else
+      return name_ + templateArgValue_.name;
+  }
 
   // The first time this function is called, it initializes the class members
   // with those in rhs, but in subsequent calls it adds additional argument
@@ -205,10 +220,8 @@ template<class F>
 inline void verifyReturnTypes(const std::vector<std::string>& validTypes,
     const std::map<std::string, F>& vt) {
   typedef typename std::map<std::string, F>::value_type NamedMethod;
-  BOOST_FOREACH(const NamedMethod& namedMethod, vt) {
-    const F& t = namedMethod.second;
-    t.verifyReturnTypes(validTypes, t.name_);
-  }
+  BOOST_FOREACH(const NamedMethod& namedMethod, vt)
+    namedMethod.second.verifyReturnTypes(validTypes);
 }
 
 } // \namespace wrap

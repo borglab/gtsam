@@ -97,7 +97,7 @@ TEST( wrap, Small ) {
 
   // Method 1
   Method m1 = cls.method("x");
-  EXPECT(assert_equal("x", m1.name_));
+  EXPECT(assert_equal("x", m1.name()));
   EXPECT(m1.is_const_);
   LONGS_EQUAL(1, m1.nrOverloads());
 
@@ -109,7 +109,7 @@ TEST( wrap, Small ) {
 
   // Method 2
   Method m2 = cls.method("returnMatrix");
-  EXPECT(assert_equal("returnMatrix", m2.name_));
+  EXPECT(assert_equal("returnMatrix", m2.name()));
   EXPECT(m2.is_const_);
   LONGS_EQUAL(1, m2.nrOverloads());
 
@@ -121,7 +121,7 @@ TEST( wrap, Small ) {
 
   // Method 3
   Method m3 = cls.method("returnPoint2");
-  EXPECT(assert_equal("returnPoint2", m3.name_));
+  EXPECT(assert_equal("returnPoint2", m3.name()));
   EXPECT(m3.is_const_);
   LONGS_EQUAL(1, m3.nrOverloads());
 
@@ -134,7 +134,7 @@ TEST( wrap, Small ) {
   // Static Method 1
   // static Vector returnVector();
   StaticMethod sm1 = cls.static_methods.at("returnVector");
-  EXPECT(assert_equal("returnVector", sm1.name_));
+  EXPECT(assert_equal("returnVector", sm1.name()));
   LONGS_EQUAL(1, sm1.nrOverloads());
 
   ReturnValue rv4 = sm1.returnValue(0);
@@ -195,7 +195,7 @@ TEST( wrap, Geometry ) {
       EXPECT(assert_equal("char", m1.returnValue(0).type1.name));
       EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnValue(0).type1.category);
       EXPECT(!m1.returnValue(0).isPair);
-      EXPECT(assert_equal("returnChar", m1.name_));
+      EXPECT(assert_equal("returnChar", m1.name()));
       LONGS_EQUAL(1, m1.nrOverloads());
       EXPECT_LONGS_EQUAL(0, m1.argumentList(0).size());
       EXPECT(m1.is_const_);
@@ -209,7 +209,7 @@ TEST( wrap, Geometry ) {
       EXPECT(assert_equal("VectorNotEigen", m1.returnValue(0).type1.name));
       EXPECT_LONGS_EQUAL(ReturnType::CLASS, m1.returnValue(0).type1.category);
       EXPECT(!m1.returnValue(0).isPair);
-      EXPECT(assert_equal("vectorConfusion", m1.name_));
+      EXPECT(assert_equal("vectorConfusion", m1.name()));
       LONGS_EQUAL(1, m1.nrOverloads());
       EXPECT_LONGS_EQUAL(0, m1.argumentList(0).size());
       EXPECT(!m1.is_const_);
@@ -251,7 +251,7 @@ TEST( wrap, Geometry ) {
     LONGS_EQUAL(1, m1.nrOverloads());
     EXPECT(assert_equal("double", m1.returnValue(0).type1.name));
     EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnValue(0).type1.category);
-    EXPECT(assert_equal("norm", m1.name_));
+    EXPECT(assert_equal("norm", m1.name()));
     LONGS_EQUAL(1, m1.nrOverloads());
     EXPECT_LONGS_EQUAL(0, m1.argumentList(0).size());
     EXPECT(m1.is_const_);
@@ -312,7 +312,7 @@ TEST( wrap, Geometry ) {
   CHECK(module.global_functions.find("aGlobalFunction") != module.global_functions.end());
   {
     GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
-    EXPECT(assert_equal("aGlobalFunction", gfunc.name_));
+    EXPECT(assert_equal("aGlobalFunction", gfunc.name()));
     LONGS_EQUAL(1, gfunc.nrOverloads());
     EXPECT(assert_equal("Vector", gfunc.returnValue(0).type1.name));
     EXPECT_LONGS_EQUAL(1, gfunc.nrOverloads());
@@ -386,7 +386,7 @@ TEST( wrap, parse_namespaces ) {
   CHECK(module.global_functions.find("aGlobalFunction") != module.global_functions.end());
   {
     GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
-    EXPECT(assert_equal("aGlobalFunction", gfunc.name_));
+    EXPECT(assert_equal("aGlobalFunction", gfunc.name()));
     LONGS_EQUAL(2, gfunc.nrOverloads());
     EXPECT(assert_equal("Vector", gfunc.returnValue(0).type1.name));
 

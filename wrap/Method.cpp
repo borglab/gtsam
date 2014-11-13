@@ -39,7 +39,7 @@ void Method::addOverload(bool verbose, bool is_const, Str name,
 
 /* ************************************************************************* */
 void Method::proxy_header(FileWriter& proxyFile) const {
-  proxyFile.oss << "    function varargout = " << name_ << "(this, varargin)\n";
+  proxyFile.oss << "    function varargout = " << matlabName() << "(this, varargin)\n";
 }
 
 /* ************************************************************************* */

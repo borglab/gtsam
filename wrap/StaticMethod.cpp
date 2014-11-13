@@ -39,7 +39,7 @@ void StaticMethod::addOverload(bool verbose, Str name, const ArgumentList& args,
 
 /* ************************************************************************* */
 void StaticMethod::proxy_header(FileWriter& proxyFile) const {
-  string upperName = name_;
+  string upperName = matlabName();
   upperName[0] = toupper(upperName[0], locale());
   proxyFile.oss << "    function varargout = " << upperName << "(varargin)\n";
 }
@@ -51,6 +51,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile,
     const TypeAttributesTable& typeAttributes,
     vector<string>& functionNames) const {
 
+  // emit header, e.g., function varargout = templatedMethod(this, varargin)
   proxy_header(proxyFile);
 
   // Emit comments for documentation

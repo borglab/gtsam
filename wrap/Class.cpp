@@ -381,17 +381,13 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 
   if (!methods.empty())
     proxyFile.oss << "%\n%-------Methods-------\n";
-  BOOST_FOREACH(const Methods::value_type& name_m, methods) {
-    const Method& m = name_m.second;
-    m.comment_fragment(proxyFile, m.name_);
-  }
+  BOOST_FOREACH(const Methods::value_type& name_m, methods)
+    name_m.second.comment_fragment(proxyFile);
 
   if (!static_methods.empty())
     proxyFile.oss << "%\n%-------Static Methods-------\n";
-  BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) {
-    const StaticMethod& m = name_m.second;
-    m.comment_fragment(proxyFile, m.name_);
-  }
+  BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods)
+    name_m.second.comment_fragment(proxyFile);
 
   if (hasSerialization) {
     proxyFile.oss << "%\n%-------Serialization Interface-------\n";

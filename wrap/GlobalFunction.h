@@ -27,6 +27,14 @@ struct GlobalFunction: public Function, public SignatureOverloads {
       Function(name,verbose) {
   }
 
+  void verifyArguments(const std::vector<std::string>& validArgs) const {
+    SignatureOverloads::verifyArguments(validArgs, name_);
+  }
+
+  void verifyReturnTypes(const std::vector<std::string>& validtypes) const {
+    SignatureOverloads::verifyReturnTypes(validtypes, name_);
+  }
+
   // adds an overloaded version of this function,
   void addOverload(bool verbose, const Qualified& overload,
       const ArgumentList& args, const ReturnValue& retVal,

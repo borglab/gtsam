@@ -36,6 +36,19 @@ struct StaticMethod: public Function, public SignatureOverloads {
   void addOverload(bool verbose, Str name, const ArgumentList& args,
       const ReturnValue& retVal, const Qualified& instName);
 
+  // emit a list of comments, one for each overload
+  void comment_fragment(FileWriter& proxyFile) const {
+    SignatureOverloads::comment_fragment(proxyFile, name_);
+  }
+
+  void verifyArguments(const std::vector<std::string>& validArgs) const {
+    SignatureOverloads::verifyArguments(validArgs, name_);
+  }
+
+  void verifyReturnTypes(const std::vector<std::string>& validtypes) const {
+    SignatureOverloads::verifyReturnTypes(validtypes, name_);
+  }
+
   // MATLAB code generation
   // classPath is class directory, e.g., ../matlab/@Point2
   void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
