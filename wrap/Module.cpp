@@ -217,7 +217,7 @@ void Module::parseMarkup(const std::string& data) {
   Constructor constructor0(verbose), constructor(verbose);
   Rule constructor_p =  
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p) 
-    [push_back_a(constructor.args_list, args)] 
+    [bl::bind(&Constructor::addOverload, bl::var(constructor), bl::var(args))]
     [clear_a(args)];
  
   vector<string> namespaces_return; /// namespace for current return type

@@ -37,17 +37,6 @@ string Constructor::matlab_wrapper_name(const string& className) const {
 }
 
 /* ************************************************************************* */
-vector<ArgumentList> Constructor::expandArgumentListsTemplate(
-    const TemplateSubstitution& ts) const {
-  vector<ArgumentList> result;
-  BOOST_FOREACH(const ArgumentList& argList, args_list) {
-    ArgumentList instArgList = argList.expandTemplate(ts);
-    result.push_back(instArgList);
-  }
-  return result;
-}
-
-/* ************************************************************************* */
 void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperName,
         bool hasParent, const int id, const ArgumentList args) const {
   size_t nrArgs = args.size();

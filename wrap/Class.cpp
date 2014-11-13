@@ -73,13 +73,15 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   pointer_constructor_fragments(proxyFile, wrapperFile, wrapperName,
       functionNames);
   wrapperFile.oss << "\n";
+
   // Regular constructors 
-  BOOST_FOREACH(ArgumentList a, constructor.args_list) {
+  for (size_t i = 0; i < constructor.nrOverloads(); i++) {
+    ArgumentList args = constructor.argumentList(i);
     const int id = (int) functionNames.size();
     constructor.proxy_fragment(proxyFile, wrapperName, !qualifiedParent.empty(),
-        id, a);
+        id, args);
     const string wrapFunctionName = constructor.wrapper_fragment(wrapperFile,
-        cppName, matlabUniqueName, cppBaseName, id, a);
+        cppName, matlabUniqueName, cppBaseName, id, args);
     wrapperFile.oss << "\n";
     functionNames.push_back(wrapFunctionName);
   }
@@ -244,8 +246,7 @@ Class Class::expandTemplate(const TemplateSubstitution& ts) const {
   Class inst = *this;
   inst.methods = expandMethodTemplate(methods, ts);
   inst.static_methods = expandMethodTemplate(static_methods, ts);
-  inst.constructor.args_list = inst.constructor.expandArgumentListsTemplate(ts);
-  inst.constructor.name = inst.name;
+  inst.constructor = constructor.expandTemplate(ts);
   inst.deconstructor.name = inst.name;
   cout << inst << endl;
   return inst;
@@ -374,19 +375,12 @@ string Class::getTypedef() const {
 }
 
 /* ************************************************************************* */
-
 void Class::comment_fragment(FileWriter& proxyFile) const {
   proxyFile.oss << "%class " << name << ", see Doxygen page for details\n";
   proxyFile.oss
       << "%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n";
 
-  if (!constructor.args_list.empty())
-    proxyFile.oss << "%\n%-------Constructors-------\n";
-  BOOST_FOREACH(ArgumentList argList, constructor.args_list) {
-    proxyFile.oss << "%";
-    argList.emit_prototype(proxyFile, name);
-    proxyFile.oss << "\n";
-  }
+  constructor.comment_fragment(proxyFile);
 
   if (!methods.empty())
     proxyFile.oss << "%\n%-------Methods-------\n";

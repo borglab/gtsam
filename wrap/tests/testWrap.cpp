@@ -184,7 +184,7 @@ TEST( wrap, Geometry ) {
 
     Class cls = module.classes.at(0);
     EXPECT(assert_equal("Point2", cls.name));
-    EXPECT_LONGS_EQUAL(2, cls.constructor.args_list.size());
+    EXPECT_LONGS_EQUAL(2, cls.constructor.nrOverloads());
     EXPECT_LONGS_EQUAL(7, cls.nrMethods());
 
     {
@@ -229,13 +229,13 @@ TEST( wrap, Geometry ) {
   {
     Class cls = module.classes.at(1);
     EXPECT(assert_equal("Point3", cls.name));
-    EXPECT_LONGS_EQUAL(1, cls.constructor.args_list.size());
+    EXPECT_LONGS_EQUAL(1, cls.constructor.nrOverloads());
     EXPECT_LONGS_EQUAL(1, cls.nrMethods());
     EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
     EXPECT_LONGS_EQUAL(1, cls.namespaces.size());
 
     // first constructor takes 3 doubles
-    ArgumentList c1 = cls.constructor.args_list.front();
+    ArgumentList c1 = cls.constructor.argumentList(0);
     EXPECT_LONGS_EQUAL(3, c1.size());
 
     // check first double argument
@@ -266,7 +266,7 @@ TEST( wrap, Geometry ) {
   // Test class is the third one
   {
     Class testCls = module.classes.at(2);
-    EXPECT_LONGS_EQUAL( 2, testCls.constructor.args_list.size());
+    EXPECT_LONGS_EQUAL( 2, testCls.constructor.nrOverloads());
     EXPECT_LONGS_EQUAL(19, testCls.nrMethods());
     EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
     EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());

@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "Argument.h"
+#include "Function.h"
 
 #include <string>
 #include <vector>
@@ -26,7 +26,7 @@
 namespace wrap {
 
 // Constructor class
-struct Constructor {
+struct Constructor: public ArgumentOverloads {
 
   /// Constructor creates an empty class
   Constructor(bool verbose = false) :
@@ -34,13 +34,15 @@ struct Constructor {
   }
 
   // Then the instance variables are set directly by the Module constructor
-  std::vector<ArgumentList> args_list;
   std::string name;
   bool verbose_;
 
-  // TODO eliminate copy/paste with function
-  std::vector<ArgumentList> expandArgumentListsTemplate(
-      const TemplateSubstitution& ts) const;
+  Constructor expandTemplate(const TemplateSubstitution& ts) const {
+    Constructor inst = *this;
+    inst.argLists_ = expandArgumentListsTemplate(ts);
+    inst.name = inst.name;
+    return inst;
+  }
 
   // MATLAB code generation
   // toolboxPath is main toolbox directory, e.g., ../matlab
@@ -48,6 +50,16 @@ struct Constructor {
 
   /// wrapper name
   std::string matlab_wrapper_name(const std::string& className) const;
+
+  void comment_fragment(FileWriter& proxyFile) const {
+    if (nrOverloads() > 0)
+      proxyFile.oss << "%\n%-------Constructors-------\n";
+    for (size_t i = 0; i < nrOverloads(); i++) {
+      proxyFile.oss << "%";
+      argumentList(i).emit_prototype(proxyFile, name);
+      proxyFile.oss << "\n";
+    }
+  }
 
   /**
    * Create fragment to select constructor in proxy class, e.g.,
@@ -65,6 +77,12 @@ struct Constructor {
   /// constructor function
   void generate_construct(FileWriter& file, const std::string& cppClassName,
       std::vector<ArgumentList>& args_list) const;
+
+  friend std::ostream& operator<<(std::ostream& os, const Constructor& m) {
+    for (size_t i = 0; i < m.nrOverloads(); i++)
+      os << m.name << m.argLists_[i];
+    return os;
+  }
 
 };
 

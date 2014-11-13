@@ -43,6 +43,12 @@ struct StaticMethod: public Function, public SignatureOverloads {
       Str wrapperName, const TypeAttributesTable& typeAttributes,
       std::vector<std::string>& functionNames) const;
 
+  friend std::ostream& operator<<(std::ostream& os, const StaticMethod& m) {
+    for (size_t i = 0; i < m.nrOverloads(); i++)
+      os << "static " << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];
+    return os;
+  }
+
 protected:
 
   virtual void proxy_header(FileWriter& proxyFile) const;

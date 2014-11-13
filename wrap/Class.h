@@ -112,7 +112,10 @@ public:
       Str wrapperName, std::vector<std::string>& functionNames) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
-    os << "class " <<   cls.name << "{\n";
+    os << "class " << cls.name << "{\n";
+    os << cls.constructor << ";\n";
+    BOOST_FOREACH(const StaticMethod& m, cls.static_methods | boost::adaptors::map_values)
+      os << m << ";\n";
     BOOST_FOREACH(const Method& m, cls.methods | boost::adaptors::map_values)
       os << m << ";\n";
     os << "};" << std::endl;
