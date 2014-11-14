@@ -12,8 +12,8 @@
 %return_T(Point2 value) : returns gtsam::Point2
 %return_Tptr(Point2 value) : returns gtsam::Point2
 %return_ptrs(Point2 p1, Point2 p2) : returns pair< gtsam::Point2, gtsam::Point2 >
-%templatedMethod(Point2 t) : returns void
-%templatedMethod(Point3 t) : returns void
+%templatedMethodPoint2(Point2 t) : returns void
+%templatedMethodPoint3(Point3 t) : returns void
 %
 classdef MyTemplatePoint2 < MyBase
   properties

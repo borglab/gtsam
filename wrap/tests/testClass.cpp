@@ -46,12 +46,12 @@ TEST( Class, OverloadingMethod ) {
   EXPECT_LONGS_EQUAL(1, cls.nrMethods());
   EXPECT(cls.exists(name));
   Method& method = cls.method(name);
-  EXPECT_LONGS_EQUAL(1, method.returnVals.size());
+  EXPECT_LONGS_EQUAL(1, method.nrOverloads());
 
   cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
       templateArgValues);
   EXPECT_LONGS_EQUAL(1, cls.nrMethods());
-  EXPECT_LONGS_EQUAL(2, method.returnVals.size());
+  EXPECT_LONGS_EQUAL(2, method.nrOverloads());
 }
 
 /* ************************************************************************* */

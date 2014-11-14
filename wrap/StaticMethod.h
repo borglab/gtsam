@@ -33,6 +33,10 @@ struct StaticMethod: public Function, public SignatureOverloads {
       Function(verbosity) {
   }
 
+  StaticMethod(const std::string& name, bool verbose = true) :
+    Function(name,verbose) {
+  }
+
   virtual bool isStatic() const {
     return true;
   }

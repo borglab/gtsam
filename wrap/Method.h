@@ -36,6 +36,10 @@ public:
       StaticMethod(verbose), is_const_(false) {
   }
 
+  Method(const std::string& name, bool verbose = true) :
+    StaticMethod(name,verbose), is_const_(false) {
+  }
+
   virtual bool isStatic() const {
     return false;
   }

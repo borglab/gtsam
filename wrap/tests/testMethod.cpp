@@ -32,14 +32,12 @@ TEST( Method, Constructor ) {
 /* ************************************************************************* */
 // addOverload
 TEST( Method, addOverload ) {
-  Method method;
-  method.name = "myName";
+  Method method("myName");
   bool verbose = true, is_const = true;
   ArgumentList args;
   const ReturnValue retVal(ReturnType("return_type"));
   method.addOverload(verbose, is_const, "myName", args, retVal);
-  EXPECT_LONGS_EQUAL(1,method.argLists.size());
-  EXPECT_LONGS_EQUAL(1,method.returnVals.size());
+  EXPECT_LONGS_EQUAL(1,method.nrOverloads());
 }
 
 /* ************************************************************************* */
