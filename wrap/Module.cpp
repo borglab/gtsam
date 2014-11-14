@@ -394,51 +394,35 @@ void Module::parseMarkup(const std::string& data) {
   // Explicitly add methods to the classes from parents so it shows in documentation
   BOOST_FOREACH(Class& cls, classes)
     cls.appendInheritedMethods(cls, classes);
-} 
- 
-/* ************************************************************************* */ 
-void Module::generateIncludes(FileWriter& file) const { 
- 
-  // collect includes 
-  vector<string> all_includes(includes); 
- 
-  // sort and remove duplicates 
-  sort(all_includes.begin(), all_includes.end()); 
-  vector<string>::const_iterator last_include = unique(all_includes.begin(), all_includes.end()); 
-  vector<string>::const_iterator it = all_includes.begin(); 
-  // add includes to file 
-  for (; it != last_include; ++it) 
-    file.oss << "#include <" << *it << ">" << endl; 
-  file.oss << "\n"; 
-} 
-
- 
-/* ************************************************************************* */ 
-void Module::matlab_code(const string& toolboxPath, const string& headerPath) const { 
-
-  fs::create_directories(toolboxPath);
 
   // Expand templates - This is done first so that template instantiations are
   // counted in the list of valid types, have their attributes and dependencies
   // checked, etc.
-  vector<Class> expandedClasses = ExpandTypedefInstantiations(classes, templateInstantiationTypedefs);
+  expandedClasses = ExpandTypedefInstantiations(classes,
+      templateInstantiationTypedefs);
 
   // Dependency check list
-  vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations);
+  vector<string> validTypes = GenerateValidTypes(expandedClasses,
+      forward_declarations);
 
   // Check that all classes have been defined somewhere
   verifyArguments<GlobalFunction>(validTypes, global_functions);
   verifyReturnTypes<GlobalFunction>(validTypes, global_functions);
 
-  bool hasSerialiable = false;
+  hasSerialiable = false;
   BOOST_FOREACH(const Class& cls, expandedClasses)
     cls.verifyAll(validTypes,hasSerialiable);
 
   // Create type attributes table and check validity
-  TypeAttributesTable typeAttributes;
   typeAttributes.addClasses(expandedClasses);
   typeAttributes.addForwardDeclarations(forward_declarations);
   typeAttributes.checkValidity(expandedClasses);
+} 
+ 
+/* ************************************************************************* */ 
+void Module::matlab_code(const string& toolboxPath) const {
+
+  fs::create_directories(toolboxPath);
 
   // create the unified .cpp switch file
   const string wrapperName = name + "_wrapper";
@@ -459,19 +443,18 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   // Generate includes while avoiding redundant includes
   generateIncludes(wrapperFile);
 
-  // create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
-  BOOST_FOREACH(const Class& cls, expandedClasses) {
+  // create typedef classes - we put this at the top of the wrap file so that
+  // collectors and method arguments can use these typedefs
+  BOOST_FOREACH(const Class& cls, expandedClasses)
     if(!cls.typedefName.empty())
       wrapperFile.oss << cls.getTypedef() << "\n";
-  }
   wrapperFile.oss << "\n";
 
   // Generate boost.serialization export flags (needs typedefs from above)
   if (hasSerialiable) {
-    BOOST_FOREACH(const Class& cls, expandedClasses) {
+    BOOST_FOREACH(const Class& cls, expandedClasses)
       if(cls.isSerializable)
         wrapperFile.oss << cls.getSerializationExport() << "\n";
-    }
     wrapperFile.oss << "\n";
   }
 
@@ -484,14 +467,12 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   vector<string> functionNames; // Function names stored by index for switch
 
   // create proxy class and wrapper code
-  BOOST_FOREACH(const Class& cls, expandedClasses) {
+  BOOST_FOREACH(const Class& cls, expandedClasses)
     cls.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
-  }
 
   // create matlab files and wrapper code for global functions
-  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions) {
+  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions)
     p.second.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
-  } 
 
   // finish wrapper file
   wrapperFile.oss << "\n";
@@ -501,6 +482,23 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 }
 
 /* ************************************************************************* */ 
+void Module::generateIncludes(FileWriter& file) const {
+
+  // collect includes
+  vector<string> all_includes(includes);
+
+  // sort and remove duplicates
+  sort(all_includes.begin(), all_includes.end());
+  vector<string>::const_iterator last_include = unique(all_includes.begin(), all_includes.end());
+  vector<string>::const_iterator it = all_includes.begin();
+  // add includes to file
+  for (; it != last_include; ++it)
+    file.oss << "#include <" << *it << ">" << endl;
+  file.oss << "\n";
+}
+
+
+/* ************************************************************************* */
   void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const { 
     file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n"; 
     file.oss << "{\n"; 
