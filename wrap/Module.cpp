@@ -217,7 +217,7 @@ void Module::parseMarkup(const std::string& data) {
   Constructor constructor0(verbose), constructor(verbose);
   Rule constructor_p =  
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p) 
-    [bl::bind(&Constructor::addOverload, bl::var(constructor), bl::var(args))]
+    [bl::bind(&Constructor::push_back, bl::var(constructor), bl::var(args))]
     [clear_a(args)];
  
   vector<string> namespaces_return; /// namespace for current return type
@@ -274,7 +274,7 @@ void Module::parseMarkup(const std::string& data) {
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
-      verbose, bl::var(methodName), bl::var(args), bl::var(retVal), Qualified())]
+      bl::var(methodName), bl::var(args), bl::var(retVal), Qualified(),verbose)]
     [assign_a(retVal,retVal0)]
     [clear_a(args)];
  
@@ -295,7 +295,8 @@ void Module::parseMarkup(const std::string& data) {
       >> ((':' >> classParent_p >> '{') | '{') 
       >> *(functions_p | comments_p) 
       >> str_p("};")) 
-      [assign_a(constructor.name, cls.name)] 
+      [bl::bind(&Constructor::initializeOrCheck, bl::var(constructor),
+          bl::var(cls.name), Qualified(), verbose)]
       [assign_a(cls.constructor, constructor)] 
       [assign_a(cls.namespaces, namespaces)] 
       [assign_a(cls.deconstructor.name,cls.name)]
@@ -313,7 +314,7 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(globalFunction.namespaces,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
         bl::var(global_functions)[bl::var(globalFunction.name)],
-        verbose,  bl::var(globalFunction), bl::var(args), bl::var(retVal), Qualified())]
+        bl::var(globalFunction), bl::var(args), bl::var(retVal), Qualified(),verbose)]
       [assign_a(retVal,retVal0)]
       [clear_a(globalFunction)]
       [clear_a(args)];

@@ -286,13 +286,13 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
       // Now stick in new overload stack with expandedMethodName key
       // but note we use the same, unexpanded methodName in overload
       string expandedMethodName = methodName + instName.name;
-      methods[expandedMethodName].addOverload(verbose, is_const, methodName,
-          expandedArgs, expandedRetVal, instName);
+      methods[expandedMethodName].addOverload(methodName, expandedArgs,
+          expandedRetVal, is_const, instName, verbose);
     }
   } else
     // just add overload
-    methods[methodName].addOverload(verbose, is_const, methodName, argumentList,
-        returnValue);
+    methods[methodName].addOverload(methodName, argumentList, returnValue,
+        is_const, Qualified(), verbose);
 }
 
 /* ************************************************************************* */

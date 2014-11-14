@@ -29,17 +29,25 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Method::addOverload(bool verbose, bool is_const, Str name,
-    const ArgumentList& args, const ReturnValue& retVal,
-    const Qualified& instName) {
-
-  StaticMethod::addOverload(verbose, name, args, retVal, instName);
-  is_const_ = is_const;
+bool Method::addOverload(Str name, const ArgumentList& args,
+    const ReturnValue& retVal, bool is_const, const Qualified& instName,
+    bool verbose) {
+  bool first = StaticMethod::addOverload(name, args, retVal, instName, verbose);
+  if (first)
+    is_const_ = is_const;
+  else if (is_const && !is_const_)
+    throw std::runtime_error(
+        "Method::addOverload now designated as const whereas before it was not");
+  else if (!is_const && is_const_)
+    throw std::runtime_error(
+        "Method::addOverload now designated as non-const whereas before it was");
+  return first;
 }
 
 /* ************************************************************************* */
 void Method::proxy_header(FileWriter& proxyFile) const {
-  proxyFile.oss << "    function varargout = " << matlabName() << "(this, varargin)\n";
+  proxyFile.oss << "    function varargout = " << matlabName()
+      << "(this, varargin)\n";
 }
 
 /* ************************************************************************* */

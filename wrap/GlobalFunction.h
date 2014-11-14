@@ -9,23 +9,18 @@
 
 #pragma once
 
-#include "Function.h"
+#include "FullyOverloadedFunction.h"
 
 namespace wrap {
 
-struct GlobalFunction: public Function, public SignatureOverloads {
+struct GlobalFunction: public FullyOverloadedFunction {
 
   std::vector<Qualified> overloads; ///< Stack of qualified names
 
-  // Constructor only used in Module
-  GlobalFunction(bool verbose = true) :
-      Function(verbose) {
-  }
-
-  // Used to reconstruct
-  GlobalFunction(const std::string& name, bool verbose = true) :
-      Function(name,verbose) {
-  }
+  // adds an overloaded version of this function,
+  void addOverload(const Qualified& overload, const ArgumentList& args,
+      const ReturnValue& retVal, const Qualified& instName = Qualified(),
+      bool verbose = false);
 
   void verifyArguments(const std::vector<std::string>& validArgs) const {
     SignatureOverloads::verifyArguments(validArgs, name_);
@@ -34,11 +29,6 @@ struct GlobalFunction: public Function, public SignatureOverloads {
   void verifyReturnTypes(const std::vector<std::string>& validtypes) const {
     SignatureOverloads::verifyReturnTypes(validtypes, name_);
   }
-
-  // adds an overloaded version of this function,
-  void addOverload(bool verbose, const Qualified& overload,
-      const ArgumentList& args, const ReturnValue& retVal,
-      const Qualified& instName = Qualified());
 
   // codegen function called from Module to build the cpp and matlab versions of the function
   void matlab_proxy(const std::string& toolboxPath,

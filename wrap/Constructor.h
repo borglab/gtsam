@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "Function.h"
+#include "OverloadedFunction.h"
 
 #include <string>
 #include <vector>
@@ -26,21 +26,17 @@
 namespace wrap {
 
 // Constructor class
-struct Constructor: public ArgumentOverloads {
+struct Constructor: public OverloadedFunction {
 
   /// Constructor creates an empty class
-  Constructor(bool verbose = false) :
-      verbose_(verbose) {
+  Constructor(bool verbose = false) {
+    verbose_ = verbose;
   }
-
-  // Then the instance variables are set directly by the Module constructor
-  std::string name;
-  bool verbose_;
 
   Constructor expandTemplate(const TemplateSubstitution& ts) const {
     Constructor inst = *this;
     inst.argLists_ = expandArgumentListsTemplate(ts);
-    inst.name = ts.expandedClassName();
+    inst.name_ = ts.expandedClassName();
     return inst;
   }
 
@@ -56,7 +52,7 @@ struct Constructor: public ArgumentOverloads {
       proxyFile.oss << "%\n%-------Constructors-------\n";
     for (size_t i = 0; i < nrOverloads(); i++) {
       proxyFile.oss << "%";
-      argumentList(i).emit_prototype(proxyFile, name);
+      argumentList(i).emit_prototype(proxyFile, name_);
       proxyFile.oss << "\n";
     }
   }
@@ -80,7 +76,7 @@ struct Constructor: public ArgumentOverloads {
 
   friend std::ostream& operator<<(std::ostream& os, const Constructor& m) {
     for (size_t i = 0; i < m.nrOverloads(); i++)
-      os << m.name << m.argLists_[i];
+      os << m.name_ << m.argLists_[i];
     return os;
   }
 

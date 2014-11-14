@@ -19,30 +19,18 @@
 
 #pragma once
 
-#include "Function.h"
+#include "FullyOverloadedFunction.h"
 
 namespace wrap {
 
 /// StaticMethod class
-struct StaticMethod: public Function, public SignatureOverloads {
+struct StaticMethod: public FullyOverloadedFunction {
 
   typedef const std::string& Str;
-
-  /// Constructor creates empty object
-  StaticMethod(bool verbosity = true) :
-      Function(verbosity) {
-  }
-
-  StaticMethod(const std::string& name, bool verbose = true) :
-    Function(name,verbose) {
-  }
 
   virtual bool isStatic() const {
     return true;
   }
-
-  void addOverload(bool verbose, Str name, const ArgumentList& args,
-      const ReturnValue& retVal, const Qualified& instName);
 
   // emit a list of comments, one for each overload
   void comment_fragment(FileWriter& proxyFile) const {
