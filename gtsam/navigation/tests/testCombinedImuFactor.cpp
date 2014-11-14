@@ -21,7 +21,6 @@
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
@@ -143,9 +142,9 @@ TEST( CombinedImuFactor, ErrorWithBiases )
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   imuBias::ConstantBias bias2(Vector3(0.2, 0.2, 0), Vector3(1, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
-  LieVector v1((Vector(3) << 0.5, 0.0, 0.0));
+  Vector3 v1(0.5, 0.0, 0.0);
   Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/4.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
-  LieVector v2((Vector(3) << 0.5, 0.0, 0.0));
+  Vector3 v2(0.5, 0.0, 0.0);
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;
@@ -239,12 +238,12 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements )
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0));
 
   // Compute numerical derivatives
-  Matrix expectedDelPdelBias = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix expectedDelPdelBias = numericalDerivative11<Vector,imuBias::ConstantBias>(
       boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
   Matrix expectedDelPdelBiasAcc   = expectedDelPdelBias.leftCols(3);
   Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
 
-  Matrix expectedDelVdelBias = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix expectedDelVdelBias = numericalDerivative11<Vector,imuBias::ConstantBias>(
       boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
   Matrix expectedDelVdelBiasAcc   = expectedDelVdelBias.leftCols(3);
   Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);

@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <gtsam/base/LieScalar.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -21,11 +20,11 @@ namespace gtsam {
  *    - For implicit Euler method:  q_{k+1} = q_k + h*v_{k+1}
  *    - For sympletic Euler method: q_{k+1} = q_k + h*v_{k+1}
  */
-class PendulumFactor1: public NoiseModelFactor3<LieScalar, LieScalar, LieScalar> {
+class PendulumFactor1: public NoiseModelFactor3<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<LieScalar, LieScalar, LieScalar> Base;
+  typedef NoiseModelFactor3<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactor1() {}
@@ -38,7 +37,7 @@ public:
 
   ///Constructor.  k1: q_{k+1}, k: q_k, velKey: velocity variable depending on the chosen method, h: time step
   PendulumFactor1(Key k1, Key k, Key velKey, double h, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(LieScalar::Dim(), fabs(mu)), k1, k, velKey), h_(h) {}
+  : Base(noiseModel::Constrained::All(1, fabs(mu)), k1, k, velKey), h_(h) {}
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
@@ -46,15 +45,15 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor1(*this))); }
 
   /** q_k + h*v - q_k1 = 0, with optional derivatives */
-  Vector evaluateError(const LieScalar& qk1, const LieScalar& qk, const LieScalar& v,
+  Vector evaluateError(const double& qk1, const double& qk, const double& v,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
-    const size_t p = LieScalar::Dim();
+    const size_t p = 1;
     if (H1) *H1 = -eye(p);
     if (H2) *H2 = eye(p);
     if (H3) *H3 = eye(p)*h_;
-    return qk1.localCoordinates(qk.compose(LieScalar(v*h_)));
+    return (Vector(1) << qk+v*h_-qk1);
   }
 
 }; // \PendulumFactor1
@@ -67,11 +66,11 @@ public:
  *    - For implicit Euler method:  v_{k+1} = v_k - h*g/L*sin(q_{k+1})
  *    - For sympletic Euler method: v_{k+1} = v_k - h*g/L*sin(q_k)
  */
-class PendulumFactor2: public NoiseModelFactor3<LieScalar, LieScalar, LieScalar> {
+class PendulumFactor2: public NoiseModelFactor3<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<LieScalar, LieScalar, LieScalar> Base;
+  typedef NoiseModelFactor3<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactor2() {}
@@ -86,7 +85,7 @@ public:
 
   ///Constructor.  vk1: v_{k+1}, vk: v_k, qkey: q's key depending on the chosen method, h: time step
   PendulumFactor2(Key vk1, Key vk, Key qkey, double h, double r = 1.0, double g = 9.81, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(LieScalar::Dim(), fabs(mu)), vk1, vk, qkey), h_(h), g_(g), r_(r) {}
+  : Base(noiseModel::Constrained::All(1, fabs(mu)), vk1, vk, qkey), h_(h), g_(g), r_(r) {}
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
@@ -94,15 +93,15 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor2(*this))); }
 
   /**  v_k - h*g/L*sin(q) - v_k1 = 0, with optional derivatives */
-  Vector evaluateError(const LieScalar& vk1, const LieScalar& vk, const LieScalar& q,
+  Vector evaluateError(const double & vk1, const double & vk, const double & q,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
-    const size_t p = LieScalar::Dim();
+    const size_t p = 1;
     if (H1) *H1 = -eye(p);
     if (H2) *H2 = eye(p);
-    if (H3) *H3 = -eye(p)*h_*g_/r_*cos(q.value());
-    return vk1.localCoordinates(LieScalar(vk - h_*g_/r_*sin(q)));
+    if (H3) *H3 = -eye(p)*h_*g_/r_*cos(q);
+    return (Vector(1) << vk - h_ * g_ / r_ * sin(q) - vk1);
   }
 
 }; // \PendulumFactor2
@@ -114,11 +113,11 @@ public:
  *    p_k = -D_1 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)+mgrh(1-\alpha)\,\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right)
  *    = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1})
  */
-class PendulumFactorPk: public NoiseModelFactor3<LieScalar, LieScalar, LieScalar> {
+class PendulumFactorPk: public NoiseModelFactor3<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<LieScalar, LieScalar, LieScalar> Base;
+  typedef NoiseModelFactor3<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactorPk() {}
@@ -136,7 +135,7 @@ public:
   ///Constructor
   PendulumFactorPk(Key pKey, Key qKey, Key qKey1,
       double h, double m = 1.0, double r = 1.0, double g = 9.81, double alpha = 0.0, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(LieScalar::Dim(), fabs(mu)), pKey, qKey, qKey1),
+  : Base(noiseModel::Constrained::All(1, fabs(mu)), pKey, qKey, qKey1),
     h_(h), m_(m), r_(r), g_(g), alpha_(alpha) {}
 
   /// @return a deep copy of this factor
@@ -145,11 +144,11 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk(*this))); }
 
   /**  1/h mr^2 (qk1-qk)+mgrh (1-a) sin((1-a)pk + a*pk1) - pk = 0, with optional derivatives */
-  Vector evaluateError(const LieScalar& pk, const LieScalar& qk, const LieScalar& qk1,
+  Vector evaluateError(const double & pk, const double & qk, const double & qk1,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
-    const size_t p = LieScalar::Dim();
+    const size_t p = 1;
 
     double qmid = (1-alpha_)*qk + alpha_*qk1;
     double mr2_h = 1/h_*m_*r_*r_;
@@ -159,7 +158,7 @@ public:
     if (H2) *H2 = eye(p)*(-mr2_h + mgrh*(1-alpha_)*(1-alpha_)*cos(qmid));
     if (H3) *H3 = eye(p)*( mr2_h + mgrh*(1-alpha_)*(alpha_)*cos(qmid));
 
-    return pk.localCoordinates(LieScalar(mr2_h*(qk1-qk) + mgrh*(1-alpha_)*sin(qmid)));
+    return (Vector(1) << mr2_h * (qk1 - qk) + mgrh * (1 - alpha_) * sin(qmid) - pk);
   }
 
 }; // \PendulumFactorPk
@@ -170,11 +169,11 @@ public:
  *    p_k1 = D_2 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)-mgrh\alpha\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right)
  *    = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1})
  */
-class PendulumFactorPk1: public NoiseModelFactor3<LieScalar, LieScalar, LieScalar> {
+class PendulumFactorPk1: public NoiseModelFactor3<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<LieScalar, LieScalar, LieScalar> Base;
+  typedef NoiseModelFactor3<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactorPk1() {}
@@ -192,7 +191,7 @@ public:
   ///Constructor
   PendulumFactorPk1(Key pKey1, Key qKey, Key qKey1,
       double h, double m = 1.0, double r = 1.0, double g = 9.81, double alpha = 0.0, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(LieScalar::Dim(), fabs(mu)), pKey1, qKey, qKey1),
+  : Base(noiseModel::Constrained::All(1, fabs(mu)), pKey1, qKey, qKey1),
     h_(h), m_(m), r_(r), g_(g), alpha_(alpha) {}
 
   /// @return a deep copy of this factor
@@ -201,11 +200,11 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk1(*this))); }
 
   /**  1/h mr^2 (qk1-qk) - mgrh a sin((1-a)pk + a*pk1) - pk1 = 0, with optional derivatives */
-  Vector evaluateError(const LieScalar& pk1, const LieScalar& qk, const LieScalar& qk1,
+  Vector evaluateError(const double & pk1, const double & qk, const double & qk1,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
-    const size_t p = LieScalar::Dim();
+    const size_t p = 1;
 
     double qmid = (1-alpha_)*qk + alpha_*qk1;
     double mr2_h = 1/h_*m_*r_*r_;
@@ -215,7 +214,7 @@ public:
     if (H2) *H2 = eye(p)*(-mr2_h - mgrh*(1-alpha_)*alpha_*cos(qmid));
     if (H3) *H3 = eye(p)*( mr2_h - mgrh*alpha_*alpha_*cos(qmid));
 
-    return pk1.localCoordinates(LieScalar(mr2_h*(qk1-qk) - mgrh*alpha_*sin(qmid)));
+    return (Vector(1) << mr2_h * (qk1 - qk) - mgrh * alpha_ * sin(qmid) - pk1);
   }
 
 }; // \PendulumFactorPk1

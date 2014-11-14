@@ -63,7 +63,7 @@ public:
    * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
+   * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
   SmartProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
@@ -157,6 +157,9 @@ public:
     size_t i=0;
     BOOST_FOREACH(const Key& k, this->keys_) {
       Pose3 pose = values.at<Pose3>(k);
+      if(Base::body_P_sensor_)
+        pose = pose.compose(*(Base::body_P_sensor_));
+
       typename Base::Camera camera(pose, *K_all_[i++]);
       cameras.push_back(camera);
     }

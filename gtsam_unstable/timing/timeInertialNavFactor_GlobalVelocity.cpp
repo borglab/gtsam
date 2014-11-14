@@ -21,7 +21,6 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/inference/Key.h>
 
 using namespace std;
@@ -36,12 +35,12 @@ gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
 gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
 /* ************************************************************************* */
-gtsam::Pose3 predictionErrorPose(const Pose3& p1, const LieVector& v1, const imuBias::ConstantBias& b1, const Pose3& p2, const LieVector& v2, const InertialNavFactor_GlobalVelocity<Pose3, LieVector, imuBias::ConstantBias>& factor) {
+gtsam::Pose3 predictionErrorPose(const Pose3& p1, const Vector3& v1, const imuBias::ConstantBias& b1, const Pose3& p2, const Vector3& v2, const InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias>& factor) {
   return Pose3::Expmap(factor.evaluateError(p1, v1, b1, p2, v2).head(6));
 }
 
-gtsam::LieVector predictionErrorVel(const Pose3& p1, const LieVector& v1, const imuBias::ConstantBias& b1, const Pose3& p2, const LieVector& v2, const InertialNavFactor_GlobalVelocity<Pose3, LieVector, imuBias::ConstantBias>& factor) {
-  return LieVector::Expmap(factor.evaluateError(p1, v1, b1, p2, v2).tail(3));
+gtsam::Vector3 predictionErrorVel(const Pose3& p1, const Vector3& v1, const imuBias::ConstantBias& b1, const Pose3& p2, const Vector3& v2, const InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias>& factor) {
+  return factor.evaluateError(p1, v1, b1, p2, v2).tail(3);
 }
 
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -65,21 +64,21 @@ int main() {
   Vector measurement_acc((Vector(3) << 6.501390843381716,  -6.763926150509185,  -2.300389940090343));
   Vector measurement_gyro((Vector(3) << 0.1, 0.2, 0.3));
 
-  InertialNavFactor_GlobalVelocity<Pose3, LieVector, imuBias::ConstantBias> f(PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc, measurement_gyro, measurement_dt, world_g, world_rho, world_omega_earth, model);
+  InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc, measurement_gyro, measurement_dt, world_g, world_rho, world_omega_earth, model);
 
   Rot3 R1(0.487316618,   0.125253866,   0.86419557,
        0.580273724,  0.693095498, -0.427669306,
       -0.652537293,  0.709880342,  0.265075427);
   Point3 t1(2.0,1.0,3.0);
   Pose3 Pose1(R1, t1);
-  LieVector Vel1 = Vector((Vector(3) << 0.5,-0.5,0.4));
+  Vector3 Vel1 = Vector((Vector(3) << 0.5,-0.5,0.4));
   Rot3 R2(0.473618898,   0.119523052,  0.872582019,
        0.609241153,   0.67099888, -0.422594037,
       -0.636011287,  0.731761397,  0.244979388);
   Point3 t2 = t1.compose( Point3(Vel1*measurement_dt) );
   Pose3 Pose2(R2, t2);
   Vector dv = measurement_dt * (R1.matrix() * measurement_acc + world_g);
-  LieVector Vel2 = Vel1.compose( dv );
+  Vector3 Vel2 = Vel1 + dv;
   imuBias::ConstantBias Bias1;
 
   Values values;

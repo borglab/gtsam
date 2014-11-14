@@ -15,7 +15,6 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/numericalDerivative.h>
 
 namespace gtsam {
@@ -23,7 +22,7 @@ namespace gtsam {
 /**
  * Binary factor representing the first visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3a: public NoiseModelFactor2<Pose3, LieVector> {
+class InvDepthFactorVariant3a: public NoiseModelFactor2<Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -33,7 +32,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor2<Pose3, LieVector> Base;
+  typedef NoiseModelFactor2<Pose3, Vector3> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant3a This;
@@ -81,7 +80,7 @@ public:
         && this->K_->equals(*e->K_, tol);
   }
 
-  Vector inverseDepthError(const Pose3& pose, const LieVector& landmark) const {
+  Vector inverseDepthError(const Pose3& pose, const Vector3& landmark) const {
     try {
       // Calculate the 3D coordinates of the landmark in the Pose frame
       double theta = landmark(0), phi = landmark(1), rho = landmark(2);
@@ -103,15 +102,15 @@ public:
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose, const LieVector& landmark,
+  Vector evaluateError(const Pose3& pose, const Vector3& landmark,
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none) const {
 
     if(H1) {
-      (*H1) = numericalDerivative11<Pose3>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, _1, landmark), pose);
+      (*H1) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, _1, landmark), pose);
     }
     if(H2) {
-      (*H2) = numericalDerivative11<LieVector>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, pose, _1), landmark);
+      (*H2) = numericalDerivative11<Vector,Vector3>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, pose, _1), landmark);
     }
 
     return inverseDepthError(pose, landmark);
@@ -142,7 +141,7 @@ private:
 /**
  * Ternary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3b: public NoiseModelFactor3<Pose3, Pose3, LieVector> {
+class InvDepthFactorVariant3b: public NoiseModelFactor3<Pose3, Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -152,7 +151,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor3<Pose3, Pose3, LieVector> Base;
+  typedef NoiseModelFactor3<Pose3, Pose3, Vector3> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant3b This;
@@ -200,7 +199,7 @@ public:
         && this->K_->equals(*e->K_, tol);
   }
 
-  Vector inverseDepthError(const Pose3& pose1, const Pose3& pose2, const LieVector& landmark) const {
+  Vector inverseDepthError(const Pose3& pose1, const Pose3& pose2, const Vector3& landmark) const {
     try {
       // Calculate the 3D coordinates of the landmark in the Pose1 frame
       double theta = landmark(0), phi = landmark(1), rho = landmark(2);
@@ -222,20 +221,19 @@ public:
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose1, const Pose3& pose2, const LieVector& landmark,
+  Vector evaluateError(const Pose3& pose1, const Pose3& pose2, const Vector3& landmark,
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none,
       boost::optional<gtsam::Matrix&> H3=boost::none) const {
 
-    if(H1) {
-      (*H1) = numericalDerivative11<Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, _1, pose2, landmark), pose1);
-    }
-    if(H2) {
-      (*H2) = numericalDerivative11<Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1, _1, landmark), pose2);
-    }
-    if(H3) {
-      (*H3) = numericalDerivative11<LieVector>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1, pose2, _1), landmark);
-    }
+    if(H1)
+      (*H1) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, _1, pose2, landmark), pose1);
+
+    if(H2)
+      (*H2) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1, _1, landmark), pose2);
+
+    if(H3)
+      (*H3) = numericalDerivative11<Vector,Vector3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1, pose2, _1), landmark);
 
     return inverseDepthError(pose1, pose2, landmark);
   }

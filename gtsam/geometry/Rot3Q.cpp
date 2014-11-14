@@ -21,6 +21,7 @@
 
 #include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
+#include <cmath>
 
 using namespace std;
 
@@ -55,21 +56,25 @@ namespace gtsam {
   Rot3::Rot3(const Matrix& R) :
       quaternion_(Matrix3(R)) {}
 
-//  /* ************************************************************************* */
-//   Rot3::Rot3(const Matrix3& R) :
-//       quaternion_(R) {}
+  /* ************************************************************************* */
+  Rot3::Rot3(const Quaternion& q) :
+      quaternion_(q) {
+  }
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Quaternion& q) : quaternion_(q) {}
+  Rot3 Rot3::Rx(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX()));
+  }
 
   /* ************************************************************************* */
-  Rot3 Rot3::Rx(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX())); }
+  Rot3 Rot3::Ry(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY()));
+  }
 
   /* ************************************************************************* */
-  Rot3 Rot3::Ry(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY())); }
-
-  /* ************************************************************************* */
-  Rot3 Rot3::Rz(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ())); }
+  Rot3 Rot3::Rz(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ()));
+  }
 
   /* ************************************************************************* */
   Rot3 Rot3::RzRyRx(double x, double y, double z) { return Rot3(
@@ -81,6 +86,19 @@ namespace gtsam {
   /* ************************************************************************* */
   Rot3 Rot3::rodriguez(const Vector& w, double theta) {
     return Quaternion(Eigen::AngleAxisd(theta, w)); }
+
+  /* ************************************************************************* */
+  Rot3 Rot3::compose(const Rot3& R2) const {
+    return Rot3(quaternion_ * R2.quaternion_);
+  }
+
+  /* ************************************************************************* */
+  Rot3 Rot3::compose(const Rot3& R2,
+  boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2) const {
+    if (H1) *H1 = R2.transpose();
+    if (H2) *H2 = I3;
+    return Rot3(quaternion_ * R2.quaternion_);
+  }
 
   /* ************************************************************************* */
   Rot3 Rot3::compose(const Rot3& R2,
@@ -102,6 +120,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  // TODO: Could we do this? It works in Rot3M but not here, probably because
+  // here we create an intermediate value by calling matrix()
+  // const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+  Matrix3 Rot3::transpose() const {
+    return matrix().transpose();
+  }
+
+  /* ************************************************************************* */
   Rot3 Rot3::between(const Rot3& R2,
   boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
     if (H1) *H1 = -(R2.transpose()*matrix());
@@ -120,14 +146,31 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // Log map at identity - return the canonical coordinates of this rotation
   Vector3 Rot3::Logmap(const Rot3& R) {
-    Eigen::AngleAxisd angleAxis(R.quaternion_);
-    if(angleAxis.angle() > M_PI)      // Important:  use the smallest possible
-      angleAxis.angle() -= 2.0*M_PI;  // angle, e.g. no more than PI, to keep
-    if(angleAxis.angle() < -M_PI)     // error continuous.
-      angleAxis.angle() += 2.0*M_PI;
-    return angleAxis.axis() * angleAxis.angle();
+    using std::acos;
+    using std::sqrt;
+    static const double twoPi = 2.0 * M_PI,
+    // define these compile time constants to avoid std::abs:
+        NearlyOne = 1.0 - 1e-10, NearlyNegativeOne = -1.0 + 1e-10;
+
+    const Quaternion& q = R.quaternion_;
+    const double qw = q.w();
+    if (qw > NearlyOne) {
+      // Taylor expansion of (angle / s) at 1
+      return (2 - 2 * (qw - 1) / 3) * q.vec();
+    } else if (qw < NearlyNegativeOne) {
+      // Angle is zero, return zero vector
+      return Vector3::Zero();
+    } else {
+      // Normal, away from zero case
+      double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
+      // Important:  convert to [-pi,pi] to keep error continuous
+      if (angle > M_PI)
+        angle -= twoPi;
+      else if (angle < -M_PI)
+        angle += twoPi;
+      return (angle / s) * q.vec();
+    }
   }
 
   /* ************************************************************************* */
@@ -142,9 +185,6 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
-
-  /* ************************************************************************* */
-  Matrix3 Rot3::transpose() const {return quaternion_.toRotationMatrix().transpose();}
 
   /* ************************************************************************* */
   Point3 Rot3::r1() const { return Point3(quaternion_.toRotationMatrix().col(0)); }

@@ -23,16 +23,19 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 #include <boost/random/mersenne_twister.hpp>
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class GTSAM_EXPORT Unit3: public DerivedValue<Unit3> {
+class GTSAM_EXPORT Unit3{
 
 private:
 
+  typedef Eigen::Matrix<double,3,2> Matrix32;
+
   Point3 p_; ///< The location of the point on the unit sphere
-  mutable Matrix B_; ///< Cached basis
+  mutable boost::optional<Matrix32> B_; ///< Cached basis
 
 public:
 
@@ -84,7 +87,7 @@ public:
    * It is a 3*2 matrix [b1 b2] composed of two orthogonal directions
    * tangent to the sphere at the current direction.
    */
-  const Matrix& basis() const;
+  const Matrix32& basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
   Matrix skew() const;
@@ -146,8 +149,6 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("Unit3",
-          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(p_);
       ar & BOOST_SERIALIZATION_NVP(B_);
     }
@@ -155,6 +156,26 @@ private:
   /// @}
 
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Unit3> : public boost::true_type {
+};
+
+template<>
+struct dimension<Unit3> : public boost::integral_constant<int, 2> {
+};
+
+template<>
+struct zero<Unit3> {
+  static Unit3 value() {
+    return Unit3();
+  }
+};
+
+}
 
 } // namespace gtsam
 

@@ -21,7 +21,6 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/debug.h>
 
 /* External or standard includes */
@@ -46,7 +45,7 @@ namespace gtsam {
    * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor: Computation of the Jacobian Matrices", Tech. Report, 2013.
    */
 
-  class ImuFactor: public NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,imuBias::ConstantBias> {
+  class ImuFactor: public NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias> {
 
   public:
 
@@ -58,7 +57,7 @@ namespace gtsam {
     class PreintegratedMeasurements {
     public:
       imuBias::ConstantBias biasHat; ///< Acceleration and angular rate bias values used during preintegration
-      Matrix measurementCovariance; ///< (Raw measurements uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
+      Matrix measurementCovariance; ///< (continuous-time uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
 
       Vector3 deltaPij; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
       Vector3 deltaVij; ///< Preintegrated relative velocity (in global frame)
@@ -203,13 +202,13 @@ namespace gtsam {
         Matrix H_vel_vel    = I_3x3;
         Matrix H_vel_angles = - deltaRij.matrix() * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
         // analytic expression corresponding to the following numerical derivative
-        // Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
+        // Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
 
         Matrix H_angles_pos   = Z_3x3;
         Matrix H_angles_vel    = Z_3x3;
         Matrix H_angles_angles = Jrinv_theta_j * Rincr.inverse().matrix() * Jr_theta_i;
         // analytic expression corresponding to the following numerical derivative
-        // Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
+        // Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
 
         // overall Jacobian wrt preintegrated measurements (df/dx)
         Matrix F(9,9);
@@ -217,10 +216,20 @@ namespace gtsam {
             H_vel_pos, H_vel_vel, H_vel_angles,
             H_angles_pos, H_angles_vel, H_angles_angles;
 
-
-        // first order uncertainty propagation
+        // first order uncertainty propagation:
         // the deltaT allows to pass from continuous time noise to discrete time noise
+        // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
+        // Gt * Qt * G =(approx)= measurementCovariance_discrete * deltaT^2 = measurementCovariance_contTime * deltaT
         PreintMeasCov = F * PreintMeasCov * F.transpose() + measurementCovariance * deltaT ;
+
+        // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
+        //
+        //        Matrix G(9,9);
+        //        G << I_3x3 * deltaT, Z_3x3,  Z_3x3,
+        //            Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
+        //            Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
+        //
+        //        PreintMeasCov = F * PreintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
 
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
@@ -285,7 +294,7 @@ namespace gtsam {
   private:
 
     typedef ImuFactor This;
-    typedef NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,imuBias::ConstantBias> Base;
+    typedef NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias> Base;
 
     PreintegratedMeasurements preintegratedMeasurements_;
     Vector3 gravity_;
@@ -308,11 +317,11 @@ namespace gtsam {
 
     /** Constructor */
     ImuFactor(
-    	Key pose_i, ///< previous pose key
-    	Key vel_i, ///< previous velocity key
-    	Key pose_j, ///< current pose key
-    	Key vel_j, ///< current velocity key
-    	Key bias, ///< previous bias key
+      Key pose_i, ///< previous pose key
+      Key vel_i, ///< previous velocity key
+      Key pose_j, ///< current pose key
+      Key vel_j, ///< current velocity key
+      Key bias, ///< previous bias key
         const PreintegratedMeasurements& preintegratedMeasurements, ///< preintegrated IMU measurements
         const Vector3& gravity, ///< gravity vector
         const Vector3& omegaCoriolis, ///< rotation rate of the inertial frame
@@ -373,7 +382,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
+    Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
         const imuBias::ConstantBias& bias,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
@@ -419,29 +428,29 @@ namespace gtsam {
         Matrix3 dfPdPi;
         Matrix3 dfVdPi;
         if(use2ndOrderCoriolis_){
-        	dfPdPi = - Rot_i.matrix() + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij*deltaTij;
-        	dfVdPi = skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij;
+          dfPdPi = - Rot_i.matrix() + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij*deltaTij;
+          dfVdPi = skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij;
         }
         else{
-        	dfPdPi = - Rot_i.matrix();
-        	dfVdPi = Matrix3::Zero();
+          dfPdPi = - Rot_i.matrix();
+          dfVdPi = Matrix3::Zero();
         }
 
-		(*H1) <<
-			// dfP/dRi
-			Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij
-				+ preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr),
-			// dfP/dPi
-			dfPdPi,
-			// dfV/dRi
-			Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij
-				+ preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr),
-			// dfV/dPi
-			dfVdPi,
-			// dfR/dRi
-			Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
-			// dfR/dPi
-			Matrix3::Zero();
+    (*H1) <<
+      // dfP/dRi
+      Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij
+        + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr),
+      // dfP/dPi
+      dfPdPi,
+      // dfV/dRi
+      Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij
+        + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr),
+      // dfV/dPi
+      dfVdPi,
+      // dfR/dRi
+      Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
+      // dfR/dPi
+      Matrix3::Zero();
       }
 
       if(H2) {
@@ -525,7 +534,7 @@ namespace gtsam {
 
 
     /** predicted states from IMU */
-    static void Predict(const Pose3& pose_i, const LieVector& vel_i, Pose3& pose_j, LieVector& vel_j,
+    static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j, Vector3& vel_j,
         const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
         const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
         const bool use2ndOrderCoriolis = false)
@@ -540,22 +549,22 @@ namespace gtsam {
 
       // Predict state at time j
       /* ---------------------------------------------------------------------------------------------------- */
-	  Vector3 pos_j =  pos_i + Rot_i.matrix() * (preintegratedMeasurements.deltaPij
-		  + preintegratedMeasurements.delPdelBiasAcc * biasAccIncr
-		  + preintegratedMeasurements.delPdelBiasOmega * biasOmegaIncr)
-		  + vel_i * deltaTij
-		  - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
-		  + 0.5 * gravity * deltaTij*deltaTij;
+    Vector3 pos_j =  pos_i + Rot_i.matrix() * (preintegratedMeasurements.deltaPij
+      + preintegratedMeasurements.delPdelBiasAcc * biasAccIncr
+      + preintegratedMeasurements.delPdelBiasOmega * biasOmegaIncr)
+      + vel_i * deltaTij
+      - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
+      + 0.5 * gravity * deltaTij*deltaTij;
 
-	  vel_j = LieVector(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij
-		  + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
-		  + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
-		  - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
-		  + gravity * deltaTij);
+    vel_j = Vector3(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij
+      + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
+      + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
+      - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
+      + gravity * deltaTij);
 
       if(use2ndOrderCoriolis){
-    	  pos_j += - 0.5 * skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij*deltaTij;	// 2nd order coriolis term for position
-    	  vel_j += - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij; // 2nd order term for velocity
+        pos_j += - 0.5 * skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij*deltaTij;  // 2nd order coriolis term for position
+        vel_j += - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij; // 2nd order term for velocity
       }
 
       const Rot3 deltaRij_biascorrected = preintegratedMeasurements.deltaRij.retract(preintegratedMeasurements.delRdelBiasOmega * biasOmegaIncr, Rot3::EXPMAP);

@@ -58,6 +58,7 @@ FIND_PATH(MKL_ROOT_DIR
     /opt/intel/mkl/*/
     /opt/intel/cmkl/
     /opt/intel/cmkl/*/
+    /opt/intel/*/mkl/
     /Library/Frameworks/Intel_MKL.framework/Versions/Current/lib/universal
         "C:/Program Files (x86)/Intel/ComposerXE-2011/mkl"
         "C:/Program Files (x86)/Intel/Composer XE 2013/mkl"
@@ -136,13 +137,16 @@ ELSE() # UNIX and macOS
                 ${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}
                 ${MKL_ROOT_DIR}/lib/
         )
-
-        FIND_LIBRARY(MKL_GNUTHREAD_LIBRARY
-          mkl_gnu_thread
-          PATHS
-                ${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}
-                ${MKL_ROOT_DIR}/lib/
-        )
+        
+        # MKL on Mac OS doesn't ship with GNU thread versions, only Intel versions (see above)
+        IF(NOT APPLE)
+            FIND_LIBRARY(MKL_GNUTHREAD_LIBRARY
+              mkl_gnu_thread
+              PATHS
+                    ${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}
+                    ${MKL_ROOT_DIR}/lib/
+            )
+        ENDIF()
 
         # Intel Libraries
         IF("${MKL_ARCH_DIR}" STREQUAL "32")
@@ -226,7 +230,12 @@ ELSE() # UNIX and macOS
                 endforeach()
         endforeach()
 
-        SET(MKL_LIBRARIES ${MKL_LP_GNUTHREAD_LIBRARIES})
+        IF(APPLE)
+            SET(MKL_LIBRARIES ${MKL_LP_INTELTHREAD_LIBRARIES})
+        ELSE()
+            SET(MKL_LIBRARIES ${MKL_LP_GNUTHREAD_LIBRARIES})
+        ENDIF()
+        
         MARK_AS_ADVANCED(MKL_CORE_LIBRARY MKL_LP_LIBRARY MKL_ILP_LIBRARY
                 MKL_SEQUENTIAL_LIBRARY MKL_INTELTHREAD_LIBRARY MKL_GNUTHREAD_LIBRARY)
 ENDIF()

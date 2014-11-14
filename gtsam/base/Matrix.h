@@ -37,9 +37,27 @@ namespace gtsam {
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
+typedef Eigen::Matrix2d Matrix2;
 typedef Eigen::Matrix3d Matrix3;
 typedef Eigen::Matrix4d Matrix4;
+typedef Eigen::Matrix<double,5,5> Matrix5;
 typedef Eigen::Matrix<double,6,6> Matrix6;
+
+typedef Eigen::Matrix<double,2,3> Matrix23;
+typedef Eigen::Matrix<double,2,4> Matrix24;
+typedef Eigen::Matrix<double,2,5> Matrix25;
+typedef Eigen::Matrix<double,2,6> Matrix26;
+typedef Eigen::Matrix<double,2,7> Matrix27;
+typedef Eigen::Matrix<double,2,8> Matrix28;
+typedef Eigen::Matrix<double,2,9> Matrix29;
+
+typedef Eigen::Matrix<double,3,2> Matrix32;
+typedef Eigen::Matrix<double,3,4> Matrix34;
+typedef Eigen::Matrix<double,3,5> Matrix35;
+typedef Eigen::Matrix<double,3,6> Matrix36;
+typedef Eigen::Matrix<double,3,7> Matrix37;
+typedef Eigen::Matrix<double,3,8> Matrix38;
+typedef Eigen::Matrix<double,3,9> Matrix39;
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
@@ -275,6 +293,49 @@ void zeroBelowDiagonal(MATRIX& A, size_t cols=0) {
  */
 inline Matrix trans(const Matrix& A) { return A.transpose(); }
 
+/// Reshape functor
+template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
+struct Reshape {
+  //TODO replace this with Eigen's reshape function as soon as available. (There is a PR already pending : https://bitbucket.org/eigen/eigen/pull-request/41/reshape/diff)
+  typedef Eigen::Map<const Eigen::Matrix<double, OutM, OutN, OutOptions> > ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & in) {
+    return in.data();
+  }
+};
+
+/// Reshape specialization that does nothing as shape stays the same (needed to not be ambiguous for square input equals square output)
+template <int M, int InOptions>
+struct Reshape<M, M, InOptions, M, M, InOptions> {
+  typedef const Eigen::Matrix<double, M, M, InOptions> & ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, M, InOptions> & in) {
+    return in;
+  }
+};
+
+/// Reshape specialization that does nothing as shape stays the same
+template <int M, int N, int InOptions>
+struct Reshape<M, N, InOptions, M, N, InOptions> {
+  typedef const Eigen::Matrix<double, M, N, InOptions> & ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
+    return in;
+  }
+};
+
+/// Reshape specialization that does transpose
+template <int M, int N, int InOptions>
+struct Reshape<N, M, InOptions, M, N, InOptions> {
+  typedef typename Eigen::Matrix<double, M, N, InOptions>::ConstTransposeReturnType ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
+    return in.transpose();
+  }
+};
+
+template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
+inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
+  BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
+  return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
+}
+
 /**
  * solve AX=B via in-place Lu factorization and backsubstitution
  * After calling, A contains LU, B the solved RHS vectors
@@ -398,7 +459,6 @@ GTSAM_EXPORT Matrix collect(size_t nrMatrices, ...);
  * Arguments (Matrix, Vector) scales the columns,
  * (Vector, Matrix) scales the rows
  * @param inf_mask when true, will not scale with a NaN or inf value.
- * The inplace version also allows v.size()<A.rows() and only scales the first v.size() rows of A.
  */
 GTSAM_EXPORT void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask = false); // row
 GTSAM_EXPORT Matrix vector_scale(const Vector& v, const Matrix& A, bool inf_mask = false); // row
@@ -467,7 +527,7 @@ GTSAM_EXPORT Matrix Cayley(const Matrix& A);
 /// Implementation of Cayley transform using fixed size matrices to let
 /// Eigen do more optimization
 template<int N>
-Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
+Eigen::Matrix<double, N, N> CayleyFixed(const Eigen::Matrix<double, N, N>& A) {
   typedef Eigen::Matrix<double, N, N> FMat;
   return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
 }

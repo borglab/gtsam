@@ -19,9 +19,9 @@
 
 #include <cstdarg>
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/DerivedValue.h>
 #include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
@@ -29,7 +29,7 @@ namespace gtsam {
 /**
  * LieVector is a wrapper around vector to allow it to be a Lie type
  */
-struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
+struct LieMatrix : public Matrix {
 
   /// @name Constructors
   /// @{
@@ -40,9 +40,12 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   /** initialize from a normal matrix */
   LieMatrix(const Matrix& v) : Matrix(v) {}
 
+// Currently TMP constructor causes ICE on MSVS 2013
+#if (_MSC_VER < 1800)
   /** initialize from a fixed size normal vector */
   template<int M, int N>
   LieMatrix(const Eigen::Matrix<double, M, N>& v) : Matrix(v) {}
+#endif
 
   /** constructor with size and initial data, row order ! */
   LieMatrix(size_t m, size_t n, const double* const data) :
@@ -82,6 +85,7 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   inline LieMatrix retract(const Vector& v) const {
     if(v.size() != this->size())
       throw std::invalid_argument("LieMatrix::retract called with Vector of incorrect size");
+
     return LieMatrix(*this +
       Eigen::Map<const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
       &v(0), this->rows(), this->cols()));
@@ -153,7 +157,7 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
         result.data(), p.rows(), p.cols()) = p;
     return result;
   }
-	
+  
   /// @}
 
 private:
@@ -162,12 +166,24 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("LieMatrix",
-       boost::serialization::base_object<Value>(*this));
     ar & boost::serialization::make_nvp("Matrix",
        boost::serialization::base_object<Matrix>(*this));
 
   }
 
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<LieMatrix> : public boost::true_type {
+};
+
+template<>
+struct dimension<LieMatrix> : public Dynamic {
+};
+
+}
+
 } // \namespace gtsam

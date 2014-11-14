@@ -62,10 +62,9 @@ TEST( testIMUSystem, optimize_chain ) {
 
   // create measurements
   SharedDiagonal model = noiseModel::Unit::Create(6);
-  Vector imu12(6), imu23(6), imu34(6);
-  imu12 = pose1.imuPrediction(pose2, dt);
-  imu23 = pose2.imuPrediction(pose3, dt);
-  imu34 = pose3.imuPrediction(pose4, dt);
+  Vector6 imu12 = pose1.imuPrediction(pose2, dt);
+  Vector6 imu23 = pose2.imuPrediction(pose3, dt);
+  Vector6 imu34 = pose3.imuPrediction(pose4, dt);
 
   // assemble simple graph with IMU measurements and velocity constraints
   NonlinearFactorGraph graph;
@@ -109,10 +108,9 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
 
   // create measurements
   SharedDiagonal model = noiseModel::Isotropic::Sigma(9, 1.0);
-  Vector imu12(6), imu23(6), imu34(6);
-  imu12 = pose1.imuPrediction(pose2, dt);
-  imu23 = pose2.imuPrediction(pose3, dt);
-  imu34 = pose3.imuPrediction(pose4, dt);
+  Vector6 imu12 = pose1.imuPrediction(pose2, dt);
+  Vector6 imu23 = pose2.imuPrediction(pose3, dt);
+  Vector6 imu34 = pose3.imuPrediction(pose4, dt);
 
   // assemble simple graph with IMU measurements and velocity constraints
   NonlinearFactorGraph graph;

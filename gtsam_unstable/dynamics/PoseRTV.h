@@ -19,7 +19,7 @@ typedef Point3 Velocity3;
  * Robot state for use with IMU measurements
  * - contains translation, translational velocity and rotation
  */
-class GTSAM_UNSTABLE_EXPORT PoseRTV : public DerivedValue<PoseRTV> {
+class GTSAM_UNSTABLE_EXPORT PoseRTV {
 protected:
 
   Pose3 Rt_;
@@ -86,8 +86,8 @@ public:
    * expmap/logmap are poor approximations that assume independence of components
    * Currently implemented using the poor retract/unretract approximations
    */
-  static PoseRTV Expmap(const Vector& v);
-  static Vector Logmap(const PoseRTV& p);
+  static PoseRTV Expmap(const Vector9& v);
+  static Vector9 Logmap(const PoseRTV& p);
 
   static PoseRTV identity() { return PoseRTV(); }
 
@@ -129,7 +129,7 @@ public:
   /// Dynamics predictor for both ground and flying robots, given states at 1 and 2
   /// Always move from time 1 to time 2
   /// @return imu measurement, as [accel, gyro]
-  Vector imuPrediction(const PoseRTV& x2, double dt) const;
+  Vector6 imuPrediction(const PoseRTV& x2, double dt) const;
 
   /// predict measurement and where Point3 for x2 should be, as a way
   /// of enforcing a velocity constraint
@@ -183,4 +183,23 @@ private:
   }
 };
 
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<PoseRTV> : public boost::true_type {
+};
+
+template<>
+struct dimension<PoseRTV> : public boost::integral_constant<int, 9> {
+};
+
+template<>
+struct zero<PoseRTV> {
+  static PoseRTV value() {
+    return PoseRTV();
+  }
+};
+
+}
 } // \namespace gtsam

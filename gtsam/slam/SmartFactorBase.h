@@ -21,7 +21,7 @@
 
 #include "JacobianFactorQ.h"
 #include "JacobianFactorSVD.h"
-#include "ImplicitSchurFactor.h"
+#include "RegularImplicitSchurFactor.h"
 #include "RegularHessianFactor.h"
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -77,7 +77,7 @@ public:
 
   /**
    * Constructor
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
+   * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
   SmartFactorBase(boost::optional<POSE> body_P_sensor = boost::none) :
       body_P_sensor_(body_P_sensor) {
@@ -275,8 +275,13 @@ public:
 
       Vector bi;
       try {
-        bi =
-            -(cameras[i].project(point, Fi, Ei, Hcali) - this->measured_.at(i)).vector();
+        bi = -(cameras[i].project(point, Fi, Ei, Hcali) - this->measured_.at(i)).vector();
+        if(body_P_sensor_){
+          Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
+          Matrix J(6, 6);
+          Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+          Fi = Fi * J;
+        }
       } catch (CheiralityException&) {
         std::cout << "Cheirality exception " << std::endl;
         exit(EXIT_FAILURE);
@@ -576,7 +581,7 @@ public:
 
     FastMap<Key,size_t> KeySlotMap;
     for (size_t slot=0; slot < allKeys.size(); slot++)
-      KeySlotMap.insert(std::make_pair<Key,size_t>(allKeys[slot],slot));
+      KeySlotMap.insert(std::make_pair(allKeys[slot],slot));
 
     // a single point is observed in numKeys cameras
     size_t numKeys = this->keys_.size(); // cameras observing current point
@@ -628,11 +633,11 @@ public:
   }
 
   // ****************************************************************************************************
-  boost::shared_ptr<ImplicitSchurFactor<D> > createImplicitSchurFactor(
+  boost::shared_ptr<RegularImplicitSchurFactor<D> > createRegularImplicitSchurFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
-    typename boost::shared_ptr<ImplicitSchurFactor<D> > f(
-        new ImplicitSchurFactor<D>());
+    typename boost::shared_ptr<RegularImplicitSchurFactor<D> > f(
+        new RegularImplicitSchurFactor<D>());
     computeJacobians(f->Fblocks(), f->E(), f->PointCovariance(), f->b(),
         cameras, point, lambda, diagonalDamping);
     f->initKeys();

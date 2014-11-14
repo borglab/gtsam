@@ -21,7 +21,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
@@ -200,7 +199,7 @@ public:
     VELOCITY VelDelta(world_a_body*dt_);
 
     // Predict
-    return Vel1.compose(VelDelta);
+    return Vel1 + VelDelta;
   }
 
   void predict(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, POSE& Pose2, VELOCITY& Vel2) const {
@@ -221,7 +220,7 @@ public:
     VELOCITY Vel2Pred = predictVelocity(Pose1, Vel1, Bias1);
 
     // Calculate error
-    return Vel2.between(Vel2Pred);
+    return Vel2Pred - Vel2;
   }
 
   /** implement functions needed to derive from Factor */
@@ -242,8 +241,9 @@ public:
 
     // Jacobian w.r.t. Vel1
     if (H2){
-      Matrix H2_Pose = gtsam::numericalDerivative11<POSE, VELOCITY>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
-      Matrix H2_Vel = gtsam::numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      if (Vel1.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
+      Matrix H2_Pose = gtsam::numericalDerivative11<POSE, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      Matrix H2_Vel = gtsam::numericalDerivative11<Vector3, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
       *H2 = stack(2, &H2_Pose, &H2_Vel);
     }
 
@@ -263,13 +263,14 @@ public:
 
     // Jacobian w.r.t. Vel2
     if (H5){
-      Matrix H5_Pose = gtsam::numericalDerivative11<POSE, VELOCITY>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
-      Matrix H5_Vel = gtsam::numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      if (Vel2.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
+      Matrix H5_Pose = gtsam::numericalDerivative11<POSE, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      Matrix H5_Vel = gtsam::numericalDerivative11<Vector3, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
       *H5 = stack(2, &H5_Pose, &H5_Vel);
     }
 
     Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
-    Vector ErrVelVector(VELOCITY::Logmap(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2)));
+    Vector ErrVelVector(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2));
 
     return concatVectors(2, &ErrPoseVector, &ErrVelVector);
   }

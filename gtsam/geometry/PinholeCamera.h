@@ -37,10 +37,12 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename Calibration>
-class PinholeCamera: public DerivedValue<PinholeCamera<Calibration> > {
+class PinholeCamera {
 private:
   Pose3 pose_;
   Calibration K_;
+
+  static const int DimK = traits::dimension<Calibration>::value;
 
 public:
 
@@ -240,12 +242,13 @@ public:
           calibration().retract(d.tail(calibration().dim())));
   }
 
+  typedef Eigen::Matrix<double,6+DimK,1> VectorK6;
+
   /// return canonical coordinate
-  Vector localCoordinates(const PinholeCamera& T2) const {
-    Vector d(dim());
-    d.head(pose().dim()) = pose().localCoordinates(T2.pose());
-    d.tail(calibration().dim()) = calibration().localCoordinates(
-        T2.calibration());
+  VectorK6 localCoordinates(const PinholeCamera& T2) const {
+    VectorK6 d; // TODO: why does d.head<6>() not compile??
+    d.head(6) = pose().localCoordinates(T2.pose());
+    d.tail(DimK) = calibration().localCoordinates(T2.calibration());
     return d;
   }
 
@@ -270,16 +273,15 @@ public:
    * @param Dpoint is the 2*3 Jacobian w.r.t. P
    */
   inline static Point2 project_to_camera(const Point3& P,
-      boost::optional<Matrix&> Dpoint = boost::none) {
+      boost::optional<Matrix23&> Dpoint = boost::none) {
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (P.z() <= 0)
       throw CheiralityException();
 #endif
     double d = 1.0 / P.z();
     const double u = P.x() * d, v = P.y() * d;
-    if (Dpoint) {
-      *Dpoint = (Matrix(2, 3) << d, 0.0, -u * d, 0.0, d, -v * d);
-    }
+    if (Dpoint)
+      *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
     return Point2(u, v);
   }
 
@@ -292,15 +294,66 @@ public:
 
   /** project a point from world coordinate to the image
    *  @param pw is a point in world coordinates
+   */
+  inline Point2 project(const Point3& pw) const {
+
+    // Transform to camera coordinates and check cheirality
+    const Point3 pc = pose_.transform_to(pw);
+
+    // Project to normalized image coordinates
+    const Point2 pn = project_to_camera(pc);
+
+    return K_.uncalibrate(pn);
+  }
+
+  typedef Eigen::Matrix<double,2,DimK> Matrix2K;
+
+  /** project a point from world coordinate to the image
+   *  @param pw is a point in world coordinates
    *  @param Dpose is the Jacobian w.r.t. pose3
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
   inline Point2 project(
       const Point3& pw, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none,
-      boost::optional<Matrix&> Dcal = boost::none) const {
+      boost::optional<Matrix26&> Dpose,
+      boost::optional<Matrix23&> Dpoint,
+      boost::optional<Matrix2K&> Dcal) const {
+
+    // Transform to camera coordinates and check cheirality
+    const Point3 pc = pose_.transform_to(pw);
+
+    // Project to normalized image coordinates
+    const Point2 pn = project_to_camera(pc);
+
+    if (Dpose || Dpoint) {
+      const double z = pc.z(), d = 1.0 / z;
+
+      // uncalibration
+      Matrix2 Dpi_pn;
+      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
+
+      // chain the Jacobian matrices
+      if (Dpose)
+        calculateDpose(pn, d, Dpi_pn, *Dpose);
+      if (Dpoint)
+        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
+      return pi;
+    } else
+      return K_.uncalibrate(pn, Dcal, boost::none);
+  }
+
+  /** project a point from world coordinate to the image
+   *  @param pw is a point in world coordinates
+   *  @param Dpose is the Jacobian w.r.t. pose3
+   *  @param Dpoint is the Jacobian w.r.t. point3
+   *  @param Dcal is the Jacobian w.r.t. calibration
+   */
+  inline Point2 project(
+      const Point3& pw, //
+      boost::optional<Matrix&> Dpose,
+      boost::optional<Matrix&> Dpoint,
+      boost::optional<Matrix&> Dcal) const {
 
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
@@ -326,7 +379,7 @@ public:
       }
       return pi;
     } else
-      return K_.uncalibrate(pn, Dcal);
+      return K_.uncalibrate(pn, Dcal, boost::none);
   }
 
   /** project a point at infinity from world coordinate to the image
@@ -355,7 +408,7 @@ public:
     Dpc_pose.block(0, 0, 3, 3) = Dpc_rot;
 
     // camera to normalized image coordinate
-    Matrix Dpn_pc; // 2*3
+    Matrix23 Dpn_pc; // 2*3
     const Point2 pn = project_to_camera(pc, Dpn_pc);
 
     // uncalibration
@@ -371,15 +424,26 @@ public:
     return pi;
   }
 
+  typedef Eigen::Matrix<double,2,6+DimK> Matrix2K6;
+
   /** project a point from world coordinate to the image
+   *  @param pw is a point in the world coordinate
+   */
+  Point2 project2(const Point3& pw) const {
+    const Point3 pc = pose_.transform_to(pw);
+    const Point2 pn = project_to_camera(pc);
+    return K_.uncalibrate(pn);
+  }
+
+  /** project a point from world coordinate to the image, fixed Jacobians
    *  @param pw is a point in the world coordinate
    *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
    *  @param Dpoint is the Jacobian w.r.t. point3
    */
-  inline Point2 project2(
+  Point2 project2(
       const Point3& pw, //
-      boost::optional<Matrix&> Dcamera = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none) const {
+      boost::optional<Matrix2K6&> Dcamera,
+      boost::optional<Matrix23&> Dpoint) const {
 
     const Point3 pc = pose_.transform_to(pw);
     const Point2 pn = project_to_camera(pc);
@@ -390,7 +454,40 @@ public:
       const double z = pc.z(), d = 1.0 / z;
 
       // uncalibration
-      Matrix Dcal, Dpi_pn(2, 2);
+      Matrix2K Dcal;
+      Matrix2 Dpi_pn;
+      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
+
+      if (Dcamera) { // TODO why does leftCols<6>() not compile ??
+        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols(6));
+        Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
+      }
+      if (Dpoint) {
+        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
+      }
+      return pi;
+    }
+  }
+
+  /** project a point from world coordinate to the image
+   *  @param pw is a point in the world coordinate
+   *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
+   *  @param Dpoint is the Jacobian w.r.t. point3
+   */
+  Point2 project2(const Point3& pw, //
+      boost::optional<Matrix&> Dcamera, boost::optional<Matrix&> Dpoint) const {
+
+    const Point3 pc = pose_.transform_to(pw);
+    const Point2 pn = project_to_camera(pc);
+
+    if (!Dcamera && !Dpoint) {
+      return K_.uncalibrate(pn);
+    } else {
+      const double z = pc.z(), d = 1.0 / z;
+
+      // uncalibration
+      Matrix2K Dcal;
+      Matrix2 Dpi_pn;
       const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
       if (Dcamera) {
@@ -517,16 +614,16 @@ private:
    * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
    */
   template<typename Derived>
-  static void calculateDpose(const Point2& pn, double d, const Matrix& Dpi_pn,
+  static void calculateDpose(const Point2& pn, double d, const Matrix2& Dpi_pn,
       Eigen::MatrixBase<Derived> const & Dpose) {
     // optimized version of derivatives, see CalibratedCamera.nb
     const double u = pn.x(), v = pn.y();
     double uv = u * v, uu = u * u, vv = v * v;
-    Eigen::Matrix<double, 2, 6> Dpn_pose;
+    Matrix26 Dpn_pose;
     Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
     assert(Dpose.rows()==2 && Dpose.cols()==6);
     const_cast<Eigen::MatrixBase<Derived>&>(Dpose) = //
-        Dpi_pn.block<2, 2>(0, 0) * Dpn_pose;
+        Dpi_pn * Dpn_pose;
   }
 
   /**
@@ -538,32 +635,50 @@ private:
    * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
    */
   template<typename Derived>
-  static void calculateDpoint(const Point2& pn, double d, const Matrix& R,
-      const Matrix& Dpi_pn, Eigen::MatrixBase<Derived> const & Dpoint) {
+  static void calculateDpoint(const Point2& pn, double d, const Matrix3& R,
+      const Matrix2& Dpi_pn, Eigen::MatrixBase<Derived> const & Dpoint) {
     // optimized version of derivatives, see CalibratedCamera.nb
     const double u = pn.x(), v = pn.y();
-    Eigen::Matrix<double, 2, 3> Dpn_point;
+    Matrix23 Dpn_point;
     Dpn_point << //
         R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
     /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
     Dpn_point *= d;
     assert(Dpoint.rows()==2 && Dpoint.cols()==3);
     const_cast<Eigen::MatrixBase<Derived>&>(Dpoint) = //
-        Dpi_pn.block<2, 2>(0, 0) * Dpn_point;
+        Dpi_pn * Dpn_point;
   }
-
-  /// @}
-  /// @name Advanced Interface
-  /// @{
 
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
     ar & BOOST_SERIALIZATION_NVP(pose_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-  /// @}
-      }
-      ;}
+
+};
+
+// Define GTSAM traits
+namespace traits {
+
+template<typename Calibration>
+struct is_manifold<PinholeCamera<Calibration> > : public boost::true_type {
+};
+
+template<typename Calibration>
+struct dimension<PinholeCamera<Calibration> > : public boost::integral_constant<
+    int, dimension<Pose3>::value + dimension<Calibration>::value> {
+};
+
+template<typename Calibration>
+struct zero<PinholeCamera<Calibration> > {
+  static PinholeCamera<Calibration> value() {
+    return PinholeCamera<Calibration>(zero<Pose3>::value(),
+        zero<Calibration>::value());
+  }
+};
+
+}
+
+} // \ gtsam

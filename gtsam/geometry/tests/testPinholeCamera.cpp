@@ -183,25 +183,30 @@ TEST( PinholeCamera, Dproject)
 }
 
 /* ************************************************************************* */
-//static Point2 projectInfinity3(const Pose3& pose, const Point2& point2D, const Cal3_S2& cal) {
-//  Point3 point(point2D.x(), point2D.y(), 1.0);
-//  return Camera(pose,cal).projectPointAtInfinity(point);
-//}
-//
-//TEST( PinholeCamera, Dproject_Infinity)
-//{
-//  Matrix Dpose, Dpoint, Dcal;
-//  Point2 point2D(-0.08,-0.08);
-//  Point3 point3D(point1.x(), point1.y(), 1.0);
-//  Point2 result = camera.projectPointAtInfinity(point3D, Dpose, Dpoint, Dcal);
-//  Matrix numerical_pose  = numericalDerivative31(projectInfinity3, pose1, point2D, K);
-//  Matrix numerical_point = numericalDerivative32(projectInfinity3, pose1, point2D, K);
-//  Matrix numerical_cal   = numericalDerivative33(projectInfinity3, pose1, point2D, K);
-//  CHECK(assert_equal(numerical_pose,  Dpose,  1e-7));
-//  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
-//  CHECK(assert_equal(numerical_cal,   Dcal,   1e-7));
-//}
-//
+static Point2 projectInfinity3(const Pose3& pose, const Point3& point3D, const Cal3_S2& cal) {
+  return Camera(pose,cal).projectPointAtInfinity(point3D);
+}
+
+TEST( PinholeCamera, Dproject_Infinity)
+{
+  Matrix Dpose, Dpoint, Dcal;
+  Point3 point3D(point1.x(), point1.y(), -10.0); // a point in front of the camera
+
+  // test Projection
+  Point2 actual = camera.projectPointAtInfinity(point3D, Dpose, Dpoint, Dcal);
+  Point2 expected(-5.0, 5.0);
+  CHECK(assert_equal(actual, expected,  1e-7));
+
+  // test Jacobians
+  Matrix numerical_pose     = numericalDerivative31(projectInfinity3, pose1, point3D, K);
+  Matrix numerical_point    = numericalDerivative32(projectInfinity3, pose1, point3D, K);
+  Matrix numerical_point2x2 = numerical_point.block(0,0,2,2); // only the direction to the point matters
+  Matrix numerical_cal      = numericalDerivative33(projectInfinity3, pose1, point3D, K);
+  CHECK(assert_equal(numerical_pose,     Dpose,  1e-7));
+  CHECK(assert_equal(numerical_point2x2, Dpoint, 1e-7));
+  CHECK(assert_equal(numerical_cal,      Dcal,   1e-7));
+}
+
 /* ************************************************************************* */
 static Point2 project4(const Camera& camera, const Point3& point) {
   return camera.project2(point);

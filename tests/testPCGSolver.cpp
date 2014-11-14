@@ -13,6 +13,7 @@
  * @file    testPCGSolver.cpp
  * @brief   Unit tests for PCGSolver class
  * @author  Yong-Dian Jian
+ * @date    Aug 06, 2014
  */
 
 #include <tests/smallExample.h>
@@ -51,6 +52,7 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
+// Test cholesky decomposition
 TEST( PCGSolver, llt ) {
   Matrix R = (Matrix(3,3) <<
                 1., -1., -1.,
@@ -90,6 +92,7 @@ TEST( PCGSolver, llt ) {
 }
 
 /* ************************************************************************* */
+// Test Dummy Preconditioner
 TEST( PCGSolver, dummy )
 {
   LevenbergMarquardtParams paramsPCG;
@@ -110,6 +113,7 @@ TEST( PCGSolver, dummy )
 }
 
 /* ************************************************************************* */
+// Test Block-Jacobi Precondioner
 TEST( PCGSolver, blockjacobi )
 {
   LevenbergMarquardtParams paramsPCG;
@@ -130,6 +134,7 @@ TEST( PCGSolver, blockjacobi )
 }
 
 /* ************************************************************************* */
+// Test Incremental Subgraph PCG Solver
 TEST( PCGSolver, subgraph )
 {
   LevenbergMarquardtParams paramsPCG;

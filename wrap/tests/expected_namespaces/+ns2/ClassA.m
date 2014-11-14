@@ -65,14 +65,7 @@ classdef ClassA < handle
     function varargout = Afunction(varargin)
       % AFUNCTION usage: afunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Usage
-      % AFUNCTION()
-      if length(varargin) == 0
-        varargout{1} = testNamespaces_wrapper(12, varargin{:});
-      else
-        error('Arguments do not match any overload of function ns2.ClassA.Afunction');
-      end
+      varargout{1} = testNamespaces_wrapper(12, varargin{:});
     end
 
   end

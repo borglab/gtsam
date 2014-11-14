@@ -120,7 +120,7 @@ public:
    * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
+   * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
   SmartProjectionFactor(const double rankTol, const double linThreshold,
       const bool manageDegeneracy, const bool enableEPI,
@@ -298,7 +298,7 @@ public:
         || (!this->manageDegeneracy_
             && (this->cheiralityException_ || this->degenerate_))) {
       if (isDebug) {
-        std::cout << "createImplicitSchurFactor: degenerate configuration"
+        std::cout << "createRegularImplicitSchurFactor: degenerate configuration"
             << std::endl;
       }
       return false;
@@ -409,12 +409,12 @@ public:
   }
 
   // create factor
-  boost::shared_ptr<ImplicitSchurFactor<D> > createImplicitSchurFactor(
+  boost::shared_ptr<RegularImplicitSchurFactor<D> > createRegularImplicitSchurFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
-      return Base::createImplicitSchurFactor(cameras, point_, lambda);
+      return Base::createRegularImplicitSchurFactor(cameras, point_, lambda);
     else
-      return boost::shared_ptr<ImplicitSchurFactor<D> >();
+      return boost::shared_ptr<RegularImplicitSchurFactor<D> >();
   }
 
   /// create factor
@@ -685,7 +685,7 @@ public:
   inline bool isPointBehindCamera() const {
     return cheiralityException_;
   }
-  /** return chirality verbosity */
+  /** return cheirality verbosity */
   inline bool verboseCheirality() const {
     return verboseCheirality_;
   }

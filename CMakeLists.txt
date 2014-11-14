@@ -2,9 +2,15 @@
 project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
+# new feature to Cmake Version > 2.8.12
+# Mac ONLY. Define Relative Path on Mac OS
+if(NOT DEFINED CMAKE_MACOSX_RPATH)
+  set(CMAKE_MACOSX_RPATH 0)
+endif()
+
 # Set the version number for the library
-set (GTSAM_VERSION_MAJOR 3)
-set (GTSAM_VERSION_MINOR 1)
+set (GTSAM_VERSION_MAJOR 4)
+set (GTSAM_VERSION_MINOR 0)
 set (GTSAM_VERSION_PATCH 0)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
@@ -123,6 +129,11 @@ else()
 endif()
 
 
+if(${Boost_VERSION} EQUAL 105600)
+	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
+	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
+endif()
+
 ###############################################################################
 # Find TBB
 find_package(TBB)
@@ -169,9 +180,9 @@ endif()
 
 ###############################################################################
 # Find OpenMP (if we're also using MKL)
-if(GTSAM_WITH_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
-    find_package(OpenMP)
+find_package(OpenMP)  # do this here to generate correct message if disabled
 
+if(GTSAM_WITH_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
     if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
         set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")

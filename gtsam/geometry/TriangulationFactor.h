@@ -115,7 +115,7 @@ public:
   Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
       boost::none) const {
     try {
-      Point2 error(camera_.project(point, boost::none, H2) - measured_);
+      Point2 error(camera_.project(point, boost::none, H2, boost::none) - measured_);
       return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
@@ -155,7 +155,7 @@ public:
 
     // Would be even better if we could pass blocks to project
     const Point3& point = x.at<Point3>(key());
-    b = -(camera_.project(point, boost::none, A) - measured_).vector();
+    b = -(camera_.project(point, boost::none, A, boost::none) - measured_).vector();
     if (noiseModel_)
       this->noiseModel_->WhitenSystem(A, b);
 

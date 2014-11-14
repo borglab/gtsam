@@ -53,9 +53,6 @@ struct Module {
   /// Dummy constructor that does no parsing - use only for testing
   Module(const std::string& moduleName, bool enable_verbose=true);
 
-  //Recursive method to append all methods inhereted from parent classes
-  std::map<std::string, Method> appendInheretedMethods(const Class& cls, const std::vector<Class>& classes);
-
   /// MATLAB code generation:
   void matlab_code(
        const std::string& path,
