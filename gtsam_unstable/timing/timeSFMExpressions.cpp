@@ -47,15 +47,15 @@ int main() {
   // Create values
   Values values;
   values.insert(Symbol('K', 0), Cal3_S2());
-  for (int i = 0; i < M; i++)
+  for (size_t i = 0; i < M; i++)
     values.insert(Symbol('x', i), Pose3());
-  for (int j = 0; j < N; j++)
+  for (size_t j = 0; j < N; j++)
     values.insert(Symbol('p', j), Point3(0, 0, 1));
 
   long timeLog = clock();
   NonlinearFactorGraph graph;
-  for (int i = 0; i < M; i++) {
-    for (int j = 0; j < N; j++) {
+  for (size_t i = 0; i < M; i++) {
+    for (size_t j = 0; j < N; j++) {
       NonlinearFactor::shared_ptr f = boost::make_shared<
           ExpressionFactor<Point2> >
 #ifdef TERNARY
