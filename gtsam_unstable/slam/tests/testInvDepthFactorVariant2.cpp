@@ -43,7 +43,7 @@ TEST( InvDepthFactorVariant2, optimize) {
   double theta = atan2(ray.y(), ray.x());
   double phi = atan2(ray.z(), sqrt(ray.x()*ray.x()+ray.y()*ray.y()));
   double rho = 1./ray.norm();
-  LieVector expected((Vector(3) << theta, phi, rho));
+  Vector3 expected((Vector(3) << theta, phi, rho));
 
 
   
@@ -66,50 +66,47 @@ TEST( InvDepthFactorVariant2, optimize) {
   Values values;
   values.insert(poseKey1, pose1.retract((Vector(6) << +0.01, -0.02, +0.03, -0.10, +0.20, -0.30)));
   values.insert(poseKey2, pose2.retract((Vector(6) << +0.01, +0.02, -0.03, -0.10, +0.20, +0.30)));
-  values.insert(landmarkKey, expected.retract((Vector(3) << +0.02, -0.04, +0.05)));
+  values.insert(landmarkKey, Vector3(expected + (Vector(3) << +0.02, -0.04, +0.05)));
 
   // Optimize the graph to recover the actual landmark position
   LevenbergMarquardtParams params;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
-  LieVector actual = result.at<LieVector>(landmarkKey);
+  Vector3 actual = result.at<Vector3>(landmarkKey);
   
-
-  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
-  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
-  pose1.print("Pose1 Truth:\n");
-  std::cout << std::endl << std::endl;
-  values.at<Pose3>(poseKey2).print("Pose2 Before:\n");
-  result.at<Pose3>(poseKey2).print("Pose2 After:\n");
-  pose2.print("Pose2 Truth:\n");
-  std::cout << std::endl << std::endl;
-  values.at<LieVector>(landmarkKey).print("Landmark Before:\n");
-  result.at<LieVector>(landmarkKey).print("Landmark After:\n");
-  expected.print("Landmark Truth:\n");
-  std::cout << std::endl << std::endl;
+//  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
+//  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
+//  pose1.print("Pose1 Truth:\n");
+//  std::cout << std::endl << std::endl;
+//  values.at<Pose3>(poseKey2).print("Pose2 Before:\n");
+//  result.at<Pose3>(poseKey2).print("Pose2 After:\n");
+//  pose2.print("Pose2 Truth:\n");
+//  std::cout << std::endl << std::endl;
+//  values.at<Vector3>(landmarkKey).print("Landmark Before:\n");
+//  result.at<Vector3>(landmarkKey).print("Landmark After:\n");
+//  expected.print("Landmark Truth:\n");
+//  std::cout << std::endl << std::endl;
 
   // Calculate world coordinates of landmark versions
   Point3 world_landmarkBefore;
   {
-    LieVector landmarkBefore = values.at<LieVector>(landmarkKey);
+    Vector3 landmarkBefore = values.at<Vector3>(landmarkKey);
     double theta = landmarkBefore(0), phi = landmarkBefore(1), rho = landmarkBefore(2);
     world_landmarkBefore = referencePoint + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
   }
   Point3 world_landmarkAfter;
   {
-    LieVector landmarkAfter = result.at<LieVector>(landmarkKey);
+    Vector3 landmarkAfter = result.at<Vector3>(landmarkKey);
     double theta = landmarkAfter(0), phi = landmarkAfter(1), rho = landmarkAfter(2);
     world_landmarkAfter = referencePoint + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
   }
 
-  world_landmarkBefore.print("World Landmark Before:\n");
-  world_landmarkAfter.print("World Landmark After:\n");
-  landmark.print("World Landmark Truth:\n");
-  std::cout << std::endl << std::endl;
-
-
+//  world_landmarkBefore.print("World Landmark Before:\n");
+//  world_landmarkAfter.print("World Landmark After:\n");
+//  landmark.print("World Landmark Truth:\n");
+//  std::cout << std::endl << std::endl;
 
   // Test that the correct landmark parameters have been recovered
-  EXPECT(assert_equal(expected, actual, 1e-9));
+  EXPECT(assert_equal((Vector)expected, actual, 1e-9));
 }
 
 

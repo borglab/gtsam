@@ -45,7 +45,7 @@ TEST( Rot3AttitudeFactor, Constructor ) {
   EXPECT(assert_equal(zero(2),factor.evaluateError(nRb),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Rot3>(
+  Matrix expectedH = numericalDerivative11<Vector,Rot3>(
       boost::bind(&Rot3AttitudeFactor::evaluateError, &factor, _1, boost::none),
       nRb);
 
@@ -78,7 +78,7 @@ TEST( Pose3AttitudeFactor, Constructor ) {
   EXPECT(assert_equal(zero(2),factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Pose3>(
+  Matrix expectedH = numericalDerivative11<Vector,Pose3>(
       boost::bind(&Pose3AttitudeFactor::evaluateError, &factor, _1,
           boost::none), T);
 

@@ -130,15 +130,20 @@ TEST( Rot3, rodriguez4)
   Rot3 expected(c,-s, 0,
                 s, c, 0,
                 0, 0, 1);
-  CHECK(assert_equal(expected,actual,1e-5));
-  CHECK(assert_equal(slow_but_correct_rodriguez(axis*angle),actual,1e-5));
+  CHECK(assert_equal(expected,actual));
+  CHECK(assert_equal(slow_but_correct_rodriguez(axis*angle),actual));
 }
 
 /* ************************************************************************* */
 TEST( Rot3, retract)
 {
   Vector v = zero(3);
-  CHECK(assert_equal(R.retract(v), R));
+  CHECK(assert_equal(R, R.retract(v)));
+
+  // test Canonical coordinates
+  Canonical<Rot3> chart;
+  Vector v2 = chart.local(R);
+  CHECK(assert_equal(R, chart.retract(v2)));
 }
 
 /* ************************************************************************* */
@@ -209,9 +214,9 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta){
 TEST( Rot3, rightJacobianExpMapSO3 )
 {
   // Linearization point
-  Vector thetahat = (Vector(3) << 0.1, 0, 0);
+  Vector3 thetahat; thetahat << 0.1, 0, 0;
 
-  Matrix expectedJacobian = numericalDerivative11<Rot3, LieVector>(
+  Matrix expectedJacobian = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&Rot3::Expmap, _1), thetahat);
   Matrix actualJacobian = Rot3::rightJacobianExpMapSO3(thetahat);
   CHECK(assert_equal(expectedJacobian, actualJacobian));
@@ -221,10 +226,10 @@ TEST( Rot3, rightJacobianExpMapSO3 )
 TEST( Rot3, rightJacobianExpMapSO3inverse )
 {
   // Linearization point
-  Vector thetahat = (Vector(3) << 0.1,0.1,0); ///< Current estimate of rotation rate bias
-  Vector deltatheta = (Vector(3) << 0, 0, 0);
+  Vector3 thetahat; thetahat << 0.1,0.1,0; ///< Current estimate of rotation rate bias
+  Vector3 deltatheta; deltatheta << 0, 0, 0;
 
-  Matrix expectedJacobian = numericalDerivative11<LieVector>(
+  Matrix expectedJacobian = numericalDerivative11<Vector3,Vector3>(
       boost::bind(&evaluateLogRotation, thetahat, _1), deltatheta);
   Matrix actualJacobian = Rot3::rightJacobianExpMapSO3inverse(thetahat);
   EXPECT(assert_equal(expectedJacobian, actualJacobian));
@@ -381,10 +386,10 @@ TEST( Rot3, between )
   EXPECT(assert_equal(expected,actual));
 
   Matrix numericalH1 = numericalDerivative21(testing::between<Rot3> , R1, R2);
-  CHECK(assert_equal(numericalH1,actualH1, 1e-4));
+  CHECK(assert_equal(numericalH1,actualH1));
 
   Matrix numericalH2 = numericalDerivative22(testing::between<Rot3> , R1, R2);
-  CHECK(assert_equal(numericalH2,actualH2, 1e-4));
+  CHECK(assert_equal(numericalH2,actualH2));
 }
 
 /* ************************************************************************* */
@@ -400,12 +405,12 @@ Vector3 testDexpL(const Vector3& dw) {
 
 TEST( Rot3, dexpL) {
   Matrix actualDexpL = Rot3::dexpL(w);
-  Matrix expectedDexpL = numericalDerivative11<LieVector>(testDexpL,
-      LieVector(zero(3)), 1e-2);
-  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
+  Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(testDexpL,
+      Vector3::Zero(), 1e-2);
+  EXPECT(assert_equal(expectedDexpL, actualDexpL,1e-7));
 
   Matrix actualDexpInvL = Rot3::dexpInvL(w);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL,1e-7));
 }
 
 /* ************************************************************************* */
@@ -518,7 +523,7 @@ TEST( Rot3, logmapStability ) {
 //  std::cout << "trace: " << tr << std::endl;
 //  R.print("R = ");
   Vector actualw = Rot3::Logmap(R);
-  CHECK(assert_equal(w, actualw, 1e-15)); // this should be fixed for Quaternions!!!
+  CHECK(assert_equal(w, actualw, 1e-15));
 }
 
 /* ************************************************************************* */
@@ -575,6 +580,18 @@ TEST( Rot3, stream)
   std::ostringstream os;
   os << R;
   EXPECT(os.str() == "\n|1, 0, 0|\n|0, 1, 0|\n|0, 0, 1|\n");
+}
+
+/* ************************************************************************* */
+TEST( Rot3, slerp)
+{
+  // A first simple test
+  Rot3 R1 = Rot3::Rz(1), R2 = Rot3::Rz(2), R3 = Rot3::Rz(1.5);
+  EXPECT(assert_equal(R1, R1.slerp(0.0,R2)));
+  EXPECT(assert_equal(R2, R1.slerp(1.0,R2)));
+  EXPECT(assert_equal(R3, R1.slerp(0.5,R2)));
+  // Make sure other can be *this
+  EXPECT(assert_equal(R1, R1.slerp(0.5,R1)));
 }
 
 /* ************************************************************************* */

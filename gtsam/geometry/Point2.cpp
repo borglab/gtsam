@@ -27,8 +27,6 @@ namespace gtsam {
 /** Explicit instantiation of base class to export members */
 INSTANTIATE_LIE(Point2);
 
-static const Matrix oneOne = (Matrix(1, 2) <<  1.0, 1.0);
-
 /* ************************************************************************* */
 void Point2::print(const string& s) const {
   cout << s << *this << endl;
@@ -40,15 +38,19 @@ bool Point2::equals(const Point2& q, double tol) const {
 }
 
 /* ************************************************************************* */
+double Point2::norm() const {
+  return sqrt(x_ * x_ + y_ * y_);
+}
+
+/* ************************************************************************* */
 double Point2::norm(boost::optional<Matrix&> H) const {
-  double r = sqrt(x_ * x_ + y_ * y_);
+  double r = norm();
   if (H) {
-    Matrix D_result_d;
+    H->resize(1,2);
     if (fabs(r) > 1e-10)
-      D_result_d = (Matrix(1, 2) <<  x_ / r, y_ / r);
+      *H << x_ / r, y_ / r;
     else
-      D_result_d = oneOne; // TODO: really infinity, why 1 here??
-    *H = D_result_d;
+      *H << 1, 1;  // really infinity, why 1 ?
   }
   return r;
 }

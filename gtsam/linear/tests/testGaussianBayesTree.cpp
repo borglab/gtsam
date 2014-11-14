@@ -24,7 +24,6 @@
 using namespace boost::assign;
 
 #include <gtsam/base/debug.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
@@ -175,13 +174,13 @@ TEST(GaussianBayesTree, complicatedMarginal) {
   EXPECT(assert_equal(expectedCov, actualCov, 1e1));
 }
 
+/* ************************************************************************* */
+typedef Eigen::Matrix<double, 10, 1> Vector10;
 namespace {
-  /* ************************************************************************* */
-  double computeError(const GaussianBayesTree& gbt, const LieVector& values)
-  {
-    pair<Matrix,Vector> Rd = GaussianFactorGraph(gbt).jacobian();
-    return 0.5 * (Rd.first * values - Rd.second).squaredNorm();
-  }
+double computeError(const GaussianBayesTree& gbt, const Vector10& values) {
+  pair<Matrix, Vector> Rd = GaussianFactorGraph(gbt).jacobian();
+  return 0.5 * (Rd.first * values - Rd.second).squaredNorm();
+}
 }
 
 /* ************************************************************************* */
@@ -243,14 +242,12 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
       2, (Vector(4) << 1.0,2.0,15.0,16.0))))));
 
   // Compute the Hessian numerically
-  Matrix hessian = numericalHessian(
-    boost::function<double(const LieVector&)>(boost::bind(&computeError, bt, _1)),
-    LieVector(Vector::Zero(GaussianFactorGraph(bt).jacobian().first.cols())));
+  Matrix hessian = numericalHessian<Vector10>(
+      boost::bind(&computeError, bt, _1), Vector10::Zero());
 
   // Compute the gradient numerically
-  Vector gradient = numericalGradient(
-    boost::function<double(const LieVector&)>(boost::bind(&computeError, bt, _1)),
-    LieVector(Vector::Zero(GaussianFactorGraph(bt).jacobian().first.cols())));
+  Vector gradient = numericalGradient<Vector10>(
+      boost::bind(&computeError, bt, _1), Vector10::Zero());
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();

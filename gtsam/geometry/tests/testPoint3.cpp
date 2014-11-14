@@ -88,6 +88,20 @@ TEST (Point3, normalize) {
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
+//*************************************************************************
+double norm_proxy(const Point3& point) {
+  return double(point.norm());
+}
+
+TEST (Point3, norm) {
+  Matrix actualH;
+  Point3 point(3,4,5); // arbitrary point
+  double expected = sqrt(50);
+  EXPECT_DOUBLES_EQUAL(expected, point.norm(actualH), 1e-8);
+  Matrix expectedH = numericalDerivative11<double, Point3>(norm_proxy, point);
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

@@ -39,9 +39,8 @@ class Pose2;
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose3: public DerivedValue<Pose3> {
+class GTSAM_EXPORT Pose3{
 public:
-  static const size_t dimension = 6;
 
   /** Pose Concept requirements */
   typedef Rot3 Rotation;
@@ -132,12 +131,12 @@ public:
 
   /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
   static size_t Dim() {
-    return dimension;
+    return 6;
   }
 
   /// Dimensionality of the tangent space = 6 DOF
   size_t dim() const {
-    return dimension;
+    return 6;
   }
 
   /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ from R^ with fast first-order approximation to the exponential map
@@ -250,8 +249,13 @@ public:
      * @param Dpoint optional 3*3 Jacobian wrpt point
      * @return point in Pose coordinates
      */
+    Point3 transform_to(const Point3& p) const;
+
     Point3 transform_to(const Point3& p,
-        boost::optional<Matrix&> Dpose=boost::none, boost::optional<Matrix&> Dpoint=boost::none) const;
+        boost::optional<Matrix36&> Dpose, boost::optional<Matrix3&> Dpoint) const;
+
+    Point3 transform_to(const Point3& p,
+        boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) const;
 
     /// @}
     /// @name Standard Interface
@@ -322,8 +326,6 @@ public:
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("Pose3",
-              boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(R_);
       ar & BOOST_SERIALIZATION_NVP(t_);
     }
@@ -349,5 +351,22 @@ inline Matrix wedge<Pose3>(const Vector& xi) {
  */
 typedef std::pair<Point3, Point3> Point3Pair;
 GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_group<Pose3> : public boost::true_type {
+};
+
+template<>
+struct is_manifold<Pose3> : public boost::true_type {
+};
+
+template<>
+struct dimension<Pose3> : public boost::integral_constant<int, 6> {
+};
+
+}
 
 } // namespace gtsam

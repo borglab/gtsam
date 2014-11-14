@@ -75,10 +75,29 @@ bool Cal3_S2::equals(const Cal3_S2& K, double tol) const {
 Point2 Cal3_S2::uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal,
     boost::optional<Matrix&> Dp) const {
   const double x = p.x(), y = p.y();
-  if (Dcal)
-    *Dcal = (Matrix(2, 5) << x, 0.0, y, 1.0, 0.0, 0.0, y, 0.0, 0.0, 1.0);
-  if (Dp)
-    *Dp = (Matrix(2, 2) << fx_, s_, 0.000, fy_);
+  if (Dcal) {
+    Dcal->resize(2,5);
+    *Dcal << x, 0.0, y, 1.0, 0.0, 0.0, y, 0.0, 0.0, 1.0;
+  }
+  if (Dp) {
+    Dp->resize(2,2);
+    *Dp << fx_, s_, 0.0, fy_;
+  }
+  return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
+}
+
+/* ************************************************************************* */
+Point2 Cal3_S2::uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal,
+    boost::optional<Matrix2&> Dp) const {
+  const double x = p.x(), y = p.y();
+  if (Dcal) *Dcal << x, 0.0, y, 1.0, 0.0, 0.0, y, 0.0, 0.0, 1.0;
+  if (Dp) *Dp << fx_, s_, 0.0, fy_;
+  return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
+}
+
+/* ************************************************************************* */
+Point2 Cal3_S2::uncalibrate(const Point2& p) const {
+  const double x = p.x(), y = p.y();
   return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
 }
 

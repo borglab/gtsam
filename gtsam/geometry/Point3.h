@@ -36,12 +36,10 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Point3 : public DerivedValue<Point3> {
-  public:
-    /// dimension of the variable - used to autodetect sizes
-    static const size_t dimension = 3;
+  class GTSAM_EXPORT Point3 {
 
   private:
+
     double x_, y_, z_;  
     
   public:
@@ -122,10 +120,10 @@ namespace gtsam {
     /// @{
 
     /// dimension of the variable - used to autodetect sizes
-    inline static size_t Dim() { return dimension; }
+    inline static size_t Dim() { return 3; }
 
     /// return dimensionality of tangent space, DOF = 3
-    inline size_t dim() const { return dimension; }
+    inline size_t dim() const { return 3; }
 
     /// Updates a with tangent space delta
     inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
@@ -175,6 +173,9 @@ namespace gtsam {
 
     /** Distance of the point from the origin */
     double norm() const;
+
+    /** Distance of the point from the origin, with Jacobian */
+    double norm(boost::optional<Matrix&> H) const;
 
     /** normalize, with optional Jacobian */
     Point3 normalize(boost::optional<Matrix&> H = boost::none) const;
@@ -227,8 +228,6 @@ namespace gtsam {
     template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int version)
     {
-      ar & boost::serialization::make_nvp("Point3",
-          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(x_);
       ar & BOOST_SERIALIZATION_NVP(y_);
       ar & BOOST_SERIALIZATION_NVP(z_);
@@ -241,4 +240,20 @@ namespace gtsam {
   /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct is_group<Point3> : public boost::true_type {
+  };
+
+  template<>
+  struct is_manifold<Point3> : public boost::true_type {
+  };
+
+  template<>
+  struct dimension<Point3> : public boost::integral_constant<int, 3> {
+  };
+
+  }
 }

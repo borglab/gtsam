@@ -547,8 +547,8 @@ Pose3
     xl4(Rot3::ypr(0.0, 0.0, 1.0), Point3(1, 4,-4));
 
 /* ************************************************************************* */
-LieVector range_proxy(const Pose3& pose, const Point3& point) {
-  return LieVector(pose.range(point));
+double range_proxy(const Pose3& pose, const Point3& point) {
+  return pose.range(point);
 }
 TEST( Pose3, range )
 {
@@ -582,8 +582,8 @@ TEST( Pose3, range )
 }
 
 /* ************************************************************************* */
-LieVector range_pose_proxy(const Pose3& pose, const Pose3& point) {
-  return LieVector(pose.range(point));
+double range_pose_proxy(const Pose3& pose, const Pose3& point) {
+  return pose.range(point);
 }
 TEST( Pose3, range_pose )
 {
@@ -674,30 +674,24 @@ TEST(Pose3, align_2) {
 /* ************************************************************************* */
 /// exp(xi) exp(y) = exp(xi + x)
 /// Hence, y = log (exp(-xi)*exp(xi+x))
-
 Vector xi = (Vector(6) << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0);
 
-Vector testDerivExpmapInv(const LieVector& dxi) {
-  Vector y = Pose3::Logmap(Pose3::Expmap(-xi)*Pose3::Expmap(xi+dxi));
-  return y;
+Vector testDerivExpmapInv(const Vector6& dxi) {
+  return Pose3::Logmap(Pose3::Expmap(-xi) * Pose3::Expmap(xi + dxi));
 }
 
 TEST( Pose3, dExpInv_TLN) {
   Matrix res = Pose3::dExpInv_exp(xi);
 
-  Matrix numericalDerivExpmapInv = numericalDerivative11(
-      boost::function<Vector(const LieVector&)>(
-          boost::bind(testDerivExpmapInv,  _1)
-          ),
-      LieVector(Vector::Zero(6)), 1e-5
-      );
+  Matrix numericalDerivExpmapInv = numericalDerivative11<Vector, Vector6>(
+      testDerivExpmapInv, Vector6::Zero(), 1e-5);
 
   EXPECT(assert_equal(numericalDerivExpmapInv,res,3e-1));
 }
 
 /* ************************************************************************* */
-Vector testDerivAdjoint(const LieVector& xi, const LieVector& v) {
-  return Pose3::adjointMap(xi)*v;
+Vector testDerivAdjoint(const Vector6& xi, const Vector6& v) {
+  return Pose3::adjointMap(xi) * v;
 }
 
 TEST( Pose3, adjoint) {
@@ -706,20 +700,16 @@ TEST( Pose3, adjoint) {
   Matrix actualH;
   Vector actual = Pose3::adjoint(screw::xi, screw::xi, actualH);
 
-  Matrix numericalH = numericalDerivative21(
-      boost::function<Vector(const LieVector&, const LieVector&)>(
-          boost::bind(testDerivAdjoint,  _1, _2)
-          ),
-      LieVector(screw::xi), LieVector(screw::xi), 1e-5
-      );
+  Matrix numericalH = numericalDerivative21<Vector, Vector6, Vector6>(
+      testDerivAdjoint, screw::xi, screw::xi, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-5));
   EXPECT(assert_equal(numericalH,actualH,1e-5));
 }
 
 /* ************************************************************************* */
-Vector testDerivAdjointTranspose(const LieVector& xi, const LieVector& v) {
-  return Pose3::adjointMap(xi).transpose()*v;
+Vector testDerivAdjointTranspose(const Vector6& xi, const Vector6& v) {
+  return Pose3::adjointMap(xi).transpose() * v;
 }
 
 TEST( Pose3, adjointTranspose) {
@@ -730,12 +720,8 @@ TEST( Pose3, adjointTranspose) {
   Matrix actualH;
   Vector actual = Pose3::adjointTranspose(xi, v, actualH);
 
-  Matrix numericalH = numericalDerivative21(
-      boost::function<Vector(const LieVector&, const LieVector&)>(
-          boost::bind(testDerivAdjointTranspose,  _1, _2)
-          ),
-      LieVector(xi), LieVector(v), 1e-5
-      );
+  Matrix numericalH = numericalDerivative21<Vector, Vector6, Vector6>(
+      testDerivAdjointTranspose, xi, v, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-15));
   EXPECT(assert_equal(numericalH,actualH,1e-5));

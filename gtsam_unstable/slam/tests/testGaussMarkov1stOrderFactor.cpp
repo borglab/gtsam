@@ -16,20 +16,22 @@
  * @date    Jan 17, 2012
  */
 
-#include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/slam/GaussMarkov1stOrderFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/LieVector.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
 //! Factors
-typedef GaussMarkov1stOrderFactor<gtsam::LieVector> GaussMarkovFactor;
+typedef GaussMarkov1stOrderFactor<LieVector> GaussMarkovFactor;
 
 /* ************************************************************************* */
-gtsam::LieVector predictionError(const gtsam::LieVector& v1, const gtsam::LieVector& v2, const GaussMarkovFactor factor) {
+LieVector predictionError(const LieVector& v1, const LieVector& v2, const GaussMarkovFactor factor) {
   return factor.evaluateError(v1, v2);
 }
 
@@ -37,37 +39,37 @@ gtsam::LieVector predictionError(const gtsam::LieVector& v1, const gtsam::LieVec
 TEST( GaussMarkovFactor, equals )
 {
   // Create two identical factors and make sure they're equal
-  gtsam::Key x1(1);
-  gtsam::Key x2(2);
+  Key x1(1);
+  Key x2(2);
   double delta_t = 0.10;
   Vector tau = (Vector(3) << 100.0, 150.0, 10.0);
-  gtsam::SharedGaussian model = gtsam::noiseModel::Isotropic::Sigma(3, 1.0);
+  SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
 
   GaussMarkovFactor factor1(x1, x2, delta_t, tau, model);
   GaussMarkovFactor factor2(x1, x2, delta_t, tau, model);
 
-  CHECK(gtsam::assert_equal(factor1, factor2));
+  CHECK(assert_equal(factor1, factor2));
 }
 
 /* ************************************************************************* */
 TEST( GaussMarkovFactor, error )
 {
-  gtsam::Values linPoint;
-  gtsam::Key x1(1);
-  gtsam::Key x2(2);
+  Values linPoint;
+  Key x1(1);
+  Key x2(2);
   double delta_t = 0.10;
   Vector tau = (Vector(3) << 100.0, 150.0, 10.0);
-  gtsam::SharedGaussian model = gtsam::noiseModel::Isotropic::Sigma(3, 1.0);
+  SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
 
-  gtsam::LieVector v1 = gtsam::LieVector((gtsam::Vector(3) << 10.0, 12.0, 13.0));
-  gtsam::LieVector v2 = gtsam::LieVector((gtsam::Vector(3) << 10.0, 15.0, 14.0));
+  LieVector v1 = LieVector((Vector(3) << 10.0, 12.0, 13.0));
+  LieVector v2 = LieVector((Vector(3) << 10.0, 15.0, 14.0));
 
   // Create two nodes
   linPoint.insert(x1, v1);
   linPoint.insert(x2, v2);
 
   GaussMarkovFactor factor(x1, x2, delta_t, tau, model);
-  gtsam::Vector Err1( factor.evaluateError(v1, v2) );
+  Vector Err1( factor.evaluateError(v1, v2) );
 
   // Manually calculate the error
   Vector alpha(tau.size());
@@ -76,41 +78,41 @@ TEST( GaussMarkovFactor, error )
     alpha(i) = exp(- 1/tau(i)*delta_t );
     alpha_v1(i) = alpha(i) * v1(i);
   }
-  gtsam::Vector Err2( v2 - alpha_v1 );
+  Vector Err2( v2 - alpha_v1 );
 
-  CHECK(gtsam::assert_equal(Err1, Err2, 1e-9));
+  CHECK(assert_equal(Err1, Err2, 1e-9));
 }
 
 /* ************************************************************************* */
 TEST (GaussMarkovFactor, jacobian ) {
 
-  gtsam::Values linPoint;
-  gtsam::Key x1(1);
-  gtsam::Key x2(2);
+  Values linPoint;
+  Key x1(1);
+  Key x2(2);
   double delta_t = 0.10;
   Vector tau = (Vector(3) << 100.0, 150.0, 10.0);
-  gtsam::SharedGaussian model = gtsam::noiseModel::Isotropic::Sigma(3, 1.0);
+  SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
 
   GaussMarkovFactor factor(x1, x2, delta_t, tau, model);
 
   // Update the linearization point
-  gtsam::LieVector v1_upd = gtsam::LieVector((gtsam::Vector(3) << 0.5, -0.7, 0.3));
-  gtsam::LieVector v2_upd = gtsam::LieVector((gtsam::Vector(3) << -0.7, 0.4, 0.9));
+  LieVector v1_upd = LieVector((Vector(3) << 0.5, -0.7, 0.3));
+  LieVector v2_upd = LieVector((Vector(3) << -0.7, 0.4, 0.9));
 
   // Calculate the Jacobian matrix using the factor
   Matrix computed_H1, computed_H2;
   factor.evaluateError(v1_upd, v2_upd, computed_H1, computed_H2);
 
   // Calculate the Jacobian matrices H1 and H2 using the numerical derivative function
-  gtsam::Matrix numerical_H1, numerical_H2;
-  numerical_H1 = gtsam::numericalDerivative21<gtsam::LieVector, gtsam::LieVector,
-      gtsam::LieVector>(boost::bind(&predictionError, _1, _2, factor), v1_upd, v2_upd);
-  numerical_H2 = gtsam::numericalDerivative22<gtsam::LieVector, gtsam::LieVector,
-      gtsam::LieVector>(boost::bind(&predictionError, _1, _2, factor), v1_upd, v2_upd);
+  Matrix numerical_H1, numerical_H2;
+  numerical_H1 = numericalDerivative21<Vector3, Vector3, Vector3>(
+      boost::bind(&predictionError, _1, _2, factor), v1_upd, v2_upd);
+  numerical_H2 = numericalDerivative22<Vector3, Vector3, Vector3>(
+      boost::bind(&predictionError, _1, _2, factor), v1_upd, v2_upd);
 
   // Verify they are equal for this choice of state
-  CHECK( gtsam::assert_equal(numerical_H1, computed_H1, 1e-9));
-  CHECK( gtsam::assert_equal(numerical_H2, computed_H2, 1e-9));
+  CHECK( assert_equal(numerical_H1, computed_H1, 1e-9));
+  CHECK( assert_equal(numerical_H2, computed_H2, 1e-9));
 }
 
 /* ************************************************************************* */

@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -114,9 +113,14 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in (distorted) image coordinates
    */
+
   Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> Dcal = boost::none,
-      boost::optional<Matrix&> Dp = boost::none) const ;
+       boost::optional<Matrix29&> Dcal = boost::none,
+       boost::optional<Matrix2&> Dp = boost::none) const ;
+
+  Point2 uncalibrate(const Point2& p,
+       boost::optional<Matrix&> Dcal,
+       boost::optional<Matrix&> Dp) const ;
 
   /// Convert (distorted) image coordinates uv to intrinsic coordinates xy
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;
@@ -126,7 +130,6 @@ public:
 
   /// Derivative of uncalibrate wrpt the calibration parameters
   Matrix D2d_calibration(const Point2& p) const ;
-
 
 private:
 

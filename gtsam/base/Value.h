@@ -120,7 +120,17 @@ namespace gtsam {
     virtual Vector localCoordinates_(const Value& value) const = 0;
 
     /** Assignment operator */
-    virtual Value& operator=(const Value& rhs) = 0;
+    virtual Value& operator=(const Value& rhs) {
+      //needs a empty definition so recursion in implicit derived assignment operators work
+     return *this;
+    }
+
+    /** Cast to known ValueType */
+    template<typename ValueType>
+    const ValueType& cast() const;
+
+    template<typename Chart>
+    const Chart& getChart() const;
 
     /** Virutal destructor */
     virtual ~Value() {}

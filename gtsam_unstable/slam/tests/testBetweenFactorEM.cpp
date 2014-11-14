@@ -10,7 +10,6 @@
 #include <gtsam_unstable/slam/BetweenFactorEM.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam/slam/BetweenFactor.h>

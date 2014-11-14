@@ -9,7 +9,6 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -24,10 +23,10 @@ namespace gtsam {
  * Note: this factor is necessary if one needs to smooth the entire graph. It's not needed
  *  in sequential update method.
  */
-class Reconstruction : public NoiseModelFactor3<Pose3, Pose3, LieVector>  {
+class Reconstruction : public NoiseModelFactor3<Pose3, Pose3, Vector6>  {
 
   double h_;  // time step
-  typedef NoiseModelFactor3<Pose3, Pose3, LieVector> Base;
+  typedef NoiseModelFactor3<Pose3, Pose3, Vector6> Base;
 public:
   Reconstruction(Key gKey1, Key gKey, Key xiKey, double h, double mu = 1000.0) :
     Base(noiseModel::Constrained::All(Pose3::Dim(), fabs(mu)), gKey1, gKey,
@@ -41,7 +40,7 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new Reconstruction(*this))); }
 
   /** \f$ log((g_k\exp(h\xi_k))^{-1}g_{k+1}) = 0, with optional derivatives */
-  Vector evaluateError(const Pose3& gk1, const Pose3& gk, const LieVector& xik,
+  Vector evaluateError(const Pose3& gk1, const Pose3& gk, const Vector6& xik,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
@@ -74,7 +73,7 @@ public:
 /**
  * Implement the Discrete Euler-Poincare' equation:
  */
-class DiscreteEulerPoincareHelicopter : public NoiseModelFactor3<LieVector, LieVector, Pose3>  {
+class DiscreteEulerPoincareHelicopter : public NoiseModelFactor3<Vector6, Vector6, Pose3>  {
 
   double h_;  /// time step
   Matrix Inertia_;  /// Inertia tensors Inertia = [ J 0; 0 M ]
@@ -87,7 +86,7 @@ class DiscreteEulerPoincareHelicopter : public NoiseModelFactor3<LieVector, LieV
   // This might be needed in control or system identification problems.
   // We treat them as constant here, since the control inputs are to specify.
 
-  typedef NoiseModelFactor3<LieVector, LieVector, Pose3> Base;
+  typedef NoiseModelFactor3<Vector6, Vector6, Pose3> Base;
 
 public:
   DiscreteEulerPoincareHelicopter(Key xiKey1, Key xiKey_1, Key gKey,
@@ -108,7 +107,7 @@ public:
    * where pk = CT_TLN(h*xi_k)*Inertia*xi_k
    *       pk_1 = CT_TLN(-h*xi_k_1)*Inertia*xi_k_1
    * */
-  Vector evaluateError(const LieVector& xik, const LieVector& xik_1, const Pose3& gk,
+  Vector evaluateError(const Vector6& xik, const Vector6& xik_1, const Pose3& gk,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
@@ -125,7 +124,7 @@ public:
     Vector pk_1 = muk_1 - 0.5*Pose3::adjointTranspose(-h_*xik_1, muk_1, D_adjThxik1_muk1);
 
     Matrix D_gravityBody_gk;
-    Point3 gravityBody = gk.rotation().unrotate(Point3(0.0, 0.0, -9.81*m_), D_gravityBody_gk);
+    Point3 gravityBody = gk.rotation().unrotate(Point3(0.0, 0.0, -9.81*m_), D_gravityBody_gk, boost::none);
     Vector f_ext = (Vector(6) << 0.0, 0.0, 0.0, gravityBody.x(), gravityBody.y(), gravityBody.z());
 
     Vector hx = pk - pk_1 - h_*Fu_ - h_*f_ext;
@@ -149,7 +148,7 @@ public:
   }
 
 #if 0
-  Vector computeError(const LieVector& xik, const LieVector& xik_1, const Pose3& gk) const {
+  Vector computeError(const Vector6& xik, const Vector6& xik_1, const Pose3& gk) const {
     Vector pk = Pose3::dExpInv_exp(h_*xik).transpose()*Inertia_*xik;
     Vector pk_1 = Pose3::dExpInv_exp(-h_*xik_1).transpose()*Inertia_*xik_1;
 
@@ -161,13 +160,13 @@ public:
     return hx;
   }
 
-  Vector evaluateError(const LieVector& xik, const LieVector& xik_1, const Pose3& gk,
+  Vector evaluateError(const Vector6& xik, const Vector6& xik_1, const Pose3& gk,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
     if (H1) {
       (*H1) = numericalDerivative31(
-          boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
               boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5
@@ -175,7 +174,7 @@ public:
     }
     if (H2) {
       (*H2) = numericalDerivative32(
-          boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
               boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5
@@ -183,7 +182,7 @@ public:
     }
     if (H3) {
       (*H3) = numericalDerivative33(
-          boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
               boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5

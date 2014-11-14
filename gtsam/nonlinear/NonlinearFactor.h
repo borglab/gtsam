@@ -43,12 +43,10 @@ namespace gtsam {
 using boost::assign::cref_list_of;
 
 /* ************************************************************************* */
+
 /**
  * Nonlinear factor base class
  *
- * Templated on a values structure type. The values structures are typically
- * more general than just vectors, e.g., Rot3 or Pose3,
- * which are objects in non-linear manifolds (Lie groups).
  * \nosubgrouping
  */
 class NonlinearFactor: public Factor {
@@ -82,18 +80,10 @@ public:
 
   /** print */
   virtual void print(const std::string& s = "",
-    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
-  {
-    std::cout << s << "  keys = { ";
-    BOOST_FOREACH(Key key, this->keys()) { std::cout << keyFormatter(key) << " "; }
-    std::cout << "}" << std::endl;
-  }
+    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Check if two factors are equal */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
-    return Base::equals(f);
-  }
-
+  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
   /// @}
   /// @name Standard Interface
   /// @{
@@ -129,17 +119,6 @@ public:
   linearize(const Values& c) const = 0;
 
   /**
-   * Create a symbolic factor using the given ordering to determine the
-   * variable indices.
-   */
-  //virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-  //  std::vector<Index> indices(this->size());
-  //  for(size_t j=0; j<this->size(); ++j)
-  //    indices[j] = ordering[this->keys()[j]];
-  //  return IndexFactor::shared_ptr(new IndexFactor(indices));
-  //}
-
-  /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
    * for subclasses
    *
@@ -155,28 +134,13 @@ public:
    * Creates a shared_ptr clone of the factor with different keys using
    * a map from old->new keys
    */
-  shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const {
-    shared_ptr new_factor = clone();
-    for (size_t i=0; i<new_factor->size(); ++i) {
-      Key& cur_key = new_factor->keys()[i];
-      std::map<Key,Key>::const_iterator mapping = rekey_mapping.find(cur_key);
-      if (mapping != rekey_mapping.end())
-        cur_key = mapping->second;
-    }
-    return new_factor;
-  }
+  shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const;
 
   /**
    * Clones a factor and fully replaces its keys
    * @param new_keys is the full replacement set of keys
    */
-  shared_ptr rekey(const std::vector<Key>& new_keys) const {
-    assert(new_keys.size() == this->keys().size());
-    shared_ptr new_factor = clone();
-    new_factor->keys() = new_keys;
-    return new_factor;
-  }
-
+  shared_ptr rekey(const std::vector<Key>& new_keys) const;
 
 }; // \class NonlinearFactor
 
@@ -229,19 +193,10 @@ public:
 
   /** Print */
   virtual void print(const std::string& s = "",
-    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
-  {
-    Base::print(s, keyFormatter);
-    this->noiseModel_->print("  noise model: ");
-  }
+    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Check if two factors are equal */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
-    const NoiseModelFactor* e = dynamic_cast<const NoiseModelFactor*>(&f);
-    return e && Base::equals(f, tol) &&
-      ((!noiseModel_ && !e->noiseModel_) ||
-      (noiseModel_ && e->noiseModel_ && noiseModel_->equals(*e->noiseModel_, tol)));
-  }
+  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
 
   /** get the dimension of the factor (number of rows on linearization) */
   virtual size_t dim() const {
@@ -256,21 +211,17 @@ public:
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    * Override this method to finish implementing an N-way factor.
-   * If any of the optional Matrix reference arguments are specified, it should compute
-   * both the function evaluation and its derivative(s) in X1 (and/or X2, X3...).
+   * If the optional arguments is specified, it should compute
+   * both the function evaluation and its derivative(s) in H.
    */
-  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
+  virtual Vector unwhitenedError(const Values& x,
+      boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
 
   /**
    * Vector of errors, whitened
    * This is the raw error, i.e., i.e. \f$ (h(x)-z)/\sigma \f$ in case of a Gaussian
    */
-  Vector whitenedError(const Values& c) const {
-    const Vector unwhitenedErrorVec = unwhitenedError(c);
-    if((size_t) unwhitenedErrorVec.size() != noiseModel_->dim())
-      throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
-    return noiseModel_->whiten(unwhitenedErrorVec);
-  }
+  Vector whitenedError(const Values& c) const;
 
   /**
    * Calculate the error of the factor.
@@ -278,60 +229,14 @@ public:
    * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
-  virtual double error(const Values& c) const {
-    if (this->active(c)) {
-      const Vector unwhitenedErrorVec = unwhitenedError(c);
-      if((size_t) unwhitenedErrorVec.size() != noiseModel_->dim())
-        throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
-      return 0.5 * noiseModel_->distance(unwhitenedErrorVec);
-    } else {
-      return 0.0;
-    }
-  }
+  virtual double error(const Values& c) const;
 
   /**
    * Linearize a non-linearFactorN to get a GaussianFactor,
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
-    // Only linearize if the factor is active
-    if (!this->active(x))
-      return boost::shared_ptr<JacobianFactor>();
-
-    // Create the set of terms - Jacobians for each index
-    Vector b;
-    // Call evaluate error to get Jacobians and b vector
-    std::vector<Matrix> A(this->size());
-    b = -unwhitenedError(x, A);
-    if(noiseModel_)
-    {
-      if((size_t) b.size() != noiseModel_->dim())
-        throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
-
-      this->noiseModel_->WhitenSystem(A,b);
-    }
-
-    std::vector<std::pair<Key, Matrix> > terms(this->size());
-    // Fill in terms
-    for(size_t j=0; j<this->size(); ++j) {
-      terms[j].first = this->keys()[j];
-      terms[j].second.swap(A[j]);
-    }
-
-    if(noiseModel_)
-    {
-      // TODO pass unwhitened + noise model to Gaussian factor
-      noiseModel::Constrained::shared_ptr constrained =
-          boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-      if(constrained)
-        return GaussianFactor::shared_ptr(new JacobianFactor(terms, b, constrained->unit()));
-      else
-        return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
-    }
-    else
-      return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
-  }
+  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const;
 
 private:
 
@@ -348,8 +253,15 @@ private:
 
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NoiseModelFactor with 1
- * variable.  To derive from this class, implement evaluateError(). */
+
+/**
+ * A convenient base class for creating your own NoiseModelFactor with 1
+ * variable.  To derive from this class, implement evaluateError().
+ *
+ * Templated on a values structure type. The values structures are typically
+ * more general than just vectors, e.g., Rot3 or Pose3,
+ * which are objects in non-linear manifolds (Lie groups).
+ */
 template<class VALUE>
 class NoiseModelFactor1: public NoiseModelFactor {
 

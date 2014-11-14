@@ -45,7 +45,7 @@ for i=1:size(measurements,1)
     if ~initial.exists(symbol('l',sf(2)))
         % 3D landmarks are stored in camera coordinates: transform
         % to world coordinates using the respective initial pose
-        pose = initial.at(symbol('x', sf(1)));
+        pose = initial.atPose3(symbol('x', sf(1)));
         world_point = pose.transform_from(Point3(sf(6),sf(7),sf(8)));
         initial.insert(symbol('l',sf(2)), world_point);
     end
@@ -54,7 +54,7 @@ toc
 
 %% add a constraint on the starting pose
 key = symbol('x',1);
-first_pose = initial.at(key);
+first_pose = initial.atPose3(key);
 graph.add(NonlinearEqualityPose3(key, first_pose));
 
 %% optimize

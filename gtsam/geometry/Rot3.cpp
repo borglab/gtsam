@@ -99,11 +99,31 @@ Unit3 Rot3::operator*(const Unit3& p) const {
 
 /* ************************************************************************* */
 // see doc/math.lyx, SO(3) section
+Point3 Rot3::unrotate(const Point3& p, boost::optional<Matrix3&> H1,
+    boost::optional<Matrix3&> H2) const {
+  const Matrix3& Rt = transpose();
+  Point3 q(Rt * p.vector()); // q = Rt*p
+  const double wx = q.x(), wy = q.y(), wz = q.z();
+  if (H1)
+    *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  if (H2)
+    *H2 = Rt;
+  return q;
+}
+
+/* ************************************************************************* */
+// see doc/math.lyx, SO(3) section
 Point3 Rot3::unrotate(const Point3& p,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  Point3 q(transpose()*p.vector()); // q = Rt*p
-  if (H1) *H1 = skewSymmetric(q.x(), q.y(), q.z());
-  if (H2) *H2 = transpose();
+  const Matrix3& Rt = transpose();
+  Point3 q(Rt * p.vector()); // q = Rt*p
+  const double wx = q.x(), wy = q.y(), wz = q.z();
+  if (H1) {
+    H1->resize(3,3);
+    *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  }
+  if (H2)
+    *H2 = Rt;
   return q;
 }
 
@@ -233,6 +253,20 @@ ostream &operator<<(ostream &os, const Rot3& R) {
   os << '|' << R.r1().y() << ", " << R.r2().y() << ", " << R.r3().y() << "|\n";
   os << '|' << R.r1().z() << ", " << R.r2().z() << ", " << R.r3().z() << "|\n";
   return os;
+}
+
+/* ************************************************************************* */
+Point3 Rot3::unrotate(const Point3& p) const {
+  // Eigen expression
+  return Point3(transpose()*p.vector()); // q = Rt*p
+}
+
+/* ************************************************************************* */
+Rot3 Rot3::slerp(double t, const Rot3& other) const {
+  // amazingly simple in GTSAM :-)
+  assert(t>=0 && t<=1);
+  Vector3 omega = localCoordinates(other, Rot3::EXPMAP);
+  return retract(t * omega, Rot3::EXPMAP);
 }
 
 /* ************************************************************************* */

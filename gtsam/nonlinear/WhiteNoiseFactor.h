@@ -19,7 +19,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/base/LieScalar.h>
 #include <cmath>
 
 namespace gtsam {
@@ -126,7 +125,7 @@ namespace gtsam {
 
     /// Calculate the error of the factor, typically equal to log-likelihood
     inline double error(const Values& x) const {
-      return f(z_, x.at<LieScalar>(meanKey_), x.at<LieScalar>(precisionKey_));
+      return f(z_, x.at<double>(meanKey_), x.at<double>(precisionKey_));
     }
 
     /**
@@ -155,8 +154,8 @@ namespace gtsam {
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
     virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
-      double u = x.at<LieScalar>(meanKey_);
-      double p = x.at<LieScalar>(precisionKey_);
+      double u = x.at<double>(meanKey_);
+      double p = x.at<double>(precisionKey_);
       Key j1 = meanKey_;
       Key j2 = precisionKey_;
       return linearize(z_, u, p, j1, j2);

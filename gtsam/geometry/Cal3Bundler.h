@@ -28,7 +28,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3Bundler: public DerivedValue<Cal3Bundler> {
+class GTSAM_EXPORT Cal3Bundler {
 
 private:
   double f_; ///< focal length
@@ -72,7 +72,7 @@ public:
   Matrix K() const; ///< Standard 3*3 calibration matrix
   Vector k() const; ///< Radial distortion parameters (4 of them, 2 0)
 
-  Vector vector() const;
+  Vector3 vector() const;
 
   /// focal length x
   inline double fx() const {
@@ -108,12 +108,29 @@ public:
   /**
    * convert intrinsic coordinates xy to image coordinates uv
    * @param p point in intrinsic coordinates
+   * @return point in image coordinates
+   */
+  Point2 uncalibrate(const Point2& p) const;
+
+  /**
+   * Version of uncalibrate with fixed derivatives
+   * @param p point in intrinsic coordinates
    * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal =
-      boost::none, boost::optional<Matrix&> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix23&> Dcal,
+      boost::optional<Matrix2&> Dp) const;
+
+  /**
+   * Version of uncalibrate with dynamic derivatives
+   * @param p point in intrinsic coordinates
+   * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in image coordinates
+   */
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal,
+      boost::optional<Matrix&> Dp) const;
 
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
@@ -135,7 +152,7 @@ public:
   Cal3Bundler retract(const Vector& d) const;
 
   /// Calculate local coordinates to another calibration
-  Vector localCoordinates(const Cal3Bundler& T2) const;
+  Vector3 localCoordinates(const Cal3Bundler& T2) const;
 
   /// dimensionality
   virtual size_t dim() const {
@@ -157,9 +174,6 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("Cal3Bundler",
-            boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(f_);
     ar & BOOST_SERIALIZATION_NVP(k1_);
     ar & BOOST_SERIALIZATION_NVP(k2_);
@@ -169,6 +183,26 @@ private:
 
   /// @}
 
-      };
+};
 
-      } // namespace gtsam
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Cal3Bundler> : public boost::true_type {
+};
+
+template<>
+struct dimension<Cal3Bundler> : public boost::integral_constant<int, 3> {
+};
+
+template<>
+struct zero<Cal3Bundler> {
+  static Cal3Bundler value() {
+    return Cal3Bundler(0, 0, 0);
+  }
+};
+
+}
+
+} // namespace gtsam

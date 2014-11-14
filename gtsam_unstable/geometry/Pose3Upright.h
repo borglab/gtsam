@@ -22,7 +22,7 @@ namespace gtsam {
  * @ingroup geometry
  * \nosubgrouping
  */
-class GTSAM_UNSTABLE_EXPORT Pose3Upright : public DerivedValue<Pose3Upright> {
+class GTSAM_UNSTABLE_EXPORT Pose3Upright {
 public:
   static const size_t dimension = 4;
 
@@ -126,11 +126,9 @@ public:
   /// Log map at identity - return the canonical coordinates of this rotation
   static Vector Logmap(const Pose3Upright& p);
 
-private:
-
   /// @}
-  /// @name Advanced Interface
-  /// @{
+
+private:
 
   // Serialization function
   friend class boost::serialization::access;
@@ -141,5 +139,19 @@ private:
   }
 
 }; // \class Pose3Upright
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Pose3Upright> : public boost::true_type {
+};
+
+template<>
+struct dimension<Pose3Upright> : public boost::integral_constant<int, 4> {
+};
+
+}
+
 
 } // \namespace gtsam

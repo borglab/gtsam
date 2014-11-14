@@ -50,6 +50,7 @@ bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
 }
 
 /* ************************************************************************* */
+// todo: make a fixed sized jacobian version of this
 Point2 Cal3Unified::uncalibrate(const Point2& p,
        boost::optional<Matrix&> H1,
        boost::optional<Matrix&> H2) const {
@@ -70,26 +71,30 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
 
   // Part2: project NPlane point to pixel plane: use Cal3DS2
   Point2 m(x,y);
-  Matrix H1base, H2base;    // jacobians from Base class
+  Matrix29 H1base;
+  Matrix2 H2base;    // jacobians from Base class
   Point2 puncalib = Base::uncalibrate(m, H1base, H2base);
 
   // Inlined derivative for calibration
   if (H1) {
     // part1
-    Matrix DU = (Matrix(2,1) << -xs * sqrt_nx * xi_sqrt_nx2,
-        -ys * sqrt_nx * xi_sqrt_nx2);
-    Matrix DDS2U = H2base * DU;
+    Vector2 DU;
+    DU << -xs * sqrt_nx * xi_sqrt_nx2, //
+        -ys * sqrt_nx * xi_sqrt_nx2;
 
-    *H1 = collect(2, &H1base, &DDS2U);
+    H1->resize(2,10);
+    H1->block<2,9>(0,0) = H1base;
+    H1->block<2,1>(0,9) = H2base * DU;
   }
+
   // Inlined derivative for points
   if (H2) {
     // part1
     const double denom = 1.0 * xi_sqrt_nx2 / sqrt_nx;
     const double mid = -(xi * xs*ys) * denom;
-    Matrix DU = (Matrix(2, 2) <<
-        (sqrt_nx + xi*(ys*ys + 1)) * denom, mid,
-        mid, (sqrt_nx + xi*(xs*xs + 1)) * denom);
+    Matrix2 DU;
+    DU << (sqrt_nx + xi*(ys*ys + 1)) * denom, mid, //
+        mid, (sqrt_nx + xi*(xs*xs + 1)) * denom;
 
     *H2 = H2base * DU;
   }

@@ -10,7 +10,6 @@
 #include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam/slam/BetweenFactor.h>
@@ -23,26 +22,21 @@
 using namespace std;
 using namespace gtsam;
 
-// Disabled this test because it is currently failing - remove the lines "#if 0" and "#endif" below
-// to reenable the test.
-//#if 0
 /* ************************************************************************* */
-LieVector predictionError(const Pose2& org1_T_org2, const gtsam::Key& key, const TransformBtwRobotsUnaryFactorEM<gtsam::Pose2>& factor){
+Vector predictionError(const Pose2& org1_T_org2, const gtsam::Key& key, const TransformBtwRobotsUnaryFactorEM<gtsam::Pose2>& factor){
   gtsam::Values values;
   values.insert(key, org1_T_org2);
-  //  LieVector err = factor.whitenedError(values);
-  //  return err;
-  return LieVector::Expmap(factor.whitenedError(values));
+  return factor.whitenedError(values);
 }
 
 /* ************************************************************************* */
-//LieVector predictionError_standard(const Pose2& p1, const Pose2& p2, const gtsam::Key& keyA, const gtsam::Key& keyB, const BetweenFactor<gtsam::Pose2>& factor){
+//Vector predictionError_standard(const Pose2& p1, const Pose2& p2, const gtsam::Key& keyA, const gtsam::Key& keyB, const BetweenFactor<gtsam::Pose2>& factor){
 //  gtsam::Values values;
 //  values.insert(keyA, p1);
 //  values.insert(keyB, p2);
-//  //  LieVector err = factor.whitenedError(values);
+//  //  Vector err = factor.whitenedError(values);
 //  //  return err;
-//  return LieVector::Expmap(factor.whitenedError(values));
+//  return Vector::Expmap(factor.whitenedError(values));
 //}
 
 /* ************************************************************************* */
@@ -266,7 +260,7 @@ TEST( TransformBtwRobotsUnaryFactorEM, Jacobian)
   Matrix H1_actual = H_actual[0];
 
   double stepsize = 1.0e-9;
-  Matrix H1_expected = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError, _1,  key, g), orgA_T_orgB, stepsize);
+  Matrix H1_expected = gtsam::numericalDerivative11<Vector, Pose2>(boost::bind(&predictionError, _1,  key, g), orgA_T_orgB, stepsize);
 //  CHECK( assert_equal(H1_expected, H1_actual, 1e-5));
 }
 /////* ************************************************************************** */
@@ -316,12 +310,12 @@ TEST( TransformBtwRobotsUnaryFactorEM, Jacobian)
 ////  CHECK( assert_equal(H2_actual_stnd, H2_actual, 1e-8));
 //
 //  double stepsize = 1.0e-9;
-//  Matrix H1_expected = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError, _1, p2, keyA, keyB, f), p1, stepsize);
-//  Matrix H2_expected = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError, p1, _1, keyA, keyB, f), p2, stepsize);
+//  Matrix H1_expected = gtsam::numericalDerivative11<Vector, Pose2>(boost::bind(&predictionError, _1, p2, keyA, keyB, f), p1, stepsize);
+//  Matrix H2_expected = gtsam::numericalDerivative11<Vector, Pose2>(boost::bind(&predictionError, p1, _1, keyA, keyB, f), p2, stepsize);
 //
 //
 //  // try to check numerical derivatives of a standard between factor
-//  Matrix H1_expected_stnd = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError_standard, _1, p2, keyA, keyB, h), p1, stepsize);
+//  Matrix H1_expected_stnd = gtsam::numericalDerivative11<Vector, Pose2>(boost::bind(&predictionError_standard, _1, p2, keyA, keyB, h), p1, stepsize);
 //  CHECK( assert_equal(H1_expected_stnd, H1_actual_stnd, 1e-5));
 //
 //
@@ -329,8 +323,6 @@ TEST( TransformBtwRobotsUnaryFactorEM, Jacobian)
 //  CHECK( assert_equal(H2_expected, H2_actual, 1e-8));
 //
 //}
-
-//#endif
 
 /* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

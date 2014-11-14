@@ -30,11 +30,11 @@ testStereoVOExample
 display 'Starting: testVisualISAMExample'
 testVisualISAMExample
 
-display 'Starting: testSerialization'
-testSerialization
-
 display 'Starting: testUtilities'
 testUtilities
+
+display 'Starting: testSerialization'
+testSerialization
 
 % end of tests
 display 'Tests complete!'

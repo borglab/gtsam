@@ -28,7 +28,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT StereoPoint2 : public DerivedValue<StereoPoint2> {
+  class GTSAM_EXPORT StereoPoint2 {
   public:
     static const size_t dimension = 3;
   private:
@@ -162,8 +162,6 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("StereoPoint2",
-          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(uL_);
       ar & BOOST_SERIALIZATION_NVP(uR_);
       ar & BOOST_SERIALIZATION_NVP(v_);
@@ -173,4 +171,20 @@ namespace gtsam {
 
   };
 
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct is_group<StereoPoint2> : public boost::true_type {
+  };
+
+  template<>
+  struct is_manifold<StereoPoint2> : public boost::true_type {
+  };
+
+  template<>
+  struct dimension<StereoPoint2> : public boost::integral_constant<int, 3> {
+  };
+
+  }
 }
