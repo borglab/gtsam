@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 #include <boost/foreach.hpp>
 #include <vector>
 
@@ -26,14 +27,6 @@ namespace gtsam {
 
 template<size_t D>
 class RegularJacobianFactor: public JacobianFactor {
-
-private:
-
-  typedef Eigen::Matrix<double, D, D> MatrixDD; // camera hessian block
-  typedef Eigen::Matrix<double, D, 1> VectorD;
-  // Use eigen magic to access raw memory
-  typedef Eigen::Map<VectorD> DMap;
-  typedef Eigen::Map<const VectorD> ConstDMap;
 
 public:
 
@@ -57,24 +50,6 @@ public:
       JacobianFactor(keys, augmentedMatrix, sigmas) {
   }
 
-  /// Return the diagonal of the Hessian for this factor
-  VectorValues hessianDiagonal() const {
-    return JacobianFactor::hessianDiagonal();
-  }
-
-  /// Raw memory access version of hessianDiagonal
-  void hessianDiagonal(double* d) const {
-    // Loop over all variables in the factor
-    for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
-      // Get the diagonal block, and insert its diagonal
-      DVector dj;
-      for (size_t k = 0; k < D; ++k)
-        dj(k) = Ab_(j).col(k).squaredNorm();
-
-      DMap(d + D * j) += dj;
-    }
-  }
-
   /// y += alpha * A'*A*x
   void multiplyHessianAdd(double alpha, const VectorValues& x,
       VectorValues& y) const {
@@ -83,16 +58,24 @@ public:
 
   void multiplyHessianAdd(double alpha, const double* x, double* y,
       std::vector<size_t> keys) const {
+
+    // Use eigen magic to access raw memory
+    typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+    typedef Eigen::Map<const DVector> ConstDMap;
+
     if (empty())
       return;
     Vector Ax = zero(Ab_.rows());
 
     // Just iterate over all A matrices and multiply in correct config part
     for (size_t pos = 0; pos < size(); ++pos)
+    {
+      std::cout << "pos: " << pos << " keys_[pos]: " << keys_[pos] << " keys[keys_[pos]]: " << keys[keys_[pos]] << std::endl;
       Ax += Ab_(pos)
           * ConstDMap(x + keys[keys_[pos]],
               keys[keys_[pos] + 1] - keys[keys_[pos]]);
-
+    }
     // Deal with noise properly, need to Double* whiten as we are dividing by variance
     if (model_) {
       model_->whitenInPlace(Ax);
@@ -109,6 +92,12 @@ public:
   }
 
   void multiplyHessianAdd(double alpha, const double* x, double* y) const {
+
+    // Use eigen magic to access raw memory
+    typedef Eigen::Matrix<double, D, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+    typedef Eigen::Map<const DVector> ConstDMap;
+
     if (empty()) return;
     Vector Ax = zero(Ab_.rows());
 
@@ -125,6 +114,33 @@ public:
     // Again iterate over all A matrices and insert Ai^e into y
     for(size_t pos=0; pos<size(); ++pos)
       DMap(y + D * keys_[pos]) += Ab_(pos).transpose() * Ax;
+  }
+
+  /// Return the diagonal of the Hessian for this factor
+  VectorValues hessianDiagonal() const {
+    return JacobianFactor::hessianDiagonal();
+  }
+
+  /// Raw memory access version of hessianDiagonal
+  /* ************************************************************************* */
+  // TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
+  void hessianDiagonal(double* d) const {
+    // Use eigen magic to access raw memory
+    //typedef Eigen::Matrix<double, 9, 1> DVector;
+    typedef Eigen::Matrix<double, D, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+
+    // Loop over all variables in the factor
+    for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
+      // Get the diagonal block, and insert its diagonal
+      DVector dj;
+      //for (size_t k = 0; k < 9; ++k)
+      for (size_t k = 0; k < D; ++k)
+        dj(k) = Ab_(j).col(k).squaredNorm();
+
+      //DMap(d + 9 * j) += dj;
+      DMap(d + D * j) += dj;
+    }
   }
 
   VectorValues gradientAtZero() const {
