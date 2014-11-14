@@ -1,5 +1,5 @@
 /**
- * @file    ImplicitSchurFactor.h
+ * @file    RegularImplicitSchurFactor.h
  * @brief   A new type of linear factor (GaussianFactor), which is subclass of GaussianFactor
  * @author  Frank Dellaert
  * @author  Luca Carlone
@@ -17,13 +17,13 @@
 namespace gtsam {
 
 /**
- * ImplicitSchurFactor
+ * RegularImplicitSchurFactor
  */
 template<size_t D> //
-class ImplicitSchurFactor: public GaussianFactor {
+class RegularImplicitSchurFactor: public GaussianFactor {
 
 public:
-  typedef ImplicitSchurFactor This; ///< Typedef to this class
+  typedef RegularImplicitSchurFactor This; ///< Typedef to this class
   typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 protected:
@@ -40,11 +40,11 @@ protected:
 public:
 
   /// Constructor
-  ImplicitSchurFactor() {
+  RegularImplicitSchurFactor() {
   }
 
   /// Construct from blcoks of F, E, inv(E'*E), and RHS vector b
-  ImplicitSchurFactor(const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
+  RegularImplicitSchurFactor(const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
       const Matrix3& P, const Vector& b) :
       Fblocks_(Fblocks), PointCovariance_(P), E_(E), b_(b) {
     initKeys();
@@ -58,7 +58,7 @@ public:
   }
 
   /// Destructor
-  virtual ~ImplicitSchurFactor() {
+  virtual ~RegularImplicitSchurFactor() {
   }
 
   // Write access, only use for construction!
@@ -87,7 +87,7 @@ public:
   /// print
   void print(const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-    std::cout << " ImplicitSchurFactor " << std::endl;
+    std::cout << " RegularImplicitSchurFactor " << std::endl;
     Factor::print(s);
     std::cout << " PointCovariance_ \n" << PointCovariance_ << std::endl;
     std::cout << " E_ \n" << E_ << std::endl;
@@ -96,7 +96,7 @@ public:
 
   /// equals
   bool equals(const GaussianFactor& lf, double tol) const {
-    if (!dynamic_cast<const ImplicitSchurFactor*>(&lf))
+    if (!dynamic_cast<const RegularImplicitSchurFactor*>(&lf))
       return false;
     else {
       return false;
@@ -110,21 +110,21 @@ public:
 
   virtual Matrix augmentedJacobian() const {
     throw std::runtime_error(
-        "ImplicitSchurFactor::augmentedJacobian non implemented");
+        "RegularImplicitSchurFactor::augmentedJacobian non implemented");
     return Matrix();
   }
   virtual std::pair<Matrix, Vector> jacobian() const {
-    throw std::runtime_error("ImplicitSchurFactor::jacobian non implemented");
+    throw std::runtime_error("RegularImplicitSchurFactor::jacobian non implemented");
     return std::make_pair(Matrix(), Vector());
   }
   virtual Matrix augmentedInformation() const {
     throw std::runtime_error(
-        "ImplicitSchurFactor::augmentedInformation non implemented");
+        "RegularImplicitSchurFactor::augmentedInformation non implemented");
     return Matrix();
   }
   virtual Matrix information() const {
     throw std::runtime_error(
-        "ImplicitSchurFactor::information non implemented");
+        "RegularImplicitSchurFactor::information non implemented");
     return Matrix();
   }
 
@@ -210,18 +210,18 @@ public:
   }
 
   virtual GaussianFactor::shared_ptr clone() const {
-    return boost::make_shared<ImplicitSchurFactor<D> >(Fblocks_,
+    return boost::make_shared<RegularImplicitSchurFactor<D> >(Fblocks_,
         PointCovariance_, E_, b_);
-    throw std::runtime_error("ImplicitSchurFactor::clone non implemented");
+    throw std::runtime_error("RegularImplicitSchurFactor::clone non implemented");
   }
   virtual bool empty() const {
     return false;
   }
 
   virtual GaussianFactor::shared_ptr negate() const {
-    return boost::make_shared<ImplicitSchurFactor<D> >(Fblocks_,
+    return boost::make_shared<RegularImplicitSchurFactor<D> >(Fblocks_,
         PointCovariance_, E_, b_);
-    throw std::runtime_error("ImplicitSchurFactor::negate non implemented");
+    throw std::runtime_error("RegularImplicitSchurFactor::negate non implemented");
   }
 
   // Raw Vector version of y += F'*alpha*(I - E*P*E')*F*x, for testing
@@ -454,7 +454,7 @@ public:
   }
 
 };
-// ImplicitSchurFactor
+// RegularImplicitSchurFactor
 
 }
 

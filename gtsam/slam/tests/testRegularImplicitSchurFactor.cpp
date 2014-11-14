@@ -6,7 +6,7 @@
  */
 
 //#include <gtsam_unstable/slam/ImplicitSchurFactor.h>
-#include <gtsam/slam/ImplicitSchurFactor.h>
+#include <gtsam/slam/RegularImplicitSchurFactor.h>
 //#include <gtsam_unstable/slam/JacobianFactorQ.h>
 #include <gtsam/slam/JacobianFactorQ.h>
 //#include "gtsam_unstable/slam/JacobianFactorQR.h"
@@ -38,19 +38,19 @@ const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
 const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.);
 
 //*************************************************************************************
-TEST( implicitSchurFactor, creation ) {
+TEST( regularImplicitSchurFactor, creation ) {
   // Matrix E = Matrix::Ones(6,3);
   Matrix E = zeros(6, 3);
   E.block<2,2>(0, 0) = eye(2);
   E.block<2,3>(2, 0) = 2 * ones(2, 3);
   Matrix3 P = (E.transpose() * E).inverse();
-  ImplicitSchurFactor<6> expected(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<6> expected(Fblocks, E, P, b);
   Matrix expectedP = expected.getPointCovariance();
   EXPECT(assert_equal(expectedP, P));
 }
 
 /* ************************************************************************* */
-TEST( implicitSchurFactor, addHessianMultiply ) {
+TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   Matrix E = zeros(6, 3);
   E.block<2,2>(0, 0) = eye(2);
@@ -81,11 +81,11 @@ TEST( implicitSchurFactor, addHessianMultiply ) {
   keys += 0,1,2,3;
   Vector x = xvalues.vector(keys);
   Vector expected = zero(24);
-  ImplicitSchurFactor<6>::multiplyHessianAdd(F, E, P, alpha, x, expected);
+  RegularImplicitSchurFactor<6>::multiplyHessianAdd(F, E, P, alpha, x, expected);
   EXPECT(assert_equal(expected, yExpected.vector(keys), 1e-8));
 
   // Create ImplicitSchurFactor
-  ImplicitSchurFactor<6> implicitFactor(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<6> implicitFactor(Fblocks, E, P, b);
 
   VectorValues zero = 0 * yExpected;// quick way to get zero w right structure
   { // First Version
@@ -190,7 +190,7 @@ TEST( implicitSchurFactor, addHessianMultiply ) {
 }
 
 /* ************************************************************************* */
-TEST(implicitSchurFactor, hessianDiagonal)
+TEST(regularImplicitSchurFactor, hessianDiagonal)
 {
   /* TESTED AGAINST MATLAB
    *  F = [ones(2,6) zeros(2,6) zeros(2,6)
@@ -207,7 +207,7 @@ TEST(implicitSchurFactor, hessianDiagonal)
   E.block<2,3>(2, 0) << 1,2,3,4,5,6;
   E.block<2,3>(4, 0) << 0.5,1,2,3,4,5;
   Matrix3 P = (E.transpose() * E).inverse();
-  ImplicitSchurFactor<6> factor(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<6> factor(Fblocks, E, P, b);
 
   // hessianDiagonal
   VectorValues expected;

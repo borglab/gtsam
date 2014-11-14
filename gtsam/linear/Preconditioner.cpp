@@ -13,6 +13,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <iostream>
 #include <vector>
 
@@ -134,30 +135,16 @@ void BlockJacobiPreconditioner::build(
   size_t nnz = 0;
   for ( size_t i = 0 ; i < n ; ++i ) {
     const size_t dim = dims_[i];
-    blocks.push_back(Matrix::Zero(dim, dim));
+    // blocks.push_back(Matrix::Zero(dim, dim));
     // nnz += (((dim)*(dim+1)) >> 1); // d*(d+1) / 2  ;
     nnz += dim*dim;
   }
 
-  /* compute the block diagonal by scanning over the factors */
+  /* getting the block diagonals over the factors */
   BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg ) {
-    if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
-      for ( JacobianFactor::const_iterator it = jf->begin() ; it != jf->end() ; ++it ) {
-        const KeyInfoEntry &entry =  keyInfo.find(*it)->second;
-        const Matrix &Ai = jf->getA(it);
-        blocks[entry.index()] += (Ai.transpose() * Ai);
-      }
-    }
-    else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
-      for ( HessianFactor::const_iterator it = hf->begin() ; it != hf->end() ; ++it ) {
-        const KeyInfoEntry &entry =  keyInfo.find(*it)->second;
-        const Matrix &Hii = hf->info(it, it).selfadjointView();
-        blocks[entry.index()] += Hii;
-      }
-    }
-    else {
-      throw invalid_argument("BlockJacobiPreconditioner::build gfg contains a factor that is neither a JacobianFactor nor a HessianFactor.");
-    }
+    std::map<Key, Matrix> hessianMap = gf->hessianBlockDiagonal();
+    BOOST_FOREACH ( const Matrix hessian, hessianMap | boost::adaptors::map_values)
+      blocks.push_back(hessian);
   }
 
   /* if necessary, allocating the memory for cacheing the factorization results */
