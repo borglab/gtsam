@@ -70,6 +70,9 @@ struct Module {
   void finish_wrapper(FileWriter& file,
       const std::vector<std::string>& functionNames) const;
 
+  /// Python code generation:
+  void python_wrapper(const std::string& path) const;
+
 private:
   static std::vector<Class> ExpandTypedefInstantiations(
       const std::vector<Class>& classes,

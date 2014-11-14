@@ -461,5 +461,24 @@ TEST( wrap, matlab_code_geometry ) {
 }
 
 /* ************************************************************************* */
+TEST( wrap, python_code_geometry ) {
+  // Parse into class object
+  string header_path = topdir + "/wrap/tests";
+  Module module(header_path,"geometry",enable_verbose);
+  string path = topdir + "/wrap";
+
+  // clean out previous generated code
+  fs::remove_all("actual-python");
+
+  // emit MATLAB code
+  // make_geometry will not compile, use make testwrap to generate real make
+  module.python_wrapper("actual-python");
+  string epath = path + "/tests/expected-python/";
+  string apath = "actual-python/";
+
+  EXPECT(files_equal(epath + "geometry_python.cpp", apath + "geometry_python.cpp" ));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

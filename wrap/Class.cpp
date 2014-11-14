@@ -583,4 +583,16 @@ string Class::getSerializationExport() const {
   return "BOOST_CLASS_EXPORT_GUID(" + qualifiedName("::") + ", \""
       + qualifiedName() + "\");";
 }
+
+/* ************************************************************************* */
+void Class::python_wrapper(FileWriter& wrapperFile) const {
+  wrapperFile.oss << "class_<" << name << ">(\"" << name << "\")\n";
+  constructor.python_wrapper(wrapperFile, name);
+  BOOST_FOREACH(const StaticMethod& m, static_methods | boost::adaptors::map_values)
+    m.python_wrapper(wrapperFile, name);
+  BOOST_FOREACH(const Method& m, methods | boost::adaptors::map_values)
+    m.python_wrapper(wrapperFile, name);
+  wrapperFile.oss << ";\n\n";
+}
+
 /* ************************************************************************* */

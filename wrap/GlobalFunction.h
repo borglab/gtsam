@@ -35,6 +35,9 @@ struct GlobalFunction: public FullyOverloadedFunction {
       const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
       FileWriter& file, std::vector<std::string>& functionNames) const;
 
+  // emit python wrapper
+  void python_wrapper(FileWriter& wrapperFile) const;
+
 private:
 
   // Creates a single global function - all in same namespace

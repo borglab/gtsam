@@ -165,3 +165,10 @@ string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 }
 
 /* ************************************************************************* */
+void StaticMethod::python_wrapper(FileWriter& wrapperFile,
+    Str className) const {
+  wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className << "::" << name_
+      << ");\n";
+}
+
+/* ************************************************************************* */

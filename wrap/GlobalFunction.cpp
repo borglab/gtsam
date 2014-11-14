@@ -128,6 +128,11 @@ void GlobalFunction::generateSingleFunction(const string& toolboxPath,
 }
 
 /* ************************************************************************* */
+void GlobalFunction::python_wrapper(FileWriter& wrapperFile) const {
+  wrapperFile.oss << "def(\"" << name_ << "\", " << name_ << ");\n";
+}
+
+/* ************************************************************************* */
 
 } // \namespace wrap
 

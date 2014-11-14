@@ -52,6 +52,9 @@ struct StaticMethod: public FullyOverloadedFunction {
       Str wrapperName, const TypeAttributesTable& typeAttributes,
       std::vector<std::string>& functionNames) const;
 
+  // emit python wrapper
+  void python_wrapper(FileWriter& wrapperFile, Str className) const;
+
   friend std::ostream& operator<<(std::ostream& os, const StaticMethod& m) {
     for (size_t i = 0; i < m.nrOverloads(); i++)
       os << "static " << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];

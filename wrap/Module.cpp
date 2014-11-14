@@ -650,3 +650,31 @@ void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& modul
 } 
  
 /* ************************************************************************* */ 
+void Module::python_wrapper(const string& toolboxPath) const {
+
+  fs::create_directories(toolboxPath);
+
+  // create the unified .cpp switch file
+  const string wrapperName = name + "_python";
+  string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
+  FileWriter wrapperFile(wrapperFileName, verbose, "//");
+  wrapperFile.oss << "#include <boost/python.hpp>\n\n";
+  wrapperFile.oss << "using namespace boost::python;\n";
+  wrapperFile.oss << "BOOST_PYTHON_MODULE(" + name + ")\n";
+  wrapperFile.oss << "{\n";
+
+  // write out classes
+  BOOST_FOREACH(const Class& cls, expandedClasses)
+    cls.python_wrapper(wrapperFile);
+
+  // write out global functions
+  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions)
+    p.second.python_wrapper(wrapperFile);
+
+  // finish wrapper file
+  wrapperFile.oss << "}\n";
+
+  wrapperFile.emit(true);
+}
+
+/* ************************************************************************* */
