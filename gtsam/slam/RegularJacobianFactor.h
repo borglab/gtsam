@@ -56,8 +56,13 @@ public:
     JacobianFactor::multiplyHessianAdd(alpha, x, y);
   }
 
+  // Note: this is not assuming a fixed dimension for the variables,
+  // but requires the vector accumulatedDims to tell the dimension of
+  // each variable: e.g.: x0 has dim 3, x2 has dim 6, x3 has dim 2,
+  // then accumulatedDims is [0 3 9 11 13]
+  // NOTE: size of accumulatedDims is size of keys + 1!!
   void multiplyHessianAdd(double alpha, const double* x, double* y,
-      std::vector<size_t> keys) const {
+      const std::vector<size_t>& accumulatedDims) const {
 
     // Use eigen magic to access raw memory
     typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
@@ -68,13 +73,13 @@ public:
       return;
     Vector Ax = zero(Ab_.rows());
 
-    // Just iterate over all A matrices and multiply in correct config part
+    // Just iterate over all A matrices and multiply in correct config part (looping over keys)
+    // E.g.: Jacobian A = [A0 A1 A2] multiplies x = [x0 x1 x2]'
+    // Hence: Ax = A0 x0 + A1 x1 + A2 x2 (hence we loop over the keys and accumulate)
     for (size_t pos = 0; pos < size(); ++pos)
     {
-      std::cout << "pos: " << pos << " keys_[pos]: " << keys_[pos] << " keys[keys_[pos]]: " << keys[keys_[pos]] << std::endl;
       Ax += Ab_(pos)
-          * ConstDMap(x + keys[keys_[pos]],
-              keys[keys_[pos] + 1] - keys[keys_[pos]]);
+          * ConstDMap(x + accumulatedDims[keys_[pos]], accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]);
     }
     // Deal with noise properly, need to Double* whiten as we are dividing by variance
     if (model_) {
@@ -85,10 +90,11 @@ public:
     // multiply with alpha
     Ax *= alpha;
 
-    // Again iterate over all A matrices and insert Ai^e into y
-    for (size_t pos = 0; pos < size(); ++pos)
-      DMap(y + keys[keys_[pos]], keys[keys_[pos] + 1] - keys[keys_[pos]]) += Ab_(
+    // Again iterate over all A matrices and insert Ai^T into y
+    for (size_t pos = 0; pos < size(); ++pos){
+      DMap(y + accumulatedDims[keys_[pos]], accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]) += Ab_(
           pos).transpose() * Ax;
+    }
   }
 
   void multiplyHessianAdd(double alpha, const double* x, double* y) const {
@@ -123,10 +129,9 @@ public:
 
   /// Raw memory access version of hessianDiagonal
   /* ************************************************************************* */
-  // TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
+  // TODO: currently assumes all variables of the same size D (templated) and keys arranged from 0 to n
   void hessianDiagonal(double* d) const {
     // Use eigen magic to access raw memory
-    //typedef Eigen::Matrix<double, 9, 1> DVector;
     typedef Eigen::Matrix<double, D, 1> DVector;
     typedef Eigen::Map<DVector> DMap;
 
@@ -134,11 +139,15 @@ public:
     for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
       // Get the diagonal block, and insert its diagonal
       DVector dj;
-      //for (size_t k = 0; k < 9; ++k)
-      for (size_t k = 0; k < D; ++k)
-        dj(k) = Ab_(j).col(k).squaredNorm();
-
-      //DMap(d + 9 * j) += dj;
+      for (size_t k = 0; k < D; ++k){
+        if (model_){
+          Vector column_k = Ab_(j).col(k);
+          column_k = model_->whiten(column_k);
+          dj(k) = dot(column_k, column_k);
+        }else{
+          dj(k) = Ab_(j).col(k).squaredNorm();
+        }
+      }
       DMap(d + D * j) += dj;
     }
   }
