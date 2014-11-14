@@ -40,7 +40,7 @@ gtsam::Pose3 predictionErrorPose(const Pose3& p1, const Vector3& v1, const imuBi
 }
 
 gtsam::Vector3 predictionErrorVel(const Pose3& p1, const Vector3& v1, const imuBias::ConstantBias& b1, const Pose3& p2, const Vector3& v2, const InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias>& factor) {
-  return Vector3::Expmap(factor.evaluateError(p1, v1, b1, p2, v2).tail(3));
+  return factor.evaluateError(p1, v1, b1, p2, v2).tail(3);
 }
 
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -78,7 +78,7 @@ int main() {
   Point3 t2 = t1.compose( Point3(Vel1*measurement_dt) );
   Pose3 Pose2(R2, t2);
   Vector dv = measurement_dt * (R1.matrix() * measurement_acc + world_g);
-  Vector3 Vel2 = Vel1.compose( dv );
+  Vector3 Vel2 = Vel1 + dv;
   imuBias::ConstantBias Bias1;
 
   Values values;
