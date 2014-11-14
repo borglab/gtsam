@@ -57,7 +57,8 @@ int main(int argc, char* argv[]) {
     volatile double fpm = 0.5; // fraction of points matched
     volatile size_t nm = fpm * n * np; // number of matches
 
-    cout << format("\nTesting with %1% images, %2% points, %3% matches\n") % m % N % nm;
+    cout << format("\nTesting with %1% images, %2% points, %3% matches\n")
+            % (int)m % (int)N % (int)nm;
     cout << "Generating " << nm << " matches" << endl;
     boost::variate_generator<boost::mt19937, boost::uniform_int<size_t> > rn(
         boost::mt19937(), boost::uniform_int<size_t>(0, N - 1));
@@ -67,7 +68,7 @@ int main(int argc, char* argv[]) {
     for (size_t k = 0; k < nm; k++)
       matches.push_back(Match(rn(), rn()));
 
-    os << format("%1%,%2%,%3%,") % m % N % nm;
+    os << format("%1%,%2%,%3%,") % (int)m % (int)N % (int)nm;
 
     {
       // DSFBase version
