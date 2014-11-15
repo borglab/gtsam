@@ -733,8 +733,8 @@ public:
   virtual T value(const Values& values) const {
     using boost::none;
     return function_(this->template expression<A1, 1>()->value(values),
-    this->template expression<A2, 2>()->value(values),
-    none, none);
+        this->template expression<A2, 2>()->value(values),
+        none, none);
   }
 
   /// Construct an execution trace for reverse AD
