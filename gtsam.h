@@ -2149,6 +2149,10 @@ virtual class DroneDynamicsVelXYFactor : gtsam::NoiseModelFactor {
   DroneDynamicsVelXYFactor(size_t key1, size_t key2, size_t key3, Vector motors, Vector acc, const gtsam::noiseModel::Base* noiseModel);
 };
 
+#include <gtsam/slam/CageFactor.h>
+virtual class CageFactor : gtsam::NoiseModelFactor {
+  CageFactor(size_t key1, const gtsam::Pose3& pose, double cageBoundary, const gtsam::noiseModel::Base* noiseModel);
+};
 
 #include <gtsam/slam/BearingFactor.h>
 template<POSE, POINT, ROTATION>
@@ -2461,22 +2465,22 @@ virtual class CombinedImuFactor : gtsam::NonlinearFactor {
   gtsam::CombinedImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
 
 
-  static void Predict(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i, gtsam::Pose3& pose_j, gtsam::LieVector& vel_j,
+  static void predict(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i, gtsam::Pose3& pose_j, gtsam::LieVector& vel_j,
       const gtsam::imuBias::ConstantBias& bias_i, const gtsam::imuBias::ConstantBias& bias_j,
       const gtsam::CombinedImuFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector gravity, Vector omegaCoriolis);
 
-  static gtsam::imuBias::ConstantBias PredictImuBias(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i,
+  static gtsam::imuBias::ConstantBias predictImuBias(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i,
       const gtsam::imuBias::ConstantBias& bias_i,
       const gtsam::CombinedImuFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector gravity, Vector omegaCoriolis);
 
-  static gtsam::LieVector PredictVelocity(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i,
+  static gtsam::LieVector predictVelocity(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i,
       const gtsam::imuBias::ConstantBias& bias_i,
       const gtsam::CombinedImuFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector gravity, Vector omegaCoriolis);
 
-  static gtsam::Pose3 PredictPose(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i,
+  static gtsam::Pose3 predictPose(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i,
       const gtsam::imuBias::ConstantBias& bias_i,
       const gtsam::CombinedImuFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector gravity, Vector omegaCoriolis);
