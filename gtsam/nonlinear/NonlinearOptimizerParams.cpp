@@ -109,10 +109,10 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
   }
 
   switch (orderingType){
-  case Ordering::Type::COLAMD_:
+  case OrderingType::COLAMD:
 	  std::cout << "                   ordering: COLAMD\n";
 	  break;
-  case Ordering::Type::METIS_:
+  case OrderingType::METIS:
 	  std::cout << "                   ordering: METIS\n";
 	  break;
   default:
@@ -165,11 +165,11 @@ NonlinearOptimizerParams::LinearSolverType NonlinearOptimizerParams::linearSolve
 }
 
 /* ************************************************************************* */
-std::string NonlinearOptimizerParams::orderingTypeTranslator(Ordering::Type type) const{
+std::string NonlinearOptimizerParams::orderingTypeTranslator(OrderingType type) const{
 	switch (type) {
-	case Ordering::Type::METIS_:
+	case OrderingType::METIS:
 		return "METIS";
-	case Ordering::Type::COLAMD_:
+	case OrderingType::COLAMD:
 		return "COLAMD";
 	default:
 		if (ordering)
@@ -181,11 +181,11 @@ std::string NonlinearOptimizerParams::orderingTypeTranslator(Ordering::Type type
 }
 
 /* ************************************************************************* */
-Ordering::Type NonlinearOptimizerParams::orderingTypeTranslator(const std::string& type) const{
+OrderingType NonlinearOptimizerParams::orderingTypeTranslator(const std::string& type) const{
 	if (type == "METIS")
-		return Ordering::Type::METIS_;
+		return OrderingType::METIS;
 	if (type == "COLAMD")
-		return Ordering::Type::COLAMD_;
+		return OrderingType::COLAMD;
 	throw std::invalid_argument(
 		"Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
 }

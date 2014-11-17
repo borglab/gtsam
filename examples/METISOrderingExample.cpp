@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
 
   // optimize using Levenberg-Marquardt optimization
   LevenbergMarquardtParams params;
-  params.orderingType = Ordering::Type::METIS_;
+  params.orderingType = OrderingType::METIS;
   LevenbergMarquardtOptimizer optimizer(graph, initial, params);
   Values result = optimizer.optimize();
   result.print("Final Result:\n");

@@ -54,7 +54,7 @@ namespace gtsam {
       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
-      if (orderingType == Ordering::Type::METIS_)
+      if (orderingType == OrderingType::METIS)
 	      return eliminateSequential(Ordering::METIS(asDerived()), function, variableIndex, orderingType);
 	    else
 		    return eliminateSequential(Ordering::COLAMD(*variableIndex), function, variableIndex, orderingType);
@@ -92,7 +92,7 @@ namespace gtsam {
       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
-	    if (orderingType == Ordering::Type::METIS_)
+	    if (orderingType == OrderingType::METIS)
 		    return eliminateMultifrontal(Ordering::METIS(asDerived()), function, variableIndex, orderingType);
 	    else
 		    return eliminateMultifrontal(Ordering::COLAMD(*variableIndex), function, variableIndex, orderingType);

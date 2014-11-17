@@ -95,7 +95,7 @@ namespace gtsam {
     typedef boost::optional<const VariableIndex&> OptionalVariableIndex;
 
 	  /// Typedef for an optional ordering type
-	  typedef boost::optional<Ordering::Type> OptionalOrderingType;
+	  typedef boost::optional<OrderingType> OptionalOrderingType;
 
     /** Do sequential elimination of all variables to produce a Bayes net.  If an ordering is not
      *  provided, the ordering provided by COLAMD will be used.
@@ -107,7 +107,7 @@ namespace gtsam {
 	   *
 	   *  <b> Example - METIS ordering for elimination
 	   *  \code
-	   *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(Ordering::Type::METIS_);
+	   *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(OrderingType::METIS);
      *  
      *  <b> Example - Full QR elimination in specified order:
      *  \code
