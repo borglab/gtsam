@@ -359,6 +359,13 @@ VectorValues HessianFactor::hessianDiagonal() const {
 }
 
 /* ************************************************************************* */
+// Raw memory access version should be called in Regular Factors only currently
+void HessianFactor::hessianDiagonal(double* d) const {
+  throw std::runtime_error(
+      "HessianFactor::hessianDiagonal raw memory access is allowed for Regular Factors only");
+}
+
+/* ************************************************************************* */
 map<Key,Matrix> HessianFactor::hessianBlockDiagonal() const {
   map<Key,Matrix> blocks;
   // Loop over all variables
@@ -538,6 +545,13 @@ VectorValues HessianFactor::gradientAtZero() const {
   for (size_t j = 0; j < n; ++j)
     g.insert(keys_[j], -info_(j,n).knownOffDiagonal());
   return g;
+}
+
+/* ************************************************************************* */
+// Raw memory access version should be called in Regular Factors only currently
+void HessianFactor::gradientAtZero(double* d) const {
+  throw std::runtime_error(
+      "HessianFactor::gradientAtZero raw memory access is allowed for Regular Factors only");
 }
 
 /* ************************************************************************* */

@@ -461,6 +461,13 @@ VectorValues JacobianFactor::hessianDiagonal() const {
 }
 
 /* ************************************************************************* */
+// Raw memory access version should be called in Regular Factors only currently
+void JacobianFactor::hessianDiagonal(double* d) const {
+  throw std::runtime_error(
+      "JacobianFactor::hessianDiagonal raw memory access is allowed for Regular Factors only");
+}
+
+/* ************************************************************************* */
 map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
   map<Key, Matrix> blocks;
   for (size_t pos = 0; pos < size(); ++pos) {
@@ -518,6 +525,13 @@ VectorValues JacobianFactor::gradientAtZero() const {
   Vector b_sigma = model_ ? model_->whiten(b) : b;
   this->transposeMultiplyAdd(-1.0, b_sigma, g); // g -= A'*b/sigma^2
   return g;
+}
+
+/* ************************************************************************* */
+// Raw memory access version should be called in Regular Factors only currently
+void JacobianFactor::gradientAtZero(double* d) const {
+  throw std::runtime_error(
+      "JacobianFactor::gradientAtZero raw memory access is allowed for Regular Factors only");
 }
 
 /* ************************************************************************* */

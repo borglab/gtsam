@@ -340,6 +340,9 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const;
 
+    /// Raw memory access version of hessianDiagonal
+    virtual void hessianDiagonal(double* d) const;
+
     /// Return the block diagonal of the Hessian for this factor
     virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
 
@@ -379,6 +382,9 @@ namespace gtsam {
 
     /// eta for Hessian
     VectorValues gradientAtZero() const;
+
+    /// Raw memory access version of gradientAtZero
+    virtual void gradientAtZero(double* d) const;
 
     /**
     *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are

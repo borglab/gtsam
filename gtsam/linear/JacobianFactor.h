@@ -185,6 +185,9 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const;
 
+    /// Raw memory access version of hessianDiagonal
+    virtual void hessianDiagonal(double* d) const;
+
     /// Return the block diagonal of the Hessian for this factor
     virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
 
@@ -278,6 +281,9 @@ namespace gtsam {
 
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;
+
+    /// Raw memory access version of gradientAtZero
+    virtual void gradientAtZero(double* d) const;
 
     /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactor whiten() const;
