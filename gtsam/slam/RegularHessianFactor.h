@@ -51,16 +51,11 @@ public:
       HessianFactor(keys, augmentedInformation) {
   }
 
-  /** y += alpha * A'*A*x */
-  void multiplyHessianAdd(double alpha, const VectorValues& x,
-      VectorValues& y) const {
-    HessianFactor::multiplyHessianAdd(alpha, x, y);
-  }
-
   // Scratch space for multiplyHessianAdd
   typedef Eigen::Matrix<double, D, 1> DVector;
   mutable std::vector<DVector> y;
 
+  /** y += alpha * A'*A*x */
   void multiplyHessianAdd(double alpha, const double* x, double* yvalues) const {
     // Create a vector of temporary y values, corresponding to rows i
     y.resize(size());
@@ -134,16 +129,12 @@ public:
           alpha * y[i];
   }
 
-  /** Return the diagonal of the Hessian for this factor */
-  VectorValues hessianDiagonal() const {
-    return HessianFactor::hessianDiagonal();
-  }
-
   /** Return the diagonal of the Hessian for this factor (raw memory version) */
-  void hessianDiagonal(double* d) const {
+  virtual void hessianDiagonal(double* d) const {
 
     // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, 9, 1> DVector;
+    //typedef Eigen::Matrix<double, 9, 1> DVector;
+    typedef Eigen::Matrix<double, D, 1> DVector;
     typedef Eigen::Map<DVector> DMap;
 
     // Loop over all variables in the factor
@@ -151,20 +142,18 @@ public:
       Key j = keys_[pos];
       // Get the diagonal block, and insert its diagonal
       const Matrix& B = info_(pos, pos).selfadjointView();
-      DMap(d + 9 * j) += B.diagonal();
+      //DMap(d + 9 * j) += B.diagonal();
+      DMap(d + D * j) += B.diagonal();
     }
-  }
-
-  VectorValues gradientAtZero() const {
-    return HessianFactor::gradientAtZero();
   }
 
   /* ************************************************************************* */
   // TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
-  void gradientAtZero(double* d) const {
+  virtual void gradientAtZero(double* d) const {
 
     // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, 9, 1> DVector;
+    //typedef Eigen::Matrix<double, 9, 1> DVector;
+    typedef Eigen::Matrix<double, D, 1> DVector;
     typedef Eigen::Map<DVector> DMap;
 
     // Loop over all variables in the factor
@@ -172,7 +161,8 @@ public:
       Key j = keys_[pos];
       // Get the diagonal block, and insert its diagonal
       VectorD dj =  -info_(pos,size()).knownOffDiagonal();
-      DMap(d + 9 * j) += dj;
+      //DMap(d + 9 * j) += dj;
+      DMap(d + D * j) += dj;
     }
   }
 

@@ -57,13 +57,7 @@ public:
       JacobianFactor(keys, augmentedMatrix, sigmas) {
   }
 
-  /** y += alpha * A'*A*x */
-  void multiplyHessianAdd(double alpha, const VectorValues& x,
-      VectorValues& y) const {
-    JacobianFactor::multiplyHessianAdd(alpha, x, y);
-  }
-
-  /** Raw memory access version of multiplyHessianAdd
+  /** Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
    * Note: this is not assuming a fixed dimension for the variables,
    * but requires the vector accumulatedDims to tell the dimension of
    * each variable: e.g.: x0 has dim 3, x2 has dim 6, x3 has dim 2,
@@ -126,16 +120,10 @@ public:
       DMap(y + D * keys_[pos]) += Ab_(pos).transpose() * Ax;
   }
 
-//  /// Return the diagonal of the Hessian for this factor
-//  VectorValues hessianDiagonal() const {
-//    return JacobianFactor::hessianDiagonal();
-//  }
-
   /** Raw memory access version of hessianDiagonal
    * TODO: currently assumes all variables of the same size D (templated) and keys arranged from 0 to n
-   *
    */
-  void hessianDiagonal(double* d) const {
+  virtual void hessianDiagonal(double* d) const {
     // Loop over all variables in the factor
     for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
       // Get the diagonal block, and insert its diagonal
@@ -153,22 +141,18 @@ public:
     }
   }
 
-  /** // Gradient is really -A'*b / sigma^2 */
-  VectorValues gradientAtZero() const {
-    return JacobianFactor::gradientAtZero();
-  }
-
   /** Raw memory access version of gradientAtZero */
-  void gradientAtZero(double* d) const {
+  virtual void gradientAtZero(double* d) const {
     // Get vector b not weighted
     Vector b = getb();
     Vector b_sigma = model_ ? (model_->whiten(b)*model_->whiten(b)) : b;
 
-    // gradient -= A'*b/sigma^2
-    // Loop over all variables in the factor
+    // Just iterate over all A matrices
     for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
-      // Get the diagonal block, and insert its diagonal
+      DMap(d + D * j) = DVector::Zero();
       DVector dj;
+      // gradient -= A'*b/sigma^2
+      // Computing with each column
       for (size_t k = 0; k < D; ++k){
         Vector column_k = Ab_(j).col(k);
         dj(k) = -1.0*dot(b_sigma,column_k);

@@ -77,15 +77,6 @@ TEST(RegularHessianFactor, ConstructorNWay)
   expected.insert(1, Y.segment<2>(2));
   expected.insert(3, Y.segment<2>(4));
 
-  // VectorValues way
-  VectorValues actual;
-  factor.multiplyHessianAdd(1, x, actual);
-  EXPECT(assert_equal(expected, actual));
-
-  // now, do it with non-zero y
-  factor.multiplyHessianAdd(1, x, actual);
-  EXPECT(assert_equal(2*expected, actual));
-
   // RAW ACCESS
   Vector expected_y(8); expected_y << 2633, 2674, 4465, 4501, 0, 0, 5669, 5696;
   Vector fast_y = gtsam::zero(8);
