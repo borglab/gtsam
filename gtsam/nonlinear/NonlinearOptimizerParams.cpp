@@ -165,8 +165,7 @@ NonlinearOptimizerParams::LinearSolverType NonlinearOptimizerParams::linearSolve
 }
 
 /* ************************************************************************* */
-std::string NonlinearOptimizerParams::orderingTypeTranslator(Ordering::Type type) const
-{
+std::string NonlinearOptimizerParams::orderingTypeTranslator(Ordering::Type type) const{
 	switch (type) {
 	case Ordering::Type::METIS_:
 		return "METIS";
@@ -182,8 +181,7 @@ std::string NonlinearOptimizerParams::orderingTypeTranslator(Ordering::Type type
 }
 
 /* ************************************************************************* */
-Ordering::Type NonlinearOptimizerParams::orderingTypeTranslator(const std::string& type) const
-{
+Ordering::Type NonlinearOptimizerParams::orderingTypeTranslator(const std::string& type) const{
 	if (type == "METIS")
 		return Ordering::Type::METIS_;
 	if (type == "COLAMD")
