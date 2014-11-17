@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
   LevenbergMarquardtParams params;
   // In order to specify the ordering type, we need to se the NonlinearOptimizerParameter "orderingType"
   // By default this parameter is set to OrderingType::COLAMD
-  params.orderingType = OrderingType::METIS;
+  params.orderingType = Ordering::METIS;
   LevenbergMarquardtOptimizer optimizer(graph, initial, params);
   Values result = optimizer.optimize();
   result.print("Final Result:\n");

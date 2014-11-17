@@ -282,13 +282,13 @@ FastSet<Key> NonlinearFactorGraph::keys() const {
 /* ************************************************************************* */
 Ordering NonlinearFactorGraph::orderingCOLAMD() const
 {
-  return Ordering::COLAMD(*this);
+  return Ordering::colamd(*this);
 }
 
 /* ************************************************************************* */
 Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const
 {
-  return Ordering::COLAMDConstrained(*this, constraints);
+  return Ordering::colamdConstrained(*this, constraints);
 }
 
 /* ************************************************************************* */

@@ -95,7 +95,7 @@ namespace gtsam {
     typedef boost::optional<const VariableIndex&> OptionalVariableIndex;
 
 	  /// Typedef for an optional ordering type
-	  typedef boost::optional<OrderingType> OptionalOrderingType;
+	  typedef boost::optional<Ordering::OrderingType> OptionalOrderingType;
 
     /** Do sequential elimination of all variables to produce a Bayes net.  If an ordering is not
      *  provided, the ordering provided by COLAMD will be used.

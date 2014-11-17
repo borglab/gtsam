@@ -39,15 +39,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMD(const VariableIndex& variableIndex)
+  Ordering Ordering::colamd(const VariableIndex& variableIndex)
   {
     // Call constrained version with all groups set to zero
     vector<int> dummy_groups(variableIndex.size(), 0);
-    return Ordering::COLAMDConstrained(variableIndex, dummy_groups);
+    return Ordering::colamdConstrained(variableIndex, dummy_groups);
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMDConstrained(
+  Ordering Ordering::colamdConstrained(
     const VariableIndex& variableIndex, std::vector<int>& cmember)
   {
     gttic(Ordering_COLAMDConstrained);
@@ -114,7 +114,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMDConstrainedLast(
+  Ordering Ordering::colamdConstrainedLast(
     const VariableIndex& variableIndex, const std::vector<Key>& constrainLast, bool forceOrder)
   {
     gttic(Ordering_COLAMDConstrainedLast);
@@ -137,11 +137,11 @@ namespace gtsam {
         ++ group;
     }
 
-    return Ordering::COLAMDConstrained(variableIndex, cmember);
+    return Ordering::colamdConstrained(variableIndex, cmember);
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMDConstrainedFirst(
+  Ordering Ordering::colamdConstrainedFirst(
     const VariableIndex& variableIndex, const std::vector<Key>& constrainFirst, bool forceOrder)
   {
     gttic(Ordering_COLAMDConstrainedFirst);
@@ -171,11 +171,11 @@ namespace gtsam {
       if(c == none)
         c = group;
 
-    return Ordering::COLAMDConstrained(variableIndex, cmember);
+    return Ordering::colamdConstrained(variableIndex, cmember);
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMDConstrained(const VariableIndex& variableIndex,
+  Ordering Ordering::colamdConstrained(const VariableIndex& variableIndex,
     const FastMap<Key, int>& groups)
   {
     gttic(Ordering_COLAMDConstrained);
@@ -195,12 +195,12 @@ namespace gtsam {
       cmember[keyIndices.at(p.first)] = p.second;
     }
 
-    return Ordering::COLAMDConstrained(variableIndex, cmember);
+    return Ordering::colamdConstrained(variableIndex, cmember);
   }
 
 
   /* ************************************************************************* */
-  Ordering Ordering::METIS(const MetisIndex& met)
+  Ordering Ordering::metis(const MetisIndex& met)
   {
     gttic(Ordering_METIS);
 
