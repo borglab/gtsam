@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "JacobianFactorQ.h"
-#include "JacobianFactorSVD.h"
-#include "RegularImplicitSchurFactor.h"
-#include "RegularHessianFactor.h"
+#include <gtsam/slam/JacobianFactorQ.h>
+#include <gtsam/slam/JacobianFactorSVD.h>
+#include <gtsam/slam/RegularImplicitSchurFactor.h>
+#include <gtsam/slam/RegularHessianFactor.h>
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>  // for Cheirality exception
