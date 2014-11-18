@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "SmartStereoProjectionFactor.h"
+#include <gtsam_unstable/slam/SmartStereoProjectionFactor.h>
 
 namespace gtsam {
 /**

@@ -18,7 +18,7 @@
  *  @date   Sept 2013
  */
 
-#include "../SmartStereoProjectionPoseFactor.h"
+#include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/PoseTranslationPrior.h>

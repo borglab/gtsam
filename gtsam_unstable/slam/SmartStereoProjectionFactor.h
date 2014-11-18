@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "SmartFactorBase.h"
+#include <gtsam/slam/SmartFactorBase.h>
 
 #include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
