@@ -186,26 +186,26 @@ public:
 
   // ****************************************************************************************************
 //  /// Calculate vector of re-projection errors, before applying noise model
-//  Vector reprojectionError(const Cameras& cameras, const Point3& point) const {
-//
-//    Vector b = zero(2 * cameras.size());
-//
-//    size_t i = 0;
-//    BOOST_FOREACH(const Camera& camera, cameras) {
-//      const Z& zi = this->measured_.at(i);
-//      try {
-//        Z e(camera.project(point) - zi);
-//        b[2 * i] = e.x();
-//        b[2 * i + 1] = e.y();
-//      } catch (CheiralityException& e) {
-//        std::cout << "Cheirality exception " << std::endl;
-//        exit(EXIT_FAILURE);
-//      }
-//      i += 1;
-//    }
-//
-//    return b;
-//  }
+  Vector reprojectionError(const Cameras& cameras, const Point3& point) const {
+
+    Vector b = zero(ZDim_t::value * cameras.size());
+
+    size_t i = 0;
+    BOOST_FOREACH(const CAMERA& camera, cameras) {
+      const Z& zi = this->measured_.at(i);
+      try {
+        Z e(camera.project(point) - zi);
+        b[ZDim_t::value * i] = e.x();
+        b[ZDim_t::value * i + 1] = e.y();
+      } catch (CheiralityException& e) {
+        std::cout << "Cheirality exception " << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      i += 1;
+    }
+
+    return b;
+  }
 
   // ****************************************************************************************************
   /**
@@ -238,28 +238,28 @@ public:
 
   // ****************************************************************************************************
   /// Assumes non-degenerate !
-//  void computeEP(Matrix& E, Matrix& PointCov, const Cameras& cameras,
-//      const Point3& point) const {
-//
-//    int numKeys = this->keys_.size();
-//    E = zeros(2 * numKeys, 3);
-//    Vector b = zero(2 * numKeys);
-//
-//    Matrix Ei(2, 3);
-//    for (size_t i = 0; i < this->measured_.size(); i++) {
-//      try {
-//        cameras[i].project(point, boost::none, Ei);
-//      } catch (CheiralityException& e) {
-//        std::cout << "Cheirality exception " << std::endl;
-//        exit(EXIT_FAILURE);
-//      }
-//      this->noise_.at(i)->WhitenSystem(Ei, b);
-//      E.block<2, 3>(2 * i, 0) = Ei;
-//    }
-//
-//    // Matrix PointCov;
-//    PointCov.noalias() = (E.transpose() * E).inverse();
-//  }
+  void computeEP(Matrix& E, Matrix& PointCov, const Cameras& cameras,
+      const Point3& point) const {
+
+    int numKeys = this->keys_.size();
+    E = zeros(ZDim_t::value * numKeys, 3);
+    Vector b = zero(2 * numKeys);
+
+    Matrix Ei(ZDim_t::value, 3);
+    for (size_t i = 0; i < this->measured_.size(); i++) {
+      try {
+        cameras[i].project(point, boost::none, Ei);
+      } catch (CheiralityException& e) {
+        std::cout << "Cheirality exception " << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      this->noise_.at(i)->WhitenSystem(Ei, b);
+      E.block<ZDim_t::value, 3>(ZDim_t::value * i, 0) = Ei;
+    }
+
+    // Matrix PointCov;
+    PointCov.noalias() = (E.transpose() * E).inverse();
+  }
 
   // ****************************************************************************************************
   /// Compute F, E only (called below in both vanilla and SVD versions)
