@@ -104,6 +104,8 @@ protected:
   /// shorthand for this class
   typedef SmartProjectionFactor<POSE, LANDMARK, CALIBRATION, D> This;
 
+  typedef traits::dimension<gtsam::Point2> ZDim_t;    ///< Dimension trait of measurement type
+
 public:
 
   /// shorthand for a smart pointer to a factor
@@ -418,16 +420,16 @@ public:
   }
 
   /// create factor
-  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
+  boost::shared_ptr<JacobianFactorQ<D, ZDim_t::value> > createJacobianQFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createJacobianQFactor(cameras, point_, lambda);
     else
-      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
+      return boost::make_shared< JacobianFactorQ<D, ZDim_t::value> >(this->keys_);
   }
 
   /// Create a factor, takes values
-  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
+  boost::shared_ptr<JacobianFactorQ<D, ZDim_t::value> > createJacobianQFactor(
       const Values& values, double lambda) const {
     Cameras myCameras;
     // TODO triangulate twice ??
@@ -435,7 +437,7 @@ public:
     if (nonDegenerate)
       return createJacobianQFactor(myCameras, lambda);
     else
-      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
+      return boost::make_shared< JacobianFactorQ<D, ZDim_t::value> >(this->keys_);
   }
 
   /// different (faster) way to compute Jacobian factor
@@ -444,7 +446,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, point_, lambda);
     else
-      return boost::make_shared< JacobianFactorSVD<D, Point2> >(this->keys_);
+      return boost::make_shared< JacobianFactorSVD<D, ZDim_t::value> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate

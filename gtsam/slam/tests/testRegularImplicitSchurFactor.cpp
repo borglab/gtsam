@@ -115,7 +115,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   // Create JacobianFactor with same error
   const SharedDiagonal model;
-  JacobianFactorQ<6> jf(Fblocks, E, P, b, model);
+  JacobianFactorQ<6, 2> jf(Fblocks, E, P, b, model);
 
   { // error
     double expectedError = jf.error(xvalues);
@@ -165,7 +165,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   }
 
   // Create JacobianFactorQR
-  JacobianFactorQR<6> jfq(Fblocks, E, P, b, model);
+  JacobianFactorQR<6, 2> jfq(Fblocks, E, P, b, model);
   {
     const SharedDiagonal model;
     VectorValues yActual = zero;

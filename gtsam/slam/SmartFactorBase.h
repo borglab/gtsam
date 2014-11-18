@@ -34,7 +34,6 @@
 #include <boost/make_shared.hpp>
 #include <vector>
 #include <gtsam/3rdparty/gtsam_eigen_includes.h>
-//#include <gtsam/3rdparty/Eigen/Eigen/StdVector>
 
 namespace gtsam {
 /// Base class with no internal point, completely functional
@@ -50,20 +49,23 @@ protected:
 
   boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
 
+  typedef traits::dimension<Z> ZDim_t;    ///< Dimension trait of measurement type
+
   /// Definitions for blocks of F
-  typedef Eigen::Matrix<double, Z::dimension, D> Matrix2D; // F
-  typedef Eigen::Matrix<double, D, Z::dimension> MatrixD2; // F'
+  typedef Eigen::Matrix<double, ZDim_t::value, D> Matrix2D; // F
+  typedef Eigen::Matrix<double, D, ZDim_t::value> MatrixD2; // F'
   typedef std::pair<Key, Matrix2D> KeyMatrix2D; // Fblocks
   typedef Eigen::Matrix<double, D, D> MatrixDD; // camera hessian block
-  typedef Eigen::Matrix<double, Z::dimension, 3> Matrix23;
+  typedef Eigen::Matrix<double, ZDim_t::value, 3> Matrix23;
   typedef Eigen::Matrix<double, D, 1> VectorD;
-  typedef Eigen::Matrix<double, Z::dimension, Z::dimension> Matrix2;
+  typedef Eigen::Matrix<double, ZDim_t::value, ZDim_t::value> Matrix2;
 
   /// shorthand for base class type
   typedef NonlinearFactor Base;
 
   /// shorthand for this class
   typedef SmartFactorBase<POSE, Z, CAMERA, D> This;
+
 
 public:
 
@@ -262,7 +264,7 @@ public:
   // ****************************************************************************************************
   /// Compute F, E only (called below in both vanilla and SVD versions)
   /// Given a Point3, assumes dimensionality is 3
-  double computeJacobians(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> >& Fblocks, Matrix& E,
+  double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
       Vector& b, const Cameras& cameras, const Point3& point) const {
 
     size_t numKeys = this->keys_.size();
@@ -292,11 +294,11 @@ public:
       if (D == 6) { // optimize only camera pose
         Fblocks.push_back(KeyMatrix2D(this->keys_[i], Fi));
       } else {
-        Hcam.block<Z::dimension, 6>(0, 0) = Fi; // Z::Dim() x 6 block for the cameras
-        Hcam.block<Z::dimension, D - 6>(0, 6) = Hcali; // Z::Dim() x nrCal block for the cameras
+        Hcam.block<ZDim_t::value, 6>(0, 0) = Fi; // Z::Dim() x 6 block for the cameras
+        Hcam.block<ZDim_t::value, D - 6>(0, 6) = Hcali; // Z::Dim() x nrCal block for the cameras
         Fblocks.push_back(KeyMatrix2D(this->keys_[i], Hcam));
       }
-      E.block<Z::dimension, 3>(Z::dimension * i, 0) = Ei;
+      E.block<ZDim_t::value, 3>(ZDim_t::value * i, 0) = Ei;
       subInsert(b, bi, Z::Dim() * i);
     }
     return f;
@@ -304,7 +306,7 @@ public:
 
   // ****************************************************************************************************
   /// Version that computes PointCov, with optional lambda parameter
-  double computeJacobians(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> >& Fblocks, Matrix& E,
+  double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
       Matrix3& PointCov, Vector& b, const Cameras& cameras, const Point3& point,
       double lambda = 0.0, bool diagonalDamping = false) const {
 
@@ -335,20 +337,20 @@ public:
       const double lambda = 0.0) const {
 
     size_t numKeys = this->keys_.size();
-    std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> > Fblocks;
+    std::vector<KeyMatrix2D> Fblocks;
     double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point,
         lambda);
     F = zeros(Z::Dim() * numKeys, D * numKeys);
 
     for (size_t i = 0; i < this->keys_.size(); ++i) {
-      F.block<Z::dimension, D>(Z::Dim() * i, D * i) = Fblocks.at(i).second; // Z::Dim() x 6 block for the cameras
+      F.block<ZDim_t::value, D>(ZDim_t::value * i, D * i) = Fblocks.at(i).second; // Z::Dim() x 6 block for the cameras
     }
     return f;
   }
 
   // ****************************************************************************************************
   /// SVD version
-  double computeJacobiansSVD(std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> >& Fblocks, Matrix& Enull,
+  double computeJacobiansSVD(std::vector<KeyMatrix2D>& Fblocks, Matrix& Enull,
       Vector& b, const Cameras& cameras, const Point3& point, double lambda =
           0.0, bool diagonalDamping = false) const {
 
@@ -645,27 +647,27 @@ public:
   }
 
   // ****************************************************************************************************
-  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
+  boost::shared_ptr<JacobianFactorQ<D, ZDim_t::value> > createJacobianQFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
-    std::vector<KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> > Fblocks;
+    std::vector<KeyMatrix2D> Fblocks;
     Matrix E;
     Matrix3 PointCov;
     Vector b;
     computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
         diagonalDamping);
-    return boost::make_shared<JacobianFactorQ<D> >(Fblocks, E, PointCov, b);
+    return boost::make_shared<JacobianFactorQ<D, ZDim_t::value> >(Fblocks, E, PointCov, b);
   }
 
   // ****************************************************************************************************
   boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
     size_t numKeys = this->keys_.size();
-    std::vector < KeyMatrix2D,Eigen::aligned_allocator<KeyMatrix2D> > Fblocks;
+    std::vector<KeyMatrix2D> Fblocks;
     Vector b;
     Matrix Enull(Z::Dim()*numKeys, Z::Dim()*numKeys-3);
     computeJacobiansSVD(Fblocks, Enull, b, cameras, point, lambda);
-    return boost::make_shared< JacobianFactorSVD<6, Z> >(Fblocks, Enull, b);
+    return boost::make_shared< JacobianFactorSVD<6, ZDim_t::value> >(Fblocks, Enull, b);
   }
 
 private:
