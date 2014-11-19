@@ -117,7 +117,6 @@ public:
       if (body_P_sensor) {
         Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
         correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
-        Matrix3 body_omega_body_cross = skewSymmetric(correctedOmega);
         // linear acceleration vector in the body frame
       }
       const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
