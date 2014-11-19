@@ -60,8 +60,8 @@ static Key poseKey1(x1);
 static Point2 measurement1(323.0, 240.0);
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
 
-typedef SmartProjectionPoseFactor<Pose3,Point3,Cal3_S2> SmartFactor;
-typedef SmartProjectionPoseFactor<Pose3,Point3,Cal3Bundler> SmartFactorBundler;
+typedef SmartProjectionPoseFactor<Pose3,Cal3_S2> SmartFactor;
+typedef SmartProjectionPoseFactor<Pose3,Cal3Bundler> SmartFactorBundler;
 
 void projectToMultipleCameras(
     SimpleCamera cam1, SimpleCamera cam2, SimpleCamera cam3, Point3 landmark,
@@ -1202,7 +1202,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ){
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, ConstructorWithCal3Bundler) {
-  SmartProjectionPoseFactor<Pose3,Point3,Cal3Bundler> factor1(rankTol, linThreshold);
+  SmartProjectionPoseFactor<Pose3,Cal3Bundler> factor1(rankTol, linThreshold);
   boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
   factor1.add(measurement1, poseKey1, model, Kbundler);
 }

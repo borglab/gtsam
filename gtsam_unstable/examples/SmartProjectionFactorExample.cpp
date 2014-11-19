@@ -46,7 +46,7 @@ using namespace gtsam;
 
 int main(int argc, char** argv){
 
-  typedef SmartProjectionPoseFactor<Pose3, Point3, Cal3_S2> SmartFactor;
+  typedef SmartProjectionPoseFactor<Pose3, Cal3_S2> SmartFactor;
 
   Values initial_estimate;
   NonlinearFactorGraph graph;

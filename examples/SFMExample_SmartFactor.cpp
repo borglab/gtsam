@@ -61,8 +61,7 @@ using namespace std;
 using namespace gtsam;
 
 // Make the typename short so it looks much cleaner
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Point3,
-    gtsam::Cal3_S2> SmartFactor;
+typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Cal3_S2> SmartFactor;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
