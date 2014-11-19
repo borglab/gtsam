@@ -144,11 +144,11 @@ TEST( ImuFactor, Error ) {
   EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
 
   // Expected Jacobians
-  Matrix H1e = numericalDerivative11<Rot3>(
+  Matrix H1e = numericalDerivative11<Vector, Rot3>(
       boost::bind(&callEvaluateError, factor, _1, x2, bias), x1);
-  Matrix H2e = numericalDerivative11<Rot3>(
+  Matrix H2e = numericalDerivative11<Vector, Rot3>(
       boost::bind(&callEvaluateError, factor, x1, _1, bias), x2);
-  Matrix H3e = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix H3e = numericalDerivative11<Vector, imuBias::ConstantBias>(
       boost::bind(&callEvaluateError, factor, x1, x2, _1), bias);
 
   // Check rotation Jacobians
@@ -212,11 +212,11 @@ TEST( ImuFactor, ErrorWithBiases ) {
 //    EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
 
   // Expected Jacobians
-  Matrix H1e = numericalDerivative11<Rot3>(
+  Matrix H1e = numericalDerivative11<Vector, Rot3>(
       boost::bind(&callEvaluateError, factor, _1, x2, bias), x1);
-  Matrix H2e = numericalDerivative11<Rot3>(
+  Matrix H2e = numericalDerivative11<Vector, Rot3>(
       boost::bind(&callEvaluateError, factor, x1, _1, bias), x2);
-  Matrix H3e = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix H3e = numericalDerivative11<Vector, imuBias::ConstantBias>(
       boost::bind(&callEvaluateError, factor, x1, x2, _1), bias);
 
   // Check rotation Jacobians
@@ -248,9 +248,9 @@ TEST( AHRSFactor, PartialDerivativeExpmap ) {
   double deltaT = 0.5;
 
   // Compute numerical derivatives
-  Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, LieVector>(
+  Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&evaluateRotation, measuredOmega, _1, deltaT),
-      LieVector(biasOmega));
+      biasOmega);
 
   const Matrix3 Jr = Rot3::rightJacobianExpMapSO3(
       (measuredOmega - biasOmega) * deltaT);
@@ -273,8 +273,8 @@ TEST( AHRSFactor, PartialDerivativeLogmap ) {
   deltatheta << 0, 0, 0;
 
   // Compute numerical derivatives
-  Matrix expectedDelFdeltheta = numericalDerivative11<LieVector>(
-      boost::bind(&evaluateLogRotation, thetahat, _1), LieVector(deltatheta));
+  Matrix expectedDelFdeltheta = numericalDerivative11<Vector3, Vector3>(
+      boost::bind(&evaluateLogRotation, thetahat, _1), deltatheta);
 
   const Vector3 x = thetahat; // parametrization of so(3)
   const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
@@ -401,11 +401,11 @@ TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
   AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
 
   // Expected Jacobians
-  Matrix H1e = numericalDerivative11<Rot3>(
+  Matrix H1e = numericalDerivative11<Vector, Rot3>(
       boost::bind(&callEvaluateError, factor, _1, x2, bias), x1);
-  Matrix H2e = numericalDerivative11<Rot3>(
+  Matrix H2e = numericalDerivative11<Vector, Rot3>(
       boost::bind(&callEvaluateError, factor, x1, _1, bias), x2);
-  Matrix H3e = numericalDerivative11<imuBias::ConstantBias>(
+  Matrix H3e = numericalDerivative11<Vector, imuBias::ConstantBias>(
       boost::bind(&callEvaluateError, factor, x1, x2, _1), bias);
 
   // Check rotation Jacobians
