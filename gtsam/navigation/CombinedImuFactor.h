@@ -30,6 +30,21 @@
 namespace gtsam {
 
   /**
+   * Struct to hold all state variables of CombinedImuFactor
+   * returned by predict function
+   */
+  struct PoseVelocityBias {
+    Pose3 pose;
+    Vector3 velocity;
+    imuBias::ConstantBias bias;
+
+    PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
+        const imuBias::ConstantBias _bias) :
+        pose(_pose), velocity(_velocity), bias(_bias) {
+    }
+  };
+
+  /**
    * 
    * @addtogroup SLAM
    *
@@ -107,7 +122,8 @@ namespace gtsam {
       biasHat_(imuBias::ConstantBias()), measurementCovariance_(21,21), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()), deltaTij_(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
-      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(15,15))
+      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(15,15)),
+      use2ndOrderIntegration_(false) ///< Controls the order of integration
       {
       }
 
@@ -642,8 +658,8 @@ namespace gtsam {
 
 
     /** predicted states from IMU */
-    static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j, Vector3& vel_j,
-        const imuBias::ConstantBias& bias_i, imuBias::ConstantBias& bias_j,
+    static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
+        const imuBias::ConstantBias& bias_i,
         const CombinedPreintegratedMeasurements& preintegratedMeasurements,
         const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
         const bool use2ndOrderCoriolis = false)
@@ -658,18 +674,18 @@ namespace gtsam {
 
       // Predict state at time j
       /* ---------------------------------------------------------------------------------------------------- */
-       Vector3 pos_j =  pos_i + Rot_i.matrix() * (preintegratedMeasurements.deltaPij_
-      + preintegratedMeasurements.delPdelBiasAcc * biasAccIncr
-      + preintegratedMeasurements.delPdelBiasOmega * biasOmegaIncr)
-      + vel_i * deltaTij
-      - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
-      + 0.5 * gravity * deltaTij*deltaTij;
+      Vector3 pos_j =  pos_i + Rot_i.matrix() * (preintegratedMeasurements.deltaPij_
+          + preintegratedMeasurements.delPdelBiasAcc * biasAccIncr
+          + preintegratedMeasurements.delPdelBiasOmega * biasOmegaIncr)
+          + vel_i * deltaTij
+          - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
+          + 0.5 * gravity * deltaTij*deltaTij;
 
-    vel_j = Vector3(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij_
-      + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
-      + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
-      - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
-      + gravity * deltaTij);
+      Vector3 vel_j = Vector3(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij_
+          + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
+          + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
+          - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
+          + gravity * deltaTij);
 
       if(use2ndOrderCoriolis){
         pos_j += - 0.5 * skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij*deltaTij;  // 2nd order coriolis term for position
@@ -685,64 +701,9 @@ namespace gtsam {
           Rot3::Expmap( theta_biascorrected_corioliscorrected );
       const Rot3 Rot_j = Rot_i.compose( deltaRij_biascorrected_corioliscorrected  );
 
-      pose_j = Pose3( Rot_j, Point3(pos_j) );
+      Pose3 pose_j = Pose3( Rot_j, Point3(pos_j) );
 
-      bias_j = bias_i;
-    }
-
-
-    static Pose3 predictPose(const Pose3& pose_i, const LieVector& vel_i,
-            const imuBias::ConstantBias& bias_i,
-            const CombinedPreintegratedMeasurements& preintegratedMeasurements,
-            const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
-            const bool use2ndOrderCoriolis = false) {
-      Pose3 pose_j = Pose3();
-      LieVector vel_j = LieVector();
-      imuBias::ConstantBias bias_j = imuBias::ConstantBias();
-
-      predict(pose_i, vel_i, pose_j, vel_j,
-              bias_i, bias_j,
-              preintegratedMeasurements,
-              gravity, omegaCoriolis, body_P_sensor,
-              use2ndOrderCoriolis);
-
-      return pose_j;
-    }
-
-    static LieVector predictVelocity(const Pose3& pose_i, const LieVector& vel_i,
-            const imuBias::ConstantBias& bias_i,
-            const CombinedPreintegratedMeasurements& preintegratedMeasurements,
-            const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
-            const bool use2ndOrderCoriolis = false) {
-      Pose3 pose_j = Pose3();
-      LieVector vel_j = LieVector();
-      imuBias::ConstantBias bias_j = imuBias::ConstantBias();
-
-      predict(pose_i, vel_i, pose_j, vel_j,
-              bias_i, bias_j,
-              preintegratedMeasurements,
-              gravity, omegaCoriolis, body_P_sensor,
-              use2ndOrderCoriolis);
-
-      return vel_j;
-    }
-
-    static imuBias::ConstantBias predictImuBias(const Pose3& pose_i, const LieVector& vel_i,
-            const imuBias::ConstantBias& bias_i,
-            const CombinedPreintegratedMeasurements& preintegratedMeasurements,
-            const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
-            const bool use2ndOrderCoriolis = false) {
-      Pose3 pose_j = Pose3();
-      LieVector vel_j = LieVector();
-      imuBias::ConstantBias bias_j = imuBias::ConstantBias();
-
-      predict(pose_i, vel_i, pose_j, vel_j,
-              bias_i, bias_j,
-              preintegratedMeasurements,
-              gravity, omegaCoriolis, body_P_sensor,
-              use2ndOrderCoriolis);
-
-      return bias_j;
+      return PoseVelocityBias(pose_j, vel_j, bias_i);
     }
 
 
