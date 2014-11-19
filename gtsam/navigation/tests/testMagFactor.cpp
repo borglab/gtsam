@@ -48,7 +48,7 @@ Point3 bias(10, -10, 50);
 Point3 scaled = scale * nM;
 Point3 measured = nRb.inverse() * (scale * nM) + bias;
 
-LieScalar s(scale * nM.norm());
+double s = (scale * nM.norm());
 Unit3 dir(nM);
 
 SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
@@ -94,7 +94,7 @@ TEST( MagFactor, Factors ) {
 // MagFactor2
   MagFactor3 f3(1, 2, 3, measured, nRb, model);
   EXPECT(assert_equal(zero(3),f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
-  EXPECT(assert_equal(numericalDerivative11<Vector,LieScalar> //
+  EXPECT(assert_equal(numericalDerivative11<Vector,double> //
       (boost::bind(&MagFactor3::evaluateError, &f3, _1, dir, bias, none, none, none), s),//
       H1, 1e-7));
   EXPECT(assert_equal(numericalDerivative11<Vector,Unit3> //
