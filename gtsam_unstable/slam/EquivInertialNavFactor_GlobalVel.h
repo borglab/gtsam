@@ -22,7 +22,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
@@ -269,7 +268,7 @@ public:
     VelDelta -= 2*skewSymmetric(world_rho + world_omega_earth)*world_V1_body * dt12;
 
     // Predict
-    return Vel1.compose( VelDelta );
+    return Vel1 + VelDelta;
 
   }
 
@@ -295,7 +294,7 @@ public:
     VELOCITY Vel2Pred = predictVelocity(Pose1, Vel1, Bias1);
 
     // Calculate error
-    return Vel2.between(Vel2Pred);
+    return Vel2Pred-Vel2;
   }
 
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
@@ -315,8 +314,9 @@ public:
 
     // Jacobian w.r.t. Vel1
     if (H2){
-      Matrix H2_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
-      Matrix H2_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      if (Vel1.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
+      Matrix H2_Pose = numericalDerivative11<POSE, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      Matrix H2_Vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
       *H2 = stack(2, &H2_Pose, &H2_Vel);
     }
 
@@ -336,13 +336,14 @@ public:
 
     // Jacobian w.r.t. Vel2
     if (H5){
-      Matrix H5_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
-      Matrix H5_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      if (Vel2.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
+      Matrix H5_Pose = numericalDerivative11<POSE, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      Matrix H5_Vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
       *H5 = stack(2, &H5_Pose, &H5_Vel);
     }
 
     Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
-    Vector ErrVelVector(VELOCITY::Logmap(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2)));
+    Vector ErrVelVector(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2));
 
     return concatVectors(2, &ErrPoseVector, &ErrVelVector);
   }
@@ -436,18 +437,18 @@ public:
     Matrix Z_3x3 = zeros(3,3);
     Matrix I_3x3 = eye(3,3);
 
-    Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
-    Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
+    Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
+    Matrix H_pos_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
     Matrix H_pos_bias = collect(2, &Z_3x3, &Z_3x3);
 
-    Matrix H_vel_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_vel_in_t0);
-    Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
-    Matrix H_vel_bias = numericalDerivative11<LieVector, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
+    Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_vel_in_t0);
+    Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
+    Matrix H_vel_bias = numericalDerivative11<Vector3, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
     Matrix H_vel_pos = Z_3x3;
 
-    Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
-    Matrix H_angles_bias = numericalDerivative11<LieVector, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, delta_angles, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
+    Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
+    Matrix H_angles_bias = numericalDerivative11<Vector3, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, delta_angles, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 

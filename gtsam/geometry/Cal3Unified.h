@@ -40,7 +40,7 @@ namespace gtsam {
  *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
  * pi = K*pn
  */
-class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base, public DerivedValue<Cal3Unified> {
+class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
   typedef Cal3Unified This;
   typedef Cal3DS2_Base Base;
@@ -50,9 +50,8 @@ private:
   double xi_;  // mirror parameter
 
 public:
-  //Matrix K() const ;
-  //Eigen::Vector4d k() const { return Base::k(); }
-  Vector vector() const ;
+
+    Vector vector() const ;
 
   /// @name Standard Constructors
   /// @{
@@ -125,25 +124,35 @@ public:
 
 private:
 
-  /// @}
-  /// @name Advanced Interface
-  /// @{
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version)
   {
     ar & boost::serialization::make_nvp("Cal3Unified",
-        boost::serialization::base_object<Value>(*this));
-    ar & boost::serialization::make_nvp("Cal3Unified",
         boost::serialization::base_object<Cal3DS2_Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(xi_);
   }
 
-  /// @}
-
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Cal3Unified> : public boost::true_type {
+};
+
+template<>
+struct dimension<Cal3Unified> : public boost::integral_constant<int, 10> {
+};
+
+template<>
+struct zero<Cal3Unified> {
+  static Cal3Unified value() { return Cal3Unified();}
+};
+
+}
 
 }
 

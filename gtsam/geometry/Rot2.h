@@ -31,7 +31,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot2 : public DerivedValue<Rot2> {
+  class GTSAM_EXPORT Rot2 {
 
   public:
     /** get the dimension by the type */
@@ -230,23 +230,31 @@ namespace gtsam {
     /** return 2*2 transpose (inverse) rotation matrix   */
     Matrix transpose() const;
 
-    /// @}
-    /// @name Advanced Interface
-    /// @{
-
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("Rot2",
-          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(c_);
       ar & BOOST_SERIALIZATION_NVP(s_);
     }
 
-    /// @}
-
   };
 
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct is_group<Rot2> : public boost::true_type {
+  };
+
+  template<>
+  struct is_manifold<Rot2> : public boost::true_type {
+  };
+
+  template<>
+  struct dimension<Rot2> : public boost::integral_constant<int, 1> {
+  };
+
+  }
 } // gtsam

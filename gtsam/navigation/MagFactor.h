@@ -19,7 +19,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/LieScalar.h>
 
 namespace gtsam {
 
@@ -61,7 +60,7 @@ public:
 
   static Point3 unrotate(const Rot2& R, const Point3& p,
       boost::optional<Matrix&> HR = boost::none) {
-    Point3 q = Rot3::yaw(R.theta()).unrotate(p, HR);
+    Point3 q = Rot3::yaw(R.theta()).unrotate(p, HR, boost::none);
     if (HR) {
       // assign to temporary first to avoid error in Win-Debug mode
       Matrix H = HR->col(2);
@@ -114,7 +113,7 @@ public:
   Vector evaluateError(const Rot3& nRb,
       boost::optional<Matrix&> H = boost::none) const {
     // measured bM = nRb’ * nM + b
-    Point3 hx = nRb.unrotate(nM_, H) + bias_;
+    Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
     return (hx - measured_).vector();
   }
 };
@@ -165,7 +164,7 @@ public:
  * This version uses model measured bM = scale * bRn * direction + bias
  * and optimizes for both scale, direction, and the bias.
  */
-class MagFactor3: public NoiseModelFactor3<LieScalar, Unit3, Point3> {
+class MagFactor3: public NoiseModelFactor3<double, Unit3, Point3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
@@ -175,7 +174,7 @@ public:
   /** Constructor */
   MagFactor3(Key key1, Key key2, Key key3, const Point3& measured,
       const Rot3& nRb, const SharedNoiseModel& model) :
-      NoiseModelFactor3<LieScalar, Unit3, Point3>(model, key1, key2, key3), //
+      NoiseModelFactor3<double, Unit3, Point3>(model, key1, key2, key3), //
       measured_(measured), bRn_(nRb.inverse()) {
   }
 
@@ -190,7 +189,7 @@ public:
    * @param nM (unknown) local earth magnetic field vector, in nav frame
    * @param bias (unknown) 3D bias
    */
-  Vector evaluateError(const LieScalar& scale, const Unit3& direction,
+  Vector evaluateError(double scale, const Unit3& direction,
       const Point3& bias, boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
           boost::none) const {

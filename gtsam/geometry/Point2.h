@@ -32,11 +32,10 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Point2 : public DerivedValue<Point2> {
-public:
-  /// dimension of the variable - used to autodetect sizes
-  static const size_t dimension = 2;
+class GTSAM_EXPORT Point2 {
+
 private:
+
   double x_, y_;
 
 public:
@@ -153,10 +152,10 @@ public:
   /// @{
 
   /// dimension of the variable - used to autodetect sizes
-  inline static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return 2; }
 
   /// Dimensionality of tangent space = 2 DOF
-  inline size_t dim() const { return dimension; }
+  inline size_t dim() const { return 2; }
 
   /// Updates a with tangent space delta
   inline Point2 retract(const Vector& v) const { return *this + Point2(v); }
@@ -182,7 +181,10 @@ public:
   Point2 unit() const { return *this/norm(); }
 
   /** norm of point */
-  double norm(boost::optional<Matrix&> H = boost::none) const;
+  double norm() const;
+
+  /** norm of point, with derivative */
+  double norm(boost::optional<Matrix&> H) const;
 
   /** distance between two points */
   double distance(const Point2& p2, boost::optional<Matrix&> H1 = boost::none,
@@ -235,8 +237,6 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version)
   {
-    ar & boost::serialization::make_nvp("Point2",
-        boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(x_);
     ar & BOOST_SERIALIZATION_NVP(y_);
   }
@@ -247,6 +247,23 @@ private:
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_group<Point2> : public boost::true_type {
+};
+
+template<>
+struct is_manifold<Point2> : public boost::true_type {
+};
+
+template<>
+struct dimension<Point2> : public boost::integral_constant<int, 2> {
+};
+
+}
 
 }
 

@@ -83,9 +83,9 @@ public:
   virtual gtsam::Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none) const {
-    if (H1) *H1 = gtsam::numericalDerivative21<gtsam::LieVector,PoseRTV,PoseRTV>(
+    if (H1) *H1 = gtsam::numericalDerivative21<gtsam::Vector,PoseRTV,PoseRTV>(
         boost::bind(VelocityConstraint::evaluateError_, _1, _2, dt_, integration_mode_), x1, x2, 1e-5);
-    if (H2) *H2 = gtsam::numericalDerivative22<gtsam::LieVector,PoseRTV,PoseRTV>(
+    if (H2) *H2 = gtsam::numericalDerivative22<gtsam::Vector,PoseRTV,PoseRTV>(
         boost::bind(VelocityConstraint::evaluateError_, _1, _2, dt_, integration_mode_), x1, x2, 1e-5);
     return evaluateError_(x1, x2, dt_, integration_mode_);
   }
@@ -103,7 +103,7 @@ public:
   }
 
 private:
-  static gtsam::LieVector evaluateError_(const PoseRTV& x1, const PoseRTV& x2,
+  static gtsam::Vector evaluateError_(const PoseRTV& x1, const PoseRTV& x2,
       double dt, const dynamics::IntegrationMode& mode) {
 
     const Velocity3& v1 = x1.v(), v2 = x2.v(), p1 = x1.t(), p2 = x2.t();

@@ -26,7 +26,7 @@ namespace gtsam {
 /**
  * LieVector is a wrapper around vector to allow it to be a Lie type
  */
-struct LieVector : public Vector, public DerivedValue<LieVector> {
+struct LieVector : public Vector {
 
   /** default constructor - should be unnecessary */
   LieVector() {}
@@ -123,11 +123,22 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("LieVector",
-       boost::serialization::base_object<Value>(*this));
     ar & boost::serialization::make_nvp("Vector",
        boost::serialization::base_object<Vector>(*this));
   }
-
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<LieVector> : public boost::true_type {
+};
+
+template<>
+struct dimension<LieVector> : public Dynamic {
+};
+
+}
+
 } // \namespace gtsam

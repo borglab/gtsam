@@ -39,11 +39,11 @@ TEST( InvDepthFactorVariant3, optimize) {
 
   // Create expected landmark
   Point3 landmark_p1 = pose1.transform_to(landmark);
-  landmark_p1.print("Landmark in Pose1 Frame:\n");
+  // landmark_p1.print("Landmark in Pose1 Frame:\n");
   double theta = atan2(landmark_p1.x(), landmark_p1.z());
   double phi = atan2(landmark_p1.y(), sqrt(landmark_p1.x()*landmark_p1.x()+landmark_p1.z()*landmark_p1.z()));
   double rho = 1./landmark_p1.norm();
-  LieVector expected((Vector(3) << theta, phi, rho));
+  Vector3 expected((Vector(3) << theta, phi, rho));
 
 
   
@@ -66,17 +66,17 @@ TEST( InvDepthFactorVariant3, optimize) {
   Values values;
   values.insert(poseKey1, pose1.retract((Vector(6) << +0.01, -0.02, +0.03, -0.10, +0.20, -0.30)));
   values.insert(poseKey2, pose2.retract((Vector(6) << +0.01, +0.02, -0.03, -0.10, +0.20, +0.30)));
-  values.insert(landmarkKey, expected.retract((Vector(3) <<  +0.02, -0.04, +0.05)));
+  values.insert(landmarkKey, Vector3(expected + (Vector(3) <<  +0.02, -0.04, +0.05)));
 
   // Optimize the graph to recover the actual landmark position
   LevenbergMarquardtParams params;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
-  LieVector actual = result.at<LieVector>(landmarkKey);
+  Vector3 actual = result.at<Vector3>(landmarkKey);
   
 
 
   // Test that the correct landmark parameters have been recovered
-  EXPECT(assert_equal(expected, actual, 1e-9));
+  EXPECT(assert_equal((Vector)expected, actual, 1e-9));
 }
 
 

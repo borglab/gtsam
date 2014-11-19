@@ -61,4 +61,4 @@ if [ $? -ne 0 ]; then
 fi
 
 # Create package
-tar czf gtsam-toolbox-3.0.0-$platform.tgz -C stage/gtsam_toolbox toolbox
+tar czf gtsam-toolbox-3.2.0-$platform.tgz -C stage/gtsam_toolbox toolbox

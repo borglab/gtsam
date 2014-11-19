@@ -1,5 +1,4 @@
 /* ----------------------------------------------------------------------------
-
  * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
@@ -349,8 +348,9 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
   fstream stream(filename.c_str(), fstream::out);
 
   // save poses
+
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config) {
-    const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
+    const Pose2& pose = key_value.value.cast<Pose2>();
     stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
         << " " << pose.theta() << endl;
   }
@@ -392,25 +392,22 @@ GraphAndValues readG2o(const string& g2oFile, const bool is3D,
 /* ************************************************************************* */
 void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
     const string& filename) {
-
   fstream stream(filename.c_str(), fstream::out);
 
   // save 2D & 3D poses
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
+  Values::ConstFiltered<Pose2> viewPose2 = estimate.filter<Pose2>();
+  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value, viewPose2) {
+    stream << "VERTEX_SE2 " << key_value.key << " " << key_value.value.x() << " "
+        << key_value.value.y() << " " << key_value.value.theta() << endl;
+  }
 
-    const Pose2* pose2D = dynamic_cast<const Pose2*>(&key_value.value);
-    if(pose2D){
-    stream << "VERTEX_SE2 " << key_value.key << " " << pose2D->x() << " "
-        << pose2D->y() << " " << pose2D->theta() << endl;
-    }
-    const Pose3* pose3D = dynamic_cast<const Pose3*>(&key_value.value);
-    if(pose3D){
-      Point3 p = pose3D->translation();
-      Rot3 R = pose3D->rotation();
+  Values::ConstFiltered<Pose3> viewPose3 = estimate.filter<Pose3>();
+  BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, viewPose3) {
+      Point3 p = key_value.value.translation();
+      Rot3 R = key_value.value.rotation();
       stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
         << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
         << " " << R.toQuaternion().w() << endl;
-    }
   }
 
   // save edges (2D or 3D)

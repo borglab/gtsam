@@ -36,7 +36,7 @@ SfM_data data;
 bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
-PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(),Cal3_S2());
+PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(), Cal3_S2());
 EssentialMatrix trueE(c1Rc2, Unit3(c1Tc2));
 double baseline = 0.1; // actual baseline of the camera
 
@@ -96,7 +96,7 @@ TEST (EssentialMatrixFactor, factor) {
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected;
-    Hexpected = numericalDerivative11<EssentialMatrix>(
+    Hexpected = numericalDerivative11<Vector, EssentialMatrix>(
         boost::bind(&EssentialMatrixFactor::evaluateError, &factor, _1,
             boost::none), trueE);
 
@@ -164,17 +164,17 @@ TEST (EssentialMatrixFactor2, factor) {
     Vector expected = reprojectionError.vector();
 
     Matrix Hactual1, Hactual2;
-    LieScalar d(baseline / P1.z());
+    double d(baseline / P1.z());
     Vector actual = factor.evaluateError(trueE, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
-        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
-            boost::none, boost::none);
-    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, trueE, d);
-    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, trueE, d);
+    boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
+        &EssentialMatrixFactor2::evaluateError, &factor, _1, _2, boost::none,
+        boost::none);
+    Hexpected1 = numericalDerivative21<Vector, EssentialMatrix, double>(f, trueE, d);
+    Hexpected2 = numericalDerivative22<Vector, EssentialMatrix, double>(f, trueE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
@@ -197,7 +197,7 @@ TEST (EssentialMatrixFactor2, minimization) {
   truth.insert(100, trueE);
   for (size_t i = 0; i < 5; i++) {
     Point3 P1 = data.tracks[i].p;
-    truth.insert(i, LieScalar(baseline / P1.z()));
+    truth.insert(i, double(baseline / P1.z()));
   }
   EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
 
@@ -211,7 +211,7 @@ TEST (EssentialMatrixFactor2, minimization) {
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(trueE, actual, 1e-1));
   for (size_t i = 0; i < 5; i++)
-    EXPECT(assert_equal(truth.at<LieScalar>(i), result.at<LieScalar>(i), 1e-1));
+    EXPECT_DOUBLES_EQUAL(truth.at<double>(i), result.at<double>(i), 1e-1);
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
@@ -238,17 +238,17 @@ TEST (EssentialMatrixFactor3, factor) {
     Vector expected = reprojectionError.vector();
 
     Matrix Hactual1, Hactual2;
-    LieScalar d(baseline / P1.z());
+    double d(baseline / P1.z());
     Vector actual = factor.evaluateError(bodyE, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
-        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
-            boost::none, boost::none);
-    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, bodyE, d);
-    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, bodyE, d);
+    boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
+        &EssentialMatrixFactor3::evaluateError, &factor, _1, _2, boost::none,
+        boost::none);
+    Hexpected1 = numericalDerivative21<Vector, EssentialMatrix, double>(f, bodyE, d);
+    Hexpected2 = numericalDerivative22<Vector, EssentialMatrix, double>(f, bodyE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
@@ -270,7 +270,7 @@ TEST (EssentialMatrixFactor3, minimization) {
   truth.insert(100, bodyE);
   for (size_t i = 0; i < 5; i++) {
     Point3 P1 = data.tracks[i].p;
-    truth.insert(i, LieScalar(baseline / P1.z()));
+    truth.insert(i, double(baseline / P1.z()));
   }
   EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
 
@@ -284,7 +284,7 @@ TEST (EssentialMatrixFactor3, minimization) {
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(bodyE, actual, 1e-1));
   for (size_t i = 0; i < 5; i++)
-    EXPECT(assert_equal(truth.at<LieScalar>(i), result.at<LieScalar>(i), 1e-1));
+    EXPECT_DOUBLES_EQUAL(truth.at<double>(i), result.at<double>(i), 1e-1);
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
@@ -314,7 +314,7 @@ Point2 pB(size_t i) {
 
 boost::shared_ptr<Cal3Bundler> //
 K = boost::make_shared<Cal3Bundler>(500, 0, 0);
-PinholeCamera<Cal3Bundler> camera2(data.cameras[1].pose(),*K);
+PinholeCamera<Cal3Bundler> camera2(data.cameras[1].pose(), *K);
 
 Vector vA(size_t i) {
   Point2 xy = K->calibrate(pA(i));
@@ -380,17 +380,17 @@ TEST (EssentialMatrixFactor2, extraTest) {
     Vector expected = reprojectionError.vector();
 
     Matrix Hactual1, Hactual2;
-    LieScalar d(baseline / P1.z());
+    double d(baseline / P1.z());
     Vector actual = factor.evaluateError(trueE, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
-        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
-            boost::none, boost::none);
-    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, trueE, d);
-    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, trueE, d);
+    boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
+        &EssentialMatrixFactor2::evaluateError, &factor, _1, _2, boost::none,
+        boost::none);
+    Hexpected1 = numericalDerivative21<Vector, EssentialMatrix, double>(f, trueE, d);
+    Hexpected2 = numericalDerivative22<Vector, EssentialMatrix, double>(f, trueE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
@@ -413,7 +413,7 @@ TEST (EssentialMatrixFactor2, extraMinimization) {
   truth.insert(100, trueE);
   for (size_t i = 0; i < data.number_tracks(); i++) {
     Point3 P1 = data.tracks[i].p;
-    truth.insert(i, LieScalar(baseline / P1.z()));
+    truth.insert(i, double(baseline / P1.z()));
   }
   EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
 
@@ -427,7 +427,7 @@ TEST (EssentialMatrixFactor2, extraMinimization) {
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(trueE, actual, 1e-1));
   for (size_t i = 0; i < data.number_tracks(); i++)
-    EXPECT(assert_equal(truth.at<LieScalar>(i), result.at<LieScalar>(i), 1e-1));
+    EXPECT_DOUBLES_EQUAL(truth.at<double>(i), result.at<double>(i), 1e-1);
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
@@ -449,17 +449,17 @@ TEST (EssentialMatrixFactor3, extraTest) {
     Vector expected = reprojectionError.vector();
 
     Matrix Hactual1, Hactual2;
-    LieScalar d(baseline / P1.z());
+    double d(baseline / P1.z());
     Vector actual = factor.evaluateError(bodyE, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix&, const LieScalar&)> f =
-        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
-            boost::none, boost::none);
-    Hexpected1 = numericalDerivative21<EssentialMatrix>(f, bodyE, d);
-    Hexpected2 = numericalDerivative22<EssentialMatrix>(f, bodyE, d);
+    boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
+        &EssentialMatrixFactor3::evaluateError, &factor, _1, _2, boost::none,
+        boost::none);
+    Hexpected1 = numericalDerivative21<Vector, EssentialMatrix, double>(f, bodyE, d);
+    Hexpected2 = numericalDerivative22<Vector, EssentialMatrix, double>(f, bodyE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));

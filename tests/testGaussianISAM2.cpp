@@ -6,24 +6,24 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/base/debug.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/treeTraversal-inst.h>
+#include <tests/smallExample.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
-#include <tests/smallExample.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/base/LieScalar.h>
 
 #include <boost/foreach.hpp>
 #include <boost/assign/list_of.hpp>
@@ -34,6 +34,9 @@ namespace br { using namespace boost::adaptors; using namespace boost::range; }
 using namespace std;
 using namespace gtsam;
 using boost::shared_ptr;
+
+static const SharedNoiseModel model;
+static const LieScalar Zero(0);
 
 //  SETDEBUG("ISAM2 update", true);
 //  SETDEBUG("ISAM2 update verbose", true);
@@ -203,11 +206,11 @@ struct ConsistencyVisitor
     consistent(true), isam(isam) {}
   int operator()(const ISAM2::sharedClique& node, int& parentData)
   {
-    if(std::find(isam.roots().begin(), isam.roots().end(), node) == isam.roots().end())
+    if(find(isam.roots().begin(), isam.roots().end(), node) == isam.roots().end())
     {
       if(node->parent_.expired())
         consistent = false;
-      if(std::find(node->parent()->children.begin(), node->parent()->children.end(), node) == node->parent()->children.end())
+      if(find(node->parent()->children.begin(), node->parent()->children.end(), node) == node->parent()->children.end())
         consistent = false;
     }
     BOOST_FOREACH(Key j, node->conditional()->frontals())
@@ -223,7 +226,7 @@ struct ConsistencyVisitor
 bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, const ISAM2& isam, Test& test, TestResult& result) {
 
   TestResult& result_ = result;
-  const std::string name_ = test.getName();
+  const string name_ = test.getName();
 
   Values actual = isam.calculateEstimate();
   Values expected = fullinit.retract(fullgraph.linearize(fullinit)->optimize());
@@ -285,19 +288,19 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 TEST(ISAM2, AddFactorsStep1)
 {
   NonlinearFactorGraph nonlinearFactors;
-  nonlinearFactors += PriorFactor<LieVector>(10, LieVector(), gtsam::SharedNoiseModel());
+  nonlinearFactors += PriorFactor<LieScalar>(10, Zero, model);
   nonlinearFactors += NonlinearFactor::shared_ptr();
-  nonlinearFactors += PriorFactor<LieVector>(11, LieVector(), gtsam::SharedNoiseModel());
+  nonlinearFactors += PriorFactor<LieScalar>(11, Zero, model);
 
   NonlinearFactorGraph newFactors;
-  newFactors += PriorFactor<LieVector>(1, LieVector(), gtsam::SharedNoiseModel());
-  newFactors += PriorFactor<LieVector>(2, LieVector(), gtsam::SharedNoiseModel());
+  newFactors += PriorFactor<LieScalar>(1, Zero, model);
+  newFactors += PriorFactor<LieScalar>(2, Zero, model);
 
   NonlinearFactorGraph expectedNonlinearFactors;
-  expectedNonlinearFactors += PriorFactor<LieVector>(10, LieVector(), gtsam::SharedNoiseModel());
-  expectedNonlinearFactors += PriorFactor<LieVector>(1, LieVector(), gtsam::SharedNoiseModel());
-  expectedNonlinearFactors += PriorFactor<LieVector>(11, LieVector(), gtsam::SharedNoiseModel());
-  expectedNonlinearFactors += PriorFactor<LieVector>(2, LieVector(), gtsam::SharedNoiseModel());
+  expectedNonlinearFactors += PriorFactor<LieScalar>(10, Zero, model);
+  expectedNonlinearFactors += PriorFactor<LieScalar>(1, Zero, model);
+  expectedNonlinearFactors += PriorFactor<LieScalar>(11, Zero, model);
+  expectedNonlinearFactors += PriorFactor<LieScalar>(2, Zero, model);
 
   const FastVector<size_t> expectedNewFactorIndices = list_of(1)(3);
 
@@ -694,18 +697,17 @@ namespace {
 TEST(ISAM2, marginalizeLeaves1)
 {
   ISAM2 isam;
-
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += PriorFactor<LieScalar>(0, Zero, model);
 
-  factors += BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
+  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
 
   Values values;
-  values.insert(0, LieVector(0.0));
-  values.insert(1, LieVector(0.0));
-  values.insert(2, LieVector(0.0));
+  values.insert(0, Zero);
+  values.insert(1, Zero);
+  values.insert(2, Zero);
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));
@@ -724,18 +726,18 @@ TEST(ISAM2, marginalizeLeaves2)
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += PriorFactor<LieScalar>(0, Zero, model);
 
-  factors += BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
+  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(2, 3, Zero, model);
 
   Values values;
-  values.insert(0, LieVector(0.0));
-  values.insert(1, LieVector(0.0));
-  values.insert(2, LieVector(0.0));
-  values.insert(3, LieVector(0.0));
+  values.insert(0, Zero);
+  values.insert(1, Zero);
+  values.insert(2, Zero);
+  values.insert(3, Zero);
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));
@@ -755,25 +757,25 @@ TEST(ISAM2, marginalizeLeaves3)
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += PriorFactor<LieScalar>(0, Zero, model);
 
-  factors += BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
+  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
 
-  factors += BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(2, 3, Zero, model);
 
-  factors += BetweenFactor<LieVector>(3, 4, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(4, 5, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(3, 5, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(3, 4, Zero, model);
+  factors += BetweenFactor<LieScalar>(4, 5, Zero, model);
+  factors += BetweenFactor<LieScalar>(3, 5, Zero, model);
 
   Values values;
-  values.insert(0, LieVector(0.0));
-  values.insert(1, LieVector(0.0));
-  values.insert(2, LieVector(0.0));
-  values.insert(3, LieVector(0.0));
-  values.insert(4, LieVector(0.0));
-  values.insert(5, LieVector(0.0));
+  values.insert(0, Zero);
+  values.insert(1, Zero);
+  values.insert(2, Zero);
+  values.insert(3, Zero);
+  values.insert(4, Zero);
+  values.insert(5, Zero);
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));
@@ -795,14 +797,14 @@ TEST(ISAM2, marginalizeLeaves4)
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += PriorFactor<LieScalar>(0, Zero, model);
+  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
 
   Values values;
-  values.insert(0, LieVector(0.0));
-  values.insert(1, LieVector(0.0));
-  values.insert(2, LieVector(0.0));
+  values.insert(0, Zero);
+  values.insert(1, Zero);
+  values.insert(2, Zero);
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));

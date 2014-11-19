@@ -29,10 +29,10 @@ TEST( InvDepthFactor, Project1) {
   Point2 expected_uv = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector inv_landmark((Vector(5) << 1., 0., 1., 0., 0.));
-  LieScalar inv_depth(1./4);
+  Vector5 inv_landmark((Vector(5) << 1., 0., 1., 0., 0.));
+  double inv_depth(1./4);
   Point2 actual_uv = inv_camera.project(inv_landmark, inv_depth);
-  EXPECT(assert_equal(expected_uv, actual_uv));
+  EXPECT(assert_equal(expected_uv, actual_uv,1e-8));
   EXPECT(assert_equal(Point2(640,480), actual_uv));
 }
 
@@ -45,8 +45,8 @@ TEST( InvDepthFactor, Project2) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector diag_landmark((Vector(5) << 0., 0., 1., M_PI/4., atan(1.0/sqrt(2.0))));
-  LieScalar inv_depth(1/sqrt(3.0));
+  Vector5 diag_landmark((Vector(5) << 0., 0., 1., M_PI/4., atan(1.0/sqrt(2.0))));
+  double inv_depth(1/sqrt(3.0));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
 }
@@ -60,8 +60,8 @@ TEST( InvDepthFactor, Project3) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector diag_landmark((Vector(5) << 0., 0., 0., M_PI/4., atan(2./sqrt(2.0))));
-  LieScalar inv_depth( 1./sqrt(1.0+1+4));
+  Vector5 diag_landmark((Vector(5) << 0., 0., 0., M_PI/4., atan(2./sqrt(2.0))));
+  double inv_depth( 1./sqrt(1.0+1+4));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
 }
@@ -75,81 +75,81 @@ TEST( InvDepthFactor, Project4) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector diag_landmark((Vector(5) << 0., 0., 0., atan(4.0/1), atan(2./sqrt(1.+16.))));
-  LieScalar inv_depth(1./sqrt(1.+16.+4.));
+  Vector5 diag_landmark((Vector(5) << 0., 0., 0., atan(4.0/1), atan(2./sqrt(1.+16.))));
+  double inv_depth(1./sqrt(1.+16.+4.));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
 }
 
 
 /* ************************************************************************* */
-Point2 project_(const Pose3& pose, const LieVector& landmark, const LieScalar& inv_depth) {
+Point2 project_(const Pose3& pose, const Vector5& landmark, const double& inv_depth) {
   return InvDepthCamera3<Cal3_S2>(pose,K).project(landmark, inv_depth); }
 
 TEST( InvDepthFactor, Dproject_pose)
 {
-  LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
-  LieScalar inv_depth(1./4);
-  Matrix expected = numericalDerivative31<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
+  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
+  double inv_depth(1./4);
+  Matrix expected = numericalDerivative31(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
-  Point2 uv = inv_camera.project(landmark, inv_depth, actual, boost::none, boost::none);
+  inv_camera.project(landmark, inv_depth, actual, boost::none, boost::none);
   EXPECT(assert_equal(expected,actual,1e-6));
 }
 
 /* ************************************************************************* */
 TEST( InvDepthFactor, Dproject_landmark)
 {
-  LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
-  LieScalar inv_depth(1./4);
-  Matrix expected = numericalDerivative32<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
+  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
+  double inv_depth(1./4);
+  Matrix expected = numericalDerivative32(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
-  Point2 uv = inv_camera.project(landmark, inv_depth, boost::none, actual, boost::none);
+  inv_camera.project(landmark, inv_depth, boost::none, actual, boost::none);
   EXPECT(assert_equal(expected,actual,1e-7));
 }
 
 /* ************************************************************************* */
 TEST( InvDepthFactor, Dproject_inv_depth)
 {
-  LieVector landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
-  LieScalar inv_depth(1./4);
-  Matrix expected = numericalDerivative33<Point2,Pose3,LieVector>(project_,level_pose, landmark, inv_depth);
+  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
+  double inv_depth(1./4);
+  Matrix expected = numericalDerivative33(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
-  Point2 uv = inv_camera.project(landmark, inv_depth, boost::none, boost::none, actual);
+  inv_camera.project(landmark, inv_depth, boost::none, boost::none, actual);
   EXPECT(assert_equal(expected,actual,1e-7));
 }
 
 /* ************************************************************************* */
 TEST(InvDepthFactor, backproject)
 {
-  LieVector expected((Vector(5) << 0.,0.,1., 0.1,0.2));
-  LieScalar inv_depth(1./4);
+  Vector expected((Vector(5) << 0.,0.,1., 0.1,0.2));
+  double inv_depth(1./4);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Point2 z = inv_camera.project(expected, inv_depth);
 
-  LieVector actual_vec;
-  LieScalar actual_inv;
+  Vector5 actual_vec;
+  double actual_inv;
   boost::tie(actual_vec, actual_inv) = inv_camera.backproject(z, 4);
   EXPECT(assert_equal(expected,actual_vec,1e-7));
-  EXPECT(assert_equal(inv_depth,actual_inv,1e-7));
+  EXPECT_DOUBLES_EQUAL(inv_depth,actual_inv,1e-7);
 }
 
 /* ************************************************************************* */
 TEST(InvDepthFactor, backproject2)
 {
   // backwards facing camera
-  LieVector expected((Vector(5) << -5.,-5.,2., 3., -0.1));
-  LieScalar inv_depth(1./10);
+  Vector expected((Vector(5) << -5.,-5.,2., 3., -0.1));
+  double inv_depth(1./10);
   InvDepthCamera3<Cal3_S2> inv_camera(Pose3(Rot3::ypr(1.5,0.1, -1.5), Point3(-5, -5, 2)),K);
   Point2 z = inv_camera.project(expected, inv_depth);
 
-  LieVector actual_vec;
-  LieScalar actual_inv;
+  Vector5 actual_vec;
+  double actual_inv;
   boost::tie(actual_vec, actual_inv) = inv_camera.backproject(z, 10);
   EXPECT(assert_equal(expected,actual_vec,1e-7));
-  EXPECT(assert_equal(inv_depth,actual_inv,1e-7));
+  EXPECT_DOUBLES_EQUAL(inv_depth,actual_inv,1e-7);
 }
 
 /* ************************************************************************* */

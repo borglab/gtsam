@@ -56,21 +56,25 @@ namespace gtsam {
   Rot3::Rot3(const Matrix& R) :
       quaternion_(Matrix3(R)) {}
 
-//  /* ************************************************************************* */
-//   Rot3::Rot3(const Matrix3& R) :
-//       quaternion_(R) {}
+  /* ************************************************************************* */
+  Rot3::Rot3(const Quaternion& q) :
+      quaternion_(q) {
+  }
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Quaternion& q) : quaternion_(q) {}
+  Rot3 Rot3::Rx(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX()));
+  }
 
   /* ************************************************************************* */
-  Rot3 Rot3::Rx(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX())); }
+  Rot3 Rot3::Ry(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY()));
+  }
 
   /* ************************************************************************* */
-  Rot3 Rot3::Ry(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY())); }
-
-  /* ************************************************************************* */
-  Rot3 Rot3::Rz(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ())); }
+  Rot3 Rot3::Rz(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ()));
+  }
 
   /* ************************************************************************* */
   Rot3 Rot3::RzRyRx(double x, double y, double z) { return Rot3(
@@ -82,6 +86,19 @@ namespace gtsam {
   /* ************************************************************************* */
   Rot3 Rot3::rodriguez(const Vector& w, double theta) {
     return Quaternion(Eigen::AngleAxisd(theta, w)); }
+
+  /* ************************************************************************* */
+  Rot3 Rot3::compose(const Rot3& R2) const {
+    return Rot3(quaternion_ * R2.quaternion_);
+  }
+
+  /* ************************************************************************* */
+  Rot3 Rot3::compose(const Rot3& R2,
+  boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2) const {
+    if (H1) *H1 = R2.transpose();
+    if (H2) *H2 = I3;
+    return Rot3(quaternion_ * R2.quaternion_);
+  }
 
   /* ************************************************************************* */
   Rot3 Rot3::compose(const Rot3& R2,
@@ -100,6 +117,14 @@ namespace gtsam {
   Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
     if (H1) *H1 = -matrix();
     return Rot3(quaternion_.inverse());
+  }
+
+  /* ************************************************************************* */
+  // TODO: Could we do this? It works in Rot3M but not here, probably because
+  // here we create an intermediate value by calling matrix()
+  // const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+  Matrix3 Rot3::transpose() const {
+    return matrix().transpose();
   }
 
   /* ************************************************************************* */
@@ -160,9 +185,6 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
-
-  /* ************************************************************************* */
-  Matrix3 Rot3::transpose() const {return quaternion_.toRotationMatrix().transpose();}
 
   /* ************************************************************************* */
   Point3 Rot3::r1() const { return Point3(quaternion_.toRotationMatrix().col(0)); }

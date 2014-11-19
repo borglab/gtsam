@@ -38,13 +38,13 @@ const Rot2 rot2A, rot2B = Rot2::fromAngle(M_PI_2);
 const Rot2 rot2C = Rot2::fromAngle(M_PI-0.01), rot2D = Rot2::fromAngle(M_PI+0.01);
 
 /* ************************************************************************* */
-LieVector evalFactorError3(const Pose3RotationPrior& factor, const Pose3& x) {
-  return LieVector(factor.evaluateError(x));
+Vector evalFactorError3(const Pose3RotationPrior& factor, const Pose3& x) {
+  return factor.evaluateError(x);
 }
 
 /* ************************************************************************* */
-LieVector evalFactorError2(const Pose2RotationPrior& factor, const Pose2& x) {
-  return LieVector(factor.evaluateError(x));
+Vector evalFactorError2(const Pose2RotationPrior& factor, const Pose2& x) {
+  return factor.evaluateError(x);
 }
 
 /* ************************************************************************* */
@@ -53,8 +53,7 @@ TEST( testPoseRotationFactor, level3_zero_error ) {
   Pose3RotationPrior factor(poseKey, rot3A, model3);
   Matrix actH1;
   EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
-  Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
-      boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
+  Matrix expH1 = numericalDerivative22(evalFactorError3, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
 
@@ -68,13 +67,10 @@ TEST( testPoseRotationFactor, level3_error ) {
 #else
   EXPECT(assert_equal((Vector(3) << -0.1, -0.2, -0.3), factor.evaluateError(pose1, actH1),1e-2));
 #endif
+  Matrix expH1 = numericalDerivative22(evalFactorError3, factor, pose1, 1e-5);
   // the derivative is more complex, but is close to the identity for Rot3 around the origin
-  /*
-  Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
-      boost::bind(evalFactorError3, factor, _1), pose1, 1e-2);
-  EXPECT(assert_equal(expH1, actH1, tol));*/
   // If not using true expmap will be close, but not exact around the origin
-
+  // EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
@@ -83,8 +79,7 @@ TEST( testPoseRotationFactor, level2_zero_error ) {
   Pose2RotationPrior factor(poseKey, rot2A, model1);
   Matrix actH1;
   EXPECT(assert_equal(zero(1), factor.evaluateError(pose1, actH1)));
-  Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
-      boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
+  Matrix expH1 = numericalDerivative22(evalFactorError2, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
 
@@ -94,8 +89,7 @@ TEST( testPoseRotationFactor, level2_error ) {
   Pose2RotationPrior factor(poseKey, rot2B, model1);
   Matrix actH1;
   EXPECT(assert_equal((Vector(1) << -M_PI_2), factor.evaluateError(pose1, actH1)));
-  Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
-      boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
+  Matrix expH1 = numericalDerivative22(evalFactorError2, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
 
@@ -105,8 +99,7 @@ TEST( testPoseRotationFactor, level2_error_wrap ) {
   Pose2RotationPrior factor(poseKey, rot2D, model1);
   Matrix actH1;
   EXPECT(assert_equal((Vector(1) << -0.02), factor.evaluateError(pose1, actH1)));
-  Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
-      boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
+  Matrix expH1 = numericalDerivative22(evalFactorError2, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
 

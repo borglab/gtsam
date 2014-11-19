@@ -46,7 +46,7 @@ Vector Cal3Bundler::k() const {
 }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::vector() const {
+Vector3 Cal3Bundler::vector() const {
   return (Vector(3) << f_, k1_, k2_);
 }
 
@@ -62,6 +62,45 @@ bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
       || fabs(v0_ - K.v0_) > tol)
     return false;
   return true;
+}
+
+/* ************************************************************************* */
+Point2 Cal3Bundler::uncalibrate(const Point2& p) const {
+  //  r = x^2 + y^2;
+  //  g = (1 + k(1)*r + k(2)*r^2);
+  //  pi(:,i) = g * pn(:,i)
+  const double x = p.x(), y = p.y();
+  const double r = x * x + y * y;
+  const double g = 1. + (k1_ + k2_ * r) * r;
+  const double u = g * x, v = g * y;
+  return Point2(u0_ + f_ * u, v0_ + f_ * v);
+}
+
+/* ************************************************************************* */
+Point2 Cal3Bundler::uncalibrate(const Point2& p, //
+    boost::optional<Matrix23&> Dcal, boost::optional<Matrix2&> Dp) const {
+  //  r = x^2 + y^2;
+  //  g = (1 + k(1)*r + k(2)*r^2);
+  //  pi(:,i) = g * pn(:,i)
+  const double x = p.x(), y = p.y();
+  const double r = x * x + y * y;
+  const double g = 1. + (k1_ + k2_ * r) * r;
+  const double u = g * x, v = g * y;
+
+  // Derivatives make use of intermediate variables above
+  if (Dcal) {
+    double rx = r * x, ry = r * y;
+    *Dcal << u, f_ * rx, f_ * r * rx, v, f_ * ry, f_ * r * ry;
+  }
+
+  if (Dp) {
+    const double a = 2. * (k1_ + 2. * k2_ * r);
+    const double axx = a * x * x, axy = a * x * y, ayy = a * y * y;
+    *Dp << g + axx, axy, axy, g + ayy;
+    *Dp *= f_;
+  }
+
+  return Point2(u0_ + f_ * u, v0_ + f_ * v);
 }
 
 /* ************************************************************************* */
@@ -150,7 +189,7 @@ Cal3Bundler Cal3Bundler::retract(const Vector& d) const {
 }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
+Vector3 Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
   return T2.vector() - vector();
 }
 

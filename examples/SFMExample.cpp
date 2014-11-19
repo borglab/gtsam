@@ -85,8 +85,8 @@ int main(int argc, char* argv[]) {
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t i = 0; i < poses.size(); ++i) {
+    SimpleCamera camera(poses[i], *K);
     for (size_t j = 0; j < points.size(); ++j) {
-      SimpleCamera camera(poses[i], *K);
       Point2 measurement = camera.project(points[j]);
       graph.push_back(GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K));
     }
@@ -111,6 +111,8 @@ int main(int argc, char* argv[]) {
   /* Optimize the graph and print results */
   Values result = DoglegOptimizer(graph, initialEstimate).optimize();
   result.print("Final results:\n");
+  cout << "initial error = " << graph.error(initialEstimate) << endl;
+  cout << "final error = " << graph.error(result) << endl;
 
   return 0;
 }

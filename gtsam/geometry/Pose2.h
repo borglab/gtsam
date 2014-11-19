@@ -33,10 +33,9 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose2 : public DerivedValue<Pose2> {
+class GTSAM_EXPORT Pose2 {
 
 public:
-  static const size_t dimension = 3;
 
   /** Pose Concept requirements */
   typedef Rot2 Rotation;
@@ -123,20 +122,29 @@ public:
   /**
    * Return relative pose between p1 and p2, in p1 coordinate frame
    */
-  Pose2 between(const Pose2& p2,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+  Pose2 between(const Pose2& p2) const;
 
+  /**
+   * Return relative pose between p1 and p2, in p1 coordinate frame
+   */
+  Pose2 between(const Pose2& p2, boost::optional<Matrix3&> H1,
+      boost::optional<Matrix3&> H2) const;
+
+  /**
+   * Return relative pose between p1 and p2, in p1 coordinate frame
+   */
+  Pose2 between(const Pose2& p2, boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) const;
 
   /// @}
   /// @name Manifold
   /// @{
 
   /// Dimensionality of tangent space = 3 DOF - used to autodetect sizes
-  inline static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return 3; }
 
   /// Dimensionality of tangent space = 3 DOF
-  inline size_t dim() const { return dimension; }
+  inline size_t dim() const { return 3; }
 
   /// Retraction from R^3 \f$ [T_x,T_y,\theta] \f$ to Pose2 manifold neighborhood around current pose
   Pose2 retract(const Vector& v) const;
@@ -183,9 +191,17 @@ public:
   /// @{
 
   /** Return point coordinates in pose coordinate frame */
+  Point2 transform_to(const Point2& point) const;
+
+  /** Return point coordinates in pose coordinate frame */
   Point2 transform_to(const Point2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      boost::optional<Matrix23&> H1,
+      boost::optional<Matrix2&> H2) const;
+
+  /** Return point coordinates in pose coordinate frame */
+  Point2 transform_to(const Point2& point,
+      boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) const;
 
   /** Return point coordinates in global frame */
   Point2 transform_from(const Point2& point,
@@ -277,14 +293,14 @@ public:
    */
   static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(2, 2); }
 
+  /// @}
+
 private:
 
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("Pose2",
-        boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
@@ -303,7 +319,18 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
-/// @}
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Pose2> : public boost::true_type {
+};
+
+template<>
+struct dimension<Pose2> : public boost::integral_constant<int, 3> {
+};
+
+}
 
 } // namespace gtsam
 

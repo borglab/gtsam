@@ -31,7 +31,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3_S2: public DerivedValue<Cal3_S2> {
+class GTSAM_EXPORT Cal3_S2 {
 private:
   double fx_, fy_, s_, u0_, v0_;
 
@@ -144,12 +144,29 @@ public:
   /**
    * convert intrinsic coordinates xy to image coordinates uv
    * @param p point in intrinsic coordinates
+   * @return point in image coordinates
+   */
+  Point2 uncalibrate(const Point2& p) const;
+
+  /**
+   * convert intrinsic coordinates xy to image coordinates uv, fixed derivaitves
+   * @param p point in intrinsic coordinates
    * @param Dcal optional 2*5 Jacobian wrpt Cal3_S2 parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal =
-      boost::none, boost::optional<Matrix&> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal,
+      boost::optional<Matrix2&> Dp) const;
+
+  /**
+   * convert intrinsic coordinates xy to image coordinates uv, dynamic derivaitves
+   * @param p point in intrinsic coordinates
+   * @param Dcal optional 2*5 Jacobian wrpt Cal3_S2 parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in image coordinates
+   */
+  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal,
+      boost::optional<Matrix&> Dp) const;
 
   /**
    * convert image coordinates uv to intrinsic coordinates xy
@@ -209,9 +226,6 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("Cal3_S2",
-            boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(fx_);
     ar & BOOST_SERIALIZATION_NVP(fy_);
     ar & BOOST_SERIALIZATION_NVP(s_);
@@ -222,5 +236,23 @@ private:
   /// @}
 
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<Cal3_S2> : public boost::true_type {
+};
+
+template<>
+struct dimension<Cal3_S2> : public boost::integral_constant<int, 5> {
+};
+
+template<>
+struct zero<Cal3_S2> {
+  static Cal3_S2 value() { return Cal3_S2();}
+};
+
+}
 
 } // \ namespace gtsam

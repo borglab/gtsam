@@ -28,7 +28,7 @@
 namespace wrap {
 
   // Forward declarations
-  struct Class;
+  class Class;
   
 /** Attributes about valid classes, both for classes defined in this module and
  * also those forward-declared from others.  At the moment this only contains

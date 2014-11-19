@@ -10,7 +10,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/EssentialMatrix.h>
 #include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/base/LieScalar.h>
 #include <iostream>
 
 namespace gtsam {
@@ -87,14 +86,13 @@ public:
  * Binary factor that optimizes for E and inverse depth d: assumes measurement
  * in image 2 is perfect, and returns re-projection error in image 1
  */
-class EssentialMatrixFactor2: public NoiseModelFactor2<EssentialMatrix,
-    LieScalar> {
+class EssentialMatrixFactor2: public NoiseModelFactor2<EssentialMatrix, double> {
 
   Point3 dP1_; ///< 3D point corresponding to measurement in image 1
   Point2 pn_; ///< Measurement in image 2, in ideal coordinates
   double f_; ///< approximate conversion factor for error scaling
 
-  typedef NoiseModelFactor2<EssentialMatrix, LieScalar> Base;
+  typedef NoiseModelFactor2<EssentialMatrix, double> Base;
   typedef EssentialMatrixFactor2 This;
 
 public:
@@ -155,7 +153,7 @@ public:
    * @param E essential matrix
    * @param d inverse depth d
    */
-  Vector evaluateError(const EssentialMatrix& E, const LieScalar& d,
+  Vector evaluateError(const EssentialMatrix& E, const double& d,
       boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
           boost::none) const {
 
@@ -180,12 +178,14 @@ public:
     } else {
 
       // Calculate derivatives. TODO if slow: optimize with Mathematica
-      //     3*2        3*3       3*3        2*3
-      Matrix D_1T2_dir, DdP2_rot, DP2_point, Dpn_dP2;
+      //     3*2        3*3       3*3
+      Matrix D_1T2_dir, DdP2_rot, DP2_point;
 
       Point3 _1T2 = E.direction().point3(D_1T2_dir);
       Point3 d1T2 = d * _1T2;
       Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2, DdP2_rot, DP2_point);
+
+      Matrix23 Dpn_dP2;
       pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
 
       if (DE) {
@@ -245,7 +245,8 @@ public:
    */
   template<class CALIBRATION>
   EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
-      const Rot3& cRb, const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
+      const Rot3& cRb, const SharedNoiseModel& model,
+      boost::shared_ptr<CALIBRATION> K) :
       EssentialMatrixFactor2(key1, key2, pA, pB, model, K), cRb_(cRb) {
   }
 
@@ -267,7 +268,7 @@ public:
    * @param E essential matrix
    * @param d inverse depth d
    */
-  Vector evaluateError(const EssentialMatrix& E, const LieScalar& d,
+  Vector evaluateError(const EssentialMatrix& E, const double& d,
       boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
           boost::none) const {
     if (!DE) {

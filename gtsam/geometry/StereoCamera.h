@@ -36,7 +36,7 @@ public:
  * A stereo camera class, parameterize by left camera pose and stereo calibration
  * @addtogroup geometry
  */
-class GTSAM_EXPORT StereoCamera  : public DerivedValue<StereoCamera> {
+class GTSAM_EXPORT StereoCamera {
 
 private:
   Pose3 leftCamPose_;
@@ -147,12 +147,28 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("StereoCamera",
-       boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(leftCamPose_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<StereoCamera> : public boost::true_type {
+};
+
+template<>
+struct dimension<StereoCamera> : public boost::integral_constant<int, 6> {
+};
+
+template<>
+struct zero<StereoCamera> {
+  static StereoCamera value() { return StereoCamera();}
+};
+
+}
 
 }

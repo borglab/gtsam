@@ -27,7 +27,6 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/LieVector.h>
 #include <tests/smallExample.h>
 #include <tests/simulated2D.h>
 #include <gtsam/linear/GaussianFactor.h>
@@ -197,8 +196,7 @@ TEST( NonlinearFactor, size )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_constraint1 )
 {
-  Vector sigmas = (Vector(2) << 0.2, 0.0);
-  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
+  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(Vector2(0.2,0));
 
   Point2 mu(1., -1.);
   NonlinearFactorGraph::sharedFactor f0(new simulated2D::Prior(mu, constraint, X(1)));
@@ -208,17 +206,16 @@ TEST( NonlinearFactor, linearize_constraint1 )
   GaussianFactor::shared_ptr actual = f0->linearize(config);
 
   // create expected
-  Vector b = (Vector(2) << 0., -3.);
+  Vector2 b(0., -3.);
   JacobianFactor expected(X(1), (Matrix(2, 2) << 5.0, 0.0, 0.0, 1.0), b,
-    noiseModel::Constrained::MixedSigmas((Vector(2) << 1.0, 0.0)));
+    noiseModel::Constrained::MixedSigmas(Vector2(1,0)));
   CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_constraint2 )
 {
-  Vector sigmas = (Vector(2) << 0.2, 0.0);
-  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
+  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(Vector2(0.2,0));
 
   Point2 z3(1.,-1.);
   simulated2D::Measurement f0(z3, constraint, X(1),L(1));
@@ -229,21 +226,21 @@ TEST( NonlinearFactor, linearize_constraint2 )
   GaussianFactor::shared_ptr actual = f0.linearize(config);
 
   // create expected
-  Matrix A = (Matrix(2, 2) << 5.0, 0.0, 0.0, 1.0);
-  Vector b = (Vector(2) << -15., -3.);
+  Matrix2 A; A << 5.0, 0.0, 0.0, 1.0;
+  Vector2 b(-15., -3.);
   JacobianFactor expected(X(1), -1*A, L(1), A, b,
-    noiseModel::Constrained::MixedSigmas((Vector(2) << 1.0, 0.0)));
+    noiseModel::Constrained::MixedSigmas(Vector2(1,0)));
   CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */
-class TestFactor4 : public NoiseModelFactor4<LieVector, LieVector, LieVector, LieVector> {
+class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
 public:
-  typedef NoiseModelFactor4<LieVector, LieVector, LieVector, LieVector> Base;
+  typedef NoiseModelFactor4<double, double, double, double> Base;
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0)), X(1), X(2), X(3), X(4)) {}
 
   virtual Vector
-    evaluateError(const LieVector& x1, const LieVector& x2, const LieVector& x3, const LieVector& x4,
+    evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
         boost::optional<Matrix&> H3 = boost::none,
@@ -266,10 +263,10 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor4) {
   TestFactor4 tf;
   Values tv;
-  tv.insert(X(1), LieVector((Vector(1) << 1.0)));
-  tv.insert(X(2), LieVector((Vector(1) << 2.0)));
-  tv.insert(X(3), LieVector((Vector(1) << 3.0)));
-  tv.insert(X(4), LieVector((Vector(1) << 4.0)));
+  tv.insert(X(1), double((1.0)));
+  tv.insert(X(2), double((2.0)));
+  tv.insert(X(3), double((3.0)));
+  tv.insert(X(4), double((4.0)));
   EXPECT(assert_equal((Vector(1) << 10.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(25.0/2.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
@@ -285,9 +282,9 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
 }
 
 /* ************************************************************************* */
-class TestFactor5 : public NoiseModelFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> {
+class TestFactor5 : public NoiseModelFactor5<double, double, double, double, double> {
 public:
-  typedef NoiseModelFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> Base;
+  typedef NoiseModelFactor5<double, double, double, double, double> Base;
   TestFactor5() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0)), X(1), X(2), X(3), X(4), X(5)) {}
 
   virtual Vector
@@ -312,11 +309,11 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor5) {
   TestFactor5 tf;
   Values tv;
-  tv.insert(X(1), LieVector((Vector(1) << 1.0)));
-  tv.insert(X(2), LieVector((Vector(1) << 2.0)));
-  tv.insert(X(3), LieVector((Vector(1) << 3.0)));
-  tv.insert(X(4), LieVector((Vector(1) << 4.0)));
-  tv.insert(X(5), LieVector((Vector(1) << 5.0)));
+  tv.insert(X(1), double((1.0)));
+  tv.insert(X(2), double((2.0)));
+  tv.insert(X(3), double((3.0)));
+  tv.insert(X(4), double((4.0)));
+  tv.insert(X(5), double((5.0)));
   EXPECT(assert_equal((Vector(1) << 15.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(56.25/2.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
@@ -334,9 +331,9 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
 }
 
 /* ************************************************************************* */
-class TestFactor6 : public NoiseModelFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> {
+class TestFactor6 : public NoiseModelFactor6<double, double, double, double, double, double> {
 public:
-  typedef NoiseModelFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> Base;
+  typedef NoiseModelFactor6<double, double, double, double, double, double> Base;
   TestFactor6() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0)), X(1), X(2), X(3), X(4), X(5), X(6)) {}
 
   virtual Vector
@@ -364,12 +361,12 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor6) {
   TestFactor6 tf;
   Values tv;
-  tv.insert(X(1), LieVector((Vector(1) << 1.0)));
-  tv.insert(X(2), LieVector((Vector(1) << 2.0)));
-  tv.insert(X(3), LieVector((Vector(1) << 3.0)));
-  tv.insert(X(4), LieVector((Vector(1) << 4.0)));
-  tv.insert(X(5), LieVector((Vector(1) << 5.0)));
-  tv.insert(X(6), LieVector((Vector(1) << 6.0)));
+  tv.insert(X(1), double((1.0)));
+  tv.insert(X(2), double((2.0)));
+  tv.insert(X(3), double((3.0)));
+  tv.insert(X(4), double((4.0)));
+  tv.insert(X(5), double((5.0)));
+  tv.insert(X(6), double((6.0)));
   EXPECT(assert_equal((Vector(1) << 21.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(110.25/2.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));

@@ -26,12 +26,9 @@
 
 namespace wrap {
 
-struct TemplateInstantiationTypedef {
-  std::vector<std::string> classNamespaces;
-  std::string className;
-  std::vector<std::string> namespaces;
-  std::string name;
-  std::vector<std::vector<std::string> > typeList;
+struct TemplateInstantiationTypedef : public Qualified {
+  Qualified class_;
+  std::vector<Qualified> typeList;
 
   Class findAndExpand(const std::vector<Class>& classes) const;
 };

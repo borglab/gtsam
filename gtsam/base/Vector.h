@@ -36,7 +36,12 @@ typedef Eigen::VectorXd Vector;
 // Commonly used fixed size vectors
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
+typedef Eigen::Matrix<double, 4, 1> Vector4;
+typedef Eigen::Matrix<double, 5, 1> Vector5;
 typedef Eigen::Matrix<double, 6, 1> Vector6;
+typedef Eigen::Matrix<double, 7, 1> Vector7;
+typedef Eigen::Matrix<double, 8, 1> Vector8;
+typedef Eigen::Matrix<double, 9, 1> Vector9;
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
