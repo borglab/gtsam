@@ -2101,15 +2101,6 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 };
 
 
-#include <gtsam/slam/DistanceFactor.h>
-template<T = {gtsam::Point2, gtsam::Point3}>
-virtual class DistanceFactor : gtsam::NoiseModelFactor {
-  DistanceFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
-
-  // enabling serialization functionality
-  void serialize() const;
-};
-
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
@@ -2139,20 +2130,6 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimple
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
 typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
-#include <gtsam/slam/DroneDynamicsFactor.h>
-virtual class DroneDynamicsFactor : gtsam::NoiseModelFactor {
-  DroneDynamicsFactor(size_t key1, size_t key2, const gtsam::LieVector& measured, const gtsam::noiseModel::Base* noiseModel);
-};
-
-#include <gtsam/slam/DroneDynamicsVelXYFactor.h>
-virtual class DroneDynamicsVelXYFactor : gtsam::NoiseModelFactor {
-  DroneDynamicsVelXYFactor(size_t key1, size_t key2, size_t key3, Vector motors, Vector acc, const gtsam::noiseModel::Base* noiseModel);
-};
-
-#include <gtsam/slam/CageFactor.h>
-virtual class CageFactor : gtsam::NoiseModelFactor {
-  CageFactor(size_t key1, const gtsam::Pose3& pose, double cageBoundary, const gtsam::noiseModel::Base* noiseModel);
-};
 
 #include <gtsam/slam/BearingFactor.h>
 template<POSE, POINT, ROTATION>
