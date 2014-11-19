@@ -49,7 +49,7 @@ public:
     typedef std::pair<Key, Matrix> KeyMatrix;
     std::vector < KeyMatrix > QF;
     QF.reserve(m);
-    // Below, we compute each 2m*D block A_j = Q_j * F_j = (2m*2) * (2*D)
+    // Below, we compute each mZDim*D block A_j = Q_j * F_j = (mZDim*ZDim) * (Zdim*D)
     BOOST_FOREACH(const typename Base::KeyMatrix2D& it, Fblocks)
       QF.push_back(KeyMatrix(it.first, Q.block(0, ZDim * j++, m2, ZDim) * it.second));
     // Which is then passed to the normal JacobianFactor constructor

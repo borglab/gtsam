@@ -143,12 +143,12 @@ namespace gtsam {
     }
 
     /** convenient function to get a Point2 from the left image */
-    inline Point2 point2() const {
+    Point2 point2() const {
       return Point2(uL_, v_);
     }
 
     /** convenient function to get a Point2 from the right image */
-    inline Point2 const right(){
+    Point2 right() const {
       return Point2(uR_, v_);
     }
 
