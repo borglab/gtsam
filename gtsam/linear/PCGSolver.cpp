@@ -33,6 +33,7 @@ void PCGSolverParameters::print(ostream &os) const {
 
 /*****************************************************************************/
 PCGSolver::PCGSolver(const PCGSolverParameters &p) {
+  parameters_ = p;
   preconditioner_ = createPreconditioner(p.preconditioner_);
 }
 
