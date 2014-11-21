@@ -87,8 +87,7 @@ namespace gtsam
 
             // Check for indeterminant solution
             if(soln.hasNaN()) {
-              std::cout << "OptimizeClique failed: solution has NaN!" << std::endl;
-              clique->print("Problematic clique: ");
+              std::cout << "linearAlgorithms::OptimizeClique failed: solution has NaN!" << std::endl;
               throw IndeterminantLinearSystemException(c.keys().front());
             }
 

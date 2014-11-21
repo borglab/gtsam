@@ -170,7 +170,6 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
         GaussianConditional& c = *clique->conditional();
         // Solve matrix
         Vector xS;
-        Vector xS0; // Duy: for debug only
         {
           // Count dimensions of vector
           DenseIndex dim = 0;
@@ -190,19 +189,12 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
             vectorPos += parentVector.size();
           }
         }
-        xS0 = xS;
         xS = c.getb() - c.get_S() * xS;
         Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
 
         // Check for indeterminant solution
         if(soln.hasNaN()) {
           std::cout << "iSAM2 failed: solution has NaN!!" << std::endl;
-          c.print("Clique conditional: ");
-          std::cout << "R: " << c.get_R() << std::endl;
-          std::cout << "S: " << c.get_S().transpose() << std::endl;
-          std::cout << "b: " << c.getb().transpose() << std::endl;
-          std::cout << "xS0: " << xS0.transpose() << std::endl;
-          std::cout << "xS: " << xS.transpose() << std::endl;
           throw IndeterminantLinearSystemException(c.keys().front());
         }
 
