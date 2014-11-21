@@ -362,9 +362,9 @@ void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysT
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
   if(keysToMove && keysToMove->size() > 0) {
-    ordering_ = Ordering::COLAMDConstrainedFirst(factors_, std::vector<Key>(keysToMove->begin(), keysToMove->end()));
+    ordering_ = Ordering::colamdConstrainedFirst(factors_, std::vector<Key>(keysToMove->begin(), keysToMove->end()));
   }else{
-    ordering_ = Ordering::COLAMD(factors_);
+    ordering_ = Ordering::colamd(factors_);
   }
 
 }
