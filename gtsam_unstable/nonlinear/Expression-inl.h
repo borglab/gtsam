@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/Callrecord.h>
+#include <gtsam_unstable/nonlinear/CallRecord.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>

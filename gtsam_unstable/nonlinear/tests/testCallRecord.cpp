@@ -15,10 +15,10 @@
  * @author Frank Dellaert
  * @author Paul Furgale
  * @author Hannes Sommer
- * @brief unit tests for Callrecord class
+ * @brief unit tests for CallRecord class
  */
 
-#include <gtsam_unstable/nonlinear/Callrecord.h>
+#include <gtsam_unstable/nonlinear/CallRecord.h>
 
 #include <CppUnitLite/TestHarness.h>
 
