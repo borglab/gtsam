@@ -96,7 +96,7 @@ struct ReverseADImplementor; // forward for CallRecord's friend declaration
  * It is implemented in the function-style ExpressionNode's nested Record class below.
  */
 template<int Cols>
-struct CallRecord: private internal::ReverseADInterface<MaxVirtualStaticRows,
+struct CallRecord: virtual private internal::ReverseADInterface<MaxVirtualStaticRows,
     Cols> {
 
   inline void print(const std::string& indent) const {
@@ -154,9 +154,10 @@ private:
 };
 
 template<typename Derived, int Cols>
-struct ReverseADImplementor<Derived, 0, Cols> : CallRecord<Cols> {
+struct ReverseADImplementor<Derived, 0, Cols>
+  : virtual internal::ReverseADInterface<MaxVirtualStaticRows, Cols> {
 private:
-  using CallRecord<Cols>::_reverseAD;
+  using internal::ReverseADInterface<MaxVirtualStaticRows, Cols>::_reverseAD;
   const Derived & derived() const {
     return static_cast<const Derived&>(*this);
   }
@@ -177,7 +178,7 @@ private:
  */
 template<typename Derived, int Cols>
 struct CallRecordImplementor: ReverseADImplementor<Derived,
-    MaxVirtualStaticRows, Cols> {
+    MaxVirtualStaticRows, Cols>, CallRecord<Cols>{
 private:
   const Derived & derived() const {
     return static_cast<const Derived&>(*this);
