@@ -144,5 +144,181 @@ TEST( Preconditioner, buildBlocks2 ) {
 }
 
 /* ************************************************************************* */
+TEST( BlockJacobiPreconditioner, verySimpleLinerSystem) {
+  // Ax = [4 1][u] = [1]  x0 = [2]
+  //      [1 3][v]   [2]       [1]
+  //
+  // exact solution x = [1/11, 7/11]';
+  //
+
+  // Create a Gaussian Factor Graph
+  GaussianFactorGraph simpleGFG;
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 4, 1, 1, 3), (Vector(2) << 1,2 ), noiseModel::Unit::Create(2));
+  //simpleGFG.print("Factors\n");
+
+  // Expected Hessian block diagonal matrices
+  std::map<Key, Matrix> expectedHessian =simpleGFG.hessianBlockDiagonal();
+  // Actual Hessian block diagonal matrices from BlockJacobiPreconditioner::build
+  std::vector<Matrix> actualHessian = buildBlocks(simpleGFG, KeyInfo(simpleGFG));
+  // Compare the number of block diagonal matrices
+  EXPECT_LONGS_EQUAL(expectedHessian.size(), actualHessian.size());
+
+  // Compare the values of matrices
+  std::map<Key, Matrix>::const_iterator it1 = expectedHessian.begin();
+  std::vector<Matrix>::const_iterator it2 = actualHessian.begin();
+
+  // the function 'build' in BlockJacobianPreconditioner stores in 'buffer'
+  // the cholesky decomposion of each block of the hessian
+  // In this example there is a single block (i.e., a single value)
+  // and the corresponding block of the Hessian is
+  //
+  // H0 = [17 7; 7 10]
+  //
+  EXPECT(assert_equal(it1->second, *it2));
+  // TODO: Matrix expectedH0 ...
+  //EXPECT(assert_equal(it1->second, *it2));
+
+  // The corresponding Cholesky decomposition is:
+  // R = chol(H0) = [4.1231  1.6977   0   2.6679] (from Matlab)
+  Preconditioner::shared_ptr preconditioner = createPreconditioner(boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>());
+  preconditioner->build(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>());
+  boost::shared_ptr<BlockJacobiPreconditioner> blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditioner>(preconditioner);
+  double* buf = blockJacobi->getBuffer();
+  for(int i=0; i<4; ++i){}
+    // TODO: EXPECT(assert_equal(number..,buf[i]));
+
+}
+/* ************************************************************************* */
+TEST( PCGsolver, verySimpleLinearSystem) {
+
+  // Ax = [4 1][u] = [1]  x0 = [2]
+  //      [1 3][v]   [2]       [1]
+  //
+  // exact solution x = [1/11, 7/11]';
+  //
+
+  // Create a Gaussian Factor Graph
+  GaussianFactorGraph simpleGFG;
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 4, 1, 1, 3), (Vector(2) << 1,2 ), noiseModel::Unit::Create(2));
+  //simpleGFG.print("Factors\n");
+
+  // Exact solution already known
+  VectorValues exactSolution;
+  exactSolution.insert(0, (Vector(2) << 1./11., 7./11.));
+  //exactSolution.print("Exact");
+
+  // Solve the system using direct method
+  VectorValues deltaDirect = simpleGFG.optimize();
+  EXPECT(assert_equal(exactSolution, deltaDirect, 1e-7));
+  //deltaDirect.print("Direct");
+
+  // Solve the system using PCG
+  // With Dummy preconditioner
+  gtsam::PCGSolverParameters::shared_ptr pcg = boost::make_shared<gtsam::PCGSolverParameters>();
+  pcg->preconditioner_ = boost::make_shared<gtsam::DummyPreconditionerParameters>();
+  pcg->setMaxIterations(500);
+  pcg->setEpsilon_abs(0.0);
+  pcg->setEpsilon_rel(0.0);
+  //pcg->setVerbosity("ERROR");
+  VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG);
+  EXPECT(assert_equal(exactSolution, deltaPCGDummy, 1e-7));
+
+  // With Block-Jacobi preconditioner
+  gtsam::PCGSolverParameters::shared_ptr pcgJacobi = boost::make_shared<gtsam::PCGSolverParameters>();
+  pcgJacobi->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
+  pcgJacobi->setMaxIterations(500);
+  pcgJacobi->setEpsilon_abs(0.0);
+  pcgJacobi->setEpsilon_rel(0.0);
+  VectorValues deltaPCGJacobi = PCGSolver(*pcgJacobi).optimize(simpleGFG);
+
+  // Failed!
+  EXPECT(assert_equal(exactSolution, deltaPCGJacobi, 1e-5));
+  //deltaPCGJacobi.print("PCG Jacobi");
+}
+
+/* ************************************************************************* */
+TEST(PCGSolver, simpleLinearSystem) {
+  // Create a Gaussian Factor Graph
+  GaussianFactorGraph simpleGFG;
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 10, 0, 0, 10), (Vector(2) << -1, -1), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -10, 0, 0, -10), 0, (Matrix(2,2)<< 10, 0, 0, 10), (Vector(2) << 2, -1), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -5, 0, 0, -5), 1, (Matrix(2,2)<< 5, 0, 0, 5), (Vector(2) << 0, 1), unit2);
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< -5, 0, 0, -5), 1, (Matrix(2,2)<< 5, 0, 0, 5), (Vector(2) << -1, 1.5), unit2);
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 1, 0, 0, 1), (Vector(2) << 0, 0), unit2);
+  simpleGFG += JacobianFactor(1, (Matrix(2,2)<< 1, 0, 0, 1), (Vector(2) << 0, 0), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 1, 0, 0, 1), (Vector(2) << 0, 0), unit2);
+  //simpleGFG.print("Factors\n");
+
+  // Expected solution
+  VectorValues expectedSolution;
+  expectedSolution.insert(0, (Vector(2) << 0.100498, -0.196756));
+  expectedSolution.insert(2, (Vector(2) << -0.0990413, -0.0980577));
+  expectedSolution.insert(1, (Vector(2) << -0.0973252, 0.100582));
+
+  // Solve the system using direct method
+  VectorValues deltaDirect = simpleGFG.optimize();
+  EXPECT(assert_equal(expectedSolution, deltaDirect, 1e-5));
+  //expectedSolution.print("Expected");
+  //deltaCholesky.print("Direct");
+
+  // Solve the system using PCG
+  VectorValues initial;
+  initial.insert(0, (Vector(2) << 0.1, -0.1));
+  initial.insert(1, (Vector(2) << -0.1, 0.1));
+  initial.insert(2, (Vector(2) << -0.1, -0.1));
+
+  // With Dummy preconditioner
+  gtsam::PCGSolverParameters::shared_ptr pcg = boost::make_shared<gtsam::PCGSolverParameters>();
+  pcg->preconditioner_ = boost::make_shared<gtsam::DummyPreconditionerParameters>();
+  pcg->setMaxIterations(500);
+  pcg->setEpsilon_abs(0.0);
+  pcg->setEpsilon_rel(0.0);
+  //pcg->setVerbosity("ERROR");
+
+  VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>(), initial);
+  // Failed!
+  EXPECT(assert_equal(expectedSolution, deltaPCGDummy, 1e-5));
+  //deltaPCGDummy.print("PCG Dummy");
+
+  // Solve the system using Preconditioned Conjugate Gradient
+  pcg->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
+  VectorValues deltaPCGJacobi = PCGSolver(*pcg).optimize(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>(), initial);
+  // Failed!
+  EXPECT(assert_equal(expectedSolution, deltaPCGJacobi, 1e-5));
+  //deltaPCGJacobi.print("PCG Jacobi");
+
+  // Test that the retrieval of the diagonal blocks of the Jacobian are correct.
+    std::map<Key, Matrix> expectedHessian =simpleGFG.hessianBlockDiagonal();
+    std::vector<Matrix> actualHessian = buildBlocks(simpleGFG, KeyInfo(simpleGFG));
+    EXPECT_LONGS_EQUAL(expectedHessian.size(), actualHessian.size());
+    std::map<Key, Matrix>::const_iterator it1 = expectedHessian.begin();
+    std::vector<Matrix>::const_iterator it2 = actualHessian.begin();
+
+    // The corresponding Cholesky decomposition is:
+    // R = chol(H0) = [4.1231  1.6977   0   2.6679] (from Matlab)
+    Preconditioner::shared_ptr preconditioner = createPreconditioner(boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>());
+    preconditioner->build(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>());
+    boost::shared_ptr<BlockJacobiPreconditioner> blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditioner>(preconditioner);
+    double* buf = blockJacobi->getBuffer();
+    for(int i=0; i<4; ++i){}
+    // TODO: EXPECT(assert_equal(number..,buf[i]));
+
+    size_t i = 0;
+    for(; it1!=expectedHessian.end(); it1++, it2++){
+      EXPECT(assert_equal(it1->second, *it2));
+      Matrix R_i(2,2);
+      R_i(0,0) = buf[i+0];
+      R_i(0,1) = buf[i+1];
+      R_i(1,0) = buf[i+2];
+      R_i(1,1) = buf[i+3];
+
+      Matrix actualH_i = R_i.transpose() * R_i;// i-th diagonal block
+      EXPECT(assert_equal(it1->second, actualH_i));
+      i += 4;
+    }
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
