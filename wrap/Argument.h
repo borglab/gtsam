@@ -122,13 +122,5 @@ struct ArgumentList: public std::vector<Argument> {
 
 };
 
-template<class T>
-inline void verifyArguments(const std::vector<std::string>& validArgs,
-    const std::map<std::string, T>& vt) {
-  typedef typename std::map<std::string, T>::value_type NamedMethod;
-  BOOST_FOREACH(const NamedMethod& namedMethod, vt)
-    namedMethod.second.verifyArguments(validArgs);
-}
-
 } // \namespace wrap
 

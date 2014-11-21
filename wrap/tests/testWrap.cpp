@@ -64,12 +64,11 @@ TEST( wrap, check_exception ) {
   THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
   CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 
-  // clean out previous generated code
-  fs::remove_all("actual_deps");
-
-  string path = topdir + "/wrap/tests";
-  Module module(path.c_str(), "testDependencies",enable_verbose);
-  CHECK_EXCEPTION(module.matlab_code("actual_deps", headerPath), DependencyMissing);
+//  // TODO: matlab_code does not throw this anymore, so check constructor
+//  fs::remove_all("actual_deps"); // clean out previous generated code
+//  string path = topdir + "/wrap/tests";
+//  Module module(path.c_str(), "testDependencies",enable_verbose);
+//  CHECK_EXCEPTION(module.matlab_code("actual_deps"), DependencyMissing);
 }
 
 /* ************************************************************************* */
@@ -413,7 +412,7 @@ TEST( wrap, matlab_code_namespaces ) {
   // emit MATLAB code
   string exp_path = path + "/tests/expected_namespaces/";
   string act_path = "actual_namespaces/";
-  module.matlab_code("actual_namespaces", headerPath);
+  module.matlab_code("actual_namespaces");
 
 
   EXPECT(files_equal(exp_path + "ClassD.m", act_path + "ClassD.m" ));
@@ -441,7 +440,7 @@ TEST( wrap, matlab_code_geometry ) {
 
   // emit MATLAB code
   // make_geometry will not compile, use make testwrap to generate real make
-  module.matlab_code("actual", headerPath);
+  module.matlab_code("actual");
 #ifndef WRAP_DISABLE_SERIALIZE
   string epath = path + "/tests/expected/";
 #else
@@ -459,6 +458,25 @@ TEST( wrap, matlab_code_geometry ) {
   EXPECT(files_equal(epath + "MyFactorPosePoint2.m" , apath + "MyFactorPosePoint2.m"));
   EXPECT(files_equal(epath + "aGlobalFunction.m"    , apath + "aGlobalFunction.m"    ));
   EXPECT(files_equal(epath + "overloadedGlobalFunction.m"    , apath + "overloadedGlobalFunction.m"    ));
+}
+
+/* ************************************************************************* */
+TEST( wrap, python_code_geometry ) {
+  // Parse into class object
+  string header_path = topdir + "/wrap/tests";
+  Module module(header_path,"geometry",enable_verbose);
+  string path = topdir + "/wrap";
+
+  // clean out previous generated code
+  fs::remove_all("actual-python");
+
+  // emit MATLAB code
+  // make_geometry will not compile, use make testwrap to generate real make
+  module.python_wrapper("actual-python");
+  string epath = path + "/tests/expected-python/";
+  string apath = "actual-python/";
+
+  EXPECT(files_equal(epath + "geometry_python.cpp", apath + "geometry_python.cpp" ));
 }
 
 /* ************************************************************************* */

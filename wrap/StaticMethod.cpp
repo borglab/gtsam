@@ -30,14 +30,6 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void StaticMethod::addOverload(bool verbose, Str name, const ArgumentList& args,
-    const ReturnValue& retVal, const Qualified& instName) {
-
-  Function::addOverload(verbose, name, instName);
-  SignatureOverloads::addOverload(args, retVal);
-}
-
-/* ************************************************************************* */
 void StaticMethod::proxy_header(FileWriter& proxyFile) const {
   string upperName = matlabName();
   upperName[0] = toupper(upperName[0], locale());
@@ -170,6 +162,13 @@ string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
     expanded += ("<" + instName.qualifiedName("::") + ">");
 
   return expanded;
+}
+
+/* ************************************************************************* */
+void StaticMethod::python_wrapper(FileWriter& wrapperFile,
+    Str className) const {
+  wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className << "::" << name_
+      << ");\n";
 }
 
 /* ************************************************************************* */
