@@ -143,11 +143,9 @@ void BlockJacobiPreconditioner::build(
   }
 
   /* getting the block diagonals over the factors */
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg ) {
-    std::map<Key, Matrix> hessianMap = gf->hessianBlockDiagonal();
-    BOOST_FOREACH ( const Matrix hessian, hessianMap | boost::adaptors::map_values)
-      blocks.push_back(hessian);
-  }
+  std::map<Key, Matrix> hessianMap =gfg.hessianBlockDiagonal();
+  BOOST_FOREACH ( const Matrix hessian, hessianMap | boost::adaptors::map_values)
+    blocks.push_back(hessian);
 
   /* if necessary, allocating the memory for cacheing the factorization results */
   if ( nnz > bufferSize_ ) {
