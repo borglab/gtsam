@@ -326,14 +326,6 @@ TEST(JacobianFactor, operators )
   EXPECT(assert_equal(-A.transpose()*b2, expectedG.vector(keys)));
   VectorValues actualG = lf.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
-
-  // test gradient at zero scaled by a dual vector
-  Vector dual = (Vector(2) << 3.0, 5.0);
-  VectorValues actualGscaled = lf.gradientAtZero(dual);
-  VectorValues expectedGscaled;
-  expectedGscaled.insert(1, (Vector(2) << 60,-50));
-  expectedGscaled.insert(2, (Vector(2) << -60, 50));
-  EXPECT(assert_equal(expectedGscaled, actualGscaled));
 }
 
 /* ************************************************************************* */
@@ -584,7 +576,7 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   Matrix m(1,2);
   Matrix Aempty = m.topRows(0);
   Vector bempty = m.block(0,0,0,1);
-  JacobianFactor expectedLF(2, Aempty, bempty, noiseModel::Constrained::All(0));
+  JacobianFactor expectedLF(2, Aempty, bempty, noiseModel::Diagonal::Sigmas(Vector()));
   EXPECT(assert_equal(expectedLF, *actual.second));
 
   // verify CG

@@ -8,7 +8,7 @@
 #include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/LPSolver.h>
+#include <gtsam_unstable/linear/LPSolver.h>
 
 using namespace std;
 using namespace gtsam;

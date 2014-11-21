@@ -179,14 +179,6 @@ if(GTSAM_WITH_EIGEN_MKL AND GTSAM_USE_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
 endif()
 
 ###############################################################################
-# Find lp_solve
-include(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/lp_solve_5.5/cmake/Findlpsolve.cmake)
-message("lpsolve_INCLUDE_DIRS: " ${lpsolve_INCLUDE_DIRS})
-include_directories(${lpsolve_INCLUDE_DIRS})
-list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${lpsolve_LIBRARY})
-
-
-###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
 ### Disabled until our patches are included in Eigen ###
 ### See:  http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)

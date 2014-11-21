@@ -19,7 +19,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/QPSolver.h>
+#include <gtsam_unstable/linear/QPSolver.h>
 
 using namespace std;
 using namespace gtsam;
