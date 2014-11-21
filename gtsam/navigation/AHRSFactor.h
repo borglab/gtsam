@@ -37,28 +37,29 @@ public:
   /** CombinedPreintegratedMeasurements accumulates (integrates) the Gyroscope measurements (rotation rates)
        * and the corresponding covariance matrix. The measurements are then used to build the Preintegrated AHRS factor*/
   class PreintegratedMeasurements {
-  public:
+    friend class AHRSFactor;
+  protected:
     imuBias::ConstantBias biasHat_;///< Acceleration and angular rate bias values used during preintegration. Note that we won't be using the accelerometer
     Matrix measurementCovariance_;///< (Raw measurements uncertainty) Covariance of the vector [measuredOmega] in R^(3X3)
 
     Rot3 deltaRij_; ///< Preintegrated relative orientation (in frame i)
     double deltaTij_; ///< Time interval from i to j
-    Matrix3 delRdelBiasOmega; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
-    Matrix PreintMeasCov; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
-
+    Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
+    Matrix PreintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
+  public:
     /** Default constructor, initialize with no measurements */
     PreintegratedMeasurements(
         const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
         const Matrix3& measuredOmegaCovariance ///< Covariance matrix of measured angular rate
         ) : biasHat_(bias), measurementCovariance_(3,3), deltaTij_(0.0),
-          delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(3,3) {
+          delRdelBiasOmega_(Matrix3::Zero()), PreintMeasCov_(3,3) {
       measurementCovariance_ <<measuredOmegaCovariance;
-      PreintMeasCov = Matrix::Zero(3,3);
+      PreintMeasCov_ = Matrix::Zero(3,3);
     }
 
     PreintegratedMeasurements() :
       biasHat_(imuBias::ConstantBias()), measurementCovariance_(Matrix::Zero(3,3)), deltaTij_(0.0),
-      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(3,3)) {}
+      delRdelBiasOmega_(Matrix3::Zero()), PreintMeasCov_(Matrix::Zero(3,3)) {}
 
     /** print */
     void print(const std::string& s = "Preintegrated Measurements: ") const {
@@ -67,7 +68,7 @@ public:
       deltaRij_.print(" deltaRij ");
       std::cout << " measurementCovariance [" << measurementCovariance_ << " ]"
           << std::endl;
-      std::cout << " PreintMeasCov [ " << PreintMeasCov << " ]" << std::endl;
+      std::cout << " PreintMeasCov [ " << PreintMeasCov_ << " ]" << std::endl;
     }
 
     /** equals */
@@ -78,28 +79,20 @@ public:
               expected.measurementCovariance_, tol)
               && deltaRij_.equals(expected.deltaRij_, tol)
               && std::fabs(deltaTij_ - expected.deltaTij_) < tol
-              && equal_with_abs_tol(delRdelBiasOmega, expected.delRdelBiasOmega,
+              && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_,
                   tol);
     }
-    Matrix measurementCovariance() const {
-      return measurementCovariance_;
-    }
-    Matrix deltaRij() const {
-      return deltaRij_.matrix();
-    }
-    double deltaTij() const {
-      return deltaTij_;
-    }
-
-    Vector biasHat() const {
-      return biasHat_.vector();
-    }
-
+    Matrix measurementCovariance() const {return measurementCovariance_;}
+    Matrix deltaRij() const {return deltaRij_.matrix();}
+    double deltaTij() const {return deltaTij_;}
+    Vector biasHat() const {return biasHat_.vector();}
+    Matrix3 delRdelBiasOmega() {return delRdelBiasOmega_;}
+    Matrix PreintMeasCov() {return PreintMeasCov_;}
     void resetIntegration() {
       deltaRij_ = Rot3();
       deltaTij_ = 0.0;
-      delRdelBiasOmega = Matrix3::Zero();
-      PreintMeasCov = Matrix::Zero(9, 9);
+      delRdelBiasOmega_ = Matrix3::Zero();
+      PreintMeasCov_ = Matrix::Zero(9, 9);
     }
 
     /** Add a single Gyroscope measurement to the preintegration. */
@@ -125,7 +118,7 @@ public:
 
       // Update Jacobians
       /* ----------------------------------------------------------------------------------------------------------------------- */
-      delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega
+      delRdelBiasOmega_ = Rincr.inverse().matrix() * delRdelBiasOmega_
           - Jr_theta_incr * deltaT;
 
       // Update preintegrated measurements covariance
@@ -151,7 +144,7 @@ public:
 
       // first order uncertainty propagation
       // the deltaT allows to pass from continuous time noise to discrete time noise
-      PreintMeasCov = F * PreintMeasCov * F.transpose()
+      PreintMeasCov_ = F * PreintMeasCov_ * F.transpose()
                   + measurementCovariance_ * deltaT;
 
       // Update preintegrated measurements
@@ -186,7 +179,7 @@ public:
       ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
       ar & BOOST_SERIALIZATION_NVP(deltaRij_);
       ar & BOOST_SERIALIZATION_NVP(deltaTij_);
-      ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega);
+      ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
     }
   };
 
@@ -222,7 +215,7 @@ public:
       ) :
       Base(
           noiseModel::Gaussian::Covariance(
-              preintegratedMeasurements.PreintMeasCov), rot_i, rot_j, bias), preintegratedMeasurements_(
+              preintegratedMeasurements.PreintMeasCov_), rot_i, rot_j, bias), preintegratedMeasurements_(
           preintegratedMeasurements), omegaCoriolis_(omegaCoriolis), body_P_sensor_(
           body_P_sensor) {
   }
@@ -294,7 +287,7 @@ public:
     /* ---------------------------------------------------------------------------------------------------- */
     Rot3 deltaRij_biascorrected =
         preintegratedMeasurements_.deltaRij_.retract(
-            preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr,
+            preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr,
             Rot3::EXPMAP);
 
     Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
@@ -337,9 +330,9 @@ public:
       Matrix3 Jrinv_theta_bc = Rot3::rightJacobianExpMapSO3inverse(
           theta_biascorrected);
       Matrix3 Jr_JbiasOmegaIncr = Rot3::rightJacobianExpMapSO3(
-          preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr);
+          preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr);
       Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc
-          * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega;
+          * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega_;
 
       H3->resize(3, 6);
       (*H3) <<
@@ -375,7 +368,7 @@ public:
     /* ---------------------------------------------------------------------------------------------------- */
     const Rot3 deltaRij_biascorrected =
         preintegratedMeasurements.deltaRij_.retract(
-            preintegratedMeasurements.delRdelBiasOmega * biasOmegaIncr,
+            preintegratedMeasurements.delRdelBiasOmega_ * biasOmegaIncr,
             Rot3::EXPMAP);
     // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
     Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);

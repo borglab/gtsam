@@ -362,7 +362,7 @@ TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3, 3)));
   EXPECT(
-      assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega,
+      assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega_,
           1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
 }
 
@@ -451,7 +451,7 @@ TEST (AHRSFactor, graphTest) {
 //  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create Factor
-  noiseModel::Base::shared_ptr model = noiseModel::Gaussian::Covariance(pre_int_data.PreintMeasCov);
+  noiseModel::Base::shared_ptr model = noiseModel::Gaussian::Covariance(pre_int_data.PreintMeasCov_);
 //  cout<<"model: \n"<<noiseModel::Gaussian::Covariance(pre_int_data.PreintMeasCov)<<endl;
 //  cout<<"pre int measurement cov: \n "<<pre_int_data.PreintMeasCov<<endl;
   NonlinearFactorGraph graph;

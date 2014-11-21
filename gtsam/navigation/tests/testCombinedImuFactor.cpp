@@ -68,7 +68,7 @@ Vector3 evaluatePreintegratedMeasurementsPosition(
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
 {
   return evaluatePreintegratedMeasurements(bias,
-      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaPij_;
+      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaPij();
 }
 
 Vector3 evaluatePreintegratedMeasurementsVelocity(
@@ -79,7 +79,7 @@ Vector3 evaluatePreintegratedMeasurementsVelocity(
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
 {
   return evaluatePreintegratedMeasurements(bias,
-      measuredAccs, measuredOmegas, deltaTs).deltaVij_;
+      measuredAccs, measuredOmegas, deltaTs).deltaVij();
 }
 
 Rot3 evaluatePreintegratedMeasurementsRotation(
@@ -90,7 +90,7 @@ Rot3 evaluatePreintegratedMeasurementsRotation(
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
 {
   return evaluatePreintegratedMeasurements(bias,
-      measuredAccs, measuredOmegas, deltaTs).deltaRij_;
+      measuredAccs, measuredOmegas, deltaTs).deltaRij();
 }
 
 }
@@ -127,7 +127,7 @@ TEST( CombinedImuFactor, PreintegratedMeasurements )
 
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  EXPECT(assert_equal(Vector(expected1.deltaPij_), Vector(actual1.deltaPij_), tol));
+  EXPECT(assert_equal(Vector(expected1.deltaPij()), Vector(actual1.deltaPij()), tol));
 //  EXPECT(assert_equal(Vector(expected1.deltaVij), Vector(actual1.deltaVij), tol));
 //  EXPECT(assert_equal(expected1.deltaRij, actual1.deltaRij, tol));
 //  DOUBLES_EQUAL(expected1.deltaTij, actual1.deltaTij, tol);
@@ -181,7 +181,7 @@ TEST( CombinedImuFactor, ErrorWithBiases )
     // Create factor
     ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
-    noiseModel::Gaussian::shared_ptr Combinedmodel = noiseModel::Gaussian::Covariance(Combined_pre_int_data.PreintMeasCov);
+    noiseModel::Gaussian::shared_ptr Combinedmodel = noiseModel::Gaussian::Covariance(Combined_pre_int_data.PreintMeasCov());
     CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), Combined_pre_int_data, gravity, omegaCoriolis);
 
 
@@ -254,12 +254,12 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements )
   Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
 
   // Compare Jacobians
-  EXPECT(assert_equal(expectedDelPdelBiasAcc, preintegrated.delPdelBiasAcc));
-  EXPECT(assert_equal(expectedDelPdelBiasOmega, preintegrated.delPdelBiasOmega));
-  EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc));
-  EXPECT(assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega));
+  EXPECT(assert_equal(expectedDelPdelBiasAcc, preintegrated.delPdelBiasAcc()));
+  EXPECT(assert_equal(expectedDelPdelBiasOmega, preintegrated.delPdelBiasOmega()));
+  EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc()));
+  EXPECT(assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega()));
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3,3)));
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega, 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega(), 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
 }
 
 #include <gtsam/linear/GaussianFactorGraph.h>
