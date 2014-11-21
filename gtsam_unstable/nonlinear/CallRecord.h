@@ -115,6 +115,11 @@ struct CallRecord: private internal::ReverseADInterface<MaxVirtualStaticRows,
             dFdT), jacobians);
   }
 
+  inline void reverseAD(const Matrix & dFdT,
+      JacobianMap& jacobians) const {
+    _reverseAD(dFdT, jacobians);
+  }
+
   virtual ~CallRecord() {
   }
 
