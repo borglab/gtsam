@@ -27,8 +27,8 @@ namespace gtsam {
 template<class FACTOR>
 void MetisIndex::augment(const FactorGraph<FACTOR>& factors)
 {
-	std::map<int, FastSet<int> > adjMap;
-	std::map<int, FastSet<int> >::iterator adjMapIt;
+  std::map<Key, FastSet<Key> > adjMap;
+  std::map<Key, FastSet<Key> >::iterator adjMapIt;
 	std::set<Key> keySet;
         
 	/* ********** Convert to CSR format ********** */

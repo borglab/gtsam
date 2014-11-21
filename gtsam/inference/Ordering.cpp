@@ -204,12 +204,43 @@ namespace gtsam {
   {
     gttic(Ordering_METIS);
 
-    vector<idx_t> xadj = met.xadj();
-    vector<idx_t>  adj = met.adj();
-		size_t minKey = met.minKey();
+    vector<Key> xadj = met.xadj();
+    vector<Key>  adj = met.adj();
+		Key minKey      = met.minKey();
+
+    // TODO(Andrew): Debug
+    Key min = std::numeric_limits<Key>::max();
+    for (int i = 0; i < adj.size(); i++)
+    {
+      if (adj[i] < min)
+        min = adj[i];
+    }
+
+    std::cout << "Min: " << min << " minkey: " << minKey << std::endl;
 
 		// Normalize, subtract the smallest key
-		std::transform(adj.begin(), adj.end(), adj.begin(), std::bind2nd(std::minus<size_t>(), minKey));
+		//std::transform(adj.begin(), adj.end(), adj.begin(), std::bind2nd(std::minus<Key>(), minKey));
+    for (vector<Key>::iterator it = adj.begin(); it != adj.end(); ++it)
+      *it = *it - minKey;
+
+    // Cast the adjacency formats into idx_t (int32)
+    // NOTE: Keys can store quite large values and hence may overflow during conversion to int
+    //       It's important that the normalization is performed first.
+    vector<idx_t> adj_idx;
+    for (vector<Key>::iterator it = adj.begin(); it != adj.end(); ++it)
+      adj_idx.push_back(static_cast<int>(*it));
+
+    vector<idx_t> xadj_idx;
+    for (vector<Key>::iterator it = xadj.begin(); it != xadj.end(); ++it)
+      xadj_idx.push_back(static_cast<int>(*it));
+
+    // TODO(Andrew): Debug
+    for (int i = 0; i < adj.size(); i++)
+    {
+      assert(adj[i] >= 0);
+      if (adj[i] < 0)
+        std::cout << adj[i] << std::endl;
+    }
 
     vector<idx_t> perm, iperm;
 
@@ -222,7 +253,7 @@ namespace gtsam {
 
     int outputError;
       
-    outputError = METIS_NodeND(&size, &xadj[0], &adj[0], NULL, NULL, &perm[0], &iperm[0]);
+    outputError = METIS_NodeND(&size, &xadj_idx[0], &adj_idx[0], NULL, NULL, &perm[0], &iperm[0]);
     Ordering result;
 
     if (outputError != METIS_OK)
@@ -234,7 +265,7 @@ namespace gtsam {
 	  result.resize(size);
 		for (size_t j = 0; j < size; ++j){
 			// We have to add the minKey value back to obtain the original key in the Values
-			result[j] = perm[j] + minKey;
+			result[j] = (Key)perm[j] + minKey;
 		}
     return result;
   }
