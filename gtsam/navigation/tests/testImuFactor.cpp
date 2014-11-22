@@ -101,8 +101,8 @@ Rot3 evaluatePreintegratedMeasurementsRotation(
     const list<double>& deltaTs,
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
 {
-  return evaluatePreintegratedMeasurements(bias,
-      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaRij();
+  return Rot3(evaluatePreintegratedMeasurements(bias,
+      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaRij());
 }
 
 Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega, const double deltaT)
@@ -142,7 +142,7 @@ TEST( ImuFactor, PreintegratedMeasurements )
 
   EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij()), 1e-6));
   EXPECT(assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij()), 1e-6));
-  EXPECT(assert_equal(expectedDeltaR1, actual1.deltaRij(), 1e-6));
+  EXPECT(assert_equal(expectedDeltaR1, Rot3(actual1.deltaRij()), 1e-6));
   DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij(), 1e-6);
 
   // Integrate again
@@ -157,7 +157,7 @@ TEST( ImuFactor, PreintegratedMeasurements )
 
   EXPECT(assert_equal(Vector(expectedDeltaP2), Vector(actual2.deltaPij()), 1e-6));
   EXPECT(assert_equal(Vector(expectedDeltaV2), Vector(actual2.deltaVij()), 1e-6));
-  EXPECT(assert_equal(expectedDeltaR2, actual2.deltaRij(), 1e-6));
+  EXPECT(assert_equal(expectedDeltaR2, Rot3(actual2.deltaRij()), 1e-6));
   DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-6);
 }
 

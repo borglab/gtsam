@@ -137,17 +137,17 @@ struct PoseVelocity {
             && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_, tol);
       }
       Matrix measurementCovariance() const {return measurementCovariance_;}
-      Rot3 deltaRij() const {return deltaRij_;}
+      Matrix deltaRij() const {return deltaRij_.matrix();}
       double deltaTij() const{return deltaTij_;}
       Vector deltaPij() const {return deltaPij_;}
       Vector deltaVij() const {return deltaVij_;}
       Vector biasHat() const { return biasHat_.vector();}
-      Matrix delPdelBiasAcc() { return delPdelBiasAcc_;}
-      Matrix delPdelBiasOmega() { return delPdelBiasOmega_;}
-      Matrix delVdelBiasAcc() { return delVdelBiasAcc_;}
-      Matrix delVdelBiasOmega() { return delVdelBiasOmega_;}
-      Matrix delRdelBiasOmega() { return delRdelBiasOmega_;}
-      Matrix PreintMeasCov() { return PreintMeasCov_;}
+      Matrix delPdelBiasAcc() const { return delPdelBiasAcc_;}
+      Matrix delPdelBiasOmega() const { return delPdelBiasOmega_;}
+      Matrix delVdelBiasAcc() const { return delVdelBiasAcc_;}
+      Matrix delVdelBiasOmega() const { return delVdelBiasOmega_;}
+      Matrix delRdelBiasOmega() const{ return delRdelBiasOmega_;}
+      Matrix PreintMeasCov() const { return PreintMeasCov_;}
 
 
       void resetIntegration(){

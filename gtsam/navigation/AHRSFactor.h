@@ -83,7 +83,7 @@ public:
                   tol);
     }
     Matrix measurementCovariance() const {return measurementCovariance_;}
-    Rot3 deltaRij() const {return deltaRij_;}
+    Matrix deltaRij() const {return deltaRij_.matrix();}
     double deltaTij() const {return deltaTij_;}
     Vector biasHat() const {return biasHat_.vector();}
     Matrix3 delRdelBiasOmega() {return delRdelBiasOmega_;}

@@ -89,8 +89,8 @@ Rot3 evaluatePreintegratedMeasurementsRotation(
     const list<double>& deltaTs,
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
 {
-  return evaluatePreintegratedMeasurements(bias,
-      measuredAccs, measuredOmegas, deltaTs).deltaRij();
+  return Rot3(evaluatePreintegratedMeasurements(bias,
+      measuredAccs, measuredOmegas, deltaTs).deltaRij());
 }
 
 }
