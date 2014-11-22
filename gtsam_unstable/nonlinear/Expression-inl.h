@@ -28,19 +28,10 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/bind.hpp>
 
-// template meta-programming headers, TODO not all needed?
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/plus.hpp>
-#include <boost/mpl/front.hpp>
-#include <boost/mpl/pop_front.hpp>
+// template meta-programming headers
 #include <boost/mpl/fold.hpp>
-#include <boost/mpl/empty_base.hpp>
-#include <boost/mpl/placeholders.hpp>
-#include <boost/mpl/transform.hpp>
-#include <boost/mpl/at.hpp>
 namespace MPL = boost::mpl::placeholders;
-//
-//#include <new> // for placement new
+
 #include <map>
 
 class ExpressionFactorBinaryTest;
@@ -171,8 +162,9 @@ public:
       content.ptr->startReverseAD(jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
-  template <typename DerivedMatrix>
-  void reverseAD(const Eigen::MatrixBase<DerivedMatrix> & dTdA, JacobianMap& jacobians) const {
+  template<typename DerivedMatrix>
+  void reverseAD(const Eigen::MatrixBase<DerivedMatrix> & dTdA,
+      JacobianMap& jacobians) const {
     if (kind == Leaf)
       handleLeafCase(dTdA.eval(), jacobians, content.key);
     else if (kind == Function)
@@ -435,7 +427,7 @@ struct FunctionalBase: ExpressionNode<T> {
     }
     void startReverseAD(JacobianMap& jacobians) const {
     }
-    template <typename SomeMatrix>
+    template<typename SomeMatrix>
     void reverseAD(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
     }
   };
@@ -511,8 +503,9 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     }
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    template <int Rows, int Cols>
-    void reverseAD(const Eigen::Matrix<double, Rows, Cols> & dFdT, JacobianMap& jacobians) const {
+    template<int Rows, int Cols>
+    void reverseAD(const Eigen::Matrix<double, Rows, Cols> & dFdT,
+        JacobianMap& jacobians) const {
       Base::Record::reverseAD(dFdT, jacobians);
       This::trace.reverseAD(dFdT * This::dTdA, jacobians);
     }
@@ -571,14 +564,14 @@ struct FunctionalNode {
 
     /// Provide convenience access to Record storage and implement
     /// the virtual function based interface of CallRecord using the CallRecordImplementor
-    struct Record:
-        public internal::CallRecordImplementor<Record, traits::dimension<T>::value>,
-        public Base::Record {
+    struct Record: public internal::CallRecordImplementor<Record,
+        traits::dimension<T>::value>, public Base::Record {
       using Base::Record::print;
       using Base::Record::startReverseAD;
       using Base::Record::reverseAD;
 
-      virtual ~Record(){}
+      virtual ~Record() {
+      }
 
       /// Access Value
       template<class A, size_t N>
@@ -690,8 +683,8 @@ public:
   virtual T value(const Values& values) const {
     using boost::none;
     return function_(this->template expression<A1, 1>()->value(values),
-        this->template expression<A2, 2>()->value(values),
-        none, none);
+    this->template expression<A2, 2>()->value(values),
+    none, none);
   }
 
   /// Construct an execution trace for reverse AD
