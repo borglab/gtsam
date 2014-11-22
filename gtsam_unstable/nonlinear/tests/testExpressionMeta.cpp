@@ -38,7 +38,6 @@ template<class T> struct Incomplete;
 typedef mpl::vector<Pose3, Point3> MyTypes;
 typedef FunctionalNode<Point2, MyTypes>::type Generated;
 //Incomplete<Generated> incomplete;
-BOOST_MPL_ASSERT((boost::is_same< Matrix2, Generated::Record::Jacobian2T >));
 
 // Try generating vectors of ExecutionTrace
 typedef mpl::vector<ExecutionTrace<Pose3>, ExecutionTrace<Point3> > ExpectedTraces;

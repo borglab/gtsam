@@ -116,7 +116,7 @@ public:
     return root_->traceSize();
   }
 
-  /// trace execution, very unsafe, for testing purposes only
+  /// trace execution, very unsafe, for testing purposes only //TODO this is not only used for testing, but in value() below!
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       char* raw) const {
     return root_->traceExecution(values, trace, raw);
