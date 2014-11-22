@@ -235,7 +235,7 @@ struct DefaultChart<double> {
   static double retract(double origin, const vector& d) {
     return origin + d[0];
   }
-  static const int getDimension(double) {
+  static int getDimension(double) {
     return 1;
   }
 };
