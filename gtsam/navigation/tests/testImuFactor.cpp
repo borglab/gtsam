@@ -560,6 +560,71 @@ TEST( ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement )
     EXPECT(assert_equal(H5e, H5a));
 }
 
+TEST(ImuFactor, PredictPositionAndVelocity){
+  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
+
+  // Measurements
+  Vector3 gravity; gravity << 0, 0, 9.81;
+  Vector3 omegaCoriolis; omegaCoriolis << 0, 0, 0;
+  Vector3 measuredOmega; measuredOmega << 0, 0, 0;//M_PI/10.0+0.3;
+  Vector3 measuredAcc; measuredAcc << 0,1,-9.81;
+  double deltaT = 0.001;
+  double tol = 1e-6;
+
+  Matrix I6x6(6,6);
+  I6x6 = Matrix::Identity(6,6);
+
+  ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0),
+        Vector3(0.0, 0.0, 0.0)), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), true);
+
+  for (int i = 0; i<1000; ++i)   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+    // Create factor
+    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
+
+    // Predict
+    Pose3 x1;
+    Vector3 v1(0, 0.0, 0.0);
+    PoseVelocity poseVelocity = factor.Predict(x1, v1, bias, pre_int_data, gravity, omegaCoriolis);
+    Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
+    Vector3 expectedVelocity; expectedVelocity<<0,1,0;
+    EXPECT(assert_equal(expectedPose, poseVelocity.pose));
+    EXPECT(assert_equal(Vector(expectedVelocity), Vector(poseVelocity.velocity)));
+
+
+}
+
+TEST(ImuFactor, PredictRotation) {
+  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
+
+  // Measurements
+  Vector3 gravity; gravity << 0, 0, 9.81;
+  Vector3 omegaCoriolis; omegaCoriolis << 0, 0, 0;
+  Vector3 measuredOmega; measuredOmega << 0, 0, M_PI/10;//M_PI/10.0+0.3;
+  Vector3 measuredAcc; measuredAcc << 0,0,-9.81;
+  double deltaT = 0.001;
+  double tol = 1e-6;
+
+  Matrix I6x6(6,6);
+  I6x6 = Matrix::Identity(6,6);
+
+  ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0),
+        Vector3(0.0, 0.0, 0.0)), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), true);
+
+  for (int i = 0; i<1000; ++i)   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+    // Create factor
+    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
+
+    // Predict
+    Pose3 x1;
+    Vector3 v1(0, 0.0, 0.0);
+    PoseVelocity poseVelocity = factor.Predict(x1, v1, bias, pre_int_data, gravity, omegaCoriolis);
+    Pose3 expectedPose(Rot3().ypr(M_PI/10, 0, 0), Point3(0, 0, 0));
+    Vector3 expectedVelocity; expectedVelocity<<0,0,0;
+    EXPECT(assert_equal(expectedPose, poseVelocity.pose));
+    EXPECT(assert_equal(Vector(expectedVelocity), Vector(poseVelocity.velocity)));
+}
 
 /* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

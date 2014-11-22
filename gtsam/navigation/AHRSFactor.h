@@ -83,7 +83,7 @@ public:
                   tol);
     }
     Matrix measurementCovariance() const {return measurementCovariance_;}
-    Matrix deltaRij() const {return deltaRij_.matrix();}
+    Rot3 deltaRij() const {return deltaRij_;}
     double deltaTij() const {return deltaTij_;}
     Vector biasHat() const {return biasHat_.vector();}
     Matrix3 delRdelBiasOmega() {return delRdelBiasOmega_;}
@@ -349,7 +349,7 @@ public:
   }
 
   /** predicted states from IMU */
-  static void predict(const Rot3& rot_i, const Rot3& rot_j,
+  static Rot3 predict(const Rot3& rot_i,
       const imuBias::ConstantBias& bias,
       const PreintegratedMeasurements preintegratedMeasurements,
       const Vector3& omegaCoriolis,
@@ -376,7 +376,8 @@ public:
         - Rot_i.inverse().matrix() * omegaCoriolis * deltaTij; // Coriolis term
     const Rot3 deltaRij_biascorrected_corioliscorrected = Rot3::Expmap(
         theta_biascorrected_corioliscorrected);
-    const Rot3 Rot_j = Rot_i.compose(deltaRij_biascorrected_corioliscorrected);
+//    const Rot3 Rot_j =
+    return (Rot_i.compose(deltaRij_biascorrected_corioliscorrected));
 
   }
 

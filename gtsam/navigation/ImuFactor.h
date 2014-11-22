@@ -28,6 +28,16 @@
 
 
 namespace gtsam {
+/**
+ * Struct to hold return variables by the Predict Function
+ */
+struct PoseVelocity {
+  Pose3 pose;
+  Vector3 velocity;
+  PoseVelocity(const Pose3& _pose, const Vector3& _velocity) :
+      pose(_pose), velocity(_velocity) {
+  }
+};
 
   /**
    * 
@@ -547,7 +557,7 @@ namespace gtsam {
 
 
     /** predicted states from IMU */
-    static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j, Vector3& vel_j,
+    static PoseVelocity Predict(const Pose3& pose_i, const Vector3& vel_i,
         const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
         const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
         const bool use2ndOrderCoriolis = false)
@@ -569,7 +579,7 @@ namespace gtsam {
       - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
       + 0.5 * gravity * deltaTij*deltaTij;
 
-    vel_j = Vector3(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij_
+    Vector3 vel_j = Vector3(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij_
       + preintegratedMeasurements.delVdelBiasAcc_ * biasAccIncr
       + preintegratedMeasurements.delVdelBiasOmega_ * biasOmegaIncr)
       - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
@@ -589,7 +599,8 @@ namespace gtsam {
           Rot3::Expmap( theta_biascorrected_corioliscorrected );
       const Rot3 Rot_j = Rot_i.compose( deltaRij_biascorrected_corioliscorrected  );
 
-      pose_j = Pose3( Rot_j, Point3(pos_j) );
+      Pose3 pose_j = Pose3( Rot_j, Point3(pos_j) );
+      return PoseVelocity(pose_j, vel_j);
     }
 
 

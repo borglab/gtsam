@@ -69,7 +69,7 @@ Rot3 evaluatePreintegratedMeasurementsRotation(
     const list<double>& deltaTs,
     const Vector3& initialRotationRate = Vector3(0.0, 0.0, 0.0)) {
   return evaluatePreintegratedMeasurements(bias, measuredOmegas,
-      deltaTs, initialRotationRate).deltaRij_;
+      deltaTs, initialRotationRate).deltaRij();
 }
 
 Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega,
@@ -99,8 +99,8 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
   AHRSFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero());
   actual1.integrateMeasurement(measuredOmega, deltaT);
 
-  EXPECT(assert_equal(expectedDeltaR1, actual1.deltaRij_, 1e-6));
-  DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij_, 1e-6);
+  EXPECT(assert_equal(expectedDeltaR1, actual1.deltaRij(), 1e-6));
+  DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij(), 1e-6);
 
   // Integrate again
   Rot3 expectedDeltaR2 = Rot3::RzRyRx(2.0 * 0.5 * M_PI / 100.0, 0.0, 0.0);
@@ -110,8 +110,8 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
   AHRSFactor::PreintegratedMeasurements actual2 = actual1;
   actual2.integrateMeasurement(measuredOmega, deltaT);
 
-  EXPECT(assert_equal(expectedDeltaR2, actual2.deltaRij_, 1e-6));
-  DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij_, 1e-6);
+  EXPECT(assert_equal(expectedDeltaR2, actual2.deltaRij(), 1e-6));
+  DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-6);
 }
 
 /* ************************************************************************* */
