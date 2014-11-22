@@ -17,6 +17,8 @@
  * @brief Expressions for Block Automatic Differentiation
  */
 
+#pragma once
+
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
