@@ -1548,15 +1548,6 @@ class KalmanFilter {
       Vector z, Matrix Q);
 };
 
-#include <gtsam/linear/QPSolver.h>
-class QPSolver {
-  QPSolver(const gtsam::GaussianFactorGraph &graph);
-  pair<gtsam::VectorValues, gtsam::VectorValues> optimize(const gtsam::VectorValues& initials) const;
-  pair<gtsam::VectorValues, gtsam::VectorValues> optimize() const;
-  pair<bool, gtsam::VectorValues> findFeasibleInitialValues() const;
-};
-
-
 //*************************************************************************
 // nonlinear
 //*************************************************************************

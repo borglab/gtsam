@@ -47,6 +47,15 @@ class Dummy {
   unsigned char dummyTwoVar(unsigned char a) const;
 };
 
+#include <gtsam_unstable/linear/QPSolver.h>
+class QPSolver {
+  QPSolver(const gtsam::GaussianFactorGraph &graph);
+  pair<gtsam::VectorValues, gtsam::VectorValues> optimize(const gtsam::VectorValues& initials) const;
+  pair<gtsam::VectorValues, gtsam::VectorValues> optimize() const;
+  pair<bool, gtsam::VectorValues> findFeasibleInitialValues() const;
+};
+
+
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 virtual class PoseRTV : gtsam::Value {
   PoseRTV();
