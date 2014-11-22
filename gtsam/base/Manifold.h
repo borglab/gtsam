@@ -253,10 +253,10 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");
   static vector local(const T& origin, const T& other) {
-    return reshape<vector::RowsAtCompileTime, 1>(other) - reshape<vector::RowsAtCompileTime, 1>(origin);
+    return reshape<vector::RowsAtCompileTime, 1, vector::Options>(other) - reshape<vector::RowsAtCompileTime, 1, vector::Options>(origin);
   }
   static T retract(const T& origin, const vector& d) {
-    return origin + reshape<M, N>(d);
+    return origin + reshape<M, N, Options>(d);
   }
   static int getDimension(const T&origin) {
     return origin.rows() * origin.cols();

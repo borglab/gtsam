@@ -19,44 +19,61 @@
 
 #pragma once
 
-#include "Argument.h"
-#include "ReturnValue.h"
-#include "TypeAttributesTable.h"
+#include "FullyOverloadedFunction.h"
 
 namespace wrap {
 
 /// StaticMethod class
-struct StaticMethod {
+struct StaticMethod: public FullyOverloadedFunction {
 
-  /// Constructor creates empty object
-  StaticMethod(bool verbosity = true) :
-      verbose(verbosity) {
+  typedef const std::string& Str;
+
+  virtual bool isStatic() const {
+    return true;
   }
 
-  // Then the instance variables are set directly by the Module constructor
-  bool verbose;
-  std::string name;
-  std::vector<ArgumentList> argLists;
-  std::vector<ReturnValue> returnVals;
+  // emit a list of comments, one for each overload
+  void comment_fragment(FileWriter& proxyFile) const {
+    SignatureOverloads::comment_fragment(proxyFile, matlabName());
+  }
 
-  // The first time this function is called, it initializes the class members
-  // with those in rhs, but in subsequent calls it adds additional argument
-  // lists as function overloads.
-  void addOverload(bool verbose, const std::string& name,
-      const ArgumentList& args, const ReturnValue& retVal);
+  void verifyArguments(const std::vector<std::string>& validArgs) const {
+    SignatureOverloads::verifyArguments(validArgs, name_);
+  }
+
+  void verifyReturnTypes(const std::vector<std::string>& validtypes) const {
+    SignatureOverloads::verifyReturnTypes(validtypes, name_);
+  }
 
   // MATLAB code generation
   // classPath is class directory, e.g., ../matlab/@Point2
   void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
-      const std::string& cppClassName, const std::string& matlabQualName,
-      const std::string& matlabUniqueName, const std::string& wrapperName,
-      const TypeAttributesTable& typeAttributes,
+      Str cppClassName, Str matlabQualName, Str matlabUniqueName,
+      Str wrapperName, const TypeAttributesTable& typeAttributes,
       std::vector<std::string>& functionNames) const;
 
-private:
-  std::string wrapper_fragment(FileWriter& file,
-      const std::string& cppClassName, const std::string& matlabUniqueName,
-      int overload, int id, const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
+  // emit python wrapper
+  void python_wrapper(FileWriter& wrapperFile, Str className) const;
+
+  friend std::ostream& operator<<(std::ostream& os, const StaticMethod& m) {
+    for (size_t i = 0; i < m.nrOverloads(); i++)
+      os << "static " << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];
+    return os;
+  }
+
+protected:
+
+  virtual void proxy_header(FileWriter& proxyFile) const;
+
+  std::string wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
+      Str matlabUniqueName, int overload, int id,
+      const TypeAttributesTable& typeAttributes, const Qualified& instName =
+          Qualified()) const; ///< cpp wrapper
+
+  virtual std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
+      Str matlabUniqueName, const ArgumentList& args,
+      const ReturnValue& returnVal, const TypeAttributesTable& typeAttributes,
+      const Qualified& instName) const;
 };
 
 } // \namespace wrap

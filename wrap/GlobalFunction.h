@@ -9,42 +9,34 @@
 
 #pragma once
 
-#include "Argument.h"
-#include "ReturnValue.h"
+#include "FullyOverloadedFunction.h"
 
 namespace wrap {
 
-struct GlobalFunction {
+struct GlobalFunction: public FullyOverloadedFunction {
 
-  typedef std::vector<std::string> StrVec;
+  std::vector<Qualified> overloads; ///< Stack of qualified names
 
-  bool verbose_;
-  std::string name;
+  // adds an overloaded version of this function,
+  void addOverload(const Qualified& overload, const ArgumentList& args,
+      const ReturnValue& retVal, const Qualified& instName = Qualified(),
+      bool verbose = false);
 
-  // each overload, regardless of namespace
-  std::vector<ArgumentList> argLists; ///< arugments for each overload
-  std::vector<ReturnValue> returnVals; ///< returnVals for each overload
-  std::vector<StrVec> namespaces; ///< Stack of namespaces
-
-  // Constructor only used in Module
-  GlobalFunction(bool verbose = true) :
-      verbose_(verbose) {
+  void verifyArguments(const std::vector<std::string>& validArgs) const {
+    SignatureOverloads::verifyArguments(validArgs, name_);
   }
 
-  // Used to reconstruct
-  GlobalFunction(const std::string& name_, bool verbose = true) :
-      verbose_(verbose), name(name_) {
+  void verifyReturnTypes(const std::vector<std::string>& validtypes) const {
+    SignatureOverloads::verifyReturnTypes(validtypes, name_);
   }
-
-  // adds an overloaded version of this function
-  void addOverload(bool verbose, const std::string& name,
-      const ArgumentList& args, const ReturnValue& retVal,
-      const StrVec& ns_stack);
 
   // codegen function called from Module to build the cpp and matlab versions of the function
   void matlab_proxy(const std::string& toolboxPath,
       const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
       FileWriter& file, std::vector<std::string>& functionNames) const;
+
+  // emit python wrapper
+  void python_wrapper(FileWriter& wrapperFile) const;
 
 private:
 

@@ -22,6 +22,7 @@
 #include <gtsam/base/Testable.h>
 
 #include <CppUnitLite/TestHarness.h>
+#include <algorithm>
 
 using namespace std;
 using namespace gtsam;
@@ -143,7 +144,7 @@ TEST(ExpressionFactor, Triple) {
 
 // Test out invoke
 TEST(ExpressionFactor, Invoke) {
-  assert(invoke(add,boost::fusion::make_vector(1,1)) == 2);
+  EXPECT_LONGS_EQUAL(2, invoke(plus<int>(),boost::fusion::make_vector(1,1)));
 
   // Creating a Pose3 (is there another way?)
   boost::fusion::vector<Rot3, Point3> pair;

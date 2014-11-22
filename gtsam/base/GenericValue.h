@@ -70,9 +70,9 @@ struct print<double> {
 };
 
 // equals for Matrix types
-template<int M, int N, int Options>
-struct equals<Eigen::Matrix<double, M, N, Options> > {
-  typedef Eigen::Matrix<double, M, N, Options> type;
+template<int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+struct equals<Eigen::Matrix<double, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > {
+  typedef Eigen::Matrix<double, _Rows, _Cols, _Options, _MaxRows, _MaxCols> type;
   typedef bool result_type;
   bool operator()(const type& A, const type& B, double tol) {
     return equal_with_abs_tol(A, B, tol);
@@ -80,9 +80,9 @@ struct equals<Eigen::Matrix<double, M, N, Options> > {
 };
 
 // print for Matrix types
-template<int M, int N, int Options>
-struct print<Eigen::Matrix<double, M, N, Options> > {
-  typedef Eigen::Matrix<double, M, N, Options> type;
+template<int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+struct print<Eigen::Matrix<double, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > {
+  typedef Eigen::Matrix<double, _Rows, _Cols, _Options, _MaxRows, _MaxCols> type;
   typedef void result_type;
   void operator()(const type& A, const std::string& str) {
     std::cout << str << ": " << A << std::endl;

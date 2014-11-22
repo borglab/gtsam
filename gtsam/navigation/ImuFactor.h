@@ -57,7 +57,7 @@ namespace gtsam {
     class PreintegratedMeasurements {
     public:
       imuBias::ConstantBias biasHat; ///< Acceleration and angular rate bias values used during preintegration
-      Matrix measurementCovariance; ///< (Raw measurements uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
+      Matrix measurementCovariance; ///< (continuous-time uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
 
       Vector3 deltaPij; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
       Vector3 deltaVij; ///< Preintegrated relative velocity (in global frame)
@@ -216,10 +216,20 @@ namespace gtsam {
             H_vel_pos, H_vel_vel, H_vel_angles,
             H_angles_pos, H_angles_vel, H_angles_angles;
 
-
-        // first order uncertainty propagation
+        // first order uncertainty propagation:
         // the deltaT allows to pass from continuous time noise to discrete time noise
+        // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
+        // Gt * Qt * G =(approx)= measurementCovariance_discrete * deltaT^2 = measurementCovariance_contTime * deltaT
         PreintMeasCov = F * PreintMeasCov * F.transpose() + measurementCovariance * deltaT ;
+
+        // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
+        //
+        //        Matrix G(9,9);
+        //        G << I_3x3 * deltaT, Z_3x3,  Z_3x3,
+        //            Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
+        //            Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
+        //
+        //        PreintMeasCov = F * PreintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
 
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */

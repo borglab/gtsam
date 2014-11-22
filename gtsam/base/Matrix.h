@@ -294,10 +294,10 @@ void zeroBelowDiagonal(MATRIX& A, size_t cols=0) {
 inline Matrix trans(const Matrix& A) { return A.transpose(); }
 
 /// Reshape functor
-template <int OutM, int OutN, int InM, int InN, int InOptions>
+template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
 struct Reshape {
   //TODO replace this with Eigen's reshape function as soon as available. (There is a PR already pending : https://bitbucket.org/eigen/eigen/pull-request/41/reshape/diff)
-  typedef Eigen::Map<const Eigen::Matrix<double, OutM, OutN> > ReshapedType;
+  typedef Eigen::Map<const Eigen::Matrix<double, OutM, OutN, OutOptions> > ReshapedType;
   static inline ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & in) {
     return in.data();
   }
@@ -305,7 +305,7 @@ struct Reshape {
 
 /// Reshape specialization that does nothing as shape stays the same (needed to not be ambiguous for square input equals square output)
 template <int M, int InOptions>
-struct Reshape<M, M, M, M, InOptions> {
+struct Reshape<M, M, InOptions, M, M, InOptions> {
   typedef const Eigen::Matrix<double, M, M, InOptions> & ReshapedType;
   static inline ReshapedType reshape(const Eigen::Matrix<double, M, M, InOptions> & in) {
     return in;
@@ -314,7 +314,7 @@ struct Reshape<M, M, M, M, InOptions> {
 
 /// Reshape specialization that does nothing as shape stays the same
 template <int M, int N, int InOptions>
-struct Reshape<M, N, M, N, InOptions> {
+struct Reshape<M, N, InOptions, M, N, InOptions> {
   typedef const Eigen::Matrix<double, M, N, InOptions> & ReshapedType;
   static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
     return in;
@@ -323,17 +323,17 @@ struct Reshape<M, N, M, N, InOptions> {
 
 /// Reshape specialization that does transpose
 template <int M, int N, int InOptions>
-struct Reshape<N, M, M, N, InOptions> {
+struct Reshape<N, M, InOptions, M, N, InOptions> {
   typedef typename Eigen::Matrix<double, M, N, InOptions>::ConstTransposeReturnType ReshapedType;
   static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
     return in.transpose();
   }
 };
 
-template <int OutM, int OutN, int InM, int InN, int InOptions>
-inline typename Reshape<OutM, OutN, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
+template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
+inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
   BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
-  return Reshape<OutM, OutN, InM, InN, InOptions>::reshape(m);
+  return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
 }
 
 /**

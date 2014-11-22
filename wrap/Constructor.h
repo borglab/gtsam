@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "Argument.h"
+#include "OverloadedFunction.h"
 
 #include <string>
 #include <vector>
@@ -26,41 +26,63 @@
 namespace wrap {
 
 // Constructor class
-struct Constructor {
+struct Constructor: public OverloadedFunction {
+
+  typedef const std::string& Str;
 
   /// Constructor creates an empty class
-  Constructor(bool verbose = false) :
-      verbose_(verbose) {
+  Constructor(bool verbose = false) {
+    verbose_ = verbose;
   }
 
-  // Then the instance variables are set directly by the Module constructor
-  std::vector<ArgumentList> args_list;
-  std::string name;
-  bool verbose_;
+  Constructor expandTemplate(const TemplateSubstitution& ts) const {
+    Constructor inst = *this;
+    inst.argLists_ = expandArgumentListsTemplate(ts);
+    inst.name_ = ts.expandedClassName();
+    return inst;
+  }
 
   // MATLAB code generation
   // toolboxPath is main toolbox directory, e.g., ../matlab
   // classFile is class proxy file, e.g., ../matlab/@Point2/Point2.m
 
   /// wrapper name
-  std::string matlab_wrapper_name(const std::string& className) const;
+  std::string matlab_wrapper_name(Str className) const;
+
+  void comment_fragment(FileWriter& proxyFile) const {
+    if (nrOverloads() > 0)
+      proxyFile.oss << "%\n%-------Constructors-------\n";
+    for (size_t i = 0; i < nrOverloads(); i++) {
+      proxyFile.oss << "%";
+      argumentList(i).emit_prototype(proxyFile, name_);
+      proxyFile.oss << "\n";
+    }
+  }
 
   /**
    * Create fragment to select constructor in proxy class, e.g.,
    * if nargin == 2, obj.self = new_Pose3_RP(varargin{1},varargin{2}); end
    */
-  void proxy_fragment(FileWriter& file, const std::string& wrapperName,
-      bool hasParent, const int id, const ArgumentList args) const;
+  void proxy_fragment(FileWriter& file, Str wrapperName, bool hasParent,
+      const int id, const ArgumentList args) const;
 
   /// cpp wrapper
-  std::string wrapper_fragment(FileWriter& file,
-      const std::string& cppClassName, const std::string& matlabUniqueName,
-      const std::string& cppBaseClassName, int id,
+  std::string wrapper_fragment(FileWriter& file, Str cppClassName,
+      Str matlabUniqueName, Str cppBaseClassName, int id,
       const ArgumentList& al) const;
 
   /// constructor function
-  void generate_construct(FileWriter& file, const std::string& cppClassName,
+  void generate_construct(FileWriter& file, Str cppClassName,
       std::vector<ArgumentList>& args_list) const;
+
+  // emit python wrapper
+  void python_wrapper(FileWriter& wrapperFile, Str className) const;
+
+  friend std::ostream& operator<<(std::ostream& os, const Constructor& m) {
+    for (size_t i = 0; i < m.nrOverloads(); i++)
+      os << m.name_ << m.argLists_[i];
+    return os;
+  }
 
 };
 

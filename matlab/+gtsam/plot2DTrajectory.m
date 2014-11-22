@@ -8,7 +8,7 @@ function plot2DTrajectory(values, linespec, marginals)
 import gtsam.*
 
 if ~exist('linespec', 'var') || isempty(linespec)
-  linespec = 'k*-';
+    linespec = 'k*-';
 end
 
 haveMarginals = exist('marginals', 'var');
@@ -25,24 +25,26 @@ plot(X,Y,linespec);
 
 % Quiver can also be vectorized if no marginals asked
 if ~haveMarginals
-  C = cos(theta);
-  S = sin(theta);
-  quiver(X,Y,C,S,0.1,linespec);
+    C = cos(theta);
+    S = sin(theta);
+    quiver(X,Y,C,S,0.1,linespec);
 else
-  % plotPose2 does both quiver and covariance matrix
-  keys = KeyVector(values.keys);
-  for i = 0:keys.size-1
-    key = keys.at(i);
-    x = values.at(key);
-    if isa(x, 'gtsam.Pose2')
-      P = marginals.marginalCovariance(key);
-      gtsam.plotPose2(x,linespec(1), P);
+    % plotPose2 does both quiver and covariance matrix
+    keys = KeyVector(values.keys);
+    for i = 0:keys.size-1
+        key = keys.at(i);
+        try
+            x = values.atPose2(key);
+            P = marginals.marginalCovariance(key);
+            gtsam.plotPose2(x,linespec(1), P);
+        catch err
+            % I guess it's not a Pose2
+        end
     end
-  end
 end
 
 if ~holdstate
-  hold off
+    hold off
 end
 
 end

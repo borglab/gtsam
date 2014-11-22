@@ -62,17 +62,23 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 /* ************************************************************************* */ 
  
 /* ************************************************************************* */ 
-void handle_possible_template(vector<Class>& classes, const Class& cls, const string& templateArgument, const vector<vector<string> >& instantiations) { 
-  if(instantiations.empty()) { 
-    classes.push_back(cls); 
-  } else { 
-    vector<Class> classInstantiations = cls.expandTemplate(templateArgument, instantiations); 
-    BOOST_FOREACH(const Class& c, classInstantiations) { 
-      classes.push_back(c); 
-    } 
-  } 
-} 
- 
+// If a number of template arguments were given, generate a number of expanded
+// class names, e.g., PriorFactor -> PriorFactorPose2, and add those classes
+static void handle_possible_template(vector<Class>& classes, const Class& cls,
+    const vector<Qualified>& instantiations) {
+  if (cls.templateArgs.empty() || instantiations.empty()) {
+    classes.push_back(cls);
+  } else {
+    if (cls.templateArgs.size() != 1)
+      throw std::runtime_error(
+          "In-line template instantiations only handle a single template argument");
+    vector<Class> classInstantiations = //
+        cls.expandTemplate(cls.templateArgs.front(), instantiations);
+    BOOST_FOREACH(const Class& c, classInstantiations)
+      classes.push_back(c);
+  }
+}
+
 /* ************************************************************************* */
 Module::Module(const std::string& moduleName, bool enable_verbose)
 : name(moduleName), verbose(enable_verbose)
@@ -94,28 +100,9 @@ Module::Module(const string& interfacePath,
 
 /* ************************************************************************* */
 void Module::parseMarkup(const std::string& data) {
-  // these variables will be imperatively updated to gradually build [cls] 
+  // The parse imperatively :-( updates variables gradually during parse
   // The one with postfix 0 are used to reset the variables after parse. 
-  string methodName, methodName0; 
-  bool isConst, isConst0 = false; 
-  ReturnValue retVal0, retVal;
-  Argument arg0, arg; 
-  ArgumentList args0, args; 
-  vector<string> arg_dup; ///keep track of duplicates 
-  Constructor constructor0(verbose), constructor(verbose);
-  Deconstructor deconstructor0(verbose), deconstructor(verbose);
-  StaticMethod static_method0(verbose), static_method(verbose);
-  Class cls0(verbose),cls(verbose);
-  GlobalFunction globalFunc0(verbose), globalFunc(verbose);
-  ForwardDeclaration fwDec0, fwDec; 
-  vector<string> namespaces, /// current namespace tag 
-                 namespaces_return; /// namespace for current return type 
-  string templateArgument; 
-  vector<string> templateInstantiationNamespace; 
-  vector<vector<string> > templateInstantiations; 
-  TemplateInstantiationTypedef singleInstantiation, singleInstantiation0; 
-  string include_path = ""; 
-  const string null_str = ""; 
+  vector<string> namespaces; // current namespace tag
  
   //---------------------------------------------------------------------------- 
   // Grammar with actions that build the Class object. Actions are 
@@ -144,51 +131,63 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p; 
  
-  Rule namespace_arg_p = namespace_name_p[push_back_a(arg.namespaces)] >> str_p("::"); 
+  Argument arg0, arg;
+  Rule namespace_arg_p = namespace_name_p
+      [push_back_a(arg.type.namespaces)] >> str_p("::");
  
   Rule argEigenType_p = 
-    eigenType_p[assign_a(arg.type)];
+    eigenType_p[assign_a(arg.type.name)];
  
   Rule eigenRef_p = 
       !str_p("const") [assign_a(arg.is_const,true)] >> 
-      eigenType_p     [assign_a(arg.type)] >> 
+      eigenType_p     [assign_a(arg.type.name)] >>
       ch_p('&')       [assign_a(arg.is_ref,true)]; 
  
   Rule classArg_p = 
     !str_p("const") [assign_a(arg.is_const,true)] >> 
     *namespace_arg_p >> 
-    className_p[assign_a(arg.type)] >> 
+    className_p[assign_a(arg.type.name)] >>
     !ch_p('&')[assign_a(arg.is_ref,true)];
  
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')]; 
- 
+
+  // TODO, do we really need cls here? Non-local
+  Class cls0(verbose),cls(verbose);
   Rule classParent_p = 
-    *(namespace_name_p[push_back_a(cls.qualifiedParent)] >> str_p("::")) >> 
-    className_p[push_back_a(cls.qualifiedParent)]; 
+    *(namespace_name_p[push_back_a(cls.qualifiedParent.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(cls.qualifiedParent.name)];
  
-  Rule templateInstantiation_p = 
-    (*(namespace_name_p[push_back_a(templateInstantiationNamespace)] >> str_p("::")) >> 
-    className_p[push_back_a(templateInstantiationNamespace)]) 
-    [push_back_a(templateInstantiations, templateInstantiationNamespace)] 
-    [clear_a(templateInstantiationNamespace)]; 
+  // parse "gtsam::Pose2" and add to templateArgValues
+  Qualified templateArgValue;
+  vector<Qualified> templateArgValues;
+  Rule templateArgValue_p =
+    (*(namespace_name_p[push_back_a(templateArgValue.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(templateArgValue.name)])
+    [push_back_a(templateArgValues, templateArgValue)]
+    [clear_a(templateArgValue)];
  
-  Rule templateInstantiations_p = 
+  // template<CALIBRATION = {gtsam::Cal3DS2}>
+  string templateArgName;
+  Rule templateArgValues_p =
     (str_p("template") >> 
-    '<' >> name_p[assign_a(templateArgument)] >> '=' >> '{' >> 
-    !(templateInstantiation_p >> *(',' >> templateInstantiation_p)) >> 
-    '}' >> '>') 
-    [push_back_a(cls.templateArgs, templateArgument)]; 
+    '<' >> name_p[assign_a(templateArgName)] >> '=' >>
+    '{' >> !(templateArgValue_p >> *(',' >> templateArgValue_p)) >> '}' >>
+    '>');
  
+  // parse "gtsam::Pose2" and add to singleInstantiation.typeList
+  TemplateInstantiationTypedef singleInstantiation;
   Rule templateSingleInstantiationArg_p = 
-    (*(namespace_name_p[push_back_a(templateInstantiationNamespace)] >> str_p("::")) >> 
-    className_p[push_back_a(templateInstantiationNamespace)]) 
-    [push_back_a(singleInstantiation.typeList, templateInstantiationNamespace)] 
-    [clear_a(templateInstantiationNamespace)]; 
+    (*(namespace_name_p[push_back_a(templateArgValue.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(templateArgValue.name)])
+    [push_back_a(singleInstantiation.typeList, templateArgValue)]
+    [clear_a(templateArgValue)];
  
+  // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
+  TemplateInstantiationTypedef singleInstantiation0;
   Rule templateSingleInstantiation_p = 
     (str_p("typedef") >> 
-    *(namespace_name_p[push_back_a(singleInstantiation.classNamespaces)] >> str_p("::")) >> 
-    className_p[assign_a(singleInstantiation.className)] >> 
+    *(namespace_name_p[push_back_a(singleInstantiation.class_.namespaces)] >> str_p("::")) >>
+    className_p[assign_a(singleInstantiation.class_.name)] >>
     '<' >> templateSingleInstantiationArg_p >> *(',' >> templateSingleInstantiationArg_p) >> 
     '>' >> 
     className_p[assign_a(singleInstantiation.name)] >> 
@@ -197,129 +196,128 @@ void Module::parseMarkup(const std::string& data) {
     [push_back_a(templateInstantiationTypedefs, singleInstantiation)] 
     [assign_a(singleInstantiation, singleInstantiation0)]; 
  
+  // template<POSE, POINT>
   Rule templateList_p = 
     (str_p("template") >> 
     '<' >> name_p[push_back_a(cls.templateArgs)] >> *(',' >> name_p[push_back_a(cls.templateArgs)]) >> 
     '>'); 
 
   // NOTE: allows for pointers to all types
+  ArgumentList args;
   Rule argument_p =  
-    ((basisType_p[assign_a(arg.type)] | argEigenType_p | eigenRef_p | classArg_p) 
+    ((basisType_p[assign_a(arg.type.name)] | argEigenType_p | eigenRef_p | classArg_p)
         >> !ch_p('*')[assign_a(arg.is_ptr,true)]
         >> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)] 
     [assign_a(arg,arg0)]; 
  
   Rule argumentList_p = !argument_p >> * (',' >> argument_p); 
- 
+
+  // parse class constructor
+  Constructor constructor0(verbose), constructor(verbose);
   Rule constructor_p =  
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p) 
-    [push_back_a(constructor.args_list, args)] 
-    [assign_a(args,args0)]; 
-    //[assign_a(constructor.args,args)] 
-    //[assign_a(constructor.name,cls.name)] 
-    //[push_back_a(cls.constructors, constructor)] 
-    //[assign_a(constructor,constructor0)]; 
+    [bl::bind(&Constructor::push_back, bl::var(constructor), bl::var(args))]
+    [clear_a(args)];
  
+  vector<string> namespaces_return; /// namespace for current return type
   Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::"); 
  
   // HACK: use const values instead of using enums themselves - somehow this doesn't result in values getting assigned to gibberish
-  static const ReturnValue::return_category RETURN_EIGEN = ReturnValue::EIGEN;
-  static const ReturnValue::return_category RETURN_BASIS = ReturnValue::BASIS;
-  static const ReturnValue::return_category RETURN_CLASS = ReturnValue::CLASS;
-  static const ReturnValue::return_category RETURN_VOID = ReturnValue::VOID;
+  static const ReturnType::return_category RETURN_EIGEN = ReturnType::EIGEN;
+  static const ReturnType::return_category RETURN_BASIS = ReturnType::BASIS;
+  static const ReturnType::return_category RETURN_CLASS = ReturnType::CLASS;
+  static const ReturnType::return_category RETURN_VOID = ReturnType::VOID;
 
-  Rule returnType1_p =
-    (basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_BASIS)]) |
-    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
-        >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_CLASS)]) >>
-        !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
-    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_EIGEN)]);
+  ReturnType retType0, retType;
+  Rule returnType_p =
+    (basisType_p[assign_a(retType.name)][assign_a(retType.category, RETURN_BASIS)]) |
+    ((*namespace_ret_p)[assign_a(retType.namespaces, namespaces_return)][clear_a(namespaces_return)]
+        >> (className_p[assign_a(retType.name)][assign_a(retType.category, RETURN_CLASS)]) >>
+        !ch_p('*')[assign_a(retType.isPtr,true)]) |
+    (eigenType_p[assign_a(retType.name)][assign_a(retType.category, RETURN_EIGEN)]);
 
-  Rule returnType2_p = 
-    (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_BASIS)]) |
-    ((*namespace_ret_p)[assign_a(retVal.namespaces2, namespaces_return)][clear_a(namespaces_return)] 
-        >> (className_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_CLASS)]) >>
-        !ch_p('*')  [assign_a(retVal.isPtr2,true)]) | 
-    (eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_EIGEN)]);
+  ReturnValue retVal0, retVal;
+  Rule returnType1_p = returnType_p[assign_a(retVal.type1,retType)][assign_a(retType,retType0)];
+  Rule returnType2_p = returnType_p[assign_a(retVal.type2,retType)][assign_a(retType,retType0)];
 
   Rule pair_p =  
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>') 
     [assign_a(retVal.isPair,true)]; 
  
-  Rule void_p = str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_VOID)];
+  Rule void_p = str_p("void")[assign_a(retVal.type1.name)][assign_a(retVal.type1.category, RETURN_VOID)];
  
-  Rule returnType_p = void_p | pair_p | returnType1_p;
+  Rule returnValue_p = void_p | pair_p | returnType1_p;
  
   Rule methodName_p = lexeme_d[(upper_p | lower_p)  >> *(alnum_p | '_')];
  
+  // gtsam::Values retract(const gtsam::VectorValues& delta) const;
+  string methodName;
+  bool isConst, isConst0 = false;
   Rule method_p =  
-    (returnType_p >> methodName_p[assign_a(methodName)] >> 
+    !templateArgValues_p >>
+    (returnValue_p >> methodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >>  
      !str_p("const")[assign_a(isConst,true)] >> ';' >> *comments_p) 
-    [bl::bind(&Method::addOverload, 
-      bl::var(cls.methods)[bl::var(methodName)], 
-      verbose, 
-      bl::var(isConst), 
-      bl::var(methodName), 
-      bl::var(args), 
-      bl::var(retVal))] 
-    [assign_a(isConst,isConst0)] 
-    [assign_a(methodName,methodName0)] 
-    [assign_a(args,args0)] 
-    [assign_a(retVal,retVal0)]; 
+    [bl::bind(&Class::addMethod, bl::var(cls), verbose, bl::var(isConst),
+        bl::var(methodName), bl::var(args), bl::var(retVal),
+        bl::var(templateArgName), bl::var(templateArgValues))]
+    [assign_a(retVal,retVal0)]
+    [clear_a(args)]
+    [clear_a(templateArgValues)]
+    [assign_a(isConst,isConst0)];
  
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')]; 
  
   Rule static_method_p = 
-    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(methodName)] >> 
+    (str_p("static") >> returnValue_p >> staticMethodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
-      verbose, 
-      bl::var(methodName), 
-      bl::var(args), 
-      bl::var(retVal))] 
-    [assign_a(methodName,methodName0)] 
-    [assign_a(args,args0)] 
-    [assign_a(retVal,retVal0)]; 
+      bl::var(methodName), bl::var(args), bl::var(retVal), Qualified(),verbose)]
+    [assign_a(retVal,retVal0)]
+    [clear_a(args)];
  
   Rule functions_p = constructor_p | method_p | static_method_p; 
  
+  // parse a full class
+  vector<Qualified> templateInstantiations;
   Rule class_p = 
-      (str_p("")[assign_a(cls,cls0)]) 
-      >> (!(templateInstantiations_p | templateList_p) 
+      eps_p[assign_a(cls,cls0)]
+      >> (!(templateArgValues_p
+          [push_back_a(cls.templateArgs, templateArgName)]
+          [assign_a(templateInstantiations,templateArgValues)]
+          [clear_a(templateArgValues)]
+          | templateList_p)
       >> !(str_p("virtual")[assign_a(cls.isVirtual, true)]) 
       >> str_p("class") 
       >> className_p[assign_a(cls.name)] 
       >> ((':' >> classParent_p >> '{') | '{') 
       >> *(functions_p | comments_p) 
       >> str_p("};")) 
-      [assign_a(constructor.name, cls.name)] 
+      [bl::bind(&Constructor::initializeOrCheck, bl::var(constructor),
+          bl::var(cls.name), Qualified(), verbose)]
       [assign_a(cls.constructor, constructor)] 
       [assign_a(cls.namespaces, namespaces)] 
-      [assign_a(deconstructor.name,cls.name)] 
-      [assign_a(cls.deconstructor, deconstructor)] 
-      [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls), bl::var(templateArgument), bl::var(templateInstantiations))] 
-      [assign_a(deconstructor,deconstructor0)] 
+      [assign_a(cls.deconstructor.name,cls.name)]
+      [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
+          bl::var(templateInstantiations))]
+      [clear_a(templateInstantiations)]
       [assign_a(constructor, constructor0)] 
-      [assign_a(cls,cls0)] 
-      [clear_a(templateArgument)] 
-      [clear_a(templateInstantiations)]; 
+      [assign_a(cls,cls0)];
  
+  // parse a global function
+  Qualified globalFunction;
   Rule global_function_p = 
-      (returnType_p >> staticMethodName_p[assign_a(methodName)] >> 
+      (returnValue_p >> staticMethodName_p[assign_a(globalFunction.name)] >>
        '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
+      [assign_a(globalFunction.namespaces,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
-        bl::var(global_functions)[bl::var(methodName)], 
-        verbose, 
-        bl::var(methodName), 
-        bl::var(args), 
-        bl::var(retVal), 
-        bl::var(namespaces))] 
-      [assign_a(methodName,methodName0)] 
-      [assign_a(args,args0)] 
-      [assign_a(retVal,retVal0)]; 
+        bl::var(global_functions)[bl::var(globalFunction.name)],
+        bl::var(globalFunction), bl::var(args), bl::var(retVal), Qualified(),verbose)]
+      [assign_a(retVal,retVal0)]
+      [clear_a(globalFunction)]
+      [clear_a(args)];
  
   Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
 
@@ -327,19 +325,21 @@ void Module::parseMarkup(const std::string& data) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wuninitialized"
 #endif
- 
-  Rule namespace_def_p = 
-      (str_p("namespace") 
-      >> namespace_name_p[push_back_a(namespaces)] 
-      >> ch_p('{') 
-      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | comments_p) 
-      >> ch_p('}')) 
-      [pop_a(namespaces)]; 
+
+  Rule namespace_def_p =
+      (str_p("namespace")
+      >> namespace_name_p[push_back_a(namespaces)]
+      >> ch_p('{')
+      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | comments_p)
+      >> ch_p('}'))
+      [pop_a(namespaces)];
 
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
 
+  // parse forward declaration
+  ForwardDeclaration fwDec0, fwDec;
   Rule forward_declaration_p =
       !(str_p("virtual")[assign_a(fwDec.isVirtual, true)]) 
       >> str_p("class") 
@@ -367,7 +367,7 @@ void Module::parseMarkup(const std::string& data) {
   BOOST_SPIRIT_DEBUG_NODE(returnType2_p);
   BOOST_SPIRIT_DEBUG_NODE(pair_p);
   BOOST_SPIRIT_DEBUG_NODE(void_p);
-  BOOST_SPIRIT_DEBUG_NODE(returnType_p);
+  BOOST_SPIRIT_DEBUG_NODE(returnValue_p);
   BOOST_SPIRIT_DEBUG_NODE(methodName_p);
   BOOST_SPIRIT_DEBUG_NODE(method_p);
   BOOST_SPIRIT_DEBUG_NODE(class_p);
@@ -388,125 +388,41 @@ void Module::parseMarkup(const std::string& data) {
   }
 
   // Post-process classes for serialization markers
-  BOOST_FOREACH(Class& cls, classes) {
-    Class::Methods::iterator serializable_it = cls.methods.find("serializable");
-    if (serializable_it != cls.methods.end()) {
-#ifndef WRAP_DISABLE_SERIALIZE
-      cls.isSerializable = true;
-#else
-      cout << "Ignoring serializable() flag in class " << cls.name << endl;
-#endif
-      cls.methods.erase(serializable_it);
-    }
-
-    Class::Methods::iterator serialize_it = cls.methods.find("serialize");
-    if (serialize_it != cls.methods.end()) {
-#ifndef WRAP_DISABLE_SERIALIZE
-      cls.isSerializable = true;
-      cls.hasSerialization= true;
-#else
-      cout << "Ignoring serialize() flag in class " << cls.name << endl;
-#endif
-      cls.methods.erase(serialize_it);
-    }
-  }
+  BOOST_FOREACH(Class& cls, classes)
+    cls.erase_serialization();
 
   // Explicitly add methods to the classes from parents so it shows in documentation
   BOOST_FOREACH(Class& cls, classes)
-  {
-    map<string, Method> inhereted = appendInheretedMethods(cls, classes);
-    cls.methods.insert(inhereted.begin(), inhereted.end());
-  }
-} 
- 
-/* ************************************************************************* */ 
-template<class T> 
-void verifyArguments(const vector<string>& validArgs, const map<string,T>& vt) { 
-  typedef typename map<string,T>::value_type Name_Method; 
-  BOOST_FOREACH(const Name_Method& name_method, vt) { 
-    const T& t = name_method.second; 
-    BOOST_FOREACH(const ArgumentList& argList, t.argLists) { 
-      BOOST_FOREACH(Argument arg, argList) { 
-        string fullType = arg.qualifiedType("::"); 
-        if(find(validArgs.begin(), validArgs.end(), fullType) 
-          == validArgs.end()) 
-          throw DependencyMissing(fullType, t.name); 
-      } 
-    } 
-  } 
-} 
- 
-/* ************************************************************************* */ 
-template<class T> 
-void verifyReturnTypes(const vector<string>& validtypes, const map<string,T>& vt) { 
-  typedef typename map<string,T>::value_type Name_Method; 
-  BOOST_FOREACH(const Name_Method& name_method, vt) { 
-    const T& t = name_method.second; 
-    BOOST_FOREACH(const ReturnValue& retval, t.returnVals) { 
-      if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::")) == validtypes.end()) 
-        throw DependencyMissing(retval.qualifiedType1("::"), t.name); 
-      if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::")) == validtypes.end()) 
-        throw DependencyMissing(retval.qualifiedType2("::"), t.name); 
-    } 
-  } 
-} 
- 
-/* ************************************************************************* */ 
-void Module::generateIncludes(FileWriter& file) const { 
- 
-  // collect includes 
-  vector<string> all_includes(includes); 
- 
-  // sort and remove duplicates 
-  sort(all_includes.begin(), all_includes.end()); 
-  vector<string>::const_iterator last_include = unique(all_includes.begin(), all_includes.end()); 
-  vector<string>::const_iterator it = all_includes.begin(); 
-  // add includes to file 
-  for (; it != last_include; ++it) 
-    file.oss << "#include <" << *it << ">" << endl; 
-  file.oss << "\n"; 
-} 
-
- 
-/* ************************************************************************* */ 
-void Module::matlab_code(const string& toolboxPath, const string& headerPath) const { 
-
-  fs::create_directories(toolboxPath);
+    cls.appendInheritedMethods(cls, classes);
 
   // Expand templates - This is done first so that template instantiations are
   // counted in the list of valid types, have their attributes and dependencies
   // checked, etc.
-  vector<Class> expandedClasses = ExpandTypedefInstantiations(classes, templateInstantiationTypedefs);
+  expandedClasses = ExpandTypedefInstantiations(classes,
+      templateInstantiationTypedefs);
 
   // Dependency check list
-  vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations);
+  vector<string> validTypes = GenerateValidTypes(expandedClasses,
+      forward_declarations);
 
   // Check that all classes have been defined somewhere
   verifyArguments<GlobalFunction>(validTypes, global_functions);
   verifyReturnTypes<GlobalFunction>(validTypes, global_functions);
 
-  bool hasSerialiable = false;
-  BOOST_FOREACH(const Class& cls, expandedClasses) {
-    hasSerialiable |= cls.isSerializable;
-    // verify all of the function arguments
-    //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
-    verifyArguments<StaticMethod>(validTypes, cls.static_methods);
-    verifyArguments<Method>(validTypes, cls.methods);
-
-    // verify function return types
-    verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
-    verifyReturnTypes<Method>(validTypes, cls.methods);
-
-    // verify parents
-    if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end())
-      throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::"));
-  }
+  hasSerialiable = false;
+  BOOST_FOREACH(const Class& cls, expandedClasses)
+    cls.verifyAll(validTypes,hasSerialiable);
 
   // Create type attributes table and check validity
-  TypeAttributesTable typeAttributes;
   typeAttributes.addClasses(expandedClasses);
   typeAttributes.addForwardDeclarations(forward_declarations);
   typeAttributes.checkValidity(expandedClasses);
+} 
+ 
+/* ************************************************************************* */ 
+void Module::matlab_code(const string& toolboxPath) const {
+
+  fs::create_directories(toolboxPath);
 
   // create the unified .cpp switch file
   const string wrapperName = name + "_wrapper";
@@ -527,19 +443,18 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   // Generate includes while avoiding redundant includes
   generateIncludes(wrapperFile);
 
-  // create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
-  BOOST_FOREACH(const Class& cls, expandedClasses) {
+  // create typedef classes - we put this at the top of the wrap file so that
+  // collectors and method arguments can use these typedefs
+  BOOST_FOREACH(const Class& cls, expandedClasses)
     if(!cls.typedefName.empty())
       wrapperFile.oss << cls.getTypedef() << "\n";
-  }
   wrapperFile.oss << "\n";
 
   // Generate boost.serialization export flags (needs typedefs from above)
   if (hasSerialiable) {
-    BOOST_FOREACH(const Class& cls, expandedClasses) {
+    BOOST_FOREACH(const Class& cls, expandedClasses)
       if(cls.isSerializable)
         wrapperFile.oss << cls.getSerializationExport() << "\n";
-    }
     wrapperFile.oss << "\n";
   }
 
@@ -552,14 +467,12 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   vector<string> functionNames; // Function names stored by index for switch
 
   // create proxy class and wrapper code
-  BOOST_FOREACH(const Class& cls, expandedClasses) {
+  BOOST_FOREACH(const Class& cls, expandedClasses)
     cls.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
-  }
 
   // create matlab files and wrapper code for global functions
-  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions) {
+  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions)
     p.second.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
-  } 
 
   // finish wrapper file
   wrapperFile.oss << "\n";
@@ -567,29 +480,25 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 
   wrapperFile.emit(true);
 }
-/* ************************************************************************* */ 
-map<string, Method> Module::appendInheretedMethods(const Class& cls, const vector<Class>& classes)
-{
-  map<string, Method> methods;
-  if(!cls.qualifiedParent.empty())
-  {
-    //Find Class
-    BOOST_FOREACH(const Class& parent, classes) {
-      //We found the class for our parent
-      if(parent.name == cls.qualifiedParent.back())
-      {
-        Methods inhereted = appendInheretedMethods(parent, classes);
-        methods.insert(inhereted.begin(), inhereted.end());
-      }
-    }
-  } else {
-    methods.insert(cls.methods.begin(), cls.methods.end());
-  }
 
-  return methods;
-}
- 
 /* ************************************************************************* */ 
+void Module::generateIncludes(FileWriter& file) const {
+
+  // collect includes
+  vector<string> all_includes(includes);
+
+  // sort and remove duplicates
+  sort(all_includes.begin(), all_includes.end());
+  vector<string>::const_iterator last_include = unique(all_includes.begin(), all_includes.end());
+  vector<string>::const_iterator it = all_includes.begin();
+  // add includes to file
+  for (; it != last_include; ++it)
+    file.oss << "#include <" << *it << ">" << endl;
+  file.oss << "\n";
+}
+
+
+/* ************************************************************************* */
   void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const { 
     file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n"; 
     file.oss << "{\n"; 
@@ -741,3 +650,31 @@ void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& modul
 } 
  
 /* ************************************************************************* */ 
+void Module::python_wrapper(const string& toolboxPath) const {
+
+  fs::create_directories(toolboxPath);
+
+  // create the unified .cpp switch file
+  const string wrapperName = name + "_python";
+  string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
+  FileWriter wrapperFile(wrapperFileName, verbose, "//");
+  wrapperFile.oss << "#include <boost/python.hpp>\n\n";
+  wrapperFile.oss << "using namespace boost::python;\n";
+  wrapperFile.oss << "BOOST_PYTHON_MODULE(" + name + ")\n";
+  wrapperFile.oss << "{\n";
+
+  // write out classes
+  BOOST_FOREACH(const Class& cls, expandedClasses)
+    cls.python_wrapper(wrapperFile);
+
+  // write out global functions
+  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions)
+    p.second.python_wrapper(wrapperFile);
+
+  // finish wrapper file
+  wrapperFile.oss << "}\n";
+
+  wrapperFile.emit(true);
+}
+
+/* ************************************************************************* */
