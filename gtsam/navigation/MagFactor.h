@@ -74,7 +74,7 @@ public:
    */
   Vector evaluateError(const Rot2& nRb,
       boost::optional<Matrix&> H = boost::none) const {
-    // measured bM = nRbÕ * nM + b
+    // measured bM = nRbï¿½ * nM + b
     Point3 hx = unrotate(nRb, nM_, H) + bias_;
     return (hx - measured_).vector();
   }
@@ -112,7 +112,7 @@ public:
    */
   Vector evaluateError(const Rot3& nRb,
       boost::optional<Matrix&> H = boost::none) const {
-    // measured bM = nRbÕ * nM + b
+    // measured bM = nRbï¿½ * nM + b
     Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
     return (hx - measured_).vector();
   }
@@ -151,7 +151,7 @@ public:
   Vector evaluateError(const Point3& nM, const Point3& bias,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
-    // measured bM = nRbÕ * nM + b, where b is unknown bias
+    // measured bM = nRbï¿½ * nM + b, where b is unknown bias
     Point3 hx = bRn_.rotate(nM, boost::none, H1) + bias;
     if (H2)
       *H2 = eye(3);
@@ -193,7 +193,7 @@ public:
       const Point3& bias, boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
           boost::none) const {
-    // measured bM = nRbÕ * nM + b, where b is unknown bias
+    // measured bM = nRbï¿½ * nM + b, where b is unknown bias
     Unit3 rotated = bRn_.rotate(direction, boost::none, H2);
     Point3 hx = scale * rotated.point3() + bias;
     if (H1)

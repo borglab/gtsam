@@ -110,6 +110,12 @@ public:
       boost::optional<Matrix&> H = boost::none) const {
     return attitudeError(nRb, H);
   }
+  Unit3 nZ() const {
+    return nZ_;
+  }
+  Unit3 bRef() const {
+    return bRef_;
+  }
 
 private:
 
@@ -184,6 +190,12 @@ public:
       H->block<2,3>(0,0) = H23;
     }
     return e;
+  }
+  Unit3 nZ() const {
+    return nZ_;
+  }
+  Unit3 bRef() const {
+    return bRef_;
   }
 
 private:

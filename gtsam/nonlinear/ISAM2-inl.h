@@ -303,4 +303,3 @@ int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique) {
 
 }
 
-
