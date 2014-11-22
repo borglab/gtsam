@@ -189,7 +189,7 @@ public:
    * @param nM (unknown) local earth magnetic field vector, in nav frame
    * @param bias (unknown) 3D bias
    */
-  Vector evaluateError(double scale, const Unit3& direction,
+  Vector evaluateError(const double& scale, const Unit3& direction,
       const Point3& bias, boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
           boost::none) const {
