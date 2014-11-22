@@ -33,12 +33,13 @@ TEST( Method, Constructor ) {
 // addOverload
 TEST( Method, addOverload ) {
   Method method;
-  method.initializeOrCheck("myName");
-  bool is_const = true;
   ArgumentList args;
-  const ReturnValue retVal(ReturnType("return_type"));
-  method.addOverload("myName", args, retVal, is_const);
-  EXPECT_LONGS_EQUAL(1, method.nrOverloads());
+  bool is_const = true;
+  const ReturnValue retVal1(ReturnType("return_type1"));
+  method.addOverload("myName", args, retVal1, is_const);
+  const ReturnValue retVal2(ReturnType("return_type2"));
+  method.addOverload("myName", args, retVal2, is_const);
+  EXPECT_LONGS_EQUAL(2, method.nrOverloads());
 }
 
 /* ************************************************************************* */
