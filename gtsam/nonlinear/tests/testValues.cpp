@@ -383,6 +383,12 @@ TEST(Values, filter) {
   expectedSubValues1.insert(3, pose3);
   EXPECT(assert_equal(expectedSubValues1, actualSubValues1));
 
+  // ConstFilter by Key
+  Values::ConstFiltered<Value> constfiltered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  EXPECT_LONGS_EQUAL(2, (long)constfiltered.size());
+  Values fromconstfiltered(constfiltered);
+  EXPECT(assert_equal(expectedSubValues1, fromconstfiltered));
+
   // Filter by type
   i = 0;
   Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();

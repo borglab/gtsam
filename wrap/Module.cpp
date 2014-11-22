@@ -217,7 +217,7 @@ void Module::parseMarkup(const std::string& data) {
   Constructor constructor0(verbose), constructor(verbose);
   Rule constructor_p =  
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p) 
-    [bl::bind(&Constructor::addOverload, bl::var(constructor), bl::var(args))]
+    [bl::bind(&Constructor::push_back, bl::var(constructor), bl::var(args))]
     [clear_a(args)];
  
   vector<string> namespaces_return; /// namespace for current return type
@@ -274,7 +274,7 @@ void Module::parseMarkup(const std::string& data) {
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p) 
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
-      verbose, bl::var(methodName), bl::var(args), bl::var(retVal), Qualified())]
+      bl::var(methodName), bl::var(args), bl::var(retVal), Qualified(),verbose)]
     [assign_a(retVal,retVal0)]
     [clear_a(args)];
  
@@ -295,7 +295,8 @@ void Module::parseMarkup(const std::string& data) {
       >> ((':' >> classParent_p >> '{') | '{') 
       >> *(functions_p | comments_p) 
       >> str_p("};")) 
-      [assign_a(constructor.name, cls.name)] 
+      [bl::bind(&Constructor::initializeOrCheck, bl::var(constructor),
+          bl::var(cls.name), Qualified(), verbose)]
       [assign_a(cls.constructor, constructor)] 
       [assign_a(cls.namespaces, namespaces)] 
       [assign_a(cls.deconstructor.name,cls.name)]
@@ -313,7 +314,7 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(globalFunction.namespaces,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
         bl::var(global_functions)[bl::var(globalFunction.name)],
-        verbose,  bl::var(globalFunction), bl::var(args), bl::var(retVal), Qualified())]
+        bl::var(globalFunction), bl::var(args), bl::var(retVal), Qualified(),verbose)]
       [assign_a(retVal,retVal0)]
       [clear_a(globalFunction)]
       [clear_a(args)];
@@ -393,51 +394,35 @@ void Module::parseMarkup(const std::string& data) {
   // Explicitly add methods to the classes from parents so it shows in documentation
   BOOST_FOREACH(Class& cls, classes)
     cls.appendInheritedMethods(cls, classes);
-} 
- 
-/* ************************************************************************* */ 
-void Module::generateIncludes(FileWriter& file) const { 
- 
-  // collect includes 
-  vector<string> all_includes(includes); 
- 
-  // sort and remove duplicates 
-  sort(all_includes.begin(), all_includes.end()); 
-  vector<string>::const_iterator last_include = unique(all_includes.begin(), all_includes.end()); 
-  vector<string>::const_iterator it = all_includes.begin(); 
-  // add includes to file 
-  for (; it != last_include; ++it) 
-    file.oss << "#include <" << *it << ">" << endl; 
-  file.oss << "\n"; 
-} 
-
- 
-/* ************************************************************************* */ 
-void Module::matlab_code(const string& toolboxPath, const string& headerPath) const { 
-
-  fs::create_directories(toolboxPath);
 
   // Expand templates - This is done first so that template instantiations are
   // counted in the list of valid types, have their attributes and dependencies
   // checked, etc.
-  vector<Class> expandedClasses = ExpandTypedefInstantiations(classes, templateInstantiationTypedefs);
+  expandedClasses = ExpandTypedefInstantiations(classes,
+      templateInstantiationTypedefs);
 
   // Dependency check list
-  vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations);
+  vector<string> validTypes = GenerateValidTypes(expandedClasses,
+      forward_declarations);
 
   // Check that all classes have been defined somewhere
   verifyArguments<GlobalFunction>(validTypes, global_functions);
   verifyReturnTypes<GlobalFunction>(validTypes, global_functions);
 
-  bool hasSerialiable = false;
+  hasSerialiable = false;
   BOOST_FOREACH(const Class& cls, expandedClasses)
     cls.verifyAll(validTypes,hasSerialiable);
 
   // Create type attributes table and check validity
-  TypeAttributesTable typeAttributes;
   typeAttributes.addClasses(expandedClasses);
   typeAttributes.addForwardDeclarations(forward_declarations);
   typeAttributes.checkValidity(expandedClasses);
+} 
+ 
+/* ************************************************************************* */ 
+void Module::matlab_code(const string& toolboxPath) const {
+
+  fs::create_directories(toolboxPath);
 
   // create the unified .cpp switch file
   const string wrapperName = name + "_wrapper";
@@ -458,19 +443,18 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   // Generate includes while avoiding redundant includes
   generateIncludes(wrapperFile);
 
-  // create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
-  BOOST_FOREACH(const Class& cls, expandedClasses) {
+  // create typedef classes - we put this at the top of the wrap file so that
+  // collectors and method arguments can use these typedefs
+  BOOST_FOREACH(const Class& cls, expandedClasses)
     if(!cls.typedefName.empty())
       wrapperFile.oss << cls.getTypedef() << "\n";
-  }
   wrapperFile.oss << "\n";
 
   // Generate boost.serialization export flags (needs typedefs from above)
   if (hasSerialiable) {
-    BOOST_FOREACH(const Class& cls, expandedClasses) {
+    BOOST_FOREACH(const Class& cls, expandedClasses)
       if(cls.isSerializable)
         wrapperFile.oss << cls.getSerializationExport() << "\n";
-    }
     wrapperFile.oss << "\n";
   }
 
@@ -483,14 +467,12 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   vector<string> functionNames; // Function names stored by index for switch
 
   // create proxy class and wrapper code
-  BOOST_FOREACH(const Class& cls, expandedClasses) {
+  BOOST_FOREACH(const Class& cls, expandedClasses)
     cls.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
-  }
 
   // create matlab files and wrapper code for global functions
-  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions) {
+  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions)
     p.second.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
-  } 
 
   // finish wrapper file
   wrapperFile.oss << "\n";
@@ -500,6 +482,23 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 }
 
 /* ************************************************************************* */ 
+void Module::generateIncludes(FileWriter& file) const {
+
+  // collect includes
+  vector<string> all_includes(includes);
+
+  // sort and remove duplicates
+  sort(all_includes.begin(), all_includes.end());
+  vector<string>::const_iterator last_include = unique(all_includes.begin(), all_includes.end());
+  vector<string>::const_iterator it = all_includes.begin();
+  // add includes to file
+  for (; it != last_include; ++it)
+    file.oss << "#include <" << *it << ">" << endl;
+  file.oss << "\n";
+}
+
+
+/* ************************************************************************* */
   void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const { 
     file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n"; 
     file.oss << "{\n"; 
@@ -651,3 +650,31 @@ void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& modul
 } 
  
 /* ************************************************************************* */ 
+void Module::python_wrapper(const string& toolboxPath) const {
+
+  fs::create_directories(toolboxPath);
+
+  // create the unified .cpp switch file
+  const string wrapperName = name + "_python";
+  string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
+  FileWriter wrapperFile(wrapperFileName, verbose, "//");
+  wrapperFile.oss << "#include <boost/python.hpp>\n\n";
+  wrapperFile.oss << "using namespace boost::python;\n";
+  wrapperFile.oss << "BOOST_PYTHON_MODULE(" + name + ")\n";
+  wrapperFile.oss << "{\n";
+
+  // write out classes
+  BOOST_FOREACH(const Class& cls, expandedClasses)
+    cls.python_wrapper(wrapperFile);
+
+  // write out global functions
+  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions)
+    p.second.python_wrapper(wrapperFile);
+
+  // finish wrapper file
+  wrapperFile.oss << "}\n";
+
+  wrapperFile.emit(true);
+}
+
+/* ************************************************************************* */

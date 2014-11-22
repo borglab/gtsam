@@ -16,18 +16,18 @@ namespace wrap {
 using namespace std;
 
 /* ************************************************************************* */
-void GlobalFunction::addOverload(bool verbose, const Qualified& overload,
+void GlobalFunction::addOverload(const Qualified& overload,
     const ArgumentList& args, const ReturnValue& retVal,
-    const Qualified& instName) {
-  Function::addOverload(verbose, overload.name, instName);
-  SignatureOverloads::addOverload(args, retVal);
+    const Qualified& instName, bool verbose) {
+  string name(overload.name);
+  FullyOverloadedFunction::addOverload(name, args, retVal, instName, verbose);
   overloads.push_back(overload);
 }
 
 /* ************************************************************************* */
-void GlobalFunction::matlab_proxy(const std::string& toolboxPath,
-    const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
-    FileWriter& file, std::vector<std::string>& functionNames) const {
+void GlobalFunction::matlab_proxy(const string& toolboxPath,
+    const string& wrapperName, const TypeAttributesTable& typeAttributes,
+    FileWriter& file, vector<string>& functionNames) const {
 
   // cluster overloads with same namespace
   // create new GlobalFunction structures around namespaces - same namespaces and names are overloads
@@ -40,8 +40,7 @@ void GlobalFunction::matlab_proxy(const std::string& toolboxPath,
     string str_ns = qualifiedName("", overload.namespaces);
     const ReturnValue& ret = returnValue(i);
     const ArgumentList& args = argumentList(i);
-    grouped_functions[str_ns].addOverload(verbose_, overload, args, ret,
-        templateArgValue_);
+    grouped_functions[str_ns].addOverload(overload, args, ret);
   }
 
   size_t lastcheck = grouped_functions.size();
@@ -54,9 +53,9 @@ void GlobalFunction::matlab_proxy(const std::string& toolboxPath,
 }
 
 /* ************************************************************************* */
-void GlobalFunction::generateSingleFunction(const std::string& toolboxPath,
-    const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
-    FileWriter& file, std::vector<std::string>& functionNames) const {
+void GlobalFunction::generateSingleFunction(const string& toolboxPath,
+    const string& wrapperName, const TypeAttributesTable& typeAttributes,
+    FileWriter& file, vector<string>& functionNames) const {
 
   // create the folder for the namespace
   const Qualified& overload1 = overloads.front();
@@ -126,6 +125,11 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath,
 
   // Close file
   mfunctionFile.emit(true);
+}
+
+/* ************************************************************************* */
+void GlobalFunction::python_wrapper(FileWriter& wrapperFile) const {
+  wrapperFile.oss << "def(\"" << name_ << "\", " << name_ << ");\n";
 }
 
 /* ************************************************************************* */

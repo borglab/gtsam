@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose2SLAMExample.cpp
+ * @file Pose2SLAMExampleExpressions.cpp
  * @brief Expressions version of Pose2SLAMExample.cpp
  * @date Oct 2, 2014
  * @author Frank Dellaert

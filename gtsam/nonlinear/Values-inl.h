@@ -215,7 +215,7 @@ namespace gtsam {
   Values::Values(const Values::ConstFiltered<ValueType>& view) {
     BOOST_FOREACH(const typename ConstFiltered<ValueType>::KeyValuePair& key_value, view) {
       Key key = key_value.key;
-      insert<ValueType>(key, key_value.value);
+      insert(key, static_cast<const ValueType&>(key_value.value));
     }
   }
 

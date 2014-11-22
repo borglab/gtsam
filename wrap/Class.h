@@ -111,6 +111,9 @@ public:
   void deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
       Str wrapperName, std::vector<std::string>& functionNames) const;
 
+  // emit python wrapper
+  void python_wrapper(FileWriter& wrapperFile) const;
+
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name << "{\n";
     os << cls.constructor << ";\n";

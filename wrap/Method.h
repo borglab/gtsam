@@ -31,14 +31,9 @@ public:
 
   typedef const std::string& Str;
 
-  /// Constructor creates empty object
-  Method(bool verbose = true) :
-      StaticMethod(verbose), is_const_(false) {
-  }
-
-  Method(const std::string& name, bool verbose = true) :
-    StaticMethod(name,verbose), is_const_(false) {
-  }
+  bool addOverload(Str name, const ArgumentList& args,
+      const ReturnValue& retVal, bool is_const, const Qualified& instName =
+          Qualified(), bool verbose = false);
 
   virtual bool isStatic() const {
     return false;
@@ -47,13 +42,6 @@ public:
   virtual bool isConst() const {
     return is_const_;
   }
-
-  // The first time this function is called, it initializes the class members
-  // with those in rhs, but in subsequent calls it adds additional argument
-  // lists as function overloads.
-  void addOverload(bool verbose, bool is_const, Str name,
-      const ArgumentList& args, const ReturnValue& retVal,
-      const Qualified& instName = Qualified());
 
   friend std::ostream& operator<<(std::ostream& os, const Method& m) {
     for (size_t i = 0; i < m.nrOverloads(); i++)
