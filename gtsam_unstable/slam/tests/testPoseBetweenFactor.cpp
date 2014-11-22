@@ -95,13 +95,20 @@ TEST( PoseBetweenFactor, Error ) {
 
   // The expected error
   Vector expectedError(6);
+  // The solution depends on choice of Pose3 and Rot3 Expmap mode!
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   expectedError << -0.0298135267953815,
                     0.0131341515747393,
                     0.0968868439682154,
+#if defined(GTSAM_POSE3_EXPMAP)
                    -0.145701634472172,
                    -0.134898525569125,
                    -0.0421026389164264;
+#else
+                   -0.13918755,
+                   -0.142346243,
+                   -0.0390885321;
+#endif
 #else
   expectedError << -0.029839512616488,
                     0.013145599455949,
@@ -132,14 +139,20 @@ TEST( PoseBetweenFactor, ErrorWithTransform ) {
 
   // The expected error
   Vector expectedError(6);
-  // TODO: The solution depends on choice of Pose3 and Rot3 Expmap mode!
-#if defined(GTSAM_ROT3_EXPMAP)
+  // The solution depends on choice of Pose3 and Rot3 Expmap mode!
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   expectedError <<    0.0173358202010741,
                       0.0222210698409755,
                      -0.0125032003886145,
+#if defined(GTSAM_POSE3_EXPMAP)
                       0.0263800787416566,
                       0.00540285006310398,
                       0.000175859555693563;
+#else
+                      0.0264132886,
+                      0.0052376953,
+                      -7.16127036e-05;
+#endif
 #else
   expectedError <<    0.017337193670445,
                       0.022222830355243,

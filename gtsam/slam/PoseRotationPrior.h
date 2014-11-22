@@ -77,7 +77,7 @@ public:
       (*H).middleCols(rotInterval.first, rDim).setIdentity(rDim, rDim);
     }
 
-    return Rotation::Logmap(newR) - Rotation::Logmap(measured_);
+    return measured_.localCoordinates(newR);
   }
 
 private:

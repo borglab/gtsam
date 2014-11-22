@@ -81,13 +81,13 @@ int main(int argc, char** argv) {
   // Add a prior on pose x1 at the origin. A prior factor consists of a mean and a noise model (covariance matrix)
   Pose2 prior(0.0, 0.0, 0.0); // prior mean is at origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
-  graph.push_back(PriorFactor<Pose2>(x1, prior, priorNoise)); // add directly to graph
+  graph.add(PriorFactor<Pose2>(x1, prior, priorNoise)); // add directly to graph
 
   // Add two odometry factors
   Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
   noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
-  graph.push_back(BetweenFactor<Pose2>(x1, x2, odometry, odometryNoise));
-  graph.push_back(BetweenFactor<Pose2>(x2, x3, odometry, odometryNoise));
+  graph.add(BetweenFactor<Pose2>(x1, x2, odometry, odometryNoise));
+  graph.add(BetweenFactor<Pose2>(x2, x3, odometry, odometryNoise));
 
   // Add Range-Bearing measurements to two different landmarks
   // create a noise model for the landmark measurements
@@ -101,9 +101,9 @@ int main(int argc, char** argv) {
          range32 = 2.0;
 
   // Add Bearing-Range factors
-  graph.push_back(BearingRangeFactor<Pose2, Point2>(x1, l1, bearing11, range11, measurementNoise));
-  graph.push_back(BearingRangeFactor<Pose2, Point2>(x2, l1, bearing21, range21, measurementNoise));
-  graph.push_back(BearingRangeFactor<Pose2, Point2>(x3, l2, bearing32, range32, measurementNoise));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x1, l1, bearing11, range11, measurementNoise));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x2, l1, bearing21, range21, measurementNoise));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x3, l2, bearing32, range32, measurementNoise));
 
   // Print
   graph.print("Factor Graph:\n");

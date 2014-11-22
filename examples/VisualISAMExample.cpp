@@ -14,6 +14,7 @@
  * @brief   A visualSLAM example for the structure-from-motion problem on a simulated dataset
  * This version uses iSAM to solve the problem incrementally
  * @author  Duy-Nguyen Ta
+ * @author  Frank Dellaert
  */
 
 /**
@@ -61,7 +62,8 @@ int main(int argc, char* argv[]) {
   Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
 
   // Define the camera observation noise model
-  noiseModel::Isotropic::shared_ptr measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
+  noiseModel::Isotropic::shared_ptr noise = //
+      noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Create the set of ground-truth landmarks
   vector<Point3> points = createPoints();
@@ -69,7 +71,8 @@ int main(int argc, char* argv[]) {
   // Create the set of ground-truth poses
   vector<Pose3> poses = createPoses();
 
-  // Create a NonlinearISAM object which will relinearize and reorder the variables every "relinearizeInterval" updates
+  // Create a NonlinearISAM object which will relinearize and reorder the variables
+  // every "relinearizeInterval" updates
   int relinearizeInterval = 3;
   NonlinearISAM isam(relinearizeInterval);
 
@@ -82,32 +85,44 @@ int main(int argc, char* argv[]) {
 
     // Add factors for each landmark observation
     for (size_t j = 0; j < points.size(); ++j) {
+      // Create ground truth measurement
       SimpleCamera camera(poses[i], *K);
       Point2 measurement = camera.project(points[j]);
-      graph.push_back(GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K));
+      // Add measurement
+      graph.add(
+          GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, noise,
+              Symbol('x', i), Symbol('l', j), K));
     }
 
-    // Add an initial guess for the current pose
     // Intentionally initialize the variables off from the ground truth
-    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
+    Pose3 noise(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+    Pose3 initial_xi = poses[i].compose(noise);
+
+    // Add an initial guess for the current pose
+    initialEstimate.insert(Symbol('x', i), initial_xi);
 
     // If this is the first iteration, add a prior on the first pose to set the coordinate frame
     // and a prior on the first landmark to set the scale
     // Also, as iSAM solves incrementally, we must wait until each is observed at least twice before
     // adding it to iSAM.
-    if( i == 0) {
-      // Add a prior on pose x0
-      noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-      graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
+    if (i == 0) {
+      // Add a prior on pose x0, with 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+      noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(
+          (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)));
+      graph.add(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
 
       // Add a prior on landmark l0
-      noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-      graph.push_back(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
+      noiseModel::Isotropic::shared_ptr pointNoise =
+          noiseModel::Isotropic::Sigma(3, 0.1);
+      graph.add(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise));
 
       // Add initial guesses to all observed landmarks
-      // Intentionally initialize the variables off from the ground truth
-      for (size_t j = 0; j < points.size(); ++j)
-        initialEstimate.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
+      Point3 noise(-0.25, 0.20, 0.15);
+      for (size_t j = 0; j < points.size(); ++j) {
+        // Intentionally initialize the variables off from the ground truth
+        Point3 initial_lj = points[j].compose(noise);
+        initialEstimate.insert(Symbol('l', j), initial_lj);
+      }
 
     } else {
       // Update iSAM with the new factors

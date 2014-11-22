@@ -81,7 +81,7 @@ public:
   }
 
   /// Get matrix P
-  inline const Matrix& getPointCovariance() const {
+  inline const Matrix3& getPointCovariance() const {
     return PointCovariance_;
   }
 
@@ -286,26 +286,27 @@ public:
     return 0.5 * (result + f);
   }
 
-  /// needed to be GaussianFactor - (I - E*P*E')*(F*x - b)
-  // This is wrong and does not match the definition in Hessian
-  //  virtual double error(const VectorValues& x) const {
-  //
-  //    // resize does not do malloc if correct size
-  //    e1.resize(size());
-  //    e2.resize(size());
-  //
-  //    // e1 = F * x - b = (2m*dm)*dm
-  //    for (size_t k = 0; k < size(); ++k)
-  //      e1[k] = Fblocks_[k].second * x.at(keys_[k]) - b_.segment < 2 > (k * 2);
-  //    projectError(e1, e2);
-  //
-  //    double result = 0;
-  //    for (size_t k = 0; k < size(); ++k)
-  //      result += dot(e2[k], e2[k]);
-  //
-  //    std::cout << "implicitFactor::error result " << result << std::endl;
-  //    return 0.5 * result;
-  //  }
+  // needed to be GaussianFactor - (I - E*P*E')*(F*x - b)
+  // This is wrong and does not match the definition in Hessian,
+  // but it matches the definition of the Jacobian factor (JF)
+  double errorJF(const VectorValues& x) const {
+
+    // resize does not do malloc if correct size
+    e1.resize(size());
+    e2.resize(size());
+
+    // e1 = F * x - b = (2m*dm)*dm
+    for (size_t k = 0; k < size(); ++k)
+      e1[k] = Fblocks_[k].second * x.at(keys_[k]) - b_.segment < 2 > (k * 2);
+    projectError(e1, e2);
+
+    double result = 0;
+    for (size_t k = 0; k < size(); ++k)
+      result += dot(e2[k], e2[k]);
+
+    // std::cout << "implicitFactor::error result " << result << std::endl;
+    return 0.5 * result;
+  }
   /**
    * @brief Calculate corrected error Q*e = (I - E*P*E')*e
    */

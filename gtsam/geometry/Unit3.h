@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 #include <boost/random/mersenne_twister.hpp>
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
@@ -31,8 +32,10 @@ class GTSAM_EXPORT Unit3: public DerivedValue<Unit3> {
 
 private:
 
+  typedef Eigen::Matrix<double,3,2> Matrix32;
+
   Point3 p_; ///< The location of the point on the unit sphere
-  mutable Matrix B_; ///< Cached basis
+  mutable boost::optional<Matrix32> B_; ///< Cached basis
 
 public:
 
@@ -84,7 +87,7 @@ public:
    * It is a 3*2 matrix [b1 b2] composed of two orthogonal directions
    * tangent to the sphere at the current direction.
    */
-  const Matrix& basis() const;
+  const Matrix32& basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
   Matrix skew() const;

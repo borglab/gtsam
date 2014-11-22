@@ -176,11 +176,11 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     stm << "];\n";
 
     if (firstTimePoses) {
-    	lastKey = key;
-    	firstTimePoses = false;
+      lastKey = key;
+      firstTimePoses = false;
     } else {
-    	stm << "  var" << key << "--" << "var" << lastKey << ";\n";
-    	lastKey = key;
+      stm << "  var" << key << "--" << "var" << lastKey << ";\n";
+      lastKey = key;
     }
   }
   stm << "\n";
@@ -219,37 +219,37 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     // Create factors and variable connections
     for(size_t i = 0; i < this->size(); ++i) {
       if(graphvizFormatting.plotFactorPoints){
-		// Make each factor a dot
-		stm << "  factor" << i << "[label=\"\", shape=point";
-		{
-		map<size_t, Point2>::const_iterator pos = graphvizFormatting.factorPositions.find(i);
-		if(pos != graphvizFormatting.factorPositions.end())
-		  stm << ", pos=\"" << graphvizFormatting.scale*(pos->second.x() - minX) << "," << graphvizFormatting.scale*(pos->second.y() - minY) << "!\"";
-		}
-		stm << "];\n";
+    // Make each factor a dot
+    stm << "  factor" << i << "[label=\"\", shape=point";
+    {
+    map<size_t, Point2>::const_iterator pos = graphvizFormatting.factorPositions.find(i);
+    if(pos != graphvizFormatting.factorPositions.end())
+      stm << ", pos=\"" << graphvizFormatting.scale*(pos->second.x() - minX) << "," << graphvizFormatting.scale*(pos->second.y() - minY) << "!\"";
+    }
+    stm << "];\n";
 
-		// Make factor-variable connections
-		if(graphvizFormatting.connectKeysToFactor && this->at(i)) {
-		  BOOST_FOREACH(Key key, *this->at(i)) {
-		  stm << "  var" << key << "--" << "factor" << i << ";\n";
-		  }
-		}
+    // Make factor-variable connections
+    if(graphvizFormatting.connectKeysToFactor && this->at(i)) {
+      BOOST_FOREACH(Key key, *this->at(i)) {
+      stm << "  var" << key << "--" << "factor" << i << ";\n";
+      }
+    }
 
-	  }
+    }
       else {
-    	if(this->at(i)) {
-    	  Key k;
-    	  bool firstTime = true;
-    	  BOOST_FOREACH(Key key, *this->at(i)) {
-    		if(firstTime){
-    		  k = key;
-    		  firstTime = false;
-    		  continue;
-    		}
-    		stm << "  var" << key << "--" << "var" << k << ";\n";
-    		k = key;
-    	  }
-    	}
+      if(this->at(i)) {
+        Key k;
+        bool firstTime = true;
+        BOOST_FOREACH(Key key, *this->at(i)) {
+        if(firstTime){
+          k = key;
+          firstTime = false;
+          continue;
+        }
+        stm << "  var" << key << "--" << "var" << k << ";\n";
+        k = key;
+        }
+      }
       }
     }
   }

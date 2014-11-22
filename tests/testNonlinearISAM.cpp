@@ -212,11 +212,11 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
   // verify values - all but the last one should be very close
   Values actualChol = isamChol.estimate();
   for (size_t i=0; i<nrPoses; ++i)
-    EXPECT(assert_equal(expected.at<Pose2>(i), actualChol.at<Pose2>(i), tol));
+    EXPECT(assert_equal(expected.at<Pose2>(i), actualChol.at<Pose2>(i), 1e-4));
 
   Values actualQR = isamQR.estimate();
   for (size_t i=0; i<nrPoses; ++i)
-    EXPECT(assert_equal(expected.at<Pose2>(i), actualQR.at<Pose2>(i), tol));
+    EXPECT(assert_equal(expected.at<Pose2>(i), actualQR.at<Pose2>(i), 1e-4));
 
   // Check landmarks
   EXPECT(assert_equal(expected.at<Point2>(lm1), actualChol.at<Point2>(lm1), tol));

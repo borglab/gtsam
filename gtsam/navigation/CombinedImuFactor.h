@@ -345,12 +345,12 @@ namespace gtsam {
 
     /** Constructor */
     CombinedImuFactor(
-    	Key pose_i, ///< previous pose key
-    	Key vel_i, ///< previous velocity key
-    	Key pose_j, ///< current pose key
-    	Key vel_j, ///< current velocity key
-    	Key bias_i, ///< previous bias key
-    	Key bias_j, ///< current bias key
+      Key pose_i, ///< previous pose key
+      Key vel_i, ///< previous velocity key
+      Key pose_j, ///< current pose key
+      Key vel_j, ///< current velocity key
+      Key bias_i, ///< previous bias key
+      Key bias_j, ///< current bias key
         const CombinedPreintegratedMeasurements& preintegratedMeasurements, ///< Preintegrated IMU measurements
         const Vector3& gravity, ///< gravity vector
         const Vector3& omegaCoriolis, ///< rotation rate of inertial frame
@@ -480,33 +480,33 @@ namespace gtsam {
         Matrix3 dfPdPi;
         Matrix3 dfVdPi;
         if(use2ndOrderCoriolis_){
-        	dfPdPi = - Rot_i.matrix() + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij*deltaTij;
-        	dfVdPi = skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij;
+          dfPdPi = - Rot_i.matrix() + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij*deltaTij;
+          dfVdPi = skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij;
         }
         else{
-        	dfPdPi = - Rot_i.matrix();
-        	dfVdPi = Matrix3::Zero();
+          dfPdPi = - Rot_i.matrix();
+          dfVdPi = Matrix3::Zero();
         }
 
-		(*H1) <<
-			// dfP/dRi
-			Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij
-				+ preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr),
-			// dfP/dPi
-			dfPdPi,
-			// dfV/dRi
-			Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij
-				+ preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr),
-			// dfV/dPi
-			dfVdPi,
-			// dfR/dRi
-			Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
-			// dfR/dPi
-			Matrix3::Zero(),
-			//dBiasAcc/dPi
-			Matrix3::Zero(), Matrix3::Zero(),
-			//dBiasOmega/dPi
-			Matrix3::Zero(), Matrix3::Zero();
+    (*H1) <<
+      // dfP/dRi
+      Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij
+        + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr),
+      // dfP/dPi
+      dfPdPi,
+      // dfV/dRi
+      Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij
+        + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr),
+      // dfV/dPi
+      dfVdPi,
+      // dfR/dRi
+      Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
+      // dfR/dPi
+      Matrix3::Zero(),
+      //dBiasAcc/dPi
+      Matrix3::Zero(), Matrix3::Zero(),
+      //dBiasOmega/dPi
+      Matrix3::Zero(), Matrix3::Zero();
       }
 
       if(H2) {
@@ -517,13 +517,13 @@ namespace gtsam {
             + skewSymmetric(omegaCoriolis_) * deltaTij * deltaTij,  // Coriolis term - we got rid of the 2 wrt ins paper
             // dfV/dVi
             - Matrix3::Identity()
-			+ 2 * skewSymmetric(omegaCoriolis_) * deltaTij, // Coriolis term
-			// dfR/dVi
-			Matrix3::Zero(),
-			//dBiasAcc/dVi
-			Matrix3::Zero(),
-			//dBiasOmega/dVi
-			Matrix3::Zero();
+      + 2 * skewSymmetric(omegaCoriolis_) * deltaTij, // Coriolis term
+      // dfR/dVi
+      Matrix3::Zero(),
+      //dBiasAcc/dVi
+      Matrix3::Zero(),
+      //dBiasOmega/dVi
+      Matrix3::Zero();
       }
 
       if(H3) {
@@ -643,21 +643,21 @@ namespace gtsam {
       // Predict state at time j
       /* ---------------------------------------------------------------------------------------------------- */
        Vector3 pos_j =  pos_i + Rot_i.matrix() * (preintegratedMeasurements.deltaPij
-		  + preintegratedMeasurements.delPdelBiasAcc * biasAccIncr
-		  + preintegratedMeasurements.delPdelBiasOmega * biasOmegaIncr)
-		  + vel_i * deltaTij
-		  - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
-		  + 0.5 * gravity * deltaTij*deltaTij;
+      + preintegratedMeasurements.delPdelBiasAcc * biasAccIncr
+      + preintegratedMeasurements.delPdelBiasOmega * biasOmegaIncr)
+      + vel_i * deltaTij
+      - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
+      + 0.5 * gravity * deltaTij*deltaTij;
 
-	  vel_j = LieVector(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij
-		  + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
-		  + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
-		  - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
-		  + gravity * deltaTij);
+    vel_j = LieVector(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij
+      + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
+      + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
+      - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
+      + gravity * deltaTij);
 
       if(use2ndOrderCoriolis){
-    	  pos_j += - 0.5 * skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij*deltaTij;	// 2nd order coriolis term for position
-    	  vel_j += - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij; // 2nd order term for velocity
+        pos_j += - 0.5 * skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij*deltaTij;  // 2nd order coriolis term for position
+        vel_j += - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij; // 2nd order term for velocity
       }
 
       const Rot3 deltaRij_biascorrected = preintegratedMeasurements.deltaRij.retract(preintegratedMeasurements.delRdelBiasOmega * biasOmegaIncr, Rot3::EXPMAP);
