@@ -1851,8 +1851,6 @@ class KeyGroupMap {
 class Marginals {
   Marginals(const gtsam::NonlinearFactorGraph& graph,
       const gtsam::Values& solution);
-  Marginals(const gtsam::NonlinearFactorGraph& graph,
-      const gtsam::Values& solution, string str);
 
   void print(string s) const;
   Matrix marginalCovariance(size_t variable) const;
