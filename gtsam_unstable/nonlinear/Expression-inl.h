@@ -27,6 +27,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/bind.hpp>
+#include <boost/type_traits/aligned_storage.hpp>
 
 // template meta-programming headers
 #include <boost/mpl/fold.hpp>
@@ -38,6 +39,26 @@ class ExpressionFactorBinaryTest;
 // Forward declare for testing
 
 namespace gtsam {
+
+const unsigned TraceAlignment = 16;
+
+template <typename T>
+T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment){
+  // right now only word sized types are supported.
+  // Easy to extend if needed,
+  //   by somehow inferring the unsigned integer of same size
+  BOOST_STATIC_ASSERT(sizeof(T) == sizeof(size_t));
+  size_t & uiValue = reinterpret_cast<size_t &>(value);
+  size_t misAlignment = uiValue % requiredAlignment;
+  if(misAlignment) {
+    uiValue += requiredAlignment - misAlignment;
+  }
+  return value;
+}
+template <typename T>
+T upAligned(T value, unsigned requiredAlignment = TraceAlignment){
+  return upAlign(value, requiredAlignment);
+}
 
 template<typename T>
 class Expression;
@@ -175,6 +196,11 @@ public:
   typedef ExecutionTrace<T> type;
 };
 
+/// Storage type for the execution trace.
+/// It enforces the proper alignment in a portable way.
+/// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
+typedef boost::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
+
 //-----------------------------------------------------------------------------
 /**
  * Expression node. The superclass for objects that do the heavy lifting
@@ -221,7 +247,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      char* raw) const = 0;
+     ExecutionTraceStorage* traceStorage) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -248,7 +274,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      char* raw) const {
+      ExecutionTraceStorage* traceStorage) const {
     return constant_;
   }
 };
@@ -292,7 +318,8 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual const value_type& traceExecution(const Values& values,
-      ExecutionTrace<value_type>& trace, char* raw) const {
+      ExecutionTrace<value_type>& trace, 
+      ExecutionTraceStorage* traceStorage) const {
     trace.setLeaf(key_);
     return dynamic_cast<const value_type&>(values.at(key_));
   }
@@ -337,7 +364,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      char* raw) const {
+      ExecutionTraceStorage* traceStorage) const {
     trace.setLeaf(key_);
     return values.at<T>(key_);
   }
@@ -432,7 +459,8 @@ struct FunctionalBase: ExpressionNode<T> {
     }
   };
   /// Construct an execution trace for reverse AD
-  void trace(const Values& values, Record* record, char*& raw) const {
+  void trace(const Values& values, Record* record,
+      ExecutionTraceStorage*& traceStorage) const {
     // base case: does not do anything
   }
 };
@@ -512,17 +540,18 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   };
 
   /// Construct an execution trace for reverse AD
-  void trace(const Values& values, Record* record, char*& raw) const {
-    Base::trace(values, record, raw); // recurse
+  void trace(const Values& values, Record* record, 
+      ExecutionTraceStorage*& traceStorage) const {
+    Base::trace(values, record, traceStorage); // recurse
     // Write an Expression<A> execution trace in record->trace
-    // Iff Constant or Leaf, this will not write to raw, only to trace.
-    // Iff the expression is functional, write all Records in raw buffer
+    // Iff Constant or Leaf, this will not write to traceStorage, only to trace.
+    // Iff the expression is functional, write all Records in traceStorage buffer
     // Return value of type T is recorded in record->value
     record->Record::This::value = This::expression->traceExecution(values,
-        record->Record::This::trace, raw);
-    // raw is never modified by traceExecution, but if traceExecution has
+        record->Record::This::trace, traceStorage);
+    // traceStorage is never modified by traceExecution, but if traceExecution has
     // written in the buffer, the next caller expects we advance the pointer
-    raw += This::expression->traceSize();
+    traceStorage += This::expression->traceSize();
   }
 };
 
@@ -587,15 +616,17 @@ struct FunctionalNode {
     };
 
     /// Construct an execution trace for reverse AD
-    Record* trace(const Values& values, char* raw) const {
+    Record* trace(const Values& values, 
+        ExecutionTraceStorage* traceStorage) const {
+      assert(reinterpret_cast<size_t>(traceStorage) % TraceAlignment == 0);
 
       // Create the record and advance the pointer
-      Record* record = new (raw) Record();
-      raw = (char*) (record + 1);
+      Record* record = new (traceStorage) Record();
+      traceStorage += upAligned(sizeof(Record));
 
       // Record the traces for all arguments
-      // After this, the raw pointer is set to after what was written
-      Base::trace(values, record, raw);
+      // After this, the traceStorage pointer is set to after what was written
+      Base::trace(values, record, traceStorage);
 
       // Return the record for this function evaluation
       return record;
@@ -622,7 +653,7 @@ private:
   UnaryExpression(Function f, const Expression<A1>& e1) :
       function_(f) {
     this->template reset<A1, 1>(e1.root());
-    ExpressionNode<T>::traceSize_ = sizeof(Record) + e1.traceSize();
+    ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
   }
 
   friend class Expression<T> ;
@@ -636,9 +667,9 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      char* raw) const {
+      ExecutionTraceStorage* traceStorage) const {
 
-    Record* record = Base::trace(values, raw);
+    Record* record = Base::trace(values, traceStorage);
     trace.setFunction(record);
 
     return function_(record->template value<A1, 1>(),
@@ -671,7 +702,7 @@ private:
     this->template reset<A1, 1>(e1.root());
     this->template reset<A2, 2>(e2.root());
     ExpressionNode<T>::traceSize_ = //
-        sizeof(Record) + e1.traceSize() + e2.traceSize();
+        upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize();
   }
 
   friend class Expression<T> ;
@@ -689,9 +720,9 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      char* raw) const {
+      ExecutionTraceStorage* traceStorage) const {
 
-    Record* record = Base::trace(values, raw);
+    Record* record = Base::trace(values, traceStorage);
     trace.setFunction(record);
 
     return function_(record->template value<A1, 1>(),
@@ -727,7 +758,7 @@ private:
     this->template reset<A2, 2>(e2.root());
     this->template reset<A3, 3>(e3.root());
     ExpressionNode<T>::traceSize_ = //
-        sizeof(Record) + e1.traceSize() + e2.traceSize() + e3.traceSize();
+        upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize() + e3.traceSize();
   }
 
   friend class Expression<T> ;
@@ -745,9 +776,9 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      char* raw) const {
+      ExecutionTraceStorage* traceStorage) const {
 
-    Record* record = Base::trace(values, raw);
+    Record* record = Base::trace(values, traceStorage);
     trace.setFunction(record);
 
     return function_(

@@ -118,8 +118,8 @@ public:
 
   /// trace execution, very unsafe, for testing purposes only //TODO this is not only used for testing, but in value() below!
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      char* raw) const {
-    return root_->traceExecution(values, trace, raw);
+      ExecutionTraceStorage* traceStorage) const {
+    return root_->traceExecution(values, trace, traceStorage);
   }
 
   /// Return value and derivatives, reverse AD version
@@ -130,9 +130,9 @@ public:
     // with an execution trace, made up entirely of "Record" structs, see
     // the FunctionalNode class in expression-inl.h
     size_t size = traceSize();
-    char raw[size];
+    ExecutionTraceStorage traceStorage[size];
     ExecutionTrace<T> trace;
-    T value(traceExecution(values, trace, raw));
+    T value(traceExecution(values, trace, traceStorage));
     trace.startReverseAD(jacobians);
     return value;
   }
