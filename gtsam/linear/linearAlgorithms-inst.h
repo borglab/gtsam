@@ -86,10 +86,7 @@ namespace gtsam
             Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
 
             // Check for indeterminant solution
-            if(soln.hasNaN()) {
-              std::cout << "linearAlgorithms::OptimizeClique failed: solution has NaN!" << std::endl;
-              throw IndeterminantLinearSystemException(c.keys().front());
-            }
+            if(soln.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
 
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;

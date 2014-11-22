@@ -116,10 +116,8 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor) :
   boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
   // Check for indefinite system
-  if (!success) {
-    std::cout << "JacobianFactor constructor from HessianFactor failed!" << std::endl;
+  if (!success)
     throw IndeterminantLinearSystemException(factor.keys().front());
-  }
 
   // Zero out lower triangle
   Ab_.matrix().topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
@@ -693,10 +691,8 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(
   Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
   SharedDiagonal conditionalNoiseModel;
   if (model_) {
-    if ((DenseIndex) model_->dim() < frontalDim) {
-      std::cout << "Jacobian::splitConditional failed" << std::endl;
+    if ((DenseIndex) model_->dim() < frontalDim)
       throw IndeterminantLinearSystemException(this->keys().front());
-    }
     conditionalNoiseModel = noiseModel::Diagonal::Sigmas(
         model_->sigmas().segment(Ab_.rowStart(), Ab_.rows()));
   }

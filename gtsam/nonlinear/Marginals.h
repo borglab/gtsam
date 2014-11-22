@@ -54,7 +54,6 @@ public:
    * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
    */
   Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY);
-  Marginals(const NonlinearFactorGraph& graph, const Values& solution, const std::string& str);
 
   /** print */
   void print(const std::string& str = "Marginals: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -72,16 +71,6 @@ public:
 
   /** Compute the joint marginal information of several variables */
   JointMarginal jointMarginalInformation(const std::vector<Key>& variables) const;
-
-  Factorization factorizationTranslator(const std::string& str) const;
-
-  std::string factorizationTranslator(const Marginals::Factorization& value) const;
-
-  void setFactorization(const std::string& factorization) { this->factorization_ = factorizationTranslator(factorization); }
-
-
-
-
 };
 
 /**

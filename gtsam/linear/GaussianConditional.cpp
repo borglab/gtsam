@@ -129,10 +129,7 @@ namespace gtsam {
     Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
 
     // Check for indeterminant solution
-    if(soln.hasNaN()) {
-      std::cout << "GaussianConditional::solve failed: solution has NaN!!" << std::endl;
-      throw IndeterminantLinearSystemException(keys().front());
-    }
+    if(soln.hasNaN()) throw IndeterminantLinearSystemException(keys().front());
 
     // TODO, do we not have to scale by sigmas here? Copy/paste bug
 
@@ -183,10 +180,7 @@ namespace gtsam {
     frontalVec = gtsam::backSubstituteUpper(frontalVec, Matrix(get_R()));
 
     // Check for indeterminant solution
-    if (frontalVec.hasNaN()) {
-      std::cout << "GaussianConditional::solveTransposeInPlace failed: frontalVec has NaN!!" << std::endl;
-      throw IndeterminantLinearSystemException(this->keys().front());
-    }
+    if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
       gtsam::transposeMultiplyAdd(-1.0, Matrix(getA(it)), frontalVec, gy[*it]);
@@ -214,4 +208,3 @@ namespace gtsam {
   }
 
 }
-

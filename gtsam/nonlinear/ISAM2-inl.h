@@ -115,7 +115,6 @@ template<class CLIQUE>
 bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double threshold,
     FastSet<Key>& changed, const FastSet<Key>& replaced, VectorValues& delta, size_t& count)
 {
-  //clique->print("Input clique: ");
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
   // cliques in the children need to be processed
@@ -193,10 +192,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
         Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
 
         // Check for indeterminant solution
-        if(soln.hasNaN()) {
-          std::cout << "iSAM2 failed: solution has NaN!!" << std::endl;
-          throw IndeterminantLinearSystemException(c.keys().front());
-        }
+        if(soln.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
 
         // Insert solution into a VectorValues
         DenseIndex vectorPosition = 0;
@@ -306,5 +302,4 @@ int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique) {
 }
 
 }
-
 
