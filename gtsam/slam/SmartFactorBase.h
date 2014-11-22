@@ -249,7 +249,7 @@ public:
     Matrix Ei(ZDim, 3);
     for (size_t i = 0; i < this->measured_.size(); i++) {
       try {
-        cameras[i].project(point, boost::none, Ei);
+        cameras[i].project(point, boost::none, Ei, boost::none);
       } catch (CheiralityException& e) {
         std::cout << "Cheirality exception " << std::endl;
         exit(EXIT_FAILURE);
