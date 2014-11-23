@@ -28,7 +28,7 @@ namespace gtsam {
 // Inner class PreintegratedMeasurements
 //------------------------------------------------------------------------------
 AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements(
-    const imuBias::ConstantBias& bias, const Matrix3& measuredOmegaCovariance) :
+    const Vector3& bias, const Matrix3& measuredOmegaCovariance) :
     biasHat_(bias), deltaTij_(0.0) {
   measurementCovariance_ << measuredOmegaCovariance;
   delRdelBiasOmega_.setZero();
@@ -37,7 +37,7 @@ AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements(
 
 //------------------------------------------------------------------------------
 AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements() :
-    biasHat_(imuBias::ConstantBias()), deltaTij_(0.0) {
+    biasHat_(Vector3()), deltaTij_(0.0) {
   measurementCovariance_.setZero();
   delRdelBiasOmega_.setZero();
   delRdelBiasOmega_.setZero();
@@ -47,7 +47,7 @@ AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements() :
 //------------------------------------------------------------------------------
 void AHRSFactor::PreintegratedMeasurements::print(const std::string& s) const {
   std::cout << s << std::endl;
-  biasHat_.print(" biasHat");
+  std::cout << "biasHat [" << biasHat_.transpose() << "]" << std::endl;
   deltaRij_.print(" deltaRij ");
   std::cout << " measurementCovariance [" << measurementCovariance_ << " ]"
       << std::endl;
@@ -57,7 +57,7 @@ void AHRSFactor::PreintegratedMeasurements::print(const std::string& s) const {
 //------------------------------------------------------------------------------
 bool AHRSFactor::PreintegratedMeasurements::equals(
     const PreintegratedMeasurements& other, double tol) const {
-  return biasHat_.equals(other.biasHat_, tol)
+  return equal_with_abs_tol(biasHat_, other.biasHat_, tol)
       && equal_with_abs_tol(measurementCovariance_,
           other.measurementCovariance_, tol)
       && deltaRij_.equals(other.deltaRij_, tol)
@@ -80,7 +80,7 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
 
   // NOTE: order is important here because each update uses old values.
   // First we compensate the measurements for the bias
-  Vector3 correctedOmega = biasHat_.correctGyroscope(measuredOmega);
+  Vector3 correctedOmega = measuredOmega - biasHat_;
 
   // Then compensate for sensor-body displacement: we express the quantities
   // (originally in the IMU frame) into the body frame
@@ -136,9 +136,9 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
 }
 
 //------------------------------------------------------------------------------
-Vector3 AHRSFactor::PreintegratedMeasurements::predict(
-    const imuBias::ConstantBias& bias, boost::optional<Matrix&> H) const {
-  const Vector3 biasOmegaIncr = bias.gyroscope() - biasHat_.gyroscope();
+Vector3 AHRSFactor::PreintegratedMeasurements::predict(const Vector3& bias,
+    boost::optional<Matrix&> H) const {
+  const Vector3 biasOmegaIncr = bias - biasHat_;
   Vector3 delRdelBiasOmega_biasOmegaIncr = delRdelBiasOmega_ * biasOmegaIncr;
   const Rot3 deltaRij_biascorrected = deltaRij_.retract(
       delRdelBiasOmega_biasOmegaIncr, Rot3::EXPMAP);
@@ -172,7 +172,7 @@ Vector AHRSFactor::PreintegratedMeasurements::DeltaAngles(
 // AHRSFactor methods
 //------------------------------------------------------------------------------
 AHRSFactor::AHRSFactor() :
-    preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero()) {
+    preintegratedMeasurements_(Vector3(), Matrix3::Zero()) {
 }
 
 AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
@@ -217,7 +217,7 @@ bool AHRSFactor::equals(const NonlinearFactor& other, double tol) const {
 
 //------------------------------------------------------------------------------
 Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
-    const imuBias::ConstantBias& bias, boost::optional<Matrix&> H1,
+    const Vector3& bias, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2, boost::optional<Matrix&> H3) const {
 
   // Do bias correction, if (H3) will contain 3*3 derivative used below
@@ -258,8 +258,8 @@ Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
   if (H3) {
     // dfR/dBias, note H3 contains derivative of predict
     const Matrix3 JbiasOmega = Jr_theta_bcc * (*H3);
-    H3->resize(3, 6);
-    (*H3) << Matrix::Zero(3, 3), Jrinv_fRhat * (-fRhat.transpose() * JbiasOmega);
+    H3->resize(3, 3);
+    (*H3) << Jrinv_fRhat * (-fRhat.transpose() * JbiasOmega);
   }
 
   Vector error(3);
@@ -268,7 +268,7 @@ Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
 }
 
 //------------------------------------------------------------------------------
-Rot3 AHRSFactor::predict(const Rot3& rot_i, const imuBias::ConstantBias& bias,
+Rot3 AHRSFactor::predict(const Rot3& rot_i, const Vector3& bias,
     const PreintegratedMeasurements preintegratedMeasurements,
     const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor) {
 
