@@ -31,7 +31,7 @@ gtsam::Rot3 world_R_ECEF(
     0.85173,     -0.52399,            0,
     0.41733,      0.67835,     -0.60471);
 
-gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5).finished());
+gtsam::Vector ECEF_omega_earth(Vector3(0.0, 0.0, 7.292115e-5));
 gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
 /* ************************************************************************* */
@@ -54,8 +54,8 @@ int main() {
 
   double measurement_dt(0.1);
   Vector world_g(Vector3(0.0, 0.0, 9.81));
-  Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0).finished()); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5).finished());
+  Vector world_rho(Vector3(0.0, -1.5724e-05, 0.0)); // NED system
+  gtsam::Vector ECEF_omega_earth(Vector3(0.0, 0.0, 7.292115e-5));
   gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));

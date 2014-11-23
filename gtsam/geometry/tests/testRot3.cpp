@@ -499,7 +499,7 @@ TEST( Rot3, RQ)
 
 /* ************************************************************************* */
 TEST( Rot3, expmapStability ) {
-  Vector w = (Vector(3) << 78e-9, 5e-8, 97e-7).finished();
+  Vector w = Vector3(78e-9, 5e-8, 97e-7);
   double theta = w.norm();
   double theta2 = theta*theta;
   Rot3 actualR = Rot3::Expmap(w);
@@ -515,7 +515,7 @@ TEST( Rot3, expmapStability ) {
 
 /* ************************************************************************* */
 TEST( Rot3, logmapStability ) {
-  Vector w = (Vector(3) << 1e-8, 0.0, 0.0).finished();
+  Vector w = Vector3(1e-8, 0.0, 0.0);
   Rot3 R = Rot3::Expmap(w);
 //  double tr = R.r1().x()+R.r2().y()+R.r3().z();
 //  std::cout.precision(5000);

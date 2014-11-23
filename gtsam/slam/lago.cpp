@@ -37,7 +37,7 @@ static const Key keyAnchor = symbol('Z', 9999999);
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =
     noiseModel::Diagonal::Sigmas((Vector(1) << 0).finished());
 static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
-    noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8).finished());
+    noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
 
 /* ************************************************************************* */
 /**

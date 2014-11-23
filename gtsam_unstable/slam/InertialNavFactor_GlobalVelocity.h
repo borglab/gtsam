@@ -347,7 +347,7 @@ public:
 
     Rot3 R_ECEF_to_ENU( UEN_to_ENU * C2 * C1 );
 
-    Vector omega_earth_ECEF((Vector(3) << 0.0, 0.0, 7.292115e-5).finished());
+    Vector omega_earth_ECEF(Vector3(0.0, 0.0, 7.292115e-5));
     omega_earth_ENU = R_ECEF_to_ENU.matrix() * omega_earth_ECEF;
 
     // Calculating g

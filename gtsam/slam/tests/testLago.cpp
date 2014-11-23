@@ -265,7 +265,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
-  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4).finished());
+  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(Vector3(1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
   VectorValues actualVV = lago::initializeOrientations(graphWithPrior);
@@ -300,7 +300,7 @@ TEST( Lago, largeGraphNoisy ) {
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
-  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4).finished());
+  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(Vector3(1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
   Values actual = lago::initialize(graphWithPrior);
