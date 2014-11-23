@@ -277,8 +277,6 @@ Rot3 AHRSFactor::predict(const Rot3& rot_i, const imuBias::ConstantBias& bias,
     const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor) {
 
   const double& deltaTij = preintegratedMeasurements.deltaTij_;
-//    const Vector3 biasAccIncr = bias.accelerometer()
-  -preintegratedMeasurements.biasHat_.accelerometer();
   const Vector3 biasOmegaIncr = bias.gyroscope()
       - preintegratedMeasurements.biasHat_.gyroscope();
 
