@@ -97,6 +97,18 @@ public:
     void integrateMeasurement(const Vector3& measuredOmega, double deltaT,
         boost::optional<const Pose3&> body_P_sensor = boost::none);
 
+    /// Predict bias-corrected incremental rotation
+    Rot3 predict(const imuBias::ConstantBias& bias) const {
+      const Vector3 biasOmegaIncr = bias.gyroscope() - biasHat_.gyroscope();
+      return deltaRij_.retract(delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
+    }
+
+    /// Integrate coriolis correction in body frame rot_i
+    Vector3 integrateCoriolis(const Rot3& rot_i,
+        const Vector3& omegaCoriolis) const {
+      return rot_i.transpose() * omegaCoriolis * deltaTij_;
+    }
+
     // This function is only used for test purposes
     // (compare numerical derivatives wrt analytic ones)
     static Vector DeltaAngles(const Vector& msr_gyro_t, const double msr_dt,
