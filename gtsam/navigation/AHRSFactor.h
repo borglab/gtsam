@@ -98,10 +98,9 @@ public:
         boost::optional<const Pose3&> body_P_sensor = boost::none);
 
     /// Predict bias-corrected incremental rotation
-    Rot3 predict(const imuBias::ConstantBias& bias) const {
-      const Vector3 biasOmegaIncr = bias.gyroscope() - biasHat_.gyroscope();
-      return deltaRij_.retract(delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
-    }
+    /// TODO: The matrix Hbias is the derivative of predict? Unit-test?
+    Vector3 predict(const imuBias::ConstantBias& bias,
+        boost::optional<Matrix&> H = boost::none) const;
 
     /// Integrate coriolis correction in body frame rot_i
     Vector3 integrateCoriolis(const Rot3& rot_i,
