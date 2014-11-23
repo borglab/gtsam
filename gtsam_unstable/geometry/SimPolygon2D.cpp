@@ -145,7 +145,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
     // extend line by random dist and angle to get BC
     double dAB = randomDistance(mean_side_len, sigma_side_len, min_side_len);
     double tABC = randomAngle().theta();
-    Pose2 xB = xA.retract((Vector(3) << dAB, 0.0, tABC));
+    Pose2 xB = xA.retract((Vector(3) << dAB, 0.0, tABC).finished());
 
     // extend from B to find C
     double dBC = randomDistance(mean_side_len, sigma_side_len, min_side_len);

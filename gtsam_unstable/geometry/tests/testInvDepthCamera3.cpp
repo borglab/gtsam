@@ -29,7 +29,7 @@ TEST( InvDepthFactor, Project1) {
   Point2 expected_uv = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  Vector5 inv_landmark((Vector(5) << 1., 0., 1., 0., 0.));
+  Vector5 inv_landmark((Vector(5) << 1., 0., 1., 0., 0.).finished());
   double inv_depth(1./4);
   Point2 actual_uv = inv_camera.project(inv_landmark, inv_depth);
   EXPECT(assert_equal(expected_uv, actual_uv,1e-8));
@@ -45,7 +45,7 @@ TEST( InvDepthFactor, Project2) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  Vector5 diag_landmark((Vector(5) << 0., 0., 1., M_PI/4., atan(1.0/sqrt(2.0))));
+  Vector5 diag_landmark((Vector(5) << 0., 0., 1., M_PI/4., atan(1.0/sqrt(2.0))).finished());
   double inv_depth(1/sqrt(3.0));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
@@ -60,7 +60,7 @@ TEST( InvDepthFactor, Project3) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  Vector5 diag_landmark((Vector(5) << 0., 0., 0., M_PI/4., atan(2./sqrt(2.0))));
+  Vector5 diag_landmark((Vector(5) << 0., 0., 0., M_PI/4., atan(2./sqrt(2.0))).finished());
   double inv_depth( 1./sqrt(1.0+1+4));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
@@ -75,7 +75,7 @@ TEST( InvDepthFactor, Project4) {
   Point2 expected = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  Vector5 diag_landmark((Vector(5) << 0., 0., 0., atan(4.0/1), atan(2./sqrt(1.+16.))));
+  Vector5 diag_landmark((Vector(5) << 0., 0., 0., atan(4.0/1), atan(2./sqrt(1.+16.))).finished());
   double inv_depth(1./sqrt(1.+16.+4.));
   Point2 actual = inv_camera.project(diag_landmark, inv_depth);
   EXPECT(assert_equal(expected, actual));
@@ -88,7 +88,7 @@ Point2 project_(const Pose3& pose, const Vector5& landmark, const double& inv_de
 
 TEST( InvDepthFactor, Dproject_pose)
 {
-  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
+  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2).finished());
   double inv_depth(1./4);
   Matrix expected = numericalDerivative31(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
@@ -100,7 +100,7 @@ TEST( InvDepthFactor, Dproject_pose)
 /* ************************************************************************* */
 TEST( InvDepthFactor, Dproject_landmark)
 {
-  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
+  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2).finished());
   double inv_depth(1./4);
   Matrix expected = numericalDerivative32(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
@@ -112,7 +112,7 @@ TEST( InvDepthFactor, Dproject_landmark)
 /* ************************************************************************* */
 TEST( InvDepthFactor, Dproject_inv_depth)
 {
-  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2));
+  Vector5 landmark((Vector(5) << 0.1,0.2,0.3, 0.1,0.2).finished());
   double inv_depth(1./4);
   Matrix expected = numericalDerivative33(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
@@ -124,7 +124,7 @@ TEST( InvDepthFactor, Dproject_inv_depth)
 /* ************************************************************************* */
 TEST(InvDepthFactor, backproject)
 {
-  Vector expected((Vector(5) << 0.,0.,1., 0.1,0.2));
+  Vector expected((Vector(5) << 0.,0.,1., 0.1,0.2).finished());
   double inv_depth(1./4);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Point2 z = inv_camera.project(expected, inv_depth);
@@ -140,7 +140,7 @@ TEST(InvDepthFactor, backproject)
 TEST(InvDepthFactor, backproject2)
 {
   // backwards facing camera
-  Vector expected((Vector(5) << -5.,-5.,2., 3., -0.1));
+  Vector expected((Vector(5) << -5.,-5.,2., 3., -0.1).finished());
   double inv_depth(1./10);
   InvDepthCamera3<Cal3_S2> inv_camera(Pose3(Rot3::ypr(1.5,0.1, -1.5), Point3(-5, -5, 2)),K);
   Point2 z = inv_camera.project(expected, inv_depth);

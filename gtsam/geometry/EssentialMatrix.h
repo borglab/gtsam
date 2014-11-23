@@ -32,7 +32,7 @@ public:
 
   /// Static function to convert Point2 to homogeneous coordinates
   static Vector Homogeneous(const Point2& p) {
-    return Vector(3) << p.x(), p.y(), 1;
+    return (Vector(3) << p.x(), p.y(), 1).finished();
   }
 
   /// @name Constructors and named constructors

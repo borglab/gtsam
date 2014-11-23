@@ -281,7 +281,7 @@ public:
       }
     }
 
-    return (Vector(2) << p_inlier, p_outlier);
+    return (Vector(2) << p_inlier, p_outlier).finished();
   }
 
   /* ************************************************************************* */

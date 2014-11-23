@@ -37,9 +37,9 @@ TEST( EquivInertialNavFactor_GlobalVel, Constructor)
   Key biasKey1(31);
 
   // IMU accumulation variables
-  Vector delta_pos_in_t0 = (Vector(3) << 0.0, 0.0, 0.0);
-  Vector delta_vel_in_t0 = (Vector(3) << 0.0, 0.0, 0.0);
-  Vector delta_angles = (Vector(3) << 0.0, 0.0, 0.0);
+  Vector delta_pos_in_t0 = Vector3(0.0, 0.0, 0.0);
+  Vector delta_vel_in_t0 = Vector3(0.0, 0.0, 0.0);
+  Vector delta_angles = Vector3(0.0, 0.0, 0.0);
   double delta_t = 0.0;
   Matrix EquivCov_Overall = zeros(15,15);
   Matrix Jacobian_wrt_t0_Overall = eye(15);

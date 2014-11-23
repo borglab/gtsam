@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     if (i == 0) {
       // Add a prior on pose x0, with 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
       noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(
-          (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)));
+          (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
       graph.add(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
 
       // Add a prior on landmark l0

@@ -47,17 +47,17 @@ TEST( TestVector, special_comma_initializer)
   expected(1) = 2;
   expected(2) = 3;
 
-  Vector actual1 = (Vector(3) << 1, 2, 3);
-  Vector actual2((Vector(3) << 1, 2, 3));
+  Vector actual1 = Vector3(1, 2, 3);
+  Vector actual2(Vector3(1, 2, 3));
 
-  Vector subvec1 = (Vector(2) << 2, 3);
-  Vector actual4 = (Vector(3) << 1, subvec1);
+  Vector subvec1 = Vector2(2, 3);
+  Vector actual4 = (Vector(3) << 1, subvec1).finished();
 
-  Vector subvec2 = (Vector(2) << 1, 2);
-  Vector actual5 = (Vector(3) << subvec2, 3);
+  Vector subvec2 = Vector2(1, 2);
+  Vector actual5 = (Vector(3) << subvec2, 3).finished();
 
-  Vector actual6 = testFcn1((Vector(3) << 1, 2, 3));
-  Vector actual7 = testFcn2((Vector(3) << 1, 2, 3));
+  Vector actual6 = testFcn1(Vector3(1, 2, 3));
+  Vector actual7 = testFcn2(Vector3(1, 2, 3));
 
   EXPECT(assert_equal(expected, actual1));
   EXPECT(assert_equal(expected, actual2));
@@ -142,7 +142,7 @@ TEST( TestVector, subInsert )
   size_t i = 2;
   subInsert(big, small, i);
 
-  Vector expected = (Vector(6) << 0.0, 0.0, 1.0, 1.0, 1.0, 0.0);
+  Vector expected = (Vector(6) << 0.0, 0.0, 1.0, 1.0, 1.0, 0.0).finished();
 
   EXPECT(assert_equal(expected, big));
 }
@@ -240,13 +240,13 @@ TEST( TestVector, weightedPseudoinverse_constraint )
 /* ************************************************************************* */
 TEST( TestVector, weightedPseudoinverse_nan )
 {
-  Vector a = (Vector(4) << 1., 0., 0., 0.);
-  Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.);
+  Vector a = (Vector(4) << 1., 0., 0., 0.).finished();
+  Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.).finished();
   Vector weights = reciprocal(emul(sigmas,sigmas));
   Vector pseudo; double precision;
   boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
 
-  Vector expected = (Vector(4) << 1., 0., 0.,0.);
+  Vector expected = (Vector(4) << 1., 0., 0.,0.).finished();
   EXPECT(assert_equal(expected, pseudo));
   DOUBLES_EQUAL(100, precision, 1e-5);
 }
@@ -254,31 +254,31 @@ TEST( TestVector, weightedPseudoinverse_nan )
 /* ************************************************************************* */
 TEST( TestVector, ediv )
 {
-  Vector a = (Vector(3) << 10., 20., 30.);
-  Vector b = (Vector(3) << 2.0, 5.0, 6.0);
+  Vector a = Vector3(10., 20., 30.);
+  Vector b = Vector3(2.0, 5.0, 6.0);
   Vector actual(ediv(a,b));
 
-  Vector c = (Vector(3) << 5.0, 4.0, 5.0);
+  Vector c = Vector3(5.0, 4.0, 5.0);
   EXPECT(assert_equal(c,actual));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, dot )
 {
-  Vector a = (Vector(3) << 10., 20., 30.);
-  Vector b = (Vector(3) << 2.0, 5.0, 6.0);
+  Vector a = Vector3(10., 20., 30.);
+  Vector b = Vector3(2.0, 5.0, 6.0);
   DOUBLES_EQUAL(20+100+180,dot(a,b),1e-9);
 }
 
 /* ************************************************************************* */
 TEST( TestVector, axpy )
 {
-  Vector x = (Vector(3) << 10., 20., 30.);
-  Vector y0 = (Vector(3) << 2.0, 5.0, 6.0);
+  Vector x = Vector3(10., 20., 30.);
+  Vector y0 = Vector3(2.0, 5.0, 6.0);
   Vector y1 = y0, y2 = y0;
   axpy(0.1,x,y1);
   axpy(0.1,x,y2.head(3));
-  Vector expected = (Vector(3) << 3.0, 7.0, 9.0);
+  Vector expected = Vector3(3.0, 7.0, 9.0);
   EXPECT(assert_equal(expected,y1));
   EXPECT(assert_equal(expected,Vector(y2)));
 }
@@ -286,8 +286,8 @@ TEST( TestVector, axpy )
 /* ************************************************************************* */
 TEST( TestVector, equals )
 {
-  Vector v1 = (Vector(1) << 0.0/std::numeric_limits<double>::quiet_NaN()); //testing nan
-  Vector v2 = (Vector(1) << 1.0);
+  Vector v1 = (Vector(1) << 0.0/std::numeric_limits<double>::quiet_NaN()).finished(); //testing nan
+  Vector v2 = (Vector(1) << 1.0).finished();
   double tol = 1.;
   EXPECT(!equal_with_abs_tol(v1, v2, tol));
 }
@@ -295,7 +295,7 @@ TEST( TestVector, equals )
 /* ************************************************************************* */
 TEST( TestVector, greater_than )
 {
-  Vector v1 = (Vector(3) << 1.0, 2.0, 3.0),
+  Vector v1 = Vector3(1.0, 2.0, 3.0),
        v2 = zero(3);
   EXPECT(greaterThanOrEqual(v1, v1)); // test basic greater than
   EXPECT(greaterThanOrEqual(v1, v2)); // test equals
@@ -304,31 +304,31 @@ TEST( TestVector, greater_than )
 /* ************************************************************************* */
 TEST( TestVector, reciprocal )
 {
-  Vector v = (Vector(3) << 1.0, 2.0, 4.0);
-  EXPECT(assert_equal((Vector(3) << 1.0, 0.5, 0.25),reciprocal(v)));
+  Vector v = Vector3(1.0, 2.0, 4.0);
+  EXPECT(assert_equal(Vector3(1.0, 0.5, 0.25),reciprocal(v)));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, linear_dependent )
 {
-  Vector v1 = (Vector(3) << 1.0, 2.0, 3.0);
-  Vector v2 = (Vector(3) << -2.0, -4.0, -6.0);
+  Vector v1 = Vector3(1.0, 2.0, 3.0);
+  Vector v2 = Vector3(-2.0, -4.0, -6.0);
   EXPECT(linear_dependent(v1, v2));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, linear_dependent2 )
 {
-  Vector v1 = (Vector(3) << 0.0, 2.0, 0.0);
-  Vector v2 = (Vector(3) << 0.0, -4.0, 0.0);
+  Vector v1 = Vector3(0.0, 2.0, 0.0);
+  Vector v2 = Vector3(0.0, -4.0, 0.0);
   EXPECT(linear_dependent(v1, v2));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, linear_dependent3 )
 {
-  Vector v1 = (Vector(3) << 0.0, 2.0, 0.0);
-  Vector v2 = (Vector(3) << 0.1, -4.1, 0.0);
+  Vector v1 = Vector3(0.0, 2.0, 0.0);
+  Vector v2 = Vector3(0.1, -4.1, 0.0);
   EXPECT(!linear_dependent(v1, v2));
 }
 

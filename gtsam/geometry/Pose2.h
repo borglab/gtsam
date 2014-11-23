@@ -183,7 +183,7 @@ public:
     return (Matrix(3,3) <<
         0.,-w,  vx,
         w,  0., vy,
-        0., 0.,  0.);
+        0., 0.,  0.).finished();
   }
 
   /// @}

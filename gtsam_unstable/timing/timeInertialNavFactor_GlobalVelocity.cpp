@@ -31,7 +31,7 @@ gtsam::Rot3 world_R_ECEF(
     0.85173,     -0.52399,            0,
     0.41733,      0.67835,     -0.60471);
 
-gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+gtsam::Vector ECEF_omega_earth(Vector3(0.0, 0.0, 7.292115e-5));
 gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
 /* ************************************************************************* */
@@ -53,16 +53,16 @@ int main() {
   gtsam::Key BiasKey1(31);
 
   double measurement_dt(0.1);
-  Vector world_g((Vector(3) << 0.0, 0.0, 9.81));
-  Vector world_rho((Vector(3) << 0.0, -1.5724e-05, 0.0)); // NED system
-  gtsam::Vector ECEF_omega_earth((Vector(3) << 0.0, 0.0, 7.292115e-5));
+  Vector world_g(Vector3(0.0, 0.0, 9.81));
+  Vector world_rho(Vector3(0.0, -1.5724e-05, 0.0)); // NED system
+  gtsam::Vector ECEF_omega_earth(Vector3(0.0, 0.0, 7.292115e-5));
   gtsam::Vector world_omega_earth(world_R_ECEF.matrix() * ECEF_omega_earth);
 
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
   // Second test: zero angular motion, some acceleration - generated in matlab
-  Vector measurement_acc((Vector(3) << 6.501390843381716,  -6.763926150509185,  -2.300389940090343));
-  Vector measurement_gyro((Vector(3) << 0.1, 0.2, 0.3));
+  Vector measurement_acc(Vector3(6.501390843381716,  -6.763926150509185,  -2.300389940090343));
+  Vector measurement_gyro(Vector3(0.1, 0.2, 0.3));
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc, measurement_gyro, measurement_dt, world_g, world_rho, world_omega_earth, model);
 
@@ -71,7 +71,7 @@ int main() {
       -0.652537293,  0.709880342,  0.265075427);
   Point3 t1(2.0,1.0,3.0);
   Pose3 Pose1(R1, t1);
-  Vector3 Vel1 = Vector((Vector(3) << 0.5,-0.5,0.4));
+  Vector3 Vel1 = Vector(Vector3(0.5,-0.5,0.4));
   Rot3 R2(0.473618898,   0.119523052,  0.872582019,
        0.609241153,   0.67099888, -0.422594037,
       -0.636011287,  0.731761397,  0.244979388);

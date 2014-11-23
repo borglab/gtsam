@@ -110,8 +110,8 @@ TEST(ExpressionFactor, Unary) {
   values.insert(2, Point3(0, 0, 1));
 
   JacobianFactor expected( //
-      2, (Matrix(2, 3) << 1, 0, 0, 0, 1, 0), //
-      (Vector(2) << -17, 30));
+      2, (Matrix(2, 3) << 1, 0, 0, 0, 1, 0).finished(), //
+      Vector2(-17, 30));
 
   // Create leaves
   Point3_ p(2);

@@ -122,8 +122,8 @@ struct GTSAM_EXPORT ISAM2Params {
    * entries would be added with:
    * \code
      FastMap<char,Vector> thresholds;
-     thresholds['x'] = (Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5); // 0.1 rad rotation threshold, 0.5 m translation threshold
-     thresholds['l'] = (Vector(3) << 1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
+     thresholds['x'] = (Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished(); // 0.1 rad rotation threshold, 0.5 m translation threshold
+     thresholds['l'] = Vector3(1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
      params.relinearizeThreshold = thresholds;
      \endcode
    */

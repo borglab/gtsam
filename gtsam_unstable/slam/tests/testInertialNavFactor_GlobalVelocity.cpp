@@ -104,8 +104,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
   // First test: zero angular motion, some acceleration
-  Vector measurement_acc((Vector(3) << 0.1, 0.2, 0.3 - 9.81));
-  Vector measurement_gyro((Vector(3) << 0.0, 0.0, 0.0));
+  Vector measurement_acc(Vector3(0.1, 0.2, 0.3 - 9.81));
+  Vector measurement_gyro(Vector3(0.0, 0.0, 0.0));
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -113,10 +113,10 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       model);
 
   Pose3 Pose1(Rot3(), Point3(2.00, 1.00, 3.00));
-  Vector3 Vel1((Vector(3) << 0.50, -0.50, 0.40));
+  Vector3 Vel1(Vector3(0.50, -0.50, 0.40));
   imuBias::ConstantBias Bias1;
   Pose3 expectedPose2(Rot3(), Point3(2.05, 0.95, 3.04));
-  Vector3 expectedVel2((Vector(3) << 0.51, -0.48, 0.43));
+  Vector3 expectedVel2(Vector3(0.51, -0.48, 0.43));
   Pose3 actualPose2;
   Vector3 actualVel2;
   f.predict(Pose1, Vel1, Bias1, actualPose2, actualVel2);
@@ -137,8 +137,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
   // First test: zero angular motion, some acceleration
-  Vector measurement_acc((Vector(3) << 0.1, 0.2, 0.3 - 9.81));
-  Vector measurement_gyro((Vector(3) << 0.0, 0.0, 0.0));
+  Vector measurement_acc(Vector3(0.1, 0.2, 0.3 - 9.81));
+  Vector measurement_gyro(Vector3(0.0, 0.0, 0.0));
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -147,8 +147,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 
   Pose3 Pose1(Rot3(), Point3(2.00, 1.00, 3.00));
   Pose3 Pose2(Rot3(), Point3(2.05, 0.95, 3.04));
-  Vector3 Vel1((Vector(3) << 0.50, -0.50, 0.40));
-  Vector3 Vel2((Vector(3) << 0.51, -0.48, 0.43));
+  Vector3 Vel1(Vector3(0.50, -0.50, 0.40));
+  Vector3 Vel2(Vector3(0.51, -0.48, 0.43));
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
@@ -169,8 +169,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
   // Second test: zero angular motion, some acceleration
-  Vector measurement_acc((Vector(3) << 0.0, 0.0, 0.0 - 9.81));
-  Vector measurement_gyro((Vector(3) << 0.1, 0.2, 0.3));
+  Vector measurement_acc(Vector3(0.0, 0.0, 0.0 - 9.81));
+  Vector measurement_gyro(Vector3(0.1, 0.2, 0.3));
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -180,8 +180,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Pose3 Pose1(Rot3(), Point3(2.0, 1.0, 3.0));
   Pose3 Pose2(Rot3::Expmap(measurement_gyro * measurement_dt),
       Point3(2.0, 1.0, 3.0));
-  Vector3 Vel1((Vector(3) << 0.0, 0.0, 0.0));
-  Vector3 Vel2((Vector(3) << 0.0, 0.0, 0.0));
+  Vector3 Vel1(Vector3(0.0, 0.0, 0.0));
+  Vector3 Vel2(Vector3(0.0, 0.0, 0.0));
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
@@ -203,8 +203,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 
   // Second test: zero angular motion, some acceleration - generated in matlab
   Vector measurement_acc(
-      (Vector(3) << 6.501390843381716, -6.763926150509185, -2.300389940090343));
-  Vector measurement_gyro((Vector(3) << 0.1, 0.2, 0.3));
+      Vector3(6.501390843381716, -6.763926150509185, -2.300389940090343));
+  Vector measurement_gyro(Vector3(0.1, 0.2, 0.3));
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -215,7 +215,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       -0.427669306, -0.652537293, 0.709880342, 0.265075427);
   Point3 t1(2.0, 1.0, 3.0);
   Pose3 Pose1(R1, t1);
-  Vector3 Vel1((Vector(3) << 0.5, -0.5, 0.4));
+  Vector3 Vel1(Vector3(0.5, -0.5, 0.4));
   Rot3 R2(0.473618898, 0.119523052, 0.872582019, 0.609241153, 0.67099888,
       -0.422594037, -0.636011287, 0.731761397, 0.244979388);
   Point3 t2 = t1.compose(Point3(Vel1 * measurement_dt));
@@ -237,9 +237,9 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 //}
 //
 //TEST (InertialNavFactor_GlobalVelocity, Rotation_Deriv ) {
-//  Vector3 angles((Vector(3) << 3.001, -1.0004, 2.0005));
+//  Vector3 angles(Vector3(3.001, -1.0004, 2.0005));
 //  Rot3 R1(Rot3().RzRyRx(angles));
-//  Vector3 q((Vector(3) << 5.8, -2.2, 4.105));
+//  Vector3 q(Vector3(5.8, -2.2, 4.105));
 //  Rot3 qx(0.0, -q[2], q[1],
 //      q[2], 0.0, -q[0],
 //      -q[1], q[0],0.0);
@@ -271,8 +271,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   SharedGaussian model(noiseModel::Isotropic::Sigma(9, 0.1));
 
   Vector measurement_acc(
-      (Vector(3) << 6.501390843381716, -6.763926150509185, -2.300389940090343));
-  Vector measurement_gyro((Vector(3) << 3.14, 3.14 / 2, -3.14));
+      Vector3(6.501390843381716, -6.763926150509185, -2.300389940090343));
+  Vector measurement_gyro((Vector(3) << 3.14, 3.14 / 2, -3.14).finished());
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> factor(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -283,13 +283,13 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       -0.427669306, -0.652537293, 0.709880342, 0.265075427);
   Point3 t1(2.0, 1.0, 3.0);
   Pose3 Pose1(R1, t1);
-  Vector3 Vel1((Vector(3) << 0.5, -0.5, 0.4));
+  Vector3 Vel1(Vector3(0.5, -0.5, 0.4));
   Rot3 R2(0.473618898, 0.119523052, 0.872582019, 0.609241153, 0.67099888,
       -0.422594037, -0.636011287, 0.731761397, 0.244979388);
   Point3 t2(2.052670960415706, 0.977252139079380, 2.942482135362800);
   Pose3 Pose2(R2, t2);
   Vector3 Vel2(
-      (Vector(3) << 0.510000000000000, -0.480000000000000, 0.430000000000000));
+      Vector3(0.510000000000000, -0.480000000000000, 0.430000000000000));
   imuBias::ConstantBias Bias1;
 
   Matrix H1_actual, H2_actual, H3_actual, H4_actual, H5_actual;
@@ -374,8 +374,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Key Vel2(22);
   Key Bias1(31);
 
-  Vector measurement_acc((Vector(3) << 0.1, 0.2, 0.4));
-  Vector measurement_gyro((Vector(3) << -0.2, 0.5, 0.03));
+  Vector measurement_acc(Vector3(0.1, 0.2, 0.4));
+  Vector measurement_gyro(Vector3(-0.2, 0.5, 0.03));
 
   double measurement_dt(0.1);
 
@@ -396,8 +396,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Key Vel2(22);
   Key Bias1(31);
 
-  Vector measurement_acc((Vector(3) << 0.1, 0.2, 0.4));
-  Vector measurement_gyro((Vector(3) << -0.2, 0.5, 0.03));
+  Vector measurement_acc(Vector3(0.1, 0.2, 0.4));
+  Vector measurement_gyro(Vector3(-0.2, 0.5, 0.03));
 
   double measurement_dt(0.1);
 
@@ -430,9 +430,9 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Pose3 body_P_sensor(Rot3(0, 1, 0, 1, 0, 0, 0, 0, -1), Point3(1.0, -2.0, 3.0)); // IMU is in ENU orientation
 
   // First test: zero angular motion, some acceleration
-  Vector measurement_gyro((Vector(3) << 0.0, 0.0, 0.0)); // Measured in ENU orientation
+  Vector measurement_gyro(Vector3(0.0, 0.0, 0.0)); // Measured in ENU orientation
   Matrix omega__cross = skewSymmetric(measurement_gyro);
-  Vector measurement_acc = (Vector(3) << 0.2, 0.1, -0.3 + 9.81)
+  Vector measurement_acc = Vector3(0.2, 0.1, -0.3 + 9.81)
       + omega__cross * omega__cross
           * body_P_sensor.rotation().inverse().matrix()
           * body_P_sensor.translation().vector(); // Measured in ENU orientation
@@ -443,10 +443,10 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       model, body_P_sensor);
 
   Pose3 Pose1(Rot3(), Point3(2.00, 1.00, 3.00));
-  Vector3 Vel1((Vector(3) << 0.50, -0.50, 0.40));
+  Vector3 Vel1(Vector3(0.50, -0.50, 0.40));
   imuBias::ConstantBias Bias1;
   Pose3 expectedPose2(Rot3(), Point3(2.05, 0.95, 3.04));
-  Vector3 expectedVel2((Vector(3) << 0.51, -0.48, 0.43));
+  Vector3 expectedVel2(Vector3(0.51, -0.48, 0.43));
   Pose3 actualPose2;
   Vector3 actualVel2;
   f.predict(Pose1, Vel1, Bias1, actualPose2, actualVel2);
@@ -469,9 +469,9 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Pose3 body_P_sensor(Rot3(0, 1, 0, 1, 0, 0, 0, 0, -1), Point3(1.0, -2.0, 3.0)); // IMU is in ENU orientation
 
   // First test: zero angular motion, some acceleration
-  Vector measurement_gyro((Vector(3) << 0.0, 0.0, 0.0)); // Measured in ENU orientation
+  Vector measurement_gyro(Vector3(0.0, 0.0, 0.0)); // Measured in ENU orientation
   Matrix omega__cross = skewSymmetric(measurement_gyro);
-  Vector measurement_acc = (Vector(3) << 0.2, 0.1, -0.3 + 9.81)
+  Vector measurement_acc = Vector3(0.2, 0.1, -0.3 + 9.81)
       + omega__cross * omega__cross
           * body_P_sensor.rotation().inverse().matrix()
           * body_P_sensor.translation().vector(); // Measured in ENU orientation
@@ -483,8 +483,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 
   Pose3 Pose1(Rot3(), Point3(2.00, 1.00, 3.00));
   Pose3 Pose2(Rot3(), Point3(2.05, 0.95, 3.04));
-  Vector3 Vel1((Vector(3) << 0.50, -0.50, 0.40));
-  Vector3 Vel2((Vector(3) << 0.51, -0.48, 0.43));
+  Vector3 Vel1(Vector3(0.50, -0.50, 0.40));
+  Vector3 Vel2(Vector3(0.51, -0.48, 0.43));
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
@@ -507,9 +507,9 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Pose3 body_P_sensor(Rot3(0, 1, 0, 1, 0, 0, 0, 0, -1), Point3(1.0, -2.0, 3.0)); // IMU is in ENU orientation
 
   // Second test: zero angular motion, some acceleration
-  Vector measurement_gyro((Vector(3) << 0.2, 0.1, -0.3)); // Measured in ENU orientation
+  Vector measurement_gyro(Vector3(0.2, 0.1, -0.3)); // Measured in ENU orientation
   Matrix omega__cross = skewSymmetric(measurement_gyro);
-  Vector measurement_acc = (Vector(3) << 0.0, 0.0, 0.0 + 9.81)
+  Vector measurement_acc = Vector3(0.0, 0.0, 0.0 + 9.81)
       + omega__cross * omega__cross
           * body_P_sensor.rotation().inverse().matrix()
           * body_P_sensor.translation().vector(); // Measured in ENU orientation
@@ -524,8 +524,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       Rot3::Expmap(
           body_P_sensor.rotation().matrix() * measurement_gyro
               * measurement_dt), Point3(2.0, 1.0, 3.0));
-  Vector3 Vel1((Vector(3) << 0.0, 0.0, 0.0));
-  Vector3 Vel2((Vector(3) << 0.0, 0.0, 0.0));
+  Vector3 Vel1(Vector3(0.0, 0.0, 0.0));
+  Vector3 Vel2(Vector3(0.0, 0.0, 0.0));
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
@@ -548,10 +548,10 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Pose3 body_P_sensor(Rot3(0, 1, 0, 1, 0, 0, 0, 0, -1), Point3(1.0, -2.0, 3.0)); // IMU is in ENU orientation
 
   // Second test: zero angular motion, some acceleration - generated in matlab
-  Vector measurement_gyro((Vector(3) << 0.2, 0.1, -0.3)); // Measured in ENU orientation
+  Vector measurement_gyro(Vector3(0.2, 0.1, -0.3)); // Measured in ENU orientation
   Matrix omega__cross = skewSymmetric(measurement_gyro);
   Vector measurement_acc =
-      (Vector(3) << -6.763926150509185, 6.501390843381716, +2.300389940090343)
+      Vector3(-6.763926150509185, 6.501390843381716, +2.300389940090343)
           + omega__cross * omega__cross
               * body_P_sensor.rotation().inverse().matrix()
               * body_P_sensor.translation().vector(); // Measured in ENU orientation
@@ -565,7 +565,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       -0.427669306, -0.652537293, 0.709880342, 0.265075427);
   Point3 t1(2.0, 1.0, 3.0);
   Pose3 Pose1(R1, t1);
-  Vector3 Vel1((Vector(3) << 0.5, -0.5, 0.4));
+  Vector3 Vel1(Vector3(0.5, -0.5, 0.4));
   Rot3 R2(0.473618898, 0.119523052, 0.872582019, 0.609241153, 0.67099888,
       -0.422594037, -0.636011287, 0.731761397, 0.244979388);
   Point3 t2 = t1.compose(Point3(Vel1 * measurement_dt));
@@ -573,7 +573,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector dv =
       measurement_dt
           * (R1.matrix() * body_P_sensor.rotation().matrix()
-              * (Vector(3) << -6.763926150509185, 6.501390843381716, +2.300389940090343)
+              * Vector3(-6.763926150509185, 6.501390843381716, +2.300389940090343)
               + world_g);
   Vector3 Vel2 = Vel1 + dv;
   imuBias::ConstantBias Bias1;
@@ -599,10 +599,10 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 
   Pose3 body_P_sensor(Rot3(0, 1, 0, 1, 0, 0, 0, 0, -1), Point3(1.0, -2.0, 3.0)); // IMU is in ENU orientation
 
-  Vector measurement_gyro((Vector(3) << 3.14 / 2, 3.14, +3.14)); // Measured in ENU orientation
+  Vector measurement_gyro((Vector(3) << 3.14 / 2, 3.14, +3.14).finished()); // Measured in ENU orientation
   Matrix omega__cross = skewSymmetric(measurement_gyro);
   Vector measurement_acc =
-      (Vector(3) << -6.763926150509185, 6.501390843381716, +2.300389940090343)
+      Vector3(-6.763926150509185, 6.501390843381716, +2.300389940090343)
           + omega__cross * omega__cross
               * body_P_sensor.rotation().inverse().matrix()
               * body_P_sensor.translation().vector(); // Measured in ENU orientation

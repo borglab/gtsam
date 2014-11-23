@@ -313,7 +313,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
 
       // Create noise model
       noiseModel::Diagonal::shared_ptr measurementNoise =
-          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
+          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std).finished());
 
       // Add to graph
       *graph += BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range,

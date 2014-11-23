@@ -98,7 +98,7 @@ public:
           << std::endl;
       return gtsam::ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0);
+    return (Vector(1) << 0.0).finished();
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
@@ -217,7 +217,7 @@ public:
           << std::endl;
       return gtsam::ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0);
+    return (Vector(1) << 0.0).finished();
   }
 
   /// Evaluate error h(x)-z and optionally derivatives

@@ -19,7 +19,7 @@ using namespace std;
 using namespace boost::assign;
 using namespace gtsam;
 
-const gtsam::noiseModel::Diagonal::shared_ptr diag_model2 = noiseModel::Diagonal::Sigmas((Vector(2) << 1.0, 1.0));
+const gtsam::noiseModel::Diagonal::shared_ptr diag_model2 = noiseModel::Diagonal::Sigmas(Vector2(1.0, 1.0));
 const double tol = 1e-5;
 
 gtsam::Key  l1 = 101, l2 = 102, x1 = 1, x2 = 2;
@@ -32,11 +32,11 @@ TEST( testLinearContainerFactor, generic_jacobian_factor ) {
 
   Matrix A1 = (Matrix(2, 2) <<
       2.74222, -0.0067457,
-      0.0,  2.63624);
+      0.0,  2.63624).finished();
   Matrix A2 = (Matrix(2, 2) <<
       -0.0455167, -0.0443573,
-      -0.0222154, -0.102489);
-  Vector b = (Vector(2) << 0.0277052,
+      -0.0222154, -0.102489).finished();
+  Vector b = Vector2(0.0277052,
       -0.0533393);
 
   JacobianFactor expLinFactor(l1, A1, l2, A2, b, diag_model2);
@@ -66,11 +66,11 @@ TEST( testLinearContainerFactor, jacobian_factor_withlinpoints ) {
 
   Matrix A1 = (Matrix(2, 2) <<
       2.74222, -0.0067457,
-      0.0,  2.63624);
+      0.0,  2.63624).finished();
   Matrix A2 = (Matrix(2, 2) <<
       -0.0455167, -0.0443573,
-      -0.0222154, -0.102489);
-  Vector b = (Vector(2) << 0.0277052,
+      -0.0222154, -0.102489).finished();
+  Vector b = Vector2(0.0277052,
       -0.0533393);
 
   JacobianFactor expLinFactor(l1, A1, l2, A2, b, diag_model2);
@@ -97,8 +97,8 @@ TEST( testLinearContainerFactor, jacobian_factor_withlinpoints ) {
   EXPECT(assert_equal(expLinPoint, *actFactor.linearizationPoint()));
 
   // Check error evaluation
-  Vector delta_l1 = (Vector(2) << 1.0, 2.0);
-  Vector delta_l2 = (Vector(2) << 3.0, 4.0);
+  Vector delta_l1 = Vector2(1.0, 2.0);
+  Vector delta_l2 = Vector2(3.0, 4.0);
 
   VectorValues delta = values.zeroVectors();
   delta.at(l1) = delta_l1;
@@ -117,22 +117,22 @@ TEST( testLinearContainerFactor, jacobian_factor_withlinpoints ) {
 
 /* ************************************************************************* */
 TEST( testLinearContainerFactor, generic_hessian_factor ) {
-  Matrix G11 = (Matrix(1, 1) << 1.0);
-  Matrix G12 = (Matrix(1, 2) << 2.0, 4.0);
-  Matrix G13 = (Matrix(1, 3) << 3.0, 6.0, 9.0);
+  Matrix G11 = (Matrix(1, 1) << 1.0).finished();
+  Matrix G12 = (Matrix(1, 2) << 2.0, 4.0).finished();
+  Matrix G13 = (Matrix(1, 3) << 3.0, 6.0, 9.0).finished();
 
   Matrix G22 = (Matrix(2, 2) << 3.0, 5.0,
-                            0.0, 6.0);
+                            0.0, 6.0).finished();
   Matrix G23 = (Matrix(2, 3) << 4.0, 6.0, 8.0,
-                            1.0, 2.0, 4.0);
+                            1.0, 2.0, 4.0).finished();
 
   Matrix G33 = (Matrix(3, 3) << 1.0, 2.0, 3.0,
                             0.0, 5.0, 6.0,
-                            0.0, 0.0, 9.0);
+                            0.0, 0.0, 9.0).finished();
 
-  Vector g1 = (Vector(1) << -7.0);
-  Vector g2 = (Vector(2) << -8.0, -9.0);
-  Vector g3 = (Vector(3) <<  1.0,  2.0,  3.0);
+  Vector g1 = (Vector(1) << -7.0).finished();
+  Vector g2 = Vector2(-8.0, -9.0);
+  Vector g3 = Vector3(1.0,  2.0,  3.0);
 
   double f = 10.0;
 
@@ -161,18 +161,18 @@ TEST( testLinearContainerFactor, hessian_factor_withlinpoints ) {
   Matrix G11 = (Matrix(3, 3) <<
       1.0, 2.0, 3.0,
       0.0, 5.0, 6.0,
-      0.0, 0.0, 9.0);
+      0.0, 0.0, 9.0).finished();
   Matrix G12 = (Matrix(3, 2) <<
       1.0, 2.0,
       3.0, 5.0,
-      4.0, 6.0);
-  Vector g1 = (Vector(3) << 1.0,  2.0,  3.0);
+      4.0, 6.0).finished();
+  Vector g1 = Vector3(1.0,  2.0,  3.0);
 
   Matrix G22 = (Matrix(2, 2) <<
         0.5, 0.2,
-        0.0, 0.6);
+        0.0, 0.6).finished();
 
-  Vector g2 = (Vector(2) << -8.0, -9.0);
+  Vector g2 = Vector2(-8.0, -9.0);
 
   double f = 10.0;
 
@@ -197,16 +197,16 @@ TEST( testLinearContainerFactor, hessian_factor_withlinpoints ) {
   EXPECT(assert_equal(expLinPoints, actLinPoint));
 
   // Create delta
-  Vector delta_l1 = (Vector(2) << 1.0, 2.0);
-  Vector delta_x1 = (Vector(3) << 3.0, 4.0, 0.5);
-  Vector delta_x2 = (Vector(3) << 6.0, 7.0, 0.3);
+  Vector delta_l1 = Vector2(1.0, 2.0);
+  Vector delta_x1 = Vector3(3.0, 4.0, 0.5);
+  Vector delta_x2 = Vector3(6.0, 7.0, 0.3);
 
   // Check error calculation
   VectorValues delta = linearizationPoint.zeroVectors();
   delta.at(l1) = delta_l1;
   delta.at(x1) = delta_x1;
   delta.at(x2) = delta_x2;
-  EXPECT(assert_equal((Vector(5) << 3.0, 4.0, 0.5, 1.0, 2.0), delta.vector(initFactor.keys())));
+  EXPECT(assert_equal((Vector(5) << 3.0, 4.0, 0.5, 1.0, 2.0).finished(), delta.vector(initFactor.keys())));
   Values noisyValues = linearizationPoint.retract(delta);
 
   double expError = initFactor.error(delta);
@@ -214,7 +214,7 @@ TEST( testLinearContainerFactor, hessian_factor_withlinpoints ) {
   EXPECT_DOUBLES_EQUAL(initFactor.error(linearizationPoint.zeroVectors()), actFactor.error(linearizationPoint), tol);
 
   // Compute updated versions
-  Vector dv = (Vector(5) << 3.0, 4.0, 0.5, 1.0, 2.0);
+  Vector dv = (Vector(5) << 3.0, 4.0, 0.5, 1.0, 2.0).finished();
   Vector g(5); g << g1, g2;
   Vector g_prime = g - G.selfadjointView<Eigen::Upper>() * dv;
 

@@ -59,8 +59,8 @@ TEST( IncrementalFixedLagSmoother, Example )
   SETDEBUG("IncrementalFixedLagSmoother update", true);
 
   // Set up parameters
-  SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
-  SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
 
   // Create a Fixed-Lag Smoother
   typedef IncrementalFixedLagSmoother::KeyTimestampMap Timestamps;
