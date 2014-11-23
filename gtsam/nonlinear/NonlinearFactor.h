@@ -49,7 +49,7 @@ using boost::assign::cref_list_of;
  *
  * \nosubgrouping
  */
-class NonlinearFactor: public Factor {
+class GTSAM_EXPORT NonlinearFactor: public Factor {
 
 protected:
 
@@ -155,7 +155,7 @@ public:
 
  * The noise model is typically Gaussian, but robust and constrained error models are also supported.
  */
-class NoiseModelFactor: public NonlinearFactor {
+class GTSAM_EXPORT NoiseModelFactor: public NonlinearFactor {
 
 protected:
 
