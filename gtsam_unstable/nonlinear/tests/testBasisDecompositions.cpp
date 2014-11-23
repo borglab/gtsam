@@ -32,19 +32,60 @@ using namespace gtsam;
 
 noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
 
+/// Fourier
+template<int N>
+class Fourier {
+
+public:
+
+  typedef Eigen::Matrix<double, N, 1> Coefficients;
+  typedef Eigen::Matrix<double, 1, N> Jacobian;
+
+private:
+
+  double x_;
+  Jacobian H_;
+
+public:
+
+  /// Constructor
+  Fourier(double x) :
+      x_(x) {
+    H_(0, 0) = 1;
+    for (size_t i = 1; i < N; i += 2) {
+      H_(0, i) = cos(i * x);
+      H_(0, i + 1) = sin(i * x);
+    }
+  }
+
+  /// Given coefficients c, predict value for x
+  double operator()(const Coefficients& c, boost::optional<Jacobian&> H) {
+    return H_ * c;
+  }
+};
+
 //******************************************************************************
 TEST(BasisDecompositions, Fourier) {
 
   // Create linear factor graph
   GaussianFactorGraph g;
   Key key(1);
+  Vector3_ c(key);
   for (size_t i = 0; i < 16; i++) {
     double x = i * M_PI / 8, y = exp(sin(x) + cos(x));
+
+    // Manual JacobianFactor
     Matrix A(1, 3);
     A << 1, cos(x), sin(x);
     Vector b(1);
     b << y;
-    g.add(key, A, b, model);
+    JacobianFactor f1(key, A, b, model);
+
+    // With ExpressionFactor
+    Expression<double> expression(Fourier<3>(x), c);
+    ExpressionFactor<double> f2(model, y, expression);
+
+    g.add(f1);
   }
 
   // Solve
