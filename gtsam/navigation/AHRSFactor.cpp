@@ -100,34 +100,34 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   const Vector3 theta_incr = correctedOmega * deltaT;
 
   // rotation increment computed from the current rotation rate measurement
-  const Rot3 Rincr = Rot3::Expmap(theta_incr);
+  const Rot3 incrR = Rot3::Expmap(theta_incr);
+  const Matrix3 incrRt = incrR.transpose();
 
-  // Right jacobian computed at theta_incr
+  // Right Jacobian computed at theta_incr
   const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr);
 
   // Update Jacobians
   // ---------------------------------------------------------------------------
-  delRdelBiasOmega_ = Rincr.transpose() * delRdelBiasOmega_
-      - Jr_theta_incr * deltaT;
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - Jr_theta_incr * deltaT;
 
   // Update preintegrated measurements covariance
   // ---------------------------------------------------------------------------
-  const Vector3 theta_i = Rot3::Logmap(deltaRij_); // parametrization of so(3)
+  const Vector3 theta_i = Rot3::Logmap(deltaRij_); // Parameterization of so(3)
   const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3inverse(theta_i);
 
-  Rot3 Rot_j = deltaRij_ * Rincr;
-  const Vector3 theta_j = Rot3::Logmap(Rot_j); // parametrization of so(3)
+  Rot3 Rot_j = deltaRij_ * incrR;
+  const Vector3 theta_j = Rot3::Logmap(Rot_j); // Parameterization of so(3)
   const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
 
-  // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
-  // can be seen as a prediction phase in an EKF framework
-  Matrix3 H_angles_angles = Jrinv_theta_j * Rincr.transpose() * Jr_theta_i;
+  // Update preintegrated measurements covariance: as in [2] we consider a first
+  // order propagation that can be seen as a prediction phase in an EKF framework
+  Matrix3 H_angles_angles = Jrinv_theta_j * incrRt * Jr_theta_i;
   // analytic expression corresponding to the following numerical derivative
-  // Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
+  // Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>
+  // (boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
 
-  // overall Jacobian wrt preintegrated measurements (df/dx)
-  Matrix3 F;
-  F << H_angles_angles;
+  // overall Jacobian wrpt preintegrated measurements (df/dx)
+  const Matrix3& F = H_angles_angles;
 
   // first order uncertainty propagation
   // the deltaT allows to pass from continuous time noise to discrete time noise
@@ -136,7 +136,7 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
 
   // Update preintegrated measurements
   // ---------------------------------------------------------------------------
-  deltaRij_ = deltaRij_ * Rincr;
+  deltaRij_ = deltaRij_ * incrR;
   deltaTij_ += deltaT;
 }
 
