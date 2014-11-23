@@ -168,7 +168,7 @@ AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
         body_P_sensor) {
 }
 
-/// @return a deep copy of this factor
+//------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr AHRSFactor::clone() const {
   return boost::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
@@ -182,9 +182,9 @@ void AHRSFactor::print(const std::string& s,
   preintegratedMeasurements_.print("  preintegrated measurements:");
   std::cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]"
       << std::endl;
-  this->noiseModel_->print("  noise model: ");
-  if (this->body_P_sensor_)
-    this->body_P_sensor_->print("  sensor pose in body frame: ");
+  noiseModel_->print("  noise model: ");
+  if (body_P_sensor_)
+    body_P_sensor_->print("  sensor pose in body frame: ");
 }
 
 //------------------------------------------------------------------------------
@@ -241,8 +241,8 @@ Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
             * (-rot_j.between(rot_i).matrix()
                 - fRhat.inverse().matrix() * Jtheta);
   }
-  if (H2) {
 
+  if (H2) {
     H2->resize(3, 3);
     (*H2) <<
     // dfR/dPosej
@@ -258,10 +258,9 @@ Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
     Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc * Jr_JbiasOmegaIncr
         * preintegratedMeasurements_.delRdelBiasOmega_;
 
-    H3->resize(3, 6);
-    (*H3) <<
     // dfR/dBias
-        Matrix::Zero(3, 3), Jrinv_fRhat
+    H3->resize(3, 6);
+    (*H3) << Matrix::Zero(3, 3), Jrinv_fRhat
         * (-fRhat.inverse().matrix() * JbiasOmega);
   }
 
