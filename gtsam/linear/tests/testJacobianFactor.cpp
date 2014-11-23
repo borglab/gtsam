@@ -42,8 +42,8 @@ namespace {
       (make_pair(15, 3*Matrix3::Identity()));
 
     // RHS and sigmas
-    const Vector b = (Vector(3) << 1., 2., 3.).finished();
-    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.5).finished());
+    const Vector b = Vector3(1., 2., 3.);
+    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector3(0.5, 0.5, 0.5));
   }
 }
 
@@ -156,7 +156,7 @@ TEST(JabobianFactor, Hessian_conversion) {
   JacobianFactor expected(0, (Matrix(2,4) <<
       1.2530,   2.1508,   -0.8779,  -1.8755,
            0,   2.5858,    0.4789,  -2.3943).finished(),
-      (Vector(2) << -6.2929, -5.7941).finished());
+      Vector2(-6.2929, -5.7941));
 
   EXPECT(assert_equal(expected, JacobianFactor(hessian), 1e-3));
 }
@@ -296,9 +296,9 @@ TEST(JacobianFactor, matrices)
   // hessianDiagonal
   VectorValues expectDiagonal;
   // below we divide by the variance 0.5^2
-  expectDiagonal.insert(5, (Vector(3) << 1, 1, 1).finished()/0.25);
-  expectDiagonal.insert(10, (Vector(3) << 4, 4, 4).finished()/0.25);
-  expectDiagonal.insert(15, (Vector(3) << 9, 9, 9).finished()/0.25);
+  expectDiagonal.insert(5, Vector3(1, 1, 1)/0.25);
+  expectDiagonal.insert(10, Vector3(4, 4, 4)/0.25);
+  expectDiagonal.insert(15, Vector3(9, 9, 9)/0.25);
   EXPECT(assert_equal(expectDiagonal, factor.hessianDiagonal()));
 
   // hessianBlockDiagonal
@@ -315,22 +315,22 @@ TEST(JacobianFactor, operators )
   SharedDiagonal  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
 
   Matrix I = eye(2);
-  Vector b = (Vector(2) << 0.2,-0.1).finished();
+  Vector b = Vector2(0.2,-0.1);
   JacobianFactor lf(1, -I, 2, I, b, sigma0_1);
 
   VectorValues c;
-  c.insert(1, (Vector(2) << 10.,20.).finished());
-  c.insert(2, (Vector(2) << 30.,60.).finished());
+  c.insert(1, Vector2(10.,20.));
+  c.insert(2, Vector2(30.,60.));
 
   // test A*x
-  Vector expectedE = (Vector(2) << 200.,400.).finished();
+  Vector expectedE = Vector2(200.,400.);
   Vector actualE = lf * c;
   EXPECT(assert_equal(expectedE, actualE));
 
   // test A^e
   VectorValues expectedX;
-  expectedX.insert(1, (Vector(2) << -2000.,-4000.).finished());
-  expectedX.insert(2, (Vector(2) << 2000., 4000.).finished());
+  expectedX.insert(1, Vector2(-2000.,-4000.));
+  expectedX.insert(2, Vector2(2000., 4000.));
   VectorValues actualX = VectorValues::Zero(expectedX);
   lf.transposeMultiplyAdd(1.0, actualE, actualX);
   EXPECT(assert_equal(expectedX, actualX));
@@ -338,8 +338,8 @@ TEST(JacobianFactor, operators )
   // test gradient at zero
   Matrix A; Vector b2; boost::tie(A,b2) = lf.jacobian();
   VectorValues expectedG;
-  expectedG.insert(1, (Vector(2) << 20,-10).finished());
-  expectedG.insert(2, (Vector(2) << -20, 10).finished());
+  expectedG.insert(1, Vector2(20,-10));
+  expectedG.insert(2, Vector2(-20, 10));
   FastVector<Key> keys; keys += 1,2;
   EXPECT(assert_equal(-A.transpose()*b2, expectedG.vector(keys)));
   VectorValues actualG = lf.gradientAtZero();
@@ -465,7 +465,7 @@ TEST(JacobianFactor, eliminate2 )
     -0.20, 0.00,-0.80, 0.00,
     +0.00,-0.20,+0.00,-0.80
     ).finished()/oldSigma;
-  Vector d = (Vector(2) << 0.2,-0.14).finished()/oldSigma;
+  Vector d = Vector2(0.2,-0.14)/oldSigma;
   GaussianConditional expectedCG(2, d, R11, 11, S12);
 
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
@@ -477,7 +477,7 @@ TEST(JacobianFactor, eliminate2 )
     1.00, 0.00, -1.00,  0.00,
     0.00, 1.00, +0.00, -1.00
     ).finished()/sigma;
-  Vector b1 = (Vector(2) << 0.0, 0.894427).finished();
+  Vector b1 = Vector2(0.0, 0.894427);
   JacobianFactor expectedLF(11, Bl1x1, b1);
   EXPECT(assert_equal(expectedLF, *actual.second,1e-3));
 }
@@ -561,7 +561,7 @@ TEST ( JacobianFactor, constraint_eliminate1 )
   EXPECT(actual.second->size() == 0);
 
   // verify conditional Gaussian
-  Vector sigmas = (Vector(2) << 0.0, 0.0).finished();
+  Vector sigmas = Vector2(0.0, 0.0);
   GaussianConditional expCG(1, v, eye(2), noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expCG, *actual.first));
 }
@@ -604,8 +604,8 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   Matrix S = (Matrix(2, 2) <<
       1.0,    2.0,
       0.0,    0.0).finished();
-  Vector d = (Vector(2) << 3.0, 0.6666).finished();
-  Vector sigmas = (Vector(2) << 0.0, 0.0).finished();
+  Vector d = Vector2(3.0, 0.6666);
+  Vector sigmas = Vector2(0.0, 0.0);
   GaussianConditional expectedCG(1, d, R, 2, S, noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
 }

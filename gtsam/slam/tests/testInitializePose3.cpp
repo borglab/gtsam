@@ -145,7 +145,7 @@ TEST( InitializePose3, iterationGradient ) {
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
   // Wrong initial guess - initialization should fix the rotations
-  Rot3 Rpert = Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01).finished());
+  Rot3 Rpert = Rot3::Expmap(Vector3(0.01, 0.01, 0.01));
   Values givenPoses;
   givenPoses.insert(x0,simple::pose0);
   givenPoses.insert(x1,(simple::pose0).compose( Pose3(Rpert,Point3()) ));
@@ -186,7 +186,7 @@ TEST( InitializePose3, orientationsGradient ) {
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
   // Wrong initial guess - initialization should fix the rotations
-  Rot3 Rpert = Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01).finished());
+  Rot3 Rpert = Rot3::Expmap(Vector3(0.01, 0.01, 0.01));
   Values givenPoses;
   givenPoses.insert(x0,simple::pose0);
   givenPoses.insert(x1,(simple::pose0).compose( Pose3(Rpert,Point3()) ));

@@ -71,7 +71,7 @@ TEST (EssentialMatrixFactor, testData) {
   EXPECT(assert_equal(Point2(-1, 0.2), pB(4), 1e-8));
 
   // Check homogeneous version
-  EXPECT(assert_equal((Vector(3) << -1, 0.2, 1).finished(), vB(4), 1e-8));
+  EXPECT(assert_equal(Vector3(-1, 0.2, 1), vB(4), 1e-8));
 
   // Check epipolar constraint
   for (size_t i = 0; i < 5; i++)

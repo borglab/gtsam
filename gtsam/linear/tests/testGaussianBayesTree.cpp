@@ -88,7 +88,7 @@ TEST( GaussianBayesTree, eliminate )
 
   GaussianBayesTree bayesTree_expected;
   bayesTree_expected.insertRoot(
-    MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x3, (Matrix(2, 1) << 2., 0.).finished()) (x4, (Matrix(2, 1) << 2., 2.).finished()), 2, (Vector(2) << 2., 2.).finished()), list_of
+    MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x3, (Matrix(2, 1) << 2., 0.).finished()) (x4, (Matrix(2, 1) << 2., 2.).finished()), 2, Vector2(2., 2.)), list_of
       (MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x2, (Matrix(2, 1) << -2.*sqrt(2.), 0.).finished()) (x1, (Matrix(2, 1) << -sqrt(2.), -sqrt(2.)).finished()) (x3, (Matrix(2, 1) << -sqrt(2.), sqrt(2.)).finished()), 2, (Vector(2) << -2.*sqrt(2.), 0.).finished())))));
 
   EXPECT(assert_equal(bayesTree_expected, bt));
@@ -115,16 +115,16 @@ TEST(GaussianBayesTree, complicatedMarginal) {
   bt.insertRoot(
     MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (11, (Matrix(3,1) << 0.0971, 0, 0).finished()) 
                                                          (12, (Matrix(3,2) << 0.3171, 0.4387,  0.9502, 0.3816,  0, 0.7655).finished()),
-                                            2, (Vector(3) << 0.2638, 0.1455, 0.1361).finished()), list_of
+                                            2, Vector3(0.2638, 0.1455, 0.1361)), list_of
       (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (9, (Matrix(3,1) << 0.7952, 0, 0).finished())
                                                             (10, (Matrix(3,2) << 0.4456, 0.7547, 0.6463, 0.2760, 0, 0.6797).finished())
                                                             (11, (Matrix(3,1) << 0.6551, 0.1626, 0.1190).finished())
                                                             (12, (Matrix(3,2) << 0.4984, 0.5853, 0.9597, 0.2238, 0.3404, 0.7513).finished()),
-                                               2, (Vector(3) << 0.4314, 0.9106, 0.1818).finished())))
+                                               2, Vector3(0.4314, 0.9106, 0.1818))))
       (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (7, (Matrix(3,1) << 0.2551, 0, 0).finished())
                                                             (8, (Matrix(3,2) << 0.8909, 0.1386, 0.9593, 0.1493, 0, 0.2575).finished())
                                                             (11, (Matrix(3,1) << 0.8407, 0.2543, 0.8143).finished()),
-                                               2, (Vector(3) << 0.3998, 0.2599, 0.8001).finished()), list_of
+                                               2, Vector3(0.3998, 0.2599, 0.8001)), list_of
           (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (5, (Matrix(3,1) << 0.2435, 0, 0).finished())
                                                                 (6, (Matrix(3,2) << 0.4733, 0.1966, 0.3517, 0.2511, 0.8308,    0.0).finished())
                                                                 // NOTE the non-upper-triangular form
@@ -134,15 +134,15 @@ TEST(GaussianBayesTree, complicatedMarginal) {
                                                                 // redone if this stops working in the future
                                                                 (7, (Matrix(3,1) << 0.5853, 0.5497, 0.9172).finished())
                                                                 (8, (Matrix(3,2) << 0.2858, 0.3804, 0.7572, 0.5678, 0.7537, 0.0759).finished()),
-                                                  2, (Vector(3) << 0.8173, 0.8687, 0.0844).finished()), list_of
+                                                  2, Vector3(0.8173, 0.8687, 0.0844)), list_of
               (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (3, (Matrix(3,1) << 0.0540, 0, 0).finished())
                                                                     (4, (Matrix(3,2) << 0.9340, 0.4694, 0.1299, 0.0119, 0, 0.3371).finished())
                                                                     (6, (Matrix(3,2) << 0.1622, 0.5285, 0.7943, 0.1656, 0.3112, 0.6020).finished()),
-                                                      2, (Vector(3) << 0.9619, 0.0046, 0.7749).finished())))
+                                                      2, Vector3(0.9619, 0.0046, 0.7749))))
               (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (1, (Matrix(3,1) << 0.2630, 0, 0).finished())
                                                                     (2, (Matrix(3,2) << 0.7482, 0.2290, 0.4505, 0.9133, 0, 0.1524).finished())
                                                                     (5, (Matrix(3,1) << 0.8258, 0.5383, 0.9961).finished()),
-                                                      2, (Vector(3) << 0.0782, 0.4427, 0.1067).finished())))))))));
+                                                      2, Vector3(0.0782, 0.4427, 0.1067))))))))));
 
   // Marginal on 5
   Matrix expectedCov = (Matrix(1,1) << 236.5166).finished();
@@ -261,11 +261,11 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
 
   // Known steepest descent point from Bayes' net version
   VectorValues expectedFromBN = pair_list_of<Key, Vector>
-    (0, (Vector(2) << 0.000129034, 0.000688183).finished())
-    (1, (Vector(2) << 0.0109679, 0.0253767).finished())
-    (2, (Vector(2) << 0.0680441, 0.114496).finished())
-    (3, (Vector(2) << 0.16125, 0.241294).finished())
-    (4, (Vector(2) << 0.300134, 0.423233).finished());
+    (0, Vector2(0.000129034, 0.000688183))
+    (1, Vector2(0.0109679, 0.0253767))
+    (2, Vector2(0.0680441, 0.114496))
+    (3, Vector2(0.16125, 0.241294))
+    (4, Vector2(0.300134, 0.423233));
 
   // Compute the steepest descent point with the dogleg function
   VectorValues actual = bt.optimizeGradientSearch();

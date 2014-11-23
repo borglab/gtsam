@@ -105,7 +105,7 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
 
   VectorValues expected;
   expected.insert(X(1), zero(3));
-  expected.insert(X(2), (Vector(3) << -0.5,0.,0.).finished());
+  expected.insert(X(2), Vector3(-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
 
@@ -132,7 +132,7 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 
   VectorValues expected;
   expected.insert(X(1), zero(3));
-  expected.insert(X(2), (Vector(3) << -0.5,0.,0.).finished());
+  expected.insert(X(2), Vector3(-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
 

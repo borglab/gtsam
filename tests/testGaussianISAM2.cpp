@@ -172,10 +172,10 @@ done:
 //  // Create values where indices 1 and 3 are above the threshold of 0.1
 //  VectorValues values;
 //  values.reserve(4, 10);
-//  values.push_back_preallocated((Vector(2) << 0.09, 0.09).finished());
-//  values.push_back_preallocated((Vector(3) << 0.11, 0.11, 0.09).finished());
-//  values.push_back_preallocated((Vector(3) << 0.09, 0.09, 0.09).finished());
-//  values.push_back_preallocated((Vector(2) << 0.11, 0.11).finished());
+//  values.push_back_preallocated(Vector2(0.09, 0.09));
+//  values.push_back_preallocated(Vector3(0.11, 0.11, 0.09));
+//  values.push_back_preallocated(Vector3(0.09, 0.09, 0.09));
+//  values.push_back_preallocated(Vector2(0.11, 0.11));
 //
 //  // Create a permutation
 //  Permutation permutation(4);

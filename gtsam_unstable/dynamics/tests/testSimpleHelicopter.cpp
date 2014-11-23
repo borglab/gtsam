@@ -25,8 +25,8 @@ Pose3 g2(g1.retract(h*V1_g1, Pose3::EXPMAP));
 //Vector6 v2 = Pose3::Logmap(g1.between(g2));
 
 double mass = 100.0;
-Vector gamma2 = (Vector(2) << 0.0, 0.0).finished();  // no shape
-Vector u2 = (Vector(2) << 0.0, 0.0).finished(); // no control at time 2
+Vector gamma2 = Vector2(0.0, 0.0);  // no shape
+Vector u2 = Vector2(0.0, 0.0); // no control at time 2
 double distT = 1.0; // distance from the body-centered x axis to the big top motor
 double distR = 5.0; // distance from the body-centered z axis to the small motor
 Matrix Mass = diag((Vector(3) << mass, mass, mass).finished());

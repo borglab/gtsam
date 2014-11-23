@@ -67,7 +67,7 @@ TEST( KalmanFilter, linear1 ) {
   // Create the controls and measurement properties for our example
   Matrix F = eye(2, 2);
   Matrix B = eye(2, 2);
-  Vector u = (Vector(2) << 1.0, 0.0).finished();
+  Vector u = Vector2(1.0, 0.0);
   SharedDiagonal modelQ = noiseModel::Isotropic::Sigma(2, 0.1);
   Matrix Q = 0.01*eye(2, 2);
   Matrix H = eye(2, 2);
@@ -137,7 +137,7 @@ TEST( KalmanFilter, predict ) {
   // Create dynamics model
   Matrix F = (Matrix(2, 2) << 1.0, 0.1, 0.2, 1.1).finished();
   Matrix B = (Matrix(2, 3) << 1.0, 0.1, 0.2, 1.1, 1.2, 0.8).finished();
-  Vector u = (Vector(3) << 1.0, 0.0, 2.0).finished();
+  Vector u = Vector3(1.0, 0.0, 2.0);
   Matrix R = (Matrix(2, 2) << 1.0, 0.5, 0.0, 3.0).finished();
   Matrix M = trans(R)*R;
   Matrix Q = inverse(M);
@@ -240,8 +240,8 @@ TEST( KalmanFilter, QRvsCholesky ) {
       0.0, 9795.9, 83.6, 0.0, 0.0, 0.0, 1000.0, 0.0, 0.0,
       -9795.9, 0.0, -5.2, 0.0, 0.0, 0.0, 0.0, 1000.0, 0.0,
       -83.6, 5.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000.).finished();
-  Vector z = (Vector(3) << 0.2599 , 1.3327 , 0.2007).finished();
-  Vector sigmas = (Vector(3) << 0.3323 , 0.2470 , 0.1904).finished();
+  Vector z = Vector3(0.2599 , 1.3327 , 0.2007);
+  Vector sigmas = Vector3(0.3323 , 0.2470 , 0.1904);
   SharedDiagonal modelR = noiseModel::Diagonal::Sigmas(sigmas);
 
   // do update

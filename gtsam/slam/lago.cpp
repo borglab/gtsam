@@ -338,7 +338,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
     }
   }
   // add prior
-  linearPose2graph.add(keyAnchor, I3, (Vector(3) << 0.0, 0.0, 0.0).finished(),
+  linearPose2graph.add(keyAnchor, I3, Vector3(0.0, 0.0, 0.0),
       priorPose2Noise);
 
   // optimize

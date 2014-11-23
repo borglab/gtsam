@@ -76,7 +76,7 @@ TEST(HessianFactor, ConversionConstructor)
   HessianFactor actual(jacobian);
 
   VectorValues values = pair_list_of<Key, Vector>
-    (0, (Vector(2) << 1.0, 2.0).finished())
+    (0, Vector2(1.0, 2.0))
     (1, (Vector(4) << 3.0, 4.0, 5.0, 6.0).finished());
 
   EXPECT_LONGS_EQUAL(2, (long)actual.size());
@@ -88,7 +88,7 @@ TEST(HessianFactor, ConversionConstructor)
 TEST(HessianFactor, Constructor1)
 {
   Matrix G = (Matrix(2,2) << 3.0, 5.0, 5.0, 6.0).finished();
-  Vector g = (Vector(2) << -8.0, -9.0).finished();
+  Vector g = Vector2(-8.0, -9.0);
   double f = 10.0;
   HessianFactor factor(0, G, g, f);
 
@@ -98,7 +98,7 @@ TEST(HessianFactor, Constructor1)
   EXPECT(assert_equal(g, Vector(factor.linearTerm())));
   EXPECT_LONGS_EQUAL(1, (long)factor.size());
 
-  VectorValues dx = pair_list_of<Key, Vector>(0, (Vector(2) << 1.5, 2.5).finished());
+  VectorValues dx = pair_list_of<Key, Vector>(0, Vector2(1.5, 2.5));
 
   // error 0.5*(f - 2*x'*g + x'*G*x)
   double expected = 80.375;
@@ -112,7 +112,7 @@ TEST(HessianFactor, Constructor1)
 /* ************************************************************************* */
 TEST(HessianFactor, Constructor1b)
 {
-  Vector mu = (Vector(2) << 1.0,2.0).finished();
+  Vector mu = Vector2(1.0,2.0);
   Matrix Sigma = eye(2,2);
 
   HessianFactor factor(0, mu, Sigma);
@@ -135,11 +135,11 @@ TEST(HessianFactor, Constructor2)
   Matrix G12 = (Matrix(1,2) << 2.0, 4.0).finished();
   Matrix G22 = (Matrix(2,2) << 3.0, 5.0, 5.0, 6.0).finished();
   Vector g1 = (Vector(1) << -7.0).finished();
-  Vector g2 = (Vector(2) << -8.0, -9.0).finished();
+  Vector g2 = Vector2(-8.0, -9.0);
   double f = 10.0;
 
   Vector dx0 = (Vector(1) << 0.5).finished();
-  Vector dx1 = (Vector(2) << 1.5, 2.5).finished();
+  Vector dx1 = Vector2(1.5, 2.5);
 
   VectorValues dx = pair_list_of
     (0, dx0)
@@ -165,7 +165,7 @@ TEST(HessianFactor, Constructor2)
   VectorValues dxLarge = pair_list_of<Key, Vector>
     (0, dx0)
     (1, dx1)
-    (2, (Vector(2) << 0.1, 0.2).finished());
+    (2, Vector2(0.1, 0.2));
   EXPECT_DOUBLES_EQUAL(expected, factor.error(dxLarge), 1e-10);
 }
 
@@ -182,14 +182,14 @@ TEST(HessianFactor, Constructor3)
   Matrix G33 = (Matrix(3,3) << 1.0, 2.0, 3.0, 2.0, 5.0, 6.0, 3.0, 6.0, 9.0).finished();
 
   Vector g1 = (Vector(1) << -7.0).finished();
-  Vector g2 = (Vector(2) << -8.0, -9.0).finished();
-  Vector g3 = (Vector(3) <<  1.0,  2.0,  3.0).finished();
+  Vector g2 = Vector2(-8.0, -9.0);
+  Vector g3 = Vector3(1.0,  2.0,  3.0);
 
   double f = 10.0;
 
   Vector dx0 = (Vector(1) << 0.5).finished();
-  Vector dx1 = (Vector(2) << 1.5, 2.5).finished();
-  Vector dx2 = (Vector(3) << 1.5, 2.5, 3.5).finished();
+  Vector dx1 = Vector2(1.5, 2.5);
+  Vector dx2 = Vector3(1.5, 2.5, 3.5);
 
   VectorValues dx = pair_list_of
     (0, dx0)
@@ -229,14 +229,14 @@ TEST(HessianFactor, ConstructorNWay)
   Matrix G33 = (Matrix(3,3) << 1.0, 2.0, 3.0, 2.0, 5.0, 6.0, 3.0, 6.0, 9.0).finished();
 
   Vector g1 = (Vector(1) << -7.0).finished();
-  Vector g2 = (Vector(2) << -8.0, -9.0).finished();
-  Vector g3 = (Vector(3) <<  1.0,  2.0,  3.0).finished();
+  Vector g2 = Vector2(-8.0, -9.0);
+  Vector g3 = Vector3(1.0,  2.0,  3.0);
 
   double f = 10.0;
 
   Vector dx0 = (Vector(1) << 0.5).finished();
-  Vector dx1 = (Vector(2) << 1.5, 2.5).finished();
-  Vector dx2 = (Vector(3) << 1.5, 2.5, 3.5).finished();
+  Vector dx1 = Vector2(1.5, 2.5);
+  Vector dx2 = Vector3(1.5, 2.5, 3.5);
 
   VectorValues dx = pair_list_of
     (0, dx0)
@@ -379,7 +379,7 @@ TEST(HessianFactor, eliminate2 )
       -0.20, 0.00,-0.80, 0.00,
       +0.00,-0.20,+0.00,-0.80
   ).finished()/oldSigma;
-  Vector d = (Vector(2) << 0.2,-0.14).finished()/oldSigma;
+  Vector d = Vector2(0.2,-0.14)/oldSigma;
   GaussianConditional expectedCG(0, d, R11, 1, S12);
   EXPECT(assert_equal(expectedCG, *actual_Chol.first, 1e-4));
 
@@ -390,7 +390,7 @@ TEST(HessianFactor, eliminate2 )
       1.00, 0.00, -1.00,  0.00,
       0.00, 1.00, +0.00, -1.00
   ).finished()/sigma;
-  Vector b1 = (Vector(2) << 0.0,0.894427).finished();
+  Vector b1 = Vector2(0.0,0.894427);
   JacobianFactor expectedLF(1, Bl1x1, b1, noiseModel::Isotropic::Sigma(2,1.0));
   EXPECT(assert_equal(HessianFactor(expectedLF), *actual_Chol.second, 1.5e-3));
 }
@@ -408,7 +408,7 @@ TEST(HessianFactor, combine) {
   Matrix A2 = (Matrix(2, 2) <<
   -8.94427191,      0.0,
          0.0, -8.94427191).finished();
-  Vector b = (Vector(2) << 2.23606798,-1.56524758).finished();
+  Vector b = Vector2(2.23606798,-1.56524758);
   SharedDiagonal model = noiseModel::Diagonal::Sigmas(ones(2));
   GaussianFactor::shared_ptr f(new JacobianFactor(0, A0, 1, A1, 2, A2, b, model));
   GaussianFactorGraph factors = list_of(f);
@@ -435,7 +435,7 @@ TEST(HessianFactor, gradientAtZero)
   Matrix G12 = (Matrix(1, 2) << 0, 0).finished();
   Matrix G22 = (Matrix(2, 2) << 1, 0, 0, 1).finished();
   Vector g1 = (Vector(1) << -7).finished();
-  Vector g2 = (Vector(2) << -8, -9).finished();
+  Vector g2 = Vector2(-8, -9);
   double f = 194;
 
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
@@ -456,7 +456,7 @@ TEST(HessianFactor, hessianDiagonal)
   Matrix G12 = (Matrix(1, 2) << 0, 0).finished();
   Matrix G22 = (Matrix(2, 2) << 1, 0, 0, 1).finished();
   Vector g1 = (Vector(1) << -7).finished();
-  Vector g2 = (Vector(2) << -8, -9).finished();
+  Vector g2 = Vector2(-8, -9);
   double f = 194;
 
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
@@ -464,7 +464,7 @@ TEST(HessianFactor, hessianDiagonal)
   // hessianDiagonal
   VectorValues expected;
   expected.insert(0, (Vector(1) << 1).finished());
-  expected.insert(1, (Vector(2) << 1,1).finished());
+  expected.insert(1, Vector2(1,1));
   EXPECT(assert_equal(expected, factor.hessianDiagonal()));
 
   // hessianBlockDiagonal

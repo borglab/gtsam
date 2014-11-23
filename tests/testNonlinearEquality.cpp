@@ -166,7 +166,7 @@ TEST ( NonlinearEquality, allow_error_pose ) {
   // the unwhitened error should provide logmap to the feasible state
   Pose2 badPoint1(0.0, 2.0, 3.0);
   Vector actVec = nle.evaluateError(badPoint1);
-  Vector expVec = (Vector(3) << -0.989992, -0.14112, 0.0).finished();
+  Vector expVec = Vector3(-0.989992, -0.14112, 0.0);
   EXPECT(assert_equal(expVec, actVec, 1e-5));
 
   // the actual error should have a gain on it
@@ -267,8 +267,8 @@ TEST( testNonlinearEqualityConstraint, unary_basics ) {
   Point2 ptBad1(2.0, 2.0);
   config2.insert(key, ptBad1);
   EXPECT(constraint.active(config2));
-  EXPECT(assert_equal((Vector(2) << 1.0, 0.0).finished(), constraint.evaluateError(ptBad1), tol));
-  EXPECT(assert_equal((Vector(2) << 1.0, 0.0).finished(), constraint.unwhitenedError(config2), tol));
+  EXPECT(assert_equal(Vector2(1.0, 0.0), constraint.evaluateError(ptBad1), tol));
+  EXPECT(assert_equal(Vector2(1.0, 0.0), constraint.unwhitenedError(config2), tol));
   EXPECT_DOUBLES_EQUAL(500.0, constraint.error(config2), tol);
 }
 
@@ -289,7 +289,7 @@ TEST( testNonlinearEqualityConstraint, unary_linearization ) {
   Point2 ptBad(2.0, 2.0);
   config2.insert(key, ptBad);
   GaussianFactor::shared_ptr actual2 = constraint.linearize(config2);
-  GaussianFactor::shared_ptr expected2(new JacobianFactor(key, eye(2,2), (Vector(2) <<-1.0,0.0).finished(), hard_model));
+  GaussianFactor::shared_ptr expected2(new JacobianFactor(key, eye(2,2), Vector2(-1.0,0.0), hard_model));
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
 
@@ -347,8 +347,8 @@ TEST( testNonlinearEqualityConstraint, odo_basics ) {
   config2.insert(key1, x1bad);
   config2.insert(key2, x2bad);
   EXPECT(constraint.active(config2));
-  EXPECT(assert_equal((Vector(2) << -1.0, -1.0).finished(), constraint.evaluateError(x1bad, x2bad), tol));
-  EXPECT(assert_equal((Vector(2) << -1.0, -1.0).finished(), constraint.unwhitenedError(config2), tol));
+  EXPECT(assert_equal(Vector2(-1.0, -1.0), constraint.evaluateError(x1bad, x2bad), tol));
+  EXPECT(assert_equal(Vector2(-1.0, -1.0), constraint.unwhitenedError(config2), tol));
   EXPECT_DOUBLES_EQUAL(1000.0, constraint.error(config2), tol);
 }
 
@@ -376,7 +376,7 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   GaussianFactor::shared_ptr actual2 = constraint.linearize(config2);
   GaussianFactor::shared_ptr expected2(
       new JacobianFactor(key1, -eye(2,2), key2,
-          eye(2,2), (Vector(2) << 1.0, 1.0).finished(), hard_model));
+          eye(2,2), Vector2(1.0, 1.0), hard_model));
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
 

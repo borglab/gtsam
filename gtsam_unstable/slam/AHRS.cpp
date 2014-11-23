@@ -221,8 +221,8 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Matrix b_g = skewSymmetric(increment* f_previous);
   Matrix H = collect(3, &b_g, &I3, &Z3);
 //  Matrix R = diag(emul(sigmas_v_a_, sigmas_v_a_));
-//  Matrix R = diag((Vector(3) << 1.0, 0.2, 1.0).finished()); // good for L_twice
-  Matrix R = diag((Vector(3) << 0.01, 0.0001, 0.01).finished());
+//  Matrix R = diag(Vector3(1.0, 0.2, 1.0)); // good for L_twice
+  Matrix R = diag(Vector3(0.01, 0.0001, 0.01));
 
 // update the Kalman filter
   KalmanFilter::State updatedState = KF_.updateQ(state, H, z, R);

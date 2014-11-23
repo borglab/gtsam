@@ -110,7 +110,7 @@ TEST( dataSet, readG2o)
   expectedValues.insert(10, Pose2(3.531067, 0.388263, -2.148934));
   EXPECT(assert_equal(expectedValues,*actualValues,1e-5));
 
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699).finished());
+  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
   NonlinearFactorGraph expectedGraph;
   expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
   expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
@@ -238,7 +238,7 @@ TEST( dataSet, readG2oHuber)
   bool is3D = false;
   boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D, KernelFunctionTypeHUBER);
 
-  noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699).finished());
+  noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), baseModel);
 
   NonlinearFactorGraph expectedGraph;
@@ -266,7 +266,7 @@ TEST( dataSet, readG2oTukey)
   bool is3D = false;
   boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D, KernelFunctionTypeTUKEY);
 
-  noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions((Vector(3) << 44.721360, 44.721360, 30.901699).finished());
+  noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
 
   NonlinearFactorGraph expectedGraph;

@@ -38,9 +38,9 @@ namespace {
 
 // Set up initial pose, odometry difference, loop closure difference, and initialization errors
 const Pose3 poseInitial;
-const Pose3 poseOdometry( Rot3::RzRyRx((Vector(3) << 0.05, 0.10, -0.75).finished()), Point3(1.0, -0.25, 0.10) );
-//const Pose3 poseError( Rot3::RzRyRx((Vector(3) << 0.01, 0.02, -0.1).finished()), Point3(0.05, -0.05, 0.02) );
-const Pose3 poseError( Rot3::RzRyRx((Vector(3) << 0.1, 0.02, -0.1).finished()), Point3(0.5, -0.05, 0.2) );
+const Pose3 poseOdometry( Rot3::RzRyRx(Vector3(0.05, 0.10, -0.75)), Point3(1.0, -0.25, 0.10) );
+//const Pose3 poseError( Rot3::RzRyRx(Vector3(0.01, 0.02, -0.1)), Point3(0.05, -0.05, 0.02) );
+const Pose3 poseError( Rot3::RzRyRx(Vector3(0.1, 0.02, -0.1)), Point3(0.5, -0.05, 0.2) );
 
 // Set up noise models for the factors
 const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);

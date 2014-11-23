@@ -128,7 +128,7 @@ TEST( ParticleFilter, linear1 ) {
   // Create the controls and measurement properties for our example
   Matrix F = eye(2, 2);
   Matrix B = eye(2, 2);
-  Vector u = (Vector(2) << 1.0, 0.0).finished();
+  Vector u = Vector2(1.0, 0.0);
   SharedDiagonal modelQ = noiseModel::Isotropic::Sigma(2, 0.1);
   Matrix Q = 0.01 * eye(2, 2);
   Matrix H = eye(2, 2);

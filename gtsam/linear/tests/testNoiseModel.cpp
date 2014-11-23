@@ -48,8 +48,8 @@ static Matrix Sigma = (Matrix(3, 3) <<
 /* ************************************************************************* */
 TEST(NoiseModel, constructors)
 {
-  Vector whitened = (Vector(3) << 5.0,10.0,15.0).finished();
-  Vector unwhitened = (Vector(3) << 10.0,20.0,30.0).finished();
+  Vector whitened = Vector3(5.0,10.0,15.0);
+  Vector unwhitened = Vector3(10.0,20.0,30.0);
 
   // Construct noise models
   vector<Gaussian::shared_ptr> m;
@@ -107,7 +107,7 @@ TEST(NoiseModel, constructors)
 /* ************************************************************************* */
 TEST(NoiseModel, Unit)
 {
-  Vector v = (Vector(3) << 5.0,10.0,15.0).finished();
+  Vector v = Vector3(5.0,10.0,15.0);
   Gaussian::shared_ptr u(Unit::Create(3));
   EXPECT(assert_equal(v,u->whiten(v)));
 }
@@ -118,7 +118,7 @@ TEST(NoiseModel, equals)
   Gaussian::shared_ptr g1 = Gaussian::SqrtInformation(R),
                        g2 = Gaussian::SqrtInformation(eye(3,3));
   Diagonal::shared_ptr d1 = Diagonal::Sigmas((Vector(3) << sigma, sigma, sigma).finished()),
-                       d2 = Diagonal::Sigmas((Vector(3) << 0.1, 0.2, 0.3).finished());
+                       d2 = Diagonal::Sigmas(Vector3(0.1, 0.2, 0.3));
   Isotropic::shared_ptr i1 = Isotropic::Sigma(3, sigma),
                         i2 = Isotropic::Sigma(3, 0.7);
 
@@ -156,7 +156,7 @@ TEST(NoiseModel, ConstrainedConstructors )
   size_t d = 3;
   double m = 100.0;
   Vector sigmas = (Vector(3) << sigma, 0.0, 0.0).finished();
-  Vector mu = (Vector(3) << 200.0, 300.0, 400.0).finished();
+  Vector mu = Vector3(200.0, 300.0, 400.0);
   actual = Constrained::All(d);
   // TODO: why should this be a thousand ??? Dummy variable?
   EXPECT(assert_equal(gtsam::repeat(d, 1000.0), actual->mu()));
@@ -180,12 +180,12 @@ TEST(NoiseModel, ConstrainedConstructors )
 /* ************************************************************************* */
 TEST(NoiseModel, ConstrainedMixed )
 {
-  Vector feasible = (Vector(3) << 1.0, 0.0, 1.0).finished(),
-      infeasible = (Vector(3) << 1.0, 1.0, 1.0).finished();
+  Vector feasible = Vector3(1.0, 0.0, 1.0),
+      infeasible = Vector3(1.0, 1.0, 1.0);
   Diagonal::shared_ptr d = Constrained::MixedSigmas((Vector(3) << sigma, 0.0, sigma).finished());
   // NOTE: we catch constrained variables elsewhere, so whitening does nothing
-  EXPECT(assert_equal((Vector(3) << 0.5, 1.0, 0.5).finished(),d->whiten(infeasible)));
-  EXPECT(assert_equal((Vector(3) << 0.5, 0.0, 0.5).finished(),d->whiten(feasible)));
+  EXPECT(assert_equal(Vector3(0.5, 1.0, 0.5),d->whiten(infeasible)));
+  EXPECT(assert_equal(Vector3(0.5, 0.0, 0.5),d->whiten(feasible)));
 
   DOUBLES_EQUAL(1000.0 + 0.25 + 0.25,d->distance(infeasible),1e-9);
   DOUBLES_EQUAL(0.5,d->distance(feasible),1e-9);
@@ -194,13 +194,13 @@ TEST(NoiseModel, ConstrainedMixed )
 /* ************************************************************************* */
 TEST(NoiseModel, ConstrainedAll )
 {
-  Vector feasible = (Vector(3) << 0.0, 0.0, 0.0).finished(),
-       infeasible = (Vector(3) << 1.0, 1.0, 1.0).finished();
+  Vector feasible = Vector3(0.0, 0.0, 0.0),
+       infeasible = Vector3(1.0, 1.0, 1.0);
 
   Constrained::shared_ptr i = Constrained::All(3);
   // NOTE: we catch constrained variables elsewhere, so whitening does nothing
-  EXPECT(assert_equal((Vector(3) << 1.0, 1.0, 1.0).finished(),i->whiten(infeasible)));
-  EXPECT(assert_equal((Vector(3) << 0.0, 0.0, 0.0).finished(),i->whiten(feasible)));
+  EXPECT(assert_equal(Vector3(1.0, 1.0, 1.0),i->whiten(infeasible)));
+  EXPECT(assert_equal(Vector3(0.0, 0.0, 0.0),i->whiten(feasible)));
 
   DOUBLES_EQUAL(1000.0 * 3.0,i->distance(infeasible),1e-9);
   DOUBLES_EQUAL(0.0,i->distance(feasible),1e-9);
@@ -317,7 +317,7 @@ TEST(NoiseModel, ScalarOrVector )
 /* ************************************************************************* */
 TEST(NoiseModel, WhitenInPlace)
 {
-  Vector sigmas = (Vector(3) << 0.1, 0.1, 0.1).finished();
+  Vector sigmas = Vector3(0.1, 0.1, 0.1);
   SharedDiagonal model = Diagonal::Sigmas(sigmas);
   Matrix A = eye(3);
   model->WhitenInPlace(A);

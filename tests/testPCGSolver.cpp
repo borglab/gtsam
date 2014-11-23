@@ -67,9 +67,9 @@ TEST( PCGSolver, llt ) {
 //                                      2., -1.,
 //                                           1.).finished();
 
-  Vector b = (Vector(3) << 1., 2., 3.).finished();
+  Vector b = Vector3(1., 2., 3.);
 
-  Vector x = (Vector(3) << 6.5, 2.5, 3.).finished() ;
+  Vector x = Vector3(6.5, 2.5, 3.) ;
 
   /* test cholesky */
   Matrix Rhat = AtA.llt().matrixL().transpose();

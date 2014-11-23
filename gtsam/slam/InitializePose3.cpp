@@ -291,7 +291,7 @@ Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a, const doubl
 
   double th = logRot.norm();
   if(th != th){ // the second case means that th = nan (logRot does not work well for +/-pi)
-    Rot3 R1pert = R1.compose( Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01).finished()) ); // some perturbation
+    Rot3 R1pert = R1.compose( Rot3::Expmap(Vector3(0.01, 0.01, 0.01)) ); // some perturbation
     logRot = Rot3::Logmap(R1pert.between(R2));
     th = logRot.norm();
   }

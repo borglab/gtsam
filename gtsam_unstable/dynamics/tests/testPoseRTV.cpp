@@ -99,7 +99,7 @@ TEST( testPoseRTV, dynamics_identities ) {
   PoseRTV x0, x1, x2, x3, x4;
 
   const double dt = 0.1;
-  Vector accel = (Vector(3) << 0.2, 0.0, 0.0).finished(), gyro = (Vector(3) << 0.0, 0.0, 0.2).finished();
+  Vector accel = Vector3(0.2, 0.0, 0.0), gyro = Vector3(0.0, 0.0, 0.2);
   Vector imu01 = zero(6), imu12 = zero(6), imu23 = zero(6), imu34 = zero(6);
 
   x1 = x0.generalDynamics(accel, gyro, dt);
@@ -181,14 +181,14 @@ TEST( testPoseRTV, transformed_from_2 ) {
 TEST(testPoseRTV, RRTMbn) {
   EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(zero(3)), tol));
   EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(Rot3()), tol));
-  EXPECT(assert_equal(PoseRTV::RRTMbn((Vector(3) << 0.3, 0.2, 0.1).finished()), PoseRTV::RRTMbn(Rot3::ypr(0.1, 0.2, 0.3)), tol));
+  EXPECT(assert_equal(PoseRTV::RRTMbn(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMbn(Rot3::ypr(0.1, 0.2, 0.3)), tol));
 }
 
 /* ************************************************************************* */
 TEST(testPoseRTV, RRTMnb) {
   EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(zero(3)), tol));
   EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(Rot3()), tol));
-  EXPECT(assert_equal(PoseRTV::RRTMnb((Vector(3) << 0.3, 0.2, 0.1).finished()), PoseRTV::RRTMnb(Rot3::ypr(0.1, 0.2, 0.3)), tol));
+  EXPECT(assert_equal(PoseRTV::RRTMnb(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMnb(Rot3::ypr(0.1, 0.2, 0.3)), tol));
 }
 
 /* ************************************************************************* */

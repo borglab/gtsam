@@ -46,8 +46,8 @@ TEST(Point2, Lie) {
   EXPECT(assert_equal(-eye(2), H1));
   EXPECT(assert_equal(eye(2), H2));
 
-  EXPECT(assert_equal(Point2(5,7), p1.retract((Vector(2) << 4., 5.).finished())));
-  EXPECT(assert_equal((Vector(2) << 3.,3.).finished(), p1.localCoordinates(p2)));
+  EXPECT(assert_equal(Point2(5,7), p1.retract(Vector2(4., 5.))));
+  EXPECT(assert_equal(Vector2(3.,3.), p1.localCoordinates(p2)));
 }
 
 /* ************************************************************************* */

@@ -114,7 +114,7 @@ TEST( ProjectionFactorPPP, Error ) {
   Vector actualError(factor.evaluateError(pose, Pose3(), point));
 
   // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-  Vector expectedError = (Vector(2) << -3.0, 0.0).finished();
+  Vector expectedError = Vector2(-3.0, 0.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -138,7 +138,7 @@ TEST( ProjectionFactorPPP, ErrorWithTransform ) {
   Vector actualError(factor.evaluateError(pose, transform, point));
 
   // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-  Vector expectedError = (Vector(2) << -3.0, 0.0).finished();
+  Vector expectedError = Vector2(-3.0, 0.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));

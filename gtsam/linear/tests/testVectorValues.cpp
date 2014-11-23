@@ -37,9 +37,9 @@ TEST(VectorValues, basics)
   // insert
   VectorValues actual;
   actual.insert(0, (Vector(1) << 1).finished());
-  actual.insert(1, (Vector(2) << 2, 3).finished());
-  actual.insert(5, (Vector(2) << 6, 7).finished());
-  actual.insert(2, (Vector(2) << 4, 5).finished());
+  actual.insert(1, Vector2(2, 3));
+  actual.insert(5, Vector2(6, 7));
+  actual.insert(2, Vector2(4, 5));
 
   // Check dimensions
   LONGS_EQUAL(4, actual.size());
@@ -59,9 +59,9 @@ TEST(VectorValues, basics)
 
   // Check values
   EXPECT(assert_equal((Vector(1) << 1).finished(), actual[0]));
-  EXPECT(assert_equal((Vector(2) << 2, 3).finished(), actual[1]));
-  EXPECT(assert_equal((Vector(2) << 4, 5).finished(), actual[2]));
-  EXPECT(assert_equal((Vector(2) << 6, 7).finished(), actual[5]));
+  EXPECT(assert_equal(Vector2(2, 3), actual[1]));
+  EXPECT(assert_equal(Vector2(4, 5), actual[2]));
+  EXPECT(assert_equal(Vector2(6, 7), actual[5]));
   FastVector<Key> keys = list_of(0)(1)(2)(5);
   EXPECT(assert_equal((Vector(7) << 1, 2, 3, 4, 5, 6, 7).finished(), actual.vector(keys)));
 
@@ -75,17 +75,17 @@ TEST(VectorValues, combine)
 {
   VectorValues expected;
   expected.insert(0, (Vector(1) << 1).finished());
-  expected.insert(1, (Vector(2) << 2, 3).finished());
-  expected.insert(5, (Vector(2) << 6, 7).finished());
-  expected.insert(2, (Vector(2) << 4, 5).finished());
+  expected.insert(1, Vector2(2, 3));
+  expected.insert(5, Vector2(6, 7));
+  expected.insert(2, Vector2(4, 5));
 
   VectorValues first;
   first.insert(0, (Vector(1) << 1).finished());
-  first.insert(1, (Vector(2) << 2, 3).finished());
+  first.insert(1, Vector2(2, 3));
 
   VectorValues second;
-  second.insert(5, (Vector(2) << 6, 7).finished());
-  second.insert(2, (Vector(2) << 4, 5).finished());
+  second.insert(5, Vector2(6, 7));
+  second.insert(2, Vector2(4, 5));
 
   VectorValues actual(first, second);
 
@@ -97,9 +97,9 @@ TEST(VectorValues, subvector)
 {
   VectorValues init;
   init.insert(10, (Vector(1) << 1).finished());
-  init.insert(11, (Vector(2) << 2, 3).finished());
-  init.insert(12, (Vector(2) << 4, 5).finished());
-  init.insert(13, (Vector(2) << 6, 7).finished());
+  init.insert(11, Vector2(2, 3));
+  init.insert(12, Vector2(4, 5));
+  init.insert(13, Vector2(6, 7));
 
   std::vector<Key> keys;
   keys += 10, 12, 13;
@@ -112,15 +112,15 @@ TEST(VectorValues, LinearAlgebra)
 {
   VectorValues test1;
   test1.insert(0, (Vector(1) << 1).finished());
-  test1.insert(1, (Vector(2) << 2, 3).finished());
-  test1.insert(5, (Vector(2) << 6, 7).finished());
-  test1.insert(2, (Vector(2) << 4, 5).finished());
+  test1.insert(1, Vector2(2, 3));
+  test1.insert(5, Vector2(6, 7));
+  test1.insert(2, Vector2(4, 5));
 
   VectorValues test2;
   test2.insert(0, (Vector(1) << 6).finished());
-  test2.insert(1, (Vector(2) << 1, 6).finished());
-  test2.insert(5, (Vector(2) << 4, 3).finished());
-  test2.insert(2, (Vector(2) << 1, 8).finished());
+  test2.insert(1, Vector2(1, 6));
+  test2.insert(5, Vector2(4, 3));
+  test2.insert(2, Vector2(1, 8));
 
   // Dot product
   double dotExpected = test1.vector().dot(test2.vector());
@@ -176,9 +176,9 @@ TEST(VectorValues, convert)
 
   VectorValues expected;
   expected.insert(0, (Vector(1) << 1).finished());
-  expected.insert(1, (Vector(2) << 2, 3).finished());
-  expected.insert(2, (Vector(2) << 4, 5).finished());
-  expected.insert(5, (Vector(2) << 6, 7).finished());
+  expected.insert(1, Vector2(2, 3));
+  expected.insert(2, Vector2(4, 5));
+  expected.insert(5, Vector2(6, 7));
 
   std::map<Key,size_t> dims;
   dims.insert(make_pair(0,1));
@@ -201,10 +201,10 @@ TEST(VectorValues, vector_sub)
 {
   VectorValues vv;
   vv.insert(0, (Vector(1) << 1).finished());
-  vv.insert(1, (Vector(2) << 2, 3).finished());
-  vv.insert(2, (Vector(2) << 4, 5).finished());
-  vv.insert(5, (Vector(2) << 6, 7).finished());
-  vv.insert(7, (Vector(2) << 8, 9).finished());
+  vv.insert(1, Vector2(2, 3));
+  vv.insert(2, Vector2(4, 5));
+  vv.insert(5, Vector2(6, 7));
+  vv.insert(7, Vector2(8, 9));
 
   std::map<Key,size_t> dims;
   dims.insert(make_pair(0,1));

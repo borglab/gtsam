@@ -30,9 +30,9 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
 
-Vector v1 = (Vector(2) << 1.0, 2.0).finished();
-Vector v2 = (Vector(2) << 3.0, 4.0).finished();
-Vector v3 = (Vector(2) << 5.0, 6.0).finished();
+Vector v1 = Vector2(1.0, 2.0);
+Vector v2 = Vector2(3.0, 4.0);
+Vector v3 = Vector2(5.0, 6.0);
 
 /* ************************************************************************* */
 TEST (Serialization, FastList) {

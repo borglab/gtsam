@@ -58,8 +58,8 @@ TEST(GaussianConditional, constructor)
       -11.3820,  -7.2581,
       -3.0153,  -3.5635).finished();
 
-  Vector d = (Vector(2) << 1.0, 2.0).finished();
-  SharedDiagonal s = noiseModel::Diagonal::Sigmas((Vector(2) << 3.0, 4.0).finished());
+  Vector d = Vector2(1.0, 2.0);
+  SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector2(3.0, 4.0));
 
   vector<pair<Key, Matrix> > terms = pair_list_of
       (1, R)
@@ -116,9 +116,9 @@ TEST( GaussianConditional, equals )
   R(0,0) = 0.1 ; R(1,0) = 0.3;
   R(0,1) = 0.0 ; R(1,1) = 0.34;
 
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(2) << 1.0, 0.34).finished());
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector2(1.0, 0.34));
 
-  Vector d = (Vector(2) << 0.2, 0.5).finished();
+  Vector d = Vector2(0.2, 0.5);
 
   GaussianConditional
     expected(1, d, R, 2, A1, 10, A2, model),
@@ -179,7 +179,7 @@ TEST( GaussianConditional, solve_simple )
   GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
 
   // partial solution
-  Vector sx1 = (Vector(2) << 9.0, 10.0).finished();
+  Vector sx1 = Vector2(9.0, 10.0);
 
   // elimination order: 1, 2
   VectorValues actual = map_list_of
@@ -215,15 +215,15 @@ TEST( GaussianConditional, solve_multifrontal )
   EXPECT(assert_equal(Vector(blockMatrix.full().rightCols(1)), cg.get_d()));
 
   // partial solution
-  Vector sl1 = (Vector(2) << 9.0, 10.0).finished();
+  Vector sl1 = Vector2(9.0, 10.0);
 
   // elimination order; _x_, _x1_, _l1_
   VectorValues actual = map_list_of
     (10, sl1); // parent
 
   VectorValues expected = map_list_of<Key, Vector>
-    (1, (Vector(2) << -3.1,-3.4).finished())
-    (2, (Vector(2) << -11.9,-13.2).finished())
+    (1, Vector2(-3.1,-3.4))
+    (2, Vector2(-11.9,-13.2))
     (10, sl1);
 
   // verify indices/size

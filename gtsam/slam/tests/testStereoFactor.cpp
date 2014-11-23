@@ -102,7 +102,7 @@ TEST( StereoFactor, Error ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
-  Vector expectedError = (Vector(3) << -3.0, +2.0, -1.0).finished();
+  Vector expectedError = Vector3(-3.0, +2.0, -1.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -123,7 +123,7 @@ TEST( StereoFactor, ErrorWithTransform ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
-  Vector expectedError = (Vector(3) << -3.0, +2.0, -1.0).finished();
+  Vector expectedError = Vector3(-3.0, +2.0, -1.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));

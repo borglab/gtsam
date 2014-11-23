@@ -400,7 +400,7 @@ TEST( matrix, scale_rows )
   A(2, 2) = 1.;
   A(2, 3) = 1.;
 
-  Vector v = (Vector(3) << 2., 3., 4.).finished();
+  Vector v = Vector3(2., 3., 4.);
 
   Matrix actual = vector_scale(v, A);
 
@@ -618,9 +618,9 @@ TEST( matrix, matrix_vector_multiplication )
   Vector result(2);
 
   Matrix A = (Matrix(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
-  Vector v = (Vector(3) << 1., 2., 3.).finished();
-  Vector Av = (Vector(2) << 14., 32.).finished();
-  Vector AtAv = (Vector(3) << 142., 188., 234.).finished();
+  Vector v = Vector3(1., 2., 3.);
+  Vector Av = Vector2(14., 32.);
+  Vector AtAv = Vector3(142., 188., 234.);
 
   EQUALITY(A*v,Av);
   EQUALITY(A^Av,AtAv);
@@ -787,19 +787,19 @@ TEST( matrix, inverse2 )
 TEST( matrix, backsubtitution )
 {
   // TEST ONE  2x2 matrix U1*x=b1
-  Vector expected1 = (Vector(2) << 3.6250, -0.75).finished();
+  Vector expected1 = Vector2(3.6250, -0.75);
   Matrix U22 = (Matrix(2, 2) << 2., 3., 0., 4.).finished();
   Vector b1 = U22 * expected1;
   EXPECT( assert_equal(expected1 , backSubstituteUpper(U22, b1), 0.000001));
 
   // TEST TWO  3x3 matrix U2*x=b2
-  Vector expected2 = (Vector(3) << 5.5, -8.5, 5.).finished();
+  Vector expected2 = Vector3(5.5, -8.5, 5.);
   Matrix U33 = (Matrix(3, 3) << 3., 5., 6., 0., 2., 3., 0., 0., 1.).finished();
   Vector b2 = U33 * expected2;
   EXPECT( assert_equal(expected2 , backSubstituteUpper(U33, b2), 0.000001));
 
   // TEST THREE  Lower triangular 3x3 matrix L3*x=b3
-  Vector expected3 = (Vector(3) << 1., 1., 1.).finished();
+  Vector expected3 = Vector3(1., 1., 1.);
   Matrix L3 = trans(U33);
   Vector b3 = L3 * expected3;
   EXPECT( assert_equal(expected3 , backSubstituteLower(L3, b3), 0.000001));
@@ -1054,7 +1054,7 @@ TEST( matrix, cholesky_inverse )
 TEST( matrix, multiplyAdd )
 {
   Matrix A = (Matrix(3, 4) << 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.).finished();
-  Vector x = (Vector(4) << 1., 2., 3., 4.).finished(), e = (Vector(3) << 5., 6., 7.).finished(),
+  Vector x = (Vector(4) << 1., 2., 3., 4.).finished(), e = Vector3(5., 6., 7.),
       expected = e + A * x;
 
   multiplyAdd(1, A, x, e);
@@ -1065,7 +1065,7 @@ TEST( matrix, multiplyAdd )
 TEST( matrix, transposeMultiplyAdd )
 {
   Matrix A = (Matrix(3, 4) << 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.).finished();
-  Vector x = (Vector(4) << 1., 2., 3., 4.).finished(), e = (Vector(3) << 5., 6., 7.).finished(),
+  Vector x = (Vector(4) << 1., 2., 3., 4.).finished(), e = Vector3(5., 6., 7.),
       expected = x + trans(A) * e;
 
   transposeMultiplyAdd(1, A, e, x);
@@ -1099,7 +1099,7 @@ TEST( matrix, linear_dependent3 )
 /* ************************************************************************* */
 TEST( matrix, svd1 )
 {
-  Vector v = (Vector(3) << 2., 1., 0.).finished();
+  Vector v = Vector3(2., 1., 0.);
   Matrix U1 = eye(4, 3), S1 = diag(v), V1 = eye(3, 3), A = (U1 * S1)
       * Matrix(trans(V1));
   Matrix U, V;
@@ -1122,7 +1122,7 @@ TEST( matrix, svd2 )
   Vector s;
 
   Matrix expectedU = (Matrix(3, 2) << 0.,-1.,0.,0.,1.,0.).finished();
-  Vector expected_s = (Vector(2) << 3.,2.).finished();
+  Vector expected_s = Vector2(3.,2.);
   Matrix expectedV = (Matrix(2, 2) << 1.,0.,0.,1.).finished();
 
   svd(sampleA, U, s, V);
@@ -1145,7 +1145,7 @@ TEST( matrix, svd3 )
   Vector s;
 
   Matrix expectedU = (Matrix(2, 2) << -1.,0.,0.,-1.).finished();
-  Vector expected_s = (Vector(2) << 3.0, 2.0).finished();
+  Vector expected_s = Vector2(3.0, 2.0);
   Matrix expectedV = (Matrix(3, 2) << 0.,1.,0.,0.,-1.,0.).finished();
 
   svd(sampleAt, U, s, V);
@@ -1182,7 +1182,7 @@ TEST( matrix, svd4 )
      0.6659,   -0.7370,
      0.0970,   -0.0689).finished();
 
-  Vector expected_s = (Vector(2) << 1.6455, 0.1910).finished();
+  Vector expected_s = Vector2(1.6455, 0.1910);
 
   Matrix expectedV = (Matrix(2, 2) <<
      0.7403,   -0.6723,
