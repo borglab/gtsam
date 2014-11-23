@@ -20,6 +20,7 @@
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Testable.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -60,12 +61,25 @@ public:
 
   /// Given coefficients c, predict value for x
   double operator()(const Coefficients& c, boost::optional<Jacobian&> H) {
+    if (H)
+      (*H) = H_;
     return H_ * c;
   }
 };
 
 //******************************************************************************
 TEST(BasisDecompositions, Fourier) {
+  Fourier<3> fx(0);
+  Eigen::Matrix<double, 1, 3> expectedH, actualH;
+  Vector3 c(1.5661, 1.2717, 1.2717);
+  expectedH = numericalDerivative11<double, Vector3>(
+      boost::bind(&Fourier<3>::operator(), fx, _1, boost::none), c);
+  EXPECT_DOUBLES_EQUAL(c[0]+c[1], fx(c,actualH), 1e-9);
+  EXPECT(assert_equal((Matrix)expectedH, actualH));
+}
+
+//******************************************************************************
+TEST(BasisDecompositions, FourierExpression) {
 
   // Create linear factor graph
   GaussianFactorGraph g;
@@ -93,7 +107,7 @@ TEST(BasisDecompositions, Fourier) {
 
   // Check
   Vector3 expected(1.5661, 1.2717, 1.2717);
-  CHECK(assert_equal((Vector) expected, actual.at(key),1e-4));
+  EXPECT(assert_equal((Vector) expected, actual.at(key),1e-4));
 }
 
 //******************************************************************************
