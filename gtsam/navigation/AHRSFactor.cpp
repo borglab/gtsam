@@ -139,14 +139,15 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
 Vector3 AHRSFactor::PreintegratedMeasurements::predict(
     const imuBias::ConstantBias& bias, boost::optional<Matrix&> H) const {
   const Vector3 biasOmegaIncr = bias.gyroscope() - biasHat_.gyroscope();
+  Vector3 delRdelBiasOmega_biasOmegaIncr = delRdelBiasOmega_ * biasOmegaIncr;
   const Rot3 deltaRij_biascorrected = deltaRij_.retract(
-      delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
+      delRdelBiasOmega_biasOmegaIncr, Rot3::EXPMAP);
   const Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
   if (H) {
     const Matrix3 Jrinv_theta_bc = //
         Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
     const Matrix3 Jr_JbiasOmegaIncr = //
-        Rot3::rightJacobianExpMapSO3(delRdelBiasOmega_ * biasOmegaIncr);
+        Rot3::rightJacobianExpMapSO3(delRdelBiasOmega_biasOmegaIncr);
     (*H) = Jrinv_theta_bc * Jr_JbiasOmegaIncr * delRdelBiasOmega_;
   }
   return theta_biascorrected;
