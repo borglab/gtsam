@@ -48,8 +48,7 @@ Rot3 evaluateRotationError(const AHRSFactor& factor, const Rot3 rot_i,
 }
 
 AHRSFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
-    const imuBias::ConstantBias& bias,
-    const list<Vector3>& measuredOmegas,
+    const imuBias::ConstantBias& bias, const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs,
     const Vector3& initialRotationRate = Vector3(0.0, 0.0, 0.0)) {
   AHRSFactor::PreintegratedMeasurements result(bias, Matrix3::Identity());
@@ -64,12 +63,12 @@ AHRSFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
 }
 
 Rot3 evaluatePreintegratedMeasurementsRotation(
-    const imuBias::ConstantBias& bias,
-    const list<Vector3>& measuredOmegas,
+    const imuBias::ConstantBias& bias, const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs,
     const Vector3& initialRotationRate = Vector3(0.0, 0.0, 0.0)) {
-  return Rot3(evaluatePreintegratedMeasurements(bias, measuredOmegas,
-      deltaTs, initialRotationRate).deltaRij());
+  return Rot3(
+      evaluatePreintegratedMeasurements(bias, measuredOmegas, deltaTs,
+          initialRotationRate).deltaRij());
 }
 
 Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega,
@@ -82,8 +81,7 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 }
 
 }
-/* ************************************************************************* */
-TEST( AHRSFactor, PreintegratedMeasurements ) {
+/* ************************************************************************* */TEST( AHRSFactor, PreintegratedMeasurements ) {
   // Linearization point
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); ///< Current estimate of acceleration and angular rate biases
 
@@ -114,8 +112,7 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
   DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-6);
 }
 
-/* ************************************************************************* */
-TEST( ImuFactor, Error ) {
+/* ************************************************************************* */TEST( ImuFactor, Error ) {
   // Linearization point
   imuBias::ConstantBias bias; // Bias
   Rot3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0));
@@ -133,8 +130,7 @@ TEST( ImuFactor, Error ) {
   pre_int_data.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis,
-      false);
+  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis, false);
 
   Vector errorActual = factor.evaluateError(x1, x2, bias);
 
@@ -162,18 +158,20 @@ TEST( ImuFactor, Error ) {
   (void) factor.evaluateError(x1, x2, bias, H1a, H2a, H3a);
 
   // rotations
-  EXPECT(assert_equal(RH1e, H1a, 1e-5)); // 1e-5 needs to be added only when using quaternions for rotations
+  EXPECT(assert_equal(RH1e, H1a, 1e-5));
+  // 1e-5 needs to be added only when using quaternions for rotations
 
   EXPECT(assert_equal(H2e, H2a, 1e-5));
 
   // rotations
-  EXPECT(assert_equal(RH2e, H2a, 1e-5)); // 1e-5 needs to be added only when using quaternions for rotations
+  EXPECT(assert_equal(RH2e, H2a, 1e-5));
+  // 1e-5 needs to be added only when using quaternions for rotations
 
-  EXPECT(assert_equal(H3e, H3a, 1e-5)); // FIXME!! DOes not work. Different matrix dimensions.
+  EXPECT(assert_equal(H3e, H3a, 1e-5));
+  // FIXME!! DOes not work. Different matrix dimensions.
 }
 
-/* ************************************************************************* */
-TEST( ImuFactor, ErrorWithBiases ) {
+/* ************************************************************************* */TEST( ImuFactor, ErrorWithBiases ) {
   // Linearization point
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
@@ -188,7 +186,8 @@ TEST( ImuFactor, ErrorWithBiases ) {
   double deltaT = 1.0;
 
   AHRSFactor::PreintegratedMeasurements pre_int_data(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)), Matrix3::Zero());
+      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
+      Matrix3::Zero());
   pre_int_data.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
@@ -201,7 +200,7 @@ TEST( ImuFactor, ErrorWithBiases ) {
   // Expected error
   Vector errorExpected(3);
   errorExpected << 0, 0, 0;
-    EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
+  EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
 
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Vector, Rot3>(
@@ -225,11 +224,10 @@ TEST( ImuFactor, ErrorWithBiases ) {
 
   EXPECT(assert_equal(H1e, H1a));
   EXPECT(assert_equal(H2e, H2a));
-    EXPECT(assert_equal(H3e, H3a));
+  EXPECT(assert_equal(H3e, H3a));
 }
 
-/* ************************************************************************* */
-TEST( AHRSFactor, PartialDerivativeExpmap ) {
+/* ************************************************************************* */TEST( AHRSFactor, PartialDerivativeExpmap ) {
   // Linearization point
   Vector3 biasOmega;
   biasOmega << 0, 0, 0; ///< Current estimate of rotation rate bias
@@ -241,8 +239,7 @@ TEST( AHRSFactor, PartialDerivativeExpmap ) {
 
   // Compute numerical derivatives
   Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&evaluateRotation, measuredOmega, _1, deltaT),
-      biasOmega);
+      boost::bind(&evaluateRotation, measuredOmega, _1, deltaT), biasOmega);
 
   const Matrix3 Jr = Rot3::rightJacobianExpMapSO3(
       (measuredOmega - biasOmega) * deltaT);
@@ -250,12 +247,12 @@ TEST( AHRSFactor, PartialDerivativeExpmap ) {
   Matrix3 actualdelRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
 
   // Compare Jacobians
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, actualdelRdelBiasOmega, 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, actualdelRdelBiasOmega, 1e-3));
+  // 1e-3 needs to be added only when using quaternions for rotations
 
 }
 
-/* ************************************************************************* */
-TEST( AHRSFactor, PartialDerivativeLogmap ) {
+/* ************************************************************************* */TEST( AHRSFactor, PartialDerivativeLogmap ) {
   // Linearization point
   Vector3 thetahat;
   thetahat << 0.1, 0.1, 0; ///< Current estimate of rotation rate bias
@@ -280,8 +277,7 @@ TEST( AHRSFactor, PartialDerivativeLogmap ) {
 
 }
 
-/* ************************************************************************* */
-TEST( AHRSFactor, fistOrderExponential ) {
+/* ************************************************************************* */TEST( AHRSFactor, fistOrderExponential ) {
   // Linearization point
   Vector3 biasOmega;
   biasOmega << 0, 0, 0; ///< Current estimate of rotation rate bias
@@ -313,8 +309,7 @@ TEST( AHRSFactor, fistOrderExponential ) {
   EXPECT(assert_equal(expectedRot, actualRot));
 }
 
-/* ************************************************************************* */
-TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
+/* ************************************************************************* */TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
   // Linearization point
   imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
 
@@ -335,30 +330,28 @@ TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
 
   // Actual preintegrated values
   AHRSFactor::PreintegratedMeasurements preintegrated =
-      evaluatePreintegratedMeasurements(bias, measuredOmegas,
-          deltaTs, Vector3(M_PI / 100.0, 0.0, 0.0));
+      evaluatePreintegratedMeasurements(bias, measuredOmegas, deltaTs,
+          Vector3(M_PI / 100.0, 0.0, 0.0));
 
   // Compute numerical derivatives
   Matrix expectedDelRdelBias =
       numericalDerivative11<Rot3, imuBias::ConstantBias>(
           boost::bind(&evaluatePreintegratedMeasurementsRotation, _1,
-              measuredOmegas, deltaTs,
-              Vector3(M_PI / 100.0, 0.0, 0.0)), bias);
+              measuredOmegas, deltaTs, Vector3(M_PI / 100.0, 0.0, 0.0)), bias);
   Matrix expectedDelRdelBiasAcc = expectedDelRdelBias.leftCols(3);
   Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
 
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3, 3)));
   EXPECT(
-      assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega(),
-          1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
+      assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega(), 1e-3));
+  // 1e-3 needs to be added only when using quaternions for rotations
 }
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
-/* ************************************************************************* */
-TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
+/* ************************************************************************* */TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Rot3 x1(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)));
@@ -415,22 +408,24 @@ TEST (AHRSFactor, predictTest) {
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
 
   // Measurements
-  Vector3 gravity;  gravity << 0, 0, 9.81;
-  Vector3 omegaCoriolis; omegaCoriolis << 0, 0.0, 0.0;
-  Vector3 measuredOmega; measuredOmega << 0, 0, M_PI / 10.0;
+  Vector3 gravity;
+  gravity << 0, 0, 9.81;
+  Vector3 omegaCoriolis;
+  omegaCoriolis << 0, 0.0, 0.0;
+  Vector3 measuredOmega;
+  measuredOmega << 0, 0, M_PI / 10.0;
   double deltaT = 0.001;
-    AHRSFactor::PreintegratedMeasurements pre_int_data(bias,Matrix3::Zero());
-  for (int i = 0; i < 1000; ++i){
-  pre_int_data.integrateMeasurement(measuredOmega, deltaT);
+  AHRSFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero());
+  for (int i = 0; i < 1000; ++i) {
+    pre_int_data.integrateMeasurement(measuredOmega, deltaT);
   }
   AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
 
   // Predict
   Rot3 x;
-  Rot3 expectedRot = Rot3().ypr(M_PI/10,0,0);
-  Rot3 actualRot = factor.predict(x,bias, pre_int_data, omegaCoriolis);
+  Rot3 expectedRot = Rot3().ypr(M_PI / 10, 0, 0);
+  Rot3 actualRot = factor.predict(x, bias, pre_int_data, omegaCoriolis);
   EXPECT(assert_equal(expectedRot, actualRot, 1e-6));
-
 
 }
 /* ************************************************************************* */
@@ -439,7 +434,7 @@ TEST (AHRSFactor, predictTest) {
 TEST (AHRSFactor, graphTest) {
   // linearization point
   Rot3 x1(Rot3::RzRyRx(0, 0, 0));
-  Rot3 x2(Rot3::RzRyRx(0, M_PI/4, 0));
+  Rot3 x2(Rot3::RzRyRx(0, M_PI / 4, 0));
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
 
   // PreIntegrator
@@ -453,17 +448,19 @@ TEST (AHRSFactor, graphTest) {
 
   // Pre-integrate measurements
   Vector3 measuredAcc(0.0, 0.0, 0.0);
-  Vector3 measuredOmega(0, M_PI/20, 0);
+  Vector3 measuredOmega(0, M_PI / 20, 0);
   double deltaT = 1;
 
   // Create Factor
-  noiseModel::Base::shared_ptr model = noiseModel::Gaussian::Covariance(pre_int_data.PreintMeasCov());
+  noiseModel::Base::shared_ptr model = //
+      noiseModel::Gaussian::Covariance(pre_int_data.preintMeasCov());
   NonlinearFactorGraph graph;
   Values values;
-  for(size_t i = 0; i < 5; ++i) {
+  for (size_t i = 0; i < 5; ++i) {
     pre_int_data.integrateMeasurement(measuredOmega, deltaT);
   }
-//  pre_int_data.print("Pre integrated measurementes");
+
+  // pre_int_data.print("Pre integrated measurementes");
   AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
   values.insert(X(1), x1);
   values.insert(X(2), x2);
@@ -471,7 +468,7 @@ TEST (AHRSFactor, graphTest) {
   graph.push_back(factor);
   LevenbergMarquardtOptimizer optimizer(graph, values);
   Values result = optimizer.optimize();
-  Rot3 expectedRot(Rot3::RzRyRx(0, M_PI/4, 0));
+  Rot3 expectedRot(Rot3::RzRyRx(0, M_PI / 4, 0));
   EXPECT(assert_equal(expectedRot, result.at<Rot3>(X(2))));
 }
 

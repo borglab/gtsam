@@ -37,7 +37,7 @@ AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements(
     biasHat_(bias), deltaTij_(0.0) {
   measurementCovariance_ << measuredOmegaCovariance;
   delRdelBiasOmega_.setZero();
-  PreintMeasCov_.setZero();
+  preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements() :
   measurementCovariance_.setZero();
   delRdelBiasOmega_.setZero();
   delRdelBiasOmega_.setZero();
-  PreintMeasCov_.setZero();
+  preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
@@ -56,18 +56,18 @@ void AHRSFactor::PreintegratedMeasurements::print(const std::string& s) const {
   deltaRij_.print(" deltaRij ");
   std::cout << " measurementCovariance [" << measurementCovariance_ << " ]"
       << std::endl;
-  std::cout << " PreintMeasCov [ " << PreintMeasCov_ << " ]" << std::endl;
+  std::cout << " PreintMeasCov [ " << preintMeasCov_ << " ]" << std::endl;
 }
 
 //------------------------------------------------------------------------------
 bool AHRSFactor::PreintegratedMeasurements::equals(
-    const PreintegratedMeasurements& expected, double tol) const {
-  return biasHat_.equals(expected.biasHat_, tol)
+    const PreintegratedMeasurements& other, double tol) const {
+  return biasHat_.equals(other.biasHat_, tol)
       && equal_with_abs_tol(measurementCovariance_,
-          expected.measurementCovariance_, tol)
-      && deltaRij_.equals(expected.deltaRij_, tol)
-      && std::fabs(deltaTij_ - expected.deltaTij_) < tol
-      && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_, tol);
+          other.measurementCovariance_, tol)
+      && deltaRij_.equals(other.deltaRij_, tol)
+      && std::fabs(deltaTij_ - other.deltaTij_) < tol
+      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ void AHRSFactor::PreintegratedMeasurements::resetIntegration() {
   deltaRij_ = Rot3();
   deltaTij_ = 0.0;
   delRdelBiasOmega_.setZero();
-  PreintMeasCov_.setZero();
+  preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
 
   // first order uncertainty propagation
   // the deltaT allows to pass from continuous time noise to discrete time noise
-  PreintMeasCov_ = F * PreintMeasCov_ * F.transpose()
+  preintMeasCov_ = F * preintMeasCov_ * F.transpose()
       + measurementCovariance_ * deltaT;
 
   // Update preintegrated measurements

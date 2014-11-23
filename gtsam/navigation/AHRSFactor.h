@@ -32,11 +32,13 @@ namespace gtsam {
 class AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, imuBias::ConstantBias> {
 public:
 
-  /** Struct to store results of preintegrating IMU measurements.  Can be build
-   * incrementally so as to avoid costly integration at time of factor construction. */
-
-  /** CombinedPreintegratedMeasurements accumulates (integrates) the Gyroscope measurements (rotation rates)
-       * and the corresponding covariance matrix. The measurements are then used to build the Preintegrated AHRS factor*/
+  /**
+   * CombinedPreintegratedMeasurements accumulates (integrates) the Gyroscope
+   * measurements (rotation rates) and the corresponding covariance matrix.
+   * The measurements are then used to build the Preintegrated AHRS factor.
+   * Can be built incrementally so as to avoid costly integration at time of
+   * factor construction.
+   */
   class PreintegratedMeasurements {
 
     friend class AHRSFactor;
@@ -48,48 +50,54 @@ public:
     Rot3 deltaRij_; ///< Preintegrated relative orientation (in frame i)
     double deltaTij_; ///< Time interval from i to j
     Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
-    Matrix3 PreintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
+    Matrix3 preintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
 
   public:
 
     /// Default constructor
     PreintegratedMeasurements();
 
-    /// Default constructor, initialize with no measurements
-    PreintegratedMeasurements(const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
-        const Matrix3& measuredOmegaCovariance ///< Covariance matrix of measured angular rate
-        );
+    /**
+     *  Default constructor, initialize with no measurements
+     *  @param bias Current estimate of acceleration and rotation rate biases
+     *  @param measuredOmegaCovariance Covariance matrix of measured angular rate
+     */
+    PreintegratedMeasurements(const imuBias::ConstantBias& bias,
+        const Matrix3& measuredOmegaCovariance);
 
-    /** print */
+    /// print
     void print(const std::string& s = "Preintegrated Measurements: ") const;
 
-    /** equals */
-    bool equals(const PreintegratedMeasurements& expected,
-        double tol = 1e-9) const;
+    /// equals
+    bool equals(const PreintegratedMeasurements&, double tol = 1e-9) const;
 
-    Matrix measurementCovariance() const {return measurementCovariance_;}
-    Matrix deltaRij()              const {return deltaRij_.matrix();}
-    double deltaTij()              const {return deltaTij_;}
-    Vector biasHat()               const {return biasHat_.vector();}
-    Matrix3 delRdelBiasOmega()     const {return delRdelBiasOmega_;}
-    Matrix PreintMeasCov()         const {return PreintMeasCov_;}
+    const Matrix3& measurementCovariance() const {return measurementCovariance_;}
+    Matrix3        deltaRij()              const {return deltaRij_.matrix();}
+    double         deltaTij()              const {return deltaTij_;}
+    Vector6        biasHat()               const {return biasHat_.vector();}
+    const Matrix3& delRdelBiasOmega()      const {return delRdelBiasOmega_;}
+    const Matrix3& preintMeasCov()         const {return preintMeasCov_;}
 
     /// TODO: Document
     void resetIntegration();
 
-    /** Add a single Gyroscope measurement to the preintegration. */
-    void integrateMeasurement(
-        const Vector3& measuredOmega, ///< Measured angular velocity (in body frame)
-        double deltaT, ///< Time step
-        boost::optional<const Pose3&> body_P_sensor = boost::none ///< Sensor frame
-        );
+    /**
+     * Add a single Gyroscope measurement to the preintegration.
+     * @param measureOmedga Measured angular velocity (in body frame)
+     * @param deltaT Time step
+     * @param body_P_sensor Optional sensor frame
+     */
+    void integrateMeasurement(const Vector3& measuredOmega, double deltaT,
+        boost::optional<const Pose3&> body_P_sensor = boost::none);
 
-    // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
+    // This function is only used for test purposes
+    // (compare numerical derivatives wrt analytic ones)
     static Vector PreIntegrateIMUObservations_delta_angles(
         const Vector& msr_gyro_t, const double msr_dt,
         const Vector3& delta_angles);
 
   private:
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -134,7 +142,7 @@ public:
       ) :
       Base(
           noiseModel::Gaussian::Covariance(
-              preintegratedMeasurements.PreintMeasCov_), rot_i, rot_j, bias), preintegratedMeasurements_(
+              preintegratedMeasurements.preintMeasCov_), rot_i, rot_j, bias), preintegratedMeasurements_(
           preintegratedMeasurements), omegaCoriolis_(omegaCoriolis), body_P_sensor_(
           body_P_sensor) {
   }

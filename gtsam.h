@@ -2414,7 +2414,7 @@ class ImuFactorPreintegratedMeasurements {
   Matrix delVdelBiasAcc() const;
   Matrix delVdelBiasOmega() const;
   Matrix delRdelBiasOmega() const;
-  Matrix PreintMeasCov() const;
+  Matrix preintMeasCov() const;
 
 
   // Standard Interface
