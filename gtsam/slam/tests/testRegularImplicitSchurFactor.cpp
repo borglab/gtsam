@@ -28,7 +28,6 @@ using namespace boost::assign;
 using namespace gtsam;
 
 // F
-typedef Eigen::Matrix<double, 2, 6> Matrix26;
 const Matrix26 F0 = Matrix26::Ones();
 const Matrix26 F1 = 2 * Matrix26::Ones();
 const Matrix26 F3 = 3 * Matrix26::Ones();
