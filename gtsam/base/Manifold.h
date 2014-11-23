@@ -242,13 +242,13 @@ struct DefaultChart<double> {
 
 // Fixed size Eigen::Matrix type
 
-template<int M, int N, int Options>
-struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct DefaultChart<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
   /**
    * This chart for the vector space of M x N matrices (represented by Eigen matrices) chooses as basis the one with respect to which the coordinates are exactly the matrix entries as laid out in memory (as determined by Options).
    * Computing coordinates for a matrix is then simply a reshape to the row vector of appropriate size.
    */
-  typedef Eigen::Matrix<double, M, N, Options> type;
+	typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> type;
   typedef type T;
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");
