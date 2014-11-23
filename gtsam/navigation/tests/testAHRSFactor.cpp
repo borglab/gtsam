@@ -115,7 +115,7 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
 }
 
 /* ************************************************************************* */
-TEST( ImuFactor, Error ) {
+TEST(AHRSFactor, Error) {
   // Linearization point
   imuBias::ConstantBias bias; // Bias
   Rot3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0));
@@ -173,7 +173,7 @@ TEST( ImuFactor, Error ) {
 }
 
 /* ************************************************************************* */
-TEST( ImuFactor, ErrorWithBiases ) {
+TEST(AHRSFactor, ErrorWithBiases) {
   // Linearization point
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
