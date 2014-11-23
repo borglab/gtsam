@@ -119,7 +119,7 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   Matrix3 H_angles_angles = Jrinv_theta_j * incrRt * Jr_theta_i;
   // analytic expression corresponding to the following numerical derivative
   // Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>
-  // (boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
+  // (boost::bind(&DeltaAngles, correctedOmega, deltaT, _1), thetaij);
 
   // overall Jacobian wrpt preintegrated measurements (df/dx)
   const Matrix3& F = H_angles_angles;
@@ -136,7 +136,7 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
 }
 
 //------------------------------------------------------------------------------
-Vector AHRSFactor::PreintegratedMeasurements::PreIntegrateIMUObservations_delta_angles(
+Vector AHRSFactor::PreintegratedMeasurements::DeltaAngles(
     const Vector& msr_gyro_t, const double msr_dt,
     const Vector3& delta_angles) {
 

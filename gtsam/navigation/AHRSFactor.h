@@ -99,8 +99,7 @@ public:
 
     // This function is only used for test purposes
     // (compare numerical derivatives wrt analytic ones)
-    static Vector PreIntegrateIMUObservations_delta_angles(
-        const Vector& msr_gyro_t, const double msr_dt,
+    static Vector DeltaAngles(const Vector& msr_gyro_t, const double msr_dt,
         const Vector3& delta_angles);
 
   private:
