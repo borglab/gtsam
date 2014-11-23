@@ -224,15 +224,15 @@ private:
 namespace traits {
 
 template<>
-struct is_group<CalibratedCamera> : public boost::true_type {
+struct GTSAM_EXPORT is_group<CalibratedCamera> : public boost::true_type{
 };
 
 template<>
-struct is_manifold<CalibratedCamera> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<CalibratedCamera> : public boost::true_type{
 };
 
 template<>
-struct dimension<CalibratedCamera> : public boost::integral_constant<int, 6> {
+struct GTSAM_EXPORT dimension<CalibratedCamera> : public boost::integral_constant<int, 6>{
 };
 
 }

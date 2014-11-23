@@ -323,11 +323,11 @@ GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 namespace traits {
 
 template<>
-struct is_manifold<Pose2> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Pose2> : public boost::true_type{
 };
 
 template<>
-struct dimension<Pose2> : public boost::integral_constant<int, 3> {
+struct GTSAM_EXPORT dimension<Pose2> : public boost::integral_constant<int, 3>{
 };
 
 }

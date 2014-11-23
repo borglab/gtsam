@@ -241,15 +241,15 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3_S2> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Cal3_S2> : public boost::true_type{
 };
 
 template<>
-struct dimension<Cal3_S2> : public boost::integral_constant<int, 5> {
+struct GTSAM_EXPORT dimension<Cal3_S2> : public boost::integral_constant<int, 5>{
 };
 
 template<>
-struct zero<Cal3_S2> {
+struct GTSAM_EXPORT zero<Cal3_S2> {
   static Cal3_S2 value() { return Cal3_S2();}
 };
 

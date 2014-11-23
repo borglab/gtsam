@@ -140,15 +140,15 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3Unified> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Cal3Unified> : public boost::true_type{
 };
 
 template<>
-struct dimension<Cal3Unified> : public boost::integral_constant<int, 10> {
+struct GTSAM_EXPORT dimension<Cal3Unified> : public boost::integral_constant<int, 10>{
 };
 
 template<>
-struct zero<Cal3Unified> {
+struct GTSAM_EXPORT zero<Cal3Unified> {
   static Cal3Unified value() { return Cal3Unified();}
 };
 

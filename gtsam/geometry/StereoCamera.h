@@ -157,15 +157,15 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<StereoCamera> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<StereoCamera> : public boost::true_type{
 };
 
 template<>
-struct dimension<StereoCamera> : public boost::integral_constant<int, 6> {
+struct GTSAM_EXPORT dimension<StereoCamera> : public boost::integral_constant<int, 6>{
 };
 
 template<>
-struct zero<StereoCamera> {
+struct GTSAM_EXPORT zero<StereoCamera> {
   static StereoCamera value() { return StereoCamera();}
 };
 

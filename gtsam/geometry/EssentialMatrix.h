@@ -200,15 +200,15 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<EssentialMatrix> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<EssentialMatrix> : public boost::true_type{
 };
 
 template<>
-struct dimension<EssentialMatrix> : public boost::integral_constant<int, 5> {
+struct GTSAM_EXPORT dimension<EssentialMatrix> : public boost::integral_constant<int, 5>{
 };
 
 template<>
-struct zero<EssentialMatrix> {
+struct GTSAM_EXPORT zero<EssentialMatrix> {
   static EssentialMatrix value() { return EssentialMatrix();}
 };
 

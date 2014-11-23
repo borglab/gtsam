@@ -106,23 +106,23 @@ struct zero<double> {
 
 // Fixed size Eigen::Matrix type
 
-template<int M, int N, int Options>
-struct is_group<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct is_group<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::true_type {
 };
 
-template<int M, int N, int Options>
-struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct is_manifold<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::true_type{
 };
 
-template<int M, int N, int Options>
-struct dimension<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<int,
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct dimension<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::integral_constant<int,
     M == Eigen::Dynamic ? Eigen::Dynamic : (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)> {
     //TODO after switch to c++11 : the above should should be extracted to a constexpr function
     // for readability and to reduce code duplication
 };
 
-template<int M, int N, int Options>
-struct zero<Eigen::Matrix<double, M, N, Options> > {
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct zero<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
   BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "traits::zero is only supported for fixed-size matrices");
   static Eigen::Matrix<double, M, N, Options> value() {

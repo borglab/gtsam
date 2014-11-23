@@ -356,15 +356,15 @@ GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 namespace traits {
 
 template<>
-struct is_group<Pose3> : public boost::true_type {
+struct GTSAM_EXPORT is_group<Pose3> : public boost::true_type{
 };
 
 template<>
-struct is_manifold<Pose3> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Pose3> : public boost::true_type{
 };
 
 template<>
-struct dimension<Pose3> : public boost::integral_constant<int, 6> {
+struct GTSAM_EXPORT dimension<Pose3> : public boost::integral_constant<int, 6>{
 };
 
 }
