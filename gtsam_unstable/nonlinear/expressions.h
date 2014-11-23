@@ -1,7 +1,7 @@
 /**
  * @file expressions.h
  * @brief Common expressions, both linear and non-linear
- * @date Oct 1, 2014
+ * @date Nov 23, 2014
  * @author Frank Dellaert
  */
 
@@ -20,6 +20,7 @@ Expression<T> between(const Expression<T>& t1, const Expression<T>& t2) {
 }
 
 typedef Expression<double> double_;
+typedef Expression<Vector3> Vector3_;
 
 } // \namespace gtsam
 
