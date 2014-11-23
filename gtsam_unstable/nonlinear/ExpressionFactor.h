@@ -81,6 +81,8 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    // TODO(PTF) Is this a place for custom charts?
+    DefaultChart<T> chart;
     if (H) {
       // H should be pre-allocated
       assert(H->size()==size());
@@ -95,18 +97,19 @@ public:
       T value = expression_.value(x, map); // <<< Reverse AD happens here !
 
       // Copy blocks into the vector of jacobians passed in
-      for (DenseIndex i = 0; i < size(); i++)
+      for (DenseIndex i = 0; i < static_cast<DenseIndex>(size()); i++)
         H->at(i) = Ab(i);
 
-      return measurement_.localCoordinates(value);
+      return chart.local(measurement_, value);
     } else {
       const T& value = expression_.value(x);
-      return measurement_.localCoordinates(value);
+      return chart.local(measurement_, value);
     }
   }
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
-
+    // TODO(PTF) Is this a place for custom charts?
+    DefaultChart<T> chart;
     // Only linearize if the factor is active
     if (!active(x))
       return boost::shared_ptr<JacobianFactor>();
@@ -128,7 +131,7 @@ public:
 
     // Evaluate error to get Jacobians and RHS vector b
     T value = expression_.value(x, map); // <<< Reverse AD happens here !
-    Ab(size()).col(0) = -measurement_.localCoordinates(value);
+    Ab(size()).col(0) = -chart.local(measurement_, value);
 
     // Whiten the corresponding system, Ab already contains RHS
     Vector dummy(Dim);
