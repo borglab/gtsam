@@ -42,7 +42,7 @@ struct LieVector : public Vector {
 #endif
 
   /** wrap a double */
-  LieVector(double d) : Vector((Vector(1) << d)) {}
+  LieVector(double d) : Vector((Vector(1) << d).finished()) {}
 
   /** constructor with size and initial data, row order ! */
   GTSAM_EXPORT LieVector(size_t m, const double* const data);

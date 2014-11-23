@@ -74,11 +74,11 @@ namespace gtsam {
         Key j1, Key j2) {
       double e = u - z, e2 = e * e;
       double c = 2 * logSqrt2PI - log(p) + e2 * p;
-      Vector g1 = (Vector(1) << -e * p);
-      Vector g2 = (Vector(1) <<  0.5 / p - 0.5 * e2);
-      Matrix G11 = (Matrix(1, 1) << p);
-      Matrix G12 = (Matrix(1, 1) << e);
-      Matrix G22 = (Matrix(1, 1) << 0.5 / (p * p));
+      Vector g1 = (Vector(1) << -e * p).finished();
+      Vector g2 = (Vector(1) <<  0.5 / p - 0.5 * e2).finished();
+      Matrix G11 = (Matrix(1, 1) << p).finished();
+      Matrix G12 = (Matrix(1, 1) << e).finished();
+      Matrix G22 = (Matrix(1, 1) << 0.5 / (p * p)).finished();
       return HessianFactor::shared_ptr(
           new HessianFactor(j1, j2, G11, G12, g1, G22, g2, c));
     }
@@ -136,7 +136,7 @@ namespace gtsam {
      * TODO: Where is this used? should disappear.
      */
     virtual Vector unwhitenedError(const Values& x) const {
-      return (Vector(1) << std::sqrt(2 * error(x)));
+      return (Vector(1) << std::sqrt(2 * error(x))).finished();
     }
 
     /**

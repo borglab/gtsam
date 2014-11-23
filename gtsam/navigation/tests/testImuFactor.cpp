@@ -167,9 +167,9 @@ TEST( ImuFactor, Error )
   // Linearization point
   imuBias::ConstantBias bias; // Bias
   Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
-  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0));
+  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0).finished());
   Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
-  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0));
+  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0).finished());
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;
@@ -239,16 +239,16 @@ TEST( ImuFactor, ErrorWithBiases )
   // Linearization point
 //  Vector bias(6); bias << 0.2, 0, 0, 0.1, 0, 0; // Biases (acc, rot)
 //  Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
-//  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0));
+//  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0).finished());
 //  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/10.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
-//  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0));
+//  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0).finished());
 
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
-  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0));
+  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0).finished());
   Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/4.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
-  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0));
+  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0).finished());
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;
@@ -446,9 +446,9 @@ TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
 //{
 //  // Linearization point
 //  Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
-//  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0));
+//  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0).finished());
 //  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
-//  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0));
+//  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0).finished());
 //  imuBias::ConstantBias bias(Vector3(0.001, 0.002, 0.008), Vector3(0.002, 0.004, 0.012));
 //
 //  // Pre-integrator
@@ -502,9 +502,9 @@ TEST( ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement )
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
-  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0));
+  Vector3 v1((Vector(3) << 0.5, 0.0, 0.0).finished());
   Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/4.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
-  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0));
+  Vector3 v2((Vector(3) << 0.5, 0.0, 0.0).finished());
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;

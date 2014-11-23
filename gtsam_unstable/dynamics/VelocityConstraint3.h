@@ -44,7 +44,7 @@ public:
     if (H1) *H1 = eye(p);
     if (H2) *H2 = -eye(p);
     if (H3) *H3 = eye(p)*dt_;
-    return (Vector(1) << x1+v*dt_-x2);
+    return (Vector(1) << x1+v*dt_-x2).finished();
   }
 
 private:

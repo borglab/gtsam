@@ -74,9 +74,9 @@ struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
     }
 
     if (isGreaterThan_)
-      return (Vector(1) << error);
+      return (Vector(1) << error).finished();
     else
-      return -1.0 * (Vector(1) << error);
+      return -1.0 * (Vector(1) << error).finished();
   }
 
 private:
@@ -147,9 +147,9 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
     }
 
     if (isGreaterThan_)
-      return (Vector(1) << error);
+      return (Vector(1) << error).finished();
     else
-      return -1.0 * (Vector(1) << error);
+      return -1.0 * (Vector(1) << error).finished();
   }
 
 private:

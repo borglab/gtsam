@@ -194,7 +194,7 @@ TEST(Values, basic_functions)
 //TEST(Values, dim_zero)
 //{
 //  Values config0;
-//  config0.insert(key1, Vector2((Vector(2) << 2.0, 3.0));
+//  config0.insert(key1, Vector2((Vector(2) << 2.0, 3.0).finished());
 //  config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 //  LONGS_EQUAL(5, config0.dim());
 //
@@ -212,8 +212,8 @@ TEST(Values, expmap_a)
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
   VectorValues increment = pair_list_of<Key, Vector>
-    (key1, (Vector(3) << 1.0, 1.1, 1.2))
-    (key2, (Vector(3) << 1.3, 1.4, 1.5));
+    (key1, (Vector(3) << 1.0, 1.1, 1.2).finished())
+    (key2, (Vector(3) << 1.3, 1.4, 1.5).finished());
 
   Values expected;
   expected.insert(key1, Vector3(2.0, 3.1, 4.2));
@@ -230,7 +230,7 @@ TEST(Values, expmap_b)
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
   VectorValues increment = pair_list_of<Key, Vector>
-    (key2, (Vector(3) << 1.3, 1.4, 1.5));
+    (key2, (Vector(3) << 1.3, 1.4, 1.5).finished());
 
   Values expected;
   expected.insert(key1, Vector3(1.0, 2.0, 3.0));
@@ -283,8 +283,8 @@ TEST(Values, localCoordinates)
   valuesA.insert(key2, Vector3(5.0, 6.0, 7.0));
 
   VectorValues expDelta = pair_list_of<Key, Vector>
-    (key1, (Vector(3) << 0.1, 0.2, 0.3))
-    (key2, (Vector(3) << 0.4, 0.5, 0.6));
+    (key1, (Vector(3) << 0.1, 0.2, 0.3).finished())
+    (key2, (Vector(3) << 0.4, 0.5, 0.6).finished());
 
   Values valuesB = valuesA.retract(expDelta);
 

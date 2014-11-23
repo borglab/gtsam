@@ -53,7 +53,7 @@ public:
     if (H1) *H1 = -eye(p);
     if (H2) *H2 = eye(p);
     if (H3) *H3 = eye(p)*h_;
-    return (Vector(1) << qk+v*h_-qk1);
+    return (Vector(1) << qk+v*h_-qk1).finished();
   }
 
 }; // \PendulumFactor1
@@ -101,7 +101,7 @@ public:
     if (H1) *H1 = -eye(p);
     if (H2) *H2 = eye(p);
     if (H3) *H3 = -eye(p)*h_*g_/r_*cos(q);
-    return (Vector(1) << vk - h_ * g_ / r_ * sin(q) - vk1);
+    return (Vector(1) << vk - h_ * g_ / r_ * sin(q) - vk1).finished();
   }
 
 }; // \PendulumFactor2
@@ -158,7 +158,7 @@ public:
     if (H2) *H2 = eye(p)*(-mr2_h + mgrh*(1-alpha_)*(1-alpha_)*cos(qmid));
     if (H3) *H3 = eye(p)*( mr2_h + mgrh*(1-alpha_)*(alpha_)*cos(qmid));
 
-    return (Vector(1) << mr2_h * (qk1 - qk) + mgrh * (1 - alpha_) * sin(qmid) - pk);
+    return (Vector(1) << mr2_h * (qk1 - qk) + mgrh * (1 - alpha_) * sin(qmid) - pk).finished();
   }
 
 }; // \PendulumFactorPk
@@ -214,7 +214,7 @@ public:
     if (H2) *H2 = eye(p)*(-mr2_h - mgrh*(1-alpha_)*alpha_*cos(qmid));
     if (H3) *H3 = eye(p)*( mr2_h - mgrh*alpha_*alpha_*cos(qmid));
 
-    return (Vector(1) << mr2_h * (qk1 - qk) - mgrh * alpha_ * sin(qmid) - pk1);
+    return (Vector(1) << mr2_h * (qk1 - qk) - mgrh * alpha_ * sin(qmid) - pk1).finished();
   }
 
 }; // \PendulumFactorPk1

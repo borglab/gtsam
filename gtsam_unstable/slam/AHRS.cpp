@@ -60,7 +60,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   sigmas_v_a_ = esqrt(T * Pa_.diagonal());
 
   // gravity in nav frame
-  n_g_ = (Vector(3) << 0.0, 0.0, g_e);
+  n_g_ = (Vector(3) << 0.0, 0.0, g_e).finished();
   n_g_cross_ = skewSymmetric(n_g_);  // nav frame has Z down !!!
 }
 
@@ -72,7 +72,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double sp = sin(mech0_.bRn().inverse().pitch());
   double cy = cos(0.0);
   double sy = sin(0.0);
-  Matrix Omega_T = (Matrix(3, 3) << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0);
+  Matrix Omega_T = (Matrix(3, 3) << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0).finished();
 
   // Calculate Jacobian of roll/pitch/yaw wrpt (g1,g2,g3), see doc/ypr.nb
   Vector b_g = mech0_.b_g(g_e);
@@ -83,9 +83,9 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double g123 = g1 * g1 + g23;
   double f = 1 / (std::sqrt(g23) * g123);
   Matrix H_g = (Matrix(3, 3) <<
-      0.0, g3 / g23, -(g2 / g23),                       // roll
+      0.0, g3 / g23, -(g2 / g23),                            // roll
       std::sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3), // pitch
-      0.0, 0.0, 0.0);                                   // we don't know anything on yaw
+      0.0, 0.0, 0.0).finished();                             // we don't know anything on yaw
 
   // Calculate the initial covariance matrix for the error state dx, Farrell08book eq. 10.66
   Matrix Pa = 0.025 * 0.025 * eye(3);
@@ -221,8 +221,8 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Matrix b_g = skewSymmetric(increment* f_previous);
   Matrix H = collect(3, &b_g, &I3, &Z3);
 //  Matrix R = diag(emul(sigmas_v_a_, sigmas_v_a_));
-//  Matrix R = diag((Vector(3) << 1.0, 0.2, 1.0)); // good for L_twice
-  Matrix R = diag((Vector(3) << 0.01, 0.0001, 0.01));
+//  Matrix R = diag((Vector(3) << 1.0, 0.2, 1.0).finished()); // good for L_twice
+  Matrix R = diag((Vector(3) << 0.01, 0.0001, 0.01).finished());
 
 // update the Kalman filter
   KalmanFilter::State updatedState = KF_.updateQ(state, H, z, R);

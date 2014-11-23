@@ -133,7 +133,7 @@ public:
         *H2 = J2 * (Matrix(3, 5) <<
             H11, H12, H13, H14, H15,
             H21, H22, H23, H24, H25,
-            H31, H32, H33, H34, H35);
+            H31, H32, H33, H34, H35).finished();
       }
       if(H3) {
         double H16 = -cos_phi*cos_theta/rho2;
@@ -142,7 +142,7 @@ public:
         *H3 = J2 * (Matrix(3, 1) <<
             H16,
             H26,
-            H36);
+            H36).finished();
       }
       return uv;
     }
@@ -162,7 +162,7 @@ public:
     gtsam::Point3 ray = pw - pt;
     double theta = atan2(ray.y(), ray.x()); // longitude
     double phi = atan2(ray.z(), sqrt(ray.x()*ray.x()+ray.y()*ray.y()));
-    return std::make_pair(Vector5((Vector(5) << pt.x(),pt.y(),pt.z(), theta, phi)),
+    return std::make_pair((Vector5() << pt.x(),pt.y(),pt.z(), theta, phi).finished(),
         double(1./depth));
   }
 

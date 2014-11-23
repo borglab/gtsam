@@ -31,7 +31,7 @@ int main()
       1., 0., 0.,
       0.,-1., 0.,
       0., 0.,-1.
-  )),
+  ).finished()),
   Point3(0,0,0.5));
 
   const CalibratedCamera camera(pose1);

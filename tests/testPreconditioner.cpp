@@ -34,11 +34,11 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
   fg += JacobianFactor(2, 10*eye(2), -1.0*ones(2), unit2);
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(2, -10*eye(2), 0, 10*eye(2), (Vector(2) << 2.0, -1.0), unit2);
+  fg += JacobianFactor(2, -10*eye(2), 0, 10*eye(2), (Vector(2) << 2.0, -1.0).finished(), unit2);
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(2, -5*eye(2), 1, 5*eye(2), (Vector(2) << 0.0, 1.0), unit2);
+  fg += JacobianFactor(2, -5*eye(2), 1, 5*eye(2), (Vector(2) << 0.0, 1.0).finished(), unit2);
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), (Vector(2) << -1.0, 1.5), unit2);
+  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), (Vector(2) << -1.0, 1.5).finished(), unit2);
   return fg;
 }
 

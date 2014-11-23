@@ -56,7 +56,7 @@ TEST(Rot3, manifold_cayley)
   CHECK(assert_equal(d12,-d21));
 
   // lines in canonical coordinates correspond to Abelian subgroups in SO(3)
-  Vector d = (Vector(3) << 0.1, 0.2, 0.3);
+  Vector d = (Vector(3) << 0.1, 0.2, 0.3).finished();
   // exp(-d)=inverse(exp(d))
   CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -84,7 +84,7 @@ TEST(Rot3, manifold_slow_cayley)
   CHECK(assert_equal(d12,-d21));
 
   // lines in canonical coordinates correspond to Abelian subgroups in SO(3)
-  Vector d = (Vector(3) << 0.1, 0.2, 0.3);
+  Vector d = (Vector(3) << 0.1, 0.2, 0.3).finished();
   // exp(-d)=inverse(exp(d))
   CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)

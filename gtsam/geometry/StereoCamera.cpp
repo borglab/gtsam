@@ -68,7 +68,7 @@ namespace gtsam {
                 uL*v1, -fx-dx*uL,     v2, -dfx,  0.0, d*uL,
                 uR*v1, -fx-dx*uR,     v2, -dfx,  0.0, d*uR,
             fy + v*v1,    -dx*v , -x*dfy,  0.0, -dfy, d*v
-          );
+          ).finished();
       }
       if (H2) {
         const Matrix R(leftCamPose_.rotation().matrix());
@@ -76,7 +76,7 @@ namespace gtsam {
              fx*R(0, 0) - R(0, 2)*uL, fx*R(1, 0) - R(1, 2)*uL, fx*R(2, 0) - R(2, 2)*uL,
              fx*R(0, 0) - R(0, 2)*uR, fx*R(1, 0) - R(1, 2)*uR, fx*R(2, 0) - R(2, 2)*uR,
              fy*R(0, 1) - R(0, 2)*v , fy*R(1, 1) - R(1, 2)*v , fy*R(2, 1) - R(2, 2)*v
-         );
+         ).finished();
       }
 #endif
     }
@@ -94,7 +94,7 @@ namespace gtsam {
          f_x*d,   0.0, -d2*f_x* P.x(),
          f_x*d,   0.0, -d2*f_x*(P.x() - b),
            0.0, f_y*d, -d2*f_y* P.y()
-    );
+    ).finished();
   }
 
 }
