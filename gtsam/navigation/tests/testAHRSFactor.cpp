@@ -36,7 +36,7 @@ using symbol_shorthand::X;
 using symbol_shorthand::V;
 using symbol_shorthand::B;
 
-/* ************************************************************************* */
+//******************************************************************************
 namespace {
 Vector callEvaluateError(const AHRSFactor& factor, const Rot3 rot_i,
     const Rot3 rot_j, const imuBias::ConstantBias& bias) {
@@ -82,7 +82,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 }
 
 }
-/* ************************************************************************* */TEST( AHRSFactor, PreintegratedMeasurements ) {
+//******************************************************************************
+TEST( AHRSFactor, PreintegratedMeasurements ) {
   // Linearization point
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); ///< Current estimate of acceleration and angular rate biases
 
@@ -113,7 +114,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
   DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-6);
 }
 
-/* ************************************************************************* */TEST( ImuFactor, Error ) {
+//******************************************************************************
+TEST( ImuFactor, Error ) {
   // Linearization point
   imuBias::ConstantBias bias; // Bias
   Rot3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0));
@@ -172,7 +174,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
   // FIXME!! DOes not work. Different matrix dimensions.
 }
 
-/* ************************************************************************* */TEST( ImuFactor, ErrorWithBiases ) {
+//******************************************************************************
+TEST( ImuFactor, ErrorWithBiases ) {
   // Linearization point
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
@@ -228,7 +231,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
   EXPECT(assert_equal(H3e, H3a));
 }
 
-/* ************************************************************************* */TEST( AHRSFactor, PartialDerivativeExpmap ) {
+//******************************************************************************
+TEST( AHRSFactor, PartialDerivativeExpmap ) {
   // Linearization point
   Vector3 biasOmega;
   biasOmega << 0, 0, 0; ///< Current estimate of rotation rate bias
@@ -253,7 +257,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 
 }
 
-/* ************************************************************************* */TEST( AHRSFactor, PartialDerivativeLogmap ) {
+//******************************************************************************
+TEST( AHRSFactor, PartialDerivativeLogmap ) {
   // Linearization point
   Vector3 thetahat;
   thetahat << 0.1, 0.1, 0; ///< Current estimate of rotation rate bias
@@ -278,7 +283,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 
 }
 
-/* ************************************************************************* */TEST( AHRSFactor, fistOrderExponential ) {
+//******************************************************************************
+TEST( AHRSFactor, fistOrderExponential ) {
   // Linearization point
   Vector3 biasOmega;
   biasOmega << 0, 0, 0; ///< Current estimate of rotation rate bias
@@ -310,7 +316,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
   EXPECT(assert_equal(expectedRot, actualRot));
 }
 
-/* ************************************************************************* */TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
+//******************************************************************************
+TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
   // Linearization point
   imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
 
@@ -352,7 +359,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
-/* ************************************************************************* */TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
+//******************************************************************************
+TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Rot3 x1(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)));
@@ -403,8 +411,7 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
   EXPECT(assert_equal(H2e, H2a));
   EXPECT(assert_equal(H3e, H3a));
 }
-/* ************************************************************************* */
-
+//******************************************************************************
 TEST (AHRSFactor, predictTest) {
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
 
@@ -429,7 +436,7 @@ TEST (AHRSFactor, predictTest) {
   EXPECT(assert_equal(expectedRot, actualRot, 1e-6));
 
 }
-/* ************************************************************************* */
+//******************************************************************************
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Marginals.h>
 
@@ -474,9 +481,9 @@ TEST (AHRSFactor, graphTest) {
   EXPECT(assert_equal(expectedRot, result.at<Rot3>(X(2))));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-/* ************************************************************************* */
+//******************************************************************************
