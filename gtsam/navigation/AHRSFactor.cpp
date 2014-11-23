@@ -13,16 +13,11 @@
  *  @file  AHRSFactor.cpp
  *  @author Krunal Chande
  *  @author Luca Carlone
+ *  @author Frank Dellaert
  *  @date   July 2014
  **/
 
 #include <gtsam/navigation/AHRSFactor.h>
-
-/* GTSAM includes */
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/navigation/ImuBias.h>
-#include <gtsam/base/debug.h>
 
 /* External or standard includes */
 #include <ostream>

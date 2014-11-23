@@ -18,10 +18,11 @@
 #include <gtsam/navigation/AHRSFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/navigation/ImuBias.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/debug.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
@@ -431,6 +432,7 @@ TEST (AHRSFactor, predictTest) {
 /* ************************************************************************* */
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Marginals.h>
+
 TEST (AHRSFactor, graphTest) {
   // linearization point
   Rot3 x1(Rot3::RzRyRx(0, 0, 0));

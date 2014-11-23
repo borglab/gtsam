@@ -20,12 +20,7 @@
 
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/navigation/ImuBias.h>
-#include <gtsam/base/debug.h>
-
-/* External or standard includes */
-#include <ostream>
 
 namespace gtsam {
 
