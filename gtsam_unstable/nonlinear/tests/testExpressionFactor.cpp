@@ -19,6 +19,7 @@
 
 #include <gtsam_unstable/slam/expressions.h>
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam_unstable/nonlinear/ExpressionTesting.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -424,6 +425,30 @@ TEST(ExpressionFactor, composeTernary) {
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf,1e-9));
 }
+
+TEST(ExpressionFactor, tree_finite_differences) {
+
+  // Create some values
+  Values values;
+  values.insert(1, Pose3());
+  values.insert(2, Point3(0, 0, 1));
+  values.insert(3, Cal3_S2());
+
+  // Create leaves
+  Pose3_ x(1);
+  Point3_ p(2);
+  Cal3_S2_ K(3);
+
+  // Create expression tree
+  Point3_ p_cam(x, &Pose3::transform_to, p);
+  Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
+
+  const double fd_step = 1e-5;
+  const double tolerance = 1e-5;
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(uv_hat, values, fd_step, tolerance);
+}
+
 
 /* ************************************************************************* */
 int main() {
