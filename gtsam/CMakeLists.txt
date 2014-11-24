@@ -10,7 +10,7 @@ set (gtsam_subdirs
     linear
     nonlinear
     slam
-	navigation
+	  navigation
 )
 
 set(gtsam_srcs)
@@ -74,8 +74,8 @@ set(gtsam_srcs
     ${linear_srcs}
     ${nonlinear_srcs}
     ${slam_srcs}
-	${navigation_srcs}
-	${gtsam_core_headers}
+	  ${navigation_srcs}
+	  ${gtsam_core_headers}
 )
 
 # Generate and install config and dllexport files
