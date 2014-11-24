@@ -55,7 +55,7 @@ public:
     noiseModel_ = noiseModel;
 
     // Get dimensions of Jacobian matrices
-    // An Expression is assumed unmutable, so we do this now
+    // An Expression is assumed immutable, so we do this now
     std::map<Key, size_t> map;
     expression_.dims(map);
     size_t n = map.size();
@@ -83,12 +83,12 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    // TODO(PTF) Is this a place for custom charts?
     DefaultChart<T> chart;
     if (H) {
       // H should be pre-allocated
       assert(H->size()==size());
 
+      // todo...fix for custom charts.
       VerticalBlockMatrix Ab(dimensions_, Dim);
 
       // Wrap keys and VerticalBlockMatrix into structure passed to expression_
@@ -116,11 +116,20 @@ public:
     if (!active(x))
       return boost::shared_ptr<JacobianFactor>();
 
+    // For custom charts, we would have to update the dimensions here
+    // based on the values that have been passed in.
+    FastVector<Key>::const_iterator kit = keys_.begin();
+    std::vector<size_t> dims;
+    dims.reserve(keys_.size());
+    for(; kit != keys_.end(); ++kit) {
+      dims.push_back(x.at(*kit).dim());
+    }
+
     // Create a writeable JacobianFactor in advance
     // In case noise model is constrained, we need to provide a noise model
     bool constrained = noiseModel_->is_constrained();
     boost::shared_ptr<JacobianFactor> factor(
-        constrained ? new JacobianFactor(keys_, dimensions_, Dim,
+        constrained ? new JacobianFactor(keys_, dims, Dim,
             boost::static_pointer_cast<noiseModel::Constrained>(noiseModel_)->unit()) :
             new JacobianFactor(keys_, dimensions_, Dim));
 
