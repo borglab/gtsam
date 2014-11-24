@@ -578,8 +578,7 @@ void testFactorJacobians(TestResult& result_,
   Jacobian evalJ = jf->jacobianUnweighted();
   Jacobian estJ = expected.jacobianUnweighted();
   EXPECT(assert_equal(evalJ.first, estJ.first, tolerance));
-  EXPECT(assert_equal(evalJ.second, Eigen::VectorXd::Zero(evalJ.second.size()), tolerance));
-  EXPECT(assert_equal(estJ.second, Eigen::VectorXd::Zero(evalJ.second.size()), tolerance));
+  EXPECT(assert_equal(evalJ.second, estJ.second, tolerance));
 }
 
 } // namespace gtsam

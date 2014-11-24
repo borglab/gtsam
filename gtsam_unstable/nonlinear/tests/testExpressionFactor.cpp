@@ -450,19 +450,42 @@ TEST(ExpressionFactor, tree_finite_differences) {
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(uv_hat, values, fd_step, tolerance);
 }
 
-TEST(Expression, local_at_identity) {
+Eigen::Vector3d local_and_jacobian(const Rot3& R,
+                                   boost::optional<Eigen::Matrix3d&> HR) {
+  Rot3 I;
+  Eigen::Vector3d e = Rot3::Logmap(R);
+  if(HR) {
+    // This awful thing is the correct Jacobian of the Logmap function
+    double phi = e.norm();
+    double a1 = (1.0/(phi*phi)) * (1 - (0.5 * phi) / tan(0.5 * phi));
+    (*HR) = Eigen::Matrix3d::Identity() + 0.5 * skewSymmetric(e) + a1 * skewSymmetric(e) * skewSymmetric(e);
+  }
+  return e;
+}
+
+TEST(Expression, local_away_from_identity) {
   Expression<Rot3> C(1);
   Values values;
+  // Create a full rotation matrix.
   Rot3 someR = Rot3::RzRyRx(0.2, 0.3, 0.4);
   values.insert(1, someR);
 
+  // At identity (creating the factor at the same point as the expression,
+  // the Jacobian of localCoordinates is correct (identity).
   ExpressionFactor<Rot3> f_at_identity(noiseModel::Unit::Create(3), someR, C);
   const double nd_step = 1e-5;
   const double tolerance = 1e-5;
   EXPECT_CORRECT_FACTOR_JACOBIANS(f_at_identity, values, nd_step, tolerance);
 
+  // If we create the same factor, but move the linearization point away from the value
+  // in the expression, the Jacobian test will fail.
   ExpressionFactor<Rot3> f_away_from_identity(noiseModel::Unit::Create(3), Rot3(), C);
   EXPECT_CORRECT_FACTOR_JACOBIANS(f_away_from_identity, values, nd_step, tolerance);
+
+  // If we treat the "local()" function like any other function, and compute its Jacobian,
+  // the numerical derivative test will succeed.
+  Expression<Eigen::Vector3d> ex(&local_and_jacobian, C);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(ex, values, nd_step, tolerance);
 }
 
 /* ************************************************************************* */
