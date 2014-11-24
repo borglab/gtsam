@@ -13,6 +13,7 @@
  *  @file  AHRSFactor.h
  *  @author Krunal Chande
  *  @author Luca Carlone
+ *  @author Frank Dellaert
  *  @date   July 2014
  **/
 
@@ -20,11 +21,11 @@
 
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/navigation/ImuBias.h>
+#include <gtsam/geometry/Pose3.h>
 
 namespace gtsam {
 
-class AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, imuBias::ConstantBias> {
+class AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, Vector3> {
 public:
 
   /**
@@ -39,7 +40,7 @@ public:
     friend class AHRSFactor;
 
   protected:
-    imuBias::ConstantBias biasHat_; ///< Acceleration and angular rate bias values used during preintegration. Note that we won't be using the accelerometer
+    Vector3 biasHat_; ///< Acceleration and angular rate bias values used during preintegration. Note that we won't be using the accelerometer
     Matrix3 measurementCovariance_; ///< (Raw measurements uncertainty) Covariance of the vector [measuredOmega] in R^(3X3)
 
     Rot3 deltaRij_; ///< Preintegrated relative orientation (in frame i)
@@ -57,7 +58,7 @@ public:
      *  @param bias Current estimate of acceleration and rotation rate biases
      *  @param measuredOmegaCovariance Covariance matrix of measured angular rate
      */
-    PreintegratedMeasurements(const imuBias::ConstantBias& bias,
+    PreintegratedMeasurements(const Vector3& bias,
         const Matrix3& measuredOmegaCovariance);
 
     /// print
@@ -75,8 +76,8 @@ public:
     double deltaTij() const {
       return deltaTij_;
     }
-    Vector6 biasHat() const {
-      return biasHat_.vector();
+    Vector3 biasHat() const {
+      return biasHat_;
     }
     const Matrix3& delRdelBiasOmega() const {
       return delRdelBiasOmega_;
@@ -99,8 +100,8 @@ public:
 
     /// Predict bias-corrected incremental rotation
     /// TODO: The matrix Hbias is the derivative of predict? Unit-test?
-    Vector3 predict(const imuBias::ConstantBias& bias,
-        boost::optional<Matrix&> H = boost::none) const;
+    Vector3 predict(const Vector3& bias, boost::optional<Matrix&> H =
+        boost::none) const;
 
     /// Integrate coriolis correction in body frame rot_i
     Vector3 integrateCoriolis(const Rot3& rot_i,
@@ -129,7 +130,7 @@ public:
 
 private:
   typedef AHRSFactor This;
-  typedef NoiseModelFactor3<Rot3, Rot3, imuBias::ConstantBias> Base;
+  typedef NoiseModelFactor3<Rot3, Rot3, Vector3> Base;
 
   PreintegratedMeasurements preintegratedMeasurements_;
   Vector3 gravity_;
@@ -188,12 +189,12 @@ public:
 
   /// vector of errors
   Vector evaluateError(const Rot3& rot_i, const Rot3& rot_j,
-      const imuBias::ConstantBias& bias, boost::optional<Matrix&> H1 =
-          boost::none, boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const;
+      const Vector3& bias, boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
+          boost::none) const;
 
   /// predicted states from IMU
-  static Rot3 predict(const Rot3& rot_i, const imuBias::ConstantBias& bias,
+  static Rot3 predict(const Rot3& rot_i, const Vector3& bias,
       const PreintegratedMeasurements preintegratedMeasurements,
       const Vector3& omegaCoriolis,
       boost::optional<const Pose3&> body_P_sensor = boost::none);
