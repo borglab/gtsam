@@ -104,7 +104,7 @@ int main(int argc, char** argv){
   cout << "Optimizing" << endl;
   //create Levenberg-Marquardt optimizer to optimize the factor graph
   LevenbergMarquardtParams params;
-  params.orderingType = OrderingType::METIS;
+  params.orderingType = Ordering::METIS;
   LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate, params);
   Values result = optimizer.optimize();
 
