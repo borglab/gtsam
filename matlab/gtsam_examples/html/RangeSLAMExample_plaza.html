@@ -1,0 +1,306 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>RangeSLAMExample_plaza</title><meta name="generator" content="MATLAB 8.4"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2014-11-24"><meta name="DC.source" content="RangeSLAMExample_plaza.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Range-only SLAM</a></li><li><a href="#3">Load Data</a></li><li><a href="#4">Create Factor Graph and Values</a></li><li><a href="#5">Create Noise Models</a></li><li><a href="#6">Prior on First Pose</a></li><li><a href="#7">Landmark initialization</a></li><li><a href="#8">Add Measurement Factors</a></li><li><a href="#9">Optimization</a></li><li><a href="#10">Visualization of Results</a></li></ul></div><pre class="codeinput"><span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+<span class="comment">% GTSAM Copyright 2010-2014, Georgia Tech Research Corporation,</span>
+<span class="comment">% Atlanta, Georgia 30332-0415</span>
+<span class="comment">% All Rights Reserved</span>
+<span class="comment">% Authors: Frank Dellaert, et al. (see THANKS for the full author list)</span>
+<span class="comment">%</span>
+<span class="comment">% See LICENSE for the license information</span>
+<span class="comment">%</span>
+<span class="comment">% @brief Read Robotics Institute range-only Plaza2 dataset and do SAM</span>
+<span class="comment">% @author Frank Dellaert</span>
+<span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+</pre><h2>Range-only SLAM<a name="2"></a></h2><p>This example demonstrates how to use GTSAM for range-only SLAM. We will read the data from a file, and then build a factor graph containing a RangeFactorPosePoint2 for every range measurement, a BetweenFactorPose2 for every robot odometry measurement, a as well as a prior on the first pose. This is a batch-SLAM approach, an incremental SLAM approach might be less prone to local minima, but overall it works quite well and quite fast.</p><p>We start by clearning the workspace and importing all of GTSAM:</p><pre class="codeinput">clear
+import <span class="string">gtsam.*</span>
+</pre><h2>Load Data<a name="3"></a></h2><p>The data is available at <a href="http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/">http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/</a> The datafile format (from <a href="http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/log.html">http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/log.html</a>)</p><div><ul><li>GT: Groundtruth path from GPS:       <tt>Time (sec) X_pose (m) Y_pose (m) Heading (rad)</tt></li><li>DR: Odometry Input (delta distance traveled and delta heading change):       <tt>Time (sec) Delta Dist. Trav. (m) Delta Heading (rad)</tt></li><li>DRp: Dead Reckoned Path from Odometry:       <tt>Time (sec) X_pose (m) Y_pose (m) Heading (rad)</tt></li><li>TL: Surveyed Node Locations:       <tt>Time (sec) X_pose (m) Y_pose (m)</tt></li><li>TD: Range measurements:       <tt>Time (sec) Sender/Antenna ID Receiver Node (ID) Range (m)</tt></li></ul></div><p>Example data can be found through the gtsam.findExampleDataFile utility:</p><pre class="codeinput">datafile = findExampleDataFile(<span class="string">'Plaza2_.mat'</span>);
+load(datafile)
+M=size(DR,1); <span class="comment">% number of odometry measurements</span>
+K=size(TD,1); <span class="comment">% number of range measurements</span>
+</pre><h2>Create Factor Graph and Values<a name="4"></a></h2><p>We create a factor graph that holds nonlinear factors, which will then be repeatedly linearized during optimization. The factor graph defines a probability distribution, but does not contain any values for the unknown variables. Thoese will be initialized in the Values object 'initial'.</p><pre class="codeinput">graph = NonlinearFactorGraph;
+initial = Values;
+</pre><h2>Create Noise Models<a name="5"></a></h2><p>Below we create the GTSAM noise models that are needed for factor creation. All of them are Gaussian noise models with a diagnoal covariance matrix (although we specifiy them below in terms of standard deviations), but for the range we use a robust Tukey error model.</p><pre class="codeinput">noiseModels.prior = noiseModel.Diagonal.Sigmas([1 1 pi]');
+noiseModels.pointPrior = noiseModel.Diagonal.Sigmas([1 1]');
+noiseModels.odometry = noiseModel.Diagonal.Sigmas([0.05 0.01 0.2]');
+base = noiseModel.mEstimator.Tukey(5);
+sigmaR = 50; <span class="comment">% range standard deviation</span>
+noiseModels.range = noiseModel.Robust(base,noiseModel.Isotropic.Sigma(1, sigmaR));
+</pre><h2>Prior on First Pose<a name="6"></a></h2><p>We extract the first pose from the ground truth, add this as a prior on the first pose (with key 0), and also initialize the unknown with it.</p><pre class="codeinput">pose0 = Pose2(GT(1,2),GT(1,3),pi+GT(1,4));
+graph.add(PriorFactorPose2(0,pose0,noiseModels.prior));
+initial.insert(0,pose0);
+</pre><h2>Landmark initialization<a name="7"></a></h2><p>We randomly initialize the landmarks. We could get unlucky with this and get stuck in a local minimum. A smarter strategy would initialize them by triangulation after seeing a few range measurements.</p><pre class="codeinput">sigmaInitial = 30; <span class="comment">% draw initial landmark guess from Gaussian</span>
+<span class="keyword">for</span> i=1:size(TL,1)
+  j=TL(i,1);
+  initial.insert(symbol(<span class="string">'L'</span>,j),Point2(pose0.x+sigmaInitial*randn,pose0.y+sigmaInitial*randn));
+<span class="keyword">end</span>
+</pre><h2>Add Measurement Factors<a name="8"></a></h2><p>Below we loop over the odometry measurements, and for each of those add an odometry factor (a BetweenFactorPose2) and insert an initial guess for the corresponding next pose. After that we scan the TD matrix for range measurements, and add a range factor for each. The type of this factor is a RangeFactorPose2Point2, the equivalent of the C++ RangeFactor&lt;Pose2,Point2&gt; template instantiation.</p><pre class="codeinput">tic
+k = 1; <span class="comment">% range measurement counter</span>
+lastPose = pose0;
+<span class="keyword">for</span> i=1:M
+
+  <span class="comment">% get odometry measurement</span>
+  t = DR(i,1);
+  distance_traveled = DR(i,2);
+  delta_heading = DR(i,3);
+
+  <span class="comment">% add odometry factor</span>
+  odometry = Pose2(distance_traveled,0,delta_heading);
+  graph.add(BetweenFactorPose2(i-1, i, odometry, noiseModels.odometry));
+
+  <span class="comment">% predict pose and add as initial estimate</span>
+  predictedPose = lastPose.compose(odometry);
+  lastPose = predictedPose;
+  initial.insert(i,predictedPose);
+
+  <span class="comment">% scan the TD matrix for range measurements</span>
+  <span class="keyword">while</span> k&lt;=K &amp;&amp; t&gt;=TD(k,1)
+    j = TD(k,3);
+    range = TD(k,4);
+    factor = RangeFactorPosePoint2(i, symbol(<span class="string">'L'</span>,j), range, noiseModels.range);
+    graph.add(factor);
+    k=k+1;
+  <span class="keyword">end</span>
+
+<span class="keyword">end</span>
+toc
+</pre><pre class="codeoutput">Elapsed time is 6.959025 seconds.
+</pre><h2>Optimization<a name="9"></a></h2><p>The factor graph is now built, so we can now optimize. Below we use the GTSAM Levenberg-Marqaurdt nonlinear optimizer, whch just takes a graph and a set of initial values. After that, we simply call optimize and wait.</p><pre class="codeinput">tic
+batchOptimizer = LevenbergMarquardtOptimizer(graph, initial);
+result = batchOptimizer.optimize();
+toc
+</pre><pre class="codeoutput">Elapsed time is 40.934635 seconds.
+</pre><h2>Visualization of Results<a name="10"></a></h2><p>Below we show the initial estimate derived from the odometry in yellow, the ground truth in green, and the estimated trajectory in black.</p><pre class="codeinput">figure(1);clf;hold <span class="string">on</span>
+
+<span class="comment">% initial estimate</span>
+XYT = utilities.extractPose2(initial);
+plot(XYT(:,1),XYT(:,2),<span class="string">'y-'</span>);
+
+<span class="comment">% ground truth</span>
+plot(GT(:,2),GT(:,3),<span class="string">'g-'</span>);
+plot(TL(:,2),TL(:,3),<span class="string">'g*'</span>);
+
+<span class="comment">% estimated trajectory</span>
+XYT = utilities.extractPose2(result);
+plot(XYT(:,1),XYT(:,2),<span class="string">'k-'</span>);
+XY = utilities.extractPoint2(result);
+plot(XY(:,1),XY(:,2),<span class="string">'k*'</span>);
+axis <span class="string">equal</span>
+</pre><img vspace="5" hspace="5" src="RangeSLAMExample_plaza_01.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2014b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% GTSAM Copyright 2010-2014, Georgia Tech Research Corporation,
+% Atlanta, Georgia 30332-0415
+% All Rights Reserved
+% Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+%
+% See LICENSE for the license information
+%
+% @brief Read Robotics Institute range-only Plaza2 dataset and do SAM
+% @author Frank Dellaert
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Range-only SLAM
+% This example demonstrates how to use GTSAM for range-only SLAM. We will
+% read the data from a file, and then build a factor graph containing a
+% RangeFactorPosePoint2 for every range measurement, a BetweenFactorPose2 for 
+% every robot odometry measurement, a as well as a prior on the first pose.
+% This is a batch-SLAM approach, an incremental SLAM approach might be less
+% prone to local minima, but overall it works quite well and quite fast.
+%
+% We start by clearning the workspace and importing all of GTSAM:
+clear
+import gtsam.*
+
+%% Load Data
+% The data is available at http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/
+% The datafile format (from http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/log.html)
+%
+% * GT: Groundtruth path from GPS: 
+%       |Time (sec) X_pose (m) Y_pose (m) Heading (rad)|
+% * DR: Odometry Input (delta distance traveled and delta heading change): 
+%       |Time (sec) Delta Dist. Trav. (m) Delta Heading (rad)|
+% * DRp: Dead Reckoned Path from Odometry: 
+%       |Time (sec) X_pose (m) Y_pose (m) Heading (rad)|
+% * TL: Surveyed Node Locations: 
+%       |Time (sec) X_pose (m) Y_pose (m)|
+% * TD: Range measurements:  
+%       |Time (sec) Sender/Antenna ID Receiver Node (ID) Range (m)|
+%
+% Example data can be found through the gtsam.findExampleDataFile utility:
+datafile = findExampleDataFile('Plaza2_.mat');
+load(datafile)
+M=size(DR,1); % number of odometry measurements
+K=size(TD,1); % number of range measurements
+
+%% Create Factor Graph and Values
+% We create a factor graph that holds nonlinear factors, which will then be
+% repeatedly linearized during optimization. The factor graph defines a
+% probability distribution, but does not contain any values for the unknown
+% variables. Thoese will be initialized in the Values object 'initial'.
+graph = NonlinearFactorGraph;
+initial = Values;
+
+%% Create Noise Models
+% Below we create the GTSAM noise models that are needed for factor
+% creation. All of them are Gaussian noise models with a diagnoal
+% covariance matrix (although we specifiy them below in terms of standard
+% deviations), but for the range we use a robust Tukey error model.
+noiseModels.prior = noiseModel.Diagonal.Sigmas([1 1 pi]');
+noiseModels.pointPrior = noiseModel.Diagonal.Sigmas([1 1]');
+noiseModels.odometry = noiseModel.Diagonal.Sigmas([0.05 0.01 0.2]');
+base = noiseModel.mEstimator.Tukey(5);
+sigmaR = 50; % range standard deviation
+noiseModels.range = noiseModel.Robust(base,noiseModel.Isotropic.Sigma(1, sigmaR));
+
+%% Prior on First Pose
+% We extract the first pose from the ground truth, add this as a prior on 
+% the first pose (with key 0), and also initialize the unknown with it.
+pose0 = Pose2(GT(1,2),GT(1,3),pi+GT(1,4));
+graph.add(PriorFactorPose2(0,pose0,noiseModels.prior));
+initial.insert(0,pose0);
+
+%% Landmark initialization
+% We randomly initialize the landmarks. We could get unlucky with this and
+% get stuck in a local minimum. A smarter strategy would initialize them by
+% triangulation after seeing a few range measurements.
+sigmaInitial = 30; % draw initial landmark guess from Gaussian
+for i=1:size(TL,1)
+  j=TL(i,1);
+  initial.insert(symbol('L',j),Point2(pose0.x+sigmaInitial*randn,pose0.y+sigmaInitial*randn));
+end
+
+%% Add Measurement Factors
+% Below we loop over the odometry measurements, and for each of those add
+% an odometry factor (a BetweenFactorPose2) and insert an initial guess for
+% the corresponding next pose. After that we scan the TD matrix for range
+% measurements, and add a range factor for each. The type of this factor is a 
+% RangeFactorPose2Point2, the equivalent of the C++ RangeFactor<Pose2,Point2>
+% template instantiation. 
+tic
+k = 1; % range measurement counter
+lastPose = pose0;
+for i=1:M
+  
+  % get odometry measurement
+  t = DR(i,1);
+  distance_traveled = DR(i,2);
+  delta_heading = DR(i,3);
+  
+  % add odometry factor
+  odometry = Pose2(distance_traveled,0,delta_heading);
+  graph.add(BetweenFactorPose2(i-1, i, odometry, noiseModels.odometry));
+  
+  % predict pose and add as initial estimate
+  predictedPose = lastPose.compose(odometry);
+  lastPose = predictedPose;
+  initial.insert(i,predictedPose);
+  
+  % scan the TD matrix for range measurements
+  while k<=K && t>=TD(k,1)
+    j = TD(k,3);
+    range = TD(k,4);
+    factor = RangeFactorPosePoint2(i, symbol('L',j), range, noiseModels.range);
+    graph.add(factor);
+    k=k+1;
+  end
+  
+end
+toc
+
+%% Optimization
+% The factor graph is now built, so we can now optimize. Below we use the
+% GTSAM Levenberg-Marqaurdt nonlinear optimizer, whch just takes a graph
+% and a set of initial values. After that, we simply call optimize and wait.
+tic
+batchOptimizer = LevenbergMarquardtOptimizer(graph, initial);
+result = batchOptimizer.optimize();
+toc
+
+%% Visualization of Results
+% Below we show the initial estimate derived from the odometry in yellow,
+% the ground truth in green, and the estimated trajectory in black.
+figure(1);clf;hold on
+
+% initial estimate
+XYT = utilities.extractPose2(initial);
+plot(XYT(:,1),XYT(:,2),'y-');
+
+% ground truth
+plot(GT(:,2),GT(:,3),'g-');
+plot(TL(:,2),TL(:,3),'g*');
+
+% estimated trajectory
+XYT = utilities.extractPose2(result);
+plot(XYT(:,1),XYT(:,2),'k-');
+XY = utilities.extractPoint2(result);
+plot(XY(:,1),XY(:,2),'k*');
+axis equal
+
+##### SOURCE END #####
+--></body></html>
