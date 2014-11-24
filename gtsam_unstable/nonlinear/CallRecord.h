@@ -46,7 +46,7 @@ namespace internal {
  * it just passes dense Eigen matrices through.
  */
 template<bool ConvertToDynamicRows>
-struct ConvertToDynamicRowsIf {
+struct ConvertToVirtualFunctionSupportedMatrixType {
   template<typename Derived>
   static Eigen::Matrix<double, Eigen::Dynamic, Derived::ColsAtCompileTime> convert(
       const Eigen::MatrixBase<Derived> & x) {
@@ -55,7 +55,13 @@ struct ConvertToDynamicRowsIf {
 };
 
 template<>
-struct ConvertToDynamicRowsIf<false> {
+struct ConvertToVirtualFunctionSupportedMatrixType<false> {
+  template<typename Derived>
+  static const Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> convert(
+      const Eigen::MatrixBase<Derived> & x) {
+    return x;
+  }
+  // special treatment of matrices that don't need conversion
   template<int Rows, int Cols>
   static const Eigen::Matrix<double, Rows, Cols> & convert(
       const Eigen::Matrix<double, Rows, Cols> & x) {
@@ -143,11 +149,11 @@ struct CallRecord: virtual private internal::ReverseADInterface<
     _startReverseAD(jacobians);
   }
 
-  template<int Rows>
-  inline void reverseAD(const Eigen::Matrix<double, Rows, Cols> & dFdT,
+  template<typename Derived>
+  inline void reverseAD(const Eigen::MatrixBase<Derived> & dFdT,
       JacobianMap& jacobians) const {
     _reverseAD(
-        internal::ConvertToDynamicRowsIf<(Rows > MaxVirtualStaticRows)>::convert(
+        internal::ConvertToVirtualFunctionSupportedMatrixType<(Derived::RowsAtCompileTime > MaxVirtualStaticRows)>::convert(
             dFdT), jacobians);
   }
 
