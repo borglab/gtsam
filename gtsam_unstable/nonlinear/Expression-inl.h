@@ -64,18 +64,36 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-/// Handle Leaf Case: reverseAD ends here, by writing a matrix into Jacobians
-template<int ROWS, int COLS>
-void handleLeafCase(const Eigen::Matrix<double, ROWS, COLS>& dTdA,
-    JacobianMap& jacobians, Key key) {
-  jacobians(key).block<ROWS, COLS>(0, 0) += dTdA; // block makes HUGE difference
+
+namespace internal {
+
+template <bool UseBlock, typename Derived>
+struct UseBlockIf {
+  static void addToJacobian(const Eigen::MatrixBase<Derived>& dTdA,
+                            JacobianMap& jacobians, Key key){
+    // block makes HUGE difference
+    jacobians(key).block<Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>(0, 0) += dTdA;
+  };
+};
+/// Handle Leaf Case for Dynamic Matrix type (slower)
+template <typename Derived>
+struct UseBlockIf<false, Derived> {
+  static void addToJacobian(const Eigen::MatrixBase<Derived>& dTdA,
+                            JacobianMap& jacobians, Key key) {
+    jacobians(key) += dTdA;
+  }
+};
 }
-/// Handle Leaf Case for Dynamic ROWS Matrix type (slower)
-template<int COLS>
-inline void handleLeafCase(
-    const Eigen::Matrix<double, Eigen::Dynamic, COLS>& dTdA,
+
+/// Handle Leaf Case: reverseAD ends here, by writing a matrix into Jacobians
+template<typename Derived>
+void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
     JacobianMap& jacobians, Key key) {
-  jacobians(key) += dTdA;
+  internal::UseBlockIf<
+      Derived::RowsAtCompileTime != Eigen::Dynamic &&
+      Derived::ColsAtCompileTime != Eigen::Dynamic,
+      Derived>
+    ::addToJacobian(dTdA, jacobians, key);
 }
 
 //-----------------------------------------------------------------------------
@@ -166,9 +184,9 @@ public:
   void reverseAD(const Eigen::MatrixBase<DerivedMatrix> & dTdA,
       JacobianMap& jacobians) const {
     if (kind == Leaf)
-      handleLeafCase(dTdA.eval(), jacobians, content.key);
+      handleLeafCase(dTdA, jacobians, content.key);
     else if (kind == Function)
-      content.ptr->reverseAD(dTdA.eval(), jacobians);
+      content.ptr->reverseAD(dTdA, jacobians);
   }
 
   /// Define type so we can apply it as a meta-function

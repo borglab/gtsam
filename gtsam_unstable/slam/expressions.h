@@ -7,19 +7,11 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/Expression.h>
+#include <gtsam_unstable/nonlinear/expressions.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
-#include <boost/bind.hpp>
 
 namespace gtsam {
-
-// Generics
-
-template<class T>
-Expression<T> between(const Expression<T>& t1, const Expression<T>& t2) {
-  return Expression<T>(t1, &T::between, t2);
-}
 
 // 2D Geometry
 

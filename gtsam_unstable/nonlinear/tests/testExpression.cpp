@@ -73,25 +73,82 @@ TEST(Expression, Leaves) {
 }
 
 /* ************************************************************************* */
+// Unary(Leaf)
+namespace unary {
+Point2 f0(const Point3& p, boost::optional<Matrix23&> H) {
+  return Point2();
+}
+LieScalar f1(const Point3& p, boost::optional<Eigen::Matrix<double, 1, 3>&> H) {
+  return LieScalar(0.0);
+}
+double f2(const Point3& p, boost::optional<Eigen::Matrix<double, 1, 3>&> H) {
+  return 0.0;
+}
+Expression<Point3> p(1);
+set<Key> expected = list_of(1);
+}
+TEST(Expression, Unary0) {
+  using namespace unary;
+  Expression<Point2> e(f0, p);
+  EXPECT(expected == e.keys());
+}
+TEST(Expression, Unary1) {
+  using namespace unary;
+  Expression<double> e(f1, p);
+  EXPECT(expected == e.keys());
+}
+TEST(Expression, Unary2) {
+  using namespace unary;
+  Expression<double> e(f2, p);
+  EXPECT(expected == e.keys());
+}
+/* ************************************************************************* */
+//Nullary Method
+TEST(Expression, NullaryMethod) {
 
-//TEST(Expression, NullaryMethod) {
-//  Expression<Point3> p(67);
-//  Expression<LieScalar> norm(p, &Point3::norm);
-//  Values values;
-//  values.insert(67,Point3(3,4,5));
-//  Augmented<LieScalar> a = norm.augmented(values);
-//  EXPECT(a.value() == sqrt(50));
-//  JacobianMap expected;
-//  expected[67] = (Matrix(1,3) << 3/sqrt(50),4/sqrt(50),5/sqrt(50));
-//  EXPECT(assert_equal(expected.at(67),a.jacobians().at(67)));
-//}
+  // Create expression
+  Expression<Point3> p(67);
+  Expression<double> norm(p, &Point3::norm);
+
+  // Create Values
+  Values values;
+  values.insert(67, Point3(3, 4, 5));
+
+  // Pre-allocate JacobianMap
+  FastVector<Key> keys;
+  keys.push_back(67);
+  FastVector<int> dims;
+  dims.push_back(3);
+  VerticalBlockMatrix Ab(dims, 1);
+  JacobianMap map(keys, Ab);
+
+  // Get value and Jacobian
+  double actual = norm.value(values, map);
+
+  // Check all
+  EXPECT(actual == sqrt(50));
+  Matrix expected(1, 3);
+  expected << 3.0 / sqrt(50.0), 4.0 / sqrt(50.0), 5.0 / sqrt(50.0);
+  EXPECT(assert_equal(expected,Ab(0)));
+}
 /* ************************************************************************* */
 // Binary(Leaf,Leaf)
 namespace binary {
 // Create leaves
+double doubleF(const Pose3& pose, const Point3& point,
+    boost::optional<Eigen::Matrix<double, 1, 6>&> H1,
+    boost::optional<Eigen::Matrix<double, 1, 3>&> H2) {
+  return 0.0;
+}
 Expression<Pose3> x(1);
 Expression<Point3> p(2);
 Expression<Point3> p_cam(x, &Pose3::transform_to, p);
+}
+/* ************************************************************************* */
+// Check that creating an expression to double compiles
+TEST(Expression, BinaryToDouble) {
+  using namespace binary;
+  Expression<double> p_cam(doubleF, x, p);
 }
 /* ************************************************************************* */
 // keys
