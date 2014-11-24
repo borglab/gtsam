@@ -166,11 +166,11 @@ namespace gtsam {
         boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
       double d = (p2 - *this).norm();
       if (H1) {
-        *H1 = (Matrix(1, 3) << x_-p2.x(), y_-p2.y(), z_-p2.z())*(1./d);
+        *H1 = (Matrix(1, 3) << x_-p2.x(), y_-p2.y(), z_-p2.z()).finished()*(1./d);
       }
 
       if (H2) {
-        *H2 = (Matrix(1, 3) << -x_+p2.x(), -y_+p2.y(), -z_+p2.z())*(1./d);
+        *H2 = (Matrix(1, 3) << -x_+p2.x(), -y_+p2.y(), -z_+p2.z()).finished()*(1./d);
       }
       return d;
     }
