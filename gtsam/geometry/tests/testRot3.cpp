@@ -42,7 +42,7 @@ static const Matrix I3 = eye(3);
 /* ************************************************************************* */
 TEST( Rot3, chart)
 {
-  Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1);
+  Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1).finished();
   Rot3 rot3(R);
   CHECK_CHART_CONCEPT(rot3);
 }
