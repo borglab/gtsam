@@ -26,6 +26,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -447,6 +448,21 @@ TEST(ExpressionFactor, tree_finite_differences) {
   const double fd_step = 1e-5;
   const double tolerance = 1e-5;
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(uv_hat, values, fd_step, tolerance);
+}
+
+TEST(Expression, local_at_identity) {
+  Expression<Rot3> C(1);
+  Values values;
+  Rot3 someR = Rot3::RzRyRx(0.2, 0.3, 0.4);
+  values.insert(1, someR);
+
+  ExpressionFactor<Rot3> f_at_identity(noiseModel::Unit::Create(3), someR, C);
+  const double nd_step = 1e-5;
+  const double tolerance = 1e-5;
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f_at_identity, values, nd_step, tolerance);
+
+  ExpressionFactor<Rot3> f_away_from_identity(noiseModel::Unit::Create(3), Rot3(), C);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f_away_from_identity, values, nd_step, tolerance);
 }
 
 /* ************************************************************************* */
