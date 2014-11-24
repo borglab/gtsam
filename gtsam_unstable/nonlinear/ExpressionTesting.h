@@ -63,41 +63,7 @@ void testExpressionJacobians(TestResult& result_,
   ExpressionFactor<T> f(noiseModel::Unit::Create(size), expression.value(values), expression);
   testFactorJacobians(result_, name_, f, values, fd_step, tolerance);
 }
-
-// Do a full concept check and test the invertibility of
-// local() vs. retract().
-template<typename T>
-void testDefaultChart(TestResult& result_,
-                      const std::string& name_,
-                      const T& value) {
-  T other = value;
-  // Check for the existence of a print function.
-  gtsam::traits::print<T>()(value, "value");
-  gtsam::traits::print<T>()(other, "other");
-
-  // Check for the existence of "equals"
-  EXPECT(gtsam::traits::equals<T>()(value, other, 1e-12));
-
-  typedef typename gtsam::DefaultChart<T> Chart;
-  typedef typename Chart::vector Vector;
-
-  // Check that the dimension of the local value matches the chart dimension.
-  Vector dx = Chart::local(value, other);
-  EXPECT_LONGS_EQUAL(Chart::getDimension(value), dx.size());
-  // And that the "local" of a value vs. itself is zero.
-  EXPECT(assert_equal(Matrix(dx), Matrix(Eigen::VectorXd::Zero(dx.size()))));
-
-  // Test the invertibility of retract/local
-  dx.setRandom();
-  T updated = Chart::retract(value, dx);
-  Vector invdx = Chart::local(value, updated);
-  EXPECT(assert_equal(Matrix(dx), Matrix(invdx), 1e-9));
-
-  dx = -dx;
-  updated = Chart::retract(value, dx);
-  invdx = Chart::local(value, updated);
-  EXPECT(assert_equal(Matrix(dx), Matrix(invdx), 1e-9));
-}
+}  // namespace gtsam
 
 /// \brief Check the Jacobians produced by a factor against finite differences.
 /// \param factor The factor to test.
@@ -105,7 +71,7 @@ void testDefaultChart(TestResult& result_,
 /// \param finite_difference_step The step to use when computing the finite difference Jacobians
 /// \param tolerance The numerical tolerance to use when comparing Jacobians.
 #define EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, finite_difference_step, tolerance) \
-    { testFactorJacobians(result_, name_, factor, values, finite_difference_step, tolerance); }
+    { gtsam::testFactorJacobians(result_, name_, factor, values, finite_difference_step, tolerance); }
 
 /// \brief Check the Jacobians produced by an expression against finite differences.
 /// \param expression The expression to test.
@@ -113,10 +79,4 @@ void testDefaultChart(TestResult& result_,
 /// \param finite_difference_step The step to use when computing the finite difference Jacobians
 /// \param tolerance The numerical tolerance to use when comparing Jacobians.
 #define EXPECT_CORRECT_EXPRESSION_JACOBIANS(expression, values, finite_difference_step, tolerance) \
-    { testExpressionJacobians(result_, name_, expression, values, finite_difference_step, tolerance); }
-
-/// \brief Perform a concept check on the default chart for a type.
-/// \param value An instantiation of the type to be tested.
-#define CHECK_CHART_CONCEPT(value) \
-    { testDefaultChart(result_, name_, value); }
-}  // namespace gtsam
+    { gtsam::testExpressionJacobians(result_, name_, expression, values, finite_difference_step, tolerance); }

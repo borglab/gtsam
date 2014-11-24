@@ -449,11 +449,6 @@ TEST(ExpressionFactor, tree_finite_differences) {
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(uv_hat, values, fd_step, tolerance);
 }
 
-TEST(ExpressionFactor, Pose3Chart) {
-  Pose3 p3;
-  CHECK_CHART_CONCEPT(p3);
-}
-
 /* ************************************************************************* */
 int main() {
   TestResult tr;
