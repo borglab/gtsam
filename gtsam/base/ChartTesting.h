@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file chartTesting.h
+ * @file ChartTesting.h
  * @brief
  * @date November, 2014
  * @author Paul Furgale
