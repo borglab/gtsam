@@ -174,6 +174,43 @@ TEST(Ordering, csr_format_3) {
 }
 
 /* ************************************************************************* */
+TEST(Ordering, csr_format_4) {
+  SymbolicFactorGraph sfg;
+
+  sfg.push_factor(Symbol('x', 1));
+  sfg.push_factor(Symbol('x', 1), Symbol('x', 2));
+  sfg.push_factor(Symbol('x', 2), Symbol('x', 3));
+  sfg.push_factor(Symbol('x', 3), Symbol('x', 4));
+  sfg.push_factor(Symbol('x', 4), Symbol('x', 5));
+  sfg.push_factor(Symbol('x', 5), Symbol('x', 6));
+
+  MetisIndex mi(sfg);
+
+  vector<int> xadjExpected, adjExpected;
+  xadjExpected += 0, 1, 3, 5, 7, 9, 10;
+  adjExpected += 1, 0, 2, 1, 3, 2, 4, 3, 5, 4;
+
+  vector<int> adjAcutal = mi.adj();
+  vector<int> xadjActual = mi.xadj();
+
+  EXPECT(xadjExpected == mi.xadj());
+  EXPECT(adjExpected.size() == mi.adj().size());
+  EXPECT(adjExpected == adjAcutal);
+
+  Ordering metOrder = Ordering::metis(sfg);
+
+  // Test different symbol types
+  sfg.push_factor(Symbol('l', 1));
+  sfg.push_factor(Symbol('x', 1), Symbol('l', 1));
+  sfg.push_factor(Symbol('x', 2), Symbol('l', 1));
+  sfg.push_factor(Symbol('x', 3), Symbol('l', 1));
+  sfg.push_factor(Symbol('x', 4), Symbol('l', 1));
+
+  Ordering metOrder2 = Ordering::metis(sfg);
+
+}
+
+/* ************************************************************************* */
 TEST(Ordering, metis) {
 
   SymbolicFactorGraph sfg;
