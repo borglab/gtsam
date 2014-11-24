@@ -10,27 +10,34 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file ChartValue.h
+ * @file chartTesting.h
  * @brief
- * @date October, 2014
+ * @date November, 2014
  * @author Paul Furgale
  */
 
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestResult.h>
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/Failure.h>
 
 namespace gtsam {
-// Do a full concept check and test the invertibility of
-// local() vs. retract().
+// Do a full concept check and test the invertibility of local() vs. retract().
 template<typename T>
 void testDefaultChart(TestResult& result_,
                       const std::string& name_,
                       const T& value) {
+  typedef typename gtsam::DefaultChart<T> Chart;
+  typedef typename Chart::vector Vector;
+
+  // First, check the basic chart concept. This checks that the interface is satisfied.
+  // The rest of the function is even more detailed, checking the correctness of the chart.
+  BOOST_CONCEPT_ASSERT((ChartConcept<Chart>));
+
   T other = value;
   // Check for the existence of a print function.
   gtsam::traits::print<T>()(value, "value");
@@ -38,9 +45,6 @@ void testDefaultChart(TestResult& result_,
 
   // Check for the existence of "equals"
   EXPECT(gtsam::traits::equals<T>()(value, other, 1e-12));
-
-  typedef typename gtsam::DefaultChart<T> Chart;
-  typedef typename Chart::vector Vector;
 
   // Check that the dimension of the local value matches the chart dimension.
   Vector dx = Chart::local(value, other);
@@ -54,6 +58,7 @@ void testDefaultChart(TestResult& result_,
   Vector invdx = Chart::local(value, updated);
   EXPECT(assert_equal(Matrix(dx), Matrix(invdx), 1e-9));
 
+  // And test that negative steps work as well.
   dx = -dx;
   updated = Chart::retract(value, dx);
   invdx = Chart::local(value, updated);

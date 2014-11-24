@@ -34,6 +34,10 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/Values.h>
 
+#include <CppUnitLite/TestResult.h>
+#include <CppUnitLite/Test.h>
+#include <CppUnitLite/Failure.h>
+
 namespace gtsam {
 
 /*
@@ -522,9 +526,9 @@ inline Matrix numericalHessian323(double (*f)(const X1&, const X2&, const X3&),
 
 // The benefit of this method is that it does not need to know what types are involved
 // to evaluate the factor. If all the machinery of gtsam is working correctly, we should
-// get the correct finite differences out the other side.
+// get the correct numerical derivatives out the other side.
 template<typename FactorType>
-JacobianFactor computeFiniteDifferenceJacobianFactor(const FactorType& factor,
+JacobianFactor computeNumericalDerivativeJacobianFactor(const FactorType& factor,
                                                      const Values& values,
                                                      double fd_step) {
   Eigen::VectorXd e = factor.unwhitenedError(values);
@@ -557,5 +561,34 @@ JacobianFactor computeFiniteDifferenceJacobianFactor(const FactorType& factor,
   return JacobianFactor(jacobians, -e);
 }
 
+template<typename FactorType>
+void testFactorJacobians(TestResult& result_,
+                         const std::string& name_,
+                         const FactorType& f,
+                         const gtsam::Values& values,
+                         double fd_step,
+                         double tolerance) {
+  // Check linearization
+  JacobianFactor expected = computeNumericalDerivativeJacobianFactor(f, values, fd_step);
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+
+  typedef std::pair<Eigen::MatrixXd, Eigen::VectorXd> Jacobian;
+  Jacobian evalJ = jf->jacobianUnweighted();
+  Jacobian estJ = expected.jacobianUnweighted();
+  EXPECT(assert_equal(evalJ.first, estJ.first, tolerance));
+  EXPECT(assert_equal(evalJ.second, Eigen::VectorXd::Zero(evalJ.second.size()), tolerance));
+  EXPECT(assert_equal(estJ.second, Eigen::VectorXd::Zero(evalJ.second.size()), tolerance));
+}
+
 } // namespace gtsam
+
+/// \brief Check the Jacobians produced by a factor against finite differences.
+/// \param factor The factor to test.
+/// \param values Values filled in for testing the Jacobians.
+/// \param numerical_derivative_step The step to use when computing the numerical derivative Jacobians
+/// \param tolerance The numerical tolerance to use when comparing Jacobians.
+#define EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, numerical_derivative_step, tolerance) \
+    { gtsam::testFactorJacobians(result_, name_, factor, values, numerical_derivative_step, tolerance); }
 
