@@ -15,6 +15,7 @@
  * @author Yong-Dian Jian
  * @author Richard Roberts
  * @author Frank Dellaert
+ * @author Andrew Melim
  * @date   Apr 1, 2012
  */
 
@@ -42,11 +43,12 @@ public:
   double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
   double errorTol; ///< The maximum total error to stop iterating (default 0.0)
   Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
+  Ordering::OrderingType orderingType; ///< The method of ordering use during variable elimination (default COLAMD)
 
   NonlinearOptimizerParams() :
       maxIterations(100), relativeErrorTol(1e-5), absoluteErrorTol(1e-5), errorTol(
-          0.0), verbosity(SILENT), linearSolverType(MULTIFRONTAL_CHOLESKY) {
-  }
+          0.0), verbosity(SILENT), orderingType(Ordering::COLAMD),
+          linearSolverType(MULTIFRONTAL_CHOLESKY) {}
 
   virtual ~NonlinearOptimizerParams() {
   }
@@ -152,12 +154,27 @@ public:
 
   void setOrdering(const Ordering& ordering) {
     this->ordering = ordering;
+	  this->orderingType = Ordering::CUSTOM;
+  }
+
+  std::string getOrderingType() const {
+	  return orderingTypeTranslator(orderingType);
+  }
+
+  // Note that if you want to use a custom ordering, you must set the ordering directly, this will switch to custom type
+  void setOrderingType(const std::string& ordering){
+	  orderingType = orderingTypeTranslator(ordering);
   }
 
 private:
   std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
-  LinearSolverType linearSolverTranslator(
-      const std::string& linearSolverType) const;
+
+  LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
+
+  std::string orderingTypeTranslator(Ordering::OrderingType type) const;
+
+  Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
+
 };
 
 // For backward compatibility:
