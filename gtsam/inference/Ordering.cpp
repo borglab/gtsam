@@ -23,7 +23,7 @@
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
-#include <gtsam/3rdparty/metis-5.1.0/include/metis.h>
+#include <gtsam/3rdparty/metis/include/metis.h>
 
 using namespace std;
 

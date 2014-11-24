@@ -45,7 +45,7 @@ endif()
 option(GTSAM_BUILD_METIS "Build metis library" ON)
 option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
 if(GTSAM_BUILD_METIS)
-	add_subdirectory(metis-5.1.0)
+	add_subdirectory(metis)
 endif(GTSAM_BUILD_METIS)
 ############ NOTE:  When updating GeographicLib be sure to disable building their examples
 ############        and unit tests by commenting out their lines:
