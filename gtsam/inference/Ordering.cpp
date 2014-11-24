@@ -227,7 +227,7 @@ namespace gtsam {
     }
 
     result.resize(size);
-    for (size_t j = 0; j < size; ++j){
+    for (size_t j = 0; j < (size_t)size; ++j){
 	    // We have to add the minKey value back to obtain the original key in the Values
 	    result[j] = met.intToKey(perm[j]);
     }

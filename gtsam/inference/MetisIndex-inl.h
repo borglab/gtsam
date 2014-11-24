@@ -42,7 +42,7 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors)
   // First: Record a copy of each key inside the factorgraph and create a
   // key to integer mapping. This is referenced during the adjaceny step
   for (size_t i = 0; i < factors.size(); i++){
-    if (factors[i])
+    if (factors[i]) {
       BOOST_FOREACH(const Key& key, *factors[i]){
         keySet.insert(keySet.end(), key); // Keep a track of all unique keys
         if (intKeyBMap_.left.find(key) == intKeyBMap_.left.end()){
@@ -50,6 +50,7 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors)
           keyCounter++;
         }
       }
+    }
   }
   
   // Create an adjacency mapping that stores the set of all adjacent keys for every key
