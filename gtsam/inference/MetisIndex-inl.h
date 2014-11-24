@@ -27,8 +27,8 @@ namespace gtsam {
 template<class FACTOR>
 void MetisIndex::augment(const FactorGraph<FACTOR>& factors)
 {
-  std::map<Key, FastSet<Key> > adjMap;
-  std::map<Key, FastSet<Key> >::iterator adjMapIt;
+  std::map<idx_t, FastSet<idx_t> > iAdjMap; // Stores a set of keys that are adjacent to key x, with  adjMap.first
+  std::map<idx_t, FastSet<idx_t> >::iterator iAdjMapIt;
 	std::set<Key> keySet;
         
 	/* ********** Convert to CSR format ********** */
@@ -37,31 +37,43 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors)
 	// starting at index xadj[i] and ending at(but not including)
 	// index xadj[i + 1](i.e., adjncy[xadj[i]] through
 	// and including adjncy[xadj[i + 1] - 1]).
+  idx_t keyCounter = 0;
+
+  // First: Record a copy of each key inside the factorgraph and create a
+  // key to integer mapping. This is referenced during the adjaceny step
+  for (size_t i = 0; i < factors.size(); i++){
+    if (factors[i])
+      BOOST_FOREACH(const Key& key, *factors[i]){
+        keySet.insert(keySet.end(), key); // Keep a track of all unique keys
+        if (intKeyBMap_.left.find(key) == intKeyBMap_.left.end()){
+          intKeyBMap_.insert(bm_type::value_type(key, keyCounter));
+          keyCounter++;
+        }
+      }
+  }
+  
+  // Create an adjacency mapping that stores the set of all adjacent keys for every key
 	for (size_t i = 0; i < factors.size(); i++){
 		if (factors[i]){
-			BOOST_FOREACH(const Key& k1, *factors[i]){
-				BOOST_FOREACH(const Key& k2, *factors[i]){
-					if (k1 != k2)
-						adjMap[k1].insert(adjMap[k1].end(), k2); // Insert at the end
-				}
-				keySet.insert(keySet.end(), k1); // Keep a track of all unique keySet
-			}
+			BOOST_FOREACH(const Key& k1, *factors[i])
+				BOOST_FOREACH(const Key& k2, *factors[i])
+          if (k1 != k2){
+            // Store both in Key and idx_t format
+            int i = intKeyBMap_.left.at(k1);
+            int j = intKeyBMap_.left.at(k2);
+            iAdjMap[i].insert(iAdjMap[i].end(), j);
+          }
 		}
 	}
 
 	// Number of keys referenced in this factor graph
 	nKeys_ = keySet.size();
-
-		
-	// Starting with a nonzero key crashes METIS
-	// Find the smallest key in the graph
-	minKey_ = *keySet.begin(); // set is ordered
 		
 	xadj_.push_back(0);// Always set the first index to zero
-	for (adjMapIt = adjMap.begin(); adjMapIt != adjMap.end(); ++adjMapIt) {
-		std::vector<Key> temp;
+  for (iAdjMapIt = iAdjMap.begin(); iAdjMapIt != iAdjMap.end(); ++iAdjMapIt) {
+		std::vector<idx_t> temp;
 		// Copy from the FastSet into a temporary vector
-		std::copy(adjMapIt->second.begin(), adjMapIt->second.end(), std::back_inserter(temp));
+		std::copy(iAdjMapIt->second.begin(), iAdjMapIt->second.end(), std::back_inserter(temp));
 		// Insert each index's set in order by appending them to the end of adj_
 		adj_.insert(adj_.end(), temp.begin(), temp.end());
 		//adj_.push_back(temp);

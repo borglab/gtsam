@@ -25,12 +25,14 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <metis.h>
+#include <boost/bimap.hpp>
 
 namespace gtsam {
 /**
 	* The MetisIndex class converts a factor graph into the Compressed Sparse Row format for use in
 	* METIS algorithms. Specifically, two vectors store the adjacency structure of the graph. It is built
-	* fromt a factor graph prior to elimination, and stores the list of factors
+	* from a factor graph prior to elimination, and stores the list of factors
 	* that involve each variable.
 	* \nosubgrouping
 	*/
@@ -38,13 +40,15 @@ class GTSAM_EXPORT MetisIndex
 {
 public:
 	typedef boost::shared_ptr<MetisIndex> shared_ptr;
+  typedef boost::bimap<Key, idx_t>      bm_type;
 
 private:
-	FastVector<Key> xadj_; // Index of node's adjacency list in adj
-  FastVector<Key>  adj_; // Stores ajacency lists of all nodes, appended into a single vector
-	size_t nFactors_;      // Number of factors in the original factor graph
-	size_t nKeys_;         // 
-	size_t minKey_;
+  FastVector<idx_t>        xadj_; // Index of node's adjacency list in adj
+  FastVector<idx_t>        adj_; // Stores ajacency lists of all nodes, appended into a single vector
+  FastVector<idx_t>        iadj_; // Integer keys for passing into metis. One to one mapping with adj_;
+  boost::bimap<Key, idx_t> intKeyBMap_; // Stores Key <-> integer value relationship
+	size_t nFactors_;        // Number of factors in the original factor graph
+	size_t nKeys_;          
 
 public:
 	/// @name Standard Constructors
@@ -69,10 +73,13 @@ public:
 	template<class FACTOR>
 	void augment(const FactorGraph<FACTOR>& factors);
 
-	std::vector<Key> xadj() const { return   xadj_; }
-  std::vector<Key>  adj() const { return    adj_; }
-	size_t        nValues() const { return  nKeys_; }
-	size_t         minKey() const { return minKey_; }
+  std::vector<idx_t> xadj() const { return   xadj_; }
+  std::vector<idx_t>  adj() const { return    adj_; }
+	size_t          nValues() const { return  nKeys_; }
+  Key intToKey(idx_t value) const {
+    assert(value >= 0);
+    return intKeyBMap_.right.find(value)->second;
+  }
 
 	/// @}
 };
