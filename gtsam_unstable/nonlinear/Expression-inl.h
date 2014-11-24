@@ -507,7 +507,7 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     void reverseAD(const Eigen::Matrix<double, Rows, Cols> & dFdT,
         JacobianMap& jacobians) const {
       Base::Record::reverseAD(dFdT, jacobians);
-      This::trace.reverseAD(dFdT * This::dTdA, jacobians);
+      This::trace.reverseAD((dFdT * This::dTdA).eval(), jacobians);
     }
   };
 
