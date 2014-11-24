@@ -66,7 +66,6 @@ void testDefaultChart(TestResult& result_,
 }
 }  // namespace gtsam
 
-
 /// \brief Perform a concept check on the default chart for a type.
 /// \param value An instantiation of the type to be tested.
 #define CHECK_CHART_CONCEPT(value) \
