@@ -25,7 +25,7 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/3rdparty/metis/include/metis.h>
+#include <gtsam/3rdparty/metis/metis.h>
 #include <boost/bimap.hpp>
 
 namespace gtsam {
