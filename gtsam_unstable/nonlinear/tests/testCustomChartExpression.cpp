@@ -10,7 +10,7 @@
  * -------------------------------1------------------------------------------- */
 
 /**
- * @file testExpression.cpp
+ * @file testCustomChartExpression.cpp
  * @date September 18, 2014
  * @author Frank Dellaert
  * @author Paul Furgale
