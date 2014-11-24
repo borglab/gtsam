@@ -22,6 +22,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
+#include <gtsam/base/ChartTesting.h>
 
 #include <boost/math/constants/constants.hpp>
 
@@ -37,6 +38,14 @@ static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
 static double error = 1e-9, epsilon = 0.001;
 static const Matrix I3 = eye(3);
+
+/* ************************************************************************* */
+TEST( Rot3, chart)
+{
+  Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1);
+  Rot3 rot3(R);
+  CHECK_CHART_CONCEPT(rot3);
+}
 
 /* ************************************************************************* */
 TEST( Rot3, constructor)

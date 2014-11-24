@@ -29,7 +29,6 @@
 
 #include <gtsam_unstable/nonlinear/ceres_example.h>
 
-#undef CHECK
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/list_of.hpp>

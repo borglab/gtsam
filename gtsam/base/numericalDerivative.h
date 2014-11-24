@@ -30,6 +30,13 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/nonlinear/Values.h>
+
+#include <CppUnitLite/TestResult.h>
+#include <CppUnitLite/Test.h>
+#include <CppUnitLite/Failure.h>
 
 namespace gtsam {
 
@@ -516,4 +523,72 @@ inline Matrix numericalHessian323(double (*f)(const X1&, const X2&, const X3&),
       boost::function<double(const X1&, const X2&, const X3&)>(f), x1, x2, x3,
       delta);
 }
+
+// The benefit of this method is that it does not need to know what types are involved
+// to evaluate the factor. If all the machinery of gtsam is working correctly, we should
+// get the correct numerical derivatives out the other side.
+template<typename FactorType>
+JacobianFactor computeNumericalDerivativeJacobianFactor(const FactorType& factor,
+                                                     const Values& values,
+                                                     double fd_step) {
+  Eigen::VectorXd e = factor.unwhitenedError(values);
+  const size_t rows = e.size();
+
+  std::map<Key, Matrix> jacobians;
+  typename FactorType::const_iterator key_it = factor.begin();
+  VectorValues dX = values.zeroVectors();
+  for(; key_it != factor.end(); ++key_it) {
+    size_t key = *key_it;
+    // Compute central differences using the values struct.
+    const size_t cols = dX.dim(key);
+    Matrix J = Matrix::Zero(rows, cols);
+    for(size_t col = 0; col < cols; ++col) {
+      Eigen::VectorXd dx = Eigen::VectorXd::Zero(cols);
+      dx[col] = fd_step;
+      dX[key] = dx;
+      Values eval_values = values.retract(dX);
+      Eigen::VectorXd left = factor.unwhitenedError(eval_values);
+      dx[col] = -fd_step;
+      dX[key] = dx;
+      eval_values = values.retract(dX);
+      Eigen::VectorXd right = factor.unwhitenedError(eval_values);
+      J.col(col) = (left - right) * (1.0/(2.0 * fd_step));
+    }
+    jacobians[key] = J;
+  }
+
+  // Next step...return JacobianFactor
+  return JacobianFactor(jacobians, -e);
 }
+
+template<typename FactorType>
+void testFactorJacobians(TestResult& result_,
+                         const std::string& name_,
+                         const FactorType& f,
+                         const gtsam::Values& values,
+                         double fd_step,
+                         double tolerance) {
+  // Check linearization
+  JacobianFactor expected = computeNumericalDerivativeJacobianFactor(f, values, fd_step);
+  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  boost::shared_ptr<JacobianFactor> jf = //
+      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+
+  typedef std::pair<Eigen::MatrixXd, Eigen::VectorXd> Jacobian;
+  Jacobian evalJ = jf->jacobianUnweighted();
+  Jacobian estJ = expected.jacobianUnweighted();
+  EXPECT(assert_equal(evalJ.first, estJ.first, tolerance));
+  EXPECT(assert_equal(evalJ.second, Eigen::VectorXd::Zero(evalJ.second.size()), tolerance));
+  EXPECT(assert_equal(estJ.second, Eigen::VectorXd::Zero(evalJ.second.size()), tolerance));
+}
+
+} // namespace gtsam
+
+/// \brief Check the Jacobians produced by a factor against finite differences.
+/// \param factor The factor to test.
+/// \param values Values filled in for testing the Jacobians.
+/// \param numerical_derivative_step The step to use when computing the numerical derivative Jacobians
+/// \param tolerance The numerical tolerance to use when comparing Jacobians.
+#define EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, numerical_derivative_step, tolerance) \
+    { gtsam::testFactorJacobians(result_, name_, factor, values, numerical_derivative_step, tolerance); }
+
