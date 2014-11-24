@@ -100,7 +100,7 @@ std::vector<Matrix> buildBlocks( const GaussianFactorGraph &gfg, const KeyInfo &
   return blocks;
 }
 
-/* ************************************************************************* */
+/* *************************************************************************
 TEST( Preconditioner, buildBlocks ) {
   // Create simple Gaussian factor graph and initial values
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
@@ -121,7 +121,7 @@ TEST( Preconditioner, buildBlocks ) {
     EXPECT(assert_equal(it1->second, *it2));
 }
 
-/* ************************************************************************* */
+/* *************************************************************************
 TEST( Preconditioner, buildBlocks2 ) {
   // Create simple Gaussian factor graph and initial values
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraphUnordered();
@@ -143,7 +143,7 @@ TEST( Preconditioner, buildBlocks2 ) {
     EXPECT(assert_equal(it1->second, *it2));
 }
 
-/* ************************************************************************* */
+/* *************************************************************************
 TEST( BlockJacobiPreconditioner, verySimpleLinerSystem) {
   // Ax = [4 1][u] = [1]  x0 = [2]
   //      [1 3][v]   [2]       [1]
@@ -168,26 +168,65 @@ TEST( BlockJacobiPreconditioner, verySimpleLinerSystem) {
   std::vector<Matrix>::const_iterator it2 = actualHessian.begin();
 
   // the function 'build' in BlockJacobianPreconditioner stores in 'buffer'
-  // the cholesky decomposion of each block of the hessian
+  // the cholesky decomposion of each block of the hessian (column major)
   // In this example there is a single block (i.e., a single value)
   // and the corresponding block of the Hessian is
   //
   // H0 = [17 7; 7 10]
   //
-  EXPECT(assert_equal(it1->second, *it2));
-  // TODO: Matrix expectedH0 ...
-  //EXPECT(assert_equal(it1->second, *it2));
+  Matrix expectedH0 = it1->second;
+  Matrix actualH0 = *it2;
+  EXPECT(assert_equal(expectedH0, (Matrix(2,2) << 17, 7, 7, 10) ));
+  EXPECT(assert_equal(expectedH0, actualH0));
 
   // The corresponding Cholesky decomposition is:
   // R = chol(H0) = [4.1231  1.6977   0   2.6679] (from Matlab)
   Preconditioner::shared_ptr preconditioner = createPreconditioner(boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>());
   preconditioner->build(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>());
   boost::shared_ptr<BlockJacobiPreconditioner> blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditioner>(preconditioner);
+  Vector expectedR = (Vector(4) << 4.1231, 0, 1.6977, 2.6679);
   double* buf = blockJacobi->getBuffer();
-  for(int i=0; i<4; ++i){}
-    // TODO: EXPECT(assert_equal(number..,buf[i]));
+  for(int i=0; i<4; ++i){
+	  EXPECT_DOUBLES_EQUAL(expectedR(i), buf[i], 1e-4);
+  }
 
 }
+
+/* ************************************************************************* */
+TEST( BlockJacobiPreconditioner, SimpleLinerSystem) {
+  // Create a Gaussian Factor Graph
+  GaussianFactorGraph simpleGFG;
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 10, 0, 0, 10), (Vector(2) << -1, -1), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -10, 0, 0, -10), 0, (Matrix(2,2)<< 10, 0, 0, 10), (Vector(2) << 2, -1), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -5, 0, 0, -5), 1, (Matrix(2,2)<< 5, 0, 0, 5), (Vector(2) << 0, 1), unit2);
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< -5, 0, 0, -5), 1, (Matrix(2,2)<< 5, 0, 0, 5), (Vector(2) << -1, 1.5), unit2);
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 1, 0, 0, 1), (Vector(2) << 0, 0), unit2);
+  simpleGFG += JacobianFactor(1, (Matrix(2,2)<< 1, 0, 0, 1), (Vector(2) << 0, 0), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 1, 0, 0, 1), (Vector(2) << 0, 0), unit2);
+
+  // Expected Hessian block diagonal matrices
+  std::map<Key, Matrix> expectedHessian =simpleGFG.hessianBlockDiagonal();
+  // Actual Hessian block diagonal matrices from BlockJacobiPreconditioner::build
+  std::vector<Matrix> actualHessian = buildBlocks(simpleGFG, KeyInfo(simpleGFG));
+  // Compare the number of block diagonal matrices
+  EXPECT_LONGS_EQUAL(expectedHessian.size(), actualHessian.size());
+
+  // Compare the values of matrices
+  std::map<Key, Matrix>::const_iterator it1 = expectedHessian.begin();
+  std::vector<Matrix>::const_iterator it2 = actualHessian.begin();
+
+
+  Preconditioner::shared_ptr preconditioner = createPreconditioner(boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>());
+  preconditioner->build(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>());
+  boost::shared_ptr<BlockJacobiPreconditioner> blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditioner>(preconditioner);
+  double* buf = blockJacobi->getBuffer();
+  for(size_t i=0; i<blockJacobi->getBufferSize(); ++i){
+	  std::cout << "buf[" << i << "] = " << buf[i] << std::endl;
+  }
+
+}
+
 /* ************************************************************************* */
 TEST( PCGsolver, verySimpleLinearSystem) {
 
