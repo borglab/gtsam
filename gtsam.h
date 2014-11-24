@@ -2438,8 +2438,8 @@ virtual class ImuFactor : gtsam::NonlinearFactor {
 #include <gtsam/navigation/AHRSFactor.h>
 class AHRSFactorPreintegratedMeasurements {
   // Standard Constructor
-  AHRSFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredOmegaCovariance);
-  AHRSFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredOmegaCovariance);
+  AHRSFactorPreintegratedMeasurements(Vector bias, Matrix measuredOmegaCovariance);
+  AHRSFactorPreintegratedMeasurements(Vector bias, Matrix measuredOmegaCovariance);
   AHRSFactorPreintegratedMeasurements(const gtsam::AHRSFactorPreintegratedMeasurements& rhs);
 
   // Testable
@@ -2468,8 +2468,8 @@ virtual class AHRSFactor : gtsam::NonlinearFactor {
   // Standard Interface
   gtsam::AHRSFactorPreintegratedMeasurements preintegratedMeasurements() const;
   Vector evaluateError(const gtsam::Rot3& rot_i, const gtsam::Rot3& rot_j,
-        const gtsam::imuBias::ConstantBias& bias) const;
-  gtsam::Rot3 predict(const gtsam::Rot3& rot_i, const gtsam::imuBias::ConstantBias& bias,
+      Vector bias) const;
+  gtsam::Rot3 predict(const gtsam::Rot3& rot_i, Vector bias,
       const gtsam::AHRSFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector omegaCoriolis) const;
 };
