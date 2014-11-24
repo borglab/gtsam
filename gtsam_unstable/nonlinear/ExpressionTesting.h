@@ -21,8 +21,8 @@
 
 #include "Expression.h"
 #include "ExpressionFactor.h"
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestResult.h>
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/Failure.h>
@@ -64,32 +64,39 @@ void testExpressionJacobians(TestResult& result_,
   testFactorJacobians(result_, name_, f, values, fd_step, tolerance);
 }
 
-
-
 // Do a full concept check and test the invertibility of
 // local() vs. retract().
 template<typename T>
-void testDefaultChart(const T& value) {
+void testDefaultChart(TestResult& result_,
+                      const std::string& name_,
+                      const T& value) {
   T other = value;
+  // Check for the existence of a print function.
   gtsam::traits::print<T>()(value, "value");
   gtsam::traits::print<T>()(other, "other");
-  EXPECT_TRUE(gtsam::traits::equals<T>()(value, other, 1e-12));
+
+  // Check for the existence of "equals"
+  EXPECT(gtsam::traits::equals<T>()(value, other, 1e-12));
 
   typedef typename gtsam::DefaultChart<T> Chart;
   typedef typename Chart::vector Vector;
 
+  // Check that the dimension of the local value matches the chart dimension.
   Vector dx = Chart::local(value, other);
-  EXPECT_EQ(Chart::getDimension(value), dx.size());
+  EXPECT_LONGS_EQUAL(Chart::getDimension(value), dx.size());
+  // And that the "local" of a value vs. itself is zero.
+  EXPECT(assert_equal(Matrix(dx), Matrix(Eigen::VectorXd::Zero(dx.size()))));
 
+  // Test the invertibility of retract/local
   dx.setRandom();
   T updated = Chart::retract(value, dx);
   Vector invdx = Chart::local(value, updated);
-  EXPECT_TRUE(assert_equal(dx, invdx, 1e-9));
+  EXPECT(assert_equal(Matrix(dx), Matrix(invdx), 1e-9));
 
   dx = -dx;
   updated = Chart::retract(value, dx);
   invdx = Chart::local(value, updated);
-  EXPECT_TRUE(assert_equal(dx, invdx, 1e-9));
+  EXPECT(assert_equal(Matrix(dx), Matrix(invdx), 1e-9));
 }
 
 /// \brief Check the Jacobians produced by a factor against finite differences.
@@ -108,4 +115,8 @@ void testDefaultChart(const T& value) {
 #define EXPECT_CORRECT_EXPRESSION_JACOBIANS(expression, values, finite_difference_step, tolerance) \
     { testExpressionJacobians(result_, name_, expression, values, finite_difference_step, tolerance); }
 
+/// \brief Perform a concept check on the default chart for a type.
+/// \param value An instantiation of the type to be tested.
+#define CHECK_CHART_CONCEPT(value) \
+    { testDefaultChart(result_, name_, value); }
 }  // namespace gtsam
