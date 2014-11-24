@@ -271,7 +271,6 @@ TEST(CombinedImuFactor, PredictPositionAndVelocity){
   Vector3 measuredOmega; measuredOmega << 0, 0, 0;//M_PI/10.0+0.3;
   Vector3 measuredAcc; measuredAcc << 0,1,-9.81;
   double deltaT = 0.001;
-  double tol = 1e-6;
 
   Matrix I6x6(6,6);
   I6x6 = Matrix::Identity(6,6);

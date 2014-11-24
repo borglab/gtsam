@@ -57,8 +57,8 @@ namespace imuBias {
     }
 
     /** return the accelerometer and gyro biases in a single vector */
-    Vector vector() const {
-      Vector v(6);
+    Vector6 vector() const {
+      Vector6 v;
       v << biasAcc_, biasGyro_;
       return v;
     }
@@ -70,18 +70,18 @@ namespace imuBias {
     const Vector3& gyroscope() const { return biasGyro_; }
 
     /** Correct an accelerometer measurement using this bias model, and optionally compute Jacobians */
-    Vector correctAccelerometer(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
-      if (H){
-        H->resize(3,6);
+    Vector3 correctAccelerometer(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
+      if (H) {
+        H->resize(3, 6);
         (*H) << -Matrix3::Identity(), Matrix3::Zero();
       }
       return measurement - biasAcc_;
     }
 
     /** Correct a gyroscope measurement using this bias model, and optionally compute Jacobians */
-    Vector correctGyroscope(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
-      if (H){
-        H->resize(3,6);
+    Vector3 correctGyroscope(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
+      if (H) {
+        H->resize(3, 6);
         (*H) << Matrix3::Zero(), -Matrix3::Identity();
       }
       return measurement - biasGyro_;

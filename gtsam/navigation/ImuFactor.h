@@ -147,7 +147,7 @@ struct PoseVelocity {
       Matrix delVdelBiasAcc() const { return delVdelBiasAcc_;}
       Matrix delVdelBiasOmega() const { return delVdelBiasOmega_;}
       Matrix delRdelBiasOmega() const{ return delRdelBiasOmega_;}
-      Matrix PreintMeasCov() const { return PreintMeasCov_;}
+      Matrix preintMeasCov() const { return PreintMeasCov_;}
 
 
       void resetIntegration(){
