@@ -112,6 +112,18 @@ double Point3::norm(boost::optional<Matrix&> H) const {
 }
 
 /* ************************************************************************* */
+double Point3::norm(boost::optional<Eigen::Matrix<double,1,3>&> H) const {
+  double r = norm();
+  if (H) {
+    if (fabs(r) > 1e-10)
+      *H << x_ / r, y_ / r, z_ / r;
+    else
+      *H << 1, 1, 1; // really infinity, why 1 ?
+  }
+  return r;
+}
+
+/* ************************************************************************* */
 Point3 Point3::normalize(boost::optional<Matrix&> H) const {
   Point3 normalized = *this / norm();
   if (H) {

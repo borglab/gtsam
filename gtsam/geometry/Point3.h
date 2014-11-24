@@ -186,6 +186,9 @@ namespace gtsam {
     /** Distance of the point from the origin, with Jacobian */
     double norm(boost::optional<Matrix&> H) const;
 
+    /** Distance of the point from the origin, with Jacobian */
+    double norm(boost::optional<Eigen::Matrix<double,1,3>&> H) const;
+
     /** normalize, with optional Jacobian */
     Point3 normalize(boost::optional<Matrix&> H = boost::none) const;
 
