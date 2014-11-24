@@ -34,7 +34,7 @@ TEST(cholesky, choleskyPartial) {
                           0.,       0.,       0.,   1.8786,   1.0535,   1.4250,   1.3347,
                           0.,       0.,       0.,       0.,   3.0788,   2.6283,   2.3791,
                           0.,       0.,       0.,       0.,       0.,   2.9227,   2.4056,
-                          0.,       0.,       0.,       0.,       0.,       0.,   2.5776);
+                          0.,       0.,       0.,       0.,       0.,       0.,   2.5776).finished();
 
   // Do partial Cholesky on 3 frontal scalar variables
   Matrix RSL(ABC);
@@ -57,7 +57,7 @@ TEST(cholesky, choleskyPartial) {
 TEST(cholesky, BadScalingCholesky) {
   Matrix A = (Matrix(2,2) <<
       1e-40, 0.0,
-      0.0, 1.0);
+      0.0, 1.0).finished();
 
   Matrix R(A.transpose() * A);
   choleskyPartial(R, 2);
@@ -72,7 +72,7 @@ TEST(cholesky, BadScalingCholesky) {
 TEST(cholesky, BadScalingSVD) {
   Matrix A = (Matrix(2,2) <<
       1.0, 0.0,
-      0.0, 1e-40);
+      0.0, 1e-40).finished();
 
   Matrix U, V;
   Vector S;

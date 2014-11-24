@@ -48,9 +48,9 @@ TEST(GaussianFactorGraph, initialization) {
 
   fg +=
     JacobianFactor(0, 10*eye(2), -1.0*ones(2), unit2),
-    JacobianFactor(0, -10*eye(2),1, 10*eye(2), (Vector(2) << 2.0, -1.0), unit2),
-    JacobianFactor(0, -5*eye(2), 2, 5*eye(2), (Vector(2) << 0.0, 1.0), unit2),
-    JacobianFactor(1, -5*eye(2), 2, 5*eye(2), (Vector(2) << -1.0, 1.5), unit2);
+    JacobianFactor(0, -10*eye(2),1, 10*eye(2), Vector2(2.0, -1.0), unit2),
+    JacobianFactor(0, -5*eye(2), 2, 5*eye(2), Vector2(0.0, 1.0), unit2),
+    JacobianFactor(1, -5*eye(2), 2, 5*eye(2), Vector2(-1.0, 1.5), unit2);
 
   EXPECT_LONGS_EQUAL(4, (long)fg.size());
 
@@ -60,7 +60,7 @@ TEST(GaussianFactorGraph, initialization) {
           1.,   2.,  1.,  2.,     3.,   4.,   3.,   4.,  3.,  4.,    5.,  6., 5., 6., 5., 6.,    7.,  8., 7., 8.,  7., 8.,
           1.,   2.,  7.,  7.,     1.,   2.,   3.,   4.,  7.,  7.,    1.,  2., 5., 6., 7., 7.,    3.,  4., 5., 6.,  7., 7.,
           10., 10., -1., -1.,   -10., -10.,  10.,  10.,  2., -1.,   -5., -5., 5., 5., 0., 1.,   -5., -5., 5., 5., -1., 1.5
-  );
+  ).finished();
   Matrix actualIJS = fg.sparseJacobian_();
   EQUALITY(expectedIJS, actualIJS);
 }
@@ -91,14 +91,14 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       4., 4.,28.,
       4., 5.,30.,
       3., 6.,26.,
-      4., 6.,32.);
+      4., 6.,32.).finished();
 
   Matrix expected = expectedT.transpose();
 
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
-  gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.), (Vector(2) << 4., 8.), model);
-  gfg.add(0, (Matrix(2, 3) << 9.,10., 0., 0., 0., 0.), 1, (Matrix(2, 2) << 11., 12., 14., 15.), (Vector(2) << 13.,16.), model);
+  gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.).finished(), Vector2(4., 8.), model);
+  gfg.add(0, (Matrix(2, 3) << 9.,10., 0., 0., 0., 0.).finished(), 1, (Matrix(2, 2) << 11., 12., 14., 15.).finished(), Vector2(13.,16.), model);
 
   Matrix actual = gfg.sparseJacobian_();
 
@@ -114,14 +114,14 @@ TEST(GaussianFactorGraph, matrices) {
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
 
-  Matrix A00 = (Matrix(2, 3) << 1, 2, 3, 5, 6, 7);
-  Matrix A10 = (Matrix(2, 3) << 9, 10, 0, 0, 0, 0);
-  Matrix A11 = (Matrix(2, 2) << 11, 12, 14, 15);
+  Matrix A00 = (Matrix(2, 3) << 1, 2, 3, 5, 6, 7).finished();
+  Matrix A10 = (Matrix(2, 3) << 9, 10, 0, 0, 0, 0).finished();
+  Matrix A11 = (Matrix(2, 2) << 11, 12, 14, 15).finished();
 
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Unit::Create(2);
-  gfg.add(0, A00, (Vector(2) << 4., 8.), model);
-  gfg.add(0, A10, 1, A11, (Vector(2) << 13.,16.), model);
+  gfg.add(0, A00, Vector2(4., 8.), model);
+  gfg.add(0, A10, 1, A11, Vector2(13.,16.), model);
 
   Matrix Ab(4,6);
   Ab <<
@@ -150,8 +150,8 @@ TEST(GaussianFactorGraph, matrices) {
 
   // hessianBlockDiagonal
   VectorValues expectLdiagonal; // Make explicit that diagonal is sum-squares of columns
-  expectLdiagonal.insert(0, (Vector(3) << 1+25+81, 4+36+100, 9+49));
-  expectLdiagonal.insert(1, (Vector(2) << 121+196, 144+225));
+  expectLdiagonal.insert(0, Vector3(1+25+81, 4+36+100, 9+49));
+  expectLdiagonal.insert(1, Vector2(121+196, 144+225));
   EXPECT(assert_equal(expectLdiagonal, gfg.hessianDiagonal()));
 
   // hessianBlockDiagonal
@@ -168,11 +168,11 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
   fg += JacobianFactor(2, 10*eye(2), -1.0*ones(2), unit2);
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(0, 10*eye(2), 2, -10*eye(2), (Vector(2) << 2.0, -1.0), unit2);
+  fg += JacobianFactor(0, 10*eye(2), 2, -10*eye(2), Vector2(2.0, -1.0), unit2);
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(1, 5*eye(2), 2, -5*eye(2), (Vector(2) << 0.0, 1.0), unit2);
+  fg += JacobianFactor(1, 5*eye(2), 2, -5*eye(2), Vector2(0.0, 1.0), unit2);
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), (Vector(2) << -1.0, 1.5), unit2);
+  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), Vector2(-1.0, 1.5), unit2);
   return fg;
 }
 
@@ -185,9 +185,9 @@ TEST( GaussianFactorGraph, gradient )
   // 2*f(x) = 100*(x1+c[X(1)])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
   // worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
   VectorValues expected = map_list_of<Key, Vector>
-    (1, (Vector(2) << 5.0, -12.5))
-    (2, (Vector(2) << 30.0, 5.0))
-    (0, (Vector(2) << -25.0, 17.5));
+    (1, Vector2(5.0, -12.5))
+    (2, Vector2(30.0, 5.0))
+    (0, Vector2(-25.0, 17.5));
 
   // Check the gradient at delta=0
   VectorValues zero = VectorValues::Zero(expected);
@@ -207,15 +207,15 @@ TEST( GaussianFactorGraph, transposeMultiplication )
   GaussianFactorGraph A = createSimpleGaussianFactorGraph();
 
   Errors e; e +=
-    (Vector(2) <<  0.0, 0.0),
-    (Vector(2) << 15.0, 0.0),
-    (Vector(2) <<  0.0,-5.0),
-    (Vector(2) << -7.5,-5.0);
+    Vector2(0.0, 0.0),
+    Vector2(15.0, 0.0),
+    Vector2(0.0,-5.0),
+    Vector2(-7.5,-5.0);
 
   VectorValues expected;
-  expected.insert(1, (Vector(2) <<  -37.5,-50.0));
-  expected.insert(2, (Vector(2) << -150.0, 25.0));
-  expected.insert(0, (Vector(2) <<  187.5, 25.0));
+  expected.insert(1, Vector2(-37.5,-50.0));
+  expected.insert(2, Vector2(-150.0, 25.0));
+  expected.insert(0, Vector2(187.5, 25.0));
 
   VectorValues actual = A.transposeMultiply(e);
   EXPECT(assert_equal(expected, actual));
@@ -259,14 +259,14 @@ TEST( GaussianFactorGraph, multiplyHessianAdd )
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
   VectorValues x = map_list_of<Key, Vector>
-    (0, (Vector(2) << 1,2))
-    (1, (Vector(2) << 3,4))
-    (2, (Vector(2) << 5,6));
+    (0, Vector2(1,2))
+    (1, Vector2(3,4))
+    (2, Vector2(5,6));
 
   VectorValues expected;
-  expected.insert(0, (Vector(2) <<  -450, -450));
-  expected.insert(1, (Vector(2) << 0, 0));
-  expected.insert(2, (Vector(2) <<  950, 1050));
+  expected.insert(0, Vector2(-450, -450));
+  expected.insert(1, Vector2(0, 0));
+  expected.insert(2, Vector2(950, 1050));
 
   VectorValues actual;
   gfg.multiplyHessianAdd(1.0, x, actual);
@@ -280,8 +280,8 @@ TEST( GaussianFactorGraph, multiplyHessianAdd )
 /* ************************************************************************* */
 static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
-  gfg += HessianFactor(1, 2, 100*eye(2,2), zeros(2,2),   (Vector(2) << 0.0, 1.0),
-                                           400*eye(2,2), (Vector(2) << 1.0, 1.0), 3.0);
+  gfg += HessianFactor(1, 2, 100*eye(2,2), zeros(2,2),   Vector2(0.0, 1.0),
+                                           400*eye(2,2), Vector2(1.0, 1.0), 3.0);
   return gfg;
 }
 
@@ -297,14 +297,14 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
   EXPECT(assert_equal(Y,AtA*X));
 
   VectorValues x = map_list_of<Key, Vector>
-    (0, (Vector(2) << 1,2))
-    (1, (Vector(2) << 3,4))
-    (2, (Vector(2) << 5,6));
+    (0, Vector2(1,2))
+    (1, Vector2(3,4))
+    (2, Vector2(5,6));
 
   VectorValues expected;
-  expected.insert(0, (Vector(2) <<  -450, -450));
-  expected.insert(1, (Vector(2) <<  300, 400));
-  expected.insert(2, (Vector(2) << 2950, 3450));
+  expected.insert(0, Vector2(-450, -450));
+  expected.insert(1, Vector2(300, 400));
+  expected.insert(2, Vector2(2950, 3450));
 
   VectorValues actual;
   gfg.multiplyHessianAdd(1.0, x, actual);
@@ -346,7 +346,7 @@ TEST( GaussianFactorGraph, matricesMixed )
   Matrix A; Vector b; boost::tie(A,b) = gfg.jacobian(); // incorrect !
   Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian(); // correct
   EXPECT(assert_equal(A.transpose()*A, AtA));
-  Vector expected = - (Vector(6) << -25, 17.5, 5, -13.5, 29, 4);
+  Vector expected = - (Vector(6) << -25, 17.5, 5, -13.5, 29, 4).finished();
   EXPECT(assert_equal(expected, eta));
   EXPECT(assert_equal(A.transpose()*b, eta));
 }
@@ -358,9 +358,9 @@ TEST( GaussianFactorGraph, gradientAtZero )
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
   VectorValues expected;
   VectorValues actual = gfg.gradientAtZero();
-  expected.insert(0, (Vector(2) << -25, 17.5));
-  expected.insert(1, (Vector(2) << 5, -13.5));
-  expected.insert(2, (Vector(2) << 29, 4));
+  expected.insert(0, Vector2(-25, 17.5));
+  expected.insert(1, Vector2(5, -13.5));
+  expected.insert(2, Vector2(29, 4));
   EXPECT(assert_equal(expected, actual));
 }
 

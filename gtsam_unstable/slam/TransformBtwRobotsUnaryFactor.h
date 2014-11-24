@@ -32,7 +32,7 @@ namespace gtsam {
    * @addtogroup SLAM
    */
   template<class VALUE>
-  class TransformBtwRobotsUnaryFactor: public NonlinearFactor {
+  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactor1 ?
 
   public:
 
@@ -159,46 +159,31 @@ namespace gtsam {
     gtsam::Vector whitenedError(const gtsam::Values& x,
         boost::optional<std::vector<gtsam::Matrix>&> H = boost::none) const {
 
-      bool debug = true;
-
-      Matrix H_compose, H_between1, H_dummy;
-
       T orgA_T_currA = valA_.at<T>(keyA_);
       T orgB_T_currB = valB_.at<T>(keyB_);
-
       T orgA_T_orgB = x.at<T>(key_);
 
-      T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB, H_compose, H_dummy);
-
-      T currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB, H_dummy, H_between1);
-
-      T currA_T_currB_msr  = measured_;
-
-      Vector err_unw = currA_T_currB_msr.localCoordinates(currA_T_currB_pred);
-
-      Vector err_wh = err_unw;
+      T currA_T_currB_pred;
       if (H) {
+        Matrix H_compose, H_between1;
+        T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB, H_compose, boost::none);
+        currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB, boost::none, H_between1);
         (*H)[0] = H_compose * H_between1;
-        model_->WhitenSystem(*H, err_wh);
       }
       else {
-        model_->whitenInPlace(err_wh);
+        T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB);
+        currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB);
       }
 
-      Vector err_wh2 = model_->whiten(err_wh);
+      const T& currA_T_currB_msr  = measured_;
+      Vector error = currA_T_currB_msr.localCoordinates(currA_T_currB_pred);
 
-      if (debug){
-        //        std::cout<<"err_wh: "<<err_wh[0]<<err_wh[1]<<err_wh[2]<<std::endl;
-        //        std::cout<<"err_wh2: "<<err_wh2[0]<<err_wh2[1]<<err_wh2[2]<<std::endl;
-        //        std::cout<<"H_compose - rows, cols, : "<<H_compose.rows()<<", "<< H_compose.cols()<<std::endl;
-        //        std::cout<<"H_between1 - rows, cols, : "<<H_between1.rows()<<", "<< H_between1.cols()<<std::endl;
-        //        std::cout<<"H_unwh - rows, cols, : "<<H_unwh.rows()<<", "<< H_unwh.cols()<<std::endl;
-        //        std::cout<<"H_unwh: "<<std:endl<<H_unwh[0]
+      if (H)
+        model_->WhitenSystem(*H, error);
+      else
+        model_->whitenInPlace(error);
 
-      }
-
-
-      return err_wh;
+      return error;
     }
 
 
@@ -207,15 +192,12 @@ namespace gtsam {
 
       T orgA_T_currA = valA_.at<T>(keyA_);
       T orgB_T_currB = valB_.at<T>(keyB_);
-
       T orgA_T_orgB = x.at<T>(key_);
 
       T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB);
-
       T currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB);
 
       T currA_T_currB_msr  = measured_;
-
       return currA_T_currB_msr.localCoordinates(currA_T_currB_pred);
     }
 

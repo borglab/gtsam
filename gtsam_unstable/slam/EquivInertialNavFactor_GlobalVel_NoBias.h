@@ -483,12 +483,12 @@ public:
     Matrix ENU_to_NED = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0);
+        0.0,  0.0, -1.0).finished();
 
     Matrix NED_to_ENU = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0);
+        0.0,  0.0, -1.0).finished();
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;

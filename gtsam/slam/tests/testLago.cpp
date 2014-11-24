@@ -129,11 +129,11 @@ TEST( Lago, regularizedMeasurements ) {
   GaussianFactorGraph lagoGraph = lago::buildLinearOrientationGraph(spanningTreeIds, chordsIds, g, orientationsToRoot, tree);
   std::pair<Matrix,Vector> actualAb = lagoGraph.jacobian();
   // jacobian corresponding to the orientation measurements (last entry is the prior on the anchor and is disregarded)
-  Vector actual = (Vector(5) <<  actualAb.second(0),actualAb.second(1),actualAb.second(2),actualAb.second(3),actualAb.second(4));
+  Vector actual = (Vector(5) <<  actualAb.second(0),actualAb.second(1),actualAb.second(2),actualAb.second(3),actualAb.second(4)).finished();
   // this is the whitened error, so we multiply by the std to unwhiten
   actual = 0.1 * actual;
   // Expected regularized measurements (same for the spanning tree, corrected for the chordsIds)
-  Vector expected = (Vector(5) << M_PI/2, M_PI, -M_PI/2, M_PI/2 - 2*M_PI , M_PI/2);
+  Vector expected = (Vector(5) << M_PI/2, M_PI, -M_PI/2, M_PI/2 - 2*M_PI , M_PI/2).finished();
 
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
@@ -144,10 +144,10 @@ TEST( Lago, smallGraphVectorValues ) {
   VectorValues initial = lago::initializeOrientations(simpleLago::graph(), useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -156,10 +156,10 @@ TEST( Lago, smallGraphVectorValuesSP ) {
   VectorValues initial = lago::initializeOrientations(simpleLago::graph());
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -170,10 +170,10 @@ TEST( Lago, multiplePosePriors ) {
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -183,10 +183,10 @@ TEST( Lago, multiplePosePriorsSP ) {
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -197,10 +197,10 @@ TEST( Lago, multiplePoseAndRotPriors ) {
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -210,10 +210,10 @@ TEST( Lago, multiplePoseAndRotPriorsSP ) {
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI ).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -265,7 +265,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
-  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
+  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(Vector3(1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
   VectorValues actualVV = lago::initializeOrientations(graphWithPrior);
@@ -300,7 +300,7 @@ TEST( Lago, largeGraphNoisy ) {
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
-  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances((Vector(3) << 1e-2, 1e-2, 1e-4));
+  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(Vector3(1e-2, 1e-2, 1e-4));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
 
   Values actual = lago::initialize(graphWithPrior);

@@ -58,11 +58,11 @@ TEST (RotateFactor, test) {
   RotateFactor f(1, i1Ri2, c1Zc2, model);
   EXPECT(assert_equal(zero(3), f.evaluateError(iRc), 1e-8));
 
-  Rot3 R = iRc.retract((Vector(3) << 0.1, 0.2, 0.1));
+  Rot3 R = iRc.retract(Vector3(0.1, 0.2, 0.1));
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  Vector expectedE = (Vector(3) << -0.0248752, 0.202981, -0.0890529);
+  Vector expectedE = Vector3(-0.0248752, 0.202981, -0.0890529);
 #else
-  Vector expectedE = (Vector(3) << -0.0246305, 0.20197, -0.08867);
+  Vector expectedE = Vector3(-0.0246305, 0.20197, -0.08867);
 #endif
   EXPECT( assert_equal(expectedE, f.evaluateError(R), 1e-5));
 
@@ -99,7 +99,7 @@ TEST (RotateFactor, minimization) {
   // Check error at initial estimate
   Values initial;
   double degree = M_PI / 180;
-  Rot3 initialE = iRc.retract(degree * (Vector(3) << 20, -20, 20));
+  Rot3 initialE = iRc.retract(degree * Vector3(20, -20, 20));
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
@@ -128,12 +128,12 @@ TEST (RotateDirectionsFactor, test) {
   RotateDirectionsFactor f(1, p1, z1, model);
   EXPECT(assert_equal(zero(2), f.evaluateError(iRc), 1e-8));
 
-  Rot3 R = iRc.retract((Vector(3) << 0.1, 0.2, 0.1));
+  Rot3 R = iRc.retract(Vector3(0.1, 0.2, 0.1));
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  Vector expectedE = (Vector(2) << -0.0890529, -0.202981);
+  Vector expectedE = Vector2(-0.0890529, -0.202981);
 #else
-  Vector expectedE = (Vector(2) << -0.08867, -0.20197);
+  Vector expectedE = Vector2(-0.08867, -0.20197);
 #endif
 
   EXPECT( assert_equal(expectedE, f.evaluateError(R), 1e-5));
@@ -173,7 +173,7 @@ TEST (RotateDirectionsFactor, minimization) {
   // Check error at initial estimate
   Values initial;
   double degree = M_PI / 180;
-  Rot3 initialE = iRc.retract(degree * (Vector(3) << 20, -20, 20));
+  Rot3 initialE = iRc.retract(degree * Vector3(20, -20, 20));
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)

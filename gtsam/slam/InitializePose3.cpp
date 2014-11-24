@@ -65,7 +65,7 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
     linearGraph.add(key1, -I9, key2, M9, zero9, model);
   }
   // prior on the anchor orientation
-  linearGraph.add(keyAnchor, I9, (Vector(9) << 1.0, 0.0, 0.0,/*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0), model);
+  linearGraph.add(keyAnchor, I9, (Vector(9) << 1.0, 0.0, 0.0,/*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0).finished(), model);
   return linearGraph;
 }
 
@@ -291,7 +291,7 @@ Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a, const doubl
 
   double th = logRot.norm();
   if(th != th){ // the second case means that th = nan (logRot does not work well for +/-pi)
-    Rot3 R1pert = R1.compose( Rot3::Expmap((Vector(3)<< 0.01, 0.01, 0.01)) ); // some perturbation
+    Rot3 R1pert = R1.compose( Rot3::Expmap(Vector3(0.01, 0.01, 0.01)) ); // some perturbation
     logRot = Rot3::Logmap(R1pert.between(R2));
     th = logRot.norm();
   }

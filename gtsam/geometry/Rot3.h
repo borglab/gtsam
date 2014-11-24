@@ -193,7 +193,7 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez((Vector(3) << wx, wy, wz));}
+      { return rodriguez((Vector(3) << wx, wy, wz).finished());}
 
     /// @}
     /// @name Testable
@@ -492,15 +492,15 @@ namespace gtsam {
   namespace traits {
 
   template<>
-  struct is_group<Rot3> : public boost::true_type {
+  struct GTSAM_EXPORT is_group<Rot3> : public boost::true_type{
   };
 
   template<>
-  struct is_manifold<Rot3> : public boost::true_type {
+  struct GTSAM_EXPORT is_manifold<Rot3> : public boost::true_type{
   };
 
   template<>
-  struct dimension<Rot3> : public boost::integral_constant<int, 3> {
+  struct GTSAM_EXPORT dimension<Rot3> : public boost::integral_constant<int, 3>{
   };
 
   }

@@ -189,15 +189,15 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3Bundler> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Cal3Bundler> : public boost::true_type{
 };
 
 template<>
-struct dimension<Cal3Bundler> : public boost::integral_constant<int, 3> {
+struct GTSAM_EXPORT dimension<Cal3Bundler> : public boost::integral_constant<int, 3>{
 };
 
 template<>
-struct zero<Cal3Bundler> {
+struct GTSAM_EXPORT zero<Cal3Bundler> {
   static Cal3Bundler value() {
     return Cal3Bundler(0, 0, 0);
   }

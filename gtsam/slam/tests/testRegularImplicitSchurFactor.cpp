@@ -28,14 +28,13 @@ using namespace boost::assign;
 using namespace gtsam;
 
 // F
-typedef Eigen::Matrix<double, 2, 6> Matrix26;
 const Matrix26 F0 = Matrix26::Ones();
 const Matrix26 F1 = 2 * Matrix26::Ones();
 const Matrix26 F3 = 3 * Matrix26::Ones();
 const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
     (make_pair(0, F0))(make_pair(1, F1))(make_pair(3, F3));
 // RHS and sigmas
-const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.);
+const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
 
 //*************************************************************************************
 TEST( regularImplicitSchurFactor, creation ) {

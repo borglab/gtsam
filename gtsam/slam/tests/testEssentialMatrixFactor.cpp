@@ -71,7 +71,7 @@ TEST (EssentialMatrixFactor, testData) {
   EXPECT(assert_equal(Point2(-1, 0.2), pB(4), 1e-8));
 
   // Check homogeneous version
-  EXPECT(assert_equal((Vector(3) << -1, 0.2, 1), vB(4), 1e-8));
+  EXPECT(assert_equal(Vector3(-1, 0.2, 1), vB(4), 1e-8));
 
   // Check epipolar constraint
   for (size_t i = 0; i < 5; i++)
@@ -126,7 +126,7 @@ TEST (EssentialMatrixFactor, minimization) {
   // Check error at initial estimate
   Values initial;
   EssentialMatrix initialE = trueE.retract(
-      (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
+      (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   initial.insert(1, initialE);
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
@@ -341,7 +341,7 @@ TEST (EssentialMatrixFactor, extraMinimization) {
   // Check error at initial estimate
   Values initial;
   EssentialMatrix initialE = trueE.retract(
-      (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1));
+      (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)

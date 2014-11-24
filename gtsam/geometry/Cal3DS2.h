@@ -111,11 +111,11 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3DS2> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Cal3DS2> : public boost::true_type{
 };
 
 template<>
-struct dimension<Cal3DS2> : public boost::integral_constant<int, 9> {
+struct GTSAM_EXPORT dimension<Cal3DS2> : public boost::integral_constant<int, 9>{
 };
 
 }

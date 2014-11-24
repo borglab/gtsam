@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
   NonlinearFactorGraph graph;
 
   // Specify uncertainty on first pose prior
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)));
+  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
 
   // Here we don't use a PriorFactor but directly the ExpressionFactor class
   // The object x0 is an Expression, and we create a factor wanting it to be equal to poses[0]

@@ -30,13 +30,13 @@ Cal3Unified::Cal3Unified(const Vector &v):
 
 /* ************************************************************************* */
 Vector Cal3Unified::vector() const {
-  return (Vector(10) << Base::vector(), xi_);
+  return (Vector(10) << Base::vector(), xi_).finished();
 }
 
 /* ************************************************************************* */
 void Cal3Unified::print(const std::string& s) const {
   Base::print(s);
-  gtsam::print((Vector)(Vector(1) << xi_), s + ".xi");
+  gtsam::print((Vector)(Vector(1) << xi_).finished(), s + ".xi");
 }
 
 /* ************************************************************************* */

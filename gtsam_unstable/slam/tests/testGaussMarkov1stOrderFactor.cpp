@@ -42,7 +42,7 @@ TEST( GaussMarkovFactor, equals )
   Key x1(1);
   Key x2(2);
   double delta_t = 0.10;
-  Vector tau = (Vector(3) << 100.0, 150.0, 10.0);
+  Vector tau = Vector3(100.0, 150.0, 10.0);
   SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
 
   GaussMarkovFactor factor1(x1, x2, delta_t, tau, model);
@@ -58,11 +58,11 @@ TEST( GaussMarkovFactor, error )
   Key x1(1);
   Key x2(2);
   double delta_t = 0.10;
-  Vector tau = (Vector(3) << 100.0, 150.0, 10.0);
+  Vector tau = Vector3(100.0, 150.0, 10.0);
   SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
 
-  LieVector v1 = LieVector((Vector(3) << 10.0, 12.0, 13.0));
-  LieVector v2 = LieVector((Vector(3) << 10.0, 15.0, 14.0));
+  LieVector v1 = LieVector(Vector3(10.0, 12.0, 13.0));
+  LieVector v2 = LieVector(Vector3(10.0, 15.0, 14.0));
 
   // Create two nodes
   linPoint.insert(x1, v1);
@@ -90,14 +90,14 @@ TEST (GaussMarkovFactor, jacobian ) {
   Key x1(1);
   Key x2(2);
   double delta_t = 0.10;
-  Vector tau = (Vector(3) << 100.0, 150.0, 10.0);
+  Vector tau = Vector3(100.0, 150.0, 10.0);
   SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
 
   GaussMarkovFactor factor(x1, x2, delta_t, tau, model);
 
   // Update the linearization point
-  LieVector v1_upd = LieVector((Vector(3) << 0.5, -0.7, 0.3));
-  LieVector v2_upd = LieVector((Vector(3) << -0.7, 0.4, 0.9));
+  LieVector v1_upd = LieVector(Vector3(0.5, -0.7, 0.3));
+  LieVector v2_upd = LieVector(Vector3(-0.7, 0.4, 0.9));
 
   // Calculate the Jacobian matrix using the factor
   Matrix computed_H1, computed_H2;

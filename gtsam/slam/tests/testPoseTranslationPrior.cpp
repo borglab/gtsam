@@ -15,8 +15,8 @@
 
 using namespace gtsam;
 
-const SharedNoiseModel model2 = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.2));
-const SharedNoiseModel model3 = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.2, 0.3));
+const SharedNoiseModel model2 = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.2));
+const SharedNoiseModel model3 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.2, 0.3));
 
 typedef PoseTranslationPrior<Pose2> Pose2TranslationPrior;
 typedef PoseTranslationPrior<Pose3> Pose3TranslationPrior;
@@ -58,7 +58,7 @@ TEST( testPoseTranslationFactor, level3_error ) {
   Pose3 pose1(rot3A, point3A);
   Pose3TranslationPrior factor(poseKey, point3B, model3);
   Matrix actH1;
-  EXPECT(assert_equal((Vector(3) << -3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Vector3(-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22(evalFactorError3, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
@@ -78,7 +78,7 @@ TEST( testPoseTranslationFactor, pitched3_error ) {
   Pose3 pose1(rot3B, point3A);
   Pose3TranslationPrior factor(poseKey, point3B, model3);
   Matrix actH1;
-  EXPECT(assert_equal((Vector(3) << -3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Vector3(-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22(evalFactorError3, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
@@ -98,7 +98,7 @@ TEST( testPoseTranslationFactor, smallrot3_error ) {
   Pose3 pose1(rot3C, point3A);
   Pose3TranslationPrior factor(poseKey, point3B, model3);
   Matrix actH1;
-  EXPECT(assert_equal((Vector(3) << -3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Vector3(-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22(evalFactorError3, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
@@ -118,7 +118,7 @@ TEST( testPoseTranslationFactor, level2_error ) {
   Pose2 pose1(rot2A, point2A);
   Pose2TranslationPrior factor(poseKey, point2B, model2);
   Matrix actH1;
-  EXPECT(assert_equal((Vector(2) << -3.0,-4.0), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Vector2(-3.0,-4.0), factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22(evalFactorError2, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }

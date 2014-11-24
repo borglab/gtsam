@@ -31,7 +31,7 @@ static const Pose3 pose1((Matrix)(Matrix(3,3) <<
               1., 0., 0.,
               0.,-1., 0.,
               0., 0.,-1.
-              ),
+              ).finished(),
             Point3(0,0,0.5));
  
 static const CalibratedCamera camera(pose1);

@@ -117,7 +117,7 @@ TEST( RangeFactor, Error2D ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141);
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -142,7 +142,7 @@ TEST( RangeFactor, Error2DWithTransform ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141);
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -164,7 +164,7 @@ TEST( RangeFactor, Error3D ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is ||(3.0, 9.0, 4.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141);
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -189,7 +189,7 @@ TEST( RangeFactor, Error3DWithTransform ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is ||(3.0, 9.0, 4.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141);
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));

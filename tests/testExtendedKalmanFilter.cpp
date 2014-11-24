@@ -37,20 +37,20 @@ TEST( ExtendedKalmanFilter, linear ) {
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.0, 0.0);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
   ExtendedKalmanFilter<Point2> ekf(x0, x_initial, P_initial);
 
   // Create the controls and measurement properties for our example
   double dt = 1.0;
-  Vector u = (Vector(2) << 1.0, 0.0);
+  Vector u = Vector2(1.0, 0.0);
   Point2 difference(u*dt);
-  SharedDiagonal Q = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1), true);
+  SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1), true);
   Point2 z1(1.0, 0.0);
   Point2 z2(2.0, 0.0);
   Point2 z3(3.0, 0.0);
-  SharedDiagonal R = noiseModel::Diagonal::Sigmas((Vector(2) << 0.25, 0.25), true);
+  SharedDiagonal R = noiseModel::Diagonal::Sigmas(Vector2(0.25, 0.25), true);
 
   // Create the set of expected output TestValues
   Point2 expected1(1.0, 0.0);
@@ -107,7 +107,7 @@ public:
   NonlinearMotionModel(){}
 
   NonlinearMotionModel(const Symbol& TestKey1, const Symbol& TestKey2) :
-    Base(noiseModel::Diagonal::Sigmas((Vector(2) << 1.0, 1.0)), TestKey1, TestKey2), Q_(2,2) {
+    Base(noiseModel::Diagonal::Sigmas(Vector2(1.0, 1.0)), TestKey1, TestKey2), Q_(2,2) {
 
     // Initialize motion model parameters:
     // w is vector of motion noise sigmas. The final covariance is calculated as G*w*w'*G'
@@ -403,7 +403,7 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.90, 1.10);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
   ExtendedKalmanFilter<Point2> ekf(X(0), x_initial, P_initial);
@@ -416,7 +416,7 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
     x_predict = ekf.predict(motionFactor);
 
     // Create a measurement factor
-    NonlinearMeasurementModel measurementFactor(X(i+1), (Vector(1) << z[i]));
+    NonlinearMeasurementModel measurementFactor(X(i+1), (Vector(1) << z[i]).finished());
     x_update = ekf.update(measurementFactor);
 
     EXPECT(assert_equal(expected_predict[i],x_predict, 1e-6));

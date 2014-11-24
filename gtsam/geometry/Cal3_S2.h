@@ -126,7 +126,7 @@ public:
 
   /// return calibration matrix K
   Matrix K() const {
-    return (Matrix(3, 3) <<  fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0);
+    return (Matrix(3, 3) <<  fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0).finished();
   }
 
   /** @deprecated The following function has been deprecated, use K above */
@@ -138,7 +138,7 @@ public:
   Matrix matrix_inverse() const {
     const double fxy = fx_ * fy_, sv0 = s_ * v0_, fyu0 = fy_ * u0_;
     return (Matrix(3, 3) << 1.0 / fx_, -s_ / fxy, (sv0 - fyu0) / fxy, 0.0,
-        1.0 / fy_, -v0_ / fy_, 0.0, 0.0, 1.0);
+        1.0 / fy_, -v0_ / fy_, 0.0, 0.0, 1.0).finished();
   }
 
   /**
@@ -241,15 +241,15 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Cal3_S2> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Cal3_S2> : public boost::true_type{
 };
 
 template<>
-struct dimension<Cal3_S2> : public boost::integral_constant<int, 5> {
+struct GTSAM_EXPORT dimension<Cal3_S2> : public boost::integral_constant<int, 5>{
 };
 
 template<>
-struct zero<Cal3_S2> {
+struct GTSAM_EXPORT zero<Cal3_S2> {
   static Cal3_S2 value() { return Cal3_S2();}
 };
 

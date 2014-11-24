@@ -32,7 +32,7 @@ public:
 
   /// Static function to convert Point2 to homogeneous coordinates
   static Vector Homogeneous(const Point2& p) {
-    return Vector(3) << p.x(), p.y(), 1;
+    return (Vector(3) << p.x(), p.y(), 1).finished();
   }
 
   /// @name Constructors and named constructors
@@ -200,15 +200,15 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<EssentialMatrix> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<EssentialMatrix> : public boost::true_type{
 };
 
 template<>
-struct dimension<EssentialMatrix> : public boost::integral_constant<int, 5> {
+struct GTSAM_EXPORT dimension<EssentialMatrix> : public boost::integral_constant<int, 5>{
 };
 
 template<>
-struct zero<EssentialMatrix> {
+struct GTSAM_EXPORT zero<EssentialMatrix> {
   static EssentialMatrix value() { return EssentialMatrix();}
 };
 

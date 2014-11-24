@@ -32,7 +32,7 @@ int main()
       1., 0., 0.,
       0.,-1., 0.,
       0., 0.,-1.
-  ),
+  ).finished(),
   Point3(0,0,0.5));
 
   static Cal3Bundler K(500, 1e-3, 2.0*1e-3);

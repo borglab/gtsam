@@ -56,9 +56,9 @@ TEST( testIMUSystem, optimize_chain ) {
   // create a simple chain of poses to generate IMU measurements
   const double dt = 1.0;
   PoseRTV pose1,
-          pose2(Point3(1.0, 1.0, 0.0), Rot3::ypr(0.1, 0.0, 0.0), (Vector)(Vector(3) << 2.0, 2.0, 0.0)),
-          pose3(Point3(2.0, 2.0, 0.0), Rot3::ypr(0.2, 0.0, 0.0), (Vector)(Vector(3) << 0.0, 0.0, 0.0)),
-          pose4(Point3(3.0, 3.0, 0.0), Rot3::ypr(0.3, 0.0, 0.0), (Vector)(Vector(3) << 2.0, 2.0, 0.0));
+          pose2(Point3(1.0, 1.0, 0.0), Rot3::ypr(0.1, 0.0, 0.0), (Vector)Vector3(2.0, 2.0, 0.0)),
+          pose3(Point3(2.0, 2.0, 0.0), Rot3::ypr(0.2, 0.0, 0.0), (Vector)Vector3(0.0, 0.0, 0.0)),
+          pose4(Point3(3.0, 3.0, 0.0), Rot3::ypr(0.3, 0.0, 0.0), (Vector)Vector3(2.0, 2.0, 0.0));
 
   // create measurements
   SharedDiagonal model = noiseModel::Unit::Create(6);
@@ -102,9 +102,9 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
   // create a simple chain of poses to generate IMU measurements
   const double dt = 1.0;
   PoseRTV pose1,
-          pose2(Point3(1.0, 0.0, 0.0), Rot3::ypr(0.0, 0.0, 0.0), (Vector)(Vector(3) << 1.0, 0.0, 0.0)),
-          pose3(Point3(2.0, 0.0, 0.0), Rot3::ypr(0.0, 0.0, 0.0), (Vector)(Vector(3) << 1.0, 0.0, 0.0)),
-          pose4(Point3(3.0, 0.0, 0.0), Rot3::ypr(0.0, 0.0, 0.0), (Vector)(Vector(3) << 1.0, 0.0, 0.0));
+          pose2(Point3(1.0, 0.0, 0.0), Rot3::ypr(0.0, 0.0, 0.0), (Vector)Vector3(1.0, 0.0, 0.0)),
+          pose3(Point3(2.0, 0.0, 0.0), Rot3::ypr(0.0, 0.0, 0.0), (Vector)Vector3(1.0, 0.0, 0.0)),
+          pose4(Point3(3.0, 0.0, 0.0), Rot3::ypr(0.0, 0.0, 0.0), (Vector)Vector3(1.0, 0.0, 0.0));
 
   // create measurements
   SharedDiagonal model = noiseModel::Isotropic::Sigma(9, 1.0);

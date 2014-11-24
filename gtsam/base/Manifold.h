@@ -106,23 +106,23 @@ struct zero<double> {
 
 // Fixed size Eigen::Matrix type
 
-template<int M, int N, int Options>
-struct is_group<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct is_group<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::true_type {
 };
 
-template<int M, int N, int Options>
-struct is_manifold<Eigen::Matrix<double, M, N, Options> > : public boost::true_type {
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct is_manifold<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::true_type{
 };
 
-template<int M, int N, int Options>
-struct dimension<Eigen::Matrix<double, M, N, Options> > : public boost::integral_constant<int,
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct dimension<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::integral_constant<int,
     M == Eigen::Dynamic ? Eigen::Dynamic : (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)> {
     //TODO after switch to c++11 : the above should should be extracted to a constexpr function
     // for readability and to reduce code duplication
 };
 
-template<int M, int N, int Options>
-struct zero<Eigen::Matrix<double, M, N, Options> > {
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct zero<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
   BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "traits::zero is only supported for fixed-size matrices");
   static Eigen::Matrix<double, M, N, Options> value() {
@@ -242,13 +242,13 @@ struct DefaultChart<double> {
 
 // Fixed size Eigen::Matrix type
 
-template<int M, int N, int Options>
-struct DefaultChart<Eigen::Matrix<double, M, N, Options> > {
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct DefaultChart<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
   /**
    * This chart for the vector space of M x N matrices (represented by Eigen matrices) chooses as basis the one with respect to which the coordinates are exactly the matrix entries as laid out in memory (as determined by Options).
    * Computing coordinates for a matrix is then simply a reshape to the row vector of appropriate size.
    */
-  typedef Eigen::Matrix<double, M, N, Options> type;
+	typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> type;
   typedef type T;
   typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
       "DefaultChart has not been implemented yet for dynamically sized matrices");

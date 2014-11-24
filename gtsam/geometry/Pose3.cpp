@@ -99,7 +99,7 @@ Vector Pose3::adjointTranspose(const Vector& xi, const Vector& y,
 Matrix6 Pose3::dExpInv_exp(const Vector& xi) {
   // Bernoulli numbers, from Wikipedia
   static const Vector B = (Vector(9) << 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
-      0.0, 1.0 / 42.0, 0.0, -1.0 / 30);
+      0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
   static const int N = 5; // order of approximation
   Matrix res = I6;
   Matrix6 ad_i = I6;
@@ -333,7 +333,7 @@ double Pose3::range(const Point3& point, boost::optional<Matrix&> H1,
   Point3 d = transform_to(point, H1, H2);
   double x = d.x(), y = d.y(), z = d.z(), d2 = x * x + y * y + z * z, n = sqrt(
       d2);
-  Matrix D_result_d = (Matrix(1, 3) << x / n, y / n, z / n);
+  Matrix D_result_d = (Matrix(1, 3) << x / n, y / n, z / n).finished();
   if (H1)
     *H1 = D_result_d * (*H1);
   if (H2)

@@ -170,7 +170,7 @@ namespace gtsam {
 
     ///Log map at identity - return the canonical coordinates of this rotation
     static inline Vector Logmap(const Rot2& r) {
-      return (Vector(1) << r.theta());
+      return (Vector(1) << r.theta()).finished();
     }
 
     /// @}
@@ -245,15 +245,15 @@ namespace gtsam {
   namespace traits {
 
   template<>
-  struct is_group<Rot2> : public boost::true_type {
+  struct GTSAM_EXPORT is_group<Rot2> : public boost::true_type{
   };
 
   template<>
-  struct is_manifold<Rot2> : public boost::true_type {
+  struct GTSAM_EXPORT is_manifold<Rot2> : public boost::true_type{
   };
 
   template<>
-  struct dimension<Rot2> : public boost::integral_constant<int, 1> {
+  struct GTSAM_EXPORT dimension<Rot2> : public boost::integral_constant<int, 1>{
   };
 
   }

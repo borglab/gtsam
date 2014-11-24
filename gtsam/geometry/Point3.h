@@ -166,11 +166,11 @@ namespace gtsam {
         boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
       double d = (p2 - *this).norm();
       if (H1) {
-        *H1 = (Matrix(1, 3) << x_-p2.x(), y_-p2.y(), z_-p2.z())*(1./d);
+        *H1 = (Matrix(1, 3) << x_-p2.x(), y_-p2.y(), z_-p2.z()).finished()*(1./d);
       }
 
       if (H2) {
-        *H2 = (Matrix(1, 3) << -x_+p2.x(), -y_+p2.y(), -z_+p2.z())*(1./d);
+        *H2 = (Matrix(1, 3) << -x_+p2.x(), -y_+p2.y(), -z_+p2.z()).finished()*(1./d);
       }
       return d;
     }
@@ -253,15 +253,15 @@ namespace gtsam {
   namespace traits {
 
   template<>
-  struct is_group<Point3> : public boost::true_type {
+  struct GTSAM_EXPORT is_group<Point3> : public boost::true_type{
   };
 
   template<>
-  struct is_manifold<Point3> : public boost::true_type {
+  struct GTSAM_EXPORT is_manifold<Point3> : public boost::true_type{
   };
 
   template<>
-  struct dimension<Point3> : public boost::integral_constant<int, 3> {
+  struct GTSAM_EXPORT dimension<Point3> : public boost::integral_constant<int, 3>{
   };
 
   }

@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 
   /* 2. add factors to the graph */
   // add measurement factors
-  SharedDiagonal measurementNoise = Diagonal::Sigmas((Vector(2) << 0.5, 0.5));
+  SharedDiagonal measurementNoise = Diagonal::Sigmas(Vector2(0.5, 0.5));
   boost::shared_ptr<ResectioningFactor> factor;
   graph.push_back(
       boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,

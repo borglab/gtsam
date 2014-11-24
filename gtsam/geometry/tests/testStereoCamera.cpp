@@ -78,7 +78,7 @@ static Pose3 camera1((Matrix)(Matrix(3,3) <<
            1., 0., 0.,
            0.,-1., 0.,
            0., 0.,-1.
-           ),
+           ).finished(),
         Point3(0,0,6.25));
 
 static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));

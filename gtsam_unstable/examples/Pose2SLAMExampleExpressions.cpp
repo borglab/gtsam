@@ -41,11 +41,11 @@ int main(int argc, char** argv) {
   Pose2_ x1(1), x2(2), x3(3), x4(4), x5(5);
 
   // 2a. Add a prior on the first pose, setting it to the origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1));
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   graph.push_back(ExpressionFactor<Pose2>(priorNoise, Pose2(0, 0, 0), x1));
 
   // For simplicity, we will use the same noise model for odometry and loop closures
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1));
+  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
   graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, 0     ), between(x1,x2)));

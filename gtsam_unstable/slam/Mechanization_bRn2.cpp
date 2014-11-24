@@ -13,8 +13,8 @@ namespace gtsam {
 /* ************************************************************************* */
 Mechanization_bRn2 Mechanization_bRn2::initializeVector(const std::list<Vector>& U,
     const std::list<Vector>& F, const double g_e, bool flat) {
-  Matrix Umat = (Matrix(3, U.size()) << concatVectors(U));
-  Matrix Fmat = (Matrix(3, F.size()) << concatVectors(F));
+  Matrix Umat = (Matrix(3, U.size()) << concatVectors(U)).finished();
+  Matrix Fmat = (Matrix(3, F.size()) << concatVectors(F)).finished();
 
   return initialize(Umat, Fmat, g_e, flat);
 }
@@ -33,14 +33,14 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
   if(g_e == 0) {
     if (flat)
       // acceleration measured is  along the z-axis.
-      b_g = (Vector(3) << 0.0, 0.0, norm_2(meanF));
+      b_g = (Vector(3) << 0.0, 0.0, norm_2(meanF)).finished();
     else
       // acceleration measured is the opposite of gravity (10.13)
       b_g = -meanF;
   } else {
     if (flat)
       // gravity is downward along the z-axis since we are flat on the ground
-      b_g = (Vector(3) << 0.0,0.0,g_e);
+      b_g = (Vector(3) << 0.0,0.0,g_e).finished();
     else
       // normalize b_g and attribute remainder to biases
       b_g = - g_e * meanF/meanF.norm();

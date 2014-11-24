@@ -77,7 +77,7 @@ TEST( GaussianBayesTree, linear_smoother_shortcuts )
 
   // Check the conditional P(C3|Root)
   double sigma3 = 0.61808;
-  Matrix A56 = (Matrix(2,2) << -0.382022,0.,0.,-0.382022);
+  Matrix A56 = (Matrix(2,2) << -0.382022,0.,0.,-0.382022).finished();
   GaussianBayesNet expected3;
   expected3 += GaussianConditional(X(5), zero(2), eye(2)/sigma3, X(6), A56/sigma3);
   GaussianBayesTree::sharedClique C3 = bayesTree[X(4)];
@@ -86,7 +86,7 @@ TEST( GaussianBayesTree, linear_smoother_shortcuts )
 
   // Check the conditional P(C4|Root)
   double sigma4 = 0.661968;
-  Matrix A46 = (Matrix(2,2) << -0.146067,0.,0.,-0.146067);
+  Matrix A46 = (Matrix(2,2) << -0.146067,0.,0.,-0.146067).finished();
   GaussianBayesNet expected4;
   expected4 += GaussianConditional(X(4), zero(2), eye(2)/sigma4, X(6), A46/sigma4);
   GaussianBayesTree::sharedClique C4 = bayesTree[X(3)];
@@ -296,13 +296,13 @@ TEST(GaussianBayesTree, shortcut_overlapping_separator)
   // f(6,7)
   GaussianFactorGraph fg;
   noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
-  fg.add(1, (Matrix(1, 1) <<  1.0), 3, (Matrix(1, 1) <<  2.0), 5, (Matrix(1, 1) <<  3.0), (Vector(1) << 4.0), model);
-  fg.add(1, (Matrix(1, 1) <<  5.0), (Vector(1) << 6.0), model);
-  fg.add(2, (Matrix(1, 1) <<  7.0), 4, (Matrix(1, 1) <<  8.0), 5, (Matrix(1, 1) <<  9.0), (Vector(1) << 10.0), model);
-  fg.add(2, (Matrix(1, 1) <<  11.0), (Vector(1) << 12.0), model);
-  fg.add(5, (Matrix(1, 1) <<  13.0), 6, (Matrix(1, 1) <<  14.0), (Vector(1) << 15.0), model);
-  fg.add(6, (Matrix(1, 1) <<  17.0), 7, (Matrix(1, 1) <<  18.0), (Vector(1) << 19.0), model);
-  fg.add(7, (Matrix(1, 1) <<  20.0), (Vector(1) << 21.0), model);
+  fg.add(1, (Matrix(1, 1) <<  1.0).finished(), 3, (Matrix(1, 1) <<  2.0).finished(), 5, (Matrix(1, 1) <<  3.0).finished(), (Vector(1) << 4.0).finished(), model);
+  fg.add(1, (Matrix(1, 1) <<  5.0).finished(), (Vector(1) << 6.0).finished(), model);
+  fg.add(2, (Matrix(1, 1) <<  7.0).finished(), 4, (Matrix(1, 1) <<  8.0).finished(), 5, (Matrix(1, 1) <<  9.0).finished(), (Vector(1) << 10.0).finished(), model);
+  fg.add(2, (Matrix(1, 1) <<  11.0).finished(), (Vector(1) << 12.0).finished(), model);
+  fg.add(5, (Matrix(1, 1) <<  13.0).finished(), 6, (Matrix(1, 1) <<  14.0).finished(), (Vector(1) << 15.0).finished(), model);
+  fg.add(6, (Matrix(1, 1) <<  17.0).finished(), 7, (Matrix(1, 1) <<  18.0).finished(), (Vector(1) << 19.0).finished(), model);
+  fg.add(7, (Matrix(1, 1) <<  20.0).finished(), (Vector(1) << 21.0).finished(), model);
 
   // Eliminate into BayesTree
   // c(6,7)

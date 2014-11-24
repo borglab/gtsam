@@ -203,7 +203,7 @@ public:
      * as detailed in [Kobilarov09siggraph] eq. (15)
      * The full formula is documented in [Celledoni99cmame]
      *    Elena Celledoni and Brynjulf Owren. Lie group methods for rigid body dynamics and
-     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421� 438, 2003.
+     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421-438, 2003.
      * and in [Hairer06book] in formula (4.5), pg. 84, Lemma 4.2
      *    Ernst Hairer, et al., Geometric Numerical Integration,
      *      Structure-Preserving Algorithms for Ordinary Differential Equations, 2nd edition, Springer-Verlag, 2006.
@@ -222,7 +222,7 @@ public:
           0.,-wz,  wy,  vx,
           wz,  0.,-wx,  vy,
           -wy, wx,   0., vz,
-          0.,  0.,  0.,  0.);
+          0.,  0.,  0.,  0.).finished();
     }
 
     /// @}
@@ -356,15 +356,15 @@ GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 namespace traits {
 
 template<>
-struct is_group<Pose3> : public boost::true_type {
+struct GTSAM_EXPORT is_group<Pose3> : public boost::true_type{
 };
 
 template<>
-struct is_manifold<Pose3> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Pose3> : public boost::true_type{
 };
 
 template<>
-struct dimension<Pose3> : public boost::integral_constant<int, 6> {
+struct GTSAM_EXPORT dimension<Pose3> : public boost::integral_constant<int, 6>{
 };
 
 }

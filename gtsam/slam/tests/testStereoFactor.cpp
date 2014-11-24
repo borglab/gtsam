@@ -35,7 +35,7 @@ static Pose3 camera1((Matrix) (Matrix(3, 3) <<
            1., 0., 0.,
            0.,-1., 0.,
            0., 0.,-1.
-           ),
+           ).finished(),
         Point3(0,0,6.25));
 
 static boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
@@ -102,7 +102,7 @@ TEST( StereoFactor, Error ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
-  Vector expectedError = (Vector(3) << -3.0, +2.0, -1.0);
+  Vector expectedError = Vector3(-3.0, +2.0, -1.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -123,7 +123,7 @@ TEST( StereoFactor, ErrorWithTransform ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
-  Vector expectedError = (Vector(3) << -3.0, +2.0, -1.0);
+  Vector expectedError = Vector3(-3.0, +2.0, -1.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -146,10 +146,10 @@ TEST( StereoFactor, Jacobian ) {
   // The expected Jacobians
   Matrix H1Expected = (Matrix(3, 6) << 0.0,  -625.0, 0.0, -100.0,    0.0,  0.0,
                                     0.0,  -625.0, 0.0, -100.0,    0.0, -8.0,
-                                    625.0,   0.0, 0.0,    0.0, -100.0,  0.0);
+                                    625.0,   0.0, 0.0,    0.0, -100.0,  0.0).finished();
   Matrix H2Expected = (Matrix(3, 3) << 100.0,   0.0, 0.0,
                                     100.0,   0.0, 8.0,
-                                    0.0,   100.0, 0.0);
+                                    0.0,   100.0, 0.0).finished();
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -174,10 +174,10 @@ TEST( StereoFactor, JacobianWithTransform ) {
   // The expected Jacobians
   Matrix H1Expected = (Matrix(3, 6) << -100.0,    0.0,  650.0,   0.0,  100.0,    0.0,
                                     -100.0,   -8.0,  649.2,  -8.0,  100.0,    0.0,
-                                     -10.0, -650.0,    0.0,   0.0,    0.0,  100.0);
+                                     -10.0, -650.0,    0.0,   0.0,    0.0,  100.0).finished();
   Matrix H2Expected = (Matrix(3, 3) <<    0.0, -100.0,    0.0,
                                        8.0, -100.0,    0.0,
-                                       0.0,    0.0, -100.0);
+                                       0.0,    0.0, -100.0).finished();
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));

@@ -171,7 +171,7 @@ public:
   static inline Point2 Expmap(const Vector& v) { return Point2(v); }
 
   /// Log map around identity - just return the Point2 as a vector
-  static inline Vector Logmap(const Point2& dp) { return (Vector(2) << dp.x(), dp.y()); }
+  static inline Vector Logmap(const Point2& dp) { return (Vector(2) << dp.x(), dp.y()).finished(); }
 
   /// @}
   /// @name Vector Space
@@ -252,15 +252,15 @@ inline Point2 operator*(double s, const Point2& p) {return p*s;}
 namespace traits {
 
 template<>
-struct is_group<Point2> : public boost::true_type {
+struct GTSAM_EXPORT is_group<Point2> : public boost::true_type{
 };
 
 template<>
-struct is_manifold<Point2> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Point2> : public boost::true_type{
 };
 
 template<>
-struct dimension<Point2> : public boost::integral_constant<int, 2> {
+struct GTSAM_EXPORT dimension<Point2> : public boost::integral_constant<int, 2>{
 };
 
 }

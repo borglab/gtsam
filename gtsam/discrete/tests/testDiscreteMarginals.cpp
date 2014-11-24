@@ -53,10 +53,10 @@ TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
   EXPECT_DOUBLES_EQUAL( 0.359631, (*actualC)(values), 1e-6);
 
   Vector actualCvector = marginals.marginalProbabilities(Cathy);
-  EXPECT(assert_equal((Vector(2) << 0.359631, 0.640369), actualCvector, 1e-6));
+  EXPECT(assert_equal(Vector2(0.359631, 0.640369), actualCvector, 1e-6));
 
   actualCvector = marginals.marginalProbabilities(Mark);
-  EXPECT(assert_equal((Vector(2) << 0.48628, 0.51372), actualCvector, 1e-6));
+  EXPECT(assert_equal(Vector2(0.48628, 0.51372), actualCvector, 1e-6));
 }
 
 /* ************************************************************************* */

@@ -162,9 +162,9 @@ Vector Unit3::localCoordinates(const Unit3& y) const {
 
   // Check for special cases
   if (std::abs(dot - 1.0) < 1e-16)
-    return (Vector(2) << 0, 0);
+    return Vector2(0, 0);
   else if (std::abs(dot + 1.0) < 1e-16)
-    return (Vector(2) << M_PI, 0);
+    return (Vector(2) << M_PI, 0).finished();
   else {
     // no special case
     double theta = acos(dot);

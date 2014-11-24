@@ -41,7 +41,7 @@ public:
 
   /// gravity in the body frame
   Vector b_g(double g_e) const {
-    Vector n_g = (Vector(3) << 0, 0, g_e);
+    Vector n_g = (Vector(3) << 0, 0, g_e).finished();
     return (bRn_ * n_g).vector();
   }
 

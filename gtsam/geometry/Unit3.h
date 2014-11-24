@@ -161,15 +161,15 @@ private:
 namespace traits {
 
 template<>
-struct is_manifold<Unit3> : public boost::true_type {
+struct GTSAM_EXPORT is_manifold<Unit3> : public boost::true_type{
 };
 
 template<>
-struct dimension<Unit3> : public boost::integral_constant<int, 2> {
+struct GTSAM_EXPORT dimension<Unit3> : public boost::integral_constant<int, 2>{
 };
 
 template<>
-struct zero<Unit3> {
+struct GTSAM_EXPORT zero<Unit3> {
   static Unit3 value() {
     return Unit3();
   }

@@ -10,19 +10,18 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testImuFactor.cpp
- * @brief   Unit test for ImuFactor
- * @author  Krunal Chande, Luca Carlone
+ * @file   testAHRSFactor.cpp
+ * @brief  Unit test for AHRSFactor
+ * @author Krunal Chande
+ * @author Luca Carlone
+ * @author Frank Dellaert
  */
 
 #include <gtsam/navigation/AHRSFactor.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/debug.h>
-
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
@@ -114,8 +113,8 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
   DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-6);
 }
 
-//******************************************************************************
-TEST( ImuFactor, Error ) {
+/* ************************************************************************* */
+TEST(AHRSFactor, Error) {
   // Linearization point
   Vector3 bias; // Bias
   Rot3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0));
@@ -174,8 +173,8 @@ TEST( ImuFactor, Error ) {
   // FIXME!! DOes not work. Different matrix dimensions.
 }
 
-//******************************************************************************
-TEST( ImuFactor, ErrorWithBiases ) {
+/* ************************************************************************* */
+TEST(AHRSFactor, ErrorWithBiases) {
   // Linearization point
 
   Vector3 bias(0, 0, 0.3);
@@ -196,9 +195,7 @@ TEST( ImuFactor, ErrorWithBiases ) {
   // Create factor
   AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
 
-  SETDEBUG("ImuFactor evaluateError", false);
   Vector errorActual = factor.evaluateError(x1, x2, bias);
-  SETDEBUG("ImuFactor evaluateError", false);
 
   // Expected error
   Vector errorExpected(3);
