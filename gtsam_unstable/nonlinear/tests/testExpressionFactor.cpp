@@ -161,9 +161,9 @@ TEST(ExpressionFactor, Binary) {
   EXPECT_LONGS_EQUAL(expectedRecordSize + 8, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
-  char raw[size];
+  ExecutionTraceStorage traceStorage[size];
   ExecutionTrace<Point2> trace;
-  Point2 value = binary.traceExecution(values, trace, raw);
+  Point2 value = binary.traceExecution(values, trace, traceStorage);
   EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
 
@@ -217,9 +217,9 @@ TEST(ExpressionFactor, Shallow) {
   size_t size = expression.traceSize();
   CHECK(size);
   EXPECT_LONGS_EQUAL(expectedTraceSize, size);
-  char raw[size];
+  ExecutionTraceStorage traceStorage[size];
   ExecutionTrace<Point2> trace;
-  Point2 value = expression.traceExecution(values, trace, raw);
+  Point2 value = expression.traceExecution(values, trace, traceStorage);
   EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
 
