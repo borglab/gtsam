@@ -19,7 +19,7 @@
 
 #include <gtsam_unstable/slam/expressions.h>
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
-#include <gtsam_unstable/nonlinear/ExpressionTesting.h>
+#include <gtsam_unstable/nonlinear/expressionTesting.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PriorFactor.h>

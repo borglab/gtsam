@@ -22,7 +22,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
-#include <gtsam/base/ChartTesting.h>
+#include <gtsam/base/chartTesting.h>
 
 #include <boost/math/constants/constants.hpp>
 
