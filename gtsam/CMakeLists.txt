@@ -8,7 +8,9 @@ set (gtsam_subdirs
 	symbolic 
     discrete 
     linear 
-    nonlinear 
+    nonlinear
+    sam
+    sfm 
     slam
 	navigation
 )
