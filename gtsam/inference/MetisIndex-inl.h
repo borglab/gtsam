@@ -78,7 +78,7 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors)
 		// Insert each index's set in order by appending them to the end of adj_
 		adj_.insert(adj_.end(), temp.begin(), temp.end());
 		//adj_.push_back(temp);
-		xadj_.push_back(adj_.size());
+		xadj_.push_back((idx_t)adj_.size());
 	}
 }
 

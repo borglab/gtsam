@@ -95,6 +95,8 @@ if(MSVC)
 		add_definitions(-DBOOST_ALL_NO_LIB)
 	  add_definitions(-DBOOST_ALL_DYN_LINK)
 	endif()
+  # Also disable certain warnings
+  add_definitions(/wd4503)
 endif()
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time regex timer chrono)
