@@ -17,12 +17,12 @@
 
 #pragma once
 
-#include <limits>
-#include <iostream>
-
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
+
+#include <limits>
+#include <iostream>
 
 namespace gtsam {
 
@@ -216,16 +216,22 @@ protected:
   X value_; /// fixed value for variable
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(X)
-  ;GTSAM_CONCEPT_TESTABLE_TYPE(X)
-  ;
+
+  GTSAM_CONCEPT_TESTABLE_TYPE(X)
 
 public:
 
   typedef boost::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
 
-  ///TODO: comment
-  NonlinearEquality1(const X& value, Key key1, double mu = 1000.0) :
-      Base(noiseModel::Constrained::All(value.dim(), fabs(mu)), key1), value_(
+  /**
+   * Constructor
+   * @param value feasible value that values(key) shouild be equal to
+   * @param key the key for the unknown variable to be constrained
+   * @param mu a parameter which really turns this into a strong prior
+   *
+   */
+  NonlinearEquality1(const X& value, Key key, double mu = 1000.0) :
+      Base(noiseModel::Constrained::All(value.dim(), fabs(mu)), key), value_(
           value) {
   }
 
@@ -285,7 +291,6 @@ protected:
   typedef NonlinearEquality2<VALUE> This;
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(X)
-  ;
 
   /** default constructor to allow for serialization */
   NonlinearEquality2() {
