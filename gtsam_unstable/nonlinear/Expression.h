@@ -27,7 +27,12 @@
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm.hpp>
 
+class ExpressionFactorShallowTest;
+
 namespace gtsam {
+
+// Forward declare
+template<typename T> class ExpressionFactor;
 
 /**
  * Expression class that supports automatic differentiation
@@ -203,6 +208,10 @@ private:
     trace.startReverseAD(jacobians);
     return value;
   }
+
+  // be very selective on who can access these private methods:
+  friend class ExpressionFactor<T>;
+  friend class ::ExpressionFactorShallowTest;
 
 };
 
