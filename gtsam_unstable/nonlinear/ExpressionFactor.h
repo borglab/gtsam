@@ -76,7 +76,7 @@ public:
     // TODO(PTF) Is this a place for custom charts?
     DefaultChart<T> chart;
     if (H) {
-      const T value = expression_.value(x, std::make_pair(keys_, dims_), *H);
+      const T value = expression_.value(x, keys_, dims_, *H);
       return chart.local(measurement_, value);
     } else {
       const T value = expression_.value(x);

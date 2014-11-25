@@ -137,14 +137,16 @@ public:
   /**
    * @brief Return value and optional derivatives, reverse AD version
    * Notes: this is not terribly efficient, and H should have correct size.
+   * The order of the Jacobians is same as keys in either keys() or dims()
    */
   T value(const Values& values, boost::optional<std::vector<Matrix>&> H =
       boost::none) const {
 
-    if (H)
-      // Call provate version that returns derivatives in H
-      return value(values, keysAndDims(), *H);
-    else
+    if (H) {
+      // Call private version that returns derivatives in H
+      KeysAndDims pair = keysAndDims();
+      return value(values, pair.first, pair.second, *H);
+    } else
       // no derivatives needed, just return value
       return root_->value(values);
   }
@@ -157,19 +159,15 @@ private:
     std::map<Key, int> map;
     dims(map);
     size_t n = map.size();
-    FastVector<Key> keys(n);
-    boost::copy(map | boost::adaptors::map_keys, keys.begin());
-    FastVector<int> dims(n);
-    boost::copy(map | boost::adaptors::map_values, dims.begin());
-    return make_pair(keys, dims);
+    KeysAndDims pair = std::make_pair(FastVector<Key>(n), FastVector<int>(n));
+    boost::copy(map | boost::adaptors::map_keys, pair.first.begin());
+    boost::copy(map | boost::adaptors::map_values, pair.second.begin());
+    return pair;
   }
 
   /// private version that takes keys and dimensions, returns derivatives
-  T value(const Values& values, const KeysAndDims& keysAndDims,
-      std::vector<Matrix>& H) const {
-
-    const FastVector<Key>& keys = keysAndDims.first;
-    const FastVector<int>& dims = keysAndDims.second;
+  T value(const Values& values, const FastVector<Key>& keys,
+      const FastVector<int>& dims, std::vector<Matrix>& H) const {
 
     // H should be pre-allocated
     assert(H->size()==keys.size());
