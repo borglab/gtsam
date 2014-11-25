@@ -101,8 +101,6 @@ if(MSVC)
 		add_definitions(-DBOOST_ALL_NO_LIB)
 	  add_definitions(-DBOOST_ALL_DYN_LINK)
 	endif()
-  # Also disable certain warnings
-  add_definitions(/wd4503)
 endif()
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time regex timer chrono)
@@ -281,7 +279,7 @@ include_directories(BEFORE
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344) # Disable non-DLL-exported base class and other warnings
+	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
 endif()
 
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
