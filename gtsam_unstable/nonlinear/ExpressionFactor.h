@@ -22,8 +22,6 @@
 #include <gtsam_unstable/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm.hpp>
 #include <numeric>
 
 namespace gtsam {
@@ -36,7 +34,7 @@ class ExpressionFactor: public NoiseModelFactor {
 
   T measurement_; ///< the measurement to be compared with the expression
   Expression<T> expression_; ///< the expression that is AD enabled
-  std::vector<size_t> dimensions_; ///< dimensions of the Jacobian matrices
+  FastVector<int> dimensions_; ///< dimensions of the Jacobian matrices
   size_t augmentedCols_; ///< total number of columns + 1 (for RHS)
 
   static const int Dim = traits::dimension<T>::value;
@@ -54,17 +52,9 @@ public:
           "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
     noiseModel_ = noiseModel;
 
-    // Get dimensions of Jacobian matrices
+    // Get keys and dimensions for Jacobian matrices
     // An Expression is assumed unmutable, so we do this now
-    std::map<Key, size_t> map;
-    expression_.dims(map);
-    size_t n = map.size();
-
-    keys_.resize(n);
-    boost::copy(map | boost::adaptors::map_keys, keys_.begin());
-
-    dimensions_.resize(n);
-    boost::copy(map | boost::adaptors::map_values, dimensions_.begin());
+    boost::tie(keys_,dimensions_) = expression_.keysAndDims();
 
     // Add sizes to know how much memory to allocate on stack in linearize
     augmentedCols_ = std::accumulate(dimensions_.begin(), dimensions_.end(), 1);
@@ -126,13 +116,13 @@ public:
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
     VerticalBlockMatrix& Ab = factor->matrixObject();
-    JacobianMap map(keys_, Ab);
+    JacobianMap jacobianMap(keys_, Ab);
 
     // Zero out Jacobian so we can simply add to it
     Ab.matrix().setZero();
 
     // Evaluate error to get Jacobians and RHS vector b
-    T value = expression_.value(x, map); // <<< Reverse AD happens here !
+    T value = expression_.value(x, jacobianMap); // <<< Reverse AD happens here !
     Ab(size()).col(0) = -chart.local(measurement_, value);
 
     // Whiten the corresponding system, Ab already contains RHS

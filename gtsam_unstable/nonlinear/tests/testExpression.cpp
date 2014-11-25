@@ -114,22 +114,29 @@ TEST(Expression, NullaryMethod) {
   Values values;
   values.insert(67, Point3(3, 4, 5));
 
-  // Pre-allocate JacobianMap
-  FastVector<Key> keys;
-  keys.push_back(67);
-  FastVector<int> dims;
-  dims.push_back(3);
-  VerticalBlockMatrix Ab(dims, 1);
-  JacobianMap map(keys, Ab);
+  // Check dims as map
+  std::map<Key, int> map;
+  norm.dims(map);
+  LONGS_EQUAL(1,map.size());
 
-  // Get value and Jacobian
-  double actual = norm.value(values, map);
+  // Get and check keys and dims
+  FastVector<Key> keys;
+  FastVector<int> dims;
+  boost::tie(keys, dims) = norm.keysAndDims();
+  LONGS_EQUAL(1,keys.size());
+  LONGS_EQUAL(1,dims.size());
+  LONGS_EQUAL(67,keys[0]);
+  LONGS_EQUAL(3,dims[0]);
+
+  // Get value and Jacobians
+  std::vector<Matrix> H(1);
+  double actual = norm.value(values, H);
 
   // Check all
   EXPECT(actual == sqrt(50));
   Matrix expected(1, 3);
   expected << 3.0 / sqrt(50.0), 4.0 / sqrt(50.0), 5.0 / sqrt(50.0);
-  EXPECT(assert_equal(expected,Ab(0)));
+  EXPECT(assert_equal(expected,H[0]));
 }
 /* ************************************************************************* */
 // Binary(Leaf,Leaf)
@@ -159,7 +166,7 @@ TEST(Expression, BinaryKeys) {
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, BinaryDimensions) {
-  map<Key, size_t> actual, expected = map_list_of<Key, size_t>(1, 6)(2, 3);
+  map<Key, int> actual, expected = map_list_of<Key, int>(1, 6)(2, 3);
   binary::p_cam.dims(actual);
   EXPECT(actual==expected);
 }
@@ -190,8 +197,7 @@ TEST(Expression, TreeKeys) {
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, TreeDimensions) {
-  map<Key, size_t> actual, expected = map_list_of<Key, size_t>(1, 6)(2, 3)(3,
-      5);
+  map<Key, int> actual, expected = map_list_of<Key, int>(1, 6)(2, 3)(3, 5);
   tree::uv_hat.dims(actual);
   EXPECT(actual==expected);
 }

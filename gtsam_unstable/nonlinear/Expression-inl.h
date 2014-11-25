@@ -252,7 +252,7 @@ public:
   }
 
   /// Return dimensions for each argument, as a map
-  virtual void dims(std::map<Key, size_t>& map) const {
+  virtual void dims(std::map<Key, int>& map) const {
   }
 
   // Return size needed for memory buffer in traceExecution
@@ -324,7 +324,7 @@ public:
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, size_t>& map) const {
+  virtual void dims(std::map<Key, int>& map) const {
     // get dimension from the chart; only works for fixed dimension charts
     map[key_] = traits::dimension<Chart>::value;
   }
@@ -371,7 +371,7 @@ public:
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, size_t>& map) const {
+  virtual void dims(std::map<Key, int>& map) const {
     map[key_] = traits::dimension<T>::value;
   }
 
@@ -523,7 +523,7 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, size_t>& map) const {
+  virtual void dims(std::map<Key, int>& map) const {
     Base::dims(map);
     This::expression->dims(map);
   }
