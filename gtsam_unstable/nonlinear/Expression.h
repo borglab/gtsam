@@ -45,6 +45,8 @@ public:
   /// Define type so we can apply it as a meta-function
   typedef Expression<T> type;
 
+  typedef std::pair<FastVector<Key>, FastVector<int> > KeysAndDims;
+
 private:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
@@ -135,7 +137,7 @@ public:
   }
 
   /// return keys and dimensions as vectors in same order
-  std::pair<FastVector<Key>, FastVector<int> > keysAndDims() const {
+  KeysAndDims keysAndDims() const {
     std::map<Key, int> map;
     dims(map);
     size_t n = map.size();
@@ -153,36 +155,41 @@ public:
   T value(const Values& values, boost::optional<std::vector<Matrix>&> H =
       boost::none) const {
 
-    if (H) {
-      // Get keys and dimensions
-      FastVector<Key> keys;
-      FastVector<int> dims;
-      boost::tie(keys, dims) = keysAndDims();
-
-      // H should be pre-allocated
-      assert(H->size()==keys.size());
-
-      // Pre-allocate and zero VerticalBlockMatrix
-      static const int Dim = traits::dimension<T>::value;
-      VerticalBlockMatrix Ab(dims, Dim);
-      Ab.matrix().setZero();
-      JacobianMap jacobianMap(keys, Ab);
-
-      // Call unsafe version
-      T result = value(values, jacobianMap);
-
-      // Copy blocks into the vector of jacobians passed in
-      for (DenseIndex i = 0; i < static_cast<DenseIndex>(keys.size()); i++)
-        H->at(i) = Ab(i);
-
-      return result;
-    } else {
+    if (H)
+      // Call provate version that returns derivatives in H
+      return value(values, keysAndDims(), *H);
+    else
       // no derivatives needed, just return value
       return root_->value(values);
-    }
   }
 
 private:
+
+  /// private version that takes keys and dimensions, returns derivatives
+  T value(const Values& values, const KeysAndDims& keysAndDims,
+      std::vector<Matrix>& H) const {
+
+    const FastVector<Key>& keys = keysAndDims.first;
+    const FastVector<int>& dims = keysAndDims.second;
+
+    // H should be pre-allocated
+    assert(H->size()==keys.size());
+
+    // Pre-allocate and zero VerticalBlockMatrix
+    static const int Dim = traits::dimension<T>::value;
+    VerticalBlockMatrix Ab(dims, Dim);
+    Ab.matrix().setZero();
+    JacobianMap jacobianMap(keys, Ab);
+
+    // Call unsafe version
+    T result = value(values, jacobianMap);
+
+    // Copy blocks into the vector of jacobians passed in
+    for (DenseIndex i = 0; i < static_cast<DenseIndex>(keys.size()); i++)
+      H[i] = Ab(i);
+
+    return result;
+  }
 
   /// trace execution, very unsafe
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
@@ -192,7 +199,7 @@ private:
 
   /**
    * @brief Return value and derivatives, reverse AD version
-   * This fairly unsafe method needs a JacobianMap with correctly allocated
+   * This very unsafe method needs a JacobianMap with correctly allocated
    * and initialized VerticalBlockMatrix, hence is declared private.
    */
   T value(const Values& values, JacobianMap& jacobians) const {
@@ -210,7 +217,7 @@ private:
   }
 
   // be very selective on who can access these private methods:
-  friend class ExpressionFactor<T>;
+  friend class ExpressionFactor<T> ;
   friend class ::ExpressionFactorShallowTest;
 
 };
