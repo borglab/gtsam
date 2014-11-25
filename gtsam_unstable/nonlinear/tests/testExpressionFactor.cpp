@@ -202,6 +202,17 @@ TEST(ExpressionFactor, Shallow) {
   // Construct expression, concise evrsion
   Point2_ expression = project(transform_to(x_, p_));
 
+  // Get and check keys and dims
+  FastVector<Key> keys;
+  FastVector<int> dims;
+  boost::tie(keys, dims) = expression.keysAndDims();
+  LONGS_EQUAL(2,keys.size());
+  LONGS_EQUAL(2,dims.size());
+  LONGS_EQUAL(1,keys[0]);
+  LONGS_EQUAL(2,keys[1]);
+  LONGS_EQUAL(6,dims[0]);
+  LONGS_EQUAL(3,dims[1]);
+
   // traceExecution of shallow tree
   typedef UnaryExpression<Point2, Point3> Unary;
   typedef BinaryExpression<Point3, Pose3, Point3> Binary;

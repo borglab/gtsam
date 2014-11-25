@@ -45,8 +45,6 @@ public:
   /// Define type so we can apply it as a meta-function
   typedef Expression<T> type;
 
-  typedef std::pair<FastVector<Key>, FastVector<int> > KeysAndDims;
-
 private:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
@@ -136,18 +134,6 @@ public:
     root_->dims(map);
   }
 
-  /// return keys and dimensions as vectors in same order
-  KeysAndDims keysAndDims() const {
-    std::map<Key, int> map;
-    dims(map);
-    size_t n = map.size();
-    FastVector<Key> keys(n);
-    boost::copy(map | boost::adaptors::map_keys, keys.begin());
-    FastVector<int> dims(n);
-    boost::copy(map | boost::adaptors::map_values, dims.begin());
-    return make_pair(keys, dims);
-  }
-
   /**
    * @brief Return value and optional derivatives, reverse AD version
    * Notes: this is not terribly efficient, and H should have correct size.
@@ -164,6 +150,19 @@ public:
   }
 
 private:
+
+  /// Vaguely unsafe keys and dimensions in same order
+  typedef std::pair<FastVector<Key>, FastVector<int> > KeysAndDims;
+  KeysAndDims keysAndDims() const {
+    std::map<Key, int> map;
+    dims(map);
+    size_t n = map.size();
+    FastVector<Key> keys(n);
+    boost::copy(map | boost::adaptors::map_keys, keys.begin());
+    FastVector<int> dims(n);
+    boost::copy(map | boost::adaptors::map_values, dims.begin());
+    return make_pair(keys, dims);
+  }
 
   /// private version that takes keys and dimensions, returns derivatives
   T value(const Values& values, const KeysAndDims& keysAndDims,

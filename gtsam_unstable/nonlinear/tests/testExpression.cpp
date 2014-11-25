@@ -119,15 +119,6 @@ TEST(Expression, NullaryMethod) {
   norm.dims(map);
   LONGS_EQUAL(1,map.size());
 
-  // Get and check keys and dims
-  FastVector<Key> keys;
-  FastVector<int> dims;
-  boost::tie(keys, dims) = norm.keysAndDims();
-  LONGS_EQUAL(1,keys.size());
-  LONGS_EQUAL(1,dims.size());
-  LONGS_EQUAL(67,keys[0]);
-  LONGS_EQUAL(3,dims[0]);
-
   // Get value and Jacobians
   std::vector<Matrix> H(1);
   double actual = norm.value(values, H);
