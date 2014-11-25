@@ -76,6 +76,7 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// shorthand for a pinhole camera
+  typedef CAMERA Camera;
   typedef std::vector<CAMERA> Cameras;
 
   /**
@@ -134,13 +135,14 @@ public:
    * The noise is assumed to be the same for all measurements
    */
   // ****************************************************************************************************
-//  void add(const SfM_Track& trackToAdd, const SharedNoiseModel& noise) {
-//    for (size_t k = 0; k < trackToAdd.number_measurements(); k++) {
-//      this->measured_.push_back(trackToAdd.measurements[k].second);
-//      this->keys_.push_back(trackToAdd.measurements[k].first);
-//      this->noise_.push_back(noise);
-//    }
-//  }
+  template<class SFM_TRACK>
+  void add(const SFM_TRACK& trackToAdd, const SharedNoiseModel& noise) {
+    for (size_t k = 0; k < trackToAdd.number_measurements(); k++) {
+      this->measured_.push_back(trackToAdd.measurements[k].second);
+      this->keys_.push_back(trackToAdd.measurements[k].first);
+      this->noise_.push_back(noise);
+    }
+  }
 
   /** return the measurements */
   const std::vector<Z>& measured() const {
