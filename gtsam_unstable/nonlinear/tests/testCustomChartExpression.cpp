@@ -32,12 +32,17 @@ using boost::assign::map_list_of;
 using namespace std;
 using namespace gtsam;
 
-// Dynamically sized Vector
-
+// A simple prototype custom chart that does two things:
+// 1. it reduces the dimension of the variable being estimated
+// 2. it scales the input to retract.
+//
+// The Jacobian of this chart is:
+// [ 2  0 ]
+// [ 0  3 ]
+// [ 0  0 ]
 struct ProjectionChart {
   typedef Eigen::Vector3d type;
   typedef Eigen::Vector2d vector;
-  enum { dimension = 2 };
   static vector local(const type& origin, const type& other) {
     return (other - origin).head<2>();
   }
@@ -57,7 +62,6 @@ template<> struct dimension<ProjectionChart> : public boost::integral_constant<i
 }  // namespace gtsam
 
 TEST(ExpressionCustomChart, projection) {
-  std::cout << "Hello!\n";
   // Create expression
   Expression<Eigen::Vector3d> point(1);
 
