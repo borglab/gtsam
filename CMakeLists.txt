@@ -330,7 +330,6 @@ endif(GTSAM_BUILD_UNSTABLE)
 
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
-message("GTSAM export: ${GTSAM_EXPORTED_TARGETS}")
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
 

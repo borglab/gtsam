@@ -92,8 +92,6 @@ set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSIO
 set(gtsam_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM Version: ${gtsam_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
-message("GTSAM Additional: ${GTSAM_ADDITIONAL_LIBRARIES}")
-message("GTSAM Exports: ${GTSAM_EXPORTED_TARGETS}")
 
 # build shared and static versions of the library
 if (GTSAM_BUILD_STATIC_LIBRARY)
