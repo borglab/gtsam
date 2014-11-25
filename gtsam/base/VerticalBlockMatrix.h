@@ -71,6 +71,7 @@ namespace gtsam {
         rowStart_(0), rowEnd_(height), blockStart_(0) {
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
       matrix_.resize(height, variableColOffsets_.back());
+      matrix_.setZero();
       assertInvariants();
     }
 
