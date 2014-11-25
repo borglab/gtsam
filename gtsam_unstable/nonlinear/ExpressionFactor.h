@@ -34,7 +34,7 @@ class ExpressionFactor: public NoiseModelFactor {
 
   T measurement_; ///< the measurement to be compared with the expression
   Expression<T> expression_; ///< the expression that is AD enabled
-  FastVector<int> dimensions_; ///< dimensions of the Jacobian matrices
+  FastVector<int> dims_; ///< dimensions of the Jacobian matrices
   size_t augmentedCols_; ///< total number of columns + 1 (for RHS)
 
   static const int Dim = traits::dimension<T>::value;
@@ -54,13 +54,13 @@ public:
 
     // Get keys and dimensions for Jacobian matrices
     // An Expression is assumed unmutable, so we do this now
-    boost::tie(keys_,dimensions_) = expression_.keysAndDims();
+    boost::tie(keys_, dims_) = expression_.keysAndDims();
 
     // Add sizes to know how much memory to allocate on stack in linearize
-    augmentedCols_ = std::accumulate(dimensions_.begin(), dimensions_.end(), 1);
+    augmentedCols_ = std::accumulate(dims_.begin(), dims_.end(), 1);
 
 #ifdef DEBUG_ExpressionFactor
-    BOOST_FOREACH(size_t d, dimensions_)
+    BOOST_FOREACH(size_t d, dims_)
     std::cout << d << " ";
     std::cout << " -> " << Dim << "x" << augmentedCols_ << std::endl;
 #endif
@@ -76,32 +76,15 @@ public:
     // TODO(PTF) Is this a place for custom charts?
     DefaultChart<T> chart;
     if (H) {
-      // H should be pre-allocated
-      assert(H->size()==size());
-
-      VerticalBlockMatrix Ab(dimensions_, Dim);
-
-      // Wrap keys and VerticalBlockMatrix into structure passed to expression_
-      JacobianMap map(keys_, Ab);
-      Ab.matrix().setZero();
-
-      // Evaluate error to get Jacobians and RHS vector b
-      T value = expression_.value(x, map); // <<< Reverse AD happens here !
-
-      // Copy blocks into the vector of jacobians passed in
-      for (DenseIndex i = 0; i < static_cast<DenseIndex>(size()); i++)
-        H->at(i) = Ab(i);
-
+      const T value = expression_.value(x, std::make_pair(keys_, dims_), *H);
       return chart.local(measurement_, value);
     } else {
-      const T& value = expression_.value(x);
+      const T value = expression_.value(x);
       return chart.local(measurement_, value);
     }
   }
 
   virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
-    // TODO(PTF) Is this a place for custom charts?
-    DefaultChart<T> chart;
     // Only linearize if the factor is active
     if (!active(x))
       return boost::shared_ptr<JacobianFactor>();
@@ -110,9 +93,9 @@ public:
     // In case noise model is constrained, we need to provide a noise model
     bool constrained = noiseModel_->is_constrained();
     boost::shared_ptr<JacobianFactor> factor(
-        constrained ? new JacobianFactor(keys_, dimensions_, Dim,
+        constrained ? new JacobianFactor(keys_, dims_, Dim,
             boost::static_pointer_cast<noiseModel::Constrained>(noiseModel_)->unit()) :
-            new JacobianFactor(keys_, dimensions_, Dim));
+            new JacobianFactor(keys_, dims_, Dim));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
     VerticalBlockMatrix& Ab = factor->matrixObject();
@@ -121,13 +104,17 @@ public:
     // Zero out Jacobian so we can simply add to it
     Ab.matrix().setZero();
 
-    // Evaluate error to get Jacobians and RHS vector b
+    // Get value and Jacobians, writing directly into JacobianFactor
     T value = expression_.value(x, jacobianMap); // <<< Reverse AD happens here !
+
+    // Evaluate error and set RHS vector b
+    // TODO(PTF) Is this a place for custom charts?
+    DefaultChart<T> chart;
     Ab(size()).col(0) = -chart.local(measurement_, value);
 
     // Whiten the corresponding system, Ab already contains RHS
     Vector dummy(Dim);
-    noiseModel_->WhitenSystem(Ab.matrix(),dummy);
+    noiseModel_->WhitenSystem(Ab.matrix(), dummy);
 
     return factor;
   }
