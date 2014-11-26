@@ -19,7 +19,7 @@
 
 #include <gtsam_unstable/slam/expressions.h>
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
-#include <gtsam_unstable/nonlinear/ExpressionTesting.h>
+#include <gtsam_unstable/nonlinear/expressionTesting.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -161,9 +161,9 @@ TEST(ExpressionFactor, Binary) {
   EXPECT_LONGS_EQUAL(expectedRecordSize + 8, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
-  char raw[size];
+  ExecutionTraceStorage traceStorage[size];
   ExecutionTrace<Point2> trace;
-  Point2 value = binary.traceExecution(values, trace, raw);
+  Point2 value = binary.traceExecution(values, trace, traceStorage);
   EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
 
@@ -202,6 +202,17 @@ TEST(ExpressionFactor, Shallow) {
   // Construct expression, concise evrsion
   Point2_ expression = project(transform_to(x_, p_));
 
+  // Get and check keys and dims
+  FastVector<Key> keys;
+  FastVector<int> dims;
+  boost::tie(keys, dims) = expression.keysAndDims();
+  LONGS_EQUAL(2,keys.size());
+  LONGS_EQUAL(2,dims.size());
+  LONGS_EQUAL(1,keys[0]);
+  LONGS_EQUAL(2,keys[1]);
+  LONGS_EQUAL(6,dims[0]);
+  LONGS_EQUAL(3,dims[1]);
+
   // traceExecution of shallow tree
   typedef UnaryExpression<Point2, Point3> Unary;
   typedef BinaryExpression<Point3, Pose3, Point3> Binary;
@@ -217,9 +228,9 @@ TEST(ExpressionFactor, Shallow) {
   size_t size = expression.traceSize();
   CHECK(size);
   EXPECT_LONGS_EQUAL(expectedTraceSize, size);
-  char raw[size];
+  ExecutionTraceStorage traceStorage[size];
   ExecutionTrace<Point2> trace;
-  Point2 value = expression.traceExecution(values, trace, raw);
+  Point2 value = expression.traceExecution(values, trace, traceStorage);
   EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
 

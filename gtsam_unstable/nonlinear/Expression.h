@@ -20,16 +20,30 @@
 #pragma once
 
 #include "Expression-inl.h"
+#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Symbol.h>
+
 #include <boost/bind.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm.hpp>
+
+class ExpressionFactorShallowTest;
 
 namespace gtsam {
+
+// Forward declare
+template<typename T> class ExpressionFactor;
 
 /**
  * Expression class that supports automatic differentiation
  */
 template<typename T>
 class Expression {
+
+public:
+
+  /// Define type so we can apply it as a meta-function
+  typedef Expression<T> type;
 
 private:
 
@@ -55,7 +69,7 @@ public:
 
   // Construct a leaf expression, creating Symbol
   Expression(unsigned char c, size_t j) :
-      root_(new LeafExpression<T>(Symbol(c, j)))  {
+      root_(new LeafExpression<T>(Symbol(c, j))) {
   }
 
   /// Construct a nullary method expression
@@ -87,8 +101,7 @@ public:
   template<typename A1, typename A2>
   Expression(typename BinaryExpression<T, A1, A2>::Function function,
       const Expression<A1>& expression1, const Expression<A2>& expression2) :
-      root_(
-          new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
+      root_(new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
   }
 
   /// Construct a ternary function expression
@@ -101,14 +114,9 @@ public:
               expression2, expression3)) {
   }
 
-  /// Return keys that play in this expression
-  std::set<Key> keys() const {
-    return root_->keys();
-  }
-
-  /// Return dimensions for each argument, as a map
-  void dims(std::map<Key, size_t>& map) const {
-    root_->dims(map);
+  /// Return root
+  const boost::shared_ptr<ExpressionNode<T> >& root() const {
+    return root_;
   }
 
   // Return size needed for memory buffer in traceExecution
@@ -116,13 +124,81 @@ public:
     return root_->traceSize();
   }
 
-  /// trace execution, very unsafe, for testing purposes only //TODO this is not only used for testing, but in value() below!
-  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      char* raw) const {
-    return root_->traceExecution(values, trace, raw);
+  /// Return keys that play in this expression
+  std::set<Key> keys() const {
+    return root_->keys();
   }
 
-  /// Return value and derivatives, reverse AD version
+  /// Return dimensions for each argument, as a map
+  void dims(std::map<Key, int>& map) const {
+    root_->dims(map);
+  }
+
+  /**
+   * @brief Return value and optional derivatives, reverse AD version
+   * Notes: this is not terribly efficient, and H should have correct size.
+   * The order of the Jacobians is same as keys in either keys() or dims()
+   */
+  T value(const Values& values, boost::optional<std::vector<Matrix>&> H =
+      boost::none) const {
+
+    if (H) {
+      // Call private version that returns derivatives in H
+      KeysAndDims pair = keysAndDims();
+      return value(values, pair.first, pair.second, *H);
+    } else
+      // no derivatives needed, just return value
+      return root_->value(values);
+  }
+
+private:
+
+  /// Vaguely unsafe keys and dimensions in same order
+  typedef std::pair<FastVector<Key>, FastVector<int> > KeysAndDims;
+  KeysAndDims keysAndDims() const {
+    std::map<Key, int> map;
+    dims(map);
+    size_t n = map.size();
+    KeysAndDims pair = std::make_pair(FastVector<Key>(n), FastVector<int>(n));
+    boost::copy(map | boost::adaptors::map_keys, pair.first.begin());
+    boost::copy(map | boost::adaptors::map_values, pair.second.begin());
+    return pair;
+  }
+
+  /// private version that takes keys and dimensions, returns derivatives
+  T value(const Values& values, const FastVector<Key>& keys,
+      const FastVector<int>& dims, std::vector<Matrix>& H) const {
+
+    // H should be pre-allocated
+    assert(H->size()==keys.size());
+
+    // Pre-allocate and zero VerticalBlockMatrix
+    static const int Dim = traits::dimension<T>::value;
+    VerticalBlockMatrix Ab(dims, Dim);
+    Ab.matrix().setZero();
+    JacobianMap jacobianMap(keys, Ab);
+
+    // Call unsafe version
+    T result = value(values, jacobianMap);
+
+    // Copy blocks into the vector of jacobians passed in
+    for (DenseIndex i = 0; i < static_cast<DenseIndex>(keys.size()); i++)
+      H[i] = Ab(i);
+
+    return result;
+  }
+
+  /// trace execution, very unsafe
+  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      ExecutionTraceStorage* traceStorage) const {
+    return root_->traceExecution(values, trace, traceStorage);
+  }
+
+  /**
+   * @brief Return value and derivatives, reverse AD version
+   * This very unsafe method needs a JacobianMap with correctly allocated
+   * and initialized VerticalBlockMatrix, hence is declared private.
+   */
   T value(const Values& values, JacobianMap& jacobians) const {
     // The following piece of code is absolutely crucial for performance.
     // We allocate a block of memory on the stack, which can be done at runtime
@@ -130,24 +206,17 @@ public:
     // with an execution trace, made up entirely of "Record" structs, see
     // the FunctionalNode class in expression-inl.h
     size_t size = traceSize();
-    char raw[size];
+    ExecutionTraceStorage traceStorage[size];
     ExecutionTrace<T> trace;
-    T value(traceExecution(values, trace, raw));
+    T value(traceExecution(values, trace, traceStorage));
     trace.startReverseAD(jacobians);
     return value;
   }
 
-  /// Return value
-  T value(const Values& values) const {
-    return root_->value(values);
-  }
+  // be very selective on who can access these private methods:
+  friend class ExpressionFactor<T> ;
+  friend class ::ExpressionFactorShallowTest;
 
-  const boost::shared_ptr<ExpressionNode<T> >& root() const {
-    return root_;
-  }
-
-  /// Define type so we can apply it as a meta-function
-  typedef Expression<T> type;
 };
 
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator

@@ -2272,7 +2272,7 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
-template<POSE, LANDMARK, CALIBRATION>
+template<POSE, CALIBRATION>
 virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
 
   SmartProjectionPoseFactor(double rankTol, double linThreshold,
@@ -2288,7 +2288,7 @@ virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
   //void serialize() const;
 };
 
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> SmartProjectionPose3Factor;
+typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Cal3_S2> SmartProjectionPose3Factor;
 
 
 #include <gtsam/slam/StereoFactor.h>
@@ -2438,8 +2438,8 @@ virtual class ImuFactor : gtsam::NonlinearFactor {
 #include <gtsam/navigation/AHRSFactor.h>
 class AHRSFactorPreintegratedMeasurements {
   // Standard Constructor
-  AHRSFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredOmegaCovariance);
-  AHRSFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredOmegaCovariance);
+  AHRSFactorPreintegratedMeasurements(Vector bias, Matrix measuredOmegaCovariance);
+  AHRSFactorPreintegratedMeasurements(Vector bias, Matrix measuredOmegaCovariance);
   AHRSFactorPreintegratedMeasurements(const gtsam::AHRSFactorPreintegratedMeasurements& rhs);
 
   // Testable
@@ -2468,8 +2468,8 @@ virtual class AHRSFactor : gtsam::NonlinearFactor {
   // Standard Interface
   gtsam::AHRSFactorPreintegratedMeasurements preintegratedMeasurements() const;
   Vector evaluateError(const gtsam::Rot3& rot_i, const gtsam::Rot3& rot_j,
-        const gtsam::imuBias::ConstantBias& bias) const;
-  gtsam::Rot3 predict(const gtsam::Rot3& rot_i, const gtsam::imuBias::ConstantBias& bias,
+      Vector bias) const;
+  gtsam::Rot3 predict(const gtsam::Rot3& rot_i, Vector bias,
       const gtsam::AHRSFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector omegaCoriolis) const;
 };

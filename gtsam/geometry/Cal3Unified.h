@@ -63,6 +63,8 @@ public:
       double k1, double k2, double p1 = 0.0, double p2 = 0.0, double xi = 0.0) :
         Base(fx, fy, s, u0, v0, k1, k2, p1, p2), xi_(xi) {}
 
+  virtual ~Cal3Unified() {}
+
   /// @}
   /// @name Advanced Constructors
   /// @{

@@ -75,7 +75,7 @@ public:
   // access
   const Vector3& gyro() const { return gyro_; }
   const Vector3& accel() const { return accel_; }
-  Vector6 z() const { return (Vector6() << accel_, gyro_); }
+  Vector6 z() const { return (Vector(6) << accel_, gyro_).finished(); }
 
   /**
    * Error evaluation with optional derivatives - calculates

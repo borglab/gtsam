@@ -88,7 +88,7 @@ namespace gtsam {
     StereoPoint2 operator-(const StereoPoint2& b) const {
       return StereoPoint2(uL_ - b.uL_, uR_ - b.uR_, v_ - b.v_);
     }
-
+    
     /// @}
     /// @name Manifold
     /// @{
@@ -143,14 +143,17 @@ namespace gtsam {
     }
 
     /** convenient function to get a Point2 from the left image */
-    inline Point2 point2(){
+    Point2 point2() const {
       return Point2(uL_, v_);
     }
 
     /** convenient function to get a Point2 from the right image */
-    inline Point2 right(){
+    Point2 right() const {
       return Point2(uR_, v_);
     }
+
+    /// Streaming
+    GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const StereoPoint2& p);
 
   private:
 

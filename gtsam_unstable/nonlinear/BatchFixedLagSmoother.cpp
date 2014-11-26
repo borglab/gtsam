@@ -191,7 +191,7 @@ void BatchFixedLagSmoother::reorder(const std::set<Key>& marginalizeKeys) {
   }
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
-  ordering_ = Ordering::COLAMDConstrainedFirst(factors_, std::vector<Key>(marginalizeKeys.begin(), marginalizeKeys.end()));
+  ordering_ = Ordering::colamdConstrainedFirst(factors_, std::vector<Key>(marginalizeKeys.begin(), marginalizeKeys.end()));
 
   if(debug) {
     ordering_.print("New Ordering: ");

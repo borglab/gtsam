@@ -46,3 +46,6 @@ add_subdirectory("libmetis")
 if(GTSAM_BUILD_METIS_EXECUTABLES)
   add_subdirectory("programs")
 endif()
+
+set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+
