@@ -2167,7 +2167,7 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 
 
 #include <gtsam/slam/BetweenFactor.h>
-template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
+template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias, Vector, Matrix}> // Parse Error
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
   T measured() const;
