@@ -78,31 +78,32 @@ public:
       const VectorValues& x0, bool useLeastSquare = false) const;
 
   /**
-   * Find the BAD active ineq that pulls x strongest to the wrong direction of its constraint
-   * (i.e. it is pulling towards >0, while its feasible region is <=0)
+   * Find the BAD active inequality that pulls x strongest to the wrong direction
+   * of its constraint (i.e. it is pulling towards >0, while its feasible region is <=0)
    *
-   * For active ineq constraints (those that are enforced as eq constraints now
-   * in the working set), we want lambda < 0.
+   * For active inequality constraints (those that are enforced as equality constraints
+   * in the current working set), we want lambda < 0.
    * This is because:
-   *     - From the Lagrangian L = f - lambda*c, we know that the constraint force is
-   *     (lambda * \grad c) = \grad f, because it cancels out the unconstrained
-   *     unconstrained force (-\grad f), which is pulling x in the opposite direction
-   *     of \grad f towards the unconstrained minimum point
-   *     - We also know that  at the constraint surface \grad c points toward + (>= 0),
+   *   - From the Lagrangian L = f - lambda*c, we know that the constraint force
+   *     is (lambda * \grad c) = \grad f, because it cancels out the unconstrained
+   *     force (-\grad f), which is pulling x in the opposite direction of \grad f
+   *     towards the unconstrained minimum point
+   *   - We also know that  at the constraint surface \grad c points toward + (>= 0),
    *     while we are solving for - (<=0) constraint
-   *     - So, we want the constraint force (lambda * \grad c) to to pull x
+   *   - So, we want the constraint force (lambda * \grad c) to to pull x
    *     towards the opposite direction of \grad c, i.e. towards the area
-   *     where the ineq constraint <=0 is satisfied.
-   *     - Hence, we want lambda < 0
+   *     where the inequality constraint <=0 is satisfied.
+   *   - Hence, we want lambda < 0
    *
-   * So active ineqs with lambda > 0 are BAD. And we want the worst one with the largest lambda.
+   * So active inequality constraints with lambda > 0 are BAD.
+   * And we want the worst one with the largest lambda.
    *
    */
   std::pair<int, int> findWorstViolatedActiveIneq(
       const VectorValues& lambdas) const;
 
   /**
-   * Deactivate or activate an ineq constraint in place
+   * Deactivate or activate an inequality constraint in place
    * Warning: modify in-place to avoid copy/clone
    * @return true if update successful
    */
