@@ -444,7 +444,7 @@ pair<VectorValues, Key> QPSolver::initialValuesLP() const {
     Vector sigmas = jacobian->get_model()->sigmas();
     for (size_t i = 0; i < sigmas.size(); ++i) {
       if (sigmas[i] < 0) {
-        slackInit[i] = max(errorAtZero[i], 0.0);
+        slackInit[i] = std::max(errorAtZero[i], 0.0);
       } else if (sigmas[i] == 0.0) {
         errorAtZero[i] = fabs(errorAtZero[i]);
       } // if it has >0 sigma, i.e. normal Gaussian noise, initialize it at 0
