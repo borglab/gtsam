@@ -196,7 +196,7 @@ TEST(Rot3, log)
 
   // Windows and Linux have flipped sign in quaternion mode
 #if !defined(__APPLE__) && defined (GTSAM_USE_QUATERNIONS)
-  w = (Vector(3) << x*PI, y*PI, z*PI); 
+  w = (Vector(3) << x*PI, y*PI, z*PI).finished();
   R = Rot3::rodriguez(w); 
   EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R),1e-12));
 #else
