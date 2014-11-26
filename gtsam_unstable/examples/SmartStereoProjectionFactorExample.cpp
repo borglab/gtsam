@@ -49,7 +49,6 @@ int main(int argc, char** argv){
   typedef SmartStereoProjectionPoseFactor<Pose3, Point3, Cal3_S2Stereo> SmartFactor;
 
   bool output_poses = true;
-  bool output_initial_poses = true;
   string poseOutput("../../../examples/data/optimized_poses.txt");
   string init_poseOutput("../../../examples/data/initial_poses.txt");
   Values initial_estimate;
