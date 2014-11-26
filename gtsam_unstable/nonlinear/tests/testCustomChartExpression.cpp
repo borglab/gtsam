@@ -17,12 +17,7 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam_unstable/nonlinear/Expression.h>
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam_unstable/nonlinear/expressionTesting.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/linear/VectorValues.h>
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;

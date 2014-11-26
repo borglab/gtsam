@@ -19,14 +19,16 @@
 
 #pragma once
 
-#include "Expression.h"
-#include "ExpressionFactor.h"
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/Expression.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/linear/VectorValues.h>
+
 #include <CppUnitLite/TestResult.h>
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/Failure.h>
-#include <gtsam/base/numericalDerivative.h>
 
 namespace gtsam {
 
