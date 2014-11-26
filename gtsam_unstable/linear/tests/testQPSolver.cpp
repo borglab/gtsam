@@ -34,10 +34,10 @@ using namespace gtsam::symbol_shorthand;
 GaussianFactorGraph createTestCase() {
   GaussianFactorGraph graph;
 
-  // Objective functions x1^2 - x1*x2 + x2^2 - 3*x1
+  // Objective functions x1^2 - x1*x2 + x2^2 - 3*x1 + 5
   // Note the Hessian encodes:
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
-  // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 0
+  // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 10
   graph.push_back(
       HessianFactor(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
           2.0 * ones(1, 1), zero(1), 10.0));
@@ -56,8 +56,19 @@ GaussianFactorGraph createTestCase() {
   return graph;
 }
 
+TEST(QPSolver, TestCase) {
+  VectorValues values;
+  double x1 = 5, x2 = 7;
+  values.insert(X(1), x1 * ones(1, 1));
+  values.insert(X(2), x2 * ones(1, 1));
+  GaussianFactorGraph graph = createTestCase();
+  DOUBLES_EQUAL(29, x1*x1 - x1*x2 + x2*x2 - 3*x1 + 5, 1e-9);
+  DOUBLES_EQUAL(29, graph[0]->error(values), 1e-9);
+}
+
 TEST(QPSolver, constraintsAux) {
   GaussianFactorGraph graph = createTestCase();
+
   QPSolver solver(graph);
   FastVector<size_t> constraintIx = solver.constraintIndices();
   LONGS_EQUAL(1, constraintIx.size());
