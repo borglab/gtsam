@@ -7,12 +7,13 @@
 
 #pragma once
 
-#include <boost/range/irange.hpp>
-
-#include <gtsam/3rdparty/lp_solve_5.5/lp_lib.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/Symbol.h>
+
+#include <gtsam/3rdparty/lp_solve_5.5/lp_lib.h>
+
+#include <boost/range/irange.hpp>
 
 namespace gtsam {
 
@@ -36,25 +37,35 @@ public:
    * We do NOT adopt this convention here. If no lower/upper bounds are specified, the variable will be
    * set as unbounded, i.e. -inf <= x <= inf.
    */
-  LPSolver(const VectorValues& objectiveCoeffs, const GaussianFactorGraph::shared_ptr& constraints,
-      const VectorValues& lowerBounds = VectorValues(), const VectorValues& upperBounds = VectorValues()) :
-        objectiveCoeffs_(objectiveCoeffs), constraints_(constraints), lowerBounds_(
-            lowerBounds), upperBounds_(upperBounds) {
+  LPSolver(const VectorValues& objectiveCoeffs,
+      const GaussianFactorGraph::shared_ptr& constraints,
+      const VectorValues& lowerBounds = VectorValues(),
+      const VectorValues& upperBounds = VectorValues()) :
+      objectiveCoeffs_(objectiveCoeffs), constraints_(constraints), lowerBounds_(
+          lowerBounds), upperBounds_(upperBounds) {
     buildMetaInformation();
   }
 
-   /**
-    * Build data structures to support converting between gtsam and lpsolve
-    * TODO: consider lp as a class variable and support setConstraints
-    * to avoid rebuild this meta data
-    */
+  /**
+   * Build data structures to support converting between gtsam and lpsolve
+   * TODO: consider lp as a class variable and support setConstraints
+   * to avoid rebuild this meta data
+   */
   void buildMetaInformation();
 
   /// Get functions for unittest checking
-  const std::map<Key, size_t>& variableColumnNo() const { return variableColumnNo_; }
-  const std::map<Key, size_t>& variableDims() const { return variableDims_; }
-  size_t nrColumns() const {return nrColumns_;}
-  const KeySet& freeVars() const { return freeVars_; }
+  const std::map<Key, size_t>& variableColumnNo() const {
+    return variableColumnNo_;
+  }
+  const std::map<Key, size_t>& variableDims() const {
+    return variableDims_;
+  }
+  size_t nrColumns() const {
+    return nrColumns_;
+  }
+  const KeySet& freeVars() const {
+    return freeVars_;
+  }
 
   /**
    * Build lpsolve's column number for a list of keys
@@ -64,7 +75,8 @@ public:
     std::vector<int> columnNo;
     BOOST_FOREACH(Key key, keyList) {
       std::vector<int> varIndices = boost::copy_range<std::vector<int> >(
-          boost::irange(variableColumnNo_.at(key), variableColumnNo_.at(key) + variableDims_.at(key)));
+          boost::irange(variableColumnNo_.at(key),
+              variableColumnNo_.at(key) + variableDims_.at(key)));
       columnNo.insert(columnNo.end(), varIndices.begin(), varIndices.end());
     }
     return columnNo;
@@ -81,7 +93,6 @@ public:
    * set as unbounded, i.e. -inf <= x <= inf.
    */
   void addBounds(const boost::shared_ptr<lprec>& lp) const;
-
 
   /**
    * Main function to build lpsolve model

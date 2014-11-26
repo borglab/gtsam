@@ -10,6 +10,9 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <vector>
+#include <set>
+
 namespace gtsam {
 
 /**
@@ -20,12 +23,12 @@ namespace gtsam {
  * and a positive sigma denotes a normal Gaussian noise model.
  */
 class QPSolver {
-  const GaussianFactorGraph& graph_;   //!< the original graph, can't be modified!
+  const GaussianFactorGraph& graph_; //!< the original graph, can't be modified!
   FastVector<size_t> constraintIndices_; //!< Indices of constrained factors in the original graph
   GaussianFactorGraph::shared_ptr freeHessians_; //!< unconstrained Hessians of constrained variables
   VariableIndex freeHessianFactorIndex_; //!< indices of unconstrained Hessian factors of constrained variables
-                                        // gtsam calls it "VariableIndex", but I think FactorIndex
-                                        // makes more sense, because it really stores factor indices.
+                                         // gtsam calls it "VariableIndex", but I think FactorIndex
+                                         // makes more sense, because it really stores factor indices.
   VariableIndex fullFactorIndices_; //!< indices of factors involving each variable.
                                     // gtsam calls it "VariableIndex", but I think FactorIndex
                                     // makes more sense, because it really stores factor indices.
@@ -35,8 +38,9 @@ public:
   QPSolver(const GaussianFactorGraph& graph);
 
   /// Return indices of all constrained factors
-  FastVector<size_t> constraintIndices() const { return constraintIndices_; }
-
+  FastVector<size_t> constraintIndices() const {
+    return constraintIndices_;
+  }
 
   /// Return the Hessian factor graph of constrained variables
   GaussianFactorGraph::shared_ptr freeHessiansOfConstrainedVars() const {
@@ -73,37 +77,37 @@ public:
   GaussianFactorGraph buildDualGraph(const GaussianFactorGraph& graph,
       const VectorValues& x0, bool useLeastSquare = false) const;
 
-
   /**
-  * Find the BAD active ineq that pulls x strongest to the wrong direction of its constraint
-  * (i.e. it is pulling towards >0, while its feasible region is <=0)
-  *
-  * For active ineq constraints (those that are enforced as eq constraints now
-  * in the working set), we want lambda < 0.
-  * This is because:
-  *     - From the Lagrangian L = f - lambda*c, we know that the constraint force is
-  *     (lambda * \grad c) = \grad f, because it cancels out the unconstrained
-  *     unconstrained force (-\grad f), which is pulling x in the opposite direction
-  *     of \grad f towards the unconstrained minimum point
-  *     - We also know that  at the constraint surface \grad c points toward + (>= 0),
-  *     while we are solving for - (<=0) constraint
-  *     - So, we want the constraint force (lambda * \grad c) to to pull x
-  *     towards the opposite direction of \grad c, i.e. towards the area
-  *     where the ineq constraint <=0 is satisfied.
-  *     - Hence, we want lambda < 0
-  *
-  * So active ineqs with lambda > 0 are BAD. And we want the worst one with the largest lambda.
-  *
-  */
-  std::pair<int, int> findWorstViolatedActiveIneq(const VectorValues& lambdas) const;
+   * Find the BAD active ineq that pulls x strongest to the wrong direction of its constraint
+   * (i.e. it is pulling towards >0, while its feasible region is <=0)
+   *
+   * For active ineq constraints (those that are enforced as eq constraints now
+   * in the working set), we want lambda < 0.
+   * This is because:
+   *     - From the Lagrangian L = f - lambda*c, we know that the constraint force is
+   *     (lambda * \grad c) = \grad f, because it cancels out the unconstrained
+   *     unconstrained force (-\grad f), which is pulling x in the opposite direction
+   *     of \grad f towards the unconstrained minimum point
+   *     - We also know that  at the constraint surface \grad c points toward + (>= 0),
+   *     while we are solving for - (<=0) constraint
+   *     - So, we want the constraint force (lambda * \grad c) to to pull x
+   *     towards the opposite direction of \grad c, i.e. towards the area
+   *     where the ineq constraint <=0 is satisfied.
+   *     - Hence, we want lambda < 0
+   *
+   * So active ineqs with lambda > 0 are BAD. And we want the worst one with the largest lambda.
+   *
+   */
+  std::pair<int, int> findWorstViolatedActiveIneq(
+      const VectorValues& lambdas) const;
 
   /**
    * Deactivate or activate an ineq constraint in place
    * Warning: modify in-place to avoid copy/clone
    * @return true if update successful
    */
-  bool updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
-      int factorIx, int sigmaIx, double newSigma) const;
+  bool updateWorkingSetInplace(GaussianFactorGraph& workingGraph, int factorIx,
+      int sigmaIx, double newSigma) const;
 
   /**
    * Compute step size alpha for the new solution x' = xk + alpha*p, where alpha \in [0,1]
@@ -113,12 +117,13 @@ public:
    *            This constraint will be added to the working set and become active
    *            in the next iteration
    */
-  boost::tuple<double, int, int> computeStepSize(const GaussianFactorGraph& workingGraph,
-      const VectorValues& xk, const VectorValues& p) const;
+  boost::tuple<double, int, int> computeStepSize(
+      const GaussianFactorGraph& workingGraph, const VectorValues& xk,
+      const VectorValues& p) const;
 
   /** Iterate 1 step, modify workingGraph and currentSolution *IN PLACE* !!! */
-  bool iterateInPlace(GaussianFactorGraph& workingGraph, VectorValues& currentSolution,
-      VectorValues& lambdas) const;
+  bool iterateInPlace(GaussianFactorGraph& workingGraph,
+      VectorValues& currentSolution, VectorValues& lambdas) const;
 
   /** Optimize with a provided initial values
    * For this version, it is the responsibility of the caller to provide
@@ -127,7 +132,8 @@ public:
    * of optimize().
    * @return a pair of <primal, dual> solutions
    */
-  std::pair<VectorValues, VectorValues> optimize(const VectorValues& initials) const;
+  std::pair<VectorValues, VectorValues> optimize(
+      const VectorValues& initials) const;
 
   /** Optimize without an initial value.
    * This version of optimize will try to find a feasible initial value by solving
@@ -136,7 +142,6 @@ public:
    * @return a pair of <primal, dual> solutions
    */
   std::pair<VectorValues, VectorValues> optimize() const;
-
 
   /**
    * Create initial values for the LP subproblem
@@ -148,14 +153,16 @@ public:
   VectorValues objectiveCoeffsLP(Key firstSlackKey) const;
 
   /// Build constraints and slacks' lower bounds for the LP subproblem
-  std::pair<GaussianFactorGraph::shared_ptr, VectorValues> constraintsLP(Key firstSlackKey) const;
+  std::pair<GaussianFactorGraph::shared_ptr, VectorValues> constraintsLP(
+      Key firstSlackKey) const;
 
   /// Find a feasible initial point
   std::pair<bool, VectorValues> findFeasibleInitialValues() const;
 
   /// Convert a Gaussian factor to a jacobian. return empty shared ptr if failed
   /// TODO: Move to GaussianFactor?
-  static JacobianFactor::shared_ptr toJacobian(const GaussianFactor::shared_ptr& factor) {
+  static JacobianFactor::shared_ptr toJacobian(
+      const GaussianFactor::shared_ptr& factor) {
     JacobianFactor::shared_ptr jacobian(
         boost::dynamic_pointer_cast<JacobianFactor>(factor));
     return jacobian;
@@ -163,17 +170,19 @@ public:
 
   /// Convert a Gaussian factor to a Hessian. Return empty shared ptr if failed
   /// TODO: Move to GaussianFactor?
-  static HessianFactor::shared_ptr toHessian(const GaussianFactor::shared_ptr factor) {
-    HessianFactor::shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
+  static HessianFactor::shared_ptr toHessian(
+      const GaussianFactor::shared_ptr factor) {
+    HessianFactor::shared_ptr hessian(
+        boost::dynamic_pointer_cast<HessianFactor>(factor));
     return hessian;
   }
 
 private:
   /// Collect all free Hessians involving constrained variables into a graph
   GaussianFactorGraph::shared_ptr unconstrainedHessiansOfConstrainedVars(
-      const GaussianFactorGraph& graph, const std::set<Key>& constrainedVars) const;
+      const GaussianFactorGraph& graph,
+      const std::set<Key>& constrainedVars) const;
 
 };
-
 
 } /* namespace gtsam */

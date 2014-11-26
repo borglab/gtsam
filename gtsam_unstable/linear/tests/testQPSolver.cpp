@@ -16,10 +16,11 @@
  * @author Duy-Nguyen Ta
  */
 
-#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/linear/QPSolver.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -38,18 +39,18 @@ GaussianFactorGraph createTestCase() {
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 0
   graph.push_back(
-      HessianFactor(X(1), X(2), 2.0*ones(1, 1), -ones(1, 1), 3.0*ones(1),
-          2.0*ones(1, 1), zero(1), 10.0));
+      HessianFactor(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
+          2.0 * ones(1, 1), zero(1), 10.0));
 
   // Inequality constraints
   // Jacobian factors represent Ax-b, hence
   // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
-  Matrix A1 = (Matrix(4, 1)<<1, -1, 0, 1);
-  Matrix A2 = (Matrix(4, 1)<<1, 0, -1, 0);
-  Vector b =  (Vector(4)<<2, 0, 0, 1.5);
+  Matrix A1 = (Matrix(4, 1) << 1, -1, 0, 1);
+  Matrix A2 = (Matrix(4, 1) << 1, 0, -1, 0);
+  Vector b = (Vector(4) << 2, 0, 0, 1.5);
   // Special constrained noise model denoting <= inequalities with negative sigmas
   noiseModel::Constrained::shared_ptr noise =
-      noiseModel::Constrained::MixedSigmas((Vector(4)<<-1, -1, -1, -1));
+      noiseModel::Constrained::MixedSigmas((Vector(4) << -1, -1, -1, -1));
   graph.push_back(JacobianFactor(X(1), A1, X(2), A2, b, noise));
 
   return graph;
@@ -63,20 +64,22 @@ TEST(QPSolver, constraintsAux) {
   LONGS_EQUAL(1, constraintIx[0]);
 
   VectorValues lambdas;
-  lambdas.insert(constraintIx[0], (Vector(4)<< -0.5, 0.0, 0.3, 0.1));
+  lambdas.insert(constraintIx[0], (Vector(4) << -0.5, 0.0, 0.3, 0.1));
   int factorIx, lambdaIx;
   boost::tie(factorIx, lambdaIx) = solver.findWorstViolatedActiveIneq(lambdas);
   LONGS_EQUAL(1, factorIx);
   LONGS_EQUAL(2, lambdaIx);
 
   VectorValues lambdas2;
-  lambdas2.insert(constraintIx[0], (Vector(4)<< -0.5, 0.0, -0.3, -0.1));
+  lambdas2.insert(constraintIx[0], (Vector(4) << -0.5, 0.0, -0.3, -0.1));
   int factorIx2, lambdaIx2;
-  boost::tie(factorIx2, lambdaIx2) = solver.findWorstViolatedActiveIneq(lambdas2);
+  boost::tie(factorIx2, lambdaIx2) = solver.findWorstViolatedActiveIneq(
+      lambdas2);
   LONGS_EQUAL(-1, factorIx2);
   LONGS_EQUAL(-1, lambdaIx2);
 
-  GaussianFactorGraph::shared_ptr freeHessian = solver.freeHessiansOfConstrainedVars();
+  GaussianFactorGraph::shared_ptr freeHessian =
+      solver.freeHessiansOfConstrainedVars();
   GaussianFactorGraph expectedFreeHessian;
   expectedFreeHessian.push_back(
       HessianFactor(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
@@ -94,17 +97,17 @@ GaussianFactorGraph createEqualityConstrainedTest() {
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=2, G12 = 0, g1 = 0, G22 = 2, g2 = 0, f = 0
   graph.push_back(
-      HessianFactor(X(1), X(2), 2.0*ones(1, 1), zeros(1, 1), zero(1),
-          2.0*ones(1, 1), zero(1), 0.0));
+      HessianFactor(X(1), X(2), 2.0 * ones(1, 1), zeros(1, 1), zero(1),
+          2.0 * ones(1, 1), zero(1), 0.0));
 
   // Equality constraints
   // x1 + x2 = 1 --> x1 + x2 -1 = 0, hence we negate the b vector
-  Matrix A1 = (Matrix(1, 1)<<1);
-  Matrix A2 = (Matrix(1, 1)<<1);
-  Vector b = -(Vector(1)<<1);
+  Matrix A1 = (Matrix(1, 1) << 1);
+  Matrix A2 = (Matrix(1, 1) << 1);
+  Vector b = -(Vector(1) << 1);
   // Special constrained noise model denoting <= inequalities with negative sigmas
   noiseModel::Constrained::shared_ptr noise =
-      noiseModel::Constrained::MixedSigmas((Vector(1)<<0.0));
+      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0));
   graph.push_back(JacobianFactor(X(1), A1, X(2), A2, b, noise));
 
   return graph;
@@ -123,7 +126,7 @@ TEST(QPSolver, dual) {
   GaussianFactorGraph dualGraph = solver.buildDualGraph(graph, initials);
   VectorValues dual = dualGraph.optimize();
   VectorValues expectedDual;
-  expectedDual.insert(1, (Vector(1)<<2.0));
+  expectedDual.insert(1, (Vector(1) << 2.0));
   CHECK(assert_equal(expectedDual, dual, 1e-10));
 }
 
@@ -140,8 +143,8 @@ TEST(QPSolver, iterate) {
   currentSolution.insert(X(2), zero(1));
 
   std::vector<VectorValues> expectedSolutions(3);
-  expectedSolutions[0].insert(X(1), (Vector(1) << 4.0/3.0));
-  expectedSolutions[0].insert(X(2), (Vector(1) << 2.0/3.0));
+  expectedSolutions[0].insert(X(1), (Vector(1) << 4.0 / 3.0));
+  expectedSolutions[0].insert(X(2), (Vector(1) << 2.0 / 3.0));
   expectedSolutions[1].insert(X(1), (Vector(1) << 1.5));
   expectedSolutions[1].insert(X(2), (Vector(1) << 0.5));
   expectedSolutions[2].insert(X(1), (Vector(1) << 1.5));
@@ -168,8 +171,8 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initials);
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1)<< 1.5));
-  expectedSolution.insert(X(2), (Vector(1)<< 0.5));
+  expectedSolution.insert(X(1), (Vector(1) << 1.5));
+  expectedSolution.insert(X(2), (Vector(1) << 0.5));
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
 }
 
@@ -183,18 +186,18 @@ GaussianFactorGraph createTestMatlabQPEx() {
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=1, G12 = -1, g1 = +2, G22 = 2, g2 = +6, f = 0
   graph.push_back(
-      HessianFactor(X(1), X(2), 1.0*ones(1, 1), -ones(1, 1), 2.0*ones(1),
-          2.0*ones(1, 1), 6*ones(1), 1000.0));
+      HessianFactor(X(1), X(2), 1.0 * ones(1, 1), -ones(1, 1), 2.0 * ones(1),
+          2.0 * ones(1, 1), 6 * ones(1), 1000.0));
 
   // Inequality constraints
   // Jacobian factors represent Ax-b, hence
   // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
-  Matrix A1 = (Matrix(5, 1)<<1, -1, 2, -1, 0);
-  Matrix A2 = (Matrix(5, 1)<<1, 2,  1, 0, -1);
-  Vector b =  (Vector(5)   <<2, 2,  3, 0, 0);
+  Matrix A1 = (Matrix(5, 1) << 1, -1, 2, -1, 0);
+  Matrix A2 = (Matrix(5, 1) << 1, 2, 1, 0, -1);
+  Vector b = (Vector(5) << 2, 2, 3, 0, 0);
   // Special constrained noise model denoting <= inequalities with negative sigmas
   noiseModel::Constrained::shared_ptr noise =
-      noiseModel::Constrained::MixedSigmas((Vector(5)<<-1, -1, -1, -1, -1));
+      noiseModel::Constrained::MixedSigmas((Vector(5) << -1, -1, -1, -1, -1));
   graph.push_back(JacobianFactor(X(1), A1, X(2), A2, b, noise));
 
   return graph;
@@ -209,8 +212,8 @@ TEST(QPSolver, optimizeMatlabEx) {
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initials);
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1)<< 2.0/3.0));
-  expectedSolution.insert(X(2), (Vector(1)<< 4.0/3.0));
+  expectedSolution.insert(X(1), (Vector(1) << 2.0 / 3.0));
+  expectedSolution.insert(X(2), (Vector(1) << 4.0 / 3.0));
   CHECK(assert_equal(expectedSolution, solution, 1e-7));
 }
 
@@ -219,17 +222,23 @@ TEST(QPSolver, optimizeMatlabEx) {
 GaussianFactorGraph createTestNocedal06bookEx16_4() {
   GaussianFactorGraph graph;
 
-  graph.push_back(JacobianFactor(X(1), ones(1,1), ones(1)));
-  graph.push_back(JacobianFactor(X(2), ones(1,1), 2.5*ones(1)));
+  graph.push_back(JacobianFactor(X(1), ones(1, 1), ones(1)));
+  graph.push_back(JacobianFactor(X(2), ones(1, 1), 2.5 * ones(1)));
 
   // Inequality constraints
-  noiseModel::Constrained::shared_ptr noise = noiseModel::Constrained::MixedSigmas(
-      (Vector(1) << -1));
-  graph.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), 2*ones(1), noise));
-  graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2), 2*ones(1,1), 6*ones(1), noise));
-  graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2),-2*ones(1,1), 2*ones(1), noise));
-  graph.push_back(JacobianFactor(X(1), -ones(1,1), zero(1), noise));
-  graph.push_back(JacobianFactor(X(2), -ones(1,1), zero(1), noise));
+  noiseModel::Constrained::shared_ptr noise =
+      noiseModel::Constrained::MixedSigmas((Vector(1) << -1));
+  graph.push_back(
+      JacobianFactor(X(1), -ones(1, 1), X(2), 2 * ones(1, 1), 2 * ones(1),
+          noise));
+  graph.push_back(
+      JacobianFactor(X(1), ones(1, 1), X(2), 2 * ones(1, 1), 6 * ones(1),
+          noise));
+  graph.push_back(
+      JacobianFactor(X(1), ones(1, 1), X(2), -2 * ones(1, 1), 2 * ones(1),
+          noise));
+  graph.push_back(JacobianFactor(X(1), -ones(1, 1), zero(1), noise));
+  graph.push_back(JacobianFactor(X(2), -ones(1, 1), zero(1), noise));
 
   return graph;
 }
@@ -238,54 +247,60 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
   GaussianFactorGraph graph = createTestNocedal06bookEx16_4();
   QPSolver solver(graph);
   VectorValues initials;
-  initials.insert(X(1), (Vector(1)<<2.0));
+  initials.insert(X(1), (Vector(1) << 2.0));
   initials.insert(X(2), zero(1));
 
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initials);
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1)<< 1.4));
-  expectedSolution.insert(X(2), (Vector(1)<< 1.7));
+  expectedSolution.insert(X(1), (Vector(1) << 1.4));
+  expectedSolution.insert(X(2), (Vector(1) << 1.7));
   CHECK(assert_equal(expectedSolution, solution, 1e-7));
 }
 
 /* ************************************************************************* */
 /* Create test graph as in Nocedal06book, Ex 16.4, pg. 475
  with the first constraint (16.49b) is replaced by
-      x1 - 2 x2 - 1 >=0
-so that the trivial initial point (0,0) is infeasible
-====
+ x1 - 2 x2 - 1 >=0
+ so that the trivial initial point (0,0) is infeasible
+ ====
  H = [2 0; 0 2];
-f = [-2; -5];
+ f = [-2; -5];
  A =[-1 2;
-      1 2
-      1 -2];
-b = [-1; 6; 2];
-lb = zeros(2,1);
+ 1 2
+ 1 -2];
+ b = [-1; 6; 2];
+ lb = zeros(2,1);
 
-opts = optimoptions('quadprog','Algorithm','active-set','Display','off');
+ opts = optimoptions('quadprog','Algorithm','active-set','Display','off');
 
-[x,fval,exitflag,output,lambda] = ...
-   quadprog(H,f,A,b,[],[],lb,[],[],opts);
-====
-x =
-    2.0000
-    0.5000
-*/
+ [x,fval,exitflag,output,lambda] = ...
+ quadprog(H,f,A,b,[],[],lb,[],[],opts);
+ ====
+ x =
+ 2.0000
+ 0.5000
+ */
 GaussianFactorGraph modifyNocedal06bookEx16_4() {
   GaussianFactorGraph graph;
 
-  graph.push_back(JacobianFactor(X(1), ones(1,1), ones(1)));
-  graph.push_back(JacobianFactor(X(2), ones(1,1), 2.5*ones(1)));
+  graph.push_back(JacobianFactor(X(1), ones(1, 1), ones(1)));
+  graph.push_back(JacobianFactor(X(2), ones(1, 1), 2.5 * ones(1)));
 
   // Inequality constraints
-  noiseModel::Constrained::shared_ptr noise = noiseModel::Constrained::MixedSigmas(
-      (Vector(1) << -1));
-  graph.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), -1*ones(1), noise));
-  graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2), 2*ones(1,1), 6*ones(1), noise));
-  graph.push_back(JacobianFactor(X(1),  ones(1,1), X(2),-2*ones(1,1), 2*ones(1), noise));
-  graph.push_back(JacobianFactor(X(1), -ones(1,1), zero(1), noise));
-  graph.push_back(JacobianFactor(X(2), -ones(1,1), zero(1), noise));
+  noiseModel::Constrained::shared_ptr noise =
+      noiseModel::Constrained::MixedSigmas((Vector(1) << -1));
+  graph.push_back(
+      JacobianFactor(X(1), -ones(1, 1), X(2), 2 * ones(1, 1), -1 * ones(1),
+          noise));
+  graph.push_back(
+      JacobianFactor(X(1), ones(1, 1), X(2), 2 * ones(1, 1), 6 * ones(1),
+          noise));
+  graph.push_back(
+      JacobianFactor(X(1), ones(1, 1), X(2), -2 * ones(1, 1), 2 * ones(1),
+          noise));
+  graph.push_back(JacobianFactor(X(1), -ones(1, 1), zero(1), noise));
+  graph.push_back(JacobianFactor(X(2), -ones(1, 1), zero(1), noise));
 
   return graph;
 }
@@ -306,23 +321,31 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_findInitialPoint) {
   EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey+4)));
 
   VectorValues objCoeffs = solver.objectiveCoeffsLP(firstSlackKey);
-  for (size_t i = 0; i<5; ++i)
+  for (size_t i = 0; i < 5; ++i)
     EXPECT(assert_equal(ones(1), objCoeffs.at(firstSlackKey+i)));
 
   GaussianFactorGraph::shared_ptr constraints;
   VectorValues lowerBounds;
   boost::tie(constraints, lowerBounds) = solver.constraintsLP(firstSlackKey);
-  for (size_t i = 0; i<5; ++i)
+  for (size_t i = 0; i < 5; ++i)
     EXPECT(assert_equal(zero(1), lowerBounds.at(firstSlackKey+i)));
 
   GaussianFactorGraph expectedConstraints;
-  noiseModel::Constrained::shared_ptr noise = noiseModel::Constrained::MixedSigmas(
-        (Vector(1) << -1));
-  expectedConstraints.push_back(JacobianFactor(X(1), -ones(1,1), X(2), 2*ones(1,1), X(3), -ones(1,1),-1*ones(1), noise));
-  expectedConstraints.push_back(JacobianFactor(X(1),  ones(1,1), X(2), 2*ones(1,1), X(4), -ones(1,1), 6*ones(1), noise));
-  expectedConstraints.push_back(JacobianFactor(X(1),  ones(1,1), X(2),-2*ones(1,1), X(5), -ones(1,1), 2*ones(1), noise));
-  expectedConstraints.push_back(JacobianFactor(X(1), -ones(1,1), X(6), -ones(1,1), zero(1), noise));
-  expectedConstraints.push_back(JacobianFactor(X(2), -ones(1,1), X(7), -ones(1,1), zero(1), noise));
+  noiseModel::Constrained::shared_ptr noise =
+      noiseModel::Constrained::MixedSigmas((Vector(1) << -1));
+  expectedConstraints.push_back(
+      JacobianFactor(X(1), -ones(1, 1), X(2), 2 * ones(1, 1), X(3), -ones(1, 1),
+          -1 * ones(1), noise));
+  expectedConstraints.push_back(
+      JacobianFactor(X(1), ones(1, 1), X(2), 2 * ones(1, 1), X(4), -ones(1, 1),
+          6 * ones(1), noise));
+  expectedConstraints.push_back(
+      JacobianFactor(X(1), ones(1, 1), X(2), -2 * ones(1, 1), X(5), -ones(1, 1),
+          2 * ones(1), noise));
+  expectedConstraints.push_back(
+      JacobianFactor(X(1), -ones(1, 1), X(6), -ones(1, 1), zero(1), noise));
+  expectedConstraints.push_back(
+      JacobianFactor(X(2), -ones(1, 1), X(7), -ones(1, 1), zero(1), noise));
   EXPECT(assert_equal(expectedConstraints, *constraints));
 
   bool isFeasible;
@@ -341,12 +364,12 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_2) {
   GaussianFactorGraph graph = createTestNocedal06bookEx16_4();
   QPSolver solver(graph);
   VectorValues initials;
-  initials.insert(X(1), (Vector(1)<<0.0));
-  initials.insert(X(2), (Vector(1)<<100.0));
+  initials.insert(X(1), (Vector(1) << 0.0));
+  initials.insert(X(2), (Vector(1) << 100.0));
 
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1)<< 1.4));
-  expectedSolution.insert(X(2), (Vector(1)<< 1.7));
+  expectedSolution.insert(X(1), (Vector(1) << 1.4));
+  expectedSolution.insert(X(2), (Vector(1) << 1.7));
 
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initials);
@@ -363,12 +386,13 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_2) {
 TEST(QPSolver, failedSubproblem) {
   GaussianFactorGraph graph;
   graph.push_back(JacobianFactor(X(1), eye(2), zero(2)));
-  graph.push_back(HessianFactor(X(1), zeros(2,2), zero(2), 100.0));
-  graph.push_back(JacobianFactor(X(1), (Matrix(1,2)<<-1.0, 0.0), -ones(1),
-                                 noiseModel::Constrained::MixedSigmas(-ones(1))));
+  graph.push_back(HessianFactor(X(1), zeros(2, 2), zero(2), 100.0));
+  graph.push_back(
+      JacobianFactor(X(1), (Matrix(1, 2) << -1.0, 0.0), -ones(1),
+          noiseModel::Constrained::MixedSigmas(-ones(1))));
 
   VectorValues expected;
-  expected.insert(X(1), (Vector(2)<< 1.0, 0.0));
+  expected.insert(X(1), (Vector(2) << 1.0, 0.0));
 
   QPSolver solver(graph);
   VectorValues solution;
