@@ -302,8 +302,8 @@ namespace gtsam {
    }
 
   // overloaded insert with chart initializer
-  template<typename ValueType, typename Chart, typename ChartInit>
-  void Values::insert(Key j, const ValueType& val, ChartInit chart) {
+  template<typename ValueType, typename Chart>
+  void Values::insert(Key j, const ValueType& val, Chart chart) {
     insert(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val, chart)));
   }
 
@@ -320,8 +320,8 @@ namespace gtsam {
   }
 
   // update with chart initializer, /todo: perhaps there is a way to init chart from old value...
-  template<typename ValueType, typename Chart, typename ChartInit>
-  void Values::update(Key j, const ValueType& val, ChartInit chart) {
+  template<typename ValueType, typename Chart>
+  void Values::update(Key j, const ValueType& val, Chart chart) {
     update(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val, chart)));
   }
 

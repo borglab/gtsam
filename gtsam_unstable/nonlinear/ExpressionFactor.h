@@ -73,7 +73,6 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    // TODO(PTF) Is this a place for custom charts?
     DefaultChart<T> chart;
     if (H) {
       const T value = expression_.value(x, keys_, dims_, *H);
