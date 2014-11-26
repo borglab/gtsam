@@ -263,8 +263,8 @@ namespace gtsam {
     void insert(Key j, const ValueType& val);
 
     /// overloaded insert version that also specifies a chart initializer
-    template <typename ValueType, typename Chart, typename ChartInit>
-    void insert(Key j, const ValueType& val, ChartInit chart);
+    template <typename ValueType, typename Chart>
+    void insert(Key j, const ValueType& val, Chart chart);
 
 
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
@@ -288,8 +288,8 @@ namespace gtsam {
     void update(Key j, const T& val);
 
     /// overloaded insert version that also specifies a chart initializer
-    template <typename T, typename Chart, typename ChartInit>
-    void update(Key j, const T& val, ChartInit chart);
+    template <typename T, typename Chart>
+    void update(Key j, const T& val, Chart chart);
 
     /** update the current available values without adding new ones */
     void update(const Values& values);

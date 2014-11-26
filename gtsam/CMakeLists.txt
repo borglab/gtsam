@@ -10,7 +10,7 @@ set (gtsam_subdirs
     linear
     nonlinear
     slam
-	  navigation
+	navigation
 )
 
 set(gtsam_srcs)
@@ -74,8 +74,8 @@ set(gtsam_srcs
     ${linear_srcs}
     ${nonlinear_srcs}
     ${slam_srcs}
-	  ${navigation_srcs}
-	  ${gtsam_core_headers}
+    ${navigation_srcs}
+	${gtsam_core_headers}
 )
 
 # Generate and install config and dllexport files
@@ -92,8 +92,6 @@ set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSIO
 set(gtsam_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM Version: ${gtsam_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
-message("GTSAM Additional: ${GTSAM_ADDITIONAL_LIBRARIES}")
-message("GTSAM Exports: ${GTSAM_EXPORTED_TARGETS}")
 
 # build shared and static versions of the library
 if (GTSAM_BUILD_STATIC_LIBRARY)

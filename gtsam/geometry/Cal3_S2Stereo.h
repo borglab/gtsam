@@ -52,6 +52,11 @@ namespace gtsam {
     /// constructor from vector
     Cal3_S2Stereo(const Vector &d): K_(d(0), d(1), d(2), d(3), d(4)), b_(d(5)){}
 
+    /// easy constructor; field-of-view in degrees, assumes zero skew
+    Cal3_S2Stereo(double fov, int w, int h, double b) :
+      K_(fov, w, h), b_(b) {
+    }
+
     /// @}
     /// @name Testable
     /// @{

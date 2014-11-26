@@ -30,7 +30,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   StereoPoint2 StereoCamera::project(const Point3& point,
-      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
+      boost::optional<Matrix&> H3) const {
 
 #ifdef STEREOCAMERA_CHAIN_RULE
     const Point3 q = leftCamPose_.transform_to(point, H1, H2);

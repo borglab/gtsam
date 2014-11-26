@@ -35,7 +35,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 
-#include <gtsam/slam/SmartProjectionPoseFactor.h>
+#include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
 
 #include <string>
 #include <fstream>
@@ -46,11 +46,18 @@ using namespace gtsam;
 
 int main(int argc, char** argv){
 
-  typedef SmartProjectionPoseFactor<Pose3, Cal3_S2> SmartFactor;
+  typedef SmartStereoProjectionPoseFactor<Pose3, Point3, Cal3_S2Stereo> SmartFactor;
 
+  bool output_poses = true;
+  bool output_initial_poses = true;
+  string poseOutput("../../../examples/data/optimized_poses.txt");
+  string init_poseOutput("../../../examples/data/initial_poses.txt");
   Values initial_estimate;
   NonlinearFactorGraph graph;
-  const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(2,1);
+  const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,1);
+  ofstream pose3Out, init_pose3Out;
+
+  bool add_initial_noise = true;
 
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
@@ -63,7 +70,7 @@ int main(int argc, char** argv){
 
   double fx, fy, s, u0, v0, b;
   calibration_file >> fx >> fy >> s >> u0 >> v0 >> b;
-  const Cal3_S2::shared_ptr K(new Cal3_S2(fx, fy, s, u0, v0));
+  const Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fx, fy, s, u0, v0,b));
 
   cout << "Reading camera poses" << endl;
   ifstream pose_file(pose_loc.c_str());
@@ -75,7 +82,19 @@ int main(int argc, char** argv){
     for (int i = 0; i < 16; i++) {
       pose_file >> m.data()[i];
     }
+    if(add_initial_noise){
+      m(1,3) += (pose_id % 10)/10.0;
+    }
     initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
+  }
+
+  Values initial_pose_values = initial_estimate.filter<Pose3>();
+  if(output_poses){
+    init_pose3Out.open(init_poseOutput.c_str(),ios::out);
+    for(int i = 1; i<=initial_pose_values.size(); i++){
+      init_pose3Out << i << " " << initial_pose_values.at<Pose3>(Symbol('x',i)).matrix().format(Eigen::IOFormat(Eigen::StreamPrecision, 0,
+        " ", " ")) << endl;
+    }
   }
   
   // camera and landmark keys
@@ -99,7 +118,7 @@ int main(int argc, char** argv){
       factor = SmartFactor::shared_ptr(new SmartFactor());
       current_l = l;
     }
-    factor->add(Point2(uL,v), Symbol('x',x), model, K);
+    factor->add(StereoPoint2(uL,uR,v), Symbol('x',x), model, K);
   }
 
   Pose3 first_pose = initial_estimate.at<Pose3>(Symbol('x',1));
@@ -120,6 +139,15 @@ int main(int argc, char** argv){
   cout << "Final result sample:" << endl;
   Values pose_values = result.filter<Pose3>();
   pose_values.print("Final camera poses:\n");
+
+  if(output_poses){
+    pose3Out.open(poseOutput.c_str(),ios::out);
+    for(int i = 1; i<=pose_values.size(); i++){
+      pose3Out << i << " " << pose_values.at<Pose3>(Symbol('x',i)).matrix().format(Eigen::IOFormat(Eigen::StreamPrecision, 0,
+        " ", " ")) << endl;
+    }
+    cout << "Writing output" << endl;
+  }
 
   return 0;
 }

@@ -12,10 +12,10 @@ namespace gtsam {
 /**
  * JacobianFactor for Schur complement that uses Q noise model
  */
-template<size_t D>
-class JacobianFactorQR: public JacobianSchurFactor<D> {
+template<size_t D, size_t ZDim>
+class JacobianFactorQR: public JacobianSchurFactor<D, ZDim> {
 
-  typedef JacobianSchurFactor<D> Base;
+  typedef JacobianSchurFactor<D, ZDim> Base;
 
 public:
 
@@ -25,14 +25,14 @@ public:
   JacobianFactorQR(const std::vector<typename Base::KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix3& P, const Vector& b,
       const SharedDiagonal& model = SharedDiagonal()) :
-      JacobianSchurFactor<D>() {
+      JacobianSchurFactor<D, ZDim>() {
     // Create a number of Jacobian factors in a factor graph
     GaussianFactorGraph gfg;
     Symbol pointKey('p', 0);
     size_t i = 0;
     BOOST_FOREACH(const typename Base::KeyMatrix2D& it, Fblocks) {
-      gfg.add(pointKey, E.block<2, 3>(2 * i, 0), it.first, it.second,
-          b.segment<2>(2 * i), model);
+      gfg.add(pointKey, E.block<ZDim, 3>(ZDim * i, 0), it.first, it.second,
+          b.segment<ZDim>(ZDim * i), model);
       i += 1;
     }
     //gfg.print("gfg");
