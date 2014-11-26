@@ -22,9 +22,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
-#include <gtsam_unstable/nonlinear/Expression.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/LieScalar.h>
 
 #undef CHECK
 #include <CppUnitLite/TestHarness.h>

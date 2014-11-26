@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "Expression-inl.h"
+#include <gtsam/nonlinear/Expression-inl.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Symbol.h>
 

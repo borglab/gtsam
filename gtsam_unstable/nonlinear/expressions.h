@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/Expression.h>
+#include <gtsam/nonlinear/Expression.h>
 #include <boost/bind.hpp>
 
 namespace gtsam {
