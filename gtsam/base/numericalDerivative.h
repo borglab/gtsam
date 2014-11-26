@@ -34,10 +34,6 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/Values.h>
 
-#include <CppUnitLite/TestResult.h>
-#include <CppUnitLite/Test.h>
-#include <CppUnitLite/Failure.h>
-
 namespace gtsam {
 
 /*
