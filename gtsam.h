@@ -2272,7 +2272,7 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
-template<POSE, LANDMARK, CALIBRATION>
+template<POSE, CALIBRATION>
 virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
 
   SmartProjectionPoseFactor(double rankTol, double linThreshold,
@@ -2288,7 +2288,7 @@ virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
   //void serialize() const;
 };
 
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> SmartProjectionPose3Factor;
+typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Cal3_S2> SmartProjectionPose3Factor;
 
 
 #include <gtsam/slam/StereoFactor.h>
