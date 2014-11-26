@@ -90,7 +90,7 @@ public:
 
     // Create a writeable JacobianFactor in advance
     // In case noise model is constrained, we need to provide a noise model
-    bool constrained = noiseModel_->is_constrained();
+    bool constrained = noiseModel_->isConstrained();
     boost::shared_ptr<JacobianFactor> factor(
         constrained ? new JacobianFactor(keys_, dims_, Dim,
             boost::static_pointer_cast<noiseModel::Constrained>(noiseModel_)->unit()) :
@@ -107,7 +107,6 @@ public:
     T value = expression_.value(x, jacobianMap); // <<< Reverse AD happens here !
 
     // Evaluate error and set RHS vector b
-    // TODO(PTF) Is this a place for custom charts?
     DefaultChart<T> chart;
     Ab(size()).col(0) = -chart.local(measurement_, value);
 
