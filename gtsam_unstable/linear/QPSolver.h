@@ -78,6 +78,10 @@ public:
       const VectorValues& x0, bool useLeastSquare = false) const;
 
   /**
+   * The goal of this function is to find currently active inequality constraints
+   * that violate the condition to be active. The one that violates the condition
+   * the most will be removed from the active set. See Nocedal06book, pg 469-471
+   *
    * Find the BAD active inequality that pulls x strongest to the wrong direction
    * of its constraint (i.e. it is pulling towards >0, while its feasible region is <=0)
    *
@@ -85,18 +89,26 @@ public:
    * in the current working set), we want lambda < 0.
    * This is because:
    *   - From the Lagrangian L = f - lambda*c, we know that the constraint force
-   *     is (lambda * \grad c) = \grad f, because it cancels out the unconstrained
-   *     force (-\grad f), which is pulling x in the opposite direction of \grad f
-   *     towards the unconstrained minimum point
-   *   - We also know that  at the constraint surface \grad c points toward + (>= 0),
-   *     while we are solving for - (<=0) constraint
-   *   - So, we want the constraint force (lambda * \grad c) to to pull x
-   *     towards the opposite direction of \grad c, i.e. towards the area
-   *     where the inequality constraint <=0 is satisfied.
-   *   - Hence, we want lambda < 0
+   *     is (lambda * \grad c) = \grad f. Intuitively, to keep the solution x stay
+   *     on the constraint surface, the constraint force has to balance out with
+   *     other unconstrained forces that are pulling x towards the unconstrained
+   *     minimum point. The other unconstrained forces are pulling x toward (-\grad f),
+   *     hence the constraint force has to be exactly \grad f, so that the total
+   *     force is 0.
+   *   - We also know that  at the constraint surface c(x)=0, \grad c points towards + (>= 0),
+   *     while we are solving for - (<=0) constraint.
+   *   - We want the constraint force (lambda * \grad c) to pull x towards the - (<=0) direction
+   *     i.e., the opposite direction of \grad c where the inequality constraint <=0 is satisfied.
+   *     That means we want lambda < 0.
+   *   - This is because when the constrained force pulls x towards the infeasible region (+),
+   *     the unconstrained force is pulling x towards the opposite direction into
+   *     the feasible region (again because the total force has to be 0 to make x stay still)
+   *     So we can drop this constraint to have a lower error but feasible solution.
    *
-   * So active inequality constraints with lambda > 0 are BAD.
-   * And we want the worst one with the largest lambda.
+   * In short, active inequality constraints with lambda > 0 are BAD, because they
+   * violate the condition to be active.
+   *
+   * And we want to remove the worst one with the largest lambda from the active set.
    *
    */
   std::pair<int, int> findWorstViolatedActiveIneq(
