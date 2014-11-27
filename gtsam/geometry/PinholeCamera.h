@@ -353,7 +353,7 @@ public:
       const Point3& pw, //
       boost::optional<Matrix&> Dpose,
       boost::optional<Matrix&> Dpoint,
-      boost::optional<Matrix&> Dcal) const {
+      boost::optional<Matrix25&> Dcal) const {
 
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
@@ -365,7 +365,7 @@ public:
       const double z = pc.z(), d = 1.0 / z;
 
       // uncalibration
-      Matrix Dpi_pn(2, 2);
+      Matrix2 Dpi_pn;
       const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
       // chain the Jacobian matrices
@@ -392,7 +392,7 @@ public:
       const Point3& pw, //
       boost::optional<Matrix&> Dpose = boost::none,
       boost::optional<Matrix&> Dpoint = boost::none,
-      boost::optional<Matrix&> Dcal = boost::none) const {
+      boost::optional<Matrix25&> Dcal = boost::none) const {
 
     if (!Dpose && !Dpoint && !Dcal) {
       const Point3 pc = pose_.rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
@@ -412,7 +412,7 @@ public:
     const Point2 pn = project_to_camera(pc, Dpn_pc);
 
     // uncalibration
-    Matrix Dpi_pn; // 2*2
+    Matrix2 Dpi_pn; // 2*2
     const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
     // chain the Jacobian matrices

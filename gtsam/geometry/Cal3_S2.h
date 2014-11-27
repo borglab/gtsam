@@ -159,16 +159,6 @@ public:
       boost::optional<Matrix2&> Dp) const;
 
   /**
-   * convert intrinsic coordinates xy to image coordinates uv, dynamic derivaitves
-   * @param p point in intrinsic coordinates
-   * @param Dcal optional 2*5 Jacobian wrpt Cal3_S2 parameters
-   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
-   * @return point in image coordinates
-   */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal,
-      boost::optional<Matrix&> Dp) const;
-
-  /**
    * convert image coordinates uv to intrinsic coordinates xy
    * @param p point in image coordinates
    * @return point in intrinsic coordinates
