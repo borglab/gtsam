@@ -27,6 +27,68 @@
 namespace gtsam {
 
 /**
+ * Eigen::Ref like class that cane take either a fixed size or dynamic
+ * Eigen matrix. In the latter case, the dynamic matrix will be resized.
+ * Finally, the default constructor acts like boost::none.
+ */
+template<int Rows, int Cols>
+class FixedRef {
+
+public:
+
+  /// Fixed size type
+  typedef Eigen::Matrix<double, Rows, Cols> Fixed;
+
+private:
+
+  bool empty_;
+  Eigen::Map<Fixed> map_;
+
+  // Trick on http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
+  // to make map_ usurp the memory of the fixed size matrix
+  void usurp(double* data) {
+    new (&map_) Eigen::Map<Fixed>(data);
+  }
+
+public:
+
+  /// Defdault constructo acts like boost::none
+  FixedRef() :
+      empty_(true), map_(NULL) {
+  }
+
+  /// Constructor that will usurp data of a fixed size matrix
+  FixedRef(Fixed& fixed) :
+      empty_(false), map_(NULL) {
+    usurp(fixed.data());
+  }
+
+  /// Constructor that will resize a dynamic matrix
+  FixedRef(Matrix& dynamic) :
+      empty_(false), map_(NULL) {
+  }
+
+  /// Constructor compatible with old-style
+  FixedRef(const boost::optional<Matrix&> optional) :
+      empty_(!optional), map_(NULL) {
+    if (optional) {
+      optional->resize(Rows, Cols);
+      usurp(optional->data());
+    }
+  }
+
+  /// Return true is allocated, false if default constructor was used
+  operator bool() const {
+    return !empty_;
+  }
+
+  /// De-reference, like boost optional
+  Eigen::Map<Fixed>& operator* () {
+    return map_;
+  }
+};
+
+/**
  * @brief The most common 5DOF 3D->2D calibration
  * @addtogroup geometry
  * \nosubgrouping
@@ -148,8 +210,8 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal = boost::none,
-      boost::optional<Matrix2&> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, FixedRef<2,5> Dcal = FixedRef<2,5>(),
+      FixedRef<2,2> Dp = FixedRef<2,2>()) const;
 
   /**
    * convert image coordinates uv to intrinsic coordinates xy

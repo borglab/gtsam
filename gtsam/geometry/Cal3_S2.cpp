@@ -72,11 +72,13 @@ bool Cal3_S2::equals(const Cal3_S2& K, double tol) const {
 }
 
 /* ************************************************************************* */
-Point2 Cal3_S2::uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal,
-    boost::optional<Matrix2&> Dp) const {
+Point2 Cal3_S2::uncalibrate(const Point2& p, FixedRef<2, 5> Dcal,
+    FixedRef<2, 2> Dp) const {
   const double x = p.x(), y = p.y();
-  if (Dcal) *Dcal << x, 0.0, y, 1.0, 0.0, 0.0, y, 0.0, 0.0, 1.0;
-  if (Dp) *Dp << fx_, s_, 0.0, fy_;
+  if (Dcal)
+    *Dcal << x, 0.0, y, 1.0, 0.0, 0.0, y, 0.0, 0.0, 1.0;
+  if (Dp)
+    *Dp << fx_, s_, 0.0, fy_;
   return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
 }
 
