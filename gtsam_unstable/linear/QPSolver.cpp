@@ -412,9 +412,9 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph,
 
 //******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize(
-    const VectorValues& initials) const {
+    const VectorValues& initialValues) const {
   GaussianFactorGraph workingGraph = graph_.clone();
-  VectorValues currentSolution = initials;
+  VectorValues currentSolution = initialValues;
   VectorValues lambdas;
   bool converged = false;
   while (!converged) {
@@ -432,15 +432,15 @@ pair<VectorValues, Key> QPSolver::initialValuesLP() const {
   }
   firstSlackKey += 1;
 
-  VectorValues initials;
+  VectorValues initialValues;
   // Create zero values for constrained vars
   BOOST_FOREACH(size_t iFactor, constraintIndices_) {
     JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
     KeyVector keys = jacobian->keys();
     BOOST_FOREACH(Key key, keys) {
-      if (!initials.exists(key)) {
+      if (!initialValues.exists(key)) {
         size_t dim = jacobian->getDim(jacobian->find(key));
-        initials.insert(key, zero(dim));
+        initialValues.insert(key, zero(dim));
       }
     }
   }
@@ -459,10 +459,10 @@ pair<VectorValues, Key> QPSolver::initialValuesLP() const {
         errorAtZero[i] = fabs(errorAtZero[i]);
       } // if it has >0 sigma, i.e. normal Gaussian noise, initialize it at 0
     }
-    initials.insert(slackKey, slackInit);
+    initialValues.insert(slackKey, slackInit);
     slackKey++;
   }
-  return make_pair(initials, firstSlackKey);
+  return make_pair(initialValues, firstSlackKey);
 }
 
 //******************************************************************************
@@ -518,9 +518,9 @@ pair<GaussianFactorGraph::shared_ptr, VectorValues> QPSolver::constraintsLP(
 pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
   static const bool debug = false;
   // Initial values with slack variables for the LP subproblem, Nocedal06book, pg.473
-  VectorValues initials;
+  VectorValues initialValues;
   size_t firstSlackKey;
-  boost::tie(initials, firstSlackKey) = initialValuesLP();
+  boost::tie(initialValues, firstSlackKey) = initialValuesLP();
 
   // Coefficients for the LP subproblem objective function, min \sum_i z_i
   VectorValues objectiveLP = objectiveCoeffsLP(firstSlackKey);
@@ -535,7 +535,7 @@ pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
   VectorValues solution = lpSolver.solve();
 
   if (debug)
-    initials.print("Initials LP: ");
+    initialValues.print("Initials LP: ");
   if (debug)
     objectiveLP.print("Objective LP: ");
   if (debug)
@@ -567,12 +567,12 @@ pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
 //******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize() const {
   bool isFeasible;
-  VectorValues initials;
-  boost::tie(isFeasible, initials) = findFeasibleInitialValues();
+  VectorValues initialValues;
+  boost::tie(isFeasible, initialValues) = findFeasibleInitialValues();
   if (!isFeasible) {
     throw runtime_error("LP subproblem is infeasible!");
   }
-  return optimize(initials);
+  return optimize(initialValues);
 }
 
 } /* namespace gtsam */

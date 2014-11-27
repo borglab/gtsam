@@ -150,7 +150,7 @@ public:
    * @return a pair of <primal, dual> solutions
    */
   std::pair<VectorValues, VectorValues> optimize(
-      const VectorValues& initials) const;
+      const VectorValues& initialValues) const;
 
   /** Optimize without an initial value.
    * This version of optimize will try to find a feasible initial value by solving

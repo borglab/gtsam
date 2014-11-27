@@ -124,13 +124,13 @@ TEST(QPSolver, dual) {
   GaussianFactorGraph graph = createEqualityConstrainedTest();
 
   // Initials values
-  VectorValues initials;
-  initials.insert(X(1), ones(1));
-  initials.insert(X(2), ones(1));
+  VectorValues initialValues;
+  initialValues.insert(X(1), ones(1));
+  initialValues.insert(X(2), ones(1));
 
   QPSolver solver(graph);
 
-  GaussianFactorGraph dualGraph = solver.buildDualGraph(graph, initials);
+  GaussianFactorGraph dualGraph = solver.buildDualGraph(graph, initialValues);
   VectorValues dual = dualGraph.optimize();
   VectorValues expectedDual;
   expectedDual.insert(1, (Vector(1) << 2.0));
@@ -172,11 +172,11 @@ TEST(QPSolver, iterate) {
 TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   GaussianFactorGraph graph = createTestCase();
   QPSolver solver(graph);
-  VectorValues initials;
-  initials.insert(X(1), zero(1));
-  initials.insert(X(2), zero(1));
+  VectorValues initialValues;
+  initialValues.insert(X(1), zero(1));
+  initialValues.insert(X(2), zero(1));
   VectorValues solution;
-  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initials);
+  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   VectorValues expectedSolution;
   expectedSolution.insert(X(1), (Vector(1) << 1.5));
   expectedSolution.insert(X(2), (Vector(1) << 0.5));
@@ -213,11 +213,11 @@ GaussianFactorGraph createTestMatlabQPEx() {
 TEST(QPSolver, optimizeMatlabEx) {
   GaussianFactorGraph graph = createTestMatlabQPEx();
   QPSolver solver(graph);
-  VectorValues initials;
-  initials.insert(X(1), zero(1));
-  initials.insert(X(2), zero(1));
+  VectorValues initialValues;
+  initialValues.insert(X(1), zero(1));
+  initialValues.insert(X(2), zero(1));
   VectorValues solution;
-  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initials);
+  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   VectorValues expectedSolution;
   expectedSolution.insert(X(1), (Vector(1) << 2.0 / 3.0));
   expectedSolution.insert(X(2), (Vector(1) << 4.0 / 3.0));
@@ -253,12 +253,12 @@ GaussianFactorGraph createTestNocedal06bookEx16_4() {
 TEST(QPSolver, optimizeNocedal06bookEx16_4) {
   GaussianFactorGraph graph = createTestNocedal06bookEx16_4();
   QPSolver solver(graph);
-  VectorValues initials;
-  initials.insert(X(1), (Vector(1) << 2.0));
-  initials.insert(X(2), zero(1));
+  VectorValues initialValues;
+  initialValues.insert(X(1), (Vector(1) << 2.0));
+  initialValues.insert(X(2), zero(1));
 
   VectorValues solution;
-  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initials);
+  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   VectorValues expectedSolution;
   expectedSolution.insert(X(1), (Vector(1) << 1.4));
   expectedSolution.insert(X(2), (Vector(1) << 1.7));
@@ -356,10 +356,10 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_findInitialPoint) {
   EXPECT(assert_equal(expectedConstraints, *constraints));
 
   bool isFeasible;
-  VectorValues initials;
-  boost::tie(isFeasible, initials) = solver.findFeasibleInitialValues();
-  EXPECT(assert_equal(1.0*ones(1), initials.at(X(1))));
-  EXPECT(assert_equal(0.0*ones(1), initials.at(X(2))));
+  VectorValues initialValues;
+  boost::tie(isFeasible, initialValues) = solver.findFeasibleInitialValues();
+  EXPECT(assert_equal(1.0*ones(1), initialValues.at(X(1))));
+  EXPECT(assert_equal(0.0*ones(1), initialValues.at(X(2))));
 
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize();
@@ -370,16 +370,16 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_findInitialPoint) {
 TEST(QPSolver, optimizeNocedal06bookEx16_4_2) {
   GaussianFactorGraph graph = createTestNocedal06bookEx16_4();
   QPSolver solver(graph);
-  VectorValues initials;
-  initials.insert(X(1), (Vector(1) << 0.0));
-  initials.insert(X(2), (Vector(1) << 100.0));
+  VectorValues initialValues;
+  initialValues.insert(X(1), (Vector(1) << 0.0));
+  initialValues.insert(X(2), (Vector(1) << 100.0));
 
   VectorValues expectedSolution;
   expectedSolution.insert(X(1), (Vector(1) << 1.4));
   expectedSolution.insert(X(2), (Vector(1) << 1.7));
 
   VectorValues solution;
-  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initials);
+  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   // THIS should fail because of the bad infeasible initial point!!
 //  CHECK(assert_equal(expectedSolution, solution, 1e-7));
 
