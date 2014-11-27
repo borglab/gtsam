@@ -81,7 +81,7 @@ void QPSolver::findUnconstrainedHessiansOfConstrainedVars(
         bool mixed = false;
         for (size_t s = 0; s < sigmas.size(); ++s) {
           if (sigmas[s] <= 1e-9)
-            newPrecisions[s] = 0.0; // 0 info for constraints (both ineq and eq)
+            newPrecisions[s] = 0.0; // 0 info for constraints (both inequality and eq)
           else {
             newPrecisions[s] = 1.0 / sigmas[s];
             mixed = true;
@@ -188,7 +188,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
       // Deal with mixed sigmas: no information if sigma != 0
       Vector sigmas = factor->get_model()->sigmas();
       for (size_t sigmaIx = 0; sigmaIx < sigmas.size(); ++sigmaIx) {
-        // if it's either ineq (sigma<0) or unconstrained (sigma>0)
+        // if it's either inequality (sigma<0) or unconstrained (sigma>0)
         // we have no information about it
         if (fabs(sigmas[sigmaIx]) > 1e-9) {
           A_k.col(sigmaIx) = zero(A_k.rows());
@@ -247,7 +247,7 @@ pair<int, int> QPSolver::identifyLeavingConstraint(
     const VectorValues& lambdas) const {
   int worstFactorIx = -1, worstSigmaIx = -1;
   // preset the maxLambda to 0.0: if lambda is <= 0.0, the constraint is either
-  // inactive or a good ineq constraint, so we don't care!
+  // inactive or a good inequality constraint, so we don't care!
   double maxLambda = 0.0;
   BOOST_FOREACH(size_t factorIx, constraintIndices_) {
     Vector lambda = lambdas.at(factorIx);
@@ -275,12 +275,12 @@ bool QPSolver::updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
 }
 
 //******************************************************************************
-/* We have to make sure the new solution with alpha satisfies all INACTIVE ineq constraints
- * If some inactive ineq constraints complain about the full step (alpha = 1),
- * we have to adjust alpha to stay within the ineq constraints' feasible regions.
+/* We have to make sure the new solution with alpha satisfies all INACTIVE inequality constraints
+ * If some inactive inequality constraints complain about the full step (alpha = 1),
+ * we have to adjust alpha to stay within the inequality constraints' feasible regions.
  *
- * For each inactive ineq j:
- *  - We already have: aj'*xk - bj <= 0, since xk satisfies all ineq constraints
+ * For each inactive inequality j:
+ *  - We already have: aj'*xk - bj <= 0, since xk satisfies all inequality constraints
  *  - We want: aj'*(xk + alpha*p) - bj <= 0
  *  - If aj'*p <= 0, we have: aj'*(xk + alpha*p) <= aj'*xk <= bj, for all alpha>0
  *  it's good!
@@ -288,7 +288,7 @@ bool QPSolver::updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
  *  aj'*xk + alpha*aj'*p - bj <= 0  --> alpha <= (bj - aj'*xk) / (aj'*p)
  *  We want to step as far as possible, so we should choose alpha = (bj - aj'*xk) / (aj'*p)
  *
- * We want the minimum of all those alphas among all inactive ineq.
+ * We want the minimum of all those alphas among all inactive inequality.
  */
 boost::tuple<double, int, int> QPSolver::computeStepSize(
     const GaussianFactorGraph& workingGraph, const VectorValues& xk,
@@ -373,23 +373,24 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph,
     int factorIx, sigmaIx;
     boost::tie(factorIx, sigmaIx) = identifyLeavingConstraint(lambdas);
     if (debug)
-      cout << "violated active ineq - factorIx, sigmaIx: " << factorIx << " "
-          << sigmaIx << endl;
+      cout << "violated active inequality - factorIx, sigmaIx: " << factorIx
+          << " " << sigmaIx << endl;
 
-    // Try to disactivate the weakest violated ineq constraints
-    // if not successful, i.e. all ineq constraints are satisfied: We have the solution!!
+    // Try to de-activate the weakest violated inequality constraints
+    // if not successful, i.e. all inequality constraints are satisfied:
+    // We have the solution!!
     if (!updateWorkingSetInplace(workingGraph, factorIx, sigmaIx, -1.0))
       return true;
   } else {
     // If we CAN make some progress
-    // Adapt stepsize if some inactive inequality constraints complain about this move
+    // Adapt stepsize if some inactive constraints complain about this move
     if (debug)
       cout << "Computing stepsize..." << endl;
     double alpha;
     int factorIx, sigmaIx;
     VectorValues p = newSolution - currentSolution;
-    boost::tie(alpha, factorIx, sigmaIx) = computeStepSize(workingGraph,
-        currentSolution, p);
+    boost::tie(alpha, factorIx, sigmaIx) = //
+        computeStepSize(workingGraph, currentSolution, p);
     if (debug)
       cout << "alpha, factorIx, sigmaIx: " << alpha << " " << factorIx << " "
           << sigmaIx << endl;
