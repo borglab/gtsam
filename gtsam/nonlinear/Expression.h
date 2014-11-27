@@ -170,7 +170,7 @@ private:
       const FastVector<int>& dims, std::vector<Matrix>& H) const {
 
     // H should be pre-allocated
-    assert(H->size()==keys.size());
+    assert(H.size()==keys.size());
 
     // Pre-allocate and zero VerticalBlockMatrix
     static const int Dim = traits::dimension<T>::value;
