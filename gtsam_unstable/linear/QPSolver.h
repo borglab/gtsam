@@ -23,9 +23,13 @@ namespace gtsam {
  * and a positive sigma denotes a normal Gaussian noise model.
  */
 class QPSolver {
+
+  class Hessians: public FactorGraph<HessianFactor> {
+  };
+
   const GaussianFactorGraph& graph_; //!< the original graph, can't be modified!
   FastVector<size_t> constraintIndices_; //!< Indices of constrained factors in the original graph
-  GaussianFactorGraph::shared_ptr freeHessians_; //!< unconstrained Hessians of constrained variables
+  Hessians freeHessians_; //!< unconstrained Hessians of constrained variables
   VariableIndex freeHessianFactorIndex_; //!< indices of unconstrained Hessian factors of constrained variables
                                          // gtsam calls it "VariableIndex", but I think FactorIndex
                                          // makes more sense, because it really stores factor indices.
@@ -43,7 +47,7 @@ public:
   }
 
   /// Return the Hessian factor graph of constrained variables
-  GaussianFactorGraph::shared_ptr freeHessiansOfConstrainedVars() const {
+  const Hessians& freeHessiansOfConstrainedVars() const {
     return freeHessians_;
   }
 
@@ -172,29 +176,11 @@ public:
   /// Find a feasible initial point
   std::pair<bool, VectorValues> findFeasibleInitialValues() const;
 
-  /// Convert a Gaussian factor to a jacobian. return empty shared ptr if failed
-  /// TODO: Move to GaussianFactor?
-  static JacobianFactor::shared_ptr toJacobian(
-      const GaussianFactor::shared_ptr& factor) {
-    JacobianFactor::shared_ptr jacobian(
-        boost::dynamic_pointer_cast<JacobianFactor>(factor));
-    return jacobian;
-  }
-
-  /// Convert a Gaussian factor to a Hessian. Return empty shared ptr if failed
-  /// TODO: Move to GaussianFactor?
-  static HessianFactor::shared_ptr toHessian(
-      const GaussianFactor::shared_ptr factor) {
-    HessianFactor::shared_ptr hessian(
-        boost::dynamic_pointer_cast<HessianFactor>(factor));
-    return hessian;
-  }
-
 private:
+
   /// Collect all free Hessians involving constrained variables into a graph
-  GaussianFactorGraph::shared_ptr unconstrainedHessiansOfConstrainedVars(
-      const GaussianFactorGraph& graph,
-      const std::set<Key>& constrainedVars) const;
+  void findUnconstrainedHessiansOfConstrainedVars(
+      const std::set<Key>& constrainedVars);
 
 };
 

@@ -89,13 +89,9 @@ TEST(QPSolver, constraintsAux) {
   LONGS_EQUAL(-1, factorIx2);
   LONGS_EQUAL(-1, lambdaIx2);
 
-  GaussianFactorGraph::shared_ptr freeHessian =
-      solver.freeHessiansOfConstrainedVars();
-  GaussianFactorGraph expectedFreeHessian;
-  expectedFreeHessian.push_back(
-      HessianFactor(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
-          2.0 * ones(1, 1), zero(1), 1.0));
-  EXPECT(expectedFreeHessian.equals(*freeHessian));
+  HessianFactor expectedFreeHessian(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1),
+      3.0 * ones(1), 2.0 * ones(1, 1), zero(1), 1.0);
+  EXPECT(solver.freeHessiansOfConstrainedVars()[0]->equals(expectedFreeHessian));
 }
 
 /* ************************************************************************* */

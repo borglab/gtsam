@@ -16,7 +16,15 @@ using namespace std;
 
 namespace gtsam {
 
-/* ************************************************************************* */
+/// Convert a Gaussian factor to a jacobian. return empty shared ptr if failed
+static JacobianFactor::shared_ptr toJacobian(
+    const GaussianFactor::shared_ptr& factor) {
+  JacobianFactor::shared_ptr jacobian(
+      boost::dynamic_pointer_cast<JacobianFactor>(factor));
+  return jacobian;
+}
+
+//******************************************************************************
 QPSolver::QPSolver(const GaussianFactorGraph& graph) :
     graph_(graph), fullFactorIndices_(graph) {
   // Split the original graph into unconstrained and constrained part
@@ -38,16 +46,15 @@ QPSolver::QPSolver(const GaussianFactorGraph& graph) :
   }
 
   // Collect unconstrained hessians of constrained vars to build dual graph
-  freeHessians_ = unconstrainedHessiansOfConstrainedVars(graph,
-      constrainedVars);
-  freeHessianFactorIndex_ = VariableIndex(*freeHessians_);
+  findUnconstrainedHessiansOfConstrainedVars(constrainedVars);
+  freeHessianFactorIndex_ = VariableIndex(freeHessians_);
 }
 
-/* ************************************************************************* */
-GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars(
-    const GaussianFactorGraph& graph, const set<Key>& constrainedVars) const {
-  VariableIndex variableIndex(graph);
-  GaussianFactorGraph::shared_ptr hfg(new GaussianFactorGraph());
+//******************************************************************************
+void QPSolver::findUnconstrainedHessiansOfConstrainedVars(
+    const set<Key>& constrainedVars) {
+  VariableIndex variableIndex(graph_);
+
   // Collect all factors involving constrained vars
   FastSet<size_t> factors;
   BOOST_FOREACH(Key key, constrainedVars) {
@@ -59,10 +66,12 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
 
   // Convert each factor into Hessian
   BOOST_FOREACH(size_t factorIndex, factors) {
-    if (!graph[factorIndex])
+    GaussianFactor::shared_ptr gf = graph_[factorIndex];
+    if (!gf)
       continue;
     // See if this is a Jacobian factor
-    JacobianFactor::shared_ptr jf = toJacobian(graph[factorIndex]);
+    JacobianFactor::shared_ptr jf = //
+        boost::dynamic_pointer_cast<JacobianFactor>(gf);
     if (jf) {
       // Dealing with mixed constrained factor
       if (jf->get_model() && jf->isConstrained()) {
@@ -82,7 +91,7 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
           JacobianFactor::shared_ptr newJacobian = toJacobian(jf->clone());
           newJacobian->setModel(
               noiseModel::Diagonal::Precisions(newPrecisions));
-          hfg->push_back(HessianFactor(*newJacobian));
+          freeHessians_.push_back(HessianFactor(*newJacobian));
         }
       } else { // unconstrained Jacobian
         // Convert the original linear factor to Hessian factor
@@ -93,16 +102,18 @@ GaussianFactorGraph::shared_ptr QPSolver::unconstrainedHessiansOfConstrainedVars
         // because of a weird error which might be related to clang
         // See this: https://groups.google.com/forum/#!topic/ceres-solver/DYhqOLPquHU
         // My current way to fix this is to compile both gtsam and my library in Release mode
-        hfg->add(HessianFactor(*jf));
+        freeHessians_.add(HessianFactor(*jf));
       }
     } else { // If it's not a Jacobian, it should be a hessian factor. Just add!
-      hfg->push_back(graph[factorIndex]);
+      HessianFactor::shared_ptr hf = //
+          boost::dynamic_pointer_cast<HessianFactor>(gf);
+      if (hf)
+        freeHessians_.push_back(hf);
     }
   }
-  return hfg;
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     const VectorValues& x0, bool useLeastSquare) const {
   static const bool debug = false;
@@ -122,8 +133,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
     // Find xi's dim from the first factor on xi
     if (xiFactors.size() == 0)
       continue;
-    GaussianFactor::shared_ptr xiFactor0 = freeHessians_->at(
-        *xiFactors.begin());
+    GaussianFactor::shared_ptr xiFactor0 = freeHessians_.at(*xiFactors.begin());
     size_t xiDim = xiFactor0->getDim(xiFactor0->find(xiKey));
     if (debug)
       xiFactor0->print("xiFactor0: ");
@@ -131,12 +141,12 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
       cout << "xiKey: " << string(Symbol(xiKey)) << ", xiDim: " << xiDim
           << endl;
 
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Compute the b-vector for the dual factor Ax-b
     // b = gradf(xi) = \frac{\partial f}{\partial xi}' = \sum_j G_ij*xj - gi
     Vector gradf_xi = zero(xiDim);
     BOOST_FOREACH(size_t factorIx, xiFactors) {
-      HessianFactor::shared_ptr factor = toHessian(freeHessians_->at(factorIx));
+      HessianFactor::shared_ptr factor = freeHessians_.at(factorIx);
       Factor::const_iterator xi = factor->find(xiKey);
       // Sum over Gij*xj for all xj connecting to xi
       for (Factor::const_iterator xj = factor->begin(); xj != factor->end();
@@ -158,7 +168,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
       gradf_xi += -factor->linearTerm(xi);
     }
 
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Compute the Jacobian A for the dual factor Ax-b
     // Obtain the jacobians for lambda variables from their corresponding constraints
     // A = gradc_k(xi) = \frac{\partial c_k}{\partial xi}'
@@ -191,7 +201,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
       lambdaTerms.push_back(make_pair(factorIndex, A_k));
     }
 
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Create and add factors to the dual graph
     // If least square approximation is desired, use unit noise model.
     if (debug)
@@ -232,7 +242,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
   return dualGraph;
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 pair<int, int> QPSolver::findWorstViolatedActiveIneq(
     const VectorValues& lambdas) const {
   int worstFactorIx = -1, worstSigmaIx = -1;
@@ -253,9 +263,9 @@ pair<int, int> QPSolver::findWorstViolatedActiveIneq(
   return make_pair(worstFactorIx, worstSigmaIx);
 }
 
-/* ************************************************************************* */bool QPSolver::updateWorkingSetInplace(
-    GaussianFactorGraph& workingGraph, int factorIx, int sigmaIx,
-    double newSigma) const {
+//******************************************************************************
+bool QPSolver::updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
+    int factorIx, int sigmaIx, double newSigma) const {
   if (factorIx < 0 || sigmaIx < 0)
     return false;
   Vector sigmas = toJacobian(workingGraph.at(factorIx))->get_model()->sigmas();
@@ -264,7 +274,7 @@ pair<int, int> QPSolver::findWorstViolatedActiveIneq(
   return true;
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 /* We have to make sure the new solution with alpha satisfies all INACTIVE ineq constraints
  * If some inactive ineq constraints complain about the full step (alpha = 1),
  * we have to adjust alpha to stay within the ineq constraints' feasible regions.
@@ -337,9 +347,9 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(
   return boost::make_tuple(minAlpha, closestFactorIx, closestSigmaIx);
 }
 
-/* ************************************************************************* */bool QPSolver::iterateInPlace(
-    GaussianFactorGraph& workingGraph, VectorValues& currentSolution,
-    VectorValues& lambdas) const {
+//******************************************************************************
+bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph,
+    VectorValues& currentSolution, VectorValues& lambdas) const {
   static bool debug = false;
   if (debug)
     workingGraph.print("workingGraph: ");
@@ -400,7 +410,7 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(
   return false;
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize(
     const VectorValues& initials) const {
   GaussianFactorGraph workingGraph = graph_.clone();
@@ -413,7 +423,7 @@ pair<VectorValues, VectorValues> QPSolver::optimize(
   return make_pair(currentSolution, lambdas);
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 pair<VectorValues, Key> QPSolver::initialValuesLP() const {
   size_t firstSlackKey = 0;
   BOOST_FOREACH(Key key, fullFactorIndices_ | boost::adaptors::map_keys) {
@@ -455,7 +465,7 @@ pair<VectorValues, Key> QPSolver::initialValuesLP() const {
   return make_pair(initials, firstSlackKey);
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 VectorValues QPSolver::objectiveCoeffsLP(Key firstSlackKey) const {
   VectorValues slackObjective;
   for (size_t i = 0; i < constraintIndices_.size(); ++i) {
@@ -474,7 +484,7 @@ VectorValues QPSolver::objectiveCoeffsLP(Key firstSlackKey) const {
   return slackObjective;
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 pair<GaussianFactorGraph::shared_ptr, VectorValues> QPSolver::constraintsLP(
     Key firstSlackKey) const {
   // Create constraints and 0 lower bounds (zi>=0)
@@ -504,7 +514,7 @@ pair<GaussianFactorGraph::shared_ptr, VectorValues> QPSolver::constraintsLP(
   return make_pair(constraints, slackLowerBounds);
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
   static const bool debug = false;
   // Initial values with slack variables for the LP subproblem, Nocedal06book, pg.473
@@ -554,7 +564,7 @@ pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
   return make_pair(slackSum < 1e-5, solution);
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize() const {
   bool isFeasible;
   VectorValues initials;
