@@ -104,9 +104,9 @@ TEST( Cal3DS2, retract)
 //  test1 = Matrix25::Zero();
 //  cout << test1 << endl;
 //
-//  // In this case we want dynaDcal to be correctly allocate and filled
-//  Matrix dynaDcal(2,5);
-//  Eigen::Ref<Matrix25> test2(dynaDcal);
+//  // In this case we want dynamic1 to be correctly allocate and filled
+//  Matrix dynamic1(2,5);
+//  Eigen::Ref<Matrix25> test2(dynamic1);
 //  cout << test2.rows() << "," << test2.cols() << endl;
 //  test2.resize(2, 5);
 //  test2 = Matrix25::Zero();
@@ -129,9 +129,9 @@ TEST( Cal3DS2, retract)
 //
 //  // In this case we don't want anything to happen
 //  cout << "\nempty" << endl;
-//  Matrix empty;
-//  test(empty);
-//  cout << "after" << empty << endl;
+//  Matrix dynamic0;
+//  test(dynamic0);
+//  cout << "after" << dynamic0 << endl;
 //
 //  // In this case we don't want a copy, TODO: does it copy???
 //  cout << "\nfixed" << endl;
@@ -142,16 +142,16 @@ TEST( Cal3DS2, retract)
 //  test(fixedDcal);
 //  cout << "after" << fixedDcal << endl;
 //
-//  // In this case we want dynaDcal to be correctly allocate and filled
+//  // In this case we want dynamic1 to be correctly allocate and filled
 //  cout << "\ndynamic wrong size" << endl;
-//  Matrix dynaDcal(8,5);
-//  dynaDcal.setOnes();
+//  Matrix dynamic1(8,5);
+//  dynamic1.setOnes();
 //
-//  cout << dynaDcal << endl;
-//  test(dynaDcal);
-//  cout << "after" << dynaDcal << endl;
+//  cout << dynamic1 << endl;
+//  test(dynamic1);
+//  cout << "after" << dynamic1 << endl;
 //
-//  // In this case we want dynaDcal to be correctly allocate and filled
+//  // In this case we want dynamic1 to be correctly allocate and filled
 //  cout << "\ndynamic right size" << endl;
 //  Matrix dynamic2(2,5);
 //  dynamic2.setOnes();
@@ -177,9 +177,9 @@ TEST( Cal3DS2, retract)
 //
 //  // In this case we don't want anything to happen
 //  cout << "\nempty" << endl;
-//  Matrix empty;
-//  test2(empty);
-//  cout << "after" << empty << endl;
+//  Matrix dynamic0;
+//  test2(dynamic0);
+//  cout << "after" << dynamic0 << endl;
 //
 //  // In this case we don't want a copy, TODO: does it copy???
 //  cout << "\nfixed" << endl;
@@ -190,16 +190,16 @@ TEST( Cal3DS2, retract)
 //  test2(fixedDcal);
 //  cout << "after" << fixedDcal << endl;
 //
-//  // In this case we want dynaDcal to be correctly allocate and filled
+//  // In this case we want dynamic1 to be correctly allocate and filled
 //  cout << "\ndynamic wrong size" << endl;
-//  Matrix dynaDcal(8,5);
-//  dynaDcal.setOnes();
+//  Matrix dynamic1(8,5);
+//  dynamic1.setOnes();
 //
-//  cout << dynaDcal << endl;
-//  test2(dynaDcal);
-//  cout << "after" << dynaDcal << endl;
+//  cout << dynamic1 << endl;
+//  test2(dynamic1);
+//  cout << "after" << dynamic1 << endl;
 //
-//  // In this case we want dynaDcal to be correctly allocate and filled
+//  // In this case we want dynamic1 to be correctly allocate and filled
 //  cout << "\ndynamic right size" << endl;
 //  Matrix dynamic2(2,5);
 //  dynamic2.setOnes();
@@ -211,66 +211,77 @@ TEST( Cal3DS2, retract)
 
 /* ************************************************************************* */
 
-template <int Rows, int Cols>
+template<int Rows, int Cols>
 struct OptionalJacobian {
   bool empty_;
-  Matrix dynamic;
-  Eigen::Matrix<double,Rows,Cols> fixed_;
-  OptionalJacobian():empty_(true) {}
-  OptionalJacobian(Eigen::Matrix<double,Rows,Cols>& fixed):empty_(false),fixed_(fixed) {}
-  OptionalJacobian(Matrix& dynamic):empty_(true) {}
-  bool empty() const {return empty_;} // TODO cast to bool !empty
-  void operator=(const Eigen::Matrix<double,Rows,Cols>& fixed) {
-    fixed_ = fixed;
+  typedef Eigen::Matrix<double, Rows, Cols> Fixed;
+  Eigen::Map<Fixed> map_;
+  OptionalJacobian() :
+      empty_(true), map_(NULL) {
   }
+  OptionalJacobian(Fixed& fixed) :
+      empty_(false), map_(NULL) {
+    // Trick on http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
+    // to make map_ usurp the memory of the fixed size matrix
+    new (&map_) Eigen::Map<Fixed>(fixed.data());
+  }
+  OptionalJacobian(Matrix& dynamic) :
+      empty_(false), map_(NULL) {
+    dynamic.resize(Rows, Cols);
+    // Trick on http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
+    // to make map_ usurp the memory of the fixed size matrix
+    new (&map_) Eigen::Map<Fixed>(dynamic.data());
+  }
+  /// Return true is allocated, false if default constructor was used
+  operator bool() const {
+    return !empty_;
+  }
+  /// Assign a fixed matrix to this
+  void operator=(const Fixed& fixed) {
+    map_ << fixed;
+  }
+  /// Print
   void print(const string& s) {
-    if (!empty_) cout << s << fixed_ << endl;
+    if (!empty_)
+      cout << s << map_ << endl;
   }
 };
 
-void test3(OptionalJacobian<2,5> H) {
-  cout << "test3" << endl;
-  if (!H.empty()) {
-    H.print("H before:\n");
-    H = Matrix25::Zero();
-    H.print("H after:\n");
-  }
+void test3(OptionalJacobian<2,3> H = OptionalJacobian<2,3>()) {
+  if (H)
+    H = Matrix23::Zero();
 }
 
 TEST( Cal3DS2, Ref2) {
 
-  // In this case we don't want anything to happen
-  cout << "\nempty" << endl;
-  Matrix empty;
-  test3(empty);
-  cout << "after" << empty << endl;
+  Matrix expected;
+  expected = Matrix23::Zero();
 
-  // In this case we don't want a copy, TODO: does it copy???
-  cout << "\nfixed" << endl;
-  Matrix25 fixedDcal;
+  // Default argument does nothing
+  test3();
+
+  // Fixed size, no copy
+  Matrix23 fixedDcal;
   fixedDcal.setOnes();
-
-  cout << fixedDcal << endl;
   test3(fixedDcal);
-  cout << "after" << fixedDcal << endl;
+  EXPECT(assert_equal(expected,fixedDcal));
 
-  // In this case we want dynaDcal to be correctly allocate and filled
-  cout << "\ndynamic wrong size" << endl;
-  Matrix dynaDcal(8,5);
-  dynaDcal.setOnes();
+  // Empty is no longer a sign we don't want a matrix, we want it resized
+  Matrix dynamic0;
+  test3(dynamic0);
+  EXPECT(assert_equal(expected,dynamic0));
 
-  cout << dynaDcal << endl;
-  test3(dynaDcal);
-  cout << "after" << dynaDcal << endl;
+  // Dynamic wrong size
+  Matrix dynamic1(3,5);
+  dynamic1.setOnes();
+  test3(dynamic1);
+  EXPECT(assert_equal(expected,dynamic0));
 
-  // In this case we want dynaDcal to be correctly allocate and filled
-  cout << "\ndynamic right size" << endl;
+  // Dynamic right size
   Matrix dynamic2(2,5);
   dynamic2.setOnes();
-
-  cout << dynamic2 << endl;
   test3(dynamic2);
-  cout << "after" << dynamic2 << endl;
+  EXPECT(assert_equal(dynamic2,dynamic0));
 }
 
 /* ************************************************************************* */
