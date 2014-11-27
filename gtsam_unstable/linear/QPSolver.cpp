@@ -253,7 +253,8 @@ pair<int, int> QPSolver::findWorstViolatedActiveIneq(
   return make_pair(worstFactorIx, worstSigmaIx);
 }
 
-/* ************************************************************************* */bool QPSolver::updateWorkingSetInplace(
+/* ************************************************************************* */
+bool QPSolver::updateWorkingSetInplace(
     GaussianFactorGraph& workingGraph, int factorIx, int sigmaIx,
     double newSigma) const {
   if (factorIx < 0 || sigmaIx < 0)
@@ -337,7 +338,8 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(
   return boost::make_tuple(minAlpha, closestFactorIx, closestSigmaIx);
 }
 
-/* ************************************************************************* */bool QPSolver::iterateInPlace(
+/* ************************************************************************* */
+bool QPSolver::iterateInPlace(
     GaussianFactorGraph& workingGraph, VectorValues& currentSolution,
     VectorValues& lambdas) const {
   static bool debug = false;
