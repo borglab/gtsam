@@ -20,6 +20,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3DS2.h>
 
+using namespace std;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Cal3DS2)
@@ -90,6 +91,122 @@ TEST( Cal3DS2, retract)
   Cal3DS2 actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-7));
   CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
+}
+
+/* ************************************************************************* */
+// Test Eigen::Ref
+//TEST( Cal3DS2, Ref) {
+//  // In this case we don't want a copy
+//  Matrix25 fixedDcal;
+//  Eigen::Ref<Matrix25> test1(fixedDcal);
+//  cout << test1 << endl;
+//  test1.resize(2, 5);
+//  test1 = Matrix25::Zero();
+//  cout << test1 << endl;
+//
+//  // In this case we want dynaDcal to be correctly allocate and filled
+//  Matrix dynaDcal(2,5);
+//  Eigen::Ref<Matrix25> test2(dynaDcal);
+//  cout << test2.rows() << "," << test2.cols() << endl;
+//  test2.resize(2, 5);
+//  test2 = Matrix25::Zero();
+//  cout << test2 << endl;
+//}
+
+void test(Eigen::Ref<Matrix25> H) {
+  cout << "test" << endl;
+  cout << H.size() << endl;
+  cout << H.rows() << "," << H.cols() << endl;
+  if (H.size()) {
+    cout << "H before:\n" << H << endl;
+    H.resize(2, 5);
+    H = Matrix25::Zero();
+    cout << "H after:\n" << H << endl;
+  }
+}
+
+TEST( Cal3DS2, Ref) {
+
+  // In this case we don't want anything to happen
+  cout << "\nempty" << endl;
+  Matrix empty;
+  test(empty);
+  cout << "after" << empty << endl;
+
+  // In this case we don't want a copy, TODO: does it copy???
+  cout << "\nfixed" << endl;
+  Matrix25 fixedDcal;
+  fixedDcal.setOnes();
+
+  cout << fixedDcal << endl;
+  test(fixedDcal);
+  cout << "after" << fixedDcal << endl;
+
+  // In this case we want dynaDcal to be correctly allocate and filled
+  cout << "\ndynamic wrong size" << endl;
+  Matrix dynaDcal(8,5);
+  dynaDcal.setOnes();
+
+  cout << dynaDcal << endl;
+  test(dynaDcal);
+  cout << "after" << dynaDcal << endl;
+
+  // In this case we want dynaDcal to be correctly allocate and filled
+  cout << "\ndynamic right size" << endl;
+  Matrix dynamic2(2,5);
+  dynamic2.setOnes();
+
+  cout << dynamic2 << endl;
+  test(dynamic2);
+  cout << "after" << dynamic2 << endl;
+}
+
+void test2(Eigen::Ref<Matrix> H) {
+  cout << "test2" << endl;
+  cout << H.size() << endl;
+  cout << H.rows() << "," << H.cols() << endl;
+  if (H.size()) {
+    cout << "H before:\n" << H << endl;
+    H.resize(2, 5);
+    H = Matrix25::Zero();
+    cout << "H after:\n" << H << endl;
+  }
+}
+
+TEST( Cal3DS2, Ref2) {
+
+  // In this case we don't want anything to happen
+  cout << "\nempty" << endl;
+  Matrix empty;
+  test2(empty);
+  cout << "after" << empty << endl;
+
+  // In this case we don't want a copy, TODO: does it copy???
+  cout << "\nfixed" << endl;
+  Matrix25 fixedDcal;
+  fixedDcal.setOnes();
+
+  cout << fixedDcal << endl;
+  test2(fixedDcal);
+  cout << "after" << fixedDcal << endl;
+
+  // In this case we want dynaDcal to be correctly allocate and filled
+  cout << "\ndynamic wrong size" << endl;
+  Matrix dynaDcal(8,5);
+  dynaDcal.setOnes();
+
+  cout << dynaDcal << endl;
+  test2(dynaDcal);
+  cout << "after" << dynaDcal << endl;
+
+  // In this case we want dynaDcal to be correctly allocate and filled
+  cout << "\ndynamic right size" << endl;
+  Matrix dynamic2(2,5);
+  dynamic2.setOnes();
+
+  cout << dynamic2 << endl;
+  test2(dynamic2);
+  cout << "after" << dynamic2 << endl;
 }
 
 /* ************************************************************************* */

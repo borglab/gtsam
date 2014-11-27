@@ -81,12 +81,6 @@ Point2 Cal3_S2::uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal,
 }
 
 /* ************************************************************************* */
-Point2 Cal3_S2::uncalibrate(const Point2& p) const {
-  const double x = p.x(), y = p.y();
-  return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
-}
-
-/* ************************************************************************* */
 Point2 Cal3_S2::calibrate(const Point2& p) const {
   const double u = p.x(), v = p.y();
   return Point2((1 / fx_) * (u - u0_ - (s_ / fy_) * (v - v0_)),

@@ -42,7 +42,9 @@ private:
   Pose3 pose_;
   Calibration K_;
 
+  // Get dimension of calibration type at compile time
   static const int DimK = traits::dimension<Calibration>::value;
+  typedef Eigen::Matrix<double,2,DimK> JacobianK;
 
 public:
 
@@ -353,7 +355,7 @@ public:
       const Point3& pw, //
       boost::optional<Matrix&> Dpose,
       boost::optional<Matrix&> Dpoint,
-      boost::optional<Matrix25&> Dcal) const {
+      boost::optional<Matrix&> Dcal) const {
 
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
@@ -379,7 +381,13 @@ public:
       }
       return pi;
     } else
-      return K_.uncalibrate(pn, Dcal, boost::none);
+      if (Dcal) {
+        JacobianK fixedDcal;
+        const Point2 pi = K_.uncalibrate(pn, fixedDcal);
+        *Dcal = fixedDcal;
+        return pi;
+      } else
+        return K_.uncalibrate(pn);
   }
 
   /** project a point at infinity from world coordinate to the image
