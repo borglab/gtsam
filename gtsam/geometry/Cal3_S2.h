@@ -23,6 +23,7 @@
 
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
@@ -54,6 +55,11 @@ public:
 
   /// Defdault constructo acts like boost::none
   FixedRef() :
+      empty_(true), map_(NULL) {
+  }
+
+  /// Defdault constructo acts like boost::none
+  FixedRef(boost::none_t none) :
       empty_(true), map_(NULL) {
   }
 

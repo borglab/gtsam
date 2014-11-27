@@ -381,13 +381,7 @@ public:
       }
       return pi;
     } else
-      if (Dcal) {
-        JacobianK fixedDcal;
-        const Point2 pi = K_.uncalibrate(pn, fixedDcal);
-        *Dcal = fixedDcal;
-        return pi;
-      } else
-        return K_.uncalibrate(pn);
+      return K_.uncalibrate(pn, Dcal);
   }
 
   /** project a point at infinity from world coordinate to the image
@@ -400,7 +394,7 @@ public:
       const Point3& pw, //
       boost::optional<Matrix&> Dpose = boost::none,
       boost::optional<Matrix&> Dpoint = boost::none,
-      boost::optional<Matrix25&> Dcal = boost::none) const {
+      boost::optional<Matrix&> Dcal = boost::none) const {
 
     if (!Dpose && !Dpoint && !Dcal) {
       const Point3 pc = pose_.rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
