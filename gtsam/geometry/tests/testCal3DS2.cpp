@@ -113,63 +113,127 @@ TEST( Cal3DS2, retract)
 //  cout << test2 << endl;
 //}
 
-void test(Eigen::Ref<Matrix25> H) {
-  cout << "test" << endl;
-  cout << H.size() << endl;
-  cout << H.rows() << "," << H.cols() << endl;
-  if (H.size()) {
-    cout << "H before:\n" << H << endl;
-    H.resize(2, 5);
-    H = Matrix25::Zero();
-    cout << "H after:\n" << H << endl;
+//void test(Eigen::Ref<Matrix25> H) {
+//  cout << "test" << endl;
+//  cout << H.size() << endl;
+//  cout << H.rows() << "," << H.cols() << endl;
+//  if (H.size()) {
+//    cout << "H before:\n" << H << endl;
+//    H.resize(2, 5);
+//    H = Matrix25::Zero();
+//    cout << "H after:\n" << H << endl;
+//  }
+//}
+//
+//TEST( Cal3DS2, Ref) {
+//
+//  // In this case we don't want anything to happen
+//  cout << "\nempty" << endl;
+//  Matrix empty;
+//  test(empty);
+//  cout << "after" << empty << endl;
+//
+//  // In this case we don't want a copy, TODO: does it copy???
+//  cout << "\nfixed" << endl;
+//  Matrix25 fixedDcal;
+//  fixedDcal.setOnes();
+//
+//  cout << fixedDcal << endl;
+//  test(fixedDcal);
+//  cout << "after" << fixedDcal << endl;
+//
+//  // In this case we want dynaDcal to be correctly allocate and filled
+//  cout << "\ndynamic wrong size" << endl;
+//  Matrix dynaDcal(8,5);
+//  dynaDcal.setOnes();
+//
+//  cout << dynaDcal << endl;
+//  test(dynaDcal);
+//  cout << "after" << dynaDcal << endl;
+//
+//  // In this case we want dynaDcal to be correctly allocate and filled
+//  cout << "\ndynamic right size" << endl;
+//  Matrix dynamic2(2,5);
+//  dynamic2.setOnes();
+//
+//  cout << dynamic2 << endl;
+//  test(dynamic2);
+//  cout << "after" << dynamic2 << endl;
+//}
+//
+//void test2(Eigen::Ref<Matrix> H) {
+//  cout << "test2" << endl;
+//  cout << H.size() << endl;
+//  cout << H.rows() << "," << H.cols() << endl;
+//  if (H.size()) {
+//    cout << "H before:\n" << H << endl;
+//    H.resize(2, 5);
+//    H = Matrix25::Zero();
+//    cout << "H after:\n" << H << endl;
+//  }
+//}
+//
+//TEST( Cal3DS2, Ref2) {
+//
+//  // In this case we don't want anything to happen
+//  cout << "\nempty" << endl;
+//  Matrix empty;
+//  test2(empty);
+//  cout << "after" << empty << endl;
+//
+//  // In this case we don't want a copy, TODO: does it copy???
+//  cout << "\nfixed" << endl;
+//  Matrix25 fixedDcal;
+//  fixedDcal.setOnes();
+//
+//  cout << fixedDcal << endl;
+//  test2(fixedDcal);
+//  cout << "after" << fixedDcal << endl;
+//
+//  // In this case we want dynaDcal to be correctly allocate and filled
+//  cout << "\ndynamic wrong size" << endl;
+//  Matrix dynaDcal(8,5);
+//  dynaDcal.setOnes();
+//
+//  cout << dynaDcal << endl;
+//  test2(dynaDcal);
+//  cout << "after" << dynaDcal << endl;
+//
+//  // In this case we want dynaDcal to be correctly allocate and filled
+//  cout << "\ndynamic right size" << endl;
+//  Matrix dynamic2(2,5);
+//  dynamic2.setOnes();
+//
+//  cout << dynamic2 << endl;
+//  test2(dynamic2);
+//  cout << "after" << dynamic2 << endl;
+//}
+
+/* ************************************************************************* */
+
+template <int Rows, int Cols>
+struct OptionalJacobian {
+  bool empty_;
+  Matrix dynamic;
+  Eigen::Matrix<double,Rows,Cols> fixed_;
+  OptionalJacobian():empty_(true) {}
+  OptionalJacobian(Eigen::Matrix<double,Rows,Cols>& fixed):empty_(false),fixed_(fixed) {}
+  OptionalJacobian(Matrix& dynamic):empty_(true) {}
+  bool empty() const {return empty_;} // TODO cast to bool !empty
+  void operator=(const Eigen::Matrix<double,Rows,Cols>& fixed) {
+    fixed_ = fixed;
   }
-}
+  void print(const string& s) {
+    if (!empty_) cout << s << fixed_ << endl;
+  }
+};
 
-TEST( Cal3DS2, Ref) {
-
-  // In this case we don't want anything to happen
-  cout << "\nempty" << endl;
-  Matrix empty;
-  test(empty);
-  cout << "after" << empty << endl;
-
-  // In this case we don't want a copy, TODO: does it copy???
-  cout << "\nfixed" << endl;
-  Matrix25 fixedDcal;
-  fixedDcal.setOnes();
-
-  cout << fixedDcal << endl;
-  test(fixedDcal);
-  cout << "after" << fixedDcal << endl;
-
-  // In this case we want dynaDcal to be correctly allocate and filled
-  cout << "\ndynamic wrong size" << endl;
-  Matrix dynaDcal(8,5);
-  dynaDcal.setOnes();
-
-  cout << dynaDcal << endl;
-  test(dynaDcal);
-  cout << "after" << dynaDcal << endl;
-
-  // In this case we want dynaDcal to be correctly allocate and filled
-  cout << "\ndynamic right size" << endl;
-  Matrix dynamic2(2,5);
-  dynamic2.setOnes();
-
-  cout << dynamic2 << endl;
-  test(dynamic2);
-  cout << "after" << dynamic2 << endl;
-}
-
-void test2(Eigen::Ref<Matrix> H) {
-  cout << "test2" << endl;
-  cout << H.size() << endl;
-  cout << H.rows() << "," << H.cols() << endl;
-  if (H.size()) {
-    cout << "H before:\n" << H << endl;
-    H.resize(2, 5);
+void test3(OptionalJacobian<2,5> H) {
+  cout << "test3" << endl;
+  if (!H.empty()) {
+    H.print("H before:\n");
     H = Matrix25::Zero();
-    cout << "H after:\n" << H << endl;
+    H.print("H after:\n");
   }
 }
 
@@ -178,7 +242,7 @@ TEST( Cal3DS2, Ref2) {
   // In this case we don't want anything to happen
   cout << "\nempty" << endl;
   Matrix empty;
-  test2(empty);
+  test3(empty);
   cout << "after" << empty << endl;
 
   // In this case we don't want a copy, TODO: does it copy???
@@ -187,7 +251,7 @@ TEST( Cal3DS2, Ref2) {
   fixedDcal.setOnes();
 
   cout << fixedDcal << endl;
-  test2(fixedDcal);
+  test3(fixedDcal);
   cout << "after" << fixedDcal << endl;
 
   // In this case we want dynaDcal to be correctly allocate and filled
@@ -196,7 +260,7 @@ TEST( Cal3DS2, Ref2) {
   dynaDcal.setOnes();
 
   cout << dynaDcal << endl;
-  test2(dynaDcal);
+  test3(dynaDcal);
   cout << "after" << dynaDcal << endl;
 
   // In this case we want dynaDcal to be correctly allocate and filled
@@ -205,7 +269,7 @@ TEST( Cal3DS2, Ref2) {
   dynamic2.setOnes();
 
   cout << dynamic2 << endl;
-  test2(dynamic2);
+  test3(dynamic2);
   cout << "after" << dynamic2 << endl;
 }
 
