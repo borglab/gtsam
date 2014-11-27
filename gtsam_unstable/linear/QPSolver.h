@@ -115,7 +115,7 @@ public:
    * And we want to remove the worst one with the largest lambda from the active set.
    *
    */
-  std::pair<int, int> findWorstViolatedActiveIneq(
+  std::pair<int, int> identifyLeavingConstraint(
       const VectorValues& lambdas) const;
 
   /**

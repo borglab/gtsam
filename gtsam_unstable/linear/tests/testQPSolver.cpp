@@ -77,14 +77,14 @@ TEST(QPSolver, constraintsAux) {
   VectorValues lambdas;
   lambdas.insert(constraintIx[0], (Vector(4) << -0.5, 0.0, 0.3, 0.1));
   int factorIx, lambdaIx;
-  boost::tie(factorIx, lambdaIx) = solver.findWorstViolatedActiveIneq(lambdas);
+  boost::tie(factorIx, lambdaIx) = solver.identifyLeavingConstraint(lambdas);
   LONGS_EQUAL(1, factorIx);
   LONGS_EQUAL(2, lambdaIx);
 
   VectorValues lambdas2;
   lambdas2.insert(constraintIx[0], (Vector(4) << -0.5, 0.0, -0.3, -0.1));
   int factorIx2, lambdaIx2;
-  boost::tie(factorIx2, lambdaIx2) = solver.findWorstViolatedActiveIneq(
+  boost::tie(factorIx2, lambdaIx2) = solver.identifyLeavingConstraint(
       lambdas2);
   LONGS_EQUAL(-1, factorIx2);
   LONGS_EQUAL(-1, lambdaIx2);

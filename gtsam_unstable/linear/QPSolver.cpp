@@ -243,7 +243,7 @@ GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
 }
 
 //******************************************************************************
-pair<int, int> QPSolver::findWorstViolatedActiveIneq(
+pair<int, int> QPSolver::identifyLeavingConstraint(
     const VectorValues& lambdas) const {
   int worstFactorIx = -1, worstSigmaIx = -1;
   // preset the maxLambda to 0.0: if lambda is <= 0.0, the constraint is either
@@ -371,7 +371,7 @@ bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph,
       lambdas.print("lambdas :");
 
     int factorIx, sigmaIx;
-    boost::tie(factorIx, sigmaIx) = findWorstViolatedActiveIneq(lambdas);
+    boost::tie(factorIx, sigmaIx) = identifyLeavingConstraint(lambdas);
     if (debug)
       cout << "violated active ineq - factorIx, sigmaIx: " << factorIx << " "
           << sigmaIx << endl;
