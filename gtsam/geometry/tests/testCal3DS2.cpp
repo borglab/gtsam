@@ -94,138 +94,21 @@ TEST( Cal3DS2, retract)
 }
 
 /* ************************************************************************* */
-// Test Eigen::Ref
-//TEST( Cal3DS2, Ref) {
-//  // In this case we don't want a copy
-//  Matrix25 fixedDcal;
-//  Eigen::Ref<Matrix25> test1(fixedDcal);
-//  cout << test1 << endl;
-//  test1.resize(2, 5);
-//  test1 = Matrix25::Zero();
-//  cout << test1 << endl;
-//
-//  // In this case we want dynamic1 to be correctly allocate and filled
-//  Matrix dynamic1(2,5);
-//  Eigen::Ref<Matrix25> test2(dynamic1);
-//  cout << test2.rows() << "," << test2.cols() << endl;
-//  test2.resize(2, 5);
-//  test2 = Matrix25::Zero();
-//  cout << test2 << endl;
-//}
-
-//void test(Eigen::Ref<Matrix25> H) {
-//  cout << "test" << endl;
-//  cout << H.size() << endl;
-//  cout << H.rows() << "," << H.cols() << endl;
-//  if (H.size()) {
-//    cout << "H before:\n" << H << endl;
-//    H.resize(2, 5);
-//    H = Matrix25::Zero();
-//    cout << "H after:\n" << H << endl;
-//  }
-//}
-//
-//TEST( Cal3DS2, Ref) {
-//
-//  // In this case we don't want anything to happen
-//  cout << "\nempty" << endl;
-//  Matrix dynamic0;
-//  test(dynamic0);
-//  cout << "after" << dynamic0 << endl;
-//
-//  // In this case we don't want a copy, TODO: does it copy???
-//  cout << "\nfixed" << endl;
-//  Matrix25 fixedDcal;
-//  fixedDcal.setOnes();
-//
-//  cout << fixedDcal << endl;
-//  test(fixedDcal);
-//  cout << "after" << fixedDcal << endl;
-//
-//  // In this case we want dynamic1 to be correctly allocate and filled
-//  cout << "\ndynamic wrong size" << endl;
-//  Matrix dynamic1(8,5);
-//  dynamic1.setOnes();
-//
-//  cout << dynamic1 << endl;
-//  test(dynamic1);
-//  cout << "after" << dynamic1 << endl;
-//
-//  // In this case we want dynamic1 to be correctly allocate and filled
-//  cout << "\ndynamic right size" << endl;
-//  Matrix dynamic2(2,5);
-//  dynamic2.setOnes();
-//
-//  cout << dynamic2 << endl;
-//  test(dynamic2);
-//  cout << "after" << dynamic2 << endl;
-//}
-//
-//void test2(Eigen::Ref<Matrix> H) {
-//  cout << "test2" << endl;
-//  cout << H.size() << endl;
-//  cout << H.rows() << "," << H.cols() << endl;
-//  if (H.size()) {
-//    cout << "H before:\n" << H << endl;
-//    H.resize(2, 5);
-//    H = Matrix25::Zero();
-//    cout << "H after:\n" << H << endl;
-//  }
-//}
-//
-//TEST( Cal3DS2, Ref2) {
-//
-//  // In this case we don't want anything to happen
-//  cout << "\nempty" << endl;
-//  Matrix dynamic0;
-//  test2(dynamic0);
-//  cout << "after" << dynamic0 << endl;
-//
-//  // In this case we don't want a copy, TODO: does it copy???
-//  cout << "\nfixed" << endl;
-//  Matrix25 fixedDcal;
-//  fixedDcal.setOnes();
-//
-//  cout << fixedDcal << endl;
-//  test2(fixedDcal);
-//  cout << "after" << fixedDcal << endl;
-//
-//  // In this case we want dynamic1 to be correctly allocate and filled
-//  cout << "\ndynamic wrong size" << endl;
-//  Matrix dynamic1(8,5);
-//  dynamic1.setOnes();
-//
-//  cout << dynamic1 << endl;
-//  test2(dynamic1);
-//  cout << "after" << dynamic1 << endl;
-//
-//  // In this case we want dynamic1 to be correctly allocate and filled
-//  cout << "\ndynamic right size" << endl;
-//  Matrix dynamic2(2,5);
-//  dynamic2.setOnes();
-//
-//  cout << dynamic2 << endl;
-//  test2(dynamic2);
-//  cout << "after" << dynamic2 << endl;
-//}
-
-/* ************************************************************************* */
-
 template<int Rows, int Cols>
-struct OptionalJacobian {
+struct FixedRef {
   bool empty_;
   typedef Eigen::Matrix<double, Rows, Cols> Fixed;
   Eigen::Map<Fixed> map_;
-  OptionalJacobian() :
+  FixedRef() :
       empty_(true), map_(NULL) {
   }
-  OptionalJacobian(Fixed& fixed) :
+  FixedRef(Fixed& fixed) :
       empty_(false), map_(NULL) {
     // Trick on http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
     // to make map_ usurp the memory of the fixed size matrix
     new (&map_) Eigen::Map<Fixed>(fixed.data());
   }
-  OptionalJacobian(Matrix& dynamic) :
+  FixedRef(Matrix& dynamic) :
       empty_(false), map_(NULL) {
     dynamic.resize(Rows, Cols);
     // Trick on http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
@@ -247,7 +130,7 @@ struct OptionalJacobian {
   }
 };
 
-void test3(OptionalJacobian<2,3> H = OptionalJacobian<2,3>()) {
+void test3(FixedRef<2,3> H = FixedRef<2,3>()) {
   if (H)
     H = Matrix23::Zero();
 }
