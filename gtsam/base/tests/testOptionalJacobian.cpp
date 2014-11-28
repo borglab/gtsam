@@ -24,21 +24,37 @@ using namespace std;
 using namespace gtsam;
 
 //******************************************************************************
-TEST( OptionalJacobian, Constructors )
-{
+TEST( OptionalJacobian, Constructors ) {
   Matrix23 fixed;
+
+  OptionalJacobian<2, 3> H1;
+  EXPECT(!H1);
+
+  OptionalJacobian<2, 3> H2(fixed);
+  EXPECT(H2);
+
+  OptionalJacobian<2, 3> H3(&fixed);
+  EXPECT(H3);
+
   Matrix dynamic;
-  OptionalJacobian<2,3> H1;
-  OptionalJacobian<2,3> H2(fixed);
-  OptionalJacobian<2,3> H3(&fixed);
-  OptionalJacobian<2,3> H4(dynamic);
-  OptionalJacobian<2,3> H5(boost::none);
+  OptionalJacobian<2, 3> H4(dynamic);
+  EXPECT(H4);
+
+  OptionalJacobian<2, 3> H5(boost::none);
+  EXPECT(!H5);
+
   boost::optional<Matrix&> optional(dynamic);
-  OptionalJacobian<2,3> H6(optional);
+  OptionalJacobian<2, 3> H6(optional);
+  EXPECT(H6);
 }
 
 //******************************************************************************
-void test3(OptionalJacobian<2,3> H = OptionalJacobian<2,3>()) {
+void test(OptionalJacobian<2, 3> H = boost::none) {
+  if (H)
+    *H = Matrix23::Zero();
+}
+
+void testPtr(Matrix23* H = NULL) {
   if (H)
     *H = Matrix23::Zero();
 }
@@ -49,35 +65,35 @@ TEST( OptionalJacobian, Ref2) {
   expected = Matrix23::Zero();
 
   // Default argument does nothing
-  test3();
+  test();
 
   // Fixed size, no copy
   Matrix23 fixed1;
   fixed1.setOnes();
-  test3(fixed1);
+  test(fixed1);
   EXPECT(assert_equal(expected,fixed1));
 
   // Fixed size, no copy, pointer style
   Matrix23 fixed2;
   fixed2.setOnes();
-  test3(&fixed2);
+  test(&fixed2);
   EXPECT(assert_equal(expected,fixed2));
 
   // Empty is no longer a sign we don't want a matrix, we want it resized
   Matrix dynamic0;
-  test3(dynamic0);
+  test(dynamic0);
   EXPECT(assert_equal(expected,dynamic0));
 
   // Dynamic wrong size
-  Matrix dynamic1(3,5);
+  Matrix dynamic1(3, 5);
   dynamic1.setOnes();
-  test3(dynamic1);
+  test(dynamic1);
   EXPECT(assert_equal(expected,dynamic0));
 
   // Dynamic right size
-  Matrix dynamic2(2,5);
+  Matrix dynamic2(2, 5);
   dynamic2.setOnes();
-  test3(dynamic2);
+  test(dynamic2);
   EXPECT(assert_equal(dynamic2,dynamic0));
 }
 

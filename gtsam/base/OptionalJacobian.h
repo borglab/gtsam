@@ -44,7 +44,6 @@ public:
 
 private:
 
-  bool empty_; ///< flag whether initialized or not
   Eigen::Map<Fixed> map_; /// View on constructor argument, if given
 
   // Trick from http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
@@ -57,25 +56,25 @@ public:
 
   /// Default constructor acts like boost::none
   OptionalJacobian() :
-      empty_(true), map_(NULL) {
+      map_(NULL) {
   }
 
   /// Constructor that will usurp data of a fixed-size matrix
   OptionalJacobian(Fixed& fixed) :
-      empty_(false), map_(NULL) {
+      map_(NULL) {
     usurp(fixed.data());
   }
 
   /// Constructor that will usurp data of a fixed-size matrix, pointer version
   OptionalJacobian(Fixed* fixedPtr) :
-      empty_(fixedPtr==NULL), map_(NULL) {
+      map_(NULL) {
     if (fixedPtr)
       usurp(fixedPtr->data());
   }
 
   /// Constructor that will resize a dynamic matrix (unless already correct)
   OptionalJacobian(Eigen::MatrixXd& dynamic) :
-      empty_(false), map_(NULL) {
+      map_(NULL) {
     dynamic.resize(Rows, Cols); // no malloc if correct size
     usurp(dynamic.data());
   }
@@ -84,12 +83,12 @@ public:
 
   /// Constructor with boost::none just makes empty
   OptionalJacobian(boost::none_t none) :
-      empty_(true), map_(NULL) {
+      map_(NULL) {
   }
 
   /// Constructor compatible with old-style derivatives
   OptionalJacobian(const boost::optional<Eigen::MatrixXd&> optional) :
-      empty_(!optional), map_(NULL) {
+      map_(NULL) {
     if (optional) {
       optional->resize(Rows, Cols);
       usurp(optional->data());
@@ -100,7 +99,7 @@ public:
 
   /// Return true is allocated, false if default constructor was used
   operator bool() const {
-    return !empty_;
+    return map_.data();
   }
 
   /// De-reference, like boost optional
