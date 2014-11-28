@@ -148,8 +148,8 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, FixedRef<2,5> Dcal = boost::none,
-      FixedRef<2,2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2,5> Dcal = boost::none,
+      OptionalJacobian<2,2> Dp = boost::none) const;
 
   /**
    * convert image coordinates uv to intrinsic coordinates xy

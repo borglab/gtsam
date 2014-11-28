@@ -66,7 +66,7 @@ bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
 
 /* ************************************************************************* */
 Point2 Cal3Bundler::uncalibrate(const Point2& p, //
-    FixedRef<2, 3> Dcal, FixedRef<2, 2> Dp) const {
+    OptionalJacobian<2, 3> Dcal, OptionalJacobian<2, 2> Dp) const {
   //  r = x^2 + y^2;
   //  g = (1 + k(1)*r + k(2)*r^2);
   //  pi(:,i) = g * pn(:,i)

@@ -274,7 +274,7 @@ public:
    * @param Dpoint is the 2*3 Jacobian w.r.t. P
    */
   static Point2 project_to_camera(const Point3& P, //
-      FixedRef<2, 3> Dpoint = boost::none) {
+      OptionalJacobian<2, 3> Dpoint = boost::none) {
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (P.z() <= 0)
       throw CheiralityException();
@@ -303,9 +303,9 @@ public:
    */
   inline Point2 project(
       const Point3& pw,
-      FixedRef<2,6> Dpose = boost::none,
-      FixedRef<2,3> Dpoint = boost::none,
-      FixedRef<2,DimK> Dcal = boost::none) const {
+      OptionalJacobian<2,6> Dpose = boost::none,
+      OptionalJacobian<2,3> Dpoint = boost::none,
+      OptionalJacobian<2,DimK> Dcal = boost::none) const {
 
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
@@ -338,9 +338,9 @@ public:
    */
   inline Point2 projectPointAtInfinity(
       const Point3& pw,
-      FixedRef<2,6> Dpose = boost::none,
-      FixedRef<2,2> Dpoint = boost::none,
-      FixedRef<2,DimK> Dcal = boost::none) const {
+      OptionalJacobian<2,6> Dpose = boost::none,
+      OptionalJacobian<2,2> Dpoint = boost::none,
+      OptionalJacobian<2,DimK> Dcal = boost::none) const {
 
     if (!Dpose && !Dpoint && !Dcal) {
       const Point3 pc = pose_.rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
@@ -378,8 +378,8 @@ public:
    *  @param Dpoint is the Jacobian w.r.t. point3
    */
   Point2 project2(const Point3& pw, //
-      FixedRef<2, 6 + DimK> Dcamera = boost::none,
-      FixedRef<2, 3> Dpoint = boost::none) const {
+      OptionalJacobian<2, 6 + DimK> Dcamera = boost::none,
+      OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
     const Point3 pc = pose_.transform_to(pw);
     const Point2 pn = project_to_camera(pc);

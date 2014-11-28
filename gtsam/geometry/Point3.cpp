@@ -94,7 +94,7 @@ double Point3::dot(const Point3 &q) const {
 }
 
 /* ************************************************************************* */
-double Point3::norm(FixedRef<1,3> H) const {
+double Point3::norm(OptionalJacobian<1,3> H) const {
   double r = sqrt(x_ * x_ + y_ * y_ + z_ * z_);
   if (H) {
     if (fabs(r) > 1e-10)

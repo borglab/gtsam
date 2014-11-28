@@ -20,6 +20,7 @@
 
 #include <gtsam_unstable/nonlinear/ceres_autodiff.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/OptionalJacobian.h>
 
 namespace gtsam {
 
@@ -50,8 +51,8 @@ class AdaptAutoDiff {
 
 public:
 
-  T operator()(const A1& a1, const A2& a2, FixedRef<N, M1> H1 = boost::none,
-      FixedRef<N, M2> H2 = boost::none) {
+  T operator()(const A1& a1, const A2& a2, OptionalJacobian<N, M1> H1 = boost::none,
+      OptionalJacobian<N, M2> H2 = boost::none) {
 
     using ceres::internal::AutoDiff;
 

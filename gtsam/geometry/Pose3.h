@@ -250,8 +250,8 @@ public:
      * @return point in Pose coordinates
      */
     Point3 transform_to(const Point3& p,
-        FixedRef<3,6> Dpose = boost::none,
-        FixedRef<3,3> Dpoint = boost::none) const;
+        OptionalJacobian<3,6> Dpose = boost::none,
+        OptionalJacobian<3,3> Dpoint = boost::none) const;
 
     /// @}
     /// @name Standard Interface

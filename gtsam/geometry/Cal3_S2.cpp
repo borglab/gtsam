@@ -72,8 +72,8 @@ bool Cal3_S2::equals(const Cal3_S2& K, double tol) const {
 }
 
 /* ************************************************************************* */
-Point2 Cal3_S2::uncalibrate(const Point2& p, FixedRef<2, 5> Dcal,
-    FixedRef<2, 2> Dp) const {
+Point2 Cal3_S2::uncalibrate(const Point2& p, OptionalJacobian<2, 5> Dcal,
+    OptionalJacobian<2, 2> Dp) const {
   const double x = p.x(), y = p.y();
   if (Dcal)
     *Dcal << x, 0.0, y, 1.0, 0.0, 0.0, y, 0.0, 0.0, 1.0;

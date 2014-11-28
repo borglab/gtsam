@@ -254,8 +254,8 @@ Point3 Pose3::transform_from(const Point3& p, boost::optional<Matrix&> Dpose,
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transform_to(const Point3& p, FixedRef<3,6> Dpose,
-    FixedRef<3,3> Dpoint) const {
+Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
+    OptionalJacobian<3,3> Dpoint) const {
   // Only get transpose once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
   const Matrix3 Rt = R_.transpose();

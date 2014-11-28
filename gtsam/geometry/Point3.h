@@ -21,9 +21,9 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
+#include <gtsam/base/OptionalJacobian.h>
 
 #include <boost/serialization/nvp.hpp>
 
@@ -181,7 +181,7 @@ namespace gtsam {
     }
 
     /** Distance of the point from the origin, with Jacobian */
-    double norm(FixedRef<1,3> H = boost::none) const;
+    double norm(OptionalJacobian<1,3> H = boost::none) const;
 
     /** normalize, with optional Jacobian */
     Point3 normalize(boost::optional<Matrix&> H = boost::none) const;

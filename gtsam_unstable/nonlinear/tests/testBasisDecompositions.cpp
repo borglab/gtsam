@@ -60,7 +60,7 @@ public:
   }
 
   /// Given coefficients c, predict value for x
-  double operator()(const Coefficients& c, FixedRef<1, N> H) {
+  double operator()(const Coefficients& c, OptionalJacobian<1, N> H) {
     if (H)
       (*H) = H_;
     return H_ * c;

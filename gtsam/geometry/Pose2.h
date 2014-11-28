@@ -192,13 +192,13 @@ public:
 
   /** Return point coordinates in pose coordinate frame */
   Point2 transform_to(const Point2& point,
-      FixedRef<2, 3> H1 = boost::none,
-      FixedRef<2, 2> H2 = boost::none) const;
+      OptionalJacobian<2, 3> H1 = boost::none,
+      OptionalJacobian<2, 2> H2 = boost::none) const;
 
   /** Return point coordinates in global frame */
   Point2 transform_from(const Point2& point,
-      FixedRef<2, 3> H1 = boost::none,
-      FixedRef<2, 2> H2 = boost::none) const;
+      OptionalJacobian<2, 3> H1 = boost::none,
+      OptionalJacobian<2, 2> H2 = boost::none) const;
 
   /** syntactic sugar for transform_from */
   inline Point2 operator*(const Point2& point) const { return transform_from(point);}

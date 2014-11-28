@@ -142,7 +142,7 @@ Rot3 Rot3::rodriguez(const Vector& w, double theta) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::compose(const Rot3& R2, FixedRef<3, 3> H1, FixedRef<3, 3> H2) const {
+Rot3 Rot3::compose(const Rot3& R2, OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
   if (H1)
     *H1 = R2.transpose();
   if (H2)

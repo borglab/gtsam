@@ -201,7 +201,7 @@ TEST(ExpressionFactor, InvokeDerivatives) {
   // Now, let's create the optional Jacobian arguments
   typedef Point3 T;
   typedef boost::mpl::vector<Pose3, Point3> TYPES;
-  typedef boost::mpl::transform<TYPES, OptionalJacobian<T, MPL::_1> >::type Optionals;
+  typedef boost::mpl::transform<TYPES, MakeOptionalJacobian<T, MPL::_1> >::type Optionals;
 
   // Unfortunately this is moot: we need a pointer to a function with the
   // optional derivatives; I don't see a way of calling a function that we
@@ -215,8 +215,8 @@ struct proxy {
     return pose.transform_to(point);
   }
   Point3 operator()(const Pose3& pose, const Point3& point,
-      FixedRef<3,6> Dpose,
-      FixedRef<3,3> Dpoint) const {
+      OptionalJacobian<3,6> Dpose,
+      OptionalJacobian<3,3> Dpoint) const {
     return pose.transform_to(point, Dpose, Dpoint);
   }
 };

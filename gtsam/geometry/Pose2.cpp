@@ -126,7 +126,7 @@ Pose2 Pose2::inverse(boost::optional<Matrix&> H1) const {
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
 Point2 Pose2::transform_to(const Point2& point,
-    FixedRef<2, 3> H1, FixedRef<2, 2> H2) const {
+    OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
   Point2 d = point - t_;
   Point2 q = r_.unrotate(d);
   if (!H1 && !H2) return q;
@@ -150,7 +150,7 @@ Pose2 Pose2::compose(const Pose2& p2, boost::optional<Matrix&> H1,
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
 Point2 Pose2::transform_from(const Point2& p,
-    FixedRef<2, 3> H1, FixedRef<2, 2> H2) const {
+    OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
   const Point2 q = r_ * p;
   if (H1 || H2) {
     const Matrix R = r_.matrix();

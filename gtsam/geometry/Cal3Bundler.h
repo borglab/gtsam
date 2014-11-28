@@ -113,8 +113,8 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, FixedRef<2, 3> Dcal = boost::none,
-      FixedRef<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
+      OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
