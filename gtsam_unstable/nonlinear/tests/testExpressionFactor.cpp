@@ -126,7 +126,7 @@ TEST(ExpressionFactor, Unary) {
 
 /* ************************************************************************* */
 static Point2 myUncal(const Cal3_S2& K, const Point2& p,
-    boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
+    FixedRef<2,5> Dcal, FixedRef<2,2> Dp) {
   return K.uncalibrate(p, Dcal, Dp);
 }
 
@@ -392,8 +392,7 @@ TEST(ExpressionFactor, compose3) {
 /* ************************************************************************* */
 // Test compose with three arguments
 Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
-    boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2,
-    boost::optional<Matrix3&> H3) {
+    FixedRef<3, 3> H1, FixedRef<3, 3> H2, FixedRef<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
     *H1 = eye(3);
