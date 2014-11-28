@@ -72,7 +72,7 @@ struct PoseVelocity {
       friend class ImuFactor;
     protected:
       imuBias::ConstantBias biasHat_; ///< Acceleration and angular rate bias values used during preintegration
-      Matrix measurementCovariance_; ///< (continuous-time uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
+      Eigen::Matrix<double,9,9> measurementCovariance_; ///< (continuous-time uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
 
       Vector3 deltaPij_; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
       Vector3 deltaVij_; ///< Preintegrated relative velocity (in global frame)
@@ -84,7 +84,7 @@ struct PoseVelocity {
       Matrix3 delVdelBiasAcc_; ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
       Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
       Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
-      Matrix PreintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
+      Eigen::Matrix<double,9,9> PreintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
       bool use2ndOrderIntegration_; ///< Controls the order of integration
     public:
       /** Default constructor, initialize with no IMU measurements */
@@ -94,25 +94,25 @@ struct PoseVelocity {
           const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measured Angular Rate
           const Matrix3& integrationErrorCovariance, ///< Covariance matrix of integration errors
           const bool use2ndOrderIntegration = false ///< Controls the order of integration
-      ) : biasHat_(bias), measurementCovariance_(9,9), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()), deltaTij_(0.0),
+      ) : biasHat_(bias), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()), deltaTij_(0.0),
       delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
       delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
-      delRdelBiasOmega_(Z_3x3), PreintMeasCov_(9,9), use2ndOrderIntegration_(use2ndOrderIntegration)
+      delRdelBiasOmega_(Z_3x3), use2ndOrderIntegration_(use2ndOrderIntegration)
       {
         measurementCovariance_ << integrationErrorCovariance , Z_3x3, Z_3x3,
                                        Z_3x3, measuredAccCovariance,  Z_3x3,
                                        Z_3x3,   Z_3x3, measuredOmegaCovariance;
-        PreintMeasCov_ = Matrix::Zero(9,9);
+        PreintMeasCov_.setZero(9,9);
       }
 
       PreintegratedMeasurements() :
-      biasHat_(imuBias::ConstantBias()), measurementCovariance_(9,9), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()), deltaTij_(0.0),
+      biasHat_(imuBias::ConstantBias()), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()), deltaTij_(0.0),
       delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
       delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
-      delRdelBiasOmega_(Z_3x3), PreintMeasCov_(9,9), use2ndOrderIntegration_(false)
+      delRdelBiasOmega_(Z_3x3), use2ndOrderIntegration_(false)
       {
-          measurementCovariance_ =  Matrix::Zero(9,9);
-          PreintMeasCov_ = Matrix::Zero(9,9);
+          measurementCovariance_.setZero(9,9);
+          PreintMeasCov_.setZero(9,9);
       }
 
       /** print */
