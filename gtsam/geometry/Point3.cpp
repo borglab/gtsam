@@ -94,26 +94,8 @@ double Point3::dot(const Point3 &q) const {
 }
 
 /* ************************************************************************* */
-double Point3::norm() const {
-  return sqrt(x_ * x_ + y_ * y_ + z_ * z_);
-}
-
-/* ************************************************************************* */
-double Point3::norm(boost::optional<Matrix&> H) const {
-  double r = norm();
-  if (H) {
-    H->resize(1,3);
-    if (fabs(r) > 1e-10)
-      *H << x_ / r, y_ / r, z_ / r;
-    else
-      *H << 1, 1, 1; // really infinity, why 1 ?
-  }
-  return r;
-}
-
-/* ************************************************************************* */
-double Point3::norm(boost::optional<Eigen::Matrix<double,1,3>&> H) const {
-  double r = norm();
+double Point3::norm(FixedRef<1,3> H) const {
+  double r = sqrt(x_ * x_ + y_ * y_ + z_ * z_);
   if (H) {
     if (fabs(r) > 1e-10)
       *H << x_ / r, y_ / r, z_ / r;

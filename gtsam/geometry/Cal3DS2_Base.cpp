@@ -91,8 +91,7 @@ static Matrix2 D2dintrinsic(double x, double y, double rr,
 
 /* ************************************************************************* */
 Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
-    boost::optional<Matrix29&> H1,
-    boost::optional<Matrix2&> H2) const {
+    FixedRef<2,9> H1, FixedRef<2,2> H2) const {
 
   //  rr = x^2 + y^2;
   //  g = (1 + k(1)*rr + k(2)*rr^2);
@@ -124,26 +123,6 @@ Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
 
   // Regular uncalibrate after distortion
   return Point2(fx_ * pnx + s_ * pny + u0_, fy_ * pny + v0_);
-}
-
-/* ************************************************************************* */
-Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
-
-  if (H1 || H2) {
-    Matrix29 D1;
-    Matrix2 D2;
-    Point2 pu = uncalibrate(p, D1, D2);
-    if (H1)
-      *H1 = D1;
-    if (H2)
-      *H2 = D2;
-    return pu;
-
-  } else {
-    return uncalibrate(p);
-  }
 }
 
 /* ************************************************************************* */

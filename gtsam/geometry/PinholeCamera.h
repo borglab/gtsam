@@ -274,8 +274,8 @@ public:
    * @param P A point in camera coordinates
    * @param Dpoint is the 2*3 Jacobian w.r.t. P
    */
-  inline static Point2 project_to_camera(const Point3& P,
-      boost::optional<Matrix23&> Dpoint = boost::none) {
+  static Point2 project_to_camera(const Point3& P, //
+      FixedRef<2, 3> Dpoint = boost::none) {
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (P.z() <= 0)
       throw CheiralityException();
@@ -294,20 +294,6 @@ public:
     return std::make_pair(K_.uncalibrate(pn), pc.z() > 0);
   }
 
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in world coordinates
-   */
-  inline Point2 project(const Point3& pw) const {
-
-    // Transform to camera coordinates and check cheirality
-    const Point3 pc = pose_.transform_to(pw);
-
-    // Project to normalized image coordinates
-    const Point2 pn = project_to_camera(pc);
-
-    return K_.uncalibrate(pn);
-  }
-
   typedef Eigen::Matrix<double,2,DimK> Matrix2K;
 
   /** project a point from world coordinate to the image
@@ -317,10 +303,10 @@ public:
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
   inline Point2 project(
-      const Point3& pw, //
-      boost::optional<Matrix26&> Dpose,
-      boost::optional<Matrix23&> Dpoint,
-      boost::optional<Matrix2K&> Dcal) const {
+      const Point3& pw,
+      FixedRef<2,6> Dpose = boost::none,
+      FixedRef<2,3> Dpoint = boost::none,
+      FixedRef<2,DimK> Dcal = boost::none) const {
 
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
@@ -342,45 +328,6 @@ public:
         calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
       return pi;
     } else
-      return K_.uncalibrate(pn, Dcal, boost::none);
-  }
-
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in world coordinates
-   *  @param Dpose is the Jacobian w.r.t. pose3
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   *  @param Dcal is the Jacobian w.r.t. calibration
-   */
-  inline Point2 project(
-      const Point3& pw, //
-      boost::optional<Matrix&> Dpose,
-      boost::optional<Matrix&> Dpoint,
-      boost::optional<Matrix&> Dcal) const {
-
-    // Transform to camera coordinates and check cheirality
-    const Point3 pc = pose_.transform_to(pw);
-
-    // Project to normalized image coordinates
-    const Point2 pn = project_to_camera(pc);
-
-    if (Dpose || Dpoint) {
-      const double z = pc.z(), d = 1.0 / z;
-
-      // uncalibration
-      Matrix2 Dpi_pn;
-      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
-
-      // chain the Jacobian matrices
-      if (Dpose) {
-        Dpose->resize(2, 6);
-        calculateDpose(pn, d, Dpi_pn, *Dpose);
-      }
-      if (Dpoint) {
-        Dpoint->resize(2, 3);
-        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
-      }
-      return pi;
-    } else
       return K_.uncalibrate(pn, Dcal);
   }
 
@@ -391,10 +338,10 @@ public:
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
   inline Point2 projectPointAtInfinity(
-      const Point3& pw, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none,
-      boost::optional<Matrix&> Dcal = boost::none) const {
+      const Point3& pw,
+      FixedRef<2,6> Dpose = boost::none,
+      FixedRef<2,2> Dpoint = boost::none,
+      FixedRef<2,DimK> Dcal = boost::none) const {
 
     if (!Dpose && !Dpoint && !Dcal) {
       const Point3 pc = pose_.rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
@@ -403,11 +350,11 @@ public:
     }
 
     // world to camera coordinate
-    Matrix Dpc_rot /* 3*3 */, Dpc_point /* 3*3 */;
+    Matrix3 Dpc_rot, Dpc_point;
     const Point3 pc = pose_.rotation().unrotate(pw, Dpc_rot, Dpc_point);
 
-    Matrix Dpc_pose = Matrix::Zero(3, 6);
-    Dpc_pose.block(0, 0, 3, 3) = Dpc_rot;
+    Matrix36 Dpc_pose; Dpc_pose.setZero();
+    Dpc_pose.leftCols<3>() = Dpc_rot;
 
     // camera to normalized image coordinate
     Matrix23 Dpn_pc; // 2*3
@@ -418,23 +365,12 @@ public:
     const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
     // chain the Jacobian matrices
-    const Matrix Dpi_pc = Dpi_pn * Dpn_pc;
+    const Matrix23 Dpi_pc = Dpi_pn * Dpn_pc;
     if (Dpose)
       *Dpose = Dpi_pc * Dpc_pose;
     if (Dpoint)
-      *Dpoint = (Dpi_pc * Dpc_point).block(0, 0, 2, 2); // only 2dof are important for the point (direction-only)
+      *Dpoint = (Dpi_pc * Dpc_point).leftCols<2>(); // only 2dof are important for the point (direction-only)
     return pi;
-  }
-
-  typedef Eigen::Matrix<double,2,6+DimK> Matrix2K6;
-
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in the world coordinate
-   */
-  Point2 project2(const Point3& pw) const {
-    const Point3 pc = pose_.transform_to(pw);
-    const Point2 pn = project_to_camera(pc);
-    return K_.uncalibrate(pn);
   }
 
   /** project a point from world coordinate to the image, fixed Jacobians
@@ -442,10 +378,9 @@ public:
    *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
    *  @param Dpoint is the Jacobian w.r.t. point3
    */
-  Point2 project2(
-      const Point3& pw, //
-      boost::optional<Matrix2K6&> Dcamera,
-      boost::optional<Matrix23&> Dpoint) const {
+  Point2 project2(const Point3& pw, //
+      FixedRef<2, 6 + DimK> Dcamera = boost::none,
+      FixedRef<2, 3> Dpoint = boost::none) const {
 
     const Point3 pc = pose_.transform_to(pw);
     const Point2 pn = project_to_camera(pc);
@@ -461,44 +396,10 @@ public:
       const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
       if (Dcamera) { // TODO why does leftCols<6>() not compile ??
-        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols(6));
-        Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
+        calculateDpose(pn, d, Dpi_pn, (*Dcamera).leftCols(6));
+        (*Dcamera).rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
       }
       if (Dpoint) {
-        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
-      }
-      return pi;
-    }
-  }
-
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in the world coordinate
-   *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   */
-  Point2 project2(const Point3& pw, //
-      boost::optional<Matrix&> Dcamera, boost::optional<Matrix&> Dpoint) const {
-
-    const Point3 pc = pose_.transform_to(pw);
-    const Point2 pn = project_to_camera(pc);
-
-    if (!Dcamera && !Dpoint) {
-      return K_.uncalibrate(pn);
-    } else {
-      const double z = pc.z(), d = 1.0 / z;
-
-      // uncalibration
-      Matrix2K Dcal;
-      Matrix2 Dpi_pn;
-      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
-
-      if (Dcamera) {
-        Dcamera->resize(2, this->dim());
-        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols<6>());
-        Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
-      }
-      if (Dpoint) {
-        Dpoint->resize(2, 3);
         calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
       }
       return pi;
