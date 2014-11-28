@@ -20,9 +20,8 @@ typedef Expression<Rot2> Rot2_;
 typedef Expression<Pose2> Pose2_;
 
 Point2_ transform_to(const Pose2_& x, const Point2_& p) {
-  Point2(Pose2::*transform)(const Point2& p,
-                           boost::optional<Matrix23&> H1,
-                           boost::optional<Matrix2&> H2) const = &Pose2::transform_to;
+  Point2 (Pose2::*transform)(const Point2& p, FixedRef<2, 3> H1,
+      FixedRef<2, 2> H2) const = &Pose2::transform_to;
 
   return Point2_(x, transform, p);
 }
@@ -35,9 +34,8 @@ typedef Expression<Pose3> Pose3_;
 
 Point3_ transform_to(const Pose3_& x, const Point3_& p) {
 
-  Point3(Pose3::*transform)(const Point3& p, 
-                           boost::optional<Matrix36&> Dpose,
-                           boost::optional<Matrix3&> Dpoint) const = &Pose3::transform_to;
+  Point3 (Pose3::*transform)(const Point3& p, FixedRef<3, 6> Dpose,
+      FixedRef<3, 3> Dpoint) const = &Pose3::transform_to;
 
   return Point3_(x, transform, p);
 }
@@ -51,8 +49,7 @@ Point2_ project(const Point3_& p_cam) {
 }
 
 Point2 project6(const Pose3& x, const Point3& p, const Cal3_S2& K,
-    boost::optional<Matrix26&> Dpose, boost::optional<Matrix23&> Dpoint,
-    boost::optional<Matrix25&> Dcal) {
+    FixedRef<2, 6> Dpose, FixedRef<2, 3> Dpoint, FixedRef<2, 5> Dcal) {
   return PinholeCamera<Cal3_S2>(x, K).project(p, Dpose, Dpoint, Dcal);
 }
 
