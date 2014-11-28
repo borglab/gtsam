@@ -20,7 +20,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3DS2.h>
 
-using namespace std;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Cal3DS2)

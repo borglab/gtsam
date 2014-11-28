@@ -106,6 +106,7 @@ public:
 
 
   /**
+   * @brief: convert intrinsic coordinates xy to image coordinates uv
    * Version of uncalibrate with derivatives
    * @param p point in intrinsic coordinates
    * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters

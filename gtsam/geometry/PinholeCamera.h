@@ -44,7 +44,6 @@ private:
 
   // Get dimension of calibration type at compile time
   static const int DimK = traits::dimension<Calibration>::value;
-  typedef Eigen::Matrix<double,2,DimK> JacobianK;
 
 public:
 
