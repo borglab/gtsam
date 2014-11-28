@@ -11,7 +11,12 @@
 
 /**
  *  @file  ImuFactor.h
- *  @author Luca Carlone, Stephen Williams, Richard Roberts, Vadim Indelman, David Jensen
+ *  @author Luca Carlone
+ *  @author Stephen Williams
+ *  @author Richard Roberts
+ *  @author Vadim Indelman
+ *  @author David Jensen
+ *  @author Frank Dellaert
  **/
 
 #pragma once
@@ -90,21 +95,21 @@ struct PoseVelocity {
           const Matrix3& integrationErrorCovariance, ///< Covariance matrix of integration errors
           const bool use2ndOrderIntegration = false ///< Controls the order of integration
       ) : biasHat_(bias), measurementCovariance_(9,9), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()), deltaTij_(0.0),
-      delPdelBiasAcc_(Matrix3::Zero()), delPdelBiasOmega_(Matrix3::Zero()),
-      delVdelBiasAcc_(Matrix3::Zero()), delVdelBiasOmega_(Matrix3::Zero()),
-      delRdelBiasOmega_(Matrix3::Zero()), PreintMeasCov_(9,9), use2ndOrderIntegration_(use2ndOrderIntegration)
+      delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
+      delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
+      delRdelBiasOmega_(Z_3x3), PreintMeasCov_(9,9), use2ndOrderIntegration_(use2ndOrderIntegration)
       {
-        measurementCovariance_ << integrationErrorCovariance , Matrix3::Zero(), Matrix3::Zero(),
-                                       Matrix3::Zero(), measuredAccCovariance,  Matrix3::Zero(),
-                                       Matrix3::Zero(),   Matrix3::Zero(), measuredOmegaCovariance;
+        measurementCovariance_ << integrationErrorCovariance , Z_3x3, Z_3x3,
+                                       Z_3x3, measuredAccCovariance,  Z_3x3,
+                                       Z_3x3,   Z_3x3, measuredOmegaCovariance;
         PreintMeasCov_ = Matrix::Zero(9,9);
       }
 
       PreintegratedMeasurements() :
       biasHat_(imuBias::ConstantBias()), measurementCovariance_(9,9), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()), deltaTij_(0.0),
-      delPdelBiasAcc_(Matrix3::Zero()), delPdelBiasOmega_(Matrix3::Zero()),
-      delVdelBiasAcc_(Matrix3::Zero()), delVdelBiasOmega_(Matrix3::Zero()),
-      delRdelBiasOmega_(Matrix3::Zero()), PreintMeasCov_(9,9), use2ndOrderIntegration_(false)
+      delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
+      delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
+      delRdelBiasOmega_(Z_3x3), PreintMeasCov_(9,9), use2ndOrderIntegration_(false)
       {
           measurementCovariance_ =  Matrix::Zero(9,9);
           PreintMeasCov_ = Matrix::Zero(9,9);
@@ -155,11 +160,11 @@ struct PoseVelocity {
         deltaVij_ = Vector3::Zero();
         deltaRij_ = Rot3();
         deltaTij_ = 0.0;
-        delPdelBiasAcc_ = Matrix3::Zero();
-        delPdelBiasOmega_ = Matrix3::Zero();
-        delVdelBiasAcc_ = Matrix3::Zero();
-        delVdelBiasOmega_ = Matrix3::Zero();
-        delRdelBiasOmega_ = Matrix3::Zero();
+        delPdelBiasAcc_ = Z_3x3;
+        delPdelBiasOmega_ = Z_3x3;
+        delVdelBiasAcc_ = Z_3x3;
+        delVdelBiasOmega_ = Z_3x3;
+        delRdelBiasOmega_ = Z_3x3;
         PreintMeasCov_ = Matrix::Zero(9,9);
       }
 
@@ -206,8 +211,6 @@ struct PoseVelocity {
 
         // Update preintegrated measurements covariance
         /* ----------------------------------------------------------------------------------------------------------------------- */
-        Matrix3 Z_3x3 = Matrix3::Zero();
-        Matrix3 I_3x3 = Matrix3::Identity();
         const Vector3 theta_i = Rot3::Logmap(deltaRij_); // parametrization of so(3)
         const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
 
@@ -336,7 +339,7 @@ struct PoseVelocity {
 #endif
 
     /** Default constructor - only use for serialization */
-    ImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()), use2ndOrderCoriolis_(false){}
+    ImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3), use2ndOrderCoriolis_(false){}
 
     /** Constructor */
     ImuFactor(
@@ -456,7 +459,7 @@ struct PoseVelocity {
         }
         else{
           dfPdPi = - Rot_i.matrix();
-          dfVdPi = Matrix3::Zero();
+          dfVdPi = Z_3x3;
         }
 
     (*H1) <<
@@ -473,20 +476,20 @@ struct PoseVelocity {
       // dfR/dRi
       Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
       // dfR/dPi
-      Matrix3::Zero();
+      Z_3x3;
       }
 
       if(H2) {
         H2->resize(9,3);
         (*H2) <<
             // dfP/dVi
-            - Matrix3::Identity() * deltaTij
+            - I_3x3 * deltaTij
             + skewSymmetric(omegaCoriolis_) * deltaTij * deltaTij,  // Coriolis term - we got rid of the 2 wrt ins paper
             // dfV/dVi
-            - Matrix3::Identity()
+            - I_3x3
             + 2 * skewSymmetric(omegaCoriolis_) * deltaTij, // Coriolis term
             // dfR/dVi
-            Matrix3::Zero();
+            Z_3x3;
       }
 
       if(H3) {
@@ -494,22 +497,22 @@ struct PoseVelocity {
         H3->resize(9,6);
         (*H3) <<
             // dfP/dPosej
-            Matrix3::Zero(), Rot_j.matrix(),
+            Z_3x3, Rot_j.matrix(),
             // dfV/dPosej
             Matrix::Zero(3,6),
             // dfR/dPosej
-            Jrinv_fRhat *  ( Matrix3::Identity() ), Matrix3::Zero();
+            Jrinv_fRhat *  ( I_3x3 ), Z_3x3;
       }
 
       if(H4) {
         H4->resize(9,3);
         (*H4) <<
             // dfP/dVj
-            Matrix3::Zero(),
+            Z_3x3,
             // dfV/dVj
-            Matrix3::Identity(),
+            I_3x3,
             // dfR/dVj
-            Matrix3::Zero();
+            Z_3x3;
       }
 
       if(H5) {

@@ -67,9 +67,6 @@ namespace gtsam {
 
   class CombinedImuFactor: public NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias> {
 
-    static const Matrix3 Z_3x3;
-    static const Matrix3 I_3x3;
-
   public:
 
     /** Struct to store results of preintegrating IMU measurements.  Can be build
