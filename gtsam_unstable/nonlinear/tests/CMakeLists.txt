@@ -1,1 +1,1 @@
-gtsamAddTestsGlob(nonlinear_unstable "test*.cpp" "" "gtsam_unstable")
+gtsamAddTestsGlob(nonlinear_unstable "test*.cpp" "testCustomChartExpression.cpp" "gtsam_unstable")
