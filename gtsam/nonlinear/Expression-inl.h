@@ -455,9 +455,7 @@ struct Jacobian {
 /// meta-function to generate JacobianTA optional reference
 template<class T, class A>
 struct OptionalJacobian {
-  typedef Eigen::Matrix<double, traits::dimension<T>::value,
-      traits::dimension<A>::value> Jacobian;
-  typedef boost::optional<Jacobian&> type;
+  typedef FixedRef<traits::dimension<T>::value, traits::dimension<A>::value> type;
 };
 
 /**
