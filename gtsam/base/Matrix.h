@@ -535,9 +535,11 @@ Eigen::Matrix<double, N, N> CayleyFixed(const Eigen::Matrix<double, N, N>& A) {
 std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal = false);
 
 /**
- * Eigen::Ref like class that cane take either a fixed size or dynamic
- * Eigen matrix. In the latter case, the dynamic matrix will be resized.
- * Finally, the default constructor acts like boost::none.
+ * FixedRef is an Eigen::Ref like class that can take be constructed using
+ * either a fixed size or dynamic Eigen matrix. In the latter case, the dynamic
+ * matrix will be resized. Finally, there is a constructor that takes
+ * boost::none, the default constructor acts like boost::none, and
+ * boost::optional<Matrix&> is also supported for backwards compatibility.
  */
 template<int Rows, int Cols>
 class FixedRef {
@@ -549,41 +551,41 @@ public:
 
 private:
 
-  bool empty_;
-  Eigen::Map<Fixed> map_;
+  bool empty_; ///< flag whether initialized or not
+  Eigen::Map<Fixed> map_; /// View on constructor argument, if given
 
-  // Trick on http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
-  // to make map_ usurp the memory of the fixed size matrix
+  // Trick from http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
+  // uses "placement new" to make map_ usurp the memory of the fixed size matrix
   void usurp(double* data) {
     new (&map_) Eigen::Map<Fixed>(data);
   }
 
 public:
 
-  /// Defdault constructo acts like boost::none
+  /// Default constructor acts like boost::none
   FixedRef() :
       empty_(true), map_(NULL) {
   }
 
-  /// Defdault constructo acts like boost::none
+  /// Default constructor acts like boost::none
   FixedRef(boost::none_t none) :
       empty_(true), map_(NULL) {
   }
 
-  /// Constructor that will usurp data of a fixed size matrix
+  /// Constructor that will usurp data of a fixed-size matrix
   FixedRef(Fixed& fixed) :
       empty_(false), map_(NULL) {
     usurp(fixed.data());
   }
 
-  /// Constructor that will resize a dynamic matrix
+  /// Constructor that will resize a dynamic matrix (unless already correct)
   FixedRef(Matrix& dynamic) :
       empty_(false), map_(NULL) {
-    dynamic.resize(Rows, Cols);
+    dynamic.resize(Rows, Cols); // no malloc if correct size
     usurp(dynamic.data());
   }
 
-  /// Constructor compatible with old-style
+  /// Constructor compatible with old-style derivatives
   FixedRef(const boost::optional<Matrix&> optional) :
       empty_(!optional), map_(NULL) {
     if (optional) {
@@ -601,6 +603,8 @@ public:
   Eigen::Map<Fixed>& operator* () {
     return map_;
   }
+
+  /// TODO: operator->()
 };
 
 } // namespace gtsam
