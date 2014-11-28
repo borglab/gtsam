@@ -63,6 +63,10 @@ typedef Eigen::Matrix<double,3,9> Matrix39;
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
+// Two very commonly used matrices:
+const Matrix3 Z_3x3 = Matrix3::Zero();
+const Matrix3 I_3x3 = Matrix3::Identity();
+
 // Matlab-like syntax
 
 /**
