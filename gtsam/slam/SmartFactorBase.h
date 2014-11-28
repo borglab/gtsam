@@ -280,7 +280,7 @@ public:
 
       Vector bi;
       try {
-        bi = -(cameras[i].project(point, Fi, Ei, static_cast<Matrix25&>(Hcali)) - this->measured_.at(i)).vector();
+        bi = -(cameras[i].project(point, Fi, Ei, Hcali) - this->measured_.at(i)).vector();
         if(body_P_sensor_){
           Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
           Matrix J(6, 6);
