@@ -59,6 +59,8 @@ class_<MyTemplatePoint2>("MyTemplatePoint2")
   .def("return_ptrs", &MyTemplatePoint2::return_ptrs);
   .def("templatedMethod", &MyTemplatePoint2::templatedMethod);
   .def("templatedMethod", &MyTemplatePoint2::templatedMethod);
+  .def("templatedMethod", &MyTemplatePoint2::templatedMethod);
+  .def("templatedMethod", &MyTemplatePoint2::templatedMethod);
 ;
 
 class_<MyTemplatePoint3>("MyTemplatePoint3")
@@ -70,6 +72,8 @@ class_<MyTemplatePoint3>("MyTemplatePoint3")
   .def("return_T", &MyTemplatePoint3::return_T);
   .def("return_Tptr", &MyTemplatePoint3::return_Tptr);
   .def("return_ptrs", &MyTemplatePoint3::return_ptrs);
+  .def("templatedMethod", &MyTemplatePoint3::templatedMethod);
+  .def("templatedMethod", &MyTemplatePoint3::templatedMethod);
   .def("templatedMethod", &MyTemplatePoint3::templatedMethod);
   .def("templatedMethod", &MyTemplatePoint3::templatedMethod);
 ;

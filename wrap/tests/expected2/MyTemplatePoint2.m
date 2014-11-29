@@ -12,8 +12,10 @@
 %return_T(Point2 value) : returns gtsam::Point2
 %return_Tptr(Point2 value) : returns gtsam::Point2
 %return_ptrs(Point2 p1, Point2 p2) : returns pair< gtsam::Point2, gtsam::Point2 >
+%templatedMethodMatrix(Matrix t) : returns void
 %templatedMethodPoint2(Point2 t) : returns void
 %templatedMethodPoint3(Point3 t) : returns void
+%templatedMethodVector(Vector t) : returns void
 %
 classdef MyTemplatePoint2 < MyBase
   properties
@@ -107,11 +109,21 @@ classdef MyTemplatePoint2 < MyBase
       end
     end
 
+    function varargout = templatedMethodMatrix(this, varargin)
+      % TEMPLATEDMETHODMATRIX usage: templatedMethodMatrix(Matrix t) : returns void
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'double')
+        geometry_wrapper(54, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethod');
+      end
+    end
+
     function varargout = templatedMethodPoint2(this, varargin)
       % TEMPLATEDMETHODPOINT2 usage: templatedMethodPoint2(Point2 t) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point2')
-        geometry_wrapper(54, this, varargin{:});
+        geometry_wrapper(55, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethod');
       end
@@ -121,7 +133,17 @@ classdef MyTemplatePoint2 < MyBase
       % TEMPLATEDMETHODPOINT3 usage: templatedMethodPoint3(Point3 t) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point3')
-        geometry_wrapper(55, this, varargin{:});
+        geometry_wrapper(56, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethod');
+      end
+    end
+
+    function varargout = templatedMethodVector(this, varargin)
+      % TEMPLATEDMETHODVECTOR usage: templatedMethodVector(Vector t) : returns void
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'double')
+        geometry_wrapper(57, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethod');
       end

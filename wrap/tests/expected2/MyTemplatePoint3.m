@@ -12,8 +12,10 @@
 %return_T(Point3 value) : returns gtsam::Point3
 %return_Tptr(Point3 value) : returns gtsam::Point3
 %return_ptrs(Point3 p1, Point3 p2) : returns pair< gtsam::Point3, gtsam::Point3 >
+%templatedMethodMatrix(Matrix t) : returns void
 %templatedMethodPoint2(Point2 t) : returns void
 %templatedMethodPoint3(Point3 t) : returns void
+%templatedMethodVector(Vector t) : returns void
 %
 classdef MyTemplatePoint3 < MyBase
   properties
@@ -25,11 +27,11 @@ classdef MyTemplatePoint3 < MyBase
         if nargin == 2
           my_ptr = varargin{2};
         else
-          my_ptr = geometry_wrapper(57, varargin{2});
+          my_ptr = geometry_wrapper(59, varargin{2});
         end
-        base_ptr = geometry_wrapper(56, my_ptr);
+        base_ptr = geometry_wrapper(58, my_ptr);
       elseif nargin == 0
-        [ my_ptr, base_ptr ] = geometry_wrapper(58);
+        [ my_ptr, base_ptr ] = geometry_wrapper(60);
       else
         error('Arguments do not match any overload of MyTemplatePoint3 constructor');
       end
@@ -38,7 +40,7 @@ classdef MyTemplatePoint3 < MyBase
     end
 
     function delete(obj)
-      geometry_wrapper(59, obj.ptr_MyTemplatePoint3);
+      geometry_wrapper(61, obj.ptr_MyTemplatePoint3);
     end
 
     function display(obj), obj.print(''); end
@@ -49,7 +51,7 @@ classdef MyTemplatePoint3 < MyBase
       % ACCEPT_T usage: accept_T(Point3 value) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point3')
-        geometry_wrapper(60, this, varargin{:});
+        geometry_wrapper(62, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint3.accept_T');
       end
@@ -59,7 +61,7 @@ classdef MyTemplatePoint3 < MyBase
       % ACCEPT_TPTR usage: accept_Tptr(Point3 value) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point3')
-        geometry_wrapper(61, this, varargin{:});
+        geometry_wrapper(63, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint3.accept_Tptr');
       end
@@ -68,20 +70,20 @@ classdef MyTemplatePoint3 < MyBase
     function varargout = create_MixedPtrs(this, varargin)
       % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< gtsam::Point3, gtsam::Point3 >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      [ varargout{1} varargout{2} ] = geometry_wrapper(62, this, varargin{:});
+      [ varargout{1} varargout{2} ] = geometry_wrapper(64, this, varargin{:});
     end
 
     function varargout = create_ptrs(this, varargin)
       % CREATE_PTRS usage: create_ptrs() : returns pair< gtsam::Point3, gtsam::Point3 >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      [ varargout{1} varargout{2} ] = geometry_wrapper(63, this, varargin{:});
+      [ varargout{1} varargout{2} ] = geometry_wrapper(65, this, varargin{:});
     end
 
     function varargout = return_T(this, varargin)
       % RETURN_T usage: return_T(Point3 value) : returns gtsam::Point3
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point3')
-        varargout{1} = geometry_wrapper(64, this, varargin{:});
+        varargout{1} = geometry_wrapper(66, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint3.return_T');
       end
@@ -91,7 +93,7 @@ classdef MyTemplatePoint3 < MyBase
       % RETURN_TPTR usage: return_Tptr(Point3 value) : returns gtsam::Point3
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point3')
-        varargout{1} = geometry_wrapper(65, this, varargin{:});
+        varargout{1} = geometry_wrapper(67, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint3.return_Tptr');
       end
@@ -101,9 +103,19 @@ classdef MyTemplatePoint3 < MyBase
       % RETURN_PTRS usage: return_ptrs(Point3 p1, Point3 p2) : returns pair< gtsam::Point3, gtsam::Point3 >
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 2 && isa(varargin{1},'gtsam.Point3') && isa(varargin{2},'gtsam.Point3')
-        [ varargout{1} varargout{2} ] = geometry_wrapper(66, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(68, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint3.return_ptrs');
+      end
+    end
+
+    function varargout = templatedMethodMatrix(this, varargin)
+      % TEMPLATEDMETHODMATRIX usage: templatedMethodMatrix(Matrix t) : returns void
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'double')
+        geometry_wrapper(69, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint3.templatedMethod');
       end
     end
 
@@ -111,7 +123,7 @@ classdef MyTemplatePoint3 < MyBase
       % TEMPLATEDMETHODPOINT2 usage: templatedMethodPoint2(Point2 t) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point2')
-        geometry_wrapper(67, this, varargin{:});
+        geometry_wrapper(70, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint3.templatedMethod');
       end
@@ -121,7 +133,17 @@ classdef MyTemplatePoint3 < MyBase
       % TEMPLATEDMETHODPOINT3 usage: templatedMethodPoint3(Point3 t) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point3')
-        geometry_wrapper(68, this, varargin{:});
+        geometry_wrapper(71, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function MyTemplatePoint3.templatedMethod');
+      end
+    end
+
+    function varargout = templatedMethodVector(this, varargin)
+      % TEMPLATEDMETHODVECTOR usage: templatedMethodVector(Vector t) : returns void
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1 && isa(varargin{1},'double')
+        geometry_wrapper(72, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint3.templatedMethod');
       end
