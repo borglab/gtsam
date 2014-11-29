@@ -12,6 +12,8 @@
 /**
  * @file testValues.cpp
  * @author Richard Roberts
+ * @author Frank Dellaert
+ * @author Mike Bosse
  */
 
 #include <gtsam/nonlinear/Values.h>
@@ -168,9 +170,9 @@ TEST(Values, basic_functions)
   Values values;
   const Values& values_c = values;
   values.insert(2, Vector3());
-  values.insert(4, Vector3());
-  values.insert(6, Vector3());
-  values.insert(8, Vector3());
+  values.insert(4, Vector(3));
+  values.insert(6, Matrix23());
+  values.insert(8, Matrix(2,3));
 
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
