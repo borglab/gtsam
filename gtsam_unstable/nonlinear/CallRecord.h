@@ -99,10 +99,12 @@ struct CallRecord {
         jacobians);
   }
 
-// TODO: remove once Hannes agrees this is never called as handled by above
-//  inline void reverseAD2(const Matrix & dFdT, JacobianMap& jacobians) const {
-//    _reverseAD3(dFdT, jacobians);
-//  }
+  // This overload supports matrices with both rows and columns dynamically sized.
+  // The template version above would be slower by introducing an extra conversion
+  // to statically sized columns.
+  inline void reverseAD2(const Matrix & dFdT, JacobianMap& jacobians) const {
+    _reverseAD3(dFdT, jacobians);
+  }
 
   virtual ~CallRecord() {
   }
@@ -130,6 +132,13 @@ private:
   virtual void _reverseAD3(const Eigen::Matrix<double, 5, Cols> & dFdT,
       JacobianMap& jacobians) const = 0;
 };
+
+/**
+ * CallRecordMaxVirtualStaticRows tells which separate virtual reverseAD with specific
+ * static rows (1..CallRecordMaxVirtualStaticRows) methods are part of the CallRecord 
+ * interface. It is used to keep the testCallRecord unit test in sync.
+ */
+const int CallRecordMaxVirtualStaticRows = 5;
 
 namespace internal {
 /**

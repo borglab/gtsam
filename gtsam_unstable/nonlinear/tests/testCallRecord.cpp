@@ -33,7 +33,7 @@ static const int Cols = 3;
 
 
 int dynamicIfAboveMax(int i){
-  if(i > 5){
+  if(i > CallRecordMaxVirtualStaticRows){
     return Eigen::Dynamic;
   }
   else return i;
@@ -43,7 +43,6 @@ struct CallConfig {
   int compTimeCols;
   int runTimeRows;
   int runTimeCols;
-  CallConfig() {}
   CallConfig(int rows, int cols):
     compTimeRows(dynamicIfAboveMax(rows)),
     compTimeCols(cols),
@@ -72,6 +71,7 @@ struct CallConfig {
 };
 
 struct Record: public internal::CallRecordImplementor<Record, Cols> {
+  Record() : cc(0, 0) {}
   virtual ~Record() {
   }
   void print(const std::string& indent) const {
