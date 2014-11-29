@@ -20,6 +20,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/regex.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -99,9 +100,10 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 }
 
 /* ************************************************************************* */
-void Argument::proxy_check(FileWriter& proxyFile, size_t sequenceNr) const {
-  proxyFile.oss << "isa(varargin{" << sequenceNr << "},'" << matlabClass(".")
-      << "')";
+void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
+  proxyFile.oss << "isa(" << s << ",'" << matlabClass(".") << "')";
+  if (type.name == "Vector")
+    proxyFile.oss << " && size(" << s << ",2)==1";
 }
 
 /* ************************************************************************* */
@@ -194,7 +196,8 @@ void ArgumentList::proxy_check(FileWriter& proxyFile) const {
   for (size_t i = 0; i < size(); i++) {
     if (!first)
       proxyFile.oss << " && ";
-    (*this)[i].proxy_check(proxyFile, i + 1);
+    string s = "varargin{" + boost::lexical_cast<string>(i + 1) + "}";
+    (*this)[i].proxy_check(proxyFile, s);
     first = false;
   }
   proxyFile.oss << "\n";

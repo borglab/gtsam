@@ -14,6 +14,7 @@ class Point2 {
  char returnChar() const;
  void argChar(char a) const;
  void argUChar(unsigned char a) const;
+ void eigenArguments(Vector v, Matrix m) const;
  VectorNotEigen vectorConfusion();
 
  void serializable() const; // Sets flag and creates export, but does not make serialization functions

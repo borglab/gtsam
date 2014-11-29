@@ -8,6 +8,7 @@ class_<Point2>("Point2")
   .def("argChar", &Point2::argChar);
   .def("argUChar", &Point2::argUChar);
   .def("dim", &Point2::dim);
+  .def("eigenArguments", &Point2::eigenArguments);
   .def("returnChar", &Point2::returnChar);
   .def("vectorConfusion", &Point2::vectorConfusion);
   .def("x", &Point2::x);

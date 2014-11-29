@@ -184,7 +184,7 @@ TEST( wrap, Geometry ) {
     Class cls = module.classes.at(0);
     EXPECT(assert_equal("Point2", cls.name));
     EXPECT_LONGS_EQUAL(2, cls.constructor.nrOverloads());
-    EXPECT_LONGS_EQUAL(7, cls.nrMethods());
+    EXPECT_LONGS_EQUAL(8, cls.nrMethods());
 
     {
       //   char returnChar() const;

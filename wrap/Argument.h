@@ -50,7 +50,7 @@ struct Argument {
    * emit checking argument to MATLAB proxy
    * @param proxyFile output stream
    */
-  void proxy_check(FileWriter& proxyFile, size_t sequenceNr) const;
+  void proxy_check(FileWriter& proxyFile, const std::string& s) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Argument& arg) {
     os << (arg.is_const ? "const " : "") << arg.type << (arg.is_ptr ? "*" : "")

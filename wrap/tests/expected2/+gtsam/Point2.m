@@ -9,6 +9,7 @@
 %argChar(char a) : returns void
 %argUChar(unsigned char a) : returns void
 %dim() : returns int
+%eigenArguments(Vector v, Matrix m) : returns void
 %returnChar() : returns char
 %vectorConfusion() : returns VectorNotEigen
 %x() : returns double
@@ -59,28 +60,38 @@ classdef Point2 < handle
       varargout{1} = geometry_wrapper(6, this, varargin{:});
     end
 
+    function varargout = eigenArguments(this, varargin)
+      % EIGENARGUMENTS usage: eigenArguments(Vector v, Matrix m) : returns void
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 2 && isa(varargin{1},'double') && size(varargin{1},2)==1 && isa(varargin{2},'double')
+        geometry_wrapper(7, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function gtsam.Point2.eigenArguments');
+      end
+    end
+
     function varargout = returnChar(this, varargin)
       % RETURNCHAR usage: returnChar() : returns char
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      varargout{1} = geometry_wrapper(7, this, varargin{:});
+      varargout{1} = geometry_wrapper(8, this, varargin{:});
     end
 
     function varargout = vectorConfusion(this, varargin)
       % VECTORCONFUSION usage: vectorConfusion() : returns VectorNotEigen
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      varargout{1} = geometry_wrapper(8, this, varargin{:});
+      varargout{1} = geometry_wrapper(9, this, varargin{:});
     end
 
     function varargout = x(this, varargin)
       % X usage: x() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      varargout{1} = geometry_wrapper(9, this, varargin{:});
+      varargout{1} = geometry_wrapper(10, this, varargin{:});
     end
 
     function varargout = y(this, varargin)
       % Y usage: y() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      varargout{1} = geometry_wrapper(10, this, varargin{:});
+      varargout{1} = geometry_wrapper(11, this, varargin{:});
     end
 
   end
