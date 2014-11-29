@@ -32,7 +32,7 @@ using namespace wrap;
 /* ************************************************************************* */
 Argument Argument::expandTemplate(const TemplateSubstitution& ts) const {
   Argument instArg = *this;
-  instArg.type = ts(type);
+  instArg.type = ts.tryToSubstitite(type);
   return instArg;
 }
 

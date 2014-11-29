@@ -44,7 +44,7 @@ public:
   }
 
   // Substitute if needed
-  Qualified operator()(const Qualified& type) const {
+  Qualified tryToSubstitite(const Qualified& type) const {
     if (type.name == templateArg_ && type.namespaces.empty())
       return qualifiedType_;
     else if (type.name == "This")
@@ -54,7 +54,7 @@ public:
   }
 
   // Substitute if needed
-  ReturnType operator()(const ReturnType& type) const {
+  ReturnType tryToSubstitite(const ReturnType& type) const {
     ReturnType instType = type;
     if (type.name == templateArg_ && type.namespaces.empty())
       instType.rename(qualifiedType_);
