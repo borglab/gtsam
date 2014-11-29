@@ -226,8 +226,8 @@ public:
    * @return 2D rotation \f$ \in SO(2) \f$
    */
   Rot2 bearing(const Point2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<2, 3> H1=boost::none,
+      OptionalJacobian<2, 2> H2=boost::none) const;
 
   /**
    * Calculate bearing to another pose
@@ -235,8 +235,8 @@ public:
    * @return 2D rotation \f$ \in SO(2) \f$
    */
   Rot2 bearing(const Pose2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<2, 3> H1=boost::none,
+      OptionalJacobian<2, 2> H2=boost::none) const;
 
   /**
    * Calculate range to a landmark

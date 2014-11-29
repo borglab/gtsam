@@ -108,9 +108,9 @@ Vector Pose2::localCoordinates(const Pose2& p2) const {
 /* ************************************************************************* */
 // Calculate Adjoint map
 // Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
-Matrix Pose2::AdjointMap() const {
+Matrix3 Pose2::AdjointMap() const {
   double c = r_.c(), s = r_.s(), x = t_.x(), y = t_.y();
-  return (Matrix(3, 3) <<
+  return (Matrix(3,3) <<
       c,  -s,   y,
       s,   c,  -x,
       0.0, 0.0, 1.0
@@ -118,7 +118,7 @@ Matrix Pose2::AdjointMap() const {
 }
 
 /* ************************************************************************* */
-Pose2 Pose2::inverse(boost::optional<Matrix&> H1) const {
+Pose2 Pose2::inverse(OptionalJacobian<3,3> H1) const {
   if (H1) *H1 = -AdjointMap();
   return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));
 }
@@ -197,7 +197,7 @@ Pose2 Pose2::between(const Pose2& p2, OptionalJacobian<3,3> H1,
 
 /* ************************************************************************* */
 Rot2 Pose2::bearing(const Point2& point,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
   Point2 d = transform_to(point, H1, H2);
   if (!H1 && !H2) return Rot2::relativeBearing(d);
   Matrix D_result_d;
@@ -209,7 +209,7 @@ Rot2 Pose2::bearing(const Point2& point,
 
 /* ************************************************************************* */
 Rot2 Pose2::bearing(const Pose2& point,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
   Rot2 result = bearing(point.t(), H1, H2);
   if (H2) {
     Matrix H2_ = *H2 * point.r().matrix();
