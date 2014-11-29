@@ -28,10 +28,6 @@ struct StaticMethod: public MethodBase {
 
   typedef const std::string& Str;
 
-  virtual bool isStatic() const {
-    return true;
-  }
-
   friend std::ostream& operator<<(std::ostream& os, const StaticMethod& m) {
     for (size_t i = 0; i < m.nrOverloads(); i++)
       os << "static " << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];

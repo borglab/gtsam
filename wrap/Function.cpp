@@ -55,10 +55,10 @@ bool Function::initializeOrCheck(const string& name, const Qualified& instName,
 
 /* ************************************************************************* */
 void Function::emit_call(FileWriter& proxyFile, const ReturnValue& returnVal,
-    const string& wrapperName, int id, bool staticMethod) const {
+    const string& wrapperName, int id) const {
   returnVal.emit_matlab(proxyFile);
   proxyFile.oss << wrapperName << "(" << id;
-  if (!staticMethod)
+  if (!isStatic())
     proxyFile.oss << ", this";
   proxyFile.oss << ", varargin{:});\n";
 }
@@ -66,14 +66,14 @@ void Function::emit_call(FileWriter& proxyFile, const ReturnValue& returnVal,
 /* ************************************************************************* */
 void Function::emit_conditional_call(FileWriter& proxyFile,
     const ReturnValue& returnVal, const ArgumentList& args,
-    const string& wrapperName, int id, bool staticMethod) const {
+    const string& wrapperName, int id) const {
 
   // Check all arguments
   args.proxy_check_arguments(proxyFile);
 
   // output call to C++ wrapper
   proxyFile.oss << "        ";
-  emit_call(proxyFile, returnVal, wrapperName, id, staticMethod);
+  emit_call(proxyFile, returnVal, wrapperName, id);
 }
 
 /* ************************************************************************* */

@@ -44,6 +44,11 @@ public:
     return name_;
   }
 
+  /// Only Methods are non-static
+  virtual bool isStatic() const {
+    return true;
+  }
+
   std::string matlabName() const {
     if (templateArgValue_.empty())
       return name_;
@@ -53,12 +58,12 @@ public:
 
   /// Emit function call to MATLAB (no argument checking)
   void emit_call(FileWriter& proxyFile, const ReturnValue& returnVal,
-      const std::string& wrapperName, int id, bool staticMethod) const;
+      const std::string& wrapperName, int id) const;
 
   /// Emit checking arguments and function call to MATLAB
   void emit_conditional_call(FileWriter& proxyFile,
       const ReturnValue& returnVal, const ArgumentList& args,
-      const std::string& wrapperName, int id, bool staticMethod) const;
+      const std::string& wrapperName, int id) const;
 
 };
 
