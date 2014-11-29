@@ -16,22 +16,9 @@
  * @brief unit tests for Basis Decompositions w Expressions
  */
 
-#include <gtsam_unstable/nonlinear/expressions.h>
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/Testable.h>
+#include <gtsam/base/Matrix.h>
 
-#include <CppUnitLite/TestHarness.h>
-
-#include <boost/assign/list_of.hpp>
-using boost::assign::list_of;
-
-using namespace std;
-using namespace gtsam;
-
-noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
+namespace gtsam {
 
 /// Fourier
 template<int N>
@@ -67,6 +54,80 @@ public:
   }
 };
 
+}
+
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
+
+namespace gtsam {
+
+/// For now, this is our sequence representation
+typedef std::map<double, double> Sequence;
+
+/**
+ * Class that does Fourier Decomposition via least squares
+ */
+class FourierDecomposition {
+public:
+
+  typedef Vector3 Coefficients; ///< Fourier coefficients
+
+private:
+  Coefficients c_;
+
+public:
+
+  /// Create nonlinear FG from Sequence
+  static NonlinearFactorGraph NonlinearGraph(const Sequence& sequence,
+      const SharedNoiseModel& model) {
+    NonlinearFactorGraph graph;
+    Expression<Coefficients> c(0);
+    typedef std::pair<double, double> Sample;
+    BOOST_FOREACH(Sample sample, sequence) {
+      Expression<double> expression(Fourier<3>(sample.first), c);
+      ExpressionFactor<double> factor(model, sample.second, expression);
+      graph.add(factor);
+    }
+    return graph;
+  }
+
+  /// Create linear FG from Sequence
+  static GaussianFactorGraph::shared_ptr LinearGraph(const Sequence& sequence,
+      const SharedNoiseModel& model) {
+    NonlinearFactorGraph graph = NonlinearGraph(sequence, model);
+    Values values;
+    values.insert(0, Coefficients()); // does not matter
+    GaussianFactorGraph::shared_ptr gfg = graph.linearize(values);
+    return gfg;
+  }
+
+  /// Constructor
+  FourierDecomposition(const Sequence& sequence,
+      const SharedNoiseModel& model) {
+    GaussianFactorGraph::shared_ptr gfg = LinearGraph(sequence, model);
+    VectorValues solution = gfg->optimize();
+    c_ = solution.at(0);
+  }
+
+  /// Return Fourier coefficients
+  Coefficients coefficients() {
+    return c_;
+  }
+};
+
+}
+
+#include <gtsam_unstable/nonlinear/expressionTesting.h>
+#include <gtsam/base/Testable.h>
+#include <CppUnitLite/TestHarness.h>
+
+using namespace std;
+using namespace gtsam;
+
+noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
+
 //******************************************************************************
 TEST(BasisDecompositions, Fourier) {
   Fourier<3> fx(0);
@@ -79,12 +140,14 @@ TEST(BasisDecompositions, Fourier) {
 }
 
 //******************************************************************************
-TEST(BasisDecompositions, FourierExpression) {
+TEST(BasisDecompositions, ManualFourier) {
 
   // Create linear factor graph
   GaussianFactorGraph g;
   Key key(1);
-  Vector3_ c(key);
+  Expression<Vector3> c(key);
+  Values values;
+  values.insert(key, Vector3()); // does not matter
   for (size_t i = 0; i < 16; i++) {
     double x = i * M_PI / 8, y = exp(sin(x) + cos(x));
 
@@ -93,13 +156,18 @@ TEST(BasisDecompositions, FourierExpression) {
     A << 1, cos(x), sin(x);
     Vector b(1);
     b << y;
-    JacobianFactor f1(key, A, b, model);
+    JacobianFactor f1(key, A, b);
+    g.add(f1);
 
     // With ExpressionFactor
     Expression<double> expression(Fourier<3>(x), c);
-    ExpressionFactor<double> f2(model, y, expression);
+    EXPECT_CORRECT_EXPRESSION_JACOBIANS(expression, values, 1e-5, 1e-9);
 
-    g.add(f1);
+    ExpressionFactor<double> f2(model, y, expression);
+    boost::shared_ptr<GaussianFactor> gf = f2.linearize(values);
+    boost::shared_ptr<JacobianFactor> jf = //
+        boost::dynamic_pointer_cast<JacobianFactor>(gf);
+    EXPECT( assert_equal(f1, *jf, 1e-9));
   }
 
   // Solve
@@ -108,6 +176,24 @@ TEST(BasisDecompositions, FourierExpression) {
   // Check
   Vector3 expected(1.5661, 1.2717, 1.2717);
   EXPECT(assert_equal((Vector) expected, actual.at(key),1e-4));
+}
+
+//******************************************************************************
+TEST(BasisDecompositions, FourierDecomposition) {
+
+  // Create example sequence
+  Sequence sequence;
+  for (size_t i = 0; i < 16; i++) {
+    double x = i * M_PI / 8, y = exp(sin(x) + cos(x));
+    sequence[x] = y;
+  }
+
+  // Do Fourier Decomposition
+  FourierDecomposition actual(sequence, model);
+
+  // Check
+  Vector3 expected(1.5661, 1.2717, 1.2717);
+  EXPECT(assert_equal((Vector) expected, actual.coefficients(),1e-4));
 }
 
 //******************************************************************************
