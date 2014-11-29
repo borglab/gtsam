@@ -56,7 +56,6 @@ private:
 
   virtual std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
       Str matlabUniqueName, const ArgumentList& args,
-      const ReturnValue& returnVal, const TypeAttributesTable& typeAttributes,
       const Qualified& instName) const;
 };
 

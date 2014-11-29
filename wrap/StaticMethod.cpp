@@ -39,7 +39,6 @@ void StaticMethod::proxy_header(FileWriter& proxyFile) const {
 /* ************************************************************************* */
 string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
     Str matlabUniqueName, const ArgumentList& args,
-    const ReturnValue& returnVal, const TypeAttributesTable& typeAttributes,
     const Qualified& instName) const {
   // check arguments
   // NOTE: for static functions, there is no object passed

@@ -121,7 +121,7 @@ string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
   // for static methods: cppClassName::staticMethod<TemplateVal>
   // for instance methods: obj->instanceMethod<TemplateVal>
   string expanded = wrapper_call(wrapperFile, cppClassName, matlabUniqueName,
-      args, returnVal, typeAttributes, instName);
+      args, instName);
 
   expanded += ("(" + args.names() + ")");
   if (returnVal.type1.name != "void")
@@ -136,10 +136,9 @@ string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
 }
 
 /* ************************************************************************* */
-void MethodBase::python_wrapper(FileWriter& wrapperFile,
-    Str className) const {
-  wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className << "::" << name_
-      << ");\n";
+void MethodBase::python_wrapper(FileWriter& wrapperFile, Str className) const {
+  wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className << "::"
+      << name_ << ");\n";
 }
 
 /* ************************************************************************* */

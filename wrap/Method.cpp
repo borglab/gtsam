@@ -53,13 +53,12 @@ void Method::proxy_header(FileWriter& proxyFile) const {
 /* ************************************************************************* */
 string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
     Str matlabUniqueName, const ArgumentList& args,
-    const ReturnValue& returnVal, const TypeAttributesTable& typeAttributes,
     const Qualified& instName) const {
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
-  wrapperFile.oss << "  checkArguments(\"" << matlabName() << "\",nargout,nargin-1,"
-      << args.size() << ");\n";
+  wrapperFile.oss << "  checkArguments(\"" << matlabName()
+      << "\",nargout,nargin-1," << args.size() << ");\n";
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
