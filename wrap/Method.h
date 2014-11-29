@@ -18,12 +18,12 @@
 
 #pragma once
 
-#include "StaticMethod.h"
+#include "MethodBase.h"
 
 namespace wrap {
 
 /// Method class
-class Method: public StaticMethod {
+class Method: public MethodBase {
 
   bool is_const_;
 

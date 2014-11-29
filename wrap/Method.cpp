@@ -32,7 +32,7 @@ using namespace wrap;
 bool Method::addOverload(Str name, const ArgumentList& args,
     const ReturnValue& retVal, bool is_const, const Qualified& instName,
     bool verbose) {
-  bool first = StaticMethod::addOverload(name, args, retVal, instName, verbose);
+  bool first = MethodBase::addOverload(name, args, retVal, instName, verbose);
   if (first)
     is_const_ = is_const;
   else if (is_const && !is_const_)
