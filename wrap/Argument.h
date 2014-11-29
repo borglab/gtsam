@@ -46,6 +46,12 @@ struct Argument {
   /// MATLAB code generation, MATLAB to C++
   void matlab_unwrap(FileWriter& file, const std::string& matlabName) const;
 
+  /**
+   * emit checking argument to MATLAB proxy
+   * @param proxyFile output stream
+   */
+  void proxy_check(FileWriter& proxyFile, size_t sequenceNr) const;
+
   friend std::ostream& operator<<(std::ostream& os, const Argument& arg) {
     os << (arg.is_const ? "const " : "") << arg.type << (arg.is_ptr ? "*" : "")
         << (arg.is_ref ? "&" : "");
@@ -91,7 +97,7 @@ struct ArgumentList: public std::vector<Argument> {
    * emit checking arguments to MATLAB proxy
    * @param proxyFile output stream
    */
-  void proxy_check_arguments(FileWriter& proxyFile) const;
+  void proxy_check(FileWriter& proxyFile) const;
 
   /// Output stream operator
   friend std::ostream& operator<<(std::ostream& os,
@@ -105,7 +111,6 @@ struct ArgumentList: public std::vector<Argument> {
     os << ")";
     return os;
   }
-
 
 };
 

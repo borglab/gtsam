@@ -69,7 +69,7 @@ void Function::emit_conditional_call(FileWriter& proxyFile,
     const string& wrapperName, int id) const {
 
   // Check all arguments
-  args.proxy_check_arguments(proxyFile);
+  args.proxy_check(proxyFile);
 
   // output call to C++ wrapper
   proxyFile.oss << "        ";

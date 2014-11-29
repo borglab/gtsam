@@ -36,7 +36,8 @@ Argument Argument::expandTemplate(const TemplateSubstitution& ts) const {
 }
 
 /* ************************************************************************* */
-ArgumentList ArgumentList::expandTemplate(const TemplateSubstitution& ts) const {
+ArgumentList ArgumentList::expandTemplate(
+    const TemplateSubstitution& ts) const {
   ArgumentList instArgList;
   BOOST_FOREACH(const Argument& arg, *this) {
     Argument instArg = arg.expandTemplate(ts);
@@ -95,6 +96,12 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   if (is_ptr || is_ref)
     file.oss << ", \"ptr_" << matlabUniqueType << "\"";
   file.oss << ");" << endl;
+}
+
+/* ************************************************************************* */
+void Argument::proxy_check(FileWriter& proxyFile, size_t sequenceNr) const {
+  proxyFile.oss << "isa(varargin{" << sequenceNr << "},'" << matlabClass(".")
+      << "')";
 }
 
 /* ************************************************************************* */
@@ -177,7 +184,7 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
 }
 
 /* ************************************************************************* */
-void ArgumentList::proxy_check_arguments(FileWriter& proxyFile) const {
+void ArgumentList::proxy_check(FileWriter& proxyFile) const {
   // Check nr of arguments
   proxyFile.oss << "if length(varargin) == " << size();
   if (size() > 0)
@@ -187,11 +194,11 @@ void ArgumentList::proxy_check_arguments(FileWriter& proxyFile) const {
   for (size_t i = 0; i < size(); i++) {
     if (!first)
       proxyFile.oss << " && ";
-    proxyFile.oss << "isa(varargin{" << i + 1 << "},'"
-        << (*this)[i].matlabClass(".") << "')";
+    (*this)[i].proxy_check(proxyFile, i + 1);
     first = false;
   }
   proxyFile.oss << "\n";
 }
+
 /* ************************************************************************* */
 
