@@ -124,7 +124,7 @@ class MyFactor {
 };
 
 // and a typedef specializing it
-typedef MyFactor<gtsam::Pose2, gtsam::Point2> MyFactorPosePoint2;
+typedef MyFactor<gtsam::Pose2, Matrix> MyFactorPosePoint2;
 
 // comments at the end!
 

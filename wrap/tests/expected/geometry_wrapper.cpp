@@ -10,7 +10,7 @@
 
 typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
 typedef MyTemplate<gtsam::Point3> MyTemplatePoint3;
-typedef MyFactor<gtsam::Pose2, gtsam::Point2> MyFactorPosePoint2;
+typedef MyFactor<gtsam::Pose2, Matrix> MyFactorPosePoint2;
 
 BOOST_CLASS_EXPORT_GUID(gtsam::Point2, "gtsamPoint2");
 BOOST_CLASS_EXPORT_GUID(gtsam::Point3, "gtsamPoint3");

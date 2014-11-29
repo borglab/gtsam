@@ -178,7 +178,7 @@ void Module::parseMarkup(const std::string& data) {
   TemplateInstantiationTypedef singleInstantiation;
   Rule templateSingleInstantiationArg_p = 
     (*(namespace_name_p[push_back_a(templateArgValue.namespaces)] >> str_p("::")) >>
-    className_p[assign_a(templateArgValue.name)])
+    (className_p | eigenType_p)[assign_a(templateArgValue.name)])
     [push_back_a(singleInstantiation.typeList, templateArgValue)]
     [clear_a(templateArgValue)];
  
