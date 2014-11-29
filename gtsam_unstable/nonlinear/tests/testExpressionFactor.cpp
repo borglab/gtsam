@@ -76,10 +76,13 @@ TEST(ExpressionFactor, Model) {
 
   // Concise version
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+
+  // Check values and derivatives
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
   EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f, values, 1e-5, 1e-5); // another way
 }
 
 /* ************************************************************************* */
@@ -122,6 +125,38 @@ TEST(ExpressionFactor, Unary) {
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf, 1e-9));
+}
+
+/* ************************************************************************* */
+// Unary(Leaf)) and Unary(Unary(Leaf)))
+// wide version (not handled in fixed-size pipeline)
+typedef Eigen::Matrix<double,9,3> Matrix93;
+Vector9 wide(const Point3& p, boost::optional<Matrix93&> H) {
+  Vector9 v;
+  v << p.vector(), p.vector(), p.vector();
+  if (H) *H << eye(3), eye(3), eye(3);
+  return v;
+}
+typedef Eigen::Matrix<double,9,9> Matrix9;
+Vector9 id9(const Vector9& v, boost::optional<Matrix9&> H) {
+  if (H) *H = Matrix9::Identity();
+  return v;
+}
+TEST(ExpressionFactor, Wide) {
+  // Create some values
+  Values values;
+  values.insert(2, Point3(0, 0, 1));
+  Point3_ point(2);
+  Vector9 measured;
+  Expression<Vector9> expression(wide,point);
+  SharedNoiseModel model = noiseModel::Unit::Create(9);
+
+  ExpressionFactor<Vector9> f1(model, measured, expression);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f1, values, 1e-5, 1e-9);
+
+  Expression<Vector9> expression2(id9,expression);
+  ExpressionFactor<Vector9> f2(model, measured, expression2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f2, values, 1e-5, 1e-9);
 }
 
 /* ************************************************************************* */
