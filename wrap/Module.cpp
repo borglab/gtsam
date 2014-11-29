@@ -416,6 +416,11 @@ void Module::parseMarkup(const std::string& data) {
   // Create type attributes table and check validity
   typeAttributes.addClasses(expandedClasses);
   typeAttributes.addForwardDeclarations(forward_declarations);
+  // add Eigen types as template arguments are also checked ?
+  vector<ForwardDeclaration> eigen;
+  eigen.push_back(ForwardDeclaration("Vector"));
+  eigen.push_back(ForwardDeclaration("Matrix"));
+  typeAttributes.addForwardDeclarations(eigen);
   typeAttributes.checkValidity(expandedClasses);
 } 
  
