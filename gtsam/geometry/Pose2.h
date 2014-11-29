@@ -107,7 +107,7 @@ public:
   inline static Pose2 identity() { return Pose2(); }
 
   /// inverse transformation with derivatives
-  Pose2 inverse(boost::optional<Matrix&> H1=boost::none) const;
+  Pose2 inverse(OptionalJacobian<3, 3> H1=boost::none) const;
 
   /// compose this transformation onto another (first *this and then p2)
   Pose2 compose(const Pose2& p2,
@@ -155,7 +155,7 @@ public:
    * Calculate Adjoint map
    * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
-  Matrix AdjointMap() const;
+  Matrix3 AdjointMap() const;
   inline Vector Adjoint(const Vector& xi) const {
     assert(xi.size() == 3);
     return AdjointMap()*xi;
