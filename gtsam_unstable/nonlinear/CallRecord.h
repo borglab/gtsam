@@ -32,12 +32,6 @@ class JacobianMap;
 // forward declaration
 
 //-----------------------------------------------------------------------------
-/**
- * MaxVirtualStaticRows defines how many separate virtual reverseAD with specific
- * static rows (1..MaxVirtualStaticRows) methods will be part of the CallRecord interface.
- */
-#define MaxVirtualStaticRows 4
-
 namespace internal {
 
 /**
@@ -57,7 +51,8 @@ struct ConvertToVirtualFunctionSupportedMatrixType {
 template<>
 struct ConvertToVirtualFunctionSupportedMatrixType<false> {
   template<typename Derived>
-  static const Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> convert(
+  static const Eigen::Matrix<double, Derived::RowsAtCompileTime,
+      Derived::ColsAtCompileTime> convert(
       const Eigen::MatrixBase<Derived> & x) {
     return x;
   }
@@ -72,73 +67,68 @@ struct ConvertToVirtualFunctionSupportedMatrixType<false> {
 } // namespace internal
 
 /**
- * The CallRecord class stores the Jacobians of applying a function
- * with respect to each of its arguments. It also stores an execution trace
- * (defined below) for each of its arguments.
- *
- * It is implemented in the function-style ExpressionNode's nested Record class below.
+ * The CallRecord is an abstract base class for the any class that stores
+ * the Jacobians of applying a function with respect to each of its arguments,
+ * as well as an execution trace for each of its arguments.
  */
 template<int Cols>
 struct CallRecord {
+
+  // Print entire record, recursively
   inline void print(const std::string& indent) const {
     _print(indent);
   }
 
-  inline void startReverseAD(JacobianMap& jacobians) const {
-    _startReverseAD(jacobians);
+  // Main entry point for the reverse AD process of a functional expression.
+  // Called *once* by the main AD entry point, ExecutionTrace::startReverseAD1
+  // This function then calls ExecutionTrace::reverseAD for every argument
+  // which will in turn call the reverseAD method below.
+  // This non-virtual function _startReverseAD3, implemented in derived
+  inline void startReverseAD2(JacobianMap& jacobians) const {
+    _startReverseAD3(jacobians);
   }
 
+  // Dispatch the reverseAD2 calls issued by ExecutionTrace::reverseAD1
+  // Here we convert to dynamic if the
   template<typename Derived>
-  inline void reverseAD(const Eigen::MatrixBase<Derived> & dFdT,
+  inline void reverseAD2(const Eigen::MatrixBase<Derived> & dFdT,
       JacobianMap& jacobians) const {
-    _reverseAD(
-         internal::ConvertToVirtualFunctionSupportedMatrixType<
-             (Derived::RowsAtCompileTime > MaxVirtualStaticRows)
-           >::convert(dFdT),
-         jacobians
-       );
+    _reverseAD3(
+        internal::ConvertToVirtualFunctionSupportedMatrixType<
+            (Derived::RowsAtCompileTime > 5)>::convert(dFdT),
+        jacobians);
   }
 
-  inline void reverseAD(const Matrix & dFdT, JacobianMap& jacobians) const {
-    _reverseAD(dFdT, jacobians);
-  }
+// TODO: remove once Hannes agrees this is never called as handled by above
+//  inline void reverseAD2(const Matrix & dFdT, JacobianMap& jacobians) const {
+//    _reverseAD3(dFdT, jacobians);
+//  }
 
   virtual ~CallRecord() {
   }
 
 private:
-  virtual void _print(const std::string& indent) const = 0;
-  virtual void _startReverseAD(JacobianMap& jacobians) const = 0;
 
-  virtual void _reverseAD(const Matrix & dFdT, JacobianMap& jacobians) const = 0;
-  virtual void _reverseAD(
+  virtual void _print(const std::string& indent) const = 0;
+  virtual void _startReverseAD3(JacobianMap& jacobians) const = 0;
+
+  virtual void _reverseAD3(const Matrix & dFdT,
+      JacobianMap& jacobians) const = 0;
+
+  virtual void _reverseAD3(
       const Eigen::Matrix<double, Eigen::Dynamic, Cols> & dFdT,
       JacobianMap& jacobians) const = 0;
-#if MaxVirtualStaticRows >= 1
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 1, Cols> & dFdT,
+
+  virtual void _reverseAD3(const Eigen::Matrix<double, 1, Cols> & dFdT,
       JacobianMap& jacobians) const = 0;
-#endif
-#if MaxVirtualStaticRows >= 2
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 2, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 2, Cols> & dFdT,
       JacobianMap& jacobians) const = 0;
-#endif
-#if MaxVirtualStaticRows >= 3
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 3, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 3, Cols> & dFdT,
       JacobianMap& jacobians) const = 0;
-#endif
-#if MaxVirtualStaticRows >= 4
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 4, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 4, Cols> & dFdT,
       JacobianMap& jacobians) const = 0;
-#endif
-#if MaxVirtualStaticRows >= 5
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 5, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 5, Cols> & dFdT,
       JacobianMap& jacobians) const = 0;
-#endif
 };
 
 namespace internal {
@@ -149,59 +139,48 @@ namespace internal {
 template<typename Derived, int Cols>
 struct CallRecordImplementor: public CallRecord<Cols> {
 private:
+
   const Derived & derived() const {
     return static_cast<const Derived&>(*this);
   }
+
   virtual void _print(const std::string& indent) const {
     derived().print(indent);
   }
-  virtual void _startReverseAD(JacobianMap& jacobians) const {
-    derived().startReverseAD(jacobians);
+
+  virtual void _startReverseAD3(JacobianMap& jacobians) const {
+    derived().startReverseAD4(jacobians);
   }
 
-  virtual void _reverseAD(const Matrix & dFdT, JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
+  virtual void _reverseAD3(const Matrix & dFdT, JacobianMap& jacobians) const {
+    derived().reverseAD4(dFdT, jacobians);
   }
-  virtual void _reverseAD(
+
+  virtual void _reverseAD3(
       const Eigen::Matrix<double, Eigen::Dynamic, Cols> & dFdT,
       JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
+    derived().reverseAD4(dFdT, jacobians);
   }
-#if MaxVirtualStaticRows >= 1
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 1, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 1, Cols> & dFdT,
       JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
+    derived().reverseAD4(dFdT, jacobians);
   }
-#endif
-#if MaxVirtualStaticRows >= 2
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 2, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 2, Cols> & dFdT,
       JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
+    derived().reverseAD4(dFdT, jacobians);
   }
-#endif
-#if MaxVirtualStaticRows >= 3
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 3, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 3, Cols> & dFdT,
       JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
+    derived().reverseAD4(dFdT, jacobians);
   }
-#endif
-#if MaxVirtualStaticRows >= 4
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 4, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 4, Cols> & dFdT,
       JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
+    derived().reverseAD4(dFdT, jacobians);
   }
-#endif
-#if MaxVirtualStaticRows >= 5
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, 5, Cols> & dFdT,
+  virtual void _reverseAD3(const Eigen::Matrix<double, 5, Cols> & dFdT,
       JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
+    derived().reverseAD4(dFdT, jacobians);
   }
-#endif
 };
 
 } // namespace internal

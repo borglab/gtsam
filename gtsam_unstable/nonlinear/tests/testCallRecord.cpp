@@ -33,7 +33,7 @@ static const int Cols = 3;
 
 
 int dynamicIfAboveMax(int i){
-  if(i > MaxVirtualStaticRows){
+  if(i > 5){
     return Eigen::Dynamic;
   }
   else return i;
@@ -76,20 +76,20 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   }
   void print(const std::string& indent) const {
   }
-  void startReverseAD(JacobianMap& jacobians) const {
+  void startReverseAD4(JacobianMap& jacobians) const {
   }
 
   mutable CallConfig cc;
  private:
   template<typename SomeMatrix>
-  void reverseAD(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+  void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
     cc.compTimeRows = SomeMatrix::RowsAtCompileTime;
     cc.compTimeCols = SomeMatrix::ColsAtCompileTime;
     cc.runTimeRows = dFdT.rows();
     cc.runTimeCols = dFdT.cols();
   }
 
-  template<typename Derived, int Rows, int OtherCols>
+  template<typename Derived, int Rows>
   friend struct internal::CallRecordImplementor;
 };
 
@@ -102,56 +102,56 @@ TEST(CallRecord, virtualReverseAdDispatching) {
   Record record;
   {
     const int Rows = 1;
-    record.CallRecord::reverseAD(Eigen::Matrix<double, Rows, Cols>(), NJM);
+    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>(), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Rows, Cols))));
-    record.CallRecord::reverseAD(DynRowMat(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(DynRowMat(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Cols, Rows, Cols))));
-    record.CallRecord::reverseAD(Eigen::MatrixXd(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(Eigen::MatrixXd(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Eigen::Dynamic, Rows, Cols))));
   }
   {
     const int Rows = 2;
-    record.CallRecord::reverseAD(Eigen::Matrix<double, Rows, Cols>(), NJM);
+    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>(), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Rows, Cols))));
-    record.CallRecord::reverseAD(DynRowMat(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(DynRowMat(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Cols, Rows, Cols))));
-    record.CallRecord::reverseAD(Eigen::MatrixXd(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(Eigen::MatrixXd(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Eigen::Dynamic, Rows, Cols))));
   }
   {
     const int Rows = 3;
-    record.CallRecord::reverseAD(Eigen::Matrix<double, Rows, Cols>(), NJM);
+    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>(), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Rows, Cols))));
-    record.CallRecord::reverseAD(DynRowMat(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(DynRowMat(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Cols, Rows, Cols))));
-    record.CallRecord::reverseAD(Eigen::MatrixXd(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(Eigen::MatrixXd(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Eigen::Dynamic, Rows, Cols))));
   }
   {
-    const int Rows = MaxVirtualStaticRows;
-    record.CallRecord::reverseAD(Eigen::Matrix<double, Rows, Cols>(), NJM);
+    const int Rows = 4;
+    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>(), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Rows, Cols))));
-    record.CallRecord::reverseAD(DynRowMat(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(DynRowMat(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Cols, Rows, Cols))));
-    record.CallRecord::reverseAD(Eigen::MatrixXd(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(Eigen::MatrixXd(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Eigen::Dynamic, Rows, Cols))));
   }
   {
-    const int Rows = MaxVirtualStaticRows + 1;
-    record.CallRecord::reverseAD(Eigen::Matrix<double, Rows, Cols>(), NJM);
+    const int Rows = 5;
+    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>(), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Rows, Cols))));
-    record.CallRecord::reverseAD(DynRowMat(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(DynRowMat(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Cols, Rows, Cols))));
-    record.CallRecord::reverseAD(Eigen::MatrixXd(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(Eigen::MatrixXd(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Eigen::Dynamic, Rows, Cols))));
   }
   {
-    const int Rows = MaxVirtualStaticRows + 2;
-    record.CallRecord::reverseAD(Eigen::Matrix<double, Rows, Cols>(), NJM);
+    const int Rows = 6;
+    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>(), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Rows, Cols))));
-    record.CallRecord::reverseAD(DynRowMat(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(DynRowMat(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Cols, Rows, Cols))));
-    record.CallRecord::reverseAD(Eigen::MatrixXd(Rows, Cols), NJM);
+    record.CallRecord::reverseAD2(Eigen::MatrixXd(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Eigen::Dynamic, Rows, Cols))));
   }
 }

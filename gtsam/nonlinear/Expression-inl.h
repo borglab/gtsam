@@ -106,7 +106,7 @@ struct UseBlockIf<false, Derived> {
 };
 }
 
-/// Handle Leaf Case: reverseAD ends here, by writing a matrix into Jacobians
+/// Handle Leaf Case: reverse AD ends here, by writing a matrix into Jacobians
 template<typename Derived>
 void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
     JacobianMap& jacobians, Key key) {
@@ -186,28 +186,28 @@ public:
     }
   }
   /**
-   *  *** This is the main entry point for reverseAD, called from Expression ***
+   *  *** This is the main entry point for reverse AD, called from Expression ***
    * Called only once, either inserts I into Jacobians (Leaf) or starts AD (Function)
    */
   typedef Eigen::Matrix<double, Dim, Dim> JacobianTT;
-  void startReverseAD(JacobianMap& jacobians) const {
+  void startReverseAD1(JacobianMap& jacobians) const {
     if (kind == Leaf) {
       // This branch will only be called on trivial Leaf expressions, i.e. Priors
       static const JacobianTT I = JacobianTT::Identity();
       handleLeafCase(I, jacobians, content.key);
     } else if (kind == Function)
       // This is the more typical entry point, starting the AD pipeline
-      // Inside the startReverseAD that the correctly dimensioned pipeline is chosen.
-      content.ptr->startReverseAD(jacobians);
+      // Inside startReverseAD2 the correctly dimensioned pipeline is chosen.
+      content.ptr->startReverseAD2(jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
   template<typename DerivedMatrix>
-  void reverseAD(const Eigen::MatrixBase<DerivedMatrix> & dTdA,
+  void reverseAD1(const Eigen::MatrixBase<DerivedMatrix> & dTdA,
       JacobianMap& jacobians) const {
     if (kind == Leaf)
       handleLeafCase(dTdA, jacobians, content.key);
     else if (kind == Function)
-      content.ptr->reverseAD(dTdA, jacobians);
+      content.ptr->reverseAD2(dTdA, jacobians);
   }
 
   /// Define type so we can apply it as a meta-function
@@ -470,10 +470,10 @@ struct FunctionalBase: ExpressionNode<T> {
   struct Record {
     void print(const std::string& indent) const {
     }
-    void startReverseAD(JacobianMap& jacobians) const {
+    void startReverseAD4(JacobianMap& jacobians) const {
     }
     template<typename SomeMatrix>
-    void reverseAD(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
     }
   };
   /// Construct an execution trace for reverse AD
@@ -505,9 +505,9 @@ struct JacobianTrace {
   typename Jacobian<T, A>::type dTdA;
 };
 
-/**
- * Recursive Definition of Functional ExpressionNode
- */
+// Recursive Definition of Functional ExpressionNode
+// The reason we inherit from Argument<T, A, N> is because we can then
+// case to this unique signature to retrieve the expression at any level
 template<class T, class A, class Base>
 struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
@@ -528,7 +528,9 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     This::expression->dims(map);
   }
 
-  /// Recursive Record Class for Functional Expressions
+  // Recursive Record Class for Functional Expressions
+  // The reason we inherit from JacobianTrace<T, A, N> is because we can then
+  // case to this unique signature to retrieve the value/trace at any level
   struct Record: JacobianTrace<T, A, N>, Base::Record {
 
     typedef T return_type;
@@ -543,17 +545,26 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     }
 
     /// Start the reverse AD process
-    void startReverseAD(JacobianMap& jacobians) const {
-      Base::Record::startReverseAD(jacobians);
-      This::trace.reverseAD(This::dTdA, jacobians);
+    void startReverseAD4(JacobianMap& jacobians) const {
+      Base::Record::startReverseAD4(jacobians);
+      // This is the crucial point where the size of the AD pipeline is selected.
+      // One pipeline is started for each argument, but the number of rows in each
+      // pipeline is the same, namely the dimension of the output argument T.
+      // For example, if the entire expression is rooted by a binary function
+      // yielding a 2D result, then the matrix dTdA will have 2 rows.
+      // ExecutionTrace::reverseAD1 just passes this on to CallRecord::reverseAD2
+      // which calls the correctly sized CallRecord::reverseAD3, which in turn
+      // calls reverseAD4 below.
+      This::trace.reverseAD1(This::dTdA, jacobians);
     }
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
+    // Cols is always known at compile time
     template<int Rows, int Cols>
-    void reverseAD(const Eigen::Matrix<double, Rows, Cols> & dFdT,
+    void reverseAD4(const Eigen::Matrix<double, Rows, Cols> & dFdT,
         JacobianMap& jacobians) const {
-      Base::Record::reverseAD(dFdT, jacobians);
-      This::trace.reverseAD(dFdT * This::dTdA, jacobians);
+      Base::Record::reverseAD4(dFdT, jacobians);
+      This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
     }
   };
 
@@ -614,8 +625,8 @@ struct FunctionalNode {
     struct Record: public internal::CallRecordImplementor<Record,
         traits::dimension<T>::value>, public Base::Record {
       using Base::Record::print;
-      using Base::Record::startReverseAD;
-      using Base::Record::reverseAD;
+      using Base::Record::startReverseAD4;
+      using Base::Record::reverseAD4;
 
       virtual ~Record() {
       }
