@@ -6,7 +6,7 @@
 
 typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
 typedef MyTemplate<gtsam::Point3> MyTemplatePoint3;
-typedef MyFactor<gtsam::Pose2, gtsam::Point2> MyFactorPosePoint2;
+typedef MyFactor<gtsam::Pose2, Matrix> MyFactorPosePoint2;
 
 typedef std::set<boost::shared_ptr<gtsam::Point2>*> Collector_gtsamPoint2;
 static Collector_gtsamPoint2 collector_gtsamPoint2;
