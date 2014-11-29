@@ -26,7 +26,7 @@ void ReturnType::wrap_result(const string& out, const string& result,
   if (category == CLASS) {
     string objCopy, ptrType;
     ptrType = "Shared" + name;
-    const bool isVirtual = typeAttributes.at(cppType).isVirtual;
+    const bool isVirtual = typeAttributes.attributes(cppType).isVirtual;
     if (isVirtual) {
       if (isPtr)
         objCopy = result;
