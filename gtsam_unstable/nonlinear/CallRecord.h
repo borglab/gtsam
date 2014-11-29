@@ -36,7 +36,7 @@ class JacobianMap;
  * MaxVirtualStaticRows defines how many separate virtual reverseAD with specific
  * static rows (1..MaxVirtualStaticRows) methods will be part of the CallRecord interface.
  */
-const int MaxVirtualStaticRows = 4;
+#define MaxVirtualStaticRows 4
 
 namespace internal {
 
@@ -69,65 +69,6 @@ struct ConvertToVirtualFunctionSupportedMatrixType<false> {
   }
 };
 
-/**
- * Recursive definition of an interface having several purely
- * virtual _reverseAD(const Eigen::Matrix<double, Rows, Cols> &, JacobianMap&)
- * with Rows in 1..MaxSupportedStaticRows
- */
-template<int MaxSupportedStaticRows, int Cols>
-struct ReverseADInterface: ReverseADInterface<MaxSupportedStaticRows - 1, Cols> {
-  using ReverseADInterface<MaxSupportedStaticRows - 1, Cols>::_reverseAD;
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, MaxSupportedStaticRows, Cols> & dFdT,
-      JacobianMap& jacobians) const = 0;
-};
-
-template<int Cols>
-struct ReverseADInterface<0, Cols> {
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, Eigen::Dynamic, Cols> & dFdT,
-      JacobianMap& jacobians) const = 0;
-  virtual void _reverseAD(const Matrix & dFdT,
-      JacobianMap& jacobians) const = 0;
-};
-
-/**
- * ReverseADImplementor is a utility class used by CallRecordImplementor to
- * implementing the recursive ReverseADInterface interface.
- */
-template<typename Derived, int MaxSupportedStaticRows, int Cols>
-struct ReverseADImplementor: ReverseADImplementor<Derived,
-    MaxSupportedStaticRows - 1, Cols> {
-private:
-  using ReverseADImplementor<Derived, MaxSupportedStaticRows - 1, Cols>::_reverseAD;
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, MaxSupportedStaticRows, Cols> & dFdT,
-      JacobianMap& jacobians) const {
-    static_cast<const Derived *>(this)->reverseAD(dFdT, jacobians);
-  }
-  friend struct internal::ReverseADImplementor<Derived,
-      MaxSupportedStaticRows + 1, Cols>;
-};
-
-template<typename Derived, int Cols>
-struct ReverseADImplementor<Derived, 0, Cols> : virtual internal::ReverseADInterface<
-    MaxVirtualStaticRows, Cols> {
-private:
-  using internal::ReverseADInterface<MaxVirtualStaticRows, Cols>::_reverseAD;
-  const Derived & derived() const {
-    return static_cast<const Derived&>(*this);
-  }
-  virtual void _reverseAD(
-      const Eigen::Matrix<double, Eigen::Dynamic, Cols> & dFdT,
-      JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
-  }
-  virtual void _reverseAD(const Matrix & dFdT, JacobianMap& jacobians) const {
-    derived().reverseAD(dFdT, jacobians);
-  }
-  friend struct internal::ReverseADImplementor<Derived, 1, Cols>;
-};
-
 } // namespace internal
 
 /**
@@ -138,9 +79,7 @@ private:
  * It is implemented in the function-style ExpressionNode's nested Record class below.
  */
 template<int Cols>
-struct CallRecord: virtual private internal::ReverseADInterface<
-    MaxVirtualStaticRows, Cols> {
-
+struct CallRecord {
   inline void print(const std::string& indent) const {
     _print(indent);
   }
@@ -153,8 +92,11 @@ struct CallRecord: virtual private internal::ReverseADInterface<
   inline void reverseAD(const Eigen::MatrixBase<Derived> & dFdT,
       JacobianMap& jacobians) const {
     _reverseAD(
-        internal::ConvertToVirtualFunctionSupportedMatrixType<(Derived::RowsAtCompileTime > MaxVirtualStaticRows)>::convert(
-            dFdT), jacobians);
+         internal::ConvertToVirtualFunctionSupportedMatrixType<
+             (Derived::RowsAtCompileTime > MaxVirtualStaticRows)
+           >::convert(dFdT),
+         jacobians
+       );
   }
 
   inline void reverseAD(const Matrix & dFdT, JacobianMap& jacobians) const {
@@ -167,7 +109,36 @@ struct CallRecord: virtual private internal::ReverseADInterface<
 private:
   virtual void _print(const std::string& indent) const = 0;
   virtual void _startReverseAD(JacobianMap& jacobians) const = 0;
-  using internal::ReverseADInterface<MaxVirtualStaticRows, Cols>::_reverseAD;
+
+  virtual void _reverseAD(const Matrix & dFdT, JacobianMap& jacobians) const = 0;
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, Eigen::Dynamic, Cols> & dFdT,
+      JacobianMap& jacobians) const = 0;
+#if MaxVirtualStaticRows >= 1
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 1, Cols> & dFdT,
+      JacobianMap& jacobians) const = 0;
+#endif
+#if MaxVirtualStaticRows >= 2
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 2, Cols> & dFdT,
+      JacobianMap& jacobians) const = 0;
+#endif
+#if MaxVirtualStaticRows >= 3
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 3, Cols> & dFdT,
+      JacobianMap& jacobians) const = 0;
+#endif
+#if MaxVirtualStaticRows >= 4
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 4, Cols> & dFdT,
+      JacobianMap& jacobians) const = 0;
+#endif
+#if MaxVirtualStaticRows >= 5
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 5, Cols> & dFdT,
+      JacobianMap& jacobians) const = 0;
+#endif
 };
 
 namespace internal {
@@ -176,8 +147,7 @@ namespace internal {
  * delegating to its corresponding (templated) non-virtual methods.
  */
 template<typename Derived, int Cols>
-struct CallRecordImplementor: public CallRecord<Cols>,
-    private ReverseADImplementor<Derived, MaxVirtualStaticRows, Cols> {
+struct CallRecordImplementor: public CallRecord<Cols> {
 private:
   const Derived & derived() const {
     return static_cast<const Derived&>(*this);
@@ -188,7 +158,50 @@ private:
   virtual void _startReverseAD(JacobianMap& jacobians) const {
     derived().startReverseAD(jacobians);
   }
-  template<typename D, int R, int C> friend struct ReverseADImplementor;
+
+  virtual void _reverseAD(const Matrix & dFdT, JacobianMap& jacobians) const {
+    derived().reverseAD(dFdT, jacobians);
+  }
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, Eigen::Dynamic, Cols> & dFdT,
+      JacobianMap& jacobians) const {
+    derived().reverseAD(dFdT, jacobians);
+  }
+#if MaxVirtualStaticRows >= 1
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 1, Cols> & dFdT,
+      JacobianMap& jacobians) const {
+    derived().reverseAD(dFdT, jacobians);
+  }
+#endif
+#if MaxVirtualStaticRows >= 2
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 2, Cols> & dFdT,
+      JacobianMap& jacobians) const {
+    derived().reverseAD(dFdT, jacobians);
+  }
+#endif
+#if MaxVirtualStaticRows >= 3
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 3, Cols> & dFdT,
+      JacobianMap& jacobians) const {
+    derived().reverseAD(dFdT, jacobians);
+  }
+#endif
+#if MaxVirtualStaticRows >= 4
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 4, Cols> & dFdT,
+      JacobianMap& jacobians) const {
+    derived().reverseAD(dFdT, jacobians);
+  }
+#endif
+#if MaxVirtualStaticRows >= 5
+  virtual void _reverseAD(
+      const Eigen::Matrix<double, 5, Cols> & dFdT,
+      JacobianMap& jacobians) const {
+    derived().reverseAD(dFdT, jacobians);
+  }
+#endif
 };
 
 } // namespace internal

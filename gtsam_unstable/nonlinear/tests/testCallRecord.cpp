@@ -90,7 +90,7 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   }
 
   template<typename Derived, int Rows, int OtherCols>
-  friend struct internal::ReverseADImplementor;
+  friend struct internal::CallRecordImplementor;
 };
 
 JacobianMap & NJM= *static_cast<JacobianMap *>(NULL);
