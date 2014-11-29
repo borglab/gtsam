@@ -162,7 +162,7 @@ void Module::parseMarkup(const std::string& data) {
   vector<Qualified> templateArgValues;
   Rule templateArgValue_p =
     (*(namespace_name_p[push_back_a(templateArgValue.namespaces)] >> str_p("::")) >>
-    className_p[assign_a(templateArgValue.name)])
+    (className_p | eigenType_p)[assign_a(templateArgValue.name)])
     [push_back_a(templateArgValues, templateArgValue)]
     [clear_a(templateArgValue)];
  

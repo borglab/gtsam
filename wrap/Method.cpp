@@ -58,7 +58,7 @@ string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
-  wrapperFile.oss << "  checkArguments(\"" << name_ << "\",nargout,nargin-1,"
+  wrapperFile.oss << "  checkArguments(\"" << matlabName() << "\",nargout,nargin-1,"
       << args.size() << ");\n";
 
   // get class pointer
