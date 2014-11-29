@@ -175,20 +175,9 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   }
   file.oss << ")";
 }
+
 /* ************************************************************************* */
-void ArgumentList::emit_call(FileWriter& proxyFile,
-    const ReturnValue& returnVal, const string& wrapperName, int id,
-    bool staticMethod) const {
-  returnVal.emit_matlab(proxyFile);
-  proxyFile.oss << wrapperName << "(" << id;
-  if (!staticMethod)
-    proxyFile.oss << ", this";
-  proxyFile.oss << ", varargin{:});\n";
-}
-/* ************************************************************************* */
-void ArgumentList::emit_conditional_call(FileWriter& proxyFile,
-    const ReturnValue& returnVal, const string& wrapperName, int id,
-    bool staticMethod) const {
+void ArgumentList::proxy_check_arguments(FileWriter& proxyFile) const {
   // Check nr of arguments
   proxyFile.oss << "if length(varargin) == " << size();
   if (size() > 0)
@@ -203,10 +192,6 @@ void ArgumentList::emit_conditional_call(FileWriter& proxyFile,
     first = false;
   }
   proxyFile.oss << "\n";
-
-  // output call to C++ wrapper
-  proxyFile.oss << "        ";
-  emit_call(proxyFile, returnVal, wrapperName, id, staticMethod);
 }
 /* ************************************************************************* */
 

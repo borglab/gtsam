@@ -80,7 +80,8 @@ void GlobalFunction::generateSingleFunction(const string& toolboxPath,
 
     // Output proxy matlab code
     mfunctionFile.oss << "      " << (i == 0 ? "" : "else");
-    args.emit_conditional_call(mfunctionFile, returnVal, wrapperName, id, true); // true omits "this"
+    emit_conditional_call(mfunctionFile, returnVal, args, wrapperName, id,
+        true); // true omits "this"
 
     // Output C++ wrapper code
 

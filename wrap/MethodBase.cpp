@@ -55,8 +55,7 @@ void MethodBase::proxy_wrapper_fragments(FileWriter& proxyFile,
     // TODO: document why is it OK to not check arguments in this case
     proxyFile.oss << "      ";
     const int id = (int) functionNames.size();
-    argumentList(0).emit_call(proxyFile, returnValue(0), wrapperName, id,
-        isStatic());
+    emit_call(proxyFile, returnValue(0), wrapperName, id, isStatic());
 
     // Output C++ wrapper code
     const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
@@ -71,7 +70,7 @@ void MethodBase::proxy_wrapper_fragments(FileWriter& proxyFile,
       // Output proxy matlab code
       proxyFile.oss << "      " << (i == 0 ? "" : "else");
       const int id = (int) functionNames.size();
-      argumentList(i).emit_conditional_call(proxyFile, returnValue(i),
+      emit_conditional_call(proxyFile, returnValue(i), argumentList(i),
           wrapperName, id, isStatic());
 
       // Output C++ wrapper code

@@ -29,12 +29,11 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-bool Function::initializeOrCheck(const std::string& name,
-    const Qualified& instName, bool verbose) {
+bool Function::initializeOrCheck(const string& name, const Qualified& instName,
+    bool verbose) {
 
   if (name.empty())
-    throw std::runtime_error(
-        "Function::initializeOrCheck called with empty name");
+    throw runtime_error("Function::initializeOrCheck called with empty name");
 
   // Check if this overload is give to the correct method
   if (name_.empty()) {
@@ -44,7 +43,7 @@ bool Function::initializeOrCheck(const std::string& name,
     return true;
   } else {
     if (name_ != name || templateArgValue_ != instName || verbose_ != verbose)
-      throw std::runtime_error(
+      throw runtime_error(
           "Function::initializeOrCheck called with different arguments:  with name "
               + name + " instead of expected " + name_
               + ", or with template argument " + instName.qualifiedName(":")
@@ -52,6 +51,29 @@ bool Function::initializeOrCheck(const std::string& name,
 
     return false;
   }
+}
+
+/* ************************************************************************* */
+void Function::emit_call(FileWriter& proxyFile, const ReturnValue& returnVal,
+    const string& wrapperName, int id, bool staticMethod) const {
+  returnVal.emit_matlab(proxyFile);
+  proxyFile.oss << wrapperName << "(" << id;
+  if (!staticMethod)
+    proxyFile.oss << ", this";
+  proxyFile.oss << ", varargin{:});\n";
+}
+
+/* ************************************************************************* */
+void Function::emit_conditional_call(FileWriter& proxyFile,
+    const ReturnValue& returnVal, const ArgumentList& args,
+    const string& wrapperName, int id, bool staticMethod) const {
+
+  // Check all arguments
+  args.proxy_check_arguments(proxyFile);
+
+  // output call to C++ wrapper
+  proxyFile.oss << "        ";
+  emit_call(proxyFile, returnVal, wrapperName, id, staticMethod);
 }
 
 /* ************************************************************************* */

@@ -88,26 +88,12 @@ struct ArgumentList: public std::vector<Argument> {
   void emit_prototype(FileWriter& file, const std::string& name) const;
 
   /**
-   * emit emit MATLAB call to proxy
+   * emit checking arguments to MATLAB proxy
    * @param proxyFile output stream
-   * @param returnVal the return value
-   * @param wrapperName of method or function
-   * @param staticMethod flag to emit "this" in call
    */
-  void emit_call(FileWriter& proxyFile, const ReturnValue& returnVal,
-      const std::string& wrapperName, int id, bool staticMethod = false) const;
+  void proxy_check_arguments(FileWriter& proxyFile) const;
 
-  /**
-   * emit conditional MATLAB call to proxy (checking arguments first)
-   * @param proxyFile output stream
-   * @param returnVal the return value
-   * @param wrapperName of method or function
-   * @param staticMethod flag to emit "this" in call
-   */
-  void emit_conditional_call(FileWriter& proxyFile,
-      const ReturnValue& returnVal, const std::string& wrapperName, int id,
-      bool staticMethod = false) const;
-
+  /// Output stream operator
   friend std::ostream& operator<<(std::ostream& os,
       const ArgumentList& argList) {
     os << "(";
@@ -119,6 +105,7 @@ struct ArgumentList: public std::vector<Argument> {
     os << ")";
     return os;
   }
+
 
 };
 
