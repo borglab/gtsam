@@ -36,13 +36,16 @@ namespace wrap {
 /// Class has name, constructors, methods
 class Class: public Qualified {
 
+  typedef const std::string& Str;
+
   typedef std::map<std::string, Method> Methods;
-  Methods methods; ///< Class methods
+  Methods methods_; ///< Class methods
 
 public:
 
-  typedef const std::string& Str;
+
   typedef std::map<std::string, StaticMethod> StaticMethods;
+  StaticMethods static_methods; ///< Static methods
 
   // Then the instance variables are set directly by the Module constructor
   std::vector<std::string> templateArgs; ///< Template arguments
@@ -51,7 +54,6 @@ public:
   bool isSerializable; ///< Whether we can use boost.serialization to serialize the class - creates exports
   bool hasSerialization; ///< Whether we should create the serialization functions
   Qualified qualifiedParent; ///< The *single* parent
-  StaticMethods static_methods; ///< Static methods
   Constructor constructor; ///< Class constructors
   Deconstructor deconstructor; ///< Deconstructor to deallocate C++ object
   bool verbose_; ///< verbose flag
@@ -63,13 +65,13 @@ public:
   }
 
   size_t nrMethods() const {
-    return methods.size();
+    return methods_.size();
   }
-  Method& method(Str name) {
-    return methods.at(name);
-  }
+
+  Method& method(Str key);
+
   bool exists(Str name) const {
-    return methods.find(name) != methods.end();
+    return methods_.find(name) != methods_.end();
   }
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
@@ -119,7 +121,7 @@ public:
     os << cls.constructor << ";\n";
     BOOST_FOREACH(const StaticMethod& m, cls.static_methods | boost::adaptors::map_values)
       os << m << ";\n";
-    BOOST_FOREACH(const Method& m, cls.methods | boost::adaptors::map_values)
+    BOOST_FOREACH(const Method& m, cls.methods_ | boost::adaptors::map_values)
       os << m << ";\n";
     os << "};" << std::endl;
     return os;

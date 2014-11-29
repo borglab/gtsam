@@ -22,15 +22,34 @@
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm/copy.hpp>
 
 #include <vector> 
 #include <iostream> 
 #include <fstream> 
+#include <iterator>     // std::ostream_iterator
+
 //#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags 
 //#include <cinttypes> // same failure as above 
 #include <stdint.h> // works on Linux GCC 
+
 using namespace std;
 using namespace wrap;
+
+/* ************************************************************************* */
+Method& Class::method(Str key) {
+  try {
+    return methods_.at(key);
+  } catch (const out_of_range& oor) {
+    cerr << "Class::method: key not found: " << oor.what()
+        << ", methods are:\n";
+    using boost::adaptors::map_keys;
+    ostream_iterator<string> out_it(cerr, "\n");
+    boost::copy(methods_ | map_keys, out_it);
+    throw runtime_error("Internal error in wrap");
+  }
+}
 
 /* ************************************************************************* */
 void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
@@ -111,7 +130,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
       << "    function disp(obj), obj.display; end\n    %DISP Calls print on the object\n";
 
   // Methods 
-  BOOST_FOREACH(const Methods::value_type& name_m, methods) {
+  BOOST_FOREACH(const Methods::value_type& name_m, methods_) {
     const Method& m = name_m.second;
     m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName,
         matlabUniqueName, wrapperName, typeAttributes, functionNames);
@@ -244,7 +263,7 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
 /* ************************************************************************* */
 Class Class::expandTemplate(const TemplateSubstitution& ts) const {
   Class inst = *this;
-  inst.methods = expandMethodTemplate(methods, ts);
+  inst.methods_ = expandMethodTemplate(methods_, ts);
   inst.static_methods = expandMethodTemplate(static_methods, ts);
   inst.constructor = constructor.expandTemplate(ts);
   inst.deconstructor.name = inst.name;
@@ -286,36 +305,36 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
       // Now stick in new overload stack with expandedMethodName key
       // but note we use the same, unexpanded methodName in overload
       string expandedMethodName = methodName + instName.name;
-      methods[expandedMethodName].addOverload(methodName, expandedArgs,
+      methods_[expandedMethodName].addOverload(methodName, expandedArgs,
           expandedRetVal, is_const, instName, verbose);
     }
   } else
     // just add overload
-    methods[methodName].addOverload(methodName, argumentList, returnValue,
+    methods_[methodName].addOverload(methodName, argumentList, returnValue,
         is_const, Qualified(), verbose);
 }
 
 /* ************************************************************************* */
 void Class::erase_serialization() {
-  Methods::iterator it = methods.find("serializable");
-  if (it != methods.end()) {
+  Methods::iterator it = methods_.find("serializable");
+  if (it != methods_.end()) {
 #ifndef WRAP_DISABLE_SERIALIZE
     isSerializable = true;
 #else
     // cout << "Ignoring serializable() flag in class " << name << endl;
 #endif
-    methods.erase(it);
+    methods_.erase(it);
   }
 
-  it = methods.find("serialize");
-  if (it != methods.end()) {
+  it = methods_.find("serialize");
+  if (it != methods_.end()) {
 #ifndef WRAP_DISABLE_SERIALIZE
     isSerializable = true;
     hasSerialization = true;
 #else
     // cout << "Ignoring serialize() flag in class " << name << endl;
 #endif
-    methods.erase(it);
+    methods_.erase(it);
   }
 }
 
@@ -327,11 +346,11 @@ void Class::verifyAll(vector<string>& validTypes, bool& hasSerialiable) const {
   // verify all of the function arguments
   //TODO:verifyArguments<ArgumentList>(validTypes, constructor.args_list);
   verifyArguments<StaticMethod>(validTypes, static_methods);
-  verifyArguments<Method>(validTypes, methods);
+  verifyArguments<Method>(validTypes, methods_);
 
   // verify function return types
   verifyReturnTypes<StaticMethod>(validTypes, static_methods);
-  verifyReturnTypes<Method>(validTypes, methods);
+  verifyReturnTypes<Method>(validTypes, methods_);
 
   // verify parents
   if (!qualifiedParent.empty()
@@ -351,7 +370,7 @@ void Class::appendInheritedMethods(const Class& cls,
     BOOST_FOREACH(const Class& parent, classes) {
       // We found a parent class for our parent, TODO improve !
       if (parent.name == cls.qualifiedParent.name) {
-        methods.insert(parent.methods.begin(), parent.methods.end());
+        methods_.insert(parent.methods_.begin(), parent.methods_.end());
         appendInheritedMethods(parent, classes);
       }
     }
@@ -379,9 +398,9 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 
   constructor.comment_fragment(proxyFile);
 
-  if (!methods.empty())
+  if (!methods_.empty())
     proxyFile.oss << "%\n%-------Methods-------\n";
-  BOOST_FOREACH(const Methods::value_type& name_m, methods)
+  BOOST_FOREACH(const Methods::value_type& name_m, methods_)
     name_m.second.comment_fragment(proxyFile);
 
   if (!static_methods.empty())
@@ -590,7 +609,7 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
   constructor.python_wrapper(wrapperFile, name);
   BOOST_FOREACH(const StaticMethod& m, static_methods | boost::adaptors::map_values)
     m.python_wrapper(wrapperFile, name);
-  BOOST_FOREACH(const Method& m, methods | boost::adaptors::map_values)
+  BOOST_FOREACH(const Method& m, methods_ | boost::adaptors::map_values)
     m.python_wrapper(wrapperFile, name);
   wrapperFile.oss << ";\n\n";
 }
