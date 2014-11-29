@@ -34,8 +34,8 @@ const TypeAttributes& TypeAttributesTable::attributes(const string& key) const {
   try {
     return table_.at(key);
   } catch (const out_of_range& oor) {
-    cerr << "Class::method: key not found: " << oor.what()
-        << ", methods are:\n";
+    cerr << "TypeAttributesTable::attributes: key " << key
+        << " not found. Valid keys are:\n";
     using boost::adaptors::map_keys;
     ostream_iterator<string> out_it(cerr, "\n");
     boost::copy(table_ | map_keys, out_it);
