@@ -169,8 +169,8 @@ public:
   inline Cal3_S2 between(const Cal3_S2& q,
       OptionalJacobian<5,5> H1=boost::none,
       OptionalJacobian<5,5> H2=boost::none) const {
-    if(H1) *H1 = -eye(5);
-    if(H2) *H2 = eye(5);
+    if(H1) *H1 = -Matrix5::Identity();
+    if(H2) *H2 = Matrix5::Identity();
     return Cal3_S2(q.fx_-fx_, q.fy_-fy_, q.s_-s_, q.u0_-u0_, q.v0_-v0_);
   }
 
