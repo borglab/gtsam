@@ -75,3 +75,67 @@ struct Qualified {
 
 } // \namespace wrap
 
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_push_back_actor.hpp>
+#include <boost/spirit/include/classic_clear_actor.hpp>
+#include <boost/spirit/include/classic_assign_actor.hpp>
+
+namespace classic = BOOST_SPIRIT_CLASSIC_NS;
+
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct type_grammar: public classic::grammar<type_grammar> {
+
+  wrap::Qualified& result_; ///< successful parse will be placed in here
+
+  /// Construct type grammar and specify where result is placed
+  type_grammar(wrap::Qualified& result) :
+      result_(result) {
+  }
+
+/// Definition of type grammar
+  template<typename ScannerT>
+  struct definition {
+
+    typedef classic::rule<ScannerT> Rule;
+
+    Rule void_p, basisType_p, eigenType_p, keywords_p, stlType_p, className_p,
+        namepsace_p, namespace_del_p, class_p, type_p;
+
+    definition(type_grammar const& self) {
+
+      using namespace classic;
+
+      void_p = str_p("void")[assign_a(self.result_.name)];
+
+      basisType_p = (str_p("string") | "bool" | "size_t" | "int" | "double"
+          | "char" | "unsigned char")[assign_a(self.result_.name)];
+
+      eigenType_p = (str_p("Vector") | "Matrix")[assign_a(self.result_.name)];
+
+      keywords_p = (str_p("const") | "static" | "namespace" | "void"
+          | basisType_p);
+
+      stlType_p = (str_p("vector") | "list");
+
+      className_p = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p
+          - keywords_p) | stlType_p;
+
+      namepsace_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
+
+      namespace_del_p = namepsace_p[push_back_a(self.result_.namespaces)]
+          >> str_p("::");
+
+      class_p = *namespace_del_p >> className_p[assign_a(self.result_.name)];
+
+      type_p = eps_p[clear_a(self.result_)] //
+      >> void_p | basisType_p | eigenType_p | class_p;
+    }
+
+    Rule const& start() const {
+      return type_p;
+    }
+
+  };
+};
+
+
