@@ -37,6 +37,12 @@ namespace gtsam {
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
+typedef Eigen::Matrix<double,1,2> Matrix12;
+typedef Eigen::Matrix<double,1,3> Matrix13;
+typedef Eigen::Matrix<double,1,4> Matrix14;
+typedef Eigen::Matrix<double,1,5> Matrix15;
+typedef Eigen::Matrix<double,1,6> Matrix16;
+
 typedef Eigen::Matrix2d Matrix2;
 typedef Eigen::Matrix3d Matrix3;
 typedef Eigen::Matrix4d Matrix4;
