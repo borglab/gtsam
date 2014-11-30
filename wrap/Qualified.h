@@ -31,8 +31,14 @@ struct Qualified {
   std::vector<std::string> namespaces; ///< Stack of namespaces
   std::string name; ///< type name
 
+  /// the different categories
+  typedef enum {
+    CLASS = 1, EIGEN = 2, BASIS = 3, VOID = 4
+  } Category;
+  Category category;
+
   Qualified(const std::string& name_ = "") :
-      name(name_) {
+      name(name_), category(CLASS) {
   }
 
   bool empty() const {
@@ -82,35 +88,54 @@ struct Qualified {
 
 namespace classic = BOOST_SPIRIT_CLASSIC_NS;
 
-// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-struct type_grammar: public classic::grammar<type_grammar> {
+template<typename ScannerT>
+struct basic_rules {
 
-  wrap::Qualified& result_; ///< successful parse will be placed in here
+  typedef classic::rule<ScannerT> Rule;
 
-  /// Construct type grammar and specify where result is placed
-  type_grammar(wrap::Qualified& result) :
-      result_(result) {
+  Rule basisType_p, eigenType_p, keywords_p, stlType_p, className_p,
+      namepsace_p;
+
+  basic_rules() {
+
+    using namespace classic;
+
+    basisType_p = (str_p("string") | "bool" | "size_t" | "int" | "double"
+        | "char" | "unsigned char");
+
+    eigenType_p = (str_p("Vector") | "Matrix");
+
+    keywords_p =
+        (str_p("const") | "static" | "namespace" | "void" | basisType_p);
+
+    stlType_p = (str_p("vector") | "list");
+
+    className_p = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p
+        - keywords_p) | stlType_p;
+
+    namepsace_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
   }
+};
 
-/// Definition of type grammar
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct classname_grammar: public classic::grammar<classname_grammar> {
+
+  /// Definition of type grammar
   template<typename ScannerT>
   struct definition {
 
     typedef classic::rule<ScannerT> Rule;
 
-    Rule void_p, basisType_p, eigenType_p, keywords_p, stlType_p, className_p,
-        namepsace_p, namespace_del_p, class_p, type_p;
+    Rule basisType_p, eigenType_p, keywords_p, stlType_p, className_p;
 
-    definition(type_grammar const& self) {
+    definition(classname_grammar const& self) {
 
       using namespace classic;
 
-      void_p = str_p("void")[assign_a(self.result_.name)];
-
       basisType_p = (str_p("string") | "bool" | "size_t" | "int" | "double"
-          | "char" | "unsigned char")[assign_a(self.result_.name)];
+          | "char" | "unsigned char");
 
-      eigenType_p = (str_p("Vector") | "Matrix")[assign_a(self.result_.name)];
+      eigenType_p = (str_p("Vector") | "Matrix");
 
       keywords_p = (str_p("const") | "static" | "namespace" | "void"
           | basisType_p);
@@ -119,13 +144,67 @@ struct type_grammar: public classic::grammar<type_grammar> {
 
       className_p = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p
           - keywords_p) | stlType_p;
+    }
+
+    Rule const& start() const {
+      return className_p;
+    }
+
+  };
+};
+// classname_grammar
+
+struct type_grammar: public classic::grammar<type_grammar> {
+
+  wrap::Qualified& result_; ///< successful parse will be placed in here
+  classname_grammar classname_g;
+
+  /// Construct type grammar and specify where result is placed
+  type_grammar(wrap::Qualified& result) :
+      result_(result) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition {
+
+    typedef classic::rule<ScannerT> Rule;
+
+    Rule void_p, basisType_p, eigenType_p, keywords_p, namepsace_p,
+        namespace_del_p, class_p, type_p;
+
+    definition(type_grammar const& self) {
+
+      using namespace wrap;
+      using namespace classic;
+
+      // HACK: use const values instead of using enums themselves - somehow this doesn't result in values getting assigned to gibberish
+      static const Qualified::Category EIGEN = Qualified::EIGEN;
+      static const Qualified::Category BASIS = Qualified::BASIS;
+      static const Qualified::Category CLASS = Qualified::CLASS;
+      static const Qualified::Category VOID = Qualified::VOID;
+
+      void_p = str_p("void")[assign_a(self.result_.name)] //
+          [assign_a(self.result_.category, VOID)];
+
+      basisType_p = (str_p("string") | "bool" | "size_t" | "int" | "double"
+          | "char" | "unsigned char")[assign_a(self.result_.name)] //
+          [assign_a(self.result_.category, BASIS)];
+
+      eigenType_p = (str_p("Vector") | "Matrix")[assign_a(self.result_.name)] //
+          [assign_a(self.result_.category, EIGEN)];
+
+      keywords_p = (str_p("const") | "static" | "namespace" | "void"
+          | basisType_p);
 
       namepsace_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
 
       namespace_del_p = namepsace_p[push_back_a(self.result_.namespaces)]
           >> str_p("::");
 
-      class_p = *namespace_del_p >> className_p[assign_a(self.result_.name)];
+      class_p = *namespace_del_p >> self.classname_g //
+          [assign_a(self.result_.name)] //
+          [assign_a(self.result_.category, CLASS)];
 
       type_p = eps_p[clear_a(self.result_)] //
       >> void_p | basisType_p | eigenType_p | class_p;
@@ -137,5 +216,5 @@ struct type_grammar: public classic::grammar<type_grammar> {
 
   };
 };
-
+// type_grammar
 

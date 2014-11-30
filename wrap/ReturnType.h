@@ -19,20 +19,14 @@ namespace wrap {
  */
 struct ReturnType: Qualified {
 
-  /// the different supported return value categories
-  typedef enum {
-    CLASS = 1, EIGEN = 2, BASIS = 3, VOID = 4
-  } return_category;
-
   bool isPtr;
-  return_category category;
 
   ReturnType() :
-      isPtr(false), category(CLASS) {
+      isPtr(false) {
   }
 
   ReturnType(const std::string& name) :
-      isPtr(false), category(CLASS) {
+      isPtr(false) {
     Qualified::name = name;
   }
 

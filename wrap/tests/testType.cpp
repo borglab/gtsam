@@ -27,7 +27,7 @@ TEST( spirit, grammar ) {
 
   using classic::space_p;
 
-  // Create grammar that will place result in actual
+  // Create type grammar that will place result in actual
   Qualified actual;
   type_grammar type_g(actual);
 
@@ -37,26 +37,31 @@ TEST( spirit, grammar ) {
   EXPECT_LONGS_EQUAL(2, actual.namespaces.size());
   EXPECT(actual.namespaces[0]=="gtsam");
   EXPECT(actual.namespaces[1]=="internal");
+  EXPECT(actual.category==Qualified::CLASS);
 
   // a class type with no namespaces
   EXPECT(parse("Point2", type_g, space_p).full);
   EXPECT(actual.name=="Point2");
   EXPECT(actual.namespaces.empty());
+  EXPECT(actual.category==Qualified::CLASS);
 
   // an Eigen type
   EXPECT(parse("Vector", type_g, space_p).full);
   EXPECT(actual.name=="Vector");
   EXPECT(actual.namespaces.empty());
+  EXPECT(actual.category==Qualified::EIGEN);
 
   // a basic type
   EXPECT(parse("double", type_g, space_p).full);
   EXPECT(actual.name=="double");
   EXPECT(actual.namespaces.empty());
+  EXPECT(actual.category==Qualified::BASIS);
 
   // void
   EXPECT(parse("void", type_g, space_p).full);
   EXPECT(actual.name=="void");
   EXPECT(actual.namespaces.empty());
+  EXPECT(actual.category==Qualified::VOID);
 }
 
 //******************************************************************************
