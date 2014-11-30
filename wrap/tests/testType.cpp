@@ -23,6 +23,22 @@ using namespace std;
 using namespace wrap;
 
 //******************************************************************************
+TEST( Type, Constructor1 ) {
+  Qualified actual("Point2");
+  EXPECT(actual.namespaces().empty());
+  EXPECT(actual.name()=="Point2");
+  EXPECT(actual.category==Qualified::CLASS);
+}
+
+//******************************************************************************
+TEST( Type, Constructor2 ) {
+  Qualified actual("Point3",Qualified::CLASS);
+  EXPECT(actual.namespaces().empty());
+  EXPECT(actual.name()=="Point3");
+  EXPECT(actual.category==Qualified::CLASS);
+}
+
+//******************************************************************************
 TEST( Type, grammar ) {
 
   using classic::space_p;

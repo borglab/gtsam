@@ -24,6 +24,32 @@ using namespace std;
 using namespace wrap;
 
 //******************************************************************************
+TEST( ReturnType, Constructor1 ) {
+  ReturnType actual("Point2");
+  EXPECT(actual.namespaces().empty());
+  EXPECT(actual.name()=="Point2");
+  EXPECT(actual.category==Qualified::CLASS);
+  EXPECT(!actual.isPtr);
+}
+
+//******************************************************************************
+TEST( ReturnType, Constructor2 ) {
+  ReturnType actual("Point3",Qualified::CLASS, true);
+  EXPECT(actual.namespaces().empty());
+  EXPECT(actual.name()=="Point3");
+  EXPECT(actual.category==Qualified::CLASS);
+  EXPECT(actual.isPtr);
+}
+
+//******************************************************************************
+TEST( ReturnValue, Constructor ) {
+  ReturnValue actual(ReturnType("Point2"), ReturnType("Point3"));
+  EXPECT(actual.type1==Qualified("Point2"));
+  EXPECT(actual.type2==Qualified("Point3"));
+  EXPECT(actual.isPair);
+}
+
+//******************************************************************************
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
 struct ReturnValueGrammar: public classic::grammar<ReturnValueGrammar> {
 
@@ -38,15 +64,12 @@ struct ReturnValueGrammar: public classic::grammar<ReturnValueGrammar> {
 
   /// Definition of type grammar
   template<typename ScannerT>
-  struct definition: basic_rules<ScannerT> {
+  struct definition {
 
-    typedef classic::rule<ScannerT> Rule;
-
-    Rule pair_p, returnValue_p;
+    classic::rule<ScannerT> pair_p, returnValue_p;
 
     definition(ReturnValueGrammar const& self) {
 
-      using namespace wrap;
       using namespace classic;
 
       pair_p = (str_p("pair") >> '<' >> self.returnType1_g >> ','
@@ -55,7 +78,7 @@ struct ReturnValueGrammar: public classic::grammar<ReturnValueGrammar> {
       returnValue_p = pair_p | self.returnType1_g;
     }
 
-    Rule const& start() const {
+    classic::rule<ScannerT> const& start() const {
       return returnValue_p;
     }
 
@@ -72,8 +95,13 @@ TEST( ReturnValue, grammar ) {
   ReturnValue actual;
   ReturnValueGrammar g(actual);
 
+  EXPECT(parse("pair<Point2,Point3>", g, space_p).full);
+  EXPECT( actual==ReturnValue(ReturnType("Point2"),ReturnType("Point3")));
+  cout << actual << endl;
+  actual.clear();
+
   EXPECT(parse("VectorNotEigen", g, space_p).full);
-  EXPECT(actual==ReturnValue(ReturnType("VectorNotEigen",Qualified::CLASS)));
+  EXPECT(actual==ReturnValue(ReturnType("VectorNotEigen")));
   actual.clear();
 
   EXPECT(parse("double", g, space_p).full);

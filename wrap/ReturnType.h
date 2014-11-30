@@ -9,6 +9,7 @@
 #include "FileWriter.h"
 #include "TypeAttributesTable.h"
 #include "utilities.h"
+#include <iostream>
 
 #pragma once
 
@@ -17,18 +18,17 @@ namespace wrap {
 /**
  * Encapsulates return value of a method or function
  */
-struct ReturnType: Qualified {
+struct ReturnType: public Qualified {
 
   bool isPtr;
 
   /// Makes a void type
-  ReturnType(bool ptr = false) :
-      isPtr(ptr) {
+  ReturnType() :
+      isPtr(false) {
   }
 
   /// Constructor, no namespaces
-  ReturnType(const std::string& name, Qualified::Category c = Qualified::CLASS,
-      bool ptr = false) :
+  ReturnType(const std::string& name, Category c = CLASS, bool ptr = false) :
       Qualified(name, c), isPtr(ptr) {
   }
 
