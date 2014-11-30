@@ -27,13 +27,13 @@
 
 using namespace std;
 using namespace wrap;
-using namespace BOOST_SPIRIT_CLASSIC_NS;
+namespace classic = BOOST_SPIRIT_CLASSIC_NS;
 
-typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
+typedef classic::rule<classic::phrase_scanner_t> Rule;
 
 //******************************************************************************
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-struct type_grammar: public grammar<type_grammar> {
+struct type_grammar: public classic::grammar<type_grammar> {
 
   Qualified& result_; ///< successful parse will be placed in here
 
@@ -46,12 +46,22 @@ struct type_grammar: public grammar<type_grammar> {
   template<typename ScannerT>
   struct definition {
 
-    typedef rule<ScannerT> Rule;
+    typedef classic::rule<ScannerT> Rule;
 
     Rule void_p, basisType_p, eigenType_p, keywords_p, stlType_p, className_p,
         namepsace_p, namespace_del_p, class_p, type_p;
 
     definition(type_grammar const& self) {
+
+      using classic::lexeme_d;
+      using classic::eps_p;
+      using classic::str_p;
+      using classic::upper_p;
+      using classic::lower_p;
+      using classic::alnum_p;
+      using classic::assign_a;
+      using classic::push_back_a;
+      using classic::clear_a;
 
       void_p = str_p("void")[assign_a(self.result_.name)];
 
@@ -88,6 +98,9 @@ struct type_grammar: public grammar<type_grammar> {
 
 //******************************************************************************
 TEST( spirit, grammar ) {
+
+  using classic::space_p;
+
   // Create grammar that will place result in actual
   Qualified actual;
   type_grammar type_g(actual);
