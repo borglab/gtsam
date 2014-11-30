@@ -116,26 +116,9 @@ struct basic_rules {
 };
 
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-struct classname_grammar: public classic::grammar<classname_grammar> {
-
-  template<typename ScannerT>
-  struct definition: basic_rules<ScannerT> {
-
-    definition(classname_grammar const& self) {
-    }
-
-    classic::rule<ScannerT> const& start() const {
-      return basic_rules<ScannerT>::className_p;
-    }
-
-  };
-};
-// classname_grammar
-
 struct type_grammar: public classic::grammar<type_grammar> {
 
   wrap::Qualified& result_; ///< successful parse will be placed in here
-  classname_grammar classname_g;
 
   /// Construct type grammar and specify where result is placed
   type_grammar(wrap::Qualified& result) :
