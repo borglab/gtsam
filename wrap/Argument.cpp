@@ -50,25 +50,25 @@ ArgumentList ArgumentList::expandTemplate(
 /* ************************************************************************* */
 string Argument::matlabClass(const string& delim) const {
   string result;
-  BOOST_FOREACH(const string& ns, type.namespaces)
+  BOOST_FOREACH(const string& ns, type.namespaces())
     result += ns + delim;
-  if (type.name == "string" || type.name == "unsigned char"
-      || type.name == "char")
+  if (type.name() == "string" || type.name() == "unsigned char"
+      || type.name() == "char")
     return result + "char";
-  if (type.name == "Vector" || type.name == "Matrix")
+  if (type.name() == "Vector" || type.name() == "Matrix")
     return result + "double";
-  if (type.name == "int" || type.name == "size_t")
+  if (type.name() == "int" || type.name() == "size_t")
     return result + "numeric";
-  if (type.name == "bool")
+  if (type.name() == "bool")
     return result + "logical";
-  return result + type.name;
+  return result + type.name();
 }
 
 /* ************************************************************************* */
 bool Argument::isScalar() const {
-  return (type.name == "bool" || type.name == "char"
-      || type.name == "unsigned char" || type.name == "int"
-      || type.name == "size_t" || type.name == "double");
+  return (type.name() == "bool" || type.name() == "char"
+      || type.name() == "unsigned char" || type.name() == "int"
+      || type.name() == "size_t" || type.name() == "double");
 }
 
 /* ************************************************************************* */
@@ -102,7 +102,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 /* ************************************************************************* */
 void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
   proxyFile.oss << "isa(" << s << ",'" << matlabClass(".") << "')";
-  if (type.name == "Vector")
+  if (type.name() == "Vector")
     proxyFile.oss << " && size(" << s << ",2)==1";
 }
 
@@ -113,7 +113,7 @@ string ArgumentList::types() const {
   BOOST_FOREACH(Argument arg, *this) {
     if (!first)
       str += ",";
-    str += arg.type.name;
+    str += arg.type.name();
     first = false;
   }
   return str;
@@ -125,14 +125,14 @@ string ArgumentList::signature() const {
   bool cap = false;
 
   BOOST_FOREACH(Argument arg, *this) {
-    BOOST_FOREACH(char ch, arg.type.name)
+    BOOST_FOREACH(char ch, arg.type.name())
       if (isupper(ch)) {
         sig += ch;
         //If there is a capital letter, we don't want to read it below
         cap = true;
       }
     if (!cap)
-      sig += arg.type.name[0];
+      sig += arg.type.name()[0];
     //Reset to default
     cap = false;
   }
@@ -179,7 +179,7 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   BOOST_FOREACH(Argument arg, *this) {
     if (!first)
       file.oss << ", ";
-    file.oss << arg.type.name << " " << arg.name;
+    file.oss << arg.type.name() << " " << arg.name;
     first = false;
   }
   file.oss << ")";

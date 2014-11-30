@@ -57,7 +57,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
     vector<string>& functionNames) const {
 
   // Create namespace folders 
-  createNamespaceStructure(namespaces, toolboxPath);
+  createNamespaceStructure(namespaces(), toolboxPath);
 
   // open destination classFile 
   string classFile = matlabName(toolboxPath);
@@ -74,14 +74,14 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   // we want our class to inherit the handle class for memory purposes 
   const string parent = qualifiedParent.empty() ? "handle" : matlabBaseName;
   comment_fragment(proxyFile);
-  proxyFile.oss << "classdef " << name << " < " << parent << endl;
+  proxyFile.oss << "classdef " << name() << " < " << parent << endl;
   proxyFile.oss << "  properties\n";
   proxyFile.oss << "    ptr_" << matlabUniqueName << " = 0\n";
   proxyFile.oss << "  end\n";
   proxyFile.oss << "  methods\n";
 
   // Constructor 
-  proxyFile.oss << "    function obj = " << name << "(varargin)\n";
+  proxyFile.oss << "    function obj = " << name() << "(varargin)\n";
   // Special pointer constructors - one in MATLAB to create an object and 
   // assign a pointer returned from a C++ function.  In turn this MATLAB 
   // constructor calls a special C++ function that just adds the object to 
@@ -266,7 +266,7 @@ Class Class::expandTemplate(const TemplateSubstitution& ts) const {
   inst.methods_ = expandMethodTemplate(methods_, ts);
   inst.static_methods = expandMethodTemplate(static_methods, ts);
   inst.constructor = constructor.expandTemplate(ts);
-  inst.deconstructor.name = inst.name;
+  inst.deconstructor.name = inst.name();
   return inst;
 }
 
@@ -276,10 +276,10 @@ vector<Class> Class::expandTemplate(Str templateArg,
   vector<Class> result;
   BOOST_FOREACH(const Qualified& instName, instantiations) {
     Qualified expandedClass = (Qualified) (*this);
-    expandedClass.name += instName.name;
+    expandedClass.expand(instName.name());
     const TemplateSubstitution ts(templateArg, instName, expandedClass);
     Class inst = expandTemplate(ts);
-    inst.name = expandedClass.name;
+    inst.name_ = expandedClass.name();
     inst.templateArgs.clear();
     inst.typedefName = qualifiedName("::") + "<" + instName.qualifiedName("::")
         + ">";
@@ -297,14 +297,14 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
     // Create method to expand
     // For all values of the template argument, create a new method
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
-      const TemplateSubstitution ts(templateArgName, instName, this->name);
+      const TemplateSubstitution ts(templateArgName, instName, name());
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
       // do the same for return type
       ReturnValue expandedRetVal = returnValue.expandTemplate(ts);
       // Now stick in new overload stack with expandedMethodName key
       // but note we use the same, unexpanded methodName in overload
-      string expandedMethodName = methodName + instName.name;
+      string expandedMethodName = methodName + instName.name();
       methods_[expandedMethodName].addOverload(methodName, expandedArgs,
           expandedRetVal, is_const, instName, verbose);
     }
@@ -369,7 +369,7 @@ void Class::appendInheritedMethods(const Class& cls,
     // Find parent
     BOOST_FOREACH(const Class& parent, classes) {
       // We found a parent class for our parent, TODO improve !
-      if (parent.name == cls.qualifiedParent.name) {
+      if (parent.name() == cls.qualifiedParent.name()) {
         methods_.insert(parent.methods_.begin(), parent.methods_.end());
         appendInheritedMethods(parent, classes);
       }
@@ -380,11 +380,11 @@ void Class::appendInheritedMethods(const Class& cls,
 /* ************************************************************************* */
 string Class::getTypedef() const {
   string result;
-  BOOST_FOREACH(Str namesp, namespaces) {
+  BOOST_FOREACH(Str namesp, namespaces()) {
     result += ("namespace " + namesp + " { ");
   }
-  result += ("typedef " + typedefName + " " + name + ";");
-  for (size_t i = 0; i < namespaces.size(); ++i) {
+  result += ("typedef " + typedefName + " " + name() + ";");
+  for (size_t i = 0; i < namespaces().size(); ++i) {
     result += " }";
   }
   return result;
@@ -392,7 +392,7 @@ string Class::getTypedef() const {
 
 /* ************************************************************************* */
 void Class::comment_fragment(FileWriter& proxyFile) const {
-  proxyFile.oss << "%class " << name << ", see Doxygen page for details\n";
+  proxyFile.oss << "%class " << name() << ", see Doxygen page for details\n";
   proxyFile.oss
       << "%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n";
 
@@ -412,7 +412,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
     proxyFile.oss << "%\n%-------Serialization Interface-------\n";
     proxyFile.oss << "%string_serialize() : returns string\n";
     proxyFile.oss << "%string_deserialize(string serialized) : returns "
-        << this->name << "\n";
+        << name() << "\n";
   }
 
   proxyFile.oss << "%\n";
@@ -605,12 +605,12 @@ string Class::getSerializationExport() const {
 
 /* ************************************************************************* */
 void Class::python_wrapper(FileWriter& wrapperFile) const {
-  wrapperFile.oss << "class_<" << name << ">(\"" << name << "\")\n";
-  constructor.python_wrapper(wrapperFile, name);
+  wrapperFile.oss << "class_<" << name() << ">(\"" << name() << "\")\n";
+  constructor.python_wrapper(wrapperFile, name());
   BOOST_FOREACH(const StaticMethod& m, static_methods | boost::adaptors::map_values)
-    m.python_wrapper(wrapperFile, name);
+    m.python_wrapper(wrapperFile, name());
   BOOST_FOREACH(const Method& m, methods_ | boost::adaptors::map_values)
-    m.python_wrapper(wrapperFile, name);
+    m.python_wrapper(wrapperFile, name());
   wrapperFile.oss << ";\n\n";
 }
 

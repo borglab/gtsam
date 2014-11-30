@@ -68,7 +68,7 @@ void TypeAttributesTable::checkValidity(const vector<Class>& classes) const {
     if (!cls.qualifiedParent.empty() && !cls.isVirtual)
       throw AttributeError(cls.qualifiedName("::"),
           "Has a base class so needs to be declared virtual, change to 'virtual class "
-              + cls.name + " ...'");
+              + cls.name() + " ...'");
     // Check that parent is virtual as well
     Qualified parent = cls.qualifiedParent;
     if (!parent.empty() && !table_.at(parent.qualifiedName("::")).isVirtual)

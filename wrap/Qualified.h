@@ -34,10 +34,18 @@ namespace wrap {
 /**
  * Class to encapuslate a qualified name, i.e., with (nested) namespaces
  */
-struct Qualified {
+class Qualified {
 
-  std::vector<std::string> namespaces; ///< Stack of namespaces
-  std::string name; ///< type name
+//protected:
+public:
+
+  std::vector<std::string> namespaces_; ///< Stack of namespaces
+  std::string name_; ///< type name
+
+  friend class TypeGrammar;
+  friend class TemplateSubstitution;
+
+public:
 
   /// the different categories
   typedef enum {
@@ -49,43 +57,76 @@ struct Qualified {
       category(VOID) {
   }
 
-  Qualified(const std::string& name_, Category c = CLASS) :
-      name(name_), category(c) {
+  Qualified(const std::string& n, Category c = CLASS) :
+      name_(n), category(c) {
+  }
+
+  Qualified(const std::string& ns1, const std::string& ns2,
+      const std::string& n, Category c = CLASS) :
+      name_(n), category(c) {
+    namespaces_.push_back(ns1);
+    namespaces_.push_back(ns2);
+  }
+
+  Qualified(const std::string& ns1, const std::string& n, Category c = CLASS) :
+      name_(n), category(c) {
+    namespaces_.push_back(ns1);
+  }
+
+  std::string name() const {
+    return name_;
+  }
+
+  std::vector<std::string> namespaces() const {
+    return namespaces_;
+  }
+
+  // Qualified is 'abused' as template argument name as well
+  // this function checks whether *this matches with templateArg
+  bool match(const std::string& templateArg) const {
+    return (name_ == templateArg && namespaces_.empty() && category == CLASS);
+  }
+
+  void rename(const Qualified& q) {
+    namespaces_ = q.namespaces_;
+    name_ = q.name_;
+    category = q.category;
+  }
+
+  void expand(const std::string& expansion) {
+    name_ += expansion;
   }
 
   bool operator==(const Qualified& other) const {
-    return namespaces == other.namespaces && name == other.name
+    return namespaces_ == other.namespaces_ && name_ == other.name_
         && category == other.category;
   }
 
   bool empty() const {
-    return namespaces.empty() && name.empty();
+    return namespaces_.empty() && name_.empty();
   }
 
   void clear() {
-    namespaces.clear();
-    name.clear();
-  }
-
-  bool operator!=(const Qualified& other) const {
-    return other.name != name || other.namespaces != namespaces;
+    namespaces_.clear();
+    name_.clear();
+    category = VOID;
   }
 
   /// Return a qualified string using given delimiter
   std::string qualifiedName(const std::string& delimiter = "") const {
     std::string result;
-    for (std::size_t i = 0; i < namespaces.size(); ++i)
-      result += (namespaces[i] + delimiter);
-    result += name;
+    for (std::size_t i = 0; i < namespaces_.size(); ++i)
+      result += (namespaces_[i] + delimiter);
+    result += name_;
     return result;
   }
 
   /// Return a matlab file name, i.e. "toolboxPath/+ns1/+ns2/name.m"
   std::string matlabName(const std::string& toolboxPath) const {
     std::string result = toolboxPath;
-    for (std::size_t i = 0; i < namespaces.size(); ++i)
-      result += ("/+" + namespaces[i]);
-    result += "/" + name + ".m";
+    for (std::size_t i = 0; i < namespaces_.size(); ++i)
+      result += ("/+" + namespaces_[i]);
+    result += "/" + name_ + ".m";
     return result;
   }
 
@@ -130,12 +171,14 @@ struct basic_rules {
 };
 
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-struct type_grammar: public classic::grammar<type_grammar> {
+class TypeGrammar: public classic::grammar<TypeGrammar> {
 
   wrap::Qualified& result_; ///< successful parse will be placed in here
 
+public:
+
   /// Construct type grammar and specify where result is placed
-  type_grammar(wrap::Qualified& result) :
+  TypeGrammar(wrap::Qualified& result) :
       result_(result) {
   }
 
@@ -148,7 +191,7 @@ struct type_grammar: public classic::grammar<type_grammar> {
     Rule void_p, my_basisType_p, my_eigenType_p, namespace_del_p, class_p,
         type_p;
 
-    definition(type_grammar const& self) {
+    definition(TypeGrammar const& self) {
 
       using namespace wrap;
       using namespace classic;
@@ -159,22 +202,22 @@ struct type_grammar: public classic::grammar<type_grammar> {
       static const Qualified::Category CLASS = Qualified::CLASS;
       static const Qualified::Category VOID = Qualified::VOID;
 
-      void_p = str_p("void")[assign_a(self.result_.name)] //
+      void_p = str_p("void")[assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, VOID)];
 
       my_basisType_p = basic_rules<ScannerT>::basisType_p //
-          [assign_a(self.result_.name)] //
+          [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, BASIS)];
 
       my_eigenType_p = basic_rules<ScannerT>::eigenType_p //
-          [assign_a(self.result_.name)] //
+          [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, EIGEN)];
 
       namespace_del_p = basic_rules<ScannerT>::namepsace_p //
-      [push_back_a(self.result_.namespaces)] >> str_p("::");
+      [push_back_a(self.result_.namespaces_)] >> str_p("::");
 
       class_p = *namespace_del_p >> basic_rules<ScannerT>::className_p //
-          [assign_a(self.result_.name)] //
+          [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, CLASS)];
 
       type_p = void_p | my_basisType_p | my_eigenType_p | class_p;

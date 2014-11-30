@@ -21,18 +21,14 @@ struct ReturnType: Qualified {
 
   bool isPtr;
 
+  /// Makes a void type
   ReturnType() :
       isPtr(false) {
   }
 
+  /// Make a Class type, no namespaces
   ReturnType(const std::string& name) :
-      isPtr(false) {
-    Qualified::name = name;
-  }
-
-  void rename(const Qualified& q) {
-    name = q.name;
-    namespaces = q.namespaces;
+      Qualified(name,Qualified::CLASS), isPtr(false) {
   }
 
   /// Check if this type is in a set of valid types

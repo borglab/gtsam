@@ -123,7 +123,7 @@ string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
       args, instName);
 
   expanded += ("(" + args.names() + ")");
-  if (returnVal.type1.name != "void")
+  if (returnVal.type1.name() != "void")
     returnVal.wrap_result(expanded, wrapperFile, typeAttributes);
   else
     wrapperFile.oss << "  " + expanded + ";\n";

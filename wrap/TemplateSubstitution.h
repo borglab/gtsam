@@ -40,14 +40,14 @@ public:
   }
 
   std::string expandedClassName() const {
-    return expandedClass_.name;
+    return expandedClass_.name();
   }
 
   // Substitute if needed
   Qualified tryToSubstitite(const Qualified& type) const {
-    if (type.name == templateArg_ && type.namespaces.empty())
+    if (type.match(templateArg_))
       return qualifiedType_;
-    else if (type.name == "This")
+    else if (type.match("This"))
       return expandedClass_;
     else
       return type;
@@ -56,9 +56,9 @@ public:
   // Substitute if needed
   ReturnType tryToSubstitite(const ReturnType& type) const {
     ReturnType instType = type;
-    if (type.name == templateArg_ && type.namespaces.empty())
+    if (type.match(templateArg_))
       instType.rename(qualifiedType_);
-    else if (type.name == "This")
+    else if (type.match("This"))
       instType.rename(expandedClass_);
     return instType;
   }

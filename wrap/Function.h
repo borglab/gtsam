@@ -53,7 +53,7 @@ public:
     if (templateArgValue_.empty())
       return name_;
     else
-      return name_ + templateArgValue_.name;
+      return name_ + templateArgValue_.name();
   }
 
   /// Emit function call to MATLAB (no argument checking)

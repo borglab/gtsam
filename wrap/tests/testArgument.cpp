@@ -30,7 +30,7 @@ static const bool T = true;
 struct ArgumentGrammar: public classic::grammar<ArgumentGrammar> {
 
   wrap::Argument& result_; ///< successful parse will be placed in here
-  type_grammar argument_type_g;
+  TypeGrammar argument_type_g;
 
   /// Construct type grammar and specify where result is placed
   ArgumentGrammar(wrap::Argument& result) :
@@ -78,9 +78,7 @@ TEST( Argument, grammar ) {
   ArgumentGrammar g(actual);
 
   EXPECT(parse("const gtsam::Point2& p4", g, space_p).full);
-  EXPECT_LONGS_EQUAL(1, actual.type.namespaces.size());
-  EXPECT(actual.type.namespaces[0]=="gtsam");
-  EXPECT(actual.type.name=="Point2");
+  EXPECT(actual.type==Qualified("gtsam","Point2",Qualified::CLASS));
   EXPECT(actual.name=="p4");
   EXPECT(actual.is_const);
   EXPECT(actual.is_ref);
@@ -88,8 +86,7 @@ TEST( Argument, grammar ) {
   actual = arg0;
 
   EXPECT(parse("Point2& p", g, space_p).full);
-  EXPECT(actual.type.namespaces.empty());
-  EXPECT(actual.type.name=="Point2");
+  EXPECT(actual.type==Qualified("Point2",Qualified::CLASS));
   EXPECT(actual.name=="p");
   EXPECT(!actual.is_const);
   EXPECT(actual.is_ref);
@@ -97,9 +94,7 @@ TEST( Argument, grammar ) {
   actual = arg0;
 
   EXPECT(parse("gtsam::Point2* p3", g, space_p).full);
-  EXPECT_LONGS_EQUAL(1, actual.type.namespaces.size());
-  EXPECT(actual.type.namespaces[0]=="gtsam");
-  EXPECT(actual.type.name=="Point2");
+  EXPECT(actual.type==Qualified("gtsam","Point2",Qualified::CLASS));
   EXPECT(actual.name=="p3");
   EXPECT(!actual.is_const);
   EXPECT(!actual.is_ref);
@@ -119,8 +114,7 @@ TEST( Argument, grammar ) {
   actual = arg0;
 
   EXPECT(parse("const Matrix& m", g, space_p).full);
-  EXPECT(actual.type.namespaces.empty());
-  EXPECT(actual.type.name=="Matrix");
+  EXPECT(actual.type==Qualified("Matrix",Qualified::EIGEN));
   EXPECT(actual.name=="m");
   EXPECT(actual.is_const);
   EXPECT(actual.is_ref);

@@ -14,7 +14,7 @@ using namespace wrap;
 
 /* ************************************************************************* */
 string ReturnType::str(bool add_ptr) const {
-  return maybe_shared_ptr(add_ptr && isPtr, qualifiedName("::"), name);
+  return maybe_shared_ptr(add_ptr && isPtr, qualifiedName("::"), name());
 }
 
 /* ************************************************************************* */
@@ -25,7 +25,7 @@ void ReturnType::wrap_result(const string& out, const string& result,
 
   if (category == CLASS) {
     string objCopy, ptrType;
-    ptrType = "Shared" + name;
+    ptrType = "Shared" + name();
     const bool isVirtual = typeAttributes.attributes(cppType).isVirtual;
     if (isVirtual) {
       if (isPtr)
@@ -41,7 +41,7 @@ void ReturnType::wrap_result(const string& out, const string& result,
     wrapperFile.oss << out << " = wrap_shared_ptr(" << objCopy << ",\""
         << matlabType << "\", " << (isVirtual ? "true" : "false") << ");\n";
   } else if (isPtr) {
-    wrapperFile.oss << "  Shared" << name << "* ret = new Shared" << name << "("
+    wrapperFile.oss << "  Shared" << name() << "* ret = new Shared" << name() << "("
         << result << ");" << endl;
     wrapperFile.oss << out << " = wrap_shared_ptr(ret,\"" << matlabType
         << "\");\n";
@@ -54,7 +54,7 @@ void ReturnType::wrap_result(const string& out, const string& result,
 void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
   if (category == CLASS)
     wrapperFile.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
-        << "> Shared" << name << ";" << endl;
+        << "> Shared" << name() << ";" << endl;
 }
 
 /* ************************************************************************* */

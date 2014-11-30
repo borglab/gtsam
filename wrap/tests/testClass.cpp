@@ -64,7 +64,7 @@ TEST( Class, TemplatedMethods ) {
   bool verbose = true, is_const = true;
   ArgumentList args;
   Argument arg;
-  arg.type.name = "T";
+  arg.type.name_ = "T";
   args.push_back(arg);
   const ReturnValue retVal(ReturnType("T"));
   const string templateArgName("T");

@@ -117,7 +117,7 @@ public:
   void python_wrapper(FileWriter& wrapperFile) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
-    os << "class " << cls.name << "{\n";
+    os << "class " << cls.name() << "{\n";
     os << cls.constructor << ";\n";
     BOOST_FOREACH(const StaticMethod& m, cls.static_methods | boost::adaptors::map_values)
       os << m << ";\n";
