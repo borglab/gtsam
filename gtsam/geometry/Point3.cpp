@@ -63,22 +63,22 @@ Point3 Point3::operator/(double s) const {
 }
 
 /* ************************************************************************* */
-Point3 Point3::add(const Point3 &q, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+Point3 Point3::add(const Point3 &q, OptionalJacobian<3,3> H1,
+    OptionalJacobian<3,3> H2) const {
   if (H1)
-    *H1 = eye(3, 3);
+    (*H1).setIdentity();
   if (H2)
-    *H2 = eye(3, 3);
+    (*H2).setIdentity();
   return *this + q;
 }
 
 /* ************************************************************************* */
-Point3 Point3::sub(const Point3 &q, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+Point3 Point3::sub(const Point3 &q, OptionalJacobian<3,3> H1,
+    OptionalJacobian<3,3> H2) const {
   if (H1)
-    *H1 = eye(3, 3);
+    (*H1).setIdentity();
   if (H2)
-    *H2 = -eye(3, 3);
+    (*H2).setIdentity();
   return *this - q;
 }
 
@@ -106,15 +106,14 @@ double Point3::norm(OptionalJacobian<1,3> H) const {
 }
 
 /* ************************************************************************* */
-Point3 Point3::normalize(boost::optional<Matrix&> H) const {
+Point3 Point3::normalize(OptionalJacobian<3,3> H) const {
   Point3 normalized = *this / norm();
   if (H) {
     // 3*3 Derivative
     double x2 = x_ * x_, y2 = y_ * y_, z2 = z_ * z_;
     double xy = x_ * y_, xz = x_ * z_, yz = y_ * z_;
-    H->resize(3, 3);
-    *H << y2 + z2, -xy, -xz, /**/-xy, x2 + z2, -yz, /**/-xz, -yz, x2 + y2;
-    *H /= pow(x2 + y2 + z2, 1.5);
+    (*H) << y2 + z2, -xy, -xz, /**/-xy, x2 + z2, -yz, /**/-xz, -yz, x2 + y2;
+    (*H) /= pow(x2 + y2 + z2, 1.5);
   }
   return normalized;
 }

@@ -93,10 +93,10 @@ namespace gtsam {
 
     /// "Compose" - just adds coordinates of two points
     inline Point3 compose(const Point3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if (H1) *H1 = eye(3);
-      if (H2) *H2 = eye(3);
+        OptionalJacobian<3,3> H1=boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const {
+      if (H1) (*H1).setIdentity();
+      if (H2) (*H2).setIdentity();
       return *this + p2;
     }
 
@@ -105,10 +105,10 @@ namespace gtsam {
 
     /** Between using the default implementation */
     inline Point3 between(const Point3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if(H1) *H1 = -eye(3);
-      if(H2) *H2 = eye(3);
+        OptionalJacobian<3,3> H1=boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const {
+      if(H1) (*H1) = (-Eigen::Matrix3d::Identity());
+      if(H2) (*H2).setIdentity();
       return p2 - *this;
     }
 
@@ -142,13 +142,13 @@ namespace gtsam {
     static inline Vector3 Logmap(const Point3& dp) { return Vector3(dp.x(), dp.y(), dp.z()); }
 
     /// Left-trivialized derivative of the exponential map
-    static Matrix dexpL(const Vector& v) {
-      return eye(3);
+    static Matrix3 dexpL(const Vector& v) {
+      return Eigen::Matrix3d::Identity();
     }
 
     /// Left-trivialized derivative inverse of the exponential map
-    static Matrix dexpInvL(const Vector& v) {
-      return eye(3);
+    static Matrix3 dexpInvL(const Vector& v) {
+      return Eigen::Matrix3d::Identity();
     }
 
     /// @}
@@ -163,14 +163,16 @@ namespace gtsam {
 
     /** distance between two points */
     inline double distance(const Point3& p2,
-        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+        OptionalJacobian<1,3> H1 = boost::none, OptionalJacobian<1,3> H2 = boost::none) const {
       double d = (p2 - *this).norm();
       if (H1) {
-        *H1 = (Matrix(1, 3) << x_-p2.x(), y_-p2.y(), z_-p2.z()).finished()*(1./d);
+        *H1 << x_-p2.x(), y_-p2.y(), z_-p2.z();
+        (*H1) = (*H1) *(1./d);
       }
 
       if (H2) {
-        *H2 = (Matrix(1, 3) << -x_+p2.x(), -y_+p2.y(), -z_+p2.z()).finished()*(1./d);
+        *H2 << -x_+p2.x(), -y_+p2.y(), -z_+p2.z();
+        (*H2) = (*H2) *(1./d);
       }
       return d;
     }
@@ -184,7 +186,7 @@ namespace gtsam {
     double norm(OptionalJacobian<1,3> H = boost::none) const;
 
     /** normalize, with optional Jacobian */
-    Point3 normalize(boost::optional<Matrix&> H = boost::none) const;
+    Point3 normalize(OptionalJacobian<3, 3> H = boost::none) const;
 
     /** cross product @return this x q */
     Point3 cross(const Point3 &q) const;
@@ -213,11 +215,11 @@ namespace gtsam {
 
     /** add two points, add(this,q) is same as this + q */
     Point3 add (const Point3 &q,
-          boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+          OptionalJacobian<3, 3> H1=boost::none, OptionalJacobian<3, 3> H2=boost::none) const;
 
     /** subtract two points, sub(this,q) is same as this - q */
     Point3 sub (const Point3 &q,
-          boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+          OptionalJacobian<3,3> H1=boost::none, OptionalJacobian<3,3> H2=boost::none) const;
 
     /// @}
 
