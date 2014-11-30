@@ -100,12 +100,12 @@ Rot2 Rot2::relativeBearing(const Point2& d, OptionalJacobian<1, 2> H) {
   double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
   if(fabs(n) > 1e-5) {
     if (H) {
-      (*H).block(0,0,1,2) << -y / d2, x / d2;
+      (*H) << -y / d2, x / d2;
     }
     return Rot2::fromCosSin(x / n, y / n);
   } else {
     if (H) {
-      (*H).block(0,0,1,2) << 0.0, 0.0;
+      (*H) << 0.0, 0.0;
     }
     return Rot2();
   }
