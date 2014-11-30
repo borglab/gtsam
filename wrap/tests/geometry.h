@@ -1,4 +1,4 @@
-//   comments!
+  // comments!
 
 class VectorNotEigen;
 class ns::OtherClass;
