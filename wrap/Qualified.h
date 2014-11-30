@@ -22,6 +22,7 @@
 #include <boost/spirit/include/classic_push_back_actor.hpp>
 #include <boost/spirit/include/classic_clear_actor.hpp>
 #include <boost/spirit/include/classic_assign_actor.hpp>
+#include <boost/spirit/include/classic_confix.hpp>
 
 namespace classic = BOOST_SPIRIT_CLASSIC_NS;
 
@@ -44,8 +45,17 @@ struct Qualified {
   } Category;
   Category category;
 
-  Qualified(const std::string& name_ = "") :
-      name(name_), category(CLASS) {
+  Qualified() :
+      category(VOID) {
+  }
+
+  Qualified(const std::string& name_, Category c = CLASS) :
+      name(name_), category(c) {
+  }
+
+  bool operator==(const Qualified& other) const {
+    return namespaces == other.namespaces && name == other.name
+        && category == other.category;
   }
 
   bool empty() const {
@@ -91,12 +101,14 @@ struct basic_rules {
 
   typedef classic::rule<ScannerT> Rule;
 
-  Rule basisType_p, eigenType_p, keywords_p, stlType_p, className_p,
-      namepsace_p;
+  Rule comments_p, basisType_p, eigenType_p, keywords_p, stlType_p, name_p,
+      className_p, namepsace_p;
 
   basic_rules() {
 
     using namespace classic;
+
+    comments_p = comment_p("/*", "*/") | comment_p("//", eol_p);
 
     basisType_p = (str_p("string") | "bool" | "size_t" | "int" | "double"
         | "char" | "unsigned char");
@@ -107,6 +119,8 @@ struct basic_rules {
         (str_p("const") | "static" | "namespace" | "void" | basisType_p);
 
     stlType_p = (str_p("vector") | "list");
+
+    name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
     className_p = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p
         - keywords_p) | stlType_p;
@@ -163,8 +177,7 @@ struct type_grammar: public classic::grammar<type_grammar> {
           [assign_a(self.result_.name)] //
           [assign_a(self.result_.category, CLASS)];
 
-      type_p = eps_p[clear_a(self.result_)] //
-      >> void_p | my_basisType_p | my_eigenType_p | class_p;
+      type_p = void_p | my_basisType_p | my_eigenType_p | class_p;
     }
 
     Rule const& start() const {
@@ -175,5 +188,5 @@ struct type_grammar: public classic::grammar<type_grammar> {
 };
 // type_grammar
 
-} // \namespace wrap
+}// \namespace wrap
 

@@ -28,11 +28,21 @@ namespace wrap {
 /// Argument class
 struct Argument {
   Qualified type;
-  bool is_const, is_ref, is_ptr;
   std::string name;
+  bool is_const, is_ref, is_ptr;
 
   Argument() :
       is_const(false), is_ref(false), is_ptr(false) {
+  }
+
+  Argument(const Qualified& t, const std::string& n) :
+      type(t), name(n), is_const(false), is_ref(false), is_ptr(false) {
+  }
+
+  bool operator==(const Argument& other) const {
+    return type == other.type && name == other.name
+        && is_const == other.is_const && is_ref == other.is_ref
+        && is_ptr == other.is_ptr;
   }
 
   Argument expandTemplate(const TemplateSubstitution& ts) const;

@@ -107,30 +107,15 @@ TEST( Argument, grammar ) {
   actual = arg0;
 
   EXPECT(parse("char a", g, space_p).full);
-  EXPECT(actual.type.namespaces.empty());
-  EXPECT(actual.type.name=="char");
-  EXPECT(actual.name=="a");
-  EXPECT(!actual.is_const);
-  EXPECT(!actual.is_ref);
-  EXPECT(!actual.is_ptr);
+  EXPECT(actual==Argument(Qualified("char",Qualified::BASIS),"a"));
   actual = arg0;
 
   EXPECT(parse("unsigned char a", g, space_p).full);
-  EXPECT(actual.type.namespaces.empty());
-  EXPECT(actual.type.name=="unsigned char");
-  EXPECT(actual.name=="a");
-  EXPECT(!actual.is_const);
-  EXPECT(!actual.is_ref);
-  EXPECT(!actual.is_ptr);
+  EXPECT(actual==Argument(Qualified("unsigned char",Qualified::BASIS),"a"));
   actual = arg0;
 
   EXPECT(parse("Vector v", g, space_p).full);
-  EXPECT(actual.type.namespaces.empty());
-  EXPECT(actual.type.name=="Vector");
-  EXPECT(actual.name=="v");
-  EXPECT(!actual.is_const);
-  EXPECT(!actual.is_ref);
-  EXPECT(!actual.is_ptr);
+  EXPECT(actual==Argument(Qualified("Vector",Qualified::EIGEN),"v"));
   actual = arg0;
 
   EXPECT(parse("const Matrix& m", g, space_p).full);
@@ -150,11 +135,11 @@ struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
   wrap::ArgumentList& result_; ///< successful parse will be placed in here
 
   Argument arg0, arg;
-  type_grammar argument_type_g;
+  ArgumentGrammar argument_g;
 
   /// Construct type grammar and specify where result is placed
   ArgumentListGrammar(wrap::ArgumentList& result) :
-      result_(result), argument_type_g(arg.type) {
+      result_(result), argument_g(arg) {
   }
 
   /// Definition of type grammar
@@ -172,19 +157,10 @@ struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
 
       // NOTE: allows for pointers to all types
       // Slightly more permissive than before on basis/eigen type qualification
-      argument_p = //
-          !str_p("const")
-//          [assign_a(self.arg.is_const, true)] //
-              >> self.argument_type_g //
-              >> (!ch_p('&')
-//                  [assign_a(self.arg.is_ref, true)]
-                  | !ch_p('*')
-//                  [assign_a(self.arg.is_ptr, true)]
-              ) >> basic_rules<ScannerT>::name_p
-              // [assign_a[self.arg.name)]
-//              [push_back_a(self.result_, self.arg)]
-              // [assign_a(self.arg, self.arg0)]
-              ;
+      argument_p = self.argument_g //
+          [push_back_a(self.result_, self.arg)] //
+//          [assign_a(self.arg, self.arg0)]
+           ;
 
       argumentList_p = '(' >> !argument_p >> *(',' >> argument_p) >> ')';
     }
@@ -206,7 +182,13 @@ TEST( ArgumentList, grammar ) {
   ArgumentList actual;
   ArgumentListGrammar g(actual);
 
+  EXPECT(parse("(const gtsam::Point2& p4)", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
+
   EXPECT(parse("()", g, space_p).full);
+  EXPECT_LONGS_EQUAL(0, actual.size());
+  actual.clear();
 
   EXPECT(parse("(char a)", g, space_p).full);
 
@@ -219,8 +201,6 @@ TEST( ArgumentList, grammar ) {
   EXPECT(parse("(Point2 p1, Point3 p2)", g, space_p).full);
 
   EXPECT(parse("(gtsam::Point2 p3)", g, space_p).full);
-
-  EXPECT(parse("(const gtsam::Point2& p4)", g, space_p).full);
 }
 
 /* ************************************************************************* */
