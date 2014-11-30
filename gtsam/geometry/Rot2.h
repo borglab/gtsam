@@ -87,7 +87,7 @@ namespace gtsam {
      * @param H optional reference for Jacobian
      * @return 2D rotation \f$ \in SO(2) \f$
      */
-    static Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H =
+    static Rot2 relativeBearing(const Point2& d, OptionalJacobian<1,2> H =
         boost::none);
 
     /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */

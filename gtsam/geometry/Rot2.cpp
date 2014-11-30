@@ -96,13 +96,15 @@ Point2 Rot2::unrotate(const Point2& p,
 }
 
 /* ************************************************************************* */
-Rot2 Rot2::relativeBearing(const Point2& d, boost::optional<Matrix&> H) {
+Rot2 Rot2::relativeBearing(const Point2& d, OptionalJacobian<1, 2> H) {
   double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
   if(fabs(n) > 1e-5) {
-    if (H) *H = (Matrix(1, 2) << -y / d2, x / d2).finished();
+    if (H)
+      *H << -y / d2, x / d2;
     return Rot2::fromCosSin(x / n, y / n);
   } else {
-    if (H) *H = (Matrix(1, 2) << 0.0, 0.0).finished();
+    if (H)
+      (*H) << 0.0, 0.0;
     return Rot2();
   }
 }
