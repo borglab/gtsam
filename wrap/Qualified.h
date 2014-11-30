@@ -143,7 +143,7 @@ struct basic_rules {
   typedef classic::rule<ScannerT> Rule;
 
   Rule comments_p, basisType_p, eigenType_p, keywords_p, stlType_p, name_p,
-      className_p, namepsace_p;
+      className_p, namespace_p;
 
   basic_rules() {
 
@@ -166,7 +166,7 @@ struct basic_rules {
     className_p = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p
         - keywords_p) | stlType_p;
 
-    namepsace_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
+    namespace_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
   }
 };
 
@@ -213,7 +213,7 @@ public:
           [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, EIGEN)];
 
-      namespace_del_p = basic_rules<ScannerT>::namepsace_p //
+      namespace_del_p = basic_rules<ScannerT>::namespace_p //
       [push_back_a(self.result_.namespaces_)] >> str_p("::");
 
       class_p = *namespace_del_p >> basic_rules<ScannerT>::className_p //
