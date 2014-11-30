@@ -52,10 +52,11 @@ struct ArgumentGrammar: public classic::grammar<ArgumentGrammar> {
 
       // NOTE: allows for pointers to all types
       // Slightly more permissive than before on basis/eigen type qualification
+      // Also, currently parses Point2*&, can't make it work otherwise :-(
       argument_p = !str_p("const")[assign_a(self.result_.is_const, T)] //
           >> self.argument_type_g //
-          >> (!ch_p('&')[assign_a(self.result_.is_ref, T)]
-              | !ch_p('*')[assign_a(self.result_.is_ptr, T)])
+          >> !ch_p('*')[assign_a(self.result_.is_ptr, T)]
+          >> !ch_p('&')[assign_a(self.result_.is_ref, T)]
           >> basic_rules<ScannerT>::name_p[assign_a(self.result_.name)];
     }
 
@@ -86,23 +87,23 @@ TEST( Argument, grammar ) {
   EXPECT(!actual.is_ptr);
   actual = arg0;
 
-  EXPECT(parse("Point2 p", g, space_p).full);
+  EXPECT(parse("Point2& p", g, space_p).full);
   EXPECT(actual.type.namespaces.empty());
   EXPECT(actual.type.name=="Point2");
   EXPECT(actual.name=="p");
   EXPECT(!actual.is_const);
-  EXPECT(!actual.is_ref);
+  EXPECT(actual.is_ref);
   EXPECT(!actual.is_ptr);
   actual = arg0;
 
-  EXPECT(parse("gtsam::Point2 p3", g, space_p).full);
+  EXPECT(parse("gtsam::Point2* p3", g, space_p).full);
   EXPECT_LONGS_EQUAL(1, actual.type.namespaces.size());
   EXPECT(actual.type.namespaces[0]=="gtsam");
   EXPECT(actual.type.name=="Point2");
   EXPECT(actual.name=="p3");
   EXPECT(!actual.is_const);
   EXPECT(!actual.is_ref);
-  EXPECT(!actual.is_ptr);
+  EXPECT(actual.is_ptr);
   actual = arg0;
 
   EXPECT(parse("char a", g, space_p).full);
