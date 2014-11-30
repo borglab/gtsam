@@ -25,6 +25,8 @@ struct ReturnValue {
   bool isPair;
   ReturnType type1, type2;
 
+  friend struct ReturnValueGrammar;
+
   /// Constructor
   ReturnValue() :
       isPair(false) {

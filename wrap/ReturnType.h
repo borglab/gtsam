@@ -22,6 +22,8 @@ struct ReturnType: public Qualified {
 
   bool isPtr;
 
+  friend struct ReturnValueGrammar;
+
   /// Makes a void type
   ReturnType() :
       isPtr(false) {
