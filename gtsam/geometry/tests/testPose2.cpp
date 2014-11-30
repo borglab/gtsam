@@ -519,7 +519,7 @@ TEST( Pose2, bearing )
   expectedH1 = numericalDerivative21(bearing_proxy, x2, l3);
   EXPECT(assert_equal(expectedH1,actualH1));
   expectedH2 = numericalDerivative22(bearing_proxy, x2, l3);
-  EXPECT(assert_equal(expectedH1,actualH1));
+  EXPECT(assert_equal(expectedH2,actualH2));
 
   // establish bearing is indeed 45 degrees even if rotated
   Rot2 actual34 = x3.bearing(l4, actualH1, actualH2);
@@ -529,7 +529,7 @@ TEST( Pose2, bearing )
   expectedH1 = numericalDerivative21(bearing_proxy, x3, l4);
   expectedH2 = numericalDerivative22(bearing_proxy, x3, l4);
   EXPECT(assert_equal(expectedH1,actualH1));
-  EXPECT(assert_equal(expectedH1,actualH1));
+  EXPECT(assert_equal(expectedH2,actualH2));
 }
 
 /* ************************************************************************* */

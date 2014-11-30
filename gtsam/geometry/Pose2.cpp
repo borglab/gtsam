@@ -198,7 +198,7 @@ Pose2 Pose2::between(const Pose2& p2, OptionalJacobian<3,3> H1,
 
 /* ************************************************************************* */
 Rot2 Pose2::bearing(const Point2& point,
-    OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
+    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   Point2 d = transform_to(point, H1, H2);
   if (!H1 && !H2) return Rot2::relativeBearing(d);
   Matrix D_result_d;
@@ -209,27 +209,29 @@ Rot2 Pose2::bearing(const Point2& point,
 }
 
 /* ************************************************************************* */
-Rot2 Pose2::bearing(const Pose2& point,
-    OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
-  Rot2 result = bearing(point.t(), H1, H2);
+Rot2 Pose2::bearing(const Pose2& pose,
+    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+  Rot2 result = bearing(pose.t(), H1, H2);
   if (H2) {
-    Matrix2 H2_ = *H2 * point.r().matrix();
+    Matrix H2_ = *H2 * pose.r().matrix();
     *H2 = zeros(1, 3);
-    (*H2).block(0, 0, H2_.rows(), H2_.cols()) = H2_;
+    insertSub(*H2, H2_, 0, 0);
   }
   return result;
 }
-
 /* ************************************************************************* */
 double Pose2::range(const Point2& point,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalJacobian<1,3> H1, OptionalJacobian<1,2> H2) const {
   Point2 d = point - t_;
   if (!H1 && !H2) return d.norm();
-  Matrix H;
+  Matrix12 H;
   double r = d.norm(H);
-  if (H1) *H1 = H * (Matrix(2, 3) <<
-      -r_.c(),  r_.s(),  0.0,
-      -r_.s(), -r_.c(),  0.0).finished();
+  if (H1) {
+      Matrix23 mvalue; // is this the correct name ?
+      mvalue << -r_.c(),  r_.s(),  0.0,
+              -r_.s(), -r_.c(),  0.0;
+      *H1 = H * mvalue;
+  }
   if (H2) *H2 = H;
   return r;
 }
