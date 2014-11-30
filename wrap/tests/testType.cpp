@@ -46,6 +46,11 @@ TEST( Type, grammar ) {
   EXPECT(actual==Qualified("Point2",Qualified::CLASS));
   actual.clear();
 
+  // a class type with no namespaces
+  EXPECT(parse("VectorNotEigen", type_g, space_p).full);
+  EXPECT(actual==Qualified("VectorNotEigen",Qualified::CLASS));
+  actual.clear();
+
   // an Eigen type
   EXPECT(parse("Vector", type_g, space_p).full);
   EXPECT(actual==Qualified("Vector",Qualified::EIGEN));
