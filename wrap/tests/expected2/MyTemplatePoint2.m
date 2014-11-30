@@ -83,7 +83,7 @@ classdef MyTemplatePoint2 < MyBase
       % RETURN_T usage: return_T(Point2 value) : returns gtsam::Point2
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point2')
-        varargout{1} = geometry_wrapper(52, this, varargin{:});
+        geometry_wrapper(52, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint2.return_T');
       end
@@ -93,7 +93,7 @@ classdef MyTemplatePoint2 < MyBase
       % RETURN_TPTR usage: return_Tptr(Point2 value) : returns gtsam::Point2
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point2')
-        varargout{1} = geometry_wrapper(53, this, varargin{:});
+        geometry_wrapper(53, this, varargin{:});
       else
         error('Arguments do not match any overload of function MyTemplatePoint2.return_Tptr');
       end
