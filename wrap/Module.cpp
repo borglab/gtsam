@@ -118,9 +118,11 @@ void Module::parseMarkup(const std::string& data) {
   // parse "gtsam::Pose2" and add to templateArgValues
   Qualified templateArgValue;
   vector<Qualified> templateArgValues;
-  Rule templateArgValue_p =
-      TypeGrammar(templateArgValue)
-      [push_back_a( templateArgValues, templateArgValue)];
+  TypeGrammar templateArgValue_g(templateArgValue);
+  Rule templateArgValue_p = templateArgValue_g
+    [assign_a(templateArgValue.category, Qualified::VOID)] // TODO: why ?
+    [push_back_a(templateArgValues, templateArgValue)]
+    [clear_a(templateArgValue)];
  
   // template<CALIBRATION = {gtsam::Cal3DS2}>
   string templateArgName;
@@ -132,17 +134,20 @@ void Module::parseMarkup(const std::string& data) {
  
   // parse "gtsam::Pose2" and add to singleInstantiation.typeList
   TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
-  Rule templateSingleInstantiationArg_p = 
-    TypeGrammar(templateArgValue)
-    [push_back_a(singleInstantiation.typeList, templateArgValue)];
+  Rule templateSingleInstantiationArg_p = templateArgValue_g
+    [push_back_a(singleInstantiation.typeList, templateArgValue)]
+    [clear_a(templateArgValue)];
  
   // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
+  vector<string> namespaces; // current namespace tag
+  TypeGrammar instantiationClass_g(singleInstantiation.class_);
   Rule templateSingleInstantiation_p = 
-    (str_p("typedef") >> 
-    TypeGrammar(singleInstantiation.class_) >>
-    '<' >> templateSingleInstantiationArg_p >> *(',' >> templateSingleInstantiationArg_p) >> '>' >>
-    TypeGrammar(singleInstantiation) >>
+    (str_p("typedef") >> instantiationClass_g >>
+    '<' >> templateSingleInstantiationArg_p >> *(',' >> templateSingleInstantiationArg_p) >> 
+    '>' >> 
+    basic.className_p[assign_a(singleInstantiation.name_)] >>
     ';') 
+    [assign_a(singleInstantiation.namespaces_, namespaces)]
     [push_back_a(templateInstantiationTypedefs, singleInstantiation)] 
     [assign_a(singleInstantiation, singleInstantiation0)]; 
  
@@ -152,30 +157,27 @@ void Module::parseMarkup(const std::string& data) {
     '<' >> basic.name_p[push_back_a(cls.templateArgs)] >> *(',' >> basic.name_p[push_back_a(cls.templateArgs)]) >>
     '>'); 
 
-  // Argument list
+  // NOTE: allows for pointers to all types
   ArgumentList args;
-  ArgumentListGrammar argumentlist_g(args);
+  Argument arg,arg0;
+  ArgumentGrammar argument_g(arg);
+  Rule argument_p = argument_g[push_back_a(args, arg)][assign_a(arg, arg0)];
+ 
+  Rule argumentList_p = !argument_p >> * (',' >> argument_p); 
 
   // parse class constructor
   Constructor constructor0(verbose), constructor(verbose);
   Rule constructor_p =  
-    (basic.className_p >> '(' >> argumentlist_g >> ')' >> ';' >> !basic.comments_p)
+    (basic.className_p >> '(' >> argumentList_p >> ')' >> ';' >> !basic.comments_p)
     [bl::bind(&Constructor::push_back, bl::var(constructor), bl::var(args))]
     [clear_a(args)];
  
-  ReturnType retType0, retType;
-  Rule returnType_p = TypeGrammar(retType);
-
+  vector<string> namespaces_return; /// namespace for current return type
+  Rule namespace_ret_p = basic.namespace_p[push_back_a(namespaces_return)] >> str_p("::");
+ 
   ReturnValue retVal0, retVal;
-  Rule returnType1_p = returnType_p[assign_a(retVal.type1,retType)][assign_a(retType,retType0)];
-  Rule returnType2_p = returnType_p[assign_a(retVal.type2,retType)][assign_a(retType,retType0)];
+  ReturnValueGrammar returnValue_g(retVal);
 
-  Rule pair_p =  
-    (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>') 
-    [assign_a(retVal.isPair,true)]; 
- 
-  Rule returnValue_p = pair_p | returnType1_p;
- 
   Rule methodName_p = lexeme_d[(upper_p | lower_p)  >> *(alnum_p | '_')];
  
   // gtsam::Values retract(const gtsam::VectorValues& delta) const;
@@ -183,8 +185,8 @@ void Module::parseMarkup(const std::string& data) {
   bool isConst, isConst0 = false;
   Rule method_p =  
     !templateArgValues_p >>
-    (returnValue_p >> methodName_p[assign_a(methodName)] >>
-     '(' >> argumentlist_g >> ')' >>
+    (returnValue_g >> methodName_p[assign_a(methodName)] >>
+     '(' >> argumentList_p >> ')' >>  
      !str_p("const")[assign_a(isConst,true)] >> ';' >> *basic.comments_p)
     [bl::bind(&Class::addMethod, bl::var(cls), verbose, bl::var(isConst),
         bl::var(methodName), bl::var(args), bl::var(retVal),
@@ -197,8 +199,8 @@ void Module::parseMarkup(const std::string& data) {
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')]; 
  
   Rule static_method_p = 
-    (str_p("static") >> returnValue_p >> staticMethodName_p[assign_a(methodName)] >>
-     '(' >> argumentlist_g >> ')' >> ';' >> *basic.comments_p)
+    (str_p("static") >> returnValue_g >> staticMethodName_p[assign_a(methodName)] >>
+     '(' >> argumentList_p >> ')' >> ';' >> *basic.comments_p)
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
       bl::var(methodName), bl::var(args), bl::var(retVal), Qualified(),verbose)]
@@ -208,7 +210,6 @@ void Module::parseMarkup(const std::string& data) {
   Rule functions_p = constructor_p | method_p | static_method_p; 
  
   // parse a full class
-  vector<string> namespaces; // current namespace tag
   vector<Qualified> templateInstantiations;
   Rule class_p = 
       eps_p[assign_a(cls,cls0)]
@@ -237,8 +238,8 @@ void Module::parseMarkup(const std::string& data) {
   // parse a global function
   Qualified globalFunction;
   Rule global_function_p = 
-      (returnValue_p >> staticMethodName_p[assign_a(globalFunction.name_)] >>
-       '(' >> argumentlist_g >> ')' >> ';' >> *basic.comments_p)
+      (returnValue_g >> staticMethodName_p[assign_a(globalFunction.name_)] >>
+       '(' >> argumentList_p >> ')' >> ';' >> *basic.comments_p)
       [assign_a(globalFunction.namespaces_,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
         bl::var(global_functions)[bl::var(globalFunction.name_)],
@@ -256,7 +257,7 @@ void Module::parseMarkup(const std::string& data) {
 
   Rule namespace_def_p =
       (str_p("namespace")
-      >> basic.namepsace_p[push_back_a(namespaces)]
+      >> basic.namespace_p[push_back_a(namespaces)]
       >> ch_p('{')
       >> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | basic.comments_p)
       >> ch_p('}'))
@@ -271,7 +272,7 @@ void Module::parseMarkup(const std::string& data) {
   Rule forward_declaration_p =
       !(str_p("virtual")[assign_a(fwDec.isVirtual, true)]) 
       >> str_p("class") 
-      >> (*(basic.namepsace_p >> str_p("::")) >> basic.className_p)[assign_a(fwDec.name)]
+      >> (*(basic.namespace_p >> str_p("::")) >> basic.className_p)[assign_a(fwDec.name)]
       >> ch_p(';') 
       [push_back_a(forward_declarations, fwDec)] 
       [assign_a(fwDec, fwDec0)]; 
@@ -284,7 +285,6 @@ void Module::parseMarkup(const std::string& data) {
  
   //----------------------------------------------------------------------------
   // for debugging, define BOOST_SPIRIT_DEBUG
-#define BOOST_SPIRIT_DEBUG
 # ifdef BOOST_SPIRIT_DEBUG
   BOOST_SPIRIT_DEBUG_NODE(className_p);
   BOOST_SPIRIT_DEBUG_NODE(classPtr_p);
@@ -298,7 +298,7 @@ void Module::parseMarkup(const std::string& data) {
   BOOST_SPIRIT_DEBUG_NODE(returnType2_p);
   BOOST_SPIRIT_DEBUG_NODE(pair_p);
   BOOST_SPIRIT_DEBUG_NODE(void_p);
-  BOOST_SPIRIT_DEBUG_NODE(returnValue_p);
+  BOOST_SPIRIT_DEBUG_NODE(returnValue_g);
   BOOST_SPIRIT_DEBUG_NODE(methodName_p);
   BOOST_SPIRIT_DEBUG_NODE(method_p);
   BOOST_SPIRIT_DEBUG_NODE(class_p);
@@ -312,8 +312,9 @@ void Module::parseMarkup(const std::string& data) {
   if(!info.full) {
     printf("parsing stopped at \n%.20s\n",info.stop);
     cout << "Stopped near:\n"
-      "class '" << cls.name() << "'\n"
-      "method '" << methodName << endl;
+      "class '" << cls.name_ << "'\n"
+      "method '" << methodName << "'\n"
+      "argument '" << arg.name << "'" << endl;
     throw ParseFailed((int)info.length);
   }
 
@@ -481,7 +482,7 @@ vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, 
 vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration> forwardDeclarations) { 
   vector<string> validTypes; 
   BOOST_FOREACH(const ForwardDeclaration& fwDec, forwardDeclarations) { 
-    validTypes.push_back(fwDec.name); 
+    validTypes.push_back(fwDec.name);
   } 
   validTypes.push_back("void"); 
   validTypes.push_back("string"); 
