@@ -152,24 +152,14 @@ void Module::parseMarkup(const std::string& data) {
     '<' >> basic.name_p[push_back_a(cls.templateArgs)] >> *(',' >> basic.name_p[push_back_a(cls.templateArgs)]) >>
     '>'); 
 
-  // NOTE: allows for pointers to all types
-  // Slightly more permissive than before on basis/eigen type qualification
+  // Argument list
   ArgumentList args;
-  Argument arg0, arg;
-  TypeGrammar argument_type_g(arg.type);
-  Rule argument_p =
-      !str_p("const")[assign_a(arg.is_const, true)]
-      >> argument_type_g
-      >> (!ch_p('&')[assign_a(arg.is_ref, true)] | !ch_p('*')[assign_a(arg.is_ptr, true)])
-      [push_back_a(args, arg)]
-      [assign_a(arg,arg0)];
- 
-  Rule argumentList_p = !argument_p >> * (',' >> argument_p); 
+  ArgumentListGrammar argumentlist_g(args);
 
   // parse class constructor
   Constructor constructor0(verbose), constructor(verbose);
   Rule constructor_p =  
-    (basic.className_p >> '(' >> argumentList_p >> ')' >> ';' >> !basic.comments_p)
+    (basic.className_p >> '(' >> argumentlist_g >> ')' >> ';' >> !basic.comments_p)
     [bl::bind(&Constructor::push_back, bl::var(constructor), bl::var(args))]
     [clear_a(args)];
  
@@ -194,7 +184,7 @@ void Module::parseMarkup(const std::string& data) {
   Rule method_p =  
     !templateArgValues_p >>
     (returnValue_p >> methodName_p[assign_a(methodName)] >>
-     '(' >> argumentList_p >> ')' >>  
+     '(' >> argumentlist_g >> ')' >>
      !str_p("const")[assign_a(isConst,true)] >> ';' >> *basic.comments_p)
     [bl::bind(&Class::addMethod, bl::var(cls), verbose, bl::var(isConst),
         bl::var(methodName), bl::var(args), bl::var(retVal),
@@ -208,7 +198,7 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule static_method_p = 
     (str_p("static") >> returnValue_p >> staticMethodName_p[assign_a(methodName)] >>
-     '(' >> argumentList_p >> ')' >> ';' >> *basic.comments_p)
+     '(' >> argumentlist_g >> ')' >> ';' >> *basic.comments_p)
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
       bl::var(methodName), bl::var(args), bl::var(retVal), Qualified(),verbose)]
@@ -248,7 +238,7 @@ void Module::parseMarkup(const std::string& data) {
   Qualified globalFunction;
   Rule global_function_p = 
       (returnValue_p >> staticMethodName_p[assign_a(globalFunction.name_)] >>
-       '(' >> argumentList_p >> ')' >> ';' >> *basic.comments_p)
+       '(' >> argumentlist_g >> ')' >> ';' >> *basic.comments_p)
       [assign_a(globalFunction.namespaces_,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
         bl::var(global_functions)[bl::var(globalFunction.name_)],
@@ -323,8 +313,7 @@ void Module::parseMarkup(const std::string& data) {
     printf("parsing stopped at \n%.20s\n",info.stop);
     cout << "Stopped near:\n"
       "class '" << cls.name() << "'\n"
-      "method '" << methodName << "'\n"
-      "argument '" << arg.name << "'" << endl;
+      "method '" << methodName << endl;
     throw ParseFailed((int)info.length);
   }
 
