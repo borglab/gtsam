@@ -65,14 +65,14 @@ void TypeAttributesTable::addForwardDeclarations(
 void TypeAttributesTable::checkValidity(const vector<Class>& classes) const {
   BOOST_FOREACH(const Class& cls, classes) {
     // Check that class is virtual if it has a parent
-    if (!cls.qualifiedParent.empty() && !cls.isVirtual)
+    if (cls.parentClass && !cls.isVirtual)
       throw AttributeError(cls.qualifiedName("::"),
           "Has a base class so needs to be declared virtual, change to 'virtual class "
               + cls.name + " ...'");
     // Check that parent is virtual as well
-    Qualified parent = cls.qualifiedParent;
-    if (!parent.empty() && !table_.at(parent.qualifiedName("::")).isVirtual)
-      throw AttributeError(parent.qualifiedName("::"),
+    if (cls.parentClass
+        && !table_.at(cls.parentClass->qualifiedName("::")).isVirtual)
+      throw AttributeError(cls.parentClass->qualifiedName("::"),
           "Is the base class of " + cls.qualifiedName("::")
               + ", so needs to be declared virtual");
   }

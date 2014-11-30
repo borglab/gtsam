@@ -27,6 +27,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <boost/optional.hpp>
 
 #include <string>
 #include <map>
@@ -53,7 +54,7 @@ public:
   bool isVirtual; ///< Whether the class is part of a virtual inheritance chain
   bool isSerializable; ///< Whether we can use boost.serialization to serialize the class - creates exports
   bool hasSerialization; ///< Whether we should create the serialization functions
-  Qualified qualifiedParent; ///< The *single* parent
+  boost::optional<Qualified> parentClass; ///< The *single* parent
   Constructor constructor; ///< Class constructors
   Deconstructor deconstructor; ///< Deconstructor to deallocate C++ object
   bool verbose_; ///< verbose flag

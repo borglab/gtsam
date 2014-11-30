@@ -104,7 +104,7 @@ TEST( wrap, Small ) {
   EXPECT(!rv1.isPair);
   EXPECT(!rv1.type1.isPtr);
   EXPECT(assert_equal("double", rv1.type1.name));
-  EXPECT_LONGS_EQUAL(ReturnType::BASIS, rv1.type1.category);
+  EXPECT_LONGS_EQUAL(ReturnType::BASIS, rv1.type1.category_);
 
   // Method 2
   Method m2 = cls.method("returnMatrix");
@@ -116,7 +116,7 @@ TEST( wrap, Small ) {
   EXPECT(!rv2.isPair);
   EXPECT(!rv2.type1.isPtr);
   EXPECT(assert_equal("Matrix", rv2.type1.name));
-  EXPECT_LONGS_EQUAL(ReturnType::EIGEN, rv2.type1.category);
+  EXPECT_LONGS_EQUAL(ReturnType::EIGEN, rv2.type1.category_);
 
   // Method 3
   Method m3 = cls.method("returnPoint2");
@@ -128,7 +128,7 @@ TEST( wrap, Small ) {
   EXPECT(!rv3.isPair);
   EXPECT(!rv3.type1.isPtr);
   EXPECT(assert_equal("Point2", rv3.type1.name));
-  EXPECT_LONGS_EQUAL(ReturnType::CLASS, rv3.type1.category);
+  EXPECT_LONGS_EQUAL(ReturnType::CLASS, rv3.type1.category_);
 
   // Static Method 1
   // static Vector returnVector();
@@ -140,7 +140,7 @@ TEST( wrap, Small ) {
   EXPECT(!rv4.isPair);
   EXPECT(!rv4.type1.isPtr);
   EXPECT(assert_equal("Vector", rv4.type1.name));
-  EXPECT_LONGS_EQUAL(ReturnType::EIGEN, rv4.type1.category);
+  EXPECT_LONGS_EQUAL(ReturnType::EIGEN, rv4.type1.category_);
 
 }
 
@@ -192,7 +192,7 @@ TEST( wrap, Geometry ) {
       Method m1 = cls.method("returnChar");
       LONGS_EQUAL(1, m1.nrOverloads());
       EXPECT(assert_equal("char", m1.returnValue(0).type1.name));
-      EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnValue(0).type1.category);
+      EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnValue(0).type1.category_);
       EXPECT(!m1.returnValue(0).isPair);
       EXPECT(assert_equal("returnChar", m1.name()));
       LONGS_EQUAL(1, m1.nrOverloads());
@@ -206,7 +206,7 @@ TEST( wrap, Geometry ) {
       Method m1 = cls.method("vectorConfusion");
       LONGS_EQUAL(1, m1.nrOverloads());
       EXPECT(assert_equal("VectorNotEigen", m1.returnValue(0).type1.name));
-      EXPECT_LONGS_EQUAL(ReturnType::CLASS, m1.returnValue(0).type1.category);
+      EXPECT_LONGS_EQUAL(ReturnType::CLASS, m1.returnValue(0).type1.category_);
       EXPECT(!m1.returnValue(0).isPair);
       EXPECT(assert_equal("vectorConfusion", m1.name()));
       LONGS_EQUAL(1, m1.nrOverloads());
@@ -249,7 +249,7 @@ TEST( wrap, Geometry ) {
     Method m1 = cls.method("norm");
     LONGS_EQUAL(1, m1.nrOverloads());
     EXPECT(assert_equal("double", m1.returnValue(0).type1.name));
-    EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnValue(0).type1.category);
+    EXPECT_LONGS_EQUAL(ReturnType::BASIS, m1.returnValue(0).type1.category_);
     EXPECT(assert_equal("norm", m1.name()));
     LONGS_EQUAL(1, m1.nrOverloads());
     EXPECT_LONGS_EQUAL(0, m1.argumentList(0).size());
@@ -275,9 +275,9 @@ TEST( wrap, Geometry ) {
     Method m2 = testCls.method("return_pair");
     LONGS_EQUAL(1, m2.nrOverloads());
     EXPECT(m2.returnValue(0).isPair);
-    EXPECT_LONGS_EQUAL(ReturnType::EIGEN, m2.returnValue(0).type1.category);
+    EXPECT_LONGS_EQUAL(ReturnType::EIGEN, m2.returnValue(0).type1.category_);
     EXPECT(assert_equal("Vector", m2.returnValue(0).type1.name));
-    EXPECT_LONGS_EQUAL(ReturnType::EIGEN, m2.returnValue(0).type2.category);
+    EXPECT_LONGS_EQUAL(ReturnType::EIGEN, m2.returnValue(0).type2.category_);
     EXPECT(assert_equal("Matrix", m2.returnValue(0).type2.name));
 
     // checking pointer args and return values

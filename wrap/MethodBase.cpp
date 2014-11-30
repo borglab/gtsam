@@ -59,7 +59,7 @@ void MethodBase::proxy_wrapper_fragments(FileWriter& proxyFile,
 
     // Output C++ wrapper code
     const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
-        matlabUniqueName, 0, id, typeAttributes, templateArgValue_);
+        matlabUniqueName, 0, id, typeAttributes);
 
     // Add to function list
     functionNames.push_back(wrapFunctionName);
@@ -75,8 +75,7 @@ void MethodBase::proxy_wrapper_fragments(FileWriter& proxyFile,
 
       // Output C++ wrapper code
       const string wrapFunctionName = wrapper_fragment(wrapperFile,
-          cppClassName, matlabUniqueName, i, id, typeAttributes,
-          templateArgValue_);
+          cppClassName, matlabUniqueName, i, id, typeAttributes);
 
       // Add to function list
       functionNames.push_back(wrapFunctionName);
@@ -94,8 +93,7 @@ void MethodBase::proxy_wrapper_fragments(FileWriter& proxyFile,
 /* ************************************************************************* */
 string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
     Str matlabUniqueName, int overload, int id,
-    const TypeAttributesTable& typeAttributes,
-    const Qualified& instName) const {
+    const TypeAttributesTable& typeAttributes) const {
 
   // generate code
 
@@ -120,7 +118,7 @@ string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
   // for static methods: cppClassName::staticMethod<TemplateVal>
   // for instance methods: obj->instanceMethod<TemplateVal>
   string expanded = wrapper_call(wrapperFile, cppClassName, matlabUniqueName,
-      args, instName);
+      args);
 
   expanded += ("(" + args.names() + ")");
   if (returnVal.type1.name != "void")

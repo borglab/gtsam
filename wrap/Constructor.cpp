@@ -69,7 +69,7 @@ void Constructor::proxy_fragment(FileWriter& file,
 
 /* ************************************************************************* */
 string Constructor::wrapper_fragment(FileWriter& file, Str cppClassName,
-    Str matlabUniqueName, Str cppBaseClassName, int id,
+    Str matlabUniqueName, boost::optional<string> cppBaseClassName, int id,
     const ArgumentList& al) const {
 
   const string wrapFunctionName = matlabUniqueName + "_constructor_"
@@ -100,9 +100,9 @@ string Constructor::wrapper_fragment(FileWriter& file, Str cppClassName,
       << endl;
 
   // If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy)
-  if (!cppBaseClassName.empty()) {
+  if (cppBaseClassName) {
     file.oss << "\n";
-    file.oss << "  typedef boost::shared_ptr<" << cppBaseClassName
+    file.oss << "  typedef boost::shared_ptr<" << *cppBaseClassName
         << "> SharedBase;\n";
     file.oss
         << "  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);\n";

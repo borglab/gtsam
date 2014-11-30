@@ -52,8 +52,7 @@ void Method::proxy_header(FileWriter& proxyFile) const {
 
 /* ************************************************************************* */
 string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
-    Str matlabUniqueName, const ArgumentList& args,
-    const Qualified& instName) const {
+    Str matlabUniqueName, const ArgumentList& args) const {
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
@@ -71,8 +70,8 @@ string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
   // call method and wrap result
   // example: out[0]=wrap<bool>(obj->return_field(t));
   string expanded = "obj->" + name_;
-  if (!instName.empty())
-    expanded += ("<" + instName.qualifiedName("::") + ">");
+  if (templateArgValue_)
+    expanded += ("<" + templateArgValue_->qualifiedName("::") + ">");
 
   return expanded;
 }

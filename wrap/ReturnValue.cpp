@@ -64,7 +64,7 @@ void ReturnValue::emit_matlab(FileWriter& proxyFile) const {
   string output;
   if (isPair)
     proxyFile.oss << "[ varargout{1} varargout{2} ] = ";
-  else if (type1.category != ReturnType::VOID)
+  else if (type1.category_ != ReturnType::VOID)
     proxyFile.oss << "varargout{1} = ";
 }
 

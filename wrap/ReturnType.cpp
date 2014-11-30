@@ -23,7 +23,7 @@ void ReturnType::wrap_result(const string& out, const string& result,
 
   string cppType = qualifiedName("::"), matlabType = qualifiedName(".");
 
-  if (category == CLASS) {
+  if (category_ == CLASS) {
     string objCopy, ptrType;
     ptrType = "Shared" + name;
     const bool isVirtual = typeAttributes.attributes(cppType).isVirtual;
@@ -52,7 +52,7 @@ void ReturnType::wrap_result(const string& out, const string& result,
 
 /* ************************************************************************* */
 void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
-  if (category == CLASS)
+  if (category_ == CLASS)
     wrapperFile.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
         << "> Shared" << name << ";" << endl;
 }

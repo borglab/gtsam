@@ -26,26 +26,53 @@ namespace wrap {
 /**
  * Class to encapuslate a qualified name, i.e., with (nested) namespaces
  */
-struct Qualified {
+class Qualified {
+
+public:
 
   std::vector<std::string> namespaces; ///< Stack of namespaces
   std::string name; ///< type name
 
-  Qualified(const std::string& name_ = "") :
-      name(name_) {
+  /// the different supported return value categories
+  typedef enum {
+    CLASS = 1, EIGEN = 2, BASIS = 3, VOID = 4
+  } Category;
+  Category category_;
+
+  Qualified() :
+      category_(CLASS) {
   }
 
-  bool empty() const {
-    return namespaces.empty() && name.empty();
+  Qualified(std::vector<std::string> ns, const std::string& name) :
+      namespaces(ns), name(name), category_(CLASS) {
   }
 
-  void clear() {
-    namespaces.clear();
-    name.clear();
+  Qualified(const std::string& n, Category category) :
+      name(n), category_(category) {
+  }
+
+public:
+
+  static Qualified MakeClass(std::vector<std::string> namespaces,
+      const std::string& name) {
+    return Qualified(namespaces, name);
+  }
+
+  static Qualified MakeEigen(const std::string& name) {
+    return Qualified(name, EIGEN);
+  }
+
+  static Qualified MakeBasis(const std::string& name) {
+    return Qualified(name, BASIS);
+  }
+
+  static Qualified MakeVoid() {
+    return Qualified("void", VOID);
   }
 
   bool operator!=(const Qualified& other) const {
-    return other.name != name || other.namespaces != namespaces;
+    return other.name != name || other.namespaces != namespaces
+        || other.category_ != category_;
   }
 
   /// Return a qualified string using given delimiter

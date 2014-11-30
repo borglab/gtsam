@@ -29,11 +29,9 @@
 #include <iostream> 
 #include <fstream> 
 #include <iterator>     // std::ostream_iterator
-
 //#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags 
 //#include <cinttypes> // same failure as above 
 #include <stdint.h> // works on Linux GCC 
-
 using namespace std;
 using namespace wrap;
 
@@ -67,12 +65,11 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   const string matlabQualName = qualifiedName(".");
   const string matlabUniqueName = qualifiedName();
   const string cppName = qualifiedName("::");
-  const string matlabBaseName = qualifiedParent.qualifiedName(".");
-  const string cppBaseName = qualifiedParent.qualifiedName("::");
 
   // emit class proxy code 
   // we want our class to inherit the handle class for memory purposes 
-  const string parent = qualifiedParent.empty() ? "handle" : matlabBaseName;
+  const string parent =
+      parentClass ? "handle" : parentClass->qualifiedName(".");
   comment_fragment(proxyFile);
   proxyFile.oss << "classdef " << name << " < " << parent << endl;
   proxyFile.oss << "  properties\n";
@@ -94,11 +91,14 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   wrapperFile.oss << "\n";
 
   // Regular constructors 
+  boost::optional<string> cppBaseName;
+  if (parentClass)
+    cppBaseName = parentClass->qualifiedName("::");
   for (size_t i = 0; i < constructor.nrOverloads(); i++) {
     ArgumentList args = constructor.argumentList(i);
     const int id = (int) functionNames.size();
-    constructor.proxy_fragment(proxyFile, wrapperName, !qualifiedParent.empty(),
-        id, args);
+    constructor.proxy_fragment(proxyFile, wrapperName, (bool) parentClass, id,
+        args);
     const string wrapFunctionName = constructor.wrapper_fragment(wrapperFile,
         cppName, matlabUniqueName, cppBaseName, id, args);
     wrapperFile.oss << "\n";
@@ -108,9 +108,9 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "        error('Arguments do not match any overload of "
       << matlabQualName << " constructor');\n";
   proxyFile.oss << "      end\n";
-  if (!qualifiedParent.empty())
-    proxyFile.oss << "      obj = obj@" << matlabBaseName << "(uint64("
-        << ptr_constructor_key << "), base_ptr);\n";
+  if (parentClass)
+    proxyFile.oss << "      obj = obj@" << parentClass->qualifiedName(".")
+        << "(uint64(" << ptr_constructor_key << "), base_ptr);\n";
   proxyFile.oss << "      obj.ptr_" << matlabUniqueName << " = my_ptr;\n";
   proxyFile.oss << "    end\n\n";
 
@@ -170,7 +170,6 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
 
   const string matlabUniqueName = qualifiedName();
   const string cppName = qualifiedName("::");
-  const string baseCppName = qualifiedParent.qualifiedName("::");
 
   const int collectorInsertId = (int) functionNames.size();
   const string collectorInsertFunctionName = matlabUniqueName
@@ -207,7 +206,7 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
   } else {
     proxyFile.oss << "        my_ptr = varargin{2};\n";
   }
-  if (qualifiedParent.empty()) // If this class has a base class, we'll get a base class pointer back
+  if (!parentClass) // If this class has a base class, we'll get a base class pointer back
     proxyFile.oss << "        ";
   else
     proxyFile.oss << "        base_ptr = ";
@@ -230,7 +229,8 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
   // Add to collector 
   wrapperFile.oss << "  collector_" << matlabUniqueName << ".insert(self);\n";
   // If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy) 
-  if (!qualifiedParent.empty()) {
+  if (parentClass) {
+    const string baseCppName = parentClass->qualifiedName("::");
     wrapperFile.oss << "\n";
     wrapperFile.oss << "  typedef boost::shared_ptr<" << baseCppName
         << "> SharedBase;\n";
@@ -297,7 +297,7 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
     // Create method to expand
     // For all values of the template argument, create a new method
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
-      const TemplateSubstitution ts(templateArgName, instName, this->name);
+      const TemplateSubstitution ts(templateArgName, instName, *this);
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
       // do the same for return type
@@ -353,10 +353,10 @@ void Class::verifyAll(vector<string>& validTypes, bool& hasSerialiable) const {
   verifyReturnTypes<Method>(validTypes, methods_);
 
   // verify parents
-  if (!qualifiedParent.empty()
+  if (parentClass
       && find(validTypes.begin(), validTypes.end(),
-          qualifiedParent.qualifiedName("::")) == validTypes.end())
-    throw DependencyMissing(qualifiedParent.qualifiedName("::"),
+          parentClass->qualifiedName("::")) == validTypes.end())
+    throw DependencyMissing(parentClass->qualifiedName("::"),
         qualifiedName("::"));
 }
 
@@ -364,12 +364,12 @@ void Class::verifyAll(vector<string>& validTypes, bool& hasSerialiable) const {
 void Class::appendInheritedMethods(const Class& cls,
     const vector<Class>& classes) {
 
-  if (!cls.qualifiedParent.empty()) {
+  if (cls.parentClass) {
 
     // Find parent
     BOOST_FOREACH(const Class& parent, classes) {
       // We found a parent class for our parent, TODO improve !
-      if (parent.name == cls.qualifiedParent.name) {
+      if (parent.name == cls.parentClass->name) {
         methods_.insert(parent.methods_.begin(), parent.methods_.end());
         appendInheritedMethods(parent, classes);
       }

@@ -57,12 +57,10 @@ protected:
 
   std::string wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
       Str matlabUniqueName, int overload, int id,
-      const TypeAttributesTable& typeAttributes, const Qualified& instName =
-          Qualified()) const; ///< cpp wrapper
+      const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
 
   virtual std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
-      Str matlabUniqueName, const ArgumentList& args,
-      const Qualified& instName) const = 0;
+      Str matlabUniqueName, const ArgumentList& args) const = 0;
 };
 
 } // \namespace wrap

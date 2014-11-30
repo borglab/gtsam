@@ -19,6 +19,7 @@
 #pragma once
 
 #include "Argument.h"
+#include <boost/optional.hpp>
 
 namespace wrap {
 
@@ -28,7 +29,7 @@ class Function {
 protected:
 
   std::string name_; ///< name of method
-  Qualified templateArgValue_; ///< value of template argument if applicable
+  boost::optional<Qualified> templateArgValue_; ///< value of template argument if applicable
   bool verbose_;
 
 public:
@@ -37,8 +38,8 @@ public:
    * @brief first time, fill in instance variables, otherwise check if same
    * @return true if first time, false thereafter
    */
-  bool initializeOrCheck(const std::string& name, const Qualified& instName =
-      Qualified(), bool verbose = false);
+  bool initializeOrCheck(const std::string& name, boost::optional<const Qualified> instName =
+      boost::none, bool verbose = false);
 
   std::string name() const {
     return name_;
@@ -50,10 +51,10 @@ public:
   }
 
   std::string matlabName() const {
-    if (templateArgValue_.empty())
+    if (templateArgValue_)
       return name_;
     else
-      return name_ + templateArgValue_.name;
+      return name_ + templateArgValue_->name;
   }
 
   /// Emit function call to MATLAB (no argument checking)

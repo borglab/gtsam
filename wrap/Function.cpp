@@ -29,8 +29,8 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-bool Function::initializeOrCheck(const string& name, const Qualified& instName,
-    bool verbose) {
+bool Function::initializeOrCheck(const string& name,
+    boost::optional<const Qualified> instName, bool verbose) {
 
   if (name.empty())
     throw runtime_error("Function::initializeOrCheck called with empty name");
@@ -44,10 +44,7 @@ bool Function::initializeOrCheck(const string& name, const Qualified& instName,
   } else {
     if (name_ != name || templateArgValue_ != instName || verbose_ != verbose)
       throw runtime_error(
-          "Function::initializeOrCheck called with different arguments:  with name "
-              + name + " instead of expected " + name_
-              + ", or with template argument " + instName.qualifiedName(":")
-              + " instead of expected " + templateArgValue_.qualifiedName(":"));
+          "Function::initializeOrCheck called with different arguments");
 
     return false;
   }
