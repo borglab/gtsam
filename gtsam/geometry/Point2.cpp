@@ -50,12 +50,12 @@ double Point2::norm(OptionalJacobian<1,2> H) const {
 }
 
 /* ************************************************************************* */
-static const Matrix I2 = eye(2);
+static const Matrix2 I2 = Eigen::Matrix2d::Identity();
 double Point2::distance(const Point2& point, OptionalJacobian<1,2> H1,
     OptionalJacobian<1,2> H2) const {
   Point2 d = point - *this;
   if (H1 || H2) {
-    Eigen::Matrix<double,1,2> H;
+    Matrix12 H;
     double r = d.norm(H);
     if (H1) *H1 = -H;
     if (H2) *H2 =  H;
