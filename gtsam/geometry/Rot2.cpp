@@ -65,9 +65,9 @@ Rot2& Rot2::normalize() {
 
 /* ************************************************************************* */
 Matrix2 Rot2::matrix() const {
-  Matrix2 rvalue;
-  rvalue <<  c_, -s_, s_, c_;
-  return rvalue;
+  Matrix2 rvalue_;
+  rvalue_ <<  c_, -s_, s_, c_;
+  return rvalue_;
 }
 
 /* ************************************************************************* */

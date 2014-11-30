@@ -116,10 +116,10 @@ namespace gtsam {
     }
 
     /** Compose - make a new rotation by adding angles */
-    inline Rot2 compose(const Rot2& R, boost::optional<Matrix&> H1 =
-        boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-      if (H1) *H1 = eye(1);
-      if (H2) *H2 = eye(1);
+    inline Rot2 compose(const Rot2& R, OptionalJacobian<1,1> H1 =
+        boost::none, OptionalJacobian<1,1> H2 = boost::none) const {
+      if (H1) (*H1)<< 1; // set to 1x1 identity matrix
+      if (H2) (*H2)<< 1; // set to 1x1 identity matrix
       return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
     }
 
@@ -129,10 +129,10 @@ namespace gtsam {
     }
 
     /** Between using the default implementation */
-    inline Rot2 between(const Rot2& R, boost::optional<Matrix&> H1 =
-        boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-      if (H1) *H1 = -eye(1);
-      if (H2) *H2 = eye(1);
+    inline Rot2 between(const Rot2& R, OptionalJacobian<1,1> H1 =
+        boost::none, OptionalJacobian<1,1> H2 = boost::none) const {
+      if (H1) *H1 << -1; // set to 1x1 identity matrix
+      if (H2) *H2 <<  1; // set to 1x1 identity matrix
       return fromCosSin(c_ * R.c_ + s_ * R.s_, -s_ * R.c_ + c_ * R.s_);
     }
 
