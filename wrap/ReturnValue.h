@@ -35,6 +35,22 @@ struct ReturnValue {
       isPair(false), type1(type) {
   }
 
+  /// Constructor
+  ReturnValue(const ReturnType& t1, const ReturnType& t2) :
+      isPair(true), type1(t1), type2(t2) {
+  }
+
+  virtual void clear() {
+    type1.clear();
+    type2.clear();
+    isPair = false;
+  }
+
+  bool operator==(const ReturnValue& other) const {
+    return isPair == other.isPair && type1 == other.type1
+        && type2 == other.type2;
+  }
+
   /// Substitute template argument
   ReturnValue expandTemplate(const TemplateSubstitution& ts) const;
 

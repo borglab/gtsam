@@ -22,13 +22,19 @@ struct ReturnType: Qualified {
   bool isPtr;
 
   /// Makes a void type
-  ReturnType() :
-      isPtr(false) {
+  ReturnType(bool ptr = false) :
+      isPtr(ptr) {
   }
 
-  /// Make a Class type, no namespaces
-  ReturnType(const std::string& name) :
-      Qualified(name,Qualified::CLASS), isPtr(false) {
+  /// Constructor, no namespaces
+  ReturnType(const std::string& name, Qualified::Category c = Qualified::CLASS,
+      bool ptr = false) :
+      Qualified(name, c), isPtr(ptr) {
+  }
+
+  virtual void clear() {
+    Qualified::clear();
+    isPtr = false;
   }
 
   /// Check if this type is in a set of valid types

@@ -106,7 +106,7 @@ public:
     return namespaces_.empty() && name_.empty();
   }
 
-  void clear() {
+  virtual void clear() {
     namespaces_.clear();
     name_.clear();
     category = VOID;
@@ -230,6 +230,10 @@ public:
   };
 };
 // type_grammar
+
+// Needed for other parsers in Argument.h and ReturnType.h
+static const bool T = true;
+
 
 }// \namespace wrap
 

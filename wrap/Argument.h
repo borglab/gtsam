@@ -124,8 +124,6 @@ struct ArgumentList: public std::vector<Argument> {
 
 };
 
-static const bool T = true;
-
 /* ************************************************************************* */
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
 struct ArgumentGrammar: public classic::grammar<ArgumentGrammar> {
@@ -175,7 +173,7 @@ struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
 
   wrap::ArgumentList& result_; ///< successful parse will be placed in here
 
-  Argument arg0, arg;
+  Argument arg, arg0;
   ArgumentGrammar argument_g;
 
   /// Construct type grammar and specify where result is placed
@@ -192,17 +190,10 @@ struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
     Rule argument_p, argumentList_p;
 
     definition(ArgumentListGrammar const& self) {
-
-      using namespace wrap;
       using namespace classic;
-
-      // NOTE: allows for pointers to all types
-      // Slightly more permissive than before on basis/eigen type qualification
       argument_p = self.argument_g //
-          [push_back_a(self.result_, self.arg)] //
-//          [assign_a(self.arg, self.arg0)]
-          ;
-
+          [classic::push_back_a(self.result_, self.arg)] //
+          [assign_a(self.arg, self.arg0)];
       argumentList_p = '(' >> !argument_p >> *(',' >> argument_p) >> ')';
     }
 
