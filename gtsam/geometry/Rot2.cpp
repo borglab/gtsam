@@ -92,11 +92,7 @@ Point2 Rot2::rotate(const Point2& p, OptionalJacobian<2, 1> H1,
 Point2 Rot2::unrotate(const Point2& p,
     OptionalJacobian<2, 1> H1, OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + s_ * p.y(), -s_ * p.x() + c_ * p.y());
-  if (H1) {
-      Matrix21 H1_;
-      H1_ << q.y(), -q.x();
-      *H1 = H1_;  // R_{pi/2}q
-  }
+  if (H1) *H1 << q.y(), -q.x();
   if (H2) *H2 = transpose();
   return q;
 }
