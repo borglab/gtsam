@@ -110,11 +110,12 @@ Vector Pose2::localCoordinates(const Pose2& p2) const {
 // Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
 Matrix3 Pose2::AdjointMap() const {
   double c = r_.c(), s = r_.s(), x = t_.x(), y = t_.y();
-  return (Matrix(3,3) <<
+  Matrix3 rvalue;
+  rvalue <<
       c,  -s,   y,
       s,   c,  -x,
-      0.0, 0.0, 1.0
-  ).finished();
+      0.0, 0.0, 1.0;
+  return rvalue;
 }
 
 /* ************************************************************************* */
