@@ -64,8 +64,10 @@ Rot2& Rot2::normalize() {
 }
 
 /* ************************************************************************* */
-Matrix Rot2::matrix() const {
-  return (Matrix(2, 2) <<  c_, -s_, s_, c_).finished();
+Matrix2 Rot2::matrix() const {
+  Matrix2 rvalue;
+  rvalue <<  c_, -s_, s_, c_;
+  return rvalue;
 }
 
 /* ************************************************************************* */
