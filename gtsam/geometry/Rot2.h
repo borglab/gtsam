@@ -225,7 +225,7 @@ namespace gtsam {
     }
 
     /** return 2*2 rotation matrix */
-    Matrix matrix() const;
+    Matrix2 matrix() const;
 
     /** return 2*2 transpose (inverse) rotation matrix   */
     Matrix transpose() const;
