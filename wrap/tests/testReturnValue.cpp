@@ -42,38 +42,6 @@ TEST( ReturnType, Constructor2 ) {
 }
 
 //******************************************************************************
-// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-struct ReturnTypeGrammar: public classic::grammar<ReturnTypeGrammar> {
-
-  wrap::ReturnType& result_; ///< successful parse will be placed in here
-
-  TypeGrammar type_g;
-
-  /// Construct ReturnType grammar and specify where result is placed
-  ReturnTypeGrammar(wrap::ReturnType& result) :
-      result_(result), type_g(result_) {
-  }
-
-  /// Definition of type grammar
-  template<typename ScannerT>
-  struct definition {
-
-    classic::rule<ScannerT> type_p;
-
-    definition(ReturnTypeGrammar const& self) {
-      using namespace classic;
-      type_p = self.type_g >> !ch_p('*')[assign_a(self.result_.isPtr, T)];
-    }
-
-    classic::rule<ScannerT> const& start() const {
-      return type_p;
-    }
-
-  };
-};
-// ReturnTypeGrammar
-
-//******************************************************************************
 TEST( ReturnType, grammar ) {
 
   using classic::space_p;
@@ -106,43 +74,6 @@ TEST( ReturnValue, Constructor ) {
   EXPECT(actual.type2==Qualified("Point3"));
   EXPECT(actual.isPair);
 }
-
-//******************************************************************************
-// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-struct ReturnValueGrammar: public classic::grammar<ReturnValueGrammar> {
-
-  wrap::ReturnValue& result_; ///< successful parse will be placed in here
-
-  ReturnTypeGrammar returnType1_g, returnType2_g;
-
-  /// Construct type grammar and specify where result is placed
-  ReturnValueGrammar(wrap::ReturnValue& result) :
-      result_(result), returnType1_g(result.type1), returnType2_g(result.type2) {
-  }
-
-  /// Definition of type grammar
-  template<typename ScannerT>
-  struct definition {
-
-    classic::rule<ScannerT> pair_p, returnValue_p;
-
-    definition(ReturnValueGrammar const& self) {
-
-      using namespace classic;
-
-      pair_p = (str_p("pair") >> '<' >> self.returnType1_g >> ','
-          >> self.returnType2_g >> '>')[assign_a(self.result_.isPair, T)];
-
-      returnValue_p = pair_p | self.returnType1_g;
-    }
-
-    classic::rule<ScannerT> const& start() const {
-      return returnValue_p;
-    }
-
-  };
-};
-// ReturnValueGrammar
 
 //******************************************************************************
 TEST( ReturnValue, grammar ) {

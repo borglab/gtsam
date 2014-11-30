@@ -62,4 +62,36 @@ private:
 
 };
 
+//******************************************************************************
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct ReturnTypeGrammar: public classic::grammar<ReturnTypeGrammar> {
+
+  wrap::ReturnType& result_; ///< successful parse will be placed in here
+
+  TypeGrammar type_g;
+
+  /// Construct ReturnType grammar and specify where result is placed
+  ReturnTypeGrammar(wrap::ReturnType& result) :
+      result_(result), type_g(result_) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition {
+
+    classic::rule<ScannerT> type_p;
+
+    definition(ReturnTypeGrammar const& self) {
+      using namespace classic;
+      type_p = self.type_g >> !ch_p('*')[assign_a(self.result_.isPtr, T)];
+    }
+
+    classic::rule<ScannerT> const& start() const {
+      return type_p;
+    }
+
+  };
+};
+// ReturnTypeGrammar
+
 } // \namespace wrap

@@ -77,4 +77,41 @@ struct ReturnValue {
 
 };
 
+//******************************************************************************
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct ReturnValueGrammar: public classic::grammar<ReturnValueGrammar> {
+
+  wrap::ReturnValue& result_; ///< successful parse will be placed in here
+
+  ReturnTypeGrammar returnType1_g, returnType2_g;
+
+  /// Construct type grammar and specify where result is placed
+  ReturnValueGrammar(wrap::ReturnValue& result) :
+      result_(result), returnType1_g(result.type1), returnType2_g(result.type2) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition {
+
+    classic::rule<ScannerT> pair_p, returnValue_p;
+
+    definition(ReturnValueGrammar const& self) {
+
+      using namespace classic;
+
+      pair_p = (str_p("pair") >> '<' >> self.returnType1_g >> ','
+          >> self.returnType2_g >> '>')[assign_a(self.result_.isPair, T)];
+
+      returnValue_p = pair_p | self.returnType1_g;
+    }
+
+    classic::rule<ScannerT> const& start() const {
+      return returnValue_p;
+    }
+
+  };
+};
+// ReturnValueGrammar
+
 } // \namespace wrap
