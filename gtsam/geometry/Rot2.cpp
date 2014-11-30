@@ -71,16 +71,22 @@ Matrix2 Rot2::matrix() const {
 }
 
 /* ************************************************************************* */
-Matrix Rot2::transpose() const {
-  return (Matrix(2, 2) <<  c_, s_, -s_, c_).finished();
+Matrix2 Rot2::transpose() const {
+  Matrix2 rvalue_;
+  rvalue_ <<   c_, s_, -s_, c_;
+  return rvalue_;
 }
 
 /* ************************************************************************* */
 // see doc/math.lyx, SO(2) section
-Point2 Rot2::rotate(const Point2& p, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+Point2 Rot2::rotate(const Point2& p, OptionalJacobian<2, 1> H1,
+    OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + -s_ * p.y(), s_ * p.x() + c_ * p.y());
-  if (H1) *H1 = (Matrix(2, 1) <<  -q.y(), q.x()).finished();
+  if (H1) {
+      Matrix21 H1_;
+      H1_ <<  -q.y(), q.x();
+      *H1 = H1_;
+  }
   if (H2) *H2 = matrix();
   return q;
 }
@@ -88,9 +94,13 @@ Point2 Rot2::rotate(const Point2& p, boost::optional<Matrix&> H1,
 /* ************************************************************************* */
 // see doc/math.lyx, SO(2) section
 Point2 Rot2::unrotate(const Point2& p,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalJacobian<2, 1> H1, OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + s_ * p.y(), -s_ * p.x() + c_ * p.y());
-  if (H1) *H1 = (Matrix(2, 1) << q.y(), -q.x()).finished();  // R_{pi/2}q
+  if (H1) {
+      Matrix21 H1_;
+      H1_ << q.y(), -q.x();
+      *H1 = H1_;  // R_{pi/2}q
+  }
   if (H2) *H2 = transpose();
   return q;
 }

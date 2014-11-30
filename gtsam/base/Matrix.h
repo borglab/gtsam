@@ -43,6 +43,13 @@ typedef Eigen::Matrix<double,1,4> Matrix14;
 typedef Eigen::Matrix<double,1,5> Matrix15;
 typedef Eigen::Matrix<double,1,6> Matrix16;
 
+typedef Eigen::Matrix<double,2,1> Matrix21;
+typedef Eigen::Matrix<double,3,1> Matrix31;
+typedef Eigen::Matrix<double,4,1> Matrix41;
+typedef Eigen::Matrix<double,5,1> Matrix51;
+typedef Eigen::Matrix<double,6,1> Matrix61;
+
+
 typedef Eigen::Matrix2d Matrix2;
 typedef Eigen::Matrix3d Matrix3;
 typedef Eigen::Matrix4d Matrix4;

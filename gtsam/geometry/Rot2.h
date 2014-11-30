@@ -180,8 +180,8 @@ namespace gtsam {
     /**
      * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
      */
-    Point2 rotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    Point2 rotate(const Point2& p, OptionalJacobian<2, 1> H1 = boost::none,
+        OptionalJacobian<2, 2> H2 = boost::none) const;
 
     /** syntactic sugar for rotate */
     inline Point2 operator*(const Point2& p) const {
@@ -191,8 +191,8 @@ namespace gtsam {
     /**
      * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
      */
-    Point2 unrotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    Point2 unrotate(const Point2& p, OptionalJacobian<2, 1> H1 = boost::none,
+        OptionalJacobian<2, 2> H2 = boost::none) const;
 
     /// @}
     /// @name Standard Interface
@@ -228,7 +228,7 @@ namespace gtsam {
     Matrix2 matrix() const;
 
     /** return 2*2 transpose (inverse) rotation matrix   */
-    Matrix transpose() const;
+    Matrix2 transpose() const;
 
   private:
     /** Serialization function */
