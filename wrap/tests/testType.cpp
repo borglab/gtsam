@@ -21,6 +21,8 @@
 
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_push_back_actor.hpp>
+#include <boost/spirit/include/classic_clear_actor.hpp>
+#include <boost/spirit/include/classic_assign_actor.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -46,10 +48,13 @@ struct type_grammar: public grammar<type_grammar> {
 
     typedef rule<ScannerT> Rule;
 
-    Rule basisType_p, keywords_p, eigenType_p, stlType_p, className_p,
-        namepsace_p, namespace_del_p, qualified_p, type_p;
+    Rule void_p, basisType_p, eigenType_p, keywords_p, stlType_p, className_p,
+        namepsace_p, namespace_del_p, class_p, type_p;
 
     definition(type_grammar const& self) {
+
+      void_p = str_p("void")[assign_a(self.result_.name)];
+
       basisType_p = (str_p("string") | "bool" | "size_t" | "int" | "double"
           | "char" | "unsigned char")[assign_a(self.result_.name)];
 
@@ -58,7 +63,6 @@ struct type_grammar: public grammar<type_grammar> {
       keywords_p = (str_p("const") | "static" | "namespace" | "void"
           | basisType_p);
 
-      //Rule for STL Containers (class names are lowercase)
       stlType_p = (str_p("vector") | "list");
 
       className_p = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p
@@ -69,10 +73,10 @@ struct type_grammar: public grammar<type_grammar> {
       namespace_del_p = namepsace_p[push_back_a(self.result_.namespaces)]
           >> str_p("::");
 
-      qualified_p = *namespace_del_p
-          >> className_p[assign_a(self.result_.name)];
+      class_p = *namespace_del_p >> className_p[assign_a(self.result_.name)];
 
-      type_p = basisType_p | eigenType_p;
+      type_p = eps_p[clear_a(self.result_)] //
+      >> void_p | basisType_p | eigenType_p | class_p;
     }
 
     Rule const& start() const {
@@ -88,13 +92,32 @@ TEST( spirit, grammar ) {
   Qualified actual;
   type_grammar type_g(actual);
 
-  // a basic type
-  EXPECT(parse("double", type_g, space_p).full);
-  EXPECT(actual.name=="double");
+  // a class type with namespaces
+  EXPECT(parse("gtsam::internal::Point2", type_g, space_p).full);
+  EXPECT(actual.name=="Point2");
+  EXPECT_LONGS_EQUAL(2, actual.namespaces.size());
+  EXPECT(actual.namespaces[0]=="gtsam");
+  EXPECT(actual.namespaces[1]=="internal");
+
+  // a class type with no namespaces
+  EXPECT(parse("Point2", type_g, space_p).full);
+  EXPECT(actual.name=="Point2");
+  EXPECT(actual.namespaces.empty());
 
   // an Eigen type
   EXPECT(parse("Vector", type_g, space_p).full);
   EXPECT(actual.name=="Vector");
+  EXPECT(actual.namespaces.empty());
+
+  // a basic type
+  EXPECT(parse("double", type_g, space_p).full);
+  EXPECT(actual.name=="double");
+  EXPECT(actual.namespaces.empty());
+
+  // void
+  EXPECT(parse("void", type_g, space_p).full);
+  EXPECT(actual.name=="void");
+  EXPECT(actual.namespaces.empty());
 }
 
 //******************************************************************************
