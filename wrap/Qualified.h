@@ -84,7 +84,7 @@ public:
   // Qualified is 'abused' as template argument name as well
   // this function checks whether *this matches with templateArg
   bool match(const std::string& templateArg) const {
-    return (name_ == templateArg && namespaces_.empty() && category == CLASS);
+    return (name_ == templateArg && namespaces_.empty());//TODO && category == CLASS);
   }
 
   void rename(const Qualified& q) {
@@ -220,7 +220,7 @@ public:
           [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, CLASS)];
 
-      type_p = void_p | my_basisType_p | my_eigenType_p | class_p;
+      type_p = void_p | my_basisType_p | class_p | my_eigenType_p;
     }
 
     Rule const& start() const {
