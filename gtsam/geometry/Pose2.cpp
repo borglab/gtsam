@@ -213,9 +213,9 @@ Rot2 Pose2::bearing(const Pose2& point,
     OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
   Rot2 result = bearing(point.t(), H1, H2);
   if (H2) {
-    Matrix H2_ = *H2 * point.r().matrix();
+    Matrix2 H2_ = *H2 * point.r().matrix();
     *H2 = zeros(1, 3);
-    insertSub(*H2, H2_, 0, 0);
+    (*H2).block(0, 0, H2_.rows(), H2_.cols()) = H2_;
   }
   return result;
 }
