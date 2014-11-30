@@ -105,6 +105,10 @@ TEST( ReturnValue, grammar ) {
   EXPECT(parse("double", g, space_p).full);
   EXPECT(actual==ReturnValue(ReturnType("double",Qualified::BASIS)));
   actual.clear();
+
+  EXPECT(parse("void", g, space_p).full);
+  EXPECT(actual==ReturnValue(ReturnType("void",Qualified::VOID)));
+  actual.clear();
 }
 
 //******************************************************************************
