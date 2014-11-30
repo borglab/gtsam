@@ -124,5 +124,97 @@ struct ArgumentList: public std::vector<Argument> {
 
 };
 
-} // \namespace wrap
+static const bool T = true;
+
+/* ************************************************************************* */
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct ArgumentGrammar: public classic::grammar<ArgumentGrammar> {
+
+  wrap::Argument& result_; ///< successful parse will be placed in here
+  TypeGrammar argument_type_g;
+
+  /// Construct type grammar and specify where result is placed
+  ArgumentGrammar(wrap::Argument& result) :
+      result_(result), argument_type_g(result.type) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition: basic_rules<ScannerT> {
+
+    typedef classic::rule<ScannerT> Rule;
+
+    Rule argument_p, argumentList_p;
+
+    definition(ArgumentGrammar const& self) {
+
+      using namespace wrap;
+      using namespace classic;
+
+      // NOTE: allows for pointers to all types
+      // Slightly more permissive than before on basis/eigen type qualification
+      // Also, currently parses Point2*&, can't make it work otherwise :-(
+      argument_p = !str_p("const")[assign_a(self.result_.is_const, T)] //
+          >> self.argument_type_g //
+          >> !ch_p('*')[assign_a(self.result_.is_ptr, T)]
+          >> !ch_p('&')[assign_a(self.result_.is_ref, T)]
+          >> basic_rules<ScannerT>::name_p[assign_a(self.result_.name)];
+    }
+
+    Rule const& start() const {
+      return argument_p;
+    }
+
+  };
+};
+// ArgumentGrammar
+
+/* ************************************************************************* */
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
+
+  wrap::ArgumentList& result_; ///< successful parse will be placed in here
+
+  Argument arg0, arg;
+  ArgumentGrammar argument_g;
+
+  /// Construct type grammar and specify where result is placed
+  ArgumentListGrammar(wrap::ArgumentList& result) :
+      result_(result), argument_g(arg) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition: basic_rules<ScannerT> {
+
+    typedef classic::rule<ScannerT> Rule;
+
+    Rule argument_p, argumentList_p;
+
+    definition(ArgumentListGrammar const& self) {
+
+      using namespace wrap;
+      using namespace classic;
+
+      // NOTE: allows for pointers to all types
+      // Slightly more permissive than before on basis/eigen type qualification
+      argument_p = self.argument_g //
+          [push_back_a(self.result_, self.arg)] //
+//          [assign_a(self.arg, self.arg0)]
+          ;
+
+      argumentList_p = '(' >> !argument_p >> *(',' >> argument_p) >> ')';
+    }
+
+    Rule const& start() const {
+      return argumentList_p;
+    }
+
+  };
+};
+// ArgumentListGrammar
+
+/* ************************************************************************* */
+
+}// \namespace wrap
 
