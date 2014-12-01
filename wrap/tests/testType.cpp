@@ -83,6 +83,91 @@ TEST( Type, grammar ) {
   actual.clear();
 }
 
+/* ************************************************************************* */
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct TypeListGrammar: public classic::grammar<TypeListGrammar> {
+
+  typedef std::vector<wrap::Qualified> TypeList;
+  TypeList& result_; ///< successful parse will be placed in here
+
+  mutable wrap::Qualified type; // temporary type for use during parsing
+  TypeGrammar type_g;
+
+  /// Construct type grammar and specify where result is placed
+  TypeListGrammar(TypeList& result) :
+      result_(result), type_g(type) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition: basic_rules<ScannerT> {
+
+    typedef classic::rule<ScannerT> Rule;
+
+    Rule type_p, typeList_p;
+
+    definition(TypeListGrammar const& self) {
+      using namespace classic;
+      type_p = self.type_g //
+          [classic::push_back_a(self.result_, self.type)] //
+          [clear_a(self.type)];
+      typeList_p = '{' >> !type_p >> *(',' >> type_p) >> '}';
+    }
+
+    Rule const& start() const {
+      return typeList_p;
+    }
+
+  };
+};
+// TypeListGrammar
+
+//******************************************************************************
+TEST( TypeList, grammar ) {
+
+  using classic::space_p;
+
+  // Create type grammar that will place result in actual
+  vector<Qualified> actual;
+  TypeListGrammar g(actual);
+
+  EXPECT(parse("{gtsam::Point2}", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
+
+  EXPECT(parse("{}", g, space_p).full);
+  EXPECT_LONGS_EQUAL(0, actual.size());
+  actual.clear();
+
+  EXPECT(parse("{char}", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
+
+  EXPECT(parse("{unsigned char}", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
+
+  EXPECT(parse("{Vector, Matrix}", g, space_p).full);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  EXPECT(actual[0]==Qualified("Vector",Qualified::EIGEN));
+  EXPECT(actual[1]==Qualified("Matrix",Qualified::EIGEN));
+  actual.clear();
+
+  EXPECT(parse("{Point2}", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
+
+  EXPECT(parse("{Point2, Point3}", g, space_p).full);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  EXPECT(actual[0]==Qualified("Point2"));
+  EXPECT(actual[1]==Qualified("Point3"));
+  actual.clear();
+
+  EXPECT(parse("{gtsam::Point2}", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
+}
+
 //******************************************************************************
 int main() {
   TestResult tr;
