@@ -83,12 +83,12 @@ Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
 Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
     OptionalJacobian<6,6> H) {
   if (H) {
-    (*H).setZero();
+    H->setZero();
     for (int i = 0; i < 6; ++i) {
       Vector6 dxi;
       dxi.setZero();
       dxi(i) = 1.0;
-      Matrix GTi = adjointMap(dxi).transpose();
+      Matrix6 GTi = adjointMap(dxi).transpose();
       (*H).col(i) = GTi * y;
     }
   }
@@ -360,13 +360,13 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
 }
 
 // Compute SVD
-  Matrix U, V;
+  Matrix U,V;
   Vector S;
   svd(H, U, S, V);
 
   // Recover transform with correction from Eggert97machinevisionandapplications
-  Matrix UVtranspose = U * V.transpose();
-  Matrix detWeighting = eye(3, 3);
+  Matrix3 UVtranspose = U * V.transpose();
+  Matrix3 detWeighting = Eigen::Matrix3d::Identity();
   detWeighting(2, 2) = UVtranspose.determinant();
   Rot3 R(Matrix(V * detWeighting * U.transpose()));
   Point3 t = Point3(cq) - R * Point3(cp);

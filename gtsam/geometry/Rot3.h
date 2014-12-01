@@ -215,7 +215,7 @@ namespace gtsam {
     }
 
     /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
-    Rot3 inverse(boost::optional<Matrix&> H1=boost::none) const;
+    Rot3 inverse(boost::optional<Matrix3&> H1=boost::none) const;
 
     /// Compose two rotations i.e., R= (*this) * R2
     Rot3 compose(const Rot3& R2, OptionalJacobian<3, 3> H1 = boost::none,
@@ -238,8 +238,8 @@ namespace gtsam {
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
      */
     Rot3 between(const Rot3& R2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
+        OptionalJacobian<3,3> H1=boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const;
 
     /// @}
     /// @name Manifold
@@ -321,34 +321,27 @@ namespace gtsam {
     /**
      * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
      */
-    Point3 rotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    Point3 rotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
+        OptionalJacobian<3,3> H2 = boost::none) const;
 
     /// rotate point from rotated coordinate frame to world = R*p
     Point3 operator*(const Point3& p) const;
 
     /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-    Point3 unrotate(const Point3& p) const;
-
-    /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-    Point3 unrotate(const Point3& p, boost::optional<Matrix3&> H1,
-        boost::optional<Matrix3&> H2) const;
-
-    /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-    Point3 unrotate(const Point3& p, boost::optional<Matrix&> H1,
-        boost::optional<Matrix&> H2) const;
+    Point3 unrotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const;
 
     /// @}
     /// @name Group Action on Unit3
     /// @{
 
     /// rotate 3D direction from rotated coordinate frame to world frame
-    Unit3 rotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
-        boost::optional<Matrix&> Hp = boost::none) const;
+    Unit3 rotate(const Unit3& p, OptionalJacobian<2,3> HR = boost::none,
+        OptionalJacobian<2,2> Hp = boost::none) const;
 
     /// unrotate 3D direction from world frame to rotated coordinate frame
-    Unit3 unrotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
-        boost::optional<Matrix&> Hp = boost::none) const;
+    Unit3 unrotate(const Unit3& p, OptionalJacobian<2,3> HR = boost::none,
+        OptionalJacobian<2,2> Hp = boost::none) const;
 
     /// rotate 3D direction from rotated coordinate frame to world frame
     Unit3 operator*(const Unit3& p) const;

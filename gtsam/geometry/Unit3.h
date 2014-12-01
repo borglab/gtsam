@@ -32,8 +32,6 @@ class GTSAM_EXPORT Unit3{
 
 private:
 
-  typedef Eigen::Matrix<double,3,2> Matrix32;
-
   Point3 p_; ///< The location of the point on the unit sphere
   mutable boost::optional<Matrix32> B_; ///< Cached basis
 
@@ -90,10 +88,10 @@ public:
   const Matrix32& basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
-  Matrix skew() const;
+  Matrix3 skew() const;
 
   /// Return unit-norm Point3
-  const Point3& point3(boost::optional<Matrix&> H = boost::none) const {
+  const Point3& point3(OptionalJacobian<3,2> H = boost::none) const {
     if (H)
       *H = basis();
     return p_;

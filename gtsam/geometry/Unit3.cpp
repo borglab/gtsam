@@ -67,7 +67,7 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 /* ************************************************************************* */
-const Unit3::Matrix32& Unit3::basis() const {
+const Matrix32& Unit3::basis() const {
 
   // Return cached version if exists
   if (B_)
@@ -92,7 +92,7 @@ const Unit3::Matrix32& Unit3::basis() const {
   b2 = b2 / b2.norm();
 
   // Create the basis matrix
-  B_.reset(Unit3::Matrix32());
+  B_.reset(Matrix32());
   (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
   return *B_;
 }
@@ -104,7 +104,7 @@ void Unit3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-Matrix Unit3::skew() const {
+Matrix3 Unit3::skew() const {
   return skewSymmetric(p_.x(), p_.y(), p_.z());
 }
 

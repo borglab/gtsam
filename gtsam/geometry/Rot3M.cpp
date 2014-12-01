@@ -162,14 +162,14 @@ Matrix3 Rot3::transpose() const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
+Rot3 Rot3::inverse(boost::optional<Matrix3 &> H1) const {
   if (H1) *H1 = -rot_;
   return Rot3(Matrix3(transpose()));
 }
 
 /* ************************************************************************* */
 Rot3 Rot3::between (const Rot3& R2,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
   if (H1) *H1 = -(R2.transpose()*rot_);
   if (H2) *H2 = I3;
   Matrix3 R12 = transpose()*R2.rot_;
@@ -178,7 +178,7 @@ Rot3 Rot3::between (const Rot3& R2,
 
 /* ************************************************************************* */
 Point3 Rot3::rotate(const Point3& p,
-    boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
+    OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
   if (H1 || H2) {
       if (H1) *H1 = rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
       if (H2) *H2 = rot_;
@@ -245,7 +245,7 @@ Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
   } else if(mode == Rot3::CAYLEY) {
     return retractCayley(omega);
   } else if(mode == Rot3::SLOW_CAYLEY) {
-    Matrix Omega = skewSymmetric(omega);
+    Matrix3 Omega = skewSymmetric(omega);
     return (*this)*CayleyFixed<3>(-Omega/2);
   } else {
     assert(false);

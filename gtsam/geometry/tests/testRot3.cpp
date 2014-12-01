@@ -359,7 +359,7 @@ TEST( Rot3, inverse )
   Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
 
   Rot3 I;
-  Matrix actualH;
+  Matrix3 actualH;
   Rot3 actual = R.inverse(actualH);
   CHECK(assert_equal(I,R*actual));
   CHECK(assert_equal(I,actual*R));
