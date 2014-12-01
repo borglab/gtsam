@@ -9,6 +9,14 @@
 
  * -------------------------------------------------------------------------- */
 
+/**
+ *  @file   ConjugateGradientSolver.h
+ *  @brief  Implementation of Conjugate Gradient solver for a linear system
+ *  @author Sungtae An
+ *  @author ydjian
+ *  @date   Nov 6, 2014
+ **/
+
 #pragma once
 
 #include <gtsam/linear/IterativeSolver.h>
