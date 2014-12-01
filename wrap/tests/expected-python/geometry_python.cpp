@@ -64,19 +64,19 @@ class_<MyTemplatePoint2>("MyTemplatePoint2")
   .def("templatedMethod", &MyTemplatePoint2::templatedMethod);
 ;
 
-class_<MyTemplatePoint3>("MyTemplatePoint3")
-  .def("MyTemplatePoint3", &MyTemplatePoint3::MyTemplatePoint3);
-  .def("accept_T", &MyTemplatePoint3::accept_T);
-  .def("accept_Tptr", &MyTemplatePoint3::accept_Tptr);
-  .def("create_MixedPtrs", &MyTemplatePoint3::create_MixedPtrs);
-  .def("create_ptrs", &MyTemplatePoint3::create_ptrs);
-  .def("return_T", &MyTemplatePoint3::return_T);
-  .def("return_Tptr", &MyTemplatePoint3::return_Tptr);
-  .def("return_ptrs", &MyTemplatePoint3::return_ptrs);
-  .def("templatedMethod", &MyTemplatePoint3::templatedMethod);
-  .def("templatedMethod", &MyTemplatePoint3::templatedMethod);
-  .def("templatedMethod", &MyTemplatePoint3::templatedMethod);
-  .def("templatedMethod", &MyTemplatePoint3::templatedMethod);
+class_<MyTemplateMatrix>("MyTemplateMatrix")
+  .def("MyTemplateMatrix", &MyTemplateMatrix::MyTemplateMatrix);
+  .def("accept_T", &MyTemplateMatrix::accept_T);
+  .def("accept_Tptr", &MyTemplateMatrix::accept_Tptr);
+  .def("create_MixedPtrs", &MyTemplateMatrix::create_MixedPtrs);
+  .def("create_ptrs", &MyTemplateMatrix::create_ptrs);
+  .def("return_T", &MyTemplateMatrix::return_T);
+  .def("return_Tptr", &MyTemplateMatrix::return_Tptr);
+  .def("return_ptrs", &MyTemplateMatrix::return_ptrs);
+  .def("templatedMethod", &MyTemplateMatrix::templatedMethod);
+  .def("templatedMethod", &MyTemplateMatrix::templatedMethod);
+  .def("templatedMethod", &MyTemplateMatrix::templatedMethod);
+  .def("templatedMethod", &MyTemplateMatrix::templatedMethod);
 ;
 
 class_<MyFactorPosePoint2>("MyFactorPosePoint2")

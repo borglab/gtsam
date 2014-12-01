@@ -454,7 +454,7 @@ TEST( wrap, matlab_code_geometry ) {
   EXPECT(files_equal(epath + "Test.m"               , apath + "Test.m"               ));
   EXPECT(files_equal(epath + "MyBase.m"             , apath + "MyBase.m"             ));
   EXPECT(files_equal(epath + "MyTemplatePoint2.m"   , apath + "MyTemplatePoint2.m"   ));
-  EXPECT(files_equal(epath + "MyTemplatePoint3.m"   , apath + "MyTemplatePoint3.m"   ));
+  EXPECT(files_equal(epath + "MyTemplateMatrix.m"   , apath + "MyTemplateMatrix.m"   ));
   EXPECT(files_equal(epath + "MyFactorPosePoint2.m" , apath + "MyFactorPosePoint2.m"));
   EXPECT(files_equal(epath + "aGlobalFunction.m"    , apath + "aGlobalFunction.m"    ));
   EXPECT(files_equal(epath + "overloadedGlobalFunction.m"    , apath + "overloadedGlobalFunction.m"    ));
