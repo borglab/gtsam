@@ -35,6 +35,6 @@ EXPECT('at',values.atConstantBias(10).equals(imuBias.ConstantBias,tol));
 
 % special cases for Vector and Matrix:
 actualVector = values.atVector(11);
-EQUALITY('at',[1 2;3 4],actualVector,tol);
+EQUALITY('at',[1;2;3],actualVector,tol);
 actualMatrix = values.atMatrix(12);
 EQUALITY('at',[1 2;3 4],actualMatrix,tol);
