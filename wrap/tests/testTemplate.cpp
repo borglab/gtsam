@@ -32,20 +32,33 @@ TEST( Template, grammar ) {
   TemplateGrammar g(actual);
 
   EXPECT(parse("template<T = {gtsam::Point2, Matrix}>", g, space_p).full);
-  EXPECT_LONGS_EQUAL(2, actual.argValues.size());
-  EXPECT(actual.argName=="T");
-  EXPECT(actual.argValues[0]==Qualified("gtsam","Point2",Qualified::CLASS));
-  EXPECT(actual.argValues[1]==Qualified("Matrix",Qualified::EIGEN));
+  EXPECT_LONGS_EQUAL(2, actual.nrValues());
+  EXPECT(actual.argName()=="T");
+  EXPECT(actual[0]==Qualified("gtsam","Point2",Qualified::CLASS));
+  EXPECT(actual[1]==Qualified("Matrix",Qualified::EIGEN));
   actual.clear();
 
-  EXPECT(parse("template<ARG = {gtsam::Point2, gtsam::Point3, Vector, Matrix}>", g, space_p).full);
-  EXPECT_LONGS_EQUAL(4, actual.argValues.size());
-  EXPECT(actual.argName=="ARG");
-  EXPECT(actual.argValues[0]==Qualified("gtsam","Point2",Qualified::CLASS));
-  EXPECT(actual.argValues[1]==Qualified("gtsam","Point3",Qualified::CLASS));
-  EXPECT(actual.argValues[2]==Qualified("Vector",Qualified::EIGEN));
-  EXPECT(actual.argValues[3]==Qualified("Matrix",Qualified::EIGEN));
+  EXPECT(
+      parse("template<ARG = {gtsam::Point2, gtsam::Point3, Vector, Matrix}>", g, space_p).full);
+  EXPECT_LONGS_EQUAL(4, actual.nrValues());
+  EXPECT(actual.argName()=="ARG");
+  EXPECT(actual[0]==Qualified("gtsam","Point2",Qualified::CLASS));
+  EXPECT(actual[1]==Qualified("gtsam","Point3",Qualified::CLASS));
+  EXPECT(actual[2]==Qualified("Vector",Qualified::EIGEN));
+  EXPECT(actual[3]==Qualified("Matrix",Qualified::EIGEN));
   actual.clear();
+}
+
+//******************************************************************************
+TEST( Template, CreateTemplate ) {
+  boost::optional<Template> actual = //
+      CreateTemplate("template<T = {gtsam::Point2, Matrix}>");
+  CHECK(actual);
+  // aborts if not true
+  EXPECT_LONGS_EQUAL(2, actual->nrValues());
+  EXPECT(actual->argName()=="T");
+  EXPECT((*actual)[0]==Qualified("gtsam","Point2",Qualified::CLASS));
+  EXPECT((*actual)[1]==Qualified("Matrix",Qualified::EIGEN));
 }
 
 //******************************************************************************

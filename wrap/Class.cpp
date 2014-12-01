@@ -319,11 +319,11 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
     const ArgumentList& argumentList, const ReturnValue& returnValue,
     const Template& tmplate) {
   // Check if templated
-  if (!tmplate.argName.empty() && tmplate.argValues.size() > 0) {
+  if (tmplate.valid()) {
     // Create method to expand
     // For all values of the template argument, create a new method
-    BOOST_FOREACH(const Qualified& instName, tmplate.argValues) {
-      const TemplateSubstitution ts(tmplate.argName, instName, *this);
+    BOOST_FOREACH(const Qualified& instName, tmplate.argValues()) {
+      const TemplateSubstitution ts(tmplate.argName(), instName, *this);
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
       // do the same for return type

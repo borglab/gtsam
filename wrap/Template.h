@@ -23,13 +23,34 @@
 namespace wrap {
 
 /// The template specification that goes before a method or a class
-struct Template {
-  std::string argName;
-  std::vector<Qualified> argValues;
-  void clear() {
-    argName.clear();
-    argValues.clear();
+class Template {
+  std::string argName_;
+  std::vector<Qualified> argValues_;
+  friend struct TemplateGrammar;
+public:
+  /// The only way to get values into a Template is via our friendly Grammar
+  Template() {
   }
+  void clear() {
+    argName_.clear();
+    argValues_.clear();
+  }
+  const std::string& argName() const {
+    return argName_;
+  }
+  const std::vector<Qualified>& argValues() const {
+    return argValues_;
+  }
+  size_t nrValues() const {
+    return argValues_.size();
+  }
+  const Qualified& operator[](size_t i) const {
+    return argValues_[i];
+  }
+  bool valid() const {
+    return !argName_.empty() && argValues_.size() > 0;
+  }
+
 };
 
 /* ************************************************************************* */
@@ -41,7 +62,7 @@ struct TemplateGrammar: public classic::grammar<TemplateGrammar> {
 
   /// Construct type grammar and specify where result is placed
   TemplateGrammar(Template& result) :
-      result_(result), argValues_g(result.argValues) {
+      result_(result), argValues_g(result.argValues_) {
   }
 
   /// Definition of type grammar
@@ -51,9 +72,10 @@ struct TemplateGrammar: public classic::grammar<TemplateGrammar> {
     classic::rule<ScannerT> templateArgValues_p;
 
     definition(TemplateGrammar const& self) {
-      using namespace classic;
+      using classic::str_p;
+      using classic::assign_a;
       templateArgValues_p = (str_p("template") >> '<'
-          >> (BasicRules<ScannerT>::name_p)[assign_a(self.result_.argName)]
+          >> (BasicRules<ScannerT>::name_p)[assign_a(self.result_.argName_)]
           >> '=' >> self.argValues_g >> '>');
     }
 
@@ -65,5 +87,16 @@ struct TemplateGrammar: public classic::grammar<TemplateGrammar> {
 };
 // TemplateGrammar
 
-}// \namespace wrap
+/// Cool initializer for tests
+static inline boost::optional<Template> CreateTemplate(const std::string& s) {
+  Template result;
+  TemplateGrammar g(result);
+  bool success = parse(s.c_str(), g, classic::space_p).full;
+  if (success)
+    return result;
+  else
+    return boost::none;
+}
+
+} // \namespace wrap
 

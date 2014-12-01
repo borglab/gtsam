@@ -200,7 +200,7 @@ void Module::parseMarkup(const std::string& data) {
   Rule class_p = 
       eps_p[assign_a(cls,cls0)]
       >> (!(classTemplate_g
-          [push_back_a(cls.templateArgs, classTemplate.argName)]
+          [push_back_a(cls.templateArgs, classTemplate.argName())]
           | templateList_p)
       >> !(str_p("virtual")[assign_a(cls.isVirtual, true)]) 
       >> str_p("class") 
@@ -216,7 +216,7 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(cls.namespaces_, namespaces)]
       [assign_a(cls.deconstructor.name,cls.name_)]
       [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
-          bl::var(classTemplate.argValues))]
+          bl::var(classTemplate.argValues()))]
       [clear_a(classTemplate)]
       [assign_a(constructor, constructor0)] 
       [assign_a(cls,cls0)];
