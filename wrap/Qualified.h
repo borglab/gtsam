@@ -18,14 +18,7 @@
 
 #pragma once
 
-#include <boost/spirit/include/classic_core.hpp>
-#include <boost/spirit/include/classic_push_back_actor.hpp>
-#include <boost/spirit/include/classic_clear_actor.hpp>
-#include <boost/spirit/include/classic_assign_actor.hpp>
-#include <boost/spirit/include/classic_confix.hpp>
-
-namespace classic = BOOST_SPIRIT_CLASSIC_NS;
-
+#include <wrap/spirit.h>
 #include <string>
 #include <vector>
 
@@ -162,41 +155,6 @@ public:
 };
 
 /* ************************************************************************* */
-/// Som basic rules used by all parsers
-template<typename ScannerT>
-struct basic_rules {
-
-  typedef classic::rule<ScannerT> Rule;
-
-  Rule comments_p, basisType_p, eigenType_p, keywords_p, stlType_p, name_p,
-      className_p, namespace_p;
-
-  basic_rules() {
-
-    using namespace classic;
-
-    comments_p = comment_p("/*", "*/") | comment_p("//", eol_p);
-
-    basisType_p = (str_p("string") | "bool" | "size_t" | "int" | "double"
-        | "char" | "unsigned char");
-
-    eigenType_p = (str_p("Vector") | "Matrix");
-
-    keywords_p =
-        (str_p("const") | "static" | "namespace" | "void" | basisType_p);
-
-    stlType_p = (str_p("vector") | "list");
-
-    name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
-
-    className_p = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p
-        - keywords_p) | stlType_p;
-
-    namespace_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
-  }
-};
-
-/* ************************************************************************* */
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
 class TypeGrammar: public classic::grammar<TypeGrammar> {
 
@@ -284,7 +242,7 @@ struct TypeListGrammar: public classic::grammar<TypeListGrammar> {
     definition(TypeListGrammar const& self) {
       using namespace classic;
       type_p = self.type_g //
-          [classic::push_back_a(self.result_, self.type)] //
+          [push_back_a(self.result_, self.type)] //
           [clear_a(self.type)];
       typeList_p = '{' >> !type_p >> *(',' >> type_p) >> '}';
     }

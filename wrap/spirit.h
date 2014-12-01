@@ -1,16 +1,20 @@
 /**
  * @file spirit_actors.h
  *
- * @brief Additional actors for the wrap parser
+ * @brief Additional utilities and actors for the wrap parser
  *
  * @date Dec 8, 2011
  * @author Alex Cunningham
+ * @author Frank Dellaert
  */
 
 #pragma once
 
 #include <boost/spirit/include/classic_core.hpp>
-#include <boost/spirit/include/classic_ref_actor.hpp>
+#include <boost/spirit/include/classic_push_back_actor.hpp>
+#include <boost/spirit/include/classic_clear_actor.hpp>
+#include <boost/spirit/include/classic_assign_actor.hpp>
+#include <boost/spirit/include/classic_confix.hpp>
 
 namespace boost {
 namespace spirit {
@@ -120,4 +124,41 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_END
 
 }
 }
+
+namespace classic = BOOST_SPIRIT_CLASSIC_NS;
+
+/// Some basic rules used by all parsers
+template<typename ScannerT>
+struct basic_rules {
+
+  typedef BOOST_SPIRIT_CLASSIC_NS::rule<ScannerT> Rule;
+
+  Rule comments_p, basisType_p, eigenType_p, keywords_p, stlType_p, name_p,
+      className_p, namespace_p;
+
+  basic_rules() {
+
+    using namespace BOOST_SPIRIT_CLASSIC_NS;
+
+    comments_p = comment_p("/*", "*/") | comment_p("//", eol_p);
+
+    basisType_p = (str_p("string") | "bool" | "size_t" | "int" | "double"
+        | "char" | "unsigned char");
+
+    eigenType_p = (str_p("Vector") | "Matrix");
+
+    keywords_p =
+        (str_p("const") | "static" | "namespace" | "void" | basisType_p);
+
+    stlType_p = (str_p("vector") | "list");
+
+    name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
+
+    className_p = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p
+        - keywords_p) | stlType_p;
+
+    namespace_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
+  }
+};
+
 

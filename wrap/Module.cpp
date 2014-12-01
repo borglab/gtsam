@@ -23,7 +23,7 @@
 #include "utilities.h"
 
 //#define BOOST_SPIRIT_DEBUG
-#include "spirit_actors.h" 
+#include "spirit.h"
  
 #ifdef __GNUC__
 #pragma GCC diagnostic push
