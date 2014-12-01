@@ -108,6 +108,7 @@ public:
   }
 
   /// TODO: operator->()
+  Eigen::Map<Fixed>* operator->(){ return &map_; }
 };
 
 } // namespace gtsam
