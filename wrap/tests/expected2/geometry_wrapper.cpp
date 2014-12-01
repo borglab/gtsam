@@ -685,20 +685,22 @@ void MyTemplatePoint2_templatedMethod_55(int nargout, mxArray *out[], int nargin
 
 void MyTemplatePoint2_templatedMethod_56(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
+  typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("templatedMethodPoint2",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
-  out[0] = wrap< gtsam::Point2 >(obj->templatedMethod<gtsam::Point2>(t));
+  out[0] = wrap_shared_ptr(SharedPoint2(new gtsam::Point2(obj->templatedMethod<gtsam::Point2>(t))),"gtsam.Point2", false);
 }
 
 void MyTemplatePoint2_templatedMethod_57(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
+  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("templatedMethodPoint3",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   gtsam::Point3& t = *unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  out[0] = wrap< gtsam::Point3 >(obj->templatedMethod<gtsam::Point3>(t));
+  out[0] = wrap_shared_ptr(SharedPoint3(new gtsam::Point3(obj->templatedMethod<gtsam::Point3>(t))),"gtsam.Point3", false);
 }
 
 void MyTemplatePoint2_templatedMethod_58(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -847,20 +849,22 @@ void MyTemplatePoint3_templatedMethod_70(int nargout, mxArray *out[], int nargin
 
 void MyTemplatePoint3_templatedMethod_71(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
+  typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
   checkArguments("templatedMethodPoint2",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
   gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
-  out[0] = wrap< gtsam::Point2 >(obj->templatedMethod<gtsam::Point2>(t));
+  out[0] = wrap_shared_ptr(SharedPoint2(new gtsam::Point2(obj->templatedMethod<gtsam::Point2>(t))),"gtsam.Point2", false);
 }
 
 void MyTemplatePoint3_templatedMethod_72(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
+  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
   typedef boost::shared_ptr<MyTemplatePoint3> Shared;
   checkArguments("templatedMethodPoint3",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
   gtsam::Point3& t = *unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  out[0] = wrap< gtsam::Point3 >(obj->templatedMethod<gtsam::Point3>(t));
+  out[0] = wrap_shared_ptr(SharedPoint3(new gtsam::Point3(obj->templatedMethod<gtsam::Point3>(t))),"gtsam.Point3", false);
 }
 
 void MyTemplatePoint3_templatedMethod_73(int nargout, mxArray *out[], int nargin, const mxArray *in[])

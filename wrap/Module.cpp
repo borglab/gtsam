@@ -119,7 +119,6 @@ void Module::parseMarkup(const std::string& data) {
   vector<Qualified> templateArgValues;
   TypeGrammar templateArgValue_g(templateArgValue);
   Rule templateArgValue_p = templateArgValue_g
-    [assign_a(templateArgValue.category, Qualified::VOID)] // TODO: why ?
     [push_back_a(templateArgValues, templateArgValue)]
     [clear_a(templateArgValue)];
  
