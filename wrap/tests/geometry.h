@@ -101,7 +101,7 @@ virtual class MyBase {
 };
 
 // A templated class
-template<T = {gtsam::Point2, gtsam::Point3}>
+template<T = {gtsam::Point2, Matrix}>
 virtual class MyTemplate : MyBase {
   MyTemplate();
 

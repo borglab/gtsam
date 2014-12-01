@@ -46,10 +46,10 @@ void ReturnType::wrap_result(const string& out, const string& result,
   } else if (isPtr) {
 
     // Handle shared pointer case for BASIS/EIGEN/VOID
-    wrapperFile.oss << "{\n  Shared" << name() << "* ret = new Shared" << name()
+    wrapperFile.oss << "  {\n  Shared" << name() << "* ret = new Shared" << name()
         << "(" << result << ");" << endl;
     wrapperFile.oss << out << " = wrap_shared_ptr(ret,\"" << matlabType
-        << "\");\n}\n";
+        << "\");\n  }\n";
 
   } else if (matlabType != "void")
 
