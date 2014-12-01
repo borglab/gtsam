@@ -75,7 +75,7 @@ public:
   Pose2(const Rot2& r, const Point2& t) : r_(r), t_(t) {}
 
   /** Constructor from 3*3 matrix */
-  Pose2(const Matrix &T) : // TODO : Change this to Optional Jacobian ??
+  Pose2(const Matrix &T) :
     r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) {
     assert(T.rows() == 3 && T.cols() == 3);
   }
@@ -169,12 +169,10 @@ public:
    * @return xihat, 3*3 element of Lie algebra that can be exponentiated
    */
   static inline Matrix3 wedge(double vx, double vy, double w) {
-     Matrix3 wedge_;
-     wedge_ <<
+     return (Matrix(3,3) <<
         0.,-w,  vx,
         w,  0., vy,
-        0., 0.,  0.;
-      return wedge_;
+        0., 0.,  0.).finished();
   }
 
   /// @}
@@ -289,7 +287,7 @@ private:
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */
 template <>
-inline Matrix wedge<Pose2>(const Vector& xi) { // TODO : Convert to Optional Jacobian ?
+inline Matrix wedge<Pose2>(const Vector& xi) {
   return Pose2::wedge(xi(0),xi(1),xi(2));
 }
 

@@ -32,8 +32,7 @@ INSTANTIATE_LIE(Pose3);
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3);
 
-static const Matrix3 I3 = eye(3), Z3 = zeros(3, 3), _I3 = -I3;
-static const Matrix6 I6 = eye(6);
+static const Matrix3 I3 = Eigen::Matrix3d::Identity(), Z3 = Eigen::Matrix3d::Zero(), _I3 = -I3;
 
 /* ************************************************************************* */
 Pose3::Pose3(const Pose2& pose2) :
@@ -55,7 +54,7 @@ Matrix6 Pose3::AdjointMap() const {
 }
 
 /* ************************************************************************* */
-Matrix6 Pose3::adjointMap(const Vector& xi) {
+Matrix6 Pose3::adjointMap(const Vector6& xi) {
   Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
   Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
   Matrix6 adj;
@@ -65,14 +64,15 @@ Matrix6 Pose3::adjointMap(const Vector& xi) {
 }
 
 /* ************************************************************************* */
-Vector Pose3::adjoint(const Vector& xi, const Vector& y,
-    boost::optional<Matrix&> H) {
+Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
+    OptionalJacobian<6,6> H) {
   if (H) {
-    *H = zeros(6, 6);
+    (*H).setZero();
     for (int i = 0; i < 6; ++i) {
-      Vector dxi = zero(6);
+      Vector6 dxi;
+      dxi.setZero();
       dxi(i) = 1.0;
-      Matrix Gi = adjointMap(dxi);
+      Matrix6 Gi = adjointMap(dxi);
       (*H).col(i) = Gi * y;
     }
   }
@@ -80,29 +80,31 @@ Vector Pose3::adjoint(const Vector& xi, const Vector& y,
 }
 
 /* ************************************************************************* */
-Vector Pose3::adjointTranspose(const Vector& xi, const Vector& y,
-    boost::optional<Matrix&> H) {
+Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
+    OptionalJacobian<6,6> H) {
   if (H) {
-    *H = zeros(6, 6);
+    (*H).setZero();
     for (int i = 0; i < 6; ++i) {
-      Vector dxi = zero(6);
+      Vector6 dxi;
+      dxi.setZero();
       dxi(i) = 1.0;
       Matrix GTi = adjointMap(dxi).transpose();
       (*H).col(i) = GTi * y;
     }
   }
-  Matrix adjT = adjointMap(xi).transpose();
   return adjointMap(xi).transpose() * y;
 }
 
 /* ************************************************************************* */
-Matrix6 Pose3::dExpInv_exp(const Vector& xi) {
+Matrix6 Pose3::dExpInv_exp(const Vector6& xi) {
   // Bernoulli numbers, from Wikipedia
   static const Vector B = (Vector(9) << 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
       0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
   static const int N = 5; // order of approximation
-  Matrix res = I6;
-  Matrix6 ad_i = I6;
+  Matrix6 res;
+  res.setIdentity();
+  Matrix6 ad_i;
+  ad_i.setIdentity();
   Matrix6 ad_xi = adjointMap(xi);
   double fac = 1.0;
   for (int i = 1; i < N; ++i) {
@@ -225,7 +227,7 @@ Vector6 Pose3::localCoordinates(const Pose3& T,
 Matrix4 Pose3::matrix() const {
   const Matrix3 R = R_.matrix();
   const Vector3 T = t_.vector();
-  Eigen::Matrix<double, 1, 4> A14;
+  Matrix14 A14;
   A14 << 0.0, 0.0, 0.0, 1.0;
   Matrix4 mat;
   mat << R, T, A14;
@@ -240,12 +242,11 @@ Pose3 Pose3::transform_to(const Pose3& pose) const {
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transform_from(const Point3& p, boost::optional<Matrix&> Dpose,
-    boost::optional<Matrix&> Dpoint) const {
+Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
+    OptionalJacobian<3,3> Dpoint) const {
   if (Dpose) {
     const Matrix3 R = R_.matrix();
     Matrix3 DR = R * skewSymmetric(-p.x(), -p.y(), -p.z());
-    Dpose->resize(3, 6);
     (*Dpose) << DR, R;
   }
   if (Dpoint)
@@ -273,17 +274,17 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::compose(const Pose3& p2, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+Pose3 Pose3::compose(const Pose3& p2, OptionalJacobian<6,6> H1,
+    OptionalJacobian<6,6> H2) const {
   if (H1)
     *H1 = p2.inverse().AdjointMap();
   if (H2)
-    *H2 = I6;
+    (*H2).setIdentity();
   return (*this) * p2;
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
+Pose3 Pose3::inverse(OptionalJacobian<6,6> H1) const {
   if (H1)
     *H1 = -AdjointMap();
   Rot3 Rt = R_.inverse();
@@ -292,40 +293,44 @@ Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
 
 /* ************************************************************************* */
 // between = compose(p2,inverse(p1));
-Pose3 Pose3::between(const Pose3& p2, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+Pose3 Pose3::between(const Pose3& p2, OptionalJacobian<6,6> H1,
+    OptionalJacobian<6,6> H2) const {
   Pose3 result = inverse() * p2;
   if (H1)
     *H1 = -result.inverse().AdjointMap();
   if (H2)
-    *H2 = I6;
+    (*H2).setIdentity();
   return result;
 }
 
 /* ************************************************************************* */
-double Pose3::range(const Point3& point, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+double Pose3::range(const Point3& point, OptionalJacobian<1,6> H1,
+    OptionalJacobian<1,3> H2) const {
   if (!H1 && !H2)
     return transform_to(point).norm();
-  Point3 d = transform_to(point, H1, H2);
+  Matrix36 D1;
+  Matrix3 D2;
+  Point3 d = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0);
   double x = d.x(), y = d.y(), z = d.z(), d2 = x * x + y * y + z * z, n = sqrt(
       d2);
-  Matrix D_result_d = (Matrix(1, 3) << x / n, y / n, z / n).finished();
+  Matrix13 D_result_d ;
+  D_result_d << x / n, y / n, z / n;
   if (H1)
-    *H1 = D_result_d * (*H1);
+    *H1 = D_result_d * (D1);
   if (H2)
-    *H2 = D_result_d * (*H2);
+    *H2 = D_result_d * (D2);
   return n;
 }
 
 /* ************************************************************************* */
-double Pose3::range(const Pose3& point, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
-  double r = range(point.translation(), H1, H2);
+double Pose3::range(const Pose3& pose, OptionalJacobian<1,6> H1,
+    OptionalJacobian<1,6> H2) const {
+  Matrix13 D2;
+  double r = range(pose.translation(), H1, H2? &D2 : 0);
   if (H2) {
-    Matrix H2_ = *H2 * point.rotation().matrix();
-    *H2 = zeros(1, 6);
-    insertSub(*H2, H2_, 0, 3);
+    Matrix13 H2_ = D2 * pose.rotation().matrix();
+    (*H2).setZero();
+    (*H2).block<1,3>(0,3) = H2_;
   }
   return r;
 }
@@ -347,7 +352,7 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
   cq *= f;
 
   // Add to form H matrix
-  Matrix H = zeros(3, 3);
+  Matrix3 H = Eigen::Matrix3d::Zero();
   BOOST_FOREACH(const Point3Pair& pair, pairs){
   Vector dp = pair.first.vector() - cp;
   Vector dq = pair.second.vector() - cq;

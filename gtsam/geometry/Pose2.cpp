@@ -45,7 +45,7 @@ Matrix3 Pose2::matrix() const {
   Matrix31 T;
   T <<  t_.x(), t_.y(), 1.0;
   Matrix3 RT_;
-  RT_.block<3,2<(0,0) = R0;
+  RT_.block<3,2>(0,0) = R0;
   RT_.block<3,1>(0,2) = T;
   return RT_;
 }
