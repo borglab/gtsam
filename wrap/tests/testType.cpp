@@ -83,45 +83,6 @@ TEST( Type, grammar ) {
   actual.clear();
 }
 
-/* ************************************************************************* */
-// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-struct TypeListGrammar: public classic::grammar<TypeListGrammar> {
-
-  typedef std::vector<wrap::Qualified> TypeList;
-  TypeList& result_; ///< successful parse will be placed in here
-
-  mutable wrap::Qualified type; // temporary type for use during parsing
-  TypeGrammar type_g;
-
-  /// Construct type grammar and specify where result is placed
-  TypeListGrammar(TypeList& result) :
-      result_(result), type_g(type) {
-  }
-
-  /// Definition of type grammar
-  template<typename ScannerT>
-  struct definition: basic_rules<ScannerT> {
-
-    typedef classic::rule<ScannerT> Rule;
-
-    Rule type_p, typeList_p;
-
-    definition(TypeListGrammar const& self) {
-      using namespace classic;
-      type_p = self.type_g //
-          [classic::push_back_a(self.result_, self.type)] //
-          [clear_a(self.type)];
-      typeList_p = '{' >> !type_p >> *(',' >> type_p) >> '}';
-    }
-
-    Rule const& start() const {
-      return typeList_p;
-    }
-
-  };
-};
-// TypeListGrammar
-
 //******************************************************************************
 TEST( TypeList, grammar ) {
 
