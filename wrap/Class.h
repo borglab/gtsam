@@ -27,6 +27,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <boost/optional.hpp>
 
 #include <string>
 #include <map>
@@ -36,15 +37,19 @@ namespace wrap {
 /// Class has name, constructors, methods
 class Class: public Qualified {
 
+public:
   typedef const std::string& Str;
-
   typedef std::map<std::string, Method> Methods;
+  typedef std::map<std::string, StaticMethod> StaticMethods;
+
+private:
+
+  boost::optional<Qualified> parentClass; ///< The *single* parent
   Methods methods_; ///< Class methods
+  Method& mutableMethod(Str key);
 
 public:
 
-
-  typedef std::map<std::string, StaticMethod> StaticMethods;
   StaticMethods static_methods; ///< Static methods
 
   // Then the instance variables are set directly by the Module constructor
@@ -53,22 +58,25 @@ public:
   bool isVirtual; ///< Whether the class is part of a virtual inheritance chain
   bool isSerializable; ///< Whether we can use boost.serialization to serialize the class - creates exports
   bool hasSerialization; ///< Whether we should create the serialization functions
-  Qualified qualifiedParent; ///< The *single* parent
   Constructor constructor; ///< Class constructors
   Deconstructor deconstructor; ///< Deconstructor to deallocate C++ object
   bool verbose_; ///< verbose flag
 
   /// Constructor creates an empty class
   Class(bool verbose = true) :
-      isVirtual(false), isSerializable(false), hasSerialization(false), deconstructor(
-          verbose), verbose_(verbose) {
+      parentClass(boost::none), isVirtual(false), isSerializable(false), hasSerialization(
+          false), deconstructor(verbose), verbose_(verbose) {
   }
+
+  void assignParent(const Qualified& parent);
+
+  boost::optional<std::string> qualifiedParent() const;
 
   size_t nrMethods() const {
     return methods_.size();
   }
 
-  Method& method(Str key);
+  const Method& method(Str key) const;
 
   bool exists(Str name) const {
     return methods_.find(name) != methods_.end();

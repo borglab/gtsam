@@ -73,6 +73,10 @@ public:
     namespaces_.push_back(ns1);
   }
 
+  Qualified(std::vector<std::string> ns, const std::string& name) :
+      namespaces_(ns), name_(name), category(CLASS) {
+  }
+
   std::string name() const {
     return name_;
   }
@@ -111,6 +115,26 @@ public:
     name_.clear();
     category = VOID;
   }
+
+public:
+
+  static Qualified MakeClass(std::vector<std::string> namespaces,
+      const std::string& name) {
+    return Qualified(namespaces, name);
+  }
+
+  static Qualified MakeEigen(const std::string& name) {
+    return Qualified(name, EIGEN);
+  }
+
+  static Qualified MakeBasis(const std::string& name) {
+    return Qualified(name, BASIS);
+  }
+
+  static Qualified MakeVoid() {
+    return Qualified("void", VOID);
+  }
+
 
   /// Return a qualified string using given delimiter
   std::string qualifiedName(const std::string& delimiter = "") const {

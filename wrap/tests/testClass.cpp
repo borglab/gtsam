@@ -45,7 +45,7 @@ TEST( Class, OverloadingMethod ) {
       templateArgValues);
   EXPECT_LONGS_EQUAL(1, cls.nrMethods());
   EXPECT(cls.exists(name));
-  Method& method = cls.method(name);
+  Method method = cls.method(name);
   EXPECT_LONGS_EQUAL(1, method.nrOverloads());
 
   cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,

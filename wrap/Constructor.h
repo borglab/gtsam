@@ -19,7 +19,7 @@
 #pragma once
 
 #include "OverloadedFunction.h"
-
+#include <boost/optional.hpp>
 #include <string>
 #include <vector>
 
@@ -68,7 +68,7 @@ struct Constructor: public OverloadedFunction {
 
   /// cpp wrapper
   std::string wrapper_fragment(FileWriter& file, Str cppClassName,
-      Str matlabUniqueName, Str cppBaseClassName, int id,
+      Str matlabUniqueName, boost::optional<std::string> cppBaseClassName, int id,
       const ArgumentList& al) const;
 
   /// constructor function

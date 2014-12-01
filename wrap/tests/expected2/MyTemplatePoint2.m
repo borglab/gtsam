@@ -12,10 +12,10 @@
 %return_T(Point2 value) : returns gtsam::Point2
 %return_Tptr(Point2 value) : returns gtsam::Point2
 %return_ptrs(Point2 p1, Point2 p2) : returns pair< gtsam::Point2, gtsam::Point2 >
-%templatedMethodMatrix(Matrix t) : returns void
-%templatedMethodPoint2(Point2 t) : returns void
-%templatedMethodPoint3(Point3 t) : returns void
-%templatedMethodVector(Vector t) : returns void
+%templatedMethodMatrix(Matrix t) : returns Matrix
+%templatedMethodPoint2(Point2 t) : returns gtsam::Point2
+%templatedMethodPoint3(Point3 t) : returns gtsam::Point3
+%templatedMethodVector(Vector t) : returns Vector
 %
 classdef MyTemplatePoint2 < MyBase
   properties
@@ -110,7 +110,7 @@ classdef MyTemplatePoint2 < MyBase
     end
 
     function varargout = templatedMethodMatrix(this, varargin)
-      % TEMPLATEDMETHODMATRIX usage: templatedMethodMatrix(Matrix t) : returns void
+      % TEMPLATEDMETHODMATRIX usage: templatedMethodMatrix(Matrix t) : returns Matrix
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'double')
         geometry_wrapper(55, this, varargin{:});
@@ -120,7 +120,7 @@ classdef MyTemplatePoint2 < MyBase
     end
 
     function varargout = templatedMethodPoint2(this, varargin)
-      % TEMPLATEDMETHODPOINT2 usage: templatedMethodPoint2(Point2 t) : returns void
+      % TEMPLATEDMETHODPOINT2 usage: templatedMethodPoint2(Point2 t) : returns gtsam::Point2
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point2')
         geometry_wrapper(56, this, varargin{:});
@@ -130,7 +130,7 @@ classdef MyTemplatePoint2 < MyBase
     end
 
     function varargout = templatedMethodPoint3(this, varargin)
-      % TEMPLATEDMETHODPOINT3 usage: templatedMethodPoint3(Point3 t) : returns void
+      % TEMPLATEDMETHODPOINT3 usage: templatedMethodPoint3(Point3 t) : returns gtsam::Point3
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'gtsam.Point3')
         geometry_wrapper(57, this, varargin{:});
@@ -140,7 +140,7 @@ classdef MyTemplatePoint2 < MyBase
     end
 
     function varargout = templatedMethodVector(this, varargin)
-      % TEMPLATEDMETHODVECTOR usage: templatedMethodVector(Vector t) : returns void
+      % TEMPLATEDMETHODVECTOR usage: templatedMethodVector(Vector t) : returns Vector
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},2)==1
         geometry_wrapper(58, this, varargin{:});

@@ -678,7 +678,7 @@ void MyTemplatePoint2_templatedMethod_55(int nargout, mxArray *out[], int nargin
   checkArguments("templatedMethodMatrix",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   Matrix& t = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
-  obj->templatedMethod<Matrix>(t);
+  out[0] = wrap< Matrix >(obj->templatedMethod<Matrix>(t));
 }
 
 void MyTemplatePoint2_templatedMethod_56(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -687,7 +687,7 @@ void MyTemplatePoint2_templatedMethod_56(int nargout, mxArray *out[], int nargin
   checkArguments("templatedMethodPoint2",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
-  obj->templatedMethod<gtsam::Point2>(t);
+  out[0] = wrap< gtsam::Point2 >(obj->templatedMethod<gtsam::Point2>(t));
 }
 
 void MyTemplatePoint2_templatedMethod_57(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -696,7 +696,7 @@ void MyTemplatePoint2_templatedMethod_57(int nargout, mxArray *out[], int nargin
   checkArguments("templatedMethodPoint3",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   gtsam::Point3& t = *unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  obj->templatedMethod<gtsam::Point3>(t);
+  out[0] = wrap< gtsam::Point3 >(obj->templatedMethod<gtsam::Point3>(t));
 }
 
 void MyTemplatePoint2_templatedMethod_58(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -705,7 +705,7 @@ void MyTemplatePoint2_templatedMethod_58(int nargout, mxArray *out[], int nargin
   checkArguments("templatedMethodVector",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
   Vector& t = *unwrap_shared_ptr< Vector >(in[1], "ptr_Vector");
-  obj->templatedMethod<Vector>(t);
+  out[0] = wrap< Vector >(obj->templatedMethod<Vector>(t));
 }
 
 void MyTemplatePoint3_collectorInsertAndMakeBase_59(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -838,7 +838,7 @@ void MyTemplatePoint3_templatedMethod_70(int nargout, mxArray *out[], int nargin
   checkArguments("templatedMethodMatrix",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
   Matrix& t = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
-  obj->templatedMethod<Matrix>(t);
+  out[0] = wrap< Matrix >(obj->templatedMethod<Matrix>(t));
 }
 
 void MyTemplatePoint3_templatedMethod_71(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -847,7 +847,7 @@ void MyTemplatePoint3_templatedMethod_71(int nargout, mxArray *out[], int nargin
   checkArguments("templatedMethodPoint2",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
   gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
-  obj->templatedMethod<gtsam::Point2>(t);
+  out[0] = wrap< gtsam::Point2 >(obj->templatedMethod<gtsam::Point2>(t));
 }
 
 void MyTemplatePoint3_templatedMethod_72(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -856,7 +856,7 @@ void MyTemplatePoint3_templatedMethod_72(int nargout, mxArray *out[], int nargin
   checkArguments("templatedMethodPoint3",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
   gtsam::Point3& t = *unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  obj->templatedMethod<gtsam::Point3>(t);
+  out[0] = wrap< gtsam::Point3 >(obj->templatedMethod<gtsam::Point3>(t));
 }
 
 void MyTemplatePoint3_templatedMethod_73(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -865,7 +865,7 @@ void MyTemplatePoint3_templatedMethod_73(int nargout, mxArray *out[], int nargin
   checkArguments("templatedMethodVector",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
   Vector& t = *unwrap_shared_ptr< Vector >(in[1], "ptr_Vector");
-  obj->templatedMethod<Vector>(t);
+  out[0] = wrap< Vector >(obj->templatedMethod<Vector>(t));
 }
 
 void MyFactorPosePoint2_collectorInsertAndMakeBase_74(int nargout, mxArray *out[], int nargin, const mxArray *in[])

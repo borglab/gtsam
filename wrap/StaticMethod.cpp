@@ -38,8 +38,7 @@ void StaticMethod::proxy_header(FileWriter& proxyFile) const {
 
 /* ************************************************************************* */
 string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
-    Str matlabUniqueName, const ArgumentList& args,
-    const Qualified& instName) const {
+    Str matlabUniqueName, const ArgumentList& args) const {
   // check arguments
   // NOTE: for static functions, there is no object passed
   wrapperFile.oss << "  checkArguments(\"" << matlabUniqueName << "." << name_
@@ -51,8 +50,8 @@ string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
   // call method and wrap result
   // example: out[0]=wrap<bool>(staticMethod(t));
   string expanded = cppClassName + "::" + name_;
-  if (!instName.empty())
-    expanded += ("<" + instName.qualifiedName("::") + ">");
+  if (templateArgValue_)
+    expanded += ("<" + templateArgValue_->qualifiedName("::") + ">");
 
   return expanded;
 }

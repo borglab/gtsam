@@ -113,7 +113,6 @@ void Module::parseMarkup(const std::string& data) {
 
   // TODO, do we really need cls here? Non-local
   Class cls0(verbose),cls(verbose);
-  TypeGrammar classParent_p(cls.qualifiedParent);
  
   // parse "gtsam::Pose2" and add to templateArgValues
   Qualified templateArgValue;
@@ -203,12 +202,15 @@ void Module::parseMarkup(const std::string& data) {
      '(' >> argumentList_p >> ')' >> ';' >> *basic.comments_p)
     [bl::bind(&StaticMethod::addOverload, 
       bl::var(cls.static_methods)[bl::var(methodName)], 
-      bl::var(methodName), bl::var(args), bl::var(retVal), Qualified(),verbose)]
+      bl::var(methodName), bl::var(args), bl::var(retVal), boost::none,verbose)]
     [assign_a(retVal,retVal0)]
     [clear_a(args)];
  
   Rule functions_p = constructor_p | method_p | static_method_p; 
  
+  Qualified possibleParent;
+  TypeGrammar classParent_p(possibleParent);
+
   // parse a full class
   vector<Qualified> templateInstantiations;
   Rule class_p = 
@@ -221,11 +223,13 @@ void Module::parseMarkup(const std::string& data) {
       >> !(str_p("virtual")[assign_a(cls.isVirtual, true)]) 
       >> str_p("class") 
       >> basic.className_p[assign_a(cls.name_)]
-      >> ((':' >> classParent_p >> '{') | '{') 
+      >> ((':' >> classParent_p >> '{')
+          [bl::bind(&Class::assignParent, bl::var(cls), bl::var(possibleParent))]
+          [clear_a(possibleParent)] | '{')
       >> *(functions_p | basic.comments_p)
       >> str_p("};")) 
       [bl::bind(&Constructor::initializeOrCheck, bl::var(constructor),
-          bl::var(cls.name_), Qualified(), verbose)]
+          bl::var(cls.name_), boost::none, verbose)]
       [assign_a(cls.constructor, constructor)] 
       [assign_a(cls.namespaces_, namespaces)]
       [assign_a(cls.deconstructor.name,cls.name_)]
@@ -243,7 +247,7 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(globalFunction.namespaces_,namespaces)]
       [bl::bind(&GlobalFunction::addOverload, 
         bl::var(global_functions)[bl::var(globalFunction.name_)],
-        bl::var(globalFunction), bl::var(args), bl::var(retVal), Qualified(),verbose)]
+        bl::var(globalFunction), bl::var(args), bl::var(retVal), boost::none,verbose)]
       [assign_a(retVal,retVal0)]
       [clear_a(globalFunction)]
       [clear_a(args)];

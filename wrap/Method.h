@@ -32,8 +32,9 @@ public:
   typedef const std::string& Str;
 
   bool addOverload(Str name, const ArgumentList& args,
-      const ReturnValue& retVal, bool is_const, const Qualified& instName =
-          Qualified(), bool verbose = false);
+      const ReturnValue& retVal, bool is_const,
+      boost::optional<const Qualified> instName = boost::none, bool verbose =
+          false);
 
   virtual bool isStatic() const {
     return false;
@@ -55,8 +56,7 @@ private:
   void proxy_header(FileWriter& proxyFile) const;
 
   virtual std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
-      Str matlabUniqueName, const ArgumentList& args,
-      const Qualified& instName) const;
+      Str matlabUniqueName, const ArgumentList& args) const;
 };
 
 } // \namespace wrap

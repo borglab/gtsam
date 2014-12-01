@@ -19,8 +19,8 @@ struct GlobalFunction: public FullyOverloadedFunction {
 
   // adds an overloaded version of this function,
   void addOverload(const Qualified& overload, const ArgumentList& args,
-      const ReturnValue& retVal, const Qualified& instName = Qualified(),
-      bool verbose = false);
+      const ReturnValue& retVal, boost::optional<const Qualified> instName =
+          boost::none, bool verbose = false);
 
   void verifyArguments(const std::vector<std::string>& validArgs) const {
     SignatureOverloads::verifyArguments(validArgs, name_);

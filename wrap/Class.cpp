@@ -29,24 +29,49 @@
 #include <iostream> 
 #include <fstream> 
 #include <iterator>     // std::ostream_iterator
-
 //#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags 
 //#include <cinttypes> // same failure as above 
 #include <stdint.h> // works on Linux GCC 
-
 using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-Method& Class::method(Str key) {
+void Class::assignParent(const Qualified& parent) {
+  parentClass.reset(parent);
+}
+
+/* ************************************************************************* */
+boost::optional<string> Class::qualifiedParent() const {
+  boost::optional<string> result = boost::none;
+  if (parentClass) result = parentClass->qualifiedName("::");
+  return result;
+}
+
+/* ************************************************************************* */
+static void handleException(const out_of_range& oor,
+    const Class::Methods& methods) {
+  cerr << "Class::method: key not found: " << oor.what() << ", methods are:\n";
+  using boost::adaptors::map_keys;
+  ostream_iterator<string> out_it(cerr, "\n");
+  boost::copy(methods | map_keys, out_it);
+}
+
+/* ************************************************************************* */
+Method& Class::mutableMethod(Str key) {
   try {
     return methods_.at(key);
   } catch (const out_of_range& oor) {
-    cerr << "Class::method: key not found: " << oor.what()
-        << ", methods are:\n";
-    using boost::adaptors::map_keys;
-    ostream_iterator<string> out_it(cerr, "\n");
-    boost::copy(methods_ | map_keys, out_it);
+    handleException(oor,methods_);
+    throw runtime_error("Internal error in wrap");
+  }
+}
+
+/* ************************************************************************* */
+const Method& Class::method(Str key) const {
+  try {
+    return methods_.at(key);
+  } catch (const out_of_range& oor) {
+    handleException(oor,methods_);
     throw runtime_error("Internal error in wrap");
   }
 }
@@ -67,12 +92,11 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   const string matlabQualName = qualifiedName(".");
   const string matlabUniqueName = qualifiedName();
   const string cppName = qualifiedName("::");
-  const string matlabBaseName = qualifiedParent.qualifiedName(".");
-  const string cppBaseName = qualifiedParent.qualifiedName("::");
 
   // emit class proxy code 
   // we want our class to inherit the handle class for memory purposes 
-  const string parent = qualifiedParent.empty() ? "handle" : matlabBaseName;
+  const string parent =
+      parentClass ? parentClass->qualifiedName(".") : "handle";
   comment_fragment(proxyFile);
   proxyFile.oss << "classdef " << name() << " < " << parent << endl;
   proxyFile.oss << "  properties\n";
@@ -94,11 +118,12 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   wrapperFile.oss << "\n";
 
   // Regular constructors 
+  boost::optional<string> cppBaseName = qualifiedParent();
   for (size_t i = 0; i < constructor.nrOverloads(); i++) {
     ArgumentList args = constructor.argumentList(i);
     const int id = (int) functionNames.size();
-    constructor.proxy_fragment(proxyFile, wrapperName, !qualifiedParent.empty(),
-        id, args);
+    constructor.proxy_fragment(proxyFile, wrapperName, (bool) parentClass, id,
+        args);
     const string wrapFunctionName = constructor.wrapper_fragment(wrapperFile,
         cppName, matlabUniqueName, cppBaseName, id, args);
     wrapperFile.oss << "\n";
@@ -108,9 +133,9 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "        error('Arguments do not match any overload of "
       << matlabQualName << " constructor');\n";
   proxyFile.oss << "      end\n";
-  if (!qualifiedParent.empty())
-    proxyFile.oss << "      obj = obj@" << matlabBaseName << "(uint64("
-        << ptr_constructor_key << "), base_ptr);\n";
+  if (parentClass)
+    proxyFile.oss << "      obj = obj@" << parentClass->qualifiedName(".")
+        << "(uint64(" << ptr_constructor_key << "), base_ptr);\n";
   proxyFile.oss << "      obj.ptr_" << matlabUniqueName << " = my_ptr;\n";
   proxyFile.oss << "    end\n\n";
 
@@ -170,7 +195,6 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
 
   const string matlabUniqueName = qualifiedName();
   const string cppName = qualifiedName("::");
-  const string baseCppName = qualifiedParent.qualifiedName("::");
 
   const int collectorInsertId = (int) functionNames.size();
   const string collectorInsertFunctionName = matlabUniqueName
@@ -207,7 +231,7 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
   } else {
     proxyFile.oss << "        my_ptr = varargin{2};\n";
   }
-  if (qualifiedParent.empty()) // If this class has a base class, we'll get a base class pointer back
+  if (!parentClass) // If this class has a base class, we'll get a base class pointer back
     proxyFile.oss << "        ";
   else
     proxyFile.oss << "        base_ptr = ";
@@ -230,9 +254,10 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
   // Add to collector 
   wrapperFile.oss << "  collector_" << matlabUniqueName << ".insert(self);\n";
   // If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy) 
-  if (!qualifiedParent.empty()) {
+  boost::optional<string> cppBaseName = qualifiedParent();
+  if (cppBaseName) {
     wrapperFile.oss << "\n";
-    wrapperFile.oss << "  typedef boost::shared_ptr<" << baseCppName
+    wrapperFile.oss << "  typedef boost::shared_ptr<" << *cppBaseName
         << "> SharedBase;\n";
     wrapperFile.oss
         << "  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);\n";
@@ -297,7 +322,7 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
     // Create method to expand
     // For all values of the template argument, create a new method
     BOOST_FOREACH(const Qualified& instName, templateArgValues) {
-      const TemplateSubstitution ts(templateArgName, instName, name());
+      const TemplateSubstitution ts(templateArgName, instName, *this);
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
       // do the same for return type
@@ -311,7 +336,7 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
   } else
     // just add overload
     methods_[methodName].addOverload(methodName, argumentList, returnValue,
-        is_const, Qualified(), verbose);
+        is_const, boost::none, verbose);
 }
 
 /* ************************************************************************* */
@@ -353,23 +378,23 @@ void Class::verifyAll(vector<string>& validTypes, bool& hasSerialiable) const {
   verifyReturnTypes<Method>(validTypes, methods_);
 
   // verify parents
-  if (!qualifiedParent.empty()
-      && find(validTypes.begin(), validTypes.end(),
-          qualifiedParent.qualifiedName("::")) == validTypes.end())
-    throw DependencyMissing(qualifiedParent.qualifiedName("::"),
-        qualifiedName("::"));
+  boost::optional<string> parent = qualifiedParent();
+  if (parent
+      && find(validTypes.begin(), validTypes.end(), *parent)
+          == validTypes.end())
+    throw DependencyMissing(*parent, qualifiedName("::"));
 }
 
 /* ************************************************************************* */
 void Class::appendInheritedMethods(const Class& cls,
     const vector<Class>& classes) {
 
-  if (!cls.qualifiedParent.empty()) {
+  if (cls.parentClass) {
 
     // Find parent
     BOOST_FOREACH(const Class& parent, classes) {
       // We found a parent class for our parent, TODO improve !
-      if (parent.name() == cls.qualifiedParent.name()) {
+      if (parent.name() == cls.parentClass->name()) {
         methods_.insert(parent.methods_.begin(), parent.methods_.end());
         appendInheritedMethods(parent, classes);
       }

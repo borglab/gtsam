@@ -18,7 +18,7 @@ using namespace std;
 /* ************************************************************************* */
 void GlobalFunction::addOverload(const Qualified& overload,
     const ArgumentList& args, const ReturnValue& retVal,
-    const Qualified& instName, bool verbose) {
+    boost::optional<const Qualified> instName, bool verbose) {
   FullyOverloadedFunction::addOverload(overload.name(), args, retVal, instName,
       verbose);
   overloads.push_back(overload);
