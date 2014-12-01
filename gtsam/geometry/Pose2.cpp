@@ -33,7 +33,7 @@ INSTANTIATE_LIE(Pose2);
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose2);
 
-static const Matrix3 I3 = Eigen::Matrix3d::Identity(), Z12 = Eigen::Matrix3d::Zero();
+static const Matrix3 I3 = Eigen::Matrix3d::Identity();
 static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 
 /* ************************************************************************* */
