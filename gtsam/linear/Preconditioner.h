@@ -155,6 +155,10 @@ public:
   double* getBuffer() {
     return buffer_;
   }
+  size_t getBufferSize() {
+	return bufferSize_;
+  }
+
 protected:
 
   void clean() ;
