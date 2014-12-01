@@ -151,6 +151,10 @@ public:
     const std::map<Key,Vector> &lambda
     ) ;
 
+  // Should be removed after test
+  double* getBuffer() {
+    return buffer_;
+  }
 protected:
 
   void clean() ;
