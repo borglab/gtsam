@@ -43,7 +43,8 @@ void Class::assignParent(const Qualified& parent) {
 /* ************************************************************************* */
 boost::optional<string> Class::qualifiedParent() const {
   boost::optional<string> result = boost::none;
-  if (parentClass) result = parentClass->qualifiedName("::");
+  if (parentClass)
+    result = parentClass->qualifiedName("::");
   return result;
 }
 
@@ -61,7 +62,7 @@ Method& Class::mutableMethod(Str key) {
   try {
     return methods_.at(key);
   } catch (const out_of_range& oor) {
-    handleException(oor,methods_);
+    handleException(oor, methods_);
     throw runtime_error("Internal error in wrap");
   }
 }
@@ -71,7 +72,7 @@ const Method& Class::method(Str key) const {
   try {
     return methods_.at(key);
   } catch (const out_of_range& oor) {
-    handleException(oor,methods_);
+    handleException(oor, methods_);
     throw runtime_error("Internal error in wrap");
   }
 }
@@ -316,13 +317,13 @@ vector<Class> Class::expandTemplate(Str templateArg,
 /* ************************************************************************* */
 void Class::addMethod(bool verbose, bool is_const, Str methodName,
     const ArgumentList& argumentList, const ReturnValue& returnValue,
-    Str templateArgName, const vector<Qualified>& templateArgValues) {
+    const Template& tmplate) {
   // Check if templated
-  if (!templateArgName.empty() && templateArgValues.size() > 0) {
+  if (!tmplate.argName.empty() && tmplate.argValues.size() > 0) {
     // Create method to expand
     // For all values of the template argument, create a new method
-    BOOST_FOREACH(const Qualified& instName, templateArgValues) {
-      const TemplateSubstitution ts(templateArgName, instName, *this);
+    BOOST_FOREACH(const Qualified& instName, tmplate.argValues) {
+      const TemplateSubstitution ts(tmplate.argName, instName, *this);
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
       // do the same for return type

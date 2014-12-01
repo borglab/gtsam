@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "Template.h"
 #include "Constructor.h"
 #include "Deconstructor.h"
 #include "Method.h"
@@ -95,7 +96,7 @@ public:
   /// Add potentially overloaded, potentially templated method
   void addMethod(bool verbose, bool is_const, Str methodName,
       const ArgumentList& argumentList, const ReturnValue& returnValue,
-      Str templateArgName, const std::vector<Qualified>& templateArgValues);
+      const Template& tmplate);
 
   /// Post-process classes for serialization markers
   void erase_serialization(); // non-const !
