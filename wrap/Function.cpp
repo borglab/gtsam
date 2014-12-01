@@ -42,7 +42,10 @@ bool Function::initializeOrCheck(const string& name,
     verbose_ = verbose;
     return true;
   } else {
-    if (name_ != name || !(templateArgValue_ == instName) || verbose_ != verbose)
+    if (name_ != name || verbose_ != verbose
+        || ((bool) templateArgValue_ != (bool) instName)
+        || ((bool) templateArgValue_ && (bool) instName
+            && !(*templateArgValue_ == *instName)))
       throw runtime_error(
           "Function::initializeOrCheck called with different arguments");
 
