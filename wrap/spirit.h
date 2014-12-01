@@ -138,7 +138,14 @@ struct BasicRules {
 
   BasicRules() {
 
-    using namespace BOOST_SPIRIT_CLASSIC_NS;
+    using classic::comment_p;
+    using classic::eol_p;
+    using classic::str_p;
+    using classic::alpha_p;
+    using classic::lexeme_d;
+    using classic::upper_p;
+    using classic::lower_p;
+    using classic::alnum_p;
 
     comments_p = comment_p("/*", "*/") | comment_p("//", eol_p);
 
