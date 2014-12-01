@@ -33,15 +33,21 @@ INSTANTIATE_LIE(Pose2);
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose2);
 
-static const Matrix I3 = eye(3), Z12 = zeros(1,2);
+static const Matrix3 I3 = Eigen::Matrix3d::Identity(), Z12 = Eigen::Matrix3d::Zero();
 static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 
 /* ************************************************************************* */
-Matrix Pose2::matrix() const {
-  Matrix R = r_.matrix();
-  R = stack(2, &R, &Z12);
-  Matrix T = (Matrix(3, 1) <<  t_.x(), t_.y(), 1.0).finished();
-  return collect(2, &R, &T);
+Matrix3 Pose2::matrix() const {
+  Matrix2 R = r_.matrix();
+  Matrix32 R0;
+  R0.block(0,0,2,2) = R;
+  R0.block(2,0,1,2).setZero();
+  Matrix31 T;
+  T <<  t_.x(), t_.y(), 1.0;
+  Matrix3 RT_;
+  RT_.block(0,0,3,2) = R0;
+  RT_.block(0,2,3,1) = T;
+  return RT_;
 }
 
 /* ************************************************************************* */
@@ -140,8 +146,8 @@ Point2 Pose2::transform_to(const Point2& point,
 
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
-Pose2 Pose2::compose(const Pose2& p2, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+Pose2 Pose2::compose(const Pose2& p2, OptionalJacobian<3,3> H1,
+    OptionalJacobian<3,3> H2) const {
   // TODO: inline and reuse?
   if(H1) *H1 = p2.inverse().AdjointMap();
   if(H2) *H2 = I3;
@@ -154,10 +160,14 @@ Point2 Pose2::transform_from(const Point2& p,
     OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
   const Point2 q = r_ * p;
   if (H1 || H2) {
-    const Matrix R = r_.matrix();
-    const Matrix Drotate1 = (Matrix(2, 1) <<  -q.y(), q.x()).finished();
-    if (H1) *H1 = collect(2, &R, &Drotate1); // [R R_{pi/2}q]
-    if (H2) *H2 = R;                         // R
+    const Matrix2 R = r_.matrix();
+    Matrix21 Drotate1;
+    Drotate1 <<  -q.y(), q.x();
+    if (H1) {
+        (*H1).block(0,0,2,2) = R; // [R R_{pi/2}q]
+        (*H1).block(0,2,2,1) = Drotate1;
+    }
+    if (H2) *H2 = R; // R
   }
   return q + t_;
 }
@@ -198,24 +208,27 @@ Pose2 Pose2::between(const Pose2& p2, OptionalJacobian<3,3> H1,
 
 /* ************************************************************************* */
 Rot2 Pose2::bearing(const Point2& point,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  Point2 d = transform_to(point, H1, H2);
+    OptionalJacobian<1, 3> H1, OptionalJacobian<1, 2> H2) const {
+  // make temporary matrices
+  Matrix23 D1; Matrix2 D2;
+  Point2 d = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0); // uses pointer version
   if (!H1 && !H2) return Rot2::relativeBearing(d);
-  Matrix D_result_d;
+  Matrix12 D_result_d;
   Rot2 result = Rot2::relativeBearing(d, D_result_d);
-  if (H1) *H1 = D_result_d * (*H1);
-  if (H2) *H2 = D_result_d * (*H2);
+  if (H1) *H1 = D_result_d * (D1);
+  if (H2) *H2 = D_result_d * (D2);
   return result;
 }
 
 /* ************************************************************************* */
 Rot2 Pose2::bearing(const Pose2& pose,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  Rot2 result = bearing(pose.t(), H1, H2);
+    OptionalJacobian<1, 3> H1, OptionalJacobian<1, 3> H2) const {
+  Matrix12 D2;
+  Rot2 result = bearing(pose.t(), H1, H2 ? &D2 : 0);
   if (H2) {
-    Matrix H2_ = *H2 * pose.r().matrix();
-    *H2 = zeros(1, 3);
-    insertSub(*H2, H2_, 0, 0);
+    Matrix12 H2_ = D2 * pose.r().matrix();
+    (*H2).setZero();
+    (*H2).block(0,0,1,2) = H2_;
   }
   return result;
 }
@@ -227,29 +240,37 @@ double Pose2::range(const Point2& point,
   Matrix12 H;
   double r = d.norm(H);
   if (H1) {
-      Matrix23 mvalue; // is this the correct name ?
-      mvalue << -r_.c(),  r_.s(),  0.0,
+      Matrix23 H1_;
+      H1_ << -r_.c(),  r_.s(),  0.0,
               -r_.s(), -r_.c(),  0.0;
-      *H1 = H * mvalue;
+      *H1 = H * H1_;
   }
   if (H2) *H2 = H;
   return r;
 }
 
 /* ************************************************************************* */
-double Pose2::range(const Pose2& pose2,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
-  Point2 d = pose2.t() - t_;
+double Pose2::range(const Pose2& pose,
+    OptionalJacobian<1,3> H1,
+    OptionalJacobian<1,3> H2) const {
+  Point2 d = pose.t() - t_;
   if (!H1 && !H2) return d.norm();
-  Matrix H;
+  Matrix12 H;
   double r = d.norm(H);
-  if (H1) *H1 = H * (Matrix(2, 3) <<
+  if (H1) {
+      Matrix23 H1_;
+      H1_ <<
       -r_.c(),  r_.s(),  0.0,
-      -r_.s(), -r_.c(),  0.0).finished();
-  if (H2) *H2 = H * (Matrix(2, 3) <<
-      pose2.r_.c(), -pose2.r_.s(),  0.0,
-      pose2.r_.s(),  pose2.r_.c(),  0.0).finished();
+      -r_.s(), -r_.c(),  0.0;
+      *H1 = H * H1_;
+  }
+  if (H2) {
+      Matrix23 H2_;
+      H2_ <<
+      pose.r_.c(), -pose.r_.s(),  0.0,
+      pose.r_.s(),  pose.r_.c(),  0.0;
+      *H2 = H * H2_;
+  }
   return r;
 }
 

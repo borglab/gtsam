@@ -44,7 +44,7 @@ TEST(Pose2, constructors) {
   Pose2 origin;
   assert_equal(pose,origin);
   Pose2 t(M_PI/2.0+0.018, Point2(1.015, 2.01));
-  EXPECT(assert_equal(t,Pose2(t.matrix())));
+  EXPECT(assert_equal(t,Pose2((Matrix)t.matrix())));
 }
 
 /* ************************************************************************* */

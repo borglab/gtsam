@@ -75,7 +75,7 @@ public:
   Pose2(const Rot2& r, const Point2& t) : r_(r), t_(t) {}
 
   /** Constructor from 3*3 matrix */
-  Pose2(const Matrix &T) :
+  Pose2(const Matrix &T) : // TODO : Change this to Optional Jacobian ??
     r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) {
     assert(T.rows() == 3 && T.cols() == 3);
   }
@@ -111,8 +111,8 @@ public:
 
   /// compose this transformation onto another (first *this and then p2)
   Pose2 compose(const Pose2& p2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+      OptionalJacobian<3, 3> H1 = boost::none,
+      OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /// compose syntactic sugar
   inline Pose2 operator*(const Pose2& p2) const {
@@ -168,11 +168,13 @@ public:
    *  v (vx,vy) = 2D velocity
    * @return xihat, 3*3 element of Lie algebra that can be exponentiated
    */
-  static inline Matrix wedge(double vx, double vy, double w) {
-    return (Matrix(3,3) <<
+  static inline Matrix3 wedge(double vx, double vy, double w) {
+     Matrix3 wedge_;
+     wedge_ <<
         0.,-w,  vx,
         w,  0., vy,
-        0., 0.,  0.).finished();
+        0., 0.,  0.;
+      return wedge_;
   }
 
   /// @}
@@ -218,7 +220,7 @@ public:
   inline const Rot2&   rotation() const { return r_; }
 
   //// return transformation matrix
-  Matrix matrix() const;
+  Matrix3 matrix() const;
 
   /**
    * Calculate bearing to a landmark
@@ -226,15 +228,15 @@ public:
    * @return 2D rotation \f$ \in SO(2) \f$
    */
   Rot2 bearing(const Point2& point,
-               boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+               OptionalJacobian<1, 3> H1=boost::none, OptionalJacobian<1, 2> H2=boost::none) const;
 
   /**
    * Calculate bearing to another pose
    * @param point SO(2) location of other pose
    * @return 2D rotation \f$ \in SO(2) \f$
    */
-  Rot2 bearing(const Pose2& point,
-               boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+  Rot2 bearing(const Pose2& pose,
+               OptionalJacobian<1, 3> H1=boost::none, OptionalJacobian<1, 3> H2=boost::none) const;
 
   /**
    * Calculate range to a landmark
@@ -251,8 +253,8 @@ public:
    * @return range (double)
    */
   double range(const Pose2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<1, 3> H1=boost::none,
+      OptionalJacobian<1, 3> H2=boost::none) const;
 
   /// @}
   /// @name Advanced Interface
@@ -287,7 +289,7 @@ private:
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */
 template <>
-inline Matrix wedge<Pose2>(const Vector& xi) {
+inline Matrix wedge<Pose2>(const Vector& xi) { // TODO : Convert to Optional Jacobian ?
   return Pose2::wedge(xi(0),xi(1),xi(2));
 }
 
