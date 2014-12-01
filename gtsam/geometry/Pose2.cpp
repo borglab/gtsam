@@ -40,13 +40,13 @@ static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 Matrix3 Pose2::matrix() const {
   Matrix2 R = r_.matrix();
   Matrix32 R0;
-  R0.block(0,0,2,2) = R;
-  R0.block(2,0,1,2).setZero();
+  R0.block<2,2>(0,0) = R;
+  R0.block<1,2>(2,0).setZero();
   Matrix31 T;
   T <<  t_.x(), t_.y(), 1.0;
   Matrix3 RT_;
-  RT_.block(0,0,3,2) = R0;
-  RT_.block(0,2,3,1) = T;
+  RT_.block<3,2<(0,0) = R0;
+  RT_.block<3,1>(0,2) = T;
   return RT_;
 }
 
@@ -164,8 +164,8 @@ Point2 Pose2::transform_from(const Point2& p,
     Matrix21 Drotate1;
     Drotate1 <<  -q.y(), q.x();
     if (H1) {
-        (*H1).block(0,0,2,2) = R; // [R R_{pi/2}q]
-        (*H1).block(0,2,2,1) = Drotate1;
+        (*H1).block<2,2>(0,0) = R; // [R R_{pi/2}q]
+        (*H1).block<2,1>(0,2) = Drotate1;
     }
     if (H2) *H2 = R; // R
   }
@@ -228,7 +228,7 @@ Rot2 Pose2::bearing(const Pose2& pose,
   if (H2) {
     Matrix12 H2_ = D2 * pose.r().matrix();
     (*H2).setZero();
-    (*H2).block(0,0,1,2) = H2_;
+    (*H2).block<1,2>(0,0) = H2_;
   }
   return result;
 }
