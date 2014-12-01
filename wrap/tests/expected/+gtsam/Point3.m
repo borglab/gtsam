@@ -11,6 +11,10 @@
 %StaticFunctionRet(double z) : returns gtsam::Point3
 %staticFunction() : returns double
 %
+%-------Serialization Interface-------
+%string_serialize() : returns string
+%string_deserialize(string serialized) : returns Point3
+%
 classdef Point3 < handle
   properties
     ptr_gtsamPoint3 = 0
@@ -42,20 +46,48 @@ classdef Point3 < handle
       varargout{1} = geometry_wrapper(15, this, varargin{:});
     end
 
+    function varargout = string_serialize(this, varargin)
+      % STRING_SERIALIZE usage: string_serialize() : returns string
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 0
+        varargout{1} = geometry_wrapper(16, this, varargin{:});
+      else
+        error('Arguments do not match any overload of function gtsam.Point3.string_serialize');
+      end
+    end
+
+    function sobj = saveobj(obj)
+      % SAVEOBJ Saves the object to a matlab-readable format
+      sobj = obj.string_serialize();
+    end
   end
 
   methods(Static = true)
     function varargout = StaticFunctionRet(varargin)
       % STATICFUNCTIONRET usage: StaticFunctionRet(double z) : returns gtsam::Point3
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      varargout{1} = geometry_wrapper(16, varargin{:});
+      varargout{1} = geometry_wrapper(17, varargin{:});
     end
 
     function varargout = StaticFunction(varargin)
       % STATICFUNCTION usage: staticFunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      varargout{1} = geometry_wrapper(17, varargin{:});
+      varargout{1} = geometry_wrapper(18, varargin{:});
     end
 
+    function varargout = string_deserialize(varargin)
+      % STRING_DESERIALIZE usage: string_deserialize() : returns gtsam.Point3
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      if length(varargin) == 1
+        varargout{1} = geometry_wrapper(19, varargin{:});
+      else
+        error('Arguments do not match any overload of function gtsam.Point3.string_deserialize');
+      end
+    end
+
+    function obj = loadobj(sobj)
+      % LOADOBJ Saves the object to a matlab-readable format
+      obj = gtsam.Point3.string_deserialize(sobj);
+    end
   end
 end

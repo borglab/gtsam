@@ -30,9 +30,9 @@ using namespace wrap;
 
 /* ************************************************************************* */
 bool Method::addOverload(Str name, const ArgumentList& args,
-    const ReturnValue& retVal, bool is_const, const Qualified& instName,
-    bool verbose) {
-  bool first = StaticMethod::addOverload(name, args, retVal, instName, verbose);
+    const ReturnValue& retVal, bool is_const,
+    boost::optional<const Qualified> instName, bool verbose) {
+  bool first = MethodBase::addOverload(name, args, retVal, instName, verbose);
   if (first)
     is_const_ = is_const;
   else if (is_const && !is_const_)
@@ -52,14 +52,12 @@ void Method::proxy_header(FileWriter& proxyFile) const {
 
 /* ************************************************************************* */
 string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
-    Str matlabUniqueName, const ArgumentList& args,
-    const ReturnValue& returnVal, const TypeAttributesTable& typeAttributes,
-    const Qualified& instName) const {
+    Str matlabUniqueName, const ArgumentList& args) const {
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
-  wrapperFile.oss << "  checkArguments(\"" << name_ << "\",nargout,nargin-1,"
-      << args.size() << ");\n";
+  wrapperFile.oss << "  checkArguments(\"" << matlabName()
+      << "\",nargout,nargin-1," << args.size() << ");\n";
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
@@ -72,8 +70,8 @@ string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
   // call method and wrap result
   // example: out[0]=wrap<bool>(obj->return_field(t));
   string expanded = "obj->" + name_;
-  if (!instName.empty())
-    expanded += ("<" + instName.qualifiedName("::") + ">");
+  if (templateArgValue_)
+    expanded += ("<" + templateArgValue_->qualifiedName("::") + ">");
 
   return expanded;
 }
