@@ -114,35 +114,25 @@ void Module::parseMarkup(const std::string& data) {
   // TODO, do we really need cls here? Non-local
   Class cls0(verbose),cls(verbose);
  
-  // parse "gtsam::Pose2" and add to templateArgValues
-  Qualified templateArgValue;
-  vector<Qualified> templateArgValues;
-  TypeGrammar templateArgValue_g(templateArgValue);
-  Rule templateArgValue_p = templateArgValue_g
-    [push_back_a(templateArgValues, templateArgValue)]
-    [clear_a(templateArgValue)];
- 
   // template<CALIBRATION = {gtsam::Cal3DS2}>
   string templateArgName;
+  vector<Qualified> templateArgValues;
+  TypeListGrammar<'{','}'> templateArgValues_g(templateArgValues);
   Rule templateArgValues_p =
     (str_p("template") >> 
     '<' >> basic.name_p[assign_a(templateArgName)] >> '=' >>
-    '{' >> !(templateArgValue_p >> *(',' >> templateArgValue_p)) >> '}' >>
-    '>');
+    templateArgValues_g >> '>');
  
   // parse "gtsam::Pose2" and add to singleInstantiation.typeList
   TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
-  Rule templateSingleInstantiationArg_p = templateArgValue_g
-    [push_back_a(singleInstantiation.typeList, templateArgValue)]
-    [clear_a(templateArgValue)];
+  TypeListGrammar<'<','>'> typelist_g(singleInstantiation.typeList);
  
   // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
   vector<string> namespaces; // current namespace tag
   TypeGrammar instantiationClass_g(singleInstantiation.class_);
   Rule templateSingleInstantiation_p = 
     (str_p("typedef") >> instantiationClass_g >>
-    '<' >> templateSingleInstantiationArg_p >> *(',' >> templateSingleInstantiationArg_p) >> 
-    '>' >> 
+    typelist_g >>
     basic.className_p[assign_a(singleInstantiation.name_)] >>
     ';') 
     [assign_a(singleInstantiation.namespaces_, namespaces)]

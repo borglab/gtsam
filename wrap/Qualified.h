@@ -218,7 +218,8 @@ public:
 
 /* ************************************************************************* */
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-struct TypeListGrammar: public classic::grammar<TypeListGrammar> {
+template <char OPEN, char CLOSE>
+struct TypeListGrammar: public classic::grammar<TypeListGrammar<OPEN,CLOSE> > {
 
   typedef std::vector<wrap::Qualified> TypeList;
   TypeList& result_; ///< successful parse will be placed in here
@@ -244,7 +245,7 @@ struct TypeListGrammar: public classic::grammar<TypeListGrammar> {
       type_p = self.type_g //
           [push_back_a(self.result_, self.type)] //
           [clear_a(self.type)];
-      typeList_p = '{' >> !type_p >> *(',' >> type_p) >> '}';
+      typeList_p = OPEN >> !type_p >> *(',' >> type_p) >> CLOSE;
     }
 
     Rule const& start() const {

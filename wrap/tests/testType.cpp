@@ -90,7 +90,7 @@ TEST( TypeList, grammar ) {
 
   // Create type grammar that will place result in actual
   vector<Qualified> actual;
-  TypeListGrammar g(actual);
+  TypeListGrammar<'{','}'> g(actual);
 
   EXPECT(parse("{gtsam::Point2}", g, space_p).full);
   EXPECT_LONGS_EQUAL(1, actual.size());
