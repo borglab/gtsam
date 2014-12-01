@@ -173,7 +173,8 @@ struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
 
   wrap::ArgumentList& result_; ///< successful parse will be placed in here
 
-  Argument arg, arg0;
+  const Argument arg0; // used to reset arg
+  mutable Argument arg; // temporary argument for use during parsing
   ArgumentGrammar argument_g;
 
   /// Construct type grammar and specify where result is placed

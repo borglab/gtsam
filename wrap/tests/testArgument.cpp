@@ -95,16 +95,32 @@ TEST( ArgumentList, grammar ) {
   actual.clear();
 
   EXPECT(parse("(char a)", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
 
   EXPECT(parse("(unsigned char a)", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
 
   EXPECT(parse("(Vector v, Matrix m)", g, space_p).full);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  EXPECT(actual[0]==Argument(Qualified("Vector",Qualified::EIGEN),"v"));
+  EXPECT(actual[1]==Argument(Qualified("Matrix",Qualified::EIGEN),"m"));
+  actual.clear();
 
   EXPECT(parse("(Point2 p)", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
 
   EXPECT(parse("(Point2 p1, Point3 p2)", g, space_p).full);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  EXPECT(actual[0]==Argument(Qualified("Point2"),"p1"));
+  EXPECT(actual[1]==Argument(Qualified("Point3"),"p2"));
+  actual.clear();
 
   EXPECT(parse("(gtsam::Point2 p3)", g, space_p).full);
+  EXPECT_LONGS_EQUAL(1, actual.size());
+  actual.clear();
 }
 
 /* ************************************************************************* */
