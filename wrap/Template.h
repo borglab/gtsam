@@ -37,8 +37,7 @@ struct Template {
 struct TemplateGrammar: public classic::grammar<TemplateGrammar> {
 
   Template& result_; ///< successful parse will be placed in here
-
-  TypeListGrammar<'{', '}'> argValues_g;
+  TypeListGrammar<'{', '}'> argValues_g; ///< TypeList parser
 
   /// Construct type grammar and specify where result is placed
   TemplateGrammar(Template& result) :
@@ -47,20 +46,18 @@ struct TemplateGrammar: public classic::grammar<TemplateGrammar> {
 
   /// Definition of type grammar
   template<typename ScannerT>
-  struct definition: basic_rules<ScannerT> {
+  struct definition: BasicRules<ScannerT> {
 
-    typedef classic::rule<ScannerT> Rule;
-
-    Rule templateArgValues_p;
+    classic::rule<ScannerT> templateArgValues_p;
 
     definition(TemplateGrammar const& self) {
       using namespace classic;
       templateArgValues_p = (str_p("template") >> '<'
-          >> (basic_rules<ScannerT>::name_p)[assign_a(self.result_.argName)]
+          >> (BasicRules<ScannerT>::name_p)[assign_a(self.result_.argName)]
           >> '=' >> self.argValues_g >> '>');
     }
 
-    Rule const& start() const {
+    classic::rule<ScannerT> const& start() const {
       return templateArgValues_p;
     }
 

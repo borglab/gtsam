@@ -82,8 +82,7 @@ struct ReturnValue {
 struct ReturnValueGrammar: public classic::grammar<ReturnValueGrammar> {
 
   wrap::ReturnValue& result_; ///< successful parse will be placed in here
-
-  ReturnTypeGrammar returnType1_g, returnType2_g;
+  ReturnTypeGrammar returnType1_g, returnType2_g; ///< Type parsers
 
   /// Construct type grammar and specify where result is placed
   ReturnValueGrammar(wrap::ReturnValue& result) :
@@ -97,7 +96,6 @@ struct ReturnValueGrammar: public classic::grammar<ReturnValueGrammar> {
     classic::rule<ScannerT> pair_p, returnValue_p;
 
     definition(ReturnValueGrammar const& self) {
-
       using namespace classic;
 
       pair_p = (str_p("pair") >> '<' >> self.returnType1_g >> ','
@@ -114,4 +112,4 @@ struct ReturnValueGrammar: public classic::grammar<ReturnValueGrammar> {
 };
 // ReturnValueGrammar
 
-} // \namespace wrap
+}// \namespace wrap

@@ -43,7 +43,7 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
 ///////////////////////////////////////////////////////////////////////////
 struct pop_action
 {
-  template<  typename T>
+  template< typename T>
   void act(T& ref_) const
   {
     if (!ref_.empty())
@@ -86,7 +86,7 @@ inline ref_actor<T,pop_action> pop_a(T& ref_)
 
 struct append_action
 {
-  template<  typename T,  typename ValueT  >
+  template< typename T, typename ValueT >
   void act(T& ref_, ValueT const& value_) const
   {
     ref_.insert(ref_.begin(), value_.begin(), value_.end());
@@ -125,18 +125,18 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_END
 }
 }
 
+namespace wrap {
+
 namespace classic = BOOST_SPIRIT_CLASSIC_NS;
 
 /// Some basic rules used by all parsers
 template<typename ScannerT>
-struct basic_rules {
+struct BasicRules {
 
-  typedef BOOST_SPIRIT_CLASSIC_NS::rule<ScannerT> Rule;
+  classic::rule<ScannerT> comments_p, basisType_p, eigenType_p, keywords_p,
+      stlType_p, name_p, className_p, namespace_p;
 
-  Rule comments_p, basisType_p, eigenType_p, keywords_p, stlType_p, name_p,
-      className_p, namespace_p;
-
-  basic_rules() {
+  BasicRules() {
 
     using namespace BOOST_SPIRIT_CLASSIC_NS;
 
@@ -160,5 +160,5 @@ struct basic_rules {
     namespace_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
   }
 };
-
+}
 

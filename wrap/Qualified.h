@@ -35,7 +35,7 @@ public:
   std::vector<std::string> namespaces_; ///< Stack of namespaces
   std::string name_; ///< type name
 
-  friend class TypeGrammar;
+  friend struct TypeGrammar;
   friend class TemplateSubstitution;
 
 public:
@@ -81,7 +81,7 @@ public:
   // Qualified is 'abused' as template argument name as well
   // this function checks whether *this matches with templateArg
   bool match(const std::string& templateArg) const {
-    return (name_ == templateArg && namespaces_.empty());//TODO && category == CLASS);
+    return (name_ == templateArg && namespaces_.empty()); //TODO && category == CLASS);
   }
 
   void rename(const Qualified& q) {
@@ -128,7 +128,6 @@ public:
     return Qualified("void", VOID);
   }
 
-
   /// Return a qualified string using given delimiter
   std::string qualifiedName(const std::string& delimiter = "") const {
     std::string result;
@@ -156,11 +155,9 @@ public:
 
 /* ************************************************************************* */
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-class TypeGrammar: public classic::grammar<TypeGrammar> {
+struct TypeGrammar: classic::grammar<TypeGrammar> {
 
   wrap::Qualified& result_; ///< successful parse will be placed in here
-
-public:
 
   /// Construct type grammar and specify where result is placed
   TypeGrammar(wrap::Qualified& result) :
@@ -169,17 +166,17 @@ public:
 
   /// Definition of type grammar
   template<typename ScannerT>
-  struct definition: basic_rules<ScannerT> {
+  struct definition: BasicRules<ScannerT> {
 
     typedef classic::rule<ScannerT> Rule;
 
-    Rule void_p, my_basisType_p, my_eigenType_p, namespace_del_p, class_p,
-        type_p;
+    Rule void_p, basisType_p, eigenType_p, namespace_del_p, class_p, type_p;
 
     definition(TypeGrammar const& self) {
 
       using namespace wrap;
       using namespace classic;
+      typedef BasicRules<ScannerT> Basic;
 
       // HACK: use const values instead of using enums themselves - somehow this doesn't result in values getting assigned to gibberish
       static const Qualified::Category EIGEN = Qualified::EIGEN;
@@ -187,25 +184,26 @@ public:
       static const Qualified::Category CLASS = Qualified::CLASS;
       static const Qualified::Category VOID = Qualified::VOID;
 
-      void_p = str_p("void")[assign_a(self.result_.name_)] //
+      void_p = str_p("void") //
+          [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, VOID)];
 
-      my_basisType_p = basic_rules<ScannerT>::basisType_p //
+      basisType_p = Basic::basisType_p //
           [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, BASIS)];
 
-      my_eigenType_p = basic_rules<ScannerT>::eigenType_p //
+      eigenType_p = Basic::eigenType_p //
           [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, EIGEN)];
 
-      namespace_del_p = basic_rules<ScannerT>::namespace_p //
+      namespace_del_p = Basic::namespace_p //
       [push_back_a(self.result_.namespaces_)] >> str_p("::");
 
-      class_p = *namespace_del_p >> basic_rules<ScannerT>::className_p //
+      class_p = *namespace_del_p >> Basic::className_p //
           [assign_a(self.result_.name_)] //
           [assign_a(self.result_.category, CLASS)];
 
-      type_p = void_p | my_basisType_p | class_p | my_eigenType_p;
+      type_p = void_p | basisType_p | class_p | eigenType_p;
     }
 
     Rule const& start() const {
@@ -218,8 +216,8 @@ public:
 
 /* ************************************************************************* */
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
-template <char OPEN, char CLOSE>
-struct TypeListGrammar: public classic::grammar<TypeListGrammar<OPEN,CLOSE> > {
+template<char OPEN, char CLOSE>
+struct TypeListGrammar: public classic::grammar<TypeListGrammar<OPEN, CLOSE> > {
 
   typedef std::vector<wrap::Qualified> TypeList;
   TypeList& result_; ///< successful parse will be placed in here
@@ -234,11 +232,9 @@ struct TypeListGrammar: public classic::grammar<TypeListGrammar<OPEN,CLOSE> > {
 
   /// Definition of type grammar
   template<typename ScannerT>
-  struct definition: basic_rules<ScannerT> {
+  struct definition {
 
-    typedef classic::rule<ScannerT> Rule;
-
-    Rule type_p, typeList_p;
+    classic::rule<ScannerT> type_p, typeList_p;
 
     definition(TypeListGrammar const& self) {
       using namespace classic;
@@ -248,7 +244,7 @@ struct TypeListGrammar: public classic::grammar<TypeListGrammar<OPEN,CLOSE> > {
       typeList_p = OPEN >> !type_p >> *(',' >> type_p) >> CLOSE;
     }
 
-    Rule const& start() const {
+    classic::rule<ScannerT> const& start() const {
       return typeList_p;
     }
 
@@ -260,6 +256,5 @@ struct TypeListGrammar: public classic::grammar<TypeListGrammar<OPEN,CLOSE> > {
 // Needed for other parsers in Argument.h and ReturnType.h
 static const bool T = true;
 
-
-}// \namespace wrap
+} // \namespace wrap
 

@@ -65,8 +65,6 @@ TEST( Method, addOverload ) {
 //  template<typename ScannerT>
 //  struct definition: basic_rules<ScannerT> {
 //
-//    typedef classic::rule<ScannerT> Rule;
-//
 //    Rule templateArgValue_p, templateArgValues_p, argument_p, argumentList_p,
 //        returnType1_p, returnType2_p, pair_p, returnValue_p, methodName_p,
 //        method_p;

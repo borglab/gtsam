@@ -109,7 +109,7 @@ void Module::parseMarkup(const std::string& data) {
  
   // Define Rule and instantiate basic rules
   typedef rule<phrase_scanner_t> Rule;
-  basic_rules<phrase_scanner_t> basic;
+  BasicRules<phrase_scanner_t> basic;
 
   // TODO, do we really need cls here? Non-local
   Class cls0(verbose),cls(verbose);

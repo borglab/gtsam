@@ -129,7 +129,7 @@ struct ArgumentList: public std::vector<Argument> {
 struct ArgumentGrammar: public classic::grammar<ArgumentGrammar> {
 
   wrap::Argument& result_; ///< successful parse will be placed in here
-  TypeGrammar argument_type_g;
+  TypeGrammar argument_type_g; ///< Type parser for Argument::type
 
   /// Construct type grammar and specify where result is placed
   ArgumentGrammar(wrap::Argument& result) :
@@ -138,15 +138,13 @@ struct ArgumentGrammar: public classic::grammar<ArgumentGrammar> {
 
   /// Definition of type grammar
   template<typename ScannerT>
-  struct definition: basic_rules<ScannerT> {
+  struct definition: BasicRules<ScannerT> {
 
     typedef classic::rule<ScannerT> Rule;
 
-    Rule argument_p, argumentList_p;
+    Rule argument_p;
 
     definition(ArgumentGrammar const& self) {
-
-      using namespace wrap;
       using namespace classic;
 
       // NOTE: allows for pointers to all types
@@ -156,7 +154,7 @@ struct ArgumentGrammar: public classic::grammar<ArgumentGrammar> {
           >> self.argument_type_g //
           >> !ch_p('*')[assign_a(self.result_.is_ptr, T)]
           >> !ch_p('&')[assign_a(self.result_.is_ref, T)]
-          >> basic_rules<ScannerT>::name_p[assign_a(self.result_.name)];
+          >> BasicRules<ScannerT>::name_p[assign_a(self.result_.name)];
     }
 
     Rule const& start() const {
@@ -173,9 +171,9 @@ struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
 
   wrap::ArgumentList& result_; ///< successful parse will be placed in here
 
-  const Argument arg0; // used to reset arg
-  mutable Argument arg; // temporary argument for use during parsing
-  ArgumentGrammar argument_g;
+  const Argument arg0; ///< used to reset arg
+  mutable Argument arg; ///< temporary argument for use during parsing
+  ArgumentGrammar argument_g;  ///< single Argument parser
 
   /// Construct type grammar and specify where result is placed
   ArgumentListGrammar(wrap::ArgumentList& result) :
@@ -184,21 +182,21 @@ struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
 
   /// Definition of type grammar
   template<typename ScannerT>
-  struct definition: basic_rules<ScannerT> {
+  struct definition {
 
-    typedef classic::rule<ScannerT> Rule;
-
-    Rule argument_p, argumentList_p;
+    classic::rule<ScannerT> argument_p, argumentList_p;
 
     definition(ArgumentListGrammar const& self) {
       using namespace classic;
+
       argument_p = self.argument_g //
           [classic::push_back_a(self.result_, self.arg)] //
           [assign_a(self.arg, self.arg0)];
+
       argumentList_p = '(' >> !argument_p >> *(',' >> argument_p) >> ')';
     }
 
-    Rule const& start() const {
+    classic::rule<ScannerT> const& start() const {
       return argumentList_p;
     }
 
