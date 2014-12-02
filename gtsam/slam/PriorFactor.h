@@ -81,9 +81,9 @@ namespace gtsam {
 
     /** vector of errors */
     Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
-      if (H) (*H) = eye(traits::dimension<T>());
-      // manifold equivalent of h(x)-z -> log(z,h(x))
       DefaultChart<T> chart;
+      if (H) (*H) = eye(chart.getDimension(p));
+      // manifold equivalent of h(x)-z -> log(z,h(x))
       return chart.local(prior_,p);
     }
 
