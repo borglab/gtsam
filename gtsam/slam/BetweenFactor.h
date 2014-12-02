@@ -131,7 +131,7 @@ namespace gtsam {
     /** Syntactic sugar for constrained version */
     BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :
       BetweenFactor<VALUE>(key1, key2, measured,
-                           noiseModel::Constrained::All(traits::dimension<VALUE>(), fabs(mu)))
+                           noiseModel::Constrained::All(DefaultChart<VALUE>::getDimension(measured), fabs(mu)))
     {}
 
   private:
