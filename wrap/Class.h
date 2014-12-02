@@ -162,11 +162,12 @@ private:
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
 struct ClassGrammar: public classic::grammar<ClassGrammar> {
 
-  Class& result_; ///< successful parse will be placed in here
+  Class& cls_; ///< successful parse will be placed in here
+  Template& template_; ///< result needs to be visible outside
 
   /// Construct type grammar and specify where result is placed
-  ClassGrammar(Class& result) :
-      result_(result) {
+  ClassGrammar(Class& cls, Template& t) :
+      cls_(cls), template_(t) {
   }
 
   /// Definition of type grammar
@@ -186,8 +187,7 @@ struct ClassGrammar: public classic::grammar<ClassGrammar> {
     ReturnValue retVal0, retVal;
     ReturnValueGrammar returnValue_g;
 
-    // template<CALIBRATION = {gtsam::Cal3DS2}>
-    Template methodTemplate, classTemplate;
+    Template methodTemplate;
     TemplateGrammar methodTemplate_g, classTemplate_g;
 
     std::string methodName;
@@ -195,35 +195,27 @@ struct ClassGrammar: public classic::grammar<ClassGrammar> {
 
     // Parent class
     Qualified possibleParent;
-    TypeGrammar classParent_p;
+    TypeGrammar classParent_g;
 
-    classic::rule<ScannerT> templateList_p, constructor_p, methodName_p,
-        method_p, staticMethodName_p, static_method_p, functions_p, class_p;
+    classic::rule<ScannerT> constructor_p, methodName_p, method_p,
+        staticMethodName_p, static_method_p, templateList_p, classParent_p,
+        functions_p, class_p;
 
     definition(ClassGrammar const& self) :
         argumentList_g(args), returnValue_g(retVal), //
-        methodTemplate_g(methodTemplate), classTemplate_g(classTemplate), //
-        T(true), F(false), classParent_p(possibleParent) {
+        methodTemplate_g(methodTemplate), classTemplate_g(self.template_), //
+        T(true), F(false), classParent_g(possibleParent) {
 
       using namespace classic;
       bool verbose = false; // TODO
 
-      // template<POSE, POINT>
-      templateList_p = (str_p("template") >> '<'
-          >> name_p[push_back_a(self.result_.templateArgs)]
-          >> *(',' >> name_p[push_back_a(self.result_.templateArgs)]) >> '>');
+      // ConstructorGrammar
+      constructor_p = (className_p >> argumentList_g >> ';' >> !comments_p) //
+          [bl::bind(&Constructor::push_back, bl::var(constructor),
+              bl::var(args))] //
+          [clear_a(args)];
 
-      // parse class constructor
-      constructor_p =
-          (className_p >> argumentList_g >> ';' >> !comments_p)[bl::bind(
-              &Constructor::push_back, bl::var(constructor), bl::var(args))][clear_a(
-              args)];
-
-      // TODO why is this not used anywhere?
-//      vector<string> namespaces_return; /// namespace for current return type
-//      Rule namespace_ret_p = namespace_p[push_back_a(namespaces_return)]
-//          >> str_p("::");
-
+      // MethodGrammar
       methodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
       // gtsam::Values retract(const gtsam::VectorValues& delta) const;
@@ -231,40 +223,47 @@ struct ClassGrammar: public classic::grammar<ClassGrammar> {
           >> (returnValue_g >> methodName_p[assign_a(methodName)]
               >> argumentList_g >> !str_p("const")[assign_a(isConst, T)] >> ';'
               >> *comments_p) //
-          [bl::bind(&Class::addMethod, bl::var(self.result_), verbose,
+          [bl::bind(&Class::addMethod, bl::var(self.cls_), verbose,
               bl::var(isConst), bl::var(methodName), bl::var(args),
               bl::var(retVal), bl::var(methodTemplate))] //
-          [assign_a(retVal, retVal0)] //
-          [clear_a(args)][clear_a(methodTemplate)] //
-          [assign_a(isConst, F)];
+          [assign_a(retVal, retVal0)][clear_a(args)] //
+          [clear_a(methodTemplate)][assign_a(isConst, F)];
 
+      // StaticMethodGrammar
       staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
       static_method_p = (str_p("static") >> returnValue_g
           >> staticMethodName_p[assign_a(methodName)] >> argumentList_g >> ';'
           >> *comments_p) //
           [bl::bind(&StaticMethod::addOverload,
-              bl::var(self.result_.static_methods)[bl::var(methodName)],
+              bl::var(self.cls_.static_methods)[bl::var(methodName)],
               bl::var(methodName), bl::var(args), bl::var(retVal), boost::none,
               verbose)] //
           [assign_a(retVal, retVal0)][clear_a(args)];
 
+      // template<POSE, POINT>
+      templateList_p = (str_p("template") >> '<'
+          >> name_p[push_back_a(self.cls_.templateArgs)]
+          >> *(',' >> name_p[push_back_a(self.cls_.templateArgs)]) >> '>');
+
+      // parse a full class
+      classParent_p = (':' >> classParent_g >> '{') //
+          [bl::bind(&Class::assignParent, bl::var(self.cls_),
+              bl::var(possibleParent))][clear_a(possibleParent)];
+
       functions_p = constructor_p | method_p | static_method_p;
 
       // parse a full class
-      class_p = (!(classTemplate_g[push_back_a(self.result_.templateArgs,
-          classTemplate.argName())] | templateList_p)
-          >> !(str_p("virtual")[assign_a(self.result_.isVirtual, true)])
-          >> str_p("class") >> className_p[assign_a(self.result_.name_)]
-          >> ((':' >> classParent_p >> '{')[bl::bind(&Class::assignParent,
-              bl::var(self.result_), bl::var(possibleParent))][clear_a(
-              possibleParent)] | '{') >> *(functions_p | comments_p)
-          >> str_p("};")) //
+      class_p = (!(classTemplate_g[push_back_a(self.cls_.templateArgs,
+          self.template_.argName())] | templateList_p)
+          >> !(str_p("virtual")[assign_a(self.cls_.isVirtual, true)])
+          >> str_p("class") >> className_p[assign_a(self.cls_.name_)]
+          >> (classParent_p | '{') >> //
+          *(functions_p | comments_p) >> str_p("};")) //
           [bl::bind(&Constructor::initializeOrCheck, bl::var(constructor),
-              bl::var(self.result_.name_), boost::none, verbose)][assign_a(
-              self.result_.constructor, constructor)] //
-          [assign_a(self.result_.deconstructor.name, self.result_.name_)] //
-          [clear_a(classTemplate)] //
+              bl::var(self.cls_.name_), boost::none, verbose)][assign_a(
+              self.cls_.constructor, constructor)] //
+          [assign_a(self.cls_.deconstructor.name, self.cls_.name_)] //
           [assign_a(constructor, constructor0)];
     }
 
@@ -276,5 +275,5 @@ struct ClassGrammar: public classic::grammar<ClassGrammar> {
 };
 // ClassGrammar
 
-} // \namespace wrap
+}// \namespace wrap
 

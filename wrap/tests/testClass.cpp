@@ -89,7 +89,8 @@ TEST( Class, Grammar ) {
 
   // Create type grammar that will place result in cls
   Class cls;
-  ClassGrammar g(cls);
+  Template t;
+  ClassGrammar g(cls, t);
 
   EXPECT(parse("class Point2 {\n};", g, space_p).full);
 
