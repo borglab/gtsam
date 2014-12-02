@@ -231,7 +231,7 @@ struct TypeListGrammar: public classic::grammar<TypeListGrammar<OPEN, CLOSE> > {
   template<typename ScannerT>
   struct definition {
 
-    mutable wrap::Qualified type; ///< temporary for use during parsing
+    wrap::Qualified type; ///< temporary for use during parsing
     TypeGrammar type_g; ///< Individual Type grammars
 
     classic::rule<ScannerT> type_p, typeList_p;
