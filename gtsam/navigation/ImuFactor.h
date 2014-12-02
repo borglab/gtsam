@@ -55,6 +55,14 @@ struct PoseVelocity {
   }
 };
 
+/**
+ * ImuFactor is a 5-ways factor involving previous state (pose and velocity of the vehicle at previous time step),
+ * current state (pose and velocity at current time step), and the bias estimate. According to the
+ * preintegration scheme proposed in [2], the ImuFactor includes many IMU measurements, which are
+ * "summarized" using the PreintegratedMeasurements class.
+ * Note that this factor does not force "temporal consistency" of the biases (which are usually
+ * slowly varying quantities), see also CombinedImuFactor for more details.
+ */
 class ImuFactor: public NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias> {
 public:
 
@@ -62,8 +70,8 @@ public:
    * PreintegratedMeasurements accumulates (integrates) the IMU measurements
    * (rotation rates and accelerations) and the corresponding covariance matrix.
    * The measurements are then used to build the Preintegrated IMU factor (ImuFactor).
-   * Can be built incrementally so as to avoid costly integration at time of
-   * factor construction.
+   * Integration is done incrementally (ideally, one integrates the measurement as soon as it is received
+   * from the IMU) so as to avoid costly integration at time of factor construction.
    */
   class PreintegratedMeasurements {
 
@@ -84,7 +92,8 @@ public:
     Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
     Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
-    Eigen::Matrix<double,9,9> PreintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
+    Eigen::Matrix<double,9,9> PreintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
+    ///< (first-order propagation from *measurementCovariance*).
 
     bool use2ndOrderIntegration_; ///< Controls the order of integration
 
@@ -109,6 +118,19 @@ public:
     /// equals
     bool equals(const PreintegratedMeasurements& expected, double tol=1e-9) const;
 
+    /// Re-initialize PreintegratedMeasurements
+    void resetIntegration();
+
+    /**
+     * Add a single IMU measurement to the preintegration.
+     * @param measuredAcc Measured acceleration (in body frame, as given by the sensor)
+     * @param measuredOmega Measured angular velocity (as given by the sensor)
+     * @param deltaT Time interval between two consecutive IMU measurements
+     * @param body_P_sensor Optional sensor frame (pose of the IMU in the body frame)
+     */
+    void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
+        boost::optional<const Pose3&> body_P_sensor = boost::none);
+
     /// methods to access class variables
     Matrix measurementCovariance() const {return measurementCovariance_;}
     Matrix deltaRij() const {return deltaRij_.matrix();}
@@ -122,19 +144,6 @@ public:
     Matrix delVdelBiasOmega() const { return delVdelBiasOmega_;}
     Matrix delRdelBiasOmega() const{ return delRdelBiasOmega_;}
     Matrix preintMeasCov() const { return PreintMeasCov_;}
-
-    /// Re-initialize PreintegratedMeasurements
-    void resetIntegration();
-
-    /**
-     * Add a single IMU measurement to the preintegration.
-     * @param measuredAcc Measured acceleration (in body frame)
-     * @param measuredOmega Measured angular velocity
-     * @param deltaT Time interval between two consecutive IMU measurements
-     * @param body_P_sensor Optional sensor frame (pose of the IMU in the body frame)
-     */
-    void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-        boost::optional<const Pose3&> body_P_sensor = boost::none);
 
     /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
     // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
@@ -233,6 +242,7 @@ public:
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const;
 
     /** Access the preintegrated measurements. */
+
     const PreintegratedMeasurements& preintegratedMeasurements() const {
       return preintegratedMeasurements_; }
 
@@ -251,7 +261,7 @@ public:
         boost::optional<Matrix&> H4 = boost::none,
         boost::optional<Matrix&> H5 = boost::none) const;
 
-    // predicted states from IMU
+    /// predicted states from IMU
     static PoseVelocity Predict(const Pose3& pose_i, const Vector3& vel_i,
         const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
         const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
