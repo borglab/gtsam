@@ -88,11 +88,16 @@ namespace gtsam {
 
     /** vector of errors */
     Vector evaluateError(const T& p1, const T& p2,
-        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+        boost::optional<Matrix&> H1 = boost::none,boost::optional<Matrix&> H2 =
             boost::none) const {
-      T hx = p1.between(p2, H1, H2); // h(x)
-      // manifold equivalent of h(x)-z -> log(z,h(x))
       DefaultChart<T> chart;
+      // TODO check:
+      //T hx = p1.between(p2, H1, H2); // h(x)
+      T hx = chart.local(p2, p1);
+      if(H1) (*H1) = -eye(chart.getDimension(p1));
+      if(H2) (*H2) = eye(chart.getDimension(p2));
+
+      // manifold equivalent of h(x)-z -> log(z,h(x))
       return chart.local(measured_, hx);
     }
 
