@@ -28,8 +28,10 @@ Cal3DS2_Base::Cal3DS2_Base(const Vector &v):
     fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), p1_(v[7]), p2_(v[8]){}
 
 /* ************************************************************************* */
-Matrix Cal3DS2_Base::K() const {
-  return (Matrix(3, 3) << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0).finished();
+Matrix3 Cal3DS2_Base::K() const {
+    Matrix3 K;
+    K << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0;
+    return K;
 }
 
 /* ************************************************************************* */
@@ -39,7 +41,7 @@ Vector Cal3DS2_Base::vector() const {
 
 /* ************************************************************************* */
 void Cal3DS2_Base::print(const std::string& s_) const {
-  gtsam::print(K(), s_ + ".K");
+  gtsam::print((Matrix)K(), s_ + ".K");
   gtsam::print(Vector(k()), s_ + ".k");
 }
 
@@ -156,7 +158,7 @@ Point2 Cal3DS2_Base::calibrate(const Point2& pi, const double tol) const {
 }
 
 /* ************************************************************************* */
-Matrix Cal3DS2_Base::D2d_intrinsic(const Point2& p) const {
+Matrix2 Cal3DS2_Base::D2d_intrinsic(const Point2& p) const {
   const double x = p.x(), y = p.y(), xx = x * x, yy = y * y;
   const double rr = xx + yy;
   const double r4 = rr * rr;
@@ -167,7 +169,7 @@ Matrix Cal3DS2_Base::D2d_intrinsic(const Point2& p) const {
 }
 
 /* ************************************************************************* */
-Matrix Cal3DS2_Base::D2d_calibration(const Point2& p) const {
+Matrix29 Cal3DS2_Base::D2d_calibration(const Point2& p) const {
   const double x = p.x(), y = p.y(), xx = x * x, yy = y * y, xy = x * y;
   const double rr = xx + yy;
   const double r4 = rr * rr;

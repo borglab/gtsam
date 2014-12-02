@@ -34,15 +34,17 @@ Cal3Bundler::Cal3Bundler(double f, double k1, double k2, double u0, double v0) :
 }
 
 /* ************************************************************************* */
-Matrix Cal3Bundler::K() const {
+Matrix3 Cal3Bundler::K() const {
   Matrix3 K;
   K << f_, 0, u0_, 0, f_, v0_, 0, 0, 1;
   return K;
 }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::k() const {
-  return (Vector(4) << k1_, k2_, 0, 0).finished();
+Vector4 Cal3Bundler::k() const {
+  Vector4 rvalue_;
+  rvalue_ << k1_, k2_, 0, 0;
+  return rvalue_;
 }
 
 /* ************************************************************************* */
@@ -120,25 +122,27 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
 }
 
 /* ************************************************************************* */
-Matrix Cal3Bundler::D2d_intrinsic(const Point2& p) const {
-  Matrix Dp;
+Matrix2 Cal3Bundler::D2d_intrinsic(const Point2& p) const {
+  Matrix2 Dp;
   uncalibrate(p, boost::none, Dp);
   return Dp;
 }
 
 /* ************************************************************************* */
-Matrix Cal3Bundler::D2d_calibration(const Point2& p) const {
-  Matrix Dcal;
+Matrix23 Cal3Bundler::D2d_calibration(const Point2& p) const {
+  Matrix23 Dcal;
   uncalibrate(p, Dcal, boost::none);
   return Dcal;
 }
 
 /* ************************************************************************* */
-Matrix Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
-  Matrix Dcal, Dp;
+Matrix25 Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
+  Matrix23 Dcal;
+  Matrix2 Dp;
   uncalibrate(p, Dcal, Dp);
-  Matrix H(2, 5);
-  H << Dp, Dcal;
+  Matrix25 H;
+  H.block<2,2>(0,0) = Dp;
+  H.block<2,3>(0,2) = Dcal;
   return H;
 }
 

@@ -90,20 +90,20 @@ public:
 
   /// compose the two camera poses: TODO Frank says this might not make sense
   inline const CalibratedCamera compose(const CalibratedCamera &c,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+      OptionalJacobian<6,6> H1=boost::none, OptionalJacobian<6,6> H2 =
           boost::none) const {
     return CalibratedCamera(pose_.compose(c.pose(), H1, H2));
   }
 
   /// between the two camera poses: TODO Frank says this might not make sense
   inline const CalibratedCamera between(const CalibratedCamera& c,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+      OptionalJacobian<6,6> H1 = boost::none, OptionalJacobian<6,6> H2 =
           boost::none) const {
     return CalibratedCamera(pose_.between(c.pose(), H1, H2));
   }
 
   /// invert the camera pose: TODO Frank says this might not make sense
-  inline const CalibratedCamera inverse(boost::optional<Matrix&> H1 =
+  inline const CalibratedCamera inverse(OptionalJacobian<6,6> H1 =
       boost::none) const {
     return CalibratedCamera(pose_.inverse(H1));
   }
@@ -152,8 +152,7 @@ public:
    * @return the intrinsic coordinates of the projected point
    */
   Point2 project(const Point3& point,
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none) const;
+      OptionalJacobian<2,6> Dpose=boost::none, OptionalJacobian<2,3> Dpoint=boost::none) const;
 
   /**
    * projects a 3-dimensional point in camera coordinates into the
@@ -161,7 +160,7 @@ public:
    * With optional 2by3 derivative
    */
   static Point2 project_to_camera(const Point3& cameraPoint,
-      boost::optional<Matrix&> H1 = boost::none);
+      OptionalJacobian<2, 3> H1 = boost::none);
 
   /**
    * backproject a 2-dimensional point to a 3-dimension point
@@ -175,8 +174,8 @@ public:
    * @param H2 optionally computed Jacobian with respect to the 3D point
    * @return range (double)
    */
-  double range(const Point3& point, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const {
+  double range(const Point3& point, OptionalJacobian<1,6> H1 = boost::none,
+      OptionalJacobian<1,3> H2 = boost::none) const {
     return pose_.range(point, H1, H2);
   }
 
@@ -187,8 +186,8 @@ public:
    * @param H2 optionally computed Jacobian with respect to the 3D point
    * @return range (double)
    */
-  double range(const Pose3& pose, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const {
+  double range(const Pose3& pose, OptionalJacobian<1,6> H1=boost::none,
+      OptionalJacobian<1,6> H2=boost::none) const {
     return pose_.range(pose, H1, H2);
   }
 
@@ -199,8 +198,8 @@ public:
    * @param H2 optionally computed Jacobian with respect to the 3D point
    * @return range (double)
    */
-  double range(const CalibratedCamera& camera, boost::optional<Matrix&> H1 =
-      boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+  double range(const CalibratedCamera& camera, OptionalJacobian<1,6> H1 =
+      boost::none, OptionalJacobian<1,6> H2 = boost::none) const {
     return pose_.range(camera.pose_, H1, H2);
   }
 

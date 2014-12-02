@@ -96,8 +96,8 @@ public:
    * @return point in image coordinates
    */
   Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> Dcal = boost::none,
-      boost::optional<Matrix&> Dp = boost::none) const ;
+      OptionalJacobian<2,10> Dcal = boost::none,
+      OptionalJacobian<2,2> Dp = boost::none) const ;
 
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;

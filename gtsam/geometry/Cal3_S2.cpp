@@ -53,7 +53,7 @@ Cal3_S2::Cal3_S2(const std::string &path) :
 
 /* ************************************************************************* */
 void Cal3_S2::print(const std::string& s) const {
-  gtsam::print(matrix(), s);
+  gtsam::print((Matrix)matrix(), s);
 }
 
 /* ************************************************************************* */

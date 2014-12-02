@@ -69,8 +69,8 @@ public:
   /// @name Standard Interface
   /// @{
 
-  Matrix K() const; ///< Standard 3*3 calibration matrix
-  Vector k() const; ///< Radial distortion parameters (4 of them, 2 0)
+  Matrix3 K() const; ///< Standard 3*3 calibration matrix
+  Vector4 k() const; ///< Radial distortion parameters (4 of them, 2 0)
 
   Vector3 vector() const;
 
@@ -120,13 +120,13 @@ public:
   Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
-  Matrix D2d_intrinsic(const Point2& p) const;
+  Matrix2 D2d_intrinsic(const Point2& p) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
-  Matrix D2d_calibration(const Point2& p) const;
+  Matrix23 D2d_calibration(const Point2& p) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
-  Matrix D2d_intrinsic_calibration(const Point2& p) const;
+  Matrix25 D2d_intrinsic_calibration(const Point2& p) const;
 
   /// @}
   /// @name Manifold
