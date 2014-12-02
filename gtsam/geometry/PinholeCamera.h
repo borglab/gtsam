@@ -428,8 +428,8 @@ public:
    */
   double range(
       const Point3& point, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none) const {
+      OptionalJacobian<1,6> Dpose = boost::none,
+      OptionalJacobian<1,3> Dpoint = boost::none) const {
     double result = pose_.range(point, Dpose, Dpoint);
     if (Dpose) {
       // Add columns of zeros to Jacobian for calibration
@@ -500,8 +500,8 @@ public:
    */
   double range(
       const CalibratedCamera& camera, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dother = boost::none) const {
+      OptionalJacobian<1,6> Dpose = boost::none,
+      OptionalJacobian<1,6> Dother = boost::none) const {
     return pose_.range(camera.pose_, Dpose, Dother);
   }
 
