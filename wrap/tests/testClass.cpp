@@ -83,6 +83,37 @@ TEST( Class, TemplatedMethods ) {
 }
 
 /* ************************************************************************* */
+#include "../Module.h"
+#include "../FileWriter.h"
+#include "../TypeAttributesTable.h"
+#include "../utilities.h"
+
+//#define BOOST_SPIRIT_DEBUG
+#include "../spirit.h"
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+#include <boost/lambda/construct.hpp>
+#include <boost/foreach.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+using namespace wrap;
+using namespace BOOST_SPIRIT_CLASSIC_NS;
+namespace bl = boost::lambda;
+namespace fs = boost::filesystem;
+
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
 struct ClassGrammar: public classic::grammar<ClassGrammar> {
 
@@ -95,14 +126,101 @@ struct ClassGrammar: public classic::grammar<ClassGrammar> {
 
   /// Definition of type grammar
   template<typename ScannerT>
-  struct definition {
+  struct definition: BasicRules<ScannerT> {
 
-    classic::rule<ScannerT> class_p;
+    using BasicRules<ScannerT>::name_p;
+    using BasicRules<ScannerT>::className_p;
+    using BasicRules<ScannerT>::comments_p;
 
-    definition(ClassGrammar const& self) {
+    // NOTE: allows for pointers to all types
+    ArgumentList args;
+    ArgumentListGrammar argumentList_g;
+
+    Constructor constructor0, constructor;
+
+    ReturnValue retVal0, retVal;
+    ReturnValueGrammar returnValue_g;
+
+    // template<CALIBRATION = {gtsam::Cal3DS2}>
+    Template methodTemplate, classTemplate;
+    TemplateGrammar methodTemplate_g, classTemplate_g;
+
+    string methodName;
+    bool isConst, T, F;
+
+    // Parent class
+    Qualified possibleParent;
+    TypeGrammar classParent_p;
+
+    classic::rule<ScannerT> templateList_p, constructor_p, methodName_p,
+        method_p, staticMethodName_p, static_method_p, functions_p, class_p;
+
+    definition(ClassGrammar const& self) :
+        argumentList_g(args), returnValue_g(retVal), //
+        methodTemplate_g(methodTemplate), classTemplate_g(classTemplate), //
+        T(true), F(false), classParent_p(possibleParent) {
+
       using namespace classic;
+      bool verbose = false; // TODO
 
-      class_p = str_p("class");
+      // template<POSE, POINT>
+      templateList_p = (str_p("template") >> '<'
+          >> name_p[push_back_a(self.result_.templateArgs)]
+          >> *(',' >> name_p[push_back_a(self.result_.templateArgs)]) >> '>');
+
+      // parse class constructor
+      constructor_p =
+          (className_p >> argumentList_g >> ';' >> !comments_p)[bl::bind(
+              &Constructor::push_back, bl::var(constructor), bl::var(args))][clear_a(
+              args)];
+
+      // TODO why is this not used anywhere?
+//      vector<string> namespaces_return; /// namespace for current return type
+//      Rule namespace_ret_p = namespace_p[push_back_a(namespaces_return)]
+//          >> str_p("::");
+
+      methodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
+
+      // gtsam::Values retract(const gtsam::VectorValues& delta) const;
+      method_p = !methodTemplate_g
+          >> (returnValue_g >> methodName_p[assign_a(methodName)]
+              >> argumentList_g >> !str_p("const")[assign_a(isConst, T)] >> ';'
+              >> *comments_p) //
+          [bl::bind(&Class::addMethod, bl::var(self.result_), verbose,
+              bl::var(isConst), bl::var(methodName), bl::var(args),
+              bl::var(retVal), bl::var(methodTemplate))] //
+          [assign_a(retVal, retVal0)] //
+          [clear_a(args)][clear_a(methodTemplate)] //
+          [assign_a(isConst, F)];
+
+      staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
+
+      static_method_p = (str_p("static") >> returnValue_g
+          >> staticMethodName_p[assign_a(methodName)] >> argumentList_g >> ';'
+          >> *comments_p) //
+          [bl::bind(&StaticMethod::addOverload,
+              bl::var(self.result_.static_methods)[bl::var(methodName)],
+              bl::var(methodName), bl::var(args), bl::var(retVal), boost::none,
+              verbose)] //
+          [assign_a(retVal, retVal0)][clear_a(args)];
+
+      functions_p = constructor_p | method_p | static_method_p;
+
+      // parse a full class
+      class_p = (!(classTemplate_g[push_back_a(self.result_.templateArgs,
+          classTemplate.argName())] | templateList_p)
+          >> !(str_p("virtual")[assign_a(self.result_.isVirtual, true)])
+          >> str_p("class") >> className_p[assign_a(self.result_.name_)]
+          >> ((':' >> classParent_p >> '{')[bl::bind(&Class::assignParent,
+              bl::var(self.result_), bl::var(possibleParent))][clear_a(
+              possibleParent)] | '{') >> *(functions_p | comments_p)
+          >> str_p("};")) //
+          [bl::bind(&Constructor::initializeOrCheck, bl::var(constructor),
+              bl::var(self.result_.name_), boost::none, verbose)][assign_a(
+              self.result_.constructor, constructor)] //
+          [assign_a(self.result_.deconstructor.name, self.result_.name_)] //
+          [clear_a(classTemplate)] //
+          [assign_a(constructor, constructor0)];
     }
 
     classic::rule<ScannerT> const& start() const {
@@ -113,8 +231,8 @@ struct ClassGrammar: public classic::grammar<ClassGrammar> {
 };
 // ClassGrammar
 
-/* ************************************************************************* */
-TEST( wrap, Small ) {
+//******************************************************************************
+TEST( Class, Grammar ) {
 
   using classic::space_p;
 
@@ -122,13 +240,15 @@ TEST( wrap, Small ) {
   Class cls;
   ClassGrammar g(cls);
 
+  EXPECT(parse("class Point2 {\n};", g, space_p).full);
+
   string markup(
-      string("class Point2 {                \n") +
-      string(" double x() const;            \n") +   // Method 1
-      string(" Matrix returnMatrix() const;   \n") + // Method 2
-      string(" Point2 returnPoint2() const; \n") +   // Method 3
-      string(" static Vector returnVector(); \n") +  // Static Method 1
-      string("};\n"));
+      string("class Point2 {                \n")
+          + string(" double x() const;            \n") // Method 1
+          + string(" Matrix returnMatrix() const;   \n") // Method 2
+          + string(" Point2 returnPoint2() const; \n") // Method 3
+          + string(" static Vector returnVector(); \n") // Static Method 1
+          + string("};"));
 
   EXPECT(parse(markup.c_str(), g, space_p).full);
 
