@@ -26,6 +26,13 @@ TEST(PriorFactor, ConstructorVector3) {
   PriorFactor<Vector3> factor(1, Vector3(1,2,3), model);
 }
 
+// Constructor dynamic sized vector
+TEST(PriorFactor, ConstructorDynamicSizeVector) {
+  Vector v(5); v << 1, 2, 3, 4, 5;
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(5, 1.0);
+  PriorFactor<Vector> factor(1, v, model);
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
