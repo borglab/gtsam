@@ -147,7 +147,7 @@ TEST(BasisDecompositions, ManualFourier) {
   Key key(1);
   Expression<Vector3> c(key);
   Values values;
-  values.insert(key, Vector3()); // does not matter
+  values.insert<Vector3>(key, Vector3::Zero()); // does not matter
   for (size_t i = 0; i < 16; i++) {
     double x = i * M_PI / 8, y = exp(sin(x) + cos(x));
 
@@ -162,12 +162,38 @@ TEST(BasisDecompositions, ManualFourier) {
     // With ExpressionFactor
     Expression<double> expression(Fourier<3>(x), c);
     EXPECT_CORRECT_EXPRESSION_JACOBIANS(expression, values, 1e-5, 1e-9);
-
-    ExpressionFactor<double> f2(model, y, expression);
-    boost::shared_ptr<GaussianFactor> gf = f2.linearize(values);
-    boost::shared_ptr<JacobianFactor> jf = //
-        boost::dynamic_pointer_cast<JacobianFactor>(gf);
-    EXPECT( assert_equal(f1, *jf, 1e-9));
+    {
+      ExpressionFactor<double> f2(model, y, expression);
+      boost::shared_ptr<GaussianFactor> gf = f2.linearize(values);
+      boost::shared_ptr<JacobianFactor> jf = //
+          boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      CHECK(jf);
+      EXPECT( assert_equal(f1, *jf, 1e-9));
+    }
+    {
+      ExpressionFactor<double> f2(model, y, expression);
+      boost::shared_ptr<GaussianFactor> gf = f2.linearize(values);
+      boost::shared_ptr<JacobianFactor> jf = //
+          boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      CHECK(jf);
+      EXPECT( assert_equal(f1, *jf, 1e-9));
+    }
+    {
+      ExpressionFactor<double> f2(model, y, expression);
+      boost::shared_ptr<GaussianFactor> gf = f2.linearize(values);
+      boost::shared_ptr<JacobianFactor> jf = //
+          boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      CHECK(jf);
+      EXPECT( assert_equal(f1, *jf, 1e-9));
+    }
+    {
+      ExpressionFactor<double> f2(model, y, expression);
+      boost::shared_ptr<GaussianFactor> gf = f2.linearize(values);
+      boost::shared_ptr<JacobianFactor> jf = //
+          boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      CHECK(jf);
+      EXPECT( assert_equal(f1, *jf, 1e-9));
+    }
   }
 
   // Solve
