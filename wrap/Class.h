@@ -256,7 +256,7 @@ struct ClassGrammar: public classic::grammar<ClassGrammar> {
       // parse a full class
       class_p = (!(classTemplate_g[push_back_a(self.cls_.templateArgs,
           self.template_.argName())] | templateList_p)
-          >> !(str_p("virtual")[assign_a(self.cls_.isVirtual, true)])
+          >> !(str_p("virtual")[assign_a(self.cls_.isVirtual, T)])
           >> str_p("class") >> className_p[assign_a(self.cls_.name_)]
           >> (classParent_p | '{') >> //
           *(functions_p | comments_p) >> str_p("};")) //
