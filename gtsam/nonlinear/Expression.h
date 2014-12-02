@@ -209,7 +209,7 @@ private:
     ExecutionTraceStorage traceStorage[size];
     ExecutionTrace<T> trace;
     T value(traceExecution(values, trace, traceStorage));
-    trace.startReverseAD(jacobians);
+    trace.startReverseAD1(jacobians);
     return value;
   }
 

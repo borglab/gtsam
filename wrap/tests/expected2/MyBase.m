@@ -11,9 +11,9 @@ classdef MyBase < handle
         if nargin == 2
           my_ptr = varargin{2};
         else
-          my_ptr = geometry_wrapper(41, varargin{2});
+          my_ptr = geometry_wrapper(42, varargin{2});
         end
-        geometry_wrapper(40, my_ptr);
+        geometry_wrapper(41, my_ptr);
       else
         error('Arguments do not match any overload of MyBase constructor');
       end
@@ -21,7 +21,7 @@ classdef MyBase < handle
     end
 
     function delete(obj)
-      geometry_wrapper(42, obj.ptr_MyBase);
+      geometry_wrapper(43, obj.ptr_MyBase);
     end
 
     function display(obj), obj.print(''); end

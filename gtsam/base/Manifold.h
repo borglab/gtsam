@@ -73,7 +73,6 @@ template<typename T>
 struct dimension: public Dynamic {
 };
 
-
 /**
  * zero<T>::value is intended to be the origin of a canonical coordinate system
  * with canonical(t) == DefaultChart<T>::local(zero<T>::value, t)
@@ -111,14 +110,16 @@ struct is_group<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : publi
 };
 
 template<int M, int N, int Options, int MaxRows, int MaxCols>
-struct is_manifold<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::true_type{
+struct is_manifold<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::true_type {
 };
 
 template<int M, int N, int Options, int MaxRows, int MaxCols>
-struct dimension<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::integral_constant<int,
-    M == Eigen::Dynamic ? Eigen::Dynamic : (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)> {
-    //TODO after switch to c++11 : the above should should be extracted to a constexpr function
-    // for readability and to reduce code duplication
+struct dimension<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::integral_constant<
+    int,
+    M == Eigen::Dynamic ? Eigen::Dynamic :
+        (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)> {
+  //TODO after switch to c++11 : the above should should be extracted to a constexpr function
+  // for readability and to reduce code duplication
 };
 
 template<int M, int N, int Options, int MaxRows, int MaxCols>
@@ -131,9 +132,9 @@ struct zero<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
 };
 
 template<int M, int N, int Options>
-struct identity<Eigen::Matrix<double, M, N, Options> > : public zero<Eigen::Matrix<double, M, N, Options> > {
+struct identity<Eigen::Matrix<double, M, N, Options> > : public zero<
+    Eigen::Matrix<double, M, N, Options> > {
 };
-
 
 template<typename T> struct is_chart: public boost::false_type {
 };
@@ -248,12 +249,16 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
    * This chart for the vector space of M x N matrices (represented by Eigen matrices) chooses as basis the one with respect to which the coordinates are exactly the matrix entries as laid out in memory (as determined by Options).
    * Computing coordinates for a matrix is then simply a reshape to the row vector of appropriate size.
    */
-	typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> type;
+  typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> type;
   typedef type T;
-  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
-      "DefaultChart has not been implemented yet for dynamically sized matrices");
+  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
+
+  BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
+      "Internal error: DefaultChart for Dynamic should be handled by template below");
+
   static vector local(const T& origin, const T& other) {
-    return reshape<vector::RowsAtCompileTime, 1, vector::Options>(other) - reshape<vector::RowsAtCompileTime, 1, vector::Options>(origin);
+    return reshape<vector::RowsAtCompileTime, 1, vector::Options>(other)
+        - reshape<vector::RowsAtCompileTime, 1, vector::Options>(origin);
   }
   static T retract(const T& origin, const vector& d) {
     return origin + reshape<M, N, Options>(d);
@@ -266,17 +271,33 @@ struct DefaultChart<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
 // Dynamically sized Vector
 template<>
 struct DefaultChart<Vector> {
-  typedef Vector T;
-  typedef T type;
-  typedef T vector;
-  static vector local(const T& origin, const T& other) {
+  typedef Vector type;
+  typedef Vector vector;
+  static vector local(const Vector& origin, const Vector& other) {
     return other - origin;
   }
-  static T retract(const T& origin, const vector& d) {
+  static Vector retract(const Vector& origin, const vector& d) {
     return origin + d;
   }
-  static int getDimension(const T& origin) {
+  static int getDimension(const Vector& origin) {
     return origin.size();
+  }
+};
+
+// Dynamically sized Matrix
+template<>
+struct DefaultChart<Matrix> {
+  typedef Matrix type;
+  typedef Vector vector;
+  static vector local(const Matrix& origin, const Matrix& other) {
+    Matrix d = other - origin;
+    return Eigen::Map<Vector>(d.data(),getDimension(d));
+  }
+  static Matrix retract(const Matrix& origin, const vector& d) {
+    return origin + Eigen::Map<const Matrix>(d.data(),origin.rows(),origin.cols());
+  }
+  static int getDimension(const Matrix& m) {
+    return m.size();
   }
 };
 

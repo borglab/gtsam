@@ -39,19 +39,25 @@ TEST( Class, OverloadingMethod ) {
   bool verbose = true, is_const = true;
   ArgumentList args;
   const ReturnValue retVal;
-  const string templateArgName;
-  vector<Qualified> templateArgValues;
-  cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
-      templateArgValues);
+  const Template tmplate;
+  cls.addMethod(verbose, is_const, name, args, retVal, tmplate);
   EXPECT_LONGS_EQUAL(1, cls.nrMethods());
   EXPECT(cls.exists(name));
-  Method& method = cls.method(name);
-  EXPECT_LONGS_EQUAL(1, method.nrOverloads());
+  EXPECT_LONGS_EQUAL(1, cls.method(name).nrOverloads());
 
-  cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
-      templateArgValues);
+  // add an overload w different argument list
+  args.push_back(Argument(Qualified("Vector",Qualified::EIGEN),"v"));
+  cls.addMethod(verbose, is_const, name, args, retVal, tmplate);
   EXPECT_LONGS_EQUAL(1, cls.nrMethods());
-  EXPECT_LONGS_EQUAL(2, method.nrOverloads());
+  EXPECT_LONGS_EQUAL(2, cls.method(name).nrOverloads());
+
+  // add with non-trivial template list, will create two different functions
+  boost::optional<Template> t = //
+      CreateTemplate("template<T = {Point2, Point3}>");
+  CHECK(t);
+  cls.addMethod(verbose, is_const, name, args, retVal, *t);
+  EXPECT_LONGS_EQUAL(3, cls.nrMethods());
+  EXPECT_LONGS_EQUAL(2, cls.method(name).nrOverloads());
 }
 
 /* ************************************************************************* */
@@ -64,15 +70,13 @@ TEST( Class, TemplatedMethods ) {
   bool verbose = true, is_const = true;
   ArgumentList args;
   Argument arg;
-  arg.type.name = "T";
+  arg.type.name_ = "T";
   args.push_back(arg);
   const ReturnValue retVal(ReturnType("T"));
-  const string templateArgName("T");
-  vector<Qualified> templateArgValues;
-  templateArgValues.push_back(Qualified("Point2"));
-  templateArgValues.push_back(Qualified("Point3"));
-  cls.addMethod(verbose, is_const, name, args, retVal, templateArgName,
-      templateArgValues);
+  boost::optional<Template> tmplate = //
+      CreateTemplate("template<T = {Point2, Point3}>");
+  CHECK(tmplate);
+  cls.addMethod(verbose, is_const, name, args, retVal, *tmplate);
   EXPECT_LONGS_EQUAL(2, cls.nrMethods());
   EXPECT(cls.exists(name+"Point2"));
   EXPECT(cls.exists(name+"Point3"));

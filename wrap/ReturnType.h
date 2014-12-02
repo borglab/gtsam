@@ -9,6 +9,7 @@
 #include "FileWriter.h"
 #include "TypeAttributesTable.h"
 #include "utilities.h"
+#include <iostream>
 
 #pragma once
 
@@ -17,28 +18,25 @@ namespace wrap {
 /**
  * Encapsulates return value of a method or function
  */
-struct ReturnType: Qualified {
-
-  /// the different supported return value categories
-  typedef enum {
-    CLASS = 1, EIGEN = 2, BASIS = 3, VOID = 4
-  } return_category;
+struct ReturnType: public Qualified {
 
   bool isPtr;
-  return_category category;
 
+  friend struct ReturnValueGrammar;
+
+  /// Makes a void type
   ReturnType() :
-      isPtr(false), category(CLASS) {
+      isPtr(false) {
   }
 
-  ReturnType(const std::string& name) :
-      isPtr(false), category(CLASS) {
-    Qualified::name = name;
+  /// Constructor, no namespaces
+  ReturnType(const std::string& name, Category c = CLASS, bool ptr = false) :
+      Qualified(name, c), isPtr(ptr) {
   }
 
-  void rename(const Qualified& q) {
-    name = q.name;
-    namespaces = q.namespaces;
+  virtual void clear() {
+    Qualified::clear();
+    isPtr = false;
   }
 
   /// Check if this type is in a set of valid types
@@ -63,5 +61,37 @@ private:
   void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 
 };
+
+//******************************************************************************
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct ReturnTypeGrammar: public classic::grammar<ReturnTypeGrammar> {
+
+  wrap::ReturnType& result_; ///< successful parse will be placed in here
+
+  TypeGrammar type_g;
+
+  /// Construct ReturnType grammar and specify where result is placed
+  ReturnTypeGrammar(wrap::ReturnType& result) :
+      result_(result), type_g(result_) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition {
+
+    classic::rule<ScannerT> type_p;
+
+    definition(ReturnTypeGrammar const& self) {
+      using namespace classic;
+      type_p = self.type_g >> !ch_p('*')[assign_a(self.result_.isPtr, T)];
+    }
+
+    classic::rule<ScannerT> const& start() const {
+      return type_p;
+    }
+
+  };
+};
+// ReturnTypeGrammar
 
 } // \namespace wrap

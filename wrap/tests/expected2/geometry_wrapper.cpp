@@ -5,8 +5,8 @@
 #include <folder/path/to/Test.h>
 
 typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
-typedef MyTemplate<gtsam::Point3> MyTemplatePoint3;
-typedef MyFactor<gtsam::Pose2, gtsam::Point2> MyFactorPosePoint2;
+typedef MyTemplate<Matrix> MyTemplateMatrix;
+typedef MyFactor<gtsam::Pose2, Matrix> MyFactorPosePoint2;
 
 typedef std::set<boost::shared_ptr<gtsam::Point2>*> Collector_gtsamPoint2;
 static Collector_gtsamPoint2 collector_gtsamPoint2;
@@ -18,8 +18,8 @@ typedef std::set<boost::shared_ptr<MyBase>*> Collector_MyBase;
 static Collector_MyBase collector_MyBase;
 typedef std::set<boost::shared_ptr<MyTemplatePoint2>*> Collector_MyTemplatePoint2;
 static Collector_MyTemplatePoint2 collector_MyTemplatePoint2;
-typedef std::set<boost::shared_ptr<MyTemplatePoint3>*> Collector_MyTemplatePoint3;
-static Collector_MyTemplatePoint3 collector_MyTemplatePoint3;
+typedef std::set<boost::shared_ptr<MyTemplateMatrix>*> Collector_MyTemplateMatrix;
+static Collector_MyTemplateMatrix collector_MyTemplateMatrix;
 typedef std::set<boost::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
 static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
 
@@ -59,10 +59,10 @@ void _deleteAllObjects()
     collector_MyTemplatePoint2.erase(iter++);
     anyDeleted = true;
   } }
-  { for(Collector_MyTemplatePoint3::iterator iter = collector_MyTemplatePoint3.begin();
-      iter != collector_MyTemplatePoint3.end(); ) {
+  { for(Collector_MyTemplateMatrix::iterator iter = collector_MyTemplateMatrix.begin();
+      iter != collector_MyTemplateMatrix.end(); ) {
     delete *iter;
-    collector_MyTemplatePoint3.erase(iter++);
+    collector_MyTemplateMatrix.erase(iter++);
     anyDeleted = true;
   } }
   { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();
@@ -85,7 +85,7 @@ void _geometry_RTTIRegister() {
     std::map<std::string, std::string> types;
     types.insert(std::make_pair(typeid(MyBase).name(), "MyBase"));
     types.insert(std::make_pair(typeid(MyTemplatePoint2).name(), "MyTemplatePoint2"));
-    types.insert(std::make_pair(typeid(MyTemplatePoint3).name(), "MyTemplatePoint3"));
+    types.insert(std::make_pair(typeid(MyTemplateMatrix).name(), "MyTemplateMatrix"));
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
     if(!registry)
@@ -181,7 +181,17 @@ void gtsamPoint2_dim_6(int nargout, mxArray *out[], int nargin, const mxArray *i
   out[0] = wrap< int >(obj->dim());
 }
 
-void gtsamPoint2_returnChar_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint2_eigenArguments_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<gtsam::Point2> Shared;
+  checkArguments("eigenArguments",nargout,nargin-1,2);
+  Shared obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
+  Vector v = unwrap< Vector >(in[1]);
+  Matrix m = unwrap< Matrix >(in[2]);
+  obj->eigenArguments(v,m);
+}
+
+void gtsamPoint2_returnChar_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> Shared;
   checkArguments("returnChar",nargout,nargin-1,0);
@@ -189,7 +199,7 @@ void gtsamPoint2_returnChar_7(int nargout, mxArray *out[], int nargin, const mxA
   out[0] = wrap< char >(obj->returnChar());
 }
 
-void gtsamPoint2_vectorConfusion_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint2_vectorConfusion_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<VectorNotEigen> SharedVectorNotEigen;
   typedef boost::shared_ptr<gtsam::Point2> Shared;
@@ -198,7 +208,7 @@ void gtsamPoint2_vectorConfusion_8(int nargout, mxArray *out[], int nargin, cons
   out[0] = wrap_shared_ptr(SharedVectorNotEigen(new VectorNotEigen(obj->vectorConfusion())),"VectorNotEigen", false);
 }
 
-void gtsamPoint2_x_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint2_x_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> Shared;
   checkArguments("x",nargout,nargin-1,0);
@@ -206,7 +216,7 @@ void gtsamPoint2_x_9(int nargout, mxArray *out[], int nargin, const mxArray *in[
   out[0] = wrap< double >(obj->x());
 }
 
-void gtsamPoint2_y_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint2_y_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> Shared;
   checkArguments("y",nargout,nargin-1,0);
@@ -214,7 +224,7 @@ void gtsamPoint2_y_10(int nargout, mxArray *out[], int nargin, const mxArray *in
   out[0] = wrap< double >(obj->y());
 }
 
-void gtsamPoint3_collectorInsertAndMakeBase_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint3_collectorInsertAndMakeBase_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<gtsam::Point3> Shared;
@@ -223,7 +233,7 @@ void gtsamPoint3_collectorInsertAndMakeBase_11(int nargout, mxArray *out[], int 
   collector_gtsamPoint3.insert(self);
 }
 
-void gtsamPoint3_constructor_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint3_constructor_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<gtsam::Point3> Shared;
@@ -237,7 +247,7 @@ void gtsamPoint3_constructor_12(int nargout, mxArray *out[], int nargin, const m
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 }
 
-void gtsamPoint3_deconstructor_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint3_deconstructor_14(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point3> Shared;
   checkArguments("delete_gtsamPoint3",nargout,nargin,1);
@@ -250,7 +260,7 @@ void gtsamPoint3_deconstructor_13(int nargout, mxArray *out[], int nargin, const
   }
 }
 
-void gtsamPoint3_norm_14(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint3_norm_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point3> Shared;
   checkArguments("norm",nargout,nargin-1,0);
@@ -258,7 +268,7 @@ void gtsamPoint3_norm_14(int nargout, mxArray *out[], int nargin, const mxArray 
   out[0] = wrap< double >(obj->norm());
 }
 
-void gtsamPoint3_StaticFunctionRet_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint3_StaticFunctionRet_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
   typedef boost::shared_ptr<gtsam::Point3> Shared;
@@ -267,14 +277,14 @@ void gtsamPoint3_StaticFunctionRet_15(int nargout, mxArray *out[], int nargin, c
   out[0] = wrap_shared_ptr(SharedPoint3(new gtsam::Point3(gtsam::Point3::StaticFunctionRet(z))),"gtsam.Point3", false);
 }
 
-void gtsamPoint3_staticFunction_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPoint3_staticFunction_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point3> Shared;
   checkArguments("gtsamPoint3.staticFunction",nargout,nargin,0);
   out[0] = wrap< double >(gtsam::Point3::staticFunction());
 }
 
-void Test_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_collectorInsertAndMakeBase_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<Test> Shared;
@@ -283,7 +293,7 @@ void Test_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin,
   collector_Test.insert(self);
 }
 
-void Test_constructor_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_constructor_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<Test> Shared;
@@ -294,7 +304,7 @@ void Test_constructor_18(int nargout, mxArray *out[], int nargin, const mxArray 
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 }
 
-void Test_constructor_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_constructor_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<Test> Shared;
@@ -307,7 +317,7 @@ void Test_constructor_19(int nargout, mxArray *out[], int nargin, const mxArray 
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 }
 
-void Test_deconstructor_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_deconstructor_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("delete_Test",nargout,nargin,1);
@@ -320,7 +330,7 @@ void Test_deconstructor_20(int nargout, mxArray *out[], int nargin, const mxArra
   }
 }
 
-void Test_arg_EigenConstRef_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_arg_EigenConstRef_22(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("arg_EigenConstRef",nargout,nargin-1,1);
@@ -329,7 +339,7 @@ void Test_arg_EigenConstRef_21(int nargout, mxArray *out[], int nargin, const mx
   obj->arg_EigenConstRef(value);
 }
 
-void Test_create_MixedPtrs_22(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_create_MixedPtrs_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> SharedTest;
@@ -341,7 +351,7 @@ void Test_create_MixedPtrs_22(int nargout, mxArray *out[], int nargin, const mxA
   out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
 }
 
-void Test_create_ptrs_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_create_ptrs_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> SharedTest;
@@ -353,7 +363,7 @@ void Test_create_ptrs_23(int nargout, mxArray *out[], int nargin, const mxArray 
   out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
 }
 
-void Test_print_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_print_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("print",nargout,nargin-1,0);
@@ -361,7 +371,7 @@ void Test_print_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   obj->print();
 }
 
-void Test_return_Point2Ptr_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_Point2Ptr_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
   typedef boost::shared_ptr<Test> Shared;
@@ -371,7 +381,7 @@ void Test_return_Point2Ptr_25(int nargout, mxArray *out[], int nargin, const mxA
   out[0] = wrap_shared_ptr(obj->return_Point2Ptr(value),"gtsam.Point2", false);
 }
 
-void Test_return_Test_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_Test_27(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
@@ -381,7 +391,7 @@ void Test_return_Test_26(int nargout, mxArray *out[], int nargin, const mxArray 
   out[0] = wrap_shared_ptr(SharedTest(new Test(obj->return_Test(value))),"Test", false);
 }
 
-void Test_return_TestPtr_27(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_TestPtr_28(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
@@ -391,7 +401,7 @@ void Test_return_TestPtr_27(int nargout, mxArray *out[], int nargin, const mxArr
   out[0] = wrap_shared_ptr(obj->return_TestPtr(value),"Test", false);
 }
 
-void Test_return_bool_28(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_bool_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_bool",nargout,nargin-1,1);
@@ -400,7 +410,7 @@ void Test_return_bool_28(int nargout, mxArray *out[], int nargin, const mxArray 
   out[0] = wrap< bool >(obj->return_bool(value));
 }
 
-void Test_return_double_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_double_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_double",nargout,nargin-1,1);
@@ -409,7 +419,7 @@ void Test_return_double_29(int nargout, mxArray *out[], int nargin, const mxArra
   out[0] = wrap< double >(obj->return_double(value));
 }
 
-void Test_return_field_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_field_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_field",nargout,nargin-1,1);
@@ -418,7 +428,7 @@ void Test_return_field_30(int nargout, mxArray *out[], int nargin, const mxArray
   out[0] = wrap< bool >(obj->return_field(t));
 }
 
-void Test_return_int_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_int_32(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_int",nargout,nargin-1,1);
@@ -427,7 +437,7 @@ void Test_return_int_31(int nargout, mxArray *out[], int nargin, const mxArray *
   out[0] = wrap< int >(obj->return_int(value));
 }
 
-void Test_return_matrix1_32(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_matrix1_33(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_matrix1",nargout,nargin-1,1);
@@ -436,7 +446,7 @@ void Test_return_matrix1_32(int nargout, mxArray *out[], int nargin, const mxArr
   out[0] = wrap< Matrix >(obj->return_matrix1(value));
 }
 
-void Test_return_matrix2_33(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_matrix2_34(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_matrix2",nargout,nargin-1,1);
@@ -445,7 +455,7 @@ void Test_return_matrix2_33(int nargout, mxArray *out[], int nargin, const mxArr
   out[0] = wrap< Matrix >(obj->return_matrix2(value));
 }
 
-void Test_return_pair_34(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_pair_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_pair",nargout,nargin-1,2);
@@ -457,7 +467,7 @@ void Test_return_pair_34(int nargout, mxArray *out[], int nargin, const mxArray 
   out[1] = wrap< Matrix >(pairResult.second);
 }
 
-void Test_return_ptrs_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_ptrs_36(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> SharedTest;
@@ -471,7 +481,7 @@ void Test_return_ptrs_35(int nargout, mxArray *out[], int nargin, const mxArray 
   out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
 }
 
-void Test_return_size_t_36(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_size_t_37(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_size_t",nargout,nargin-1,1);
@@ -480,7 +490,7 @@ void Test_return_size_t_36(int nargout, mxArray *out[], int nargin, const mxArra
   out[0] = wrap< size_t >(obj->return_size_t(value));
 }
 
-void Test_return_string_37(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_string_38(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_string",nargout,nargin-1,1);
@@ -489,7 +499,7 @@ void Test_return_string_37(int nargout, mxArray *out[], int nargin, const mxArra
   out[0] = wrap< string >(obj->return_string(value));
 }
 
-void Test_return_vector1_38(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_vector1_39(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_vector1",nargout,nargin-1,1);
@@ -498,7 +508,7 @@ void Test_return_vector1_38(int nargout, mxArray *out[], int nargin, const mxArr
   out[0] = wrap< Vector >(obj->return_vector1(value));
 }
 
-void Test_return_vector2_39(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_return_vector2_40(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_vector2",nargout,nargin-1,1);
@@ -507,7 +517,7 @@ void Test_return_vector2_39(int nargout, mxArray *out[], int nargin, const mxArr
   out[0] = wrap< Vector >(obj->return_vector2(value));
 }
 
-void MyBase_collectorInsertAndMakeBase_40(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyBase_collectorInsertAndMakeBase_41(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyBase> Shared;
@@ -516,7 +526,7 @@ void MyBase_collectorInsertAndMakeBase_40(int nargout, mxArray *out[], int nargi
   collector_MyBase.insert(self);
 }
 
-void MyBase_upcastFromVoid_41(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+void MyBase_upcastFromVoid_42(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyBase> Shared;
   boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
@@ -525,7 +535,7 @@ void MyBase_upcastFromVoid_41(int nargout, mxArray *out[], int nargin, const mxA
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
-void MyBase_deconstructor_42(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyBase_deconstructor_43(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyBase> Shared;
   checkArguments("delete_MyBase",nargout,nargin,1);
@@ -538,7 +548,7 @@ void MyBase_deconstructor_42(int nargout, mxArray *out[], int nargin, const mxAr
   }
 }
 
-void MyTemplatePoint2_collectorInsertAndMakeBase_43(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_collectorInsertAndMakeBase_44(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
@@ -551,7 +561,7 @@ void MyTemplatePoint2_collectorInsertAndMakeBase_43(int nargout, mxArray *out[],
   *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
 }
 
-void MyTemplatePoint2_upcastFromVoid_44(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+void MyTemplatePoint2_upcastFromVoid_45(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
@@ -560,7 +570,7 @@ void MyTemplatePoint2_upcastFromVoid_44(int nargout, mxArray *out[], int nargin,
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
-void MyTemplatePoint2_constructor_45(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_constructor_46(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
@@ -575,7 +585,7 @@ void MyTemplatePoint2_constructor_45(int nargout, mxArray *out[], int nargin, co
   *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);
 }
 
-void MyTemplatePoint2_deconstructor_46(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_deconstructor_47(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("delete_MyTemplatePoint2",nargout,nargin,1);
@@ -588,7 +598,7 @@ void MyTemplatePoint2_deconstructor_46(int nargout, mxArray *out[], int nargin, 
   }
 }
 
-void MyTemplatePoint2_accept_T_47(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_accept_T_48(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("accept_T",nargout,nargin-1,1);
@@ -597,7 +607,7 @@ void MyTemplatePoint2_accept_T_47(int nargout, mxArray *out[], int nargin, const
   obj->accept_T(value);
 }
 
-void MyTemplatePoint2_accept_Tptr_48(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_accept_Tptr_49(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("accept_Tptr",nargout,nargin-1,1);
@@ -606,7 +616,7 @@ void MyTemplatePoint2_accept_Tptr_48(int nargout, mxArray *out[], int nargin, co
   obj->accept_Tptr(value);
 }
 
-void MyTemplatePoint2_create_MixedPtrs_49(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_create_MixedPtrs_50(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
@@ -618,7 +628,7 @@ void MyTemplatePoint2_create_MixedPtrs_49(int nargout, mxArray *out[], int nargi
   out[1] = wrap_shared_ptr(pairResult.second,"gtsam.Point2", false);
 }
 
-void MyTemplatePoint2_create_ptrs_50(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_create_ptrs_51(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
@@ -630,7 +640,7 @@ void MyTemplatePoint2_create_ptrs_50(int nargout, mxArray *out[], int nargin, co
   out[1] = wrap_shared_ptr(pairResult.second,"gtsam.Point2", false);
 }
 
-void MyTemplatePoint2_return_T_51(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_return_T_52(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
@@ -640,7 +650,7 @@ void MyTemplatePoint2_return_T_51(int nargout, mxArray *out[], int nargin, const
   out[0] = wrap_shared_ptr(SharedPoint2(new gtsam::Point2(obj->return_T(value))),"gtsam.Point2", false);
 }
 
-void MyTemplatePoint2_return_Tptr_52(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_return_Tptr_53(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
@@ -650,7 +660,7 @@ void MyTemplatePoint2_return_Tptr_52(int nargout, mxArray *out[], int nargin, co
   out[0] = wrap_shared_ptr(obj->return_Tptr(value),"gtsam.Point2", false);
 }
 
-void MyTemplatePoint2_return_ptrs_53(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_return_ptrs_54(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
   typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
@@ -664,53 +674,73 @@ void MyTemplatePoint2_return_ptrs_53(int nargout, mxArray *out[], int nargin, co
   out[1] = wrap_shared_ptr(pairResult.second,"gtsam.Point2", false);
 }
 
-void MyTemplatePoint2_templatedMethod_54(int nargout, mxArray *out[], int nargin, const mxArray *in[])
-{
-  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
-  checkArguments("templatedMethod",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
-  gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
-  obj->templatedMethod<gtsam::Point2>(t);
-}
-
 void MyTemplatePoint2_templatedMethod_55(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
-  checkArguments("templatedMethod",nargout,nargin-1,1);
+  checkArguments("templatedMethodMatrix",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
-  gtsam::Point3& t = *unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  obj->templatedMethod<gtsam::Point3>(t);
+  Matrix& t = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  out[0] = wrap< Matrix >(obj->templatedMethod<Matrix>(t));
 }
 
-void MyTemplatePoint3_collectorInsertAndMakeBase_56(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplatePoint2_templatedMethod_56(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
+  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
+  checkArguments("templatedMethodPoint2",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
+  gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
+  out[0] = wrap_shared_ptr(SharedPoint2(new gtsam::Point2(obj->templatedMethod<gtsam::Point2>(t))),"gtsam.Point2", false);
+}
+
+void MyTemplatePoint2_templatedMethod_57(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
+  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
+  checkArguments("templatedMethodPoint3",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
+  gtsam::Point3& t = *unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
+  out[0] = wrap_shared_ptr(SharedPoint3(new gtsam::Point3(obj->templatedMethod<gtsam::Point3>(t))),"gtsam.Point3", false);
+}
+
+void MyTemplatePoint2_templatedMethod_58(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<MyTemplatePoint2> Shared;
+  checkArguments("templatedMethodVector",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
+  Vector& t = *unwrap_shared_ptr< Vector >(in[1], "ptr_Vector");
+  out[0] = wrap< Vector >(obj->templatedMethod<Vector>(t));
+}
+
+void MyTemplateMatrix_collectorInsertAndMakeBase_59(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
-  collector_MyTemplatePoint3.insert(self);
+  collector_MyTemplateMatrix.insert(self);
 
   typedef boost::shared_ptr<MyBase> SharedBase;
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
 }
 
-void MyTemplatePoint3_upcastFromVoid_57(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+void MyTemplateMatrix_upcastFromVoid_60(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  Shared *self = new Shared(boost::static_pointer_cast<MyTemplatePoint3>(*asVoid));
+  Shared *self = new Shared(boost::static_pointer_cast<MyTemplateMatrix>(*asVoid));
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
-void MyTemplatePoint3_constructor_58(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_constructor_61(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
 
-  Shared *self = new Shared(new MyTemplatePoint3());
-  collector_MyTemplatePoint3.insert(self);
+  Shared *self = new Shared(new MyTemplateMatrix());
+  collector_MyTemplateMatrix.insert(self);
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 
@@ -719,114 +749,144 @@ void MyTemplatePoint3_constructor_58(int nargout, mxArray *out[], int nargin, co
   *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);
 }
 
-void MyTemplatePoint3_deconstructor_59(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_deconstructor_62(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
-  checkArguments("delete_MyTemplatePoint3",nargout,nargin,1);
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
+  checkArguments("delete_MyTemplateMatrix",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
-  Collector_MyTemplatePoint3::iterator item;
-  item = collector_MyTemplatePoint3.find(self);
-  if(item != collector_MyTemplatePoint3.end()) {
+  Collector_MyTemplateMatrix::iterator item;
+  item = collector_MyTemplateMatrix.find(self);
+  if(item != collector_MyTemplateMatrix.end()) {
     delete self;
-    collector_MyTemplatePoint3.erase(item);
+    collector_MyTemplateMatrix.erase(item);
   }
 }
 
-void MyTemplatePoint3_accept_T_60(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_accept_T_63(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("accept_T",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
-  gtsam::Point3& value = *unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  Matrix& value = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
   obj->accept_T(value);
 }
 
-void MyTemplatePoint3_accept_Tptr_61(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_accept_Tptr_64(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("accept_Tptr",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
-  boost::shared_ptr<gtsam::Point3> value = unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  boost::shared_ptr<Matrix> value = unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
   obj->accept_Tptr(value);
 }
 
-void MyTemplatePoint3_create_MixedPtrs_62(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_create_MixedPtrs_65(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
-  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("create_MixedPtrs",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
-  pair< gtsam::Point3, SharedPoint3 > pairResult = obj->create_MixedPtrs();
-  out[0] = wrap_shared_ptr(SharedPoint3(new gtsam::Point3(pairResult.first)),"gtsam.Point3", false);
-  out[1] = wrap_shared_ptr(pairResult.second,"gtsam.Point3", false);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  pair< Matrix, SharedMatrix > pairResult = obj->create_MixedPtrs();
+  out[0] = wrap< Matrix >(pairResult.first);
+  {
+  SharedMatrix* ret = new SharedMatrix(pairResult.second);
+  out[1] = wrap_shared_ptr(ret,"Matrix");
+  }
 }
 
-void MyTemplatePoint3_create_ptrs_63(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_create_ptrs_66(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
-  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("create_ptrs",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
-  pair< SharedPoint3, SharedPoint3 > pairResult = obj->create_ptrs();
-  out[0] = wrap_shared_ptr(pairResult.first,"gtsam.Point3", false);
-  out[1] = wrap_shared_ptr(pairResult.second,"gtsam.Point3", false);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  pair< SharedMatrix, SharedMatrix > pairResult = obj->create_ptrs();
+  {
+  SharedMatrix* ret = new SharedMatrix(pairResult.first);
+  out[0] = wrap_shared_ptr(ret,"Matrix");
+  }
+  {
+  SharedMatrix* ret = new SharedMatrix(pairResult.second);
+  out[1] = wrap_shared_ptr(ret,"Matrix");
+  }
 }
 
-void MyTemplatePoint3_return_T_64(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_return_T_67(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("return_T",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
-  boost::shared_ptr<gtsam::Point3> value = unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  out[0] = wrap_shared_ptr(SharedPoint3(new gtsam::Point3(obj->return_T(value))),"gtsam.Point3", false);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  boost::shared_ptr<Matrix> value = unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  out[0] = wrap< Matrix >(obj->return_T(value));
 }
 
-void MyTemplatePoint3_return_Tptr_65(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_return_Tptr_68(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("return_Tptr",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
-  boost::shared_ptr<gtsam::Point3> value = unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  out[0] = wrap_shared_ptr(obj->return_Tptr(value),"gtsam.Point3", false);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  boost::shared_ptr<Matrix> value = unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  {
+  SharedMatrix* ret = new SharedMatrix(obj->return_Tptr(value));
+  out[0] = wrap_shared_ptr(ret,"Matrix");
+  }
 }
 
-void MyTemplatePoint3_return_ptrs_66(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_return_ptrs_69(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
-  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("return_ptrs",nargout,nargin-1,2);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
-  boost::shared_ptr<gtsam::Point3> p1 = unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  boost::shared_ptr<gtsam::Point3> p2 = unwrap_shared_ptr< gtsam::Point3 >(in[2], "ptr_gtsamPoint3");
-  pair< SharedPoint3, SharedPoint3 > pairResult = obj->return_ptrs(p1,p2);
-  out[0] = wrap_shared_ptr(pairResult.first,"gtsam.Point3", false);
-  out[1] = wrap_shared_ptr(pairResult.second,"gtsam.Point3", false);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  boost::shared_ptr<Matrix> p1 = unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  boost::shared_ptr<Matrix> p2 = unwrap_shared_ptr< Matrix >(in[2], "ptr_Matrix");
+  pair< SharedMatrix, SharedMatrix > pairResult = obj->return_ptrs(p1,p2);
+  {
+  SharedMatrix* ret = new SharedMatrix(pairResult.first);
+  out[0] = wrap_shared_ptr(ret,"Matrix");
+  }
+  {
+  SharedMatrix* ret = new SharedMatrix(pairResult.second);
+  out[1] = wrap_shared_ptr(ret,"Matrix");
+  }
 }
 
-void MyTemplatePoint3_templatedMethod_67(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_templatedMethod_70(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
-  checkArguments("templatedMethod",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
+  checkArguments("templatedMethodMatrix",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  Matrix& t = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  out[0] = wrap< Matrix >(obj->templatedMethod<Matrix>(t));
+}
+
+void MyTemplateMatrix_templatedMethod_71(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<gtsam::Point2> SharedPoint2;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
+  checkArguments("templatedMethodPoint2",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
   gtsam::Point2& t = *unwrap_shared_ptr< gtsam::Point2 >(in[1], "ptr_gtsamPoint2");
-  obj->templatedMethod<gtsam::Point2>(t);
+  out[0] = wrap_shared_ptr(SharedPoint2(new gtsam::Point2(obj->templatedMethod<gtsam::Point2>(t))),"gtsam.Point2", false);
 }
 
-void MyTemplatePoint3_templatedMethod_68(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_templatedMethod_72(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<MyTemplatePoint3> Shared;
-  checkArguments("templatedMethod",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<MyTemplatePoint3>(in[0], "ptr_MyTemplatePoint3");
+  typedef boost::shared_ptr<gtsam::Point3> SharedPoint3;
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
+  checkArguments("templatedMethodPoint3",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
   gtsam::Point3& t = *unwrap_shared_ptr< gtsam::Point3 >(in[1], "ptr_gtsamPoint3");
-  obj->templatedMethod<gtsam::Point3>(t);
+  out[0] = wrap_shared_ptr(SharedPoint3(new gtsam::Point3(obj->templatedMethod<gtsam::Point3>(t))),"gtsam.Point3", false);
 }
 
-void MyFactorPosePoint2_collectorInsertAndMakeBase_69(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyTemplateMatrix_templatedMethod_73(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<MyTemplateMatrix> Shared;
+  checkArguments("templatedMethodVector",nargout,nargin-1,1);
+  Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
+  Vector& t = *unwrap_shared_ptr< Vector >(in[1], "ptr_Vector");
+  out[0] = wrap< Vector >(obj->templatedMethod<Vector>(t));
+}
+
+void MyFactorPosePoint2_collectorInsertAndMakeBase_74(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyFactorPosePoint2> Shared;
@@ -835,7 +895,7 @@ void MyFactorPosePoint2_collectorInsertAndMakeBase_69(int nargout, mxArray *out[
   collector_MyFactorPosePoint2.insert(self);
 }
 
-void MyFactorPosePoint2_constructor_70(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_constructor_75(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<MyFactorPosePoint2> Shared;
@@ -850,7 +910,7 @@ void MyFactorPosePoint2_constructor_70(int nargout, mxArray *out[], int nargin, 
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 }
 
-void MyFactorPosePoint2_deconstructor_71(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_deconstructor_76(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<MyFactorPosePoint2> Shared;
   checkArguments("delete_MyFactorPosePoint2",nargout,nargin,1);
@@ -863,18 +923,18 @@ void MyFactorPosePoint2_deconstructor_71(int nargout, mxArray *out[], int nargin
   }
 }
 
-void aGlobalFunction_72(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void aGlobalFunction_77(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("aGlobalFunction",nargout,nargin,0);
   out[0] = wrap< Vector >(aGlobalFunction());
 }
-void overloadedGlobalFunction_73(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void overloadedGlobalFunction_78(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("overloadedGlobalFunction",nargout,nargin,1);
   int a = unwrap< int >(in[0]);
   out[0] = wrap< Vector >(overloadedGlobalFunction(a));
 }
-void overloadedGlobalFunction_74(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void overloadedGlobalFunction_79(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("overloadedGlobalFunction",nargout,nargin,2);
   int a = unwrap< int >(in[0]);
@@ -915,208 +975,223 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       gtsamPoint2_dim_6(nargout, out, nargin-1, in+1);
       break;
     case 7:
-      gtsamPoint2_returnChar_7(nargout, out, nargin-1, in+1);
+      gtsamPoint2_eigenArguments_7(nargout, out, nargin-1, in+1);
       break;
     case 8:
-      gtsamPoint2_vectorConfusion_8(nargout, out, nargin-1, in+1);
+      gtsamPoint2_returnChar_8(nargout, out, nargin-1, in+1);
       break;
     case 9:
-      gtsamPoint2_x_9(nargout, out, nargin-1, in+1);
+      gtsamPoint2_vectorConfusion_9(nargout, out, nargin-1, in+1);
       break;
     case 10:
-      gtsamPoint2_y_10(nargout, out, nargin-1, in+1);
+      gtsamPoint2_x_10(nargout, out, nargin-1, in+1);
       break;
     case 11:
-      gtsamPoint3_collectorInsertAndMakeBase_11(nargout, out, nargin-1, in+1);
+      gtsamPoint2_y_11(nargout, out, nargin-1, in+1);
       break;
     case 12:
-      gtsamPoint3_constructor_12(nargout, out, nargin-1, in+1);
+      gtsamPoint3_collectorInsertAndMakeBase_12(nargout, out, nargin-1, in+1);
       break;
     case 13:
-      gtsamPoint3_deconstructor_13(nargout, out, nargin-1, in+1);
+      gtsamPoint3_constructor_13(nargout, out, nargin-1, in+1);
       break;
     case 14:
-      gtsamPoint3_norm_14(nargout, out, nargin-1, in+1);
+      gtsamPoint3_deconstructor_14(nargout, out, nargin-1, in+1);
       break;
     case 15:
-      gtsamPoint3_StaticFunctionRet_15(nargout, out, nargin-1, in+1);
+      gtsamPoint3_norm_15(nargout, out, nargin-1, in+1);
       break;
     case 16:
-      gtsamPoint3_staticFunction_16(nargout, out, nargin-1, in+1);
+      gtsamPoint3_StaticFunctionRet_16(nargout, out, nargin-1, in+1);
       break;
     case 17:
-      Test_collectorInsertAndMakeBase_17(nargout, out, nargin-1, in+1);
+      gtsamPoint3_staticFunction_17(nargout, out, nargin-1, in+1);
       break;
     case 18:
-      Test_constructor_18(nargout, out, nargin-1, in+1);
+      Test_collectorInsertAndMakeBase_18(nargout, out, nargin-1, in+1);
       break;
     case 19:
       Test_constructor_19(nargout, out, nargin-1, in+1);
       break;
     case 20:
-      Test_deconstructor_20(nargout, out, nargin-1, in+1);
+      Test_constructor_20(nargout, out, nargin-1, in+1);
       break;
     case 21:
-      Test_arg_EigenConstRef_21(nargout, out, nargin-1, in+1);
+      Test_deconstructor_21(nargout, out, nargin-1, in+1);
       break;
     case 22:
-      Test_create_MixedPtrs_22(nargout, out, nargin-1, in+1);
+      Test_arg_EigenConstRef_22(nargout, out, nargin-1, in+1);
       break;
     case 23:
-      Test_create_ptrs_23(nargout, out, nargin-1, in+1);
+      Test_create_MixedPtrs_23(nargout, out, nargin-1, in+1);
       break;
     case 24:
-      Test_print_24(nargout, out, nargin-1, in+1);
+      Test_create_ptrs_24(nargout, out, nargin-1, in+1);
       break;
     case 25:
-      Test_return_Point2Ptr_25(nargout, out, nargin-1, in+1);
+      Test_print_25(nargout, out, nargin-1, in+1);
       break;
     case 26:
-      Test_return_Test_26(nargout, out, nargin-1, in+1);
+      Test_return_Point2Ptr_26(nargout, out, nargin-1, in+1);
       break;
     case 27:
-      Test_return_TestPtr_27(nargout, out, nargin-1, in+1);
+      Test_return_Test_27(nargout, out, nargin-1, in+1);
       break;
     case 28:
-      Test_return_bool_28(nargout, out, nargin-1, in+1);
+      Test_return_TestPtr_28(nargout, out, nargin-1, in+1);
       break;
     case 29:
-      Test_return_double_29(nargout, out, nargin-1, in+1);
+      Test_return_bool_29(nargout, out, nargin-1, in+1);
       break;
     case 30:
-      Test_return_field_30(nargout, out, nargin-1, in+1);
+      Test_return_double_30(nargout, out, nargin-1, in+1);
       break;
     case 31:
-      Test_return_int_31(nargout, out, nargin-1, in+1);
+      Test_return_field_31(nargout, out, nargin-1, in+1);
       break;
     case 32:
-      Test_return_matrix1_32(nargout, out, nargin-1, in+1);
+      Test_return_int_32(nargout, out, nargin-1, in+1);
       break;
     case 33:
-      Test_return_matrix2_33(nargout, out, nargin-1, in+1);
+      Test_return_matrix1_33(nargout, out, nargin-1, in+1);
       break;
     case 34:
-      Test_return_pair_34(nargout, out, nargin-1, in+1);
+      Test_return_matrix2_34(nargout, out, nargin-1, in+1);
       break;
     case 35:
-      Test_return_ptrs_35(nargout, out, nargin-1, in+1);
+      Test_return_pair_35(nargout, out, nargin-1, in+1);
       break;
     case 36:
-      Test_return_size_t_36(nargout, out, nargin-1, in+1);
+      Test_return_ptrs_36(nargout, out, nargin-1, in+1);
       break;
     case 37:
-      Test_return_string_37(nargout, out, nargin-1, in+1);
+      Test_return_size_t_37(nargout, out, nargin-1, in+1);
       break;
     case 38:
-      Test_return_vector1_38(nargout, out, nargin-1, in+1);
+      Test_return_string_38(nargout, out, nargin-1, in+1);
       break;
     case 39:
-      Test_return_vector2_39(nargout, out, nargin-1, in+1);
+      Test_return_vector1_39(nargout, out, nargin-1, in+1);
       break;
     case 40:
-      MyBase_collectorInsertAndMakeBase_40(nargout, out, nargin-1, in+1);
+      Test_return_vector2_40(nargout, out, nargin-1, in+1);
       break;
     case 41:
-      MyBase_upcastFromVoid_41(nargout, out, nargin-1, in+1);
+      MyBase_collectorInsertAndMakeBase_41(nargout, out, nargin-1, in+1);
       break;
     case 42:
-      MyBase_deconstructor_42(nargout, out, nargin-1, in+1);
+      MyBase_upcastFromVoid_42(nargout, out, nargin-1, in+1);
       break;
     case 43:
-      MyTemplatePoint2_collectorInsertAndMakeBase_43(nargout, out, nargin-1, in+1);
+      MyBase_deconstructor_43(nargout, out, nargin-1, in+1);
       break;
     case 44:
-      MyTemplatePoint2_upcastFromVoid_44(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_collectorInsertAndMakeBase_44(nargout, out, nargin-1, in+1);
       break;
     case 45:
-      MyTemplatePoint2_constructor_45(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_upcastFromVoid_45(nargout, out, nargin-1, in+1);
       break;
     case 46:
-      MyTemplatePoint2_deconstructor_46(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_constructor_46(nargout, out, nargin-1, in+1);
       break;
     case 47:
-      MyTemplatePoint2_accept_T_47(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_deconstructor_47(nargout, out, nargin-1, in+1);
       break;
     case 48:
-      MyTemplatePoint2_accept_Tptr_48(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_accept_T_48(nargout, out, nargin-1, in+1);
       break;
     case 49:
-      MyTemplatePoint2_create_MixedPtrs_49(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_accept_Tptr_49(nargout, out, nargin-1, in+1);
       break;
     case 50:
-      MyTemplatePoint2_create_ptrs_50(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_create_MixedPtrs_50(nargout, out, nargin-1, in+1);
       break;
     case 51:
-      MyTemplatePoint2_return_T_51(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_create_ptrs_51(nargout, out, nargin-1, in+1);
       break;
     case 52:
-      MyTemplatePoint2_return_Tptr_52(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_return_T_52(nargout, out, nargin-1, in+1);
       break;
     case 53:
-      MyTemplatePoint2_return_ptrs_53(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_return_Tptr_53(nargout, out, nargin-1, in+1);
       break;
     case 54:
-      MyTemplatePoint2_templatedMethod_54(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_return_ptrs_54(nargout, out, nargin-1, in+1);
       break;
     case 55:
       MyTemplatePoint2_templatedMethod_55(nargout, out, nargin-1, in+1);
       break;
     case 56:
-      MyTemplatePoint3_collectorInsertAndMakeBase_56(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_templatedMethod_56(nargout, out, nargin-1, in+1);
       break;
     case 57:
-      MyTemplatePoint3_upcastFromVoid_57(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_templatedMethod_57(nargout, out, nargin-1, in+1);
       break;
     case 58:
-      MyTemplatePoint3_constructor_58(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_templatedMethod_58(nargout, out, nargin-1, in+1);
       break;
     case 59:
-      MyTemplatePoint3_deconstructor_59(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_collectorInsertAndMakeBase_59(nargout, out, nargin-1, in+1);
       break;
     case 60:
-      MyTemplatePoint3_accept_T_60(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_upcastFromVoid_60(nargout, out, nargin-1, in+1);
       break;
     case 61:
-      MyTemplatePoint3_accept_Tptr_61(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_constructor_61(nargout, out, nargin-1, in+1);
       break;
     case 62:
-      MyTemplatePoint3_create_MixedPtrs_62(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_deconstructor_62(nargout, out, nargin-1, in+1);
       break;
     case 63:
-      MyTemplatePoint3_create_ptrs_63(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_accept_T_63(nargout, out, nargin-1, in+1);
       break;
     case 64:
-      MyTemplatePoint3_return_T_64(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_accept_Tptr_64(nargout, out, nargin-1, in+1);
       break;
     case 65:
-      MyTemplatePoint3_return_Tptr_65(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_create_MixedPtrs_65(nargout, out, nargin-1, in+1);
       break;
     case 66:
-      MyTemplatePoint3_return_ptrs_66(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_create_ptrs_66(nargout, out, nargin-1, in+1);
       break;
     case 67:
-      MyTemplatePoint3_templatedMethod_67(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_return_T_67(nargout, out, nargin-1, in+1);
       break;
     case 68:
-      MyTemplatePoint3_templatedMethod_68(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_return_Tptr_68(nargout, out, nargin-1, in+1);
       break;
     case 69:
-      MyFactorPosePoint2_collectorInsertAndMakeBase_69(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_return_ptrs_69(nargout, out, nargin-1, in+1);
       break;
     case 70:
-      MyFactorPosePoint2_constructor_70(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_templatedMethod_70(nargout, out, nargin-1, in+1);
       break;
     case 71:
-      MyFactorPosePoint2_deconstructor_71(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_templatedMethod_71(nargout, out, nargin-1, in+1);
       break;
     case 72:
-      aGlobalFunction_72(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_templatedMethod_72(nargout, out, nargin-1, in+1);
       break;
     case 73:
-      overloadedGlobalFunction_73(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_templatedMethod_73(nargout, out, nargin-1, in+1);
       break;
     case 74:
-      overloadedGlobalFunction_74(nargout, out, nargin-1, in+1);
+      MyFactorPosePoint2_collectorInsertAndMakeBase_74(nargout, out, nargin-1, in+1);
+      break;
+    case 75:
+      MyFactorPosePoint2_constructor_75(nargout, out, nargin-1, in+1);
+      break;
+    case 76:
+      MyFactorPosePoint2_deconstructor_76(nargout, out, nargin-1, in+1);
+      break;
+    case 77:
+      aGlobalFunction_77(nargout, out, nargin-1, in+1);
+      break;
+    case 78:
+      overloadedGlobalFunction_78(nargout, out, nargin-1, in+1);
+      break;
+    case 79:
+      overloadedGlobalFunction_79(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {
