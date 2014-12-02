@@ -23,9 +23,7 @@
 
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/navigation/ImuBias.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
@@ -63,7 +61,7 @@ public:
   /**
    * PreintegratedMeasurements accumulates (integrates) the IMU measurements
    * (rotation rates and accelerations) and the corresponding covariance matrix.
-   * The measurements are then used to build the Preintegrated IMU factor (ImuFactor class).
+   * The measurements are then used to build the Preintegrated IMU factor (ImuFactor).
    * Can be built incrementally so as to avoid costly integration at time of
    * factor construction.
    */
@@ -93,7 +91,7 @@ public:
     public:
 
     /**
-     *  Default constructor, initialize the class with no measurements
+     *  Default constructor, initializes the class with no measurements
      *  @param bias Current estimate of acceleration and rotation rate biases
      *  @param measuredAccCovariance      Covariance matrix of measuredAcc
      *  @param measuredOmegaCovariance    Covariance matrix of measured Angular Rate
@@ -256,8 +254,7 @@ public:
     // predicted states from IMU
     static PoseVelocity Predict(const Pose3& pose_i, const Vector3& vel_i,
         const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
-        const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none,
-        const bool use2ndOrderCoriolis = false);
+        const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
 
   private:
 
