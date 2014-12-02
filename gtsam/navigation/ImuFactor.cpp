@@ -34,8 +34,7 @@ ImuFactor::PreintegratedMeasurements::PreintegratedMeasurements(
     const Matrix3& measuredOmegaCovariance, const Matrix3& integrationErrorCovariance,
     const bool use2ndOrderIntegration) :
                   biasHat_(bias), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()),
-                  // TODO: add this deltaRij_(Rot3()),
-                  deltaTij_(0.0),
+                  deltaRij_(Rot3()), deltaTij_(0.0),
                   delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
                   delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
                   delRdelBiasOmega_(Z_3x3), use2ndOrderIntegration_(use2ndOrderIntegration)
