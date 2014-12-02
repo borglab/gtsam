@@ -41,7 +41,7 @@
  
 #include <iostream> 
 #include <algorithm> 
- 
+
 using namespace std; 
 using namespace wrap; 
 using namespace BOOST_SPIRIT_CLASSIC_NS; 
@@ -314,8 +314,8 @@ void Module::parseMarkup(const std::string& data) {
   // Expand templates - This is done first so that template instantiations are
   // counted in the list of valid types, have their attributes and dependencies
   // checked, etc.
-  expandedClasses = ExpandTypedefInstantiations(classes,
-      templateInstantiationTypedefs);
+
+  expandedClasses = ExpandTypedefInstantiations(classes,templateInstantiationTypedefs);
 
   // Dependency check list
   vector<string> validTypes = GenerateValidTypes(expandedClasses,
@@ -373,9 +373,30 @@ void Module::matlab_code(const string& toolboxPath) const {
 
   // Generate boost.serialization export flags (needs typedefs from above)
   if (hasSerialiable) {
+    wrapperFile.oss << "#define CHART_VALUE_EXPORT(UNIQUE_NAME, TYPE) \\" << "\n";
+    wrapperFile.oss << "typedef gtsam::ChartValue<TYPE, gtsam::DefaultChart<TYPE> > UNIQUE_NAME; \\" << "\n";
+    wrapperFile.oss << "BOOST_CLASS_EXPORT( UNIQUE_NAME);" << "\n";
+    wrapperFile.oss << "\n";
+
     BOOST_FOREACH(const Class& cls, expandedClasses)
-      if(cls.isSerializable)
+      if(cls.isSerializable) {
         wrapperFile.oss << cls.getSerializationExport() << "\n";
+    }
+
+    wrapperFile.oss << "\n";
+
+    // hard coded! just make it work at first commit. Should be removed.
+    vector<string> valueTypeClasses;
+    valueTypeClasses.push_back("gtsamPoint2");
+    valueTypeClasses.push_back("gtsamPoint3");
+    valueTypeClasses.push_back("gtsamPose2");
+    valueTypeClasses.push_back("gtsamPose3");
+    BOOST_FOREACH(const Class& cls, expandedClasses)
+      if(cls.isSerializable) {
+        if(find(valueTypeClasses.begin(), valueTypeClasses.end(), cls.qualifiedName()) != valueTypeClasses.end() ) {
+          wrapperFile.oss << cls.getSerializationChartValueExport() << "\n";
+        }
+    }
     wrapperFile.oss << "\n";
   }
 
@@ -444,16 +465,16 @@ void Module::generateIncludes(FileWriter& file) const {
   } 
  
 /* ************************************************************************* */ 
-vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, const vector<TemplateInstantiationTypedef> instantiations) { 
+vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, const vector<TemplateInstantiationTypedef> instantiations) {
  
-  vector<Class> expandedClasses = classes; 
+  vector<Class> expandedClasses = classes;
  
   BOOST_FOREACH(const TemplateInstantiationTypedef& inst, instantiations) { 
     // Add the new class to the list 
-    expandedClasses.push_back(inst.findAndExpand(classes)); 
-  } 
+    expandedClasses.push_back(inst.findAndExpand(classes));
+  }
  
-  // Remove all template classes 
+  // Remove all template classes for expandedClasses
   for(size_t i = 0; i < expandedClasses.size(); ++i) 
     if(!expandedClasses[size_t(i)].templateArgs.empty()) { 
       expandedClasses.erase(expandedClasses.begin() + size_t(i)); 
@@ -461,8 +482,8 @@ vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, 
     } 
  
   return expandedClasses; 
-} 
- 
+}
+
 /* ************************************************************************* */ 
 vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration> forwardDeclarations) { 
   vector<string> validTypes; 

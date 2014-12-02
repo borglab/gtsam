@@ -114,6 +114,9 @@ public:
   /// Returns the string for an export flag
   std::string getSerializationExport() const;
 
+  /// Returns the string for an Chart Value Export flag
+  std::string getSerializationChartValueExport() const;
+
   /// Creates a member function that performs serialization
   void serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
       Str wrapperName, std::vector<std::string>& functionNames) const;

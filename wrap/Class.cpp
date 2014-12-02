@@ -629,6 +629,10 @@ string Class::getSerializationExport() const {
       + qualifiedName() + "\");";
 }
 
+string Class::getSerializationChartValueExport() const {
+  return "CHART_VALUE_EXPORT(" + qualifiedName() + "Chart" + ", " + qualifiedName("::") + ");";
+}
+
 /* ************************************************************************* */
 void Class::python_wrapper(FileWriter& wrapperFile) const {
   wrapperFile.oss << "class_<" << name() << ">(\"" << name() << "\")\n";

@@ -46,7 +46,13 @@ struct Module {
   GlobalFunctions global_functions;
 
   // After parsing:
+
+  /// all the expanded classes used
   std::vector<Class> expandedClasses;
+
+//  /// all the ChartValue classes
+//  std::vector<Class> valueTypeClasses;
+
   bool hasSerialiable;
   TypeAttributesTable typeAttributes;
 
