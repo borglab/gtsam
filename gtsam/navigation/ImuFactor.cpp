@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  ImuFactor.h
+ *  @file  ImuFactor.cpp
  *  @author Luca Carlone
  *  @author Stephen Williams
  *  @author Richard Roberts
@@ -25,6 +25,8 @@
 #include <ostream>
 
 namespace gtsam {
+
+using namespace std;
 
 //------------------------------------------------------------------------------
 // Inner class PreintegratedMeasurements
@@ -47,30 +49,30 @@ ImuFactor::PreintegratedMeasurements::PreintegratedMeasurements(
 }
 
 //------------------------------------------------------------------------------
-void ImuFactor::PreintegratedMeasurements::print(const std::string& s) const {
-  std::cout << s << std::endl;
+void ImuFactor::PreintegratedMeasurements::print(const string& s) const {
+  cout << s << endl;
   biasHat_.print("  biasHat");
-  std::cout << "  deltaTij " << deltaTij_ << std::endl;
-  std::cout << "  deltaPij [ " << deltaPij_.transpose() << " ]" << std::endl;
-  std::cout << "  deltaVij [ " << deltaVij_.transpose() << " ]" << std::endl;
+  cout << "  deltaTij " << deltaTij_ << endl;
+  cout << "  deltaPij [ " << deltaPij_.transpose() << " ]" << endl;
+  cout << "  deltaVij [ " << deltaVij_.transpose() << " ]" << endl;
   deltaRij_.print("  deltaRij ");
-  std::cout << "  measurementCovariance = \n [ " << measurementCovariance_ << " ]" << std::endl;
-  std::cout << "  PreintMeasCov = \n [ " << PreintMeasCov_ << " ]" << std::endl;
+  cout << "  measurementCovariance = \n [ " << measurementCovariance_ << " ]" << endl;
+  cout << "  PreintMeasCov = \n [ " << PreintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool ImuFactor::PreintegratedMeasurements::equals(const PreintegratedMeasurements& expected, double tol) const {
   return biasHat_.equals(expected.biasHat_, tol)
-      && equal_with_abs_tol(measurementCovariance_, expected.measurementCovariance_, tol)
-      && equal_with_abs_tol(deltaPij_, expected.deltaPij_, tol)
-      && equal_with_abs_tol(deltaVij_, expected.deltaVij_, tol)
-      && deltaRij_.equals(expected.deltaRij_, tol)
-      && std::fabs(deltaTij_ - expected.deltaTij_) < tol
-      && equal_with_abs_tol(delPdelBiasAcc_, expected.delPdelBiasAcc_, tol)
-      && equal_with_abs_tol(delPdelBiasOmega_, expected.delPdelBiasOmega_, tol)
-      && equal_with_abs_tol(delVdelBiasAcc_, expected.delVdelBiasAcc_, tol)
-      && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_, tol)
-      && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_, tol);
+  && equal_with_abs_tol(measurementCovariance_, expected.measurementCovariance_, tol)
+  && equal_with_abs_tol(deltaPij_, expected.deltaPij_, tol)
+  && equal_with_abs_tol(deltaVij_, expected.deltaVij_, tol)
+  && deltaRij_.equals(expected.deltaRij_, tol)
+  && fabs(deltaTij_ - expected.deltaTij_) < tol
+  && equal_with_abs_tol(delPdelBiasAcc_, expected.delPdelBiasAcc_, tol)
+  && equal_with_abs_tol(delPdelBiasOmega_, expected.delPdelBiasOmega_, tol)
+  && equal_with_abs_tol(delVdelBiasAcc_, expected.delVdelBiasAcc_, tol)
+  && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_, tol)
+  && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +86,7 @@ void ImuFactor::PreintegratedMeasurements::resetIntegration(){
   delVdelBiasAcc_ = Z_3x3;
   delVdelBiasOmega_ = Z_3x3;
   delRdelBiasOmega_ = Z_3x3;
-  PreintMeasCov_.setZero(9,9);
+  PreintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
@@ -215,16 +217,16 @@ gtsam::NonlinearFactor::shared_ptr ImuFactor::clone() const {
 }
 
 //------------------------------------------------------------------------------
-void ImuFactor::print(const std::string& s, const KeyFormatter& keyFormatter) const {
-  std::cout << s << "ImuFactor("
+void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
+  cout << s << "ImuFactor("
       << keyFormatter(this->key1()) << ","
       << keyFormatter(this->key2()) << ","
       << keyFormatter(this->key3()) << ","
       << keyFormatter(this->key4()) << ","
       << keyFormatter(this->key5()) << ")\n";
   preintegratedMeasurements_.print("  preintegrated measurements:");
-  std::cout << "  gravity: [ " << gravity_.transpose() << " ]" << std::endl;
-  std::cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << std::endl;
+  cout << "  gravity: [ " << gravity_.transpose() << " ]" << endl;
+  cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << endl;
   this->noiseModel_->print("  noise model: ");
   if(this->body_P_sensor_)
     this->body_P_sensor_->print("  sensor pose in body frame: ");
@@ -390,8 +392,7 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i, const
 //------------------------------------------------------------------------------
 PoseVelocity ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
     const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
-    const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensore,
-    const bool use2ndOrderCoriolis)
+    const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis)
 {
 
   const double& deltaTij = preintegratedMeasurements.deltaTij_;
