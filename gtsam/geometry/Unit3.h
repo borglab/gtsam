@@ -57,7 +57,7 @@ public:
   }
 
   /// Named constructor from Point3 with optional Jacobian
-  static Unit3 FromPoint3(const Point3& point, boost::optional<Matrix&> H =
+  static Unit3 FromPoint3(const Point3& point, OptionalJacobian<2,3> H =
       boost::none);
 
   /// Random direction, using boost::uniform_on_sphere
