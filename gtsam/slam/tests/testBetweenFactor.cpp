@@ -45,7 +45,7 @@ TEST(BetweenFactor, Rot3) {
 }
 
 /* ************************************************************************* */
-
+/*
 // Constructor scalar
 TEST(BetweenFactor, ConstructorScalar) {
   SharedNoiseModel model;
@@ -66,6 +66,7 @@ TEST(BetweenFactor, ConstructorDynamicSizeVector) {
   Vector measured_value(5); measured_value << 1, 2, 3, 4, 5;
   BetweenFactor<Vector> factor(1, 2, measured_value, model);
 }
+*/
 
 /* ************************************************************************* */
 int main() {
