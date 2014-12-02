@@ -98,7 +98,7 @@ public:
       const SharedNoiseModel& model) {
     NonlinearFactorGraph graph = NonlinearGraph(sequence, model);
     Values values;
-    values.insert(0, Coefficients()); // does not matter
+    values.insert<Coefficients>(0, Coefficients::Zero()); // does not matter
     GaussianFactorGraph::shared_ptr gfg = graph.linearize(values);
     return gfg;
   }
