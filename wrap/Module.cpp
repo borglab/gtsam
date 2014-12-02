@@ -126,30 +126,8 @@ void Module::parseMarkup(const std::string& data) {
     [push_back_a(templateInstantiationTypedefs, singleInstantiation)] 
     [assign_a(singleInstantiation, singleInstantiation0)]; 
  
-  // NOTE: allows for pointers to all types
-  ArgumentList args;
-  ArgumentListGrammar argumentList_g(args);
-
-  vector<string> namespaces_return; /// namespace for current return type
-  Rule namespace_ret_p = basic.namespace_p[push_back_a(namespaces_return)] >> str_p("::");
- 
-  ReturnValue retVal0, retVal;
-  ReturnValueGrammar returnValue_g(retVal);
-
-  Rule globalFunctionName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
-
-  // parse a global function
-  Qualified globalFunction;
-  Rule global_function_p = 
-      (returnValue_g >> globalFunctionName_p[assign_a(globalFunction.name_)] >>
-       argumentList_g >> ';' >> *basic.comments_p)
-      [assign_a(globalFunction.namespaces_,namespaces)]
-      [bl::bind(&GlobalFunction::addOverload, 
-        bl::var(global_functions)[bl::var(globalFunction.name_)],
-        bl::var(globalFunction), bl::var(args), bl::var(retVal), boost::none,verbose)]
-      [assign_a(retVal,retVal0)]
-      [clear_a(globalFunction)]
-      [clear_a(args)];
+  // Create grammar for global functions
+  GlobalFunctionGrammar global_function_g(global_functions,namespaces);
  
   Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
 
@@ -162,7 +140,7 @@ void Module::parseMarkup(const std::string& data) {
       (str_p("namespace")
       >> basic.namespace_p[push_back_a(namespaces)]
       >> ch_p('{')
-      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | basic.comments_p)
+      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_g | namespace_def_p | basic.comments_p)
       >> ch_p('}'))
       [pop_a(namespaces)];
 
@@ -182,7 +160,7 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule module_content_p = basic.comments_p | include_p | class_p
       | templateSingleInstantiation_p | forward_declaration_p
-      | global_function_p | namespace_def_p;
+      | global_function_g | namespace_def_p;
  
   Rule module_p = *module_content_p >> !end_p; 
  

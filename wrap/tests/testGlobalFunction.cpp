@@ -36,7 +36,8 @@ TEST( GlobalFunction, Grammar ) {
 
   // Create type grammar that will place result in actual
   GlobalFunctions actual;
-  GlobalFunctionGrammar g(actual);
+  vector<string> namespaces;
+  GlobalFunctionGrammar g(actual,namespaces);
 
   // a class type with namespaces
   EXPECT(parse("Vector aGlobalFunction();", g, space_p).full);

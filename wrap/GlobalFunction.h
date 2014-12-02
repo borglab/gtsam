@@ -66,10 +66,12 @@ typedef std::map<std::string, GlobalFunction> GlobalFunctions;
 struct GlobalFunctionGrammar: public classic::grammar<GlobalFunctionGrammar> {
 
   GlobalFunctions& global_functions_; ///< successful parse will be placed in here
+  std::vector<std::string>& namespaces_;
 
   /// Construct type grammar and specify where result is placed
-  GlobalFunctionGrammar(GlobalFunctions& global_functions) :
-      global_functions_(global_functions) {
+  GlobalFunctionGrammar(GlobalFunctions& global_functions,
+      std::vector<std::string>& namespaces) :
+      global_functions_(global_functions), namespaces_(namespaces) {
   }
 
   /// Definition of type grammar
@@ -102,7 +104,8 @@ struct GlobalFunctionGrammar: public classic::grammar<GlobalFunctionGrammar> {
       global_function_p = (returnValue_g
           >> globalFunctionName_p[assign_a(globalFunction.name_)]
           >> argumentList_g >> ';' >> *comments_p) //
-          [bl::bind(&GlobalFunction::addOverload,
+          [assign_a(globalFunction.namespaces_, self.namespaces_)][bl::bind(
+              &GlobalFunction::addOverload,
               bl::var(self.global_functions_)[bl::var(globalFunction.name_)],
               bl::var(globalFunction), bl::var(args), bl::var(retVal),
               boost::none, verbose)] //
@@ -118,5 +121,5 @@ struct GlobalFunctionGrammar: public classic::grammar<GlobalFunctionGrammar> {
 };
 // GlobalFunctionGrammar
 
-} // \namespace wrap
+}// \namespace wrap
 
