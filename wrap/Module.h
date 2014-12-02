@@ -34,8 +34,6 @@ namespace wrap {
  */
 struct Module {
 
-  typedef std::map<std::string, GlobalFunction> GlobalFunctions;
-
   // Filled during parsing:
   std::string name; ///< module name
   bool verbose; ///< verbose flag
