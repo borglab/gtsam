@@ -47,5 +47,7 @@ private:
 
 };
 
+typedef std::map<std::string, GlobalFunction> GlobalFunctions;
+
 } // \namespace wrap
 
