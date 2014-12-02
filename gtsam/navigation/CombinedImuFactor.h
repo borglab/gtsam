@@ -489,27 +489,6 @@ namespace gtsam {
 
       const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
 
-      /* TODO why is this commented out. Put it on a branch but remove from develop?
-        (*H1) <<
-            // dfP/dRi
-            Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij
-                + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr),
-                // dfP/dPi
-                - Rot_i.matrix() + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij*deltaTij,
-                // dfV/dRi
-                Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij
-                    + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr),
-                    // dfV/dPi
-                    skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij,
-                    // dfR/dRi
-                    Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
-                    // dfR/dPi
-                    Z_3x3,
-                    //dBiasAcc/dPi
-                    Z_3x3, Z_3x3,
-                    //dBiasOmega/dPi
-                    Z_3x3, Z_3x3;
-          */
       if(H1) {
         H1->resize(15,6);
 
@@ -524,25 +503,25 @@ namespace gtsam {
           dfVdPi = Z_3x3;
         }
 
-    (*H1) <<
-      // dfP/dRi
-      Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij_
-        + preintegratedMeasurements_.delPdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc_ * biasAccIncr),
-      // dfP/dPi
-      dfPdPi,
-      // dfV/dRi
-      Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij_
-        + preintegratedMeasurements_.delVdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc_ * biasAccIncr),
-      // dfV/dPi
-      dfVdPi,
-      // dfR/dRi
-      Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
-      // dfR/dPi
-      Z_3x3,
-      //dBiasAcc/dPi
-      Z_3x3, Z_3x3,
-      //dBiasOmega/dPi
-      Z_3x3, Z_3x3;
+        (*H1) <<
+            // dfP/dRi
+            Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij_
+                + preintegratedMeasurements_.delPdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc_ * biasAccIncr),
+            // dfP/dPi
+            dfPdPi,
+            // dfV/dRi
+            Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij_
+                + preintegratedMeasurements_.delVdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc_ * biasAccIncr),
+            // dfV/dPi
+            dfVdPi,
+            // dfR/dRi
+            Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
+            // dfR/dPi
+            Z_3x3,
+            //dBiasAcc/dPi
+            Z_3x3, Z_3x3,
+            //dBiasOmega/dPi
+            Z_3x3, Z_3x3;
       }
 
       if(H2) {

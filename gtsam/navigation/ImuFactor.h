@@ -105,6 +105,7 @@ struct PoseVelocity {
         PreintMeasCov_.setZero(9,9);
       }
 
+      // TODO: in what context is this constructor used and why do you init to zero?
       PreintegratedMeasurements() :
       biasHat_(imuBias::ConstantBias()), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()), deltaTij_(0.0),
       delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
