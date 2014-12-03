@@ -76,18 +76,8 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   // NOTE: order is important here because each update uses old values, e.g., velocity and position updates are based on previous rotation estimate.
   // (i.e., we have to update jacobians and covariances before updating preintegrated measurements).
 
-  // First we compensate the measurements for the bias: since we have only an estimate of the bias, the covariance includes the corresponding uncertainty
-  Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
-  Vector3 correctedOmega = biasHat_.correctGyroscope(measuredOmega);
-
-  // Then compensate for sensor-body displacement: we express the quantities (originally in the IMU frame) into the body frame
-  if(body_P_sensor){
-    Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
-    correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
-    Matrix3 body_omega_body__cross = skewSymmetric(correctedOmega);
-    correctedAcc = body_R_sensor * correctedAcc - body_omega_body__cross * body_omega_body__cross * body_P_sensor->translation().vector();
-    // linear acceleration vector in the body frame
-  }
+  Vector3 correctedAcc, correctedOmega;
+  correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, correctedAcc, correctedOmega, body_P_sensor);
 
   const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
   const Rot3 Rincr = Rot3::Expmap(theta_incr); // rotation increment computed from the current rotation rate measurement
@@ -95,17 +85,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 
   // Update Jacobians
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  if(!use2ndOrderIntegration_){
-    delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT;
-    delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT;
-  }else{
-    delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * deltaRij_.matrix() * deltaT*deltaT;
-    delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT - 0.5 * deltaRij_.matrix()
-                                            * skewSymmetric(correctedAcc) * deltaT*deltaT * delRdelBiasOmega_;
-  }
-  delVdelBiasAcc_ += -deltaRij_.matrix() * deltaT;
-  delVdelBiasOmega_ += -deltaRij_.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega_;
-  delRdelBiasOmega_ = Rincr.inverse().matrix() * delRdelBiasOmega_ - Jr_theta_incr  * deltaT;
+  updatePreintegratedJacobians(correctedAcc, Jr_theta_incr, Rincr, deltaT);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
   // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
@@ -173,14 +153,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 
   // Update preintegrated measurements
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  if(!use2ndOrderIntegration_){
-    deltaPij_ += deltaVij_ * deltaT;
-  }else{
-    deltaPij_ += deltaVij_ * deltaT + 0.5 * deltaRij_.matrix() * correctedAcc * deltaT*deltaT;
-  }
-  deltaVij_ += deltaRij_.matrix() * correctedAcc * deltaT;
-  deltaRij_ = deltaRij_ * Rincr;
-  deltaTij_ += deltaT;
+  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
 }
 
 //------------------------------------------------------------------------------

@@ -105,6 +105,48 @@ public:
     delRdelBiasOmega_ = Z_3x3;
   }
 
+  /// Update preintegrated measurements
+  void updatePreintegratedMeasurements(const Vector3& correctedAcc, const Rot3& Rincr, double deltaT){
+    if(!use2ndOrderIntegration_){
+      deltaPij_ += deltaVij_ * deltaT;
+    }else{
+      deltaPij_ += deltaVij_ * deltaT + 0.5 * deltaRij_.matrix() * correctedAcc * deltaT*deltaT;
+    }
+    deltaVij_ += deltaRij_.matrix() * correctedAcc * deltaT;
+    deltaRij_ = deltaRij_ * Rincr;
+    deltaTij_ += deltaT;
+  }
+
+  /// Update Jacobians to be used during preintegration
+  void updatePreintegratedJacobians(const Vector3& correctedAcc, const Matrix3& Jr_theta_incr, const Rot3& Rincr, double deltaT){
+    if(!use2ndOrderIntegration_){
+      delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT;
+      delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT;
+    }else{
+      delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * deltaRij_.matrix() * deltaT*deltaT;
+      delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT - 0.5 * deltaRij_.matrix()
+                                              * skewSymmetric(correctedAcc) * deltaT*deltaT * delRdelBiasOmega_;
+    }
+    delVdelBiasAcc_ += -deltaRij_.matrix() * deltaT;
+    delVdelBiasOmega_ += -deltaRij_.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega_;
+    delRdelBiasOmega_ = Rincr.inverse().matrix() * delRdelBiasOmega_ - Jr_theta_incr  * deltaT;
+  }
+
+  void correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc, const Vector3& measuredOmega,
+      Vector3& correctedAcc, Vector3& correctedOmega, boost::optional<const Pose3&> body_P_sensor){
+    correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
+    correctedOmega = biasHat_.correctGyroscope(measuredOmega);
+
+    // Then compensate for sensor-body displacement: we express the quantities (originally in the IMU frame) into the body frame
+    if(body_P_sensor){
+      Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
+      correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
+      Matrix3 body_omega_body__cross = skewSymmetric(correctedOmega);
+      correctedAcc = body_R_sensor * correctedAcc - body_omega_body__cross * body_omega_body__cross * body_P_sensor->translation().vector();
+      // linear acceleration vector in the body frame
+    }
+  }
+
   /// methods to access class variables
   Matrix deltaRij() const {return deltaRij_.matrix();}
   double deltaTij() const{return deltaTij_;}
