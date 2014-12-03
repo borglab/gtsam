@@ -23,7 +23,7 @@
 
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/navigation/ImuBias.h>
+#include <gtsam/navigation/PreintegrationBase.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
@@ -78,32 +78,19 @@ public:
    * Integration is done incrementally (ideally, one integrates the measurement as soon as it is received
    * from the IMU) so as to avoid costly integration at time of factor construction.
    */
-  class CombinedPreintegratedMeasurements {
+  class CombinedPreintegratedMeasurements: public PreintegrationBase {
 
     friend class CombinedImuFactor;
 
   protected:
-    imuBias::ConstantBias biasHat_; ///< Acceleration and angular rate bias values used during preintegration
+
     Eigen::Matrix<double,21,21> measurementCovariance_; ///< (Raw measurements uncertainty) Covariance of the vector
     ///< [integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
-
-    Vector3 deltaPij_; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
-    Vector3 deltaVij_; ///< Preintegrated relative velocity (in global frame)
-    Rot3 deltaRij_;    ///< Preintegrated relative orientation (in frame i)
-    double deltaTij_;  ///< Time interval from i to j
-
-    Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
-    Matrix3 delPdelBiasOmega_; ///< Jacobian of preintegrated position w.r.t. angular rate bias
-    Matrix3 delVdelBiasAcc_;   ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
-    Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
-    Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
     Eigen::Matrix<double,15,15> PreintMeasCov_; ///< Covariance matrix of the preintegrated measurements
     ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION BiasAcc BiasOmega]
     ///< (first-order propagation from *measurementCovariance*). CombinedPreintegratedMeasurements also include the biases and keep the correlation
     ///< between the preintegrated measurements and the biases
-
-    bool use2ndOrderIntegration_; ///< Controls the order of integration
 
   public:
 
@@ -145,56 +132,17 @@ public:
 
     /// methods to access class variables
     Matrix measurementCovariance() const {return measurementCovariance_;}
-    Matrix deltaRij() const {return deltaRij_.matrix();}
-    double deltaTij() const{return deltaTij_;}
-    Vector deltaPij() const {return deltaPij_;}
-    Vector deltaVij() const {return deltaVij_;}
-    Vector biasHat() const { return biasHat_.vector();}
-    Matrix delPdelBiasAcc() const { return delPdelBiasAcc_;}
-    Matrix delPdelBiasOmega() const { return delPdelBiasOmega_;}
-    Matrix delVdelBiasAcc() const { return delVdelBiasAcc_;}
-    Matrix delVdelBiasOmega() const { return delVdelBiasOmega_;}
-    Matrix delRdelBiasOmega() const{ return delRdelBiasOmega_;}
     Matrix PreintMeasCov() const { return PreintMeasCov_;}
 
-    /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-    // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
-    static inline Vector PreIntegrateIMUObservations_delta_vel(const Vector& msr_gyro_t, const Vector& msr_acc_t, const double msr_dt,
-        const Vector3& delta_angles, const Vector& delta_vel_in_t0){
-      // Note: all delta terms refer to an IMU\sensor system at t0
-      Vector body_t_a_body = msr_acc_t;
-      Rot3 R_t_to_t0 = Rot3::Expmap(delta_angles);
-      return delta_vel_in_t0 + R_t_to_t0.matrix() * body_t_a_body * msr_dt;
-    }
-
-    // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
-    static inline Vector PreIntegrateIMUObservations_delta_angles(const Vector& msr_gyro_t, const double msr_dt,
-        const Vector3& delta_angles){
-      // Note: all delta terms refer to an IMU\sensor system at t0
-      // Calculate the corrected measurements using the Bias object
-      Vector body_t_omega_body= msr_gyro_t;
-      Rot3 R_t_to_t0 = Rot3::Expmap(delta_angles);
-      R_t_to_t0    = R_t_to_t0 * Rot3::Expmap( body_t_omega_body*msr_dt );
-      return Rot3::Logmap(R_t_to_t0);
-    }
-    /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
   private:
-    /** Serialization function */
+
+    /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_NVP(biasHat_);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
       ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
-      ar & BOOST_SERIALIZATION_NVP(deltaPij_);
-      ar & BOOST_SERIALIZATION_NVP(deltaVij_);
-      ar & BOOST_SERIALIZATION_NVP(deltaRij_);
-      ar & BOOST_SERIALIZATION_NVP(deltaTij_);
-      ar & BOOST_SERIALIZATION_NVP(delPdelBiasAcc_);
-      ar & BOOST_SERIALIZATION_NVP(delPdelBiasOmega_);
-      ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
-      ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
-      ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
+      ar & BOOST_SERIALIZATION_NVP(PreintMeasCov_);
     }
   };
 

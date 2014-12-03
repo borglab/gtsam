@@ -35,11 +35,7 @@ ImuFactor::PreintegratedMeasurements::PreintegratedMeasurements(
     const imuBias::ConstantBias& bias, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance, const Matrix3& integrationErrorCovariance,
     const bool use2ndOrderIntegration) :
-                  biasHat_(bias), deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()),
-                  deltaRij_(Rot3()), deltaTij_(0.0),
-                  delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
-                  delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
-                  delRdelBiasOmega_(Z_3x3), use2ndOrderIntegration_(use2ndOrderIntegration)
+        PreintegrationBase(bias, use2ndOrderIntegration)
 {
   measurementCovariance_.setZero();
   measurementCovariance_.block<3,3>(0,0) = integrationErrorCovariance;
@@ -50,42 +46,21 @@ ImuFactor::PreintegratedMeasurements::PreintegratedMeasurements(
 
 //------------------------------------------------------------------------------
 void ImuFactor::PreintegratedMeasurements::print(const string& s) const {
-  cout << s << endl;
-  biasHat_.print("  biasHat");
-  cout << "  deltaTij " << deltaTij_ << endl;
-  cout << "  deltaPij [ " << deltaPij_.transpose() << " ]" << endl;
-  cout << "  deltaVij [ " << deltaVij_.transpose() << " ]" << endl;
-  deltaRij_.print("  deltaRij ");
+  PreintegrationBase::print(s);
   cout << "  measurementCovariance = \n [ " << measurementCovariance_ << " ]" << endl;
   cout << "  PreintMeasCov = \n [ " << PreintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool ImuFactor::PreintegratedMeasurements::equals(const PreintegratedMeasurements& expected, double tol) const {
-  return biasHat_.equals(expected.biasHat_, tol)
-  && equal_with_abs_tol(measurementCovariance_, expected.measurementCovariance_, tol)
-  && equal_with_abs_tol(deltaPij_, expected.deltaPij_, tol)
-  && equal_with_abs_tol(deltaVij_, expected.deltaVij_, tol)
-  && deltaRij_.equals(expected.deltaRij_, tol)
-  && fabs(deltaTij_ - expected.deltaTij_) < tol
-  && equal_with_abs_tol(delPdelBiasAcc_, expected.delPdelBiasAcc_, tol)
-  && equal_with_abs_tol(delPdelBiasOmega_, expected.delPdelBiasOmega_, tol)
-  && equal_with_abs_tol(delVdelBiasAcc_, expected.delVdelBiasAcc_, tol)
-  && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_, tol)
-  && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_, tol);
+  return equal_with_abs_tol(measurementCovariance_, expected.measurementCovariance_, tol)
+  && equal_with_abs_tol(PreintMeasCov_, expected.PreintMeasCov_, tol)
+  && PreintegrationBase::equals(expected, tol);
 }
 
 //------------------------------------------------------------------------------
 void ImuFactor::PreintegratedMeasurements::resetIntegration(){
-  deltaPij_ = Vector3::Zero();
-  deltaVij_ = Vector3::Zero();
-  deltaRij_ = Rot3();
-  deltaTij_ = 0.0;
-  delPdelBiasAcc_ = Z_3x3;
-  delPdelBiasOmega_ = Z_3x3;
-  delVdelBiasAcc_ = Z_3x3;
-  delVdelBiasOmega_ = Z_3x3;
-  delRdelBiasOmega_ = Z_3x3;
+  PreintegrationBase::resetIntegration();
   PreintMeasCov_.setZero();
 }
 
