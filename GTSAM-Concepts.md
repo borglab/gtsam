@@ -294,6 +294,7 @@ Boost provides a nice way to check whether a given type satisfies a concept. For
 Using the following from Mike Bosse's prototype:
 
 ```
+#!c++
 template<class C>
 struct ChartConcept {
 
