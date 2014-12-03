@@ -127,8 +127,8 @@ public:
   inline Point2 compose(const Point2& q,
       OptionalJacobian<2,2> H1=boost::none,
       OptionalJacobian<2,2> H2=boost::none) const {
-    if(H1) *H1 = Eigen::Matrix2d::Identity();
-    if(H2) *H2 = Eigen::Matrix2d::Identity();
+    if(H1) *H1 = I2;
+    if(H2) *H2 = I2;
     return *this + q;
   }
 
@@ -139,8 +139,8 @@ public:
   inline Point2 between(const Point2& q,
       OptionalJacobian<2,2> H1=boost::none,
       OptionalJacobian<2,2> H2=boost::none) const {
-    if(H1) *H1 = -Eigen::Matrix2d::Identity();
-    if(H2) *H2 = Eigen::Matrix2d::Identity();
+    if(H1) *H1 = _I2;
+    if(H2) *H2 = I2;
     return q - (*this);
   }
 

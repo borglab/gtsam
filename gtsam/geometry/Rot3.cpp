@@ -27,8 +27,6 @@ using namespace std;
 
 namespace gtsam {
 
-static const Matrix3 I3 = Matrix3::Identity();
-
 /* ************************************************************************* */
 void Rot3::print(const std::string& s) const {
   gtsam::print((Matrix)matrix(), s);
@@ -186,11 +184,11 @@ Matrix3 Rot3::rightJacobianExpMapSO3(const Vector3& x)    {
   double normx = norm_2(x); // rotation angle
   Matrix3 Jr;
   if (normx < 10e-8){
-    Jr = Matrix3::Identity();
+    Jr = I3;
   }
   else{
     const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jr = Matrix3::Identity() - ((1-cos(normx))/(normx*normx)) * X +
+    Jr = I3 - ((1-cos(normx))/(normx*normx)) * X +
         ((normx-sin(normx))/(normx*normx*normx)) * X * X; // right Jacobian
   }
   return Jr;
@@ -203,11 +201,11 @@ Matrix3 Rot3::rightJacobianExpMapSO3inverse(const Vector3& x)    {
   Matrix3 Jrinv;
 
   if (normx < 10e-8){
-    Jrinv = Matrix3::Identity();
+    Jrinv = I3;
   }
   else{
     const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jrinv = Matrix3::Identity() +
+    Jrinv = I3 +
         0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx))   ) * X * X;
   }
   return Jrinv;

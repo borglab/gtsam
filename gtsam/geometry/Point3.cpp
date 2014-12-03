@@ -66,9 +66,9 @@ Point3 Point3::operator/(double s) const {
 Point3 Point3::add(const Point3 &q, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   if (H1)
-    (*H1).setIdentity();
+    *H1= I3;
   if (H2)
-    (*H2).setIdentity();
+    *H2= I3;
   return *this + q;
 }
 
@@ -76,9 +76,9 @@ Point3 Point3::add(const Point3 &q, OptionalJacobian<3,3> H1,
 Point3 Point3::sub(const Point3 &q, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   if (H1)
-    (*H1).setIdentity();
+    (*H1) = I3;
   if (H2)
-    (*H2).setIdentity();
+    (*H2) = I3;
   return *this - q;
 }
 

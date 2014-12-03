@@ -32,8 +32,6 @@ INSTANTIATE_LIE(Pose3);
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3);
 
-static const Matrix3 I3 = Eigen::Matrix3d::Identity(), Z3 = Eigen::Matrix3d::Zero(), _I3 = -I3;
-
 /* ************************************************************************* */
 Pose3::Pose3(const Pose2& pose2) :
     R_(Rot3::rodriguez(0, 0, pose2.theta())), t_(
@@ -102,9 +100,9 @@ Matrix6 Pose3::dExpInv_exp(const Vector6& xi) {
       0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
   static const int N = 5; // order of approximation
   Matrix6 res;
-  res.setIdentity();
+  res = I6;
   Matrix6 ad_i;
-  ad_i.setIdentity();
+  ad_i = I6;
   Matrix6 ad_xi = adjointMap(xi);
   double fac = 1.0;
   for (int i = 1; i < N; ++i) {
@@ -279,7 +277,7 @@ Pose3 Pose3::compose(const Pose3& p2, OptionalJacobian<6,6> H1,
   if (H1)
     *H1 = p2.inverse().AdjointMap();
   if (H2)
-    (*H2).setIdentity();
+    *H2 = I6;
   return (*this) * p2;
 }
 
@@ -299,7 +297,7 @@ Pose3 Pose3::between(const Pose3& p2, OptionalJacobian<6,6> H1,
   if (H1)
     *H1 = -result.inverse().AdjointMap();
   if (H2)
-    (*H2).setIdentity();
+    (*H2) = I6;
   return result;
 }
 
@@ -366,7 +364,7 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
 
   // Recover transform with correction from Eggert97machinevisionandapplications
   Matrix3 UVtranspose = U * V.transpose();
-  Matrix3 detWeighting = Eigen::Matrix3d::Identity();
+  Matrix3 detWeighting = I3;
   detWeighting(2, 2) = UVtranspose.determinant();
   Rot3 R(Matrix(V * detWeighting * U.transpose()));
   Point3 t = Point3(cq) - R * Point3(cp);

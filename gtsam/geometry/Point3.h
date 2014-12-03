@@ -143,12 +143,12 @@ namespace gtsam {
 
     /// Left-trivialized derivative of the exponential map
     static Matrix3 dexpL(const Vector& v) {
-      return Eigen::Matrix3d::Identity();
+      return I3;
     }
 
     /// Left-trivialized derivative inverse of the exponential map
     static Matrix3 dexpInvL(const Vector& v) {
-      return Eigen::Matrix3d::Identity();
+      return I3;
     }
 
     /// @}

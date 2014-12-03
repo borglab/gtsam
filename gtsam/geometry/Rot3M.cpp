@@ -30,10 +30,8 @@ using namespace std;
 
 namespace gtsam {
 
-static const Matrix3 I3 = Matrix3::Identity();
-
 /* ************************************************************************* */
-Rot3::Rot3() : rot_(Matrix3::Identity()) {}
+Rot3::Rot3() : rot_(I3) {}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {

@@ -36,7 +36,7 @@ Point2 CalibratedCamera::project_to_camera(const Point3& P,
     OptionalJacobian<2,3> H1) {
   if (H1) {
     double d = 1.0 / P.z(), d2 = d * d;
-    (*H1) <<  d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2;
+    *H1 <<  d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2;
   }
   return Point2(P.x() / P.z(), P.y() / P.z());
 }

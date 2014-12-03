@@ -20,9 +20,6 @@ Matrix cov(const Matrix& m) {
   return DDt / (num_observations - 1);
 }
 
-Matrix I3 = eye(3);
-Matrix Z3 = zeros(3, 3);
-
 /* ************************************************************************* */
 AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
     bool flat) :
