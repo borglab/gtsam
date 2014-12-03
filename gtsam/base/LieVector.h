@@ -17,6 +17,7 @@
 
 #pragma once
 
+#warning "LieVector.h is deprecated. Please use Eigen::Vector instead."
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/DerivedValue.h>

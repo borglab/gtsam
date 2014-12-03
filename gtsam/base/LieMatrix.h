@@ -19,6 +19,7 @@
 
 #include <cstdarg>
 
+#warning "LieMatrix.h is deprecated. Please use Eigen::Matrix instead."
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
