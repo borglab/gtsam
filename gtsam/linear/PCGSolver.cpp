@@ -119,11 +119,11 @@ void GaussianFactorGraphSystem::getb(Vector &b) const {
 
 /**********************************************************************************/
 void GaussianFactorGraphSystem::leftPrecondition(const Vector &x, Vector &y) const
-{ preconditioner_.transposeSolve(x, y); }
+{ preconditioner_.solve(x, y); }
 
 /**********************************************************************************/
 void GaussianFactorGraphSystem::rightPrecondition(const Vector &x, Vector &y) const
-{ preconditioner_.solve(x, y); }
+{ preconditioner_.transposeSolve(x, y); }
 
 /**********************************************************************************/
 VectorValues buildVectorValues(const Vector &v,
