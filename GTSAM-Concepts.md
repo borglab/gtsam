@@ -1,20 +1,15 @@
 GTSAM Concepts
 ==============
 
-Concepts define (see [Generic Programming Techniques](http://www.boost.org/community/generic_programming.html))
+As discussed in [Generic Programming Techniques](http://www.boost.org/community/generic_programming.html), concepts define
 
 * associated types
 * valid expressions, like functions and values
 * invariants
 * complexity guarantees
 
-GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the TESTABLE, MANIFOLD, GROUP, LIE_GROUP, and VECTOR_SPACE concepts.
+Below we discuss the most important concepts use in GTSAM, and after that we discuss how they are implemented/used/enforced.
 
-Testable
---------
-Unit tests heavily depend on the following two functions being defined for all types that need to be tested:
-
-* functions: `print`, `equals` 
 
 Manifold
 --------
@@ -59,11 +54,21 @@ Vector Space
 
 Lie Group where compose == `+`
 
+Testable
+--------
+Unit tests heavily depend on the following two functions being defined for all types that need to be tested:
+
+* functions: `print`, `equals` 
+
+Implementation
+==============
+
+GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the TESTABLE, MANIFOLD, GROUP, LIE_GROUP, and VECTOR_SPACE concepts. `gtsam::traits` is our way to associate these concepts with types, and we also define a limited number of `gtsam::tags` to select the correct implementation of certain functions at compile time (tag dispatching).
 
 traits
 ------
 
-`gtsam::traits` is our way to associate these concepts with types. We will not use Eigen-style or STL-style traits, that define many properties at once. Rather, we use boost::mpl style meta-programming functions to facilitate meta-programming.
+We will not use Eigen-style or STL-style traits, that define many properties at once. Rather, we use boost::mpl style meta-programming functions to facilitate meta-programming.
 
 Traits allow us to play with types that are outside GTSAM control, e.g., `Eigen::VectorXd`.
 
