@@ -27,9 +27,9 @@ EssentialMatrix EssentialMatrix::FromPose3(const Pose3& _1P2_,
     // First get 2*3 derivative from Unit3::FromPoint3
     Matrix23 D_direction_1T2;
     Unit3 direction = Unit3::FromPoint3(_1T2_, D_direction_1T2);
-    H->block<3, 3>(0, 0) << I3; // upper left
+    H->block<3, 3>(0, 0) << I_3x3; // upper left
     H->block<2, 3>(3, 0).setZero(); // lower left
-    H->block<3, 3>(0, 3) << Z3; // upper right
+    H->block<3, 3>(0, 3) << Z_3x3; // upper right
     H->block<2, 3>(3, 3) = D_direction_1T2 * _1R2_.matrix(); // lower right
     return EssentialMatrix(_1R2_, direction);
   }

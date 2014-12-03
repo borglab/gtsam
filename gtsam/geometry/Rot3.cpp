@@ -120,7 +120,7 @@ Matrix3 Rot3::dexpL(const Vector3& v) {
   double theta = v.norm(), vi = theta/2.0;
   double s1 = sin(vi)/vi;
   double s2 = (theta - sin(theta))/(theta*theta*theta);
-  Matrix3 res = I3 - 0.5*s1*s1*x + s2*x2;
+  Matrix3 res = I_3x3 - 0.5*s1*s1*x + s2*x2;
   return res;
 }
 
@@ -132,7 +132,7 @@ Matrix3 Rot3::dexpInvL(const Vector3& v) {
   Matrix3 x2 = x*x;
   double theta = v.norm(), vi = theta/2.0;
   double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
-  Matrix3 res = I3 + 0.5*x - s2*x2;
+  Matrix3 res = I_3x3 + 0.5*x - s2*x2;
   return res;
 }
 
@@ -184,11 +184,11 @@ Matrix3 Rot3::rightJacobianExpMapSO3(const Vector3& x)    {
   double normx = norm_2(x); // rotation angle
   Matrix3 Jr;
   if (normx < 10e-8){
-    Jr = I3;
+    Jr = I_3x3;
   }
   else{
     const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jr = I3 - ((1-cos(normx))/(normx*normx)) * X +
+    Jr = I_3x3 - ((1-cos(normx))/(normx*normx)) * X +
         ((normx-sin(normx))/(normx*normx*normx)) * X * X; // right Jacobian
   }
   return Jr;
@@ -201,11 +201,11 @@ Matrix3 Rot3::rightJacobianExpMapSO3inverse(const Vector3& x)    {
   Matrix3 Jrinv;
 
   if (normx < 10e-8){
-    Jrinv = I3;
+    Jrinv = I_3x3;
   }
   else{
     const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jrinv = I3 +
+    Jrinv = I_3x3 +
         0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx))   ) * X * X;
   }
   return Jrinv;

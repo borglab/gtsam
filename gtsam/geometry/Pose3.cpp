@@ -47,7 +47,7 @@ Matrix6 Pose3::AdjointMap() const {
   const Vector3 t = t_.vector();
   Matrix3 A = skewSymmetric(t) * R;
   Matrix6 adj;
-  adj << R, Z3, A, R;
+  adj << R, Z_3x3, A, R;
   return adj;
 }
 
@@ -56,7 +56,7 @@ Matrix6 Pose3::adjointMap(const Vector6& xi) {
   Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
   Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
   Matrix6 adj;
-  adj << w_hat, Z3, v_hat, w_hat;
+  adj << w_hat, Z_3x3, v_hat, w_hat;
 
   return adj;
 }
@@ -100,9 +100,9 @@ Matrix6 Pose3::dExpInv_exp(const Vector6& xi) {
       0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
   static const int N = 5; // order of approximation
   Matrix6 res;
-  res = I6;
+  res = I_6x6;
   Matrix6 ad_i;
-  ad_i = I6;
+  ad_i = I_6x6;
   Matrix6 ad_xi = adjointMap(xi);
   double fac = 1.0;
   for (int i = 1; i < N; ++i) {
@@ -277,7 +277,7 @@ Pose3 Pose3::compose(const Pose3& p2, OptionalJacobian<6,6> H1,
   if (H1)
     *H1 = p2.inverse().AdjointMap();
   if (H2)
-    *H2 = I6;
+    *H2 = I_6x6;
   return (*this) * p2;
 }
 
@@ -297,7 +297,7 @@ Pose3 Pose3::between(const Pose3& p2, OptionalJacobian<6,6> H1,
   if (H1)
     *H1 = -result.inverse().AdjointMap();
   if (H2)
-    (*H2) = I6;
+    (*H2) = I_6x6;
   return result;
 }
 
@@ -364,7 +364,7 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
 
   // Recover transform with correction from Eggert97machinevisionandapplications
   Matrix3 UVtranspose = U * V.transpose();
-  Matrix3 detWeighting = I3;
+  Matrix3 detWeighting = I_3x3;
   detWeighting(2, 2) = UVtranspose.determinant();
   Rot3 R(Matrix(V * detWeighting * U.transpose()));
   Point3 t = Point3(cq) - R * Point3(cp);

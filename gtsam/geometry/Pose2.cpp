@@ -149,7 +149,7 @@ Pose2 Pose2::compose(const Pose2& p2, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   // TODO: inline and reuse?
   if(H1) *H1 = p2.inverse().AdjointMap();
-  if(H2) *H2 = I3;
+  if(H2) *H2 = I_3x3;
   return (*this)*p2;
 }
 
@@ -200,7 +200,7 @@ Pose2 Pose2::between(const Pose2& p2, OptionalJacobian<3,3> H1,
         s,  -c,  dt2,
         0.0, 0.0,-1.0;
   }
-  if (H2) *H2 = I3;
+  if (H2) *H2 = I_3x3;
 
   return Pose2(R,t);
 }

@@ -49,7 +49,7 @@ TEST( Rot3, chart)
 /* ************************************************************************* */
 TEST( Rot3, constructor)
 {
-  Rot3 expected(I3);
+  Rot3 expected(I_3x3);
   Point3 r1(1,0,0), r2(0,1,0), r3(0,0,1);
   Rot3 actual(r1, r2, r3);
   CHECK(assert_equal(actual,expected));
@@ -94,7 +94,7 @@ Rot3 slow_but_correct_rodriguez(const Vector& w) {
   double t = norm_2(w);
   Matrix J = skewSymmetric(w / t);
   if (t < 1e-5) return Rot3();
-  Matrix R = I3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
+  Matrix R = I_3x3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
   return R;
 }
 
@@ -481,7 +481,7 @@ TEST( Rot3, RQ)
   Vector actual;
   boost::tie(actualK, actual) = RQ(R.matrix());
   Vector expected = Vector3(0.14715, 0.385821, 0.231671);
-  CHECK(assert_equal(I3,actualK));
+  CHECK(assert_equal(I_3x3,actualK));
   CHECK(assert_equal(expected,actual,1e-6));
 
   // Try using xyz call, asserting that Rot3::RzRyRx(x,y,z).xyz()==[x;y;z]
@@ -515,7 +515,7 @@ TEST( Rot3, expmapStability ) {
                           w(2), 0.0, -w(0),
                           -w(1), w(0), 0.0 ).finished();
   Matrix W2 = W*W;
-  Matrix Rmat = I3 + (1.0-theta2/6.0 + theta2*theta2/120.0
+  Matrix Rmat = I_3x3 + (1.0-theta2/6.0 + theta2*theta2/120.0
       - theta2*theta2*theta2/5040.0)*W + (0.5 - theta2/24.0 + theta2*theta2/720.0)*W2 ;
   Rot3 expectedR( Rmat );
   CHECK(assert_equal(expectedR, actualR, 1e-10));
@@ -577,7 +577,7 @@ TEST(Rot3, quaternion) {
 TEST( Rot3, Cayley ) {
   Matrix A = skewSymmetric(1,2,-3);
   Matrix Q = Cayley(A);
-  EXPECT(assert_equal((Matrix)I3, trans(Q)*Q));
+  EXPECT(assert_equal((Matrix)I_3x3, trans(Q)*Q));
   EXPECT(assert_equal(A, Cayley(Q)));
 }
 

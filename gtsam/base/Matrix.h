@@ -78,44 +78,46 @@ typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
 
 // Identity Matrices
-static const int I1 = 1;
-static const Matrix2 I2 = Matrix2::Identity();
-static const Matrix3 I3 = Matrix3::Identity();
-static const Matrix4 I4 = Matrix4::Identity();
-static const Matrix5 I5 = Matrix5::Identity();
-static const Matrix6 I6 = Matrix6::Identity();
+static const int I_1x1 = 1;
+static const Matrix2 I_2x2 = Matrix2::Identity();
+static const Matrix3 I_3x3 = Matrix3::Identity();
+static const Matrix4 I_4x4 = Matrix4::Identity();
+static const Matrix5 I_5x5 = Matrix5::Identity();
+static const Matrix6 I_6x6 = Matrix6::Identity();
 
 // Negative Identity
-static const Matrix2 _I2 = -I2;
-static const Matrix3 _I3 = -I3;
-static const Matrix4 _I4 = -I4;
-static const Matrix5 _I5 = -I5;
-static const Matrix6 _I6 = -I6;
+static const int _I_1x1 = -1;
+static const Matrix2 _I_2x2 = -I_2x2;
+static const Matrix3 _I_3x3 = -I_3x3;
+static const Matrix4 _I_4x4 = -I_4x4;
+static const Matrix5 _I_5x5 = -I_5x5;
+static const Matrix6 _I_6x6 = -I_6x6;
 
 // Zero matrices
 // TODO : Make these for rectangular sized matrices as well.
-static const int Z1 = 0;
-static const Matrix2 Z2 = Matrix2::Zero();
-static const Matrix3 Z3 = Matrix3::Zero();
-static const Matrix4 Z4 = Matrix4::Zero();
-static const Matrix5 Z5 = Matrix5::Zero();
-static const Matrix6 Z6 = Matrix6::Zero();
+static const int Z_1x1 = 0;
+static const Matrix2 Z_2x2 = Matrix2::Zero();
+static const Matrix3 Z_3x3 = Matrix3::Zero();
+static const Matrix4 Z_4x4 = Matrix4::Zero();
+static const Matrix5 Z_5x5 = Matrix5::Zero();
+static const Matrix6 Z_6x6 = Matrix6::Zero();
 
 // Ones matrices
 // TODO : Make these for rectangular sized matrices as well.
-static const int O1 = 1;
-static const Matrix2 O2 = Matrix2::Ones();
-static const Matrix3 O3 = Matrix3::Ones();
-static const Matrix4 O4 = Matrix4::Ones();
-static const Matrix5 O5 = Matrix5::Ones();
-static const Matrix6 O6 = Matrix6::Ones();
+static const int O_1x1 = 1;
+static const Matrix2 O_2x2 = Matrix2::Ones();
+static const Matrix3 O_3x3 = Matrix3::Ones();
+static const Matrix4 O_4x4 = Matrix4::Ones();
+static const Matrix5 O_5x5 = Matrix5::Ones();
+static const Matrix6 O_6x6 = Matrix6::Ones();
 
 // Negative Ones
-static const Matrix2 _O2 = -O2;
-static const Matrix3 _O3 = -O3;
-static const Matrix4 _O4 = -O4;
-static const Matrix5 _O5 = -O5;
-static const Matrix6 _O6 = -O6;
+static const int _O_1x1 = -1;
+static const Matrix2 _O_2x2 = -O_2x2;
+static const Matrix3 _O_3x3 = -O_3x3;
+static const Matrix4 _O_4x4 = -O_4x4;
+static const Matrix5 _O_5x5 = -O_5x5;
+static const Matrix6 _O_6x6 = -O_6x6;
 
 
 // Matlab-like syntax

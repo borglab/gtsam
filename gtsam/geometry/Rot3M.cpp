@@ -31,7 +31,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Rot3::Rot3() : rot_(I3) {}
+Rot3::Rot3() : rot_(I_3x3) {}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
@@ -144,7 +144,7 @@ Rot3 Rot3::compose(const Rot3& R2, OptionalJacobian<3, 3> H1, OptionalJacobian<3
   if (H1)
     *H1 = R2.transpose();
   if (H2)
-    *H2 = I3;
+    *H2 = I_3x3;
   return *this * R2;
 }
 
@@ -169,7 +169,7 @@ Rot3 Rot3::inverse(boost::optional<Matrix3 &> H1) const {
 Rot3 Rot3::between (const Rot3& R2,
     OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
   if (H1) *H1 = -(R2.transpose()*rot_);
-  if (H2) *H2 = I3;
+  if (H2) *H2 = I_3x3;
   Matrix3 R12 = transpose()*R2.rot_;
   return Rot3(R12);
 }
