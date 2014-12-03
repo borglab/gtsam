@@ -170,6 +170,8 @@ Manifold Example
 
 An example of implementing a Manifold type is here:
 
+```
+#!c++
     // GTSAM type
     class Rot2 {
 	  typedef Vector2 TangentVector;
@@ -204,17 +206,27 @@ An example of implementing a Manifold type is here:
       }
 
     }}
+```
 
 But Rot2 is in fact also a Lie Group, after we define
 
+```
+#!c++
+namespace manifold { 
     Rot2 inverse(const Rot2& p) { return p.transpose();}
     Rot2 operator*(const Rot2& p, const Rot2& q) { return p*q;}
     Rot2 compose(const Rot2& p, const Rot2& q) { return p*q;}
     Rot2 between(const Rot2& p, const Rot2& q) { return inverse(p)*q;}
+}
+```
 
 The only traits that needs to be implemented are the tags: 
 
-    namespace gtsam { namespace traits {
+
+```
+#!c++
+namespace gtsam { 
+    namespace traits {
       
       template<>
       struct structure<Rot2> : lie_group_tag {}
@@ -222,13 +234,18 @@ The only traits that needs to be implemented are the tags:
       template<>
       struct group_flavor<Rot2> : multiplicative_group_tag {}
 
-    }}
+    }
+}
+```
 
 Vector Space Example
 --------------------
 
 Providing the Vector space concept is easier:
 
+
+```
+#!c++
     // GTSAM type
     class Point2 {
       static const int dimension = 2;
@@ -242,14 +259,17 @@ Providing the Vector space concept is easier:
 	    Rot2 retract(const Vector2& v) const;
       }
     }
-    
+```
+
  The following macro, called inside the gtsam namespace,
  
 	DEFINE_VECTOR_SPACE_TRAITS(Point2)
 	
  should automatically define 
-
-    namespace traits {
+ 
+```
+#!c++
+namespace traits {
       
       template<>
       struct dimension<Point2> {
@@ -275,14 +295,19 @@ Providing the Vector space concept is easier:
 
       template<>
       struct group_flavor<Point2> : additive_group_tag {}
-    }
-    
+}
+```
 and
 
+```
+#!c++
+namespace manifold { 
     Point2 inverse(const Point2& p) { return -p;}
     Point2 operator+(const Point2& p, const Point2& q) { return p+q;}
     Point2 compose(const Point2& p, const Point2& q) { return p+q;}
     Point2 between(const Point2& p, const Point2& q) { return q-p;}
+}
+```
 
 Concept Checks
 --------------
@@ -292,6 +317,7 @@ Boost provides a nice way to check whether a given type satisfies a concept. For
     BOOST_CONCEPT_ASSERT(ChartConcept<defaultChart>)
     
 Using the following from Mike Bosse's prototype:
+
 
 ```
 #!c++
