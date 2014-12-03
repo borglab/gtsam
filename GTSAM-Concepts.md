@@ -160,8 +160,8 @@ The group composition operation can be of two flavors:
 
 which should be queryable by `gtsam::traits::group_flavor<T>`
 
-Examples
---------
+Manifold Example
+----------------
 
 An example of implementing a Manifold type is here:
 
@@ -198,11 +198,6 @@ An example of implementing a Manifold type is here:
         typedef Rot2 type;      
       }
 
-      template<>
-      struct Vector<Rot2::Chart> {
-        typedef Vector2 type;      
-      }
-      
     }}
 
 But Rot2 is in fact also a Lie Group, after we define
@@ -210,7 +205,7 @@ But Rot2 is in fact also a Lie Group, after we define
     Rot2 inverse(const Rot2& p) { return p.transpose();}
     Rot2 operator*(const Rot2& p, const Rot2& q) { return p*q;}
     Rot2 compose(const Rot2& p, const Rot2& q) { return p*q;}
-    Rot2 between(const Rot2& p, const Rot2& q) { return p*q;}
+    Rot2 between(const Rot2& p, const Rot2& q) { return inverse(p)*q;}
 
 The only traits that needs to be implemented are the tags: 
 
@@ -224,4 +219,63 @@ The only traits that needs to be implemented are the tags:
 
     }}
 
+Vector Space Example
+--------------------
+
+Providing the Vector space concept is easier:
+
+    // GTSAM type
+    class Point2 {
+      static const int dimension = 2;
+      Point2 operator+(const Point2&) const;
+      Point2 operator-(const Point2&) const;
+      Point2 operator-() const;
+      // Still needs to be defined, unless Point2 *is* Vector2
+      class Chart {
+	    Chart(const Rot2& R);
+	    Vector2 local(const Rot2& R) const;
+	    Rot2 retract(const Vector2& v) const;
+      }
+    }
+    
+ The following macro, called inside the gtsam namespace,
+ 
+	DEFINE_VECTOR_SPACE_TRAITS(Point2)
+	
+ should automatically define 
+
+    namespace traits {
+      
+      template<>
+      struct dimension<Point2> {
+        static const int value = Point2::dimension;      
+        typedef int value_type;      
+      }
+
+      template<>
+      struct TangentVector<Point2> {
+        typedef Matrix::Eigen<double,Point2::dimension,1> type;      
+      }
+
+      template<>
+      struct defaultChart<Point2> : Point2::Chart {}
+
+      template<>
+      struct Manifold<Point2::Chart> {
+        typedef Point2 type;      
+      }
+
+      template<>
+      struct structure<Point2> : vector_space_tag {}
+
+      template<>
+      struct group_flavor<Point2> : additive_group_tag {}
+    }
+    
+and
+
+    Point2 inverse(const Point2& p) { return p.transpose();}
+    Point2 operator+(const Point2& p, const Point2& q) { return p+q;}
+    Point2 compose(const Point2& p, const Point2& q) { return p+q;}
+    Point2 between(const Point2& p, const Point2& q) { return q-p;}
 
