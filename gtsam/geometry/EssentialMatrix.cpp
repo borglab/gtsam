@@ -27,10 +27,8 @@ EssentialMatrix EssentialMatrix::FromPose3(const Pose3& _1P2_,
     // First get 2*3 derivative from Unit3::FromPoint3
     Matrix23 D_direction_1T2;
     Unit3 direction = Unit3::FromPoint3(_1T2_, D_direction_1T2);
-    H->block<3, 3>(0, 0) << I_3x3; // upper left
-    H->block<2, 3>(3, 0).setZero(); // lower left
-    H->block<3, 3>(0, 3) << Z_3x3; // upper right
-    H->block<2, 3>(3, 3) = D_direction_1T2 * _1R2_.matrix(); // lower right
+    *H <<  I_3x3, Z_3x3, //
+           Z_2x3, D_direction_1T2 * _1R2_.matrix();
     return EssentialMatrix(_1R2_, direction);
   }
 }
@@ -69,9 +67,8 @@ Point3 EssentialMatrix::transform_to(const Point3& p,
     // The last 3 columns are derivative with respect to change in translation
     // The derivative of translation with respect to a 2D sphere delta is 3*2 aTb_.basis()
     // Duy made an educated guess that this needs to be rotated to the local frame
-    Matrix35 H;
-    H.block<3,3>(0,0) = DE_.block<3, 3>(0, 0);
-    H.block<3,2>(0,3)  = -aRb_.transpose() * aTb_.basis();
+    Matrix35 H; 
+    H << DE_.block<3, 3>(0, 0), -aRb_.transpose() * aTb_.basis();
     *DE = H;
   }
   return q;
@@ -93,11 +90,8 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
     Matrix23 D_c1Tc2_cRb; // 2*3
     Matrix2 D_c1Tc2_aTb;  // 2*2
     Unit3 c1Tc2 = cRb.rotate(aTb_, D_c1Tc2_cRb, D_c1Tc2_aTb);
-    if (HE) {
-      HE->setZero();
-      HE->block<3, 3>(0, 0) = cRb.matrix(); // a change in aRb_ will yield a rotated change in c1Rc2
-      HE->block<2, 2>(3, 3) = D_c1Tc2_aTb; // (2*2)
-    }
+    if (HE) *HE << cRb.matrix(), Z_3x2, //
+             Z_2x3, D_c1Tc2_aTb;
     if (HR) {
       throw runtime_error(
           "EssentialMatrix::rotate: derivative HR not implemented yet");
@@ -118,8 +112,7 @@ double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
     Matrix13 HR = vA.transpose() * E_ * skewSymmetric(-vB);
     Matrix12 HD = vA.transpose() * skewSymmetric(-aRb_.matrix() * vB)
         * aTb_.basis();
-    H->block<1,3>(0,0) = HR;
-    H->block<1,2>(0,3) = HD;
+    *H << HR, HD;
   }
   return dot(vA, E_ * vB);
 }

@@ -120,8 +120,7 @@ public:
    */
   StereoPoint2 project(const Point3& point,
       boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const;
+      boost::optional<Matrix&> H2 = boost::none) const;
 
   /**
    *

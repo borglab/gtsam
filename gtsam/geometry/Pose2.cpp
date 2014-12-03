@@ -125,7 +125,7 @@ Matrix3 Pose2::AdjointMap() const {
 
 /* ************************************************************************* */
 Pose2 Pose2::inverse(OptionalJacobian<3,3> H1) const {
-  if (H1) *H1 = -AdjointMap();
+  if (H1) *H1 << -AdjointMap();
   return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));
 }
 
@@ -139,7 +139,7 @@ Point2 Pose2::transform_to(const Point2& point,
   if (H1) *H1 <<
       -1.0, 0.0,  q.y(),
       0.0, -1.0, -q.x();
-  if (H2) *H2 = r_.transpose();
+  if (H2) *H2 << r_.transpose();
   return q;
 }
 
@@ -148,8 +148,8 @@ Point2 Pose2::transform_to(const Point2& point,
 Pose2 Pose2::compose(const Pose2& p2, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   // TODO: inline and reuse?
-  if(H1) *H1 = p2.inverse().AdjointMap();
-  if(H2) *H2 = I_3x3;
+  if(H1) *H1 << p2.inverse().AdjointMap();
+  if(H2) *H2 << I_3x3;
   return (*this)*p2;
 }
 
@@ -162,11 +162,8 @@ Point2 Pose2::transform_from(const Point2& p,
     const Matrix2 R = r_.matrix();
     Matrix21 Drotate1;
     Drotate1 <<  -q.y(), q.x();
-    if (H1) {
-        H1->block<2,2>(0,0) = R; // [R R_{pi/2}q]
-        H1->block<2,1>(0,2) = Drotate1;
-    }
-    if (H2) *H2 = R; // R
+    if (H1) *H1 << R, Drotate1;
+    if (H2) *H2 << R; // R
   }
   return q + t_;
 }
@@ -200,7 +197,7 @@ Pose2 Pose2::between(const Pose2& p2, OptionalJacobian<3,3> H1,
         s,  -c,  dt2,
         0.0, 0.0,-1.0;
   }
-  if (H2) *H2 = I_3x3;
+  if (H2) *H2 << I_3x3;
 
   return Pose2(R,t);
 }
@@ -214,8 +211,8 @@ Rot2 Pose2::bearing(const Point2& point,
   if (!H1 && !H2) return Rot2::relativeBearing(d);
   Matrix12 D_result_d;
   Rot2 result = Rot2::relativeBearing(d, D_result_d);
-  if (H1) *H1 = D_result_d * (D1);
-  if (H2) *H2 = D_result_d * (D2);
+  if (H1) *H1 << D_result_d * (D1);
+  if (H2) *H2 << D_result_d * (D2);
   return result;
 }
 
@@ -226,8 +223,7 @@ Rot2 Pose2::bearing(const Pose2& pose,
   Rot2 result = bearing(pose.t(), H1, H2 ? &D2 : 0);
   if (H2) {
     Matrix12 H2_ = D2 * pose.r().matrix();
-    H2->setZero();
-    H2->block<1,2>(0,0) = H2_;
+    *H2 << H2_, Z_1x1;
   }
   return result;
 }
@@ -242,9 +238,9 @@ double Pose2::range(const Point2& point,
       Matrix23 H1_;
       H1_ << -r_.c(),  r_.s(),  0.0,
               -r_.s(), -r_.c(),  0.0;
-      *H1 = H * H1_;
+      *H1 << H * H1_;
   }
-  if (H2) *H2 = H;
+  if (H2) *H2 << H;
   return r;
 }
 
@@ -261,14 +257,14 @@ double Pose2::range(const Pose2& pose,
       H1_ <<
       -r_.c(),  r_.s(),  0.0,
       -r_.s(), -r_.c(),  0.0;
-      *H1 = H * H1_;
+      *H1 << H * H1_;
   }
   if (H2) {
       Matrix23 H2_;
       H2_ <<
       pose.r_.c(), -pose.r_.s(),  0.0,
       pose.r_.s(),  pose.r_.c(),  0.0;
-      *H2 = H * H2_;
+      *H2 << H * H2_;
   }
   return r;
 }

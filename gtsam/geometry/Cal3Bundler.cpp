@@ -141,8 +141,7 @@ Matrix25 Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
   Matrix2 Dp;
   uncalibrate(p, Dcal, Dp);
   Matrix25 H;
-  H.block<2,2>(0,0) = Dp;
-  H.block<2,3>(0,2) = Dcal;
+  H << Dp, Dcal;
   return H;
 }
 

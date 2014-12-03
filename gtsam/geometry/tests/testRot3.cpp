@@ -49,7 +49,7 @@ TEST( Rot3, chart)
 /* ************************************************************************* */
 TEST( Rot3, constructor)
 {
-  Rot3 expected(I_3x3);
+  Rot3 expected((Matrix)I_3x3);
   Point3 r1(1,0,0), r2(0,1,0), r3(0,0,1);
   Rot3 actual(r1, r2, r3);
   CHECK(assert_equal(actual,expected));

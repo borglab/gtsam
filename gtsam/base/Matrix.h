@@ -49,7 +49,7 @@ typedef Eigen::Matrix<double,4,1> Matrix41;
 typedef Eigen::Matrix<double,5,1> Matrix51;
 typedef Eigen::Matrix<double,6,1> Matrix61;
 
-
+typedef Eigen::Matrix<double,1,1> Matrix1;
 typedef Eigen::Matrix2d Matrix2;
 typedef Eigen::Matrix3d Matrix3;
 typedef Eigen::Matrix4d Matrix4;
@@ -78,46 +78,129 @@ typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
 
 // Identity Matrices
-static const int I_1x1 = 1;
-static const Matrix2 I_2x2 = Matrix2::Identity();
-static const Matrix3 I_3x3 = Matrix3::Identity();
-static const Matrix4 I_4x4 = Matrix4::Identity();
-static const Matrix5 I_5x5 = Matrix5::Identity();
-static const Matrix6 I_6x6 = Matrix6::Identity();
-
-// Negative Identity
-static const int _I_1x1 = -1;
-static const Matrix2 _I_2x2 = -I_2x2;
-static const Matrix3 _I_3x3 = -I_3x3;
-static const Matrix4 _I_4x4 = -I_4x4;
-static const Matrix5 _I_5x5 = -I_5x5;
-static const Matrix6 _I_6x6 = -I_6x6;
+static const Eigen::MatrixBase<Matrix1>::IdentityReturnType I_1x1 = Matrix1::Identity();
+static const Eigen::MatrixBase<Matrix2>::IdentityReturnType I_2x2 = Matrix2::Identity();
+static const Eigen::MatrixBase<Matrix3>::IdentityReturnType I_3x3 = Matrix3::Identity();
+static const Eigen::MatrixBase<Matrix4>::IdentityReturnType I_4x4 = Matrix4::Identity();
+static const Eigen::MatrixBase<Matrix5>::IdentityReturnType I_5x5 = Matrix5::Identity();
+static const Eigen::MatrixBase<Matrix6>::IdentityReturnType I_6x6 = Matrix6::Identity();
 
 // Zero matrices
-// TODO : Make these for rectangular sized matrices as well.
-static const int Z_1x1 = 0;
-static const Matrix2 Z_2x2 = Matrix2::Zero();
-static const Matrix3 Z_3x3 = Matrix3::Zero();
-static const Matrix4 Z_4x4 = Matrix4::Zero();
-static const Matrix5 Z_5x5 = Matrix5::Zero();
-static const Matrix6 Z_6x6 = Matrix6::Zero();
+static const Eigen::DenseBase<Matrix1>::ConstantReturnType Z_1x1 = Matrix1::Zero();
+static const Eigen::DenseBase<Matrix2>::ConstantReturnType Z_2x2 = Matrix2::Zero();
+static const Eigen::DenseBase<Matrix3>::ConstantReturnType Z_3x3 = Matrix3::Zero();
+static const Eigen::DenseBase<Matrix4>::ConstantReturnType Z_4x4 = Matrix4::Zero();
+static const Eigen::DenseBase<Matrix5>::ConstantReturnType Z_5x5 = Matrix5::Zero();
+static const Eigen::DenseBase<Matrix6>::ConstantReturnType Z_6x6 = Matrix6::Zero();
+
+static const Eigen::DenseBase<Matrix12>::ConstantReturnType Z_1x2 = Matrix12::Zero();
+static const Eigen::DenseBase<Matrix13>::ConstantReturnType Z_1x3 = Matrix13::Zero();
+static const Eigen::DenseBase<Matrix14>::ConstantReturnType Z_1x4 = Matrix14::Zero();
+static const Eigen::DenseBase<Matrix15>::ConstantReturnType Z_1x5 = Matrix15::Zero();
+static const Eigen::DenseBase<Matrix16>::ConstantReturnType Z_1x6 = Matrix16::Zero();
+
+
+static const Eigen::DenseBase<Matrix23>::ConstantReturnType Z_2x3 = Matrix23::Zero();
+static const Eigen::DenseBase<Matrix24>::ConstantReturnType Z_2x4 = Matrix24::Zero();
+static const Eigen::DenseBase<Matrix25>::ConstantReturnType Z_2x5 = Matrix25::Zero();
+static const Eigen::DenseBase<Matrix26>::ConstantReturnType Z_2x6 = Matrix26::Zero();
+static const Eigen::DenseBase<Matrix27>::ConstantReturnType Z_2x7 = Matrix27::Zero();
+static const Eigen::DenseBase<Matrix28>::ConstantReturnType Z_2x8 = Matrix28::Zero();
+static const Eigen::DenseBase<Matrix29>::ConstantReturnType Z_2x9 = Matrix29::Zero();
+
+static const Eigen::DenseBase<Matrix32>::ConstantReturnType Z_3x2 = Matrix32::Zero();
+static const Eigen::DenseBase<Matrix34>::ConstantReturnType Z_3x4 = Matrix34::Zero();
+static const Eigen::DenseBase<Matrix35>::ConstantReturnType Z_3x5 = Matrix35::Zero();
+static const Eigen::DenseBase<Matrix36>::ConstantReturnType Z_3x6 = Matrix36::Zero();
+static const Eigen::DenseBase<Matrix37>::ConstantReturnType Z_3x7 = Matrix37::Zero();
+static const Eigen::DenseBase<Matrix38>::ConstantReturnType Z_3x8 = Matrix38::Zero();
+static const Eigen::DenseBase<Matrix39>::ConstantReturnType Z_3x9 = Matrix39::Zero();
+
+static const Eigen::DenseBase<Matrix21>::ConstantReturnType Z_2x1 = Matrix21::Zero();
+static const Eigen::DenseBase<Matrix31>::ConstantReturnType Z_3x1 = Matrix31::Zero();
+static const Eigen::DenseBase<Matrix41>::ConstantReturnType Z_4x1 = Matrix41::Zero();
+static const Eigen::DenseBase<Matrix51>::ConstantReturnType Z_5x1 = Matrix51::Zero();
+static const Eigen::DenseBase<Matrix61>::ConstantReturnType Z_6x1 = Matrix61::Zero();
+
+
+
 
 // Ones matrices
 // TODO : Make these for rectangular sized matrices as well.
-static const int O_1x1 = 1;
-static const Matrix2 O_2x2 = Matrix2::Ones();
-static const Matrix3 O_3x3 = Matrix3::Ones();
-static const Matrix4 O_4x4 = Matrix4::Ones();
-static const Matrix5 O_5x5 = Matrix5::Ones();
-static const Matrix6 O_6x6 = Matrix6::Ones();
+static const Eigen::DenseBase<Matrix1>::ConstantReturnType O_1x1 = Matrix1::Ones();
+static const Eigen::DenseBase<Matrix2>::ConstantReturnType O_2x2 = Matrix2::Ones();
+static const Eigen::DenseBase<Matrix3>::ConstantReturnType O_3x3 = Matrix3::Ones();
+static const Eigen::DenseBase<Matrix4>::ConstantReturnType O_4x4 = Matrix4::Ones();
+static const Eigen::DenseBase<Matrix5>::ConstantReturnType O_5x5 = Matrix5::Ones();
+static const Eigen::DenseBase<Matrix6>::ConstantReturnType O_6x6 = Matrix6::Ones();
+
+static const Eigen::DenseBase<Matrix12>::ConstantReturnType O_1x2 = Matrix12::Ones();
+static const Eigen::DenseBase<Matrix13>::ConstantReturnType O_1x3 = Matrix13::Ones();
+static const Eigen::DenseBase<Matrix14>::ConstantReturnType O_1x4 = Matrix14::Ones();
+static const Eigen::DenseBase<Matrix15>::ConstantReturnType O_1x5 = Matrix15::Ones();
+static const Eigen::DenseBase<Matrix16>::ConstantReturnType O_1x6 = Matrix16::Ones();
+
+
+static const Eigen::DenseBase<Matrix23>::ConstantReturnType O_2x3 = Matrix23::Ones();
+static const Eigen::DenseBase<Matrix24>::ConstantReturnType O_2x4 = Matrix24::Ones();
+static const Eigen::DenseBase<Matrix25>::ConstantReturnType O_2x5 = Matrix25::Ones();
+static const Eigen::DenseBase<Matrix26>::ConstantReturnType O_2x6 = Matrix26::Ones();
+static const Eigen::DenseBase<Matrix27>::ConstantReturnType O_2x7 = Matrix27::Ones();
+static const Eigen::DenseBase<Matrix28>::ConstantReturnType O_2x8 = Matrix28::Ones();
+static const Eigen::DenseBase<Matrix29>::ConstantReturnType O_2x9 = Matrix29::Ones();
+
+static const Eigen::DenseBase<Matrix32>::ConstantReturnType O_3x2 = Matrix32::Ones();
+static const Eigen::DenseBase<Matrix34>::ConstantReturnType O_3x4 = Matrix34::Ones();
+static const Eigen::DenseBase<Matrix35>::ConstantReturnType O_3x5 = Matrix35::Ones();
+static const Eigen::DenseBase<Matrix36>::ConstantReturnType O_3x6 = Matrix36::Ones();
+static const Eigen::DenseBase<Matrix37>::ConstantReturnType O_3x7 = Matrix37::Ones();
+static const Eigen::DenseBase<Matrix38>::ConstantReturnType O_3x8 = Matrix38::Ones();
+static const Eigen::DenseBase<Matrix39>::ConstantReturnType O_3x9 = Matrix39::Ones();
+
+static const Eigen::DenseBase<Matrix21>::ConstantReturnType O_2x1 = Matrix21::Ones();
+static const Eigen::DenseBase<Matrix31>::ConstantReturnType O_3x1 = Matrix31::Ones();
+static const Eigen::DenseBase<Matrix41>::ConstantReturnType O_4x1 = Matrix41::Ones();
+static const Eigen::DenseBase<Matrix51>::ConstantReturnType O_5x1 = Matrix51::Ones();
+static const Eigen::DenseBase<Matrix61>::ConstantReturnType O_6x1 = Matrix61::Ones();
+
 
 // Negative Ones
-static const int _O_1x1 = -1;
-static const Matrix2 _O_2x2 = -O_2x2;
-static const Matrix3 _O_3x3 = -O_3x3;
-static const Matrix4 _O_4x4 = -O_4x4;
-static const Matrix5 _O_5x5 = -O_5x5;
-static const Matrix6 _O_6x6 = -O_6x6;
+static const Eigen::DenseBase<Matrix1>::ConstantReturnType _O_1x1 = Matrix1::Constant(-1);
+static const Eigen::DenseBase<Matrix2>::ConstantReturnType _O_2x2 = Matrix2::Constant(-1);
+static const Eigen::DenseBase<Matrix3>::ConstantReturnType _O_3x3 = Matrix3::Constant(-1);
+static const Eigen::DenseBase<Matrix4>::ConstantReturnType _O_4x4 = Matrix4::Constant(-1);
+static const Eigen::DenseBase<Matrix5>::ConstantReturnType _O_5x5 = Matrix5::Constant(-1);
+static const Eigen::DenseBase<Matrix6>::ConstantReturnType _O_6x6 = Matrix6::Constant(-1);
+
+static const Eigen::DenseBase<Matrix12>::ConstantReturnType _O_1x2 = Matrix12::Constant(-1);
+static const Eigen::DenseBase<Matrix13>::ConstantReturnType _O_1x3 = Matrix13::Constant(-1);
+static const Eigen::DenseBase<Matrix14>::ConstantReturnType _O_1x4 = Matrix14::Constant(-1);
+static const Eigen::DenseBase<Matrix15>::ConstantReturnType _O_1x5 = Matrix15::Constant(-1);
+static const Eigen::DenseBase<Matrix16>::ConstantReturnType _O_1x6 = Matrix16::Constant(-1);
+
+
+static const Eigen::DenseBase<Matrix23>::ConstantReturnType _O_2x3 = Matrix23::Constant(-1);
+static const Eigen::DenseBase<Matrix24>::ConstantReturnType _O_2x4 = Matrix24::Constant(-1);
+static const Eigen::DenseBase<Matrix25>::ConstantReturnType _O_2x5 = Matrix25::Constant(-1);
+static const Eigen::DenseBase<Matrix26>::ConstantReturnType _O_2x6 = Matrix26::Constant(-1);
+static const Eigen::DenseBase<Matrix27>::ConstantReturnType _O_2x7 = Matrix27::Constant(-1);
+static const Eigen::DenseBase<Matrix28>::ConstantReturnType _O_2x8 = Matrix28::Constant(-1);
+static const Eigen::DenseBase<Matrix29>::ConstantReturnType _O_2x9 = Matrix29::Constant(-1);
+
+static const Eigen::DenseBase<Matrix32>::ConstantReturnType _O_3x2 = Matrix32::Constant(-1);
+static const Eigen::DenseBase<Matrix34>::ConstantReturnType _O_3x4 = Matrix34::Constant(-1);
+static const Eigen::DenseBase<Matrix35>::ConstantReturnType _O_3x5 = Matrix35::Constant(-1);
+static const Eigen::DenseBase<Matrix36>::ConstantReturnType _O_3x6 = Matrix36::Constant(-1);
+static const Eigen::DenseBase<Matrix37>::ConstantReturnType _O_3x7 = Matrix37::Constant(-1);
+static const Eigen::DenseBase<Matrix38>::ConstantReturnType _O_3x8 = Matrix38::Constant(-1);
+static const Eigen::DenseBase<Matrix39>::ConstantReturnType _O_3x9 = Matrix39::Constant(-1);
+
+static const Eigen::DenseBase<Matrix21>::ConstantReturnType _O_2x1 = Matrix21::Constant(-1);
+static const Eigen::DenseBase<Matrix31>::ConstantReturnType _O_3x1 = Matrix31::Constant(-1);
+static const Eigen::DenseBase<Matrix41>::ConstantReturnType _O_4x1 = Matrix41::Constant(-1);
+static const Eigen::DenseBase<Matrix51>::ConstantReturnType _O_5x1 = Matrix51::Constant(-1);
+static const Eigen::DenseBase<Matrix61>::ConstantReturnType _O_6x1 = Matrix61::Constant(-1);
+
 
 
 // Matlab-like syntax

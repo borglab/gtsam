@@ -139,7 +139,7 @@ public:
   inline Point2 between(const Point2& q,
       OptionalJacobian<2,2> H1=boost::none,
       OptionalJacobian<2,2> H2=boost::none) const {
-    if(H1) *H1 = _I_2x2;
+    if(H1) *H1 = -I_2x2;
     if(H2) *H2 = I_2x2;
     return q - (*this);
   }

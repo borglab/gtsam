@@ -141,10 +141,8 @@ Rot3 Rot3::rodriguez(const Vector& w, double theta) {
 
 /* ************************************************************************* */
 Rot3 Rot3::compose(const Rot3& R2, OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
-  if (H1)
-    *H1 = R2.transpose();
-  if (H2)
-    *H2 = I_3x3;
+  if (H1) *H1 << R2.transpose();
+  if (H2) *H2 << I_3x3;
   return *this * R2;
 }
 
@@ -161,15 +159,15 @@ Matrix3 Rot3::transpose() const {
 
 /* ************************************************************************* */
 Rot3 Rot3::inverse(boost::optional<Matrix3 &> H1) const {
-  if (H1) *H1 = -rot_;
+  if (H1) *H1 << -rot_;
   return Rot3(Matrix3(transpose()));
 }
 
 /* ************************************************************************* */
 Rot3 Rot3::between (const Rot3& R2,
     OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
-  if (H1) *H1 = -(R2.transpose()*rot_);
-  if (H2) *H2 = I_3x3;
+  if (H1) *H1 << -(R2.transpose()*rot_);
+  if (H2) *H2 << I_3x3;
   Matrix3 R12 = transpose()*R2.rot_;
   return Rot3(R12);
 }
@@ -178,8 +176,8 @@ Rot3 Rot3::between (const Rot3& R2,
 Point3 Rot3::rotate(const Point3& p,
     OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
   if (H1 || H2) {
-      if (H1) *H1 = rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
-      if (H2) *H2 = rot_;
+      if (H1) *H1 << rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
+      if (H2) *H2 << rot_;
     }
   return Point3(rot_ * p.vector());
 }

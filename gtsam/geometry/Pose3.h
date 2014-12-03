@@ -70,6 +70,12 @@ public:
       R_(R), t_(t) {
   }
 
+  /** Construct from R,t, where t \in vector3 */
+  Pose3(const Rot3& R, const Vector3& t) :
+      R_(R), t_(t) {
+  }
+
+
   /** Construct from Pose2 */
   explicit Pose3(const Pose2& pose2);
 
