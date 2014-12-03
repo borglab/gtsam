@@ -76,9 +76,9 @@ Point3 Point3::add(const Point3 &q, OptionalJacobian<3,3> H1,
 Point3 Point3::sub(const Point3 &q, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   if (H1)
-    (*H1) = I_3x3;
+    *H1 = I_3x3;
   if (H2)
-    (*H2) = I_3x3;
+    *H2 = I_3x3;
   return *this - q;
 }
 
@@ -112,8 +112,8 @@ Point3 Point3::normalize(OptionalJacobian<3,3> H) const {
     // 3*3 Derivative
     double x2 = x_ * x_, y2 = y_ * y_, z2 = z_ * z_;
     double xy = x_ * y_, xz = x_ * z_, yz = y_ * z_;
-    (*H) << y2 + z2, -xy, -xz, /**/-xy, x2 + z2, -yz, /**/-xz, -yz, x2 + y2;
-    (*H) /= pow(x2 + y2 + z2, 1.5);
+    *H << y2 + z2, -xy, -xz, /**/-xy, x2 + z2, -yz, /**/-xz, -yz, x2 + y2;
+    *H /= pow(x2 + y2 + z2, 1.5);
   }
   return normalized;
 }

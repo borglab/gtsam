@@ -95,8 +95,8 @@ namespace gtsam {
     inline Point3 compose(const Point3& p2,
         OptionalJacobian<3,3> H1=boost::none,
         OptionalJacobian<3,3> H2=boost::none) const {
-      if (H1) (*H1).setIdentity();
-      if (H2) (*H2).setIdentity();
+      if (H1) H1->setIdentity();
+      if (H2) H2->setIdentity();
       return *this + p2;
     }
 
@@ -107,8 +107,8 @@ namespace gtsam {
     inline Point3 between(const Point3& p2,
         OptionalJacobian<3,3> H1=boost::none,
         OptionalJacobian<3,3> H2=boost::none) const {
-      if(H1) (*H1) = (-Eigen::Matrix3d::Identity());
-      if(H2) (*H2).setIdentity();
+      if(H1) *H1 = _I_3x3;
+      if(H2) H2->setIdentity();
       return p2 - *this;
     }
 
@@ -167,12 +167,12 @@ namespace gtsam {
       double d = (p2 - *this).norm();
       if (H1) {
         *H1 << x_-p2.x(), y_-p2.y(), z_-p2.z();
-        (*H1) = (*H1) *(1./d);
+        *H1 = *H1 *(1./d);
       }
 
       if (H2) {
         *H2 << -x_+p2.x(), -y_+p2.y(), -z_+p2.z();
-        (*H2) = (*H2) *(1./d);
+        *H2 = *H2 *(1./d);
       }
       return d;
     }

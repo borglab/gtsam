@@ -65,13 +65,13 @@ Matrix6 Pose3::adjointMap(const Vector6& xi) {
 Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
     OptionalJacobian<6,6> H) {
   if (H) {
-    (*H).setZero();
+    H->setZero();
     for (int i = 0; i < 6; ++i) {
       Vector6 dxi;
       dxi.setZero();
       dxi(i) = 1.0;
       Matrix6 Gi = adjointMap(dxi);
-      (*H).col(i) = Gi * y;
+      H->col(i) = Gi * y;
     }
   }
   return adjointMap(xi) * y;
@@ -87,7 +87,7 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
       dxi.setZero();
       dxi(i) = 1.0;
       Matrix6 GTi = adjointMap(dxi).transpose();
-      (*H).col(i) = GTi * y;
+      H->col(i) = GTi * y;
     }
   }
   return adjointMap(xi).transpose() * y;
@@ -297,7 +297,7 @@ Pose3 Pose3::between(const Pose3& p2, OptionalJacobian<6,6> H1,
   if (H1)
     *H1 = -result.inverse().AdjointMap();
   if (H2)
-    (*H2) = I_6x6;
+    *H2 = I_6x6;
   return result;
 }
 
@@ -327,8 +327,8 @@ double Pose3::range(const Pose3& pose, OptionalJacobian<1,6> H1,
   double r = range(pose.translation(), H1, H2? &D2 : 0);
   if (H2) {
     Matrix13 H2_ = D2 * pose.rotation().matrix();
-    (*H2).setZero();
-    (*H2).block<1,3>(0,3) = H2_;
+    H2->setZero();
+    H2->block<1,3>(0,3) = H2_;
   }
   return r;
 }

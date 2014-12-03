@@ -163,8 +163,8 @@ Point2 Pose2::transform_from(const Point2& p,
     Matrix21 Drotate1;
     Drotate1 <<  -q.y(), q.x();
     if (H1) {
-        (*H1).block<2,2>(0,0) = R; // [R R_{pi/2}q]
-        (*H1).block<2,1>(0,2) = Drotate1;
+        H1->block<2,2>(0,0) = R; // [R R_{pi/2}q]
+        H1->block<2,1>(0,2) = Drotate1;
     }
     if (H2) *H2 = R; // R
   }
@@ -226,8 +226,8 @@ Rot2 Pose2::bearing(const Pose2& pose,
   Rot2 result = bearing(pose.t(), H1, H2 ? &D2 : 0);
   if (H2) {
     Matrix12 H2_ = D2 * pose.r().matrix();
-    (*H2).setZero();
-    (*H2).block<1,2>(0,0) = H2_;
+    H2->setZero();
+    H2->block<1,2>(0,0) = H2_;
   }
   return result;
 }

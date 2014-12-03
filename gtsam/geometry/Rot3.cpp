@@ -73,10 +73,8 @@ Unit3 Rot3::rotate(const Unit3& p,
     OptionalJacobian<2,3> HR, OptionalJacobian<2,2> Hp) const {
   Matrix32 Dp;
   Unit3 q = Unit3(rotate(p.point3(Hp ? &Dp : 0)));
-  if (Hp)
-    (*Hp) = q.basis().transpose() * matrix() * Dp;
-  if (HR)
-    (*HR) = -q.basis().transpose() * matrix() * p.skew();
+  if (Hp) *Hp << q.basis().transpose() * matrix() * Dp;
+  if (HR) *HR = -q.basis().transpose() * matrix() * p.skew();
   return q;
 }
 
@@ -85,10 +83,8 @@ Unit3 Rot3::unrotate(const Unit3& p,
     OptionalJacobian<2,3> HR, OptionalJacobian<2,2> Hp) const {
   Matrix32 Dp;
   Unit3 q = Unit3(unrotate(p.point3(Dp)));
-  if (Hp)
-    (*Hp) = q.basis().transpose() * matrix().transpose () * Dp;
-  if (HR)
-    (*HR) = q.basis().transpose() * q.skew();
+  if (Hp) *Hp << q.basis().transpose() * matrix().transpose () * Dp;
+  if (HR) *HR = q.basis().transpose() * q.skew();
   return q;
 }
 
