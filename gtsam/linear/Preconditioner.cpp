@@ -157,6 +157,7 @@ void BlockJacobiPreconditioner::build(
   double *ptr = buffer_;
   for ( size_t i = 0 ; i < n ; ++i ) {
     /* use eigen to decompose Di */
+    /* It is same as R = chol(M) in MATLAB where M is full preconditioner */
     const Matrix R = blocks[i].llt().matrixL().transpose();
 
     /* store the data in the buffer */
