@@ -23,11 +23,13 @@ To optimize over continuous types, we assume they are manifolds. This is central
 
 [Manifolds](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) and [charts](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) are intimately linked concepts. We are only interested here in [differentiable manifolds](http://en.wikipedia.org/wiki/Differentiable_manifold#Definition), continuous spaces that can be locally approximated *at any point* using a local vector space, called the [tangent space](http://en.wikipedia.org/wiki/Tangent_space). A chart is an invertible map from the manifold to the vector space.
 
-In GTSAM we assume that a manifold type can yield such a chart at any point, and we require that a functor `defaultChart` is available that 
+In GTSAM we assume that a manifold type can yield such a chart at any point, and we require that a functor `defaultChart` is available that, when called for any point on the manifold, returns a Chart type. 
 
 * values: `dimension`
-* functors `defaultChart`
-* types: `DefaultChart` is the *type* of chart returned by the functor `defaultChart`
+* types: `Vector`, type that lives in tangent space
+  * 
+  * `DefaultChart` is the *type* of the chart returned by the functor `defaultChart`
+* functor `defaultChart`, returns a `DefaultChart`
 * invariants: `defaultChart::result_type == DefaultChart::type`
 
 Anything else?
@@ -35,7 +37,7 @@ Anything else?
 Chart
 -----
 
-* types: `Manifold`, `Vector`
+* types: `Manifold`, a pointer back to the type
 * values: `retract`, `local`
 
 Are these values? They are just methods. Anything else?
