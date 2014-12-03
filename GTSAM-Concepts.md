@@ -42,7 +42,7 @@ A given chart is implemented using a small class that defines the chart itself (
   * `v = chart.local(q)`, the chart, from manifold to tangent space, think of it as *p (-) q*
   * `p = chart.retract(v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
 
-For many differential manifolds, an obvious mapping is the `exponential map`, which  associates staright lines in the tangent space with geodesics on the manifold (and it's inverse, the log map). However, there are two cases in which we deviate from this:
+For many differential manifolds, an obvious mapping is the `exponential map`, which  associates straight lines in the tangent space with geodesics on the manifold (and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
   * Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `defaultChart` functor returns a chart that is much cheaper to evaluate.
   * While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a `defaultChart` functor is defined by default for every vector space, GTSAM will never call it.
@@ -125,21 +125,21 @@ The conventions for `gtsam::traits` are as follows:
         typedef const int value_type; // const ?
       }
     
-* Functors: `gtsam::traits::someFunctor<T>::type`, i.e., they are mixedCase starting with a lowercase letter and define a functor (i.e., no *type*). The functor itself should define a `result_type`. Example
+* Functors: `gtsam::traits::someFunctor<T>::type`, i.e., they are mixedCase starting with a lowercase letter and define a functor (i.e., no *type*). The functor itself should define a `result_type`. A contrived example
     
-      struct Point2::retract {
-        typedef Point2 result_type;
+      struct Point2::manhattan {
+        typedef double result_type;
         Point2 p_;
-        retract(const Point2& p) : p_(p) {}
-        Point2 operator()(const Vector2& v) {
-          return Point2(p_.x()+v[0], p_.y()+v[1]);
+        manhattan(const Point2& p) : p_(p) {}
+        Point2 operator()(const Point2& q) {
+          return abs(p_.x()-q.x()) + abs(p_.y()-q.x());
         }
       }
     
       template<>
-      gtsam::traits::retract<Point2> : Point2::retract {}
+      gtsam::traits::manhattan<Point2> : Point2::manhattan {}
   
-  By *inherting* the trait from the functor, we can just use the [currying](http://en.wikipedia.org/wiki/Currying) style `gtsam::traits::retract<Point2>(p)(v)`. Note that, although technically a functor is a type, in spirit it is a free function and hence starts with a lowercase letter.
+  By *inherting* the trait from the functor, we can just use the [currying](http://en.wikipedia.org/wiki/Currying) style `gtsam::traits::manhattan<Point2>℗(q)`. Note that, although technically a functor is a type, in spirit it is a free function and hence starts with a lowercase letter.
   
 Tags
 ----
