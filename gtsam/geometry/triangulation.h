@@ -53,7 +53,7 @@ public:
  * @return Triangulated Point3
  */
 GTSAM_EXPORT Point3 triangulateDLT(
-    const std::vector<Matrix>& projection_matrices,
+    const std::vector<Matrix>& projection_matrices, // TODO: Use the fact that projection matrices sizes are known at compile time
     const std::vector<Point2>& measurements, double rank_tol);
 
 ///

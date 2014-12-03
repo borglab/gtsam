@@ -95,8 +95,8 @@ public:
   }
 
   Pose3 between(const StereoCamera &camera,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
+      OptionalJacobian<6,6> H1=boost::none,
+      OptionalJacobian<6,6> H2=boost::none) const {
     return leftCamPose_.between(camera.pose(), H1, H2);
   }
 
@@ -119,8 +119,8 @@ public:
    * @param H3 IGNORED (for calibration)
    */
   StereoPoint2 project(const Point3& point,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+      OptionalJacobian<3, 6> H1 = boost::none,
+      OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /**
    *
@@ -138,7 +138,7 @@ public:
 
 private:
   /** utility functions */
-  Matrix Dproject_to_stereo_camera1(const Point3& P) const;
+  Matrix3 Dproject_to_stereo_camera1(const Point3& P) const;
 
   friend class boost::serialization::access;
   template<class Archive>

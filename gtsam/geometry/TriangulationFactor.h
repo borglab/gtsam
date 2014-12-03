@@ -112,14 +112,14 @@ public:
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
+  Vector evaluateError(const Point3& point, OptionalJacobian<2,3> H2 =
       boost::none) const {
     try {
       Point2 error(camera_.project(point, boost::none, H2, boost::none) - measured_);
       return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
-        *H2 = zeros(2, 3);
+        *H2 << Z_2x3;
       if (verboseCheirality_)
         std::cout << e.what() << ": Landmark "
             << DefaultKeyFormatter(this->key()) << " moved behind camera"

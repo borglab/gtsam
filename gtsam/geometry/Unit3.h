@@ -147,7 +147,6 @@ private:
 
   /// @name Advanced Interface
   /// @{
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
