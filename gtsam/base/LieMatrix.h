@@ -27,7 +27,9 @@
 namespace gtsam {
 
 /**
- * LieVector is a wrapper around vector to allow it to be a Lie type
+ * @deprecated: LieScalar, LieVector and LieMatrix are obsolete in GTSAM 4.0 as
+ * we can directly add double, Vector, and Matrix into values now, because of
+ * gtsam::traits.
  */
 struct LieMatrix : public Matrix {
 
