@@ -87,7 +87,6 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
 
   const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
   const Rot3 Rincr = Rot3::Expmap(theta_incr); // rotation increment computed from the current rotation rate measurement
-
   const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr); // Right jacobian computed at theta_incr
 
   // Update Jacobians
@@ -98,7 +97,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   }else{
     delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * deltaRij_.matrix() * deltaT*deltaT;
     delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT - 0.5 * deltaRij_.matrix()
-                                            * skewSymmetric(biasHat_.correctAccelerometer(measuredAcc)) * deltaT*deltaT * delRdelBiasOmega_;
+                                            * skewSymmetric(correctedAcc) * deltaT*deltaT * delRdelBiasOmega_;
   }
   delVdelBiasAcc_ += -deltaRij_.matrix() * deltaT;
   delVdelBiasOmega_ += -deltaRij_.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega_;
@@ -157,7 +156,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   if(!use2ndOrderIntegration_){
     deltaPij_ += deltaVij_ * deltaT;
   }else{
-    deltaPij_ += deltaVij_ * deltaT + 0.5 * deltaRij_.matrix() * biasHat_.correctAccelerometer(measuredAcc) * deltaT*deltaT;
+    deltaPij_ += deltaVij_ * deltaT + 0.5 * deltaRij_.matrix() * correctedAcc * deltaT*deltaT;
   }
   deltaVij_ += deltaRij_.matrix() * correctedAcc * deltaT;
   deltaRij_ = deltaRij_ * Rincr;

@@ -101,9 +101,8 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   }else{
     delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * deltaRij_.matrix() * deltaT*deltaT;
     delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT - 0.5 * deltaRij_.matrix()
-                                            * skewSymmetric(biasHat_.correctAccelerometer(measuredAcc)) * deltaT*deltaT * delRdelBiasOmega_;
+                                            * skewSymmetric(correctedAcc) * deltaT*deltaT * delRdelBiasOmega_;
   }
-
   delVdelBiasAcc_ += -deltaRij_.matrix() * deltaT;
   delVdelBiasOmega_ += -deltaRij_.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega_;
   delRdelBiasOmega_ = Rincr.inverse().matrix() * delRdelBiasOmega_ - Jr_theta_incr  * deltaT;
@@ -177,7 +176,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   if(!use2ndOrderIntegration_){
     deltaPij_ += deltaVij_ * deltaT;
   }else{
-    deltaPij_ += deltaVij_ * deltaT + 0.5 * deltaRij_.matrix() * biasHat_.correctAccelerometer(measuredAcc) * deltaT*deltaT;
+    deltaPij_ += deltaVij_ * deltaT + 0.5 * deltaRij_.matrix() * correctedAcc * deltaT*deltaT;
   }
   deltaVij_ += deltaRij_.matrix() * correctedAcc * deltaT;
   deltaRij_ = deltaRij_ * Rincr;
