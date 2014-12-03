@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Expression.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -40,6 +41,11 @@ BOOST_CLASS_EXPORT(gtsam::Rot3);
 BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3_S2>);
 BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3DS2>);
 BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3Bundler>);
+
+BOOST_CLASS_EXPORT(gtsam::ExpressionNode<Rot3>);
+BOOST_CLASS_EXPORT(gtsam::ConstantExpression<Rot3>);
+BOOST_CLASS_EXPORT(gtsam::LeafExpression<Rot3>);
+
 
 namespace detail {
 template<class T> struct pack {
@@ -96,6 +102,32 @@ TEST (Serialization, TemplatedValues) {
   std::cout << __LINE__ << std::endl;
   EXPECT(equalsXML(values));
   EXPECT(equalsBinary(values));
+}
+
+/* ************************************************************************* */
+// Test Serialization
+TEST(Serialization, expressions) {
+  // Test constant expressions
+  Rot3 R1;
+  Rot3 R2(Rot3::RzRyRx(Eigen::Vector3d(0.1, 0.2, 0.4)));
+  Expression<Rot3> C1(R1);
+  Expression<Rot3> C2(R2);
+  EXPECT(equalsBinary(C1));
+  EXPECT(equalsBinary(C2));
+  EXPECT(equalsXML(C1));
+  EXPECT(equalsXML(C2));
+  EXPECT(!(C1.equals(C2)));
+
+  // Test Leaf expressions
+  Expression<Rot3> L1(1);
+  Expression<Rot3> L2(2);
+  EXPECT(!(L1.equals(L2)));
+  EXPECT(!(L1.equals(C1)));
+  EXPECT(equalsBinary(L1));
+  EXPECT(equalsBinary(L2));
+  EXPECT(equalsXML(L1));
+  EXPECT(equalsXML(L2));
+
 }
 
 /* ************************************************************************* */

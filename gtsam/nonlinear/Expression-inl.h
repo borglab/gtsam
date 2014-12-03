@@ -266,6 +266,16 @@ public:
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
      ExecutionTraceStorage* traceStorage) const = 0;
+
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+	  ar & BOOST_SERIALIZATION_NVP(traceSize_);
+  }
+
+  virtual bool equals(const ExpressionNode<T>& rhs, double tol = 1e-9) const {
+    return traceSize_ == rhs.traceSize_;
+  }
 };
 
 //-----------------------------------------------------------------------------
@@ -275,6 +285,9 @@ class ConstantExpression: public ExpressionNode<T> {
 
   /// The constant value
   T constant_;
+
+  // Only for boost::serialization
+  ConstantExpression(){}
 
   /// Constructor with a value, yielding a constant
   ConstantExpression(const T& value) :
@@ -295,63 +308,32 @@ public:
       ExecutionTraceStorage* traceStorage) const {
     return constant_;
   }
+
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("DERIVED", boost::serialization::base_object< ExpressionNode<T> >(*this));
+    ar & BOOST_SERIALIZATION_NVP(constant_);
+  }
+
+  virtual bool equals(const ExpressionNode<T>& rhs, double tol = 1e-9) const {
+    const ConstantExpression * rhs_ptr = dynamic_cast<const ConstantExpression<T>*>(&rhs);
+    return static_cast<bool>(rhs_ptr) && ExpressionNode<T>::equals(rhs, tol) &&
+        traits::equals<T>()(constant_, rhs_ptr->constant_, tol);
+  }
 };
 
 //-----------------------------------------------------------------------------
 /// Leaf Expression
-template<class T, class Chart = DefaultChart<T> >
-class LeafExpression: public ExpressionNode<T> {
-  typedef ChartValue<T, Chart> value_type; // perhaps this can be something else like a std::pair<T,Chart> ??
-
-  /// The key into values
-  Key key_;
-
-  /// Constructor with a single key
-  LeafExpression(Key key) :
-      key_(key) {
-  }
-  // todo: do we need a virtual destructor here too?
-
-  friend class Expression<value_type> ;
-
-public:
-
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
-    keys.insert(key_);
-    return keys;
-  }
-
-  /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
-    // get dimension from the chart; only works for fixed dimension charts
-    map[key_] = traits::dimension<Chart>::value;
-  }
-
-  /// Return value
-  virtual const value_type& value(const Values& values) const {
-    return dynamic_cast<const value_type&>(values.at(key_));
-  }
-
-  /// Construct an execution trace for reverse AD
-  virtual const value_type& traceExecution(const Values& values,
-      ExecutionTrace<value_type>& trace, 
-      ExecutionTraceStorage* traceStorage) const {
-    trace.setLeaf(key_);
-    return dynamic_cast<const value_type&>(values.at(key_));
-  }
-
-};
-
-//-----------------------------------------------------------------------------
-/// Leaf Expression, if no chart is given, assume default chart and value_type is just the plain value
 template<typename T>
-class LeafExpression<T, DefaultChart<T> > : public ExpressionNode<T> {
+class LeafExpression : public ExpressionNode<T> {
   typedef T value_type;
 
   /// The key into values
   Key key_;
+
+  // Only for boost::serialization
+  LeafExpression(){}
 
   /// Constructor with a single key
   LeafExpression(Key key) :
@@ -385,6 +367,19 @@ public:
       ExecutionTraceStorage* traceStorage) const {
     trace.setLeaf(key_);
     return values.at<T>(key_);
+  }
+
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("DERIVED", boost::serialization::base_object< ExpressionNode<T> >(*this));
+    ar & BOOST_SERIALIZATION_NVP(key_);
+  }
+
+  virtual bool equals(const ExpressionNode<T>& rhs, double tol = 1e-9) const {
+    const LeafExpression<T> * rhs_ptr = dynamic_cast<const LeafExpression<T>*>(&rhs);
+    return static_cast<bool>(rhs_ptr) && ExpressionNode<T>::equals(rhs, tol) &&
+        key_ == rhs_ptr->key_;
   }
 
 };

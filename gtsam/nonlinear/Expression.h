@@ -51,6 +51,8 @@ private:
   boost::shared_ptr<ExpressionNode<T> > root_;
 
 public:
+  // Needed for serialization. Do not use otherwise.
+  Expression(){}
 
   // Construct a constant expression
   Expression(const T& value) :
@@ -151,6 +153,13 @@ public:
       return root_->value(values);
   }
 
+  bool equals(const Expression<T>& rhs, double tol = 1e-9) const {
+    if(root_ && rhs.root_) {
+      return root_->equals(*rhs.root_, tol);
+    } else {
+      return (root_ && !rhs.root_);
+    }
+  }
 private:
 
   /// Vaguely unsafe keys and dimensions in same order
@@ -217,6 +226,11 @@ private:
   friend class ExpressionFactor<T> ;
   friend class ::ExpressionFactorShallowTest;
 
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+	  ar & BOOST_SERIALIZATION_NVP(root_);
+  }
 };
 
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
