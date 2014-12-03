@@ -4,11 +4,59 @@ GTSAM Concepts
 Concepts define (see [Generic Programming Techniques](http://www.boost.org/community/generic_programming.html))
 
 * associated types
-* valid expressions
+* valid expressions, like functions and values
 * invariants
 * complexity guarantees
 
-GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the concepts MANIFOLD, GROUP, LIE_GROUP, VECTOR_SPACE
+GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the TESTABLE, MANIFOLD, GROUP, LIE_GROUP, and VECTOR_SPACE concepts.
+
+Testable
+--------
+Unit tests heavily depend on the following two functions being defined for all types that need to be tested:
+
+* functions: `print`, `equals` 
+
+Manifold
+--------
+
+To optimize over continuous types, we assume they are manifolds. This is central to GTSAM and hence discussed in some more detail below.
+
+[Manifolds](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) and [charts](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) are intimately linked concepts. We are only interested here in [differentiable manifolds](http://en.wikipedia.org/wiki/Differentiable_manifold#Definition), continuous spaces that can be locally approximated *at any point* using a local vector space, called the [tangent space](http://en.wikipedia.org/wiki/Tangent_space). A chart is an invertible map from the manifold to the vector space.
+
+In GTSAM we assume that a manifold type can yield such a chart at any point, and we require that a functor `defaultChart` is available that 
+
+* values: `dimension`
+* functors `defaultChart`
+* types: `DefaultChart` is the *type* of chart returned by the functor `defaultChart`
+* invariants: `defaultChart::result_type == DefaultChart::type`
+
+Anything else?
+
+Chart
+-----
+
+* types: `Manifold`, `Vector`
+* values: `retract`, `local`
+
+Are these values? They are just methods. Anything else?
+
+
+Group
+-----
+
+* values: `identity`
+* values: `compose`, `inverse`, (`between`)
+
+Lie Group
+---------
+
+Implements both MANIFOLD and GROUP
+
+Vector Space
+------------
+
+Lie Group where compose == `+`
+
 
 traits
 ------
@@ -71,51 +119,6 @@ Concepts are associated with a tag.
 Can be queried `gtsam::traits::structure_tag<T>`
 
 
-Testable
---------
-
-* values: `print`, `equals`
-
-Anything else?
-
-Manifold
---------
-
-[Manifolds](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) and [charts](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) are intimately linked concepts. We are only interested here in [differentiable manifolds](http://en.wikipedia.org/wiki/Differentiable_manifold#Definition), continuous spaces that can be locally approximated *at any point* using a local vector space, called the [tangent space](http://en.wikipedia.org/wiki/Tangent_space). A chart is an invertible map from the manifold to the vector space.
-
-In GTSAM we assume that a manifold type can yield such a chart at any point, and we require that a functor `defaultChart` is available that 
-
-* values: `dimension`
-* functors `defaultChart`
-* types: `DefaultChart` is the *type* of chart returned by the functor `defaultChart`
-* invariants: `defaultChart::result_type == DefaultChart::type`
-
-Anything else?
-
-Chart
------
-
-* types: `Manifold`, `Vector`
-* values: `retract`, `local`
-
-Are these values? They are just methods. Anything else?
-
-
-Group
------
-
-* values: `identity`
-* values: `compose`, `inverse`, (`between`)
-
-Lie Group
----------
-
-Implements both MANIFOLD and GROUP
-
-Vector Space
-------------
-
-Lie Group where compose == `+`
 
 Examples
 --------
