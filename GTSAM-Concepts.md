@@ -44,7 +44,7 @@ A given chart is implemented using a small class that defines the chart itself (
 
 For many differential manifolds, an obvious mapping is the `exponential map`, which  associates staright lines in the tangent space with geodesics on the manifold (and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
-  * Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimiazation. Hence, the `defaultChart` functor returns a chart that is much cheaper to evaluate.
+  * Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `defaultChart` functor returns a chart that is much cheaper to evaluate.
   * While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a `defaultChart` functor is defined by default for every vector space, GTSAM will never call it.
 
 
@@ -132,7 +132,7 @@ The conventions for `gtsam::traits` are as follows:
         Point2 p_;
         retract(const Point2& p) : p_(p) {}
         Point2 operator()(const Vector2& v) {
-          return Point2(p.x()+v[0], p.y()+v[1]);
+          return Point2(p_.x()+v[0], p_.y()+v[1]);
         }
       }
     
@@ -274,7 +274,7 @@ Providing the Vector space concept is easier:
     
 and
 
-    Point2 inverse(const Point2& p) { return p.transpose();}
+    Point2 inverse(const Point2& p) { return -p;}
     Point2 operator+(const Point2& p, const Point2& q) { return p+q;}
     Point2 compose(const Point2& p, const Point2& q) { return p+q;}
     Point2 between(const Point2& p, const Point2& q) { return q-p;}
