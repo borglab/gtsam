@@ -222,25 +222,26 @@ struct TypeListGrammar: public classic::grammar<TypeListGrammar<OPEN, CLOSE> > {
   typedef std::vector<wrap::Qualified> TypeList;
   TypeList& result_; ///< successful parse will be placed in here
 
-  mutable wrap::Qualified type; // temporary type for use during parsing
-  TypeGrammar type_g;
-
   /// Construct type grammar and specify where result is placed
   TypeListGrammar(TypeList& result) :
-      result_(result), type_g(type) {
+      result_(result) {
   }
 
   /// Definition of type grammar
   template<typename ScannerT>
   struct definition {
 
+    wrap::Qualified type; ///< temporary for use during parsing
+    TypeGrammar type_g; ///< Individual Type grammars
+
     classic::rule<ScannerT> type_p, typeList_p;
 
-    definition(TypeListGrammar const& self) {
+    definition(TypeListGrammar const& self) :
+        type_g(type) {
       using namespace classic;
-      type_p = self.type_g //
-          [push_back_a(self.result_, self.type)] //
-          [clear_a(self.type)];
+
+      type_p = type_g[push_back_a(self.result_, type)][clear_a(type)];
+
       typeList_p = OPEN >> !type_p >> *(',' >> type_p) >> CLOSE;
     }
 

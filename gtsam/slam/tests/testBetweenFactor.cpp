@@ -45,6 +45,30 @@ TEST(BetweenFactor, Rot3) {
 }
 
 /* ************************************************************************* */
+/*
+// Constructor scalar
+TEST(BetweenFactor, ConstructorScalar) {
+  SharedNoiseModel model;
+  double measured_value = 0.0;
+  BetweenFactor<double> factor(1, 2, measured_value, model);
+}
+
+// Constructor vector3
+TEST(BetweenFactor, ConstructorVector3) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 1.0);
+  Vector3 measured_value(1, 2, 3);
+  BetweenFactor<Vector3> factor(1, 2, measured_value, model);
+}
+
+// Constructor dynamic sized vector
+TEST(BetweenFactor, ConstructorDynamicSizeVector) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(5, 1.0);
+  Vector measured_value(5); measured_value << 1, 2, 3, 4, 5;
+  BetweenFactor<Vector> factor(1, 2, measured_value, model);
+}
+*/
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
