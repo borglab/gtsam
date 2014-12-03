@@ -80,60 +80,11 @@ void GaussianFactorGraphSystem::residual(const Vector &x, Vector &r) const {
 void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
   /* implement A^t*A*x, assume x and AtAx are pre-allocated */
 
-  /* reset y */
-  AtAx.setZero();
+  VectorValues vvX = buildVectorValues(x,keyInfo_);
+  VectorValues vvAtAx;
+  gfg_.multiplyHessianAdd(1.0, vvX, vvAtAx);
+  AtAx = vvAtAx.vector();
 
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg_ ) {
-    if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
-      /* accumulate At A x*/
-      Vector Ax = zero(jf->rows());
-      for ( JacobianFactor::const_iterator it = jf->begin() ; it != jf->end() ; ++it ) {
-        const Matrix Ai = jf->getA(it);
-        /* this map lookup should be replaced */
-        const KeyInfoEntry &entry = keyInfo_.find(*it)->second;
-        Ax += (Ai * x.segment(entry.colstart(), entry.dim()));
-      }
-      for ( JacobianFactor::const_iterator it = jf->begin() ; it != jf->end() ; ++it ) {
-        const Matrix Ai = jf->getA(it);
-        /* this map lookup should be replaced */
-        const KeyInfoEntry &entry = keyInfo_.find(*it)->second;
-        AtAx.segment(entry.colstart(), entry.dim()) += Ai.transpose()*Ax;
-      }
-    }
-    else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
-      /* accumulate H x */
-      /* use buffer to avoid excessive table lookups */
-      const size_t sz = hf->size();
-      vector<Vector> y;
-      y.reserve(sz);
-      for (HessianFactor::const_iterator it = hf->begin(); it != hf->end(); it++) {
-        /* initialize y to zeros */
-        y.push_back(zero(hf->getDim(it)));
-      }
-
-      for (HessianFactor::const_iterator j = hf->begin(); j != hf->end(); j++ ) {
-        /* retrieve the key mapping */
-        const KeyInfoEntry &entry = keyInfo_.find(*j)->second;
-        // xj is the input vector
-        const Vector xj = x.segment(entry.colstart(), entry.dim());
-        size_t idx = 0;
-        for (HessianFactor::const_iterator i = hf->begin(); i != hf->end(); i++, idx++ ) {
-          if ( i == j ) y[idx] += hf->info(j, j).selfadjointView() * xj;
-          else y[idx] += hf->info(i, j).knownOffDiagonal() * xj;
-        }
-      }
-
-      /* accumulate to r */
-      for(DenseIndex i = 0; i < (DenseIndex) sz; ++i) {
-        /* retrieve the key mapping */
-        const KeyInfoEntry &entry = keyInfo_.find(hf->keys()[i])->second;
-        AtAx.segment(entry.colstart(), entry.dim()) += y[i];
-      }
-    }
-    else {
-      throw invalid_argument("GaussianFactorGraphSystem::multiply gfg contains a factor that is neither a JacobianFactor nor a HessianFactor.");
-    }
-  }
 }
 
 /*****************************************************************************/
