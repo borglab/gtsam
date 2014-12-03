@@ -28,6 +28,8 @@ In detail, we ask the following are defined for a MANIFOLD type:
 	* `defaultChart`, returns the default chart at a point p
 * types: 
   * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
+* valid expressions:
+  * `size_t dim = getDimension(p);` free function should be defined in case the dimension is not known at compile time.
 
 Anything else?
 
@@ -108,6 +110,8 @@ We will not use Eigen-style or STL-style traits, that define *many* properties a
 
 Traits allow us to play with types that are outside GTSAM control, e.g., `Eigen::VectorXd`. However, for GTSAM types, it is perfectly acceptable (and even desired) to define associated types as internal types, as well, rather than having to use traits internally.
 
+Finally, note that not everything that makes a concept is defined by traits. For example, although a CHART type is supposed to have a `retract` function, there is no trait for this: rather, the  
+
 The conventions for `gtsam::traits` are as follows:
 
 * Types: `gtsam::traits::SomeAssociatedType<T>::type`, i.e., they are MixedCase and define a *single* `type`, for example:
@@ -159,6 +163,7 @@ The group composition operation can be of two flavors:
 * `gtsam::traits::multiplicative_group_tag`
 
 which should be queryable by `gtsam::traits::group_flavor<T>`
+
 
 Manifold Example
 ----------------
@@ -279,3 +284,35 @@ and
     Point2 compose(const Point2& p, const Point2& q) { return p+q;}
     Point2 between(const Point2& p, const Point2& q) { return q-p;}
 
+Concept Checks
+--------------
+
+Boost provides a nice way to check whether a given type satisfies a concept. For example, the following
+
+    BOOST_CONCEPT_ASSERT(ChartConcept<defaultChart>)
+    
+Using the following from Mike Bosse's prototype:
+
+```
+template<class C>
+struct ChartConcept {
+
+  typedef gtsam::traits::Manifold<C>::type type;
+  typedef gtsam::traits::TangentVector<type>::type vector;
+
+  BOOST_CONCEPT_USAGE(ChartConcept) {
+
+    // Returns Retraction update of val_
+    type retract_ret = C::retract(val_, vec_);
+
+    // Returns local coordinates of another object
+    vec_ = C::local(val_, retract_ret);
+  }
+
+private:
+  type val_;
+  vector vec_;
+  int dim_;
+};
+
+```
