@@ -34,9 +34,10 @@ The naming conventions are as follows:
         typedef const int value_type; // const ?
       }
     
-* Functors: `gtsam::traits::someFunctor<T>::type`, i.e., they are mixedCase starting with a lowercase letter and define a functor `type`. Example
+* Functors: `gtsam::traits::someFunctor<T>::type`, i.e., they are mixedCase starting with a lowercase letter and define a functor `type`. The funcor itself should define a `result_type`. Example
     
       struct Point2::retract {
+        typedef Point2 result_type;
         Point2 p_;
         retract(const Point2& p) : p_(p) {}
         Point2 operator()(const Vector2& v) {
@@ -49,7 +50,13 @@ The naming conventions are as follows:
         typedef Point2::retract type;
       }
     
-  The above is still up in the air. Do we need the type indirection?
+  The above is still up in the air. Do we need the type indirection? Could we just inherit the trait like so
+    
+      template<>
+      gtsam::traits::retract<Point2> : Point2::retract {
+      }
+  
+  In which case we could just say `gtsam::traits::retract<Point2>(p)(v)`.
   
 tags
 ----
@@ -64,11 +71,24 @@ Concepts are associated with a tag.
 Can be queried `gtsam::traits::structure_tag<T>`
 
 
+Testable
+--------
+
+* values: `print`, `equals`
+
+Anything else?
+
 Manifold
 --------
 
-* types: `DefaultChart`
+[Manifolds](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) and [charts](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) are intimately linked concepts. We are only interested here in [differentiable manifolds](http://en.wikipedia.org/wiki/Differentiable_manifold#Definition), continuous spaces that can be locally approximated *at any point* using a local vector space, called the [tangent space](http://en.wikipedia.org/wiki/Tangent_space). A chart is an invertible map from the manifold to the vector space.
+
+In GTSAM we assume that a manifold type can yield such a chart at any point, and we require that a functor `defaultChart` is available that 
+
 * values: `dimension`
+* functors `defaultChart`
+* types: `DefaultChart` is the *type* of chart returned by the functor `defaultChart`
+* invariants: `defaultChart::result_type == DefaultChart::type`
 
 Anything else?
 
