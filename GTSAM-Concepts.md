@@ -102,14 +102,30 @@ Examples
 
 An example of implementing a Manifold is here:
 
+    // GTSAM type
+    class Rot2 {
+	  ...
+      class Chart {
+	    ...
+      }
+    }
 
     namespace gtsam {
       namespace traits {
       
-      // types:
-      template<typename T>
-      struct SomeAssociatedType<T>::type
-      
+      template<>
+      struct DefaultChart<Rot2> {
+        typedef Rot2::Chart type;      
+      }
+
+      template<>
+      struct Manifold<Rot2::Chart> {
+        typedef Rot2 type;      
+      }
+
+      template<>
+      struct Vector<Rot2::Chart> {
+        typedef Vector2 type;      
       }
     }
 
