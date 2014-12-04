@@ -50,7 +50,6 @@ template<class T>
 class ManifoldConcept {
  public:
   typedef T Manifold;
-  typedef traits::manifold_tag<T> manifold_tag;
   typedef traits::TangentVector<T>::type TangentVector;
   typedef traits::DefaultChart<T>::type DefaultChart;
   static const size_t dim = traits::dimension<T>::value;
@@ -126,7 +125,29 @@ class LieGroupConcept : public GroupConcept<L>, public ManifoldConcept<L> {
   }
 };
 
+template <class V>
+class VectorSpaceConcept : public LieGroupConcept {
+  typedef traits::DefaultChart<V>::type Chart;
+  typedef GroupConcept<V>::identity identity;
 
+  BOOST_CONCEPT_USAGE(VectorSpaceConcept) {
+    BOOST_STATIC_ASSERT(boost::is_base_of<traits::vector_space_tag, traits::structure<L> >);
+    r = p+q;
+    r = -p;
+    r = p-q;
+  }
+
+  bool check_invariants(const V& a, const V& b) {
+    return equal(compose(a, b), a+b)
+        && equal(inverse(a), -a)
+        && equal(between(a, b), b-a)
+        && equal(Chart::retract(a, b), a+b)
+        && equal(Chart::local(a, b), b-a);
+  }
+
+ private:
+  V p,q,r;
+};
 
 } // namespace gtsam
 
