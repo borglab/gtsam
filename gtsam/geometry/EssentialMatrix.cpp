@@ -14,7 +14,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 EssentialMatrix EssentialMatrix::FromPose3(const Pose3& _1P2_,
-    OptionalJacobian<5,6> H) {
+    OptionalJacobian<5, 6> H) {
   const Rot3& _1R2_ = _1P2_.rotation();
   const Point3& _1T2_ = _1P2_.translation();
   if (!H) {
@@ -27,8 +27,8 @@ EssentialMatrix EssentialMatrix::FromPose3(const Pose3& _1P2_,
     // First get 2*3 derivative from Unit3::FromPoint3
     Matrix23 D_direction_1T2;
     Unit3 direction = Unit3::FromPoint3(_1T2_, D_direction_1T2);
-    *H <<  I_3x3, Z_3x3, //
-           Z_2x3, D_direction_1T2 * _1R2_.matrix();
+    *H << I_3x3, Z_3x3, //
+    Matrix23::Zero(), D_direction_1T2 * _1R2_.matrix();
     return EssentialMatrix(_1R2_, direction);
   }
 }
@@ -52,13 +52,13 @@ EssentialMatrix EssentialMatrix::retract(const Vector& xi) const {
 
 /* ************************************************************************* */
 Vector EssentialMatrix::localCoordinates(const EssentialMatrix& other) const {
-  return (Vector(5) <<
-      aRb_.localCoordinates(other.aRb_), aTb_.localCoordinates(other.aTb_)).finished();
+  return (Vector(5) << aRb_.localCoordinates(other.aRb_), aTb_.localCoordinates(
+      other.aTb_)).finished();
 }
 
 /* ************************************************************************* */
-Point3 EssentialMatrix::transform_to(const Point3& p,
-    OptionalJacobian<3,5> DE, OptionalJacobian<3,3> Dpoint) const {
+Point3 EssentialMatrix::transform_to(const Point3& p, OptionalJacobian<3, 5> DE,
+    OptionalJacobian<3, 3> Dpoint) const {
   Pose3 pose(aRb_, aTb_.point3());
   Matrix36 DE_;
   Point3 q = pose.transform_to(p, DE ? &DE_ : 0, Dpoint);
@@ -67,8 +67,8 @@ Point3 EssentialMatrix::transform_to(const Point3& p,
     // The last 3 columns are derivative with respect to change in translation
     // The derivative of translation with respect to a 2D sphere delta is 3*2 aTb_.basis()
     // Duy made an educated guess that this needs to be rotated to the local frame
-    Matrix35 H; 
-    H << DE_.block<3, 3>(0, 0), -aRb_.transpose() * aTb_.basis();
+    Matrix35 H;
+    H << DE_.block < 3, 3 > (0, 0), -aRb_.transpose() * aTb_.basis();
     *DE = H;
   }
   return q;
@@ -76,7 +76,7 @@ Point3 EssentialMatrix::transform_to(const Point3& p,
 
 /* ************************************************************************* */
 EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
-    OptionalJacobian<5,5> HE, OptionalJacobian<5,3> HR) const {
+    OptionalJacobian<5, 5> HE, OptionalJacobian<5, 3> HR) const {
 
   // The rotation must be conjugated to act in the camera frame
   Rot3 c1Rc2 = aRb_.conjugate(cRb);
@@ -88,10 +88,11 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
   } else {
     // Calculate derivatives
     Matrix23 D_c1Tc2_cRb; // 2*3
-    Matrix2 D_c1Tc2_aTb;  // 2*2
+    Matrix2 D_c1Tc2_aTb; // 2*2
     Unit3 c1Tc2 = cRb.rotate(aTb_, D_c1Tc2_cRb, D_c1Tc2_aTb);
-    if (HE) *HE << cRb.matrix(), Z_3x2, //
-             Z_2x3, D_c1Tc2_aTb;
+    if (HE)
+      *HE << cRb.matrix(), Matrix32::Zero(), //
+      Matrix23::Zero(), D_c1Tc2_aTb;
     if (HR) {
       throw runtime_error(
           "EssentialMatrix::rotate: derivative HR not implemented yet");
@@ -106,7 +107,7 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
 
 /* ************************************************************************* */
 double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
-    OptionalJacobian<1,5> H) const {
+    OptionalJacobian<1, 5> H) const {
   if (H) {
     // See math.lyx
     Matrix13 HR = vA.transpose() * E_ * skewSymmetric(-vB);

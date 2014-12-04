@@ -320,7 +320,7 @@ double Pose3::range(const Pose3& pose, OptionalJacobian<1,6> H1,
   double r = range(pose.translation(), H1, H2? &D2 : 0);
   if (H2) {
     Matrix13 H2_ = D2 * pose.rotation().matrix();
-    *H2 << Z_1x3, H2_;
+    *H2 << Matrix13::Zero(), H2_;
   }
   return r;
 }
