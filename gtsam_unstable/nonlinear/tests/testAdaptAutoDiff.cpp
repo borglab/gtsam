@@ -17,7 +17,7 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam_unstable/nonlinear/ceres_example.h>
+#include <gtsam/3rdparty/ceres/example.h>
 #include <gtsam_unstable/nonlinear/AdaptAutoDiff.h>
 #include <gtsam/nonlinear/Expression.h>
 #include <gtsam/geometry/PinholeCamera.h>
