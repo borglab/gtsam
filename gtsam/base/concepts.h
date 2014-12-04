@@ -10,6 +10,7 @@
 
 #include "manifold.h"
 #include "chart.h"
+#include <boost/type_traits.hpp>
 
 namespace gtsam {
 
@@ -31,9 +32,15 @@ struct DefaultChart {
   //typedef XXX type;
 };
 
+template <class T>
+struct structure {}; // specializations should be derived from one of the following tags
+struct manifold_tag {};
+struct group_tag {};
+struct lie_group_tag : public manifold_tag, public group_tag {};
+struct vector_space_tag : public lie_group_tag {};
+
 template <class Group>
 struct group_flavor {};
-
 struct additive_group_tag {};
 struct multiplicative_group_tag {};
 
@@ -43,11 +50,13 @@ template<class T>
 class ManifoldConcept {
  public:
   typedef T Manifold;
+  typedef traits::manifold_tag<T> manifold_tag;
   typedef traits::TangentVector<T>::type TangentVector;
   typedef traits::DefaultChart<T>::type DefaultChart;
   static const size_t dim = traits::dimension<T>::value;
 
   BOOST_CONCEPT_USAGE(ManifoldConcept) {
+    BOOST_STATIC_ASSERT(boost::is_base_of<traits::manifold_tag, traits::structure<Manifold> >);
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
     // no direct usage for manifold since most usage is through a chart
   }
@@ -81,6 +90,7 @@ class GroupConcept {
   static const Group identity = traits::identity<G>::value;
 
   BOOST_CONCEPT_USAGE(GroupConcept) {
+    BOOST_STATIC_ASSERT(boost::is_base_of<traits::group_tag, traits::structure<Group> >);
     Group ip = inverse(p);
     Group pq = compose(p, q);
     Group d = between(p, q);
@@ -107,6 +117,16 @@ class GroupConcept {
   }
 
 };
+
+template <class L>
+class LieGroupConcept : public GroupConcept<L>, public ManifoldConcept<L> {
+
+  BOOST_CONCEPT_USAGE(LieGroupConcept) {
+    BOOST_STATIC_ASSERT(boost::is_base_of<traits::lie_group_tag, traits::structure<L> >);
+  }
+};
+
+
 
 } // namespace gtsam
 
