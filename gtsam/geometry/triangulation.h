@@ -19,12 +19,10 @@
 #pragma once
 
 
-#include <gtsam/geometry/TriangulationFactor.h>
+#include <gtsam/slam/TriangulationFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/slam/PriorFactor.h>
-
-#include <vector>
 
 namespace gtsam {
 

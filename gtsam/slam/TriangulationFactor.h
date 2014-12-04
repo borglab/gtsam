@@ -10,14 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * testTriangulationFactor.h
+ * triangulationFactor.h
  * @date March 2, 2014
  * @author Frank Dellaert
  */
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <boost/optional.hpp>
 #include <boost/make_shared.hpp>
 

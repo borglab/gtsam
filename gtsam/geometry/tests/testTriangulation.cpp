@@ -263,25 +263,6 @@ TEST( triangulation, twoIdenticalPoses) {
  */
 
 //******************************************************************************
-TEST( triangulation, TriangulationFactor ) {
-  // Create the factor with a measurement that is 3 pixels off in x
-  Key pointKey(1);
-  SharedNoiseModel model;
-  typedef TriangulationFactor<> Factor;
-  Factor factor(camera1, z1, model, pointKey);
-
-  // Use the factor to calculate the Jacobians
-  Matrix HActual;
-  factor.evaluateError(landmark, HActual);
-
-  Matrix HExpected = numericalDerivative11<Vector,Point3>(
-      boost::bind(&Factor::evaluateError, &factor, _1, boost::none), landmark);
-
-  // Verify the Jacobians are correct
-  CHECK(assert_equal(HExpected, HActual, 1e-3));
-}
-
-//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
