@@ -138,18 +138,18 @@ public:
       (*H1) <<
           // dfP/dRi
           Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij_
-              + preintegratedMeasurements_.delPdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc_ * biasAccIncr),
-              // dfP/dPi
-              dfPdPi,
-              // dfV/dRi
-              Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij_
-                  + preintegratedMeasurements_.delVdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc_ * biasAccIncr),
-                  // dfV/dPi
-                  dfVdPi,
-                  // dfR/dRi
-                  Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
-                  // dfR/dPi
-                  Z_3x3;
+          + preintegratedMeasurements_.delPdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc_ * biasAccIncr),
+          // dfP/dPi
+          dfPdPi,
+          // dfV/dRi
+          Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij_
+          + preintegratedMeasurements_.delVdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc_ * biasAccIncr),
+          // dfV/dPi
+          dfVdPi,
+          // dfR/dRi
+          Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
+          // dfR/dPi
+          Z_3x3;
     }
 
     if(H2) {
@@ -191,7 +191,6 @@ public:
       const Matrix3 Jrinv_theta_bc = Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
       const Matrix3 Jr_JbiasOmegaIncr = Rot3::rightJacobianExpMapSO3(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr);
       const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega_;
-
       H5->resize(9,6);
       (*H5) <<
           // dfP/dBias

@@ -186,6 +186,7 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i, const
     boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2,
     boost::optional<Matrix&> H3,  boost::optional<Matrix&> H4,
     boost::optional<Matrix&> H5) const{
+
   return ImuFactorBase::computeErrorAndJacobians(preintegratedMeasurements_, pose_i, vel_i, pose_j, vel_j, bias_i, H1, H2, H3, H4, H5);
 }
 

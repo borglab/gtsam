@@ -206,182 +206,65 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
     boost::optional<Matrix&> H3, boost::optional<Matrix&> H4,
     boost::optional<Matrix&> H5, boost::optional<Matrix&> H6) const {
 
-  const double& deltaTij = preintegratedMeasurements_.deltaTij_;
-  const Vector3 biasAccIncr = bias_i.accelerometer() - preintegratedMeasurements_.biasHat_.accelerometer();
-  const Vector3 biasOmegaIncr = bias_i.gyroscope() - preintegratedMeasurements_.biasHat_.gyroscope();
-
-  // we give some shorter name to rotations and translations
-  const Rot3 Rot_i = pose_i.rotation();
-  const Rot3 Rot_j = pose_j.rotation();
-  const Vector3 pos_i = pose_i.translation().vector();
-  const Vector3 pos_j = pose_j.translation().vector();
-
-  // We compute factor's Jacobians, according to [3]
-  /* ---------------------------------------------------------------------------------------------------- */
-  const Rot3 deltaRij_biascorrected = preintegratedMeasurements_.deltaRij_.retract(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
-  // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
-
-  Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
-
-  Vector3 theta_biascorrected_corioliscorrected = theta_biascorrected  -
-      Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij; // Coriolis term
-
-  const Rot3 deltaRij_biascorrected_corioliscorrected =
-      Rot3::Expmap( theta_biascorrected_corioliscorrected );
-
-  const Rot3 fRhat = deltaRij_biascorrected_corioliscorrected.between(Rot_i.between(Rot_j));
-
-  const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_biascorrected_corioliscorrected);
-
-  const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
-
-  const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
-
-  if(H1) {
-    H1->resize(15,6);
-
-    Matrix3 dfPdPi;
-    Matrix3 dfVdPi;
-    if(use2ndOrderCoriolis_){
-      dfPdPi = - Rot_i.matrix() + 0.5 * skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij*deltaTij;
-      dfVdPi = skewSymmetric(omegaCoriolis_) * skewSymmetric(omegaCoriolis_) * Rot_i.matrix() * deltaTij;
-    }
-    else{
-      dfPdPi = - Rot_i.matrix();
-      dfVdPi = Z_3x3;
-    }
-
-    (*H1) <<
-        // dfP/dRi
-        Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij_
-        + preintegratedMeasurements_.delPdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc_ * biasAccIncr),
-        // dfP/dPi
-        dfPdPi,
-        // dfV/dRi
-        Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij_
-        + preintegratedMeasurements_.delVdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc_ * biasAccIncr),
-        // dfV/dPi
-        dfVdPi,
-        // dfR/dRi
-        Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
-        // dfR/dPi
-        Z_3x3,
-        //dBiasAcc/dPi
-        Z_3x3, Z_3x3,
-        //dBiasOmega/dPi
-        Z_3x3, Z_3x3;
-  }
-
-  if(H2) {
-    H2->resize(15,3);
-    (*H2) <<
-        // dfP/dVi
-        - I_3x3 * deltaTij
-        + skewSymmetric(omegaCoriolis_) * deltaTij * deltaTij,  // Coriolis term - we got rid of the 2 wrt ins paper
-        // dfV/dVi
-        - I_3x3
-        + 2 * skewSymmetric(omegaCoriolis_) * deltaTij, // Coriolis term
-        // dfR/dVi
-        Z_3x3,
-        //dBiasAcc/dVi
-        Z_3x3,
-        //dBiasOmega/dVi
-        Z_3x3;
-  }
-
-  if(H3) {
-    H3->resize(15,6);
-    (*H3) <<
-        // dfP/dPosej
-        Z_3x3, Rot_j.matrix(),
-        // dfV/dPosej
-        Matrix::Zero(3,6),
-        // dfR/dPosej
-        Jrinv_fRhat *  ( I_3x3 ), Z_3x3,
-        //dBiasAcc/dPosej
-        Z_3x3, Z_3x3,
-        //dBiasOmega/dPosej
-        Z_3x3, Z_3x3;
-  }
-
-  if(H4) {
-    H4->resize(15,3);
-    (*H4) <<
-        // dfP/dVj
-        Z_3x3,
-        // dfV/dVj
-        I_3x3,
-        // dfR/dVj
-        Z_3x3,
-        //dBiasAcc/dVj
-        Z_3x3,
-        //dBiasOmega/dVj
-        Z_3x3;
-  }
-
-  if(H5) {
-    const Matrix3 Jrinv_theta_bc = Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
-    const Matrix3 Jr_JbiasOmegaIncr = Rot3::rightJacobianExpMapSO3(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr);
-    const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega_;
-
-    H5->resize(15,6);
-    (*H5) <<
-        // dfP/dBias_i
-        - Rot_i.matrix() * preintegratedMeasurements_.delPdelBiasAcc_,
-        - Rot_i.matrix() * preintegratedMeasurements_.delPdelBiasOmega_,
-        // dfV/dBias_i
-        - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasAcc_,
-        - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasOmega_,
-        // dfR/dBias_i
-        Matrix::Zero(3,3),
-        Jrinv_fRhat * ( - fRhat.inverse().matrix() * JbiasOmega),
-        //dBiasAcc/dBias_i
-        -I_3x3, Z_3x3,
-        //dBiasOmega/dBias_i
-        Z_3x3, -I_3x3;
-  }
-
-  if(H6) {
-    H6->resize(15,6);
-    (*H6) <<
-        // dfP/dBias_j
-        Z_3x3, Z_3x3,
-        // dfV/dBias_j
-        Z_3x3, Z_3x3,
-        // dfR/dBias_j
-        Z_3x3, Z_3x3,
-        //dBiasAcc/dBias_j
-        I_3x3, Z_3x3,
-        //dBiasOmega/dBias_j
-        Z_3x3, I_3x3;
-  }
-
-  // Evaluate residual error, according to [3]
-  /* ---------------------------------------------------------------------------------------------------- */
-  const Vector3 fp =
-      pos_j - pos_i
-      - Rot_i.matrix() * (preintegratedMeasurements_.deltaPij_
-          + preintegratedMeasurements_.delPdelBiasAcc_ * biasAccIncr
-          + preintegratedMeasurements_.delPdelBiasOmega_ * biasOmegaIncr)
-          - vel_i * deltaTij
-          + skewSymmetric(omegaCoriolis_) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
-          - 0.5 * gravity_ * deltaTij*deltaTij;
-
-  const Vector3 fv =
-      vel_j - vel_i - Rot_i.matrix() * (preintegratedMeasurements_.deltaVij_
-          + preintegratedMeasurements_.delVdelBiasAcc_ * biasAccIncr
-          + preintegratedMeasurements_.delVdelBiasOmega_ * biasOmegaIncr)
-          + 2 * skewSymmetric(omegaCoriolis_) * vel_i * deltaTij  // Coriolis term
-          - gravity_ * deltaTij;
-
-  const Vector3 fR = Rot3::Logmap(fRhat);
-
+  // Bias evolution model: random walk
   const Vector3 fbiasAcc = bias_j.accelerometer() - bias_i.accelerometer();
-
   const Vector3 fbiasOmega = bias_j.gyroscope() - bias_i.gyroscope();
 
-  Vector r(15); r << fp, fv, fR, fbiasAcc, fbiasOmega; // vector of size 15
+  // error wrt preintegrated position, velocity, rotation
+  Vector r_pvR(9);
 
+  // if we need the jacobians
+  if(H1 || H2 || H3 || H4 || H5 || H6){
+    Matrix H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR; // pvR = mnemonic: position (p), velocity (v), rotation (R)
+
+    // include errors wrt preintegrated measurements
+    r_pvR << ImuFactorBase::computeErrorAndJacobians(preintegratedMeasurements_, pose_i, vel_i, pose_j, vel_j, bias_i,
+        H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR);
+
+    if(H1) {
+      H1->resize(15,6);
+      H1->block<9,6>(0,0) = H1_pvR;
+      // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
+      H1->block<6,6>(0,9) = Matrix::Zero(6,6);
+    }
+    if(H2) {
+      H2->resize(15,3);
+      H2->block<9,3>(0,0) = H2_pvR;
+      // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+      H2->block<6,3>(0,9) = Matrix::Zero(6,3);
+    }
+    if(H3) {
+      H3->resize(15,6);
+      H3->block<9,6>(0,0) = H3_pvR;
+      // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
+      H3->block<6,6>(0,9) = Matrix::Zero(6,6);
+    }
+    if(H4) {
+      H4->resize(15,3);
+      H4->block<9,3>(0,0) = H4_pvR;
+      // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+      H4->block<6,3>(0,9) = Matrix::Zero(6,3);
+    }
+    if(H5) {
+      H5->resize(15,6);
+      H5->block<9,6>(0,0) = H5_pvR;
+      // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
+      H5->block<6,6>(0,9) = - Matrix::Identity(6,6);
+    }
+    if(H6) {
+      H6->resize(15,6);
+      H6->block<9,6>(0,0) = Matrix::Zero(6,6);
+      // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
+      H6->block<6,6>(0,9) = Matrix::Identity(6,6);
+    }
+    Vector r(15); r << r_pvR, fbiasAcc, fbiasOmega; // vector of size 15
+    return r;
+  }
+  // else, only compute the error vector:
+  // Evaluate residual error, including the model for bias evolution
+  r_pvR << ImuFactorBase::computeErrorAndJacobians(preintegratedMeasurements_, pose_i, vel_i, pose_j, vel_j, bias_i,
+      boost::none, boost::none, boost::none, boost::none, boost::none);
+  Vector r(15); r << r_pvR, fbiasAcc, fbiasOmega; // vector of size 15
   return r;
 }
 
