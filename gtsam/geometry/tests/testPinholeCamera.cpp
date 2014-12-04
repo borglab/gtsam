@@ -267,7 +267,6 @@ static double range2(const Camera& camera, const Camera2& camera2) {
 
 /* ************************************************************************* */
 TEST( PinholeCamera, range2) {
-  typedef Eigen::Matrix<double,1,9> Matrix19;
   Matrix1_11 D1; Matrix19 D2;
   double result = camera.range<Cal3Bundler>(camera2, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range2, camera, camera2);
