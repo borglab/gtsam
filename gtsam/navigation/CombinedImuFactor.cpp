@@ -45,27 +45,27 @@ CombinedImuFactor::CombinedPreintegratedMeasurements::CombinedPreintegratedMeasu
   measurementCovariance_.block<3,3>(9,9) = biasAccCovariance;
   measurementCovariance_.block<3,3>(12,12) = biasOmegaCovariance;
   measurementCovariance_.block<6,6>(15,15) = biasAccOmegaInit;
-  PreintMeasCov_.setZero();
+  preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
 void CombinedImuFactor::CombinedPreintegratedMeasurements::print(const string& s) const{
   PreintegrationBase::print(s);
   cout << "  measurementCovariance [ " << measurementCovariance_ << " ]" << endl;
-  cout << "  PreintMeasCov [ " << PreintMeasCov_ << " ]" << endl;
+  cout << "  preintMeasCov [ " << preintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool CombinedImuFactor::CombinedPreintegratedMeasurements::equals(const CombinedPreintegratedMeasurements& expected, double tol) const{
   return equal_with_abs_tol(measurementCovariance_, expected.measurementCovariance_, tol)
-      && equal_with_abs_tol(PreintMeasCov_, expected.PreintMeasCov_, tol)
+      && equal_with_abs_tol(preintMeasCov_, expected.preintMeasCov_, tol)
       && PreintegrationBase::equals(expected, tol);
 }
 
 //------------------------------------------------------------------------------
 void CombinedImuFactor::CombinedPreintegratedMeasurements::resetIntegration(){
   PreintegrationBase::resetIntegration();
-  PreintMeasCov_.setZero();
+  preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
@@ -149,7 +149,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   G_measCov_Gt.block<3,3>(3,6) = block23;
   G_measCov_Gt.block<3,3>(6,3) = block23.transpose();
 
-  PreintMeasCov_ = F * PreintMeasCov_ * F.transpose() + G_measCov_Gt;
+  preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
 
   // Update preintegrated measurements
   /* ----------------------------------------------------------------------------------------------------------------------- */
@@ -167,7 +167,7 @@ CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_
     const CombinedPreintegratedMeasurements& preintegratedMeasurements,
     const Vector3& gravity, const Vector3& omegaCoriolis,
     boost::optional<const Pose3&> body_P_sensor, const bool use2ndOrderCoriolis) :
-          Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.PreintMeasCov_), pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
+          Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov_), pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
           preintegratedMeasurements_(preintegratedMeasurements),
           gravity_(gravity),
           omegaCoriolis_(omegaCoriolis),

@@ -82,7 +82,7 @@ public:
     Eigen::Matrix<double,9,9> measurementCovariance_; ///< (continuous-time uncertainty) "Covariance" of
     ///< the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
 
-    Eigen::Matrix<double,9,9> PreintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
+    Eigen::Matrix<double,9,9> preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
     ///< (first-order propagation from *measurementCovariance*).
 
   public:
@@ -121,7 +121,7 @@ public:
 
     /// methods to access class variables
     Matrix measurementCovariance() const {return measurementCovariance_;}
-    Matrix preintMeasCov() const { return PreintMeasCov_;}
+    Matrix preintMeasCov() const { return preintMeasCov_;}
 
   private:
 
@@ -131,7 +131,7 @@ public:
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
       ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
-      ar & BOOST_SERIALIZATION_NVP(PreintMeasCov_);
+      ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
     }
   };
 

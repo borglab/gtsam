@@ -87,7 +87,7 @@ public:
     Eigen::Matrix<double,21,21> measurementCovariance_; ///< (Raw measurements uncertainty) Covariance of the vector
     ///< [integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
 
-    Eigen::Matrix<double,15,15> PreintMeasCov_; ///< Covariance matrix of the preintegrated measurements
+    Eigen::Matrix<double,15,15> preintMeasCov_; ///< Covariance matrix of the preintegrated measurements
     ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION BiasAcc BiasOmega]
     ///< (first-order propagation from *measurementCovariance*). CombinedPreintegratedMeasurements also include the biases and keep the correlation
     ///< between the preintegrated measurements and the biases
@@ -132,7 +132,7 @@ public:
 
     /// methods to access class variables
     Matrix measurementCovariance() const {return measurementCovariance_;}
-    Matrix PreintMeasCov() const { return PreintMeasCov_;}
+    Matrix PreintMeasCov() const { return preintMeasCov_;}
 
   private:
 
@@ -142,7 +142,7 @@ public:
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
       ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
-      ar & BOOST_SERIALIZATION_NVP(PreintMeasCov_);
+      ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
     }
   };
 

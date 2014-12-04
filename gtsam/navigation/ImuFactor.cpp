@@ -41,27 +41,27 @@ ImuFactor::PreintegratedMeasurements::PreintegratedMeasurements(
   measurementCovariance_.block<3,3>(0,0) = integrationErrorCovariance;
   measurementCovariance_.block<3,3>(3,3) = measuredAccCovariance;
   measurementCovariance_.block<3,3>(6,6) = measuredOmegaCovariance;
-  PreintMeasCov_.setZero(9,9);
+  preintMeasCov_.setZero(9,9);
 }
 
 //------------------------------------------------------------------------------
 void ImuFactor::PreintegratedMeasurements::print(const string& s) const {
   PreintegrationBase::print(s);
   cout << "  measurementCovariance = \n [ " << measurementCovariance_ << " ]" << endl;
-  cout << "  PreintMeasCov = \n [ " << PreintMeasCov_ << " ]" << endl;
+  cout << "  preintMeasCov = \n [ " << preintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool ImuFactor::PreintegratedMeasurements::equals(const PreintegratedMeasurements& expected, double tol) const {
   return equal_with_abs_tol(measurementCovariance_, expected.measurementCovariance_, tol)
-  && equal_with_abs_tol(PreintMeasCov_, expected.PreintMeasCov_, tol)
+  && equal_with_abs_tol(preintMeasCov_, expected.preintMeasCov_, tol)
   && PreintegrationBase::equals(expected, tol);
 }
 
 //------------------------------------------------------------------------------
 void ImuFactor::PreintegratedMeasurements::resetIntegration(){
   PreintegrationBase::resetIntegration();
-  PreintMeasCov_.setZero();
+  preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // the deltaT allows to pass from continuous time noise to discrete time noise
   // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
   // Gt * Qt * G =(approx)= measurementCovariance_discrete * deltaT^2 = measurementCovariance_contTime * deltaT
-  PreintMeasCov_ = F * PreintMeasCov_ * F.transpose() + measurementCovariance_ * deltaT ;
+  preintMeasCov_ = F * preintMeasCov_ * F.transpose() + measurementCovariance_ * deltaT ;
 
   // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
   // This in only kept for documentation.
@@ -129,7 +129,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   //      Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
   //      Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
   //
-  // PreintMeasCov = F * PreintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
+  // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
 
   // Update preintegrated measurements (this has to be done after the update of covariances and jacobians!)
   /* ----------------------------------------------------------------------------------------------------------------------- */
@@ -149,7 +149,7 @@ ImuFactor::ImuFactor(
     const Vector3& gravity, const Vector3& omegaCoriolis,
     boost::optional<const Pose3&> body_P_sensor,
     const bool use2ndOrderCoriolis) :
-        Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.PreintMeasCov_), pose_i, vel_i, pose_j, vel_j, bias),
+        Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov_), pose_i, vel_i, pose_j, vel_j, bias),
         preintegratedMeasurements_(preintegratedMeasurements),
         gravity_(gravity),
         omegaCoriolis_(omegaCoriolis),
