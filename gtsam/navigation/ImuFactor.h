@@ -24,6 +24,7 @@
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/navigation/PreintegrationBase.h>
+#include <gtsam/navigation/ImuFactorBase.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
@@ -47,11 +48,14 @@ namespace gtsam {
 /**
  * Struct to hold return variables by the Predict Function
  */
-struct PoseVelocity {
+struct PoseVelocityBias {
   Pose3 pose;
   Vector3 velocity;
-  PoseVelocity(const Pose3& _pose, const Vector3& _velocity) :
-    pose(_pose), velocity(_velocity) {
+  imuBias::ConstantBias bias;
+
+  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
+      const imuBias::ConstantBias _bias) :
+        pose(_pose), velocity(_velocity), bias(_bias) {
   }
 };
 
@@ -63,7 +67,7 @@ struct PoseVelocity {
  * Note that this factor does not force "temporal consistency" of the biases (which are usually
  * slowly varying quantities), see also CombinedImuFactor for more details.
  */
-class ImuFactor: public NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias>, public ImuBase {
+class ImuFactor: public NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias>, public ImuFactorBase {
 public:
 
   /**
@@ -202,8 +206,8 @@ public:
       boost::optional<Matrix&> H5 = boost::none) const;
 
   /// predicted states from IMU
-  static PoseVelocity Predict(const Pose3& pose_i, const Vector3& vel_i,
-      const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
+  static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
+      const imuBias::ConstantBias& bias, const PreintegrationBase& preintegratedMeasurements,
       const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
 
   private:

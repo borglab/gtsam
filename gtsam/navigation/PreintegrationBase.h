@@ -81,11 +81,11 @@ public:
   /// Needed for testable
   bool equals(const PreintegrationBase& expected, double tol) const {
     return biasHat_.equals(expected.biasHat_, tol)
-        && equal_with_abs_tol(deltaPij_, expected.deltaPij_, tol)
-        && equal_with_abs_tol(deltaVij_, expected.deltaVij_, tol)
-        && deltaRij_.equals(expected.deltaRij_, tol)
-        && fabs(deltaTij_ - expected.deltaTij_) < tol
-        && equal_with_abs_tol(delPdelBiasAcc_, expected.delPdelBiasAcc_, tol)
+    && equal_with_abs_tol(deltaPij_, expected.deltaPij_, tol)
+    && equal_with_abs_tol(deltaVij_, expected.deltaVij_, tol)
+    && deltaRij_.equals(expected.deltaRij_, tol)
+    && fabs(deltaTij_ - expected.deltaTij_) < tol
+    && equal_with_abs_tol(delPdelBiasAcc_, expected.delPdelBiasAcc_, tol)
     && equal_with_abs_tol(delPdelBiasOmega_, expected.delPdelBiasOmega_, tol)
     && equal_with_abs_tol(delVdelBiasAcc_, expected.delVdelBiasAcc_, tol)
     && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_, tol)

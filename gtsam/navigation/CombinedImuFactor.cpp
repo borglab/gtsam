@@ -160,7 +160,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 // CombinedImuFactor methods
 //------------------------------------------------------------------------------
 CombinedImuFactor::CombinedImuFactor() :
-    ImuBase(), preintegratedMeasurements_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Matrix::Zero(6,6)) {}
+    ImuFactorBase(), preintegratedMeasurements_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Matrix::Zero(6,6)) {}
 
 //------------------------------------------------------------------------------
 CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
@@ -168,7 +168,7 @@ CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_
     const Vector3& gravity, const Vector3& omegaCoriolis,
     boost::optional<const Pose3&> body_P_sensor, const bool use2ndOrderCoriolis) :
           Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov_), pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
-          ImuBase(gravity, omegaCoriolis, body_P_sensor, use2ndOrderCoriolis),
+          ImuFactorBase(gravity, omegaCoriolis, body_P_sensor, use2ndOrderCoriolis),
           preintegratedMeasurements_(preintegratedMeasurements) {}
 
 //------------------------------------------------------------------------------
@@ -186,12 +186,9 @@ void CombinedImuFactor::print(const string& s, const KeyFormatter& keyFormatter)
       << keyFormatter(this->key4()) << ","
       << keyFormatter(this->key5()) << ","
       << keyFormatter(this->key6()) << ")\n";
+  ImuFactorBase::print("");
   preintegratedMeasurements_.print("  preintegrated measurements:");
-  cout << "  gravity: [ " << gravity_.transpose() << " ]" << endl;
-  cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << endl;
   this->noiseModel_->print("  noise model: ");
-  if(this->body_P_sensor_)
-    this->body_P_sensor_->print("  sensor pose in body frame: ");
 }
 
 //------------------------------------------------------------------------------
@@ -199,9 +196,7 @@ bool CombinedImuFactor::equals(const NonlinearFactor& expected, double tol) cons
   const This *e =  dynamic_cast<const This*> (&expected);
   return e != NULL && Base::equals(*e, tol)
   && preintegratedMeasurements_.equals(e->preintegratedMeasurements_, tol)
-  && equal_with_abs_tol(gravity_, e->gravity_, tol)
-  && equal_with_abs_tol(omegaCoriolis_, e->omegaCoriolis_, tol)
-  && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
+  && ImuFactorBase::equals(*e, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -393,7 +388,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
 //------------------------------------------------------------------------------
 PoseVelocityBias CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
     const imuBias::ConstantBias& bias_i,
-    const CombinedPreintegratedMeasurements& preintegratedMeasurements,
+    const PreintegrationBase& preintegratedMeasurements,
     const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis){
 
   const double& deltaTij = preintegratedMeasurements.deltaTij_;
@@ -433,8 +428,7 @@ PoseVelocityBias CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& 
   const Rot3 Rot_j = Rot_i.compose( deltaRij_biascorrected_corioliscorrected  );
 
   Pose3 pose_j = Pose3( Rot_j, Point3(pos_j) );
-
-  return PoseVelocityBias(pose_j, vel_j, bias_i);
+  return PoseVelocityBias(pose_j, vel_j, bias_i); // bias is predicted as a constant
 }
 
 } /// namespace gtsam

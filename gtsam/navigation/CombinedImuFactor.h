@@ -24,6 +24,7 @@
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/navigation/PreintegrationBase.h>
+#include <gtsam/navigation/ImuFactorBase.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
@@ -70,7 +71,7 @@ struct PoseVelocityBias {
  * 3) The covariance matrix of the CombinedPreintegratedMeasurements preserves the correlation between the bias uncertainty
  * and the preintegrated measurements uncertainty.
  */
-class CombinedImuFactor: public NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias>, public ImuBase{
+class CombinedImuFactor: public NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias>, public ImuFactorBase{
 public:
 
   /** CombinedPreintegratedMeasurements accumulates (integrates) the IMU measurements (rotation rates and accelerations)
@@ -217,7 +218,7 @@ public:
   /// predicted states from IMU
   static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i,
-      const CombinedPreintegratedMeasurements& preintegratedMeasurements,
+      const PreintegrationBase& preintegratedMeasurements,
       const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
 
 private:
