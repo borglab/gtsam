@@ -17,6 +17,7 @@
 
 #pragma once
 
+#warning "LieScalar.h is deprecated. Please use double/float instead."
 #include <gtsam/dllexport.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
@@ -24,7 +25,9 @@
 namespace gtsam {
 
   /**
-   * LieScalar is a wrapper around double to allow it to be a Lie type
+   * @deprecated: LieScalar, LieVector and LieMatrix are obsolete in GTSAM 4.0 as
+   * we can directly add double, Vector, and Matrix into values now, because of
+   * gtsam::traits.
    */
   struct GTSAM_EXPORT LieScalar {
 
