@@ -314,7 +314,7 @@ Concept Checks
 
 Boost provides a nice way to check whether a given type satisfies a concept. For example, the following
 
-    BOOST_CONCEPT_ASSERT(ChartConcept<defaultChart>)
+    BOOST_CONCEPT_ASSERT(ChartConcept<gtsam::traits::defaultChart<Point2> >)
     
 Using the following from Mike Bosse's prototype:
 
@@ -328,7 +328,7 @@ struct ChartConcept {
   typedef gtsam::traits::TangentVector<type>::type vector;
 
   BOOST_CONCEPT_USAGE(ChartConcept) {
-
+  
     // Returns Retraction update of val_
     type retract_ret = C::retract(val_, vec_);
 
