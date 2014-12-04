@@ -40,9 +40,8 @@ A given chart is implemented using a small class that defines the chart itself (
 * types:
   * `Manifold`, a pointer back to the type
 * valid expressions: 
-  * `Chart chart(p)` constructor
-  * `v = chart.local(q)`, the chart, from manifold to tangent space, think of it as *p (-) q*
-  * `p = chart.retract(v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
+  * `v = Chart::local(p,q)`, the chart, from manifold to tangent space, think of it as *p (-) q*
+  * `p = Chart::retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
 
 For many differential manifolds, an obvious mapping is the `exponential map`, which  associates straight lines in the tangent space with geodesics on the manifold (and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
@@ -106,7 +105,7 @@ GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the T
 Traits
 ------
 
-We will not use Eigen-style or STL-style traits, that define *many* properties at once. Rather, we use boost::mpl style meta-programming functions to facilitate meta-programming, which return a single type or value for every trait.
+We will not use Eigen-style or STL-style traits, that define *many* properties at once. Rather, we use boost::mpl style meta-programming functions to facilitate meta-programming, which return a single type or value for every trait. Some rationale/history can be found [here](http://www.boost.org/doc/libs/1_55_0/libs/type_traits/doc/html/boost_typetraits/background.html).
 
 Traits allow us to play with types that are outside GTSAM control, e.g., `Eigen::VectorXd`. However, for GTSAM types, it is perfectly acceptable (and even desired) to define associated types as internal types, as well, rather than having to use traits internally.
 
@@ -145,6 +144,15 @@ The conventions for `gtsam::traits` are as follows:
   
   By *inherting* the trait from the functor, we can just use the [currying](http://en.wikipedia.org/wiki/Currying) style `gtsam::traits::manhattan<Point2>℗(q)`. Note that, although technically a functor is a type, in spirit it is a free function and hence starts with a lowercase letter.
   
+* Tags: `gtsam::traits::some_category<T>::type`, i.e., they are lower_case and define a *single* `type`, for example:
+    
+      template<>
+      gtsam::traits::structure_category<Point2> {
+        typedef vector_space_tag type;
+      }
+   
+   See below for the tags defined within GTSAM.
+
 Tags
 ----
   
@@ -155,14 +163,14 @@ Algebraic structure concepts are associated with the following tags
 * `gtsam::traits::lie_group_tag`
 * `gtsam::traits::vector_space_tag`
 
-which should be queryable by `gtsam::traits::structure<T>`
+which should be queryable by `gtsam::traits::structure_category<T>::type`
 
 The group composition operation can be of two flavors:
 
 * `gtsam::traits::additive_group_tag`
 * `gtsam::traits::multiplicative_group_tag`
 
-which should be queryable by `gtsam::traits::group_flavor<T>::tag`
+which should be queryable by `gtsam::traits::group_flavor<T>::type`
 
 
 Manifold Example
@@ -176,9 +184,8 @@ An example of implementing a Manifold type is here:
     class Rot2 {
 	  typedef Vector2 TangentVector;
       class Chart {
-	    Chart(const Rot2& R);
-	    TangentVector local(const Rot2& R) const;
-	    Rot2 retract(const TangentVector& v) const;
+	    static TangentVector local(const Rot2& R1, const Rot2& R2);
+	    static Rot2 retract(const Rot2& R, const TangentVector& v);
       }
       Rot2 operator*(const Rot2&) const;
       Rot2 transpose() const;
@@ -254,9 +261,8 @@ Providing the Vector space concept is easier:
       Point2 operator-() const;
       // Still needs to be defined, unless Point2 *is* Vector2
       class Chart {
-	    Chart(const Rot2& R);
-	    Vector2 local(const Rot2& R) const;
-	    Rot2 retract(const Vector2& v) const;
+	    static Vector2 local(const Point2& p, const Point2& q) const;
+	    static Rot2 retract(const Point2& p, const Point2& v) const;
       }
     }
 ```
