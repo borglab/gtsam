@@ -18,7 +18,7 @@
  */
 
 #include <gtsam/3rdparty/ceres/example.h>
-#include <gtsam_unstable/nonlinear/AdaptAutoDiff.h>
+#include <gtsam/nonlinear/AdaptAutoDiff.h>
 #include <gtsam/nonlinear/Expression.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
