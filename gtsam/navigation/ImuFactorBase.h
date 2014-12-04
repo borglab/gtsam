@@ -105,10 +105,9 @@ public:
     const Vector3 biasOmegaIncr = bias_i.gyroscope() - preintegratedMeasurements_.biasHat_.gyroscope();
 
     // we give some shorter name to rotations and translations
-    const Rot3 Rot_i = pose_i.rotation();
-    const Rot3 Rot_j = pose_j.rotation();
-    const Vector3 pos_i = pose_i.translation().vector();
-    const Vector3 pos_j = pose_j.translation().vector();
+    const Rot3& Rot_i = pose_i.rotation();
+    const Rot3& Rot_j = pose_j.rotation();
+    const Vector3& pos_j = pose_j.translation().vector();
 
     // Jacobian computation
     /* ---------------------------------------------------------------------------------------------------- */
@@ -208,22 +207,14 @@ public:
 
     // Evaluate residual error, according to [3]
     /* ---------------------------------------------------------------------------------------------------- */
-    const Vector3 fp =
-        pos_j - pos_i
-        - Rot_i.matrix() * (preintegratedMeasurements_.deltaPij_
-            + preintegratedMeasurements_.delPdelBiasAcc_ * biasAccIncr
-            + preintegratedMeasurements_.delPdelBiasOmega_ * biasOmegaIncr)
-            - vel_i * deltaTij
-            + skewSymmetric(omegaCoriolis_) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
-            - 0.5 * gravity_ * deltaTij*deltaTij;
+    PoseVelocityBias predictedState_j = ImuFactorBase::predict(pose_i, vel_i, bias_i, preintegratedMeasurements_,
+        gravity_, omegaCoriolis_, use2ndOrderCoriolis_);
 
-    const Vector3 fv =
-        vel_j - vel_i - Rot_i.matrix() * (preintegratedMeasurements_.deltaVij_
-            + preintegratedMeasurements_.delVdelBiasAcc_ * biasAccIncr
-            + preintegratedMeasurements_.delVdelBiasOmega_ * biasOmegaIncr)
-            + 2 * skewSymmetric(omegaCoriolis_) * vel_i * deltaTij  // Coriolis term
-            - gravity_ * deltaTij;
+    const Vector3 fp = pos_j - predictedState_j.pose.translation().vector();
 
+    const Vector3 fv = vel_j - predictedState_j.velocity;
+
+    // This is the same as: dR = (predictedState_j.pose.translation()).between(Rot_j)
     const Vector3 fR = Rot3::Logmap(fRhat);
 
     Vector r(9); r << fp, fv, fR;
@@ -241,8 +232,8 @@ public:
     const Vector3 biasAccIncr = bias_i.accelerometer() - preintegratedMeasurements.biasHat_.accelerometer();
     const Vector3 biasOmegaIncr = bias_i.gyroscope() - preintegratedMeasurements.biasHat_.gyroscope();
 
-    const Rot3 Rot_i = pose_i.rotation();
-    const Vector3 pos_i = pose_i.translation().vector();
+    const Rot3& Rot_i = pose_i.rotation();
+    const Vector3& pos_i = pose_i.translation().vector();
 
     // Predict state at time j
     /* ---------------------------------------------------------------------------------------------------- */
