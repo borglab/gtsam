@@ -15,12 +15,14 @@
  * @brief test CalibratedCamera class
  */
 
-#include <iostream>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/geometry/CalibratedCamera.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;

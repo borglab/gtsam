@@ -361,10 +361,10 @@ public:
       const Point3& point, //
       OptionalJacobian<1, DimC> Dcamera = boost::none,
       OptionalJacobian<1, 3> Dpoint = boost::none) const {
-    Matrix16 Dpose;
-    double result = pose_.range(point, Dcamera ? &Dpose : 0, Dpoint);
+    Matrix16 Dpose_;
+    double result = pose_.range(point, Dcamera ? &Dpose_ : 0, Dpoint);
     if (Dcamera)
-      *Dcamera << Dpose, Eigen::Matrix<double, 1, DimK>::Zero();
+      *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
     return result;
   }
 
@@ -378,11 +378,11 @@ public:
   double range(
       const Pose3& pose, //
       OptionalJacobian<1, DimC> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dpose2 = boost::none) const {
-    Matrix16 Dpose;
-    double result = pose_.range(pose, Dcamera ? &Dpose : 0, Dpose2);
+      OptionalJacobian<1, 6> Dpose = boost::none) const {
+    Matrix16 Dpose_;
+    double result = pose_.range(pose, Dcamera ? &Dpose_ : 0, Dpose);
     if (Dcamera)
-      *Dcamera << Dpose, Eigen::Matrix<double, 1, DimK>::Zero();
+      *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
     return result;
   }
 
@@ -397,14 +397,17 @@ public:
   double range(
       const PinholeCamera<CalibrationB>& camera, //
       OptionalJacobian<1, DimC> Dcamera = boost::none,
-      OptionalJacobian<1, 6 + CalibrationB::Dim()> Dother = boost::none) const {
-    Matrix16 Dpose, Dpose2;
-    double result = pose_.range(camera.pose(), Dcamera ? &Dpose : 0,
+      OptionalJacobian<1, 6 + traits::dimension<CalibrationB>::value> Dother =
+          boost::none) const {
+    Matrix16 Dpose_, Dpose2;
+    double result = pose_.range(camera.pose(), Dcamera ? &Dpose_ : 0,
         Dother ? &Dpose2 : 0);
     if (Dcamera)
-      *Dcamera << Dpose, Eigen::Matrix<double, 1, DimK>::Zero();
-    if (Dother)
-      *Dother << Dpose2, Eigen::Matrix<double, 1, CalibrationB::DimC()>::Zero();
+      *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
+    if (Dother) {
+      Dother->setZero();
+      Dother->block(0, 0, 1, 6) = Dpose2;
+    }
     return result;
   }
 
@@ -419,7 +422,7 @@ public:
       const CalibratedCamera& camera, //
       OptionalJacobian<1, DimC> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dother = boost::none) const {
-    return range(camera.pose_, Dcamera, Dother);
+    return range(camera.pose(), Dcamera, Dother);
   }
 
 private:

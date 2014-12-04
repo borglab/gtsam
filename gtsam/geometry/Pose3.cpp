@@ -297,20 +297,24 @@ Pose3 Pose3::between(const Pose3& p2, OptionalJacobian<6,6> H1,
 }
 
 /* ************************************************************************* */
-double Pose3::range(const Point3& point, OptionalJacobian<1,6> H1,
-    OptionalJacobian<1,3> H2) const {
+double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
+    OptionalJacobian<1, 3> H2) const {
   if (!H1 && !H2)
     return transform_to(point).norm();
-  Matrix36 D1;
-  Matrix3 D2;
-  Point3 d = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0);
-  double x = d.x(), y = d.y(), z = d.z(), d2 = x * x + y * y + z * z, n = sqrt(
-      d2);
-  Matrix13 D_result_d ;
-  D_result_d << x / n, y / n, z / n;
-  if (H1) *H1 << D_result_d * D1;
-  if (H2) *H2 << D_result_d * D2;
-  return n;
+  else {
+    Matrix36 D1;
+    Matrix3 D2;
+    Point3 d = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0);
+    const double x = d.x(), y = d.y(), z = d.z(), d2 = x * x + y * y + z * z,
+        n = sqrt(d2);
+    Matrix13 D_result_d;
+    D_result_d << x / n, y / n, z / n;
+    if (H1)
+      *H1 = D_result_d * D1;
+    if (H2)
+      *H2 = D_result_d * D2;
+    return n;
+  }
 }
 
 /* ************************************************************************* */
