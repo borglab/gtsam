@@ -17,13 +17,22 @@ namespace traits {
 
 template <class Manifold>
 struct TangentVector {
-  typedef Eigen::VectorXd type;
+  //typedef XXX type;
 };
 
+// used to identify the manifold associated with a chart
 template <class Chart>
 struct Manifold {
-  typedef Chart::value_type type;
+  //typedef XXX type;
 };
+
+template <class Manifold>
+struct DefaultChart {
+  //typedef XXX type;
+};
+
+template <class Group>
+struct group_flavor {};
 
 struct additive_group_tag {};
 struct multiplicative_group_tag {};
@@ -35,20 +44,16 @@ class ManifoldConcept {
  public:
   typedef T Manifold;
   typedef traits::TangentVector<T>::type TangentVector;
-  typedef traits::DefaultChart<T> DefaultChart;
+  typedef traits::DefaultChart<T>::type DefaultChart;
   static const size_t dim = traits::dimension<T>::value;
 
   BOOST_CONCEPT_USAGE(ManifoldConcept) {
-
-    // assignable
-    T t2 = t;
-
-    TangentVector v;
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
-
+    // no direct usage for manifold since most usage is through a chart
   }
  private:
   Manifold p;
+  TangentVector v;
 };
 
 template<class C>
@@ -87,18 +92,18 @@ class GroupConcept {
     return (equal(compose(a, inverse(a)), identity))
         && (equal(between(a, b), compose(inverse(a), b)))
         && (equal(compose(a, between(a, b)), b))
-        && operator_usage(a, b, traits::group_flavor<Group>)
+        && operator_usage(a, b, traits::group_flavor<Group>);
   }
 
  private:
   Group p,q;
 
   bool operator_usage(const Group& a, const Group& b, const traits::multiplicative_group_tag&) {
-    return equals(compose(a, b), a*b);
+    return equal(compose(a, b), a*b);
 
   }
   bool operator_usage(const Group& a, const Group& b, const traits::additive_group_tag&) {
-    return equals(compose(a, b), a+b);
+    return equal(compose(a, b), a+b);
   }
 
 };
