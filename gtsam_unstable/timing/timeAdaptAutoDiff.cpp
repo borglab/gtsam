@@ -17,7 +17,7 @@
  */
 
 #include "timeLinearize.h"
-#include <gtsam_unstable/nonlinear/ceres_example.h>
+#include <gtsam/3rdparty/ceres/example.h>
 #include <gtsam_unstable/nonlinear/AdaptAutoDiff.h>
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>

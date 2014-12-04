@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/ceres_autodiff.h>
+#include <gtsam/3rdparty/ceres/autodiff.h>
 #include <gtsam/base/Manifold.h>
 
 namespace gtsam {

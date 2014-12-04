@@ -163,7 +163,7 @@
 #include <string>
 
 #include <gtsam/3rdparty/gtsam_eigen_includes.h>
-#include <gtsam_unstable/nonlinear/ceres_fpclassify.h>
+#include <gtsam/3rdparty/ceres/fpclassify.h>
 
 namespace ceres {
 
