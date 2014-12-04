@@ -30,7 +30,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   StereoPoint2 StereoCamera::project(const Point3& point,
-      OptionalJacobian<3,6> H1, OptionalJacobian<3,3> H2) const {
+      OptionalJacobian<3,6> H1, OptionalJacobian<3,3> H2,
+      OptionalJacobian<3,6> H3) const {
 
 #ifdef STEREOCAMERA_CHAIN_RULE
     const Point3 q = leftCamPose_.transform_to(point, H1, H2);
@@ -76,6 +77,9 @@ namespace gtsam {
         *H2 << d * (*H2);
       }
 #endif
+      if (H3)
+        // TODO, this is set to zero, as Cal3_S2Stereo cannot be optimized yet
+        H3->setZero();
     }
 
     // finally translate

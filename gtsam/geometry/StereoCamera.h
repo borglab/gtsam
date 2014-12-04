@@ -120,7 +120,8 @@ public:
    */
   StereoPoint2 project(const Point3& point,
       OptionalJacobian<3, 6> H1 = boost::none,
-      OptionalJacobian<3, 3> H2 = boost::none) const;
+      OptionalJacobian<3, 3> H2 = boost::none,
+      OptionalJacobian<3, 6> H3 = boost::none) const;
 
   /**
    *
