@@ -46,20 +46,6 @@ namespace gtsam {
  */
 
 /**
- * Struct to hold return variables by the Predict Function
- */
-struct PoseVelocityBias {
-  Pose3 pose;
-  Vector3 velocity;
-  imuBias::ConstantBias bias;
-
-  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
-      const imuBias::ConstantBias _bias) :
-        pose(_pose), velocity(_velocity), bias(_bias) {
-  }
-};
-
-/**
  * ImuFactor is a 5-ways factor involving previous state (pose and velocity of the vehicle at previous time step),
  * current state (pose and velocity at current time step), and the bias estimate. According to the
  * preintegration scheme proposed in [2], the ImuFactor includes many IMU measurements, which are
@@ -207,8 +193,10 @@ public:
 
   /// predicted states from IMU
   static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
-      const imuBias::ConstantBias& bias, const PreintegrationBase& preintegratedMeasurements,
-      const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
+      const imuBias::ConstantBias& bias_i, const PreintegrationBase& preintegratedMeasurements,
+      const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false){
+    return ImuFactorBase::Predict(pose_i, vel_i, bias_i, preintegratedMeasurements, gravity, omegaCoriolis, use2ndOrderCoriolis);
+  }
 
   private:
 

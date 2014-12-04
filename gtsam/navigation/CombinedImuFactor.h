@@ -46,20 +46,6 @@ namespace gtsam {
  */
 
 /**
- * Struct to hold all state variables of CombinedImuFactor returned by Predict function
- */
-struct PoseVelocityBias {
-  Pose3 pose;
-  Vector3 velocity;
-  imuBias::ConstantBias bias;
-
-  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
-      const imuBias::ConstantBias _bias) :
-        pose(_pose), velocity(_velocity), bias(_bias) {
-  }
-};
-
-/**
  * CombinedImuFactor is a 6-ways factor involving previous state (pose and velocity of the vehicle, as well as bias
  * at previous time step), and current state (pose, velocity, bias at current time step). According to the
  * preintegration scheme proposed in [2], the CombinedImuFactor includes many IMU measurements, which are
@@ -133,7 +119,7 @@ public:
 
     /// methods to access class variables
     Matrix measurementCovariance() const {return measurementCovariance_;}
-    Matrix PreintMeasCov() const { return preintMeasCov_;}
+    Matrix preintMeasCov() const { return preintMeasCov_;}
 
   private:
 
@@ -219,7 +205,9 @@ public:
   static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i,
       const PreintegrationBase& preintegratedMeasurements,
-      const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
+      const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false){
+    return ImuFactorBase::Predict(pose_i, vel_i, bias_i, preintegratedMeasurements, gravity, omegaCoriolis, use2ndOrderCoriolis);
+  }
 
 private:
 

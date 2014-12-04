@@ -34,6 +34,7 @@ namespace gtsam {
  */
 class PreintegrationBase {
 
+  friend class ImuFactorBase;
   friend class ImuFactor;
   friend class CombinedImuFactor;
 

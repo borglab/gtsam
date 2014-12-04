@@ -561,13 +561,11 @@ TEST(ImuFactor, PredictPositionAndVelocity){
     // Predict
     Pose3 x1;
     Vector3 v1(0, 0.0, 0.0);
-    PoseVelocity poseVelocity = factor.Predict(x1, v1, bias, pre_int_data, gravity, omegaCoriolis);
+    PoseVelocityBias poseVelocity = factor.Predict(x1, v1, bias, pre_int_data, gravity, omegaCoriolis);
     Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
     Vector3 expectedVelocity; expectedVelocity<<0,1,0;
     EXPECT(assert_equal(expectedPose, poseVelocity.pose));
     EXPECT(assert_equal(Vector(expectedVelocity), Vector(poseVelocity.velocity)));
-
-
 }
 
 /* ************************************************************************* */
@@ -595,7 +593,7 @@ TEST(ImuFactor, PredictRotation) {
     // Predict
     Pose3 x1;
     Vector3 v1(0, 0.0, 0.0);
-    PoseVelocity poseVelocity = factor.Predict(x1, v1, bias, pre_int_data, gravity, omegaCoriolis);
+    PoseVelocityBias poseVelocity = factor.Predict(x1, v1, bias, pre_int_data, gravity, omegaCoriolis);
     Pose3 expectedPose(Rot3().ypr(M_PI/10, 0, 0), Point3(0, 0, 0));
     Vector3 expectedVelocity; expectedVelocity<<0,0,0;
     EXPECT(assert_equal(expectedPose, poseVelocity.pose));
