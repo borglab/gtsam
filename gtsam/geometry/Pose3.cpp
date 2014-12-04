@@ -274,14 +274,14 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
 /* ************************************************************************* */
 Pose3 Pose3::compose(const Pose3& p2, OptionalJacobian<6,6> H1,
     OptionalJacobian<6,6> H2) const {
-  if (H1) *H1 << p2.inverse().AdjointMap();
-  if (H2) *H2 << I_6x6;
+  if (H1) *H1 = p2.inverse().AdjointMap();
+  if (H2) *H2 = I_6x6;
   return (*this) * p2;
 }
 
 /* ************************************************************************* */
 Pose3 Pose3::inverse(OptionalJacobian<6,6> H1) const {
-  if (H1) *H1 << -AdjointMap();
+  if (H1) *H1 = -AdjointMap();
   Rot3 Rt = R_.inverse();
   return Pose3(Rt, Rt * (-t_));
 }
@@ -291,8 +291,8 @@ Pose3 Pose3::inverse(OptionalJacobian<6,6> H1) const {
 Pose3 Pose3::between(const Pose3& p2, OptionalJacobian<6,6> H1,
     OptionalJacobian<6,6> H2) const {
   Pose3 result = inverse() * p2;
-  if (H1) *H1 << -result.inverse().AdjointMap();
-  if (H2) *H2 << I_6x6;
+  if (H1) *H1 = -result.inverse().AdjointMap();
+  if (H2) *H2 = I_6x6;
   return result;
 }
 
@@ -309,10 +309,8 @@ double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
         n = sqrt(d2);
     Matrix13 D_result_d;
     D_result_d << x / n, y / n, z / n;
-    if (H1)
-      *H1 = D_result_d * D1;
-    if (H2)
-      *H2 = D_result_d * D2;
+    if (H1) *H1 = D_result_d * D1;
+    if (H2) *H2 = D_result_d * D2;
     return n;
   }
 }

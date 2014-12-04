@@ -107,8 +107,8 @@ namespace gtsam {
     inline Point3 between(const Point3& p2,
         OptionalJacobian<3,3> H1=boost::none,
         OptionalJacobian<3,3> H2=boost::none) const {
-      if(H1) *H1 << -I_3x3;
-      if(H2) *H2 << I_3x3;
+      if(H1) *H1 = -I_3x3;
+      if(H2) *H2 = I_3x3;
       return p2 - *this;
     }
 
