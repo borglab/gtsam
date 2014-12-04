@@ -40,7 +40,7 @@ A given chart is implemented using a small class that defines the chart itself (
 * types:
   * `Manifold`, a pointer back to the type
 * valid expressions: 
-  * `v = Chart::local(p,q)`, the chart, from manifold to tangent space, think of it as *p (-) q*
+  * `v = Chart::local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*
   * `p = Chart::retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
 
 For many differential manifolds, an obvious mapping is the `exponential map`, which  associates straight lines in the tangent space with geodesics on the manifold (and it's inverse, the log map). However, there are two cases in which we deviate from this:
