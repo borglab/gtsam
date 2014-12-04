@@ -162,7 +162,7 @@ The group composition operation can be of two flavors:
 * `gtsam::traits::additive_group_tag`
 * `gtsam::traits::multiplicative_group_tag`
 
-which should be queryable by `gtsam::traits::group_flavor<T>`
+which should be queryable by `gtsam::traits::group_flavor<T>::tag`
 
 
 Manifold Example

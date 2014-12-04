@@ -66,6 +66,29 @@ class ChartConcept {
 
 };
 
+template<class G>
+class GroupConcept {
+ public:
+  typedef G Group;
+  static const Group identity = traits::identity<G>::value;
+
+  BOOST_CONCEPT_USAGE(GroupConcept) {
+    Group ip = inverse(p);
+    Group pq = compose(p, q);
+    Group d = between(p, q);
+    bool test = equal(p, q);
+  }
+
+  bool check_invariants(const Group& a, const Group& b) {
+    return (equal(compose(a, inverse(a)), identity))
+        && (equal(between(a, b), compose(inverse(a), b)))
+        && (equal(compose(a, between(a, b)), b));
+  }
+
+ private:
+  Group p,q;
+};
+
 } // namespace gtsam
 
 #endif /* CONCEPTS_H_ */
