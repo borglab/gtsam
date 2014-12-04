@@ -18,16 +18,9 @@
 
 #pragma once
 
-#include <cmath>
-#include <boost/optional.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Pose2.h>
+#include <cmath>
 
 namespace gtsam {
 
@@ -42,8 +35,9 @@ private:
   Pose3 pose_;
   Calibration K_;
 
-  // Get dimension of calibration type at compile time
-  static const int DimK = traits::dimension<Calibration>::value;
+  // Get dimensions of calibration type and This at compile time
+  static const int DimK = traits::dimension<Calibration>::value, //
+      DimC = 6 + DimK;
 
 public:
 
@@ -172,6 +166,18 @@ public:
   /// @name Manifold
   /// @{
 
+  /// Manifold dimension
+  inline size_t dim() const {
+    return DimC;
+  }
+
+  /// Manifold dimension
+  inline static size_t Dim() {
+    return DimC;
+  }
+
+  typedef Eigen::Matrix<double, DimC, 1> VectorK6;
+
   /// move a cameras according to d
   PinholeCamera retract(const Vector& d) const {
     if ((size_t) d.size() == 6)
@@ -181,24 +187,12 @@ public:
           calibration().retract(d.tail(calibration().dim())));
   }
 
-  typedef Eigen::Matrix<double, Dim(), 1> VectorK6;
-
   /// return canonical coordinate
   VectorK6 localCoordinates(const PinholeCamera& T2) const {
     VectorK6 d; // TODO: why does d.head<6>() not compile??
     d.head(6) = pose().localCoordinates(T2.pose());
     d.tail(DimK) = calibration().localCoordinates(T2.calibration());
     return d;
-  }
-
-  /// Manifold dimension
-  inline size_t dim() const {
-    return Dim();
-  }
-
-  /// Manifold dimension
-  inline static size_t Dim() {
-    return Dim();
   }
 
   /// @}
@@ -315,7 +309,7 @@ public:
    */
   Point2 project2(
       const Point3& pw, //
-      OptionalJacobian<2, Dim()> Dcamera = boost::none,
+      OptionalJacobian<2, DimC> Dcamera = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
     const Point3 pc = pose_.transform_to(pw);
@@ -359,85 +353,73 @@ public:
   /**
    * Calculate range to a landmark
    * @param point 3D location of landmark
-   * @param Dpose the optionally computed Jacobian with respect to pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dpoint the optionally computed Jacobian with respect to the landmark
    * @return range (double)
    */
   double range(
       const Point3& point, //
-      OptionalJacobian<1, 6> Dpose = boost::none,
+      OptionalJacobian<1, DimC> Dcamera = boost::none,
       OptionalJacobian<1, 3> Dpoint = boost::none) const {
-    double result = pose_.range(point, Dpose, Dpoint);
-    if (Dpose) {
-      // Add columns of zeros to Jacobian for calibration
-      Matrix& H1r(*Dpose);
-      H1r.conservativeResize(Eigen::NoChange, Dim());
-      H1r.block<1, DimK>(0, 6).setZero();
-    }
+    Matrix16 Dpose;
+    double result = pose_.range(point, Dcamera ? &Dpose : 0, Dpoint);
+    if (Dcamera)
+      *Dcamera << Dpose, Eigen::Matrix<double, 1, DimK>::Zero();
     return result;
   }
 
   /**
    * Calculate range to another pose
    * @param pose Other SO(3) pose
-   * @param Dpose the optionally computed Jacobian with respect to pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dpose2 the optionally computed Jacobian with respect to the other pose
    * @return range (double)
    */
   double range(
       const Pose3& pose, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpose2 = boost::none) const {
-    double result = pose_.range(pose, Dpose, Dpose2);
-    if (Dpose) {
-      // Add columns of zeros to Jacobian for calibration
-      Matrix& H1r(*Dpose);
-      H1r.conservativeResize(Eigen::NoChange, Dim());
-      H1r.block(0, 6, 1, DimK) = Matrix::Zero(1, DimK);
-    }
+      OptionalJacobian<1, DimC> Dcamera = boost::none,
+      OptionalJacobian<1, 6> Dpose2 = boost::none) const {
+    Matrix16 Dpose;
+    double result = pose_.range(pose, Dcamera ? &Dpose : 0, Dpose2);
+    if (Dcamera)
+      *Dcamera << Dpose, Eigen::Matrix<double, 1, DimK>::Zero();
     return result;
   }
 
   /**
    * Calculate range to another camera
    * @param camera Other camera
-   * @param Dpose the optionally computed Jacobian with respect to pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dother the optionally computed Jacobian with respect to the other camera
    * @return range (double)
    */
   template<class CalibrationB>
   double range(
       const PinholeCamera<CalibrationB>& camera, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dother = boost::none) const {
-    double result = pose_.range(camera.pose_, Dpose, Dother);
-    if (Dpose) {
-      // Add columns of zeros to Jacobian for calibration
-      Matrix& H1r(*Dpose);
-      H1r.conservativeResize(Eigen::NoChange, Dim());
-      H1r.block(0, 6, 1, DimK) = Matrix::Zero(1, DimK);
-    }
-    if (Dother) {
-      // Add columns of zeros to Jacobian for calibration
-      Matrix& H2r(*Dother);
-      H2r.conservativeResize(Eigen::NoChange, Dim());
-      H2r.block(0, 6, 1, DimK) = Matrix::Zero(1, DimK);
-    }
+      OptionalJacobian<1, DimC> Dcamera = boost::none,
+      OptionalJacobian<1, 6 + CalibrationB::Dim()> Dother = boost::none) const {
+    Matrix16 Dpose, Dpose2;
+    double result = pose_.range(camera.pose(), Dcamera ? &Dpose : 0,
+        Dother ? &Dpose2 : 0);
+    if (Dcamera)
+      *Dcamera << Dpose, Eigen::Matrix<double, 1, DimK>::Zero();
+    if (Dother)
+      *Dother << Dpose2, Eigen::Matrix<double, 1, CalibrationB::DimC()>::Zero();
     return result;
   }
 
   /**
    * Calculate range to another camera
    * @param camera Other camera
-   * @param Dpose the optionally computed Jacobian with respect to pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dother the optionally computed Jacobian with respect to the other camera
    * @return range (double)
    */
   double range(
       const CalibratedCamera& camera, //
-      OptionalJacobian<1, 6> Dpose = boost::none,
+      OptionalJacobian<1, DimC> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dother = boost::none) const {
-    return pose_.range(camera.pose_, Dpose, Dother);
+    return range(camera.pose_, Dcamera, Dother);
   }
 
 private:
