@@ -109,8 +109,8 @@ class FullyOverloadedFunction: public Function, public SignatureOverloads {
 public:
 
   bool addOverload(const std::string& name, const ArgumentList& args,
-      const ReturnValue& retVal, const Qualified& instName = Qualified(),
-      bool verbose = false) {
+      const ReturnValue& retVal, boost::optional<const Qualified> instName =
+          boost::none, bool verbose = false) {
     bool first = initializeOrCheck(name, instName, verbose);
     SignatureOverloads::push_back(args, retVal);
     return first;

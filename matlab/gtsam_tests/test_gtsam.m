@@ -1,5 +1,8 @@
 % Test runner script - runs each test 
 
+display 'Starting: testValues'
+testValues
+
 display 'Starting: testJacobianFactor'
 testJacobianFactor
 

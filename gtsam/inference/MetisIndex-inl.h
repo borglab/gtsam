@@ -26,8 +26,8 @@ namespace gtsam {
 /* ************************************************************************* */
 template<class FACTOR>
 void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
-  std::map<idx_t, FastSet<idx_t> > iAdjMap; // Stores a set of keys that are adjacent to key x, with  adjMap.first
-  std::map<idx_t, FastSet<idx_t> >::iterator iAdjMapIt;
+  std::map<int32_t, FastSet<int32_t> > iAdjMap; // Stores a set of keys that are adjacent to key x, with  adjMap.first
+  std::map<int32_t, FastSet<int32_t> >::iterator iAdjMapIt;
   std::set<Key> keySet;
 
   /* ********** Convert to CSR format ********** */
@@ -36,7 +36,7 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
   // starting at index xadj[i] and ending at(but not including)
   // index xadj[i + 1](i.e., adjncy[xadj[i]] through
   // and including adjncy[xadj[i + 1] - 1]).
-  idx_t keyCounter = 0;
+  int32_t keyCounter = 0;
 
   // First: Record a copy of each key inside the factorgraph and create a
   // key to integer mapping. This is referenced during the adjaceny step
@@ -58,7 +58,7 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
       BOOST_FOREACH(const Key& k1, *factors[i])
         BOOST_FOREACH(const Key& k2, *factors[i])
           if (k1 != k2) {
-            // Store both in Key and idx_t format
+            // Store both in Key and int32_t format
             int i = intKeyBMap_.left.at(k1);
             int j = intKeyBMap_.left.at(k2);
             iAdjMap[i].insert(iAdjMap[i].end(), j);
@@ -71,14 +71,14 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
 
   xadj_.push_back(0); // Always set the first index to zero
   for (iAdjMapIt = iAdjMap.begin(); iAdjMapIt != iAdjMap.end(); ++iAdjMapIt) {
-    std::vector<idx_t> temp;
+    std::vector<int32_t> temp;
     // Copy from the FastSet into a temporary vector
     std::copy(iAdjMapIt->second.begin(), iAdjMapIt->second.end(),
         std::back_inserter(temp));
     // Insert each index's set in order by appending them to the end of adj_
     adj_.insert(adj_.end(), temp.begin(), temp.end());
     //adj_.push_back(temp);
-    xadj_.push_back((idx_t) adj_.size());
+    xadj_.push_back((int32_t) adj_.size());
   }
 }
 

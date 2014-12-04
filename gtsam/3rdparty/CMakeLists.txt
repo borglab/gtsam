@@ -45,6 +45,8 @@ endif()
 option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
 add_subdirectory(metis)
 
+add_subdirectory(ceres)
+
 ############ NOTE:  When updating GeographicLib be sure to disable building their examples
 ############        and unit tests by commenting out their lines:
 # add_subdirectory (examples)

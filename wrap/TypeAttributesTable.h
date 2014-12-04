@@ -27,9 +27,9 @@
 
 namespace wrap {
 
-  // Forward declarations
-  class Class;
-  
+// Forward declarations
+class Class;
+
 /** Attributes about valid classes, both for classes defined in this module and
  * also those forward-declared from others.  At the moment this only contains
  * whether the class is virtual, which is used to know how to copy the class,
@@ -37,18 +37,33 @@ namespace wrap {
  */
 struct TypeAttributes {
   bool isVirtual;
-  TypeAttributes() : isVirtual(false) {}
-  TypeAttributes(bool isVirtual) : isVirtual(isVirtual) {}
+  TypeAttributes() :
+      isVirtual(false) {
+  }
+  TypeAttributes(bool isVirtual) :
+      isVirtual(isVirtual) {
+  }
 };
 
 /** Map of type names to attributes. */
-class TypeAttributesTable : public std::map<std::string, TypeAttributes> {
+class TypeAttributesTable {
+
+  std::map<std::string, TypeAttributes> table_;
+
 public:
-  TypeAttributesTable() {}
+
+  /// Constructor
+  TypeAttributesTable() {
+  }
 
   void addClasses(const std::vector<Class>& classes);
-  void addForwardDeclarations(const std::vector<ForwardDeclaration>& forwardDecls);
+  void addForwardDeclarations(
+      const std::vector<ForwardDeclaration>& forwardDecls);
 
+  /// Access attributes associated with key, informative failure
+  const TypeAttributes& attributes(const std::string& key) const;
+
+  /// Check that all virtual classes are properly defined
   void checkValidity(const std::vector<Class>& classes) const;
 };
 

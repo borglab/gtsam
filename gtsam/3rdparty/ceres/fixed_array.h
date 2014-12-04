@@ -34,8 +34,8 @@
 
 #include <cstddef>
 #include <gtsam/3rdparty/gtsam_eigen_includes.h>
-#include <gtsam_unstable/nonlinear/ceres_macros.h>
-#include <gtsam_unstable/nonlinear/ceres_manual_constructor.h>
+#include <gtsam/3rdparty/ceres/macros.h>
+#include <gtsam/3rdparty/ceres/manual_constructor.h>
 
 namespace ceres {
 namespace internal {

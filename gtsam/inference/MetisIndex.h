@@ -22,7 +22,6 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/3rdparty/metis/metis.h>
 
 // Boost bimap generates many ugly warnings in CLANG
 #ifdef __clang__
@@ -47,13 +46,13 @@ namespace gtsam {
 class GTSAM_EXPORT MetisIndex {
 public:
   typedef boost::shared_ptr<MetisIndex> shared_ptr;
-  typedef boost::bimap<Key, idx_t> bm_type;
+  typedef boost::bimap<Key, int32_t> bm_type;
 
 private:
-  FastVector<idx_t> xadj_; // Index of node's adjacency list in adj
-  FastVector<idx_t> adj_; // Stores ajacency lists of all nodes, appended into a single vector
-  FastVector<idx_t> iadj_; // Integer keys for passing into metis. One to one mapping with adj_;
-  boost::bimap<Key, idx_t> intKeyBMap_; // Stores Key <-> integer value relationship
+  FastVector<int32_t> xadj_; // Index of node's adjacency list in adj
+  FastVector<int32_t> adj_; // Stores ajacency lists of all nodes, appended into a single vector
+  FastVector<int32_t> iadj_; // Integer keys for passing into metis. One to one mapping with adj_;
+  boost::bimap<Key, int32_t> intKeyBMap_; // Stores Key <-> integer value relationship
   size_t nKeys_;
 
 public:
@@ -84,16 +83,16 @@ public:
   template<class FACTOR>
   void augment(const FactorGraph<FACTOR>& factors);
 
-  std::vector<idx_t> xadj() const {
+  std::vector<int32_t> xadj() const {
     return xadj_;
   }
-  std::vector<idx_t> adj() const {
+  std::vector<int32_t> adj() const {
     return adj_;
   }
   size_t nValues() const {
     return nKeys_;
   }
-  Key intToKey(idx_t value) const {
+  Key intToKey(int32_t value) const {
     assert(value >= 0);
     return intKeyBMap_.right.find(value)->second;
   }

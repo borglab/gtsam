@@ -67,23 +67,24 @@ namespace gtsam {
     /** print */
     virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
-      prior_.print("  prior mean: ");
+      traits::print<T>()(prior_, "  prior mean: ");
       this->noiseModel_->print("  noise model: ");
     }
 
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This* e = dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && this->prior_.equals(e->prior_, tol);
+      return e != NULL && Base::equals(*e, tol) && traits::equals<T>()(prior_, e->prior_, tol);
     }
 
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
     Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
-      if (H) (*H) = eye(p.dim());
+      DefaultChart<T> chart;
+      if (H) (*H) = eye(chart.getDimension(p));
       // manifold equivalent of h(x)-z -> log(z,h(x))
-      return prior_.localCoordinates(p);
+      return chart.local(prior_,p);
     }
 
     const VALUE & prior() const { return prior_; }
