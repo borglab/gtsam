@@ -192,10 +192,10 @@ public:
       boost::optional<Matrix&> H5 = boost::none) const;
 
   /// predicted states from IMU
-  static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
+  static PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i, const PreintegrationBase& preintegratedMeasurements,
       const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false){
-    return ImuFactorBase::Predict(pose_i, vel_i, bias_i, preintegratedMeasurements, gravity, omegaCoriolis, use2ndOrderCoriolis);
+    return ImuFactorBase::predict(pose_i, vel_i, bias_i, preintegratedMeasurements, gravity, omegaCoriolis, use2ndOrderCoriolis);
   }
 
   private:

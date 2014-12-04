@@ -85,7 +85,7 @@ public:
 
   /// Predict state at time j
   //------------------------------------------------------------------------------
-  static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
+  static PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i,
       const PreintegrationBase& preintegratedMeasurements,
       const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis){
