@@ -172,6 +172,44 @@ The group composition operation can be of two flavors:
 
 which should be queryable by `gtsam::traits::group_flavor<T>::type`
 
+A tag can be used for [tag dispatching](http://www.boost.org/community/generic_programming.html#tag_dispatching),
+e.g., below is a generic compose:
+
+```
+#!c++
+  namespace detail {
+    template <class T>
+    T compose(const T& p, const T& q, additive_group_tag) {
+      return p + q;
+    }
+
+    template <class T>
+    T compose(const T& p, const T& q, multiplicative_group_tag) {
+      return p * q;
+    }
+  }
+
+  template <T>
+  T compose(const T& p, const T& q) {
+    return detail::compose(p, q, traits::group_flavor<T>::type);
+  }
+```
+
+Tags also facilitate meta-programming. Taking a leaf from [The boost Graph library](http://www.boost.org/doc/libs/1_40_0/boost/graph/graph_traits.hpp),
+tags can be used to create useful meta-functions, like `is_lie_group`, below.
+
+```
+#!c++
+    template <typename T>
+    struct is_lie_group
+        : mpl::bool_<
+            is_convertible<
+                typename structure_category<T>::type,
+                lie_group_tag
+            >::value
+        >
+    { };
+```
 
 Manifold Example
 ----------------
