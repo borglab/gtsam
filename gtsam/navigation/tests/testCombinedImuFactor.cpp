@@ -184,7 +184,7 @@ TEST( CombinedImuFactor, ErrorWithBiases )
     // Create factor
     ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
-    noiseModel::Gaussian::shared_ptr Combinedmodel = noiseModel::Gaussian::Covariance(Combined_pre_int_data.PreintMeasCov());
+    noiseModel::Gaussian::shared_ptr Combinedmodel = noiseModel::Gaussian::Covariance(Combined_pre_int_data.preintMeasCov());
     CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), Combined_pre_int_data, gravity, omegaCoriolis);
 
 
@@ -284,13 +284,13 @@ TEST(CombinedImuFactor, PredictPositionAndVelocity){
   for (int i = 0; i<1000; ++i)   Combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
     // Create factor
-    noiseModel::Gaussian::shared_ptr Combinedmodel = noiseModel::Gaussian::Covariance(Combined_pre_int_data.PreintMeasCov());
+    noiseModel::Gaussian::shared_ptr Combinedmodel = noiseModel::Gaussian::Covariance(Combined_pre_int_data.preintMeasCov());
     CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), Combined_pre_int_data, gravity, omegaCoriolis);
 
     // Predict
     Pose3 x1;
     Vector3 v1(0, 0.0, 0.0);
-    PoseVelocityBias poseVelocityBias = Combinedfactor.Predict(x1, v1, bias, Combined_pre_int_data, gravity, omegaCoriolis);
+    PoseVelocityBias poseVelocityBias = Combinedfactor.predict(x1, v1, bias, Combined_pre_int_data, gravity, omegaCoriolis);
     Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
     Vector3 expectedVelocity; expectedVelocity<<0,1,0;
     EXPECT(assert_equal(expectedPose, poseVelocityBias.pose));
@@ -319,7 +319,7 @@ TEST(CombinedImuFactor, PredictRotation) {
   // Predict
   Pose3 x(Rot3().ypr(0,0, 0), Point3(0,0,0));
   Vector3 v(0,0,0);
-  PoseVelocityBias poseVelocityBias = Combinedfactor.Predict(x,v,bias, Combined_pre_int_data, gravity, omegaCoriolis);
+  PoseVelocityBias poseVelocityBias = Combinedfactor.predict(x,v,bias, Combined_pre_int_data, gravity, omegaCoriolis);
   Pose3 expectedPose(Rot3().ypr(M_PI/10, 0,0), Point3(0,0,0));
   EXPECT(assert_equal(expectedPose, poseVelocityBias.pose, tol));
 }
