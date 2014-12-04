@@ -63,7 +63,7 @@ struct PoseVelocity {
  * Note that this factor does not force "temporal consistency" of the biases (which are usually
  * slowly varying quantities), see also CombinedImuFactor for more details.
  */
-class ImuFactor: public NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias> {
+class ImuFactor: public NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias>, public ImuBase {
 public:
 
   /**
@@ -141,11 +141,6 @@ public:
   typedef NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias> Base;
 
   PreintegratedMeasurements preintegratedMeasurements_;
-  Vector3 gravity_;
-  Vector3 omegaCoriolis_;
-  boost::optional<Pose3> body_P_sensor_;        ///< The pose of the sensor in the body frame
-
-  bool use2ndOrderCoriolis_; ///< Controls whether higher order terms are included when calculating the Coriolis Effect
 
   public:
 
@@ -194,10 +189,6 @@ public:
 
   const PreintegratedMeasurements& preintegratedMeasurements() const {
     return preintegratedMeasurements_; }
-
-  const Vector3& gravity() const { return gravity_; }
-
-  const Vector3& omegaCoriolis() const { return omegaCoriolis_; }
 
   /** implement functions needed to derive from Factor */
 

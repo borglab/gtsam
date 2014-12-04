@@ -70,7 +70,7 @@ struct PoseVelocityBias {
  * 3) The covariance matrix of the CombinedPreintegratedMeasurements preserves the correlation between the bias uncertainty
  * and the preintegrated measurements uncertainty.
  */
-class CombinedImuFactor: public NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias> {
+class CombinedImuFactor: public NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias>, public ImuBase{
 public:
 
   /** CombinedPreintegratedMeasurements accumulates (integrates) the IMU measurements (rotation rates and accelerations)
@@ -152,11 +152,6 @@ private:
   typedef NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias> Base;
 
   CombinedPreintegratedMeasurements preintegratedMeasurements_;
-  Vector3 gravity_;
-  Vector3 omegaCoriolis_;
-  boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame
-
-  bool use2ndOrderCoriolis_; ///< Controls whether higher order terms are included when calculating the Coriolis Effect
 
 public:
 
@@ -206,10 +201,6 @@ public:
 
   const CombinedPreintegratedMeasurements& preintegratedMeasurements() const {
     return preintegratedMeasurements_; }
-
-  const Vector3& gravity() const { return gravity_; }
-
-  const Vector3& omegaCoriolis() const { return omegaCoriolis_; }
 
   /** implement functions needed to derive from Factor */
 

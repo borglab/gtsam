@@ -140,7 +140,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
 // ImuFactor methods
 //------------------------------------------------------------------------------
 ImuFactor::ImuFactor() :
-    preintegratedMeasurements_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3), use2ndOrderCoriolis_(false){}
+    ImuBase(), preintegratedMeasurements_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3) {}
 
 //------------------------------------------------------------------------------
 ImuFactor::ImuFactor(
@@ -150,12 +150,8 @@ ImuFactor::ImuFactor(
     boost::optional<const Pose3&> body_P_sensor,
     const bool use2ndOrderCoriolis) :
         Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov_), pose_i, vel_i, pose_j, vel_j, bias),
-        preintegratedMeasurements_(preintegratedMeasurements),
-        gravity_(gravity),
-        omegaCoriolis_(omegaCoriolis),
-        body_P_sensor_(body_P_sensor),
-        use2ndOrderCoriolis_(use2ndOrderCoriolis){
-}
+        ImuBase(gravity, omegaCoriolis, body_P_sensor, use2ndOrderCoriolis),
+        preintegratedMeasurements_(preintegratedMeasurements) {}
 
 //------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr ImuFactor::clone() const {

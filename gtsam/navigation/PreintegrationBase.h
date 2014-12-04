@@ -66,7 +66,7 @@ public:
     deltaRij_(Rot3()), deltaTij_(0.0),
     delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
     delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
-    delRdelBiasOmega_(Z_3x3) { }
+    delRdelBiasOmega_(Z_3x3) {}
 
   /// Needed for testable
   void print(const std::string& s) const {
@@ -197,6 +197,31 @@ private:
     ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
     ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
+};
+
+class ImuBase {
+
+protected:
+
+  Vector3 gravity_;
+  Vector3 omegaCoriolis_;
+  boost::optional<Pose3> body_P_sensor_;        ///< The pose of the sensor in the body frame
+  bool use2ndOrderCoriolis_; ///< Controls whether higher order terms are included when calculating the Coriolis Effect
+
+public:
+
+  ImuBase() :
+    gravity_(Vector3(0.0,0.0,9.81)), omegaCoriolis_(Vector3(0.0,0.0,0.0)),
+    body_P_sensor_(boost::none), use2ndOrderCoriolis_(false) {}
+
+  ImuBase(const Vector3& gravity, const Vector3& omegaCoriolis,
+      boost::optional<const Pose3&> body_P_sensor = boost::none, const bool use2ndOrderCoriolis = false) :
+        gravity_(gravity), omegaCoriolis_(omegaCoriolis),
+        body_P_sensor_(body_P_sensor), use2ndOrderCoriolis_(use2ndOrderCoriolis) {}
+
+  const Vector3& gravity() const { return gravity_; }
+  const Vector3& omegaCoriolis() const { return omegaCoriolis_; }
+
 };
 
 } /// namespace gtsam
