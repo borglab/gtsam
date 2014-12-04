@@ -80,24 +80,24 @@ class GroupConcept {
     Group pq = compose(p, q);
     Group d = between(p, q);
     bool test = equal(p, q);
-    operator_usage(p, q, traits::group_flavor<Group>::tag);
+    bool test2 = operator_usage(p, q, traits::group_flavor<Group>);
   }
 
   bool check_invariants(const Group& a, const Group& b) {
     return (equal(compose(a, inverse(a)), identity))
         && (equal(between(a, b), compose(inverse(a), b)))
         && (equal(compose(a, between(a, b)), b))
-        && operator_usage(a, b, traits::group_flavor<Group>::tag)
+        && operator_usage(a, b, traits::group_flavor<Group>)
   }
 
  private:
   Group p,q;
 
-  bool operator_usage(const Group& a, const Group& b, traits::multiplicative_group_tag) {
+  bool operator_usage(const Group& a, const Group& b, const traits::multiplicative_group_tag&) {
     return equals(compose(a, b), a*b);
 
   }
-  bool operator_usage(const Group& a, const Group& b, traits::additive_group_tag) {
+  bool operator_usage(const Group& a, const Group& b, const traits::additive_group_tag&) {
     return equals(compose(a, b), a+b);
   }
 
