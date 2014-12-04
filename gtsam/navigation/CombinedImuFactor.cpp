@@ -206,20 +206,16 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
     boost::optional<Matrix&> H3, boost::optional<Matrix&> H4,
     boost::optional<Matrix&> H5, boost::optional<Matrix&> H6) const {
 
-  // Bias evolution model: random walk
-  const Vector3 fbiasAcc = bias_j.accelerometer() - bias_i.accelerometer();
-  const Vector3 fbiasOmega = bias_j.gyroscope() - bias_i.gyroscope();
-
-  // error wrt preintegrated position, velocity, rotation
-  Vector r_pvR(9);
-
   // if we need the jacobians
   if(H1 || H2 || H3 || H4 || H5 || H6){
-    Matrix H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR; // pvR = mnemonic: position (p), velocity (v), rotation (R)
+    Matrix H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR, Hbias_i, Hbias_j; // pvR = mnemonic: position (p), velocity (v), rotation (R)
 
-    // include errors wrt preintegrated measurements
-    r_pvR << ImuFactorBase::computeErrorAndJacobians(preintegratedMeasurements_, pose_i, vel_i, pose_j, vel_j, bias_i,
+    // error wrt preintegrated measurements
+    Vector r_pvR(9); r_pvR << ImuFactorBase::computeErrorAndJacobians(preintegratedMeasurements_, pose_i, vel_i, pose_j, vel_j, bias_i,
         H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR);
+
+    // error wrt bias evolution model (random walk)
+    Vector6 fbias = bias_j.between(bias_i, Hbias_j, Hbias_i).vector(); // [bias_j.acc - bias_i.acc; bias_j.gyr - bias_i.gyr]
 
     if(H1) {
       H1->resize(15,6);
@@ -249,22 +245,25 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
       H5->resize(15,6);
       H5->block<9,6>(0,0) = H5_pvR;
       // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
-      H5->block<6,6>(0,9) = - Matrix::Identity(6,6);
+      H5->block<6,6>(0,9) = Hbias_i;
     }
     if(H6) {
       H6->resize(15,6);
       H6->block<9,6>(0,0) = Matrix::Zero(6,6);
       // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
-      H6->block<6,6>(0,9) = Matrix::Identity(6,6);
+      H6->block<6,6>(0,9) = Hbias_j;
     }
-    Vector r(15); r << r_pvR, fbiasAcc, fbiasOmega; // vector of size 15
+    Vector r(15); r << r_pvR, fbias; // vector of size 15
     return r;
   }
   // else, only compute the error vector:
-  // Evaluate residual error, including the model for bias evolution
-  r_pvR << ImuFactorBase::computeErrorAndJacobians(preintegratedMeasurements_, pose_i, vel_i, pose_j, vel_j, bias_i,
+  // error wrt preintegrated measurements
+  Vector r_pvR(9); r_pvR << ImuFactorBase::computeErrorAndJacobians(preintegratedMeasurements_, pose_i, vel_i, pose_j, vel_j, bias_i,
       boost::none, boost::none, boost::none, boost::none, boost::none);
-  Vector r(15); r << r_pvR, fbiasAcc, fbiasOmega; // vector of size 15
+  // error wrt bias evolution model (random walk)
+  Vector6 fbias = bias_j.between(bias_i).vector(); // [bias_j.acc - bias_i.acc; bias_j.gyr - bias_i.gyr]
+  // overall error
+  Vector r(15); r << r_pvR, fbias; // vector of size 15
   return r;
 }
 

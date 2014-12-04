@@ -52,15 +52,24 @@ protected:
 
 public:
 
+  /** Default constructor - only use for serialization */
   ImuFactorBase() :
     gravity_(Vector3(0.0,0.0,9.81)), omegaCoriolis_(Vector3(0.0,0.0,0.0)),
     body_P_sensor_(boost::none), use2ndOrderCoriolis_(false) {}
 
+  /**
+   *  Default constructor, stores basic quantities required by the Imu factors
+   * @param gravity Gravity vector expressed in the global frame
+   * @param omegaCoriolis Rotation rate of the global frame w.r.t. an inertial frame
+   * @param body_P_sensor Optional pose of the sensor frame in the body frame
+   * @param use2ndOrderCoriolis When true, the second-order term is used in the calculation of the Coriolis Effect
+   */
   ImuFactorBase(const Vector3& gravity, const Vector3& omegaCoriolis,
       boost::optional<const Pose3&> body_P_sensor = boost::none, const bool use2ndOrderCoriolis = false) :
         gravity_(gravity), omegaCoriolis_(omegaCoriolis),
         body_P_sensor_(body_P_sensor), use2ndOrderCoriolis_(use2ndOrderCoriolis) {}
 
+  /// Methods to access class variables
   const Vector3& gravity() const { return gravity_; }
   const Vector3& omegaCoriolis() const { return omegaCoriolis_; }
 
@@ -91,6 +100,7 @@ public:
       boost::optional<Matrix&> H3,  boost::optional<Matrix&> H4, boost::optional<Matrix&> H5) const{
 
     const double& deltaTij = preintegratedMeasurements_.deltaTij_;
+    // We need the mistmatch w.r.t. the biases used for preintegration
     const Vector3 biasAccIncr = bias_i.accelerometer() - preintegratedMeasurements_.biasHat_.accelerometer();
     const Vector3 biasOmegaIncr = bias_i.gyroscope() - preintegratedMeasurements_.biasHat_.gyroscope();
 
@@ -100,7 +110,7 @@ public:
     const Vector3 pos_i = pose_i.translation().vector();
     const Vector3 pos_j = pose_j.translation().vector();
 
-    // We compute factor's Jacobians
+    // Jacobian computation
     /* ---------------------------------------------------------------------------------------------------- */
     const Rot3 deltaRij_biascorrected = preintegratedMeasurements_.deltaRij_.retract(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
     // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
@@ -114,11 +124,8 @@ public:
         Rot3::Expmap( theta_biascorrected_corioliscorrected );
 
     const Rot3 fRhat = deltaRij_biascorrected_corioliscorrected.between(Rot_i.between(Rot_j));
-
     const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_biascorrected_corioliscorrected);
-
     const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
-
     const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
 
     if(H1) {
@@ -134,7 +141,6 @@ public:
         dfPdPi = - Rot_i.matrix();
         dfVdPi = Z_3x3;
       }
-
       (*H1) <<
           // dfP/dRi
           Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij_
@@ -151,7 +157,6 @@ public:
           // dfR/dPi
           Z_3x3;
     }
-
     if(H2) {
       H2->resize(9,3);
       (*H2) <<
@@ -164,7 +169,6 @@ public:
           // dfR/dVi
           Z_3x3;
     }
-
     if(H3) {
       H3->resize(9,6);
       (*H3) <<
@@ -175,7 +179,6 @@ public:
           // dfR/dPosej
           Jrinv_fRhat *  ( I_3x3 ), Z_3x3;
     }
-
     if(H4) {
       H4->resize(9,3);
       (*H4) <<
@@ -186,7 +189,6 @@ public:
           // dfR/dVj
           Z_3x3;
     }
-
     if(H5) {
       const Matrix3 Jrinv_theta_bc = Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
       const Matrix3 Jr_JbiasOmegaIncr = Rot3::rightJacobianExpMapSO3(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr);
