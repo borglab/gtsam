@@ -229,9 +229,8 @@ static double range0(const Camera& camera, const Point3& point) {
 }
 
 /* ************************************************************************* */
-typedef Eigen::Matrix<double,1,11> Matrix1_11;
 TEST( PinholeCamera, range0) {
-  Matrix1_11 D1; Matrix13 D2;
+  Matrix D1; Matrix D2;
   double result = camera.range(point1, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range0, camera, point1);
   Matrix Hexpected2 = numericalDerivative22(range0, camera, point1);
@@ -248,7 +247,7 @@ static double range1(const Camera& camera, const Pose3& pose) {
 
 /* ************************************************************************* */
 TEST( PinholeCamera, range1) {
-  Matrix1_11 D1; Matrix16 D2;
+  Matrix D1; Matrix D2;
   double result = camera.range(pose1, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range1, camera, pose1);
   Matrix Hexpected2 = numericalDerivative22(range1, camera, pose1);
@@ -267,7 +266,7 @@ static double range2(const Camera& camera, const Camera2& camera2) {
 
 /* ************************************************************************* */
 TEST( PinholeCamera, range2) {
-  Matrix1_11 D1; Matrix19 D2;
+  Matrix D1; Matrix D2;
   double result = camera.range<Cal3Bundler>(camera2, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range2, camera, camera2);
   Matrix Hexpected2 = numericalDerivative22(range2, camera, camera2);
@@ -284,7 +283,7 @@ static double range3(const Camera& camera, const CalibratedCamera& camera3) {
 
 /* ************************************************************************* */
 TEST( PinholeCamera, range3) {
-  Matrix1_11 D1; Matrix16 D2;
+  Matrix D1; Matrix D2;
   double result = camera.range(camera3, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range3, camera, camera3);
   Matrix Hexpected2 = numericalDerivative22(range3, camera, camera3);

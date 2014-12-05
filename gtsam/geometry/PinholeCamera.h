@@ -397,16 +397,20 @@ public:
   double range(
       const PinholeCamera<CalibrationB>& camera, //
       OptionalJacobian<1, DimC> Dcamera = boost::none,
-      OptionalJacobian<1, 6 + traits::dimension<CalibrationB>::value> Dother =
+//      OptionalJacobian<1, 6 + traits::dimension<CalibrationB>::value> Dother =
+       boost::optional<Matrix&> Dother =
           boost::none) const {
-    Matrix16 Dpose_, Dpose2;
-    double result = pose_.range(camera.pose(), Dcamera ? &Dpose_ : 0,
-        Dother ? &Dpose2 : 0);
-    if (Dcamera)
-      *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
+    Matrix16 Dcamera_, Dother_;
+    double result = pose_.range(camera.pose(), Dcamera ? &Dcamera_ : 0,
+        Dother ? &Dother_ : 0);
+    if (Dcamera) {
+       Dcamera->resize(1, 6 + DimK);
+      *Dcamera << Dcamera_, Eigen::Matrix<double, 1, DimK>::Zero();
+    }
     if (Dother) {
+      Dother->resize(1, 6+traits::dimension<CalibrationB>::value);
       Dother->setZero();
-      Dother->block(0, 0, 1, 6) = Dpose2;
+      Dother->block(0, 0, 1, 6) = Dother_;
     }
     return result;
   }
