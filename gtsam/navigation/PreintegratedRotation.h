@@ -112,6 +112,12 @@ public:
     return theta_biascorrected;
   }
 
+  /// Integrate coriolis correction in body frame rot_i
+  Vector3 integrateCoriolis(const Rot3& rot_i,
+      const Vector3& omegaCoriolis) const {
+    return rot_i.transpose() * omegaCoriolis * deltaTij();
+  }
+
 private:
   /** Serialization function */
   friend class boost::serialization::access;

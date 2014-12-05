@@ -176,24 +176,26 @@ public:
     const Rot3& Rot_i = pose_i.rotation();
     const Vector3& pos_i = pose_i.translation().vector();
 
+    const Matrix3 coriolisHat = skewSymmetric(omegaCoriolis);
+
     // Predict state at time j
     /* ---------------------------------------------------------------------------------------------------- */
     Vector3 pos_j =  pos_i + Rot_i.matrix() * (deltaPij()
         + delPdelBiasAcc() * biasAccIncr
         + delPdelBiasOmega() * biasOmegaIncr)
         + vel_i * deltaTij()
-        - skewSymmetric(omegaCoriolis) * vel_i * deltaTij()*deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
+        - coriolisHat * vel_i * deltaTij()*deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
         + 0.5 * gravity * deltaTij()*deltaTij();
 
     Vector3 vel_j = Vector3(vel_i + Rot_i.matrix() * (deltaVij()
         + delVdelBiasAcc() * biasAccIncr
         + delVdelBiasOmega() * biasOmegaIncr)
-        - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij()  // Coriolis term
+        - 2 * coriolisHat * vel_i * deltaTij()  // Coriolis term
         + gravity * deltaTij());
 
     if(use2ndOrderCoriolis){
-      pos_j += - 0.5 * skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij()*deltaTij();  // 2nd order coriolis term for position
-      vel_j += - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij(); // 2nd order term for velocity
+      pos_j += - 0.5 * coriolisHat * coriolisHat * pos_i * deltaTij()*deltaTij();  // 2nd order coriolis term for position
+      vel_j += - coriolisHat * coriolisHat * pos_i * deltaTij(); // 2nd order term for velocity
     }
 
     const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);
@@ -201,11 +203,11 @@ public:
     // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
 
     Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
-    Vector3 theta_biascorrected_corioliscorrected = theta_biascorrected  -
+    Vector3 theta_corrected = theta_biascorrected  -
         Rot_i.inverse().matrix() * omegaCoriolis * deltaTij(); // Coriolis term
-    const Rot3 deltaRij_biascorrected_corioliscorrected =
-        Rot3::Expmap( theta_biascorrected_corioliscorrected );
-    const Rot3 Rot_j = Rot_i.compose( deltaRij_biascorrected_corioliscorrected  );
+    const Rot3 deltaRij_corrected =
+        Rot3::Expmap( theta_corrected );
+    const Rot3 Rot_j = Rot_i.compose( deltaRij_corrected  );
 
     Pose3 pose_j = Pose3( Rot_j, Point3(pos_j) );
     return PoseVelocityBias(pose_j, vel_j, bias_i); // bias is predicted as a constant
@@ -221,13 +223,13 @@ public:
       boost::optional<Matrix&> H3, boost::optional<Matrix&> H4,
       boost::optional<Matrix&> H5) const {
 
-    // We need the mistmatch w.r.t. the biases used for preintegration
+    // We need the mismatch w.r.t. the biases used for preintegration
     const Vector3 biasAccIncr = bias_i.accelerometer() - biasHat().accelerometer();
     const Vector3 biasOmegaIncr = bias_i.gyroscope() - biasHat().gyroscope();
 
     // we give some shorter name to rotations and translations
-    const Rot3& Rot_i = pose_i.rotation();
-    const Rot3& Rot_j = pose_j.rotation();
+    const Rot3& Ri = pose_i.rotation();
+    const Rot3& Rj = pose_j.rotation();
     const Vector3& pos_j = pose_j.translation().vector();
 
     // Jacobian computation
@@ -235,19 +237,20 @@ public:
     // Get Get so<3> version of bias corrected rotation
     // If H5 is asked for, we will need the Jacobian, which we store in H5
     // H5 will then be corrected below to take into account the Coriolis effect
-    Vector3 theta_biascorrected =
-        biascorrectedThetaRij(biasOmegaIncr, H5);
+    Vector3 theta_biascorrected = biascorrectedThetaRij(biasOmegaIncr, H5);
 
-    Vector3 theta_biascorrected_corioliscorrected = theta_biascorrected  -
-        Rot_i.inverse().matrix() * omegaCoriolis * deltaTij(); // Coriolis term
+    // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
+    const Vector3 coriolis = integrateCoriolis(Ri, omegaCoriolis);
+    const Matrix3 coriolisHat = skewSymmetric(omegaCoriolis);
+    Vector3 theta_corrected = theta_biascorrected  - coriolis;
 
-    const Rot3 deltaRij_biascorrected_corioliscorrected =
-        Rot3::Expmap( theta_biascorrected_corioliscorrected );
+    // Prediction
+    const Rot3 deltaRij_corrected = Rot3::Expmap( theta_corrected );
 
     // TODO: these are not always needed
-    const Rot3 fRhat = deltaRij_biascorrected_corioliscorrected.between(Rot_i.between(Rot_j));
-    const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_biascorrected_corioliscorrected);
-    const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis * deltaTij());
+    const Rot3 fRhat = deltaRij_corrected.between(Ri.between(Rj));
+    const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_corrected);
+    const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Ri.inverse().matrix() * omegaCoriolis * deltaTij());
     const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
 
     if(H1) {
@@ -256,26 +259,26 @@ public:
       Matrix3 dfPdPi;
       Matrix3 dfVdPi;
       if(use2ndOrderCoriolis){
-        dfPdPi = - Rot_i.matrix() + 0.5 * skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * Rot_i.matrix() * deltaTij()*deltaTij();
-        dfVdPi = skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * Rot_i.matrix() * deltaTij();
+        dfPdPi = - Ri.matrix() + 0.5 * coriolisHat * coriolisHat * Ri.matrix() * deltaTij()*deltaTij();
+        dfVdPi = coriolisHat * coriolisHat * Ri.matrix() * deltaTij();
       }
       else{
-        dfPdPi = - Rot_i.matrix();
+        dfPdPi = - Ri.matrix();
         dfVdPi = Z_3x3;
       }
       (*H1) <<
           // dfP/dRi
-          Rot_i.matrix() * skewSymmetric(deltaPij()
+          Ri.matrix() * skewSymmetric(deltaPij()
           + delPdelBiasOmega() * biasOmegaIncr + delPdelBiasAcc() * biasAccIncr),
           // dfP/dPi
           dfPdPi,
           // dfV/dRi
-          Rot_i.matrix() * skewSymmetric(deltaVij()
+          Ri.matrix() * skewSymmetric(deltaVij()
           + delVdelBiasOmega() * biasOmegaIncr + delVdelBiasAcc() * biasAccIncr),
           // dfV/dPi
           dfVdPi,
           // dfR/dRi
-          Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
+          Jrinv_fRhat *  (- Rj.between(Ri).matrix() - fRhat.inverse().matrix() * Jtheta),
           // dfR/dPi
           Z_3x3;
     }
@@ -284,10 +287,10 @@ public:
       (*H2) <<
           // dfP/dVi
           - I_3x3 * deltaTij()
-          + skewSymmetric(omegaCoriolis) * deltaTij() * deltaTij(),  // Coriolis term - we got rid of the 2 wrt ins paper
+          + coriolisHat * deltaTij() * deltaTij(),  // Coriolis term - we got rid of the 2 wrt ins paper
           // dfV/dVi
           - I_3x3
-          + 2 * skewSymmetric(omegaCoriolis) * deltaTij(), // Coriolis term
+          + 2 * coriolisHat * deltaTij(), // Coriolis term
           // dfR/dVi
           Z_3x3;
     }
@@ -295,7 +298,7 @@ public:
       H3->resize(9,6);
       (*H3) <<
           // dfP/dPosej
-          Z_3x3, Rot_j.matrix(),
+          Z_3x3, Rj.matrix(),
           // dfV/dPosej
           Matrix::Zero(3,6),
           // dfR/dPosej
@@ -317,11 +320,11 @@ public:
       H5->resize(9,6);
       (*H5) <<
           // dfP/dBias
-          - Rot_i.matrix() * delPdelBiasAcc(),
-          - Rot_i.matrix() * delPdelBiasOmega(),
+          - Ri.matrix() * delPdelBiasAcc(),
+          - Ri.matrix() * delPdelBiasOmega(),
           // dfV/dBias
-          - Rot_i.matrix() * delVdelBiasAcc(),
-          - Rot_i.matrix() * delVdelBiasOmega(),
+          - Ri.matrix() * delVdelBiasAcc(),
+          - Ri.matrix() * delVdelBiasOmega(),
           // dfR/dBias
           Matrix::Zero(3,3),
           Jrinv_fRhat * ( - fRhat.inverse().matrix() * JbiasOmega);

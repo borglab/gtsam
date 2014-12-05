@@ -182,8 +182,7 @@ void AHRSFactor::print(const string& s,
 //------------------------------------------------------------------------------
 bool AHRSFactor::equals(const NonlinearFactor& other, double tol) const {
   const This *e = dynamic_cast<const This*>(&other);
-  return e != NULL && Base::equals(*e, tol)
-      && _PIM_.equals(e->_PIM_, tol)
+  return e != NULL && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol)
       && equal_with_abs_tol(omegaCoriolis_, e->omegaCoriolis_, tol)
       && ((!body_P_sensor_ && !e->body_P_sensor_)
           || (body_P_sensor_ && e->body_P_sensor_
@@ -191,24 +190,23 @@ bool AHRSFactor::equals(const NonlinearFactor& other, double tol) const {
 }
 
 //------------------------------------------------------------------------------
-Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
+Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
     const Vector3& bias, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2, boost::optional<Matrix&> H3) const {
 
   // Do bias correction, if (H3) will contain 3*3 derivative used below
-  const Vector3 theta_biascorrected = //
-      _PIM_.predict(bias, H3);
+  const Vector3 theta_biascorrected = _PIM_.predict(bias, H3);
 
   // Coriolis term
-  const Vector3 coriolis = //
-      _PIM_.integrateCoriolis(rot_i, omegaCoriolis_);
+  const Vector3 coriolis = _PIM_.integrateCoriolis(Ri, omegaCoriolis_);
+  const Matrix3 coriolisHat = skewSymmetric(coriolis);
   const Vector3 theta_corrected = theta_biascorrected - coriolis;
 
   // Prediction
   const Rot3 deltaRij_corrected = Rot3::Expmap(theta_corrected);
 
   // Get error between actual and prediction
-  const Rot3 actualRij = rot_i.between(rot_j);
+  const Rot3 actualRij = Ri.between(Rj);
   const Rot3 fRhat = deltaRij_corrected.between(actualRij);
   Vector3 fR = Rot3::Logmap(fRhat);
 
@@ -219,7 +217,7 @@ Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
   if (H1) {
     // dfR/dRi
     H1->resize(3, 3);
-    Matrix3 Jtheta = -Jr_theta_bcc * skewSymmetric(coriolis);
+    Matrix3 Jtheta = -Jr_theta_bcc * coriolisHat;
     (*H1)
         << Jrinv_fRhat * (-actualRij.transpose() - fRhat.transpose() * Jtheta);
   }
