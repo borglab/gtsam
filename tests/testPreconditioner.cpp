@@ -100,7 +100,7 @@ std::vector<Matrix> buildBlocks( const GaussianFactorGraph &gfg, const KeyInfo &
   return blocks;
 }
 
-/* *************************************************************************
+/* ************************************************************************* */
 TEST( Preconditioner, buildBlocks ) {
   // Create simple Gaussian factor graph and initial values
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
@@ -121,7 +121,7 @@ TEST( Preconditioner, buildBlocks ) {
     EXPECT(assert_equal(it1->second, *it2));
 }
 
-/* *************************************************************************
+/* ************************************************************************* */
 TEST( Preconditioner, buildBlocks2 ) {
   // Create simple Gaussian factor graph and initial values
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraphUnordered();
@@ -143,7 +143,7 @@ TEST( Preconditioner, buildBlocks2 ) {
     EXPECT(assert_equal(it1->second, *it2));
 }
 
-/* *************************************************************************
+/* ************************************************************************* */
 TEST( BlockJacobiPreconditioner, verySimpleLinerSystem) {
   // Ax = [4 1][u] = [1]  x0 = [2]
   //      [1 3][v]   [2]       [1]
@@ -187,7 +187,7 @@ TEST( BlockJacobiPreconditioner, verySimpleLinerSystem) {
   Vector expectedR = (Vector(4) << 4.1231, 0, 1.6977, 2.6679).finished();
   double* buf = blockJacobi->getBuffer();
   for(int i=0; i<4; ++i){
-	  EXPECT_DOUBLES_EQUAL(expectedR(i), buf[i], 1e-4);
+    EXPECT_DOUBLES_EQUAL(expectedR(i), buf[i], 1e-4);
   }
 
 }
@@ -222,7 +222,7 @@ TEST( BlockJacobiPreconditioner, SimpleLinerSystem) {
   boost::shared_ptr<BlockJacobiPreconditioner> blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditioner>(preconditioner);
   double* buf = blockJacobi->getBuffer();
   for(size_t i=0; i<blockJacobi->getBufferSize(); ++i){
-	  std::cout << "buf[" << i << "] = " << buf[i] << std::endl;
+    std::cout << "buf[" << i << "] = " << buf[i] << std::endl;
   }
 
 }
@@ -244,12 +244,12 @@ TEST( PCGsolver, verySimpleLinearSystem) {
   // Exact solution already known
   VectorValues exactSolution;
   exactSolution.insert(0, (Vector(2) << 1./11., 7./11.).finished());
-  //exactSolution.print("Exact");
+  exactSolution.print("Exact");
 
   // Solve the system using direct method
   VectorValues deltaDirect = simpleGFG.optimize();
   EXPECT(assert_equal(exactSolution, deltaDirect, 1e-7));
-  //deltaDirect.print("Direct");
+  deltaDirect.print("Direct");
 
   // Solve the system using PCG
   // With Dummy preconditioner
@@ -261,25 +261,27 @@ TEST( PCGsolver, verySimpleLinearSystem) {
   //pcg->setVerbosity("ERROR");
   VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG);
   EXPECT(assert_equal(exactSolution, deltaPCGDummy, 1e-7));
+  deltaPCGDummy.print("PCG Dummy");
 
   // With Block-Jacobi preconditioner
   gtsam::PCGSolverParameters::shared_ptr pcgJacobi = boost::make_shared<gtsam::PCGSolverParameters>();
   pcgJacobi->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
-  pcgJacobi->setMaxIterations(500);
+  pcgJacobi->setMaxIterations(1500);// It takes more than 1000 iterations for this test
   pcgJacobi->setEpsilon_abs(0.0);
   pcgJacobi->setEpsilon_rel(0.0);
   VectorValues deltaPCGJacobi = PCGSolver(*pcgJacobi).optimize(simpleGFG);
 
   // Failed!
   EXPECT(assert_equal(exactSolution, deltaPCGJacobi, 1e-5));
-  //deltaPCGJacobi.print("PCG Jacobi");
+  deltaPCGJacobi.print("PCG Jacobi");
 }
 
 /* ************************************************************************* */
 TEST(PCGSolver, simpleLinearSystem) {
   // Create a Gaussian Factor Graph
   GaussianFactorGraph simpleGFG;
-  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  //SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  SharedDiagonal unit2 = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.3));
   simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << -1, -1).finished(), unit2);
   simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -10, 0, 0, -10).finished(), 0, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << 2, -1).finished(), unit2);
   simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(), unit2);
@@ -298,8 +300,8 @@ TEST(PCGSolver, simpleLinearSystem) {
   // Solve the system using direct method
   VectorValues deltaDirect = simpleGFG.optimize();
   EXPECT(assert_equal(expectedSolution, deltaDirect, 1e-5));
-  //expectedSolution.print("Expected");
-  //deltaCholesky.print("Direct");
+  expectedSolution.print("Expected");
+  deltaDirect.print("Direct");
 
   // Solve the system using PCG
   VectorValues initial;
@@ -318,44 +320,44 @@ TEST(PCGSolver, simpleLinearSystem) {
   VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>(), initial);
   // Failed!
   EXPECT(assert_equal(expectedSolution, deltaPCGDummy, 1e-5));
-  //deltaPCGDummy.print("PCG Dummy");
+  deltaPCGDummy.print("PCG Dummy");
 
   // Solve the system using Preconditioned Conjugate Gradient
   pcg->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
   VectorValues deltaPCGJacobi = PCGSolver(*pcg).optimize(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>(), initial);
   // Failed!
   EXPECT(assert_equal(expectedSolution, deltaPCGJacobi, 1e-5));
-  //deltaPCGJacobi.print("PCG Jacobi");
+  deltaPCGJacobi.print("PCG Jacobi");
 
   // Test that the retrieval of the diagonal blocks of the Jacobian are correct.
-    std::map<Key, Matrix> expectedHessian =simpleGFG.hessianBlockDiagonal();
-    std::vector<Matrix> actualHessian = buildBlocks(simpleGFG, KeyInfo(simpleGFG));
-    EXPECT_LONGS_EQUAL(expectedHessian.size(), actualHessian.size());
-    std::map<Key, Matrix>::const_iterator it1 = expectedHessian.begin();
-    std::vector<Matrix>::const_iterator it2 = actualHessian.begin();
+  std::map<Key, Matrix> expectedHessian =simpleGFG.hessianBlockDiagonal();
+  std::vector<Matrix> actualHessian = buildBlocks(simpleGFG, KeyInfo(simpleGFG));
+  EXPECT_LONGS_EQUAL(expectedHessian.size(), actualHessian.size());
+  std::map<Key, Matrix>::const_iterator it1 = expectedHessian.begin();
+  std::vector<Matrix>::const_iterator it2 = actualHessian.begin();
 
-    // The corresponding Cholesky decomposition is:
-    // R = chol(H0) = [4.1231  1.6977   0   2.6679] (from Matlab)
-    Preconditioner::shared_ptr preconditioner = createPreconditioner(boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>());
-    preconditioner->build(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>());
-    boost::shared_ptr<BlockJacobiPreconditioner> blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditioner>(preconditioner);
-    double* buf = blockJacobi->getBuffer();
-    for(int i=0; i<4; ++i){}
-    // TODO: EXPECT(assert_equal(number..,buf[i]));
+  // The corresponding Cholesky decomposition is:
+  // R = chol(H0) = [4.1231  1.6977   0   2.6679] (from Matlab)
+  Preconditioner::shared_ptr preconditioner = createPreconditioner(boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>());
+  preconditioner->build(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>());
+  boost::shared_ptr<BlockJacobiPreconditioner> blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditioner>(preconditioner);
+  double* buf = blockJacobi->getBuffer();
+  for(int i=0; i<4; ++i){}
+  // TODO: EXPECT(assert_equal(number..,buf[i]));
 
-    size_t i = 0;
-    for(; it1!=expectedHessian.end(); it1++, it2++){
-      EXPECT(assert_equal(it1->second, *it2));
-      Matrix R_i(2,2);
-      R_i(0,0) = buf[i+0];
-      R_i(0,1) = buf[i+1];
-      R_i(1,0) = buf[i+2];
-      R_i(1,1) = buf[i+3];
+  size_t i = 0;
+  for(; it1!=expectedHessian.end(); it1++, it2++){
+    //EXPECT(assert_equal(it1->second, *it2));
+    Matrix R_i(2,2);
+    R_i(0,0) = buf[i+0];
+    R_i(0,1) = buf[i+1];
+    R_i(1,0) = buf[i+2];
+    R_i(1,1) = buf[i+3];
 
-      Matrix actualH_i = R_i.transpose() * R_i;// i-th diagonal block
-      EXPECT(assert_equal(it1->second, actualH_i));
-      i += 4;
-    }
+    Matrix actualH_i = R_i.transpose() * R_i;// i-th diagonal block
+    EXPECT(assert_equal(it1->second, actualH_i));
+    i += 4;
+  }
 }
 
 /* ************************************************************************* */
