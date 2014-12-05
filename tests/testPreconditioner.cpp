@@ -39,41 +39,39 @@ TEST( PCGsolver, verySimpleLinearSystem) {
   // Create a Gaussian Factor Graph
   GaussianFactorGraph simpleGFG;
   simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 4, 1, 1, 3).finished(), (Vector(2) << 1,2 ).finished(), noiseModel::Unit::Create(2));
-  //simpleGFG.print("Factors\n");
 
   // Exact solution already known
   VectorValues exactSolution;
   exactSolution.insert(0, (Vector(2) << 1./11., 7./11.).finished());
-  exactSolution.print("Exact");
+  //exactSolution.print("Exact");
 
   // Solve the system using direct method
   VectorValues deltaDirect = simpleGFG.optimize();
   EXPECT(assert_equal(exactSolution, deltaDirect, 1e-7));
-  deltaDirect.print("Direct");
+  //deltaDirect.print("Direct");
 
-  // Solve the system using PCG
-  // With Dummy preconditioner
+  // Solve the system using Preconditioned Conjugate Gradient solver
+  // Common PCG parameters
   gtsam::PCGSolverParameters::shared_ptr pcg = boost::make_shared<gtsam::PCGSolverParameters>();
-  pcg->preconditioner_ = boost::make_shared<gtsam::DummyPreconditionerParameters>();
   pcg->setMaxIterations(500);
   pcg->setEpsilon_abs(0.0);
   pcg->setEpsilon_rel(0.0);
   //pcg->setVerbosity("ERROR");
+
+  // With Dummy preconditioner
+  pcg->preconditioner_ = boost::make_shared<gtsam::DummyPreconditionerParameters>();
   VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG);
   EXPECT(assert_equal(exactSolution, deltaPCGDummy, 1e-7));
-  deltaPCGDummy.print("PCG Dummy");
+  //deltaPCGDummy.print("PCG Dummy");
 
   // With Block-Jacobi preconditioner
-  gtsam::PCGSolverParameters::shared_ptr pcgJacobi = boost::make_shared<gtsam::PCGSolverParameters>();
-  pcgJacobi->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
-  pcgJacobi->setMaxIterations(1500);// It takes more than 1000 iterations for this test
-  pcgJacobi->setEpsilon_abs(0.0);
-  pcgJacobi->setEpsilon_rel(0.0);
-  VectorValues deltaPCGJacobi = PCGSolver(*pcgJacobi).optimize(simpleGFG);
+  pcg->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
+  // It takes more than 1000 iterations for this test
+  pcg->setMaxIterations(1500);
+  VectorValues deltaPCGJacobi = PCGSolver(*pcg).optimize(simpleGFG);
 
-  // Failed!
   EXPECT(assert_equal(exactSolution, deltaPCGJacobi, 1e-5));
-  deltaPCGJacobi.print("PCG Jacobi");
+  //deltaPCGJacobi.print("PCG Jacobi");
 }
 
 /* ************************************************************************* */
@@ -89,45 +87,38 @@ TEST(PCGSolver, simpleLinearSystem) {
   simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
   simpleGFG += JacobianFactor(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
   simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  //simpleGFG.print("Factors\n");
 
   // Expected solution
   VectorValues expectedSolution;
   expectedSolution.insert(0, (Vector(2) << 0.100498, -0.196756).finished());
   expectedSolution.insert(2, (Vector(2) << -0.0990413, -0.0980577).finished());
   expectedSolution.insert(1, (Vector(2) << -0.0973252, 0.100582).finished());
+  //expectedSolution.print("Expected");
 
   // Solve the system using direct method
   VectorValues deltaDirect = simpleGFG.optimize();
   EXPECT(assert_equal(expectedSolution, deltaDirect, 1e-5));
-  expectedSolution.print("Expected");
-  deltaDirect.print("Direct");
+  //deltaDirect.print("Direct");
 
-  // Solve the system using PCG
-  VectorValues initial;
-  initial.insert(0, (Vector(2) << 0.1, -0.1).finished());
-  initial.insert(1, (Vector(2) << -0.1, 0.1).finished());
-  initial.insert(2, (Vector(2) << -0.1, -0.1).finished());
-
-  // With Dummy preconditioner
+  // Solve the system using Preconditioned Conjugate Gradient solver
+  // Common PCG parameters
   gtsam::PCGSolverParameters::shared_ptr pcg = boost::make_shared<gtsam::PCGSolverParameters>();
-  pcg->preconditioner_ = boost::make_shared<gtsam::DummyPreconditionerParameters>();
   pcg->setMaxIterations(500);
   pcg->setEpsilon_abs(0.0);
   pcg->setEpsilon_rel(0.0);
   //pcg->setVerbosity("ERROR");
 
-  VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>(), initial);
-  // Failed!
+  // With Dummy preconditioner
+  pcg->preconditioner_ = boost::make_shared<gtsam::DummyPreconditionerParameters>();
+  VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG);
   EXPECT(assert_equal(expectedSolution, deltaPCGDummy, 1e-5));
-  deltaPCGDummy.print("PCG Dummy");
+  //deltaPCGDummy.print("PCG Dummy");
 
-  // Solve the system using Preconditioned Conjugate Gradient
+  // With Block-Jacobi preconditioner
   pcg->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
-  VectorValues deltaPCGJacobi = PCGSolver(*pcg).optimize(simpleGFG, KeyInfo(simpleGFG), std::map<Key,Vector>(), initial);
-  // Failed!
+  VectorValues deltaPCGJacobi = PCGSolver(*pcg).optimize(simpleGFG);
   EXPECT(assert_equal(expectedSolution, deltaPCGJacobi, 1e-5));
-  deltaPCGJacobi.print("PCG Jacobi");
+  //deltaPCGJacobi.print("PCG Jacobi");
 
 }
 
