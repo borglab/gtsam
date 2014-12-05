@@ -34,36 +34,47 @@ namespace gtsam {
  * @addtogroup SLAM
  *
  * If you are using the factor, please cite:
- * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
- * independent sets in factor graphs: a unifying perspective based on smart factors,
- * Int. Conf. on Robotics and Automation (ICRA), 2014.
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
+ * conditionally independent sets in factor graphs: a unifying perspective based
+ * on smart factors, Int. Conf. on Robotics and Automation (ICRA), 2014.
  *
- * REFERENCES:
- * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
- * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for High-Dynamic Motion in Built
- * Environments Without Initial Conditions", TRO, 28(1):61-76, 2012.
- * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor: Computation of the Jacobian Matrices", Tech. Report, 2013.
+ ** REFERENCES:
+ * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
+ *     Volume 2, 2008.
+ * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for
+ *     High-Dynamic Motion in Built Environments Without Initial Conditions",
+ *     TRO, 28(1):61-76, 2012.
+ * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
+ *     Computation of the Jacobian Matrices", Tech. Report, 2013.
  */
 
 /**
- * CombinedImuFactor is a 6-ways factor involving previous state (pose and velocity of the vehicle, as well as bias
- * at previous time step), and current state (pose, velocity, bias at current time step). According to the
- * preintegration scheme proposed in [2], the CombinedImuFactor includes many IMU measurements, which are
- * "summarized" using the CombinedPreintegratedMeasurements class. There are 3 main differences wrt ImuFactor:
- * 1) The factor is 6-ways, meaning that it also involves both biases (previous and current time step).
- * Therefore, the factor internally imposes the biases to be slowly varying; in particular, the matrices
- * "biasAccCovariance" and "biasOmegaCovariance" described the random walk that models bias evolution.
- * 2) The preintegration covariance takes into account the noise in the bias estimate used for integration.
- * 3) The covariance matrix of the CombinedPreintegratedMeasurements preserves the correlation between the bias uncertainty
- * and the preintegrated measurements uncertainty.
+ * CombinedImuFactor is a 6-ways factor involving previous state (pose and
+ * velocity of the vehicle, as well as bias at previous time step), and current
+ * state (pose, velocity, bias at current time step). Following the pre-
+ * integration scheme proposed in [2], the CombinedImuFactor includes many IMU
+ * measurements, which are "summarized" using the CombinedPreintegratedMeasurements
+ * class. There are 3 main differences wrpt the ImuFactor class:
+ * 1) The factor is 6-ways, meaning that it also involves both biases (previous
+ *    and current time step).Therefore, the factor internally imposes the biases
+ *    to be slowly varying; in particular, the matrices "biasAccCovariance" and
+ *    "biasOmegaCovariance" described the random walk that models bias evolution.
+ * 2) The preintegration covariance takes into account the noise in the bias
+ *    estimate used for integration.
+ * 3) The covariance matrix of the CombinedPreintegratedMeasurements preserves
+ *    the correlation between the bias uncertainty and the preintegrated
+ *    measurements uncertainty.
  */
 class CombinedImuFactor: public NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias>, public ImuFactorBase{
 public:
 
-  /** CombinedPreintegratedMeasurements accumulates (integrates) the IMU measurements (rotation rates and accelerations)
-   * and the corresponding covariance matrix. The measurements are then used to build the CombinedPreintegrated IMU factor (CombinedImuFactor).
-   * Integration is done incrementally (ideally, one integrates the measurement as soon as it is received
-   * from the IMU) so as to avoid costly integration at time of factor construction.
+  /**
+   * CombinedPreintegratedMeasurements integrates the IMU measurements
+   * (rotation rates and accelerations) and the corresponding covariance matrix.
+   * The measurements are then used to build the CombinedImuFactor. Integration
+   * is done incrementally (ideally, one integrates the measurement as soon as
+   * it is received from the IMU) so as to avoid costly integration at time of
+   * factor construction.
    */
   class CombinedPreintegratedMeasurements: public PreintegrationBase {
 

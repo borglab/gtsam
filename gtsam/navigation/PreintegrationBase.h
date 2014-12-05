@@ -28,9 +28,10 @@ namespace gtsam {
 
 
 /**
- * PreintegrationBase is the base class for PreintegratedMeasurements (in ImuFactor.h) and
- * CombinedPreintegratedMeasurements (in CombinedImuFactor.h). It includes the definitions of the
- * preintegrated variables and the methods to access, print, and compare them.
+ * PreintegrationBase is the base class for PreintegratedMeasurements
+ * (in ImuFactor) and CombinedPreintegratedMeasurements (in CombinedImuFactor).
+ * It includes the definitions of the preintegrated variables and the methods
+ * to access, print, and compare them.
  */
 class PreintegrationBase {
 
@@ -119,7 +120,8 @@ public:
   }
 
   /// Update Jacobians to be used during preintegration
-  void updatePreintegratedJacobians(const Vector3& correctedAcc, const Matrix3& Jr_theta_incr, const Rot3& Rincr, double deltaT){
+  void updatePreintegratedJacobians(const Vector3& correctedAcc,
+      const Matrix3& Jr_theta_incr, const Rot3& Rincr, double deltaT){
     if(!use2ndOrderIntegration_){
       delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT;
       delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT;
