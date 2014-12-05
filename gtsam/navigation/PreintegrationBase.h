@@ -34,11 +34,6 @@ namespace gtsam {
  */
 class PreintegrationBase : public PreintegratedRotation {
 
-  friend class ImuFactorBase;
-  friend class ImuFactor;
-  friend class CombinedImuFactor;
-
-protected:
   imuBias::ConstantBias biasHat_; ///< Acceleration and angular rate bias values used during preintegration
   bool use2ndOrderIntegration_; ///< Controls the order of integration
 
@@ -67,7 +62,8 @@ public:
   /// methods to access class variables
   const Vector3& deltaPij() const {return deltaPij_;}
   const Vector3& deltaVij() const {return deltaVij_;}
-  Vector biasHat() const { return biasHat_.vector();} // TODO expensive
+  const imuBias::ConstantBias& biasHat() const { return biasHat_;}
+  Vector biasHatVector() const { return biasHat_.vector();} // expensive
   const Matrix3& delPdelBiasAcc() const { return delPdelBiasAcc_;}
   const Matrix3& delPdelBiasOmega() const { return delPdelBiasOmega_;}
   const Matrix3& delVdelBiasAcc() const { return delVdelBiasAcc_;}

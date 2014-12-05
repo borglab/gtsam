@@ -119,7 +119,7 @@ private:
   typedef AHRSFactor This;
   typedef NoiseModelFactor3<Rot3, Rot3, Vector3> Base;
 
-  PreintegratedMeasurements preintegratedMeasurements_;
+  PreintegratedMeasurements _PIM_;
   Vector3 gravity_;
   Vector3 omegaCoriolis_; ///< Controls whether higher order terms are included when calculating the Coriolis Effect
   boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame
@@ -165,7 +165,7 @@ public:
 
   /// Access the preintegrated measurements.
   const PreintegratedMeasurements& preintegratedMeasurements() const {
-    return preintegratedMeasurements_;
+    return _PIM_;
   }
 
   const Vector3& omegaCoriolis() const {
@@ -195,7 +195,7 @@ private:
     ar
         & boost::serialization::make_nvp("NoiseModelFactor3",
             boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(preintegratedMeasurements_);
+    ar & BOOST_SERIALIZATION_NVP(_PIM_);
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }

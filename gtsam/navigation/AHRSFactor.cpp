@@ -148,7 +148,7 @@ Vector AHRSFactor::PreintegratedMeasurements::DeltaAngles(
 // AHRSFactor methods
 //------------------------------------------------------------------------------
 AHRSFactor::AHRSFactor() :
-    preintegratedMeasurements_(Vector3(), Matrix3::Zero()) {
+    _PIM_(Vector3(), Matrix3::Zero()) {
 }
 
 AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
@@ -156,7 +156,7 @@ AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
     const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor) :
     Base(
         noiseModel::Gaussian::Covariance(
-            preintegratedMeasurements.preintMeasCov_), rot_i, rot_j, bias), preintegratedMeasurements_(
+            preintegratedMeasurements.preintMeasCov_), rot_i, rot_j, bias), _PIM_(
         preintegratedMeasurements), omegaCoriolis_(omegaCoriolis), body_P_sensor_(
         body_P_sensor) {
 }
@@ -172,7 +172,7 @@ void AHRSFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
   cout << s << "AHRSFactor(" << keyFormatter(this->key1()) << ","
       << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ",";
-  preintegratedMeasurements_.print("  preintegrated measurements:");
+  _PIM_.print("  preintegrated measurements:");
   cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << endl;
   noiseModel_->print("  noise model: ");
   if (body_P_sensor_)
@@ -183,7 +183,7 @@ void AHRSFactor::print(const string& s,
 bool AHRSFactor::equals(const NonlinearFactor& other, double tol) const {
   const This *e = dynamic_cast<const This*>(&other);
   return e != NULL && Base::equals(*e, tol)
-      && preintegratedMeasurements_.equals(e->preintegratedMeasurements_, tol)
+      && _PIM_.equals(e->_PIM_, tol)
       && equal_with_abs_tol(omegaCoriolis_, e->omegaCoriolis_, tol)
       && ((!body_P_sensor_ && !e->body_P_sensor_)
           || (body_P_sensor_ && e->body_P_sensor_
@@ -197,11 +197,11 @@ Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
 
   // Do bias correction, if (H3) will contain 3*3 derivative used below
   const Vector3 theta_biascorrected = //
-      preintegratedMeasurements_.predict(bias, H3);
+      _PIM_.predict(bias, H3);
 
   // Coriolis term
   const Vector3 coriolis = //
-      preintegratedMeasurements_.integrateCoriolis(rot_i, omegaCoriolis_);
+      _PIM_.integrateCoriolis(rot_i, omegaCoriolis_);
   const Vector3 theta_corrected = theta_biascorrected - coriolis;
 
   // Prediction

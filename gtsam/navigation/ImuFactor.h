@@ -136,7 +136,7 @@ public:
   typedef ImuFactor This;
   typedef NoiseModelFactor5<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias> Base;
 
-  PreintegratedMeasurements preintegratedMeasurements_;
+  PreintegratedMeasurements _PIM_;
 
   public:
 
@@ -184,7 +184,7 @@ public:
   /** Access the preintegrated measurements. */
 
   const PreintegratedMeasurements& preintegratedMeasurements() const {
-    return preintegratedMeasurements_; }
+    return _PIM_; }
 
   /** implement functions needed to derive from Factor */
 
@@ -212,7 +212,7 @@ public:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & boost::serialization::make_nvp("NoiseModelFactor5",
         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(preintegratedMeasurements_);
+    ar & BOOST_SERIALIZATION_NVP(_PIM_);
     ar & BOOST_SERIALIZATION_NVP(gravity_);
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);

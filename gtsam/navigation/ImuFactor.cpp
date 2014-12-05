@@ -139,7 +139,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
 // ImuFactor methods
 //------------------------------------------------------------------------------
 ImuFactor::ImuFactor() :
-    ImuFactorBase(), preintegratedMeasurements_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3) {}
+    ImuFactorBase(), _PIM_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3) {}
 
 //------------------------------------------------------------------------------
 ImuFactor::ImuFactor(
@@ -150,7 +150,7 @@ ImuFactor::ImuFactor(
     const bool use2ndOrderCoriolis) :
         Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov_), pose_i, vel_i, pose_j, vel_j, bias),
         ImuFactorBase(gravity, omegaCoriolis, body_P_sensor, use2ndOrderCoriolis),
-        preintegratedMeasurements_(preintegratedMeasurements) {}
+        _PIM_(preintegratedMeasurements) {}
 
 //------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr ImuFactor::clone() const {
@@ -167,7 +167,7 @@ void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
       << keyFormatter(this->key4()) << ","
       << keyFormatter(this->key5()) << ")\n";
   ImuFactorBase::print("");
-  preintegratedMeasurements_.print("  preintegrated measurements:");
+  _PIM_.print("  preintegrated measurements:");
   this->noiseModel_->print("  noise model: ");
 }
 
@@ -175,7 +175,7 @@ void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
 bool ImuFactor::equals(const NonlinearFactor& expected, double tol) const {
   const This *e =  dynamic_cast<const This*> (&expected);
   return e != NULL && Base::equals(*e, tol)
-  && preintegratedMeasurements_.equals(e->preintegratedMeasurements_, tol)
+  && _PIM_.equals(e->_PIM_, tol)
   && ImuFactorBase::equals(*e, tol);
 }
 
@@ -186,7 +186,7 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i, const
     boost::optional<Matrix&> H3,  boost::optional<Matrix&> H4,
     boost::optional<Matrix&> H5) const{
 
-  return ImuFactorBase::computeErrorAndJacobians(preintegratedMeasurements_, pose_i, vel_i, pose_j, vel_j, bias_i, H1, H2, H3, H4, H5);
+  return ImuFactorBase::computeErrorAndJacobians(_PIM_, pose_i, vel_i, pose_j, vel_j, bias_i, H1, H2, H3, H4, H5);
 }
 
 } /// namespace gtsam

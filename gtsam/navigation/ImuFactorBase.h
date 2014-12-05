@@ -95,14 +95,14 @@ public:
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   //------------------------------------------------------------------------------
-  Vector computeErrorAndJacobians(const PreintegrationBase& preintegratedMeasurements_, const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
+  Vector computeErrorAndJacobians(const PreintegrationBase& _PIM, const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
       const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2,
       boost::optional<Matrix&> H3,  boost::optional<Matrix&> H4, boost::optional<Matrix&> H5) const{
 
-    const double& deltaTij = preintegratedMeasurements_.deltaTij();
+    const double& deltaTij = _PIM.deltaTij();
     // We need the mistmatch w.r.t. the biases used for preintegration
-    const Vector3 biasAccIncr = bias_i.accelerometer() - preintegratedMeasurements_.biasHat_.accelerometer();
-    const Vector3 biasOmegaIncr = bias_i.gyroscope() - preintegratedMeasurements_.biasHat_.gyroscope();
+    const Vector3 biasAccIncr = bias_i.accelerometer() - _PIM.biasHat().accelerometer();
+    const Vector3 biasOmegaIncr = bias_i.gyroscope() - _PIM.biasHat().gyroscope();
 
     // we give some shorter name to rotations and translations
     const Rot3& Rot_i = pose_i.rotation();
@@ -115,7 +115,7 @@ public:
     // If H5 is asked for, we will need the Jacobian, which we store in H5
     // H5 will then be corrected below to take into account the Coriolis effect
     Vector3 theta_biascorrected =
-        preintegratedMeasurements_.biascorrectedThetaRij(biasOmegaIncr, H5);
+        _PIM.biascorrectedThetaRij(biasOmegaIncr, H5);
 
     Vector3 theta_biascorrected_corioliscorrected = theta_biascorrected  -
         Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij; // Coriolis term
@@ -144,13 +144,13 @@ public:
       }
       (*H1) <<
           // dfP/dRi
-          Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij_
-          + preintegratedMeasurements_.delPdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc_ * biasAccIncr),
+          Rot_i.matrix() * skewSymmetric(_PIM.deltaPij()
+          + _PIM.delPdelBiasOmega() * biasOmegaIncr + _PIM.delPdelBiasAcc() * biasAccIncr),
           // dfP/dPi
           dfPdPi,
           // dfV/dRi
-          Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij_
-          + preintegratedMeasurements_.delVdelBiasOmega_ * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc_ * biasAccIncr),
+          Rot_i.matrix() * skewSymmetric(_PIM.deltaVij()
+          + _PIM.delVdelBiasOmega() * biasOmegaIncr + _PIM.delVdelBiasAcc() * biasAccIncr),
           // dfV/dPi
           dfVdPi,
           // dfR/dRi
@@ -196,11 +196,11 @@ public:
       H5->resize(9,6);
       (*H5) <<
           // dfP/dBias
-          - Rot_i.matrix() * preintegratedMeasurements_.delPdelBiasAcc_,
-          - Rot_i.matrix() * preintegratedMeasurements_.delPdelBiasOmega_,
+          - Rot_i.matrix() * _PIM.delPdelBiasAcc(),
+          - Rot_i.matrix() * _PIM.delPdelBiasOmega(),
           // dfV/dBias
-          - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasAcc_,
-          - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasOmega_,
+          - Rot_i.matrix() * _PIM.delVdelBiasAcc(),
+          - Rot_i.matrix() * _PIM.delVdelBiasOmega(),
           // dfR/dBias
           Matrix::Zero(3,3),
           Jrinv_fRhat * ( - fRhat.inverse().matrix() * JbiasOmega);
@@ -208,7 +208,7 @@ public:
 
     // Evaluate residual error, according to [3]
     /* ---------------------------------------------------------------------------------------------------- */
-    PoseVelocityBias predictedState_j = ImuFactorBase::predict(pose_i, vel_i, bias_i, preintegratedMeasurements_,
+    PoseVelocityBias predictedState_j = ImuFactorBase::predict(pose_i, vel_i, bias_i, _PIM,
         gravity_, omegaCoriolis_, use2ndOrderCoriolis_);
 
     const Vector3 fp = pos_j - predictedState_j.pose.translation().vector();
@@ -226,28 +226,28 @@ public:
   //------------------------------------------------------------------------------
   static PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i,
-      const PreintegrationBase& preintegratedMeasurements,
+      const PreintegrationBase& _PIM,
       const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis){
 
-    const double& deltaTij = preintegratedMeasurements.deltaTij();
-    const Vector3 biasAccIncr = bias_i.accelerometer() - preintegratedMeasurements.biasHat_.accelerometer();
-    const Vector3 biasOmegaIncr = bias_i.gyroscope() - preintegratedMeasurements.biasHat_.gyroscope();
+    const double& deltaTij = _PIM.deltaTij();
+    const Vector3 biasAccIncr = bias_i.accelerometer() - _PIM.biasHat().accelerometer();
+    const Vector3 biasOmegaIncr = bias_i.gyroscope() - _PIM.biasHat().gyroscope();
 
     const Rot3& Rot_i = pose_i.rotation();
     const Vector3& pos_i = pose_i.translation().vector();
 
     // Predict state at time j
     /* ---------------------------------------------------------------------------------------------------- */
-    Vector3 pos_j =  pos_i + Rot_i.matrix() * (preintegratedMeasurements.deltaPij_
-        + preintegratedMeasurements.delPdelBiasAcc_ * biasAccIncr
-        + preintegratedMeasurements.delPdelBiasOmega_ * biasOmegaIncr)
+    Vector3 pos_j =  pos_i + Rot_i.matrix() * (_PIM.deltaPij()
+        + _PIM.delPdelBiasAcc() * biasAccIncr
+        + _PIM.delPdelBiasOmega() * biasOmegaIncr)
         + vel_i * deltaTij
         - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
         + 0.5 * gravity * deltaTij*deltaTij;
 
-    Vector3 vel_j = Vector3(vel_i + Rot_i.matrix() * (preintegratedMeasurements.deltaVij_
-        + preintegratedMeasurements.delVdelBiasAcc_ * biasAccIncr
-        + preintegratedMeasurements.delVdelBiasOmega_ * biasOmegaIncr)
+    Vector3 vel_j = Vector3(vel_i + Rot_i.matrix() * (_PIM.deltaVij()
+        + _PIM.delVdelBiasAcc() * biasAccIncr
+        + _PIM.delVdelBiasOmega() * biasOmegaIncr)
         - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
         + gravity * deltaTij);
 
@@ -256,7 +256,7 @@ public:
       vel_j += - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij; // 2nd order term for velocity
     }
 
-    const Rot3 deltaRij_biascorrected = preintegratedMeasurements.biascorrectedDeltaRij(biasOmegaIncr);
+    const Rot3 deltaRij_biascorrected = _PIM.biascorrectedDeltaRij(biasOmegaIncr);
     // TODO Frank says comment below does not reflect what was in code
     // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
 
