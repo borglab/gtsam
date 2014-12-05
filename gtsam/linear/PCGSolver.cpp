@@ -79,7 +79,7 @@ void GaussianFactorGraphSystem::residual(const Vector &x, Vector &r) const {
 
 /*****************************************************************************/
 void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
-  /* implement A^t*A*x, assume x and AtAx are pre-allocated */
+  /* implement A^T*(A*x), assume x and AtAx are pre-allocated */
 
   // Build a VectorValues for Vector x
   VectorValues vvX = buildVectorValues(x,keyInfo_);
@@ -99,7 +99,7 @@ void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
 void GaussianFactorGraphSystem::getb(Vector &b) const {
   /* compute rhs, assume b pre-allocated */
 
-  // Get whitened r.h.s (b vector) from each factor in the form of VectorValues
+  // Get whitened r.h.s (A^T * b) from each factor in the form of VectorValues
   VectorValues vvb = gfg_.gradientAtZero();
 
   // Make the result as Vector form
