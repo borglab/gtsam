@@ -81,7 +81,7 @@ Hence, we formalize by the following extension of the concept:
 
 * valid expressions:
   * `group::act(g,t)`, for some instance of a space T, that can be acted upon by the group
-  * `group::act(g,t,H)`, if the group acted upon is a continuous differentiable manifold  
+  * `group::act(g,t,H)`, if the space acted upon is a continuous differentiable manifold  
   
 Lie Group
 ---------
@@ -96,19 +96,21 @@ where above the `H` arguments stand for optional Jacobian arguments. That makes 
 
 when a Lie group acts on a space, we have two derivatives to care about:
 
-  * `group::act(g,t,Hg,Ht)`, if the group acted upon is a continuous differentiable manifold
+  * `group::act(g,t,Hg,Ht)`, if the space acted upon is a continuous differentiable manifold
+
+For now, we won't care about Lie groups acting on non-manifolds.
 
 Vector Space
 ------------
 
-Trivial Lie Group where
+Trivial Lie group where
 
-  * `identity == 0`
+  * `identity<T> == 0`
   * `inverse(p) == -p`
   * `compose(p,q) == p+q`
   * `between(p,q) == q-p`
-  * `chart.retract(q) == p-q`   
-  * `chart.retract(v) == p+v`
+  * `chart::retract(q) == p-q`   
+  * `chart::retract(v) == p+v`
 
 This considerably simplifies certain operations.
 
