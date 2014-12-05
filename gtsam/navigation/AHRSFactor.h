@@ -20,6 +20,7 @@
 #pragma once
 
 /* GTSAM includes */
+#include <gtsam/navigation/PreintegratedRotation.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -35,7 +36,7 @@ public:
    * Can be built incrementally so as to avoid costly integration at time of
    * factor construction.
    */
-  class PreintegratedMeasurements {
+  class PreintegratedMeasurements : public PreintegratedRotation {
 
     friend class AHRSFactor;
 
@@ -43,9 +44,6 @@ public:
     Vector3 biasHat_; ///< Acceleration and angular rate bias values used during preintegration. Note that we won't be using the accelerometer
     Matrix3 measurementCovariance_; ///< (Raw measurements uncertainty) Covariance of the vector [measuredOmega] in R^(3X3)
 
-    Rot3 deltaRij_; ///< Preintegrated relative orientation (in frame i)
-    double deltaTij_; ///< Time interval from i to j
-    Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
     Matrix3 preintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
 
   public:
@@ -61,30 +59,21 @@ public:
     PreintegratedMeasurements(const Vector3& bias,
         const Matrix3& measuredOmegaCovariance);
 
+    const Matrix3& measurementCovariance() const {
+      return measurementCovariance_;
+    }
+    Vector3 biasHat() const {
+      return biasHat_;
+    }
+    const Matrix3& preintMeasCov() const {
+      return preintMeasCov_;
+    }
+
     /// print
     void print(const std::string& s = "Preintegrated Measurements: ") const;
 
     /// equals
     bool equals(const PreintegratedMeasurements&, double tol = 1e-9) const;
-
-    const Matrix3& measurementCovariance() const {
-      return measurementCovariance_;
-    }
-    Matrix3 deltaRij() const {
-      return deltaRij_.matrix();
-    }
-    double deltaTij() const {
-      return deltaTij_;
-    }
-    Vector3 biasHat() const {
-      return biasHat_;
-    }
-    const Matrix3& delRdelBiasOmega() const {
-      return delRdelBiasOmega_;
-    }
-    const Matrix3& preintMeasCov() const {
-      return preintMeasCov_;
-    }
 
     /// TODO: Document
     void resetIntegration();
@@ -106,7 +95,7 @@ public:
     /// Integrate coriolis correction in body frame rot_i
     Vector3 integrateCoriolis(const Rot3& rot_i,
         const Vector3& omegaCoriolis) const {
-      return rot_i.transpose() * omegaCoriolis * deltaTij_;
+      return rot_i.transpose() * omegaCoriolis * deltaTij();
     }
 
     // This function is only used for test purposes
@@ -120,11 +109,9 @@ public:
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
       ar & BOOST_SERIALIZATION_NVP(biasHat_);
       ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
-      ar & BOOST_SERIALIZATION_NVP(deltaRij_);
-      ar & BOOST_SERIALIZATION_NVP(deltaTij_);
-      ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
     }
   };
 

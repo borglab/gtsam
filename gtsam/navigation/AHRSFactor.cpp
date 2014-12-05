@@ -18,9 +18,9 @@
  **/
 
 #include <gtsam/navigation/AHRSFactor.h>
+#include <iostream>
 
-/* External or standard includes */
-#include <ostream>
+using namespace std;
 
 namespace gtsam {
 
@@ -29,47 +29,38 @@ namespace gtsam {
 //------------------------------------------------------------------------------
 AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements(
     const Vector3& bias, const Matrix3& measuredOmegaCovariance) :
-    biasHat_(bias), deltaTij_(0.0) {
+    biasHat_(bias) {
   measurementCovariance_ << measuredOmegaCovariance;
-  delRdelBiasOmega_.setZero();
   preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
 AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements() :
-    biasHat_(Vector3()), deltaTij_(0.0) {
+    biasHat_(Vector3()) {
   measurementCovariance_.setZero();
-  delRdelBiasOmega_.setZero();
-  delRdelBiasOmega_.setZero();
   preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
-void AHRSFactor::PreintegratedMeasurements::print(const std::string& s) const {
-  std::cout << s << std::endl;
-  std::cout << "biasHat [" << biasHat_.transpose() << "]" << std::endl;
-  deltaRij_.print(" deltaRij ");
-  std::cout << " measurementCovariance [" << measurementCovariance_ << " ]"
-      << std::endl;
-  std::cout << " PreintMeasCov [ " << preintMeasCov_ << " ]" << std::endl;
+void AHRSFactor::PreintegratedMeasurements::print(const string& s) const {
+  PreintegratedRotation::print(s);
+  cout << "biasHat [" << biasHat_.transpose() << "]" << endl;
+  cout << " measurementCovariance [" << measurementCovariance_ << " ]" << endl;
+  cout << " PreintMeasCov [ " << preintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool AHRSFactor::PreintegratedMeasurements::equals(
     const PreintegratedMeasurements& other, double tol) const {
-  return equal_with_abs_tol(biasHat_, other.biasHat_, tol)
+  return PreintegratedRotation::equals(other, tol)
+      && equal_with_abs_tol(biasHat_, other.biasHat_, tol)
       && equal_with_abs_tol(measurementCovariance_,
-          other.measurementCovariance_, tol)
-      && deltaRij_.equals(other.deltaRij_, tol)
-      && std::fabs(deltaTij_ - other.deltaTij_) < tol
-      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
+          other.measurementCovariance_, tol);
 }
 
 //------------------------------------------------------------------------------
 void AHRSFactor::PreintegratedMeasurements::resetIntegration() {
-  deltaRij_ = Rot3();
-  deltaTij_ = 0.0;
-  delRdelBiasOmega_.setZero();
+  PreintegratedRotation::resetIntegration();
   preintMeasCov_.setZero();
 }
 
@@ -95,23 +86,23 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   const Vector3 theta_incr = correctedOmega * deltaT;
 
   // rotation increment computed from the current rotation rate measurement
-  const Rot3 incrR = Rot3::Expmap(theta_incr);
+  const Rot3 incrR = Rot3::Expmap(theta_incr); // expensive !!
   const Matrix3 incrRt = incrR.transpose();
 
   // Right Jacobian computed at theta_incr
   const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr);
 
-  // Update Jacobians
-  // ---------------------------------------------------------------------------
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - Jr_theta_incr * deltaT;
+  // Update Jacobian
+  update_delRdelBiasOmega(Jr_theta_incr, incrR, deltaT);
 
   // Update preintegrated measurements covariance
-  // ---------------------------------------------------------------------------
-  const Vector3 theta_i = Rot3::Logmap(deltaRij_); // Parameterization of so(3)
+  const Vector3 theta_i = thetaRij(); // super-expensive, Parameterization of so(3)
   const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3inverse(theta_i);
 
-  Rot3 Rot_j = deltaRij_ * incrR;
-  const Vector3 theta_j = Rot3::Logmap(Rot_j); // Parameterization of so(3)
+  // Update rotation and deltaTij. TODO Frank moved from end of this function !!!
+  updateIntegratedRotationAndDeltaT(incrR, deltaT);
+
+  const Vector3 theta_j = thetaRij(); // super-expensive, , Parameterization of so(3)
   const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first
@@ -129,28 +120,13 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   preintMeasCov_ = F * preintMeasCov_ * F.transpose()
       + measurementCovariance_ * deltaT;
 
-  // Update preintegrated measurements
-  // ---------------------------------------------------------------------------
-  deltaRij_ = deltaRij_ * incrR;
-  deltaTij_ += deltaT;
 }
 
 //------------------------------------------------------------------------------
 Vector3 AHRSFactor::PreintegratedMeasurements::predict(const Vector3& bias,
     boost::optional<Matrix&> H) const {
   const Vector3 biasOmegaIncr = bias - biasHat_;
-  Vector3 delRdelBiasOmega_biasOmegaIncr = delRdelBiasOmega_ * biasOmegaIncr;
-  const Rot3 deltaRij_biascorrected = deltaRij_.retract(
-      delRdelBiasOmega_biasOmegaIncr, Rot3::EXPMAP);
-  const Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
-  if (H) {
-    const Matrix3 Jrinv_theta_bc = //
-        Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
-    const Matrix3 Jr_JbiasOmegaIncr = //
-        Rot3::rightJacobianExpMapSO3(delRdelBiasOmega_biasOmegaIncr);
-    (*H) = Jrinv_theta_bc * Jr_JbiasOmegaIncr * delRdelBiasOmega_;
-  }
-  return theta_biascorrected;
+  return biascorrectedThetaRij(biasOmegaIncr, H);
 }
 //------------------------------------------------------------------------------
 Vector AHRSFactor::PreintegratedMeasurements::DeltaAngles(
@@ -192,13 +168,12 @@ gtsam::NonlinearFactor::shared_ptr AHRSFactor::clone() const {
 }
 
 //------------------------------------------------------------------------------
-void AHRSFactor::print(const std::string& s,
+void AHRSFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  std::cout << s << "AHRSFactor(" << keyFormatter(this->key1()) << ","
+  cout << s << "AHRSFactor(" << keyFormatter(this->key1()) << ","
       << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ",";
   preintegratedMeasurements_.print("  preintegrated measurements:");
-  std::cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]"
-      << std::endl;
+  cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << endl;
   noiseModel_->print("  noise model: ");
   if (body_P_sensor_)
     body_P_sensor_->print("  sensor pose in body frame: ");
