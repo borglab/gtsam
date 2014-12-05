@@ -24,24 +24,31 @@ namespace gtsam {
  * 3D similarity transform
  */
 class Similarity3: private Matrix4 {
-  Similarity3() :
-      Matrix4::Identity() {
-  }
-
-  /// Construct pure scaling
-  Similarity3(double s) :
-      Matrix4::Identity() {
-    this->topLeftCorner<3, 3>() = s * Matrix3::Identity();
-  }
 
   /// Construct from Eigen types
   Similarity3(const Matrix3& R, const Vector3& t, double s) {
     *this << s * R, t, 0, 0, 0, 1;
   }
 
+public:
+
+  Similarity3() {
+    setIdentity();
+  }
+
+  /// Construct pure scaling
+  Similarity3(double s) {
+    setIdentity();
+    this->topLeftCorner<3, 3>() = s * Matrix3::Identity();
+  }
+
   /// Construct from GTSAM types
   Similarity3(const Rot3& R, const Point3& t, double s) {
-    *this << s * R.matrix(), t.vector, 0, 0, 0, 1;
+    *this << s * R.matrix(), t.vector(), 0, 0, 0, 1;
+  }
+
+  bool operator==(const Similarity3& other) const {
+    return Matrix4::operator==(other);
   }
 
   /// @name Manifold
@@ -61,13 +68,13 @@ class Similarity3: private Matrix4 {
   Similarity3 retract(const Vector& v) const {
 
     // Get rotation - translation - scale from 4*4
-    Rot3 R(this->topLeftCorner<3, 3>);
-    Vector3 t(this->topRightCorner<3, 1>);
-    double s(this->at(3, 3));
+    Rot3 R(this->topLeftCorner<3, 3>());
+    Vector3 t(this->topRightCorner<3, 1>());
+    double s((*this)(3, 3));
 
     return Similarity3( //
         R.retract(v.head<3>()), // retract rotation using v[0,1,2]
-        t + v.vector.segment < 3 > (3), // retract translation via v[3,4,5]
+        Point3(t + v.segment < 3 > (3)), // retract translation via v[3,4,5]
         s + v[6]); // finally, update scale using v[6]
   }
 
@@ -110,8 +117,8 @@ TEST(Similarity3, manifold) {
 
   Vector7 v = Vector7::Zero();
   v(6) = 2;
-  Similarity3 sim;
-  EXPECT(sim.retract(z)==sim);
+  Similarity3 sim2;
+  EXPECT(sim2.retract(z)==sim2);
 
   // TODO add unit tests for retract and localCoordinates
 }
