@@ -148,7 +148,8 @@ ImuFactor::ImuFactor(
     const Vector3& gravity, const Vector3& omegaCoriolis,
     boost::optional<const Pose3&> body_P_sensor,
     const bool use2ndOrderCoriolis) :
-        Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov_), pose_i, vel_i, pose_j, vel_j, bias),
+        Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov_),
+            pose_i, vel_i, pose_j, vel_j, bias),
         ImuFactorBase(gravity, omegaCoriolis, body_P_sensor, use2ndOrderCoriolis),
         _PIM_(preintegratedMeasurements) {}
 
@@ -180,13 +181,14 @@ bool ImuFactor::equals(const NonlinearFactor& expected, double tol) const {
 }
 
 //------------------------------------------------------------------------------
-Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
-    const imuBias::ConstantBias& bias_i,
-    boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2,
-    boost::optional<Matrix&> H3,  boost::optional<Matrix&> H4,
-    boost::optional<Matrix&> H5) const{
+Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
+    const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1,
+    boost::optional<Matrix&> H2, boost::optional<Matrix&> H3,
+    boost::optional<Matrix&> H4, boost::optional<Matrix&> H5) const {
 
-  return ImuFactorBase::computeErrorAndJacobians(_PIM_, pose_i, vel_i, pose_j, vel_j, bias_i, H1, H2, H3, H4, H5);
+  return _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
+      gravity_, omegaCoriolis_, use2ndOrderCoriolis_, H1, H2, H3, H4, H5);
 }
 
 } /// namespace gtsam

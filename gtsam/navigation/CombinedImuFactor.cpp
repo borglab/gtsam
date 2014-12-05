@@ -209,7 +209,9 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
     Matrix H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR, Hbias_i, Hbias_j; // pvR = mnemonic: position (p), velocity (v), rotation (R)
 
     // error wrt preintegrated measurements
-    Vector r_pvR(9); r_pvR << ImuFactorBase::computeErrorAndJacobians(_PIM_, pose_i, vel_i, pose_j, vel_j, bias_i,
+    Vector r_pvR(9);
+    r_pvR = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
+        gravity_, omegaCoriolis_, use2ndOrderCoriolis_, //
         H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR);
 
     // error wrt bias evolution model (random walk)
@@ -256,7 +258,9 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
   }
   // else, only compute the error vector:
   // error wrt preintegrated measurements
-  Vector r_pvR(9); r_pvR << ImuFactorBase::computeErrorAndJacobians(_PIM_, pose_i, vel_i, pose_j, vel_j, bias_i,
+  Vector r_pvR(9);
+  r_pvR = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
+      gravity_, omegaCoriolis_, use2ndOrderCoriolis_, //
       boost::none, boost::none, boost::none, boost::none, boost::none);
   // error wrt bias evolution model (random walk)
   Vector6 fbias = bias_j.between(bias_i).vector(); // [bias_j.acc - bias_i.acc; bias_j.gyr - bias_i.gyr]
