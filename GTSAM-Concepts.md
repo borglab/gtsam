@@ -38,10 +38,10 @@ Chart
 A given chart is implemented using a small class that defines the chart itself (from manifold to tangent space) and its inverse.
 
 * types:
-  * `Manifold`, a pointer back to the type
+  * `ManifoldType`, a pointer back to the type
 * valid expressions: 
-  * `v = Chart::local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*
-  * `p = Chart::retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
+  * `v = Chart::Local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*
+  * `p = Chart::Retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
 
 For many differential manifolds, an obvious mapping is the `exponential map`, which  associates straight lines in the tangent space with geodesics on the manifold (and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
@@ -139,18 +139,54 @@ Unit tests heavily depend on the following two functions being defined for all t
 Implementation
 ==============
 
-GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the TESTABLE, MANIFOLD, GROUP, LIE_GROUP, and VECTOR_SPACE concepts.
+GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the 
+TESTABLE, MANIFOLD, GROUP, LIE_GROUP, and VECTOR_SPACE concepts.
 
-`gtsam::traits` is our way to associate these concepts with types, and we also define a limited number of `gtsam::tags` to select the correct implementation of certain functions at compile time (tag dispatching).
+`gtsam::traits` is our way to associate these concepts with types, 
+and we also define a limited number of `gtsam::tags` to select the correct implementation
+of certain functions at compile time (tag dispatching). Charts are done more conventionally, so we start there...
+
+Interfaces
+----------
+
+Because Charts are always written by the user (or automatically generated, see below for vector spaces), 
+we enforce the Chart concept using an abstract base class, acting as an interface:
+
+```
+#!c++
+template <class T, class Derived>
+struct Chart {
+   typedef T ManifoldType;
+   typedef typename traits::TangentVector<T>::type TangentVector;
+   static TangentVector Local(const ManifoldType& p, const ManifoldType& q) {return Derived::local(p,q);}
+   static ManifoldType Retract(const ManifoldType& p, const TangentVector& v) {return Derived::retract(p,v);}
+ protected:
+   Chart(){ (void)&Local; (void)&Retract; }  // enforce early instantiation. 
+}
+```
+
+The [CRTP](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) and the protected constructor 
+automatically check for the existence of the methods in the Derived class, whenever a new Chart is created by
+
+    struct MyChart : Chart<MyType,MyChart> { ... }
 
 Traits
 ------
 
-We will not use Eigen-style or STL-style traits, that define *many* properties at once. Rather, we use boost::mpl style meta-programming functions to facilitate meta-programming, which return a single type or value for every trait. Some rationale/history can be found [here](http://www.boost.org/doc/libs/1_55_0/libs/type_traits/doc/html/boost_typetraits/background.html).
+However, a base class is not a good way to implement/check the other concepts, as we would like these
+to apply equally well to types that are outside GTSAM control, e.g., `Eigen::VectorXd`. This is where
+[traits](http://www.boost.org/doc/libs/1_57_0/libs/type_traits/doc/html/boost_typetraits/background.html) come in.
 
-Traits allow us to play with types that are outside GTSAM control, e.g., `Eigen::VectorXd`. However, for GTSAM types, it is perfectly acceptable (and even desired) to define associated types as internal types, as well, rather than having to use traits internally.
+We will not use Eigen-style or STL-style traits, that define *many* properties at once. 
+Rather, we use boost::mpl style meta-programming functions to facilitate meta-programming, 
+which return a single type or value for every trait. Some rationale/history can be 
+found [here](http://www.boost.org/doc/libs/1_55_0/libs/type_traits/doc/html/boost_typetraits/background.html).
+as well. 
 
-Finally, note that not everything that makes a concept is defined by traits. For example, although a CHART type is supposed to have a `retract` function, there is no trait for this: rather, the  
+Note that not everything that makes a concept is defined by traits. Valid expressions such as group::compose are
+defined simply as free functions.
+Finally, for GTSAM types, it is perfectly acceptable (and even desired) to define associated types as internal types, 
+rather than having to use traits internally.
 
 The conventions for `gtsam::traits` are as follows:
 
@@ -171,7 +207,7 @@ The conventions for `gtsam::traits` are as follows:
     
 * Functors: `gtsam::traits::someFunctor<T>::type`, i.e., they are mixedCase starting with a lowercase letter and define a functor (i.e., no *type*). The functor itself should define a `result_type`. A contrived example
     
-      struct Point2::manhattan {
+     struct Point2::manhattan {
         typedef double result_type;
         Point2 p_;
         manhattan(const Point2& p) : p_(p) {}
@@ -179,10 +215,9 @@ The conventions for `gtsam::traits` are as follows:
           return abs(p_.x()-q.x()) + abs(p_.y()-q.x());
         }
       }
-    
-      template<>
-      gtsam::traits::manhattan<Point2> : Point2::manhattan {}
-  
+      
+    template<> gtsam::traits::manhattan<Point2> : Point2::manhattan {}
+
   By *inherting* the trait from the functor, we can just use the [currying](http://en.wikipedia.org/wiki/Currying) style `gtsam::traits::manhattan<Point2>℗(q)`. Note that, although technically a functor is a type, in spirit it is a free function and hence starts with a lowercase letter.
   
 * Tags: `gtsam::traits::some_category<T>::type`, i.e., they are lower_case and define a *single* `type`, for example:
@@ -261,8 +296,8 @@ An example of implementing a Manifold type is here:
 #!c++
     // GTSAM type
     class Rot2 {
-	  typedef Vector2 TangentVector;
-      class Chart {
+	  typedef Vector2 TangentVector; // internal typedef, not required
+      class Chart : gtsam::Chart<Rot2,Chart>{
 	    static TangentVector local(const Rot2& R1, const Rot2& R2);
 	    static Rot2 retract(const Rot2& R, const TangentVector& v);
       }
@@ -285,11 +320,6 @@ An example of implementing a Manifold type is here:
 
       template<>
       struct defaultChart<Rot2> : Rot2::Chart {}
-
-      template<>
-      struct Manifold<Rot2::Chart> {
-        typedef Rot2 type;      
-      }
 
     }}
 ```
