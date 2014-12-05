@@ -923,26 +923,6 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
 
   // At this point we have updated the BayesTree, now update the remaining iSAM2 data structures
 
-  // Gather factors to add - the new marginal factors
-  GaussianFactorGraph factorsToAdd;
-  typedef pair<Key, vector<GaussianFactor::shared_ptr> > Key_Factors;
-  BOOST_FOREACH(const Key_Factors& key_factors, marginalFactors) {
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, key_factors.second) {
-      if(factor) {
-        factorsToAdd.push_back(factor);
-        if(marginalFactorsIndices)
-          marginalFactorsIndices->push_back(nonlinearFactors_.size());
-        nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
-          factor));
-        if(params_.cacheLinearizedFactors)
-          linearFactors_.push_back(factor);
-        BOOST_FOREACH(Key factorKey, *factor) {
-          fixedVariables_.insert(factorKey); }
-      }
-    }
-  }
-  variableIndex_.augment(factorsToAdd); // Augment the variable index
-
   // Remove the factors to remove that have been summarized in the newly-added marginal factors
   NonlinearFactorGraph removedFactors;
   BOOST_FOREACH(size_t i, factorIndicesToRemove) {
@@ -953,8 +933,47 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
   }
   variableIndex_.remove(factorIndicesToRemove.begin(), factorIndicesToRemove.end(), removedFactors);
 
+  // Fill optional return vector with factor indices that were removed
   if(deletedFactorsIndices)
     deletedFactorsIndices->assign(factorIndicesToRemove.begin(), factorIndicesToRemove.end());
+
+  // Gather factors to add - the new marginal factors
+  GaussianFactorGraph factorsToAdd;
+  FastVector<size_t> newFactorIndices;
+
+  typedef pair<Key, vector<GaussianFactor::shared_ptr> > Key_Factors;
+  BOOST_FOREACH(const Key_Factors& key_factors, marginalFactors) {
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, key_factors.second) {
+      if(factor) {
+        factorsToAdd.push_back(factor);
+
+        NonlinearFactorGraph newMarginalFG;
+        newMarginalFG.push_back(boost::make_shared<LinearContainerFactor>(factor));
+
+        FastVector<size_t> newFactorIndex;
+        Impl::AddFactorsStep1(newMarginalFG, params_.findUnusedFactorSlots, nonlinearFactors_, newFactorIndex);
+        newFactorIndices.insert(newFactorIndices.end(), newFactorIndex.begin(), newFactorIndex.end());
+
+        // Fill optional return value with indices of new marginals
+        if(marginalFactorsIndices)
+          marginalFactorsIndices->insert(marginalFactorsIndices->begin(), newFactorIndex.begin(), newFactorIndex.end());
+
+        if(params_.cacheLinearizedFactors) {
+          if (params_.findUnusedFactorSlots)
+            linearFactors_[newFactorIndex[0]] = factor;
+		  else
+            linearFactors_.push_back(factor);
+        }
+        BOOST_FOREACH(Key factorKey, *factor) {
+          fixedVariables_.insert(factorKey); }
+      }
+    }
+  }
+
+  // Augment the variable index. Must happen after removal of removed factors since some slots might
+  // get reused by new marginal factor!
+  variableIndex_.augment(factorsToAdd, newFactorIndices); // Augment the variable index
+
 
   // Remove the marginalized variables
   Impl::RemoveVariables(FastSet<Key>(leafKeys.begin(), leafKeys.end()), roots_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,

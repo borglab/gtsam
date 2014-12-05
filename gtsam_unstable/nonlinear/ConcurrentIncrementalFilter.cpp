@@ -137,10 +137,11 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
     std::vector<size_t> marginalFactorsIndices;
     std::vector<size_t> deletedFactorsIndices;
     isam2_.marginalizeLeaves(*keysToMove, marginalFactorsIndices, deletedFactorsIndices);
-    currentSmootherSummarizationSlots_.insert(currentSmootherSummarizationSlots_.end(), marginalFactorsIndices.begin(), marginalFactorsIndices.end());
+
     BOOST_FOREACH(size_t index, deletedFactorsIndices) {
       currentSmootherSummarizationSlots_.erase(std::remove(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end(), index), currentSmootherSummarizationSlots_.end());
     }
+    currentSmootherSummarizationSlots_.insert(currentSmootherSummarizationSlots_.end(), marginalFactorsIndices.begin(), marginalFactorsIndices.end());
     gttoc(marginalize);
 
     // Calculate a new shortcut
