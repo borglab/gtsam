@@ -86,7 +86,7 @@ Hence, we formalize by the following extension of the concept:
 Lie Group
 ---------
 
-A Lie group is both a manofold *and* a group. Hence, a LIE_GROUP type should implements both MANIFOLD and GROUP concepts. However, we now also need to be able to evaluate the derivatives of compose and inverse. Hence, we have the following extra valid expressions:
+A Lie group is both a manifold *and* a group. Hence, a LIE_GROUP type should implements both MANIFOLD and GROUP concepts. However, we now also need to be able to evaluate the derivatives of compose and inverse. Hence, we have the following extra valid expressions:
 
 * `compose(p,q,H1,H2)`
 * `inverse(p,H)`
@@ -99,6 +99,12 @@ when a Lie group acts on a space, we have two derivatives to care about:
   * `group::act(g,t,Hg,Ht)`, if the space acted upon is a continuous differentiable manifold
 
 For now, we won't care about Lie groups acting on non-manifolds.
+
+Matrix Group
+------------
+
+Most Lie groups we care about are *Matrix groups*, continuous sub-groups of *GL(n)*, the group of nxn invertible matrices.
+In this case, a lot of the derivatives calculations needed can be standardized.
 
 Vector Space
 ------------
@@ -340,7 +346,6 @@ As an example of a group, let's do a cyclic group, acting on Point2:
 ```
 
 
-
 Lie Group Example
 -----------------
 
@@ -353,26 +358,32 @@ As an example of a Lie group, let's do a similarity transform, acting on Point3:
     
       ... constructors and Manifold stuff...
       
-      Similarity3 operator*(const Similarity3&) const; // compose
-      Similarity3 inverse() const; // matrix inverse
+      Similarity3 compose(const Similarity3&, OptionalJacobian<7,7> H1, OptionalJacobian<7,7> H2) const;
+      Similarity3 between(const Similarity3&, OptionalJacobian<7,7> H1, OptionalJacobian<7,7> H2) const;
+      Similarity3 inverse(OptionalJacobian<7,7> H) const; // matrix inverse
       
+      Similarity3 operator*(const Similarity3& g) const { return compose(h);} // compose sugar
+
       // Act on R3
-      Point3 operator*(cons Point3& p, 
-          OptionalJacobian<3,7> Hg, OptionalJacobian<3,3> Hp) const {
+      Point3 act(cons Point3& p, OptionalJacobian<3,7> Hg, OptionalJacobian<3,3> Hp) const {
         if (Hg) *Hg << - s * R * [p], s * R, R * p; // TODO check !
         if (Hp) *Hp = s*R;
         return s*R*p + t;
       }
+      Point3 operator*(cons Point3& p); // act sugar
     }
 
     namespace group {
       // make Similarity3 obey GROUP concept
-      Similarity3 compose(const Similarity3& g, const Similarity3& h) { return g+h;}
-      Similarity3 between(const Similarity3& g, const Similarity3& h) { return h-g;}
-      Similarity3 inverse(const Similarity3& g) { return -p;}
+      Similarity3 compose(const Similarity3& g, const Similarity3& h, 
+          OptionalJacobian<7,7> H1, OptionalJacobian<7,7> H2) { return g.operator*(p,H1,H2);}
+      Similarity3 between(const Similarity3& g, const Similarity3& h, 
+          OptionalJacobian<7,7> H1, OptionalJacobian<7,7> H2) { return g.between(h,H1,H2);}
+      Similarity3 inverse(const Similarity3& g, OptionalJacobian<7,7> H) { return p.inverse(H);}
       
-      // implement acting on 2D
-      Vector2 act(Const Similarity3& g, cons Point2& p) { return g*p;}
+      // implement acting on 3D
+      Vector2 act(Const Similarity3& g, cons Point3& p, 
+          OptionalJacobian<3,7> Hg, OptionalJacobian<3,3> Hp) { return g.act(p,Hg,Hp);}
     }
 
 ```
