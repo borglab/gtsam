@@ -68,6 +68,9 @@ We do *not* at this time support more than one composition operator per type. Al
 
 Also, a type should provide either multiplication or addition operators depending on the flavor of the operation. To distinguish between the two, we will use a tag (see below).
 
+Group Action
+------------
+
 A group can *act* on another space. For example, a *similarity transform* in 3D can act on 3D space, like
 
     q = s*R*p + t
@@ -81,7 +84,9 @@ Hence, we formalize by the following extension of the concept:
 
 * valid expressions:
   * `group::act(g,t)`, for some instance of a space T, that can be acted upon by the group
-  * `group::act(g,t,H)`, if the space acted upon is a continuous differentiable manifold  
+  * `group::act(g,t,H)`, if the space acted upon is a continuous differentiable manifold
+  
+Group actions are concepts in and of themselves that can be concept checked (see below).
   
 Lie Group
 ---------
@@ -94,7 +99,10 @@ A Lie group is both a manifold *and* a group. Hence, a LIE_GROUP type should imp
 
 where above the `H` arguments stand for optional Jacobian arguments. That makes it possible to create factors implementing priors (PriorFactor) or relations between two instances of a Lie group type (BteweenFactor).
 
-when a Lie group acts on a space, we have two derivatives to care about:
+Lie Group Action
+----------------
+
+When a Lie group acts on a space, we have two derivatives to care about:
 
   * `group::act(g,t,Hg,Ht)`, if the space acted upon is a continuous differentiable manifold
 
