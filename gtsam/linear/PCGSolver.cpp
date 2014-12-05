@@ -83,10 +83,13 @@ void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
 
   // Build a VectorValues for Vector x
   VectorValues vvX = buildVectorValues(x,keyInfo_);
+
   // VectorValues form of A'Ax for multiplyHessianAdd
   VectorValues vvAtAx;
+
   // vvAtAx += 1.0 * A'Ax for each factor
   gfg_.multiplyHessianAdd(1.0, vvX, vvAtAx);
+
   // Make the result as Vector form
   AtAx = vvAtAx.vector();
 
@@ -96,55 +99,26 @@ void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
 void GaussianFactorGraphSystem::getb(Vector &b) const {
   /* compute rhs, assume b pre-allocated */
 
-  /* ------------------------------------------------------------------------
-   * Multiply and getb functions (build function in preconditioner.cpp also)
-   * Yong-Dian's code had a bug that they do not consider noise model
-   * which means that they do not whiten A and b.
-   * It has no problem when the associated noise model has a form of Isotropic
-   * because it can be cancelled out on both l.h.s and r.h.s of equation.
-   * However, it cause a wrong result with non-isotropic noise model.
-   * The unit test for PCSSolver (testPCGSolver.cpp) Yond-Dian made use a
-   * example factor graph which has isotropic noise model and
-   * that is the reason why there was no unit test error.
-   * ------------------------------------------------------------------------*/
-//  /* reset */
-//  b.setZero();
-//
-//  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg_ ) {
-//    if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
-//      const Vector rhs = jf->getb();
-//      /* accumulate At rhs */
-//      for ( JacobianFactor::const_iterator it = jf->begin() ; it != jf->end() ; ++it ) {
-//        /* this map lookup should be replaced */
-//        const KeyInfoEntry &entry = keyInfo_.find(*it)->second;
-//        b.segment(entry.colstart(), entry.dim()) += jf->getA(it).transpose() * rhs ;
-//      }
-//    }
-//    else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
-//      /* accumulate g */
-//      for (HessianFactor::const_iterator it = hf->begin(); it != hf->end(); it++) {
-//        const KeyInfoEntry &entry = keyInfo_.find(*it)->second;
-//        b.segment(entry.colstart(), entry.dim()) += hf->linearTerm(it);
-//      }
-//    }
-//    else {
-//      throw invalid_argument("GaussianFactorGraphSystem::getb gfg contains a factor that is neither a JacobianFactor nor a HessianFactor.");
-//    }
-//  }
-
   // Get whitened r.h.s (b vector) from each factor in the form of VectorValues
   VectorValues vvb = gfg_.gradientAtZero();
+
   // Make the result as Vector form
   b = -vvb.vector();
 }
 
 /**********************************************************************************/
-void GaussianFactorGraphSystem::leftPrecondition(const Vector &x, Vector &y) const
-{ preconditioner_.solve(x, y); }
+void GaussianFactorGraphSystem::leftPrecondition(const Vector &x, Vector &y) const {
+  // For a preconditioner M = L*L^T
+  // Calculate y = L^{-1} x
+  preconditioner_.solve(x, y);
+}
 
 /**********************************************************************************/
-void GaussianFactorGraphSystem::rightPrecondition(const Vector &x, Vector &y) const
-{ preconditioner_.transposeSolve(x, y); }
+void GaussianFactorGraphSystem::rightPrecondition(const Vector &x, Vector &y) const {
+  // For a preconditioner M = L*L^T
+  // Calculate y = L^{-T} x
+  preconditioner_.transposeSolve(x, y);
+}
 
 /**********************************************************************************/
 VectorValues buildVectorValues(const Vector &v,
