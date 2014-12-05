@@ -99,7 +99,7 @@ public:
       const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2,
       boost::optional<Matrix&> H3,  boost::optional<Matrix&> H4, boost::optional<Matrix&> H5) const{
 
-    const double& deltaTij = preintegratedMeasurements_.deltaTij_;
+    const double& deltaTij = preintegratedMeasurements_.deltaTij();
     // We need the mistmatch w.r.t. the biases used for preintegration
     const Vector3 biasAccIncr = bias_i.accelerometer() - preintegratedMeasurements_.biasHat_.accelerometer();
     const Vector3 biasOmegaIncr = bias_i.gyroscope() - preintegratedMeasurements_.biasHat_.gyroscope();
@@ -111,10 +111,11 @@ public:
 
     // Jacobian computation
     /* ---------------------------------------------------------------------------------------------------- */
-    const Rot3 deltaRij_biascorrected = preintegratedMeasurements_.deltaRij_.retract(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
-    // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
-
-    Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
+    // Get Get so<3> version of bias corrected rotation
+    // If H5 is asked for, we will need the Jacobian, which we store in H5
+    // H5 will then be corrected below to take into account the Coriolis effect
+    Vector3 theta_biascorrected =
+        preintegratedMeasurements_.biascorrectedThetaRij(biasOmegaIncr, H5);
 
     Vector3 theta_biascorrected_corioliscorrected = theta_biascorrected  -
         Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij; // Coriolis term
@@ -122,6 +123,7 @@ public:
     const Rot3 deltaRij_biascorrected_corioliscorrected =
         Rot3::Expmap( theta_biascorrected_corioliscorrected );
 
+    // TODO: these are not always needed
     const Rot3 fRhat = deltaRij_biascorrected_corioliscorrected.between(Rot_i.between(Rot_j));
     const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_biascorrected_corioliscorrected);
     const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
@@ -189,9 +191,8 @@ public:
           Z_3x3;
     }
     if(H5) {
-      const Matrix3 Jrinv_theta_bc = Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
-      const Matrix3 Jr_JbiasOmegaIncr = Rot3::rightJacobianExpMapSO3(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr);
-      const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega_;
+      // H5 by this point already contains 3*3 biascorrectedThetaRij derivative
+      const Matrix3 JbiasOmega = Jr_theta_bcc * (*H5);
       H5->resize(9,6);
       (*H5) <<
           // dfP/dBias
@@ -228,7 +229,7 @@ public:
       const PreintegrationBase& preintegratedMeasurements,
       const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis){
 
-    const double& deltaTij = preintegratedMeasurements.deltaTij_;
+    const double& deltaTij = preintegratedMeasurements.deltaTij();
     const Vector3 biasAccIncr = bias_i.accelerometer() - preintegratedMeasurements.biasHat_.accelerometer();
     const Vector3 biasOmegaIncr = bias_i.gyroscope() - preintegratedMeasurements.biasHat_.gyroscope();
 
@@ -255,8 +256,10 @@ public:
       vel_j += - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij; // 2nd order term for velocity
     }
 
-    const Rot3 deltaRij_biascorrected = preintegratedMeasurements.deltaRij_.retract(preintegratedMeasurements.delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
+    const Rot3 deltaRij_biascorrected = preintegratedMeasurements.biascorrectedDeltaRij(biasOmegaIncr);
+    // TODO Frank says comment below does not reflect what was in code
     // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
+
     Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
     Vector3 theta_biascorrected_corioliscorrected = theta_biascorrected  -
         Rot_i.inverse().matrix() * omegaCoriolis * deltaTij; // Coriolis term

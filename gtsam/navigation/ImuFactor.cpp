@@ -86,11 +86,14 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // Update preintegrated measurements covariance
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in an EKF framework
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  const Vector3 theta_i = Rot3::Logmap(deltaRij_); // parametrization of so(3)
+  const Vector3 theta_i = thetaRij(); // super-expensive parametrization of so(3)
   const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
 
-  Rot3 Rot_j = deltaRij_ * Rincr;
-  const Vector3 theta_j = Rot3::Logmap(Rot_j); // parametrization of so(3)
+  // Update preintegrated measurements. TODO Frank moved from end of this function !!!
+  // Even though Luca says has to happen after ? Don't understand why.
+  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
+
+  const Vector3 theta_j = thetaRij(); // super-expensive parametrization of so(3)
   const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
 
   Matrix H_pos_pos    = I_3x3;
@@ -99,7 +102,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
 
   Matrix H_vel_pos    = Z_3x3;
   Matrix H_vel_vel    = I_3x3;
-  Matrix H_vel_angles = - deltaRij_.matrix() * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
+  Matrix H_vel_angles = - deltaRij() * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
   // analytic expression corresponding to the following numerical derivative
   // Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
 
@@ -130,10 +133,6 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   //      Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
   //
   // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
-
-  // Update preintegrated measurements (this has to be done after the update of covariances and jacobians!)
-  /* ----------------------------------------------------------------------------------------------------------------------- */
-  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
 }
 
 //------------------------------------------------------------------------------

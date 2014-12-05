@@ -21,11 +21,10 @@
 
 #pragma once
 
-/* GTSAM includes */
+#include <gtsam/navigation/PreintegratedRotation.h>
 #include <gtsam/navigation/ImuBias.h>
 
 namespace gtsam {
-
 
 /**
  * PreintegrationBase is the base class for PreintegratedMeasurements
@@ -33,7 +32,7 @@ namespace gtsam {
  * It includes the definitions of the preintegrated variables and the methods
  * to access, print, and compare them.
  */
-class PreintegrationBase {
+class PreintegrationBase : public PreintegratedRotation {
 
   friend class ImuFactorBase;
   friend class ImuFactor;
@@ -45,14 +44,11 @@ protected:
 
   Vector3 deltaPij_; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
   Vector3 deltaVij_; ///< Preintegrated relative velocity (in global frame)
-  Rot3 deltaRij_;    ///< Preintegrated relative orientation (in frame i)
-  double deltaTij_;  ///< Time interval from i to j
 
   Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
   Matrix3 delPdelBiasOmega_; ///< Jacobian of preintegrated position w.r.t. angular rate bias
   Matrix3 delVdelBiasAcc_;   ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
   Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
-  Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
 public:
 
@@ -65,82 +61,90 @@ public:
   PreintegrationBase(const imuBias::ConstantBias& bias, const bool use2ndOrderIntegration) :
     biasHat_(bias), use2ndOrderIntegration_(use2ndOrderIntegration),
     deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()),
-    deltaRij_(Rot3()), deltaTij_(0.0),
     delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
-    delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
-    delRdelBiasOmega_(Z_3x3) {}
+    delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3) {}
+
+  /// methods to access class variables
+  const Vector3& deltaPij() const {return deltaPij_;}
+  const Vector3& deltaVij() const {return deltaVij_;}
+  Vector biasHat() const { return biasHat_.vector();} // TODO expensive
+  const Matrix3& delPdelBiasAcc() const { return delPdelBiasAcc_;}
+  const Matrix3& delPdelBiasOmega() const { return delPdelBiasOmega_;}
+  const Matrix3& delVdelBiasAcc() const { return delVdelBiasAcc_;}
+  const Matrix3& delVdelBiasOmega() const { return delVdelBiasOmega_;}
 
   /// Needed for testable
   void print(const std::string& s) const {
-    std::cout << s << std::endl;
-    biasHat_.print("  biasHat");
-    std::cout << "  deltaTij " << deltaTij_ << std::endl;
+    PreintegratedRotation::print(s);
     std::cout << "  deltaPij [ " << deltaPij_.transpose() << " ]" << std::endl;
     std::cout << "  deltaVij [ " << deltaVij_.transpose() << " ]" << std::endl;
-    deltaRij_.print("  deltaRij ");
+    biasHat_.print("  biasHat");
   }
 
   /// Needed for testable
   bool equals(const PreintegrationBase& expected, double tol) const {
-    return biasHat_.equals(expected.biasHat_, tol)
+    return PreintegratedRotation::equals(expected, tol)
+    && biasHat_.equals(expected.biasHat_, tol)
     && equal_with_abs_tol(deltaPij_, expected.deltaPij_, tol)
     && equal_with_abs_tol(deltaVij_, expected.deltaVij_, tol)
-    && deltaRij_.equals(expected.deltaRij_, tol)
-    && fabs(deltaTij_ - expected.deltaTij_) < tol
     && equal_with_abs_tol(delPdelBiasAcc_, expected.delPdelBiasAcc_, tol)
     && equal_with_abs_tol(delPdelBiasOmega_, expected.delPdelBiasOmega_, tol)
     && equal_with_abs_tol(delVdelBiasAcc_, expected.delVdelBiasAcc_, tol)
-    && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_, tol)
-    && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_, tol);
+    && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_, tol);
   }
 
   /// Re-initialize PreintegratedMeasurements
   void resetIntegration(){
+    PreintegratedRotation::resetIntegration();
     deltaPij_ = Vector3::Zero();
     deltaVij_ = Vector3::Zero();
-    deltaRij_ = Rot3();
-    deltaTij_ = 0.0;
     delPdelBiasAcc_ = Z_3x3;
     delPdelBiasOmega_ = Z_3x3;
     delVdelBiasAcc_ = Z_3x3;
     delVdelBiasOmega_ = Z_3x3;
-    delRdelBiasOmega_ = Z_3x3;
   }
 
   /// Update preintegrated measurements
-  void updatePreintegratedMeasurements(const Vector3& correctedAcc, const Rot3& Rincr, double deltaT){
+  void updatePreintegratedMeasurements(const Vector3& correctedAcc,
+      const Rot3& incrR, double deltaT) {
+    Matrix3 dRij = deltaRij(); // expensive
+    Vector3 temp = dRij * correctedAcc * deltaT;
     if(!use2ndOrderIntegration_){
       deltaPij_ += deltaVij_ * deltaT;
     }else{
-      deltaPij_ += deltaVij_ * deltaT + 0.5 * deltaRij_.matrix() * correctedAcc * deltaT*deltaT;
+      deltaPij_ += deltaVij_ * deltaT + 0.5 * temp * deltaT;
     }
-    deltaVij_ += deltaRij_.matrix() * correctedAcc * deltaT;
-    deltaRij_ = deltaRij_ * Rincr;
-    deltaTij_ += deltaT;
+    deltaVij_ += temp;
+    // TODO: we update rotation *after* the others. Is that correct?
+    updateIntegratedRotationAndDeltaT(incrR,deltaT);
   }
 
   /// Update Jacobians to be used during preintegration
   void updatePreintegratedJacobians(const Vector3& correctedAcc,
-      const Matrix3& Jr_theta_incr, const Rot3& Rincr, double deltaT){
-    if(!use2ndOrderIntegration_){
+      const Matrix3& Jr_theta_incr, const Rot3& incrR, double deltaT){
+    Matrix3 dRij = deltaRij(); // expensive
+    Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega();
+    if (!use2ndOrderIntegration_) {
       delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT;
       delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT;
-    }else{
-      delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * deltaRij_.matrix() * deltaT*deltaT;
-      delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT - 0.5 * deltaRij_.matrix()
-                                              * skewSymmetric(correctedAcc) * deltaT*deltaT * delRdelBiasOmega_;
+    } else {
+      delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * dRij * deltaT * deltaT;
+      delPdelBiasOmega_ += deltaT*(delVdelBiasOmega_ + temp * 0.5);
     }
-    delVdelBiasAcc_ += -deltaRij_.matrix() * deltaT;
-    delVdelBiasOmega_ += -deltaRij_.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega_;
-    delRdelBiasOmega_ = Rincr.inverse().matrix() * delRdelBiasOmega_ - Jr_theta_incr  * deltaT;
+    delVdelBiasAcc_ += -dRij * deltaT;
+    delVdelBiasOmega_ += temp;
+    // TODO: we update rotation *after* the others. Is that correct?
+    update_delRdelBiasOmega(Jr_theta_incr,incrR,deltaT);
   }
 
-  void correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc, const Vector3& measuredOmega,
-      Vector3& correctedAcc, Vector3& correctedOmega, boost::optional<const Pose3&> body_P_sensor){
+  void correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, Vector3& correctedAcc,
+      Vector3& correctedOmega, boost::optional<const Pose3&> body_P_sensor) {
     correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
     correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
-    // Then compensate for sensor-body displacement: we express the quantities (originally in the IMU frame) into the body frame
+    // Then compensate for sensor-body displacement: we express the quantities
+    // (originally in the IMU frame) into the body frame
     if(body_P_sensor){
       Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
       correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
@@ -149,18 +153,6 @@ public:
       // linear acceleration vector in the body frame
     }
   }
-
-  /// methods to access class variables
-  Matrix deltaRij() const {return deltaRij_.matrix();}
-  double deltaTij() const{return deltaTij_;}
-  Vector deltaPij() const {return deltaPij_;}
-  Vector deltaVij() const {return deltaVij_;}
-  Vector biasHat() const { return biasHat_.vector();}
-  Matrix delPdelBiasAcc() const { return delPdelBiasAcc_;}
-  Matrix delPdelBiasOmega() const { return delPdelBiasOmega_;}
-  Matrix delVdelBiasAcc() const { return delVdelBiasAcc_;}
-  Matrix delVdelBiasOmega() const { return delVdelBiasOmega_;}
-  Matrix delRdelBiasOmega() const{ return delRdelBiasOmega_;}
 
   /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
   // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
@@ -189,16 +181,14 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
     ar & BOOST_SERIALIZATION_NVP(deltaPij_);
     ar & BOOST_SERIALIZATION_NVP(deltaVij_);
-    ar & BOOST_SERIALIZATION_NVP(deltaRij_);
-    ar & BOOST_SERIALIZATION_NVP(deltaTij_);
     ar & BOOST_SERIALIZATION_NVP(delPdelBiasAcc_);
     ar & BOOST_SERIALIZATION_NVP(delPdelBiasOmega_);
     ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
     ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
-    ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
 };
 

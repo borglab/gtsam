@@ -91,11 +91,13 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
   // consider the uncertainty of the bias selection and we keep correlation between biases and preintegrated measurements
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  const Vector3 theta_i = Rot3::Logmap(deltaRij_); // parametrization of so(3)
+  const Vector3 theta_i = thetaRij(); // super-expensive parametrization of so(3)
   const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
 
-  Rot3 Rot_j = deltaRij_ * Rincr;
-  const Vector3 theta_j = Rot3::Logmap(Rot_j); // parametrization of so(3)
+  // Update preintegrated measurements. TODO Frank moved from end of this function !!!
+  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
+
+  const Vector3 theta_j = thetaRij(); // super-expensive parametrization of so(3)
   const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
 
   // Single Jacobians to propagate covariance
@@ -105,10 +107,10 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 
   Matrix3 H_vel_pos    = Z_3x3;
   Matrix3 H_vel_vel    = I_3x3;
-  Matrix3 H_vel_angles = - deltaRij_.matrix() * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
+  Matrix3 H_vel_angles = - deltaRij() * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
   // analytic expression corresponding to the following numerical derivative
   // Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
-  Matrix3 H_vel_biasacc = - deltaRij_.matrix() * deltaT;
+  Matrix3 H_vel_biasacc = - deltaRij() * deltaT;
 
   Matrix3 H_angles_pos   = Z_3x3;
   Matrix3 H_angles_vel    = Z_3x3;
@@ -150,10 +152,6 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   G_measCov_Gt.block<3,3>(6,3) = block23.transpose();
 
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
-
-  // Update preintegrated measurements
-  /* ----------------------------------------------------------------------------------------------------------------------- */
-  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
 }
 
 //------------------------------------------------------------------------------
