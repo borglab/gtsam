@@ -16,9 +16,9 @@ Manifold
 
 To optimize over continuous types, we assume they are manifolds. This is central to GTSAM and hence discussed in some more detail below.
 
-[Manifolds](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) and [charts](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) are intimately linked concepts. We are only interested here in [differentiable manifolds](http://en.wikipedia.org/wiki/Differentiable_manifold#Definition), continuous spaces that can be locally approximated *at any point* using a local vector space, called the [tangent space](http://en.wikipedia.org/wiki/Tangent_space). A *chart* is an invertible map from the manifold to the vector space.
+[Manifolds](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) and [charts](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) are intimately linked concepts. We are only interested here in [differentiable manifolds](http://en.wikipedia.org/wiki/Differentiable_manifold#Definition), continuous spaces that can be locally approximated *at any point* using a local vector space, called the [tangent space](http://en.wikipedia.org/wiki/Tangent_space). A *chart* is an invertible map from the manifold to that tangent space.
 
-In GTSAM we assume that a manifold type can yield such a chart at any point, and we require that a functor `defaultChart` is available that, when called for any point on the manifold, returns a Chart type. Hence, the functor itself can be seen as an *Atlas*.
+In GTSAM we assume that a manifold type can yield such a *Chart* at any point, and we require that a functor `defaultChart` is available that, when called for any point on the manifold, returns a Chart type. Hence, the functor itself can be seen as an *Atlas*.
 
 In detail, we ask the following are defined for a MANIFOLD type:
 
@@ -54,12 +54,12 @@ Group
 A [group](http://en.wikipedia.org/wiki/Group_(mathematics)) should be well known from grade school :-), and provides a type with a composition operation that is closed, associative, has an identity element, and an inverse for each element.
 
 * values:
-  * `identity`
+  * `group::identity<G>()`
 * valid expressions:
-  * `compose(p,q)`
-  * `inverse(p)`
-  * `between(p,q)`
-* invariants:
+  * `group::compose(p,q)`
+  * `group::inverse(p)`
+  * `group::between(p,q)`
+* invariants (using namespace group):
   * `compose(p,inverse(p)) == identity`
   * `compose(p,between(p,q)) == q`
   * `between(p,q) == compose(inverse(p),q)`
@@ -68,10 +68,35 @@ We do *not* at this time support more than one composition operator per type. Al
 
 Also, a type should provide either multiplication or addition operators depending on the flavor of the operation. To distinguish between the two, we will use a tag (see below).
 
+A group can *act* on another space. For example, a *similarity transform* in 3D can act on 3D space, like
+
+    q = s*R*p + t
+    
+Even finite groups can act on continuous entities. For example, the [cyclic group of order 6](http://en.wikipedia.org/wiki/Cyclic_group) can rotate 2D vectors around the origin:
+
+    q = R(i)*p
+    where R(i) = R(60)^i, where R(60) rotates by 60 degrees
+    
+Hence, we formalize by the following extension of the concept:
+
+* valid expressions:
+  * `group::act(g,t)`, for some instance of a space T, that can be acted upon by the group
+  * `group::act(g,t,H)`, if the group acted upon is a continuous differentiable manifold  
+  
 Lie Group
 ---------
 
-Implements both MANIFOLD and GROUP
+A Lie group is both a manofold *and* a group. Hence, a LIE_GROUP type should implements both MANIFOLD and GROUP concepts. However, we now also need to be able to evaluate the derivatives of compose and inverse. Hence, we have the following extra valid expressions:
+
+* `compose(p,q,H1,H2)`
+* `inverse(p,H)`
+* `between(p,q,H1,H2)`
+
+where above the `H` arguments stand for optional Jacobian arguments. That makes it possible to create factors implementing priors (PriorFactor) or relations between two instances of a Lie group type (BteweenFactor).
+
+when a Lie group acts on a space, we have two derivatives to care about:
+
+  * `group::act(g,t,Hg,Ht)`, if the group acted upon is a continuous differentiable manifold
 
 Vector Space
 ------------
@@ -282,6 +307,74 @@ namespace gtsam {
     }
 }
 ```
+
+Group Example
+-------------
+
+As an example of a group, let's do a cyclic group, acting on Point2:
+
+```
+#!c++
+    // GTSAM type
+    class Cyclic {
+      CyclicGroup(size_t n) {}
+      Cyclic operator+(const Cyclic&) const; // add modulo n
+      Cyclic operator-() const; // negate modulo n
+      
+      // Act on R2, rotate by i*360/n, derivative will simply be 2*2 rotation matrix
+      Point2 operator*(cons Point2& p, OptionalJacobian<2,2> H) const;
+    }
+
+    namespace group {
+      // make Cyclic obey GROUP concept
+      Cyclic compose(const Cyclic& g, const Cyclic& h) { return g+h;}
+      Cyclic between(const Cyclic& g, const Cyclic& h) { return h-g;}
+      Cyclic inverse(const Cyclic& g) { return -p;}
+      
+      // implement acting on 2D
+      Vector2 act(Const Cyclic& g, cons Point2& p) { return g*p;}
+    }
+
+```
+
+
+
+Lie Group Example
+-----------------
+
+As an example of a Lie group, let's do a similarity transform, acting on Point3:
+
+```
+#!c++
+    // GTSAM type
+    class Similarity3 {
+    
+      ... constructors and Manifold stuff...
+      
+      Similarity3 operator*(const Similarity3&) const; // compose
+      Similarity3 inverse() const; // matrix inverse
+      
+      // Act on R3
+      Point3 operator*(cons Point3& p, 
+          OptionalJacobian<3,7> Hg, OptionalJacobian<3,3> Hp) const {
+        if (Hg) *Hg << - s * R * [p], s * R, R * p; // TODO check !
+        if (Hp) *Hp = s*R;
+        return s*R*p + t;
+      }
+    }
+
+    namespace group {
+      // make Similarity3 obey GROUP concept
+      Similarity3 compose(const Similarity3& g, const Similarity3& h) { return g+h;}
+      Similarity3 between(const Similarity3& g, const Similarity3& h) { return h-g;}
+      Similarity3 inverse(const Similarity3& g) { return -p;}
+      
+      // implement acting on 2D
+      Vector2 act(Const Similarity3& g, cons Point2& p) { return g*p;}
+    }
+
+```
+
 
 Vector Space Example
 --------------------
