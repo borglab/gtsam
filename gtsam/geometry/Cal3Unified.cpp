@@ -52,8 +52,8 @@ bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
 /* ************************************************************************* */
 // todo: make a fixed sized jacobian version of this
 Point2 Cal3Unified::uncalibrate(const Point2& p,
-       boost::optional<Matrix&> H1,
-       boost::optional<Matrix&> H2) const {
+       OptionalJacobian<2,10> H1,
+       OptionalJacobian<2,2> H2) const {
 
   // this part of code is modified from Cal3DS2,
   // since the second part of this model (after project to normalized plane)
@@ -81,10 +81,7 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
     Vector2 DU;
     DU << -xs * sqrt_nx * xi_sqrt_nx2, //
         -ys * sqrt_nx * xi_sqrt_nx2;
-
-    H1->resize(2,10);
-    H1->block<2,9>(0,0) = H1base;
-    H1->block<2,1>(0,9) = H2base * DU;
+    *H1 << H1base, H2base * DU;
   }
 
   // Inlined derivative for points
@@ -96,7 +93,7 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
     DU << (sqrt_nx + xi*(ys*ys + 1)) * denom, mid, //
         mid, (sqrt_nx + xi*(xs*xs + 1)) * denom;
 
-    *H2 = H2base * DU;
+    *H2 << H2base * DU;
   }
 
   return puncalib;

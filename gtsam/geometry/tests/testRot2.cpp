@@ -49,7 +49,9 @@ TEST( Rot2, unit)
 /* ************************************************************************* */
 TEST( Rot2, transpose)
 {
-  CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
+  Matrix expected = R.inverse().matrix();
+  Matrix actual = R.transpose();
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

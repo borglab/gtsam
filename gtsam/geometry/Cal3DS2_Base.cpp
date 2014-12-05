@@ -28,8 +28,10 @@ Cal3DS2_Base::Cal3DS2_Base(const Vector &v):
     fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), p1_(v[7]), p2_(v[8]){}
 
 /* ************************************************************************* */
-Matrix Cal3DS2_Base::K() const {
-  return (Matrix(3, 3) << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0).finished();
+Matrix3 Cal3DS2_Base::K() const {
+    Matrix3 K;
+    K << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0;
+    return K;
 }
 
 /* ************************************************************************* */
@@ -39,7 +41,7 @@ Vector Cal3DS2_Base::vector() const {
 
 /* ************************************************************************* */
 void Cal3DS2_Base::print(const std::string& s_) const {
-  gtsam::print(K(), s_ + ".K");
+  gtsam::print((Matrix)K(), s_ + ".K");
   gtsam::print(Vector(k()), s_ + ".k");
 }
 
@@ -91,8 +93,7 @@ static Matrix2 D2dintrinsic(double x, double y, double rr,
 
 /* ************************************************************************* */
 Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
-    boost::optional<Matrix29&> H1,
-    boost::optional<Matrix2&> H2) const {
+    OptionalJacobian<2,9> H1, OptionalJacobian<2,2> H2) const {
 
   //  rr = x^2 + y^2;
   //  g = (1 + k(1)*rr + k(2)*rr^2);
@@ -127,26 +128,6 @@ Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
 }
 
 /* ************************************************************************* */
-Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
-
-  if (H1 || H2) {
-    Matrix29 D1;
-    Matrix2 D2;
-    Point2 pu = uncalibrate(p, D1, D2);
-    if (H1)
-      *H1 = D1;
-    if (H2)
-      *H2 = D2;
-    return pu;
-
-  } else {
-    return uncalibrate(p);
-  }
-}
-
-/* ************************************************************************* */
 Point2 Cal3DS2_Base::calibrate(const Point2& pi, const double tol) const {
   // Use the following fixed point iteration to invert the radial distortion.
   // pn_{t+1} = (inv(K)*pi - dp(pn_{t})) / g(pn_{t})
@@ -177,7 +158,7 @@ Point2 Cal3DS2_Base::calibrate(const Point2& pi, const double tol) const {
 }
 
 /* ************************************************************************* */
-Matrix Cal3DS2_Base::D2d_intrinsic(const Point2& p) const {
+Matrix2 Cal3DS2_Base::D2d_intrinsic(const Point2& p) const {
   const double x = p.x(), y = p.y(), xx = x * x, yy = y * y;
   const double rr = xx + yy;
   const double r4 = rr * rr;
@@ -188,7 +169,7 @@ Matrix Cal3DS2_Base::D2d_intrinsic(const Point2& p) const {
 }
 
 /* ************************************************************************* */
-Matrix Cal3DS2_Base::D2d_calibration(const Point2& p) const {
+Matrix29 Cal3DS2_Base::D2d_calibration(const Point2& p) const {
   const double x = p.x(), y = p.y(), xx = x * x, yy = y * y, xy = x * y;
   const double rr = xx + yy;
   const double r4 = rr * rr;
