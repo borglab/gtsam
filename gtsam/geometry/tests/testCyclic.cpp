@@ -32,6 +32,10 @@ public:
   operator size_t() const {
     return i_;
   }
+  /// Addition modulo N
+  Cyclic operator+(const Cyclic& h) const {
+    return (i_+h.i_) % N;
+  }
 };
 
 namespace traits {
@@ -42,14 +46,21 @@ template<size_t N> struct structure_category<Cyclic<N> > {
 } // \namespace traits
 
 namespace group {
-template<size_t N>
-Cyclic<N> compose(const Cyclic<N>&g, const Cyclic<N>& h);
 
 template<size_t N>
-Cyclic<N> between(const Cyclic<N>&g, const Cyclic<N>& h);
+Cyclic<N> compose(const Cyclic<N>&g, const Cyclic<N>& h) {
+  return g + h;
+}
 
 template<size_t N>
-Cyclic<N> inverse(const Cyclic<N>&g);
+Cyclic<N> between(const Cyclic<N>&g, const Cyclic<N>& h) {
+  return h - g;
+}
+
+template<size_t N>
+Cyclic<N> inverse(const Cyclic<N>&g) {
+  return -g;
+}
 
 namespace traits {
 /// Define the trait that specifies Cyclic's identity element
@@ -100,13 +111,31 @@ typedef Cyclic<6> G; // Let's use the cyclic group of order 6
 
 //******************************************************************************
 TEST(Cyclic, Concept) {
-  EXPECT_LONGS_EQUAL(0, group::traits::identity<G>::value);
   BOOST_CONCEPT_ASSERT((Group<G>));
+  EXPECT_LONGS_EQUAL(0, group::traits::identity<G>::value);
+  G g(2), h(3);
+  // EXPECT(Group<G>().check_invariants(g,h))
 }
 
 //******************************************************************************
 TEST(Cyclic, Constructor) {
   G g(0);
+}
+
+//******************************************************************************
+TEST(Cyclic, Compose) {
+  G e(0), g(2), h(3);
+  EXPECT_LONGS_EQUAL(5, group::compose(g,h));
+  EXPECT_LONGS_EQUAL(0, group::compose(h,h));
+  EXPECT_LONGS_EQUAL(3, group::compose(h,e));
+}
+
+//******************************************************************************
+TEST(Cyclic, Between) {
+  G g(2), h(3);
+  EXPECT_LONGS_EQUAL(1, group::between(g,h));
+  EXPECT_LONGS_EQUAL(0, group::between(g,g));
+  EXPECT_LONGS_EQUAL(0, group::between(h,h));
 }
 
 //******************************************************************************

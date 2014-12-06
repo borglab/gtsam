@@ -143,15 +143,19 @@ public:
     d = between(g, h);
     ig = inverse(g);
     test = operator_usage(g, h, flavor);
-//    test2 = equal(g, h);
   }
 
-  bool check_invariants(const G& a, const G& b) {
-    return (equal(compose(a, inverse(a)), e))
-        && (equal(between(a, b), compose(inverse(a), b)))
-        && (equal(compose(a, between(a, b)), b))
-        && operator_usage(a, b, flavor);
-  }
+// TODO: these all require default constructors :-(
+// Also, requires equal which is not required of a group
+//  Group():e(group::traits::identity<G>::value) {
+//  }
+//
+//  bool check_invariants(const G& a, const G& b) {
+//    return (equal(compose(a, inverse(a)), e))
+//        && (equal(between(a, b), compose(inverse(a), b)))
+//        && (equal(compose(a, between(a, b)), b))
+//        && operator_usage(a, b, flavor);
+//  }
 
 private:
   flavor_tag flavor;
