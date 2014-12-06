@@ -74,9 +74,12 @@ namespace traits {
 
 /// Define the trait that specifies Cyclic's identity element
 template<size_t N> struct identity<Cyclic<N> > {
-  static const Cyclic<N> value = Cyclic<N>(0);
+  static const Cyclic<N> value;
   typedef Cyclic<N> value_type;
 };
+
+template<size_t N>
+const Cyclic<N> identity<Cyclic<N> >::value = Cyclic<N>(0);
 
 /// Define the trait that asserts Cyclic is an additive group
 template<size_t N> struct flavor<Cyclic<N> > {
