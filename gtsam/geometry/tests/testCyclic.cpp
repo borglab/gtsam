@@ -36,6 +36,14 @@ public:
   Cyclic operator+(const Cyclic& h) const {
     return (i_+h.i_) % N;
   }
+  /// Subtraction modulo N
+  Cyclic operator-(const Cyclic& h) const {
+    return (N+i_-h.i_) % N;
+  }
+  /// Inverse
+  Cyclic operator-() const {
+    return (N-i_) % N;
+  }
 };
 
 namespace traits {
@@ -124,18 +132,46 @@ TEST(Cyclic, Constructor) {
 
 //******************************************************************************
 TEST(Cyclic, Compose) {
-  G e(0), g(2), h(3);
-  EXPECT_LONGS_EQUAL(5, group::compose(g,h));
-  EXPECT_LONGS_EQUAL(0, group::compose(h,h));
-  EXPECT_LONGS_EQUAL(3, group::compose(h,e));
+  EXPECT_LONGS_EQUAL(0, group::compose(G(0),G(0)));
+  EXPECT_LONGS_EQUAL(1, group::compose(G(0),G(1)));
+  EXPECT_LONGS_EQUAL(2, group::compose(G(0),G(2)));
+  EXPECT_LONGS_EQUAL(3, group::compose(G(0),G(3)));
+  EXPECT_LONGS_EQUAL(4, group::compose(G(0),G(4)));
+  EXPECT_LONGS_EQUAL(5, group::compose(G(0),G(5)));
+
+  EXPECT_LONGS_EQUAL(2, group::compose(G(2),G(0)));
+  EXPECT_LONGS_EQUAL(3, group::compose(G(2),G(1)));
+  EXPECT_LONGS_EQUAL(4, group::compose(G(2),G(2)));
+  EXPECT_LONGS_EQUAL(5, group::compose(G(2),G(3)));
+  EXPECT_LONGS_EQUAL(0, group::compose(G(2),G(4)));
+  EXPECT_LONGS_EQUAL(1, group::compose(G(2),G(5)));
 }
 
 //******************************************************************************
 TEST(Cyclic, Between) {
-  G g(2), h(3);
-  EXPECT_LONGS_EQUAL(1, group::between(g,h));
-  EXPECT_LONGS_EQUAL(0, group::between(g,g));
-  EXPECT_LONGS_EQUAL(0, group::between(h,h));
+  EXPECT_LONGS_EQUAL(0, group::between(G(0),G(0)));
+  EXPECT_LONGS_EQUAL(1, group::between(G(0),G(1)));
+  EXPECT_LONGS_EQUAL(2, group::between(G(0),G(2)));
+  EXPECT_LONGS_EQUAL(3, group::between(G(0),G(3)));
+  EXPECT_LONGS_EQUAL(4, group::between(G(0),G(4)));
+  EXPECT_LONGS_EQUAL(5, group::between(G(0),G(5)));
+
+  EXPECT_LONGS_EQUAL(4, group::between(G(2),G(0)));
+  EXPECT_LONGS_EQUAL(5, group::between(G(2),G(1)));
+  EXPECT_LONGS_EQUAL(0, group::between(G(2),G(2)));
+  EXPECT_LONGS_EQUAL(1, group::between(G(2),G(3)));
+  EXPECT_LONGS_EQUAL(2, group::between(G(2),G(4)));
+  EXPECT_LONGS_EQUAL(3, group::between(G(2),G(5)));
+}
+
+//******************************************************************************
+TEST(Cyclic, Ivnverse) {
+  EXPECT_LONGS_EQUAL(0, group::inverse(G(0)));
+  EXPECT_LONGS_EQUAL(5, group::inverse(G(1)));
+  EXPECT_LONGS_EQUAL(4, group::inverse(G(2)));
+  EXPECT_LONGS_EQUAL(3, group::inverse(G(3)));
+  EXPECT_LONGS_EQUAL(2, group::inverse(G(4)));
+  EXPECT_LONGS_EQUAL(1, group::inverse(G(5)));
 }
 
 //******************************************************************************
