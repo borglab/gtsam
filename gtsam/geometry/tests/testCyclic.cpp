@@ -15,53 +15,76 @@
  * @author Frank Dellaert
  **/
 
-#include <gtsam/base/concepts.h>
-#include <cstddef>
-
-namespace gtsam {
-
-template<size_t N>
-class Cyclic {
-  size_t i_;
-public:
-  static const Cyclic Identity = Cyclic(0);
-  Cyclic(size_t i) :
-      i_(i) {
-  }
-};
-
-namespace traits {
-template<size_t N> struct identity<Cyclic<N> > {
-  static const Cyclic<N> value = Cyclic<N>::Identity;
-  typedef Cyclic<N> value_type;
-};
-template<size_t N> struct group_flavor<Cyclic<N> > {
-  typedef additive_group_tag type;
-};
-} // \namespace traits
-
-} // \namespace gtsam
-
-//#include <gtsam/geometry/Cyclic.h>
+#include <gtsam/geometry/Cyclic.h>
 #include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
-BOOST_CONCEPT_ASSERT((GroupConcept<Cyclic<6> >));
+typedef Cyclic<6> G; // Let's use the cyclic group of order 6
 
-/* ************************************************************************* */
+//******************************************************************************
+TEST(Cyclic, Concept) {
+  BOOST_CONCEPT_ASSERT((Group<G>));
+  EXPECT_LONGS_EQUAL(0, group::traits::identity<G>::value);
+  G g(2), h(3);
+  // EXPECT(Group<G>().check_invariants(g,h))
+}
+
+//******************************************************************************
 TEST(Cyclic, Constructor) {
-Cyclic<6> g(0);
-//  EXPECT(assert_equal(p1, p2));
-//  EXPECT_LONGS_EQUAL(2,offset2.size());
+  G g(0);
 }
 
-/* ************************************************************************* */
-int main() {
-TestResult tr;
-return TestRegistry::runAllTests(tr);
+//******************************************************************************
+TEST(Cyclic, Compose) {
+  EXPECT_LONGS_EQUAL(0, group::compose(G(0),G(0)));
+  EXPECT_LONGS_EQUAL(1, group::compose(G(0),G(1)));
+  EXPECT_LONGS_EQUAL(2, group::compose(G(0),G(2)));
+  EXPECT_LONGS_EQUAL(3, group::compose(G(0),G(3)));
+  EXPECT_LONGS_EQUAL(4, group::compose(G(0),G(4)));
+  EXPECT_LONGS_EQUAL(5, group::compose(G(0),G(5)));
+
+  EXPECT_LONGS_EQUAL(2, group::compose(G(2),G(0)));
+  EXPECT_LONGS_EQUAL(3, group::compose(G(2),G(1)));
+  EXPECT_LONGS_EQUAL(4, group::compose(G(2),G(2)));
+  EXPECT_LONGS_EQUAL(5, group::compose(G(2),G(3)));
+  EXPECT_LONGS_EQUAL(0, group::compose(G(2),G(4)));
+  EXPECT_LONGS_EQUAL(1, group::compose(G(2),G(5)));
 }
-/* ************************************************************************* */
+
+//******************************************************************************
+TEST(Cyclic, Between) {
+  EXPECT_LONGS_EQUAL(0, group::between(G(0),G(0)));
+  EXPECT_LONGS_EQUAL(1, group::between(G(0),G(1)));
+  EXPECT_LONGS_EQUAL(2, group::between(G(0),G(2)));
+  EXPECT_LONGS_EQUAL(3, group::between(G(0),G(3)));
+  EXPECT_LONGS_EQUAL(4, group::between(G(0),G(4)));
+  EXPECT_LONGS_EQUAL(5, group::between(G(0),G(5)));
+
+  EXPECT_LONGS_EQUAL(4, group::between(G(2),G(0)));
+  EXPECT_LONGS_EQUAL(5, group::between(G(2),G(1)));
+  EXPECT_LONGS_EQUAL(0, group::between(G(2),G(2)));
+  EXPECT_LONGS_EQUAL(1, group::between(G(2),G(3)));
+  EXPECT_LONGS_EQUAL(2, group::between(G(2),G(4)));
+  EXPECT_LONGS_EQUAL(3, group::between(G(2),G(5)));
+}
+
+//******************************************************************************
+TEST(Cyclic, Ivnverse) {
+  EXPECT_LONGS_EQUAL(0, group::inverse(G(0)));
+  EXPECT_LONGS_EQUAL(5, group::inverse(G(1)));
+  EXPECT_LONGS_EQUAL(4, group::inverse(G(2)));
+  EXPECT_LONGS_EQUAL(3, group::inverse(G(3)));
+  EXPECT_LONGS_EQUAL(2, group::inverse(G(4)));
+  EXPECT_LONGS_EQUAL(1, group::inverse(G(5)));
+}
+
+//******************************************************************************
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
+//******************************************************************************
 

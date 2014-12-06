@@ -23,8 +23,9 @@ namespace traits {
  * @brief Associate a unique tag with each of the main GTSAM concepts
  */
 //@{
-template <class T>
-struct structure_category {}; // specializations should be derived from one of the following tags
+template<class T>
+struct structure_category;
+// specializations should be derived from one of the following tags
 //@}
 
 /**
@@ -32,147 +33,179 @@ struct structure_category {}; // specializations should be derived from one of t
  * @brief Possible values for traits::structure_category<T>::type
  */
 //@{
-struct manifold_tag {};
-struct group_tag {};
-struct lie_group_tag : public manifold_tag, public group_tag {};
-struct vector_space_tag : public lie_group_tag {};
+struct manifold_tag {
+};
+struct group_tag {
+};
+struct lie_group_tag: public manifold_tag, public group_tag {
+};
+struct vector_space_tag: public lie_group_tag {
+};
 //@}
 
-} // namespace traits
+}// namespace traits
 
 namespace traits {
 
 /** @name Manifold Traits */
 //@{
-template <class Manifold> struct TangentVector;
-template <class Manifold> struct DefaultChart;
+template<class Manifold> struct TangentVector;
+template<class Manifold> struct DefaultChart;
 //@}
 
-} // namespace traits
+}// namespace traits
 
 /*
-template<class T>
-class ManifoldConcept {
+ template<class T>
+ class ManifoldConcept {
  public:
-  typedef T Manifold;
-  typedef typename traits::TangentVector<T>::type TangentVector;
-  typedef typename traits::DefaultChart<T>::type DefaultChart;
-  static const size_t dim = traits::dimension<T>::value;
+ typedef T Manifold;
+ typedef typename traits::TangentVector<T>::type TangentVector;
+ typedef typename traits::DefaultChart<T>::type DefaultChart;
+ static const size_t dim = traits::dimension<T>::value;
 
-  BOOST_CONCEPT_USAGE(ManifoldConcept) {
-    BOOST_STATIC_ASSERT(boost::is_base_of<traits::manifold_tag, traits::structure<Manifold> >);
-    BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
-    // no direct usage for manifold since most usage is through a chart
-  }
+ BOOST_CONCEPT_USAGE(ManifoldConcept) {
+ BOOST_STATIC_ASSERT(boost::is_base_of<traits::manifold_tag, traits::structure<Manifold> >);
+ BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
+ // no direct usage for manifold since most usage is through a chart
+ }
  private:
-  Manifold p;
-  TangentVector v;
-};
+ Manifold p;
+ TangentVector v;
+ };
 
-template<class C>
-class ChartConcept {
+ template<class C>
+ class ChartConcept {
  public:
-  typedef C Chart;
-  typedef typename traits::Manifold<Chart>::type Manifold;
-  typedef typename traits::TangentVector<Manifold>::type TangentVector;
+ typedef C Chart;
+ typedef typename traits::Manifold<Chart>::type Manifold;
+ typedef typename traits::TangentVector<Manifold>::type TangentVector;
 
-  BOOST_CONCEPT_USAGE(ChartConcept) {
-    v = Chart::local(p,q); // returns local coordinates of q w.r.t. origin p
-    q = Chart::retract(p,v); // returns retracted update of p with v
-  }
+ BOOST_CONCEPT_USAGE(ChartConcept) {
+ v = Chart::local(p,q); // returns local coordinates of q w.r.t. origin p
+ q = Chart::retract(p,v); // returns retracted update of p with v
+ }
 
  private:
-  Manifold p,q;
-  TangentVector v;
+ Manifold p,q;
+ TangentVector v;
 
-};
-*/
+ };
+ */
+
+namespace group {
+
+/** @name Free functions any Group needs to define */
+//@{
+template<typename G> G compose(const G&g, const G& h);
+template<typename G> G between(const G&g, const G& h);
+template<typename G> G inverse(const G&g);
+//@}
 
 namespace traits {
 
 /** @name Group Traits */
 //@{
-template <class Group> struct identity {};
-template <class Group> struct group_flavor {};
+template<class G> struct identity;
+template<class G> struct flavor;
 //@}
 
 /** @name Group Flavor Tags */
 //@{
-struct additive_group_tag {};
-struct multiplicative_group_tag {};
+struct additive_tag {
+};
+struct multiplicative_tag {
+};
 //@}
 
-} // namespace traits
+} // \ namespace traits
+} // \ namespace group
 
-template<class G>
-class GroupConcept {
- public:
-  typedef G Group;
-  static const Group identity = traits::identity<G>::value;
+/**
+ * Group Concept
+ */
+template<typename G>
+class Group {
+public:
 
-  BOOST_CONCEPT_USAGE(GroupConcept) {
-    BOOST_STATIC_ASSERT(boost::is_base_of<traits::group_tag,typename traits::structure_category<Group>::type>::value );
-    Group ip = inverse(p);
-    Group pq = compose(p, q);
-    Group d = between(p, q);
-    test = equal(p, q);
-    test2 = operator_usage(p, q, traits::group_flavor<Group>::type);
+  typedef typename traits::structure_category<G>::type structure_category_tag;
+  typedef typename group::traits::identity<G>::value_type identity_value_type;
+  typedef typename group::traits::flavor<G>::type flavor_tag;
+
+  BOOST_CONCEPT_USAGE(Group) {
+    using group::compose;
+    using group::between;
+    using group::inverse;
+    BOOST_STATIC_ASSERT(
+        boost::is_base_of<traits::group_tag, structure_category_tag>::value);
+    e = group::traits::identity<G>::value;
+    d = compose(g, h);
+    d = between(g, h);
+    ig = inverse(g);
+    test = operator_usage(g, h, flavor);
   }
 
-  bool check_invariants(const Group& a, const Group& b) {
-    return (equal(compose(a, inverse(a)), identity))
-        && (equal(between(a, b), compose(inverse(a), b)))
-        && (equal(compose(a, between(a, b)), b))
-        && operator_usage(a, b, traits::group_flavor<Group>::type);
-  }
+// TODO: these all require default constructors :-(
+// Also, requires equal which is not required of a group
+//  Group():e(group::traits::identity<G>::value) {
+//  }
+//
+//  bool check_invariants(const G& a, const G& b) {
+//    return (equal(compose(a, inverse(a)), e))
+//        && (equal(between(a, b), compose(inverse(a), b)))
+//        && (equal(compose(a, between(a, b)), b))
+//        && operator_usage(a, b, flavor);
+//  }
 
- private:
-  Group p,q;
+private:
+  flavor_tag flavor;
+  G e, g, h, gh, ig, d;
   bool test, test2;
 
-  bool operator_usage(const Group& a, const Group& b, const traits::multiplicative_group_tag&) {
-    return equal(compose(a, b), a*b);
+  bool operator_usage(const G& a, const G& b,
+      group::traits::multiplicative_tag) {
+    return group::compose(a, b) == a * b;
 
   }
-  bool operator_usage(const Group& a, const Group& b, const traits::additive_group_tag&) {
-    return equal(compose(a, b), a+b);
+  bool operator_usage(const G& a, const G& b, group::traits::additive_tag) {
+    return group::compose(a, b) == a + b;
   }
 
 };
+
 /*
-template <class L>
-class LieGroupConcept : public GroupConcept<L>, public ManifoldConcept<L> {
+ template <class L>
+ class LieGroupConcept : public GroupConcept<L>, public ManifoldConcept<L> {
 
-  BOOST_CONCEPT_USAGE(LieGroupConcept) {
-    BOOST_STATIC_ASSERT(boost::is_base_of<traits::lie_group_tag, traits::structure<L> >);
-  }
-};
+ BOOST_CONCEPT_USAGE(LieGroupConcept) {
+ BOOST_STATIC_ASSERT(boost::is_base_of<traits::lie_group_tag, traits::structure<L> >);
+ }
+ };
 
-template <class V>
-class VectorSpaceConcept : public LieGroupConcept {
-  typedef typename traits::DefaultChart<V>::type Chart;
-  typedef typename GroupConcept<V>::identity identity;
+ template <class V>
+ class VectorSpaceConcept : public LieGroupConcept {
+ typedef typename traits::DefaultChart<V>::type Chart;
+ typedef typename GroupConcept<V>::identity identity;
 
-  BOOST_CONCEPT_USAGE(VectorSpaceConcept) {
-    BOOST_STATIC_ASSERT(boost::is_base_of<traits::vector_space_tag, traits::structure<L> >);
-    r = p+q;
-    r = -p;
-    r = p-q;
-  }
+ BOOST_CONCEPT_USAGE(VectorSpaceConcept) {
+ BOOST_STATIC_ASSERT(boost::is_base_of<traits::vector_space_tag, traits::structure<L> >);
+ r = p+q;
+ r = -p;
+ r = p-q;
+ }
 
-  bool check_invariants(const V& a, const V& b) {
-    return equal(compose(a, b), a+b)
-        && equal(inverse(a), -a)
-        && equal(between(a, b), b-a)
-        && equal(Chart::retract(a, b), a+b)
-        && equal(Chart::local(a, b), b-a);
-  }
+ bool check_invariants(const V& a, const V& b) {
+ return equal(compose(a, b), a+b)
+ && equal(inverse(a), -a)
+ && equal(between(a, b), b-a)
+ && equal(Chart::retract(a, b), a+b)
+ && equal(Chart::local(a, b), b-a);
+ }
 
  private:
-  V p,q,r;
-};
-*/
+ V g,q,r;
+ };
+ */
 
 } // namespace gtsam
-
 
