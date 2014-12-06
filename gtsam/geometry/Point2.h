@@ -20,7 +20,7 @@
 #include <boost/serialization/nvp.hpp>
 
 #include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Matrix.h>
+#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Lie.h>
 
 namespace gtsam {
@@ -125,10 +125,10 @@ public:
 
   /// "Compose", just adds the coordinates of two points. With optional derivatives
   inline Point2 compose(const Point2& q,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
-    if(H1) *H1 = eye(2);
-    if(H2) *H2 = eye(2);
+      OptionalJacobian<2,2> H1=boost::none,
+      OptionalJacobian<2,2> H2=boost::none) const {
+    if(H1) *H1 = I_2x2;
+    if(H2) *H2 = I_2x2;
     return *this + q;
   }
 
@@ -137,10 +137,10 @@ public:
 
   /// "Between", subtracts point coordinates. between(p,q) == compose(inverse(p),q)
   inline Point2 between(const Point2& q,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
-    if(H1) *H1 = -eye(2);
-    if(H2) *H2 = eye(2);
+      OptionalJacobian<2,2> H1=boost::none,
+      OptionalJacobian<2,2> H2=boost::none) const {
+    if(H1) *H1 = -I_2x2;
+    if(H2) *H2 = I_2x2;
     return q - (*this);
   }
 
@@ -180,15 +180,12 @@ public:
   /** creates a unit vector */
   Point2 unit() const { return *this/norm(); }
 
-  /** norm of point */
-  double norm() const;
-
   /** norm of point, with derivative */
-  double norm(boost::optional<Matrix&> H) const;
+  double norm(OptionalJacobian<1,2> H = boost::none) const;
 
   /** distance between two points */
-  double distance(const Point2& p2, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+  double distance(const Point2& p2, OptionalJacobian<1,2> H1 = boost::none,
+      OptionalJacobian<1,2> H2 = boost::none) const;
 
   /** @deprecated The following function has been deprecated, use distance above */
   inline double dist(const Point2& p2) const {

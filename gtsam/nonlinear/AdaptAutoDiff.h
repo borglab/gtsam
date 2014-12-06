@@ -18,8 +18,9 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/ceres_autodiff.h>
+#include <gtsam/3rdparty/ceres/autodiff.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/OptionalJacobian.h>
 
 namespace gtsam {
 
@@ -50,11 +51,8 @@ class AdaptAutoDiff {
 
 public:
 
-  typedef Eigen::Matrix<double, N, M1> JacobianTA1;
-  typedef Eigen::Matrix<double, N, M2> JacobianTA2;
-
-  T operator()(const A1& a1, const A2& a2, boost::optional<JacobianTA1&> H1 =
-      boost::none, boost::optional<JacobianTA2&> H2 = boost::none) {
+  T operator()(const A1& a1, const A2& a2, OptionalJacobian<N, M1> H1 = boost::none,
+      OptionalJacobian<N, M2> H2 = boost::none) {
 
     using ceres::internal::AutoDiff;
 

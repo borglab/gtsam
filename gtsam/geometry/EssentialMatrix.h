@@ -50,7 +50,7 @@ public:
 
   /// Named constructor converting a Pose3 with scale to EssentialMatrix (no scale)
   static EssentialMatrix FromPose3(const Pose3& _1P2_,
-      boost::optional<Matrix&> H = boost::none);
+      OptionalJacobian<5, 6> H = boost::none);
 
   /// Random, using Rot3::Random and Unit3::Random
   template<typename Engine>
@@ -132,16 +132,16 @@ public:
    * @return point in pose coordinates
    */
   Point3 transform_to(const Point3& p,
-      boost::optional<Matrix&> DE = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none) const;
+      OptionalJacobian<3,5> DE = boost::none,
+      OptionalJacobian<3,3> Dpoint = boost::none) const;
 
   /**
    * Given essential matrix E in camera frame B, convert to body frame C
    * @param cRb rotation from body frame to camera frame
    * @param E essential matrix E in camera frame C
    */
-  EssentialMatrix rotate(const Rot3& cRb, boost::optional<Matrix&> HE =
-      boost::none, boost::optional<Matrix&> HR = boost::none) const;
+  EssentialMatrix rotate(const Rot3& cRb, OptionalJacobian<5, 5> HE =
+      boost::none, OptionalJacobian<5, 3> HR = boost::none) const;
 
   /**
    * Given essential matrix E in camera frame B, convert to body frame C
@@ -153,8 +153,8 @@ public:
   }
 
   /// epipolar error, algebraic
-  double error(const Vector& vA, const Vector& vB, //
-      boost::optional<Matrix&> H = boost::none) const;
+  double error(const Vector3& vA, const Vector3& vB, //
+      OptionalJacobian<1,5> H = boost::none) const;
 
   /// @}
 

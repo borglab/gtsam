@@ -32,8 +32,6 @@ class GTSAM_EXPORT Unit3{
 
 private:
 
-  typedef Eigen::Matrix<double,3,2> Matrix32;
-
   Point3 p_; ///< The location of the point on the unit sphere
   mutable boost::optional<Matrix32> B_; ///< Cached basis
 
@@ -52,6 +50,11 @@ public:
       p_(p / p.norm()) {
   }
 
+  /// Construct from a vector3
+  explicit Unit3(const Vector3& p) :
+      p_(p / p.norm()) {
+  }
+
   /// Construct from x,y,z
   Unit3(double x, double y, double z) :
       p_(x, y, z) {
@@ -59,7 +62,7 @@ public:
   }
 
   /// Named constructor from Point3 with optional Jacobian
-  static Unit3 FromPoint3(const Point3& point, boost::optional<Matrix&> H =
+  static Unit3 FromPoint3(const Point3& point, OptionalJacobian<2,3> H =
       boost::none);
 
   /// Random direction, using boost::uniform_on_sphere
@@ -90,10 +93,10 @@ public:
   const Matrix32& basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
-  Matrix skew() const;
+  Matrix3 skew() const;
 
   /// Return unit-norm Point3
-  const Point3& point3(boost::optional<Matrix&> H = boost::none) const {
+  const Point3& point3(OptionalJacobian<3,2> H = boost::none) const {
     if (H)
       *H = basis();
     return p_;
@@ -105,12 +108,12 @@ public:
   }
 
   /// Signed, vector-valued error between two directions
-  Vector error(const Unit3& q,
-      boost::optional<Matrix&> H = boost::none) const;
+  Vector2 error(const Unit3& q,
+      OptionalJacobian<2,2> H = boost::none) const;
 
   /// Distance between two directions
   double distance(const Unit3& q,
-      boost::optional<Matrix&> H = boost::none) const;
+      OptionalJacobian<1,2> H = boost::none) const;
 
   /// @}
 
@@ -133,10 +136,10 @@ public:
   };
 
   /// The retract function
-  Unit3 retract(const Vector& v) const;
+  Unit3 retract(const Vector2& v) const;
 
   /// The local coordinates function
-  Vector localCoordinates(const Unit3& s) const;
+  Vector2 localCoordinates(const Unit3& s) const;
 
   /// @}
 
@@ -144,7 +147,6 @@ private:
 
   /// @name Advanced Interface
   /// @{
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
