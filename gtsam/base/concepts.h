@@ -24,7 +24,7 @@ namespace traits {
  */
 //@{
 template <class T>
-struct structure_category {}; // specializations should be derived from one of the following tags
+struct structure_category; // specializations should be derived from one of the following tags
 //@}
 
 /**
@@ -92,8 +92,8 @@ namespace traits {
 
 /** @name Group Traits */
 //@{
-template <class Group> struct identity {};
-template <class Group> struct group_flavor {};
+template <class Group> struct identity;
+template <class Group> struct group_flavor;
 //@}
 
 /** @name Group Flavor Tags */
@@ -104,41 +104,50 @@ struct multiplicative_group_tag {};
 
 } // namespace traits
 
+/**
+ * Group Concept
+ */
 template<class G>
-class GroupConcept {
- public:
-  typedef G Group;
-  static const Group identity = traits::identity<G>::value;
+class Group {
+public:
 
-  BOOST_CONCEPT_USAGE(GroupConcept) {
-    BOOST_STATIC_ASSERT(boost::is_base_of<traits::group_tag,typename traits::structure_category<Group>::type>::value );
-    Group ip = inverse(p);
-    Group pq = compose(p, q);
-    Group d = between(p, q);
-    test = equal(p, q);
-    test2 = operator_usage(p, q, traits::group_flavor<Group>::type);
+  typedef typename traits::identity<G>::value_type identity_value_type;
+  typedef typename traits::group_flavor<G>::type group_flavor_tag;
+  typedef typename traits::structure_category<G>::type structure_category_tag;
+
+  BOOST_CONCEPT_USAGE(Group) {
+    e = traits::identity<G>::value;
+//    BOOST_STATIC_ASSERT(boost::is_base_of<traits::group_tag,typename traits::structure_category<Group>::type>::value );
+//    G ip = inverse(p);
+//    G pq = compose(p, q);
+//    G d = between(p, q);
+//    test = equal(p, q);
+//    test2 = operator_usage(p, q, traits::group_flavor<Group>::type);
   }
 
-  bool check_invariants(const Group& a, const Group& b) {
-    return (equal(compose(a, inverse(a)), identity))
+  bool check_invariants(const G& a, const G& b) {
+    group_flavor_tag group_flavor;
+    return (equal(compose(a, inverse(a)), e))
         && (equal(between(a, b), compose(inverse(a), b)))
         && (equal(compose(a, between(a, b)), b))
-        && operator_usage(a, b, traits::group_flavor<Group>::type);
+        && operator_usage(a, b, group_flavor);
   }
 
- private:
-  Group p,q;
+private:
+  G p, q, e;
   bool test, test2;
 
-  bool operator_usage(const Group& a, const Group& b, const traits::multiplicative_group_tag&) {
-    return equal(compose(a, b), a*b);
+  bool operator_usage(const G& a, const G& b,
+      traits::multiplicative_group_tag) {
+    return equal(compose(a, b), a * b);
 
   }
-  bool operator_usage(const Group& a, const Group& b, const traits::additive_group_tag&) {
-    return equal(compose(a, b), a+b);
+  bool operator_usage(const G& a, const G& b, traits::additive_group_tag) {
+    return equal(compose(a, b), a + b);
   }
 
 };
+
 /*
 template <class L>
 class LieGroupConcept : public GroupConcept<L>, public ManifoldConcept<L> {

@@ -11,7 +11,7 @@
 
 /**
  * @file   Cyclic.h
- * @brief  Cyclic group, can act on 2D vector spaces
+ * @brief  Cyclic group, i.e., the integers modulo N
  * @author Frank Dellaert
  **/
 
@@ -35,6 +35,9 @@ public:
 };
 
 namespace traits {
+template<size_t N> struct structure_category<Cyclic<N> > {
+  typedef group_tag type;
+};
 template<size_t N> struct identity<Cyclic<N> > {
   static const Cyclic<N> value;
   typedef Cyclic<N> value_type;
@@ -74,21 +77,17 @@ const Cyclic<N> identity<Cyclic<N> >::value = Cyclic<N>(0);
 using namespace std;
 using namespace gtsam;
 
-typedef Cyclic<6> G;
+typedef Cyclic<6> G; // Let's use the cyclic group of order 6
 
 //******************************************************************************
 TEST(Cyclic, Concept) {
   EXPECT_LONGS_EQUAL(0,traits::identity<G>::value);
-  //BOOST_CONCEPT_ASSERT((GroupConcept<Cyclic<6> >));
-//  EXPECT(assert_equal(p1, p2));
-//  EXPECT_LONGS_EQUAL(2,offset2.size());
+  BOOST_CONCEPT_ASSERT((Group<G>));
 }
 
 //******************************************************************************
 TEST(Cyclic, Constructor) {
   G g(0);
-//  EXPECT(assert_equal(p1, p2));
-//  EXPECT_LONGS_EQUAL(2,offset2.size());
 }
 
 //******************************************************************************
