@@ -35,17 +35,28 @@ public:
 };
 
 namespace traits {
+/// Define Cyclic to be a model of the Group concept
 template<size_t N> struct structure_category<Cyclic<N> > {
   typedef group_tag type;
 };
+} // \namespace traits
+
+namespace group {
+template<size_t N>
+Cyclic<N> compose(const Cyclic<N>&g, const Cyclic<N>& h);
+
+namespace traits {
+/// Define the trait that specifies Cyclic's identity element
 template<size_t N> struct identity<Cyclic<N> > {
   static const Cyclic<N> value;
   typedef Cyclic<N> value_type;
 };
-template<size_t N> struct group_flavor<Cyclic<N> > {
-  typedef additive_group_tag type;
+/// Define the trait that asserts Cyclic is an additive group
+template<size_t N> struct flavor<Cyclic<N> > {
+  typedef additive_tag type;
 };
 } // \namespace traits
+} // \namespace group
 
 } // \namespace gtsam
 
@@ -57,10 +68,12 @@ template<size_t N> struct group_flavor<Cyclic<N> > {
 
 namespace gtsam {
 
+namespace group {
 namespace traits {
 template<size_t N>
 const Cyclic<N> identity<Cyclic<N> >::value = Cyclic<N>(0);
 } // \namespace traits
+} // \namespace group
 
 } // \namespace gtsam
 
@@ -81,7 +94,7 @@ typedef Cyclic<6> G; // Let's use the cyclic group of order 6
 
 //******************************************************************************
 TEST(Cyclic, Concept) {
-  EXPECT_LONGS_EQUAL(0,traits::identity<G>::value);
+  EXPECT_LONGS_EQUAL(0, group::traits::identity<G>::value);
   BOOST_CONCEPT_ASSERT((Group<G>));
 }
 
