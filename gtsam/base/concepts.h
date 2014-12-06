@@ -95,8 +95,12 @@ template<class Manifold> struct DefaultChart;
 
 namespace group {
 
-template<typename G>
-G compose(const G&g, const G& h);
+/** @name Free functions any Group needs to define */
+//@{
+template<typename G> G compose(const G&g, const G& h);
+template<typename G> G between(const G&g, const G& h);
+template<typename G> G inverse(const G&g);
+//@}
 
 namespace traits {
 
@@ -126,39 +130,41 @@ public:
 
   typedef typename traits::structure_category<G>::type structure_category_tag;
   typedef typename group::traits::identity<G>::value_type identity_value_type;
-  typedef typename group::traits::flavor<G>::type group_flavor_tag;
+  typedef typename group::traits::flavor<G>::type flavor_tag;
 
   BOOST_CONCEPT_USAGE(Group) {
     using group::compose;
+    using group::between;
+    using group::inverse;
     BOOST_STATIC_ASSERT(
         boost::is_base_of<traits::group_tag, structure_category_tag>::value);
     e = group::traits::identity<G>::value;
-    pq = compose(p, q);
-//    G ip = inverse(p);
-//    G d = between(p, q);
-//    test = equal(p, q);
-//    test2 = operator_usage(p, q, group::traits::_flavor<Group>::type);
+    d = compose(g, h);
+    d = between(g, h);
+    ig = inverse(g);
+    test = operator_usage(g, h, flavor);
+//    test2 = equal(g, h);
   }
 
   bool check_invariants(const G& a, const G& b) {
-    group_flavor_tag group_flavor;
     return (equal(compose(a, inverse(a)), e))
         && (equal(between(a, b), compose(inverse(a), b)))
         && (equal(compose(a, between(a, b)), b))
-        && operator_usage(a, b, group_flavor);
+        && operator_usage(a, b, flavor);
   }
 
 private:
-  G e, p, q, pq, ip, d;
+  flavor_tag flavor;
+  G e, g, h, gh, ig, d;
   bool test, test2;
 
   bool operator_usage(const G& a, const G& b,
       group::traits::multiplicative_tag) {
-    return equal(compose(a, b), a * b);
+    return group::compose(a, b) == a * b;
 
   }
   bool operator_usage(const G& a, const G& b, group::traits::additive_tag) {
-    return equal(compose(a, b), a + b);
+    return group::compose(a, b) == a + b;
   }
 
 };
@@ -193,7 +199,7 @@ private:
  }
 
  private:
- V p,q,r;
+ V g,q,r;
  };
  */
 

@@ -45,6 +45,12 @@ namespace group {
 template<size_t N>
 Cyclic<N> compose(const Cyclic<N>&g, const Cyclic<N>& h);
 
+template<size_t N>
+Cyclic<N> between(const Cyclic<N>&g, const Cyclic<N>& h);
+
+template<size_t N>
+Cyclic<N> inverse(const Cyclic<N>&g);
+
 namespace traits {
 /// Define the trait that specifies Cyclic's identity element
 template<size_t N> struct identity<Cyclic<N> > {
