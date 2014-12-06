@@ -241,7 +241,8 @@ public:
 
     // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
     const Vector3 coriolis = integrateCoriolis(Ri, omegaCoriolis);
-    const Matrix3 coriolisHat = skewSymmetric(omegaCoriolis);
+    const Matrix3 coriolisHat = skewSymmetric(coriolis);
+    const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
     Vector3 theta_corrected = theta_biascorrected  - coriolis;
 
     // Prediction
@@ -250,7 +251,7 @@ public:
     // TODO: these are not always needed
     const Rot3 fRhat = deltaRij_corrected.between(Ri.between(Rj));
     const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_corrected);
-    const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Ri.inverse().matrix() * omegaCoriolis * deltaTij());
+    const Matrix3 Jtheta = -Jr_theta_bcc  * coriolisHat;
     const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
 
     if(H1) {
@@ -259,8 +260,8 @@ public:
       Matrix3 dfPdPi;
       Matrix3 dfVdPi;
       if(use2ndOrderCoriolis){
-        dfPdPi = - Ri.matrix() + 0.5 * coriolisHat * coriolisHat * Ri.matrix() * deltaTij()*deltaTij();
-        dfVdPi = coriolisHat * coriolisHat * Ri.matrix() * deltaTij();
+        dfPdPi = - Ri.matrix() + 0.5 * omegaCoriolisHat * omegaCoriolisHat * Ri.matrix() * deltaTij()*deltaTij();
+        dfVdPi = omegaCoriolisHat * omegaCoriolisHat * Ri.matrix() * deltaTij();
       }
       else{
         dfPdPi = - Ri.matrix();
@@ -287,10 +288,10 @@ public:
       (*H2) <<
           // dfP/dVi
           - I_3x3 * deltaTij()
-          + coriolisHat * deltaTij() * deltaTij(),  // Coriolis term - we got rid of the 2 wrt ins paper
+          + omegaCoriolisHat * deltaTij() * deltaTij(),  // Coriolis term - we got rid of the 2 wrt ins paper
           // dfV/dVi
           - I_3x3
-          + 2 * coriolisHat * deltaTij(), // Coriolis term
+          + 2 * omegaCoriolisHat * deltaTij(), // Coriolis term
           // dfR/dVi
           Z_3x3;
     }
