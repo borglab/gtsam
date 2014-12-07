@@ -75,6 +75,9 @@ template <class T, class Derived>
 struct Chart {
   typedef T ManifoldType;
   typedef typename traits::TangentVector<T>::type TangentVector;
+
+  // TODO, maybe we need Retract and Local to be unary, or both
+  // TOOD, also, this indirection mechanism does not seem to help
   static TangentVector Local(const ManifoldType& p, const ManifoldType& q) {
     return Derived::local(p, q);
   }

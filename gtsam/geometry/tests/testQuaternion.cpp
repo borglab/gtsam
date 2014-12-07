@@ -37,14 +37,50 @@ struct QuaternionChart: public manifold::Chart<Eigen::Quaternion<S, O>,
     QuaternionChart<S, O> > {
   typedef Eigen::Quaternion<S, O> Q;
   typedef typename traits::TangentVector<Q>::type V;
-  static V local(const Q& p, const Q& q) {
-    return V();
-  }
-  static Q retract(const Q& p, const V& v) {
-    double theta = v.norm();
+
+  /// Exponential map, simply be converting omega to AngleAxis
+  static Q Expmap(const V& omega) {
+    double theta = omega.norm();
     if (std::abs(theta) < 1e-10)
-      return p;
-    return p * Q(Eigen::AngleAxisd(theta, v / theta));
+      return Q::Identity();
+    return Q(Eigen::AngleAxisd(theta, omega / theta));
+  }
+
+  /// retract, simply be converting omega to AngleAxis
+  static Q retract(const Q& p, const V& omega) {
+    return p * Expmap(omega);
+  }
+
+  /// We use our own Logmap, as there is a slight bug in Eigen
+  static V Logmap(const Q& q) {
+    using std::acos;
+    using std::sqrt;
+    static const double twoPi = 2.0 * M_PI,
+    // define these compile time constants to avoid std::abs:
+        NearlyOne = 1.0 - 1e-10, NearlyNegativeOne = -1.0 + 1e-10;
+
+    const double qw = q.w();
+    if (qw > NearlyOne) {
+      // Taylor expansion of (angle / s) at 1
+      return (2 - 2 * (qw - 1) / 3) * q.vec();
+    } else if (qw < NearlyNegativeOne) {
+      // Angle is zero, return zero vector
+      return Vector3::Zero();
+    } else {
+      // Normal, away from zero case
+      double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
+      // Important:  convert to [-pi,pi] to keep error continuous
+      if (angle > M_PI)
+        angle -= twoPi;
+      else if (angle < -M_PI)
+        angle += twoPi;
+      return (angle / s) * q.vec();
+    }
+  }
+
+  /// local is our own, as there is a slight bug in Eigen
+  static V local(const Q& q1, const Q& q2) {
+    return Logmap(q1.inverse() * q2);
   }
 };
 
@@ -139,8 +175,10 @@ typedef Quaternion Q; // Typedef
 
 //******************************************************************************
 TEST(Quaternion , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >)); // not strictly needed
-  BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >)); // not strictly needed
+  BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >));
+  // not strictly needed
+  BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >));
+  // not strictly needed
   BOOST_CONCEPT_ASSERT((IsLieGroup<Quaternion >));
 }
 
@@ -158,12 +196,12 @@ TEST(Quaternion , Invariants) {
 
 //******************************************************************************
 TEST(Quaternion , Local) {
-  Vector3 z_axis(0,0,1);
-  Q q1(Eigen::AngleAxisd(0,z_axis));
+  Vector3 z_axis(0, 0, 1);
+  Q q1(Eigen::AngleAxisd(0, z_axis));
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
   typedef manifold::traits::DefaultChart<Q>::type Chart;
-  Vector3 expected(0,0,0.1);
-  Vector3 actual = Chart::Local(q1,q2);
+  Vector3 expected(0, 0, 0.1);
+  Vector3 actual = Chart::Local(q1, q2);
   cout << expected << endl;
   cout << actual << endl;
   EXPECT(assert_equal((Vector)expected,actual));
@@ -171,12 +209,12 @@ TEST(Quaternion , Local) {
 
 //******************************************************************************
 TEST(Quaternion , Retract) {
-  Vector3 z_axis(0,0,1);
-  Q q(Eigen::AngleAxisd(0,z_axis));
+  Vector3 z_axis(0, 0, 1);
+  Q q(Eigen::AngleAxisd(0, z_axis));
   Q expected(Eigen::AngleAxisd(0.1, z_axis));
   typedef manifold::traits::DefaultChart<Q>::type Chart;
-  Vector3 v(0,0,0.1);
-  Q actual = Chart::Retract(q,v);
+  Vector3 v(0, 0, 0.1);
+  Q actual = Chart::Retract(q, v);
   EXPECT(actual.isApprox(expected));
 }
 
