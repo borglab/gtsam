@@ -74,7 +74,7 @@ public:
   }
 
   /// Update preintegrated measurements
-  void updateIntegratedRotationAndDeltaT(const Rot3& incrR, double deltaT){
+  void updateIntegratedRotationAndDeltaT(const Rot3& incrR, const double deltaT){
     deltaRij_ = deltaRij_ * incrR;
     deltaTij_ += deltaT;
   }

@@ -116,7 +116,7 @@ public:
 
   /// Update preintegrated measurements
   void updatePreintegratedMeasurements(const Vector3& correctedAcc,
-      const Rot3& incrR, double deltaT) {
+      const Rot3& incrR, const double deltaT) {
     Matrix3 dRij = deltaRij(); // expensive
     Vector3 temp = dRij * correctedAcc * deltaT;
     if(!use2ndOrderIntegration_){
@@ -176,7 +176,7 @@ public:
     const Rot3& Rot_i = pose_i.rotation();
     const Vector3& pos_i = pose_i.translation().vector();
 
-    const Matrix3 coriolisHat = skewSymmetric(omegaCoriolis);
+    const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
 
     // Predict state at time j
     /* ---------------------------------------------------------------------------------------------------- */
@@ -184,23 +184,22 @@ public:
         + delPdelBiasAcc() * biasAccIncr
         + delPdelBiasOmega() * biasOmegaIncr)
         + vel_i * deltaTij()
-        - coriolisHat * vel_i * deltaTij()*deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
+        - omegaCoriolisHat * vel_i * deltaTij()*deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
         + 0.5 * gravity * deltaTij()*deltaTij();
 
     Vector3 vel_j = Vector3(vel_i + Rot_i.matrix() * (deltaVij()
         + delVdelBiasAcc() * biasAccIncr
         + delVdelBiasOmega() * biasOmegaIncr)
-        - 2 * coriolisHat * vel_i * deltaTij()  // Coriolis term
+        - 2 * omegaCoriolisHat * vel_i * deltaTij()  // Coriolis term
         + gravity * deltaTij());
 
     if(use2ndOrderCoriolis){
-      pos_j += - 0.5 * coriolisHat * coriolisHat * pos_i * deltaTij()*deltaTij();  // 2nd order coriolis term for position
-      vel_j += - coriolisHat * coriolisHat * pos_i * deltaTij(); // 2nd order term for velocity
+      pos_j += - 0.5 * omegaCoriolisHat * omegaCoriolisHat * pos_i * deltaTij()*deltaTij();  // 2nd order coriolis term for position
+      vel_j += - omegaCoriolisHat * omegaCoriolisHat * pos_i * deltaTij(); // 2nd order term for velocity
     }
 
     const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);
-    // TODO Frank says comment below does not reflect what was in code
-    // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
+    // deltaRij_biascorrected = deltaRij * expmap(delRdelBiasOmega * biasOmegaIncr)
 
     Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
     Vector3 theta_corrected = theta_biascorrected  -
@@ -240,9 +239,8 @@ public:
     Vector3 theta_biascorrected = biascorrectedThetaRij(biasOmegaIncr, H5);
 
     // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
-    const Vector3 coriolis = integrateCoriolis(Ri, omegaCoriolis);
-    const Matrix3 coriolisHat = skewSymmetric(coriolis);
     const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
+    const Vector3 coriolis = integrateCoriolis(Ri, omegaCoriolis);
     Vector3 theta_corrected = theta_biascorrected  - coriolis;
 
     // Prediction
@@ -251,7 +249,7 @@ public:
     // TODO: these are not always needed
     const Rot3 fRhat = deltaRij_corrected.between(Ri.between(Rj));
     const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_corrected);
-    const Matrix3 Jtheta = -Jr_theta_bcc  * coriolisHat;
+    const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(coriolis);
     const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
 
     if(H1) {
