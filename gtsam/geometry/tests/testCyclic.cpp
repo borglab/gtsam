@@ -82,6 +82,12 @@ TEST(Cyclic, Ivnverse) {
 }
 
 //******************************************************************************
+TEST(Cyclic , Invariants) {
+  G g(2), h(5);
+  group::check_invariants(g,h);
+}
+
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
