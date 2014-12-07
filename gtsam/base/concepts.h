@@ -11,7 +11,9 @@
 //#include "manifold.h"
 //#include "chart.h"
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 #include <boost/concept_check.hpp>
+#include <boost/concept/requires.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 
@@ -24,9 +26,7 @@ namespace traits {
  * @brief Associate a unique tag with each of the main GTSAM concepts
  */
 //@{
-template<class T>
-struct structure_category;
-// specializations should be derived from one of the following tags
+template<typename T> struct structure_category;
 //@}
 
 /**
@@ -34,81 +34,98 @@ struct structure_category;
  * @brief Possible values for traits::structure_category<T>::type
  */
 //@{
-struct manifold_tag {
-};
-struct group_tag {
-};
-struct lie_group_tag: public manifold_tag, public group_tag {
-};
-struct vector_space_tag: public lie_group_tag {
-};
+struct manifold_tag {};
+struct group_tag {};
+struct lie_group_tag: public manifold_tag, public group_tag {};
+struct vector_space_tag: public lie_group_tag {};
 //@}
 
 }// namespace traits
+
+namespace manifold {
+
+/** @name Free functions any Manifold needs to define */
+//@{
+//@}
 
 namespace traits {
 
 /** @name Manifold Traits */
 //@{
-template<class Manifold> struct TangentVector;
-template<class Manifold> struct DefaultChart;
+template<typename Manifold> struct dimension;
+template<typename Manifold> struct TangentVector;
+template<typename Manifold> struct DefaultChart;
 //@}
 
-}// namespace traits
+}// \ namespace traits
 
-/*
- template<class T>
- class ManifoldConcept {
- public:
- typedef T Manifold;
- typedef typename traits::TangentVector<T>::type TangentVector;
- typedef typename traits::DefaultChart<T>::type DefaultChart;
- static const size_t dim = traits::dimension<T>::value;
+/// Check invariants for Manifold type
+template<typename T>
+BOOST_CONCEPT_REQUIRES(((Testable<T>)),(bool)) //
+check_invariants(const T& a, const T& b) {
+  typedef typename traits::DefaultChart<T>::type Chart;
+  return true;
+}
 
- BOOST_CONCEPT_USAGE(ManifoldConcept) {
- BOOST_STATIC_ASSERT(boost::is_base_of<traits::manifold_tag, traits::structure<Manifold> >);
- BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
- // no direct usage for manifold since most usage is through a chart
- }
- private:
- Manifold p;
- TangentVector v;
- };
+} // \ namespace manifold
 
- template<class C>
- class ChartConcept {
- public:
- typedef C Chart;
- typedef typename traits::Manifold<Chart>::type Manifold;
- typedef typename traits::TangentVector<Manifold>::type TangentVector;
-
- BOOST_CONCEPT_USAGE(ChartConcept) {
- v = Chart::local(p,q); // returns local coordinates of q w.r.t. origin p
- q = Chart::retract(p,v); // returns retracted update of p with v
- }
-
- private:
- Manifold p,q;
- TangentVector v;
-
- };
+/**
+ * Chart concept
  */
+template<typename T>
+class IsChart {
+public:
+  typedef typename T::ManifoldType ManifoldType;
+  typedef typename manifold::traits::TangentVector<ManifoldType>::type V;
+
+  BOOST_CONCEPT_USAGE(IsChart) {
+    // make sure Derived methods in Chart are defined
+    v = T::Local(p,q);
+    q = T::Retract(p,v);
+  }
+private:
+  ManifoldType p,q;
+  V v;
+};
+
+/**
+ * Manifold concept
+ */
+template<typename T>
+class IsManifold {
+public:
+  typedef typename traits::structure_category<T>::type structure_category_tag;
+  static const size_t dim = manifold::traits::dimension<T>::value;
+  typedef typename manifold::traits::TangentVector<T>::type TangentVector;
+  typedef typename manifold::traits::DefaultChart<T>::type DefaultChart;
+
+  BOOST_CONCEPT_USAGE(IsManifold) {
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<traits::manifold_tag, structure_category_tag>::value),
+        "This type's structure_category trait does not assert it as a manifold (or derived)");
+    BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
+    BOOST_CONCEPT_ASSERT((IsChart<DefaultChart >));
+  }
+private:
+  T p,q;
+  TangentVector v;
+};
 
 namespace group {
 
 /** @name Free functions any Group needs to define */
 //@{
-template<typename G> G compose(const G&g, const G& h);
-template<typename G> G between(const G&g, const G& h);
-template<typename G> G inverse(const G&g);
+template<typename T> T compose(const T&g, const T& h);
+template<typename T> T between(const T&g, const T& h);
+template<typename T> T inverse(const T&g);
 //@}
 
 namespace traits {
 
 /** @name Group Traits */
 //@{
-template<class G> struct identity;
-template<class G> struct flavor;
+template<typename T> struct identity;
+template<typename T> struct flavor;
 //@}
 
 /** @name Group Flavor Tags */
@@ -119,94 +136,131 @@ struct multiplicative_tag {
 };
 //@}
 
-} // \ namespace traits
+}// \ namespace traits
+
+/// Check invariants
+template<typename T>
+BOOST_CONCEPT_REQUIRES(((Testable<T>)),(bool)) //
+check_invariants(const T& a, const T& b, double tol = 1e-9) {
+  T e = traits::identity<T>::value;
+  return compose(a, inverse(a)).equals(e, tol)
+      && between(a, b).equals(compose(inverse(a), b), tol)
+      && compose(a, between(a, b)).equals<T>(b, tol);
+}
 } // \ namespace group
 
 /**
  * Group Concept
  */
-template<typename G>
-class Group {
+template<typename T>
+class IsGroup {
 public:
 
-  typedef typename traits::structure_category<G>::type structure_category_tag;
-  typedef typename group::traits::identity<G>::value_type identity_value_type;
-  typedef typename group::traits::flavor<G>::type flavor_tag;
+  typedef typename traits::structure_category<T>::type structure_category_tag;
+  typedef typename group::traits::identity<T>::value_type identity_value_type;
+  typedef typename group::traits::flavor<T>::type flavor_tag;
 
-  BOOST_CONCEPT_USAGE(Group) {
+  void operator_usage(group::traits::multiplicative_tag) {
+    g = g * h;
+  }
+  void operator_usage(group::traits::additive_tag) {
+    g = g + h;
+    g = h - g;
+    g = -g;
+  }
+
+  BOOST_CONCEPT_USAGE(IsGroup) {
     using group::compose;
     using group::between;
     using group::inverse;
-    BOOST_STATIC_ASSERT(
-        boost::is_base_of<traits::group_tag, structure_category_tag>::value);
-    e = group::traits::identity<G>::value;
-    d = compose(g, h);
-    d = between(g, h);
-    ig = inverse(g);
-    test = operator_usage(g, h, flavor);
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<traits::group_tag, structure_category_tag>::value),
+        "This type's structure_category trait does not assert it as a group (or derived)");
+    e = group::traits::identity<T>::value;
+    g = compose(g, h);
+    g = between(g, h);
+    g = inverse(g);
+    operator_usage(flavor);
   }
-
-// TODO: these all require default constructors :-(
-// Also, requires equal which is not required of a group
-//  Group():e(group::traits::identity<G>::value) {
-//  }
-//
-//  bool check_invariants(const G& a, const G& b) {
-//    return (equal(compose(a, inverse(a)), e))
-//        && (equal(between(a, b), compose(inverse(a), b)))
-//        && (equal(compose(a, between(a, b)), b))
-//        && operator_usage(a, b, flavor);
-//  }
 
 private:
   flavor_tag flavor;
-  G e, g, h, gh, ig, d;
-  bool test, test2;
-
-  bool operator_usage(const G& a, const G& b,
-      group::traits::multiplicative_tag) {
-//    return group::compose(a, b) == a * b;
-    return true;
-  }
-  bool operator_usage(const G& a, const G& b, group::traits::additive_tag) {
-    return group::compose(a, b) == a + b;
-  }
-
+  T e, g, h;
 };
 
-/*
- template <class L>
- class LieGroupConcept : public GroupConcept<L>, public ManifoldConcept<L> {
+namespace lie_group {
 
- BOOST_CONCEPT_USAGE(LieGroupConcept) {
- BOOST_STATIC_ASSERT(boost::is_base_of<traits::lie_group_tag, traits::structure<L> >);
- }
- };
+/** @name Free functions any Group needs to define */
+//@{
+// TODO need Jacobians
+//template<typename T> T compose(const T&g, const T& h);
+//template<typename T> T between(const T&g, const T& h);
+//template<typename T> T inverse(const T&g);
+//@}
 
- template <class V>
- class VectorSpaceConcept : public LieGroupConcept {
- typedef typename traits::DefaultChart<V>::type Chart;
- typedef typename GroupConcept<V>::identity identity;
+namespace traits {
 
- BOOST_CONCEPT_USAGE(VectorSpaceConcept) {
- BOOST_STATIC_ASSERT(boost::is_base_of<traits::vector_space_tag, traits::structure<L> >);
- r = p+q;
- r = -p;
- r = p-q;
- }
+/** @name Lie Group Traits */
+//@{
+//@}
 
- bool check_invariants(const V& a, const V& b) {
- return equal(compose(a, b), a+b)
- && equal(inverse(a), -a)
- && equal(between(a, b), b-a)
- && equal(Chart::retract(a, b), a+b)
- && equal(Chart::local(a, b), b-a);
- }
+}// \ namespace traits
 
- private:
- V g,q,r;
- };
+/// Check invariants
+//template<typename T>
+//BOOST_CONCEPT_REQUIRES(((Testable<T>)),(bool)) check_invariants(const T& a,
+//    const T& b) {
+//  bool check_invariants(const V& a, const V& b) {
+//    return equal(Chart::retract(a, b), a + b)
+//        && equal(Chart::local(a, b), b - a);
+//  }
+//}
+}// \ namespace lie_group
+
+/**
+ * Lie Group Concept
  */
+template<typename T>
+class IsLieGroup: public IsGroup<T>, public IsManifold<T> {
+public:
+
+  typedef typename traits::structure_category<T>::type structure_category_tag;
+
+  BOOST_CONCEPT_USAGE(IsLieGroup) {
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<traits::lie_group_tag, structure_category_tag>::value),
+        "This type's trait does not assert it as a Lie group (or derived)");
+    // TODO Check with Jacobian
+//    using lie_group::compose;
+//    using lie_group::between;
+//    using lie_group::inverse;
+//    g = compose(g, h);
+//    g = between(g, h);
+//    g = inverse(g);
+  }
+private:
+
+  T g, h;
+};
+
+template<typename T>
+class IsVectorSpace: public IsLieGroup<T> {
+public:
+
+  typedef typename traits::structure_category<T>::type structure_category_tag;
+
+  BOOST_CONCEPT_USAGE(IsVectorSpace) {
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<traits::vector_space_tag, structure_category_tag>::value),
+        "This type's trait does not assert it as a vector space (or derived)");
+    r = p + q;
+    r = -p;
+    r = p - q;
+  }
+
+private:
+  T p, q, r;
+};
 
 } // namespace gtsam
 
