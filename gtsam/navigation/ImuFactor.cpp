@@ -68,7 +68,7 @@ void ImuFactor::PreintegratedMeasurements::resetIntegration(){
 void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
     boost::optional<const Pose3&> body_P_sensor,
-    boost::optional<Matrix&> Fout, boost::optional<Matrix&> Gout) {
+    boost::optional<Matrix&> F_test, boost::optional<Matrix&> G_test) {
 
   // NOTE: order is important here because each update uses old values (i.e., we have to update
   // jacobians and covariances before updating preintegrated measurements).
@@ -91,34 +91,21 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   const Matrix3 R_i = deltaRij();
   const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
 
-  // Update preintegrated measurements. TODO Frank moved from end of this function !!!
-  // Even though Luca says has to happen after ? Don't understand why.
+  // Update preintegrated measurements
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
 
   const Vector3 theta_j = thetaRij(); // super-expensive parametrization of so(3)
   const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
 
-  Matrix H_pos_pos    = I_3x3;
-  Matrix H_pos_vel    = I_3x3 * deltaT;
-  Matrix H_pos_angles = Z_3x3;
-
-  Matrix H_vel_pos    = Z_3x3;
-  Matrix H_vel_vel    = I_3x3;
   Matrix H_vel_angles = - R_i * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
-  // analytic expression corresponding to the following numerical derivative
-  // Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
-
-  Matrix H_angles_pos   = Z_3x3;
-  Matrix H_angles_vel    = Z_3x3;
   Matrix H_angles_angles = Jrinv_theta_j * Rincr.inverse().matrix() * Jr_theta_i;
-  // analytic expression corresponding to the following numerical derivative
-  // Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix F(9,9);
-  F << H_pos_pos, H_pos_vel,  H_pos_angles,
-      H_vel_pos, H_vel_vel, H_vel_angles,
-      H_angles_pos, H_angles_vel, H_angles_angles;
+  //   pos          vel              angle
+  F << I_3x3,       I_3x3 * deltaT,  Z_3x3,          // pos
+       Z_3x3,       I_3x3,           H_vel_angles,   // vel
+       Z_3x3,       Z_3x3,           H_angles_angles;// angle
 
   // first order uncertainty propagation:
   // the deltaT allows to pass from continuous time noise to discrete time noise
@@ -126,19 +113,22 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // Gt * Qt * G =(approx)= measurementCovariance_discrete * deltaT^2 = measurementCovariance_contTime * deltaT
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + measurementCovariance_ * deltaT ;
 
-  // Fout and Gout are used for testing purposes and are not needed by the factor
-  if(Fout){
-    Fout->resize(9,9);
-    (*Fout) << F;
+  // F_test and Gout are used for testing purposes and are not needed by the factor
+  if(F_test){
+    // This in only for testing
+    F_test->resize(9,9);
+    (*F_test) << F;
   }
-  if(Gout){
+  if(G_test){
     // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
-    // This in only kept for testing.
-    Gout->resize(9,9);
-    (*Gout) << I_3x3 * deltaT, Z_3x3,        Z_3x3,
-               Z_3x3,          R_i * deltaT, Z_3x3,
-               Z_3x3,          Z_3x3,        Jrinv_theta_j * Jr_theta_incr * deltaT;
-    //preintMeasCov = F * preintMeasCov * F.transpose() + Gout * (1/deltaT) * measurementCovariance * Gout.transpose();
+    // This in only for testing
+
+    G_test->resize(9,9);
+    //           intNoise         accNoise      omegaNoise
+    (*G_test) << I_3x3 * deltaT,  Z_3x3,        Z_3x3,                                 // pos
+                Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
+                Z_3x3,            Z_3x3,        Jrinv_theta_j * Jr_theta_incr * deltaT;// angle
+    //preintMeasCov = F * preintMeasCov * F.transpose() + G_test * (1/deltaT) * measurementCovariance * G_test.transpose();
   }
 }
 
