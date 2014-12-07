@@ -176,26 +176,24 @@ public:
     const Rot3& Rot_i = pose_i.rotation();
     const Vector3& pos_i = pose_i.translation().vector();
 
-    const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
-
     // Predict state at time j
     /* ---------------------------------------------------------------------------------------------------- */
     Vector3 pos_j =  pos_i + Rot_i.matrix() * (deltaPij()
         + delPdelBiasAcc() * biasAccIncr
         + delPdelBiasOmega() * biasOmegaIncr)
         + vel_i * deltaTij()
-        - omegaCoriolisHat * vel_i * deltaTij()*deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
+        - omegaCoriolis.cross(vel_i) * deltaTij()*deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
         + 0.5 * gravity * deltaTij()*deltaTij();
 
     Vector3 vel_j = Vector3(vel_i + Rot_i.matrix() * (deltaVij()
         + delVdelBiasAcc() * biasAccIncr
         + delVdelBiasOmega() * biasOmegaIncr)
-        - 2 * omegaCoriolisHat * vel_i * deltaTij()  // Coriolis term
+        - 2 * omegaCoriolis.cross(vel_i) * deltaTij()  // Coriolis term
         + gravity * deltaTij());
 
     if(use2ndOrderCoriolis){
-      pos_j += - 0.5 * omegaCoriolisHat * omegaCoriolisHat * pos_i * deltaTij()*deltaTij();  // 2nd order coriolis term for position
-      vel_j += - omegaCoriolisHat * omegaCoriolisHat * pos_i * deltaTij(); // 2nd order term for velocity
+      pos_j += - 0.5 * omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * deltaTij()*deltaTij();  // 2nd order coriolis term for position
+      vel_j += - omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * deltaTij(); // 2nd order term for velocity
     }
 
     const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);
