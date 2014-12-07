@@ -76,17 +76,13 @@ struct QuaternionChart {
   }
 };
 
-#define GTSAM_MANIFOLD2(T1,A1,T2,A2,MANIFOLD,DIM,SCALAR,OPTIONS,CHART) \
-namespace manifold { \
-namespace traits { \
-template<T1 A1, T2 A2> struct dimension<MANIFOLD<A1,A2> > : public boost::integral_constant<int, DIM> {};\
-template<T1 A1, T2 A2> struct TangentVector<MANIFOLD<A1,A2> > { typedef Eigen::Matrix<SCALAR, DIM, 1, OPTIONS, DIM, 1> type;};\
-template<T1 A1, T2 A2> struct DefaultChart<MANIFOLD<A1,A2> > { typedef CHART<A1,A2> type;};\
-}}
+#define QUATERNION_TEMPLATE typename _Scalar, int _Options
+#define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
+GTSAM_MULTIPLICATIVE_GROUP(QUATERNION_TEMPLATE, QUATERNION_TYPE)
 
-
-GTSAM_MANIFOLD2(typename, _Scalar, int, _Options, Eigen::Quaternion, 3, _Scalar, _Options, QuaternionChart)
-GTSAM_MULTIPLICATIVE_GROUP2(typename, _Scalar, int, _Options, Eigen::Quaternion)
+#define QUATERNION_TANGENT Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1>
+#define QUATERNION_CHART QuaternionChart<_Scalar,_Options>
+GTSAM_MANIFOLD(QUATERNION_TEMPLATE,QUATERNION_TYPE,3,QUATERNION_TANGENT,QUATERNION_CHART)
 
 /// Define Eigen::Quaternion to be a model of the Lie Group concept
 namespace traits {

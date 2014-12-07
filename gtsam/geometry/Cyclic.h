@@ -62,7 +62,9 @@ public:
 
 };
 
-GTSAM_ADDITIVE_GROUP1(size_t, N, Cyclic)
+#define CYCLIC_TEMPLATE size_t N
+#define CYCLIC_TYPE Cyclic<N>
+GTSAM_ADDITIVE_GROUP(CYCLIC_TEMPLATE, CYCLIC_TYPE)
 
 /// Define cyclic group to be a model of the Group concept
 namespace traits {
