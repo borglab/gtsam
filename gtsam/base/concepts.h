@@ -11,6 +11,7 @@
 //#include "manifold.h"
 //#include "chart.h"
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 #include <boost/concept_check.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_base_of.hpp>
@@ -24,7 +25,7 @@ namespace traits {
  * @brief Associate a unique tag with each of the main GTSAM concepts
  */
 //@{
-template<class T>
+template<typename T>
 struct structure_category;
 // specializations should be derived from one of the following tags
 //@}
@@ -50,14 +51,14 @@ namespace traits {
 
 /** @name Manifold Traits */
 //@{
-template<class Manifold> struct TangentVector;
-template<class Manifold> struct DefaultChart;
+template<typename Manifold> struct TangentVector;
+template<typename Manifold> struct DefaultChart;
 //@}
 
 }// namespace traits
 
 /*
- template<class T>
+ template<typename T>
  class ManifoldConcept {
  public:
  typedef T Manifold;
@@ -75,7 +76,7 @@ template<class Manifold> struct DefaultChart;
  TangentVector v;
  };
 
- template<class C>
+ template<typename C>
  class ChartConcept {
  public:
  typedef C Chart;
@@ -107,8 +108,8 @@ namespace traits {
 
 /** @name Group Traits */
 //@{
-template<class G> struct identity;
-template<class G> struct flavor;
+template<typename G> struct identity;
+template<typename G> struct flavor;
 //@}
 
 /** @name Group Flavor Tags */
@@ -120,62 +121,60 @@ struct multiplicative_tag {
 //@}
 
 } // \ namespace traits
+
+/// Check invariants
+template <typename G>
+//BOOST_CONCEPT_REQUIRES((Testable))
+bool check_invariants(const G& a, const G& b) {
+  G e = traits::identity<G>::value;
+  typename traits::flavor<G>::type flavor;
+  return (equal(compose(a, inverse(a)), e))
+      && (equal(between(a, b), compose(inverse(a), b)))
+      && (equal(compose(a, between(a, b)), b)) //
+      && operator_usage(a, b, flavor);
+}
 } // \ namespace group
 
 /**
  * Group Concept
  */
 template<typename G>
-class Group {
+class IsGroup {
 public:
 
   typedef typename traits::structure_category<G>::type structure_category_tag;
   typedef typename group::traits::identity<G>::value_type identity_value_type;
   typedef typename group::traits::flavor<G>::type flavor_tag;
 
-  BOOST_CONCEPT_USAGE(Group) {
+  void operator_usage(group::traits::multiplicative_tag) {
+    g = g * h;
+  }
+  void operator_usage(group::traits::additive_tag) {
+    g = g + h;
+    g = h - g;
+    g = -g;
+  }
+
+  BOOST_CONCEPT_USAGE(IsGroup) {
     using group::compose;
     using group::between;
     using group::inverse;
     BOOST_STATIC_ASSERT(
         boost::is_base_of<traits::group_tag, structure_category_tag>::value);
     e = group::traits::identity<G>::value;
-    d = compose(g, h);
-    d = between(g, h);
-    ig = inverse(g);
-    test = operator_usage(g, h, flavor);
+    g = compose(g, h);
+    g = between(g, h);
+    g = inverse(g);
+    operator_usage(flavor);
   }
-
-// TODO: these all require default constructors :-(
-// Also, requires equal which is not required of a group
-//  Group():e(group::traits::identity<G>::value) {
-//  }
-//
-//  bool check_invariants(const G& a, const G& b) {
-//    return (equal(compose(a, inverse(a)), e))
-//        && (equal(between(a, b), compose(inverse(a), b)))
-//        && (equal(compose(a, between(a, b)), b))
-//        && operator_usage(a, b, flavor);
-//  }
 
 private:
   flavor_tag flavor;
-  G e, g, h, gh, ig, d;
-  bool test, test2;
-
-  bool operator_usage(const G& a, const G& b,
-      group::traits::multiplicative_tag) {
-//    return group::compose(a, b) == a * b;
-    return true;
-  }
-  bool operator_usage(const G& a, const G& b, group::traits::additive_tag) {
-    return group::compose(a, b) == a + b;
-  }
-
+  G e, g, h;
 };
 
 /*
- template <class L>
+ template <typename L>
  class LieGroupConcept : public GroupConcept<L>, public ManifoldConcept<L> {
 
  BOOST_CONCEPT_USAGE(LieGroupConcept) {
@@ -183,7 +182,7 @@ private:
  }
  };
 
- template <class V>
+ template <typename V>
  class VectorSpaceConcept : public LieGroupConcept {
  typedef typename traits::DefaultChart<V>::type Chart;
  typedef typename GroupConcept<V>::identity identity;

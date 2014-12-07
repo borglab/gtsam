@@ -55,7 +55,7 @@ struct identity<Quaternion> {
   typedef Quaternion value_type;
 };
 
-const Quaternion identity<Quaternion>::value = Quaternion(0);
+const Quaternion identity<Quaternion>::value = Quaternion::Identity();
 
 /// Define the trait that asserts Quaternion is an additive group
 template<>
@@ -75,6 +75,7 @@ struct flavor<Quaternion> {
 
 //#include <gtsam/geometry/Quaternion.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -84,12 +85,12 @@ typedef Quaternion Q; // Typedef
 
 //******************************************************************************
 TEST(Quaternion, Concept) {
-  BOOST_CONCEPT_ASSERT((Group<Q>));
+  BOOST_CONCEPT_ASSERT((IsGroup<Quaternion>));
 }
 
 //******************************************************************************
 TEST(Quaternion, Constructor) {
-  Q g(0);
+  Q g(Eigen::AngleAxisd(1, Vector3(0,0,1)));
 }
 
 //******************************************************************************
