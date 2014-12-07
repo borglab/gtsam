@@ -111,47 +111,8 @@ struct DefaultChart<Eigen::Quaternion<S, O> > {
 } // \namespace gtsam::manifold::traits
 } // \namespace gtsam::manifold
 
-namespace group {
+GTSAM_MULTIPLICATIVE_GROUP2(typename,_Scalar, int,_Options ,Eigen::Quaternion)
 
-template<typename S, int O>
-Eigen::Quaternion<S, O> compose(const Eigen::Quaternion<S, O> &g,
-    const Eigen::Quaternion<S, O> & h) {
-  return g * h;
-}
-
-template<typename S, int O>
-Eigen::Quaternion<S, O> between(const Eigen::Quaternion<S, O> &g,
-    const Eigen::Quaternion<S, O> & h) {
-  return g.inverse() * h;
-}
-
-template<typename S, int O>
-Eigen::Quaternion<S, O> inverse(const Eigen::Quaternion<S, O> &g) {
-  return g.inverse();
-}
-
-namespace traits {
-
-/// Declare the trait that specifies a quaternion's identity element
-template<typename S, int O>
-struct identity<Eigen::Quaternion<S, O> > {
-  static const Eigen::Quaternion<S, O> value;
-  typedef Eigen::Quaternion<S, O> value_type;
-};
-
-/// Out of line definition of identity
-template<typename S, int O>
-const Eigen::Quaternion<S, O> identity<Eigen::Quaternion<S, O> >::value =
-    Eigen::Quaternion<S, O>::Identity();
-
-/// Define the trait that asserts quaternions are a multiplicative group
-template<typename S, int O>
-struct flavor<Eigen::Quaternion<S, O> > {
-  typedef multiplicative_tag type;
-};
-
-} // \namespace gtsam::group::traits
-} // \namespace gtsam::group
 } // \namespace gtsam
 
 /**

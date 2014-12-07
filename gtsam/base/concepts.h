@@ -149,6 +149,17 @@ check_invariants(const T& a, const T& b, double tol = 1e-9) {
 }
 } // \ namespace group
 
+#define GTSAM_MULTIPLICATIVE_GROUP2(T1,A1,T2,A2,GROUP) \
+namespace group { \
+template<T1 A1, T2 A2> GROUP<A1,A2> compose(const GROUP<A1,A2> &g, const GROUP<A1,A2> & h) { return g * h;} \
+template<T1 A1, T2 A2> GROUP<A1,A2> between(const GROUP<A1,A2> &g, const GROUP<A1,A2> & h) { return g.inverse() * h;} \
+template<T1 A1, T2 A2> GROUP<A1,A2> inverse(const GROUP<A1,A2> &g) { return g.inverse();} \
+namespace traits { \
+template<T1 A1, T2 A2> struct identity<GROUP<A1,A2> > { static const GROUP<A1,A2> value; typedef GROUP<A1,A2> value_type;};\
+template<T1 A1, T2 A2> const GROUP<A1,A2> identity<GROUP<A1,A2> >::value = GROUP<A1,A2>::Identity();\
+template<T1 A1, T2 A2> struct flavor<GROUP<A1,A2> > { typedef multiplicative_tag type;};\
+}}
+
 /**
  * Group Concept
  */
