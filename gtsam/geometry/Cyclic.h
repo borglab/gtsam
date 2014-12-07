@@ -20,20 +20,38 @@
 
 namespace gtsam {
 
-/// Additive Group
+/// Additive Group, using CRTP
 template<typename Derived>
-class AdditiveGroup {
-
+struct AdditiveGroup {
+  static Derived Identity() {
+    return Derived::Identity();
+  }
+  Derived const * derived() const {
+    return static_cast<Derived const*>(this);
+  }
+  Derived operator+(const AdditiveGroup& h) const {
+    return derived()->operator+(*h.derived());
+  }
+  Derived operator-(const AdditiveGroup& h) const {
+    return derived()->operator-(*h.derived());
+  }
+  Derived operator-() const {
+    return derived()->operator-();
+  }
 };
 
 /// Cyclic group of order N
 template<size_t N>
-class Cyclic : AdditiveGroup<Cyclic<N> > {
+class Cyclic : public AdditiveGroup<Cyclic<N> > {
   size_t i_; ///< we just use an unsigned int
 public:
   /// Constructor
   Cyclic(size_t i) :
       i_(i) {
+  }
+  // Idenity element
+  static Cyclic Identity() {
+    return Cyclic(0);
   }
   /// Cast to size_t
   operator size_t() const {
@@ -64,8 +82,9 @@ public:
 };
 
 namespace traits {
-/// Define Cyclic to be a model of the Group concept
-template<size_t N> struct structure_category<Cyclic<N> > {
+/// Define any additive group to be at least a model of the Group concept
+template<typename G>
+struct structure_category<AdditiveGroup<G> > {
   typedef group_tag type;
 };
 } // \namespace gtsam::traits
@@ -73,30 +92,30 @@ template<size_t N> struct structure_category<Cyclic<N> > {
 namespace group {
 
 template<typename G>
-AdditiveGroup<G> compose(const AdditiveGroup<G>&g, const AdditiveGroup<G>& h) {
+G compose(const AdditiveGroup<G>&g, const AdditiveGroup<G>& h) {
   return g + h;
 }
 
 template<typename G>
-AdditiveGroup<G> between(const AdditiveGroup<G>&g, const AdditiveGroup<G>& h) {
+G between(const AdditiveGroup<G>&g, const AdditiveGroup<G>& h) {
   return h - g;
 }
 
 template<typename G>
-AdditiveGroup<G> inverse(const AdditiveGroup<G>&g) {
+G inverse(const AdditiveGroup<G>&g) {
   return -g;
 }
 
 namespace traits {
 
 /// Define the trait that specifies Cyclic's identity element
-template<size_t N> struct identity<Cyclic<N> > {
-  static const Cyclic<N> value;
-  typedef Cyclic<N> value_type;
+template<typename G> struct identity<AdditiveGroup<G> > {
+  static const G value;
+  typedef G value_type;
 };
 
-template<size_t N>
-const Cyclic<N> identity<Cyclic<N> >::value = Cyclic<N>(0);
+template<typename G>
+const G identity<AdditiveGroup<G> >::value = AdditiveGroup<G>::Identity();
 
 /// Define the trait that asserts AdditiveGroup is an additive group
 template<typename G> struct flavor<AdditiveGroup<G> > {
