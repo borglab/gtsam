@@ -18,10 +18,5 @@
 #include <gtsam/geometry/Cyclic.h>
 
 namespace gtsam {
-namespace group {
-namespace traits {
-
-} // \namespace traits
-} // \namespace group
 } // \namespace gtsam
 
