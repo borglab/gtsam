@@ -122,13 +122,13 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   if(G_test){
     // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
     // This in only for testing
-
     G_test->resize(9,9);
     //           intNoise         accNoise      omegaNoise
-    (*G_test) << I_3x3 * deltaT,  Z_3x3,        Z_3x3,                                 // pos
-                Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
-                Z_3x3,            Z_3x3,        Jrinv_theta_j * Jr_theta_incr * deltaT;// angle
-    //preintMeasCov = F * preintMeasCov * F.transpose() + G_test * (1/deltaT) * measurementCovariance * G_test.transpose();
+    (*G_test) << I_3x3 * deltaT,   Z_3x3,        Z_3x3,                                 // pos
+                 Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
+                 Z_3x3,            Z_3x3,        Jrinv_theta_j * Jr_theta_incr * deltaT;// angle
+    // Propagation with no approximation:
+    // preintMeasCov = F * preintMeasCov * F.transpose() + G_test * (1/deltaT) * measurementCovariance * G_test.transpose();
   }
 }
 

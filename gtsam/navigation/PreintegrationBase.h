@@ -125,7 +125,6 @@ public:
       deltaPij_ += deltaVij_ * deltaT + 0.5 * temp * deltaT;
     }
     deltaVij_ += temp;
-    // TODO: we update rotation *after* the others. Is that correct?
     updateIntegratedRotationAndDeltaT(incrR,deltaT);
   }
 
@@ -143,7 +142,6 @@ public:
     }
     delVdelBiasAcc_ += -dRij * deltaT;
     delVdelBiasOmega_ += temp;
-    // TODO: we update rotation *after* the others. Is that correct?
     update_delRdelBiasOmega(Jr_theta_incr,incrR,deltaT);
   }
 
@@ -244,11 +242,16 @@ public:
     // Prediction
     const Rot3 deltaRij_corrected = Rot3::Expmap( theta_corrected );
 
-    // TODO: these are not always needed
+    // Residual rotation error
     const Rot3 fRhat = deltaRij_corrected.between(Ri.between(Rj));
-    const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_corrected);
-    const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(coriolis);
-    const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
+
+    // Accessory matrix, used to build the jacobians
+    Matrix3 Jr_theta_bcc, Jtheta, Jrinv_fRhat;
+    if(H1 || H3 || H5){
+      Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
+      Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_corrected);
+      Jtheta = -Jr_theta_bcc  * skewSymmetric(coriolis);
+    }
 
     if(H1) {
       H1->resize(9,6);
