@@ -117,10 +117,9 @@ public:
   }
 
   /// vectorized form (column-wise)
-  Vector vector() const {
-    double r[] = { fx_, fy_, s_, u0_, v0_ };
-    Vector v(5);
-    std::copy(r, r + 5, v.data());
+  Vector5 vector() const {
+    Vector5 v;
+    v << fx_, fy_, s_, u0_, v0_;
     return v;
   }
 
@@ -199,7 +198,7 @@ public:
   }
 
   /// Unretraction for the calibration
-  Vector localCoordinates(const Cal3_S2& T2) const {
+  Vector5 localCoordinates(const Cal3_S2& T2) const {
     return T2.vector() - vector();
   }
 
