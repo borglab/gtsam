@@ -171,7 +171,7 @@ public:
   static inline Point2 Expmap(const Vector& v) { return Point2(v); }
 
   /// Log map around identity - just return the Point2 as a vector
-  static inline Vector Logmap(const Point2& dp) { return (Vector(2) << dp.x(), dp.y()).finished(); }
+  static inline Vector2 Logmap(const Point2& dp) { return Vector2(dp.x(), dp.y()); }
 
   /// @}
   /// @name Vector Space

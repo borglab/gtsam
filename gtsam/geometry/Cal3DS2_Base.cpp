@@ -35,8 +35,10 @@ Matrix3 Cal3DS2_Base::K() const {
 }
 
 /* ************************************************************************* */
-Vector Cal3DS2_Base::vector() const {
-  return (Vector(9) << fx_, fy_, s_, u0_, v0_, k1_, k2_, p1_, p2_).finished();
+Vector9 Cal3DS2_Base::vector() const {
+  Vector9 v;
+  v << fx_, fy_, s_, u0_, v0_, k1_, k2_, p1_, p2_;
+  return v;
 }
 
 /* ************************************************************************* */

@@ -31,8 +31,8 @@ private:
 public:
 
   /// Static function to convert Point2 to homogeneous coordinates
-  static Vector Homogeneous(const Point2& p) {
-    return (Vector(3) << p.x(), p.y(), 1).finished();
+  static Vector3 Homogeneous(const Point2& p) {
+    return Vector3(p.x(), p.y(), 1);
   }
 
   /// @name Constructors and named constructors
@@ -84,15 +84,15 @@ public:
   }
 
   /// Return the dimensionality of the tangent space
-  virtual size_t dim() const {
+  size_t dim() const {
     return 5;
   }
 
   /// Retract delta to manifold
-  virtual EssentialMatrix retract(const Vector& xi) const;
+  EssentialMatrix retract(const Vector& xi) const;
 
   /// Compute the coordinates in the tangent space
-  virtual Vector localCoordinates(const EssentialMatrix& other) const;
+  Vector5 localCoordinates(const EssentialMatrix& other) const;
 
   /// @}
 

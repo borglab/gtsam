@@ -139,7 +139,7 @@ public:
   Pose2 retract(const Vector& v) const;
 
   /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
-  Vector localCoordinates(const Pose2& p2) const;
+  Vector3 localCoordinates(const Pose2& p2) const;
 
   /// @}
   /// @name Lie Group
@@ -149,7 +149,7 @@ public:
   static Pose2 Expmap(const Vector& xi);
 
   ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
-  static Vector Logmap(const Pose2& p);
+  static Vector3 Logmap(const Pose2& p);
 
   /**
    * Calculate Adjoint map
@@ -169,10 +169,11 @@ public:
    * @return xihat, 3*3 element of Lie algebra that can be exponentiated
    */
   static inline Matrix3 wedge(double vx, double vy, double w) {
-     return (Matrix(3,3) <<
-        0.,-w,  vx,
-        w,  0., vy,
-        0., 0.,  0.).finished();
+    Matrix3 m;
+    m << 0.,-w,  vx,
+         w,  0., vy,
+         0., 0.,  0.;
+    return m;
   }
 
   /// @}

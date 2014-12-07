@@ -154,7 +154,7 @@ namespace gtsam {
     inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
 
     /// Returns inverse retraction
-    inline Vector localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
+    inline Vector1 localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
 
     /// @}
     /// @name Lie Group
@@ -169,8 +169,10 @@ namespace gtsam {
     }
 
     ///Log map at identity - return the canonical coordinates of this rotation
-    static inline Vector Logmap(const Rot2& r) {
-      return (Vector(1) << r.theta()).finished();
+    static inline Vector1 Logmap(const Rot2& r) {
+      Vector1 v;
+      v << r.theta();
+      return v;
     }
 
     /// @}

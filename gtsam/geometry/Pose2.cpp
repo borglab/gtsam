@@ -75,18 +75,18 @@ Pose2 Pose2::Expmap(const Vector& xi) {
 }
 
 /* ************************************************************************* */
-Vector Pose2::Logmap(const Pose2& p) {
+Vector3 Pose2::Logmap(const Pose2& p) {
   const Rot2& R = p.r();
   const Point2& t = p.t();
   double w = R.theta();
   if (std::abs(w) < 1e-10)
-    return (Vector(3) << t.x(), t.y(), w).finished();
+    return Vector3(t.x(), t.y(), w);
   else {
     double c_1 = R.c()-1.0, s = R.s();
     double det = c_1*c_1 + s*s;
     Point2 p = R_PI_2 * (R.unrotate(t) - t);
     Point2 v = (w/det) * p;
-    return (Vector(3) << v.x(), v.y(), w).finished();
+    return Vector3(v.x(), v.y(), w);
   }
 }
 
@@ -101,12 +101,12 @@ Pose2 Pose2::retract(const Vector& v) const {
 }
 
 /* ************************************************************************* */
-Vector Pose2::localCoordinates(const Pose2& p2) const {
+Vector3 Pose2::localCoordinates(const Pose2& p2) const {
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   return Logmap(between(p2));
 #else
   Pose2 r = between(p2);
-  return (Vector(3) << r.x(), r.y(), r.theta()).finished();
+  return Vector3(r.x(), r.y(), r.theta());
 #endif
 }
 

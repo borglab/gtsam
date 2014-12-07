@@ -91,11 +91,11 @@ namespace gtsam {
     double d = 1.0 / P.z(), d2 = d*d;
     const Cal3_S2Stereo& K = *K_;
     double f_x = K.fx(), f_y = K.fy(), b = K.baseline();
-    return (Matrix(3, 3) <<
-         f_x*d,   0.0, -d2*f_x* P.x(),
+    Matrix3 m;
+    m << f_x*d,   0.0, -d2*f_x* P.x(),
          f_x*d,   0.0, -d2*f_x*(P.x() - b),
-           0.0, f_y*d, -d2*f_y* P.y()
-    ).finished();
+           0.0, f_y*d, -d2*f_y* P.y();
+    return m;
   }
 
 }

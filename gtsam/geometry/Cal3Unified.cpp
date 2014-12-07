@@ -29,8 +29,10 @@ Cal3Unified::Cal3Unified(const Vector &v):
     Base(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]), xi_(v[9]) {}
 
 /* ************************************************************************* */
-Vector Cal3Unified::vector() const {
-  return (Vector(10) << Base::vector(), xi_).finished();
+Vector10 Cal3Unified::vector() const {
+  Vector10 v;
+  v << Base::vector(), xi_;
+  return v;
 }
 
 /* ************************************************************************* */
@@ -133,7 +135,7 @@ Cal3Unified Cal3Unified::retract(const Vector& d) const {
 }
 
 /* ************************************************************************* */
-Vector Cal3Unified::localCoordinates(const Cal3Unified& T2) const {
+Vector10 Cal3Unified::localCoordinates(const Cal3Unified& T2) const {
   return T2.vector() - vector();
 }
 
