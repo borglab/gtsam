@@ -69,6 +69,14 @@ check_invariants(const T& a, const T& b) {
 
 } // \ namespace manifold
 
+#define GTSAM_MANIFOLD(TEMPLATE,MANIFOLD,DIM,TANGENT_VECTOR,DEFAULT_CHART) \
+namespace manifold { \
+namespace traits { \
+template<TEMPLATE> struct dimension    < MANIFOLD > : public boost::integral_constant<int, DIM> {};\
+template<TEMPLATE> struct TangentVector< MANIFOLD > { typedef TANGENT_VECTOR type;};\
+template<TEMPLATE> struct DefaultChart < MANIFOLD > { typedef DEFAULT_CHART type;};\
+}}
+
 /**
  * Chart concept
  */
@@ -149,26 +157,26 @@ check_invariants(const T& a, const T& b, double tol = 1e-9) {
 }
 } // \ namespace group
 
-#define GTSAM_ADDITIVE_GROUP1(T1,A1,GROUP) \
+#define GTSAM_ADDITIVE_GROUP(TEMPLATE,GROUP) \
 namespace group { \
-template<T1 A1> GROUP<A1> compose(const GROUP<A1> &g, const GROUP<A1> & h) { return g + h;} \
-template<T1 A1> GROUP<A1> between(const GROUP<A1> &g, const GROUP<A1> & h) { return h - g;} \
-template<T1 A1> GROUP<A1> inverse(const GROUP<A1> &g) { return -g;} \
+template<TEMPLATE> GROUP compose(const GROUP &g, const GROUP & h) { return g + h;} \
+template<TEMPLATE> GROUP between(const GROUP &g, const GROUP & h) { return h - g;} \
+template<TEMPLATE> GROUP inverse(const GROUP &g) { return -g;} \
 namespace traits { \
-template<T1 A1> struct identity<GROUP<A1> > { static const GROUP<A1> value; typedef GROUP<A1> value_type;};\
-template<T1 A1> const GROUP<A1> identity<GROUP<A1> >::value = GROUP<A1>::Identity();\
-template<T1 A1> struct flavor<GROUP<A1> > { typedef additive_tag type;};\
+template<TEMPLATE> struct identity<GROUP > { static const GROUP value; typedef GROUP value_type;};\
+template<TEMPLATE> const GROUP identity<GROUP >::value = GROUP::Identity();\
+template<TEMPLATE> struct flavor<GROUP > { typedef additive_tag type;};\
 }}
 
-#define GTSAM_MULTIPLICATIVE_GROUP2(T1,A1,T2,A2,GROUP) \
+#define GTSAM_MULTIPLICATIVE_GROUP(TEMPLATE,GROUP) \
 namespace group { \
-template<T1 A1, T2 A2> GROUP<A1,A2> compose(const GROUP<A1,A2> &g, const GROUP<A1,A2> & h) { return g * h;} \
-template<T1 A1, T2 A2> GROUP<A1,A2> between(const GROUP<A1,A2> &g, const GROUP<A1,A2> & h) { return g.inverse() * h;} \
-template<T1 A1, T2 A2> GROUP<A1,A2> inverse(const GROUP<A1,A2> &g) { return g.inverse();} \
+template<TEMPLATE> GROUP compose(const GROUP &g, const GROUP & h) { return g * h;} \
+template<TEMPLATE> GROUP between(const GROUP &g, const GROUP & h) { return g.inverse() * h;} \
+template<TEMPLATE> GROUP inverse(const GROUP &g) { return g.inverse();} \
 namespace traits { \
-template<T1 A1, T2 A2> struct identity<GROUP<A1,A2> > { static const GROUP<A1,A2> value; typedef GROUP<A1,A2> value_type;};\
-template<T1 A1, T2 A2> const GROUP<A1,A2> identity<GROUP<A1,A2> >::value = GROUP<A1,A2>::Identity();\
-template<T1 A1, T2 A2> struct flavor<GROUP<A1,A2> > { typedef multiplicative_tag type;};\
+template<TEMPLATE> struct identity<GROUP > { static const GROUP value; typedef GROUP value_type;};\
+template<TEMPLATE> const GROUP identity<GROUP >::value = GROUP::Identity();\
+template<TEMPLATE> struct flavor<GROUP > { typedef multiplicative_tag type;};\
 }}
 
 /**
