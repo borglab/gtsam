@@ -145,7 +145,7 @@ check_invariants(const T& a, const T& b, double tol = 1e-9) {
   T e = traits::identity<T>::value;
   return compose(a, inverse(a)).equals(e, tol)
       && between(a, b).equals(compose(inverse(a), b), tol)
-      && compose(a, between(a, b)).equals<T>(b, tol);
+      && compose(a, between(a, b)).equals(b, tol);
 }
 } // \ namespace group
 
