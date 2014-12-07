@@ -151,14 +151,6 @@ public:
     const std::map<Key,Vector> &lambda
     ) ;
 
-  // Should be removed after test
-  double* getBuffer() {
-    return buffer_;
-  }
-  size_t getBufferSize() {
-	return bufferSize_;
-  }
-
 protected:
 
   void clean() ;
