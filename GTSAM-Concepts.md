@@ -146,30 +146,6 @@ TESTABLE, MANIFOLD, GROUP, LIE_GROUP, and VECTOR_SPACE concepts.
 and we also define a limited number of `gtsam::tags` to select the correct implementation
 of certain functions at compile time (tag dispatching). Charts are done more conventionally, so we start there...
 
-Interfaces
-----------
-
-Because Charts are always written by the user (or automatically generated, see below for vector spaces), 
-we enforce the Chart concept using an abstract base class, acting as an interface:
-
-```
-#!c++
-template <class T, class Derived>
-struct Chart {
-   typedef T ManifoldType;
-   typedef typename traits::TangentVector<T>::type TangentVector;
-   static TangentVector Local(const ManifoldType& p, const ManifoldType& q) {return Derived::local(p,q);}
-   static ManifoldType Retract(const ManifoldType& p, const TangentVector& v) {return Derived::retract(p,v);}
- protected:
-   Chart(){ (void)&Local; (void)&Retract; }  // enforce early instantiation. 
-}
-```
-
-The [CRTP](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) and the protected constructor 
-automatically check for the existence of the methods in the Derived class, whenever a new Chart is created by
-
-    struct MyChart : Chart<MyType,MyChart> { ... }
-
 Traits
 ------
 

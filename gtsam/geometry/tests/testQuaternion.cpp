@@ -33,13 +33,17 @@ namespace manifold {
 
 /// Chart for Eigen Quaternions
 template<typename S, int O>
-struct QuaternionChart: public manifold::Chart<Eigen::Quaternion<S, O>,
-    QuaternionChart<S, O> > {
-  typedef Eigen::Quaternion<S, O> Q;
-  typedef typename traits::TangentVector<Q>::type V;
+struct QuaternionChart {
+
+  // required
+  typedef Eigen::Quaternion<S, O> ManifoldType;
+
+  // internal
+  typedef ManifoldType Q;
+  typedef typename traits::TangentVector<Q>::type Omega;
 
   /// Exponential map, simply be converting omega to AngleAxis
-  static Q Expmap(const V& omega) {
+  static Q Expmap(const Omega& omega) {
     double theta = omega.norm();
     if (std::abs(theta) < 1e-10)
       return Q::Identity();
@@ -47,12 +51,12 @@ struct QuaternionChart: public manifold::Chart<Eigen::Quaternion<S, O>,
   }
 
   /// retract, simply be converting omega to AngleAxis
-  static Q retract(const Q& p, const V& omega) {
+  static Q Retract(const Q& p, const Omega& omega) {
     return p * Expmap(omega);
   }
 
   /// We use our own Logmap, as there is a slight bug in Eigen
-  static V Logmap(const Q& q) {
+  static Omega Logmap(const Q& q) {
     using std::acos;
     using std::sqrt;
     static const double twoPi = 2.0 * M_PI,
@@ -79,7 +83,7 @@ struct QuaternionChart: public manifold::Chart<Eigen::Quaternion<S, O>,
   }
 
   /// local is our own, as there is a slight bug in Eigen
-  static V local(const Q& q1, const Q& q2) {
+  static Omega Local(const Q& q1, const Q& q2) {
     return Logmap(q1.inverse() * q2);
   }
 };
@@ -176,9 +180,7 @@ typedef Quaternion Q; // Typedef
 //******************************************************************************
 TEST(Quaternion , Concept) {
   BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >));
-  // not strictly needed
   BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >));
-  // not strictly needed
   BOOST_CONCEPT_ASSERT((IsLieGroup<Quaternion >));
 }
 
@@ -202,8 +204,6 @@ TEST(Quaternion , Local) {
   typedef manifold::traits::DefaultChart<Q>::type Chart;
   Vector3 expected(0, 0, 0.1);
   Vector3 actual = Chart::Local(q1, q2);
-  cout << expected << endl;
-  cout << actual << endl;
   EXPECT(assert_equal((Vector)expected,actual));
 }
 

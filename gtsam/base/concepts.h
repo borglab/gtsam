@@ -67,32 +67,30 @@ check_invariants(const T& a, const T& b) {
   return true;
 }
 
-/**
- * Base class for Charts
- * Derived has to implement local and retract as static methods
- */
-template <class T, class Derived>
-struct Chart {
-  typedef T ManifoldType;
-  typedef typename traits::TangentVector<T>::type TangentVector;
-
-  // TODO, maybe we need Retract and Local to be unary, or both
-  // TOOD, also, this indirection mechanism does not seem to help
-  static TangentVector Local(const ManifoldType& p, const ManifoldType& q) {
-    return Derived::local(p, q);
-  }
-  static ManifoldType Retract(const ManifoldType& p, const TangentVector& v) {
-    return Derived::retract(p, v);
-  }
-protected:
-  Chart() {
-    (void) &Local;
-    (void) &Retract;
-  } // enforce early instantiation. TODO does not seem to work
-};
-
 } // \ namespace manifold
 
+/**
+ * Chart concept
+ */
+template<typename T>
+class IsChart {
+public:
+  typedef typename T::ManifoldType ManifoldType;
+  typedef typename manifold::traits::TangentVector<ManifoldType>::type V;
+
+  BOOST_CONCEPT_USAGE(IsChart) {
+    // make sure Derived methods in Chart are defined
+    v = T::Local(p,q);
+    q = T::Retract(p,v);
+  }
+private:
+  ManifoldType p,q;
+  V v;
+};
+
+/**
+ * Manifold concept
+ */
 template<typename T>
 class IsManifold {
 public:
@@ -106,12 +104,7 @@ public:
         (boost::is_base_of<traits::manifold_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a manifold (or derived)");
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
-    BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<manifold::Chart<T,DefaultChart>, DefaultChart>::value),
-        "This type's DefaultChart does not derive from manifold::Chart, as required");
-    // make sure Derived methods in Chart are defined
-    v = DefaultChart::local(p,q);
-    q = DefaultChart::retract(p,v);
+    BOOST_CONCEPT_ASSERT((IsChart<DefaultChart >));
   }
 private:
   T p,q;
