@@ -192,16 +192,13 @@ public:
   }
 
   BOOST_CONCEPT_USAGE(IsGroup) {
-    using group::compose;
-    using group::between;
-    using group::inverse;
     BOOST_STATIC_ASSERT_MSG(
         (boost::is_base_of<traits::group_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a group (or derived)");
     e = group::traits::identity<T>::value;
-    g = compose(g, h);
-    g = between(g, h);
-    g = inverse(g);
+    g = group::compose(g, h);
+    g = group::between(g, h);
+    g = group::inverse(g);
     operator_usage(flavor);
   }
 
