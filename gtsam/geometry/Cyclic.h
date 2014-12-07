@@ -62,15 +62,15 @@ public:
 
 };
 
-GTSAM_ADDITIVE_GROUP1(size_t,N,Cyclic)
+GTSAM_ADDITIVE_GROUP1(size_t, N, Cyclic)
 
-namespace traits {
 /// Define cyclic group to be a model of the Group concept
+namespace traits {
 template<size_t N>
 struct structure_category<Cyclic<N> > {
   typedef group_tag type;
 };
-} // \namespace gtsam::traits
+}
 
 } // \namespace gtsam
 

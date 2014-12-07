@@ -19,18 +19,6 @@
 
 namespace gtsam {
 
-namespace traits {
-
-/// Define Eigen::Quaternion to be a model of the Lie Group concept
-template<typename S, int O>
-struct structure_category<Eigen::Quaternion<S, O> > {
-  typedef lie_group_tag type;
-};
-
-} // \namespace gtsam::traits
-
-namespace manifold {
-
 /// Chart for Eigen Quaternions
 template<typename S, int O>
 struct QuaternionChart {
@@ -40,7 +28,7 @@ struct QuaternionChart {
 
   // internal
   typedef ManifoldType Q;
-  typedef typename traits::TangentVector<Q>::type Omega;
+  typedef typename manifold::traits::TangentVector<Q>::type Omega;
 
   /// Exponential map, simply be converting omega to AngleAxis
   static Q Expmap(const Omega& omega) {
@@ -88,32 +76,25 @@ struct QuaternionChart {
   }
 };
 
+#define GTSAM_MANIFOLD2(T1,A1,T2,A2,MANIFOLD,DIM,SCALAR,OPTIONS,CHART) \
+namespace manifold { \
+namespace traits { \
+template<T1 A1, T2 A2> struct dimension<MANIFOLD<A1,A2> > : public boost::integral_constant<int, DIM> {};\
+template<T1 A1, T2 A2> struct TangentVector<MANIFOLD<A1,A2> > { typedef Eigen::Matrix<SCALAR, DIM, 1, OPTIONS, DIM, 1> type;};\
+template<T1 A1, T2 A2> struct DefaultChart<MANIFOLD<A1,A2> > { typedef CHART<A1,A2> type;};\
+}}
+
+
+GTSAM_MANIFOLD2(typename, _Scalar, int, _Options, Eigen::Quaternion, 3, _Scalar, _Options, QuaternionChart)
+GTSAM_MULTIPLICATIVE_GROUP2(typename, _Scalar, int, _Options, Eigen::Quaternion)
+
+/// Define Eigen::Quaternion to be a model of the Lie Group concept
 namespace traits {
-
-/// Define the trait that asserts Quaternion manifold has dimension 3
 template<typename S, int O>
-struct dimension<Eigen::Quaternion<S, O> > : public boost::integral_constant<
-    int, 3> {
+struct structure_category<Eigen::Quaternion<S, O> > {
+  typedef lie_group_tag type;
 };
-
-/// Define the trait that asserts Quaternion TangentVector is Vector3
-template<typename S, int O>
-struct TangentVector<Eigen::Quaternion<S, O> > {
-  typedef Eigen::Matrix<S, 3, 1, O, 3, 1> type;
-};
-
-/// Define the trait that asserts Quaternion TangentVector is Vector3
-template<typename S, int O>
-struct DefaultChart<Eigen::Quaternion<S, O> > {
-  typedef QuaternionChart<S, O> type;
-};
-
-} // \namespace gtsam::manifold::traits
-} // \namespace gtsam::manifold
-
-GTSAM_MULTIPLICATIVE_GROUP2(typename,_Scalar, int,_Options ,Eigen::Quaternion)
-
-} // \namespace gtsam
+}
 
 /**
  *  GSAM typedef to an Eigen::Quaternion<double>, we disable alignment because
@@ -121,4 +102,6 @@ GTSAM_MULTIPLICATIVE_GROUP2(typename,_Scalar, int,_Options ,Eigen::Quaternion)
  *  and and these pool allocators do not support alignment.
  */
 typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
+
+} // \namespace gtsam
 
