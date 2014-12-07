@@ -34,6 +34,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <boost/concept_check.hpp>
 #include <stdio.h>
 #include <string>
 
@@ -50,17 +51,20 @@ namespace gtsam {
    * @tparam T is the type this constrains to be testable - assumes print() and equals()
    */
   template <class T>
-  class TestableConcept {
-    static bool checkTestableConcept(const T& d) {
+  class Testable {
+    T t;
+    bool r1,r2;
+  public:
+
+    BOOST_CONCEPT_USAGE(Testable) {
       // check print function, with optional string
-      d.print(std::string());
-      d.print();
+      t.print(std::string());
+      t.print();
 
       // check print, with optional threshold
       double tol = 1.0;
-      bool r1 = d.equals(d, tol);
-      bool r2 = d.equals(d);
-      return r1 && r2;
+      r1 = t.equals(t, tol);
+      r2 = t.equals(t);
     }
   };
 
@@ -129,6 +133,7 @@ namespace gtsam {
  *
  * NOTE: intentionally not in the gtsam namespace to allow for classes not in
  * the gtsam namespace to be more easily enforced as testable
+ * @deprecated please use BOOST_CONCEPT_ASSERT and
  */
-#define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::TestableConcept<T>;
-#define GTSAM_CONCEPT_TESTABLE_TYPE(T) typedef gtsam::TestableConcept<T> _gtsam_TestableConcept_##T;
+#define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::Testable<T>;
+#define GTSAM_CONCEPT_TESTABLE_TYPE(T) typedef gtsam::Testable<T> _gtsam_Testable_##T;
