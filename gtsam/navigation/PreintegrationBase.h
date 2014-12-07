@@ -343,28 +343,6 @@ public:
     return r;
   }
 
-  /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-  // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
-  static inline Vector PreIntegrateIMUObservations_delta_vel(const Vector& msr_gyro_t, const Vector& msr_acc_t, const double msr_dt,
-      const Vector3& delta_angles, const Vector& delta_vel_in_t0){
-    // Note: all delta terms refer to an IMU\sensor system at t0
-    Vector body_t_a_body = msr_acc_t;
-    Rot3 R_t_to_t0 = Rot3::Expmap(delta_angles);
-    return delta_vel_in_t0 + R_t_to_t0.matrix() * body_t_a_body * msr_dt;
-  }
-
-  // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
-  static inline Vector PreIntegrateIMUObservations_delta_angles(const Vector& msr_gyro_t, const double msr_dt,
-      const Vector3& delta_angles){
-    // Note: all delta terms refer to an IMU\sensor system at t0
-    // Calculate the corrected measurements using the Bias object
-    Vector body_t_omega_body= msr_gyro_t;
-    Rot3 R_t_to_t0 = Rot3::Expmap(delta_angles);
-    R_t_to_t0    = R_t_to_t0 * Rot3::Expmap( body_t_omega_body*msr_dt );
-    return Rot3::Logmap(R_t_to_t0);
-  }
-
-  /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 private:
   /** Serialization function */
   friend class boost::serialization::access;

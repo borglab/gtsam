@@ -67,7 +67,8 @@ void ImuFactor::PreintegratedMeasurements::resetIntegration(){
 //------------------------------------------------------------------------------
 void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-    boost::optional<const Pose3&> body_P_sensor) {
+    boost::optional<const Pose3&> body_P_sensor,
+    boost::optional<Matrix&> Fout, boost::optional<Matrix&> Gout) {
 
   // NOTE: order is important here because each update uses old values (i.e., we have to update
   // jacobians and covariances before updating preintegrated measurements).
@@ -87,6 +88,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in an EKF framework
   /* ----------------------------------------------------------------------------------------------------------------------- */
   const Vector3 theta_i = thetaRij(); // super-expensive parametrization of so(3)
+  const Matrix3 R_i = deltaRij();
   const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
 
   // Update preintegrated measurements. TODO Frank moved from end of this function !!!
@@ -102,7 +104,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
 
   Matrix H_vel_pos    = Z_3x3;
   Matrix H_vel_vel    = I_3x3;
-  Matrix H_vel_angles = - deltaRij() * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
+  Matrix H_vel_angles = - R_i * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
   // analytic expression corresponding to the following numerical derivative
   // Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
 
@@ -124,15 +126,20 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // Gt * Qt * G =(approx)= measurementCovariance_discrete * deltaT^2 = measurementCovariance_contTime * deltaT
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + measurementCovariance_ * deltaT ;
 
-  // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
-  // This in only kept for documentation.
-  //
-  // Matrix G(9,9);
-  // G << I_3x3 * deltaT, Z_3x3,  Z_3x3,
-  //      Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
-  //      Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
-  //
-  // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
+  // Fout and Gout are used for testing purposes and are not needed by the factor
+  if(Fout){
+    Fout->resize(9,9);
+    (*Fout) << F;
+  }
+  if(Gout){
+    // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
+    // This in only kept for testing.
+    Gout->resize(9,9);
+    (*Gout) << I_3x3 * deltaT, Z_3x3,        Z_3x3,
+               Z_3x3,          R_i * deltaT, Z_3x3,
+               Z_3x3,          Z_3x3,        Jrinv_theta_j * Jr_theta_incr * deltaT;
+    //preintMeasCov = F * preintMeasCov * F.transpose() + Gout * (1/deltaT) * measurementCovariance * Gout.transpose();
+  }
 }
 
 //------------------------------------------------------------------------------

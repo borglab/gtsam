@@ -49,6 +49,23 @@ Rot3 evaluateRotationError(const ImuFactor& factor,
   return Rot3::Expmap(factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias).tail(3) ) ;
 }
 
+Vector PreIntegrateIMUObservations_delta_vel(const Vector3& msr_acc_t,
+    const double msr_dt, const Vector3& delta_angles, const Vector3& delta_vel_in_t0){
+  // Note: all delta terms refer to an IMU\sensor system at t0
+  Vector body_t_a_body = msr_acc_t;
+  Rot3 R_t_to_t0 = Rot3::Expmap(delta_angles);
+  return delta_vel_in_t0 + R_t_to_t0.matrix() * body_t_a_body * msr_dt;
+}
+
+Vector PreIntegrateIMUObservations_delta_angles(const Vector3& msr_gyro_t,
+    const double msr_dt, const Vector3& delta_angles){
+  // Note: all delta terms refer to an IMU\sensor system at t0
+  // Calculate the corrected measurements using the Bias object
+  Rot3 R_t_to_t0 = Rot3::Expmap(delta_angles) * Rot3::Expmap( msr_gyro_t * msr_dt );
+  Vector result = Rot3::Logmap(R_t_to_t0);
+  return result;
+}
+
 ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias,
     const list<Vector3>& measuredAccs,
@@ -421,6 +438,75 @@ TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
   EXPECT(assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega()));
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3,3)));
   EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega(), 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
+}
+
+/* ************************************************************************* */
+TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
+{
+  // Linearization point
+  imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
+  Pose3 body_P_sensor = Pose3(); // (Rot3::Expmap(Vector3(0,0.1,0.1)), Point3(1, 0, 1));
+
+  // Measurements
+  list<Vector3> measuredAccs, measuredOmegas;
+  list<double> deltaTs;
+  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
+  measuredOmegas.push_back(Vector3(M_PI/100.0, 0.0, 0.0));
+  deltaTs.push_back(0.01);
+  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
+  measuredOmegas.push_back(Vector3(M_PI/100.0, 0.0, 0.0));
+  deltaTs.push_back(0.01);
+  for(int i=1;i<100;i++)
+  {
+    measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
+    measuredOmegas.push_back(Vector3(M_PI/100.0, M_PI/300.0, 2*M_PI/100.0));
+    deltaTs.push_back(0.01);
+  }
+  // Actual preintegrated values
+  ImuFactor::PreintegratedMeasurements preintegrated =
+      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0));
+
+  // so far we only created a nontrivial linearization point for the preintegrated measurements
+  // Now we add a new measurement and ask for Jacobians
+  const Vector3 newMeasuredAcc = Vector3(0.1, 0.0, 0.0);
+  const Vector3 newMeasuredOmega = Vector3(M_PI/100.0, 0.0, 0.0);
+  const double newDeltaT = 0.01;
+  const Vector3 theta_i = preintegrated.thetaRij(); // before adding new measurement
+  const Vector3 deltaVij = preintegrated.deltaVij();// before adding new measurement
+
+  Matrix Factual, Gactual;
+  preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega, newDeltaT,
+      body_P_sensor, Factual, Gactual);
+
+  // Compute expected F
+  Matrix H_vel_angles_expected =
+      numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel,
+      newMeasuredAcc, newDeltaT, _1, deltaVij), theta_i);
+  Matrix H_angles_angles_expected =
+  numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles,
+      newMeasuredOmega, newDeltaT, _1), theta_i);
+  Matrix Fexpected(9,9);
+  Fexpected << I_3x3,    I_3x3 * newDeltaT,  Z_3x3,
+               Z_3x3,    I_3x3, H_vel_angles_expected,
+               Z_3x3, Z_3x3, H_angles_angles_expected;
+
+  // verify F
+  EXPECT(assert_equal(Fexpected, Factual));
+
+  // Compute expected G
+  Matrix H_vel_noiseAcc_expected =
+      numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel,
+          _1, newDeltaT, theta_i, deltaVij), newMeasuredAcc);
+  Matrix H_angles_noiseOmega_expected =
+      numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles,
+          _1, newDeltaT, theta_i), newMeasuredOmega);
+  Matrix Gexpected(9,9);
+  //  [integrationError measuredAcc measuredOmega]
+  Gexpected << I_3x3 * newDeltaT,  Z_3x3,                   Z_3x3,
+               Z_3x3,              H_vel_noiseAcc_expected, Z_3x3,
+               Z_3x3,              Z_3x3,                   H_angles_noiseOmega_expected;
+  // verify G
+  EXPECT(assert_equal(Gexpected, Gactual,1e-7));
 }
 
 //#include <gtsam/linear/GaussianFactorGraph.h>
