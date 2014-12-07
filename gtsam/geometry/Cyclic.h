@@ -20,8 +20,15 @@
 
 namespace gtsam {
 
+/// Additive Group
+template<typename Derived>
+class AdditiveGroup {
+
+};
+
+/// Cyclic group of order N
 template<size_t N>
-class Cyclic {
+class Cyclic : AdditiveGroup<Cyclic<N> > {
   size_t i_; ///< we just use an unsigned int
 public:
   /// Constructor
@@ -44,6 +51,16 @@ public:
   Cyclic operator-() const {
     return (N - i_) % N;
   }
+  /// print with optional string
+  void print(const std::string& s = "") const {
+    std::cout << s << i_ << std::endl;
+  }
+
+  /// equals with an tolerance, prints out message if unequal
+  bool equals(const Cyclic& other, double tol = 1e-9) const {
+    return other.i_ == i_;
+  }
+
 };
 
 namespace traits {
@@ -55,18 +72,18 @@ template<size_t N> struct structure_category<Cyclic<N> > {
 
 namespace group {
 
-template<size_t N>
-Cyclic<N> compose(const Cyclic<N>&g, const Cyclic<N>& h) {
+template<typename G>
+AdditiveGroup<G> compose(const AdditiveGroup<G>&g, const AdditiveGroup<G>& h) {
   return g + h;
 }
 
-template<size_t N>
-Cyclic<N> between(const Cyclic<N>&g, const Cyclic<N>& h) {
+template<typename G>
+AdditiveGroup<G> between(const AdditiveGroup<G>&g, const AdditiveGroup<G>& h) {
   return h - g;
 }
 
-template<size_t N>
-Cyclic<N> inverse(const Cyclic<N>&g) {
+template<typename G>
+AdditiveGroup<G> inverse(const AdditiveGroup<G>&g) {
   return -g;
 }
 
@@ -81,8 +98,8 @@ template<size_t N> struct identity<Cyclic<N> > {
 template<size_t N>
 const Cyclic<N> identity<Cyclic<N> >::value = Cyclic<N>(0);
 
-/// Define the trait that asserts Cyclic is an additive group
-template<size_t N> struct flavor<Cyclic<N> > {
+/// Define the trait that asserts AdditiveGroup is an additive group
+template<typename G> struct flavor<AdditiveGroup<G> > {
   typedef additive_tag type;
 };
 

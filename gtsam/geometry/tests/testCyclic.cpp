@@ -26,7 +26,8 @@ typedef Cyclic<6> G; // Let's use the cyclic group of order 6
 
 //******************************************************************************
 TEST(Cyclic, Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<G>));
+//  BOOST_CONCEPT_ASSERT((IsGroup<G>));
+  BOOST_CONCEPT_ASSERT((AdditiveGroup<G>));
   EXPECT_LONGS_EQUAL(0, group::traits::identity<G>::value);
   G g(2), h(3);
   // EXPECT(Group<G>().check_invariants(g,h))
@@ -40,7 +41,7 @@ TEST(Cyclic, Constructor) {
 //******************************************************************************
 TEST(Cyclic, Compose) {
   EXPECT_LONGS_EQUAL(0, group::compose(G(0),G(0)));
-  EXPECT_LONGS_EQUAL(1, group::compose(G(0),G(1)));
+  EXPECT_LONGS_EQUAL(1, group::compose(G(0),G(0)));
   EXPECT_LONGS_EQUAL(2, group::compose(G(0),G(2)));
   EXPECT_LONGS_EQUAL(3, group::compose(G(0),G(3)));
   EXPECT_LONGS_EQUAL(4, group::compose(G(0),G(4)));
