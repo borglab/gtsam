@@ -1,7 +1,7 @@
 % Test runner script - runs each test 
 
-display 'Starting: testPriorFactor'
-testPriorFactor
+% display 'Starting: testPriorFactor'
+% testPriorFactor
 
 display 'Starting: testValues'
 testValues
