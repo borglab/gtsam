@@ -85,7 +85,7 @@ protected:
   Chart() {
     (void) &Local;
     (void) &Retract;
-  } // enforce early instantiation.
+  } // enforce early instantiation. TODO does not seem to work
 };
 
 } // \ namespace manifold
@@ -99,12 +99,19 @@ public:
   typedef typename manifold::traits::DefaultChart<T>::type DefaultChart;
 
   BOOST_CONCEPT_USAGE(IsManifold) {
-    BOOST_STATIC_ASSERT(boost::is_base_of<traits::manifold_tag, structure_category_tag>::value, "This type's structure_category trait does not assert it as a manifold (or derived)");
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<traits::manifold_tag, structure_category_tag>::value),
+        "This type's structure_category trait does not assert it as a manifold (or derived)");
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
-    // no direct usage for manifold since most usage is through a chart
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<manifold::Chart<T,DefaultChart>, DefaultChart>::value),
+        "This type's DefaultChart does not derive from manifold::Chart, as required");
+    // make sure Derived methods in Chart are defined
+    v = DefaultChart::local(p,q);
+    q = DefaultChart::retract(p,v);
   }
 private:
-  T p;
+  T p,q;
   TangentVector v;
 };
 
@@ -170,7 +177,9 @@ public:
     using group::compose;
     using group::between;
     using group::inverse;
-    BOOST_STATIC_ASSERT( boost::is_base_of<traits::group_tag, structure_category_tag>::value, "This type's structure_category trait does not assert it as a group (or derived)");
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<traits::group_tag, structure_category_tag>::value),
+        "This type's structure_category trait does not assert it as a group (or derived)");
     e = group::traits::identity<T>::value;
     g = compose(g, h);
     g = between(g, h);
@@ -222,7 +231,9 @@ public:
   typedef typename traits::structure_category<T>::type structure_category_tag;
 
   BOOST_CONCEPT_USAGE(IsLieGroup) {
-    BOOST_STATIC_ASSERT(boost::is_base_of<traits::lie_group_tag, structure_category_tag>::value,"This type's trait does not assert it as a Lie group (or derived)");
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<traits::lie_group_tag, structure_category_tag>::value),
+        "This type's trait does not assert it as a Lie group (or derived)");
     // TODO Check with Jacobian
 //    using lie_group::compose;
 //    using lie_group::between;
@@ -243,7 +254,9 @@ public:
   typedef typename traits::structure_category<T>::type structure_category_tag;
 
   BOOST_CONCEPT_USAGE(IsVectorSpace) {
-    BOOST_STATIC_ASSERT(boost::is_base_of<traits::vector_space_tag, structure_category_tag>::value,"This type's trait does not assert it as a vector space (or derived)");
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<traits::vector_space_tag, structure_category_tag>::value),
+        "This type's trait does not assert it as a vector space (or derived)");
     r = p + q;
     r = -p;
     r = p - q;
