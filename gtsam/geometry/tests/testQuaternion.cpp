@@ -21,52 +21,48 @@ namespace gtsam {
 
 namespace traits {
 /// Define Eigen::Quaternion to be a model of the Group concept
-template<typename _Scalar, int _Options>
-struct structure_category<Eigen::Quaternion<_Scalar, _Options> > {
+template<typename S, int O>
+struct structure_category<Eigen::Quaternion<S, O> > {
   typedef group_tag type;
 };
 } // \namespace gtsam::traits
 
 namespace group {
 
-template<typename _Scalar, int _Options>
-Eigen::Quaternion<_Scalar, _Options> compose(
-    const Eigen::Quaternion<_Scalar, _Options> &g,
-    const Eigen::Quaternion<_Scalar, _Options> & h) {
+template<typename S, int O>
+Eigen::Quaternion<S, O> compose(const Eigen::Quaternion<S, O> &g,
+    const Eigen::Quaternion<S, O> & h) {
   return g * h;
 }
 
-template<typename _Scalar, int _Options>
-Eigen::Quaternion<_Scalar, _Options> between(
-    const Eigen::Quaternion<_Scalar, _Options> &g,
-    const Eigen::Quaternion<_Scalar, _Options> & h) {
+template<typename S, int O>
+Eigen::Quaternion<S, O> between(const Eigen::Quaternion<S, O> &g,
+    const Eigen::Quaternion<S, O> & h) {
   return g.inverse() * h;
 }
 
-template<typename _Scalar, int _Options>
-Eigen::Quaternion<_Scalar, _Options> inverse(
-    const Eigen::Quaternion<_Scalar, _Options> &g) {
+template<typename S, int O>
+Eigen::Quaternion<S, O> inverse(const Eigen::Quaternion<S, O> &g) {
   return g.inverse();
 }
 
 namespace traits {
 
 /// Declare the trait that specifies a quaternion's identity element
-template<typename _Scalar, int _Options>
-struct identity<Eigen::Quaternion<_Scalar, _Options> > {
-  static const Eigen::Quaternion<_Scalar, _Options> value;
-  typedef Eigen::Quaternion<_Scalar, _Options> value_type;
+template<typename S, int O>
+struct identity<Eigen::Quaternion<S, O> > {
+  static const Eigen::Quaternion<S, O> value;
+  typedef Eigen::Quaternion<S, O> value_type;
 };
 
 /// Out of line definition of identity
-template<typename _Scalar, int _Options>
-const Eigen::Quaternion<_Scalar, _Options> identity<
-    Eigen::Quaternion<_Scalar, _Options> >::value = Eigen::Quaternion<_Scalar,
-    _Options>::Identity();
+template<typename S, int O>
+const Eigen::Quaternion<S, O> identity<Eigen::Quaternion<S, O> >::value =
+    Eigen::Quaternion<S, O>::Identity();
 
 /// Define the trait that asserts quaternions are a multiplicative group
-template<typename _Scalar, int _Options>
-struct flavor<Eigen::Quaternion<_Scalar, _Options> > {
+template<typename S, int O>
+struct flavor<Eigen::Quaternion<S, O> > {
   typedef multiplicative_tag type;
 };
 
