@@ -2,21 +2,14 @@
  * PCGSolver.cpp
  *
  *  Created on: Feb 14, 2012
- *      Author: ydjian
+ *      Author: Yong-Dian Jian
  *      Author: Sungtae An
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-//#include <gtsam/inference/FactorGraph-inst.h>
-//#include <gtsam/linear/FactorGraphUtil-inl.h>
-//#include <gtsam/linear/JacobianFactorGraph.h>
-//#include <gtsam/linear/LSPCGSolver.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
-//#include <gtsam/linear/SuiteSparseUtil.h>
-//#include <gtsam/linear/ConjugateGradientMethod-inl.h>
-//#include <gsp2/gtsam-interface-sbm.h>
-//#include <ydjian/tool/ThreadSafeTimer.h>
+
 #include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <stdexcept>

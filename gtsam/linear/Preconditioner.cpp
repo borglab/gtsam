@@ -2,7 +2,8 @@
  * Preconditioner.cpp
  *
  *  Created on: Jun 2, 2014
- *      Author: ydjian
+ *      Author: Yong-Dian Jian
+ *      Author: Sungtae An
  */
 
 #include <gtsam/inference/FactorGraph-inst.h>

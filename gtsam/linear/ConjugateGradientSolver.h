@@ -12,8 +12,8 @@
 /**
  *  @file   ConjugateGradientSolver.h
  *  @brief  Implementation of Conjugate Gradient solver for a linear system
+ *  @author Yong-Dian Jian
  *  @author Sungtae An
- *  @author ydjian
  *  @date   Nov 6, 2014
  **/
 
