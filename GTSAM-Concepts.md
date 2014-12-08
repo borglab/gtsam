@@ -40,10 +40,15 @@ A given chart is implemented using a small class that defines the chart itself (
 * types:
     * `ManifoldType`, a pointer back to the type
 * valid expressions: 
-    * `v = Chart::Local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*
-    * `p = Chart::Retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
+    * `v = Chart::Local(p,q,Hp,Hq)`, the chart, from manifold to tangent space, think of it as *q (-) p*
+    * `p = Chart::Retract(p,v,Hp,Hv)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
 
-For many differential manifolds, an obvious mapping is the `exponential map`, which  associates straight lines in the tangent space with geodesics on the manifold (and it's inverse, the log map). However, there are two cases in which we deviate from this:
+where above the `H` arguments stand for optional Jacobian arguments. When provied, it is assumed
+that the function will return the derivatives of the chart (and inverse) with respect to its arguments.
+
+For many differential manifolds, an obvious mapping is the `exponential map`, 
+which  associates straight lines in the tangent space with geodesics on the manifold 
+(and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
 * Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `defaultChart` functor returns a chart that is much cheaper to evaluate.
 * While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a `defaultChart` functor is defined by default for every vector space, GTSAM will never call it.
@@ -108,6 +113,20 @@ Hence, we have the following extra valid expressions:
 where above the `H` arguments stand for optional Jacobian arguments. 
 That makes it possible to create factors implementing priors (PriorFactor) or relations between 
 two instances of a Lie group type (BetweenFactor).
+
+In addition, a Lie group has a Lie algebra, which affords two extra valid expressions for a Chart:
+
+* `v = Chart::Local(p,H)`, the chart around the identity, which optional Jacobian
+* `p = Chart::Retract(v,H)`, the inverse chart around the identity, which optional Jacobian
+
+Note that in the Lie group case, the usual valid expressions for Retract and Local can be generated automatically, e.g.
+
+    T Retract(p,v,Hp,Hv) {
+      T q = Retract(v,Hqv);
+      T r = compose(p,q,Hrp,Hrq);
+      Hv = Hrq * Hqv; // chain rule
+      return r;
+    }
 
 Lie Group Action
 ----------------
