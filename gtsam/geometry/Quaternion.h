@@ -20,26 +20,33 @@
 namespace gtsam {
 
 /// Chart for Eigen Quaternions
-template<typename S, int O>
-struct QuaternionChart {
+template<typename _Scalar, int _Options>
+struct MakeQuaternionChart {
 
   // required
-  typedef Eigen::Quaternion<S, O> ManifoldType;
+  typedef Eigen::Quaternion<_Scalar, _Options> ManifoldType;
 
   // internal
   typedef ManifoldType Q;
   typedef typename manifold::traits::TangentVector<Q>::type Omega;
 
-  /// Exponential map, simply be converting omega to AngleAxis
-  static Q Expmap(const Omega& omega) {
-    double theta = omega.norm();
-    if (std::abs(theta) < 1e-10)
+  /// Exponential map given axis/angle representation of Lie algebra
+  static Q Expmap(const _Scalar& angle, const Eigen::Ref<const Omega>& axis) {
+    return Q(Eigen::AngleAxisd(angle, axis));
+  }
+
+  /// Exponential map, simply be converting omega to axis/angle representation
+  static Q Expmap(const Eigen::Ref<const Omega>& omega) {
+    if (omega.isZero())
       return Q::Identity();
-    return Q(Eigen::AngleAxisd(theta, omega / theta));
+    else {
+      _Scalar angle = omega.norm();
+      return Q(Eigen::AngleAxisd(angle, omega / angle));
+    }
   }
 
   /// retract, simply be converting omega to AngleAxis
-  static Q Retract(const Q& p, const Omega& omega) {
+  static Q Retract(const Q& p, const Eigen::Ref<const Omega>& omega) {
     return p * Expmap(omega);
   }
 
@@ -57,7 +64,7 @@ struct QuaternionChart {
       return (2 - 2 * (qw - 1) / 3) * q.vec();
     } else if (qw < NearlyNegativeOne) {
       // Angle is zero, return zero vector
-      return Vector3::Zero();
+      return Omega::Zero();
     } else {
       // Normal, away from zero case
       double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
@@ -81,8 +88,9 @@ struct QuaternionChart {
 GTSAM_MULTIPLICATIVE_GROUP(QUATERNION_TEMPLATE, QUATERNION_TYPE)
 
 #define QUATERNION_TANGENT Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1>
-#define QUATERNION_CHART QuaternionChart<_Scalar,_Options>
-GTSAM_MANIFOLD(QUATERNION_TEMPLATE,QUATERNION_TYPE,3,QUATERNION_TANGENT,QUATERNION_CHART)
+#define QUATERNION_CHART MakeQuaternionChart<_Scalar,_Options>
+GTSAM_MANIFOLD(QUATERNION_TEMPLATE, QUATERNION_TYPE, 3, QUATERNION_TANGENT,
+    QUATERNION_CHART)
 
 /// Define Eigen::Quaternion to be a model of the Lie Group concept
 namespace traits {
@@ -98,6 +106,7 @@ struct structure_category<Eigen::Quaternion<S, O> > {
  *  and and these pool allocators do not support alignment.
  */
 typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
+typedef MakeQuaternionChart<double, Eigen::DontAlign> QuaternionChart;
 
 } // \namespace gtsam
 
