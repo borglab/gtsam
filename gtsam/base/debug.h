@@ -43,6 +43,10 @@
 
 namespace gtsam {
   GTSAM_EXTERN_EXPORT FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
+
+  // thread-safe functions to access debugFlags map
+  bool guardedIsDebug(const std::string& s);
+  void guardedSetDebug(const std::string& s, const bool v);
 }
 
 #undef ISDEBUG
@@ -50,8 +54,8 @@ namespace gtsam {
 
 #ifdef GTSAM_ENABLE_DEBUG
 
-#define ISDEBUG(S) (gtsam::debugFlags[S])
-#define SETDEBUG(S,V) ((void)(gtsam::debugFlags[S] = (V)))
+#define ISDEBUG(S) (gtsam::guardedIsDebug(S))
+#define SETDEBUG(S,V) ((void)(gtsam::guardedSetDebug(S,V)))
 
 #else
 
