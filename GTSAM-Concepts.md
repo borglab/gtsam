@@ -23,13 +23,13 @@ In GTSAM we assume that a manifold type can yield such a *Chart* at any point, a
 In detail, we ask the following are defined for a MANIFOLD type:
 
 * values:
-  * `dimension`, an int that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimenionality is only defined at runtime, by specifying the value -1.
+    * `dimension`, an int that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimenionality is only defined at runtime, by specifying the value -1.
 * functors:
 	* `defaultChart`, returns the default chart at a point p
 * types: 
-  * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
+    * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
 * valid expressions:
-  * `size_t dim = getDimension(p);` free function should be defined in case the dimension is not known at compile time.
+    * `size_t dim = getDimension(p);` free function should be defined in case the dimension is not known at compile time.
 
 Anything else?
 
