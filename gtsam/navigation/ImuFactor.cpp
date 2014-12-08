@@ -77,8 +77,8 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, correctedAcc, correctedOmega, body_P_sensor);
 
   const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
-  const Rot3 Rincr = Rot3::Expmap(theta_incr); // rotation increment computed from the current rotation rate measurement
-  const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr); // Right jacobian computed at theta_incr
+  Matrix3 Jr_theta_incr; // Right jacobian computed at theta_incr
+  const Rot3 Rincr = Rot3::Expmap(theta_incr, Jr_theta_incr); // rotation increment computed from the current rotation rate measurement
 
   // Update Jacobians
   /* ----------------------------------------------------------------------------------------------------------------------- */
@@ -87,15 +87,18 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // Update preintegrated measurements covariance
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in an EKF framework
   /* ----------------------------------------------------------------------------------------------------------------------- */
+//  Matrix3 Jr_theta_i;
+//  const Vector3 theta_i = thetaRij(Jr_theta_i); // super-expensive parametrization of so(3)
+//  const Matrix3 R_i = deltaRij();
+
   const Vector3 theta_i = thetaRij(); // super-expensive parametrization of so(3)
-  const Matrix3 R_i = deltaRij();
   const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
+  const Matrix3 R_i = deltaRij();
 
   // Update preintegrated measurements
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
 
-  const Vector3 theta_j = thetaRij(); // super-expensive parametrization of so(3)
-  const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
+  Matrix3 Jrinv_theta_j; thetaRij(Jrinv_theta_j); // computation of rightJacobianInverse
 
   Matrix H_vel_angles = - R_i * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
   Matrix H_angles_angles = Jrinv_theta_j * Rincr.inverse().matrix() * Jr_theta_i;

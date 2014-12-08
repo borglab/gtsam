@@ -239,18 +239,24 @@ public:
     const Vector3 coriolis = integrateCoriolis(Ri, omegaCoriolis);
     Vector3 theta_corrected = theta_biascorrected  - coriolis;
 
-    // Prediction
-    const Rot3 deltaRij_corrected = Rot3::Expmap( theta_corrected );
-
-    // Residual rotation error
-    const Rot3 fRhat = deltaRij_corrected.between(Ri.between(Rj));
+    Rot3 deltaRij_corrected, fRhat;
+    Vector3 fR;
 
     // Accessory matrix, used to build the jacobians
     Matrix3 Jr_theta_bcc, Jtheta, Jrinv_fRhat;
-    if(H1 || H3 || H5){
-      Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
-      Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_corrected);
+
+    // This is done to save computation: we ask for the jacobians only when they are needed
+    if(H1 || H2 || H3 || H4 ||  H5){
+      deltaRij_corrected = Rot3::Expmap( theta_corrected, Jr_theta_bcc);
+      // Residual rotation error
+      fRhat = deltaRij_corrected.between(Ri.between(Rj));
+      fR = Rot3::Logmap(fRhat, Jrinv_fRhat);
       Jtheta = -Jr_theta_bcc  * skewSymmetric(coriolis);
+    }else{
+      deltaRij_corrected = Rot3::Expmap( theta_corrected);
+      // Residual rotation error
+      fRhat = deltaRij_corrected.between(Ri.between(Rj));
+      fR = Rot3::Logmap(fRhat);
     }
 
     if(H1) {
@@ -339,8 +345,7 @@ public:
 
     const Vector3 fv = vel_j - predictedState_j.velocity;
 
-    // This is the same as: dR = (predictedState_j.pose.translation()).between(Rot_j)
-    const Vector3 fR = Rot3::Logmap(fRhat);
+    // fR was computes earlier. Note: it is the same as: dR = (predictedState_j.pose.translation()).between(Rot_j)
 
     Vector r(9); r << fp, fv, fR;
     return r;

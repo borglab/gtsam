@@ -49,7 +49,7 @@ public:
 
   /// methods to access class variables
   Matrix3 deltaRij() const {return deltaRij_.matrix();} // expensive
-  Vector3 thetaRij() const {return Rot3::Logmap(deltaRij_);} // super-expensive
+  Vector3 thetaRij(boost::optional<Matrix3&> H = boost::none) const {return Rot3::Logmap(deltaRij_, H);} // super-expensive
   const double& deltaTij() const{return deltaTij_;}
   const Matrix3& delRdelBiasOmega() const{ return delRdelBiasOmega_;}
 
@@ -99,17 +99,18 @@ public:
       boost::optional<Matrix&> H) const {
     // First, we correct deltaRij using the biasOmegaIncr, rotated
     const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);
-    // This was done via an expmap, now we go *back* to so<3>
-    const Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
+
     if (H) {
-      // We then do a very expensive Jacobian calculation. TODO Right Duy ?
-      const Matrix3 Jrinv_theta_bc = //
-          Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
+      Matrix3 Jrinv_theta_bc;
+      // This was done via an expmap, now we go *back* to so<3>
+      const Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected, Jrinv_theta_bc);
       const Matrix3 Jr_JbiasOmegaIncr = //
           Rot3::rightJacobianExpMapSO3(delRdelBiasOmega_ * biasOmegaIncr);
       (*H) = Jrinv_theta_bc * Jr_JbiasOmegaIncr * delRdelBiasOmega_;
+      return theta_biascorrected;
     }
-    return theta_biascorrected;
+    //else
+    return Rot3::Logmap(deltaRij_biascorrected);
   }
 
   /// Integrate coriolis correction in body frame rot_i
