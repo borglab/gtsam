@@ -346,20 +346,14 @@ TEST( ImuFactor, PartialDerivativeLogmap )
   // Measurements
   Vector3 deltatheta; deltatheta << 0, 0, 0;
 
-
   // Compute numerical derivatives
   Matrix expectedDelFdeltheta = numericalDerivative11<Vector,Vector3>(boost::bind(
       &evaluateLogRotation, thetahat, _1), Vector3(deltatheta));
 
-  const Vector3 x = thetahat; // parametrization of so(3)
-  const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-  double normx = norm_2(x);
-  const Matrix3  actualDelFdeltheta = Matrix3::Identity() +
-       0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx)) ) * X * X;
+  Matrix3 actualDelFdeltheta = Rot3::rightJacobianExpMapSO3inverse(thetahat);
 
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelFdeltheta, actualDelFdeltheta));
-
 }
 
 /* ************************************************************************* */
@@ -376,7 +370,6 @@ TEST( ImuFactor, fistOrderExponential )
   double alpha = 0.0;
   Vector3 deltabiasOmega; deltabiasOmega << alpha,alpha,alpha;
 
-
   const Matrix3 Jr = Rot3::rightJacobianExpMapSO3((measuredOmega - biasOmega) * deltaT);
 
   Matrix3  delRdelBiasOmega = - Jr * deltaT; // the delta bias appears with the minus sign
@@ -388,7 +381,7 @@ TEST( ImuFactor, fistOrderExponential )
       hatRot * Rot3::Expmap(delRdelBiasOmega * deltabiasOmega).matrix();
   //hatRot * (Matrix3::Identity() + skewSymmetric(delRdelBiasOmega * deltabiasOmega));
 
-  // Compare Jacobians
+  // This is a first order expansion so the equality is only an approximation
   EXPECT(assert_equal(expectedRot, actualRot));
 }
 
