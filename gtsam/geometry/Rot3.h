@@ -319,19 +319,19 @@ namespace gtsam {
     /**
      * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-     * expmap(thetahat + thetatilde) \approx expmap(thetahat) * expmap(Jr * thetatilde)
+     * expmap(thetahat + omega) \approx expmap(thetahat) * expmap(Jr * omega)
      * where Jr = rightJacobianExpMapSO3(thetahat);
-     * This maps a perturbation in the tangent space (thetatilde) to
-     * a perturbation on the manifold (expmap(Jr * thetatilde))
+     * This maps a perturbation in the tangent space (omega) to
+     * a perturbation on the manifold (expmap(Jr * omega))
      */
     static Matrix3 rightJacobianExpMapSO3(const Vector3& x);
 
     /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-     * logmap( Rhat * Rtilde) \approx logmap( Rhat ) + Jrinv * logmap( Rtilde )
-     * where Jrinv = rightJacobianExpMapSO3inverse(logmap( Rtilde ));
-     * This maps a perturbation on the manifold (Rtilde)
-     * to a perturbation in the tangent space (Jrinv * logmap( Rtilde ))
+     * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
+     * where Jrinv = rightJacobianExpMapSO3inverse(omega);
+     * This maps a perturbation on the manifold (expmap(omega))
+     * to a perturbation in the tangent space (Jrinv * omega)
      */
     static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x);
 
