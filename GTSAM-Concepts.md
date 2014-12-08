@@ -107,7 +107,7 @@ Hence, we have the following extra valid expressions:
 
 where above the `H` arguments stand for optional Jacobian arguments. 
 That makes it possible to create factors implementing priors (PriorFactor) or relations between 
-two instances of a Lie group type (BteweenFactor).
+two instances of a Lie group type (BetweenFactor).
 
 Lie Group Action
 ----------------
