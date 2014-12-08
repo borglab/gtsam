@@ -21,7 +21,7 @@
 
 namespace gtsam {
 
-SO3 SO3Chart::Expmap(const double& theta, const Vector3& axis) {
+SO3 Rodrigues(const double& theta, const Vector3& axis) {
   using std::cos;
   using std::sin;
 
@@ -42,6 +42,16 @@ SO3 SO3Chart::Expmap(const double& theta, const Vector3& axis) {
   -swy + C02, swx + C12, c + C22;
 
   return R;
+}
+
+/// simply convert omega to axis/angle representation
+SO3 SO3Chart::Expmap(const Eigen::Ref<const Vector3>& omega) {
+  if (omega.isZero())
+    return SO3::Identity();
+  else {
+    double angle = omega.norm();
+    return Rodrigues(angle, omega / angle);
+  }
 }
 
 Vector3 SO3Chart::Logmap(const SO3& R) {

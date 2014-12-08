@@ -21,7 +21,10 @@ namespace gtsam {
 
 /// Chart for Eigen Quaternions
 template<typename _Scalar, int _Options>
-struct MakeQuaternionChart {
+struct MakeQuaternionChart: LieGroupChart<
+    MakeQuaternionChart<_Scalar, _Options>,
+    Eigen::Quaternion<_Scalar, _Options>,
+    Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> > {
 
   // required
   typedef Eigen::Quaternion<_Scalar, _Options> ManifoldType;

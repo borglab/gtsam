@@ -278,6 +278,29 @@ private:
   T g, h;
 };
 
+/**
+ * A Lie Group Chart
+ * Creates Local/Retract from exponential map and its inverse
+ * Assumes Expmap and Logmap defined in Derived
+ * TODO: Can we do this with a single Derived argument ?
+ */
+template<typename Derived, typename T, typename TangentVector>
+struct LieGroupChart {
+
+  /// retract, composes with Exmpap around identity
+  static T Retract(const T& p, const TangentVector& omega) {
+    // TODO needs to be manifold::compose, with derivatives
+    return group::compose(p, Derived::Expmap(omega));
+  }
+
+  /// local is our own, as there is a slight bug in Eigen
+  static TangentVector Local(const T& q1, const T& q2) {
+    // TODO needs to be manifold::between, with derivatives
+    return Derived::Logmap(group::between(q1, q2));
+  }
+
+};
+
 template<typename T>
 class IsVectorSpace: public IsLieGroup<T> {
 public:

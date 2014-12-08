@@ -11,7 +11,7 @@
 
 /**
  * @file    SO3.h
- * @brief   3*3 matrix representation o SO(3)
+ * @brief   3*3 matrix representation of SO(3)
  * @author  Frank Dellaert
  * @date    December 2014
  */
@@ -48,37 +48,18 @@ public:
   }
 };
 
-/// Default Chart for SO3
-struct SO3Chart {
+/**
+ * Chart for SO3 comprising of exponential map and its inverse (log-map)
+ */
+struct SO3Chart: LieGroupChart<SO3Chart,SO3,Vector3> {
 
   typedef SO3 ManifoldType;
 
-  /// Exponential map given axis/angle representation of Lie algebra
-  static SO3 Expmap(const double& theta, const Vector3& w);
-
-  /// Exponential map, simply be converting omega to axis/angle representation
-  static SO3 Expmap(const Eigen::Ref<const Vector3>& omega) {
-    if (omega.isZero())
-      return SO3::Identity();
-    else {
-      double angle = omega.norm();
-      return Expmap(angle, omega / angle);
-    }
-  }
-
-  /// retract, simply be converting omega to AngleAxis
-  static SO3 Retract(const SO3& p, const Eigen::Ref<const Vector3>& omega) {
-    return p * Expmap(omega);
-  }
+  /// Exponential map
+  static SO3 Expmap(const Eigen::Ref<const Vector3>& omega);
 
   /// We use our own Logmap, as there is a slight bug in Eigen
   static Vector3 Logmap(const SO3& R);
-
-  /// local is our own, as there is a slight bug in Eigen
-  static Vector3 Local(const SO3& q1, const SO3& q2) {
-    return Logmap(q1.inverse() * q2);
-  }
-
 };
 
 #define SO3_TEMPLATE
