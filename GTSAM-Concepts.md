@@ -71,11 +71,9 @@ Also, a type should provide either multiplication or addition operators dependin
 Group Action
 ------------
 
-A group can *act* on another space. For example, a *similarity transform* in 3D can act on 3D space, like
-
-    q = s*R*p + t
-    
-Even finite groups can act on continuous entities. For example, the [cyclic group of order 6](http://en.wikipedia.org/wiki/Cyclic_group) can rotate 2D vectors around the origin:
+Group actions are concepts in and of themselves that can be concept checked (see below).
+In particular, a group can *act* on another space.
+For example, the [cyclic group of order 6](http://en.wikipedia.org/wiki/Cyclic_group) can rotate 2D vectors around the origin:
 
     q = R(i)*p
     where R(i) = R(60)^i, where R(60) rotates by 60 degrees
@@ -83,28 +81,47 @@ Even finite groups can act on continuous entities. For example, the [cyclic grou
 Hence, we formalize by the following extension of the concept:
 
 * valid expressions:
-    * `group::act(g,t)`, for some instance of a space T, that can be acted upon by the group
-    * `group::act(g,t,H)`, if the space acted upon is a continuous differentiable manifold
+    * `group::act(g,p)`, for some instance of a space S, that can be acted upon by the group
+    * `group::act(g,p,H)`, if the space acted upon is a continuous differentiable manifold
   
-Group actions are concepts in and of themselves that can be concept checked (see below).
+In the latter case, if S is an n-dimensional manifold, H is an output argument that should be 
+filled with the *nxn* Jacobian matrix of the action with respect to a change in p. It typically depends
+on the group element g, but in most common example will *not* depend on the value of p. For example, in 
+the cyclic group example above, we simply have
+
+    H = R(i)
   
+Note there is no derivative of the action with respect to a change in g. That will only be defined
+for Lie groups, which we introduce now.
+
 Lie Group
 ---------
 
-A Lie group is both a manifold *and* a group. Hence, a LIE_GROUP type should implements both MANIFOLD and GROUP concepts. However, we now also need to be able to evaluate the derivatives of compose and inverse. Hence, we have the following extra valid expressions:
+A Lie group is both a manifold *and* a group. Hence, a LIE_GROUP type should implements both MANIFOLD and GROUP concepts. 
+However, we now also need to be able to evaluate the derivatives of compose and inverse. 
+Hence, we have the following extra valid expressions:
 
 * `compose(p,q,H1,H2)`
 * `inverse(p,H)`
 * `between(p,q,H1,H2)`
 
-where above the `H` arguments stand for optional Jacobian arguments. That makes it possible to create factors implementing priors (PriorFactor) or relations between two instances of a Lie group type (BteweenFactor).
+where above the `H` arguments stand for optional Jacobian arguments. 
+That makes it possible to create factors implementing priors (PriorFactor) or relations between 
+two instances of a Lie group type (BteweenFactor).
 
 Lie Group Action
 ----------------
 
 When a Lie group acts on a space, we have two derivatives to care about:
 
-  * `group::act(g,t,Hg,Ht)`, if the space acted upon is a continuous differentiable manifold
+  * `group::act(g,p,Hg,Hp)`, if the space acted upon is a continuous differentiable manifold
+
+An example is a *similarity transform* in 3D, which can act on 3D space, like
+
+    q = s*R*p + t
+    
+Note that again the derivative in p `Hp` is simply `s*R`, which depends on g but not on p. 
+The derivative  in g `Hg` is in general more complex.
 
 For now, we won't care about Lie groups acting on non-manifolds.
 
