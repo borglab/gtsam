@@ -294,15 +294,21 @@ namespace gtsam {
      * Exponential map at identity - create a rotation from canonical coordinates
      * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
      */
-    static Rot3 Expmap(const Vector& v)  {
-      if(zero(v)) return Rot3();
-      else return rodriguez(v);
+    static Rot3 Expmap(const Vector& v, boost::optional<Matrix3&> H = boost::none) {
+      if(H){
+        H->resize(3,3);
+        *H = Rot3::rightJacobianExpMapSO3(v);
+      }
+      if(zero(v))
+        return Rot3();
+      else
+        return rodriguez(v);
     }
 
     /**
      * Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
-    static Vector3 Logmap(const Rot3& R);
+    static Vector3 Logmap(const Rot3& R, boost::optional<Matrix3&> H = boost::none);
 
     /// Left-trivialized derivative of the exponential map
     static Matrix3 dexpL(const Vector3& v);
@@ -313,11 +319,19 @@ namespace gtsam {
     /**
      * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+     * expmap(thetahat + thetatilde) \approx expmap(thetahat) * expmap(Jr * thetatilde)
+     * where Jr = rightJacobianExpMapSO3(thetahat);
+     * This maps a perturbation in the tangent space (thetatilde) to
+     * a perturbation on the manifold (expmap(Jr * thetatilde))
      */
     static Matrix3 rightJacobianExpMapSO3(const Vector3& x);
 
     /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+     * logmap( Rhat * Rtilde) \approx logmap( Rhat ) + Jrinv * logmap( Rtilde )
+     * where Jrinv = rightJacobianExpMapSO3inverse(logmap( Rtilde ));
+     * This maps a perturbation on the manifold (Rtilde)
+     * to a perturbation in the tangent space (Jrinv * logmap( Rtilde ))
      */
     static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x);
 

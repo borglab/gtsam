@@ -200,13 +200,15 @@ Point3 Rot3::rotate(const Point3& p,
 
 /* ************************************************************************* */
 // Log map at identity - return the canonical coordinates of this rotation
-Vector3 Rot3::Logmap(const Rot3& R) {
+Vector3 Rot3::Logmap(const Rot3& R, boost::optional<Matrix3&> H) {
 
   static const double PI = boost::math::constants::pi<double>();
 
   const Matrix3& rot = R.rot_;
   // Get trace(R)
   double tr = rot.trace();
+
+  Vector3 thetaR;
 
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
@@ -218,7 +220,7 @@ Vector3 Rot3::Logmap(const Rot3& R) {
       return (PI / sqrt(2.0+2.0*rot(1,1))) *
           Vector3(rot(0,1), 1.0+rot(1,1), rot(2,1));
     else // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
-      return (PI / sqrt(2.0+2.0*rot(0,0))) *
+      thetaR = (PI / sqrt(2.0+2.0*rot(0,0))) *
           Vector3(1.0+rot(0,0), rot(1,0), rot(2,0));
   } else {
     double magnitude;
@@ -231,11 +233,17 @@ Vector3 Rot3::Logmap(const Rot3& R) {
       // use Taylor expansion: magnitude \approx 1/2-(t-3)/12 + O((t-3)^2)
       magnitude = 0.5 - tr_3*tr_3/12.0;
     }
-    return magnitude*Vector3(
+    thetaR =  magnitude*Vector3(
         rot(2,1)-rot(1,2),
         rot(0,2)-rot(2,0),
         rot(1,0)-rot(0,1));
   }
+
+  if(H){
+    H->resize(3,3);
+    *H = Rot3::rightJacobianExpMapSO3inverse(thetaR);
+  }
+  return thetaR;
 }
 
 /* ************************************************************************* */
