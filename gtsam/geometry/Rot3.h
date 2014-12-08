@@ -23,6 +23,10 @@
 
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
+#ifdef GTSAM_USE_QUATERNIONS
+#include <gtsam/geometry/Quaternion.h>
+#endif
+
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
   #ifdef GTSAM_USE_QUATERNIONS
@@ -45,11 +49,6 @@
 #include <gtsam/geometry/Unit3.h>
 
 namespace gtsam {
-
-  /// Typedef to an Eigen Quaternion<double>, we disable alignment because
-  /// geometry objects are stored in boost pool allocators, in Values
-  /// containers, and and these pool allocators do not support alignment.
-  typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
 
   /**
    * @brief A 3D rotation represented as a rotation matrix if the preprocessor
