@@ -38,15 +38,15 @@ Chart
 A given chart is implemented using a small class that defines the chart itself (from manifold to tangent space) and its inverse.
 
 * types:
-  * `ManifoldType`, a pointer back to the type
+    * `ManifoldType`, a pointer back to the type
 * valid expressions: 
-  * `v = Chart::Local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*
-  * `p = Chart::Retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
+    * `v = Chart::Local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*
+    * `p = Chart::Retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
 
 For many differential manifolds, an obvious mapping is the `exponential map`, which  associates straight lines in the tangent space with geodesics on the manifold (and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
-  * Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `defaultChart` functor returns a chart that is much cheaper to evaluate.
-  * While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a `defaultChart` functor is defined by default for every vector space, GTSAM will never call it.
+* Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `defaultChart` functor returns a chart that is much cheaper to evaluate.
+* While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a `defaultChart` functor is defined by default for every vector space, GTSAM will never call it.
 
 
 Group
@@ -54,15 +54,15 @@ Group
 A [group](http://en.wikipedia.org/wiki/Group_(mathematics)) should be well known from grade school :-), and provides a type with a composition operation that is closed, associative, has an identity element, and an inverse for each element.
 
 * values:
-  * `group::identity<G>()`
+    * `group::identity<G>()`
 * valid expressions:
-  * `group::compose(p,q)`
-  * `group::inverse(p)`
-  * `group::between(p,q)`
+    * `group::compose(p,q)`
+    * `group::inverse(p)`
+    * `group::between(p,q)`
 * invariants (using namespace group):
-  * `compose(p,inverse(p)) == identity`
-  * `compose(p,between(p,q)) == q`
-  * `between(p,q) == compose(inverse(p),q)`
+    * `compose(p,inverse(p)) == identity`
+    * `compose(p,between(p,q)) == q`
+    * `between(p,q) == compose(inverse(p),q)`
   
 We do *not* at this time support more than one composition operator per type. Although mathematically possible, it is hardly ever needed, and the machinery to support it would be burdensome and counter-intuitive. 
 
@@ -83,8 +83,8 @@ Even finite groups can act on continuous entities. For example, the [cyclic grou
 Hence, we formalize by the following extension of the concept:
 
 * valid expressions:
-  * `group::act(g,t)`, for some instance of a space T, that can be acted upon by the group
-  * `group::act(g,t,H)`, if the space acted upon is a continuous differentiable manifold
+    * `group::act(g,t)`, for some instance of a space T, that can be acted upon by the group
+    * `group::act(g,t,H)`, if the space acted upon is a continuous differentiable manifold
   
 Group actions are concepts in and of themselves that can be concept checked (see below).
   
@@ -133,8 +133,8 @@ Testable
 Unit tests heavily depend on the following two functions being defined for all types that need to be tested:
 
 * valid expressions:
-  * `print(p,s)` where s is an optional string
-  * `equals(p,q,tol)` where tol is an optional tolerance 
+    * `print(p,s)` where s is an optional string
+    * `equals(p,q,tol)` where tol is an optional tolerance 
 
 Implementation
 ==============
