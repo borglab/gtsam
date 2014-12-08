@@ -157,14 +157,24 @@ check_invariants(const T& a, const T& b, double tol = 1e-9) {
 }
 } // \ namespace group
 
+#define GTSAM_GROUP_IDENTITY0(GROUP) \
+namespace group { namespace traits { \
+template<> struct identity<GROUP > { static const GROUP value; typedef GROUP value_type;};\
+const GROUP identity<GROUP >::value = GROUP::Identity();\
+}}
+
+#define GTSAM_GROUP_IDENTITY(TEMPLATE,GROUP) \
+namespace group { namespace traits { \
+template<TEMPLATE> struct identity<GROUP > { static const GROUP value; typedef GROUP value_type;};\
+template<TEMPLATE> const GROUP identity<GROUP >::value = GROUP::Identity();\
+}}
+
 #define GTSAM_ADDITIVE_GROUP(TEMPLATE,GROUP) \
 namespace group { \
 template<TEMPLATE> GROUP compose(const GROUP &g, const GROUP & h) { return g + h;} \
 template<TEMPLATE> GROUP between(const GROUP &g, const GROUP & h) { return h - g;} \
 template<TEMPLATE> GROUP inverse(const GROUP &g) { return -g;} \
 namespace traits { \
-template<TEMPLATE> struct identity<GROUP > { static const GROUP value; typedef GROUP value_type;};\
-template<TEMPLATE> const GROUP identity<GROUP >::value = GROUP::Identity();\
 template<TEMPLATE> struct flavor<GROUP > { typedef additive_tag type;};\
 }}
 
@@ -174,8 +184,6 @@ template<TEMPLATE> GROUP compose(const GROUP &g, const GROUP & h) { return g * h
 template<TEMPLATE> GROUP between(const GROUP &g, const GROUP & h) { return g.inverse() * h;} \
 template<TEMPLATE> GROUP inverse(const GROUP &g) { return g.inverse();} \
 namespace traits { \
-template<TEMPLATE> struct identity<GROUP > { static const GROUP value; typedef GROUP value_type;};\
-template<TEMPLATE> const GROUP identity<GROUP >::value = GROUP::Identity();\
 template<TEMPLATE> struct flavor<GROUP > { typedef multiplicative_tag type;};\
 }}
 

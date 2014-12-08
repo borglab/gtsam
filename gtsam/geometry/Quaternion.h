@@ -32,7 +32,7 @@ struct MakeQuaternionChart {
 
   /// Exponential map given axis/angle representation of Lie algebra
   static Q Expmap(const _Scalar& angle, const Eigen::Ref<const Omega>& axis) {
-    return Q(Eigen::AngleAxisd(angle, axis));
+    return Q(Eigen::AngleAxis<_Scalar>(angle, axis));
   }
 
   /// Exponential map, simply be converting omega to axis/angle representation
@@ -41,7 +41,7 @@ struct MakeQuaternionChart {
       return Q::Identity();
     else {
       _Scalar angle = omega.norm();
-      return Q(Eigen::AngleAxisd(angle, omega / angle));
+      return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
     }
   }
 
@@ -85,6 +85,7 @@ struct MakeQuaternionChart {
 
 #define QUATERNION_TEMPLATE typename _Scalar, int _Options
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
+GTSAM_GROUP_IDENTITY(QUATERNION_TEMPLATE, QUATERNION_TYPE)
 GTSAM_MULTIPLICATIVE_GROUP(QUATERNION_TEMPLATE, QUATERNION_TYPE)
 
 #define QUATERNION_TANGENT Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1>
