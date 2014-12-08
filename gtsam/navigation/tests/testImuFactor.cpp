@@ -37,6 +37,8 @@ using symbol_shorthand::B;
 
 /* ************************************************************************* */
 namespace {
+// Auxiliary functions to test evaluate error in ImuFactor
+/* ************************************************************************* */
 Vector callEvaluateError(const ImuFactor& factor,
     const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
     const imuBias::ConstantBias& bias){
@@ -49,13 +51,14 @@ Rot3 evaluateRotationError(const ImuFactor& factor,
   return Rot3::Expmap(factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias).tail(3) ) ;
 }
 
-// Correspond to updatePreintegratedMeasurements, but has a different syntax to  test numerical derivatives
-Vector updatePreintegratedMeasurementsTest(
-    const Vector3 deltaPij_old, const Vector3& deltaVij_old, const Vector3& logDeltaRij_old,
+// Auxiliary functions to test Jacobians F and G used for
+// covariance propagation during preintegration
+/* ************************************************************************* */
+Vector updatePreintegratedPosVel(
+    const Vector3 deltaPij_old, const Vector3& deltaVij_old, const Rot3& deltaRij_old,
     const Vector3& correctedAcc, const Vector3& correctedOmega, const double deltaT,
     const bool use2ndOrderIntegration_) {
 
-  Rot3 deltaRij_old = Rot3::Expmap(logDeltaRij_old);
   Matrix3 dRij = deltaRij_old.matrix();
   Vector3 temp = dRij * correctedAcc * deltaT;
   Vector3 deltaPij_new;
@@ -65,12 +68,20 @@ Vector updatePreintegratedMeasurementsTest(
     deltaPij_new += deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
   }
   Vector3 deltaVij_new = deltaVij_old + temp;
-  Rot3 deltaRij_new = deltaRij_old * Rot3::Expmap(correctedOmega * deltaT);
-  Vector3 logDeltaRij_new = Rot3::Logmap(deltaRij_new);
-  Vector result(9);  result << deltaPij_new,  deltaVij_new, logDeltaRij_new;
+
+  Vector result(6);  result << deltaPij_new,  deltaVij_new;
   return result;
 }
 
+Rot3 updatePreintegratedRot(const Rot3& deltaRij_old,
+    const Vector3& correctedOmega, const double deltaT) {
+  Rot3 deltaRij_new = deltaRij_old * Rot3::Expmap(correctedOmega * deltaT);
+  return deltaRij_new;
+}
+
+// Auxiliary functions to test preintegrated Jacobians
+// delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
+/* ************************************************************************* */
 ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias,
     const list<Vector3>& measuredAccs,
@@ -356,6 +367,24 @@ TEST( ImuFactor, PartialDerivativeLogmap )
   EXPECT(assert_equal(expectedDelFdeltheta, actualDelFdeltheta));
 }
 
+Rot3 constRot = Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0);
+Rot3 testRot(const Rot3& Rk){
+  return Rk * constRot;
+}
+/* ************************************************************************* */
+TEST( ImuFactor, understandRot )
+{
+  Rot3 Rbar = Rot3::RzRyRx( M_PI, M_PI/6.0, -M_PI/4.0 );
+
+  Matrix Jexpected = numericalDerivative11<Rot3,Rot3>(boost::bind(
+      &testRot, _1), Rbar);
+
+  Matrix3 Jactual = constRot.transpose();
+
+  // Compare Jacobians
+  EXPECT(assert_equal(Jexpected, Jactual));
+}
+
 /* ************************************************************************* */
 TEST( ImuFactor, fistOrderExponential )
 {
@@ -469,7 +498,6 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
   const Vector3 newMeasuredAcc = Vector3(0.1, 0.0, 0.0);
   const Vector3 newMeasuredOmega = Vector3(M_PI/100.0, 0.0, 0.0);
   const double newDeltaT = 0.01;
-  const Vector3 logDeltaRij_old = preintegrated.thetaRij(); // before adding new measurement
   const Rot3    deltaRij_old = preintegrated.deltaRij();    // before adding new measurement
   const Vector3 deltaVij_old = preintegrated.deltaVij();    // before adding new measurement
   const Vector3 deltaPij_old = preintegrated.deltaPij();    // before adding new measurement
@@ -480,44 +508,67 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
 
   bool use2ndOrderIntegration = false;
 
-  // Compute expected F wrt positions
-  Matrix df_dpos =
-      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-          _1, deltaVij_old, logDeltaRij_old,
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  // COMPUTE NUMERICAL DERIVATIVES FOR F
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  // Compute expected f_pos_vel wrt positions
+  Matrix dfpv_dpos =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedPosVel,
+          _1, deltaVij_old, deltaRij_old,
           newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaPij_old);
-  // Compute expected F wrt velocities
-  Matrix df_dvel =
-      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-          deltaPij_old, _1, logDeltaRij_old,
+  // Compute expected f_pos_vel wrt velocities
+  Matrix dfpv_dvel =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedPosVel,
+          deltaPij_old, _1, deltaRij_old,
           newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaVij_old);
-  // Compute expected F wrt angles
-  Matrix df_dangle =
-      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
+  // Compute expected f_pos_vel wrt angles
+  Matrix dfpv_dangle =
+      numericalDerivative11<Vector, Rot3>(boost::bind(&updatePreintegratedPosVel,
           deltaPij_old, deltaVij_old, _1,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), logDeltaRij_old);
-  Matrix Fexpected(9,9);
+          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaRij_old);
+  Matrix FexpectedTop6(6,9);
+  FexpectedTop6 << dfpv_dpos, dfpv_dvel, dfpv_dangle;
 
-  Fexpected << df_dpos, df_dvel, df_dangle;
-  EXPECT(assert_equal(Fexpected, Factual));
+  EXPECT(assert_equal(FexpectedTop6, Factual.topRows(6)));
 
-  // Compute expected G wrt integration noise
-  Matrix df_dintNoise(9,3);
-  df_dintNoise << I_3x3 * newDeltaT, Z_3x3, Z_3x3;
+  // Compute expected f_rot wrt angles
+  Matrix dfr_dangle =
+      numericalDerivative11<Rot3, Rot3>(boost::bind(&updatePreintegratedRot,
+          _1, newMeasuredOmega, newDeltaT), deltaRij_old);
 
-  // Compute expected F wrt acc noise
-  Matrix df_daccNoise =
-      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-          deltaPij_old, deltaVij_old, logDeltaRij_old,
+  Matrix FexpectedBottom3(3,9);
+  FexpectedBottom3 << Z_3x3, Z_3x3, dfr_dangle;
+  EXPECT(assert_equal(FexpectedBottom3, Factual.bottomRows(3)));
+
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  // COMPUTE NUMERICAL DERIVATIVES FOR G
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  // Compute jacobian wrt integration noise
+  Matrix dgpv_dintNoise(6,3);
+  dgpv_dintNoise << I_3x3 * newDeltaT, Z_3x3;
+
+  // Compute jacobian wrt acc noise
+  Matrix dgpv_daccNoise =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedPosVel,
+          deltaPij_old, deltaVij_old, deltaRij_old,
           _1, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), newMeasuredAcc);
   // Compute expected F wrt gyro noise
-  Matrix df_domegaNoise =
-      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-          deltaPij_old, deltaVij_old, logDeltaRij_old,
+  Matrix dgpv_domegaNoise =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedPosVel,
+          deltaPij_old, deltaVij_old, deltaRij_old,
           newMeasuredAcc, _1, newDeltaT, use2ndOrderIntegration), newMeasuredOmega);
-  Matrix Gexpected(9,9);
+  Matrix GexpectedTop6(6,9);
+  GexpectedTop6 << dgpv_dintNoise, dgpv_daccNoise, dgpv_domegaNoise;
+  EXPECT(assert_equal(GexpectedTop6, Gactual.topRows(6)));
 
-  Gexpected << df_dintNoise, df_daccNoise, df_domegaNoise;
-  EXPECT(assert_equal(Gexpected, Gactual));
+  // Compute expected f_rot wrt gyro noise
+  Matrix dgr_dangle =
+      numericalDerivative11<Rot3, Vector3>(boost::bind(&updatePreintegratedRot,
+          deltaRij_old, _1, newDeltaT), newMeasuredOmega);
+
+  Matrix GexpectedBottom3(3,9);
+  GexpectedBottom3 << Z_3x3, Z_3x3, dgr_dangle;
+  EXPECT(assert_equal(GexpectedBottom3, Gactual.bottomRows(3)));
 }
 
 //#include <gtsam/linear/GaussianFactorGraph.h>

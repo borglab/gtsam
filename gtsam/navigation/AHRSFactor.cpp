@@ -69,7 +69,6 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
     const Vector3& measuredOmega, double deltaT,
     boost::optional<const Pose3&> body_P_sensor) {
 
-  // NOTE: order is important here because each update uses old values.
   // First we compensate the measurements for the bias
   Vector3 correctedOmega = measuredOmega - biasHat_;
 
@@ -84,42 +83,20 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   // rotation vector describing rotation increment computed from the
   // current rotation rate measurement
   const Vector3 theta_incr = correctedOmega * deltaT;
-
-  // rotation increment computed from the current rotation rate measurement
-  const Rot3 incrR = Rot3::Expmap(theta_incr); // expensive !!
-  const Matrix3 incrRt = incrR.transpose();
-
-  // Right Jacobian computed at theta_incr
-  const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr);
+  Matrix3 Jr_theta_incr;
+  const Rot3 incrR = Rot3::Expmap(theta_incr, Jr_theta_incr); // expensive !!
 
   // Update Jacobian
   update_delRdelBiasOmega(Jr_theta_incr, incrR, deltaT);
 
-  // Update preintegrated measurements covariance
-  const Vector3 theta_i = thetaRij(); // super-expensive, Parameterization of so(3)
-  const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3inverse(theta_i);
-
-  // Update rotation and deltaTij. TODO Frank moved from end of this function !!!
-  updateIntegratedRotationAndDeltaT(incrR, deltaT);
-
-  const Vector3 theta_j = thetaRij(); // super-expensive, , Parameterization of so(3)
-  const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
-
-  // Update preintegrated measurements covariance: as in [2] we consider a first
-  // order propagation that can be seen as a prediction phase in an EKF framework
-  Matrix3 H_angles_angles = Jrinv_theta_j * incrRt * Jr_theta_i;
-  // analytic expression corresponding to the following numerical derivative
-  // Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>
-  // (boost::bind(&DeltaAngles, correctedOmega, deltaT, _1), thetaij);
-
-  // overall Jacobian wrpt preintegrated measurements (df/dx)
-  const Matrix3& F = H_angles_angles;
+  // Update rotation and deltaTij.
+  Matrix3 Fr; // Jacobian of the update
+  updateIntegratedRotationAndDeltaT(incrR, deltaT, Fr);
 
   // first order uncertainty propagation
   // the deltaT allows to pass from continuous time noise to discrete time noise
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose()
+  preintMeasCov_ = Fr * preintMeasCov_ * Fr.transpose()
       + measurementCovariance_ * deltaT;
-
 }
 
 //------------------------------------------------------------------------------

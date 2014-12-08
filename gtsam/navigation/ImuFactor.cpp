@@ -70,9 +70,6 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     boost::optional<const Pose3&> body_P_sensor,
     boost::optional<Matrix&> F_test, boost::optional<Matrix&> G_test) {
 
-  // NOTE: order is important here because each update uses old values (i.e., we have to update
-  // jacobians and covariances before updating preintegrated measurements).
-
   Vector3 correctedAcc, correctedOmega;
   correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, correctedAcc, correctedOmega, body_P_sensor);
 
@@ -81,42 +78,22 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   const Rot3 Rincr = Rot3::Expmap(theta_incr, Jr_theta_incr); // rotation increment computed from the current rotation rate measurement
 
   // Update Jacobians
-  /* ----------------------------------------------------------------------------------------------------------------------- */
   updatePreintegratedJacobians(correctedAcc, Jr_theta_incr, Rincr, deltaT);
 
-  // Update preintegrated measurements covariance
+  // Update preintegrated measurements (also get Jacobian)
+  const Matrix3 R_i = deltaRij(); // store this, which is useful to compute G_test
+  Matrix F; // overall Jacobian wrt preintegrated measurements (df/dx)
+  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F);
+
+  // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in an EKF framework
   /* ----------------------------------------------------------------------------------------------------------------------- */
-//  Matrix3 Jr_theta_i;
-//  const Vector3 theta_i = thetaRij(Jr_theta_i); // super-expensive parametrization of so(3)
-//  const Matrix3 R_i = deltaRij();
-
-  const Vector3 theta_i = thetaRij(); // super-expensive parametrization of so(3)
-  const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
-  const Matrix3 R_i = deltaRij();
-
-  // Update preintegrated measurements
-  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
-
-  Matrix3 Jrinv_theta_j; thetaRij(Jrinv_theta_j); // computation of rightJacobianInverse
-
-  Matrix H_vel_angles = - R_i * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
-  Matrix H_angles_angles = Jrinv_theta_j * Rincr.inverse().matrix() * Jr_theta_i;
-
-  // overall Jacobian wrt preintegrated measurements (df/dx)
-  Matrix F(9,9);
-  //   pos          vel              angle
-  F << I_3x3,       I_3x3 * deltaT,  Z_3x3,          // pos
-       Z_3x3,       I_3x3,           H_vel_angles,   // vel
-       Z_3x3,       Z_3x3,           H_angles_angles;// angle
-
-  // first order uncertainty propagation:
   // the deltaT allows to pass from continuous time noise to discrete time noise
   // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
   // Gt * Qt * G =(approx)= measurementCovariance_discrete * deltaT^2 = measurementCovariance_contTime * deltaT
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + measurementCovariance_ * deltaT ;
 
-  // F_test and Gout are used for testing purposes and are not needed by the factor
+  // F_test and G_test are used for testing purposes and are not needed by the factor
   if(F_test){
     // This in only for testing
     F_test->resize(9,9);
@@ -129,7 +106,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     //           intNoise         accNoise      omegaNoise
     (*G_test) << I_3x3 * deltaT,   Z_3x3,        Z_3x3,                                 // pos
                  Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
-                 Z_3x3,            Z_3x3,        Jrinv_theta_j * Jr_theta_incr * deltaT;// angle
+                 Z_3x3,            Z_3x3,        Jr_theta_incr * deltaT;                // angle
     // Propagation with no approximation:
     // preintMeasCov = F * preintMeasCov * F.transpose() + G_test * (1/deltaT) * measurementCovariance * G_test.transpose();
   }
