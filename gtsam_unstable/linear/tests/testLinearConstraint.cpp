@@ -23,12 +23,12 @@
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
-//#include <boost/range/iterator_range.hpp>
-//#include <boost/range/adaptor/map.hpp>
 
 using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
+
+GTSAM_CONCEPT_TESTABLE_INST(LinearConstraint)
 
 namespace {
   namespace simple {
