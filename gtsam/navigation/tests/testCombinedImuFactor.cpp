@@ -52,7 +52,7 @@ Vector updatePreintegratedMeasurementsTest(
 
   Rot3 deltaRij_old = Rot3::Expmap(logDeltaRij_old);
   Matrix3 dRij = deltaRij_old.matrix();
-  Vector3 temp = dRij * correctedAcc * deltaT;
+  Vector3 temp = dRij * (correctedAcc - bias_old.accelerometer()) * deltaT;
   Vector3 deltaPij_new;
   if(!use2ndOrderIntegration_){
     deltaPij_new = deltaPij_old + deltaVij_old * deltaT;
@@ -60,7 +60,7 @@ Vector updatePreintegratedMeasurementsTest(
     deltaPij_new += deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
   }
   Vector3 deltaVij_new = deltaVij_old + temp;
-  Rot3 deltaRij_new = deltaRij_old * Rot3::Expmap(correctedOmega * deltaT);
+  Rot3 deltaRij_new = deltaRij_old * Rot3::Expmap((correctedOmega-bias_old.gyroscope()) * deltaT);
   Vector3 logDeltaRij_new = Rot3::Logmap(deltaRij_new);
   imuBias::ConstantBias bias_new(bias_old);
   Vector result(15);  result << deltaPij_new,  deltaVij_new, logDeltaRij_new, bias_new.vector();
@@ -320,7 +320,7 @@ TEST(CombinedImuFactor, PredictRotation) {
 TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation )
 {
   // Linearization point
-  imuBias::ConstantBias bias = imuBias::ConstantBias(); ///< Current estimate of acceleration and rotation rate biases
+  imuBias::ConstantBias bias_old = imuBias::ConstantBias(); ///< Current estimate of acceleration and rotation rate biases
   Pose3 body_P_sensor = Pose3();
 
   // Measurements
@@ -340,7 +340,7 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation )
   }
   // Actual preintegrated values
   CombinedImuFactor::CombinedPreintegratedMeasurements preintegrated =
-      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs);
+      evaluatePreintegratedMeasurements(bias_old, measuredAccs, measuredOmegas, deltaTs);
 
   // so far we only created a nontrivial linearization point for the preintegrated measurements
   // Now we add a new measurement and ask for Jacobians
@@ -351,32 +351,37 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation )
   const Rot3    deltaRij_old = preintegrated.deltaRij();    // before adding new measurement
   const Vector3 deltaVij_old = preintegrated.deltaVij();    // before adding new measurement
   const Vector3 deltaPij_old = preintegrated.deltaPij();    // before adding new measurement
-//
-//  Matrix Factual, Gactual;
-//  preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega, newDeltaT,
-//      body_P_sensor, Factual, Gactual);
-//
-//  bool use2ndOrderIntegration = false;
-//
-//  // Compute expected F wrt positions
-//  Matrix df_dpos =
-//      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-//          _1, deltaVij_old, logDeltaRij_old,
-//          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaPij_old);
-//  // Compute expected F wrt velocities
-//  Matrix df_dvel =
-//      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-//          deltaPij_old, _1, logDeltaRij_old,
-//          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaVij_old);
-//  // Compute expected F wrt angles
-//  Matrix df_dangle =
-//      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-//          deltaPij_old, deltaVij_old, _1,
-//          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), logDeltaRij_old);
-//  Matrix Fexpected(9,9);
-//
-//  Fexpected << df_dpos, df_dvel, df_dangle;
-//  EXPECT(assert_equal(Fexpected, Factual));
+
+  Matrix Factual, Gactual;
+  preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega, newDeltaT,
+      body_P_sensor, Factual, Gactual);
+
+  bool use2ndOrderIntegration = false;
+
+  // Compute expected F wrt positions (15,3)
+  Matrix df_dpos =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
+          _1, deltaVij_old, logDeltaRij_old, bias_old,
+          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaPij_old);
+  // Compute expected F wrt velocities (15,3)
+  Matrix df_dvel =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
+          deltaPij_old, _1, logDeltaRij_old, bias_old,
+          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaVij_old);
+  // Compute expected F wrt angles (15,3)
+  Matrix df_dangle =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
+          deltaPij_old, deltaVij_old, _1, bias_old,
+          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), logDeltaRij_old);
+  // Compute expected F wrt angles (15,6)
+  Matrix df_dbias =
+      numericalDerivative11<Vector, imuBias::ConstantBias>(boost::bind(&updatePreintegratedMeasurementsTest,
+          deltaPij_old, deltaVij_old, logDeltaRij_old, _1,
+          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), bias_old);
+  Matrix Fexpected(15,15);
+
+  Fexpected << df_dpos, df_dvel, df_dangle, df_dbias;
+  EXPECT(assert_equal(Fexpected, Factual));
 //
 //  // Compute expected G wrt integration noise
 //  Matrix df_dintNoise(9,3);
