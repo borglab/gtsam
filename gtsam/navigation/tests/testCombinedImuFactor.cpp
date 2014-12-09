@@ -382,25 +382,36 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation )
 
   Fexpected << df_dpos, df_dvel, df_dangle, df_dbias;
   EXPECT(assert_equal(Fexpected, Factual));
-//
-//  // Compute expected G wrt integration noise
-//  Matrix df_dintNoise(9,3);
-//  df_dintNoise << I_3x3 * newDeltaT, Z_3x3, Z_3x3;
-//
-//  // Compute expected F wrt acc noise
-//  Matrix df_daccNoise =
-//      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-//          deltaPij_old, deltaVij_old, logDeltaRij_old,
-//          _1, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), newMeasuredAcc);
-//  // Compute expected F wrt gyro noise
-//  Matrix df_domegaNoise =
-//      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
-//          deltaPij_old, deltaVij_old, logDeltaRij_old,
-//          newMeasuredAcc, _1, newDeltaT, use2ndOrderIntegration), newMeasuredOmega);
-//  Matrix Gexpected(9,9);
-//
-//  Gexpected << df_dintNoise, df_daccNoise, df_domegaNoise;
-//  EXPECT(assert_equal(Gexpected, Gactual));
+
+  // Compute expected G wrt integration noise
+  Matrix df_dintNoise(15,3);
+  df_dintNoise << I_3x3 * newDeltaT, Z_3x3, Z_3x3, Z_3x3, Z_3x3;
+
+  // Compute expected F wrt acc noise (15,3)
+  Matrix df_daccNoise =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
+          deltaPij_old, deltaVij_old, logDeltaRij_old, bias_old,
+          _1, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), newMeasuredAcc);
+  // Compute expected F wrt gyro noise (15,3)
+  Matrix df_domegaNoise =
+      numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedMeasurementsTest,
+          deltaPij_old, deltaVij_old, logDeltaRij_old, bias_old,
+          newMeasuredAcc, _1, newDeltaT, use2ndOrderIntegration), newMeasuredOmega);
+  // Compute expected F wrt bias random walk noise (15,6)
+  Matrix df_rwBias(15,6); // random walk on the bias does not appear in the first 9 entries
+  df_rwBias.setZero();
+  df_rwBias.block<6,6>(9,0) = eye(6);
+
+  // Compute expected F wrt gyro noise (15,3)
+  Matrix df_dinitBias =
+      numericalDerivative11<Vector, imuBias::ConstantBias>(boost::bind(&updatePreintegratedMeasurementsTest,
+          deltaPij_old, deltaVij_old, logDeltaRij_old, _1,
+          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), bias_old);
+  df_dinitBias.block<6,6>(9,0) = Matrix::Zero(6,6); // only has to influence first 9 rows
+  Matrix Gexpected(15,21);
+  Gexpected << df_dintNoise, df_daccNoise, df_domegaNoise, df_rwBias, df_dinitBias;
+
+  EXPECT(assert_equal(Gexpected, Gactual));
 }
 
 /* ************************************************************************* */

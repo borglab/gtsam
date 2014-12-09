@@ -143,9 +143,9 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
       (measurementCovariance_.block<3,3>(6,6)  +  measurementCovariance_.block<3,3>(18,18) ) *
       (H_angles_biasomega.transpose());
 
-  G_measCov_Gt.block<3,3>(9,9) = deltaT * measurementCovariance_.block<3,3>(9,9);
+  G_measCov_Gt.block<3,3>(9,9) = (1/deltaT) * measurementCovariance_.block<3,3>(9,9);
 
-  G_measCov_Gt.block<3,3>(12,12) = deltaT * measurementCovariance_.block<3,3>(12,12);
+  G_measCov_Gt.block<3,3>(12,12) = (1/deltaT) * measurementCovariance_.block<3,3>(12,12);
 
   // NEW OFF BLOCK DIAGONAL TERMS
   Matrix3 block23 = H_vel_biasacc * measurementCovariance_.block<3,3>(18,15) *  H_angles_biasomega.transpose();
@@ -164,10 +164,10 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
     // This is for testing & documentation
     ///< measurementCovariance_ : cov[integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
     (*G_test) << I_3x3 * deltaT,  Z_3x3,          Z_3x3,              Z_3x3,              Z_3x3,           Z_3x3,              Z_3x3,
-                 Z_3x3,           H_vel_biasacc,  Z_3x3,              Z_3x3,              Z_3x3,           H_vel_biasacc,      Z_3x3,
-                 Z_3x3,           Z_3x3,          H_angles_angles,    Z_3x3,              Z_3x3,           Z_3x3,              H_angles_biasomega,
-                 Z_3x3,           Z_3x3,          Z_3x3,              I_3x3 * deltaT,     Z_3x3,           Z_3x3,              Z_3x3,
-                 Z_3x3,           Z_3x3,          Z_3x3,              Z_3x3,              I_3x3 * deltaT,  Z_3x3,              Z_3x3;
+                 Z_3x3,          -H_vel_biasacc,  Z_3x3,              Z_3x3,              Z_3x3,           H_vel_biasacc,      Z_3x3,
+                 Z_3x3,           Z_3x3,         -H_angles_biasomega, Z_3x3,              Z_3x3,           Z_3x3,              H_angles_biasomega,
+                 Z_3x3,           Z_3x3,          Z_3x3,              I_3x3,              Z_3x3,           Z_3x3,              Z_3x3,
+                 Z_3x3,           Z_3x3,          Z_3x3,              Z_3x3,              I_3x3,           Z_3x3,              Z_3x3;
   }
 }
 
