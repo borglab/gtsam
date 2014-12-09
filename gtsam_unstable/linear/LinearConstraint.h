@@ -94,9 +94,15 @@ public:
   virtual ~LinearConstraint() {
   }
 
-  // Testable interface
+  /** equals */
   virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const {
     return Base::equals(lf, tol);
+  }
+
+  /** print */
+  virtual void print(const std::string& s = "", const KeyFormatter& formatter =
+      DefaultKeyFormatter) const {
+    Base::print(s, formatter);
   }
 
   /** Clone this LinearConstraint */
