@@ -84,10 +84,10 @@ public:
    *  Update Jacobians to be used during preintegration
    *  TODO: explain arguments
    */
-  void update_delRdelBiasOmega(const Matrix3& Jr_theta_incr, const Rot3& incrR,
+  void update_delRdelBiasOmega(const Matrix3& D_Rincr_integratedOmega, const Rot3& incrR,
       double deltaT) {
     const Matrix3 incrRt = incrR.transpose();
-    delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - Jr_theta_incr * deltaT;
+    delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_Rincr_integratedOmega * deltaT;
   }
 
   /// Return a bias corrected version of the integrated rotation - expensive
@@ -104,11 +104,11 @@ public:
     if (H) {
       Matrix3 Jrinv_theta_bc;
       // This was done via an expmap, now we go *back* to so<3>
-      const Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected, Jrinv_theta_bc);
+      const Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected, Jrinv_theta_bc);
       const Matrix3 Jr_JbiasOmegaIncr = //
           Rot3::rightJacobianExpMapSO3(delRdelBiasOmega_ * biasOmegaIncr);
       (*H) = Jrinv_theta_bc * Jr_JbiasOmegaIncr * delRdelBiasOmega_;
-      return theta_biascorrected;
+      return biascorrectedOmega;
     }
     //else
     return Rot3::Logmap(deltaRij_biascorrected);

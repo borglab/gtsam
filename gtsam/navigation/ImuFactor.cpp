@@ -73,12 +73,12 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   Vector3 correctedAcc, correctedOmega;
   correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, correctedAcc, correctedOmega, body_P_sensor);
 
-  const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
-  Matrix3 Jr_theta_incr; // Right jacobian computed at theta_incr
-  const Rot3 Rincr = Rot3::Expmap(theta_incr, Jr_theta_incr); // rotation increment computed from the current rotation rate measurement
+  const Vector3 integratedOmega = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
+  Matrix3 D_Rincr_integratedOmega; // Right jacobian computed at theta_incr
+  const Rot3 Rincr = Rot3::Expmap(integratedOmega, D_Rincr_integratedOmega); // rotation increment computed from the current rotation rate measurement
 
   // Update Jacobians
-  updatePreintegratedJacobians(correctedAcc, Jr_theta_incr, Rincr, deltaT);
+  updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr, deltaT);
 
   // Update preintegrated measurements (also get Jacobian)
   const Matrix3 R_i = deltaRij(); // store this, which is useful to compute G_test
@@ -106,7 +106,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     //           intNoise         accNoise      omegaNoise
     (*G_test) << I_3x3 * deltaT,   Z_3x3,        Z_3x3,                                 // pos
                  Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
-                 Z_3x3,            Z_3x3,        Jr_theta_incr * deltaT;                // angle
+                 Z_3x3,            Z_3x3,        D_Rincr_integratedOmega * deltaT;                // angle
     // Propagation with no approximation:
     // preintMeasCov = F * preintMeasCov * F.transpose() + G_test * (1/deltaT) * measurementCovariance * G_test.transpose();
   }

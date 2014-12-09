@@ -83,11 +83,11 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   // rotation vector describing rotation increment computed from the
   // current rotation rate measurement
   const Vector3 theta_incr = correctedOmega * deltaT;
-  Matrix3 Jr_theta_incr;
-  const Rot3 incrR = Rot3::Expmap(theta_incr, Jr_theta_incr); // expensive !!
+  Matrix3 D_Rincr_integratedOmega;
+  const Rot3 incrR = Rot3::Expmap(theta_incr, D_Rincr_integratedOmega); // expensive !!
 
   // Update Jacobian
-  update_delRdelBiasOmega(Jr_theta_incr, incrR, deltaT);
+  update_delRdelBiasOmega(D_Rincr_integratedOmega, incrR, deltaT);
 
   // Update rotation and deltaTij.
   Matrix3 Fr; // Jacobian of the update
@@ -172,44 +172,44 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
     boost::optional<Matrix&> H2, boost::optional<Matrix&> H3) const {
 
   // Do bias correction, if (H3) will contain 3*3 derivative used below
-  const Vector3 theta_biascorrected = _PIM_.predict(bias, H3);
+  const Vector3 biascorrectedOmega = _PIM_.predict(bias, H3);
 
   // Coriolis term
   const Vector3 coriolis = _PIM_.integrateCoriolis(Ri, omegaCoriolis_);
   const Matrix3 coriolisHat = skewSymmetric(coriolis);
-  const Vector3 theta_corrected = theta_biascorrected - coriolis;
+  const Vector3 correctedOmega = biascorrectedOmega - coriolis;
 
   // Prediction
-  const Rot3 deltaRij_corrected = Rot3::Expmap(theta_corrected);
+  const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega);
 
   // Get error between actual and prediction
   const Rot3 actualRij = Ri.between(Rj);
-  const Rot3 fRhat = deltaRij_corrected.between(actualRij);
-  Vector3 fR = Rot3::Logmap(fRhat);
+  const Rot3 fRrot = correctedDeltaRij.between(actualRij);
+  Vector3 fR = Rot3::Logmap(fRrot);
 
   // Terms common to derivatives
-  const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_corrected);
-  const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(fR);
+  const Matrix3 D_cDeltaRij_cOmega = Rot3::rightJacobianExpMapSO3(correctedOmega);
+  const Matrix3 D_fR_fRrot = Rot3::rightJacobianExpMapSO3inverse(fR);
 
   if (H1) {
     // dfR/dRi
     H1->resize(3, 3);
-    Matrix3 Jtheta = -Jr_theta_bcc * coriolisHat;
+    Matrix3 D_coriolis = -D_cDeltaRij_cOmega * coriolisHat;
     (*H1)
-        << Jrinv_fRhat * (-actualRij.transpose() - fRhat.transpose() * Jtheta);
+        << D_fR_fRrot * (-actualRij.transpose() - fRrot.transpose() * D_coriolis);
   }
 
   if (H2) {
     // dfR/dPosej
     H2->resize(3, 3);
-    (*H2) << Jrinv_fRhat * Matrix3::Identity();
+    (*H2) << D_fR_fRrot * Matrix3::Identity();
   }
 
   if (H3) {
     // dfR/dBias, note H3 contains derivative of predict
-    const Matrix3 JbiasOmega = Jr_theta_bcc * (*H3);
+    const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * (*H3);
     H3->resize(3, 3);
-    (*H3) << Jrinv_fRhat * (-fRhat.transpose() * JbiasOmega);
+    (*H3) << D_fR_fRrot * (-fRrot.transpose() * JbiasOmega);
   }
 
   Vector error(3);
@@ -222,16 +222,16 @@ Rot3 AHRSFactor::predict(const Rot3& rot_i, const Vector3& bias,
     const PreintegratedMeasurements preintegratedMeasurements,
     const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor) {
 
-  const Vector3 theta_biascorrected = preintegratedMeasurements.predict(bias);
+  const Vector3 biascorrectedOmega = preintegratedMeasurements.predict(bias);
 
   // Coriolis term
   const Vector3 coriolis = //
       preintegratedMeasurements.integrateCoriolis(rot_i, omegaCoriolis);
 
-  const Vector3 theta_corrected = theta_biascorrected - coriolis;
-  const Rot3 deltaRij_corrected = Rot3::Expmap(theta_corrected);
+  const Vector3 correctedOmega = biascorrectedOmega - coriolis;
+  const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega);
 
-  return rot_i.compose(deltaRij_corrected);
+  return rot_i.compose(correctedDeltaRij);
 }
 
 } //namespace gtsam

@@ -144,7 +144,7 @@ public:
 
   /// Update Jacobians to be used during preintegration
   void updatePreintegratedJacobians(const Vector3& correctedAcc,
-      const Matrix3& Jr_theta_incr, const Rot3& incrR, double deltaT){
+      const Matrix3& D_Rincr_integratedOmega, const Rot3& incrR, double deltaT){
     Matrix3 dRij = deltaRij(); // expensive
     Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega();
     if (!use2ndOrderIntegration_) {
@@ -156,7 +156,7 @@ public:
     }
     delVdelBiasAcc_ += -dRij * deltaT;
     delVdelBiasOmega_ += temp;
-    update_delRdelBiasOmega(Jr_theta_incr,incrR,deltaT);
+    update_delRdelBiasOmega(D_Rincr_integratedOmega,incrR,deltaT);
   }
 
   void correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
@@ -211,12 +211,12 @@ public:
     const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);
     // deltaRij_biascorrected = deltaRij * expmap(delRdelBiasOmega * biasOmegaIncr)
 
-    Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
-    Vector3 theta_corrected = theta_biascorrected  -
+    Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected);
+    Vector3 correctedOmega = biascorrectedOmega  -
         Rot_i.inverse().matrix() * omegaCoriolis * deltaTij(); // Coriolis term
-    const Rot3 deltaRij_corrected =
-        Rot3::Expmap( theta_corrected );
-    const Rot3 Rot_j = Rot_i.compose( deltaRij_corrected  );
+    const Rot3 correctedDeltaRij =
+        Rot3::Expmap( correctedOmega );
+    const Rot3 Rot_j = Rot_i.compose( correctedDeltaRij  );
 
     Pose3 pose_j = Pose3( Rot_j, Point3(pos_j) );
     return PoseVelocityBias(pose_j, vel_j, bias_i); // bias is predicted as a constant
@@ -246,31 +246,31 @@ public:
     // Get Get so<3> version of bias corrected rotation
     // If H5 is asked for, we will need the Jacobian, which we store in H5
     // H5 will then be corrected below to take into account the Coriolis effect
-    Vector3 theta_biascorrected = biascorrectedThetaRij(biasOmegaIncr, H5);
+    Vector3 biascorrectedOmega = biascorrectedThetaRij(biasOmegaIncr, H5);
 
     // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
     const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
     const Vector3 coriolis = integrateCoriolis(Ri, omegaCoriolis);
-    Vector3 theta_corrected = theta_biascorrected  - coriolis;
+    Vector3 correctedOmega = biascorrectedOmega  - coriolis;
 
-    Rot3 deltaRij_corrected, fRhat;
+    Rot3 correctedDeltaRij, fRrot;
     Vector3 fR;
 
     // Accessory matrix, used to build the jacobians
-    Matrix3 Jr_theta_bcc, Jtheta, Jrinv_fRhat;
+    Matrix3 D_cDeltaRij_cOmega, D_coriolis, D_fR_fRrot;
 
     // This is done to save computation: we ask for the jacobians only when they are needed
     if(H1 || H2 || H3 || H4 ||  H5){
-      deltaRij_corrected = Rot3::Expmap( theta_corrected, Jr_theta_bcc);
+      correctedDeltaRij = Rot3::Expmap( correctedOmega, D_cDeltaRij_cOmega);
       // Residual rotation error
-      fRhat = deltaRij_corrected.between(Ri.between(Rj));
-      fR = Rot3::Logmap(fRhat, Jrinv_fRhat);
-      Jtheta = -Jr_theta_bcc  * skewSymmetric(coriolis);
+      fRrot = correctedDeltaRij.between(Ri.between(Rj));
+      fR = Rot3::Logmap(fRrot, D_fR_fRrot);
+      D_coriolis = -D_cDeltaRij_cOmega  * skewSymmetric(coriolis);
     }else{
-      deltaRij_corrected = Rot3::Expmap( theta_corrected);
+      correctedDeltaRij = Rot3::Expmap( correctedOmega);
       // Residual rotation error
-      fRhat = deltaRij_corrected.between(Ri.between(Rj));
-      fR = Rot3::Logmap(fRhat);
+      fRrot = correctedDeltaRij.between(Ri.between(Rj));
+      fR = Rot3::Logmap(fRrot);
     }
 
     if(H1) {
@@ -298,7 +298,7 @@ public:
           // dfV/dPi
           dfVdPi,
           // dfR/dRi
-          Jrinv_fRhat *  (- Rj.between(Ri).matrix() - fRhat.inverse().matrix() * Jtheta),
+          D_fR_fRrot *  (- Rj.between(Ri).matrix() - fRrot.inverse().matrix() * D_coriolis),
           // dfR/dPi
           Z_3x3;
     }
@@ -322,7 +322,7 @@ public:
           // dfV/dPosej
           Matrix::Zero(3,6),
           // dfR/dPosej
-          Jrinv_fRhat *  ( I_3x3 ), Z_3x3;
+          D_fR_fRrot *  ( I_3x3 ), Z_3x3;
     }
     if(H4) {
       H4->resize(9,3);
@@ -336,7 +336,7 @@ public:
     }
     if(H5) {
       // H5 by this point already contains 3*3 biascorrectedThetaRij derivative
-      const Matrix3 JbiasOmega = Jr_theta_bcc * (*H5);
+      const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * (*H5);
       H5->resize(9,6);
       (*H5) <<
           // dfP/dBias
@@ -347,7 +347,7 @@ public:
           - Ri.matrix() * delVdelBiasOmega(),
           // dfR/dBias
           Matrix::Zero(3,3),
-          Jrinv_fRhat * ( - fRhat.inverse().matrix() * JbiasOmega);
+          D_fR_fRrot * ( - fRrot.inverse().matrix() * JbiasOmega);
     }
 
     // Evaluate residual error, according to [3]

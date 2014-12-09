@@ -80,13 +80,13 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   Vector3 correctedAcc, correctedOmega;
   correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, correctedAcc, correctedOmega, body_P_sensor);
 
-  const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
-  Matrix3 Jr_theta_incr; // Right jacobian computed at theta_incr
-  const Rot3 Rincr = Rot3::Expmap(theta_incr, Jr_theta_incr); // rotation increment computed from the current rotation rate measurement
+  const Vector3 integratedOmega = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
+  Matrix3 D_Rincr_integratedOmega; // Right jacobian computed at theta_incr
+  const Rot3 Rincr = Rot3::Expmap(integratedOmega, D_Rincr_integratedOmega); // rotation increment computed from the current rotation rate measurement
 
   // Update Jacobians
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  updatePreintegratedJacobians(correctedAcc, Jr_theta_incr, Rincr, deltaT);
+  updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr, deltaT);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
   // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
@@ -99,7 +99,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 
   // Single Jacobians to propagate covariance
   Matrix3 H_vel_biasacc = - R_i * deltaT;
-  Matrix3 H_angles_biasomega =- Jr_theta_incr * deltaT;
+  Matrix3 H_angles_biasomega =- D_Rincr_integratedOmega * deltaT;
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix F(15,15);
