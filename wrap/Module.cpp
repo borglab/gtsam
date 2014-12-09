@@ -22,19 +22,6 @@
 #include "TypeAttributesTable.h" 
 #include "utilities.h"
 
-//#define BOOST_SPIRIT_DEBUG
-#include "spirit.h"
- 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/lambda/bind.hpp> 
-#include <boost/lambda/lambda.hpp> 
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-#include <boost/lambda/construct.hpp> 
 #include <boost/foreach.hpp> 
 #include <boost/filesystem.hpp> 
 #include <boost/lexical_cast.hpp> 
@@ -111,15 +98,24 @@ void Module::parseMarkup(const std::string& data) {
   typedef rule<phrase_scanner_t> Rule;
   BasicRules<phrase_scanner_t> basic;
 
-  // TODO, do we really need cls here? Non-local
+  vector<string> namespaces; // current namespace tag
+
+  // parse a full class
   Class cls0(verbose),cls(verbose);
- 
+  Template classTemplate;
+  ClassGrammar class_g(cls,classTemplate);
+  Rule class_p = class_g //
+      [assign_a(cls.namespaces_, namespaces)]
+      [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
+          bl::var(classTemplate.argValues()))]
+          [clear_a(classTemplate)] //
+      [assign_a(cls,cls0)];
+
   // parse "gtsam::Pose2" and add to singleInstantiation.typeList
   TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
   TypeListGrammar<'<','>'> typelist_g(singleInstantiation.typeList);
  
   // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
-  vector<string> namespaces; // current namespace tag
   TypeGrammar instantiationClass_g(singleInstantiation.class_);
   Rule templateSingleInstantiation_p = 
     (str_p("typedef") >> instantiationClass_g >>
@@ -130,109 +126,8 @@ void Module::parseMarkup(const std::string& data) {
     [push_back_a(templateInstantiationTypedefs, singleInstantiation)] 
     [assign_a(singleInstantiation, singleInstantiation0)]; 
  
-  // template<POSE, POINT>
-  Rule templateList_p = 
-    (str_p("template") >> 
-    '<' >> basic.name_p[push_back_a(cls.templateArgs)] >> *(',' >> basic.name_p[push_back_a(cls.templateArgs)]) >>
-    '>'); 
-
-  // NOTE: allows for pointers to all types
-  ArgumentList args;
-  ArgumentListGrammar argumentList_g(args);
-
-  // parse class constructor
-  Constructor constructor0(verbose), constructor(verbose);
-  Rule constructor_p =  
-    (basic.className_p >> argumentList_g >> ';' >> !basic.comments_p)
-    [bl::bind(&Constructor::push_back, bl::var(constructor), bl::var(args))]
-    [clear_a(args)];
- 
-  vector<string> namespaces_return; /// namespace for current return type
-  Rule namespace_ret_p = basic.namespace_p[push_back_a(namespaces_return)] >> str_p("::");
- 
-  ReturnValue retVal0, retVal;
-  ReturnValueGrammar returnValue_g(retVal);
-
-  Rule methodName_p = lexeme_d[(upper_p | lower_p)  >> *(alnum_p | '_')];
- 
-  // template<CALIBRATION = {gtsam::Cal3DS2}>
-  Template methodTemplate;
-  TemplateGrammar methodTemplate_g(methodTemplate);
-
-  // gtsam::Values retract(const gtsam::VectorValues& delta) const;
-  string methodName;
-  bool isConst, isConst0 = false;
-  Rule method_p =  
-    !methodTemplate_g >>
-    (returnValue_g >> methodName_p[assign_a(methodName)] >>
-     argumentList_g >>
-     !str_p("const")[assign_a(isConst,true)] >> ';' >> *basic.comments_p)
-    [bl::bind(&Class::addMethod, bl::var(cls), verbose, bl::var(isConst),
-        bl::var(methodName), bl::var(args), bl::var(retVal),
-        bl::var(methodTemplate))]
-    [assign_a(retVal,retVal0)]
-    [clear_a(args)]
-    [clear_a(methodTemplate)]
-    [assign_a(isConst,isConst0)];
- 
-  Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')]; 
- 
-  Rule static_method_p = 
-    (str_p("static") >> returnValue_g >> staticMethodName_p[assign_a(methodName)] >>
-     argumentList_g >> ';' >> *basic.comments_p)
-    [bl::bind(&StaticMethod::addOverload, 
-      bl::var(cls.static_methods)[bl::var(methodName)], 
-      bl::var(methodName), bl::var(args), bl::var(retVal), boost::none,verbose)]
-    [assign_a(retVal,retVal0)]
-    [clear_a(args)];
- 
-  Rule functions_p = constructor_p | method_p | static_method_p; 
- 
-  // template<CALIBRATION = {gtsam::Cal3DS2}>
-  Template classTemplate;
-  TemplateGrammar classTemplate_g(classTemplate);
-
-  // Parent class
-  Qualified possibleParent;
-  TypeGrammar classParent_p(possibleParent);
-
-  // parse a full class
-  Rule class_p = 
-      eps_p[assign_a(cls,cls0)]
-      >> (!(classTemplate_g
-          [push_back_a(cls.templateArgs, classTemplate.argName())]
-          | templateList_p)
-      >> !(str_p("virtual")[assign_a(cls.isVirtual, true)]) 
-      >> str_p("class") 
-      >> basic.className_p[assign_a(cls.name_)]
-      >> ((':' >> classParent_p >> '{')
-          [bl::bind(&Class::assignParent, bl::var(cls), bl::var(possibleParent))]
-          [clear_a(possibleParent)] | '{')
-      >> *(functions_p | basic.comments_p)
-      >> str_p("};")) 
-      [bl::bind(&Constructor::initializeOrCheck, bl::var(constructor),
-          bl::var(cls.name_), boost::none, verbose)]
-      [assign_a(cls.constructor, constructor)] 
-      [assign_a(cls.namespaces_, namespaces)]
-      [assign_a(cls.deconstructor.name,cls.name_)]
-      [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
-          bl::var(classTemplate.argValues()))]
-      [clear_a(classTemplate)]
-      [assign_a(constructor, constructor0)] 
-      [assign_a(cls,cls0)];
- 
-  // parse a global function
-  Qualified globalFunction;
-  Rule global_function_p = 
-      (returnValue_g >> staticMethodName_p[assign_a(globalFunction.name_)] >>
-       argumentList_g >> ';' >> *basic.comments_p)
-      [assign_a(globalFunction.namespaces_,namespaces)]
-      [bl::bind(&GlobalFunction::addOverload, 
-        bl::var(global_functions)[bl::var(globalFunction.name_)],
-        bl::var(globalFunction), bl::var(args), bl::var(retVal), boost::none,verbose)]
-      [assign_a(retVal,retVal0)]
-      [clear_a(globalFunction)]
-      [clear_a(args)];
+  // Create grammar for global functions
+  GlobalFunctionGrammar global_function_g(global_functions,namespaces);
  
   Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
 
@@ -245,7 +140,7 @@ void Module::parseMarkup(const std::string& data) {
       (str_p("namespace")
       >> basic.namespace_p[push_back_a(namespaces)]
       >> ch_p('{')
-      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | basic.comments_p)
+      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_g | namespace_def_p | basic.comments_p)
       >> ch_p('}'))
       [pop_a(namespaces)];
 
@@ -265,41 +160,16 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule module_content_p = basic.comments_p | include_p | class_p
       | templateSingleInstantiation_p | forward_declaration_p
-      | global_function_p | namespace_def_p;
+      | global_function_g | namespace_def_p;
  
   Rule module_p = *module_content_p >> !end_p; 
- 
-  //----------------------------------------------------------------------------
-  // for debugging, define BOOST_SPIRIT_DEBUG
-# ifdef BOOST_SPIRIT_DEBUG
-  BOOST_SPIRIT_DEBUG_NODE(className_p);
-  BOOST_SPIRIT_DEBUG_NODE(classPtr_p);
-  BOOST_SPIRIT_DEBUG_NODE(classRef_p);
-  BOOST_SPIRIT_DEBUG_NODE(basisType_p);
-  BOOST_SPIRIT_DEBUG_NODE(name_p);
-  BOOST_SPIRIT_DEBUG_NODE(argument_p);
-  BOOST_SPIRIT_DEBUG_NODE(argumentList_g);
-  BOOST_SPIRIT_DEBUG_NODE(constructor_p);
-  BOOST_SPIRIT_DEBUG_NODE(returnType1_p);
-  BOOST_SPIRIT_DEBUG_NODE(returnType2_p);
-  BOOST_SPIRIT_DEBUG_NODE(pair_p);
-  BOOST_SPIRIT_DEBUG_NODE(void_p);
-  BOOST_SPIRIT_DEBUG_NODE(returnValue_g);
-  BOOST_SPIRIT_DEBUG_NODE(methodName_p);
-  BOOST_SPIRIT_DEBUG_NODE(method_p);
-  BOOST_SPIRIT_DEBUG_NODE(class_p);
-  BOOST_SPIRIT_DEBUG_NODE(namespace_def_p);
-  BOOST_SPIRIT_DEBUG_NODE(module_p);
-# endif
-  //----------------------------------------------------------------------------
  
   // and parse contents
   parse_info<const char*> info = parse(data.c_str(), module_p, space_p);
   if(!info.full) {
     printf("parsing stopped at \n%.20s\n",info.stop);
-    cout << "Stopped near:\n"
-      "class '" << cls.name_ << "'\n"
-      "method '" << methodName << "'" << endl;
+    cout << "Stopped in:\n"
+      "class '" << cls.name_ << "'" << endl;
     throw ParseFailed((int)info.length);
   }
 

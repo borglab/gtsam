@@ -11,12 +11,12 @@
 
 /**
  * @file testMethod.cpp
- * @brief Unit test for Method class
+ * @brief Unit test for GlobalFunction class
  * @author Frank Dellaert
  * @date Nov 12, 2014
  **/
 
-#include <wrap/Method.h>
+#include <wrap/GlobalFunction.h>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
@@ -25,35 +25,26 @@ using namespace wrap;
 
 //******************************************************************************
 // Constructor
-TEST( Method, Constructor ) {
-  Method method;
+TEST( GlobalFunction, Constructor ) {
+  GlobalFunction f;
 }
 
 //******************************************************************************
-// addOverload
-TEST( Method, addOverload ) {
-  Method method;
-  ArgumentList args;
-  bool is_const = true;
-  const ReturnValue retVal1(ReturnType("return_type1"));
-  method.addOverload("myName", args, retVal1, is_const);
-  const ReturnValue retVal2(ReturnType("return_type2"));
-  method.addOverload("myName", args, retVal2, is_const);
-  EXPECT_LONGS_EQUAL(2, method.nrOverloads());
-}
+TEST( GlobalFunction, Grammar ) {
 
-////******************************************************************************
-//TEST( Method, grammar ) {
-//
-//  using classic::space_p;
-//
-//  // Create type grammar that will place result in actual
-//  Method actual;
-//  method_grammar method_g(actual);
-//
-//  // a class type with namespaces
-//  EXPECT(parse("double x() const;", method_g, space_p).full);
-//}
+  using classic::space_p;
+
+  // Create type grammar that will place result in actual
+  GlobalFunctions actual;
+  vector<string> namespaces;
+  GlobalFunctionGrammar g(actual,namespaces);
+
+  // a class type with namespaces
+  EXPECT(parse("Vector aGlobalFunction();", g, space_p).full);
+  EXPECT(parse("Vector overloadedGlobalFunction(int a);", g, space_p).full);
+  EXPECT(parse("Vector overloadedGlobalFunction(int a, double b);", g, space_p).full);
+  LONGS_EQUAL(2,actual.size());
+}
 
 //******************************************************************************
 int main() {

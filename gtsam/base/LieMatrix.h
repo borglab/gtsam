@@ -19,6 +19,12 @@
 
 #include <cstdarg>
 
+#ifdef _MSC_VER
+#pragma message("LieMatrix.h is deprecated. Please use Eigen::Matrix instead.")
+#else
+#warning "LieMatrix.h is deprecated. Please use Eigen::Matrix instead."
+#endif
+
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
@@ -27,7 +33,9 @@
 namespace gtsam {
 
 /**
- * LieVector is a wrapper around vector to allow it to be a Lie type
+ * @deprecated: LieScalar, LieVector and LieMatrix are obsolete in GTSAM 4.0 as
+ * we can directly add double, Vector, and Matrix into values now, because of
+ * gtsam::traits.
  */
 struct LieMatrix : public Matrix {
 

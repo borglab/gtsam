@@ -51,7 +51,7 @@ private:
 
 public:
 
-    Vector vector() const ;
+    Vector10 vector() const ;
 
   /// @name Standard Constructors
   /// @{
@@ -96,8 +96,8 @@ public:
    * @return point in image coordinates
    */
   Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> Dcal = boost::none,
-      boost::optional<Matrix&> Dp = boost::none) const ;
+      OptionalJacobian<2,10> Dcal = boost::none,
+      OptionalJacobian<2,2> Dp = boost::none) const ;
 
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;
@@ -116,7 +116,7 @@ public:
   Cal3Unified retract(const Vector& d) const ;
 
   /// Given a different calibration, calculate update to obtain it
-  Vector localCoordinates(const Cal3Unified& T2) const ;
+  Vector10 localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
   virtual size_t dim() const { return 10 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)

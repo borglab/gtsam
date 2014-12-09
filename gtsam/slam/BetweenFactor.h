@@ -74,25 +74,26 @@ namespace gtsam {
       std::cout << s << "BetweenFactor("
           << keyFormatter(this->key1()) << ","
           << keyFormatter(this->key2()) << ")\n";
-      measured_.print("  measured: ");
+      traits::print<T>()(measured_, "  measured: ");
       this->noiseModel_->print("  noise model: ");
     }
 
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e =  dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
+      return e != NULL && Base::equals(*e, tol) && traits::equals<T>()(this->measured_, e->measured_, tol);
     }
 
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
     Vector evaluateError(const T& p1, const T& p2,
-        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+        boost::optional<Matrix&> H1 = boost::none,boost::optional<Matrix&> H2 =
             boost::none) const {
       T hx = p1.between(p2, H1, H2); // h(x)
+      DefaultChart<T> chart;
       // manifold equivalent of h(x)-z -> log(z,h(x))
-      return measured_.localCoordinates(hx);
+      return chart.local(measured_, hx);
     }
 
     /** return the measured */
@@ -129,7 +130,9 @@ namespace gtsam {
 
     /** Syntactic sugar for constrained version */
     BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :
-      BetweenFactor<VALUE>(key1, key2, measured, noiseModel::Constrained::All(VALUE::Dim(), fabs(mu))) {}
+      BetweenFactor<VALUE>(key1, key2, measured,
+                           noiseModel::Constrained::All(DefaultChart<VALUE>::getDimension(measured), fabs(mu)))
+    {}
 
   private:
 

@@ -171,27 +171,28 @@ struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
 
   wrap::ArgumentList& result_; ///< successful parse will be placed in here
 
-  const Argument arg0; ///< used to reset arg
-  mutable Argument arg; ///< temporary argument for use during parsing
-  ArgumentGrammar argument_g;  ///< single Argument parser
-
   /// Construct type grammar and specify where result is placed
   ArgumentListGrammar(wrap::ArgumentList& result) :
-      result_(result), argument_g(arg) {
+      result_(result) {
   }
 
   /// Definition of type grammar
   template<typename ScannerT>
   struct definition {
 
+    const Argument arg0; ///< used to reset arg
+    Argument arg; ///< temporary argument for use during parsing
+    ArgumentGrammar argument_g; ///< single Argument parser
+
     classic::rule<ScannerT> argument_p, argumentList_p;
 
-    definition(ArgumentListGrammar const& self) {
+    definition(ArgumentListGrammar const& self) :
+        argument_g(arg) {
       using namespace classic;
 
-      argument_p = self.argument_g //
-          [classic::push_back_a(self.result_, self.arg)] //
-          [assign_a(self.arg, self.arg0)];
+      argument_p = argument_g //
+          [classic::push_back_a(self.result_, arg)] //
+          [assign_a(arg, arg0)];
 
       argumentList_p = '(' >> !argument_p >> *(',' >> argument_p) >> ')';
     }

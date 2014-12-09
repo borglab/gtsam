@@ -70,6 +70,12 @@ public:
       R_(R), t_(t) {
   }
 
+  /** Construct from R,t, where t \in vector3 */
+  Pose3(const Rot3& R, const Vector3& t) :
+      R_(R), t_(t) {
+  }
+
+
   /** Construct from Pose2 */
   explicit Pose3(const Pose2& pose2);
 
@@ -99,11 +105,11 @@ public:
   }
 
   /// inverse transformation with derivatives
-  Pose3 inverse(boost::optional<Matrix&> H1 = boost::none) const;
+  Pose3 inverse(OptionalJacobian<6, 6> H1 = boost::none) const;
 
   ///compose this transformation onto another (first *this and then p2)
-  Pose3 compose(const Pose3& p2, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+  Pose3 compose(const Pose3& p2, OptionalJacobian<6, 6> H1 = boost::none,
+      OptionalJacobian<6, 6> H2 = boost::none) const;
 
   /// compose syntactic sugar
   Pose3 operator*(const Pose3& T) const {
@@ -114,8 +120,8 @@ public:
    * Return relative pose between p1 and p2, in p1 coordinate frame
    * as well as optionally the derivatives
    */
-  Pose3 between(const Pose3& p2, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+  Pose3 between(const Pose3& p2, OptionalJacobian<6, 6> H1 = boost::none,
+      OptionalJacobian<6, 6> H2 = boost::none) const;
 
   /// @}
   /// @name Manifold
@@ -186,17 +192,17 @@ public:
      * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
      *
      */
-    static Matrix6 adjointMap(const Vector& xi);
+    static Matrix6 adjointMap(const Vector6 &xi);
 
     /**
      * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
      */
-    static Vector adjoint(const Vector& xi, const Vector& y, boost::optional<Matrix&> H = boost::none);
+    static Vector6 adjoint(const Vector6 &xi, const Vector6 &y, OptionalJacobian<6,6> = boost::none);
 
     /**
      * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
      */
-    static Vector adjointTranspose(const Vector& xi, const Vector& y, boost::optional<Matrix&> H = boost::none);
+    static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y, OptionalJacobian<6, 6> H = boost::none);
 
     /**
      * Compute the inverse right-trivialized tangent (derivative) map of the exponential map,
@@ -208,7 +214,7 @@ public:
      *    Ernst Hairer, et al., Geometric Numerical Integration,
      *      Structure-Preserving Algorithms for Ordinary Differential Equations, 2nd edition, Springer-Verlag, 2006.
      */
-    static Matrix6 dExpInv_exp(const Vector&  xi);
+    static Matrix6 dExpInv_exp(const Vector6 &xi);
 
     /**
      * wedge for Pose3:
@@ -237,7 +243,7 @@ public:
      * @return point in world coordinates
      */
     Point3 transform_from(const Point3& p,
-        boost::optional<Matrix&> Dpose=boost::none, boost::optional<Matrix&> Dpoint=boost::none) const;
+        OptionalJacobian<3,6> Dpose=boost::none, OptionalJacobian<3,3> Dpoint=boost::none) const;
 
     /** syntactic sugar for transform_from */
     inline Point3 operator*(const Point3& p) const { return transform_from(p); }
@@ -249,13 +255,9 @@ public:
      * @param Dpoint optional 3*3 Jacobian wrpt point
      * @return point in Pose coordinates
      */
-    Point3 transform_to(const Point3& p) const;
-
     Point3 transform_to(const Point3& p,
-        boost::optional<Matrix36&> Dpose, boost::optional<Matrix3&> Dpoint) const;
-
-    Point3 transform_to(const Point3& p,
-        boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) const;
+        OptionalJacobian<3,6> Dpose = boost::none,
+        OptionalJacobian<3,3> Dpoint = boost::none) const;
 
     /// @}
     /// @name Standard Interface
@@ -288,8 +290,8 @@ public:
      * @return range (double)
      */
     double range(const Point3& point,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
+        OptionalJacobian<1,6> H1=boost::none,
+        OptionalJacobian<1,3> H2=boost::none) const;
 
     /**
      * Calculate range to another pose
@@ -297,8 +299,8 @@ public:
      * @return range (double)
      */
     double range(const Pose3& pose,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
+        OptionalJacobian<1,6> H1=boost::none,
+        OptionalJacobian<1,6> H2=boost::none) const;
 
     /// @}
     /// @name Advanced Interface

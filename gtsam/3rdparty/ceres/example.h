@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/ceres_rotation.h>
+#include <gtsam/3rdparty/ceres/rotation.h>
 
 // Templated pinhole camera model for used with Ceres. The camera is
 // parameterized using 9 parameters: 3 for rotation, 3 for translation, 1 for

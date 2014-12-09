@@ -37,7 +37,6 @@ GTSAM_CONCEPT_LIE_INST(Rot3)
 
 static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
-static const Matrix I3 = eye(3);
 
 /* ************************************************************************* */
 TEST(Rot3, manifold_cayley)

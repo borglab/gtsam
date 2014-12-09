@@ -10,19 +10,22 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testImuFactor.cpp
- * @brief   Unit test for ImuFactor
- * @author  Luca Carlone, Stephen Williams, Richard Roberts
+ * @file    testCombinedImuFactor.cpp
+ * @brief   Unit test for Lupton-style combined IMU factor
+ * @author  Luca Carlone
+ * @author  Stephen Williams
+ * @author  Richard Roberts
  */
 
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
