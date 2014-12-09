@@ -126,7 +126,8 @@ public:
      * @param body_P_sensor Optional sensor frame (pose of the IMU in the body frame)
      */
     void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-        boost::optional<const Pose3&> body_P_sensor = boost::none);
+        boost::optional<const Pose3&> body_P_sensor = boost::none,
+        boost::optional<Matrix&> F_test = boost::none, boost::optional<Matrix&> G_test = boost::none);
 
     /// methods to access class variables
     Matrix measurementCovariance() const {return measurementCovariance_;}

@@ -71,7 +71,8 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::resetIntegration(){
 //------------------------------------------------------------------------------
 void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega,
-    double deltaT, boost::optional<const Pose3&> body_P_sensor) {
+    double deltaT, boost::optional<const Pose3&> body_P_sensor,
+    boost::optional<Matrix&> F_test, boost::optional<Matrix&> G_test) {
 
   // NOTE: order is important here because each update uses old values, e.g., velocity and position updates are based on previous rotation estimate.
   // (i.e., we have to update jacobians and covariances before updating preintegrated measurements).
@@ -129,7 +130,6 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 
   // first order uncertainty propagation
   // Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
-
   Matrix G_measCov_Gt = Matrix::Zero(15,15);
   // BLOCK DIAGONAL TERMS
   G_measCov_Gt.block<3,3>(0,0) = deltaT * measurementCovariance_.block<3,3>(0,0);
@@ -152,6 +152,22 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   G_measCov_Gt.block<3,3>(6,3) = block23.transpose();
 
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
+
+  // F_test and G_test are used for testing purposes and are not needed by the factor
+  if(F_test){
+    F_test->resize(15,15);
+    (*F_test) << F;
+  }
+  if(G_test){
+    G_test->resize(15,21);
+    // This is for testing & documentation
+    ///< measurementCovariance_ : cov[integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
+    (*G_test) << I_3x3 * deltaT,  Z_3x3,          Z_3x3,              Z_3x3,              Z_3x3,           Z_3x3,              Z_3x3,
+                 Z_3x3,           H_vel_biasacc,  Z_3x3,              Z_3x3,              Z_3x3,           H_vel_biasacc,      Z_3x3,
+                 Z_3x3,           Z_3x3,          H_angles_angles,    Z_3x3,              Z_3x3,           Z_3x3,              H_angles_biasomega,
+                 Z_3x3,           Z_3x3,          Z_3x3,              I_3x3 * deltaT,     Z_3x3,           Z_3x3,              Z_3x3,
+                 Z_3x3,           Z_3x3,          Z_3x3,              Z_3x3,              I_3x3 * deltaT,  Z_3x3,              Z_3x3;
+  }
 }
 
 //------------------------------------------------------------------------------
