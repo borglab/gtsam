@@ -103,19 +103,11 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
 
   // Single Jacobians to propagate covariance
-  Matrix3 H_pos_pos    = I_3x3;
-  Matrix3 H_pos_vel    = I_3x3 * deltaT;
-  Matrix3 H_pos_angles = Z_3x3;
-
-  Matrix3 H_vel_pos    = Z_3x3;
-  Matrix3 H_vel_vel    = I_3x3;
   Matrix3 H_vel_angles = - R_i * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
   // analytic expression corresponding to the following numerical derivative
   // Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
   Matrix3 H_vel_biasacc = - R_i * deltaT;
 
-  Matrix3 H_angles_pos   = Z_3x3;
-  Matrix3 H_angles_vel    = Z_3x3;
   Matrix3 H_angles_angles = Jrinv_theta_j * Rincr.inverse().matrix() * Jr_theta_i;
   Matrix3 H_angles_biasomega =- Jrinv_theta_j * Jr_theta_incr * deltaT;
   // analytic expression corresponding to the following numerical derivative
@@ -123,11 +115,11 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix F(15,15);
-  F << H_pos_pos,    H_pos_vel,     H_pos_angles,          Z_3x3,                     Z_3x3,
-      H_vel_pos,     H_vel_vel,     H_vel_angles,      H_vel_biasacc,              Z_3x3,
-      H_angles_pos,  H_angles_vel,  H_angles_angles,   Z_3x3,                         H_angles_biasomega,
-      Z_3x3,         Z_3x3,         Z_3x3,             I_3x3,                         Z_3x3,
-      Z_3x3,         Z_3x3,         Z_3x3,             Z_3x3,                         I_3x3;
+  F << I_3x3,    I_3x3 * deltaT,   Z_3x3,             Z_3x3,            Z_3x3,
+       Z_3x3,    I_3x3,            H_vel_angles,      H_vel_biasacc,    Z_3x3,
+       Z_3x3,    Z_3x3,            H_angles_angles,   Z_3x3,            H_angles_biasomega,
+       Z_3x3,    Z_3x3,            Z_3x3,             I_3x3,            Z_3x3,
+       Z_3x3,    Z_3x3,            Z_3x3,             Z_3x3,            I_3x3;
 
   // first order uncertainty propagation
   // Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
