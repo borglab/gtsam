@@ -11,7 +11,7 @@
 
 /**
  * @file   Quaternion.h
- * @brief  Unit tests for unit quaternions
+ * @brief  Lie Group wrapper for Eigen Quaternions
  * @author Frank Dellaert
  **/
 
@@ -34,6 +34,7 @@ struct MakeQuaternionChart: LieGroupChart<
   typedef typename manifold::traits::TangentVector<Q>::type Omega;
 
   /// Exponential map given axis/angle representation of Lie algebra
+  /// TODO: obsolete? But see if not called now in Rot3Q
   static Q Expmap(const _Scalar& angle, const Eigen::Ref<const Omega>& axis) {
     return Q(Eigen::AngleAxis<_Scalar>(angle, axis));
   }
@@ -46,11 +47,6 @@ struct MakeQuaternionChart: LieGroupChart<
       _Scalar angle = omega.norm();
       return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
     }
-  }
-
-  /// retract, simply be converting omega to AngleAxis
-  static Q Retract(const Q& p, const Eigen::Ref<const Omega>& omega) {
-    return p * Expmap(omega);
   }
 
   /// We use our own Logmap, as there is a slight bug in Eigen
@@ -79,18 +75,15 @@ struct MakeQuaternionChart: LieGroupChart<
       return (angle / s) * q.vec();
     }
   }
-
-  /// local is our own, as there is a slight bug in Eigen
-  static Omega Local(const Q& q1, const Q& q2) {
-    return Logmap(q1.inverse() * q2);
-  }
 };
 
+// Define group traits
 #define QUATERNION_TEMPLATE typename _Scalar, int _Options
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 GTSAM_GROUP_IDENTITY(QUATERNION_TEMPLATE, QUATERNION_TYPE)
 GTSAM_MULTIPLICATIVE_GROUP(QUATERNION_TEMPLATE, QUATERNION_TYPE)
 
+// Define manifold traits
 #define QUATERNION_TANGENT Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1>
 #define QUATERNION_CHART MakeQuaternionChart<_Scalar,_Options>
 GTSAM_MANIFOLD(QUATERNION_TEMPLATE, QUATERNION_TYPE, 3, QUATERNION_TANGENT,
@@ -98,8 +91,8 @@ GTSAM_MANIFOLD(QUATERNION_TEMPLATE, QUATERNION_TYPE, 3, QUATERNION_TANGENT,
 
 /// Define Eigen::Quaternion to be a model of the Lie Group concept
 namespace traits {
-template<typename S, int O>
-struct structure_category<Eigen::Quaternion<S, O> > {
+template<typename _Scalar, int _Options>
+struct structure_category<Eigen::Quaternion<_Scalar,_Options> > {
   typedef lie_group_tag type;
 };
 }
