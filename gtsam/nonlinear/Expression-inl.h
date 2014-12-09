@@ -561,8 +561,8 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     // Cols is always known at compile time
-    template<int Rows, int Cols>
-    void reverseAD4(const Eigen::Matrix<double, Rows, Cols> & dFdT,
+    template<typename SomeMatrix>
+    void reverseAD4(const SomeMatrix & dFdT,
         JacobianMap& jacobians) const {
       Base::Record::reverseAD4(dFdT, jacobians);
       This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
