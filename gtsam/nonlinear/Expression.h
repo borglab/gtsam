@@ -20,8 +20,8 @@
 #pragma once
 
 #include <gtsam/nonlinear/Expression-inl.h>
-#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/base/FastVector.h>
 
 #include <boost/bind.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -75,7 +75,7 @@ public:
   /// Construct a nullary method expression
   template<typename A>
   Expression(const Expression<A>& expression,
-      T (A::*method)(typename OptionalJacobian<T, A>::type) const) :
+      T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const) :
       root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
   }
 
@@ -89,8 +89,8 @@ public:
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
-      T (A1::*method)(const A2&, typename OptionalJacobian<T, A1>::type,
-          typename OptionalJacobian<T, A2>::type) const,
+      T (A1::*method)(const A2&, typename MakeOptionalJacobian<T, A1>::type,
+          typename MakeOptionalJacobian<T, A2>::type) const,
       const Expression<A2>& expression2) :
       root_(
           new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
@@ -206,10 +206,24 @@ private:
     // with an execution trace, made up entirely of "Record" structs, see
     // the FunctionalNode class in expression-inl.h
     size_t size = traceSize();
+
+    // Windows does not support variable length arrays, so memory must be dynamically
+    // allocated on Visual Studio. For more information see the issue below
+    // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
+#ifdef _MSC_VER
+    ExecutionTraceStorage* traceStorage = new ExecutionTraceStorage[size];
+#else
     ExecutionTraceStorage traceStorage[size];
+#endif
+
     ExecutionTrace<T> trace;
     T value(traceExecution(values, trace, traceStorage));
     trace.startReverseAD1(jacobians);
+
+#ifdef _MSC_VER
+    delete[] traceStorage;
+#endif
+
     return value;
   }
 
@@ -224,9 +238,8 @@ template<class T>
 struct apply_compose {
   typedef T result_type;
   static const int Dim = traits::dimension<T>::value;
-  typedef Eigen::Matrix<double, Dim, Dim> Jacobian;
-  T operator()(const T& x, const T& y, boost::optional<Jacobian&> H1,
-      boost::optional<Jacobian&> H2) const {
+  T operator()(const T& x, const T& y, OptionalJacobian<Dim, Dim> H1 =
+      boost::none, OptionalJacobian<Dim, Dim> H2 = boost::none) const {
     return x.compose(y, H1, H2);
   }
 };

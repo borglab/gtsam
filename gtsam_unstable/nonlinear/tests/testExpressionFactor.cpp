@@ -131,14 +131,14 @@ TEST(ExpressionFactor, Unary) {
 // Unary(Leaf)) and Unary(Unary(Leaf)))
 // wide version (not handled in fixed-size pipeline)
 typedef Eigen::Matrix<double,9,3> Matrix93;
-Vector9 wide(const Point3& p, boost::optional<Matrix93&> H) {
+Vector9 wide(const Point3& p, OptionalJacobian<9,3> H) {
   Vector9 v;
   v << p.vector(), p.vector(), p.vector();
   if (H) *H << eye(3), eye(3), eye(3);
   return v;
 }
 typedef Eigen::Matrix<double,9,9> Matrix9;
-Vector9 id9(const Vector9& v, boost::optional<Matrix9&> H) {
+Vector9 id9(const Vector9& v, OptionalJacobian<9,9> H) {
   if (H) *H = Matrix9::Identity();
   return v;
 }
@@ -161,7 +161,7 @@ TEST(ExpressionFactor, Wide) {
 
 /* ************************************************************************* */
 static Point2 myUncal(const Cal3_S2& K, const Point2& p,
-    boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
+    OptionalJacobian<2,5> Dcal, OptionalJacobian<2,2> Dp) {
   return K.uncalibrate(p, Dcal, Dp);
 }
 
@@ -427,8 +427,7 @@ TEST(ExpressionFactor, compose3) {
 /* ************************************************************************* */
 // Test compose with three arguments
 Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
-    boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2,
-    boost::optional<Matrix3&> H3) {
+    OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
     *H1 = eye(3);

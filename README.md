@@ -40,8 +40,10 @@ Optional prerequisites - used automatically if findable by CMake:
 Additional Information
 ----------------------
 
-See the [`INSTALL`](https://bitbucket.org/gtborg/gtsam/src/develop/INSTALL) file for more detailed installation instructions.
+Read about important [`GTSAM-Concepts`] here.
+
+See the [`INSTALL`] file for more detailed installation instructions.
 
 GTSAM is open source under the BSD license, see the [`LICENSE`](https://bitbucket.org/gtborg/gtsam/src/develop/LICENSE) and [`LICENSE.BSD`](https://bitbucket.org/gtborg/gtsam/src/develop/LICENSE.BSD) files.
 
-Please see the [`examples/`](https://bitbucket.org/gtborg/gtsam/src/develop/examples) directory and the [`USAGE`](https://bitbucket.org/gtborg/gtsam/src/develop/USAGE) file for examples on how to use GTSAM.
+Please see the [`examples/`](examples) directory and the [`USAGE`] file for examples on how to use GTSAM.

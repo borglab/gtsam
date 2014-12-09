@@ -88,21 +88,8 @@ namespace gtsam {
     return Quaternion(Eigen::AngleAxisd(theta, w)); }
 
   /* ************************************************************************* */
-  Rot3 Rot3::compose(const Rot3& R2) const {
-    return Rot3(quaternion_ * R2.quaternion_);
-  }
-
-  /* ************************************************************************* */
   Rot3 Rot3::compose(const Rot3& R2,
-  boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2) const {
-    if (H1) *H1 = R2.transpose();
-    if (H2) *H2 = I3;
-    return Rot3(quaternion_ * R2.quaternion_);
-  }
-
-  /* ************************************************************************* */
-  Rot3 Rot3::compose(const Rot3& R2,
-  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+  OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
     if (H1) *H1 = R2.transpose();
     if (H2) *H2 = I3;
     return Rot3(quaternion_ * R2.quaternion_);
@@ -114,7 +101,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
+  Rot3 Rot3::inverse(boost::optional<Matrix3&> H1) const {
     if (H1) *H1 = -matrix();
     return Rot3(quaternion_.inverse());
   }
@@ -129,7 +116,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Rot3 Rot3::between(const Rot3& R2,
-  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+  OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
     if (H1) *H1 = -(R2.transpose()*matrix());
     if (H2) *H2 = I3;
     return between_default(*this, R2);
@@ -137,7 +124,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Point3 Rot3::rotate(const Point3& p,
-        boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
+        OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
     Matrix R = matrix();
     if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
     if (H2) *H2 = R;

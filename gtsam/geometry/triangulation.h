@@ -19,12 +19,10 @@
 #pragma once
 
 
-#include <gtsam/geometry/TriangulationFactor.h>
+#include <gtsam/slam/TriangulationFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/slam/PriorFactor.h>
-
-#include <vector>
 
 namespace gtsam {
 
@@ -53,7 +51,7 @@ public:
  * @return Triangulated Point3
  */
 GTSAM_EXPORT Point3 triangulateDLT(
-    const std::vector<Matrix>& projection_matrices,
+    const std::vector<Matrix34>& projection_matrices,
     const std::vector<Point2>& measurements, double rank_tol);
 
 ///
@@ -189,12 +187,11 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix> projection_matrices;
+  std::vector<Matrix34> projection_matrices;
   BOOST_FOREACH(const Pose3& pose, poses) {
     projection_matrices.push_back(
-        sharedCal->K() * sub(pose.inverse().matrix(), 0, 3, 0, 4));
+        sharedCal->K() * (pose.inverse().matrix()).block<3,4>(0,0));
   }
-
   // Triangulate linearly
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
@@ -240,12 +237,11 @@ Point3 triangulatePoint3(
 
   // construct projection matrices from poses & calibration
   typedef PinholeCamera<CALIBRATION> Camera;
-  std::vector<Matrix> projection_matrices;
-  BOOST_FOREACH(const Camera& camera, cameras)
-    projection_matrices.push_back(
-        camera.calibration().K()
-            * sub(camera.pose().inverse().matrix(), 0, 3, 0, 4));
-
+  std::vector<Matrix34> projection_matrices;
+  BOOST_FOREACH(const Camera& camera, cameras) {
+  Matrix P_ = (camera.pose().inverse().matrix());
+    projection_matrices.push_back(camera.calibration().K()* (P_.block<3,4>(0,0)) );
+   }
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // The n refine using non-linear optimization
