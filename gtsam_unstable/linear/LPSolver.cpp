@@ -28,21 +28,30 @@ void LPSolver::buildMetaInformation() {
     freeVars_.insert(key);
   }
   // Now collect remaining keys in constraints
-  VariableIndex factorIndex(*constraints_);
+  VariableIndex factorIndex(*equalities_);
   BOOST_FOREACH(Key key, factorIndex | boost::adaptors::map_keys) {
     if (!variableColumnNo_.count(key)) {
-      JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<
-          JacobianFactor>(constraints_->at(*factorIndex[key].begin()));
-      if (!jacobian || !jacobian->isConstrained()) {
-        throw runtime_error("Invalid constrained graph!");
-      }
-      size_t dim = jacobian->getDim(jacobian->find(key));
+      LinearEquality::shared_ptr factor = equalities_->at(*factorIndex[key].begin());
+      size_t dim = factor->getDim(factor->find(key));
       variableColumnNo_.insert(make_pair(key, firstVarIndex));
       variableDims_.insert(make_pair(key, dim));
       firstVarIndex += variableDims_[key];
       freeVars_.insert(key);
     }
   }
+
+  VariableIndex factorIndex2(*inequalities_);
+  BOOST_FOREACH(Key key, factorIndex2 | boost::adaptors::map_keys) {
+    if (!variableColumnNo_.count(key)) {
+      LinearInequality::shared_ptr factor = inequalities_->at(*factorIndex2[key].begin());
+      size_t dim = factor->getDim(factor->find(key));
+      variableColumnNo_.insert(make_pair(key, firstVarIndex));
+      variableDims_.insert(make_pair(key, dim));
+      firstVarIndex += variableDims_[key];
+      freeVars_.insert(key);
+    }
+  }
+
   // Collect the remaining keys in lowerBounds
   BOOST_FOREACH(Key key, lowerBounds_ | boost::adaptors::map_keys) {
     if (!variableColumnNo_.count(key)) {
@@ -67,7 +76,7 @@ void LPSolver::buildMetaInformation() {
 
 /* ************************************************************************* */
 void LPSolver::addConstraints(const boost::shared_ptr<lprec>& lp,
-    const JacobianFactor::shared_ptr& jacobian) const {
+    const JacobianFactor::shared_ptr& jacobian, int constraintType) const {
   if (!jacobian || !jacobian->isConstrained())
     throw runtime_error("LP only accepts constrained factors!");
 
@@ -76,7 +85,6 @@ void LPSolver::addConstraints(const boost::shared_ptr<lprec>& lp,
   vector<int> columnNo = buildColumnNo(keys);
 
   // Add each row to lp one by one. TODO: is there a faster way?
-  Vector sigmas = jacobian->get_model()->sigmas();
   Matrix A = jacobian->getA();
   Vector b = jacobian->getb();
   for (int i = 0; i < A.rows(); ++i) {
@@ -88,11 +96,6 @@ void LPSolver::addConstraints(const boost::shared_ptr<lprec>& lp,
     // so we have to make a new copy for every row!!!!!
     vector<int> columnNoCopy(columnNo);
 
-    if (sigmas[i] > 0) {
-      cout << "Warning: Ignore Gaussian noise (sigma>0) in LP constraints!"
-          << endl;
-    }
-    int constraintType = (sigmas[i] < 0) ? LE : EQ;
     if (!add_constraintex(lp.get(), columnNoCopy.size(), r.data(),
         columnNoCopy.data(), constraintType, b[i]))
       throw runtime_error("LP can't accept Gaussian noise!");
@@ -132,12 +135,16 @@ boost::shared_ptr<lprec> LPSolver::buildModel() const {
   // Makes building the model faster if it is done rows by row
   set_add_rowmode(lp.get(), TRUE);
 
-  // Add constraints
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, *constraints_) {
-    JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<
-        JacobianFactor>(factor);
-    addConstraints(lp, jacobian);
+  // Add equality constraints
+  BOOST_FOREACH(const LinearEquality::shared_ptr& factor, *equalities_) {
+    addConstraints(lp, factor, EQ);
   }
+
+  // Add inequality constraints
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, *inequalities_) {
+    addConstraints(lp, factor, LE);
+  }
+
 
   // Add bounds
   addBounds(lp);

@@ -7,13 +7,33 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam_unstable/linear/QP.h>
 
 #include <vector>
 #include <set>
 
 namespace gtsam {
+
+/// This struct holds the state of QPSolver at each iteration
+struct QPState {
+  VectorValues values;
+  VectorValues duals;
+  LinearInequalityFactorGraph workingSet;
+  bool converged;
+
+  /// default constructor
+  QPState() :
+      values(), duals(), workingSet(), converged(false) {
+  }
+
+  /// constructor with initial values
+  QPState(const VectorValues& initialValues, const VectorValues& initialDuals,
+      const LinearInequalityFactorGraph& initialWorkingSet, bool _converged) :
+      values(initialValues), duals(initialDuals), workingSet(initialWorkingSet), converged(
+          _converged) {
+  }
+};
 
 /**
  * This class implements the active set method to solve quadratic programming problems
@@ -24,32 +44,41 @@ namespace gtsam {
  */
 class QPSolver {
 
-  class Hessians: public FactorGraph<HessianFactor> {
-  };
-
-  const GaussianFactorGraph& graph_; //!< the original graph, can't be modified!
-  FastVector<size_t> constraintIndices_; //!< Indices of constrained factors in the original graph
-  Hessians freeHessians_; //!< unconstrained Hessians of constrained variables
-  VariableIndex freeHessianFactorIndex_; //!< indices of unconstrained Hessian factors of constrained variables
-                                         // gtsam calls it "VariableIndex", but I think FactorIndex
-                                         // makes more sense, because it really stores factor indices.
-  VariableIndex fullFactorIndices_; //!< indices of factors involving each variable.
-                                    // gtsam calls it "VariableIndex", but I think FactorIndex
-                                    // makes more sense, because it really stores factor indices.
+  const QP& qp_; //!< factor graphs of the QP problem, can't be modified!
+  GaussianFactorGraph baseGraph_; //!< factor graphs of cost factors and linear equalities. The working set of inequalities will be added to this base graph in the process.
+  VariableIndex costVariableIndex_, equalityVariableIndex_,
+      inequalityVariableIndex_;
+  FastSet<Key> constrainedKeys_; //!< all constrained keys, will become factors in the dual graph
 
 public:
   /// Constructor
-  QPSolver(const GaussianFactorGraph& graph);
+  QPSolver(const QP& qp);
 
-  /// Return indices of all constrained factors
-  FastVector<size_t> constraintIndices() const {
-    return constraintIndices_;
+  /// Find solution with the current working set
+  VectorValues solveWithCurrentWorkingSet(
+      const LinearInequalityFactorGraph& workingSet) const;
+
+  /// @name Build the dual graph
+  /// @{
+
+  /// Collect the Jacobian terms for a dual factor
+  template<typename FACTOR>
+  std::vector<std::pair<Key, Matrix> > collectDualJacobians(Key key,
+      const FactorGraph<FACTOR>& graph,
+      const VariableIndex& variableIndex) const {
+    std::vector<std::pair<Key, Matrix> > Aterms;
+    BOOST_FOREACH(size_t factorIx, variableIndex[key]){
+      typename FACTOR::shared_ptr factor = graph.at(factorIx);
+      Matrix Ai = factor->getA(factor->find(key)).transpose();
+      Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
+    }
+    return Aterms;
   }
 
-  /// Return the Hessian factor graph of constrained variables
-  const Hessians& freeHessiansOfConstrainedVars() const {
-    return freeHessians_;
-  }
+  /// Create a dual factor
+  JacobianFactor::shared_ptr createDualFactor(Key key,
+      const LinearInequalityFactorGraph& workingSet,
+      const VectorValues& delta) const;
 
   /**
    * Build the dual graph to solve for the Lagrange multipliers.
@@ -78,8 +107,11 @@ public:
    *    - The constant term b is \grad f(xi), which can be computed from all unconstrained
    *    Hessian factors connecting to xi: \grad f(xi) = \sum_j G_ij*xj - gi
    */
-  GaussianFactorGraph buildDualGraph(const GaussianFactorGraph& graph,
-      const VectorValues& x0, bool useLeastSquare = false) const;
+  GaussianFactorGraph::shared_ptr buildDualGraph(
+      const LinearInequalityFactorGraph& workingSet,
+      const VectorValues& delta) const;
+
+  /// @}
 
   /**
    * The goal of this function is to find currently active inequality constraints
@@ -116,15 +148,15 @@ public:
    *
    */
   std::pair<int, int> identifyLeavingConstraint(
+      const LinearInequalityFactorGraph& workingSet,
       const VectorValues& lambdas) const;
 
   /**
-   * Deactivate or activate an inequality constraint in place
-   * Warning: modify in-place to avoid copy/clone
-   * @return true if update successful
+   * Inactivate or activate an inequality constraint
    */
-  bool updateWorkingSetInplace(GaussianFactorGraph& workingGraph, int factorIx,
-      int sigmaIx, double newSigma) const;
+  LinearInequalityFactorGraph updateWorkingSet(
+      const LinearInequalityFactorGraph& workingSet, int factorIx, int sigmaIx,
+      double state) const;
 
   /**
    * Compute step size alpha for the new solution x' = xk + alpha*p, where alpha \in [0,1]
@@ -135,12 +167,11 @@ public:
    *            in the next iteration
    */
   boost::tuple<double, int, int> computeStepSize(
-      const GaussianFactorGraph& workingGraph, const VectorValues& xk,
+      const LinearInequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p) const;
 
-  /** Iterate 1 step, modify workingGraph and currentSolution *IN PLACE* !!! */
-  bool iterateInPlace(GaussianFactorGraph& workingGraph,
-      VectorValues& currentSolution, VectorValues& lambdas) const;
+  /** Iterate 1 step, return a new state with a new workingSet and values */
+  QPState iterate(const QPState& state) const;
 
   /** Optimize with a provided initial values
    * For this version, it is the responsibility of the caller to provide
@@ -161,26 +192,26 @@ public:
   std::pair<VectorValues, VectorValues> optimize() const;
 
   /**
-   * Create initial values for the LP subproblem
-   * @return initial values and the key for the first slack variable
+   * find the max key
    */
-  std::pair<VectorValues, Key> initialValuesLP() const;
+  std::pair<bool, Key> maxKey(const FastSet<Key>& keys) const;
+
+  /**
+   * Create initial values for the LP subproblem
+   * @return initial values and the key for the first and last slack variables
+   */
+  boost::tuple<VectorValues, Key, Key> initialValuesLP() const;
 
   /// Create coefficients for the LP subproblem's objective function as the sum of slack var
   VectorValues objectiveCoeffsLP(Key firstSlackKey) const;
 
   /// Build constraints and slacks' lower bounds for the LP subproblem
-  std::pair<GaussianFactorGraph::shared_ptr, VectorValues> constraintsLP(
+  boost::tuple<LinearEqualityFactorGraph::shared_ptr,
+      LinearInequalityFactorGraph::shared_ptr, VectorValues> constraintsLP(
       Key firstSlackKey) const;
 
   /// Find a feasible initial point
   std::pair<bool, VectorValues> findFeasibleInitialValues() const;
-
-private:
-
-  /// Collect all free Hessians involving constrained variables into a graph
-  void findUnconstrainedHessiansOfConstrainedVars(
-      const std::set<Key>& constrainedVars);
 
 };
 

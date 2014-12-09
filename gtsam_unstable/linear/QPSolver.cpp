@@ -6,255 +6,85 @@
  */
 
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam_unstable/linear/QPSolver.h>
 #include <gtsam_unstable/linear/LPSolver.h>
 
-#include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
 
 using namespace std;
 
+#define ACTIVE 0.0
+#define INACTIVE std::numeric_limits<double>::infinity()
+
 namespace gtsam {
 
-/// Convert a Gaussian factor to a jacobian. return empty shared ptr if failed
-static JacobianFactor::shared_ptr toJacobian(
-    const GaussianFactor::shared_ptr& factor) {
-  JacobianFactor::shared_ptr jacobian(
-      boost::dynamic_pointer_cast<JacobianFactor>(factor));
-  return jacobian;
+//******************************************************************************
+QPSolver::QPSolver(const QP& qp) : qp_(qp) {
+  baseGraph_ = qp_.cost;
+  baseGraph_.push_back(qp_.equalities.begin(), qp_.equalities.end());
+  costVariableIndex_ = VariableIndex(qp_.cost);
+  equalityVariableIndex_ = VariableIndex(qp_.equalities);
+  inequalityVariableIndex_ = VariableIndex(qp_.inequalities);
+  constrainedKeys_ = qp_.equalities.keys();
+  constrainedKeys_.merge(qp_.inequalities.keys());
 }
 
 //******************************************************************************
-QPSolver::QPSolver(const GaussianFactorGraph& graph) :
-    graph_(graph), fullFactorIndices_(graph) {
-  // Split the original graph into unconstrained and constrained part
-  // and collect indices of constrained factors
-  for (size_t i = 0; i < graph.nrFactors(); ++i) {
-    // obtain the factor and its noise model
-    JacobianFactor::shared_ptr jacobian = toJacobian(graph.at(i));
-    if (jacobian && jacobian->get_model()
-        && jacobian->get_model()->isConstrained()) {
-      constraintIndices_.push_back(i);
-    }
-  }
-
-  // Collect constrained variable keys
-  set<size_t> constrainedVars;
-  BOOST_FOREACH(size_t index, constraintIndices_) {
-    KeyVector keys = graph.at(index)->keys();
-    constrainedVars.insert(keys.begin(), keys.end());
-  }
-
-  // Collect unconstrained hessians of constrained vars to build dual graph
-  findUnconstrainedHessiansOfConstrainedVars(constrainedVars);
-  freeHessianFactorIndex_ = VariableIndex(freeHessians_);
+VectorValues QPSolver::solveWithCurrentWorkingSet(
+    const LinearInequalityFactorGraph& workingSet) const {
+  GaussianFactorGraph workingGraph = baseGraph_;
+  workingGraph.push_back(workingSet);
+  return workingGraph.optimize();
 }
 
 //******************************************************************************
-void QPSolver::findUnconstrainedHessiansOfConstrainedVars(
-    const set<Key>& constrainedVars) {
-  VariableIndex variableIndex(graph_);
+JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
+    const LinearInequalityFactorGraph& workingSet, const VectorValues& delta) const {
 
-  // Collect all factors involving constrained vars
-  FastSet<size_t> factors;
-  BOOST_FOREACH(Key key, constrainedVars) {
-    VariableIndex::Factors factorsOfThisVar = variableIndex[key];
-    BOOST_FOREACH(size_t factorIndex, factorsOfThisVar) {
-      factors.insert(factorIndex);
-    }
-  }
+  // Transpose the A matrix of constrained factors to have the jacobian of the dual key
+  std::vector<std::pair<Key, Matrix> > Aterms = collectDualJacobians
+      < LinearEquality > (key, qp_.equalities, equalityVariableIndex_);
+  std::vector<std::pair<Key, Matrix> > AtermsInequalities = collectDualJacobians
+      < LinearInequality > (key, workingSet, inequalityVariableIndex_);
+  Aterms.insert(Aterms.end(), AtermsInequalities.begin(),
+      AtermsInequalities.end());
 
-  // Convert each factor into Hessian
-  BOOST_FOREACH(size_t factorIndex, factors) {
-    GaussianFactor::shared_ptr gf = graph_[factorIndex];
-    if (!gf)
-      continue;
-    // See if this is a Jacobian factor
-    JacobianFactor::shared_ptr jf = //
-        boost::dynamic_pointer_cast<JacobianFactor>(gf);
-    if (jf) {
-      // Dealing with mixed constrained factor
-      if (jf->get_model() && jf->isConstrained()) {
-        // Turn a mixed-constrained factor into a factor with 0 information on the constrained part
-        Vector sigmas = jf->get_model()->sigmas();
-        Vector newPrecisions(sigmas.size());
-        bool mixed = false;
-        for (size_t s = 0; s < sigmas.size(); ++s) {
-          if (sigmas[s] <= 1e-9)
-            newPrecisions[s] = 0.0; // 0 info for constraints (both inequality and eq)
-          else {
-            newPrecisions[s] = 1.0 / sigmas[s];
-            mixed = true;
-          }
-        }
-        if (mixed) { // only add free hessians if it's mixed
-          JacobianFactor::shared_ptr newJacobian = toJacobian(jf->clone());
-          newJacobian->setModel(
-              noiseModel::Diagonal::Precisions(newPrecisions));
-          freeHessians_.push_back(HessianFactor(*newJacobian));
-        }
-      } else { // unconstrained Jacobian
-        // Convert the original linear factor to Hessian factor
-        // TODO: This may fail and throw the following exception
-        //      Assertion failed: (((!PanelMode) && stride==0 && offset==0) ||
-        //      (PanelMode && stride>=depth && offset<=stride)), function operator(),
-        //      file Eigen/Eigen/src/Core/products/GeneralBlockPanelKernel.h, line 1133.
-        // because of a weird error which might be related to clang
-        // See this: https://groups.google.com/forum/#!topic/ceres-solver/DYhqOLPquHU
-        // My current way to fix this is to compile both gtsam and my library in Release mode
-        freeHessians_.add(HessianFactor(*jf));
-      }
-    } else { // If it's not a Jacobian, it should be a hessian factor. Just add!
-      HessianFactor::shared_ptr hf = //
-          boost::dynamic_pointer_cast<HessianFactor>(gf);
-      if (hf)
-        freeHessians_.push_back(hf);
-    }
+  // Collect the gradients of unconstrained cost factors to the b vector
+  Vector b = zero(delta.at(key).size());
+  BOOST_FOREACH(size_t factorIx, costVariableIndex_[key]) {
+    GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);
+    b += factor->gradient(key, delta);
   }
+  return boost::make_shared<JacobianFactor>(Aterms, b);
 }
 
 //******************************************************************************
-GaussianFactorGraph QPSolver::buildDualGraph(const GaussianFactorGraph& graph,
-    const VectorValues& x0, bool useLeastSquare) const {
-  static const bool debug = false;
-
-  // The dual graph to return
-  GaussianFactorGraph dualGraph;
-
-  // For each variable xi involving in some constraint, compute the unconstrained gradient
-  // wrt xi from the prebuilt freeHessian graph
-  // \grad f(xi) = \frac{\partial f}{\partial xi}' = \sum_j G_ij*xj - gi
-  if (debug)
-    freeHessianFactorIndex_.print("freeHessianFactorIndex_: ");
-  BOOST_FOREACH(const VariableIndex::value_type& xiKey_factors, freeHessianFactorIndex_) {
-    Key xiKey = xiKey_factors.first;
-    VariableIndex::Factors xiFactors = xiKey_factors.second;
-
-    // Find xi's dim from the first factor on xi
-    if (xiFactors.size() == 0)
-      continue;
-    GaussianFactor::shared_ptr xiFactor0 = freeHessians_.at(*xiFactors.begin());
-    size_t xiDim = xiFactor0->getDim(xiFactor0->find(xiKey));
-    if (debug)
-      xiFactor0->print("xiFactor0: ");
-    if (debug)
-      cout << "xiKey: " << string(Symbol(xiKey)) << ", xiDim: " << xiDim
-          << endl;
-
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Compute the b-vector for the dual factor Ax-b
-    // b = gradf(xi) = \frac{\partial f}{\partial xi}' = \sum_j G_ij*xj - gi
-    Vector gradf_xi = zero(xiDim);
-    BOOST_FOREACH(size_t factorIx, xiFactors) {
-      HessianFactor::shared_ptr factor = freeHessians_.at(factorIx);
-      Factor::const_iterator xi = factor->find(xiKey);
-      // Sum over Gij*xj for all xj connecting to xi
-      for (Factor::const_iterator xj = factor->begin(); xj != factor->end();
-          ++xj) {
-        // Obtain Gij from the Hessian factor
-        // Hessian factor only stores an upper triangular matrix, so be careful when i>j
-        Matrix Gij;
-        if (xi > xj) {
-          Matrix Gji = factor->info(xj, xi);
-          Gij = Gji.transpose();
-        } else {
-          Gij = factor->info(xi, xj);
-        }
-        // Accumulate Gij*xj to gradf
-        Vector x0_j = x0.at(*xj);
-        gradf_xi += Gij * x0_j;
-      }
-      // Subtract the linear term gi
-      gradf_xi += -factor->linearTerm(xi);
-    }
-
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Compute the Jacobian A for the dual factor Ax-b
-    // Obtain the jacobians for lambda variables from their corresponding constraints
-    // A = gradc_k(xi) = \frac{\partial c_k}{\partial xi}'
-    vector<pair<Key, Matrix> > lambdaTerms; // collection of lambda_k, and gradc_k
-    typedef pair<size_t, size_t> FactorIx_SigmaIx;
-    vector<FactorIx_SigmaIx> unconstrainedIndex; // pairs of factorIx,sigmaIx of unconstrained rows
-    BOOST_FOREACH(size_t factorIndex, fullFactorIndices_[xiKey]) {
-      JacobianFactor::shared_ptr factor = toJacobian(graph.at(factorIndex));
-      if (!factor || !factor->isConstrained())
-        continue;
-      // Gradient is the transpose of the Jacobian: A_k = gradc_k(xi) = \frac{\partial c_k}{\partial xi}'
-      // Each column for each lambda_k corresponds to [the transpose of] each constrained row factor
-      Matrix A_k = factor->getA(factor->find(xiKey)).transpose();
-      if (debug)
-        gtsam::print(A_k, "A_k = ");
-
-      // Deal with mixed sigmas: no information if sigma != 0
-      Vector sigmas = factor->get_model()->sigmas();
-      for (size_t sigmaIx = 0; sigmaIx < sigmas.size(); ++sigmaIx) {
-        // if it's either inequality (sigma<0) or unconstrained (sigma>0)
-        // we have no information about it
-        if (fabs(sigmas[sigmaIx]) > 1e-9) {
-          A_k.col(sigmaIx) = zero(A_k.rows());
-          // remember to add a zero prior on this lambda, otherwise the graph is under-determined
-          unconstrainedIndex.push_back(make_pair(factorIndex, sigmaIx));
-        }
-      }
-
-      // Use factorIndex as the lambda's key.
-      lambdaTerms.push_back(make_pair(factorIndex, A_k));
-    }
-
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Create and add factors to the dual graph
-    // If least square approximation is desired, use unit noise model.
-    if (debug)
-      cout << "Create dual factor" << endl;
-    if (useLeastSquare) {
-      if (debug)
-        cout << "use least square!" << endl;
-      dualGraph.push_back(
-          JacobianFactor(lambdaTerms, gradf_xi,
-              noiseModel::Unit::Create(gradf_xi.size())));
-    } else {
-      // Enforce constrained noise model so lambdas are solved with QR
-      // and should exactly satisfy all the equations
-      if (debug)
-        cout << gradf_xi << endl;
-      dualGraph.push_back(
-          JacobianFactor(lambdaTerms, gradf_xi,
-              noiseModel::Constrained::All(gradf_xi.size())));
-    }
-
-    // Add 0 priors on all lambdas of the unconstrained rows to make sure the graph is solvable
-    if (debug)
-      cout << "Create priors" << endl;
-    BOOST_FOREACH(FactorIx_SigmaIx factorIx_sigmaIx, unconstrainedIndex) {
-      size_t factorIx = factorIx_sigmaIx.first;
-      JacobianFactor::shared_ptr factor = toJacobian(graph.at(factorIx));
-      size_t dim = factor->get_model()->dim();
-      Matrix J = zeros(dim, dim);
-      size_t sigmaIx = factorIx_sigmaIx.second;
-      J(sigmaIx, sigmaIx) = 1.0;
-      // Use factorIndex as the lambda's key.
-      if (debug)
-        cout << "prior for factor " << factorIx << endl;
-      dualGraph.push_back(JacobianFactor(factorIx, J, zero(dim)));
-    }
+GaussianFactorGraph::shared_ptr QPSolver::buildDualGraph(
+    const LinearInequalityFactorGraph& workingSet, const VectorValues& delta) const {
+  GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
+  BOOST_FOREACH(Key key, constrainedKeys_) {
+    // Each constrained key becomes a factor in the dual graph
+    dualGraph->push_back(createDualFactor(key, workingSet, delta));
   }
-
   return dualGraph;
 }
 
 //******************************************************************************
 pair<int, int> QPSolver::identifyLeavingConstraint(
+    const LinearInequalityFactorGraph& workingSet,
     const VectorValues& lambdas) const {
   int worstFactorIx = -1, worstSigmaIx = -1;
   // preset the maxLambda to 0.0: if lambda is <= 0.0, the constraint is either
   // inactive or a good inequality constraint, so we don't care!
   double maxLambda = 0.0;
-  BOOST_FOREACH(size_t factorIx, constraintIndices_) {
-    Vector lambda = lambdas.at(factorIx);
-    Vector orgSigmas = toJacobian(graph_.at(factorIx))->get_model()->sigmas();
-    for (size_t j = 0; j < orgSigmas.size(); ++j)
-      // If it is a BAD active inequality, and lambda is larger than the current max
-      if (orgSigmas[j] < 0 && lambda[j] > maxLambda) {
+  for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
+    const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
+    Vector lambda = lambdas.at(factor->dualKey());
+    Vector sigmas = factor->get_model()->sigmas();
+    for (size_t j = 0; j < sigmas.size(); ++j)
+      // If it is an active constraint, and lambda is larger than the current max
+      if (sigmas[j] == ACTIVE && lambda[j] > maxLambda) {
         worstFactorIx = factorIx;
         worstSigmaIx = j;
         maxLambda = lambda[j];
@@ -264,14 +94,16 @@ pair<int, int> QPSolver::identifyLeavingConstraint(
 }
 
 //******************************************************************************
-bool QPSolver::updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
-    int factorIx, int sigmaIx, double newSigma) const {
+LinearInequalityFactorGraph QPSolver::updateWorkingSet(
+    const LinearInequalityFactorGraph& workingSet, int factorIx, int sigmaIx,
+    double state) const {
+  LinearInequalityFactorGraph newWorkingSet = workingSet;
   if (factorIx < 0 || sigmaIx < 0)
-    return false;
-  Vector sigmas = toJacobian(workingGraph.at(factorIx))->get_model()->sigmas();
-  sigmas[sigmaIx] = newSigma; // removing it from the working set
-  toJacobian(workingGraph.at(factorIx))->setModel(true, sigmas);
-  return true;
+    return newWorkingSet;
+  Vector sigmas = newWorkingSet.at(factorIx)->get_model()->sigmas();
+  sigmas[sigmaIx] = state;
+  newWorkingSet.at(factorIx)->setModel(true, sigmas);
+  return newWorkingSet;
 }
 
 //******************************************************************************
@@ -291,44 +123,28 @@ bool QPSolver::updateWorkingSetInplace(GaussianFactorGraph& workingGraph,
  * We want the minimum of all those alphas among all inactive inequality.
  */
 boost::tuple<double, int, int> QPSolver::computeStepSize(
-    const GaussianFactorGraph& workingGraph, const VectorValues& xk,
+    const LinearInequalityFactorGraph& workingSet, const VectorValues& xk,
     const VectorValues& p) const {
   static bool debug = false;
 
   double minAlpha = 1.0;
   int closestFactorIx = -1, closestSigmaIx = -1;
-  BOOST_FOREACH(size_t factorIx, constraintIndices_) {
-    JacobianFactor::shared_ptr jacobian = toJacobian(workingGraph.at(factorIx));
-    Vector sigmas = jacobian->get_model()->sigmas();
-    Vector b = jacobian->getb();
+  for(size_t factorIx = 0; factorIx<workingSet.size(); ++factorIx) {
+    const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
+    Vector sigmas = factor->get_model()->sigmas();
+    Vector b = factor->getb();
     for (size_t s = 0; s < sigmas.size(); ++s) {
       // If it is an inactive inequality, compute alpha and update min
-      if (sigmas[s] < 0) {
+      if (sigmas[s] == INACTIVE) {
         // Compute aj'*p
-        double ajTp = 0.0;
-        for (Factor::const_iterator xj = jacobian->begin();
-            xj != jacobian->end(); ++xj) {
-          Vector pj = p.at(*xj);
-          Vector aj = jacobian->getA(xj).row(s);
-          ajTp += aj.dot(pj);
-        }
-        if (debug)
-          cout << "s, ajTp, b[s]: " << s << " " << ajTp << " " << b[s] << endl;
+        double ajTp = factor->dotProductRow(s, p);
 
         // Check if  aj'*p >0. Don't care if it's not.
         if (ajTp <= 0)
           continue;
 
         // Compute aj'*xk
-        double ajTx = 0.0;
-        for (Factor::const_iterator xj = jacobian->begin();
-            xj != jacobian->end(); ++xj) {
-          Vector xkj = xk.at(*xj);
-          Vector aj = jacobian->getA(xj).row(s);
-          ajTx += aj.dot(xkj);
-        }
-        if (debug)
-          cout << "b[s], ajTx: " << b[s] << " " << ajTx << " " << ajTp << endl;
+        double ajTx = factor->dotProductRow(s, xk);
 
         // alpha = (bj - aj'*xk) / (aj'*p)
         double alpha = (b[s] - ajTx) / ajTp;
@@ -348,171 +164,224 @@ boost::tuple<double, int, int> QPSolver::computeStepSize(
 }
 
 //******************************************************************************
-bool QPSolver::iterateInPlace(GaussianFactorGraph& workingGraph,
-    VectorValues& currentSolution, VectorValues& lambdas) const {
+QPState QPSolver::iterate(const QPState& state) const {
   static bool debug = false;
+
+  // Solve with the current working set
+  VectorValues newValues = solveWithCurrentWorkingSet(state.workingSet);
   if (debug)
-    workingGraph.print("workingGraph: ");
-  // Obtain the solution from the current working graph
-  VectorValues newSolution = workingGraph.optimize();
-  if (debug)
-    newSolution.print("New solution:");
+    newValues.print("New solution:");
 
   // If we CAN'T move further
-  if (newSolution.equals(currentSolution, 1e-5)) {
+  if (newValues.equals(state.values, 1e-5)) {
     // Compute lambda from the dual graph
     if (debug)
       cout << "Building dual graph..." << endl;
-    GaussianFactorGraph dualGraph = buildDualGraph(workingGraph, newSolution);
+    GaussianFactorGraph::shared_ptr dualGraph = buildDualGraph(state.workingSet, newValues);
     if (debug)
-      dualGraph.print("Dual graph: ");
-    lambdas = dualGraph.optimize();
+      dualGraph->print("Dual graph: ");
+    VectorValues duals = dualGraph->optimize();
     if (debug)
-      lambdas.print("lambdas :");
+      duals.print("Duals :");
 
-    int factorIx, sigmaIx;
-    boost::tie(factorIx, sigmaIx) = identifyLeavingConstraint(lambdas);
+    int leavingFactor, leavingSigmaIx;
+    boost::tie(leavingFactor, leavingSigmaIx) = //
+        identifyLeavingConstraint(state.workingSet, duals);
     if (debug)
-      cout << "violated active inequality - factorIx, sigmaIx: " << factorIx
-          << " " << sigmaIx << endl;
+      cout << "violated active inequality - factorIx, sigmaIx: " << leavingFactor
+          << " " << leavingSigmaIx << endl;
 
-    // Try to de-activate the weakest violated inequality constraints
-    // if not successful, i.e. all inequality constraints are satisfied:
-    // We have the solution!!
-    if (!updateWorkingSetInplace(workingGraph, factorIx, sigmaIx, -1.0))
-      return true;
-  } else {
+    // If all inequality constraints are satisfied: We have the solution!!
+    if (leavingFactor < 0 || leavingSigmaIx < 0) {
+      return QPState(newValues, duals, state.workingSet, true);
+    }
+    else {
+      // Inactivate the leaving constraint
+      LinearInequalityFactorGraph newWorkingSet = updateWorkingSet(
+          state.workingSet, leavingFactor, leavingSigmaIx, INACTIVE);
+      return QPState(newValues, duals, newWorkingSet, false);
+    }
+  }
+  else {
     // If we CAN make some progress
     // Adapt stepsize if some inactive constraints complain about this move
-    if (debug)
-      cout << "Computing stepsize..." << endl;
     double alpha;
     int factorIx, sigmaIx;
-    VectorValues p = newSolution - currentSolution;
+    VectorValues p = newValues - state.values;
     boost::tie(alpha, factorIx, sigmaIx) = //
-        computeStepSize(workingGraph, currentSolution, p);
+        computeStepSize(state.workingSet, state.values, p);
     if (debug)
       cout << "alpha, factorIx, sigmaIx: " << alpha << " " << factorIx << " "
           << sigmaIx << endl;
     // also add to the working set the one that complains the most
-    updateWorkingSetInplace(workingGraph, factorIx, sigmaIx, 0.0);
-    // step!
-    currentSolution = currentSolution + alpha * p;
-//    if (alpha <1e-5) {
-//      if (debug) cout << "Building dual graph..." << endl;
-//      GaussianFactorGraph dualGraph = buildDualGraph(workingGraph, newSolution);
-//      if (debug) dualGraph.print("Dual graph: ");
-//      lambdas = dualGraph.optimize();
-//      if (debug) lambdas.print("lambdas :");
-//      return true; // TODO: HACK HACK!!!
-//    }
-  }
+    LinearInequalityFactorGraph newWorkingSet = //
+        updateWorkingSet(state.workingSet, factorIx, sigmaIx, ACTIVE);
 
-  return false;
+    // step!
+    newValues = state.values + alpha * p;
+
+    return QPState(newValues, state.duals, newWorkingSet, false);
+  }
 }
 
 //******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize(
     const VectorValues& initialValues) const {
-  GaussianFactorGraph workingGraph = graph_.clone();
-  VectorValues currentSolution = initialValues;
-  VectorValues lambdas;
-  bool converged = false;
-  while (!converged) {
-    converged = iterateInPlace(workingGraph, currentSolution, lambdas);
+
+  // TODO: initialize workingSet from the feasible initialValues
+  LinearInequalityFactorGraph workingSet(qp_.inequalities);
+
+  QPState state(initialValues, VectorValues(), workingSet, false);
+
+  /// main loop of the solver
+  while (!state.converged) {
+    state = iterate(state);
   }
-  return make_pair(currentSolution, lambdas);
+
+  return make_pair(state.values, state.duals);
 }
 
 //******************************************************************************
-pair<VectorValues, Key> QPSolver::initialValuesLP() const {
-  size_t firstSlackKey = 0;
-  BOOST_FOREACH(Key key, fullFactorIndices_ | boost::adaptors::map_keys) {
-    if (firstSlackKey < key)
-      firstSlackKey = key;
-  }
+std::pair<bool, Key> QPSolver::maxKey(const FastSet<Key>& keys) const {
+  KeySet::iterator maxEl = std::max_element(keys.begin(), keys.end());
+  if (maxEl==keys.end())
+    return make_pair(false, 0);
+  return make_pair(true, *maxEl);
+}
+
+//******************************************************************************
+boost::tuple<VectorValues, Key, Key> QPSolver::initialValuesLP() const {
+  // Key for the first slack variable =  maximum key + 1
+  size_t firstSlackKey;
+  bool found;
+  KeySet allKeys = qp_.cost.keys();
+  allKeys.merge(qp_.equalities.keys());
+  allKeys.merge(qp_.inequalities.keys());
+  boost::tie(found, firstSlackKey) = maxKey(allKeys);
   firstSlackKey += 1;
 
   VectorValues initialValues;
   // Create zero values for constrained vars
-  BOOST_FOREACH(size_t iFactor, constraintIndices_) {
-    JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
-    KeyVector keys = jacobian->keys();
+  BOOST_FOREACH(const LinearEquality::shared_ptr& factor, qp_.equalities) {
+    KeyVector keys = factor->keys();
     BOOST_FOREACH(Key key, keys) {
       if (!initialValues.exists(key)) {
-        size_t dim = jacobian->getDim(jacobian->find(key));
+        size_t dim = factor->getDim(factor->find(key));
+        initialValues.insert(key, zero(dim));
+      }
+    }
+  }
+
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, qp_.inequalities) {
+    KeyVector keys = factor->keys();
+    BOOST_FOREACH(Key key, keys) {
+      if (!initialValues.exists(key)) {
+        size_t dim = factor->getDim(factor->find(key));
         initialValues.insert(key, zero(dim));
       }
     }
   }
 
   // Insert initial values for slack variables
-  size_t slackKey = firstSlackKey;
-  BOOST_FOREACH(size_t iFactor, constraintIndices_) {
-    JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
-    Vector errorAtZero = jacobian->getb();
-    Vector slackInit = zero(errorAtZero.size());
-    Vector sigmas = jacobian->get_model()->sigmas();
-    for (size_t i = 0; i < sigmas.size(); ++i) {
-      if (sigmas[i] < 0) {
-        slackInit[i] = std::max(errorAtZero[i], 0.0);
-      } else if (sigmas[i] == 0.0) {
-        errorAtZero[i] = fabs(errorAtZero[i]);
-      } // if it has >0 sigma, i.e. normal Gaussian noise, initialize it at 0
-    }
+  Key slackKey = firstSlackKey;
+  // Equality: zi = |bi|
+  BOOST_FOREACH(const LinearEquality::shared_ptr& factor, qp_.equalities) {
+    Vector errorAtZero = factor->getb();
+    Vector slackInit = errorAtZero.cwiseAbs();
     initialValues.insert(slackKey, slackInit);
     slackKey++;
   }
-  return make_pair(initialValues, firstSlackKey);
+  // Inequality: zi = max(bi, 0)
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, qp_.inequalities) {
+    Vector errorAtZero = factor->getb();
+    Vector zeroVec = zero(errorAtZero.size());
+    Vector slackInit = errorAtZero.cwiseMax(zeroVec);
+    initialValues.insert(slackKey, slackInit);
+    slackKey++;
+  }
+
+  return boost::make_tuple(initialValues, firstSlackKey, slackKey - 1);
 }
 
 //******************************************************************************
 VectorValues QPSolver::objectiveCoeffsLP(Key firstSlackKey) const {
   VectorValues slackObjective;
-  for (size_t i = 0; i < constraintIndices_.size(); ++i) {
-    Key key = firstSlackKey + i;
-    size_t iFactor = constraintIndices_[i];
-    JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
-    size_t dim = jacobian->rows();
-    Vector objective = ones(dim);
-    /* We should not ignore unconstrained slack var dimensions (those rows with sigmas >0)
-     * because their values might be underdetermined in the LP. Since they will have only
-     * 1 constraint zi>=0, enforcing them in the min obj function won't harm the other constrained
-     * slack vars, but also makes them well defined: 0 at the minimum.
-     */
-    slackObjective.insert(key, ones(dim));
+
+  Key slackKey = firstSlackKey;
+  // Equalities
+  BOOST_FOREACH(const LinearEquality::shared_ptr& factor, qp_.equalities) {
+    size_t dim = factor->rows();
+    slackObjective.insert(slackKey, ones(dim));
+    slackKey++;
   }
+
+  // Inequalities
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, qp_.inequalities) {
+    size_t dim = factor->rows();
+    slackObjective.insert(slackKey, ones(dim));
+    slackKey++;
+  }
+
   return slackObjective;
 }
 
 //******************************************************************************
-pair<GaussianFactorGraph::shared_ptr, VectorValues> QPSolver::constraintsLP(
+boost::tuple<LinearEqualityFactorGraph::shared_ptr,
+    LinearInequalityFactorGraph::shared_ptr, VectorValues> QPSolver::constraintsLP(
     Key firstSlackKey) const {
-  // Create constraints and 0 lower bounds (zi>=0)
-  GaussianFactorGraph::shared_ptr constraints(new GaussianFactorGraph());
+  // Create constraints and zero lower bounds (zi>=0)
+  LinearEqualityFactorGraph::shared_ptr equalities(new LinearEqualityFactorGraph());
+  LinearInequalityFactorGraph::shared_ptr inequalities(new LinearInequalityFactorGraph());
   VectorValues slackLowerBounds;
-  for (size_t key = firstSlackKey;
-      key < firstSlackKey + constraintIndices_.size(); ++key) {
-    size_t iFactor = constraintIndices_[key - firstSlackKey];
-    JacobianFactor::shared_ptr jacobian = toJacobian(graph_.at(iFactor));
+
+  Key slackKey = firstSlackKey;
+
+  // Equalities
+  BOOST_FOREACH(const LinearEquality::shared_ptr& factor, qp_.equalities) {
     // Collect old terms to form a new factor
     // TODO: it might be faster if we can get the whole block matrix at once
     // but I don't know how to extend the current VerticalBlockMatrix
     vector<pair<Key, Matrix> > terms;
-    for (Factor::iterator it = jacobian->begin(); it != jacobian->end(); ++it) {
-      terms.push_back(make_pair(*it, jacobian->getA(it)));
+    for (Factor::iterator it = factor->begin(); it != factor->end(); ++it) {
+      terms.push_back(make_pair(*it, factor->getA(it)));
     }
+
+    Vector b = factor->getb();
+    Vector sign_b = b.cwiseQuotient(b.cwiseAbs());
+    terms.push_back(make_pair(slackKey, sign_b));
+    equalities->push_back(LinearEquality(terms, b, factor->dualKey()));
+
+    // Add lower bound for this slack key
+    slackLowerBounds.insert(slackKey, zero(b.rows()));
+    // Increase slackKey for the next slack variable
+    slackKey++;
+  }
+
+  // Inequalities
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, qp_.inequalities) {
+    // Collect old terms to form a new factor
+    // TODO: it might be faster if we can get the whole block matrix at once
+    // but I don't know how to extend the current VerticalBlockMatrix
+    vector<pair<Key, Matrix> > terms;
+    for (Factor::iterator it = factor->begin(); it != factor->end(); ++it) {
+      terms.push_back(make_pair(*it, factor->getA(it)));
+    }
+
     // Add the slack term to the constraint
     // Unlike Nocedal06book, pg.473, we want ax-z <= b, since we always assume
-    // LE constraints ax <= b for sigma < 0.
-    size_t dim = jacobian->rows();
-    terms.push_back(make_pair(key, -eye(dim)));
-    constraints->push_back(
-        JacobianFactor(terms, jacobian->getb(), jacobian->get_model()));
+    // LE constraints ax <= b.
+    size_t dim = factor->rows();
+    terms.push_back(make_pair(slackKey, -eye(dim)));
+    inequalities->push_back(LinearInequality(terms, factor->getb(),
+        factor->dualKey()));
+
     // Add lower bound for this slack key
-    slackLowerBounds.insert(key, zero(dim));
+    slackLowerBounds.insert(slackKey, zero(dim));
+    // Increase slackKey for the next slack variable
+    slackKey++;
   }
-  return make_pair(constraints, slackLowerBounds);
+
+  return boost::make_tuple(equalities, inequalities, slackLowerBounds);
 }
 
 //******************************************************************************
@@ -520,19 +389,20 @@ pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
   static const bool debug = false;
   // Initial values with slack variables for the LP subproblem, Nocedal06book, pg.473
   VectorValues initialValues;
-  size_t firstSlackKey;
-  boost::tie(initialValues, firstSlackKey) = initialValuesLP();
+  size_t firstSlackKey, lastSlackKey;
+  boost::tie(initialValues, firstSlackKey, lastSlackKey) = initialValuesLP();
 
   // Coefficients for the LP subproblem objective function, min \sum_i z_i
   VectorValues objectiveLP = objectiveCoeffsLP(firstSlackKey);
 
   // Create constraints and lower bounds of slack variables
-  GaussianFactorGraph::shared_ptr constraints;
+  LinearEqualityFactorGraph::shared_ptr equalities;
+  LinearInequalityFactorGraph::shared_ptr inequalities;
   VectorValues slackLowerBounds;
-  boost::tie(constraints, slackLowerBounds) = constraintsLP(firstSlackKey);
+  boost::tie(equalities, inequalities, slackLowerBounds) = constraintsLP(firstSlackKey);
 
   // Solve the LP subproblem
-  LPSolver lpSolver(objectiveLP, constraints, slackLowerBounds);
+  LPSolver lpSolver(objectiveLP, equalities, inequalities, slackLowerBounds);
   VectorValues solution = lpSolver.solve();
 
   if (debug)
@@ -540,29 +410,34 @@ pair<bool, VectorValues> QPSolver::findFeasibleInitialValues() const {
   if (debug)
     objectiveLP.print("Objective LP: ");
   if (debug)
-    constraints->print("Constraints LP: ");
+    equalities->print("Equalities LP: ");
+  if (debug)
+    inequalities->print("Inequalities LP: ");
   if (debug)
     solution.print("LP solution: ");
 
+  // feasible when all slack values are 0s.
+  double slackSumAbs = 0.0;
+  for (Key key = firstSlackKey; key <= lastSlackKey; ++key) {
+    slackSumAbs += solution.at(key).cwiseAbs().sum();
+  }
+
   // Remove slack variables from solution
-  double slackSum = 0.0;
-  for (Key key = firstSlackKey; key < firstSlackKey + constraintIndices_.size();
-      ++key) {
-    slackSum += solution.at(key).cwiseAbs().sum();
+  for (Key key = firstSlackKey; key <= lastSlackKey; ++key) {
     solution.erase(key);
   }
 
   // Insert zero vectors for free variables that are not in the constraints
-  BOOST_FOREACH(Key key, fullFactorIndices_ | boost::adaptors::map_keys) {
+  BOOST_FOREACH(Key key, costVariableIndex_ | boost::adaptors::map_keys) {
     if (!solution.exists(key)) {
-      GaussianFactor::shared_ptr factor = graph_.at(
-          *fullFactorIndices_[key].begin());
+      GaussianFactor::shared_ptr factor = qp_.cost.at(
+          *costVariableIndex_[key].begin());
       size_t dim = factor->getDim(factor->find(key));
       solution.insert(key, zero(dim));
     }
   }
 
-  return make_pair(slackSum < 1e-5, solution);
+  return make_pair(slackSumAbs < 1e-5, solution);
 }
 
 //******************************************************************************
