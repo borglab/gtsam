@@ -352,6 +352,8 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation )
   const Vector3 deltaVij_old = preintegrated.deltaVij();    // before adding new measurement
   const Vector3 deltaPij_old = preintegrated.deltaPij();    // before adding new measurement
 
+  Matrix oldPreintCovariance = preintegrated.preintMeasCov();
+
   Matrix Factual, Gactual;
   preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega, newDeltaT,
       body_P_sensor, Factual, Gactual);
@@ -412,6 +414,13 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation )
   Gexpected << df_dintNoise, df_daccNoise, df_domegaNoise, df_rwBias, df_dinitBias;
 
   EXPECT(assert_equal(Gexpected, Gactual));
+
+  // Check covariance propagation
+  Matrix newPreintCovarianceExpected = Fexpected * oldPreintCovariance * Fexpected.transpose() +
+      (1/newDeltaT) * Gexpected * Gexpected.transpose();
+
+  Matrix newPreintCovarianceActual = preintegrated.preintMeasCov();
+  EXPECT(assert_equal(newPreintCovarianceExpected, newPreintCovarianceActual, 1e-7));
 }
 
 /* ************************************************************************* */
