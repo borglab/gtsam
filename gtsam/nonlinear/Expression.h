@@ -206,11 +206,20 @@ private:
     // with an execution trace, made up entirely of "Record" structs, see
     // the FunctionalNode class in expression-inl.h
     size_t size = traceSize();
+#ifdef _MSC_VER
+    ExecutionTraceStorage* traceStorage = new ExecutionTraceStorage[size];
+    ExecutionTrace<T> trace;
+    T value(traceExecution(values, trace, traceStorage));
+    trace.startReverseAD1(jacobians);
+    delete[] traceStorage;
+    return value;
+#else
     ExecutionTraceStorage traceStorage[size];
     ExecutionTrace<T> trace;
     T value(traceExecution(values, trace, traceStorage));
     trace.startReverseAD1(jacobians);
     return value;
+#endif
   }
 
   // be very selective on who can access these private methods:
