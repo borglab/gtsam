@@ -476,6 +476,7 @@ struct FunctionalBase: ExpressionNode<T> {
       ExecutionTraceStorage*& traceStorage) const {
     // base case: does not do anything
   }
+
 };
 
 /**
@@ -658,6 +659,62 @@ struct FunctionalNode {
   };
 };
 //-----------------------------------------------------------------------------
+template<class T, class A1>
+struct UnaryFunctor {
+  virtual T operator()(const A1& arg1, typename OptionalJacobian<T, A1>::type J1) = 0;
+};
+
+/// Unary Function Expression (serializable version)
+template<class T, class A1>
+class UnaryFunctorExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
+
+public:
+  typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
+  typedef typename Base::Record Record;
+
+private:
+  // Only needed for serialization.
+  UnaryFunctorExpression(){}
+
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("DERIVED", boost::serialization::base_object< FunctionalBase<T> >(*this));
+  }
+
+  virtual bool equals(const ExpressionNode<T>& rhs, double tol = 1e-9) const {
+    const FunctionalBase<T> * rhs_ptr = dynamic_cast<const FunctionalBase<T>*>(&rhs);
+    return static_cast<bool>(rhs_ptr) && ExpressionNode<T>::equals(rhs, tol);
+  }
+protected:
+  /// Constructor with a unary function f, and input argument e
+  UnaryExpression(Function f, const Expression<A1>& e1) :
+      function_(f) {
+    this->template reset<A1, 1>(e1.root());
+    ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
+  }
+
+  friend class Expression<T> ;
+
+public:
+
+  /// Return value
+  virtual T value(const Values& values) const {
+    return function_(this->template expression<A1, 1>()->value(values), boost::none);
+  }
+
+  /// Construct an execution trace for reverse AD
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      ExecutionTraceStorage* traceStorage) const {
+
+    Record* record = Base::trace(values, traceStorage);
+    trace.setFunction(record);
+
+    return function_(record->template value<A1, 1>(),
+        record->template jacobian<A1, 1>());
+  }
+};
+
 
 /// Unary Function Expression
 template<class T, class A1>
