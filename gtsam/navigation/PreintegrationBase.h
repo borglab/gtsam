@@ -126,16 +126,19 @@ public:
       deltaPij_ += deltaVij_ * deltaT + 0.5 * temp * deltaT;
     }
     deltaVij_ += temp;
-    Matrix3 F_angles_angles;
-    const Matrix3 R_i = deltaRij();
-    updateIntegratedRotationAndDeltaT(incrR,deltaT, F_angles_angles);
-    Matrix3 F_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
+
     if(F){
+      Matrix3 F_angles_angles;
+      const Matrix3 R_i = deltaRij();
+      updateIntegratedRotationAndDeltaT(incrR,deltaT, F_angles_angles);
+      Matrix3 F_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
       F->resize(9,9);
       //    pos          vel              angle
       *F << I_3x3,       I_3x3 * deltaT,  Z_3x3,          // pos
             Z_3x3,       I_3x3,           F_vel_angles,   // vel
             Z_3x3,       Z_3x3,           F_angles_angles;// angle
+    }else{
+      updateIntegratedRotationAndDeltaT(incrR,deltaT);
     }
   }
 

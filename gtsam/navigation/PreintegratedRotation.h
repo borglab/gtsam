@@ -76,12 +76,8 @@ public:
   /// Update preintegrated measurements
   void updateIntegratedRotationAndDeltaT(const Rot3& incrR, const double deltaT,
       boost::optional<Matrix3&> H = boost::none){
-    deltaRij_ = deltaRij_ * incrR;
+    deltaRij_ = deltaRij_.compose(incrR, H, boost::none);
     deltaTij_ += deltaT;
-    if(H){
-      H->resize(3,3);
-      *H = incrR.transpose();
-    }
   }
 
   /**
