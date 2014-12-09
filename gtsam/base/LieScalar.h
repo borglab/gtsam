@@ -17,7 +17,12 @@
 
 #pragma once
 
-#warning "LieScalar.h is deprecated. Please use double/float instead."
+#ifdef _MSC_VER
+#pragma message("LieScalar.h is deprecated. Please use double/float instead.")
+#else
+  #warning "LieScalar.h is deprecated. Please use double/float instead."
+#endif
+
 #include <gtsam/dllexport.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>

@@ -19,7 +19,12 @@
 
 #include <cstdarg>
 
+#ifdef _MSC_VER
+#pragma message("LieMatrix.h is deprecated. Please use Eigen::Matrix instead.")
+#else
 #warning "LieMatrix.h is deprecated. Please use Eigen::Matrix instead."
+#endif
+
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>

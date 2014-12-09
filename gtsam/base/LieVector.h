@@ -17,7 +17,12 @@
 
 #pragma once
 
+#ifdef _MSC_VER
+#pragma message("LieVector.h is deprecated. Please use Eigen::Vector instead.")
+#else
 #warning "LieVector.h is deprecated. Please use Eigen::Vector instead."
+#endif
+
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/DerivedValue.h>
