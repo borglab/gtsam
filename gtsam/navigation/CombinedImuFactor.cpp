@@ -94,46 +94,45 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   /* ----------------------------------------------------------------------------------------------------------------------- */
   const Matrix3 R_i = deltaRij(); // store this
   // Update preintegrated measurements. TODO Frank moved from end of this function !!!
-  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
+  Matrix F_9x9;
+  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F_9x9);
 
   // Single Jacobians to propagate covariance
-  Matrix3 H_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
   Matrix3 H_vel_biasacc = - R_i * deltaT;
-
-  Matrix3 H_angles_angles = Rincr.inverse().matrix();
   Matrix3 H_angles_biasomega =- Jr_theta_incr * deltaT;
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix F(15,15);
-  F << I_3x3,    I_3x3 * deltaT,   Z_3x3,             Z_3x3,            Z_3x3,
-       Z_3x3,    I_3x3,            H_vel_angles,      H_vel_biasacc,    Z_3x3,
-       Z_3x3,    Z_3x3,            H_angles_angles,   Z_3x3,            H_angles_biasomega,
-       Z_3x3,    Z_3x3,            Z_3x3,             I_3x3,            Z_3x3,
-       Z_3x3,    Z_3x3,            Z_3x3,             Z_3x3,            I_3x3;
+  // for documentation:
+  //  F << I_3x3,    I_3x3 * deltaT,   Z_3x3,             Z_3x3,            Z_3x3,
+  //       Z_3x3,    I_3x3,            H_vel_angles,      H_vel_biasacc,    Z_3x3,
+  //       Z_3x3,    Z_3x3,            H_angles_angles,   Z_3x3,            H_angles_biasomega,
+  //       Z_3x3,    Z_3x3,            Z_3x3,             I_3x3,            Z_3x3,
+  //       Z_3x3,    Z_3x3,            Z_3x3,             Z_3x3,            I_3x3;
+  F.setZero();
+  F.block<9,9>(0,0)  = F_9x9;
+  F.block<6,6>(9,9)  = eye(9);
+  F.block<3,3>(3,9)  = H_vel_biasacc;
+  F.block<3,3>(6,12) = H_angles_biasomega;
 
   // first order uncertainty propagation
   // Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
   Matrix G_measCov_Gt = Matrix::Zero(15,15);
+
   // BLOCK DIAGONAL TERMS
   G_measCov_Gt.block<3,3>(0,0) = deltaT * measurementCovariance_.block<3,3>(0,0);
-
   G_measCov_Gt.block<3,3>(3,3) = (1/deltaT) * (H_vel_biasacc)  *
       (measurementCovariance_.block<3,3>(3,3)  +  measurementCovariance_.block<3,3>(15,15) ) *
       (H_vel_biasacc.transpose());
-
   G_measCov_Gt.block<3,3>(6,6) = (1/deltaT) *  (H_angles_biasomega) *
       (measurementCovariance_.block<3,3>(6,6)  +  measurementCovariance_.block<3,3>(18,18) ) *
       (H_angles_biasomega.transpose());
-
   G_measCov_Gt.block<3,3>(9,9) = (1/deltaT) * measurementCovariance_.block<3,3>(9,9);
-
   G_measCov_Gt.block<3,3>(12,12) = (1/deltaT) * measurementCovariance_.block<3,3>(12,12);
-
-  // NEW OFF BLOCK DIAGONAL TERMS
+  // OFF BLOCK DIAGONAL TERMS
   Matrix3 block23 = H_vel_biasacc * measurementCovariance_.block<3,3>(18,15) *  H_angles_biasomega.transpose();
   G_measCov_Gt.block<3,3>(3,6) = block23;
   G_measCov_Gt.block<3,3>(6,3) = block23.transpose();
-
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
 
   // F_test and G_test are used for testing purposes and are not needed by the factor
