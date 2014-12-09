@@ -16,6 +16,7 @@
  * @author  Christian Potthast
  * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Luca Carlone
  */
 // \callgraph
 
@@ -297,7 +298,7 @@ namespace gtsam {
     static Rot3 Expmap(const Vector& v, boost::optional<Matrix3&> H = boost::none) {
       if(H){
         H->resize(3,3);
-        *H = Rot3::rightJacobianExpMapSO3(v);
+        *H = Rot3::expmapDerivative(v);
       }
       if(zero(v))
         return Rot3();
@@ -320,20 +321,20 @@ namespace gtsam {
      * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
      * expmap(thetahat + omega) \approx expmap(thetahat) * expmap(Jr * omega)
-     * where Jr = rightJacobianExpMapSO3(thetahat);
+     * where Jr = expmapDerivative(thetahat);
      * This maps a perturbation in the tangent space (omega) to
      * a perturbation on the manifold (expmap(Jr * omega))
      */
-    static Matrix3 rightJacobianExpMapSO3(const Vector3& x);
+    static Matrix3 expmapDerivative(const Vector3& x);
 
     /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
      * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
-     * where Jrinv = rightJacobianExpMapSO3inverse(omega);
+     * where Jrinv = logmapDerivative(omega);
      * This maps a perturbation on the manifold (expmap(omega))
      * to a perturbation in the tangent space (Jrinv * omega)
      */
-    static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x);
+    static Matrix3 logmapDerivative(const Vector3& x);
 
     /// @}
     /// @name Group Action on Point3

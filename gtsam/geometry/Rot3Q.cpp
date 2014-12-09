@@ -175,7 +175,7 @@ namespace gtsam {
 
     if(H){
       H->resize(3,3);
-      *H = Rot3::rightJacobianExpMapSO3inverse(thetaR);
+      *H = Rot3::logmapDerivative(thetaR);
     }
     return thetaR;
   }

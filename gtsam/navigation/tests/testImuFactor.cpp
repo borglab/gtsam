@@ -340,7 +340,7 @@ TEST( ImuFactor, PartialDerivativeExpmap )
   Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, Vector3>(boost::bind(
       &evaluateRotation, measuredOmega, _1, deltaT), Vector3(biasOmega));
 
-  const Matrix3 Jr = Rot3::rightJacobianExpMapSO3((measuredOmega - biasOmega) * deltaT);
+  const Matrix3 Jr = Rot3::expmapDerivative((measuredOmega - biasOmega) * deltaT);
 
    Matrix3  actualdelRdelBiasOmega = - Jr * deltaT; // the delta bias appears with the minus sign
 
@@ -361,7 +361,7 @@ TEST( ImuFactor, PartialDerivativeLogmap )
   Matrix expectedDelFdeltheta = numericalDerivative11<Vector,Vector3>(boost::bind(
       &evaluateLogRotation, thetahat, _1), Vector3(deltatheta));
 
-  Matrix3 actualDelFdeltheta = Rot3::rightJacobianExpMapSO3inverse(thetahat);
+  Matrix3 actualDelFdeltheta = Rot3::logmapDerivative(thetahat);
 
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelFdeltheta, actualDelFdeltheta));
@@ -399,7 +399,7 @@ TEST( ImuFactor, fistOrderExponential )
   double alpha = 0.0;
   Vector3 deltabiasOmega; deltabiasOmega << alpha,alpha,alpha;
 
-  const Matrix3 Jr = Rot3::rightJacobianExpMapSO3((measuredOmega - biasOmega) * deltaT);
+  const Matrix3 Jr = Rot3::expmapDerivative((measuredOmega - biasOmega) * deltaT);
 
   Matrix3  delRdelBiasOmega = - Jr * deltaT; // the delta bias appears with the minus sign
 

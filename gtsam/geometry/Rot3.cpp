@@ -195,7 +195,7 @@ Vector Rot3::quaternion() const {
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::rightJacobianExpMapSO3(const Vector3& x)    {
+Matrix3 Rot3::expmapDerivative(const Vector3& x)    {
   // x is the axis-angle representation (exponential coordinates) for a rotation
   double normx = norm_2(x); // rotation angle
   Matrix3 Jr;
@@ -211,7 +211,7 @@ Matrix3 Rot3::rightJacobianExpMapSO3(const Vector3& x)    {
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::rightJacobianExpMapSO3inverse(const Vector3& x)    {
+Matrix3 Rot3::logmapDerivative(const Vector3& x)    {
   // x is the axis-angle representation (exponential coordinates) for a rotation
   double normx = norm_2(x); // rotation angle
   Matrix3 Jrinv;

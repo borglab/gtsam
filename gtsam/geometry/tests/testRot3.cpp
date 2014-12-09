@@ -217,11 +217,11 @@ TEST(Rot3, log)
 
 /* ************************************************************************* */
 Vector3 thetahat(0.1, 0, 0.1);
-TEST( Rot3, rightJacobianExpMapSO3 )
+TEST( Rot3, expmapDerivative )
 {
   Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&Rot3::Expmap, _1, boost::none), thetahat);
-  Matrix Jactual = Rot3::rightJacobianExpMapSO3(thetahat);
+  Matrix Jactual = Rot3::expmapDerivative(thetahat);
   CHECK(assert_equal(Jexpected, Jactual));
 }
 
@@ -236,12 +236,12 @@ TEST( Rot3, jacobianExpmap )
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rightJacobianExpMapSO3inverse )
+TEST( Rot3, logmapDerivative )
 {
   Rot3 R = Rot3::Expmap(thetahat); // some rotation
   Matrix Jexpected = numericalDerivative11<Vector,Rot3>(boost::bind(
       &Rot3::Logmap, _1, boost::none), R);
-  Matrix3 Jactual = Rot3::rightJacobianExpMapSO3inverse(thetahat);
+  Matrix3 Jactual = Rot3::logmapDerivative(thetahat);
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 
