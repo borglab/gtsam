@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam_unstable/linear/LinearInequality.h>
 

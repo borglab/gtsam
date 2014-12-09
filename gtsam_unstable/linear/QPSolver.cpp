@@ -14,9 +14,6 @@
 
 using namespace std;
 
-#define ACTIVE 0.0
-#define INACTIVE std::numeric_limits<double>::infinity()
-
 namespace gtsam {
 
 //******************************************************************************
@@ -52,11 +49,29 @@ JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
 
   // Collect the gradients of unconstrained cost factors to the b vector
   Vector b = zero(delta.at(key).size());
-  BOOST_FOREACH(size_t factorIx, costVariableIndex_[key]) {
-    GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);
-    b += factor->gradient(key, delta);
+  if (costVariableIndex_.find(key) != costVariableIndex_.end()) {
+    BOOST_FOREACH(size_t factorIx, costVariableIndex_[key]) {
+      GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);
+      b += factor->gradient(key, delta);
+    }
   }
-  return boost::make_shared<JacobianFactor>(Aterms, b);
+
+  return boost::make_shared<JacobianFactor>(Aterms, b, noiseModel::Constrained::All(b.rows()));
+}
+
+//******************************************************************************
+GaussianFactor::shared_ptr QPSolver::createDualPrior(
+    const LinearInequality::shared_ptr& factor) const {
+  Vector sigmas = factor->get_model()->sigmas();
+  size_t n = sigmas.rows();
+  Matrix A = eye(n);
+  for (size_t i = 0; i<n; ++i) {
+    if (sigmas[i] == ACTIVE)
+      A(i,i) = 0;
+  }
+
+  Vector b = zero(n);
+  return boost::make_shared<JacobianFactor>(factor->dualKey(), A, b);
 }
 
 //******************************************************************************
@@ -66,6 +81,11 @@ GaussianFactorGraph::shared_ptr QPSolver::buildDualGraph(
   BOOST_FOREACH(Key key, constrainedKeys_) {
     // Each constrained key becomes a factor in the dual graph
     dualGraph->push_back(createDualFactor(key, workingSet, delta));
+  }
+
+  // Add prior for inactive dual variables
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, workingSet) {
+    dualGraph->push_back(createDualPrior(factor));
   }
   return dualGraph;
 }
@@ -225,12 +245,32 @@ QPState QPSolver::iterate(const QPState& state) const {
 }
 
 //******************************************************************************
+LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
+    const LinearInequalityFactorGraph& inequalities,
+    const VectorValues& initialValues) const {
+  LinearInequalityFactorGraph workingSet;
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities){
+    LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
+    Vector e = workingFactor->error_vector(initialValues);
+    Vector sigmas = zero(e.rows());
+    for (int i = 0; i < e.rows(); ++i){
+      if (fabs(e[i])>1e-7){
+        sigmas[i] = INACTIVE;
+      }
+    }
+    workingFactor->setModel(true, sigmas);
+    workingSet.push_back(workingFactor);
+  }
+  return workingSet;
+}
+
+//******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize(
     const VectorValues& initialValues) const {
 
   // TODO: initialize workingSet from the feasible initialValues
-  LinearInequalityFactorGraph workingSet(qp_.inequalities);
-
+  LinearInequalityFactorGraph workingSet =
+      identifyActiveConstraints(qp_.inequalities, initialValues);
   QPState state(initialValues, VectorValues(), workingSet, false);
 
   /// main loop of the solver

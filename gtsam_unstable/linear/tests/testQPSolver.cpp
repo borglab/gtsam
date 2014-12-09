@@ -26,9 +26,6 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
-#define TEST_DISABLED(testGroup, testName)\
-    void testGroup##testName##Test(TestResult& result_, const std::string& name_)
-
 /* ************************************************************************* */
 // Create test graph according to Forst10book_pg171Ex5
 QP createTestCase() {
@@ -73,7 +70,7 @@ TEST(QPSolver, constraintsAux) {
   int factorIx, lambdaIx;
   boost::tie(factorIx, lambdaIx) = solver.identifyLeavingConstraint(
       qp.inequalities, lambdas);
-  LONGS_EQUAL(1, factorIx);
+  LONGS_EQUAL(0, factorIx);
   LONGS_EQUAL(2, lambdaIx);
 
   VectorValues lambdas2;
@@ -122,37 +119,80 @@ TEST(QPSolver, dual) {
       qp.inequalities, initialValues);
   VectorValues dual = dualGraph->optimize();
   VectorValues expectedDual;
-  expectedDual.insert(1, (Vector(1) << 2.0));
+  expectedDual.insert(0, (Vector(1) << 2.0));
   CHECK(assert_equal(expectedDual, dual, 1e-10));
 }
 
 /* ************************************************************************* */
+TEST(QPSolver, indentifyActiveConstraints) {
+  QP qp = createTestCase();
+  QPSolver solver(qp);
 
-//TEST(QPSolver, iterate) {
-//  QP qp = createTestCase();
-//  QPSolver solver(qp);
-//
-//  VectorValues currentSolution;
-//  currentSolution.insert(X(1), zero(1));
-//  currentSolution.insert(X(2), zero(1));
-//
-//  std::vector<VectorValues> expectedSolutions(3);
-//  expectedSolutions[0].insert(X(1), (Vector(1) << 4.0 / 3.0));
-//  expectedSolutions[0].insert(X(2), (Vector(1) << 2.0 / 3.0));
-//  expectedSolutions[1].insert(X(1), (Vector(1) << 1.5));
-//  expectedSolutions[1].insert(X(2), (Vector(1) << 0.5));
-//  expectedSolutions[2].insert(X(1), (Vector(1) << 1.5));
-//  expectedSolutions[2].insert(X(2), (Vector(1) << 0.5));
-//
-//  bool converged = false;
-//  int it = 0;
-//  while (!converged) {
-//    VectorValues lambdas;
-//    converged = solver.iterateInPlace(workingGraph, currentSolution, lambdas);
-//    CHECK(assert_equal(expectedSolutions[it], currentSolution, 1e-100));
-//    it++;
-//  }
-//}
+  VectorValues currentSolution;
+  currentSolution.insert(X(1), zero(1));
+  currentSolution.insert(X(2), zero(1));
+
+  LinearInequalityFactorGraph workingSet =
+      solver.identifyActiveConstraints(qp.inequalities, currentSolution);
+
+  Vector actualSigmas = workingSet.at(0)->get_model()->sigmas();
+  Vector expectedSigmas = (Vector(4) << INACTIVE, ACTIVE, ACTIVE, INACTIVE);
+  CHECK(assert_equal(expectedSigmas, actualSigmas, 1e-100));
+
+  VectorValues solution  = solver.solveWithCurrentWorkingSet(workingSet);
+  VectorValues expectedSolution;
+  expectedSolution.insert(X(1), (Vector(1) << 0.0));
+  expectedSolution.insert(X(2), (Vector(1) << 0.0));
+  CHECK(assert_equal(expectedSolution, solution, 1e-100));
+
+}
+
+/* ************************************************************************* */
+TEST(QPSolver, iterate) {
+  QP qp = createTestCase();
+  QPSolver solver(qp);
+
+  VectorValues currentSolution;
+  currentSolution.insert(X(1), zero(1));
+  currentSolution.insert(X(2), zero(1));
+
+  std::vector<VectorValues> expectedSolutions(4), expectedDuals(4);
+  expectedSolutions[0].insert(X(1), (Vector(1) << 0.0));
+  expectedSolutions[0].insert(X(2), (Vector(1) << 0.0));
+  expectedDuals[0].insert(0, (Vector(4) << 0, 3, 0, 0));
+
+  expectedSolutions[1].insert(X(1), (Vector(1) << 1.5));
+  expectedSolutions[1].insert(X(2), (Vector(1) << 0.0));
+  expectedDuals[1].insert(0, (Vector(4) << 0, 0, 1.5, 0));
+
+  expectedSolutions[2].insert(X(1), (Vector(1) << 1.5));
+  expectedSolutions[2].insert(X(2), (Vector(1) << 0.75));
+  expectedDuals[2].insert(0, (Vector(4) << 0, 0, 1.5, 0));
+
+  expectedSolutions[3].insert(X(1), (Vector(1) << 1.5));
+  expectedSolutions[3].insert(X(2), (Vector(1) << 0.5));
+  expectedDuals[3].insert(0, (Vector(4) << -0.5, 0, 0, 0));
+
+  LinearInequalityFactorGraph workingSet =
+      solver.identifyActiveConstraints(qp.inequalities, currentSolution);
+
+  QPState state(currentSolution, VectorValues(), workingSet, false);
+
+  int it = 0;
+  while (!state.converged) {
+    state = solver.iterate(state);
+    // These checks will fail because the expected solutions obtained from
+    // Forst10book do not follow exactly what we implemented from Nocedal06book.
+    // Specifically, we do not re-identify active constraints and
+    // do not recompute dual variables after every step!!!
+//    CHECK(assert_equal(expectedSolutions[it], state.values, 1e-10));
+//    CHECK(assert_equal(expectedDuals[it], state.duals, 1e-10));
+    it++;
+  }
+
+  CHECK(assert_equal(expectedSolutions[3], state.values, 1e-10));
+}
+
 /* ************************************************************************* */
 
 TEST(QPSolver, optimizeForst10book_pg171Ex5) {

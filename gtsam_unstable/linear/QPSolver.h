@@ -13,6 +13,9 @@
 #include <vector>
 #include <set>
 
+#define ACTIVE 0.0
+#define INACTIVE std::numeric_limits<double>::infinity()
+
 namespace gtsam {
 
 /// This struct holds the state of QPSolver at each iteration
@@ -67,10 +70,12 @@ public:
       const FactorGraph<FACTOR>& graph,
       const VariableIndex& variableIndex) const {
     std::vector<std::pair<Key, Matrix> > Aterms;
-    BOOST_FOREACH(size_t factorIx, variableIndex[key]){
-      typename FACTOR::shared_ptr factor = graph.at(factorIx);
-      Matrix Ai = factor->getA(factor->find(key)).transpose();
-      Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
+    if (variableIndex.find(key) != variableIndex.end()) {
+      BOOST_FOREACH(size_t factorIx, variableIndex[key]){
+        typename FACTOR::shared_ptr factor = graph.at(factorIx);
+        Matrix Ai = factor->getA(factor->find(key)).transpose();
+        Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
+      }
     }
     return Aterms;
   }
@@ -79,6 +84,15 @@ public:
   JacobianFactor::shared_ptr createDualFactor(Key key,
       const LinearInequalityFactorGraph& workingSet,
       const VectorValues& delta) const;
+
+  /**
+   * Create dummy prior for inactive dual variables
+   * TODO: This might be inefficient but I don't know how to avoid
+   * the Indeterminant exception due to no information for the duals
+   * on inactive components of the constraints.
+   */
+  GaussianFactor::shared_ptr createDualPrior(
+      const LinearInequality::shared_ptr& factor) const;
 
   /**
    * Build the dual graph to solve for the Lagrange multipliers.
@@ -172,6 +186,13 @@ public:
 
   /** Iterate 1 step, return a new state with a new workingSet and values */
   QPState iterate(const QPState& state) const;
+
+  /**
+   * Identify active constraints based on initial values.
+   */
+  LinearInequalityFactorGraph identifyActiveConstraints(
+      const LinearInequalityFactorGraph& inequalities,
+      const VectorValues& initialValues) const;
 
   /** Optimize with a provided initial values
    * For this version, it is the responsibility of the caller to provide
