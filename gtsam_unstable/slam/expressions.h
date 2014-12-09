@@ -60,8 +60,8 @@ Point2_ project3(const Pose3_& x, const Point3_& p, const Cal3_S2_& K) {
 template<class CAL>
 Point2_ uncalibrate(const Expression<CAL>& K, const Point2_& xy_hat) {
   Point2(CAL::*uncal)(const Point2& p,
-    boost::optional<Matrix25&> Dpose,
-    boost::optional<Matrix2&> Dpoint) const = &CAL::uncalibrate;
+    OptionalJacobian<2, 5> Dpose,
+    OptionalJacobian<2, 2> Dpoint) const = &CAL::uncalibrate;
 
   return Point2_(K, uncal, xy_hat);
 }

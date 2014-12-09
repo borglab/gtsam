@@ -19,8 +19,8 @@ namespace gtsam {
 
   Pose2_ between(const Pose2_& x, const Pose2_& p) {
     Pose2(Pose2::*transform)(const Pose2& p,
-      boost::optional<Matrix3&> H1,
-      boost::optional<Matrix3&> H2) const = &Pose2::between;
+      OptionalJacobian<3, 3> H1,
+      OptionalJacobian<3, 3> H2) const = &Pose2::between;
 
     return Pose2_(x, transform, p);
   }
