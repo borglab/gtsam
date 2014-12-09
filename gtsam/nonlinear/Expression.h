@@ -206,20 +206,25 @@ private:
     // with an execution trace, made up entirely of "Record" structs, see
     // the FunctionalNode class in expression-inl.h
     size_t size = traceSize();
+
+    // Windows does not support variable length arrays, so memory must be dynamically
+    // allocated on Visual Studio. For more information see the issue below
+    // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
 #ifdef _MSC_VER
     ExecutionTraceStorage* traceStorage = new ExecutionTraceStorage[size];
-    ExecutionTrace<T> trace;
-    T value(traceExecution(values, trace, traceStorage));
-    trace.startReverseAD1(jacobians);
-    delete[] traceStorage;
-    return value;
 #else
     ExecutionTraceStorage traceStorage[size];
+#endif
+
     ExecutionTrace<T> trace;
     T value(traceExecution(values, trace, traceStorage));
     trace.startReverseAD1(jacobians);
-    return value;
+
+#ifdef _MSC_VER
+    delete[] traceStorage;
 #endif
+
+    return value;
   }
 
   // be very selective on who can access these private methods:
