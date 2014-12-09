@@ -81,8 +81,8 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, correctedAcc, correctedOmega, body_P_sensor);
 
   const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
-  const Rot3 Rincr = Rot3::Expmap(theta_incr); // rotation increment computed from the current rotation rate measurement
-  const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr); // Right jacobian computed at theta_incr
+  Matrix3 Jr_theta_incr; // Right jacobian computed at theta_incr
+  const Rot3 Rincr = Rot3::Expmap(theta_incr, Jr_theta_incr); // rotation increment computed from the current rotation rate measurement
 
   // Update Jacobians
   /* ----------------------------------------------------------------------------------------------------------------------- */
@@ -92,26 +92,16 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
   // consider the uncertainty of the bias selection and we keep correlation between biases and preintegrated measurements
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  const Vector3 theta_i = thetaRij(); // super-expensive parametrization of so(3)
-  const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
-
   const Matrix3 R_i = deltaRij(); // store this
   // Update preintegrated measurements. TODO Frank moved from end of this function !!!
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT);
 
-  const Vector3 theta_j = thetaRij(); // super-expensive parametrization of so(3)
-  const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
-
   // Single Jacobians to propagate covariance
-  Matrix3 H_vel_angles = - R_i * skewSymmetric(correctedAcc) * Jr_theta_i * deltaT;
-  // analytic expression corresponding to the following numerical derivative
-  // Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, correctedOmega, correctedAcc, deltaT, _1, deltaVij), theta_i);
+  Matrix3 H_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
   Matrix3 H_vel_biasacc = - R_i * deltaT;
 
-  Matrix3 H_angles_angles = Jrinv_theta_j * Rincr.inverse().matrix() * Jr_theta_i;
-  Matrix3 H_angles_biasomega =- Jrinv_theta_j * Jr_theta_incr * deltaT;
-  // analytic expression corresponding to the following numerical derivative
-  // Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles, correctedOmega, deltaT, _1), thetaij);
+  Matrix3 H_angles_angles = Rincr.inverse().matrix();
+  Matrix3 H_angles_biasomega =- Jr_theta_incr * deltaT;
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix F(15,15);
