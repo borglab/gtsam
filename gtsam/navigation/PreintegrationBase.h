@@ -116,7 +116,7 @@ public:
 
   /// Update preintegrated measurements
   void updatePreintegratedMeasurements(const Vector3& correctedAcc,
-      const Rot3& incrR, const double deltaT, boost::optional<Matrix&> F = boost::none) {
+      const Rot3& incrR, const double deltaT,  OptionalJacobian<9, 9> F) {
 
     Matrix3 dRij = deltaRij(); // expensive
     Vector3 temp = dRij * correctedAcc * deltaT;
@@ -127,9 +127,19 @@ public:
     }
     deltaVij_ += temp;
 
+//    const Matrix3 R_i = deltaRij();
+//    OptionalJacobian<3,3> F_angles_angles;
+//    updateIntegratedRotationAndDeltaT(incrR,deltaT, F ? F_angles_angles : boost::none);
+//    if(F){
+//      Matrix3 F_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
+//      //    pos          vel              angle
+//      *F << I_3x3,       I_3x3 * deltaT,  Z_3x3,          // pos
+//            Z_3x3,       I_3x3,           F_vel_angles,   // vel
+//            Z_3x3,       Z_3x3,           F_angles_angles;// angle
+//    }
     if(F){
-      Matrix3 F_angles_angles;
       const Matrix3 R_i = deltaRij();
+      Matrix3 F_angles_angles;
       updateIntegratedRotationAndDeltaT(incrR,deltaT, F_angles_angles);
       Matrix3 F_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
       F->resize(9,9);

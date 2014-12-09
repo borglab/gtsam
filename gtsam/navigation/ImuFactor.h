@@ -115,7 +115,7 @@ public:
      */
     void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
         boost::optional<const Pose3&> body_P_sensor = boost::none,
-        boost::optional<Matrix&> Fout = boost::none, boost::optional<Matrix&> Gout = boost::none);
+        OptionalJacobian<9, 9> Fout = boost::none, OptionalJacobian<9, 9> Gout = boost::none);
 
     /// methods to access class variables
     Matrix measurementCovariance() const {return measurementCovariance_;}

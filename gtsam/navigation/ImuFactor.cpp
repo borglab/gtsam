@@ -68,7 +68,7 @@ void ImuFactor::PreintegratedMeasurements::resetIntegration(){
 void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
     boost::optional<const Pose3&> body_P_sensor,
-    boost::optional<Matrix&> F_test, boost::optional<Matrix&> G_test) {
+    OptionalJacobian<9, 9> F_test, OptionalJacobian<9, 9> G_test) {
 
   Vector3 correctedAcc, correctedOmega;
   correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, correctedAcc, correctedOmega, body_P_sensor);
@@ -106,7 +106,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     //           intNoise         accNoise      omegaNoise
     (*G_test) << I_3x3 * deltaT,   Z_3x3,        Z_3x3,                                 // pos
                  Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
-                 Z_3x3,            Z_3x3,        D_Rincr_integratedOmega * deltaT;                // angle
+                 Z_3x3,            Z_3x3,        D_Rincr_integratedOmega * deltaT;      // angle
     // Propagation with no approximation:
     // preintMeasCov = F * preintMeasCov * F.transpose() + G_test * (1/deltaT) * measurementCovariance * G_test.transpose();
   }
