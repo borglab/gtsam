@@ -127,28 +127,16 @@ public:
     }
     deltaVij_ += temp;
 
-//    const Matrix3 R_i = deltaRij();
-//    OptionalJacobian<3,3> F_angles_angles;
-//    updateIntegratedRotationAndDeltaT(incrR,deltaT, F ? F_angles_angles : boost::none);
-//    if(F){
-//      Matrix3 F_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
-//      //    pos          vel              angle
-//      *F << I_3x3,       I_3x3 * deltaT,  Z_3x3,          // pos
-//            Z_3x3,       I_3x3,           F_vel_angles,   // vel
-//            Z_3x3,       Z_3x3,           F_angles_angles;// angle
-//    }
+    Matrix3 R_i;
+    if (F) R_i = deltaRij(); // has to be executed before updateIntegratedRotationAndDeltaT as that updates deltaRij
+    Matrix3 F_angles_angles;
+    updateIntegratedRotationAndDeltaT(incrR,deltaT, F ? &F_angles_angles : 0);
     if(F){
-      const Matrix3 R_i = deltaRij();
-      Matrix3 F_angles_angles;
-      updateIntegratedRotationAndDeltaT(incrR,deltaT, F_angles_angles);
       Matrix3 F_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
-      F->resize(9,9);
       //    pos          vel              angle
       *F << I_3x3,       I_3x3 * deltaT,  Z_3x3,          // pos
             Z_3x3,       I_3x3,           F_vel_angles,   // vel
             Z_3x3,       Z_3x3,           F_angles_angles;// angle
-    }else{
-      updateIntegratedRotationAndDeltaT(incrR,deltaT);
     }
   }
 
