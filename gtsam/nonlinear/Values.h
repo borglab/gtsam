@@ -258,6 +258,10 @@ namespace gtsam {
     template <typename ValueType>
     void insert(Key j, const ValueType& val);
 
+    /// Special version for small fixed size vectors, for matlab/python
+    /// throws truntime error if n<1 || n>9
+    void insertFixed(Key j, const Vector& v, size_t n);
+
     /// overloaded insert version that also specifies a chart
     template <typename ValueType, typename Chart>
     void insert(Key j, const ValueType& val);
