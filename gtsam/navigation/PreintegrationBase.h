@@ -127,10 +127,10 @@ public:
     }
     deltaVij_ += temp;
 
-    Matrix3 R_i;
+    Matrix3 R_i, F_angles_angles;
     if (F) R_i = deltaRij(); // has to be executed before updateIntegratedRotationAndDeltaT as that updates deltaRij
-    Matrix3 F_angles_angles;
     updateIntegratedRotationAndDeltaT(incrR,deltaT, F ? &F_angles_angles : 0);
+
     if(F){
       Matrix3 F_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
       //    pos          vel              angle
