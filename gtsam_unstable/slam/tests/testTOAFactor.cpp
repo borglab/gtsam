@@ -17,6 +17,7 @@
  *  @date December 2014
  */
 
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam/geometry/Point3.h>
 
 namespace gtsam {
@@ -32,21 +33,71 @@ public:
   /// Speed of sound
   static const double Speed;
 
+  /// Default Constructor
+  Event() :
+      time_(0) {
+  }
+
   /// Constructor
   Event(double t, double x, double y, double z) :
       time_(t), location_(x, y, z) {
   }
 
   /// Time of arrival to given microphone
-  double toa(const Point3& microphone) {
+  double toa(const Point3& microphone, OptionalJacobian<1, 4> H1 = boost::none,
+      OptionalJacobian<1, 3> H2 = boost::none) const {
+    if (H1) {
+
+    }
     return time_ + location_.distance(microphone) / Speed;
   }
 };
 
 const double Event::Speed = 330;
 
-} //\ namespace gtsam
+// Define GTSAM traits
+namespace traits {
 
+//template<>
+//struct GTSAM_EXPORT is_group<Point2> : public boost::true_type{
+//};
+//
+//template<>
+//struct GTSAM_EXPORT is_manifold<Point2> : public boost::true_type{
+//};
+
+template<>
+struct GTSAM_EXPORT dimension<Event> : public boost::integral_constant<int, 4> {
+};
+
+}
+
+/// A "Time of Arrival" factor
+class TOAFactor: public ExpressionFactor<double> {
+
+  typedef Expression<double> double_;
+
+public:
+
+  /**
+   * Constructor
+   * @param some expression yielding an event
+   * @param microphone_ expression yielding a microphone location
+   * @param toaMeasurement time of arrival at microphone
+   * @param model noise model
+   */
+  TOAFactor(const Expression<Event>& event_,
+      const Expression<Point3>& microphone_, double toaMeasurement,
+      const SharedNoiseModel& model) :
+      ExpressionFactor<double>(model, toaMeasurement,
+          double_(&Event::toa, event_, microphone_)) {
+  }
+
+};
+
+}//\ namespace gtsam
+
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
@@ -83,25 +134,43 @@ TEST( TOA, Toa2 ) {
 }
 
 //*****************************************************************************
-TEST( TOAFactor, WholeEnchilada ) {
-
-  // Create microphones
-  vector<Point3> microphones;
-  microphones.push_back(Point3(0, 0, 0));
-  microphones.push_back(Point3(403 * cm, 0, 0));
-  microphones.push_back(Point3(403 * cm, 403 * cm, 0));
-  microphones.push_back(Point3(0, 403 * cm, 0));
-  EXPECT_LONGS_EQUAL(4, microphones.size());
-
-  // Create a ground truth point
-  const double timeOfEvent = 0;
-  Event event(timeOfEvent, 201.5 * cm, 201.5 * cm, (212 - 45) * cm);
-
-  // Simulate measurements
-  vector<double> measurements(4);
-  for (size_t i = 0; i < 4; i++)
-    measurements[i] = event.toa(microphones[i]);
+TEST( TOA, Expression ) {
+  Key key = 12;
+  Expression<Event> event_(key);
+  Point3 microphone;
+  Expression<Point3> knownMicrophone_(microphone); // constant expression
+  Expression<double> expression(&Event::toa, event_, knownMicrophone_);
 }
+
+//*****************************************************************************
+//TEST( TOAFactor, WholeEnchilada ) {
+//
+//  // Create microphones
+//  vector<Point3> microphones;
+//  microphones.push_back(Point3(0, 0, 0));
+//  microphones.push_back(Point3(403 * cm, 0, 0));
+//  microphones.push_back(Point3(403 * cm, 403 * cm, 0));
+//  microphones.push_back(Point3(0, 403 * cm, 0));
+//  EXPECT_LONGS_EQUAL(4, microphones.size());
+//
+//  // Create a ground truth point
+//  const double timeOfEvent = 0;
+//  Event event(timeOfEvent, 201.5 * cm, 201.5 * cm, (212 - 45) * cm);
+//
+//  // Simulate measurements
+//  vector<double> measurements(4);
+//  for (size_t i = 0; i < 4; i++)
+//    measurements[i] = event.toa(microphones[i]);
+//
+//  // Now, estimate using non-linear optimization
+//  NonlinearFactorGraph graph;
+//  Key key = 12;
+//  Expression<Event> event_(key);
+//  for (size_t i = 0; i < 4; i++) {
+//    Expression<Point3> knownMicrophone_(microphones[i]); // constant expression
+//    graph.add(TOAFactor(event_, knownMicrophone_, measurements[i], model));
+//  }
+//}
 
 //*****************************************************************************
 int main() {
