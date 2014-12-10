@@ -58,7 +58,7 @@ public:
 
   /** equals with an tolerance */
   bool equals(const Event& other, double tol = 1e-9) const {
-    return std::abs(time_-other.time_) < tol
+    return std::abs(time_ - other.time_) < tol
         && location_.equals(other.location_, tol);
   }
 
@@ -82,12 +82,20 @@ public:
   }
 
   /// Time of arrival to given microphone
-  double toa(const Point3& microphone, OptionalJacobian<1, 4> H1 = boost::none,
+  double toa(const Point3& microphone, //
+      OptionalJacobian<1, 4> H1 = boost::none, //
       OptionalJacobian<1, 3> H2 = boost::none) const {
+    Matrix13 D1, D2;
+    double distance = location_.distance(microphone, D1, D2);
     if (H1) {
-
+      // derivative of toa with respect to event
+      *H1 << 1, D1 / Speed;
     }
-    return time_ + location_.distance(microphone) / Speed;
+    if (H2) {
+      // derivative of toa with respect to microphone location
+      *H2 << D2 / Speed;
+    }
+    return time_ + distance / Speed;
   }
 };
 
