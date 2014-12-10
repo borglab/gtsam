@@ -95,7 +95,7 @@ void BlockJacobiPreconditioner::solve(const Vector& y, Vector &x) const {
 
     const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
     Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
-    R.triangularView<Eigen::Upper>().solveInPlace(b);
+    R.triangularView<Eigen::Lower>().solveInPlace(b);
 
     dst += d;
     ptr += sz;
@@ -158,12 +158,12 @@ void BlockJacobiPreconditioner::build(
   double *ptr = buffer_;
   for ( size_t i = 0 ; i < n ; ++i ) {
     /* use eigen to decompose Di */
-    /* It is same as R = chol(M) in MATLAB where M is full preconditioner */
-    const Matrix R = blocks[i].llt().matrixL().transpose();
+    /* It is same as L = chol(M,'lower') in MATLAB where M is full preconditioner */
+    const Matrix L = blocks[i].llt().matrixL();
 
     /* store the data in the buffer */
     size_t sz = dims_[i]*dims_[i] ;
-    std::copy(R.data(), R.data() + sz, ptr);
+    std::copy(L.data(), L.data() + sz, ptr);
 
     /* advance the pointer */
     ptr += sz;
