@@ -268,7 +268,7 @@ LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
 pair<VectorValues, VectorValues> QPSolver::optimize(
     const VectorValues& initialValues) const {
 
-  // TODO: initialize workingSet from the feasible initialValues
+  // Initialize workingSet from the feasible initialValues
   LinearInequalityFactorGraph workingSet =
       identifyActiveConstraints(qp_.inequalities, initialValues);
   QPState state(initialValues, VectorValues(), workingSet, false);
