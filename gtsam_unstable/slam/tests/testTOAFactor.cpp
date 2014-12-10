@@ -17,41 +17,13 @@
  *  @date December 2014
  */
 
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
-#include <gtsam_unstable/geometry/Event.h>
-#include <boost/format.hpp>
-
-namespace gtsam {
-
-/// A "Time of Arrival" factor - so little code seems hardly worth it :-)
-class TOAFactor: public ExpressionFactor<double> {
-
-  typedef Expression<double> double_;
-
-public:
-
-  /**
-   * Constructor
-   * @param some expression yielding an event
-   * @param microphone_ expression yielding a microphone location
-   * @param toaMeasurement time of arrival at microphone
-   * @param model noise model
-   */
-  TOAFactor(const Expression<Event>& eventExpression,
-      const Expression<Point3>& microphone_, double toaMeasurement,
-      const SharedNoiseModel& model) :
-      ExpressionFactor<double>(model, toaMeasurement,
-          double_(&Event::toa, eventExpression, microphone_)) {
-  }
-
-};
-
-} //\ namespace gtsam
-
+#include <gtsam_unstable/slam/TOAFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
+
 #include <CppUnitLite/TestHarness.h>
+#include <boost/format.hpp>
 #include <boost/bind.hpp>
 
 using namespace std;
@@ -148,7 +120,7 @@ TEST( TOAFactor, WholeEnchilada ) {
 /// Test real data
 TEST( TOAFactor, RealExperiment1 ) {
 
-  static const bool verbose = true;
+  static const bool verbose = false;
 
   // Create microphones
   const double height = 0.5;
