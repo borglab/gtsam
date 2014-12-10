@@ -185,7 +185,7 @@ TEST( ImuFactor, PreintegratedMeasurements )
 }
 
 /* ************************************************************************* */
-TEST( ImuFactor, Error )
+TEST( ImuFactor, ErrorAndJacobians )
 {
   // Linearization point
   imuBias::ConstantBias bias; // Bias
@@ -213,6 +213,77 @@ TEST( ImuFactor, Error )
   Vector errorExpected(9); errorExpected << 0, 0, 0, 0, 0, 0, 0, 0, 0;
   EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
 
+  // Actual Jacobians
+  Matrix H1a, H2a, H3a, H4a, H5a;
+  (void) factor.evaluateError(x1, v1, x2, v2, bias, H1a, H2a, H3a, H4a, H5a);
+
+  // Expected Jacobians
+  /////////////////// H1 ///////////////////////////
+  Matrix H1e = numericalDerivative11<Vector,Pose3>(
+      boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, bias), x1);
+  // Jacobians are around zero, so the rotation part is the same as:
+  Matrix H1Rot3 = numericalDerivative11<Rot3,Pose3>(
+      boost::bind(&evaluateRotationError, factor, _1, v1, x2, v2, bias), x1);
+  EXPECT(assert_equal(H1Rot3, H1e.bottomRows(3)));
+  EXPECT(assert_equal(H1e, H1a));
+
+  /////////////////// H2 ///////////////////////////
+  Matrix H2e = numericalDerivative11<Vector,Vector3>(
+      boost::bind(&callEvaluateError, factor, x1, _1, x2, v2, bias), v1);
+  EXPECT(assert_equal(H2e, H2a));
+
+  /////////////////// H3 ///////////////////////////
+  Matrix H3e = numericalDerivative11<Vector,Pose3>(
+      boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, bias), x2);
+  // Jacobians are around zero, so the rotation part is the same as:
+  Matrix H3Rot3 = numericalDerivative11<Rot3,Pose3>(
+      boost::bind(&evaluateRotationError, factor, x1, v1, _1, v2, bias), x2);
+  EXPECT(assert_equal(H3Rot3, H3e.bottomRows(3)));
+  EXPECT(assert_equal(H3e, H3a));
+
+  /////////////////// H4 ///////////////////////////
+  Matrix H4e = numericalDerivative11<Vector,Vector3>(
+      boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, bias), v2);
+  EXPECT(assert_equal(H4e, H4a));
+
+  /////////////////// H5 ///////////////////////////
+  Matrix H5e = numericalDerivative11<Vector,imuBias::ConstantBias>(
+      boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
+  EXPECT(assert_equal(H5e, H5a));
+}
+
+/* ************************************************************************* */
+TEST( ImuFactor, ErrorAndJacobianWithBiases )
+{
+  imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0.1, 0, 0.3)); // Biases (acc, rot)
+  Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/10.0), Point3(5.0, 1.0, -50.0));
+  Vector3 v1(Vector3(0.5, 0.0, 0.0));
+  Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/10.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
+  Vector3 v2(Vector3(0.5, 0.0, 0.0));
+
+  // Measurements
+  Vector3 gravity; gravity << 0, 0, 9.81;
+  Vector3 omegaCoriolis; omegaCoriolis << 0, 0.1, 0.1;
+  Vector3 measuredOmega; measuredOmega << 0, 0, M_PI/10.0+0.3;
+  Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector() + Vector3(0.2,0.0,0.0);
+  double deltaT = 1.0;
+
+  ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0),
+      Vector3(0.0, 0.0, 0.1)), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  // Create factor
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
+
+  SETDEBUG("ImuFactor evaluateError", false);
+  Vector errorActual = factor.evaluateError(x1, v1, x2, v2, bias);
+  SETDEBUG("ImuFactor evaluateError", false);
+
+  // Expected error (should not be zero in this test, as we want to evaluate Jacobians
+  // at a nontrivial linearization point)
+  // Vector errorExpected(9); errorExpected << 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  // EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
+
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Vector,Pose3>(
       boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, bias), x1);
@@ -230,104 +301,22 @@ TEST( ImuFactor, Error )
       boost::bind(&evaluateRotationError, factor, _1, v1, x2, v2, bias), x1);
   Matrix RH3e = numericalDerivative11<Rot3,Pose3>(
       boost::bind(&evaluateRotationError, factor, x1, v1, _1, v2, bias), x2);
+  Matrix RH5e = numericalDerivative11<Rot3,imuBias::ConstantBias>(
+      boost::bind(&evaluateRotationError, factor, x1, v1, x2, v2, _1), bias);
 
   // Actual Jacobians
   Matrix H1a, H2a, H3a, H4a, H5a;
   (void) factor.evaluateError(x1, v1, x2, v2, bias, H1a, H2a, H3a, H4a, H5a);
 
-  // positions and velocities
-  Matrix H1etop6 =  H1e.topRows(6);
-  Matrix H1atop6 =  H1a.topRows(6);
-  EXPECT(assert_equal(H1etop6, H1atop6));
-  // rotations
-  EXPECT(assert_equal(RH1e, H1a.bottomRows(3), 1e-5));  // 1e-5 needs to be added only when using quaternions for rotations
-
+  EXPECT(assert_equal(H1e, H1a));
   EXPECT(assert_equal(H2e, H2a));
-
-  // positions and velocities
-  Matrix H3etop6 =  H3e.topRows(6);
-  Matrix H3atop6 =  H3a.topRows(6);
-  EXPECT(assert_equal(H3etop6, H3atop6));
-  // rotations
-  EXPECT(assert_equal(RH3e, H3a.bottomRows(3), 1e-5));  // 1e-5 needs to be added only when using quaternions for rotations
-
+  EXPECT(assert_equal(H3e, H3a));
   EXPECT(assert_equal(H4e, H4a));
-  // EXPECT(assert_equal(H5e, H5a));
+  EXPECT(assert_equal(H5e, H5a));
 }
 
 /* ************************************************************************* */
-TEST( ImuFactor, ErrorWithBiases )
-{
-  // Linearization point
-//  Vector bias(6); bias << 0.2, 0, 0, 0.1, 0, 0; // Biases (acc, rot)
-//  Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
-//  Vector3 v1(Vector3(0.5, 0.0, 0.0));
-//  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/10.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
-//  Vector3 v2(Vector3(0.5, 0.0, 0.0));
-
-  imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
-  Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
-  Vector3 v1(Vector3(0.5, 0.0, 0.0));
-  Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/4.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
-  Vector3 v2(Vector3(0.5, 0.0, 0.0));
-
-  // Measurements
-  Vector3 gravity; gravity << 0, 0, 9.81;
-  Vector3 omegaCoriolis; omegaCoriolis << 0, 0.1, 0.1;
-  Vector3 measuredOmega; measuredOmega << 0, 0, M_PI/10.0+0.3;
-  Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector() + Vector3(0.2,0.0,0.0);
-  double deltaT = 1.0;
-
-  ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
-    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-
-  //  ImuFactor::PreintegratedMeasurements pre_int_data(bias.head(3), bias.tail(3));
-  //    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-
-    // Create factor
-    ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
-
-    SETDEBUG("ImuFactor evaluateError", false);
-    Vector errorActual = factor.evaluateError(x1, v1, x2, v2, bias);
-    SETDEBUG("ImuFactor evaluateError", false);
-
-    // Expected error
-    Vector errorExpected(9); errorExpected << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-    // EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
-
-    // Expected Jacobians
-    Matrix H1e = numericalDerivative11<Vector,Pose3>(
-        boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, bias), x1);
-    Matrix H2e = numericalDerivative11<Vector,Vector3>(
-        boost::bind(&callEvaluateError, factor, x1, _1, x2, v2, bias), v1);
-    Matrix H3e = numericalDerivative11<Vector,Pose3>(
-        boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, bias), x2);
-    Matrix H4e = numericalDerivative11<Vector,Vector3>(
-        boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, bias), v2);
-    Matrix H5e = numericalDerivative11<Vector,imuBias::ConstantBias>(
-        boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
-
-    // Check rotation Jacobians
-    Matrix RH1e = numericalDerivative11<Rot3,Pose3>(
-        boost::bind(&evaluateRotationError, factor, _1, v1, x2, v2, bias), x1);
-    Matrix RH3e = numericalDerivative11<Rot3,Pose3>(
-        boost::bind(&evaluateRotationError, factor, x1, v1, _1, v2, bias), x2);
-    Matrix RH5e = numericalDerivative11<Rot3,imuBias::ConstantBias>(
-        boost::bind(&evaluateRotationError, factor, x1, v1, x2, v2, _1), bias);
-
-    // Actual Jacobians
-    Matrix H1a, H2a, H3a, H4a, H5a;
-    (void) factor.evaluateError(x1, v1, x2, v2, bias, H1a, H2a, H3a, H4a, H5a);
-
-    EXPECT(assert_equal(H1e, H1a));
-    EXPECT(assert_equal(H2e, H2a));
-    EXPECT(assert_equal(H3e, H3a));
-    EXPECT(assert_equal(H4e, H4a));
-    EXPECT(assert_equal(H5e, H5a));
-}
-
-/* ************************************************************************* */
-TEST( ImuFactor, PartialDerivativeExpmap )
+TEST( ImuFactor, PartialDerivative_wrt_Bias )
 {
   // Linearization point
   Vector3 biasOmega; biasOmega << 0,0,0; ///< Current estimate of rotation rate bias
@@ -365,24 +354,6 @@ TEST( ImuFactor, PartialDerivativeLogmap )
 
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelFdeltheta, actualDelFdeltheta));
-}
-
-Rot3 constRot = Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0);
-Rot3 testRot(const Rot3& Rk){
-  return Rk * constRot;
-}
-/* ************************************************************************* */
-TEST( ImuFactor, understandRot )
-{
-  Rot3 Rbar = Rot3::RzRyRx( M_PI, M_PI/6.0, -M_PI/4.0 );
-
-  Matrix Jexpected = numericalDerivative11<Rot3,Rot3>(boost::bind(
-      &testRot, _1), Rbar);
-
-  Matrix3 Jactual = constRot.transpose();
-
-  // Compare Jacobians
-  EXPECT(assert_equal(Jexpected, Jactual));
 }
 
 /* ************************************************************************* */
