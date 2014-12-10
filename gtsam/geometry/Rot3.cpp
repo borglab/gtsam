@@ -183,9 +183,9 @@ Matrix3 Rot3::ExpmapDerivative(const Vector3& x)    {
     Jr = I_3x3;
   }
   else{
-    const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jr = I_3x3 - ((1-cos(normx))/(normx*normx)) * X +
-        ((normx-sin(normx))/(normx*normx*normx)) * X * X; // right Jacobian
+    const Matrix3 X = skewSymmetric(x) / normx; // element of Lie algebra so(3): X = x^, normalized by normx
+    Jr = I_3x3 - ((1-cos(normx))/(normx)) * X +
+        (1 -sin(normx)/normx) * X * X; // right Jacobian
   }
   return Jr;
 }
