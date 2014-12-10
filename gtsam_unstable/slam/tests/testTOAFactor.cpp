@@ -58,14 +58,6 @@ const double Event::Speed = 330;
 // Define GTSAM traits
 namespace traits {
 
-//template<>
-//struct GTSAM_EXPORT is_group<Point2> : public boost::true_type{
-//};
-//
-//template<>
-//struct GTSAM_EXPORT is_manifold<Point2> : public boost::true_type{
-//};
-
 template<>
 struct GTSAM_EXPORT dimension<Event> : public boost::integral_constant<int, 4> {
 };
@@ -140,37 +132,54 @@ TEST( TOA, Expression ) {
   Point3 microphone;
   Expression<Point3> knownMicrophone_(microphone); // constant expression
   Expression<double> expression(&Event::toa, event_, knownMicrophone_);
+
+//  double timeOfEvent = 25;
+//  Event event12(timeOfEvent, 1, 0, 0);
+//  Values values;
+//  values.insert(key,event12);
+//  double expectedTOA = timeOfEvent + 1 / Event::Speed;
+//  EXPECT_DOUBLES_EQUAL(expectedTOA, expression.value(values), 1e-9);
 }
 
 //*****************************************************************************
-//TEST( TOAFactor, WholeEnchilada ) {
-//
-//  // Create microphones
-//  vector<Point3> microphones;
-//  microphones.push_back(Point3(0, 0, 0));
-//  microphones.push_back(Point3(403 * cm, 0, 0));
-//  microphones.push_back(Point3(403 * cm, 403 * cm, 0));
-//  microphones.push_back(Point3(0, 403 * cm, 0));
-//  EXPECT_LONGS_EQUAL(4, microphones.size());
-//
-//  // Create a ground truth point
-//  const double timeOfEvent = 0;
-//  Event event(timeOfEvent, 201.5 * cm, 201.5 * cm, (212 - 45) * cm);
-//
-//  // Simulate measurements
-//  vector<double> measurements(4);
-//  for (size_t i = 0; i < 4; i++)
-//    measurements[i] = event.toa(microphones[i]);
-//
-//  // Now, estimate using non-linear optimization
-//  NonlinearFactorGraph graph;
-//  Key key = 12;
-//  Expression<Event> event_(key);
-//  for (size_t i = 0; i < 4; i++) {
-//    Expression<Point3> knownMicrophone_(microphones[i]); // constant expression
-//    graph.add(TOAFactor(event_, knownMicrophone_, measurements[i], model));
-//  }
-//}
+TEST( TOAFactor, Constract ) {
+  Key key = 12;
+  Expression<Event> event_(key);
+  Point3 microphone;
+  Expression<Point3> knownMicrophone_(microphone); // constant expression
+  double measurement = 7;
+  TOAFactor factor(event_, knownMicrophone_, measurement, model);
+}
+
+//*****************************************************************************
+TEST( TOAFactor, WholeEnchilada ) {
+
+  // Create microphones
+  vector<Point3> microphones;
+  microphones.push_back(Point3(0, 0, 0));
+  microphones.push_back(Point3(403 * cm, 0, 0));
+  microphones.push_back(Point3(403 * cm, 403 * cm, 0));
+  microphones.push_back(Point3(0, 403 * cm, 0));
+  EXPECT_LONGS_EQUAL(4, microphones.size());
+
+  // Create a ground truth point
+  const double timeOfEvent = 0;
+  Event event(timeOfEvent, 201.5 * cm, 201.5 * cm, (212 - 45) * cm);
+
+  // Simulate measurements
+  vector<double> measurements(4);
+  for (size_t i = 0; i < 4; i++)
+    measurements[i] = event.toa(microphones[i]);
+
+  // Now, estimate using non-linear optimization
+  NonlinearFactorGraph graph;
+  Key key = 12;
+  Expression<Event> event_(key);
+  for (size_t i = 0; i < 4; i++) {
+    Expression<Point3> knownMicrophone_(microphones[i]); // constant expression
+    graph.add(TOAFactor(event_, knownMicrophone_, measurements[i], model));
+  }
+}
 
 //*****************************************************************************
 int main() {
