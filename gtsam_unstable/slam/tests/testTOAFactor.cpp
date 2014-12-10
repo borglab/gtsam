@@ -17,102 +17,12 @@
  *  @date December 2014
  */
 
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
-#include <gtsam/geometry/Point3.h>
-#include <cmath>
+#include <gtsam_unstable/geometry/Event.h>
 
 namespace gtsam {
 
-/// A space-time event
-class Event {
-
-  double time_; ///< Time event was generated
-  Point3 location_; ///< Location at time event was generated
-
-public:
-
-  /// Speed of sound
-  static const double Speed;
-
-  /// Default Constructor
-  Event() :
-      time_(0) {
-  }
-
-  /// Constructor from time and location
-  Event(double t, const Point3& p) :
-      time_(t), location_(p) {
-  }
-
-  /// Constructor with doubles
-  Event(double t, double x, double y, double z) :
-      time_(t), location_(x, y, z) {
-  }
-
-  /** print with optional string */
-  void print(const std::string& s = "") const {
-    std::cout << s << "time = " << time_;
-    location_.print("; location");
-  }
-
-  /** equals with an tolerance */
-  bool equals(const Event& other, double tol = 1e-9) const {
-    return std::abs(time_ - other.time_) < tol
-        && location_.equals(other.location_, tol);
-  }
-
-  /// Manifold stuff:
-
-  size_t dim() const {
-    return 4;
-  }
-  static size_t Dim() {
-    return 4;
-  }
-
-  /// Updates a with tangent space delta
-  inline Event retract(const Vector4& v) const {
-    return Event(time_ + v[0], location_.retract(v.tail(3)));
-  }
-
-  /// Returns inverse retraction
-  inline Vector4 localCoordinates(const Event& q) const {
-    return Vector4::Zero(); // TODO
-  }
-
-  /// Time of arrival to given microphone
-  double toa(const Point3& microphone, //
-      OptionalJacobian<1, 4> H1 = boost::none, //
-      OptionalJacobian<1, 3> H2 = boost::none) const {
-    Matrix13 D1, D2;
-    double distance = location_.distance(microphone, D1, D2);
-    if (H1)
-      // derivative of toa with respect to event
-      *H1 << 1.0, D1 / Speed;
-    if (H2)
-      // derivative of toa with respect to microphone location
-      *H2 << D2 / Speed;
-    return time_ + distance / Speed;
-  }
-};
-
-const double Event::Speed = 330;
-
-// Define GTSAM traits
-namespace traits {
-
-template<>
-struct GTSAM_EXPORT dimension<Event> : public boost::integral_constant<int, 4> {
-};
-
-template<>
-struct GTSAM_EXPORT is_manifold<Event> : public boost::true_type {
-};
-
-}
-
-/// A "Time of Arrival" factor
+/// A "Time of Arrival" factor - so little code seems hardly worth it :-)
 class TOAFactor: public ExpressionFactor<double> {
 
   typedef Expression<double> double_;
@@ -137,6 +47,7 @@ public:
 
 } //\ namespace gtsam
 
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
@@ -154,61 +65,6 @@ static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1,0.5*ms));
 static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
 static const Point3 microphoneAt0;
-
-//*****************************************************************************
-TEST( Event, Constructor ) {
-  const double t = 0;
-  Event actual(t, 201.5 * cm, 201.5 * cm, (212 - 45) * cm);
-}
-
-//*****************************************************************************
-TEST( Event, Toa1 ) {
-  Event event(0, 1, 0, 0);
-  double expected = 1 / Event::Speed;
-  EXPECT_DOUBLES_EQUAL(expected, event.toa(microphoneAt0), 1e-9);
-}
-
-//*****************************************************************************
-TEST( Event, Toa2 ) {
-  double expectedTOA = timeOfEvent + 1 / Event::Speed;
-  EXPECT_DOUBLES_EQUAL(expectedTOA, exampleEvent.toa(microphoneAt0), 1e-9);
-}
-
-//*************************************************************************
-TEST (Event, Derivatives) {
-  Matrix14 actualH1;
-  Matrix13 actualH2;
-  exampleEvent.toa(microphoneAt0, actualH1, actualH2);
-  Matrix expectedH1 = numericalDerivative11<double, Event>(
-      boost::bind(&Event::toa, _1, microphoneAt0, boost::none, boost::none),
-      exampleEvent);
-  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
-  Matrix expectedH2 = numericalDerivative11<double, Point3>(
-      boost::bind(&Event::toa, exampleEvent, _1, boost::none, boost::none),
-      microphoneAt0);
-  EXPECT(assert_equal(expectedH2, actualH2, 1e-8));
-}
-
-//*****************************************************************************
-TEST( Event, Expression ) {
-  Key key = 12;
-  Expression<Event> event_(key);
-  Expression<Point3> knownMicrophone_(microphoneAt0); // constant expression
-  Expression<double> expression(&Event::toa, event_, knownMicrophone_);
-
-  Values values;
-  values.insert(key, exampleEvent);
-  double expectedTOA = timeOfEvent + 1 / Event::Speed;
-  EXPECT_DOUBLES_EQUAL(expectedTOA, expression.value(values), 1e-9);
-}
-
-//*****************************************************************************
-TEST(Event, Retract) {
-  Event event, expected(1, 2, 3, 4);
-  Vector4 v;
-  v << 1, 2, 3, 4;
-  EXPECT(assert_equal(expected, event.retract(v)));
-}
 
 //*****************************************************************************
 TEST( TOAFactor, Construct ) {
