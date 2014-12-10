@@ -19,6 +19,7 @@
 
 #include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam_unstable/geometry/Event.h>
+#include <boost/format.hpp>
 
 namespace gtsam {
 
@@ -177,7 +178,7 @@ TEST( TOAFactor, RealExperiment1 ) {
   data[i++] << 7.8286, 7.8286, 7.8302, 7.8353;
 
   // Create unknowns and initial estimate
-  Event nullEvent;
+  Event nullEvent(3, 403 / 2 * cm, 403 / 2 * cm, (212 - 45) * cm);
   Values initialEstimate;
   vector<Expression<Event> > eventExpressions;
   for (size_t j = 0; j < 15; j++) {
@@ -209,7 +210,14 @@ TEST( TOAFactor, RealExperiment1 ) {
   LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, params);
   Values result = optimizer.optimize();
   if (verbose)
-    result.print("Final Result:\n");
+    for (size_t j = 0; j < 15; j++) {
+      Event event = result.at<Event>(j);
+      double t = event.time();
+      Point3 p = event.location();
+      cout
+          << boost::format("t(%1%) = %2%;\tlocation(%1%,:) = [%3%, %4%, %5%];")
+              % (j + 1) % t % p.x() % p.y() % p.z() << endl;
+    }
 }
 
 //*****************************************************************************

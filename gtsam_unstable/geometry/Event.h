@@ -50,6 +50,9 @@ public:
       time_(t), location_(x, y, z) {
   }
 
+  double time() const { return time_;}
+  Point3 location() const { return location_;}
+
   /** print with optional string */
   void print(const std::string& s = "") const {
     std::cout << s << "time = " << time_;
