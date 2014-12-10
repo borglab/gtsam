@@ -146,10 +146,10 @@ using namespace std;
 using namespace gtsam;
 
 // Create a noise model for the TOA error
-//static const double ms = 1e-3;
+static const double ms = 1e-3;
 static const double cm = 1e-2;
 typedef Eigen::Matrix<double, 1, 1> Vector1;
-static SharedNoiseModel model(noiseModel::Unit::Create(1));
+static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1,0.5*ms));
 
 static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
@@ -222,51 +222,67 @@ TEST( TOAFactor, Construct ) {
 //*****************************************************************************
 TEST( TOAFactor, WholeEnchilada ) {
 
+  static const bool verbose = false;
+
   // Create microphones
+  const double height = 0.5;
   vector<Point3> microphones;
-  microphones.push_back(Point3(0, 0, 0));
-  microphones.push_back(Point3(403 * cm, 0, 0));
-  microphones.push_back(Point3(403 * cm, 403 * cm, 0));
-  microphones.push_back(Point3(0, 403 * cm, 0));
+  microphones.push_back(Point3(0, 0, height));
+  microphones.push_back(Point3(403 * cm, 0, height));
+  microphones.push_back(Point3(403 * cm, 403 * cm, height));
+  microphones.push_back(Point3(0, 403 * cm, height));
   EXPECT_LONGS_EQUAL(4, microphones.size());
+  microphones.push_back(Point3(200*cm, 200 * cm, height));
 
   // Create a ground truth point
   const double timeOfEvent = 0;
-  Event groundTruthEvent(timeOfEvent, 201.5 * cm, 201.5 * cm, (212 - 45) * cm);
+  Event groundTruthEvent(timeOfEvent, 245 * cm, 201.5 * cm, (212 - 45) * cm);
 
   // Simulate measurements
-  vector<double> measurements(4);
-  for (size_t i = 0; i < 4; i++)
+  size_t K = microphones.size();
+  vector<double> measurements(K);
+  for (size_t i = 0; i < K; i++) {
     measurements[i] = groundTruthEvent.toa(microphones[i]);
+    if (verbose) {
+      cout << "mic" << i << " = " << microphones[i] << endl;
+      cout << "z" << i << " = " << measurements[i]/ms << endl;
+    }
+  }
 
   // Now, estimate using non-linear optimization
   NonlinearFactorGraph graph;
   Key key = 12;
   Expression<Event> event_(key);
-  for (size_t i = 0; i < 4; i++) {
+  for (size_t i = 0; i < K; i++) {
     Expression<Point3> knownMicrophone_(microphones[i]); // constant expression
     graph.add(TOAFactor(event_, knownMicrophone_, measurements[i], model));
   }
 
   /// Print the graph
-//  GTSAM_PRINT(graph);
+  if (verbose)
+    GTSAM_PRINT(graph);
 
   // Create initial estimate
   Values initialEstimate;
-  Event estimatedEvent(timeOfEvent + 10, 200 * cm, 150 * cm, 50 * cm);
+  //Event estimatedEvent(timeOfEvent -10, 200 * cm, 150 * cm, 350 * cm);
+  Vector4 delta; delta << 0.1, 0.1, -0.1, 0.1;
+  Event estimatedEvent = groundTruthEvent.retract(delta);
   initialEstimate.insert(key, estimatedEvent);
 
   // Print
-  initialEstimate.print("Initial Estimate:\n");
+  if (verbose)
+    initialEstimate.print("Initial Estimate:\n");
 
   // Optimize using Levenberg-Marquardt optimization.
   LevenbergMarquardtParams params;
-  params.setVerbosity("ERROR");
   params.setAbsoluteErrorTol(1e-10);
-  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
+  if (verbose)
+    params.setVerbosity("ERROR");
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, params);
   Values result = optimizer.optimize();
+  if (verbose)
+    result.print("Final Result:\n");
 
-  result.print("Final Result:\n");
   EXPECT(assert_equal(groundTruthEvent, result.at<Event>(key), 1e-6));
 }
 
