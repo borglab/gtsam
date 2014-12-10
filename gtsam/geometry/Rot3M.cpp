@@ -225,7 +225,7 @@ Vector3 Rot3::Logmap(const Rot3& R, boost::optional<Matrix3&> H) {
 
   if(H){
     H->resize(3,3);
-    *H = Rot3::logmapDerivative(thetaR);
+    *H = Rot3::LogmapDerivative(thetaR);
   }
   return thetaR;
 }

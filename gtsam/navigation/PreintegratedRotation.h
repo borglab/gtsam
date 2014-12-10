@@ -106,7 +106,7 @@ public:
       // This was done via an expmap, now we go *back* to so<3>
       const Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected, Jrinv_theta_bc);
       const Matrix3 Jr_JbiasOmegaIncr = //
-          Rot3::expmapDerivative(delRdelBiasOmega_ * biasOmegaIncr);
+          Rot3::ExpmapDerivative(delRdelBiasOmega_ * biasOmegaIncr);
       (*H) = Jrinv_theta_bc * Jr_JbiasOmegaIncr * delRdelBiasOmega_;
       return biascorrectedOmega;
     }
