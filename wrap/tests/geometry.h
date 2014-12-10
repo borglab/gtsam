@@ -14,6 +14,7 @@ class Point2 {
  char returnChar() const;
  void argChar(char a) const;
  void argUChar(unsigned char a) const;
+ void eigenArguments(Vector v, Matrix m) const;
  VectorNotEigen vectorConfusion();
 
  void serializable() const; // Sets flag and creates export, but does not make serialization functions
@@ -100,12 +101,12 @@ virtual class MyBase {
 };
 
 // A templated class
-template<T = {gtsam::Point2, gtsam::Point3}>
+template<T = {gtsam::Point2, Matrix}>
 virtual class MyTemplate : MyBase {
   MyTemplate();
 
-  template<ARG = {gtsam::Point2, gtsam::Point3}>
-  void templatedMethod(const ARG& t);
+  template<ARG = {gtsam::Point2, gtsam::Point3, Vector, Matrix}>
+  ARG templatedMethod(const ARG& t);
 
   // Stress test templates and pointer combinations
   void accept_T(const T& value) const;
@@ -124,7 +125,7 @@ class MyFactor {
 };
 
 // and a typedef specializing it
-typedef MyFactor<gtsam::Pose2, gtsam::Point2> MyFactorPosePoint2;
+typedef MyFactor<gtsam::Pose2, Matrix> MyFactorPosePoint2;
 
 // comments at the end!
 

@@ -76,10 +76,13 @@ TEST(ExpressionFactor, Model) {
 
   // Concise version
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+
+  // Check values and derivatives
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
   EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f, values, 1e-5, 1e-5); // another way
 }
 
 /* ************************************************************************* */
@@ -125,8 +128,40 @@ TEST(ExpressionFactor, Unary) {
 }
 
 /* ************************************************************************* */
+// Unary(Leaf)) and Unary(Unary(Leaf)))
+// wide version (not handled in fixed-size pipeline)
+typedef Eigen::Matrix<double,9,3> Matrix93;
+Vector9 wide(const Point3& p, OptionalJacobian<9,3> H) {
+  Vector9 v;
+  v << p.vector(), p.vector(), p.vector();
+  if (H) *H << eye(3), eye(3), eye(3);
+  return v;
+}
+typedef Eigen::Matrix<double,9,9> Matrix9;
+Vector9 id9(const Vector9& v, OptionalJacobian<9,9> H) {
+  if (H) *H = Matrix9::Identity();
+  return v;
+}
+TEST(ExpressionFactor, Wide) {
+  // Create some values
+  Values values;
+  values.insert(2, Point3(0, 0, 1));
+  Point3_ point(2);
+  Vector9 measured;
+  Expression<Vector9> expression(wide,point);
+  SharedNoiseModel model = noiseModel::Unit::Create(9);
+
+  ExpressionFactor<Vector9> f1(model, measured, expression);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f1, values, 1e-5, 1e-9);
+
+  Expression<Vector9> expression2(id9,expression);
+  ExpressionFactor<Vector9> f2(model, measured, expression2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f2, values, 1e-5, 1e-9);
+}
+
+/* ************************************************************************* */
 static Point2 myUncal(const Cal3_S2& K, const Point2& p,
-    boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
+    OptionalJacobian<2,5> Dcal, OptionalJacobian<2,2> Dp) {
   return K.uncalibrate(p, Dcal, Dp);
 }
 
@@ -392,8 +427,7 @@ TEST(ExpressionFactor, compose3) {
 /* ************************************************************************* */
 // Test compose with three arguments
 Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
-    boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2,
-    boost::optional<Matrix3&> H3) {
+    OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
     *H1 = eye(3);

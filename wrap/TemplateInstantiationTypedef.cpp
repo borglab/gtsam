@@ -32,7 +32,7 @@ Class TemplateInstantiationTypedef::findAndExpand(
   // Find matching class
   boost::optional<Class const &> matchedClass;
   BOOST_FOREACH(const Class& cls, classes) {
-    if (cls.name == class_.name && cls.namespaces == class_.namespaces
+    if (cls.name() == class_.name() && cls.namespaces() == class_.namespaces()
         && cls.templateArgs.size() == typeList.size()) {
       matchedClass.reset(cls);
       break;
@@ -52,7 +52,8 @@ Class TemplateInstantiationTypedef::findAndExpand(
   }
 
   // Fix class properties
-  classInst.name = name;
+  classInst.name_ = name();
+  classInst.namespaces_ = namespaces();
   classInst.templateArgs.clear();
   classInst.typedefName = matchedClass->qualifiedName("::") + "<";
   if (typeList.size() > 0)
@@ -60,7 +61,6 @@ Class TemplateInstantiationTypedef::findAndExpand(
   for (size_t i = 1; i < typeList.size(); ++i)
     classInst.typedefName += (", " + typeList[i].qualifiedName("::"));
   classInst.typedefName += ">";
-  classInst.namespaces = namespaces;
 
   return classInst;
 }

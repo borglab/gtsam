@@ -156,12 +156,6 @@ virtual class Value {
   size_t dim() const;
 };
 
-class Vector3 {
-  Vector3(Vector v);
-};
-class Vector6 {
-  Vector6(Vector v);
-};
 #include <gtsam/base/LieScalar.h>
 class LieScalar {
   // Standard constructors
@@ -757,10 +751,6 @@ class CalibratedCamera {
   size_t dim() const;
   gtsam::CalibratedCamera retract(const Vector& d) const;
   Vector localCoordinates(const gtsam::CalibratedCamera& T2) const;
-
-  // Group
-  gtsam::CalibratedCamera compose(const gtsam::CalibratedCamera& c) const;
-  gtsam::CalibratedCamera inverse() const;
 
   // Action on Point3
   gtsam::Point2 project(const gtsam::Point3& point) const;
@@ -1727,6 +1717,7 @@ class Values {
   // void insert(size_t j, const gtsam::Value& value);
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
+
   void insert(size_t j, const gtsam::Point2& t);
   void insert(size_t j, const gtsam::Point3& t);
   void insert(size_t j, const gtsam::Rot2& t);
@@ -1738,6 +1729,11 @@ class Values {
   void insert(size_t j, const gtsam::Cal3Bundler& t);
   void insert(size_t j, const gtsam::EssentialMatrix& t);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& t);
+  void insert(size_t j, Vector t);
+  void insert(size_t j, Matrix t);
+
+  // Fixed size version
+  void insertFixed(size_t j, Vector t, size_t n);
 
   void update(size_t j, const gtsam::Point2& t);
   void update(size_t j, const gtsam::Point3& t);
@@ -1750,9 +1746,10 @@ class Values {
   void update(size_t j, const gtsam::Cal3Bundler& t);
   void update(size_t j, const gtsam::EssentialMatrix& t);
   void update(size_t j, const gtsam::imuBias::ConstantBias& t);
+  void update(size_t j, Vector t);
+  void update(size_t j, Matrix t);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2,
-      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::imuBias::ConstantBias}>
+  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
   T at(size_t j);
 };
 
@@ -2150,7 +2147,7 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/slam/PriorFactor.h>
-template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+template<T = { gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2195,10 +2192,14 @@ typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactorPosePoint3;
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
-typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;
-typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimpleCameraPoint;
-typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
-typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
+
+// Commented out by Frank Dec 2014: not poses!
+// If needed, we need a RangeFactor that takes a camera, extracts the pose
+// Should be easy with Expressions
+//typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;
+//typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimpleCameraPoint;
+//typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
+//typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
 
 #include <gtsam/slam/BearingFactor.h>
@@ -2391,7 +2392,7 @@ class ConstantBias {
 
 #include <gtsam/navigation/ImuFactor.h>
 class PoseVelocity{
-    PoseVelocity(const gtsam::Pose3& pose, const gtsam::Vector3 velocity);
+    PoseVelocity(const gtsam::Pose3& pose, Vector velocity);
   };
 class ImuFactorPreintegratedMeasurements {
   // Standard Constructor
@@ -2430,7 +2431,7 @@ virtual class ImuFactor : gtsam::NonlinearFactor {
       const gtsam::Pose3& body_P_sensor);
   // Standard Interface
   gtsam::ImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
-  gtsam::PoseVelocity Predict(const gtsam::Pose3& pose_i, const gtsam::Vector3& vel_i, const gtsam::imuBias::ConstantBias& bias,
+  gtsam::PoseVelocity Predict(const gtsam::Pose3& pose_i, Vector vel_i, const gtsam::imuBias::ConstantBias& bias,
       const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector gravity, Vector omegaCoriolis) const;
 };
@@ -2476,7 +2477,7 @@ virtual class AHRSFactor : gtsam::NonlinearFactor {
 
 #include <gtsam/navigation/CombinedImuFactor.h>
 class PoseVelocityBias{
-    PoseVelocityBias(const gtsam::Pose3& pose, const gtsam::Vector3 velocity, const gtsam::imuBias::ConstantBias& bias);
+    PoseVelocityBias(const gtsam::Pose3& pose, Vector velocity, const gtsam::imuBias::ConstantBias& bias);
   };
 class CombinedImuFactorPreintegratedMeasurements {
   // Standard Constructor
@@ -2527,7 +2528,7 @@ virtual class CombinedImuFactor : gtsam::NonlinearFactor {
 
   // Standard Interface
   gtsam::CombinedImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
-  gtsam::PoseVelocityBias Predict(const gtsam::Pose3& pose_i, const gtsam::Vector3& vel_i, const gtsam::imuBias::ConstantBias& bias_i,
+  gtsam::PoseVelocityBias Predict(const gtsam::Pose3& pose_i, Vector vel_i, const gtsam::imuBias::ConstantBias& bias_i,
       const gtsam::CombinedImuFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector gravity, Vector omegaCoriolis);
 };

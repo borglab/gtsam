@@ -37,27 +37,31 @@ namespace gtsam {
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
-typedef Eigen::Matrix2d Matrix2;
-typedef Eigen::Matrix3d Matrix3;
-typedef Eigen::Matrix4d Matrix4;
-typedef Eigen::Matrix<double,5,5> Matrix5;
-typedef Eigen::Matrix<double,6,6> Matrix6;
+// Create handy typedefs and constants for square-size matrices
+// MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9
+#define GTSAM_MAKE_TYPEDEFS(SIZE, SUFFIX)   \
+typedef Eigen::Matrix<double, SIZE, SIZE> Matrix##SUFFIX;  \
+typedef Eigen::Matrix<double, 1, SIZE> Matrix1##SUFFIX;  \
+typedef Eigen::Matrix<double, 2, SIZE> Matrix2##SUFFIX;  \
+typedef Eigen::Matrix<double, 3, SIZE> Matrix3##SUFFIX;  \
+typedef Eigen::Matrix<double, 4, SIZE> Matrix4##SUFFIX;  \
+typedef Eigen::Matrix<double, 5, SIZE> Matrix5##SUFFIX;  \
+typedef Eigen::Matrix<double, 6, SIZE> Matrix6##SUFFIX;  \
+typedef Eigen::Matrix<double, 7, SIZE> Matrix7##SUFFIX;  \
+typedef Eigen::Matrix<double, 8, SIZE> Matrix8##SUFFIX;  \
+typedef Eigen::Matrix<double, 9, SIZE> Matrix9##SUFFIX;  \
+static const Eigen::MatrixBase<Matrix##SUFFIX>::IdentityReturnType I_##SUFFIX##x##SUFFIX = Matrix##SUFFIX::Identity(); \
+static const Eigen::MatrixBase<Matrix##SUFFIX>::ConstantReturnType Z_##SUFFIX##x##SUFFIX = Matrix##SUFFIX::Zero();
 
-typedef Eigen::Matrix<double,2,3> Matrix23;
-typedef Eigen::Matrix<double,2,4> Matrix24;
-typedef Eigen::Matrix<double,2,5> Matrix25;
-typedef Eigen::Matrix<double,2,6> Matrix26;
-typedef Eigen::Matrix<double,2,7> Matrix27;
-typedef Eigen::Matrix<double,2,8> Matrix28;
-typedef Eigen::Matrix<double,2,9> Matrix29;
-
-typedef Eigen::Matrix<double,3,2> Matrix32;
-typedef Eigen::Matrix<double,3,4> Matrix34;
-typedef Eigen::Matrix<double,3,5> Matrix35;
-typedef Eigen::Matrix<double,3,6> Matrix36;
-typedef Eigen::Matrix<double,3,7> Matrix37;
-typedef Eigen::Matrix<double,3,8> Matrix38;
-typedef Eigen::Matrix<double,3,9> Matrix39;
+GTSAM_MAKE_TYPEDEFS(1,1);
+GTSAM_MAKE_TYPEDEFS(2,2);
+GTSAM_MAKE_TYPEDEFS(3,3);
+GTSAM_MAKE_TYPEDEFS(4,4);
+GTSAM_MAKE_TYPEDEFS(5,5);
+GTSAM_MAKE_TYPEDEFS(6,6);
+GTSAM_MAKE_TYPEDEFS(7,7);
+GTSAM_MAKE_TYPEDEFS(8,8);
+GTSAM_MAKE_TYPEDEFS(9,9);
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;

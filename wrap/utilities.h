@@ -67,7 +67,7 @@ private:
   const std::string what_;
 public:
   DependencyMissing(const std::string& dep, const std::string& loc) :
-    what_("Missing dependency " + dep + " in " + loc) {}
+    what_("Missing dependency '" + dep + "' in " + loc) {}
   ~DependencyMissing() throw() {}
   virtual const char* what() const throw() { return what_.c_str(); }
 };

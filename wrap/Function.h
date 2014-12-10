@@ -19,6 +19,7 @@
 #pragma once
 
 #include "Argument.h"
+#include <boost/optional.hpp>
 
 namespace wrap {
 
@@ -28,7 +29,7 @@ class Function {
 protected:
 
   std::string name_; ///< name of method
-  Qualified templateArgValue_; ///< value of template argument if applicable
+  boost::optional<Qualified> templateArgValue_; ///< value of template argument if applicable
   bool verbose_;
 
 public:
@@ -37,19 +38,35 @@ public:
    * @brief first time, fill in instance variables, otherwise check if same
    * @return true if first time, false thereafter
    */
-  bool initializeOrCheck(const std::string& name, const Qualified& instName =
-      Qualified(), bool verbose = false);
+  bool initializeOrCheck(const std::string& name,
+      boost::optional<const Qualified> instName = boost::none, bool verbose =
+          false);
 
   std::string name() const {
     return name_;
   }
 
-  std::string matlabName() const {
-    if (templateArgValue_.empty())
-      return name_;
-    else
-      return name_ + templateArgValue_.name;
+  /// Only Methods are non-static
+  virtual bool isStatic() const {
+    return true;
   }
+
+  std::string matlabName() const {
+    if (templateArgValue_)
+      return name_ + templateArgValue_->name();
+    else
+      return name_;
+  }
+
+  /// Emit function call to MATLAB (no argument checking)
+  void emit_call(FileWriter& proxyFile, const ReturnValue& returnVal,
+      const std::string& wrapperName, int id) const;
+
+  /// Emit checking arguments and function call to MATLAB
+  void emit_conditional_call(FileWriter& proxyFile,
+      const ReturnValue& returnVal, const ArgumentList& args,
+      const std::string& wrapperName, int id) const;
+
 };
 
 } // \namespace wrap

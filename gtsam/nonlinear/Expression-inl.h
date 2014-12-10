@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/OptionalJacobian.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -42,21 +43,21 @@ namespace gtsam {
 
 const unsigned TraceAlignment = 16;
 
-template <typename T>
-T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment){
+template<typename T>
+T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment) {
   // right now only word sized types are supported.
   // Easy to extend if needed,
   //   by somehow inferring the unsigned integer of same size
   BOOST_STATIC_ASSERT(sizeof(T) == sizeof(size_t));
   size_t & uiValue = reinterpret_cast<size_t &>(value);
   size_t misAlignment = uiValue % requiredAlignment;
-  if(misAlignment) {
+  if (misAlignment) {
     uiValue += requiredAlignment - misAlignment;
   }
   return value;
 }
-template <typename T>
-T upAligned(T value, unsigned requiredAlignment = TraceAlignment){
+template<typename T>
+T upAligned(T value, unsigned requiredAlignment = TraceAlignment) {
   return upAlign(value, requiredAlignment);
 }
 
@@ -88,33 +89,34 @@ public:
 
 namespace internal {
 
-template <bool UseBlock, typename Derived>
+template<bool UseBlock, typename Derived>
 struct UseBlockIf {
   static void addToJacobian(const Eigen::MatrixBase<Derived>& dTdA,
-                            JacobianMap& jacobians, Key key){
+      JacobianMap& jacobians, Key key) {
     // block makes HUGE difference
-    jacobians(key).block<Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>(0, 0) += dTdA;
-  };
+    jacobians(key).block<Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>(
+        0, 0) += dTdA;
+  }
+  ;
 };
 /// Handle Leaf Case for Dynamic Matrix type (slower)
-template <typename Derived>
+template<typename Derived>
 struct UseBlockIf<false, Derived> {
   static void addToJacobian(const Eigen::MatrixBase<Derived>& dTdA,
-                            JacobianMap& jacobians, Key key) {
+      JacobianMap& jacobians, Key key) {
     jacobians(key) += dTdA;
   }
 };
 }
 
-/// Handle Leaf Case: reverseAD ends here, by writing a matrix into Jacobians
+/// Handle Leaf Case: reverse AD ends here, by writing a matrix into Jacobians
 template<typename Derived>
 void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
     JacobianMap& jacobians, Key key) {
   internal::UseBlockIf<
-      Derived::RowsAtCompileTime != Eigen::Dynamic &&
-      Derived::ColsAtCompileTime != Eigen::Dynamic,
-      Derived>
-    ::addToJacobian(dTdA, jacobians, key);
+      Derived::RowsAtCompileTime != Eigen::Dynamic
+          && Derived::ColsAtCompileTime != Eigen::Dynamic, Derived>::addToJacobian(
+      dTdA, jacobians, key);
 }
 
 //-----------------------------------------------------------------------------
@@ -186,28 +188,28 @@ public:
     }
   }
   /**
-   *  *** This is the main entry point for reverseAD, called from Expression ***
+   *  *** This is the main entry point for reverse AD, called from Expression ***
    * Called only once, either inserts I into Jacobians (Leaf) or starts AD (Function)
    */
   typedef Eigen::Matrix<double, Dim, Dim> JacobianTT;
-  void startReverseAD(JacobianMap& jacobians) const {
+  void startReverseAD1(JacobianMap& jacobians) const {
     if (kind == Leaf) {
       // This branch will only be called on trivial Leaf expressions, i.e. Priors
       static const JacobianTT I = JacobianTT::Identity();
       handleLeafCase(I, jacobians, content.key);
     } else if (kind == Function)
       // This is the more typical entry point, starting the AD pipeline
-      // Inside the startReverseAD that the correctly dimensioned pipeline is chosen.
-      content.ptr->startReverseAD(jacobians);
+      // Inside startReverseAD2 the correctly dimensioned pipeline is chosen.
+      content.ptr->startReverseAD2(jacobians);
   }
   // Either add to Jacobians (Leaf) or propagate (Function)
   template<typename DerivedMatrix>
-  void reverseAD(const Eigen::MatrixBase<DerivedMatrix> & dTdA,
+  void reverseAD1(const Eigen::MatrixBase<DerivedMatrix> & dTdA,
       JacobianMap& jacobians) const {
     if (kind == Leaf)
       handleLeafCase(dTdA, jacobians, content.key);
     else if (kind == Function)
-      content.ptr->reverseAD(dTdA, jacobians);
+      content.ptr->reverseAD2(dTdA, jacobians);
   }
 
   /// Define type so we can apply it as a meta-function
@@ -265,7 +267,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-     ExecutionTraceStorage* traceStorage) const = 0;
+      ExecutionTraceStorage* traceStorage) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -336,7 +338,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual const value_type& traceExecution(const Values& values,
-      ExecutionTrace<value_type>& trace, 
+      ExecutionTrace<value_type>& trace,
       ExecutionTraceStorage* traceStorage) const {
     trace.setLeaf(key_);
     return dynamic_cast<const value_type&>(values.at(key_));
@@ -454,10 +456,9 @@ struct Jacobian {
 
 /// meta-function to generate JacobianTA optional reference
 template<class T, class A>
-struct OptionalJacobian {
-  typedef Eigen::Matrix<double, traits::dimension<T>::value,
-      traits::dimension<A>::value> Jacobian;
-  typedef boost::optional<Jacobian&> type;
+struct MakeOptionalJacobian {
+  typedef OptionalJacobian<traits::dimension<T>::value,
+      traits::dimension<A>::value> type;
 };
 
 /**
@@ -470,10 +471,10 @@ struct FunctionalBase: ExpressionNode<T> {
   struct Record {
     void print(const std::string& indent) const {
     }
-    void startReverseAD(JacobianMap& jacobians) const {
+    void startReverseAD4(JacobianMap& jacobians) const {
     }
     template<typename SomeMatrix>
-    void reverseAD(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
     }
   };
   /// Construct an execution trace for reverse AD
@@ -505,9 +506,9 @@ struct JacobianTrace {
   typename Jacobian<T, A>::type dTdA;
 };
 
-/**
- * Recursive Definition of Functional ExpressionNode
- */
+// Recursive Definition of Functional ExpressionNode
+// The reason we inherit from Argument<T, A, N> is because we can then
+// case to this unique signature to retrieve the expression at any level
 template<class T, class A, class Base>
 struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
@@ -528,7 +529,9 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     This::expression->dims(map);
   }
 
-  /// Recursive Record Class for Functional Expressions
+  // Recursive Record Class for Functional Expressions
+  // The reason we inherit from JacobianTrace<T, A, N> is because we can then
+  // case to this unique signature to retrieve the value/trace at any level
   struct Record: JacobianTrace<T, A, N>, Base::Record {
 
     typedef T return_type;
@@ -543,22 +546,31 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     }
 
     /// Start the reverse AD process
-    void startReverseAD(JacobianMap& jacobians) const {
-      Base::Record::startReverseAD(jacobians);
-      This::trace.reverseAD(This::dTdA, jacobians);
+    void startReverseAD4(JacobianMap& jacobians) const {
+      Base::Record::startReverseAD4(jacobians);
+      // This is the crucial point where the size of the AD pipeline is selected.
+      // One pipeline is started for each argument, but the number of rows in each
+      // pipeline is the same, namely the dimension of the output argument T.
+      // For example, if the entire expression is rooted by a binary function
+      // yielding a 2D result, then the matrix dTdA will have 2 rows.
+      // ExecutionTrace::reverseAD1 just passes this on to CallRecord::reverseAD2
+      // which calls the correctly sized CallRecord::reverseAD3, which in turn
+      // calls reverseAD4 below.
+      This::trace.reverseAD1(This::dTdA, jacobians);
     }
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    template<int Rows, int Cols>
-    void reverseAD(const Eigen::Matrix<double, Rows, Cols> & dFdT,
+    // Cols is always known at compile time
+    template<typename SomeMatrix>
+    void reverseAD4(const SomeMatrix & dFdT,
         JacobianMap& jacobians) const {
-      Base::Record::reverseAD(dFdT, jacobians);
-      This::trace.reverseAD(dFdT * This::dTdA, jacobians);
+      Base::Record::reverseAD4(dFdT, jacobians);
+      This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
     }
   };
 
   /// Construct an execution trace for reverse AD
-  void trace(const Values& values, Record* record, 
+  void trace(const Values& values, Record* record,
       ExecutionTraceStorage*& traceStorage) const {
     Base::trace(values, record, traceStorage); // recurse
     // Write an Expression<A> execution trace in record->trace
@@ -614,8 +626,8 @@ struct FunctionalNode {
     struct Record: public internal::CallRecordImplementor<Record,
         traits::dimension<T>::value>, public Base::Record {
       using Base::Record::print;
-      using Base::Record::startReverseAD;
-      using Base::Record::reverseAD;
+      using Base::Record::startReverseAD4;
+      using Base::Record::reverseAD4;
 
       virtual ~Record() {
       }
@@ -634,7 +646,7 @@ struct FunctionalNode {
     };
 
     /// Construct an execution trace for reverse AD
-    Record* trace(const Values& values, 
+    Record* trace(const Values& values,
         ExecutionTraceStorage* traceStorage) const {
       assert(reinterpret_cast<size_t>(traceStorage) % TraceAlignment == 0);
 
@@ -659,7 +671,8 @@ class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
 public:
 
-  typedef boost::function<T(const A1&, typename OptionalJacobian<T, A1>::type)> Function;
+  typedef boost::function<
+      T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
   typedef typename Base::Record Record;
 
@@ -704,8 +717,8 @@ class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::t
 public:
 
   typedef boost::function<
-      T(const A1&, const A2&, typename OptionalJacobian<T, A1>::type,
-          typename OptionalJacobian<T, A2>::type)> Function;
+      T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
+          typename MakeOptionalJacobian<T, A2>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
 
@@ -758,9 +771,10 @@ class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3>
 public:
 
   typedef boost::function<
-      T(const A1&, const A2&, const A3&, typename OptionalJacobian<T, A1>::type,
-          typename OptionalJacobian<T, A2>::type,
-          typename OptionalJacobian<T, A3>::type)> Function;
+      T(const A1&, const A2&, const A3&,
+          typename MakeOptionalJacobian<T, A1>::type,
+          typename MakeOptionalJacobian<T, A2>::type,
+          typename MakeOptionalJacobian<T, A3>::type)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;
 
@@ -776,7 +790,8 @@ private:
     this->template reset<A2, 2>(e2.root());
     this->template reset<A3, 3>(e3.root());
     ExpressionNode<T>::traceSize_ = //
-        upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize() + e3.traceSize();
+        upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize()
+            + e3.traceSize();
   }
 
   friend class Expression<T> ;

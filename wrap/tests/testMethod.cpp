@@ -23,13 +23,13 @@
 using namespace std;
 using namespace wrap;
 
-/* ************************************************************************* */
+//******************************************************************************
 // Constructor
 TEST( Method, Constructor ) {
   Method method;
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 // addOverload
 TEST( Method, addOverload ) {
   Method method;
@@ -42,9 +42,22 @@ TEST( Method, addOverload ) {
   EXPECT_LONGS_EQUAL(2, method.nrOverloads());
 }
 
-/* ************************************************************************* */
+////******************************************************************************
+//TEST( Method, grammar ) {
+//
+//  using classic::space_p;
+//
+//  // Create type grammar that will place result in actual
+//  Method actual;
+//  method_grammar method_g(actual);
+//
+//  // a class type with namespaces
+//  EXPECT(parse("double x() const;", method_g, space_p).full);
+//}
+
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-/* ************************************************************************* */
+//******************************************************************************

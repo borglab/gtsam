@@ -32,10 +32,11 @@ namespace gtsam {
 template<class T>
 class ExpressionFactor: public NoiseModelFactor {
 
+protected:
+
   T measurement_; ///< the measurement to be compared with the expression
   Expression<T> expression_; ///< the expression that is AD enabled
   FastVector<int> dims_; ///< dimensions of the Jacobian matrices
-  size_t augmentedCols_; ///< total number of columns + 1 (for RHS)
 
   static const int Dim = traits::dimension<T>::value;
 
@@ -55,15 +56,6 @@ public:
     // Get keys and dimensions for Jacobian matrices
     // An Expression is assumed unmutable, so we do this now
     boost::tie(keys_, dims_) = expression_.keysAndDims();
-
-    // Add sizes to know how much memory to allocate on stack in linearize
-    augmentedCols_ = std::accumulate(dims_.begin(), dims_.end(), 1);
-
-#ifdef DEBUG_ExpressionFactor
-    BOOST_FOREACH(size_t d, dims_)
-    std::cout << d << " ";
-    std::cout << " -> " << Dim << "x" << augmentedCols_ << std::endl;
-#endif
   }
 
   /**

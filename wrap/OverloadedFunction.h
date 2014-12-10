@@ -87,7 +87,8 @@ class OverloadedFunction: public Function, public ArgumentOverloads {
 public:
 
   bool addOverload(const std::string& name, const ArgumentList& args,
-      const Qualified& instName = Qualified(), bool verbose = false) {
+      boost::optional<const Qualified> instName = boost::none, bool verbose =
+          false) {
     bool first = initializeOrCheck(name, instName, verbose);
     ArgumentOverloads::push_back(args);
     return first;
