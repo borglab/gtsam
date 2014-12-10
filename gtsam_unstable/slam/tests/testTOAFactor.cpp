@@ -52,8 +52,8 @@ public:
 
   /** print with optional string */
   void print(const std::string& s = "") const {
-    std::cout << s << ", time = " << time_ << std::endl;
-    location_.print("location");
+    std::cout << s << "time = " << time_;
+    location_.print("; location");
   }
 
   /** equals with an tolerance */
@@ -87,14 +87,12 @@ public:
       OptionalJacobian<1, 3> H2 = boost::none) const {
     Matrix13 D1, D2;
     double distance = location_.distance(microphone, D1, D2);
-    if (H1) {
+    if (H1)
       // derivative of toa with respect to event
-      *H1 << 1, D1 / Speed;
-    }
-    if (H2) {
+      *H1 << 1.0, D1 / Speed;
+    if (H2)
       // derivative of toa with respect to microphone location
       *H2 << D2 / Speed;
-    }
     return time_ + distance / Speed;
   }
 };
@@ -106,6 +104,10 @@ namespace traits {
 
 template<>
 struct GTSAM_EXPORT dimension<Event> : public boost::integral_constant<int, 4> {
+};
+
+template<>
+struct GTSAM_EXPORT is_manifold<Event> : public boost::true_type {
 };
 
 }
@@ -149,6 +151,10 @@ static const double cm = 1e-2;
 typedef Eigen::Matrix<double, 1, 1> Vector1;
 static SharedNoiseModel model(noiseModel::Unit::Create(1));
 
+static const double timeOfEvent = 25;
+static const Event exampleEvent(timeOfEvent, 1, 0, 0);
+static const Point3 microphoneAt0;
+
 //*****************************************************************************
 TEST( Event, Constructor ) {
   const double t = 0;
@@ -157,35 +163,43 @@ TEST( Event, Constructor ) {
 
 //*****************************************************************************
 TEST( Event, Toa1 ) {
-  Point3 microphone;
   Event event(0, 1, 0, 0);
   double expected = 1 / Event::Speed;
-  EXPECT_DOUBLES_EQUAL(expected, event.toa(microphone), 1e-9);
+  EXPECT_DOUBLES_EQUAL(expected, event.toa(microphoneAt0), 1e-9);
 }
 
 //*****************************************************************************
 TEST( Event, Toa2 ) {
-  Point3 microphone;
-  double timeOfEvent = 25;
-  Event event(timeOfEvent, 1, 0, 0);
   double expectedTOA = timeOfEvent + 1 / Event::Speed;
-  EXPECT_DOUBLES_EQUAL(expectedTOA, event.toa(microphone), 1e-9);
+  EXPECT_DOUBLES_EQUAL(expectedTOA, exampleEvent.toa(microphoneAt0), 1e-9);
+}
+
+//*************************************************************************
+TEST (Event, Derivatives) {
+  Matrix14 actualH1;
+  Matrix13 actualH2;
+  exampleEvent.toa(microphoneAt0, actualH1, actualH2);
+  Matrix expectedH1 = numericalDerivative11<double, Event>(
+      boost::bind(&Event::toa, _1, microphoneAt0, boost::none, boost::none),
+      exampleEvent);
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
+  Matrix expectedH2 = numericalDerivative11<double, Point3>(
+      boost::bind(&Event::toa, exampleEvent, _1, boost::none, boost::none),
+      microphoneAt0);
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-8));
 }
 
 //*****************************************************************************
 TEST( Event, Expression ) {
   Key key = 12;
   Expression<Event> event_(key);
-  Point3 microphone;
-  Expression<Point3> knownMicrophone_(microphone); // constant expression
+  Expression<Point3> knownMicrophone_(microphoneAt0); // constant expression
   Expression<double> expression(&Event::toa, event_, knownMicrophone_);
 
-//  double timeOfEvent = 25;
-//  Event event12(timeOfEvent, 1, 0, 0);
-//  Values values;
-//  values.insert(key,event12);
-//  double expectedTOA = timeOfEvent + 1 / Event::Speed;
-//  EXPECT_DOUBLES_EQUAL(expectedTOA, expression.value(values), 1e-9);
+  Values values;
+  values.insert(key, exampleEvent);
+  double expectedTOA = timeOfEvent + 1 / Event::Speed;
+  EXPECT_DOUBLES_EQUAL(expectedTOA, expression.value(values), 1e-9);
 }
 
 //*****************************************************************************
@@ -200,8 +214,7 @@ TEST(Event, Retract) {
 TEST( TOAFactor, Construct ) {
   Key key = 12;
   Expression<Event> event_(key);
-  Point3 microphone;
-  Expression<Point3> knownMicrophone_(microphone); // constant expression
+  Expression<Point3> knownMicrophone_(microphoneAt0); // constant expression
   double measurement = 7;
   TOAFactor factor(event_, knownMicrophone_, measurement, model);
 }
@@ -236,11 +249,11 @@ TEST( TOAFactor, WholeEnchilada ) {
   }
 
   /// Print the graph
-  GTSAM_PRINT(graph);
+//  GTSAM_PRINT(graph);
 
   // Create initial estimate
   Values initialEstimate;
-  Event estimatedEvent(timeOfEvent + 0.1, 200 * cm, 150 * cm, 50 * cm);
+  Event estimatedEvent(timeOfEvent + 10, 200 * cm, 150 * cm, 50 * cm);
   initialEstimate.insert(key, estimatedEvent);
 
   // Print
@@ -249,10 +262,12 @@ TEST( TOAFactor, WholeEnchilada ) {
   // Optimize using Levenberg-Marquardt optimization.
   LevenbergMarquardtParams params;
   params.setVerbosity("ERROR");
+  params.setAbsoluteErrorTol(1e-10);
   LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
   Values result = optimizer.optimize();
+
   result.print("Final Result:\n");
-  EXPECT(assert_equal(groundTruthEvent, result.at<Event>(key)));
+  EXPECT(assert_equal(groundTruthEvent, result.at<Event>(key), 1e-6));
 }
 
 //*****************************************************************************
