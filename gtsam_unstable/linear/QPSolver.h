@@ -13,10 +13,10 @@
 #include <vector>
 #include <set>
 
-#define ACTIVE 0.0
-#define INACTIVE std::numeric_limits<double>::infinity()
-
 namespace gtsam {
+
+static const double ACTIVE = 0.0;
+static const double INACTIVE = std::numeric_limits<double>::infinity();
 
 /// This struct holds the state of QPSolver at each iteration
 struct QPState {
