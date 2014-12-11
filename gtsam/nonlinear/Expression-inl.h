@@ -562,8 +562,7 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     // Cols is always known at compile time
     template<typename SomeMatrix>
-    void reverseAD4(const SomeMatrix & dFdT,
-        JacobianMap& jacobians) const {
+    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
       Base::Record::reverseAD4(dFdT, jacobians);
       This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
     }
@@ -669,10 +668,12 @@ struct FunctionalNode {
 template<class T, class A1>
 class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+
 public:
 
-  typedef boost::function<
-      T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> Function;
+  typedef T (A1::*Method)(OJ1) const;
+  typedef boost::function<T(const A1&, OJ1)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
   typedef typename Base::Record Record;
 
@@ -712,13 +713,16 @@ public:
 /// Binary Expression
 
 template<class T, class A1, class A2>
-class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
+class BinaryExpression:
+    public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
+
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+  typedef typename MakeOptionalJacobian<T, A2>::type OJ2;
 
 public:
 
-  typedef boost::function<
-      T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
-          typename MakeOptionalJacobian<T, A2>::type)> Function;
+  typedef T (A1::*Method)(const A2&, OJ1, OJ2) const;
+  typedef boost::function<T(const A1&, const A2&, OJ1, OJ2)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
 
@@ -766,15 +770,17 @@ public:
 /// Ternary Expression
 
 template<class T, class A1, class A2, class A3>
-class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
+class TernaryExpression:
+    public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
+
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+  typedef typename MakeOptionalJacobian<T, A2>::type OJ2;
+  typedef typename MakeOptionalJacobian<T, A3>::type OJ3;
 
 public:
 
-  typedef boost::function<
-      T(const A1&, const A2&, const A3&,
-          typename MakeOptionalJacobian<T, A1>::type,
-          typename MakeOptionalJacobian<T, A2>::type,
-          typename MakeOptionalJacobian<T, A3>::type)> Function;
+  typedef T (A1::*Method)(const A2&, const A3&, OJ1, OJ2, OJ3) const;
+  typedef boost::function<T(const A1&, const A2&, const A3&, OJ1, OJ2, OJ3)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;
 
