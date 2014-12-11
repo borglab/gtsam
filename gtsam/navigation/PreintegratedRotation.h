@@ -96,6 +96,7 @@ public:
   }
 
   /// Get so<3> version of bias corrected rotation, with optional Jacobian
+  // Implements: log( deltaRij_ * expmap(delRdelBiasOmega_ * biasOmegaIncr) )
   Vector3 biascorrectedThetaRij(const Vector3& biasOmegaIncr,
       OptionalJacobian<3, 3> H = boost::none) const {
     // First, we correct deltaRij using the biasOmegaIncr, rotated

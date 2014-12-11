@@ -266,8 +266,8 @@ public:
     // Get Get so<3> version of bias corrected rotation
     // If H5 is asked for, we will need the Jacobian, which we store in H5
     // H5 will then be corrected below to take into account the Coriolis effect
-    Matrix3 H5temp;
-    Vector3 biascorrectedOmega = biascorrectedThetaRij(biasOmegaIncr, H5 ? &H5temp : 0);
+    Matrix3 D_cThetaRij_biasOmegaIncr;
+    Vector3 biascorrectedOmega = biascorrectedThetaRij(biasOmegaIncr, H5 ? &D_cThetaRij_biasOmegaIncr : 0);
 
     // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
     const Matrix3 Ritranspose_omegaCoriolisHat = Ri.transpose() * skewSymmetric(omegaCoriolis);
@@ -351,7 +351,7 @@ public:
     }
     if(H5) {
       // H5 by this point already contains 3*3 biascorrectedThetaRij derivative
-      const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * H5temp;
+      const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * D_cThetaRij_biasOmegaIncr;
       H5->resize(9,6);
       (*H5) <<
           // dfP/dBias
