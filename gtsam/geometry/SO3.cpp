@@ -44,8 +44,11 @@ SO3 Rodrigues(const double& theta, const Vector3& axis) {
   return R;
 }
 
+
+namespace lie_group {
 /// simply convert omega to axis/angle representation
-SO3 SO3Chart::Expmap(const Eigen::Ref<const Vector3>& omega) {
+template <>
+SO3 expmap<SO3>(const Eigen::Ref<const Vector3>& omega) {
   if (omega.isZero())
     return SO3::Identity();
   else {
@@ -54,7 +57,8 @@ SO3 SO3Chart::Expmap(const Eigen::Ref<const Vector3>& omega) {
   }
 }
 
-Vector3 SO3Chart::Logmap(const SO3& R) {
+template <>
+Vector3 logmap<SO3>(const SO3& R) {
 
   // note switch to base 1
   const double& R11 = R(0, 0), R12 = R(0, 1), R13 = R(0, 2);
@@ -88,6 +92,6 @@ Vector3 SO3Chart::Logmap(const SO3& R) {
     return magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }
 }
-
+} // end namespace lie_group
 } // end namespace gtsam
 

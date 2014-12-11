@@ -48,23 +48,14 @@ public:
   }
 };
 
-/**
- * Chart for SO3 comprising of exponential map and its inverse (log-map)
- */
-struct SO3Chart: LieGroupChart<SO3Chart,SO3,Vector3> {
-
-  typedef SO3 ManifoldType;
-
-  /// Exponential map
-  static SO3 Expmap(const Eigen::Ref<const Vector3>& omega);
-
-  /// We use our own Logmap, as there is a slight bug in Eigen
-  static Vector3 Logmap(const SO3& R);
-};
-
 #define SO3_TEMPLATE
 GTSAM_GROUP_IDENTITY0(SO3)
 GTSAM_MULTIPLICATIVE_GROUP(SO3_TEMPLATE, SO3)
+
+/**
+ * Chart for SO3 comprising of exponential map and its inverse (log-map)
+ */
+typedef LieGroupChart<SO3> SO3Chart;
 
 #define SO3_TANGENT Vector3
 #define SO3_CHART SO3Chart

@@ -22,6 +22,7 @@ using namespace std;
 using namespace gtsam;
 
 typedef Quaternion Q; // Typedef
+typedef OptionalJacobian<manifold::traits::dimension<Q>::value, manifold::traits::dimension<Q>::value> QuaternionJacobian;
 
 //******************************************************************************
 TEST(Quaternion , Concept) {
@@ -48,8 +49,9 @@ TEST(Quaternion , Local) {
   Q q1(Eigen::AngleAxisd(0, z_axis));
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
   typedef manifold::traits::DefaultChart<Q>::type Chart;
+  QuaternionJacobian H1,H2;
   Vector3 expected(0, 0, 0.1);
-  Vector3 actual = Chart::Local(q1, q2);
+  Vector3 actual = Chart::Local(q1, q2, H1, H2);
   EXPECT(assert_equal((Vector)expected,actual));
 }
 
@@ -60,20 +62,24 @@ TEST(Quaternion , Retract) {
   Q expected(Eigen::AngleAxisd(0.1, z_axis));
   typedef manifold::traits::DefaultChart<Q>::type Chart;
   Vector3 v(0, 0, 0.1);
-  Q actual = Chart::Retract(q, v);
+  QuaternionJacobian Hq,Hv;
+  Q actual = Chart::Retract(q, v, Hq, Hv);
   EXPECT(actual.isApprox(expected));
 }
 
 //******************************************************************************
 TEST(Quaternion , Compose) {
+  EXPECT(false);
 }
 
 //******************************************************************************
 TEST(Quaternion , Between) {
+  EXPECT(false);
 }
 
 //******************************************************************************
 TEST(Quaternion , Inverse) {
+  EXPECT(false);
 }
 
 //******************************************************************************
