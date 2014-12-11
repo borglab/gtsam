@@ -77,7 +77,7 @@ public:
   const Vector3& deltaPij() const {return deltaPij_;}
   const Vector3& deltaVij() const {return deltaVij_;}
   const imuBias::ConstantBias& biasHat() const { return biasHat_;}
-  Vector biasHatVector() const { return biasHat_.vector();} // expensive
+  Vector6 biasHatVector() const { return biasHat_.vector();} // expensive
   const Matrix3& delPdelBiasAcc() const { return delPdelBiasAcc_;}
   const Matrix3& delPdelBiasOmega() const { return delPdelBiasOmega_;}
   const Matrix3& delVdelBiasAcc() const { return delVdelBiasAcc_;}
@@ -228,13 +228,15 @@ public:
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   //------------------------------------------------------------------------------
-  Vector computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
+  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
       const imuBias::ConstantBias& bias_i, const Vector3& gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis,
-      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
-      boost::optional<Matrix&> H3, boost::optional<Matrix&> H4,
-      boost::optional<Matrix&> H5) const {
+      OptionalJacobian<9, 6> H1 = boost::none,
+      OptionalJacobian<9, 3> H2 = boost::none,
+      OptionalJacobian<9, 6> H3 = boost::none,
+      OptionalJacobian<9, 3> H4 = boost::none,
+      OptionalJacobian<9, 6> H5 = boost::none) const {
 
     // We need the mismatch w.r.t. the biases used for preintegration
     // const Vector3 biasAccIncr = bias_i.accelerometer() - biasHat().accelerometer(); // this is not necessary
@@ -264,7 +266,8 @@ public:
     // Get Get so<3> version of bias corrected rotation
     // If H5 is asked for, we will need the Jacobian, which we store in H5
     // H5 will then be corrected below to take into account the Coriolis effect
-    Vector3 biascorrectedOmega = biascorrectedThetaRij(biasOmegaIncr, H5);
+    Matrix3 H5temp;
+    Vector3 biascorrectedOmega = biascorrectedThetaRij(biasOmegaIncr, H5 ? &H5temp : 0);
 
     // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
     const Matrix3 Ritranspose_omegaCoriolisHat = Ri.transpose() * skewSymmetric(omegaCoriolis);
@@ -278,7 +281,7 @@ public:
     Matrix3 D_cDeltaRij_cOmega, D_coriolis, D_fR_fRrot;
 
     // This is done to save computation: we ask for the jacobians only when they are needed
-    if(H1 || H2 || H3 || H4 ||  H5){
+    if(H1 || H2 || H3 || H4 || H5){
       correctedDeltaRij = Rot3::Expmap( correctedOmega, D_cDeltaRij_cOmega);
       // Residual rotation error
       fRrot = correctedDeltaRij.between(Ri.between(Rj));
@@ -348,7 +351,7 @@ public:
     }
     if(H5) {
       // H5 by this point already contains 3*3 biascorrectedThetaRij derivative
-      const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * (*H5);
+      const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * H5temp;
       H5->resize(9,6);
       (*H5) <<
           // dfP/dBias
@@ -358,7 +361,7 @@ public:
           // dfR/dBias
           Z_3x3,               D_fR_fRrot * ( - fRrot.inverse().matrix() * JbiasOmega);
     }
-    Vector r(9); r << fp, fv, fR;
+    Vector9 r; r << fp, fv, fR;
     return r;
   }
 

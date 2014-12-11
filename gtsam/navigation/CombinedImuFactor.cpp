@@ -94,7 +94,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   /* ----------------------------------------------------------------------------------------------------------------------- */
   const Matrix3 R_i = deltaRij(); // store this
   // Update preintegrated measurements. TODO Frank moved from end of this function !!!
-  Matrix F_9x9;
+  Matrix9 F_9x9;
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F_9x9);
 
   // Single Jacobians to propagate covariance

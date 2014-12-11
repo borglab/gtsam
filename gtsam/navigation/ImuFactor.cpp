@@ -82,7 +82,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
 
   // Update preintegrated measurements (also get Jacobian)
   const Matrix3 R_i = deltaRij(); // store this, which is useful to compute G_test
-  Matrix F; // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F);
 
   // first order covariance propagation:
@@ -96,13 +96,11 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // F_test and G_test are used for testing purposes and are not needed by the factor
   if(F_test){
     // This in only for testing
-    F_test->resize(9,9);
     (*F_test) << F;
   }
   if(G_test){
     // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
     // This in only for testing & documentation
-    G_test->resize(9,9);
     //           intNoise         accNoise      omegaNoise
     (*G_test) << I_3x3 * deltaT,   Z_3x3,        Z_3x3,                                 // pos
                  Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
