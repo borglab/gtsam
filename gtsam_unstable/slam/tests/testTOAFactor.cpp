@@ -40,8 +40,12 @@ static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
 static const Point3 microphoneAt0;
 
-// A TOA factor factory :-)
-MakeBinaryFactor<double, Event, Point3> makeFactor(&Event::toa, model);
+// A TOA factor factory
+static MakeBinaryFactor<double, Event, Point3> MakeFactor(&Event::toa, model);
+
+// A height prior factory
+static SharedNoiseModel heightModel(noiseModel::Isotropic::Sigma(1, 100*cm));
+static MakeUnaryFactor<double, Event> MakePrior(&Event::height, heightModel);
 
 //*****************************************************************************
 TEST( TOAFactor, NewWay ) {
@@ -49,7 +53,7 @@ TEST( TOAFactor, NewWay ) {
   Expression<Event> eventExpression(key);
   Expression<Point3> microphoneConstant(microphoneAt0); // constant expression
   double z = 7;
-  ExpressionFactor<double> factor = makeFactor(z, eventExpression, microphoneConstant);
+  ExpressionFactor<double> factor = MakeFactor(z, eventExpression, microphoneConstant);
 }
 
 //*****************************************************************************
@@ -63,9 +67,9 @@ TEST( TOAFactor, WholeEnchilada ) {
   microphones.push_back(Point3(0, 0, height));
   microphones.push_back(Point3(403 * cm, 0, height));
   microphones.push_back(Point3(403 * cm, 403 * cm, height));
-  microphones.push_back(Point3(0, 403 * cm, height));
+  microphones.push_back(Point3(0, 403 * cm, 2*height));
   EXPECT_LONGS_EQUAL(4, microphones.size());
-  microphones.push_back(Point3(200 * cm, 200 * cm, height));
+//  microphones.push_back(Point3(200 * cm, 200 * cm, height));
 
   // Create a ground truth point
   const double timeOfEvent = 0;
@@ -88,7 +92,7 @@ TEST( TOAFactor, WholeEnchilada ) {
   Expression<Event> eventExpression(key);
   for (size_t i = 0; i < K; i++) {
     Expression<Point3> microphoneConstant(microphones[i]); // constant expression
-    graph.add(makeFactor(measurements[i], eventExpression, microphoneConstant));
+    graph.add(MakeFactor(measurements[i], eventExpression, microphoneConstant));
   }
 
   /// Print the graph
@@ -123,7 +127,7 @@ TEST( TOAFactor, WholeEnchilada ) {
 /// Test real data
 TEST( TOAFactor, RealExperiment1 ) {
 
-  static const bool verbose = false;
+  static const bool verbose = true;
 
   // Create microphones
   const double height = 0.5;
@@ -170,10 +174,14 @@ TEST( TOAFactor, RealExperiment1 ) {
   for (size_t i = 0; i < 4; i++) {
     Expression<Point3> mic_(microphones[i]); // constant expression
     for (size_t j = 0; j < 15; j++)
-      graph.add(makeFactor(data[j][i], eventExpressions[j], mic_));
+      graph.add(MakeFactor(data[j][i], eventExpressions[j], mic_));
   }
 
-  /// Print the graph
+  // Add height priors
+  for (size_t j = 0; j < 15; j++)
+    graph.add(MakePrior((212 - 45) * cm, eventExpressions[j]));
+
+    /// Print the graph
   if (verbose)
     GTSAM_PRINT(graph);
 

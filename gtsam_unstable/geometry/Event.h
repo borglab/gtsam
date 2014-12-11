@@ -34,6 +34,7 @@ public:
 
   /// Speed of sound
   static const double Speed;
+  static const Matrix14 JacobianZ;
 
   /// Default Constructor
   Event() :
@@ -52,6 +53,12 @@ public:
 
   double time() const { return time_;}
   Point3 location() const { return location_;}
+
+  // TODO we really have to think of a better way to do linear arguments
+  double height(OptionalJacobian<1,4> H = boost::none) const {
+    if (H) *H = JacobianZ;
+    return location_.z();
+  }
 
   /** print with optional string */
   void print(const std::string& s = "") const {
@@ -101,6 +108,7 @@ public:
 };
 
 const double Event::Speed = 330;
+const Matrix14 Event::JacobianZ = (Matrix14() << 0,0,0,1).finished();
 
 // Define GTSAM traits
 namespace traits {
