@@ -17,7 +17,8 @@
  *  @date December 2014
  */
 
-#include <gtsam_unstable/slam/TOAFactor.h>
+#include <gtsam_unstable/geometry/Event.h>
+#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -39,13 +40,16 @@ static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
 static const Point3 microphoneAt0;
 
+// A TOA factor factory :-)
+MakeBinaryFactor<double, Event, Point3> makeFactor(&Event::toa, model);
+
 //*****************************************************************************
-TEST( TOAFactor, Construct ) {
+TEST( TOAFactor, NewWay ) {
   Key key = 12;
   Expression<Event> eventExpression(key);
-  Expression<Point3> knownMicrophone_(microphoneAt0); // constant expression
-  double measurement = 7;
-  TOAFactor factor(eventExpression, knownMicrophone_, measurement, model);
+  Expression<Point3> microphoneConstant(microphoneAt0); // constant expression
+  double z = 7;
+  ExpressionFactor<double> factor = makeFactor(z, eventExpression, microphoneConstant);
 }
 
 //*****************************************************************************
@@ -83,9 +87,8 @@ TEST( TOAFactor, WholeEnchilada ) {
   Key key = 12;
   Expression<Event> eventExpression(key);
   for (size_t i = 0; i < K; i++) {
-    Expression<Point3> knownMicrophone_(microphones[i]); // constant expression
-    graph.add(
-        TOAFactor(eventExpression, knownMicrophone_, measurements[i], model));
+    Expression<Point3> microphoneConstant(microphones[i]); // constant expression
+    graph.add(makeFactor(measurements[i], eventExpression, microphoneConstant));
   }
 
   /// Print the graph
@@ -167,7 +170,7 @@ TEST( TOAFactor, RealExperiment1 ) {
   for (size_t i = 0; i < 4; i++) {
     Expression<Point3> mic_(microphones[i]); // constant expression
     for (size_t j = 0; j < 15; j++)
-      graph.add(TOAFactor(eventExpressions[j], mic_, data[j][i], model));
+      graph.add(makeFactor(data[j][i], eventExpressions[j], mic_));
   }
 
   /// Print the graph
