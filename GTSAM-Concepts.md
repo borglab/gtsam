@@ -20,14 +20,13 @@ To optimize over continuous types, we assume they are manifolds. This is central
 
 In GTSAM we assume that a manifold type can yield such a *Chart* at any point, and we require that a functor `defaultChart` is available that, when called for any point on the manifold, returns a Chart type. Hence, the functor itself can be seen as an *Atlas*.
 
-In detail, we ask the following are defined for a MANIFOLD type:
+In detail, we ask the following are defined in the namespace `gtsam::manifold::traits` for each MANIFOLD type:
 
 * values:
     * `dimension`, an int that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimenionality is only defined at runtime, by specifying the value -1.
-* functors:
-	* `defaultChart`, returns the default chart at a point p
 * types: 
     * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
+	* `DefaultChart`,  the default chart at a point p
 * valid expressions:
     * `size_t dim = getDimension(p);` free function should be defined in case the dimension is not known at compile time.
 
@@ -39,6 +38,7 @@ A given chart is implemented using a small class that defines the chart itself (
 
 * types:
     * `ManifoldType`, a pointer back to the type
+    * `Jacobian`, a typedef for `gtsam::OptionalJacobian<Dimension, Dimension>` where the dimension is taken from `gtsam::maifold::traits::dimension`.
 * valid expressions: 
     * `v = Chart::Local(p,q,Hp,Hq)`, the chart, from manifold to tangent space, think of it as *q (-) p*
     * `p = Chart::Retract(p,v,Hp,Hv)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
@@ -50,8 +50,8 @@ For many differential manifolds, an obvious mapping is the `exponential map`,
 which  associates straight lines in the tangent space with geodesics on the manifold 
 (and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
-* Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `defaultChart` functor returns a chart that is much cheaper to evaluate.
-* While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a `defaultChart` functor is defined by default for every vector space, GTSAM will never call it.
+* Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `DefaultChart` type refers to a chart that is much cheaper to evaluate.
+* While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a `DefaultChart` is defined by default for every vector space, GTSAM will never invoke it.
 
 
 Group
