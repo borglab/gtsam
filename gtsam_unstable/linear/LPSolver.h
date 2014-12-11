@@ -7,9 +7,10 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam_unstable/linear/LinearEqualityFactorGraph.h>
+#include <gtsam_unstable/linear/LinearInequalityFactorGraph.h>
 
 #include <gtsam/3rdparty/lp_solve_5.5/lp_lib.h>
 
@@ -25,7 +26,8 @@ namespace gtsam {
  */
 class LPSolver {
   VectorValues objectiveCoeffs_;
-  GaussianFactorGraph::shared_ptr constraints_;
+  LinearEqualityFactorGraph::shared_ptr equalities_;
+  LinearInequalityFactorGraph::shared_ptr inequalities_;
   VectorValues lowerBounds_, upperBounds_;
   std::map<Key, size_t> variableColumnNo_, variableDims_;
   size_t nrColumns_;
@@ -38,11 +40,12 @@ public:
    * set as unbounded, i.e. -inf <= x <= inf.
    */
   LPSolver(const VectorValues& objectiveCoeffs,
-      const GaussianFactorGraph::shared_ptr& constraints,
+      const LinearEqualityFactorGraph::shared_ptr& equalities,
+      const LinearInequalityFactorGraph::shared_ptr& inequalities,
       const VectorValues& lowerBounds = VectorValues(),
       const VectorValues& upperBounds = VectorValues()) :
-      objectiveCoeffs_(objectiveCoeffs), constraints_(constraints), lowerBounds_(
-          lowerBounds), upperBounds_(upperBounds) {
+      objectiveCoeffs_(objectiveCoeffs), equalities_(equalities), inequalities_(
+          inequalities), lowerBounds_(lowerBounds), upperBounds_(upperBounds) {
     buildMetaInformation();
   }
 
@@ -73,18 +76,18 @@ public:
   template<class KEYLIST>
   std::vector<int> buildColumnNo(const KEYLIST& keyList) const {
     std::vector<int> columnNo;
-    BOOST_FOREACH(Key key, keyList) {
-      std::vector<int> varIndices = boost::copy_range<std::vector<int> >(
-          boost::irange(variableColumnNo_.at(key),
-              variableColumnNo_.at(key) + variableDims_.at(key)));
-      columnNo.insert(columnNo.end(), varIndices.begin(), varIndices.end());
-    }
+    BOOST_FOREACH(Key key, keyList){
+    std::vector<int> varIndices = boost::copy_range<std::vector<int> >(
+        boost::irange(variableColumnNo_.at(key),
+            variableColumnNo_.at(key) + variableDims_.at(key)));
+    columnNo.insert(columnNo.end(), varIndices.begin(), varIndices.end());
+  }
     return columnNo;
   }
 
   /// Add all [scalar] constraints in a constrained Jacobian factor to lp
   void addConstraints(const boost::shared_ptr<lprec>& lp,
-      const JacobianFactor::shared_ptr& jacobian) const;
+      const JacobianFactor::shared_ptr& jacobian, int type) const;
 
   /**
    * Add all bounds to lp.
