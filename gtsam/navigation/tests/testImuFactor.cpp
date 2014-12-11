@@ -538,6 +538,8 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
   const Vector3 deltaVij_old = preintegrated.deltaVij();    // before adding new measurement
   const Vector3 deltaPij_old = preintegrated.deltaPij();    // before adding new measurement
 
+  Matrix oldPreintCovariance = preintegrated.preintMeasCov();
+
   Matrix Factual, Gactual;
   preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega, newDeltaT,
       body_P_sensor, Factual, Gactual);
@@ -552,20 +554,20 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
       numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedPosVel,
           _1, deltaVij_old, deltaRij_old,
           newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaPij_old);
+
   // Compute expected f_pos_vel wrt velocities
   Matrix dfpv_dvel =
       numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedPosVel,
           deltaPij_old, _1, deltaRij_old,
           newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaVij_old);
+
   // Compute expected f_pos_vel wrt angles
   Matrix dfpv_dangle =
       numericalDerivative11<Vector, Rot3>(boost::bind(&updatePreintegratedPosVel,
           deltaPij_old, deltaVij_old, _1,
           newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), deltaRij_old);
-  Matrix FexpectedTop6(6,9);
-  FexpectedTop6 << dfpv_dpos, dfpv_dvel, dfpv_dangle;
 
-  EXPECT(assert_equal(FexpectedTop6, Factual.topRows(6)));
+  Matrix FexpectedTop6(6,9);   FexpectedTop6 << dfpv_dpos, dfpv_dvel, dfpv_dangle;
 
   // Compute expected f_rot wrt angles
   Matrix dfr_dangle =
@@ -574,7 +576,9 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
 
   Matrix FexpectedBottom3(3,9);
   FexpectedBottom3 << Z_3x3, Z_3x3, dfr_dangle;
-  EXPECT(assert_equal(FexpectedBottom3, Factual.bottomRows(3)));
+  Matrix Fexpected(9,9);  Fexpected << FexpectedTop6, FexpectedBottom3;
+
+  EXPECT(assert_equal(Fexpected, Factual));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   // COMPUTE NUMERICAL DERIVATIVES FOR G
@@ -588,6 +592,7 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
       numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedPosVel,
           deltaPij_old, deltaVij_old, deltaRij_old,
           _1, newMeasuredOmega, newDeltaT, use2ndOrderIntegration), newMeasuredAcc);
+
   // Compute expected F wrt gyro noise
   Matrix dgpv_domegaNoise =
       numericalDerivative11<Vector, Vector3>(boost::bind(&updatePreintegratedPosVel,
@@ -595,7 +600,6 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
           newMeasuredAcc, _1, newDeltaT, use2ndOrderIntegration), newMeasuredOmega);
   Matrix GexpectedTop6(6,9);
   GexpectedTop6 << dgpv_dintNoise, dgpv_daccNoise, dgpv_domegaNoise;
-  EXPECT(assert_equal(GexpectedTop6, Gactual.topRows(6)));
 
   // Compute expected f_rot wrt gyro noise
   Matrix dgr_dangle =
@@ -604,7 +608,16 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
 
   Matrix GexpectedBottom3(3,9);
   GexpectedBottom3 << Z_3x3, Z_3x3, dgr_dangle;
-  EXPECT(assert_equal(GexpectedBottom3, Gactual.bottomRows(3)));
+  Matrix Gexpected(9,9);  Gexpected << GexpectedTop6, GexpectedBottom3;
+
+  EXPECT(assert_equal(Gexpected, Gactual));
+
+  // Check covariance propagation
+  Matrix newPreintCovarianceExpected = Factual * oldPreintCovariance * Factual.transpose() +
+      (1/newDeltaT) * Gactual * Gactual.transpose();
+
+  Matrix newPreintCovarianceActual = preintegrated.preintMeasCov();
+  EXPECT(assert_equal(newPreintCovarianceExpected, newPreintCovarianceActual));
 }
 
 //#include <gtsam/linear/GaussianFactorGraph.h>

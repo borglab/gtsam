@@ -88,25 +88,25 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in an EKF framework
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  // the deltaT allows to pass from continuous time noise to discrete time noise
+  // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
+  // NOTE 1: (1/deltaT) allows to pass from continuous time noise to discrete time noise
   // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
-  // Gt * Qt * G =(approx)= measurementCovariance_discrete * deltaT^2 = measurementCovariance_contTime * deltaT
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose() + measurementCovariance_ * deltaT ;
+  // NOTE 2: the computation of G * (1/deltaT) * measurementCovariance * G.transpose() is done blockwise,
+  // as G and measurementCovariance are blockdiagonal matrices
+  preintMeasCov_ = F * preintMeasCov_ * F.transpose();
+  preintMeasCov_.block<3,3>(0,0) += measurementCovariance_.block<3,3>(0,0) * deltaT;
+  preintMeasCov_.block<3,3>(3,3) += R_i * measurementCovariance_.block<3,3>(3,3) * R_i.transpose() * deltaT;
+  preintMeasCov_.block<3,3>(6,6) += D_Rincr_integratedOmega * measurementCovariance_.block<3,3>(6,6) * D_Rincr_integratedOmega.transpose() * deltaT;
 
-  // F_test and G_test are used for testing purposes and are not needed by the factor
-  if(F_test){
-    // This in only for testing
+  // F_test and G_test are given as output for testing purposes and are not needed by the factor
+  if(F_test){ // This in only for testing
     (*F_test) << F;
   }
-  if(G_test){
-    // Extended version, without approximation: Gt * Qt * G =(approx)= measurementCovariance_contTime * deltaT
-    // This in only for testing & documentation
+  if(G_test){ // This in only for testing & documentation, while the actual computation is done block-wise
     //           intNoise         accNoise      omegaNoise
     (*G_test) << I_3x3 * deltaT,   Z_3x3,        Z_3x3,                                 // pos
                  Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
                  Z_3x3,            Z_3x3,        D_Rincr_integratedOmega * deltaT;      // angle
-    // Propagation with no approximation:
-    // preintMeasCov = F * preintMeasCov * F.transpose() + G_test * (1/deltaT) * measurementCovariance * G_test.transpose();
   }
 }
 
