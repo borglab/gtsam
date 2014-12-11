@@ -32,7 +32,7 @@ using namespace gtsam;
 boost::shared_ptr<Cal3_S2> fixedK(new Cal3_S2());
 
 Point2 myProject(const Pose3& pose, const Point3& point,
-    boost::optional<Matrix26&> H1, boost::optional<Matrix23&> H2) {
+    OptionalJacobian<2, 6> H1, OptionalJacobian<2, 3> H2) {
   PinholeCamera<Cal3_S2> camera(pose, *fixedK);
   return camera.project(point, H1, H2, boost::none);
 }
