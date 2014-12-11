@@ -111,5 +111,46 @@ public:
 };
 // ExpressionFactor
 
-}
+/**
+ *  A functor that creates binary expression factors on demand
+ *  Example usage:
+ *    MakeBinaryFactor<double, Event, Point3> make(&Event::toa, model);
+ *    ExpressionFactor<double> factor = make(z, eventExpr, microphoneExpr);
+ *  This obviates the need for making Factor classes that are almost empty.
+ *  It also takes a default noise model.
+ *  TODO: unary and ternary versions
+ */
+template<typename T, typename A1, typename A2>
+class MakeBinaryFactor {
+
+  typedef typename BinaryExpression<T, A1, A2>::Method Method;
+  typedef typename BinaryExpression<T, A1, A2>::Function Function;
+
+  Function function_;
+  SharedNoiseModel model_;
+
+public:
+
+  /// Constructor with a binary function
+  MakeBinaryFactor(Function function, const SharedNoiseModel& model) :
+      function_(function), model_(model) {
+  }
+
+  /// Constructor with a unary method pointer
+  MakeBinaryFactor(Method method, const SharedNoiseModel& model) :
+      function_(boost::bind(method, _1, _2, _3, _4)), model_(model) {
+
+  }
+
+  /// Operator just needs noise model, measurement, and two expressions
+  ExpressionFactor<T> operator()(double measurement,
+      const Expression<A1>& expression1, const Expression<A2>& expression2) {
+    // Create expression and return factor
+    Expression<T> expression(function_, expression1, expression2);
+    return ExpressionFactor<T>(model_, measurement, expression);
+  }
+
+};
+
+} // \ namespace gtsam
 
