@@ -112,13 +112,55 @@ public:
 // ExpressionFactor
 
 /**
+ *  ExpressionFactor Factories
+ *  They obviate the need for making Factor classes that are almost empty.
+ *  They also takes a default noise model.
+ *  TODO: Ternary version
+ */
+
+/**
+ *  A functor that creates unary expression factors on demand
+ *  Example usage:
+ *    MakeUnaryFactor<double, Event> MakePrior(&Event::height, model);
+ *    ExpressionFactor<double> factor = MakePrior(z, eventExpr);
+ */
+template<typename T, typename A1>
+class MakeUnaryFactor {
+
+  typedef typename UnaryExpression<T, A1>::Method Method;
+  typedef typename UnaryExpression<T, A1>::Function Function;
+
+  Function function_;
+  SharedNoiseModel model_;
+
+public:
+
+  /// Constructor with a binary function
+  MakeUnaryFactor(Function function, const SharedNoiseModel& model) :
+      function_(function), model_(model) {
+  }
+
+  /// Constructor with a unary method pointer
+  MakeUnaryFactor(Method method, const SharedNoiseModel& model) :
+      function_(boost::bind(method, _1, _2)), model_(model) {
+
+  }
+
+  /// Operator just needs noise model, measurement, and two expressions
+  ExpressionFactor<T> operator()(double measurement,
+      const Expression<A1>& expression1) {
+    // Create expression and return factor
+    Expression<T> expression(function_, expression1);
+    return ExpressionFactor<T>(model_, measurement, expression);
+  }
+
+};
+
+/**
  *  A functor that creates binary expression factors on demand
  *  Example usage:
- *    MakeBinaryFactor<double, Event, Point3> make(&Event::toa, model);
- *    ExpressionFactor<double> factor = make(z, eventExpr, microphoneExpr);
- *  This obviates the need for making Factor classes that are almost empty.
- *  It also takes a default noise model.
- *  TODO: unary and ternary versions
+ *    MakeBinaryFactor<double, Event, Point3> MakeFactor(&Event::toa, model);
+ *    ExpressionFactor<double> factor = MakeFactor(z, eventExpr, microphoneExpr);
  */
 template<typename T, typename A1, typename A2>
 class MakeBinaryFactor {
