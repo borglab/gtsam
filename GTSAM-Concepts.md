@@ -27,6 +27,7 @@ In detail, we ask the following are defined in the namespace `gtsam::manifold::t
 * types: 
     * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
 	* `DefaultChart`,  the default chart at a point p
+	* `ChartJacobian`, a typedef for `OptionalJacobian<dimension<Manifold>::value, dimension<Manifold>::value>`.  
 * valid expressions:
     * `size_t dim = getDimension(p);` free function should be defined in case the dimension is not known at compile time.
 
@@ -34,11 +35,10 @@ Anything else?
 
 Chart
 -----
-A given chart is implemented using a small class that defines the chart itself (from manifold to tangent space) and its inverse.
+A given chart is implemented using a small class that defines the chart itself (from manifold to tangent space) and its inverse. The trait `gtsam::manifold::traits::DefaultChart<ManifoldType>::type` should point to the chart implementation. This specialization requires the following:
 
 * types:
     * `ManifoldType`, a pointer back to the type
-    * `Jacobian`, a typedef for `gtsam::OptionalJacobian<Dimension, Dimension>` where the dimension is taken from `gtsam::maifold::traits::dimension`.
 * valid expressions: 
     * `v = Chart::Local(p,q,Hp,Hq)`, the chart, from manifold to tangent space, think of it as *q (-) p*
     * `p = Chart::Retract(p,v,Hp,Hv)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*

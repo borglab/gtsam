@@ -54,9 +54,12 @@ namespace traits {
 template<typename Manifold> struct dimension;
 template<typename Manifold> struct TangentVector;
 template<typename Manifold> struct DefaultChart;
+template<typename Manifold> struct ChartJacobian {
+  typedef OptionalJacobian<dimension<Manifold>::value, dimension<Manifold>::value> value;
+};
 //@}
 
-}// \ namespace traits
+}// \ namespace manifold::traits
 
 /// Check invariants for Manifold type
 template<typename T>
