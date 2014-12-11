@@ -237,6 +237,7 @@ public:
     // we give some shorter name to rotations and translations
     const Rot3& Ri = pose_i.rotation();
     const Rot3& Rj = pose_j.rotation();
+    const Vector3& pos_i = pose_i.translation().vector();
     const Vector3& pos_j = pose_j.translation().vector();
 
     // Jacobian computation
@@ -274,25 +275,23 @@ public:
     if(H1) {
       H1->resize(9,6);
 
-      Matrix3 dfPdPi;
-      Matrix3 dfVdPi;
+      Matrix3 dfPdPi = -I_3x3;
+      Matrix3 dfVdPi = Z_3x3;
       if(use2ndOrderCoriolis){
-        dfPdPi = - Ri.matrix() + 0.5 * omegaCoriolisHat * omegaCoriolisHat * Ri.matrix() * deltaTij()*deltaTij();
-        dfVdPi = omegaCoriolisHat * omegaCoriolisHat * Ri.matrix() * deltaTij();
-      }
-      else{
-        dfPdPi = - Ri.matrix();
-        dfVdPi = Z_3x3;
+        dfPdPi += 0.5 * Ri.transpose() * omegaCoriolisHat * omegaCoriolisHat * Ri.matrix() * deltaTij()*deltaTij();
+        dfVdPi += Ri.transpose() * omegaCoriolisHat * omegaCoriolisHat * Ri.matrix() * deltaTij();
       }
       (*H1) <<
           // dfP/dRi
-          Ri.matrix() * skewSymmetric(deltaPij()
-          + delPdelBiasOmega() * biasOmegaIncr + delPdelBiasAcc() * biasAccIncr),
+          skewSymmetric( Ri.inverse().matrix() * (pos_j - pos_i - vel_i * deltaTij()
+          + omegaCoriolis.cross(vel_i) * deltaTij()*deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
+          - 0.5 * gravity *deltaTij()*deltaTij())),
           // dfP/dPi
           dfPdPi,
           // dfV/dRi
-          Ri.matrix() * skewSymmetric(deltaVij()
-          + delVdelBiasOmega() * biasOmegaIncr + delVdelBiasAcc() * biasAccIncr),
+          skewSymmetric( Ri.inverse().matrix() *
+              (vel_j - vel_i - gravity * deltaTij() + 2 * omegaCoriolis.cross(vel_i) * deltaTij()  // Coriolis term
+           ) ),
           // dfV/dPi
           dfVdPi,
           // dfR/dRi
@@ -304,11 +303,11 @@ public:
       H2->resize(9,3);
       (*H2) <<
           // dfP/dVi
-          - I_3x3 * deltaTij()
-          + omegaCoriolisHat * deltaTij() * deltaTij(),  // Coriolis term - we got rid of the 2 wrt ins paper
+          - Ri.transpose() * deltaTij()
+          + Ri.transpose() * omegaCoriolisHat * deltaTij() * deltaTij(),  // Coriolis term - we got rid of the 2 wrt ins paper
           // dfV/dVi
-          - I_3x3
-          + 2 * omegaCoriolisHat * deltaTij(), // Coriolis term
+          - Ri.transpose()
+          + 2 * Ri.transpose() * omegaCoriolisHat * deltaTij(), // Coriolis term
           // dfR/dVi
           Z_3x3;
     }
@@ -316,7 +315,7 @@ public:
       H3->resize(9,6);
       (*H3) <<
           // dfP/dPosej
-          Z_3x3, Rj.matrix(),
+          Z_3x3, Ri.transpose() * Rj.matrix(),
           // dfV/dPosej
           Matrix::Zero(3,6),
           // dfR/dPosej
@@ -328,7 +327,7 @@ public:
           // dfP/dVj
           Z_3x3,
           // dfV/dVj
-          I_3x3,
+          Ri.transpose(),
           // dfR/dVj
           Z_3x3;
     }
@@ -338,14 +337,11 @@ public:
       H5->resize(9,6);
       (*H5) <<
           // dfP/dBias
-          - Ri.matrix() * delPdelBiasAcc(),
-          - Ri.matrix() * delPdelBiasOmega(),
+          - delPdelBiasAcc(),   - delPdelBiasOmega(),
           // dfV/dBias
-          - Ri.matrix() * delVdelBiasAcc(),
-          - Ri.matrix() * delVdelBiasOmega(),
+          - delVdelBiasAcc(),   - delVdelBiasOmega(),
           // dfR/dBias
-          Matrix::Zero(3,3),
-          D_fR_fRrot * ( - fRrot.inverse().matrix() * JbiasOmega);
+          Z_3x3,               D_fR_fRrot * ( - fRrot.inverse().matrix() * JbiasOmega);
     }
 
     // Evaluate residual error, according to [3]
@@ -353,9 +349,11 @@ public:
     PoseVelocityBias predictedState_j = predict(pose_i, vel_i, bias_i, gravity,
         omegaCoriolis, use2ndOrderCoriolis);
 
-    const Vector3 fp = pos_j - predictedState_j.pose.translation().vector();
+    // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
+    const Vector3 fp = Ri.transpose() * ( pos_j - predictedState_j.pose.translation().vector() );
 
-    const Vector3 fv = vel_j - predictedState_j.velocity;
+    // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
+    const Vector3 fv = Ri.transpose() * ( vel_j - predictedState_j.velocity );
 
     // fR was computes earlier. Note: it is the same as: dR = (predictedState_j.pose.translation()).between(Rot_j)
 
