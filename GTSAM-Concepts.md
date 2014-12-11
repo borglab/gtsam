@@ -18,57 +18,61 @@ To optimize over continuous types, we assume they are manifolds. This is central
 
 [Manifolds](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) and [charts](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) are intimately linked concepts. We are only interested here in [differentiable manifolds](http://en.wikipedia.org/wiki/Differentiable_manifold#Definition), continuous spaces that can be locally approximated *at any point* using a local vector space, called the [tangent space](http://en.wikipedia.org/wiki/Tangent_space). A *chart* is an invertible map from the manifold to that tangent space.
 
-In GTSAM we assume that a manifold type can yield such a *Chart* at any point, and we require that a functor `defaultChart` is available that, when called for any point on the manifold, returns a Chart type. Hence, the functor itself can be seen as an *Atlas*.
-
-In detail, we ask the following are defined in the namespace `gtsam::manifold::traits` for each MANIFOLD type:
+In GTSAM, all properties and operations needed to use a type must be defined through template specialization of the struct  `gtsam::manifold::traits`. Concept checks are used to check that all required functions are implemented.
+In detail, we ask the following are defined in the traits object:
 
 * values:
-    * `dimension`, an int that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimenionality is only defined at runtime, by specifying the value -1.
+    * `enum { dimension = D};`, an enum that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimenionality is only defined at runtime, by specifying the value -1.
 * types: 
     * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
-	* `DefaultChart`,  the default chart at a point p
-	* `ChartJacobian`, a typedef for `OptionalJacobian<dimension<Manifold>::value, dimension<Manifold>::value>`.  
+	* `ChartJacobian`, a typedef for `OptionalJacobian<dimension, dimension>`.  
+	* `ManifoldType`, a pointer back to the type.
+	* `structure_category`, a tag type that defines what requirements the type fulfills, and therefore what requirements this traits class must fulfill. It should be defined to be one of the following: 
+		*  `gtsam::traits::manifold_tag` -- Everything in this list is expected
+		* `gtsam::traits::group_tag` -- Everything in this list is expected, plus the functions defined under **Groups** below.
+		* `gtsam::traits::lie_group_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
+		* `gtsam::traits::vector_space_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
 * valid expressions:
-    * `size_t dim = getDimension(p);` free function should be defined in case the dimension is not known at compile time.
+    * `size_t dim = traits<T>::getDimension(p);` static function should be defined. This is mostly useful if the size is not known at compile time.
+    * `v = traits<T>::Local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*, where *p* and *q* are elements of the manifold and the result, *v* is an element of the vector space.
+	* `v = traits<T>::Local(p,q, Hp, Hq)`.
+    * `p = traits<T>::Retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*, where *p* is an element of the manifold and the result, *v* is an element of the vector space.
+    * `p = traits<T>::Retract(p,v, Hp, Hv)`.
 
-Anything else?
-
-Chart
------
-A given chart is implemented using a small class that defines the chart itself (from manifold to tangent space) and its inverse. The trait `gtsam::manifold::traits::DefaultChart<ManifoldType>::type` should point to the chart implementation. This specialization requires the following:
-
-* types:
-    * `ManifoldType`, a pointer back to the type
-* valid expressions: 
-    * `v = Chart::Local(p,q,Hp,Hq)`, the chart, from manifold to tangent space, think of it as *q (-) p*
-    * `p = Chart::Retract(p,v,Hp,Hv)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*
-
-where above the `H` arguments stand for optional Jacobian arguments. When provied, it is assumed
+In the functions above, the `H` arguments stand for optional Jacobians. When provided, it is assumed
 that the function will return the derivatives of the chart (and inverse) with respect to its arguments.
+* invariants
+	* `Retract(p, Local(p,q)) == q`
+	* `Local(p, Retract(p, v)) == v`
 
 For many differential manifolds, an obvious mapping is the `exponential map`, 
 which  associates straight lines in the tangent space with geodesics on the manifold 
 (and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
-* Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `DefaultChart` type refers to a chart that is much cheaper to evaluate.
-* While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a `DefaultChart` is defined by default for every vector space, GTSAM will never invoke it.
-
+* Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `Local` and `Retract` refer to a chart that is much cheaper to evaluate.
+* While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a these functions are defined for every vector space, GTSAM will never invoke them. (IS THIS TRUE?)
 
 Group
 -----
-A [group](http://en.wikipedia.org/wiki/Group_(mathematics)) should be well known from grade school :-), and provides a type with a composition operation that is closed, associative, has an identity element, and an inverse for each element.
+A [group](http://en.wikipedia.org/wiki/Group_(mathematics)) should be well known from grade school :-), and provides a type with a composition operation that is closed, associative, has an identity element, and an inverse for each element. The following should be added to the traits class for a group:
 
-* values:
-    * `group::identity<G>()`
 * valid expressions:
-    * `group::compose(p,q)`
-    * `group::inverse(p)`
-    * `group::between(p,q)`
-* invariants (using namespace group):
-    * `compose(p,inverse(p)) == identity`
-    * `compose(p,between(p,q)) == q`
-    * `between(p,q) == compose(inverse(p),q)`
-  
+    * `r = traits<M>::Compose(p,q)`, where *p*, *q*, and *r* are elements of the manifold. 
+    * `q = traits<M>::Inverse(p)`, where *p* and*q* are elements of the manifold. 
+    * `r = traits<M>::Between(p,q)`, where *p*, *q*, and *r* are elements of the manifold. 
+* static members:
+	* `traits<M>::Identity`, a static const member that represents the group's identity element.
+* invariants:
+    * `Compose(p,Inverse(p)) == Identity`
+    * `Compose(p,Between(p,q)) == q`
+    * `Between(p,q) == Compose(Inverse(p),q)`
+The `gtsam::group::traits` namespace defines the following:
+* values:
+	* `traits<M>::Identity` -- The identity element for this group stored as a static const.
+	* `traits<M>::group_flavor` -- the flavor of this group's `compose()` operator, either:
+		*  `gtsam::traits::group_multiplicative_tag` for multiplicative operator syntax ,or 
+		* `gtsam::traits::group_additive_tag` for additive operator syntax.
+
 We do *not* at this time support more than one composition operator per type. Although mathematically possible, it is hardly ever needed, and the machinery to support it would be burdensome and counter-intuitive. 
 
 Also, a type should provide either multiplication or addition operators depending on the flavor of the operation. To distinguish between the two, we will use a tag (see below).
@@ -86,15 +90,15 @@ For example, the [cyclic group of order 6](http://en.wikipedia.org/wiki/Cyclic_g
 Hence, we formalize by the following extension of the concept:
 
 * valid expressions:
-    * `group::act(g,p)`, for some instance of a space S, that can be acted upon by the group
-    * `group::act(g,p,H)`, if the space acted upon is a continuous differentiable manifold
+    * `q = traits<T>::Act(g,p)`, for some instance, *p*,  of a space *S*, that can be acted upon by the group element *g* to produce *q* in *S*.
+    * `q = traits<T>::Act(g,p,Hp)`, if the space acted upon is a continuous differentiable manifold. *
   
-In the latter case, if S is an n-dimensional manifold, H is an output argument that should be 
-filled with the *nxn* Jacobian matrix of the action with respect to a change in p. It typically depends
-on the group element g, but in most common example will *not* depend on the value of p. For example, in 
+In the latter case, if *S* is an n-dimensional manifold, *Hp* is an output argument that should be 
+filled with the *nxn* Jacobian matrix of the action with respect to a change in *p*. It typically depends
+on the group element *g*, but in most common example will *not* depend on the value of *p*. For example, in 
 the cyclic group example above, we simply have
 
-    H = R(i)
+    Hp = R(i)
   
 Note there is no derivative of the action with respect to a change in g. That will only be defined
 for Lie groups, which we introduce now.
@@ -104,26 +108,26 @@ Lie Group
 
 A Lie group is both a manifold *and* a group. Hence, a LIE_GROUP type should implements both MANIFOLD and GROUP concepts. 
 However, we now also need to be able to evaluate the derivatives of compose and inverse. 
-Hence, we have the following extra valid expressions:
+Hence, we have the following extra valid static functions defined in the struct `gtsam::manifold::traits<M>`:
 
-* `compose(p,q,H1,H2)`
-* `inverse(p,H)`
-* `between(p,q,H1,H2)`
+* `r = traits<M>::Compose(p,q,Hq,Hp)`
+* `q = traits<M>::Inverse(p,Hp)`
+* `r = traits<M>::Between(p,q,Hq,H2p)`
 
-where above the `H` arguments stand for optional Jacobian arguments. 
+where above the *H* arguments stand for optional Jacobian arguments. 
 That makes it possible to create factors implementing priors (PriorFactor) or relations between 
 two instances of a Lie group type (BetweenFactor).
 
-In addition, a Lie group has a Lie algebra, which affords two extra valid expressions for a Chart:
+In addition, a Lie group has a Lie algebra, which affords two extra valid expressions:
 
-* `v = Chart::Local(p,H)`, the chart around the identity, which optional Jacobian
-* `p = Chart::Retract(v,H)`, the inverse chart around the identity, which optional Jacobian
+* `v = Chart::Log(p,Hp)`, the log map, with optional Jacobian
+* `p = Chart::Exp(v,Hv)`, the exponential map, with optional Jacobian
 
 Note that in the Lie group case, the usual valid expressions for Retract and Local can be generated automatically, e.g.
 
     T Retract(p,v,Hp,Hv) {
-      T q = Retract(v,Hqv);
-      T r = compose(p,q,Hrp,Hrq);
+      T q = Exp(v,Hqv);
+      T r = Compose(p,q,Hrp,Hrq);
       Hv = Hrq * Hqv; // chain rule
       return r;
     }
@@ -133,21 +137,21 @@ Lie Group Action
 
 When a Lie group acts on a space, we have two derivatives to care about:
 
-  * `group::act(g,p,Hg,Hp)`, if the space acted upon is a continuous differentiable manifold
+  * `gtasm::manifold::traits<M>::act(g,p,Hg,Hp)`, if the space acted upon is a continuous differentiable manifold.
 
 An example is a *similarity transform* in 3D, which can act on 3D space, like
 
     q = s*R*p + t
     
-Note that again the derivative in p `Hp` is simply `s*R`, which depends on g but not on p. 
-The derivative  in g `Hg` is in general more complex.
+Note that again the derivative in *p*,  *Hp* is simply *s R*, which depends on *g* but not on *p*. 
+The derivative  in *g*,  *Hg*, is in general more complex.
 
 For now, we won't care about Lie groups acting on non-manifolds.
 
 Matrix Group
 ------------
 
-Most Lie groups we care about are *Matrix groups*, continuous sub-groups of *GL(n)*, the group of nxn invertible matrices.
+Most Lie groups we care about are *Matrix groups*, continuous sub-groups of *GL(n)*, the group of *n x n* invertible matrices.
 In this case, a lot of the derivatives calculations needed can be standardized.
 
 Vector Space
@@ -155,12 +159,12 @@ Vector Space
 
 Trivial Lie group where
 
-  * `identity<T> == 0`
-  * `inverse(p) == -p`
-  * `compose(p,q) == p+q`
-  * `between(p,q) == q-p`
-  * `chart::retract(q) == p-q`   
-  * `chart::retract(v) == p+v`
+  * `Identity == 0`
+  * `Inverse(p) == -p`
+  * `Compose(p,q) == p+q`
+  * `Between(p,q) == q-p`
+  * `Local(q) == p-q`   
+  * `Retract(v) == p+v`
 
 This considerably simplifies certain operations.
 
@@ -169,8 +173,8 @@ Testable
 Unit tests heavily depend on the following two functions being defined for all types that need to be tested:
 
 * valid expressions:
-    * `print(p,s)` where s is an optional string
-    * `equals(p,q,tol)` where tol is an optional tolerance 
+    * `Print(p,s)` where s is an optional string
+    * `Equals(p,q,tol)` where tol is an optional (double) tolerance 
 
 Implementation
 ==============
@@ -178,9 +182,9 @@ Implementation
 GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the 
 TESTABLE, MANIFOLD, GROUP, LIE_GROUP, and VECTOR_SPACE concepts.
 
-`gtsam::traits` is our way to associate these concepts with types, 
+`gtsam::manifold::traits` is our way to associate these concepts with types, 
 and we also define a limited number of `gtsam::tags` to select the correct implementation
-of certain functions at compile time (tag dispatching). Charts are done more conventionally, so we start there...
+of certain functions at compile time (tag dispatching). 
 
 Traits
 ------
@@ -189,115 +193,15 @@ However, a base class is not a good way to implement/check the other concepts, a
 to apply equally well to types that are outside GTSAM control, e.g., `Eigen::VectorXd`. This is where
 [traits](http://www.boost.org/doc/libs/1_57_0/libs/type_traits/doc/html/boost_typetraits/background.html) come in.
 
-We will not use Eigen-style or STL-style traits, that define *many* properties at once. 
-Rather, we use boost::mpl style meta-programming functions to facilitate meta-programming, 
-which return a single type or value for every trait. Some rationale/history can be 
-found [here](http://www.boost.org/doc/libs/1_55_0/libs/type_traits/doc/html/boost_typetraits/background.html).
-as well. 
+We will use Eigen-style or STL-style traits, that define *many* properties at once. 
 
-Note that not everything that makes a concept is defined by traits. Valid expressions such as group::compose are
-defined simply as free functions.
+Note that not everything that makes a concept is defined by traits. Valid expressions such as traits<T>::Compose are
+defined simply as static functions within the traits class.
 Finally, for GTSAM types, it is perfectly acceptable (and even desired) to define associated types as internal types, 
 rather than having to use traits internally.
 
-The conventions for `gtsam::traits` are as follows:
 
-* Types: `gtsam::traits::SomeAssociatedType<T>::type`, i.e., they are MixedCase and define a *single* `type`, for example:
-    
-      template<>
-      gtsam::traits::TangentVector<Point2> {
-        typedef Vector2 type;
-      }
-    
-* Values: `gtsam::traits::someValue<T>::value`, i.e., they are mixedCase starting with a lowercase letter and define a `value`, *and* a `value_type`. For example:
-    
-      template<>
-      gtsam::traits::dimension<Point2> {
-        static const int value = 2;
-        typedef const int value_type; // const ?
-      }
-    
-* Functors: `gtsam::traits::someFunctor<T>::type`, i.e., they are mixedCase starting with a lowercase letter and define a functor (i.e., no *type*). The functor itself should define a `result_type`. A contrived example
-    
-     struct Point2::manhattan {
-        typedef double result_type;
-        Point2 p_;
-        manhattan(const Point2& p) : p_(p) {}
-        Point2 operator()(const Point2& q) {
-          return abs(p_.x()-q.x()) + abs(p_.y()-q.x());
-        }
-      }
-      
-    template<> gtsam::traits::manhattan<Point2> : Point2::manhattan {}
-
-  By *inherting* the trait from the functor, we can just use the [currying](http://en.wikipedia.org/wiki/Currying) style `gtsam::traits::manhattan<Point2>℗(q)`. Note that, although technically a functor is a type, in spirit it is a free function and hence starts with a lowercase letter.
-  
-* Tags: `gtsam::traits::some_category<T>::type`, i.e., they are lower_case and define a *single* `type`, for example:
-    
-      template<>
-      gtsam::traits::structure_category<Point2> {
-        typedef vector_space_tag type;
-      }
-   
-   See below for the tags defined within GTSAM.
-
-Tags
-----
-  
-Algebraic structure concepts are associated with the following tags
-
-* `gtsam::traits::manifold_tag`
-* `gtsam::traits::group_tag`
-* `gtsam::traits::lie_group_tag`
-* `gtsam::traits::vector_space_tag`
-
-which should be queryable by `gtsam::traits::structure_category<T>::type`
-
-The group composition operation can be of two flavors:
-
-* `gtsam::traits::additive_group_tag`
-* `gtsam::traits::multiplicative_group_tag`
-
-which should be queryable by `gtsam::traits::group_flavor<T>::type`
-
-A tag can be used for [tag dispatching](http://www.boost.org/community/generic_programming.html#tag_dispatching),
-e.g., below is a generic compose:
-
-```
-#!c++
-  namespace detail {
-    template <class T>
-    T compose(const T& p, const T& q, additive_group_tag) {
-      return p + q;
-    }
-
-    template <class T>
-    T compose(const T& p, const T& q, multiplicative_group_tag) {
-      return p * q;
-    }
-  }
-
-  template <T>
-  T compose(const T& p, const T& q) {
-    return detail::compose(p, q, traits::group_flavor<T>::type);
-  }
-```
-
-Tags also facilitate meta-programming. Taking a leaf from [The boost Graph library](http://www.boost.org/doc/libs/1_40_0/boost/graph/graph_traits.hpp),
-tags can be used to create useful meta-functions, like `is_lie_group`, below.
-
-```
-#!c++
-    template <typename T>
-    struct is_lie_group
-        : mpl::bool_<
-            is_convertible<
-                typename structure_category<T>::type,
-                lie_group_tag
-            >::value
-        >
-    { };
-```
+** THE EXAMPLES ARE NOT UPDATED YET **
 
 Manifold Example
 ----------------

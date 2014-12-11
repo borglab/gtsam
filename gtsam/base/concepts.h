@@ -125,6 +125,9 @@ public:
   }
 };
 
+template<typename Manifold>
+struct Group;
+
 namespace group {
 
 /** @name Free functions any Group needs to define */
@@ -230,16 +233,24 @@ private:
   G e, g, h;
 };
 
+
+template<typename ManifoldType>
+struct LieGroup;
+
 namespace lie_group {
+
+
 
 /** @name Free functions any Lie Group needs to define */
 //@{
-template<typename LG, int dim> LG compose(const LG& g, const LG& h, OptionalJacobian<dim, dim> Hg, OptionalJacobian<dim, dim> Hh);
-template<typename LG, int dim> LG between(const LG& g, const LG& h, OptionalJacobian<dim, dim> Hg, OptionalJacobian<dim, dim> Hh);
-template<typename LG> LG inverse(const LG& g, OptionalJacobian<manifold::traits::dimension<LG>::value, manifold::traits::dimension<LG>::value > Hg);
+template<typename LG> LG compose(const LG& g, const LG& h,
+    manifold::traits::ChartJacobian<LG>::type Hg, manifold::traits::ChartJacobian<LG>::type Hh);
+template<typename LG> LG between(const LG& g, const LG& h,
+    manifold::traits::ChartJacobian<LG>::type Hg, manifold::traits::ChartJacobian<LG>::type Hh);
+template<typename LG> LG inverse(const LG& g, manifold::ChartJacobian<LG>::type Hg);
 template<typename LG> typename manifold::traits::TangentVector<LG>::type logmap(const LG & g);
-//template<typename LG> LG expmap(const typename manifold::traits::TangentVector<LG>::type& v);
-template<typename LG> LG expmap(const Eigen::Ref<const typename manifold::traits::TangentVector<LG>::type>& v);
+template<typename LG> LG expmap(const typename manifold::traits::TangentVector<LG>::type& v);
+template<typename LG> manifold::traits::TangentVector<LG>::type log(const LG& v);
 //@}
 
 namespace traits {
