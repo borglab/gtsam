@@ -34,6 +34,7 @@
 #include <boost/mpl/fold.hpp>
 namespace MPL = boost::mpl::placeholders;
 
+#include <typeinfo>       // operator typeid
 #include <map>
 
 class ExpressionFactorBinaryTest;
@@ -245,6 +246,13 @@ public:
 
   /// Destructor
   virtual ~ExpressionNode() {
+  }
+
+  /// Streaming
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os,
+      const ExpressionNode& node) {
+    os << "Expression of type " << typeid(int).name() << std::endl;
+    if (node.traceSize_>0) os << node.traceSize_ << std::endl;
   }
 
   /// Return keys that play in this expression as a set

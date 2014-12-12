@@ -52,6 +52,11 @@ private:
 
 public:
 
+  /// Print
+  void print(const std::string& s) const {
+    std::cout << s << root_ << std::endl;
+  }
+
   // Construct a constant expression
   Expression(const T& value) :
       root_(new ConstantExpression<T>(value)) {
