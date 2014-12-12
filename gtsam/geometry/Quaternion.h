@@ -16,50 +16,72 @@
  **/
 
 #include <gtsam/base/concepts.h>
+#include <gtsam/base/Matrix.h>
+#include <Geometry/Quaternion.h>
 
 #define QUATERNION_TEMPLATE typename _Scalar, int _Options
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 
-template<QUATERNION_TEMPLATE>
-QUATERNION_TYPE operator-(const QUATERNION_TYPE &q) { return gtsam::group::inverse(q); }
-
 namespace gtsam {
 
 // Define group traits
-GTSAM_GROUP_IDENTITY(QUATERNION_TEMPLATE, QUATERNION_TYPE)
-GTSAM_MULTIPLICATIVE_GROUP(QUATERNION_TEMPLATE, QUATERNION_TYPE)
+template<QUATERNION_TEMPLATE>
+struct traits<QUATERNION_TYPE> {
+  typedef QUATERNION_TYPE ManifoldType;
+  typedef QUATERNION_TYPE Q;
+  typedef lie_group_tag structure_category;
+
+  static const Q identity = Q::Identity();
 
 // Define manifold traits
-#define QUATERNION_TANGENT Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1>
-#define QUATERNION_CHART LieGroupChart<typename QUATERNION_TYPE>
-GTSAM_MANIFOLD(QUATERNION_TEMPLATE, QUATERNION_TYPE, 3, QUATERNION_TANGENT,
-    QUATERNION_CHART)
+  typedef Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> TangentVector;
+  typedef OptionalJacobian<3, 3> ChartJacobian;
 
-/// Define Eigen::Quaternion to be a model of the Lie Group concept
-namespace traits {
-template<typename _Scalar, int _Options>
-struct structure_category<Eigen::Quaternion<_Scalar,_Options> > {
-  typedef lie_group_tag type;
-};
-}
-
-/// lie_group for Eigen Quaternions
-namespace lie_group {
+  static Q Compose(const Q &g, const Q & h, ChartJacobian Hg=NULL, ChartJacobian Hh=NULL) {
+    if (Hg) {
+      //TODO : check Jacobian consistent with chart ( h.toRotationMatrix().transpose() ? )
+      *Hg = h.toRotationMatrix().transpose();
+    }
+    if (Hh) {
+      //TODO : check Jacobian consistent with chart ( I(3)? )
+      *Hh = I_3x3;
+    }
+    return g * h;
+  }
+  static Q Between(const Q &g, const Q & h, ChartJacobian Hg=NULL, ChartJacobian Hh=NULL) {
+    Q d = g.inverse() * h;
+    if (Hg) {
+        //TODO : check Jacobian consistent with chart
+      *Hg = -d.toRotationMatrix().transpose();
+      }
+      if (Hh) {
+        //TODO : check Jacobian consistent with chart (my guess I(3) )
+        *Hh = I_3x3;
+      }
+      return d;
+  }
+  static Q Inverse(const Q &g, ChartJacobian H=NULL) {
+      if (H) {
+        //TODO : check Jacobian consistent with chart
+        *H = -g.toRotationMatrix();
+       }
+       return g.inverse();
+  }
 
   /// Exponential map, simply be converting omega to axis/angle representation
-  template <typename _Scalar, int _Options>
-  static QUATERNION_TYPE expmap<QUATERNION_TYPE>(const Eigen::Ref<const typename QUATERNION_TANGENT >& omega) {
+  // TODO: implement Jacobian
+  static Q Expmap(const Eigen::Ref<const TangentVector >& omega, ChartJacobian H=NULL) {
     if (omega.isZero())
-      return QUATERNION_TYPE::Identity();
+      return Q::Identity();
     else {
       _Scalar angle = omega.norm();
-      return QUATERNION_TYPE(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
+      return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
     }
   }
 
   /// We use our own Logmap, as there is a slight bug in Eigen
-  template <QUATERNION_TEMPLATE>
-  static QUATERNION_TANGENT logmap<QUATERNION_TYPE>(const QUATERNION_TYPE& q) {
+  // TODO: implement Jacobian
+  static TangentVector Logmap(const Q& q, ChartJacobian H=NULL) {
     using std::acos;
     using std::sqrt;
     static const double twoPi = 2.0 * M_PI,
@@ -86,15 +108,18 @@ namespace lie_group {
       return (angle / s) * q.vec();
     }
   }
-} // end namespace lie_group
 
-/**
- *  GSAM typedef to an Eigen::Quaternion<double>, we disable alignment because
- *  geometry objects are stored in boost pool allocators, in Values containers,
- *  and and these pool allocators do not support alignment.
- */
+  static TangentVector Local(const Q& origin, const Q& other, ChartJacobian Horigin=NULL, ChartJacobian Hother=NULL) {
+    return Logmap(Between(origin,other,Horigin,Hother));
+    // TODO: incorporate Jacobian of Logmap
+  }
+  static Q Retract(const Q& origin, const TangentVector& v, ChartJacobian Horigin, ChartJacobian Hv) {
+    return Compose(origin, Expmap(v), Horigin, Hv);
+    // TODO : incorporate Jacobian of Expmap
+  }
+};
+
 typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
-typedef LieGroupChart<Quaternion> QuaternionChart;
 
 } // \namespace gtsam
 

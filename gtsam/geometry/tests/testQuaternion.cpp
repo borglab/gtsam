@@ -22,12 +22,12 @@ using namespace std;
 using namespace gtsam;
 
 typedef Quaternion Q; // Typedef
-typedef OptionalJacobian<manifold::traits::dimension<Q>::value, manifold::traits::dimension<Q>::value> QuaternionJacobian;
+typedef traits<Q>::ChartJacobian QuaternionJacobian;
 
 //******************************************************************************
 TEST(Quaternion , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >));
-  BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >));
+  //BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >));
+  //BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >));
   BOOST_CONCEPT_ASSERT((IsLieGroup<Quaternion >));
 }
 
@@ -40,7 +40,7 @@ TEST(Quaternion , Constructor) {
 TEST(Quaternion , Invariants) {
   Q q1(Eigen::AngleAxisd(1, Vector3(0, 0, 1)));
   Q q2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
-  // group::check_invariants(q1,q2); Does not satisfy Testable concept (yet!)
+  check_group_invariants(q1,q2);
 }
 
 //******************************************************************************
@@ -48,10 +48,9 @@ TEST(Quaternion , Local) {
   Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0, z_axis));
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
-  typedef manifold::traits::DefaultChart<Q>::type Chart;
   QuaternionJacobian H1,H2;
   Vector3 expected(0, 0, 0.1);
-  Vector3 actual = Chart::Local(q1, q2, H1, H2);
+  Vector3 actual = traits<Q>::Local(q1, q2, H1, H2);
   EXPECT(assert_equal((Vector)expected,actual));
 }
 
@@ -60,10 +59,9 @@ TEST(Quaternion , Retract) {
   Vector3 z_axis(0, 0, 1);
   Q q(Eigen::AngleAxisd(0, z_axis));
   Q expected(Eigen::AngleAxisd(0.1, z_axis));
-  typedef manifold::traits::DefaultChart<Q>::type Chart;
   Vector3 v(0, 0, 0.1);
   QuaternionJacobian Hq,Hv;
-  Q actual = Chart::Retract(q, v, Hq, Hv);
+  Q actual = traits<Q>::Retract(q, v, Hq, Hv);
   EXPECT(actual.isApprox(expected));
 }
 

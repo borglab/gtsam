@@ -135,27 +135,6 @@ check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
                              ChartJacobian Hv=boost::none); \
   static int GetDimension(const ManifoldType& m) { return dimension; }
 
-
-/**
- * Chart concept
- */
-template<typename C>
-class IsChart {
-public:
-  typedef typename C::ManifoldType ManifoldType;
-  typedef typename manifold::traits::TangentVector<ManifoldType>::type V;
-  static const int dim = manifold::traits::dimension<ManifoldType>::value;
-  typedef OptionalJacobian<dim, dim> OptionalJacobian;
-
-  BOOST_CONCEPT_USAGE(IsChart) {
-
-  }
-private:
-  ManifoldType p,q;
-  OptionalJacobian Hp,Hq,Hv;
-  V v;
-};
-
 /**
  * Manifold concept
  */
@@ -174,7 +153,7 @@ public:
         "This type's structure_category trait does not assert it as a manifold (or derived)");
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
 
-    // make sure methods in Chart are defined
+    // make sure Chart methods are defined
     v = traits<M>::Local(p,q);
     q = traits<M>::Retract(p,v);
     // and the versions with Jacobians.
@@ -186,16 +165,6 @@ private:
   ChartJacobian Hp,Hq,Hv;
   TangentVector v;
 };
-
-/// Check invariants
-template<typename G>
-BOOST_CONCEPT_REQUIRES(((Testable<G>,IsGroup<G>)),(bool)) //
-check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
-  G e = traits<G>::identity;
-  return traits<G>::Equals(traits<G>::Compose(a, traits<G>::inverse(a)), e, tol)
-      && traits<G>::Equals(traits<G>::Between(a, b), traits<G>::Compose(traits<G>::Inverse(a), b), tol)
-      && traits<G>::Equals(traits<G>::Compose(a, traits<G>::Between(a, b)), b, tol);
-}
 
 /**
  * Group Concept
@@ -235,16 +204,30 @@ private:
   G e, g, h;
 };
 
-
 /// Check invariants
-//template<typename LG>
-//BOOST_CONCEPT_REQUIRES(((Testable<LG>)),(bool)) check_invariants(const LG& a,
-//    const LG& b) {
-//  bool check_invariants(const LG& a, const LG& b) {
-//    return equal(Chart::Retract(a, b), a + b)
-//        && equal(Chart::Local(a, b), b - a);
-//  }
-//}
+template<typename G>
+BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(bool)) //
+check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
+  G e = traits<G>::identity;
+  return traits<G>::Equals(traits<G>::Compose(a, traits<G>::inverse(a)), e, tol)
+      && traits<G>::Equals(traits<G>::Between(a, b), traits<G>::Compose(traits<G>::Inverse(a), b), tol)
+      && traits<G>::Equals(traits<G>::Compose(a, traits<G>::Between(a, b)), b, tol);
+}
+
+
+#define GTSAM_ADDITIVE_GROUP(GROUP) \
+    typedef additive_gropu_tag group_flavor; \
+    static GROUP Compose(const GROUP &g, const GROUP & h) { return g + h;} \
+    static GROUP Between(const GROUP &g, const GROUP & h) { return h - g;} \
+    static GROUP Inverse(const GROUP &g) { return -g;}
+
+
+#define GTSAM_MULTIPLICATIVE_GROUP(GROUP) \
+    typedef additive_group_tag group_flavor; \
+    static GROUP Compose(const GROUP &g, const GROUP & h) { return g * h;} \
+    static GROUP Between(const GROUP &g, const GROUP & h) { return g.inverse() * h;} \
+    static GROUP Inverse(const GROUP &g) { return g.inverse();}
+
 
 /**
  * Lie Group Concept
