@@ -61,8 +61,10 @@ public:
   /// @{
 
   /**
-   * Add an Expression factor directly
-   * Which implements |h(x)-z|^2_R
+   * Directly add ExpressionFactor that implements |h(x)-z|^2_R
+   * @param h expression that implements measurement function
+   * @param z measurement
+   * @param R model
    */
   template<typename T>
   void addExpressionFactor(const Expression<T>& h, const T& z,
@@ -201,8 +203,8 @@ TEST( TOAFactor, RealExperiment1 ) {
   ExpressionFactorGraph graph;
   for (size_t i = 0; i < 4; i++) {
     for (size_t j = 0; j < 15; j++) {
-      Double_ predictTOA_ij(&Event::toa, unknownEvents[j], microphones[i]);
-      graph.addExpressionFactor(predictTOA_ij, data[j][i], model);
+      Double_ h_ij(&Event::toa, unknownEvents[j], microphones[i]);
+      graph.addExpressionFactor(h_ij, data[j][i], model);
     }
   }
 
