@@ -16,12 +16,9 @@
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 
-//FIXME temporary until all conflicts with namespace traits resolved
-#define traits traits_foo
-
 namespace gtsam {
 
-template <typename T> struct traits {};
+template <typename T> struct traits_x {};
 
 /**
  * @name Algebraic Structure Tags
@@ -38,90 +35,170 @@ struct vector_space_tag: public lie_group_tag {};
 struct multiplicative_group_tag {};
 struct additive_group_tag {};
 
-// a fictitious example
-class Transformation;
-template<>
-struct traits<Transformation> {
 
+namespace internal {
+
+/// A helper that implements the traits interface for GTSAM manifolds.
+/// To use this for your gtsam type, define:
+/// template<> struct traits<Type> : public Manifold<Type> { };
+template<typename ManifoldType>
+struct Manifold {
   // Typedefs required by all manifold types.
-  typedef multiplicative_group_tag group_flavor;
-  typedef lie_group_tag structure_category;
-  typedef Transformation ManifoldType;
-
-  enum { dimension = 6 };
+  typedef manifold_tag structure_category;
+  enum { dimension = ManifoldType::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
-  // Required by all Manifold types.
+  // For Testable
+  void Print(const ManifoldType& m) {
+    m.print();
+  }
+  void Equals(const ManifoldType& m1,
+              const ManifoldType& m2,
+              double tol = 1e-8) {
+    return m1.equals(m2, tol);
+  }
+
   static TangentVector Local(const ManifoldType& origin,
-                             const ManifoldType& other);
+                             const ManifoldType& other) {
+    return origin.localCoordinates(other);
+  }
 
   static ManifoldType Retract(const ManifoldType& origin,
-                              const TangentVector& v);
+                              const TangentVector& v) {
+    return origin.retract(v);
+  }
 
-  static int GetDimension(const ManifoldType& m){ return dimension; }
-
-  // For Group. Only implemented for groups
-  static ManifoldType Compose(const ManifoldType& m1,
-                              const ManifoldType& m2);
-  static ManifoldType Between(const ManifoldType& m1,
-                              const ManifoldType& m2);
-  static ManifoldType Inverse(const ManifoldType& m);
-
-  static Vector3 Act(const ManifoldType& T,
-                     const Vector3& p);
-  static Vector3 Act(const ManifoldType& T,
-                     const Vector3& p,
-                     OptionalJacobian<3,3> Hp);
-
-
-  // For Lie Group. Only implemented for lie groups.
-  static ManifoldType Compose(const ManifoldType& m1,
-                              const ManifoldType& m2,
-                              ChartJacobian H1,
-                              ChartJacobian H2);
-  static ManifoldType Between(const ManifoldType& m1,
-                              const ManifoldType& m2,
-                              ChartJacobian H1,
-                              ChartJacobian H2);
-  static ManifoldType Inverse(const ManifoldType& m,
-                              ChartJacobian H);
-  static Vector3 Act(const ManifoldType& T,
-                     const Vector3& p,
-                     OptionalJacobian<3, dimension> HT,
-                     OptionalJacobian<3, 3> Hp);
-  static const ManifoldType Identity;
   static TangentVector Local(const ManifoldType& origin,
                              const ManifoldType& other,
                              ChartJacobian Horigin,
-                             ChartJacobian Hother);
+                             ChartJacobian Hother) {
+    return origin.localCoordinates(other, Horigin, Hother);
+  }
 
   static ManifoldType Retract(const ManifoldType& origin,
                               const TangentVector& v,
                               ChartJacobian Horigin,
-                              ChartJacobian Hv);
+                              ChartJacobian Hv) {
+    return origin.retract(v, Horigin, Hv);
+  }
 
-  static TangentVector Logmap(const ManifoldType& m);
-  static ManifoldType Expmap(const TangentVector& v);
-  static TangentVector Logmap(const ManifoldType& m, ChartJacobian Hm);
-  static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv);
+  static int GetDimension(const ManifoldType& m){ return m.dim(); }
+
+};
+
+
+/// A helper that implements the traits interface for GTSAM lie groups.
+/// To use this for your gtsam type, define:
+/// template<> struct traits<Type> : public LieGroup<Type> { };
+template<typename ManifoldType>
+struct LieGroup {
+  // Typedefs required by all manifold types.
+  typedef manifold_tag structure_category;
+  enum { dimension = ManifoldType::dimension };
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   // For Testable
-  static void Print(const ManifoldType& T);
-  static void Equals(const ManifoldType& m1,
-                     const ManifoldType& m2,
-                     double tol = 1e-8);
+  void Print(const ManifoldType& m) {
+    m.print();
+  }
+  void Equals(const ManifoldType& m1,
+              const ManifoldType& m2,
+              double tol = 1e-8) {
+    return m1.equals(m2, tol);
+  }
+
+  static TangentVector Local(const ManifoldType& origin,
+                             const ManifoldType& other) {
+    return origin.localCoordinates(other);
+  }
+
+  static ManifoldType Retract(const ManifoldType& origin,
+                              const TangentVector& v) {
+    return origin.retract(v);
+  }
+
+  static TangentVector Local(const ManifoldType& origin,
+                             const ManifoldType& other,
+                             ChartJacobian Horigin,
+                             ChartJacobian Hother) {
+    return origin.localCoordinates(other, Horigin, Hother);
+  }
+
+  static ManifoldType Retract(const ManifoldType& origin,
+                              const TangentVector& v,
+                              ChartJacobian Horigin,
+                              ChartJacobian Hv) {
+    return origin.retract(v, Horigin, Hv);
+  }
+
+  static int GetDimension(const ManifoldType& m){ return m.dim(); }
+
+  // For Group. Only implemented for groups
+  static ManifoldType Compose(const ManifoldType& m1,
+                              const ManifoldType& m2) {
+    return m1.compose(m2);
+  }
+
+  static ManifoldType Between(const ManifoldType& m1,
+                              const ManifoldType& m2) {
+    return m1.between(m2);
+  }
+
+  static ManifoldType Inverse(const ManifoldType& m) {
+    return m.inverse();
+  }
+
+  static ManifoldType Compose(const ManifoldType& m1,
+                              const ManifoldType& m2,
+                              ChartJacobian H1,
+                              ChartJacobian H2) {
+    return m1.compose(m2, H1, H2);
+  }
+
+  static ManifoldType Between(const ManifoldType& m1,
+                              const ManifoldType& m2,
+                              ChartJacobian H1,
+                              ChartJacobian H2) {
+    return m1.between(m2, H1, H2);
+  }
+
+  static ManifoldType Inverse(const ManifoldType& m,
+                              ChartJacobian H) {
+    return m.inverse(H);
+  }
+
+  static const ManifoldType identity = ManifoldType::Identity();
+
+  static TangentVector Logmap(const ManifoldType& m) {
+    return ManifoldType::Logmap(m);
+  }
+
+  static ManifoldType Expmap(const TangentVector& v) {
+    return ManifoldType::Expmap(v);
+  }
+
+  static TangentVector Logmap(const ManifoldType& m, ChartJacobian Hm) {
+    return ManifoldType::Logmap(m, Hm);
+  }
+
+  static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv) {
+    return ManifoldType::Expmap(v, Hv);
+  }
 };
+
+}  // namespace internal
 
 
 /// Check invariants for Manifold type
 template<typename T>
-BOOST_CONCEPT_REQUIRES(((Testable<traits<T> >)),(bool)) //
+BOOST_CONCEPT_REQUIRES(((Testable<traits_x<T> >)),(bool)) //
 check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
-  typename traits<T>::TangentVector v0 = traits<T>::Local(a,a);
-  typename traits<T>::TangentVector v = traits<T>::Local(a,b);
-  T c = traits<T>::Retract(a,v);
-  return v0.norm() < tol && traits<T>::Equals(b,c,tol);
+  typename traits_x<T>::TangentVector v0 = traits_x<T>::Local(a,a);
+  typename traits_x<T>::TangentVector v = traits_x<T>::Local(a,b);
+  T c = traits_x<T>::Retract(a,v);
+  return v0.norm() < tol && traits_x<T>::Equals(b,c,tol);
 }
 
 #define GTSAM_MANIFOLD_DECLARATIONS(MANIFOLD,DIM,TANGENT_VECTOR) \
@@ -146,11 +223,11 @@ check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
 template<typename M>
 class IsManifold {
 public:
-  typedef typename traits<M>::structure_category structure_category_tag;
-  static const size_t dim = traits<M>::dimension;
-  typedef typename traits<M>::ManifoldType ManifoldType;
-  typedef typename traits<M>::TangentVector TangentVector;
-  typedef typename traits<M>::ChartJacobian ChartJacobian;
+  typedef typename traits_x<M>::structure_category structure_category_tag;
+  static const size_t dim = traits_x<M>::dimension;
+  typedef typename traits_x<M>::ManifoldType ManifoldType;
+  typedef typename traits_x<M>::TangentVector TangentVector;
+  typedef typename traits_x<M>::ChartJacobian ChartJacobian;
 
   BOOST_CONCEPT_USAGE(IsManifold) {
     BOOST_STATIC_ASSERT_MSG(
@@ -159,11 +236,11 @@ public:
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
 
     // make sure Chart methods are defined
-    v = traits<M>::Local(p,q);
-    q = traits<M>::Retract(p,v);
+    v = traits_x<M>::Local(p,q);
+    q = traits_x<M>::Retract(p,v);
     // and the versions with Jacobians.
-    v = traits<M>::Local(p,q,Hp,Hq);
-    q = traits<M>::Retract(p,v,Hp,Hv);
+    v = traits_x<M>::Local(p,q,Hp,Hq);
+    q = traits_x<M>::Retract(p,v,Hp,Hv);
   }
 private:
   ManifoldType p,q;
@@ -177,18 +254,18 @@ private:
 template<typename G>
 class IsGroup {
 public:
-  typedef typename traits<G>::structure_category structure_category_tag;
-  typedef typename traits<G>::group_flavor flavor_tag;
-  //typedef typename traits<G>::identity::value_type identity_value_type;
+  typedef typename traits_x<G>::structure_category structure_category_tag;
+  typedef typename traits_x<G>::group_flavor flavor_tag;
+  //typedef typename traits_x<G>::identity::value_type identity_value_type;
 
   BOOST_CONCEPT_USAGE(IsGroup) {
     BOOST_STATIC_ASSERT_MSG(
         (boost::is_base_of<group_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a group (or derived)");
-    e = traits<G>::identity;
-    e = traits<G>::Compose(g, h);
-    e = traits<G>::Between(g, h);
-    e = traits<G>::Inverse(g);
+    e = traits_x<G>::identity;
+    e = traits_x<G>::Compose(g, h);
+    e = traits_x<G>::Between(g, h);
+    e = traits_x<G>::Inverse(g);
     operator_usage(flavor);
     // todo: how do we test the act concept? or do we even need to?
   }
@@ -212,10 +289,10 @@ private:
 template<typename G>
 BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(bool)) //
 check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
-  G e = traits<G>::identity;
-  return traits<G>::Equals(traits<G>::Compose(a, traits<G>::inverse(a)), e, tol)
-      && traits<G>::Equals(traits<G>::Between(a, b), traits<G>::Compose(traits<G>::Inverse(a), b), tol)
-      && traits<G>::Equals(traits<G>::Compose(a, traits<G>::Between(a, b)), b, tol);
+  G e = traits_x<G>::identity;
+  return traits_x<G>::Equals(traits_x<G>::Compose(a, traits_x<G>::inverse(a)), e, tol)
+      && traits_x<G>::Equals(traits_x<G>::Between(a, b), traits_x<G>::Compose(traits_x<G>::Inverse(a), b), tol)
+      && traits_x<G>::Equals(traits_x<G>::Compose(a, traits_x<G>::Between(a, b)), b, tol);
 }
 
 
@@ -239,10 +316,10 @@ check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
 template<typename LG>
 class IsLieGroup: public IsGroup<LG>, public IsManifold<LG> {
 public:
-  typedef typename traits<LG>::structure_category structure_category_tag;
-  typedef typename traits<LG>::ManifoldType ManifoldType;
-  typedef typename traits<LG>::TangentVector TangentVector;
-  typedef typename traits<LG>::ChartJacobian ChartJacobian;
+  typedef typename traits_x<LG>::structure_category structure_category_tag;
+  typedef typename traits_x<LG>::ManifoldType ManifoldType;
+  typedef typename traits_x<LG>::TangentVector TangentVector;
+  typedef typename traits_x<LG>::ChartJacobian ChartJacobian;
 
   BOOST_CONCEPT_USAGE(IsLieGroup) {
     BOOST_STATIC_ASSERT_MSG(
@@ -250,15 +327,15 @@ public:
         "This type's trait does not assert it is a Lie group (or derived)");
 
     // group opertations with Jacobians
-    g = traits<LG>::Compose(g, h, Hg, Hh);
-    g = traits<LG>::Between(g, h, Hg, Hh);
-    g = traits<LG>::Inverse(g, Hg);
+    g = traits_x<LG>::Compose(g, h, Hg, Hh);
+    g = traits_x<LG>::Between(g, h, Hg, Hh);
+    g = traits_x<LG>::Inverse(g, Hg);
     // log and exp map without Jacobians
-    g = traits<LG>::Expmap(v);
-    v = traits<LG>::Logmap(g);
+    g = traits_x<LG>::Expmap(v);
+    v = traits_x<LG>::Logmap(g);
     // log and exp map with Jacobians
-    g = traits<LG>::Expmap(v, Hg);
-    v = traits<LG>::Logmap(g, Hg);
+    g = traits_x<LG>::Expmap(v, Hg);
+    v = traits_x<LG>::Logmap(g, Hg);
   }
 private:
   LG g, h;
@@ -271,7 +348,7 @@ template<typename V>
 class IsVectorSpace: public IsLieGroup<V> {
 public:
 
-  typedef typename traits<V>::structure_category structure_category_tag;
+  typedef typename traits_x<V>::structure_category structure_category_tag;
 
   BOOST_CONCEPT_USAGE(IsVectorSpace) {
     BOOST_STATIC_ASSERT_MSG(

@@ -25,7 +25,7 @@ namespace gtsam {
 
 // Define group traits
 template<QUATERNION_TEMPLATE>
-struct traits<QUATERNION_TYPE> {
+struct traits_x<QUATERNION_TYPE> {
   typedef QUATERNION_TYPE ManifoldType;
   typedef QUATERNION_TYPE Q;
   typedef lie_group_tag structure_category;

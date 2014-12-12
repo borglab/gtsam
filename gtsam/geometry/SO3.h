@@ -48,26 +48,6 @@ public:
   }
 };
 
-#define SO3_TEMPLATE
-GTSAM_GROUP_IDENTITY0(SO3)
-GTSAM_MULTIPLICATIVE_GROUP(SO3_TEMPLATE, SO3)
-
-/**
- * Chart for SO3 comprising of exponential map and its inverse (log-map)
- */
-typedef LieGroupChart<SO3> SO3Chart;
-
-#define SO3_TANGENT Vector3
-#define SO3_CHART SO3Chart
-GTSAM_MANIFOLD(SO3_TEMPLATE, SO3, 3, SO3_TANGENT, SO3_CHART)
-
-/// Define SO3 to be a model of the Lie Group concept
-namespace traits {
-template<>
-struct structure_category<SO3> {
-  typedef lie_group_tag type;
-};
-}
 
 } // end namespace gtsam
 
