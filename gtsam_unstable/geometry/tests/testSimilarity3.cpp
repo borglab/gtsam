@@ -131,10 +131,11 @@ TEST(Similarity3, manifold) {
   Similarity3 sim2;
   EXPECT(sim2.retract(z)==sim2);
 
-  Vector7 vzero = Vector7::Zero();
-  EXPECT(sim2.localCoordinates(sim) == vzero);
+  EXPECT(sim2.localCoordinates(sim) == zero);
 
-  EXPECT(sim2.localCoordinates(sim))
+  Similarity3 sim3 = Similarity3(Matrix3::Identity(), {1,1,1}, 1);
+  Vector7 v3 = {0,0,0,1,1,1,0};
+  EXPECT(sim2.localCoordinates(sim3)==v3);
 
   // TODO add unit tests for retract and localCoordinates
 }
