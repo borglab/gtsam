@@ -66,7 +66,7 @@ struct Manifold {
   void Print(const ManifoldType& m) {
     m.print();
   }
-  void Equals(const ManifoldType& m1,
+  bool Equals(const ManifoldType& m1,
               const ManifoldType& m2,
               double tol = 1e-8) {
     return m1.equals(m2, tol);
@@ -116,7 +116,7 @@ struct LieGroup {
   void Print(const ManifoldType& m) {
     m.print();
   }
-  void Equals(const ManifoldType& m1,
+  bool Equals(const ManifoldType& m1,
               const ManifoldType& m2,
               double tol = 1e-8) {
     return m1.equals(m2, tol);
@@ -201,6 +201,7 @@ struct LieGroup {
   static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv) {
     return ManifoldType::Expmap(v, Hv);
   }
+
 };
 
 }  // namespace internal
@@ -256,11 +257,17 @@ public:
     // and the versions with Jacobians.
     v = traits_x<M>::Local(p,q,Hp,Hq);
     q = traits_x<M>::Retract(p,v,Hp,Hv);
+
+    traits_x<M>::Print(p);
+    traits_x<M>::Print(p, "p");
+    b = traits_x<M>::Equals(p,q);
+    b = traits_x<M>::Equals(p,q,1e-9);
   }
 private:
   ManifoldType p,q;
   ChartJacobian Hp,Hq,Hv;
   TangentVector v;
+  bool b;
 };
 
 /**
@@ -277,12 +284,17 @@ public:
     BOOST_STATIC_ASSERT_MSG(
         (boost::is_base_of<group_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a group (or derived)");
-    e = traits_x<G>::identity;
+    e = traits_x<G>::Identity();
     e = traits_x<G>::Compose(g, h);
     e = traits_x<G>::Between(g, h);
     e = traits_x<G>::Inverse(g);
     operator_usage(flavor);
     // todo: how do we test the act concept? or do we even need to?
+
+    traits_x<G>::Print(g);
+    traits_x<G>::Print(g, "g");
+    b = traits_x<G>::Equals(g,h);
+    b = traits_x<G>::Equals(g,h,1e-9);
   }
 
 private:
@@ -298,14 +310,15 @@ private:
 
   flavor_tag flavor;
   G e, g, h;
+  bool b;
 };
 
 /// Check invariants
 template<typename G>
 BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(bool)) //
 check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
-  G e = traits_x<G>::identity;
-  return traits_x<G>::Equals(traits_x<G>::Compose(a, traits_x<G>::inverse(a)), e, tol)
+  G e = traits_x<G>::Identity();
+  return traits_x<G>::Equals(traits_x<G>::Compose(a, traits_x<G>::Inverse(a)), e, tol)
       && traits_x<G>::Equals(traits_x<G>::Between(a, b), traits_x<G>::Compose(traits_x<G>::Inverse(a), b), tol)
       && traits_x<G>::Equals(traits_x<G>::Compose(a, traits_x<G>::Between(a, b)), b, tol);
 }

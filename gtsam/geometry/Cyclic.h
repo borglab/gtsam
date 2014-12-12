@@ -70,7 +70,9 @@ template <CYCLIC_TEMPLATE>
 struct traits_x<CYCLIC_TYPE > {
   typedef group_tag structure_category;
   GTSAM_ADDITIVE_GROUP(CYCLIC_TYPE);
-  static const CYCLIC_TYPE identity = CYCLIC_TYPE::Identity();
+  static CYCLIC_TYPE Identity() { return CYCLIC_TYPE::Identity(); }
+  static bool Equals(const CYCLIC_TYPE& a, const CYCLIC_TYPE& b, double tol=1e-9) { return a.equals(b,tol); }
+  static void Print(const CYCLIC_TYPE& c, const std::string &s="") { c.print(s); }
 };
 
 } // \namespace gtsam

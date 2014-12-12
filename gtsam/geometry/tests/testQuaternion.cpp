@@ -22,7 +22,7 @@ using namespace std;
 using namespace gtsam;
 
 typedef Quaternion Q; // Typedef
-typedef traits<Q>::ChartJacobian QuaternionJacobian;
+typedef traits_x<Q>::ChartJacobian QuaternionJacobian;
 
 //******************************************************************************
 TEST(Quaternion , Concept) {

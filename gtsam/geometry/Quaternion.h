@@ -29,8 +29,11 @@ struct traits_x<QUATERNION_TYPE> {
   typedef QUATERNION_TYPE ManifoldType;
   typedef QUATERNION_TYPE Q;
   typedef lie_group_tag structure_category;
+  typedef multiplicative_group_tag group_flavor;
 
-  static const Q identity = Q::Identity();
+  enum { dimension = 3 };
+
+  static Q Identity() { return Q::Identity(); }
 
 // Define manifold traits
   typedef Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> TangentVector;

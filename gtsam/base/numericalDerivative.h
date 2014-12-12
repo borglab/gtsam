@@ -111,12 +111,12 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
     double delta = 1e-5) {
   using namespace traits;
 
-  BOOST_STATIC_ASSERT_MSG( (typename boost::is_same< typename traits_x<X>::structure_category, gtsam::manifold_tag>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
   typedef DefaultChart<Y> ChartY;
   typedef typename ChartY::vector TangentY;
 
-  BOOST_STATIC_ASSERT_MSG( (typename boost::is_same<traits_x<X>::structure_category, gtsam::manifold_tag>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
   static const int N = traits::dimension<X>::value;
   BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
