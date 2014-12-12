@@ -672,7 +672,6 @@ class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
 public:
 
-  typedef T (A1::*Method)(OJ1) const;
   typedef boost::function<T(const A1&, OJ1)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
   typedef typename Base::Record Record;
@@ -721,7 +720,6 @@ class BinaryExpression:
 
 public:
 
-  typedef T (A1::*Method)(const A2&, OJ1, OJ2) const;
   typedef boost::function<T(const A1&, const A2&, OJ1, OJ2)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
@@ -779,7 +777,6 @@ class TernaryExpression:
 
 public:
 
-  typedef T (A1::*Method)(const A2&, const A3&, OJ1, OJ2, OJ3) const;
   typedef boost::function<T(const A1&, const A2&, const A3&, OJ1, OJ2, OJ3)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;

@@ -75,7 +75,7 @@ public:
   /// Construct a nullary method expression
   template<typename A>
   Expression(const Expression<A>& expression,
-      typename UnaryExpression<T, A>::Method method) :
+      T (A::*method)(typename UnaryExpression<T, A>::OJ1) const) :
       root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
   }
 
@@ -89,7 +89,8 @@ public:
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
-      typename BinaryExpression<T, A1, A2>::Method method,
+      T (A1::*method)(const A2&, typename BinaryExpression<T, A1, A2>::OJ1,
+          typename BinaryExpression<T, A1, A2>::OJ2) const,
       const Expression<A2>& expression2) :
       root_(
           new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
@@ -106,7 +107,10 @@ public:
   /// Construct a binary method expression
   template<typename A1, typename A2, typename A3>
   Expression(const Expression<A1>& expression1,
-      typename TernaryExpression<T, A1, A2, A3>::Method method,
+      T (A1::*method)(const A2&, const A3&,
+          typename TernaryExpression<T, A1, A2, A3>::OJ1,
+          typename TernaryExpression<T, A1, A2, A3>::OJ2,
+          typename TernaryExpression<T, A1, A2, A3>::OJ3) const,
       const Expression<A2>& expression2, const Expression<A3>& expression3) :
       root_(
           new TernaryExpression<T, A1, A2, A3>(
