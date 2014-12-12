@@ -131,12 +131,12 @@ TEST( SubgraphPreconditioner, system )
 
   // y1 = perturbed y0
   VectorValues y1 = zeros;
-  y1[1] = (Vector(2) << 1.0, -1.0);
+  y1[1] = Vector2(1.0, -1.0);
 
   // Check corresponding x  values
   VectorValues expected_x1 = xtrue, x1 = system.x(y1);
-  expected_x1[1] = (Vector(2) << 2.01, 2.99);
-  expected_x1[0] = (Vector(2) << 3.01, 2.99);
+  expected_x1[1] = Vector2(2.01, 2.99);
+  expected_x1[0] = Vector2(3.01, 2.99);
   CHECK(assert_equal(xtrue, system.x(y0)));
   CHECK(assert_equal(expected_x1,system.x(y1)));
 
@@ -150,21 +150,21 @@ TEST( SubgraphPreconditioner, system )
   VectorValues expected_gx0 = zeros;
   VectorValues expected_gx1 = zeros;
   CHECK(assert_equal(expected_gx0,gradient(Ab,xtrue)));
-  expected_gx1[2] = (Vector(2) << -100., 100.);
-  expected_gx1[4] = (Vector(2) << -100., 100.);
-  expected_gx1[1] = (Vector(2) << 200., -200.);
-  expected_gx1[3] = (Vector(2) << -100., 100.);
-  expected_gx1[0] = (Vector(2) << 100., -100.);
+  expected_gx1[2] = Vector2(-100., 100.);
+  expected_gx1[4] = Vector2(-100., 100.);
+  expected_gx1[1] = Vector2(200., -200.);
+  expected_gx1[3] = Vector2(-100., 100.);
+  expected_gx1[0] = Vector2(100., -100.);
   CHECK(assert_equal(expected_gx1,gradient(Ab,x1)));
 
   // Test gradient in y
   VectorValues expected_gy0 = zeros;
   VectorValues expected_gy1 = zeros;
-  expected_gy1[2] = (Vector(2) << 2., -2.);
-  expected_gy1[4] = (Vector(2) << -2., 2.);
-  expected_gy1[1] = (Vector(2) << 3., -3.);
-  expected_gy1[3] = (Vector(2) << -1., 1.);
-  expected_gy1[0] = (Vector(2) << 1., -1.);
+  expected_gy1[2] = Vector2(2., -2.);
+  expected_gy1[4] = Vector2(-2., 2.);
+  expected_gy1[1] = Vector2(3., -3.);
+  expected_gy1[3] = Vector2(-1., 1.);
+  expected_gy1[0] = Vector2(1., -1.);
   CHECK(assert_equal(expected_gy0,gradient(system,y0)));
   CHECK(assert_equal(expected_gy1,gradient(system,y1)));
 
@@ -204,7 +204,7 @@ TEST( SubgraphPreconditioner, conjugateGradients )
   VectorValues y0 = VectorValues::Zero(xbar);
 
   VectorValues y1 = y0;
-  y1[1] = (Vector(2) << 1.0, -1.0);
+  y1[1] = Vector2(1.0, -1.0);
   VectorValues x1 = system.x(y1);
 
   // Solve for the remaining constraints using PCG

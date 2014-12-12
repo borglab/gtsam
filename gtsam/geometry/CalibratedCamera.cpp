@@ -33,10 +33,10 @@ CalibratedCamera::CalibratedCamera(const Vector &v) :
 
 /* ************************************************************************* */
 Point2 CalibratedCamera::project_to_camera(const Point3& P,
-    boost::optional<Matrix&> H1) {
+    OptionalJacobian<2,3> H1) {
   if (H1) {
     double d = 1.0 / P.z(), d2 = d * d;
-    *H1 = (Matrix(2, 3) <<  d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
+    *H1 <<  d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2;
   }
   return Point2(P.x() / P.z(), P.y() / P.z());
 }
@@ -59,10 +59,12 @@ CalibratedCamera CalibratedCamera::Level(const Pose2& pose2, double height) {
 
 /* ************************************************************************* */
 Point2 CalibratedCamera::project(const Point3& point,
-    boost::optional<Matrix&> Dpose, boost::optional<Matrix&> Dpoint) const {
+    OptionalJacobian<2,6> Dpose, OptionalJacobian<2,3> Dpoint) const {
 
 #ifdef CALIBRATEDCAMERA_CHAIN_RULE
-  Point3 q = pose_.transform_to(point, Dpose, Dpoint);
+  Matrix36 Dpose_;
+  Matrix3 Dpoint_;
+  Point3 q = pose_.transform_to(point, Dpose ? Dpose_ : 0, Dpoint ? Dpoint_ : 0);
 #else
   Point3 q = pose_.transform_to(point);
 #endif
@@ -75,23 +77,26 @@ Point2 CalibratedCamera::project(const Point3& point,
   if (Dpose || Dpoint) {
 #ifdef CALIBRATEDCAMERA_CHAIN_RULE
     // just implement chain rule
-    Matrix H;
-    project_to_camera(q,H);
-    if (Dpose) *Dpose = H * (*Dpose);
-    if (Dpoint) *Dpoint = H * (*Dpoint);
+    if(Dpose && Dpoint) {
+      Matrix23 H;
+      project_to_camera(q,H);
+      if (Dpose) *Dpose = H * (*Dpose_);
+      if (Dpoint) *Dpoint = H * (*Dpoint_);
+    }
 #else
     // optimized version, see CalibratedCamera.nb
     const double z = q.z(), d = 1.0 / z;
     const double u = intrinsic.x(), v = intrinsic.y(), uv = u * v;
     if (Dpose)
-      *Dpose = (Matrix(2, 6) <<  uv, -(1. + u * u), v, -d, 0., d * u, (1. + v * v),
-          -uv, -u, 0., -d, d * v);
+      *Dpose <<  uv, -(1. + u * u), v, -d, 0., d * u, (1. + v * v),
+          -uv, -u, 0., -d, d * v;
     if (Dpoint) {
-      const Matrix R(pose_.rotation().matrix());
-      *Dpoint = d
-          * (Matrix(2, 3) <<  R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2),
+      const Matrix3 R(pose_.rotation().matrix());
+      Matrix23 Dpoint_;
+      Dpoint_ << R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2),
               R(2, 0) - u * R(2, 2), R(0, 1) - v * R(0, 2),
-              R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2));
+              R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
+      *Dpoint = d * Dpoint_;
     }
 #endif
   }

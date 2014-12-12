@@ -27,7 +27,7 @@ GTSAM_CONCEPT_LIE_INST(LieVector)
 
 /* ************************************************************************* */
 TEST( testLieVector, construction ) {
-  Vector v = (Vector(3) << 1.0, 2.0, 3.0);
+  Vector v = Vector3(1.0, 2.0, 3.0);
   LieVector lie1(v), lie2(v);
 
   EXPECT(lie1.dim() == 3);
@@ -37,7 +37,7 @@ TEST( testLieVector, construction ) {
 
 /* ************************************************************************* */
 TEST( testLieVector, other_constructors ) {
-  Vector init = (Vector(2) << 10.0, 20.0);
+  Vector init = Vector2(10.0, 20.0);
   LieVector exp(init);
   double data[] = {10,20};
   LieVector b(2,data);

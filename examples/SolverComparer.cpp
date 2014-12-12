@@ -589,7 +589,7 @@ void runStats()
 {
   cout << "Gathering statistics..." << endl;
   GaussianFactorGraph linear = *datasetMeasurements.linearize(initial);
-  GaussianJunctionTree jt(GaussianEliminationTree(linear, Ordering::COLAMD(linear)));
+  GaussianJunctionTree jt(GaussianEliminationTree(linear, Ordering::colamd(linear)));
   treeTraversal::ForestStatistics statistics = treeTraversal::GatherStatistics(jt);
 
   ofstream file;

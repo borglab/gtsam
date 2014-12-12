@@ -21,9 +21,9 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
+#include <gtsam/base/OptionalJacobian.h>
 
 #include <boost/serialization/nvp.hpp>
 
@@ -36,12 +36,10 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Point3 : public DerivedValue<Point3> {
-  public:
-    /// dimension of the variable - used to autodetect sizes
-    static const size_t dimension = 3;
+  class GTSAM_EXPORT Point3 {
 
   private:
+
     double x_, y_, z_;  
     
   public:
@@ -95,10 +93,10 @@ namespace gtsam {
 
     /// "Compose" - just adds coordinates of two points
     inline Point3 compose(const Point3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if (H1) *H1 = eye(3);
-      if (H2) *H2 = eye(3);
+        OptionalJacobian<3,3> H1=boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const {
+      if (H1) *H1 << I_3x3;
+      if (H2) *H2 << I_3x3;
       return *this + p2;
     }
 
@@ -107,10 +105,10 @@ namespace gtsam {
 
     /** Between using the default implementation */
     inline Point3 between(const Point3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if(H1) *H1 = -eye(3);
-      if(H2) *H2 = eye(3);
+        OptionalJacobian<3,3> H1=boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const {
+      if(H1) *H1 = -I_3x3;
+      if(H2) *H2 = I_3x3;
       return p2 - *this;
     }
 
@@ -122,10 +120,10 @@ namespace gtsam {
     /// @{
 
     /// dimension of the variable - used to autodetect sizes
-    inline static size_t Dim() { return dimension; }
+    inline static size_t Dim() { return 3; }
 
     /// return dimensionality of tangent space, DOF = 3
-    inline size_t dim() const { return dimension; }
+    inline size_t dim() const { return 3; }
 
     /// Updates a with tangent space delta
     inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
@@ -144,13 +142,13 @@ namespace gtsam {
     static inline Vector3 Logmap(const Point3& dp) { return Vector3(dp.x(), dp.y(), dp.z()); }
 
     /// Left-trivialized derivative of the exponential map
-    static Matrix dexpL(const Vector& v) {
-      return eye(3);
+    static Matrix3 dexpL(const Vector& v) {
+      return I_3x3;
     }
 
     /// Left-trivialized derivative inverse of the exponential map
-    static Matrix dexpInvL(const Vector& v) {
-      return eye(3);
+    static Matrix3 dexpInvL(const Vector& v) {
+      return I_3x3;
     }
 
     /// @}
@@ -164,8 +162,19 @@ namespace gtsam {
     Point3 operator / (double s) const;
 
     /** distance between two points */
-    inline double distance(const Point3& p2) const {
-      return (p2 - *this).norm();
+    inline double distance(const Point3& p2,
+        OptionalJacobian<1,3> H1 = boost::none, OptionalJacobian<1,3> H2 = boost::none) const {
+      double d = (p2 - *this).norm();
+      if (H1) {
+        *H1 << x_-p2.x(), y_-p2.y(), z_-p2.z();
+        *H1 = *H1 *(1./d);
+      }
+
+      if (H2) {
+        *H2 << -x_+p2.x(), -y_+p2.y(), -z_+p2.z();
+        *H2 << *H2 *(1./d);
+      }
+      return d;
     }
 
     /** @deprecated The following function has been deprecated, use distance above */
@@ -173,11 +182,11 @@ namespace gtsam {
       return (p2 - *this).norm();
     }
 
-    /** Distance of the point from the origin */
-    double norm() const;
+    /** Distance of the point from the origin, with Jacobian */
+    double norm(OptionalJacobian<1,3> H = boost::none) const;
 
     /** normalize, with optional Jacobian */
-    Point3 normalize(boost::optional<Matrix&> H = boost::none) const;
+    Point3 normalize(OptionalJacobian<3, 3> H = boost::none) const;
 
     /** cross product @return this x q */
     Point3 cross(const Point3 &q) const;
@@ -206,11 +215,11 @@ namespace gtsam {
 
     /** add two points, add(this,q) is same as this + q */
     Point3 add (const Point3 &q,
-          boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+          OptionalJacobian<3, 3> H1=boost::none, OptionalJacobian<3, 3> H2=boost::none) const;
 
     /** subtract two points, sub(this,q) is same as this - q */
     Point3 sub (const Point3 &q,
-          boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+          OptionalJacobian<3,3> H1=boost::none, OptionalJacobian<3,3> H2=boost::none) const;
 
     /// @}
 
@@ -227,8 +236,6 @@ namespace gtsam {
     template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int version)
     {
-      ar & boost::serialization::make_nvp("Point3",
-          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(x_);
       ar & BOOST_SERIALIZATION_NVP(y_);
       ar & BOOST_SERIALIZATION_NVP(z_);
@@ -241,4 +248,20 @@ namespace gtsam {
   /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct GTSAM_EXPORT is_group<Point3> : public boost::true_type{
+  };
+
+  template<>
+  struct GTSAM_EXPORT is_manifold<Point3> : public boost::true_type{
+  };
+
+  template<>
+  struct GTSAM_EXPORT dimension<Point3> : public boost::integral_constant<int, 3>{
+  };
+
+  }
 }

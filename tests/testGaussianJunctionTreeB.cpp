@@ -105,7 +105,7 @@ TEST( GaussianJunctionTreeB, optimizeMultiFrontal )
 
   // verify
   VectorValues expected(vector<size_t>(7,2)); // expected solution
-  Vector v = (Vector(2) << 0., 0.);
+  Vector v = Vector2(0., 0.);
   for (int i=1; i<=7; i++)
     expected[ordering[X(i)]] = v;
   EXPECT(assert_equal(expected,actual));
@@ -199,7 +199,7 @@ TEST(GaussianJunctionTreeB, simpleMarginal) {
   // Create a simple graph
   NonlinearFactorGraph fg;
   fg.add(PriorFactor<Pose2>(X(0), Pose2(), noiseModel::Isotropic::Sigma(3, 10.0)));
-  fg.add(BetweenFactor<Pose2>(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas((Vector(3) << 10.0, 1.0, 1.0))));
+  fg.add(BetweenFactor<Pose2>(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas(Vector3(10.0, 1.0, 1.0))));
 
   Values init;
   init.insert(X(0), Pose2());

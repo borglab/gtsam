@@ -31,7 +31,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot2 : public DerivedValue<Rot2> {
+  class GTSAM_EXPORT Rot2 {
 
   public:
     /** get the dimension by the type */
@@ -87,7 +87,7 @@ namespace gtsam {
      * @param H optional reference for Jacobian
      * @return 2D rotation \f$ \in SO(2) \f$
      */
-    static Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H =
+    static Rot2 relativeBearing(const Point2& d, OptionalJacobian<1,2> H =
         boost::none);
 
     /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
@@ -116,10 +116,10 @@ namespace gtsam {
     }
 
     /** Compose - make a new rotation by adding angles */
-    inline Rot2 compose(const Rot2& R, boost::optional<Matrix&> H1 =
-        boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-      if (H1) *H1 = eye(1);
-      if (H2) *H2 = eye(1);
+    inline Rot2 compose(const Rot2& R, OptionalJacobian<1,1> H1 =
+        boost::none, OptionalJacobian<1,1> H2 = boost::none) const {
+      if (H1) *H1 = I_1x1; // set to 1x1 identity matrix
+      if (H2) *H2 = I_1x1; // set to 1x1 identity matrix
       return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
     }
 
@@ -129,10 +129,10 @@ namespace gtsam {
     }
 
     /** Between using the default implementation */
-    inline Rot2 between(const Rot2& R, boost::optional<Matrix&> H1 =
-        boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-      if (H1) *H1 = -eye(1);
-      if (H2) *H2 = eye(1);
+    inline Rot2 between(const Rot2& R, OptionalJacobian<1,1> H1 =
+        boost::none, OptionalJacobian<1,1> H2 = boost::none) const {
+      if (H1) *H1 = -I_1x1; // set to 1x1 identity matrix
+      if (H2) *H2 =  I_1x1; // set to 1x1 identity matrix
       return fromCosSin(c_ * R.c_ + s_ * R.s_, -s_ * R.c_ + c_ * R.s_);
     }
 
@@ -154,7 +154,7 @@ namespace gtsam {
     inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
 
     /// Returns inverse retraction
-    inline Vector localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
+    inline Vector1 localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
 
     /// @}
     /// @name Lie Group
@@ -169,8 +169,10 @@ namespace gtsam {
     }
 
     ///Log map at identity - return the canonical coordinates of this rotation
-    static inline Vector Logmap(const Rot2& r) {
-      return (Vector(1) << r.theta());
+    static inline Vector1 Logmap(const Rot2& r) {
+      Vector1 v;
+      v << r.theta();
+      return v;
     }
 
     /// Left-trivialized derivative of the exponential map
@@ -190,8 +192,8 @@ namespace gtsam {
     /**
      * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
      */
-    Point2 rotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    Point2 rotate(const Point2& p, OptionalJacobian<2, 1> H1 = boost::none,
+        OptionalJacobian<2, 2> H2 = boost::none) const;
 
     /** syntactic sugar for rotate */
     inline Point2 operator*(const Point2& p) const {
@@ -201,8 +203,8 @@ namespace gtsam {
     /**
      * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
      */
-    Point2 unrotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    Point2 unrotate(const Point2& p, OptionalJacobian<2, 1> H1 = boost::none,
+        OptionalJacobian<2, 2> H2 = boost::none) const;
 
     /// @}
     /// @name Standard Interface
@@ -235,28 +237,36 @@ namespace gtsam {
     }
 
     /** return 2*2 rotation matrix */
-    Matrix matrix() const;
+    Matrix2 matrix() const;
 
     /** return 2*2 transpose (inverse) rotation matrix   */
-    Matrix transpose() const;
-
-    /// @}
-    /// @name Advanced Interface
-    /// @{
+    Matrix2 transpose() const;
 
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("Rot2",
-          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(c_);
       ar & BOOST_SERIALIZATION_NVP(s_);
     }
 
-    /// @}
-
   };
 
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct GTSAM_EXPORT is_group<Rot2> : public boost::true_type{
+  };
+
+  template<>
+  struct GTSAM_EXPORT is_manifold<Rot2> : public boost::true_type{
+  };
+
+  template<>
+  struct GTSAM_EXPORT dimension<Rot2> : public boost::integral_constant<int, 1>{
+  };
+
+  }
 } // gtsam

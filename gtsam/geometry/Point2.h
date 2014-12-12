@@ -20,7 +20,7 @@
 #include <boost/serialization/nvp.hpp>
 
 #include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Matrix.h>
+#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Lie.h>
 
 namespace gtsam {
@@ -32,11 +32,10 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Point2 : public DerivedValue<Point2> {
-public:
-  /// dimension of the variable - used to autodetect sizes
-  static const size_t dimension = 2;
+class GTSAM_EXPORT Point2 {
+
 private:
+
   double x_, y_;
 
 public:
@@ -126,10 +125,10 @@ public:
 
   /// "Compose", just adds the coordinates of two points. With optional derivatives
   inline Point2 compose(const Point2& q,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
-    if(H1) *H1 = eye(2);
-    if(H2) *H2 = eye(2);
+      OptionalJacobian<2,2> H1=boost::none,
+      OptionalJacobian<2,2> H2=boost::none) const {
+    if(H1) *H1 = I_2x2;
+    if(H2) *H2 = I_2x2;
     return *this + q;
   }
 
@@ -138,10 +137,10 @@ public:
 
   /// "Between", subtracts point coordinates. between(p,q) == compose(inverse(p),q)
   inline Point2 between(const Point2& q,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
-    if(H1) *H1 = -eye(2);
-    if(H2) *H2 = eye(2);
+      OptionalJacobian<2,2> H1=boost::none,
+      OptionalJacobian<2,2> H2=boost::none) const {
+    if(H1) *H1 = -I_2x2;
+    if(H2) *H2 = I_2x2;
     return q - (*this);
   }
 
@@ -153,10 +152,10 @@ public:
   /// @{
 
   /// dimension of the variable - used to autodetect sizes
-  inline static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return 2; }
 
   /// Dimensionality of tangent space = 2 DOF
-  inline size_t dim() const { return dimension; }
+  inline size_t dim() const { return 2; }
 
   /// Updates a with tangent space delta
   inline Point2 retract(const Vector& v) const { return *this + Point2(v); }
@@ -172,7 +171,7 @@ public:
   static inline Point2 Expmap(const Vector& v) { return Point2(v); }
 
   /// Log map around identity - just return the Point2 as a vector
-  static inline Vector Logmap(const Point2& dp) { return (Vector(2) << dp.x(), dp.y()); }
+  static inline Vector2 Logmap(const Point2& dp) { return Vector2(dp.x(), dp.y()); }
 
   /// Left-trivialized derivative of the exponential map
   static Matrix dexpL(const Vector2& v) {
@@ -191,12 +190,12 @@ public:
   /** creates a unit vector */
   Point2 unit() const { return *this/norm(); }
 
-  /** norm of point */
-  double norm(boost::optional<Matrix&> H = boost::none) const;
+  /** norm of point, with derivative */
+  double norm(OptionalJacobian<1,2> H = boost::none) const;
 
   /** distance between two points */
-  double distance(const Point2& p2, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+  double distance(const Point2& p2, OptionalJacobian<1,2> H1 = boost::none,
+      OptionalJacobian<1,2> H2 = boost::none) const;
 
   /** @deprecated The following function has been deprecated, use distance above */
   inline double dist(const Point2& p2) const {
@@ -245,8 +244,6 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version)
   {
-    ar & boost::serialization::make_nvp("Point2",
-        boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(x_);
     ar & BOOST_SERIALIZATION_NVP(y_);
   }
@@ -257,6 +254,23 @@ private:
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct GTSAM_EXPORT is_group<Point2> : public boost::true_type{
+};
+
+template<>
+struct GTSAM_EXPORT is_manifold<Point2> : public boost::true_type{
+};
+
+template<>
+struct GTSAM_EXPORT dimension<Point2> : public boost::integral_constant<int, 2>{
+};
+
+}
 
 }
 

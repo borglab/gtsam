@@ -35,9 +35,9 @@ static const Matrix I3 = eye(3);
 
 static const Key keyAnchor = symbol('Z', 9999999);
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =
-    noiseModel::Diagonal::Sigmas((Vector(1) << 0));
+    noiseModel::Diagonal::Sigmas((Vector(1) << 0).finished());
 static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
-    noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
+    noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
 
 /* ************************************************************************* */
 /**
@@ -143,7 +143,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   if (!pose2Between)
     throw invalid_argument(
         "buildLinearOrientationGraph: invalid between factor!");
-  deltaTheta = (Vector(1) << pose2Between->measured().theta());
+  deltaTheta = (Vector(1) << pose2Between->measured().theta()).finished();
 
   // Retrieve the noise model for the relative rotation
   SharedNoiseModel model = pose2Between->get_noiseModel();
@@ -152,7 +152,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   if (!diagonalModel)
     throw invalid_argument("buildLinearOrientationGraph: invalid noise model "
         "(current version assumes diagonal noise model)!");
-  Vector std_deltaTheta = (Vector(1) << diagonalModel->sigma(2)); // std on the angular measurement
+  Vector std_deltaTheta = (Vector(1) << diagonalModel->sigma(2)).finished(); // std on the angular measurement
   model_deltaTheta = noiseModel::Diagonal::Sigmas(std_deltaTheta);
 }
 
@@ -185,11 +185,11 @@ GaussianFactorGraph buildLinearOrientationGraph(
     double k = boost::math::round(k2pi_noise / (2 * M_PI));
     //if (k2pi_noise - 2*k*M_PI > 1e-5) cout << k2pi_noise - 2*k*M_PI << endl; // for debug
     Vector deltaThetaRegularized = (Vector(1)
-        << key1_DeltaTheta_key2 - 2 * k * M_PI);
+        << key1_DeltaTheta_key2 - 2 * k * M_PI).finished();
     lagoGraph.add(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta);
   }
   // prior on the anchor orientation
-  lagoGraph.add(keyAnchor, I, (Vector(1) << 0.0), priorOrientationNoise);
+  lagoGraph.add(keyAnchor, I, (Vector(1) << 0.0).finished(), priorOrientationNoise);
   return lagoGraph;
 }
 
@@ -321,8 +321,8 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       double dy = pose2Between->measured().y();
 
       Vector globalDeltaCart = //
-          (Vector(2) << c1 * dx - s1 * dy, s1 * dx + c1 * dy);
-      Vector b = (Vector(3) << globalDeltaCart, linearDeltaRot); // rhs
+          (Vector(2) << c1 * dx - s1 * dy, s1 * dx + c1 * dy).finished();
+      Vector b = (Vector(3) << globalDeltaCart, linearDeltaRot).finished(); // rhs
       Matrix J1 = -I3;
       J1(0, 2) = s1 * dx + c1 * dy;
       J1(1, 2) = -c1 * dx + s1 * dy;
@@ -338,7 +338,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
     }
   }
   // add prior
-  linearPose2graph.add(keyAnchor, I3, (Vector(3) << 0.0, 0.0, 0.0),
+  linearPose2graph.add(keyAnchor, I3, Vector3(0.0, 0.0, 0.0),
       priorPose2Noise);
 
   // optimize

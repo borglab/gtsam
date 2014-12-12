@@ -80,7 +80,7 @@ public:
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  gtsam::Vector evaluateError(const POSE& pose, const gtsam::LieVector& point, const INVDEPTH& invDepth,
+  gtsam::Vector evaluateError(const POSE& pose, const Vector5& point, const INVDEPTH& invDepth,
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none,
       boost::optional<gtsam::Matrix&> H3=boost::none) const {
@@ -96,7 +96,7 @@ public:
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       return gtsam::ones(2) * 2.0 * K_->fx();
     }
-    return (gtsam::Vector(1) << 0.0);
+    return (gtsam::Vector(1) << 0.0).finished();
   }
 
   /** return the measurement */

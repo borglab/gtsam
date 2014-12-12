@@ -31,7 +31,7 @@ static SymmetricBlockMatrix testBlockMatrix(
   3, 9, 15, 16, 17, 18,
   4, 10, 16, 22, 23, 24,
   5, 11, 17, 23, 29, 30,
-  6, 12, 18, 24, 30, 36));
+  6, 12, 18, 24, 30, 36).finished());
 
 /* ************************************************************************* */
 TEST(SymmetricBlockMatrix, ReadBlocks)
@@ -39,7 +39,7 @@ TEST(SymmetricBlockMatrix, ReadBlocks)
   // On the diagonal
   Matrix expected1 = (Matrix(2, 2) <<
     22, 23,
-    23, 29);
+    23, 29).finished();
   Matrix actual1 = testBlockMatrix(1, 1);
   // Test only writing the upper triangle for efficiency
   Matrix actual1t = Matrix::Zero(2, 2);
@@ -51,14 +51,14 @@ TEST(SymmetricBlockMatrix, ReadBlocks)
   Matrix expected2 = (Matrix(3, 2) <<
     4, 5,
     10, 11,
-    16, 17);
+    16, 17).finished();
   Matrix actual2 = testBlockMatrix(0, 1);
   EXPECT(assert_equal(expected2, actual2));
 
   // Below the diagonal
   Matrix expected3 = (Matrix(2, 3) <<
     4, 10, 16,
-    5, 11, 17);
+    5, 11, 17).finished();
   Matrix actual3 = testBlockMatrix(1, 0);
   EXPECT(assert_equal(expected3, actual3));
 }
@@ -102,7 +102,7 @@ TEST(SymmetricBlockMatrix, Ranges)
   Matrix expected1 = (Matrix(3, 3) <<
     22, 23, 24,
     23, 29, 30,
-    24, 30, 36);
+    24, 30, 36).finished();
   Matrix actual1 = testBlockMatrix.range(1, 3, 1, 3).selfadjointView();
   Matrix actual1a = testBlockMatrix.range(1, 3, 1, 3);
   EXPECT(assert_equal(expected1, actual1));
@@ -112,7 +112,7 @@ TEST(SymmetricBlockMatrix, Ranges)
   Matrix expected2 = (Matrix(3, 1) <<
     24,
     30,
-    36);
+    36).finished();
   Matrix actual2 = testBlockMatrix.range(1, 3, 2, 3).knownOffDiagonal();
   Matrix actual2a = testBlockMatrix.range(1, 3, 2, 3);
   EXPECT(assert_equal(expected2, actual2));
@@ -122,7 +122,7 @@ TEST(SymmetricBlockMatrix, Ranges)
   Matrix expected3 = (Matrix(3, 3) <<
     4, 10, 16,
     5, 11, 17,
-    6, 12, 18);
+    6, 12, 18).finished();
   Matrix actual3 = testBlockMatrix.range(1, 3, 0, 1).knownOffDiagonal();
   Matrix actual3a = testBlockMatrix.range(1, 3, 0, 1);
   EXPECT(assert_equal(expected3, actual3));
@@ -138,7 +138,7 @@ TEST(SymmetricBlockMatrix, expressions)
     0, 0, 4, 6, 8, 0,
     0, 0, 0, 9, 12, 0,
     0, 0, 0, 0, 16, 0,
-    0, 0, 0, 0, 0, 0));
+    0, 0, 0, 0, 0, 0).finished());
 
   SymmetricBlockMatrix expected2(list_of(2)(3)(1), (Matrix(6, 6) <<
     0, 0, 10, 15, 20, 0,
@@ -146,10 +146,10 @@ TEST(SymmetricBlockMatrix, expressions)
     0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0));
+    0, 0, 0, 0, 0, 0).finished());
 
-  Matrix a = (Matrix(1, 3) << 2, 3, 4);
-  Matrix b = (Matrix(1, 2) << 5, 6);
+  Matrix a = (Matrix(1, 3) << 2, 3, 4).finished();
+  Matrix b = (Matrix(1, 2) << 5, 6).finished();
 
   SymmetricBlockMatrix bm1(list_of(2)(3)(1));
   bm1.full().triangularView().setZero();

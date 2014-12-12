@@ -193,7 +193,7 @@ double timeHouseholder(size_t reps) {
       -5,  0, 5, 0,  0,  0,  -1,
       00, -5, 0, 5,  0,  0, 1.5,
       10,  0, 0, 0,-10,  0,   2,
-      00, 10, 0, 0,  0,-10,  -1);
+      00, 10, 0, 0,  0,-10,  -1).finished();
 
   // perform timing
   double elapsed;

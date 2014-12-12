@@ -49,7 +49,9 @@ TEST( Rot2, unit)
 /* ************************************************************************* */
 TEST( Rot2, transpose)
 {
-  CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
+  Matrix expected = R.inverse().matrix();
+  Matrix actual = R.transpose();
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -96,7 +98,7 @@ TEST(Rot2, logmap)
 {
   Rot2 rot0(Rot2::fromAngle(M_PI/2.0));
   Rot2 rot(Rot2::fromAngle(M_PI));
-  Vector expected = (Vector(1) << M_PI/2.0);
+  Vector expected = (Vector(1) << M_PI/2.0).finished();
   Vector actual = rot0.localCoordinates(rot);
   CHECK(assert_equal(expected, actual));
 }

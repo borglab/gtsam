@@ -16,20 +16,19 @@
  * @author Frank Dellaert
  */
 
-#include <limits>
-#include <iostream>
-#include <typeinfo>
-#include <stdexcept>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/foreach.hpp>
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 
-#include <gtsam/base/timing.h>
-#include <gtsam/linear/NoiseModel.h>
+#include <limits>
+#include <iostream>
+#include <typeinfo>
+#include <stdexcept>
 
-static double inf = std::numeric_limits<double>::infinity();
 using namespace std;
 
 namespace gtsam {
@@ -290,40 +289,40 @@ void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
 // Constrained
 /* ************************************************************************* */
 
+namespace internal {
+// switch precisions and invsigmas to finite value
+// TODO: why?? And, why not just ask s==0.0 below ?
+static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
+  for (size_t i = 0; i < sigmas.size(); ++i)
+    if (!std::isfinite(1. / sigmas[i])) {
+      precisions[i] = 0.0;
+      invsigmas[i] = 0.0;
+    }
+}
+}
+
 /* ************************************************************************* */
 Constrained::Constrained(const Vector& sigmas)
   : Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {
-  for (int i=0; i<sigmas.size(); ++i) {
-    if (!std::isfinite(1./sigmas(i))) {
-      precisions_(i) = 0.0; // Set to finite value
-      invsigmas_(i) = 0.0;
-    }
-  }
+  internal::fix(sigmas, precisions_, invsigmas_);
 }
 
 /* ************************************************************************* */
 Constrained::Constrained(const Vector& mu, const Vector& sigmas)
   : Diagonal(sigmas), mu_(mu) {
-//  assert(sigmas.size() == mu.size());
-  for (int i=0; i<sigmas.size(); ++i) {
-    if (!std::isfinite(1./sigmas(i))) {
-      precisions_(i) = 0.0; // Set to finite value
-      invsigmas_(i) = 0.0;
-    }
-  }
+  internal::fix(sigmas, precisions_, invsigmas_);
 }
 
 /* ************************************************************************* */
-Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector& sigmas, bool smart) {
-  // FIXME: can't return a diagonal shared_ptr due to conversion
-//  if (smart) {
-//    // look for zeros to make a constraint
-//    for (size_t i=0; i< (size_t) sigmas.size(); ++i)
-//      if (sigmas(i)<1e-8)
-//        return MixedSigmas(mu, sigmas);
-//    return Diagonal::Sigmas(sigmas);
-//  }
+Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu,
+    const Vector& sigmas) {
   return shared_ptr(new Constrained(mu, sigmas));
+}
+
+/* ************************************************************************* */
+bool Constrained::constrained(size_t i) const {
+  // TODO why not just check sigmas_[i]==0.0 ?
+  return !std::isfinite(1./sigmas_[i]);
 }
 
 /* ************************************************************************* */
@@ -334,17 +333,17 @@ void Constrained::print(const std::string& name) const {
 
 /* ************************************************************************* */
 Vector Constrained::whiten(const Vector& v) const {
-  // If sigmas[i] > 0 then divide v[i] by sigmas[i], as usually done in
-  // other normal Gaussian noise model. Otherwise, sigmas[i] <= 0 indicating
-  // a constraint (ineq and eq), we don't do anything.
+  // If sigmas[i] is not 0 then divide v[i] by sigmas[i], as usually done in
+  // other normal Gaussian noise model. Otherwise, sigmas[i] = 0 indicating
+  // a hard constraint, we don't do anything.
   const Vector& a = v;
   const Vector& b = sigmas_;
-  // Now allows for whiten augmented vector with a new additional part coming
-  // from the Lagrange multiplier. So a.size() >= b.size()
-  Vector c = a;
-  for( DenseIndex i = 0; i < b.size(); i++ ) {
+  size_t n = a.size();
+  assert (b.size()==a.size());
+  Vector c(n);
+  for( size_t i = 0; i < n; i++ ) {
     const double& ai = a(i), &bi = b(i);
-    if (bi>0) c(i) = ai/bi;
+    c(i) = (bi==0.0) ? ai : ai/bi; // NOTE: not ediv_()
   }
   return c;
 }
@@ -352,10 +351,8 @@ Vector Constrained::whiten(const Vector& v) const {
 /* ************************************************************************* */
 double Constrained::distance(const Vector& v) const {
   Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
-  // TODO Find a better way of doing these checks
   for (size_t i=0; i<dim_; ++i)  // add mu weights on constrained variables
-    if (!std::isfinite(1./sigmas_[i])) // whiten makes constrained variables zero
-      // TODO: how to deal with ineq constraint (sigmas_[i] < 0) ???
+    if (constrained(i)) // whiten makes constrained variables zero
       w[i] = v[i] * sqrt(mu_[i]); // TODO: may want to store sqrt rather than rebuild
   return w.dot(w);
 }
@@ -363,48 +360,29 @@ double Constrained::distance(const Vector& v) const {
 /* ************************************************************************* */
 Matrix Constrained::Whiten(const Matrix& H) const {
   // selective scaling
-  // Now allow augmented Matrix with a new additional part coming
-  // from the Lagrange multiplier.
-  Matrix M(H.block(0, 0, dim(), H.cols()));
-  Constrained::WhitenInPlace(M);
-  return M;
+  return vector_scale(invsigmas(), H, true);
 }
 
 /* ************************************************************************* */
 void Constrained::WhitenInPlace(Matrix& H) const {
-  // selective scaling
-  // Scale row i of H by sigmas[i], basically multiplying H with diag(sigmas)
-  // Set inf_mask flag is true so that if invsigmas[i] is inf, i.e. sigmas[i] = 0,
-  // indicating a hard constraint, we leave H's row i in place.
-  // Now allow augmented Matrix with a new additional part coming
-  // from the Lagrange multiplier.
-//  Inlined: vector_scale_inplace(invsigmas(), H, true);
-  // vector_scale_inplace(v, A, true);
-  for (DenseIndex i=0; i<(DenseIndex)dim_; ++i) {
-    const double& invsigma = invsigmas_(i);
-    if (std::isfinite(1./sigmas_(i)) && sigmas_(i)>0)
-      H.row(i) *= invsigma;
-  }
+  for (DenseIndex i=0; i<(DenseIndex)dim_; ++i)
+    if (!constrained(i)) // if constrained, leave row of H as is
+      H.row(i) *= invsigmas_(i);
 }
 
 /* ************************************************************************* */
 void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
-  // selective scaling
-  // Scale row i of H by sigmas[i], basically multiplying H with diag(sigmas)
-  // Set inf_mask flag is true so that if invsigmas[i] is inf, i.e. sigmas[i] = 0,
-  // indicating a hard constraint, we leave H's row i in place.
-  const Vector& _invsigmas = invsigmas();
-  for(DenseIndex row = 0; row < _invsigmas.size(); ++row)
-    if(isfinite(_invsigmas(row)) && _invsigmas(row)>0 )
-      H.row(row) *= _invsigmas(row);
+  for (DenseIndex i=0; i<(DenseIndex)dim_; ++i)
+    if (!constrained(i)) // if constrained, leave row of H as is
+      H.row(i) *= invsigmas_(i);
 }
 
 /* ************************************************************************* */
 Constrained::shared_ptr Constrained::unit() const {
   Vector sigmas = ones(dim());
   for (size_t i=0; i<dim(); ++i)
-    if (this->sigmas_(i) <= 0.0)
-      sigmas(i) = sigmas_(i);
+    if (constrained(i))
+      sigmas(i) = 0.0;
   return MixedSigmas(mu_, sigmas);
 }
 
@@ -429,19 +407,11 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   Vector invsigmas = reciprocal(sigmas_);
   Vector weights = emul(invsigmas,invsigmas); // calculate weights once
 
-  // Denote weights of inequality constraints with the negative sign
-  // TODO: might be slow!
-  for (size_t s = 0; s<sigmas_.size(); ++s)
-    weights[s] = (sigmas_[s]<0)?-weights[s]:weights[s];
-  if (verbose) gtsam::print(weights, "weights: ");
-
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
   // scalar variable x as d-rS, with S the separator (remaining columns).
   // Then update A and b by substituting x with d-rS, zero-ing out x's column.
-  if (verbose) gtsam::print(Ab, "Ab = ");
   for (size_t j=0; j<n; ++j) {
-    if (verbose) cout << "j: " << j << endl;
     // extract the first column of A
     Vector a = Ab.col(j);
 
@@ -449,7 +419,6 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     gttic(constrained_QR_weightedPseudoinverse);
     double precision = weightedPseudoinverse(a, weights, pseudo);
     gttoc(constrained_QR_weightedPseudoinverse);
-    if (verbose) gtsam::print(pseudo, "pseudo: ");
 
     // If precision is zero, no information on this column
     // This is actually not limited to constraints, could happen in Gaussian::QR
@@ -460,10 +429,8 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     // create solution [r d], rhs is automatically r(n)
     Vector rd(n+1); // uninitialized !
     rd(j)=1.0; // put 1 on diagonal
-    for (size_t j2=j+1; j2<n+1; ++j2) { // and fill in remainder with dot-products
-      Vector Abj2 = Ab.col(j2);
+    for (size_t j2=j+1; j2<n+1; ++j2) // and fill in remainder with dot-products
       rd(j2) = pseudo.dot(Ab.col(j2));
-    }
     gttoc(constrained_QR_create_rd);
 
     // construct solution (r, d, sigma)
@@ -490,7 +457,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     const size_t& j  = t.get<0>();
     const Vector& rd = t.get<1>();
     precisions(i)    = t.get<2>();
-    if (precisions(i)==inf) mixed = true;
+    if (constrained(i)) mixed = true;
     for (size_t j2=0; j2<j; ++j2)
       Ab(i,j2) = 0.0; // fill in zeros below diagonal anway
     for (size_t j2=j; j2<n+1; ++j2)

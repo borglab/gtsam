@@ -18,14 +18,16 @@ hold on
 % Plot points and covariance matrices
 for i = 0:keys.size-1
     key = keys.at(i);
-    p = values.at(key);
-    if isa(p, 'gtsam.Point3')
+    try
+        p = values.atPoint3(key);
         if haveMarginals
             P = marginals.marginalCovariance(key);
             gtsam.plotPoint3(p, linespec, P);
         else
             gtsam.plotPoint3(p, linespec);
         end
+    catch
+        % I guess it's not a Point3
     end
 end
 

@@ -10,7 +10,6 @@
 #include <gtsam_unstable/slam/BetweenFactorEM.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam/slam/BetweenFactor.h>
@@ -57,8 +56,8 @@ TEST( BetweenFactorEM, ConstructorAndEquals)
   gtsam::Pose2 rel_pose_ideal = p1.between(p2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.5, 0.5, 0.05)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 5, 5, 1.0)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::Vector3(0.5, 0.5, 0.05)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::Vector3(5, 5, 1.0)));
 
   double prior_outlier = 0.5;
   double prior_inlier = 0.5;
@@ -86,8 +85,8 @@ TEST( BetweenFactorEM, EvaluateError)
   gtsam::Pose2 rel_pose_ideal = p1.between(p2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.5, 0.5, 0.05)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 50.0, 50.0, 10.0)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::Vector3(0.5, 0.5, 0.05)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::Vector3(50.0, 50.0, 10.0)));
 
   gtsam::Values values;
   values.insert(key1, p1);
@@ -158,8 +157,8 @@ TEST (BetweenFactorEM, jacobian ) {
   gtsam::Pose2 rel_pose_ideal = p1.between(p2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.5, 0.5, 0.05)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 50.0, 50.0, 10.0)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::Vector3(0.5, 0.5, 0.05)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::Vector3(50.0, 50.0, 10.0)));
 
   gtsam::Values values;
   values.insert(key1, p1);
@@ -221,8 +220,8 @@ TEST( BetweenFactorEM, CaseStudy)
   gtsam::Pose2 p2(-0.0491752554, -0.289649075, -0.328993962);
   gtsam::Pose2 rel_pose_msr(0.0316191379, 0.0247539161, 0.004102182);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 0.4021, 0.286, 0.428)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::(Vector(3) << 4.9821, 4.614, 1.8387)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(gtsam::Vector3(0.4021, 0.286, 0.428)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(gtsam::Vector3(4.9821, 4.614, 1.8387)));
 
   gtsam::Values values;
     values.insert(key1, p1);

@@ -74,41 +74,49 @@ TEST( StereoCamera, project)
 
 /* ************************************************************************* */
 
-static Pose3 camera1((Matrix)(Matrix(3,3) <<
+static Pose3 camPose((Matrix)(Matrix(3,3) <<
            1., 0., 0.,
            0.,-1., 0.,
            0., 0.,-1.
-           ),
+           ).finished(),
         Point3(0,0,6.25));
 
 static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
-static StereoCamera stereoCam(Pose3(), K);
+static StereoCamera stereoCam(camPose, K);
 
 // point X Y Z in meters
-static Point3 p(0, 0, 5);
+static Point3 landmark(0, 0, 5);
 
 /* ************************************************************************* */
-static StereoPoint2 project_(const StereoCamera& cam, const Point3& point) { return cam.project(point); }
-TEST( StereoCamera, Dproject_stereo_pose)
-{
-  Matrix expected = numericalDerivative21<StereoPoint2,StereoCamera,Point3>(project_,stereoCam, p);
-  Matrix actual; stereoCam.project(p, actual, boost::none);
-  CHECK(assert_equal(expected,actual,1e-7));
+static StereoPoint2 project3(const Pose3& pose, const Point3& point, const Cal3_S2Stereo& K) {
+  return StereoCamera(pose, boost::make_shared<Cal3_S2Stereo>(K)).project(point);
 }
 
 /* ************************************************************************* */
-TEST( StereoCamera, Dproject_stereo_point)
+TEST( StereoCamera, Dproject)
 {
-  Matrix expected = numericalDerivative22<StereoPoint2,StereoCamera,Point3>(project_,stereoCam, p);
-  Matrix actual; stereoCam.project(p, boost::none, actual);
-  CHECK(assert_equal(expected,actual,1e-8));
+  Matrix expected1 = numericalDerivative31(project3, camPose, landmark, *K);
+  Matrix actual1; stereoCam.project(landmark, actual1, boost::none, boost::none);
+  CHECK(assert_equal(expected1,actual1,1e-7));
+
+  Matrix expected2 = numericalDerivative32(project3,camPose, landmark, *K);
+  Matrix actual2; stereoCam.project(landmark, boost::none, actual2, boost::none);
+  CHECK(assert_equal(expected2,actual2,1e-7));
+
+  Matrix expected3 = numericalDerivative33(project3,camPose, landmark, *K);
+  Matrix actual3; stereoCam.project(landmark, boost::none, boost::none, actual3);
+//  CHECK(assert_equal(expected3,actual3,1e-8));
 }
 
+/* ************************************************************************* */
 TEST( StereoCamera, backproject)
 {
+  Cal3_S2Stereo::shared_ptr K2(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
+  StereoCamera stereoCam2(Pose3(), K2);
+
   Point3 expected(1.2, 2.3, 4.5);
-  StereoPoint2 stereo_point = stereoCam.project(expected);
-  Point3 actual = stereoCam.backproject(stereo_point);
+  StereoPoint2 stereo_point = stereoCam2.project(expected);
+  Point3 actual = stereoCam2.backproject(stereo_point);
   CHECK(assert_equal(expected,actual,1e-8));
 }
 

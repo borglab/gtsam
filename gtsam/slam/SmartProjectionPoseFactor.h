@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "SmartProjectionFactor.h"
+#include <gtsam/slam/SmartProjectionFactor.h>
 
 namespace gtsam {
 /**
@@ -37,8 +37,8 @@ namespace gtsam {
  * The calibration is known here. The factor only constraints poses (variable dimension is 6)
  * @addtogroup SLAM
  */
-template<class POSE, class LANDMARK, class CALIBRATION>
-class SmartProjectionPoseFactor: public SmartProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> {
+template<class POSE, class CALIBRATION>
+class SmartProjectionPoseFactor: public SmartProjectionFactor<POSE, CALIBRATION, 6> {
 protected:
 
   LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
@@ -48,10 +48,10 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef SmartProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> Base;
+  typedef SmartProjectionFactor<POSE, CALIBRATION, 6> Base;
 
   /// shorthand for this class
-  typedef SmartProjectionPoseFactor<POSE, LANDMARK, CALIBRATION> This;
+  typedef SmartProjectionPoseFactor<POSE, CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -63,7 +63,7 @@ public:
    * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
+   * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
   SmartProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
@@ -157,6 +157,9 @@ public:
     size_t i=0;
     BOOST_FOREACH(const Key& k, this->keys_) {
       Pose3 pose = values.at<Pose3>(k);
+      if(Base::body_P_sensor_)
+        pose = pose.compose(*(Base::body_P_sensor_));
+
       typename Base::Camera camera(pose, *K_all_[i++]);
       cameras.push_back(camera);
     }

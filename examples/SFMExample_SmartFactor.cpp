@@ -61,8 +61,7 @@ using namespace std;
 using namespace gtsam;
 
 // Make the typename short so it looks much cleaner
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Point3,
-    gtsam::Cal3_S2> SmartFactor;
+typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Cal3_S2> SmartFactor;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
@@ -108,7 +107,7 @@ int main(int argc, char* argv[]) {
   // Add a prior on pose x0. This indirectly specifies where the origin is.
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)));
+      (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
   graph.push_back(PriorFactor<Pose3>(0, poses[0], poseNoise));
 
   // Because the structure-from-motion problem has a scale ambiguity, the problem is

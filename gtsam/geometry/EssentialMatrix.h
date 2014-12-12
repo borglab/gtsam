@@ -20,7 +20,7 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class GTSAM_EXPORT EssentialMatrix: public DerivedValue<EssentialMatrix> {
+class GTSAM_EXPORT EssentialMatrix {
 
 private:
 
@@ -31,8 +31,8 @@ private:
 public:
 
   /// Static function to convert Point2 to homogeneous coordinates
-  static Vector Homogeneous(const Point2& p) {
-    return Vector(3) << p.x(), p.y(), 1;
+  static Vector3 Homogeneous(const Point2& p) {
+    return Vector3(p.x(), p.y(), 1);
   }
 
   /// @name Constructors and named constructors
@@ -50,13 +50,15 @@ public:
 
   /// Named constructor converting a Pose3 with scale to EssentialMatrix (no scale)
   static EssentialMatrix FromPose3(const Pose3& _1P2_,
-      boost::optional<Matrix&> H = boost::none);
+      OptionalJacobian<5, 6> H = boost::none);
 
   /// Random, using Rot3::Random and Unit3::Random
   template<typename Engine>
   static EssentialMatrix Random(Engine & rng) {
     return EssentialMatrix(Rot3::Random(rng), Unit3::Random(rng));
   }
+
+  virtual ~EssentialMatrix() {}
 
   /// @}
 
@@ -82,15 +84,15 @@ public:
   }
 
   /// Return the dimensionality of the tangent space
-  virtual size_t dim() const {
+  size_t dim() const {
     return 5;
   }
 
   /// Retract delta to manifold
-  virtual EssentialMatrix retract(const Vector& xi) const;
+  EssentialMatrix retract(const Vector& xi) const;
 
   /// Compute the coordinates in the tangent space
-  virtual Vector localCoordinates(const EssentialMatrix& other) const;
+  Vector5 localCoordinates(const EssentialMatrix& other) const;
 
   /// @}
 
@@ -130,16 +132,16 @@ public:
    * @return point in pose coordinates
    */
   Point3 transform_to(const Point3& p,
-      boost::optional<Matrix&> DE = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none) const;
+      OptionalJacobian<3,5> DE = boost::none,
+      OptionalJacobian<3,3> Dpoint = boost::none) const;
 
   /**
    * Given essential matrix E in camera frame B, convert to body frame C
    * @param cRb rotation from body frame to camera frame
    * @param E essential matrix E in camera frame C
    */
-  EssentialMatrix rotate(const Rot3& cRb, boost::optional<Matrix&> HE =
-      boost::none, boost::optional<Matrix&> HR = boost::none) const;
+  EssentialMatrix rotate(const Rot3& cRb, OptionalJacobian<5, 5> HE =
+      boost::none, OptionalJacobian<5, 3> HR = boost::none) const;
 
   /**
    * Given essential matrix E in camera frame B, convert to body frame C
@@ -151,8 +153,8 @@ public:
   }
 
   /// epipolar error, algebraic
-  double error(const Vector& vA, const Vector& vB, //
-      boost::optional<Matrix&> H = boost::none) const;
+  double error(const Vector3& vA, const Vector3& vB, //
+      OptionalJacobian<1,5> H = boost::none) const;
 
   /// @}
 
@@ -176,8 +178,6 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("EssentialMatrix",
-          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(aRb_);
       ar & BOOST_SERIALIZATION_NVP(aTb_);
 
@@ -195,6 +195,24 @@ private:
   /// @}
 
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct GTSAM_EXPORT is_manifold<EssentialMatrix> : public boost::true_type{
+};
+
+template<>
+struct GTSAM_EXPORT dimension<EssentialMatrix> : public boost::integral_constant<int, 5>{
+};
+
+template<>
+struct GTSAM_EXPORT zero<EssentialMatrix> {
+  static EssentialMatrix value() { return EssentialMatrix();}
+};
+
+}
 
 } // gtsam
 

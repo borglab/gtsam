@@ -284,7 +284,7 @@ namespace gtsam {
         }
       }
 
-      return (Vector(2) << p_inlier, p_outlier);
+      return (Vector(2) << p_inlier, p_outlier).finished();
     }
 
     /* ************************************************************************* */
@@ -372,7 +372,7 @@ namespace gtsam {
       const T& p2 = values.at<T>(keyB_);
 
       Matrix H1, H2;
-      T hx = p1.between(p2, H1, H2); // h(x)
+      p1.between(p2, H1, H2); // h(x)
 
       Matrix H;
       H.resize(H1.rows(), H1.rows()+H2.rows());

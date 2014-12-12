@@ -39,7 +39,7 @@ namespace gtsam {
 /// All bias models live in the imuBias namespace
 namespace imuBias {
 
-  class ConstantBias : public DerivedValue<ConstantBias> {
+  class ConstantBias {
   private:
     Vector3 biasAcc_;
     Vector3 biasGyro_;
@@ -57,8 +57,8 @@ namespace imuBias {
     }
 
     /** return the accelerometer and gyro biases in a single vector */
-    Vector vector() const {
-      Vector v(6);
+    Vector6 vector() const {
+      Vector6 v;
       v << biasAcc_, biasGyro_;
       return v;
     }
@@ -70,18 +70,18 @@ namespace imuBias {
     const Vector3& gyroscope() const { return biasGyro_; }
 
     /** Correct an accelerometer measurement using this bias model, and optionally compute Jacobians */
-    Vector correctAccelerometer(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
-      if (H){
-        H->resize(3,6);
+    Vector3 correctAccelerometer(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
+      if (H) {
+        H->resize(3, 6);
         (*H) << -Matrix3::Identity(), Matrix3::Zero();
       }
       return measurement - biasAcc_;
     }
 
     /** Correct a gyroscope measurement using this bias model, and optionally compute Jacobians */
-    Vector correctGyroscope(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
-      if (H){
-        H->resize(3,6);
+    Vector3 correctGyroscope(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
+      if (H) {
+        H->resize(3, 6);
         (*H) << Matrix3::Zero(), -Matrix3::Identity();
       }
       return measurement - biasGyro_;
@@ -144,7 +144,7 @@ namespace imuBias {
     /// return dimensionality of tangent space
     inline size_t dim() const { return dimension; }
 
-    /** Update the LieVector with a tangent space update */
+    /** Update the bias with a tangent space update */
     inline ConstantBias retract(const Vector& v) const { return ConstantBias(biasAcc_ + v.head(3), biasGyro_ + v.tail(3)); }
 
     /** @return the local coordinates of another object */
@@ -205,8 +205,7 @@ namespace imuBias {
     template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int version)
     {
-      ar & boost::serialization::make_nvp("imuBias::ConstantBias",
-          boost::serialization::base_object<Value>(*this));
+      ar & boost::serialization::make_nvp("imuBias::ConstantBias",*this);
       ar & BOOST_SERIALIZATION_NVP(biasAcc_);
       ar & BOOST_SERIALIZATION_NVP(biasGyro_);
     }
@@ -217,6 +216,23 @@ namespace imuBias {
 
 
 } // namespace ImuBias
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_group<imuBias::ConstantBias> : public boost::true_type {
+};
+
+template<>
+struct is_manifold<imuBias::ConstantBias> : public boost::true_type {
+};
+
+template<>
+struct dimension<imuBias::ConstantBias> : public boost::integral_constant<int, 6> {
+};
+
+}
 
 } // namespace gtsam
 

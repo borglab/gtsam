@@ -32,9 +32,11 @@
 using namespace std;
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(Rot3)
+GTSAM_CONCEPT_LIE_INST(Rot3)
+
 static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
-static const Matrix I3 = eye(3);
 
 /* ************************************************************************* */
 TEST(Rot3, manifold_cayley)
@@ -53,7 +55,7 @@ TEST(Rot3, manifold_cayley)
   CHECK(assert_equal(d12,-d21));
 
   // lines in canonical coordinates correspond to Abelian subgroups in SO(3)
-  Vector d = (Vector(3) << 0.1, 0.2, 0.3);
+  Vector d = Vector3(0.1, 0.2, 0.3);
   // exp(-d)=inverse(exp(d))
   CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -81,7 +83,7 @@ TEST(Rot3, manifold_slow_cayley)
   CHECK(assert_equal(d12,-d21));
 
   // lines in canonical coordinates correspond to Abelian subgroups in SO(3)
-  Vector d = (Vector(3) << 0.1, 0.2, 0.3);
+  Vector d = Vector3(0.1, 0.2, 0.3);
   // exp(-d)=inverse(exp(d))
   CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)

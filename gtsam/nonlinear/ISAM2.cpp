@@ -341,7 +341,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
     Ordering order;
     if(constrainKeys)
     {
-      order = Ordering::COLAMDConstrained(variableIndex_, *constrainKeys);
+      order = Ordering::colamdConstrained(variableIndex_, *constrainKeys);
     }
     else
     {
@@ -351,11 +351,11 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
         FastMap<Key, int> constraintGroups;
         BOOST_FOREACH(Key var, observedKeys)
           constraintGroups[var] = 1;
-        order = Ordering::COLAMDConstrained(variableIndex_, constraintGroups);
+        order = Ordering::colamdConstrained(variableIndex_, constraintGroups);
       }
       else
       {
-        order = Ordering::COLAMD(variableIndex_);
+        order = Ordering::colamd(variableIndex_);
       }
     }
     gttoc(ordering);
@@ -481,7 +481,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
 
     // Generate ordering
     gttic(Ordering);
-    Ordering ordering = Ordering::COLAMDConstrained(affectedFactorsVarIndex, constraintGroups);
+    Ordering ordering = Ordering::colamdConstrained(affectedFactorsVarIndex, constraintGroups);
     gttoc(Ordering);
 
     ISAM2BayesTree::shared_ptr bayesTree = ISAM2JunctionTree(GaussianEliminationTree(

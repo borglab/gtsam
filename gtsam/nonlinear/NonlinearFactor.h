@@ -17,15 +17,17 @@
  */
 
 // \callgraph
-#pragma once
 
-#include <boost/serialization/base_object.hpp>
-#include <boost/assign/list_of.hpp>
+#pragma once
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Factor.h>
+#include <gtsam/base/OptionalJacobian.h>
+
+#include <boost/serialization/base_object.hpp>
+#include <boost/assign/list_of.hpp>
 
 /**
  * Macro to add a standard clone function to a derived factor
@@ -41,23 +43,19 @@ namespace gtsam {
 using boost::assign::cref_list_of;
 
 /* ************************************************************************* */
+
 /**
  * Nonlinear factor base class
  *
- * Templated on a values structure type. The values structures are typically
- * more general than just vectors, e.g., Rot3 or Pose3,
- * which are objects in non-linear manifolds (Lie groups).
  * \nosubgrouping
  */
-class NonlinearFactor: public Factor {
+class GTSAM_EXPORT NonlinearFactor: public Factor {
 
 protected:
 
   // Some handy typedefs
   typedef Factor Base;
   typedef NonlinearFactor This;
-
-  boost::optional<Key> dualKey_; //!< Key for the dual variable associated with this factor if it is a constraint
 
 public:
 
@@ -67,23 +65,14 @@ public:
   /// @{
 
   /** Default constructor for I/O only */
-  NonlinearFactor() :
-      dualKey_(boost::none) {
-  }
-
-  /** Construct with a dual key */
-  NonlinearFactor(const boost::optional<Key>& dualKey) :
-      dualKey_(dualKey) {
-  }
+  NonlinearFactor() {}
 
   /**
    * Constructor from a collection of the keys involved in this factor
    */
   template<typename CONTAINER>
-  NonlinearFactor(const CONTAINER& keys, const boost::optional<Key>& dualKey =
-      boost::none) :
-      Base(keys), dualKey_(dualKey) {
-  }
+  NonlinearFactor(const CONTAINER& keys) :
+    Base(keys) {}
 
   /// @}
   /// @name Testable
@@ -91,24 +80,17 @@ public:
 
   /** print */
   virtual void print(const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-    std::cout << s << "  keys = { ";
-    BOOST_FOREACH(Key key, this->keys()){ std::cout << keyFormatter(key) << " ";}
-    std::cout << "}" << std::endl;
-  }
+    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Check if two factors are equal */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
-    return Base::equals(f);
-  }
-
+  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
   /// @}
   /// @name Standard Interface
   /// @{
 
   /** Destructor */
-  virtual ~NonlinearFactor() {
-  }
+  virtual ~NonlinearFactor() {}
+
 
   /**
    * Calculate the error of the factor
@@ -130,24 +112,12 @@ public:
    * when the constraint is *NOT* fulfilled.
    * @return true if the constraint is active
    */
-  virtual bool active(const Values& c) const {
-    return true;
-  }
+  virtual bool active(const Values& c) const { return true; }
 
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
   linearize(const Values& c) const = 0;
 
-  /**
-   * Create a symbolic factor using the given ordering to determine the
-   * variable indices.
-   */
-  //virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-  //  std::vector<Index> indices(this->size());
-  //  for(size_t j=0; j<this->size(); ++j)
-  //    indices[j] = ordering[this->keys()[j]];
-  //  return IndexFactor::shared_ptr(new IndexFactor(indices));
-  //}
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
    * for subclasses
@@ -156,8 +126,7 @@ public:
    */
   virtual shared_ptr clone() const {
     // TODO: choose better exception to throw here
-    throw std::runtime_error(
-        "NonlinearFactor::clone(): Attempting to clone factor with no clone() implemented!");
+    throw std::runtime_error("NonlinearFactor::clone(): Attempting to clone factor with no clone() implemented!");
     return shared_ptr();
   }
 
@@ -165,49 +134,15 @@ public:
    * Creates a shared_ptr clone of the factor with different keys using
    * a map from old->new keys
    */
-  shared_ptr rekey(const std::map<Key, Key>& rekey_mapping) const {
-    shared_ptr new_factor = clone();
-    for (size_t i = 0; i < new_factor->size(); ++i) {
-      Key& cur_key = new_factor->keys()[i];
-      std::map<Key, Key>::const_iterator mapping = rekey_mapping.find(cur_key);
-      if (mapping != rekey_mapping.end())
-        cur_key = mapping->second;
-    }
-    return new_factor;
-  }
+  shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const;
 
   /**
    * Clones a factor and fully replaces its keys
    * @param new_keys is the full replacement set of keys
    */
-  shared_ptr rekey(const std::vector<Key>& new_keys) const {
-    assert(new_keys.size() == this->keys().size());
-    shared_ptr new_factor = clone();
-    new_factor->keys() = new_keys;
-    return new_factor;
-  }
+  shared_ptr rekey(const std::vector<Key>& new_keys) const;
 
-  /**
-   * Return the optional dual variable's key
-   */
-  Key dualKey() const {
-    if (!dualKey_)
-      throw std::runtime_error("Error: Request for a dual key which does not exist in this factor!");
-    return *dualKey_;
-  }
-
-  /**
-   * Create a Hessian factor scaled by the dual variable corresponding to
-   * the nonlinear equality constraint, used in SQP scheme for solving constrained problems.
-   * By default, return a null shared_ptr if it's not a constraint.
-   */
-  virtual GaussianFactor::shared_ptr multipliedHessian(const Values& x,
-      const VectorValues& duals) const {
-    return GaussianFactor::shared_ptr();
-  }
-
-};
-// \class NonlinearFactor
+}; // \class NonlinearFactor
 
 /* ************************************************************************* */
 /**
@@ -220,7 +155,7 @@ public:
 
  * The noise model is typically Gaussian, but robust and constrained error models are also supported.
  */
-class NoiseModelFactor: public NonlinearFactor {
+class GTSAM_EXPORT NoiseModelFactor: public NonlinearFactor {
 
 protected:
 
@@ -235,53 +170,33 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /** Default constructor for I/O only */
-  NoiseModelFactor() :
-      Base() {
-  }
+  NoiseModelFactor() {}
 
   /** Destructor */
-  virtual ~NoiseModelFactor() {
-  }
+  virtual ~NoiseModelFactor() {}
 
   /**
    * Constructor
    */
   template<typename CONTAINER>
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, const CONTAINER& keys,
-      const boost::optional<Key>& dualKey = boost::none) :
-      Base(keys, dualKey), noiseModel_(noiseModel) {
-  }
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, const CONTAINER& keys) :
+    Base(keys), noiseModel_(noiseModel) {}
 
 protected:
 
   /**
    * Constructor - only for subclasses, as this does not set keys.
    */
-  NoiseModelFactor(const SharedNoiseModel& noiseModel,
-      const boost::optional<Key>& dualKey = boost::none) : Base(dualKey),
-      noiseModel_(noiseModel) {
-  }
+  NoiseModelFactor(const SharedNoiseModel& noiseModel) : noiseModel_(noiseModel) {}
 
 public:
 
   /** Print */
   virtual void print(const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-    Base::print(s, keyFormatter);
-    this->noiseModel_->print("  noise model: ");
-    if (dualKey_) {
-      std::cout << "Dual Key: " << this->dualKey() << std::endl;
-    }
-  }
+    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Check if two factors are equal */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
-    const NoiseModelFactor* e = dynamic_cast<const NoiseModelFactor*>(&f);
-    return e && Base::equals(f, tol)
-        && ((!noiseModel_ && !e->noiseModel_)
-            || (noiseModel_ && e->noiseModel_
-                && noiseModel_->equals(*e->noiseModel_, tol)));
-  }
+  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
 
   /** get the dimension of the factor (number of rows on linearization) */
   virtual size_t dim() const {
@@ -296,8 +211,8 @@ public:
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    * Override this method to finish implementing an N-way factor.
-   * If any of the optional Matrix reference arguments are specified, it should compute
-   * both the function evaluation and its derivative(s) in X1 (and/or X2, X3...).
+   * If the optional arguments is specified, it should compute
+   * both the function evaluation and its derivative(s) in H.
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
@@ -306,13 +221,7 @@ public:
    * Vector of errors, whitened
    * This is the raw error, i.e., i.e. \f$ (h(x)-z)/\sigma \f$ in case of a Gaussian
    */
-  Vector whitenedError(const Values& c) const {
-    const Vector unwhitenedErrorVec = unwhitenedError(c);
-    if ((size_t) unwhitenedErrorVec.size() != noiseModel_->dim())
-      throw std::invalid_argument(
-          "This factor was created with a NoiseModel of incorrect dimension.");
-    return noiseModel_->whiten(unwhitenedErrorVec);
-  }
+  Vector whitenedError(const Values& c) const;
 
   /**
    * Calculate the error of the factor.
@@ -320,61 +229,14 @@ public:
    * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
-  virtual double error(const Values& c) const {
-    if (this->active(c)) {
-      const Vector unwhitenedErrorVec = unwhitenedError(c);
-      if ((size_t) unwhitenedErrorVec.size() != noiseModel_->dim())
-        throw std::invalid_argument(
-            "This factor was created with a NoiseModel of incorrect dimension.");
-      return 0.5 * noiseModel_->distance(unwhitenedErrorVec);
-    } else {
-      return 0.0;
-    }
-  }
+  virtual double error(const Values& c) const;
 
   /**
    * Linearize a non-linearFactorN to get a GaussianFactor,
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
-    // Only linearize if the factor is active
-    if (!this->active(x))
-      return boost::shared_ptr<JacobianFactor>();
-
-    // Create the set of terms - Jacobians for each index
-    Vector b;
-    // Call evaluate error to get Jacobians and b vector
-    std::vector<Matrix> A(this->size());
-    b = -unwhitenedError(x, A);
-    if (noiseModel_) {
-      if ((size_t) b.size() != noiseModel_->dim())
-        throw std::invalid_argument(
-            "This factor was created with a NoiseModel of incorrect dimension.");
-
-      this->noiseModel_->WhitenSystem(A, b);
-    }
-
-    std::vector<std::pair<Key, Matrix> > terms(this->size());
-    // Fill in terms
-    for (size_t j = 0; j < this->size(); ++j) {
-      terms[j].first = this->keys()[j];
-      terms[j].second.swap(A[j]);
-    }
-
-    // TODO pass unwhitened + noise model to Gaussian factor
-    // For now, only linearized constrained factors have noise model at linear level!!!
-    if (noiseModel_) {
-      noiseModel::Constrained::shared_ptr constrained =
-          boost::dynamic_pointer_cast<noiseModel::Constrained>(
-              this->noiseModel_);
-      if (constrained)
-        return GaussianFactor::shared_ptr(
-            new JacobianFactor(terms, b, constrained->unit(), dualKey_));
-    }
-
-    return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
-  }
+  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const;
 
 private:
 
@@ -382,18 +244,24 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("NonlinearFactor",
-            boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("NonlinearFactor",
+        boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(noiseModel_);
   }
 
-};
-// \class NoiseModelFactor
+}; // \class NoiseModelFactor
+
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NoiseModelFactor with 1
- * variable.  To derive from this class, implement evaluateError(). */
+
+/**
+ * A convenient base class for creating your own NoiseModelFactor with 1
+ * variable.  To derive from this class, implement evaluateError().
+ *
+ * Templated on a values structure type. The values structures are typically
+ * more general than just vectors, e.g., Rot3 or Pose3,
+ * which are objects in non-linear manifolds (Lie groups).
+ */
 template<class VALUE>
 class NoiseModelFactor1: public NoiseModelFactor {
 
@@ -410,35 +278,27 @@ protected:
 public:
 
   /** Default constructor for I/O only */
-  NoiseModelFactor1() :
-      Base() {
-  }
+  NoiseModelFactor1() {}
 
-  virtual ~NoiseModelFactor1() {
-  }
+  virtual ~NoiseModelFactor1() {}
 
-  inline Key key() const {
-    return keys_[0];
-  }
+  inline Key key() const { return keys_[0]; }
 
   /**
    *  Constructor
    *  @param noiseModel shared pointer to noise model
    *  @param key1 by which to look up X value in Values
    */
-  NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1,
-      const boost::optional<Key>& dualKey = boost::none) :
-      Base(noiseModel, cref_list_of<1>(key1), dualKey) {
-  }
+  NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1) :
+    Base(noiseModel, cref_list_of<1>(key1)) {}
 
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
    *  so must be implemented in the derived class.
    */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if (this->active(x)) {
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
       const X& x1 = x.at<X>(keys_[0]);
-      if (H) {
+      if(H) {
         return evaluateError(x1, (*H)[0]);
       } else {
         return evaluateError(x1);
@@ -462,12 +322,11 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
-};
-// \class NoiseModelFactor1
+};// \class NoiseModelFactor1
+
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 2
@@ -491,9 +350,7 @@ public:
   /**
    * Default Constructor for I/O
    */
-  NoiseModelFactor2() :
-      Base() {
-  }
+  NoiseModelFactor2() {}
 
   /**
    * Constructor
@@ -501,30 +358,22 @@ public:
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    */
-  NoiseModelFactor2(const SharedNoiseModel& noiseModel, Key j1, Key j2,
-      const boost::optional<Key>& dualKey = boost::none) :
-      Base(noiseModel, cref_list_of<2>(j1)(j2), dualKey) {
-  }
+  NoiseModelFactor2(const SharedNoiseModel& noiseModel, Key j1, Key j2) :
+    Base(noiseModel, cref_list_of<2>(j1)(j2)) {}
 
-  virtual ~NoiseModelFactor2() {
-  }
+  virtual ~NoiseModelFactor2() {}
 
   /** methods to retrieve both keys */
-  inline Key key1() const {
-    return keys_[0];
-  }
-  inline Key key2() const {
-    return keys_[1];
-  }
+  inline Key key1() const { return keys_[0];  }
+  inline Key key2() const {  return keys_[1];  }
 
   /** Calls the 2-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if (this->active(x)) {
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
       const X1& x1 = x.at<X1>(keys_[0]);
       const X2& x2 = x.at<X2>(keys_[1]);
-      if (H) {
+      if(H) {
         return evaluateError(x1, x2, (*H)[0], (*H)[1]);
       } else {
         return evaluateError(x1, x2);
@@ -540,8 +389,8 @@ public:
    *  both the function evaluation and its derivative(s) in X1 (and/or X2).
    */
   virtual Vector
-  evaluateError(const X1&, const X2&, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const = 0;
+  evaluateError(const X1&, const X2&, boost::optional<Matrix&> H1 =
+      boost::none, boost::optional<Matrix&> H2 = boost::none) const = 0;
 
 private:
 
@@ -549,12 +398,10 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
-};
-// \class NoiseModelFactor2
+}; // \class NoiseModelFactor2
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 3
@@ -579,9 +426,7 @@ public:
   /**
    * Default Constructor for I/O
    */
-  NoiseModelFactor3() :
-      Base() {
-  }
+  NoiseModelFactor3() {}
 
   /**
    * Constructor
@@ -590,36 +435,24 @@ public:
    * @param j2 key of the second variable
    * @param j3 key of the third variable
    */
-  NoiseModelFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3,
-      const boost::optional<Key>& dualKey = boost::none) :
-      Base(noiseModel, cref_list_of<3>(j1)(j2)(j3), dualKey) {
-  }
+  NoiseModelFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3) :
+    Base(noiseModel, cref_list_of<3>(j1)(j2)(j3)) {}
 
-  virtual ~NoiseModelFactor3() {
-  }
+  virtual ~NoiseModelFactor3() {}
 
   /** methods to retrieve keys */
-  inline Key key1() const {
-    return keys_[0];
-  }
-  inline Key key2() const {
-    return keys_[1];
-  }
-  inline Key key3() const {
-    return keys_[2];
-  }
+  inline Key key1() const { return keys_[0]; }
+  inline Key key2() const { return keys_[1]; }
+  inline Key key3() const { return keys_[2]; }
 
   /** Calls the 3-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if (this->active(x)) {
-      if (H)
-        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]),
-            x.at<X3>(keys_[2]), (*H)[0], (*H)[1], (*H)[2]);
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
+      if(H)
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), (*H)[0], (*H)[1], (*H)[2]);
       else
-        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]),
-            x.at<X3>(keys_[2]));
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]));
     } else {
       return zero(this->dim());
     }
@@ -631,8 +464,9 @@ public:
    *  both the function evaluation and its derivative(s) in X1 (and/or X2, X3).
    */
   virtual Vector
-  evaluateError(const X1&, const X2&, const X3&, boost::optional<Matrix&> H1 =
-      boost::none, boost::optional<Matrix&> H2 = boost::none,
+  evaluateError(const X1&, const X2&, const X3&,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const = 0;
 
 private:
@@ -641,12 +475,10 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
-};
-// \class NoiseModelFactor3
+}; // \class NoiseModelFactor3
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 4
@@ -672,9 +504,7 @@ public:
   /**
    * Default Constructor for I/O
    */
-  NoiseModelFactor4() :
-      Base() {
-  }
+  NoiseModelFactor4() {}
 
   /**
    * Constructor
@@ -684,40 +514,25 @@ public:
    * @param j3 key of the third variable
    * @param j4 key of the fourth variable
    */
-  NoiseModelFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3,
-      Key j4, const boost::optional<Key>& dualKey = boost::none) :
-      Base(noiseModel, cref_list_of<4>(j1)(j2)(j3)(j4), dualKey) {
-  }
+  NoiseModelFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4) :
+    Base(noiseModel, cref_list_of<4>(j1)(j2)(j3)(j4)) {}
 
-  virtual ~NoiseModelFactor4() {
-  }
+  virtual ~NoiseModelFactor4() {}
 
   /** methods to retrieve keys */
-  inline Key key1() const {
-    return keys_[0];
-  }
-  inline Key key2() const {
-    return keys_[1];
-  }
-  inline Key key3() const {
-    return keys_[2];
-  }
-  inline Key key4() const {
-    return keys_[3];
-  }
+  inline Key key1() const { return keys_[0]; }
+  inline Key key2() const { return keys_[1]; }
+  inline Key key3() const { return keys_[2]; }
+  inline Key key4() const { return keys_[3]; }
 
   /** Calls the 4-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if (this->active(x)) {
-      if (H)
-        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]),
-            x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), (*H)[0], (*H)[1], (*H)[2],
-            (*H)[3]);
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
+      if(H)
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
       else
-        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]),
-            x.at<X3>(keys_[2]), x.at<X4>(keys_[3]));
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]));
     } else {
       return zero(this->dim());
     }
@@ -730,8 +545,9 @@ public:
    */
   virtual Vector
   evaluateError(const X1&, const X2&, const X3&, const X4&,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none, boost::optional<Matrix&> H3 = boost::none,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none,
       boost::optional<Matrix&> H4 = boost::none) const = 0;
 
 private:
@@ -740,12 +556,10 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
-};
-// \class NoiseModelFactor4
+}; // \class NoiseModelFactor4
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 5
@@ -772,9 +586,7 @@ public:
   /**
    * Default Constructor for I/O
    */
-  NoiseModelFactor5() :
-      Base() {
-  }
+  NoiseModelFactor5() {}
 
   /**
    * Constructor
@@ -785,43 +597,26 @@ public:
    * @param j4 key of the fourth variable
    * @param j5 key of the fifth variable
    */
-  NoiseModelFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3,
-      Key j4, Key j5, const boost::optional<Key>& dualKey = boost::none) :
-      Base(noiseModel, cref_list_of<5>(j1)(j2)(j3)(j4)(j5), dualKey) {
-  }
+  NoiseModelFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5) :
+    Base(noiseModel, cref_list_of<5>(j1)(j2)(j3)(j4)(j5)) {}
 
-  virtual ~NoiseModelFactor5() {
-  }
+  virtual ~NoiseModelFactor5() {}
 
   /** methods to retrieve keys */
-  inline Key key1() const {
-    return keys_[0];
-  }
-  inline Key key2() const {
-    return keys_[1];
-  }
-  inline Key key3() const {
-    return keys_[2];
-  }
-  inline Key key4() const {
-    return keys_[3];
-  }
-  inline Key key5() const {
-    return keys_[4];
-  }
+  inline Key key1() const { return keys_[0]; }
+  inline Key key2() const { return keys_[1]; }
+  inline Key key3() const { return keys_[2]; }
+  inline Key key4() const { return keys_[3]; }
+  inline Key key5() const { return keys_[4]; }
 
   /** Calls the 5-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if (this->active(x)) {
-      if (H)
-        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]),
-            x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), (*H)[0],
-            (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
+      if(H)
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
       else
-        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]),
-            x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]));
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]));
     } else {
       return zero(this->dim());
     }
@@ -834,10 +629,11 @@ public:
    */
   virtual Vector
   evaluateError(const X1&, const X2&, const X3&, const X4&, const X5&,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none, boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none, boost::optional<Matrix&> H5 =
-          boost::none) const = 0;
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none,
+      boost::optional<Matrix&> H4 = boost::none,
+      boost::optional<Matrix&> H5 = boost::none) const = 0;
 
 private:
 
@@ -845,18 +641,15 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
-};
-// \class NoiseModelFactor5
+}; // \class NoiseModelFactor5
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 6
  * variables.  To derive from this class, implement evaluateError(). */
-template<class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
-    class VALUE6>
+template<class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5, class VALUE6>
 class NoiseModelFactor6: public NoiseModelFactor {
 
 public:
@@ -879,9 +672,7 @@ public:
   /**
    * Default Constructor for I/O
    */
-  NoiseModelFactor6() :
-      Base() {
-  }
+  NoiseModelFactor6() {}
 
   /**
    * Constructor
@@ -893,48 +684,27 @@ public:
    * @param j5 key of the fifth variable
    * @param j6 key of the fifth variable
    */
-  NoiseModelFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3,
-      Key j4, Key j5, Key j6, const boost::optional<Key>& dualKey = boost::none) :
-      Base(noiseModel, cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6), dualKey) {
-  }
+  NoiseModelFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
+    Base(noiseModel, cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
 
-  virtual ~NoiseModelFactor6() {
-  }
+  virtual ~NoiseModelFactor6() {}
 
   /** methods to retrieve keys */
-  inline Key key1() const {
-    return keys_[0];
-  }
-  inline Key key2() const {
-    return keys_[1];
-  }
-  inline Key key3() const {
-    return keys_[2];
-  }
-  inline Key key4() const {
-    return keys_[3];
-  }
-  inline Key key5() const {
-    return keys_[4];
-  }
-  inline Key key6() const {
-    return keys_[5];
-  }
+  inline Key key1() const { return keys_[0]; }
+  inline Key key2() const { return keys_[1]; }
+  inline Key key3() const { return keys_[2]; }
+  inline Key key4() const { return keys_[3]; }
+  inline Key key5() const { return keys_[4]; }
+  inline Key key6() const { return keys_[5]; }
 
   /** Calls the 6-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if (this->active(x)) {
-      if (H)
-        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]),
-            x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]),
-            x.at<X6>(keys_[5]), (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4],
-            (*H)[5]);
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
+      if(H)
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), x.at<X6>(keys_[5]), (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);
       else
-        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]),
-            x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]),
-            x.at<X6>(keys_[5]));
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), x.at<X6>(keys_[5]));
     } else {
       return zero(this->dim());
     }
@@ -946,12 +716,13 @@ public:
    *  both the function evaluation and its derivative(s) in X1 (and/or X2, X3).
    */
   virtual Vector
-  evaluateError(const X1&, const X2&, const X3&, const X4&, const X5&,
-      const X6&, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
-          boost::none, boost::optional<Matrix&> H4 = boost::none,
-      boost::optional<Matrix&> H5 = boost::none, boost::optional<Matrix&> H6 =
-          boost::none) const = 0;
+  evaluateError(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none,
+      boost::optional<Matrix&> H4 = boost::none,
+      boost::optional<Matrix&> H5 = boost::none,
+      boost::optional<Matrix&> H6 = boost::none) const = 0;
 
 private:
 
@@ -959,13 +730,11 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
-};
-// \class NoiseModelFactor6
+}; // \class NoiseModelFactor6
 
 /* ************************************************************************* */
 
-}// \namespace gtsam
+} // \namespace gtsam

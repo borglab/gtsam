@@ -95,7 +95,7 @@ int main()
   // create a random direction:
   double norm=sqrt(16.0+4.0);
   double x=4.0/norm, y=2.0/norm;
-  Vector v = (Vector(2) << x, y);
+  Vector v = (Vector(2) << x, y).finished();
   Rot2 R = Rot2(0.4), R2 = R.retract(v), R3(0.6);
 
   TEST(Rot2_Expmap, Rot2::Expmap(v));

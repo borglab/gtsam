@@ -58,11 +58,10 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot3 : public DerivedValue<Rot3> {
-  public:
-    static const size_t dimension = 3;
+  class GTSAM_EXPORT Rot3 {
 
   private:
+
 #ifdef GTSAM_USE_QUATERNIONS
     /** Internal Eigen Quaternion */
     Quaternion quaternion_;
@@ -184,7 +183,7 @@ namespace gtsam {
      * @param v a vector of incremental roll,pitch,yaw
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Vector& v);
+    static Rot3 rodriguez(const Vector3& v);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -194,7 +193,7 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez((Vector(3) << wx, wy, wz));}
+      { return rodriguez(Vector3(wx, wy, wz));}
 
     /// @}
     /// @name Testable
@@ -216,11 +215,11 @@ namespace gtsam {
     }
 
     /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
-    Rot3 inverse(boost::optional<Matrix&> H1=boost::none) const;
+    Rot3 inverse(boost::optional<Matrix3&> H1=boost::none) const;
 
     /// Compose two rotations i.e., R= (*this) * R2
-    Rot3 compose(const Rot3& R2,
-    boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+    Rot3 compose(const Rot3& R2, OptionalJacobian<3, 3> H1 = boost::none,
+        OptionalJacobian<3, 3> H2 = boost::none) const;
 
     /** compose two rotations */
     Rot3 operator*(const Rot3& R2) const;
@@ -239,18 +238,18 @@ namespace gtsam {
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
      */
     Rot3 between(const Rot3& R2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
+        OptionalJacobian<3,3> H1=boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const;
 
     /// @}
     /// @name Manifold
     /// @{
 
     /// dimension of the variable - used to autodetect sizes
-    static size_t Dim() { return dimension; }
+    static size_t Dim() { return 3; }
 
     /// return dimensionality of tangent space, DOF = 3
-    size_t dim() const { return dimension; }
+    size_t dim() const { return 3; }
 
     /**
      * The method retract() is used to map from the tangent space back to the manifold.
@@ -322,29 +321,27 @@ namespace gtsam {
     /**
      * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
      */
-    Point3 rotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    Point3 rotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
+        OptionalJacobian<3,3> H2 = boost::none) const;
 
     /// rotate point from rotated coordinate frame to world = R*p
     Point3 operator*(const Point3& p) const;
 
-    /**
-     * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-     */
-    Point3 unrotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
+    Point3 unrotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const;
 
     /// @}
     /// @name Group Action on Unit3
     /// @{
 
     /// rotate 3D direction from rotated coordinate frame to world frame
-    Unit3 rotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
-        boost::optional<Matrix&> Hp = boost::none) const;
+    Unit3 rotate(const Unit3& p, OptionalJacobian<2,3> HR = boost::none,
+        OptionalJacobian<2,2> Hp = boost::none) const;
 
     /// unrotate 3D direction from world frame to rotated coordinate frame
-    Unit3 unrotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
-        boost::optional<Matrix&> Hp = boost::none) const;
+    Unit3 unrotate(const Unit3& p, OptionalJacobian<2,3> HR = boost::none,
+        OptionalJacobian<2,2> Hp = boost::none) const;
 
     /// rotate 3D direction from rotated coordinate frame to world frame
     Unit3 operator*(const Unit3& p) const;
@@ -356,8 +353,11 @@ namespace gtsam {
     /** return 3*3 rotation matrix */
     Matrix3 matrix() const;
 
-    /** return 3*3 transpose (inverse) rotation matrix   */
+    /**
+     * Return 3*3 transpose (inverse) rotation matrix
+     */
     Matrix3 transpose() const;
+    // TODO: const Eigen::Transpose<const Matrix3> transpose() const;
 
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
@@ -423,17 +423,25 @@ namespace gtsam {
      */
     Vector quaternion() const;
 
+    /**
+     * @brief Spherical Linear intERPolation between *this and other
+     * @param s a value between 0 and 1
+     * @param other final point of iterpolation geodesic on manifold
+     */
+    Rot3 slerp(double t, const Rot3& other) const;
+
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
+    /// @}
+
   private:
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version)
     {
-       ar & boost::serialization::make_nvp("Rot3",
-           boost::serialization::base_object<Value>(*this));
 #ifndef GTSAM_USE_QUATERNIONS
        ar & boost::serialization::make_nvp("rot11", rot_(0,0));
        ar & boost::serialization::make_nvp("rot12", rot_(0,1));
@@ -451,9 +459,8 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("z", quaternion_.z());
 #endif
     }
-  };
 
-  /// @}
+  };
 
   /**
    * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
@@ -466,4 +473,21 @@ namespace gtsam {
    * @return a vector [thetax, thetay, thetaz] in radians.
    */
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
+
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct GTSAM_EXPORT is_group<Rot3> : public boost::true_type{
+  };
+
+  template<>
+  struct GTSAM_EXPORT is_manifold<Rot3> : public boost::true_type{
+  };
+
+  template<>
+  struct GTSAM_EXPORT dimension<Rot3> : public boost::integral_constant<int, 3>{
+  };
+
+  }
 }

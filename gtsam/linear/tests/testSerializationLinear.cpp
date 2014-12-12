@@ -49,10 +49,10 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
 /* ************************************************************************* */
 // example noise models
-static noiseModel::Diagonal::shared_ptr diag3 = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.2, 0.3));
+static noiseModel::Diagonal::shared_ptr diag3 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.2, 0.3));
 static noiseModel::Gaussian::shared_ptr gaussian3 = noiseModel::Gaussian::SqrtInformation(2.0 * eye(3,3));
 static noiseModel::Isotropic::shared_ptr iso3 = noiseModel::Isotropic::Sigma(3, 0.2);
-static noiseModel::Constrained::shared_ptr constrained3 = noiseModel::Constrained::MixedSigmas((Vector(3) << 0.0, 0.0, 0.1));
+static noiseModel::Constrained::shared_ptr constrained3 = noiseModel::Constrained::MixedSigmas(Vector3(0.0, 0.0, 0.1));
 static noiseModel::Unit::shared_ptr unit3 = noiseModel::Unit::Create(3);
 
 /* ************************************************************************* */
@@ -135,9 +135,9 @@ BOOST_CLASS_EXPORT_GUID(gtsam::GaussianConditional , "gtsam::GaussianConditional
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
   VectorValues values;
-  values.insert(0, (Vector(1) << 1.0));
-  values.insert(1, (Vector(2) << 2.0,3.0));
-  values.insert(2, (Vector(2) << 4.0,5.0));
+  values.insert(0, (Vector(1) << 1.0).finished());
+  values.insert(1, Vector2(2.0,3.0));
+  values.insert(2, Vector2(4.0,5.0));
   EXPECT(equalsObj<VectorValues>(values));
   EXPECT(equalsXML<VectorValues>(values));
   EXPECT(equalsBinary<VectorValues>(values));
@@ -145,7 +145,7 @@ TEST (Serialization, linear_factors) {
   Key i1 = 4, i2 = 7;
   Matrix A1 = eye(3), A2 = -1.0 * eye(3);
   Vector b = ones(3);
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 1.0, 2.0, 3.0));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector3(1.0, 2.0, 3.0));
   JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
   EXPECT(equalsObj(jacobianfactor));
   EXPECT(equalsXML(jacobianfactor));
@@ -159,9 +159,9 @@ TEST (Serialization, linear_factors) {
 
 /* ************************************************************************* */
 TEST (Serialization, gaussian_conditional) {
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.);
-  Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4);
-  Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34);
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4).finished();
+  Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34).finished();
   Vector d(2); d << 0.2, 0.5;
   GaussianConditional cg(0, d, R, 1, A1, 2, A2);
 
@@ -174,9 +174,9 @@ TEST (Serialization, gaussian_conditional) {
 TEST (Serialization, gaussian_factor_graph) {
   GaussianFactorGraph graph;
   {
-    Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.);
-    Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4);
-    Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34);
+    Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+    Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4).finished();
+    Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34).finished();
     Vector d(2); d << 0.2, 0.5;
     GaussianConditional cg(0, d, R, 1, A1, 2, A2);
     graph.push_back(cg);
@@ -186,7 +186,7 @@ TEST (Serialization, gaussian_factor_graph) {
     Key i1 = 4, i2 = 7;
     Matrix A1 = eye(3), A2 = -1.0 * eye(3);
     Vector b = ones(3);
-    SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 1.0, 2.0, 3.0));
+    SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector3(1.0, 2.0, 3.0));
     JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
     HessianFactor hessianfactor(jacobianfactor);
     graph.push_back(jacobianfactor);
@@ -203,10 +203,10 @@ TEST (Serialization, gaussian_bayes_tree) {
   const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
   const GaussianFactorGraph chain = list_of
-    (JacobianFactor(x2, (Matrix(1, 1) << 1.), x1, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
-    (JacobianFactor(x2, (Matrix(1, 1) << 1.), x3, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
-    (JacobianFactor(x3, (Matrix(1, 1) << 1.), x4, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
-    (JacobianFactor(x4, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise));
+    (JacobianFactor(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
+    (JacobianFactor(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
+    (JacobianFactor(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
+    (JacobianFactor(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise));
 
   GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
   GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);

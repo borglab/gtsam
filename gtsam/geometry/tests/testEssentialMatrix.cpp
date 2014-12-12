@@ -62,16 +62,16 @@ TEST (EssentialMatrix, retract0) {
 
 //*************************************************************************
 TEST (EssentialMatrix, retract1) {
-  EssentialMatrix expected(c1Rc2.retract((Vector(3) << 0.1, 0, 0)), Unit3(c1Tc2));
-  EssentialMatrix actual = trueE.retract((Vector(5) << 0.1, 0, 0, 0, 0));
+  EssentialMatrix expected(c1Rc2.retract(Vector3(0.1, 0, 0)), Unit3(c1Tc2));
+  EssentialMatrix actual = trueE.retract((Vector(5) << 0.1, 0, 0, 0, 0).finished());
   EXPECT(assert_equal(expected, actual));
 }
 
 //*************************************************************************
 TEST (EssentialMatrix, retract2) {
   EssentialMatrix expected(c1Rc2,
-      Unit3(c1Tc2).retract((Vector(2) << 0.1, 0)));
-  EssentialMatrix actual = trueE.retract((Vector(5) << 0, 0, 0, 0.1, 0));
+      Unit3(c1Tc2).retract(Vector2(0.1, 0)));
+  EssentialMatrix actual = trueE.retract((Vector(5) << 0, 0, 0, 0.1, 0).finished());
   EXPECT(assert_equal(expected, actual));
 }
 
@@ -85,7 +85,7 @@ TEST (EssentialMatrix, transform_to) {
       * Rot3::roll(M_PI / 6.0);
   Point3 aTb2(19.2, 3.7, 5.9);
   EssentialMatrix E(aRb2, Unit3(aTb2));
-  //EssentialMatrix E(aRb, Unit3(aTb).retract((Vector(2) << 0.1, 0)));
+  //EssentialMatrix E(aRb, Unit3(aTb).retract(Vector2(0.1, 0)));
   static Point3 P(0.2, 0.7, -2);
   Matrix actH1, actH2;
   E.transform_to(P, actH1, actH2);

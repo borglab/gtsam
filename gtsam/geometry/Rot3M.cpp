@@ -30,10 +30,8 @@ using namespace std;
 
 namespace gtsam {
 
-static const Matrix3 I3 = Matrix3::Identity();
-
 /* ************************************************************************* */
-Rot3::Rot3() : rot_(Matrix3::Identity()) {}
+Rot3::Rot3() : rot_(I_3x3) {}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
@@ -63,11 +61,9 @@ Rot3::Rot3(const Matrix& R) {
   rot_ = R;
 }
 
-///* ************************************************************************* */
-//Rot3::Rot3(const Matrix3& R) : rot_(R) {}
-
 /* ************************************************************************* */
-Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {}
+Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {
+}
 
 /* ************************************************************************* */
 Rot3 Rot3::Rx(double t) {
@@ -144,10 +140,9 @@ Rot3 Rot3::rodriguez(const Vector& w, double theta) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::compose (const Rot3& R2,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+Rot3 Rot3::compose(const Rot3& R2, OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
   if (H1) *H1 = R2.transpose();
-  if (H2) *H2 = I3;
+  if (H2) *H2 = I_3x3;
   return *this * R2;
 }
 
@@ -157,22 +152,29 @@ Rot3 Rot3::operator*(const Rot3& R2) const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
+// TODO const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+Matrix3 Rot3::transpose() const {
+  return rot_.transpose();
+}
+
+/* ************************************************************************* */
+Rot3 Rot3::inverse(boost::optional<Matrix3 &> H1) const {
   if (H1) *H1 = -rot_;
-  return Rot3(Matrix3(rot_.transpose()));
+  return Rot3(Matrix3(transpose()));
 }
 
 /* ************************************************************************* */
 Rot3 Rot3::between (const Rot3& R2,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
   if (H1) *H1 = -(R2.transpose()*rot_);
-  if (H2) *H2 = I3;
-  return Rot3(Matrix3(rot_.transpose()*R2.rot_));
+  if (H2) *H2 = I_3x3;
+  Matrix3 R12 = transpose()*R2.rot_;
+  return Rot3(R12);
 }
 
 /* ************************************************************************* */
 Point3 Rot3::rotate(const Point3& p,
-    boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
+    OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
   if (H1 || H2) {
       if (H1) *H1 = rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
       if (H2) *H2 = rot_;
@@ -239,7 +241,7 @@ Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
   } else if(mode == Rot3::CAYLEY) {
     return retractCayley(omega);
   } else if(mode == Rot3::SLOW_CAYLEY) {
-    Matrix Omega = skewSymmetric(omega);
+    Matrix3 Omega = skewSymmetric(omega);
     return (*this)*CayleyFixed<3>(-Omega/2);
   } else {
     assert(false);
@@ -253,23 +255,23 @@ Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const 
     return Logmap(between(T));
   } else if(mode == Rot3::CAYLEY) {
     // Create a fixed-size matrix
-    Eigen::Matrix3d A(between(T).matrix());
+    Matrix3 A = rot_.transpose() * T.matrix();
     // Mathematica closed form optimization (procrastination?) gone wild:
     const double a=A(0,0),b=A(0,1),c=A(0,2);
     const double d=A(1,0),e=A(1,1),f=A(1,2);
     const double g=A(2,0),h=A(2,1),i=A(2,2);
     const double di = d*i, ce = c*e, cd = c*d, fg=f*g;
     const double M = 1 + e - f*h + i + e*i;
-    const double K = 2.0 / (cd*h + M + a*M -g*(c + ce) - b*(d + di - fg));
-    const double x = (a * f - cd + f) * K;
-    const double y = (b * f - ce - c) * K;
-    const double z = (fg - di - d) * K;
-    return -2 * Vector3(x, y, z);
+    const double K = - 4.0 / (cd*h + M + a*M -g*(c + ce) - b*(d + di - fg));
+    const double x = a * f - cd + f;
+    const double y = b * f - ce - c;
+    const double z = fg - di - d;
+    return K * Vector3(x, y, z);
   } else if(mode == Rot3::SLOW_CAYLEY) {
     // Create a fixed-size matrix
-    Eigen::Matrix3d A(between(T).matrix());
+    Matrix3 A(between(T).matrix());
     // using templated version of Cayley
-    Eigen::Matrix3d Omega = CayleyFixed<3>(A);
+    Matrix3 Omega = CayleyFixed<3>(A);
     return -2*Vector3(Omega(2,1),Omega(0,2),Omega(1,0));
   } else {
     assert(false);
@@ -280,11 +282,6 @@ Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const 
 /* ************************************************************************* */
 Matrix3 Rot3::matrix() const {
   return rot_;
-}
-
-/* ************************************************************************* */
-Matrix3 Rot3::transpose() const {
-  return rot_.transpose();
 }
 
 /* ************************************************************************* */

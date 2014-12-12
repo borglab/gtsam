@@ -32,7 +32,7 @@ static const Pose3 pose1((Matrix)(Matrix(3,3) <<
               1., 0., 0.,
               0.,-1., 0.,
               0., 0.,-1.
-              ),
+              ).finished(),
             Point3(0,0,0.5));
  
 static const SimpleCamera camera(pose1, K);
@@ -125,7 +125,7 @@ static Point2 project2(const Pose3& pose, const Point3& point) {
 TEST( SimpleCamera, Dproject_point_pose)
 {
   Matrix Dpose, Dpoint;
-  Point2 result = camera.project(point1, Dpose, Dpoint);
+  Point2 result = camera.project(point1, Dpose, Dpoint, boost::none);
   Matrix numerical_pose  = numericalDerivative21(project2, pose1, point1);
   Matrix numerical_point = numericalDerivative22(project2, pose1, point1);
   CHECK(assert_equal(result, Point2(-100,  100) ));
@@ -147,7 +147,7 @@ TEST( SimpleCamera, simpleCamera)
   Matrix P = (Matrix(3,4) <<
       3.53553e2, 3.39645e2, 2.77744e2, -1.44946e6,
       -1.03528e2, 2.33212e1, 4.59607e2, -6.32525e5,
-      7.07107e-1, -3.53553e-1,6.12372e-1, -9.18559e2);
+      7.07107e-1, -3.53553e-1,6.12372e-1, -9.18559e2).finished();
   SimpleCamera actual = simpleCamera(P);
   // Note precision of numbers given in book
   CHECK(assert_equal(expected, actual,1e-1));

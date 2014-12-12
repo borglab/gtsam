@@ -2,7 +2,8 @@
  * Preconditioner.cpp
  *
  *  Created on: Jun 2, 2014
- *      Author: ydjian
+ *      Author: Yong-Dian Jian
+ *      Author: Sungtae An
  */
 
 #include <gtsam/inference/FactorGraph-inst.h>
@@ -13,6 +14,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <iostream>
 #include <vector>
 
@@ -93,7 +95,7 @@ void BlockJacobiPreconditioner::solve(const Vector& y, Vector &x) const {
 
     const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
     Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
-    R.triangularView<Eigen::Upper>().solveInPlace(b);
+    R.triangularView<Eigen::Lower>().solveInPlace(b);
 
     dst += d;
     ptr += sz;
@@ -134,31 +136,15 @@ void BlockJacobiPreconditioner::build(
   size_t nnz = 0;
   for ( size_t i = 0 ; i < n ; ++i ) {
     const size_t dim = dims_[i];
-    blocks.push_back(Matrix::Zero(dim, dim));
+    // blocks.push_back(Matrix::Zero(dim, dim));
     // nnz += (((dim)*(dim+1)) >> 1); // d*(d+1) / 2  ;
     nnz += dim*dim;
   }
 
-  /* compute the block diagonal by scanning over the factors */
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg ) {
-    if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
-      for ( JacobianFactor::const_iterator it = jf->begin() ; it != jf->end() ; ++it ) {
-        const KeyInfoEntry &entry =  keyInfo.find(*it)->second;
-        const Matrix &Ai = jf->getA(it);
-        blocks[entry.index()] += (Ai.transpose() * Ai);
-      }
-    }
-    else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
-      for ( HessianFactor::const_iterator it = hf->begin() ; it != hf->end() ; ++it ) {
-        const KeyInfoEntry &entry =  keyInfo.find(*it)->second;
-        const Matrix &Hii = hf->info(it, it).selfadjointView();
-        blocks[entry.index()] += Hii;
-      }
-    }
-    else {
-      throw invalid_argument("BlockJacobiPreconditioner::build gfg contains a factor that is neither a JacobianFactor nor a HessianFactor.");
-    }
-  }
+  /* getting the block diagonals over the factors */
+  std::map<Key, Matrix> hessianMap =gfg.hessianBlockDiagonal();
+  BOOST_FOREACH ( const Matrix hessian, hessianMap | boost::adaptors::map_values)
+    blocks.push_back(hessian);
 
   /* if necessary, allocating the memory for cacheing the factorization results */
   if ( nnz > bufferSize_ ) {
@@ -172,11 +158,12 @@ void BlockJacobiPreconditioner::build(
   double *ptr = buffer_;
   for ( size_t i = 0 ; i < n ; ++i ) {
     /* use eigen to decompose Di */
-    const Matrix R = blocks[i].llt().matrixL().transpose();
+    /* It is same as L = chol(M,'lower') in MATLAB where M is full preconditioner */
+    const Matrix L = blocks[i].llt().matrixL();
 
     /* store the data in the buffer */
     size_t sz = dims_[i]*dims_[i] ;
-    std::copy(R.data(), R.data() + sz, ptr);
+    std::copy(L.data(), L.data() + sz, ptr);
 
     /* advance the pointer */
     ptr += sz;

@@ -39,9 +39,8 @@ class Pose2;
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose3: public DerivedValue<Pose3> {
+class GTSAM_EXPORT Pose3{
 public:
-  static const size_t dimension = 6;
 
   /** Pose Concept requirements */
   typedef Rot3 Rotation;
@@ -70,6 +69,12 @@ public:
   Pose3(const Rot3& R, const Point3& t) :
       R_(R), t_(t) {
   }
+
+  /** Construct from R,t, where t \in vector3 */
+  Pose3(const Rot3& R, const Vector3& t) :
+      R_(R), t_(t) {
+  }
+
 
   /** Construct from Pose2 */
   explicit Pose3(const Pose2& pose2);
@@ -100,11 +105,11 @@ public:
   }
 
   /// inverse transformation with derivatives
-  Pose3 inverse(boost::optional<Matrix&> H1 = boost::none) const;
+  Pose3 inverse(OptionalJacobian<6, 6> H1 = boost::none) const;
 
   ///compose this transformation onto another (first *this and then p2)
-  Pose3 compose(const Pose3& p2, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+  Pose3 compose(const Pose3& p2, OptionalJacobian<6, 6> H1 = boost::none,
+      OptionalJacobian<6, 6> H2 = boost::none) const;
 
   /// compose syntactic sugar
   Pose3 operator*(const Pose3& T) const {
@@ -115,8 +120,8 @@ public:
    * Return relative pose between p1 and p2, in p1 coordinate frame
    * as well as optionally the derivatives
    */
-  Pose3 between(const Pose3& p2, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+  Pose3 between(const Pose3& p2, OptionalJacobian<6, 6> H1 = boost::none,
+      OptionalJacobian<6, 6> H2 = boost::none) const;
 
   /// @}
   /// @name Manifold
@@ -132,12 +137,12 @@ public:
 
   /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
   static size_t Dim() {
-    return dimension;
+    return 6;
   }
 
   /// Dimensionality of the tangent space = 6 DOF
   size_t dim() const {
-    return dimension;
+    return 6;
   }
 
   /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ from R^ with fast first-order approximation to the exponential map
@@ -187,30 +192,30 @@ public:
      * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
      *
      */
-    static Matrix6 adjointMap(const Vector& xi);
+    static Matrix6 adjointMap(const Vector6 &xi);
 
     /**
      * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
      */
-    static Vector adjoint(const Vector& xi, const Vector& y, boost::optional<Matrix&> H = boost::none);
+    static Vector6 adjoint(const Vector6 &xi, const Vector6 &y, OptionalJacobian<6,6> = boost::none);
 
     /**
      * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
      */
-    static Vector adjointTranspose(const Vector& xi, const Vector& y, boost::optional<Matrix&> H = boost::none);
+    static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y, OptionalJacobian<6, 6> H = boost::none);
 
     /**
      * Compute the inverse right-trivialized tangent (derivative) map of the exponential map,
      * as detailed in [Kobilarov09siggraph] eq. (15)
      * The full formula is documented in [Celledoni99cmame]
      *    Elena Celledoni and Brynjulf Owren. Lie group methods for rigid body dynamics and
-     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421� 438, 2003.
+     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421-438, 2003.
      * and in [Hairer06book] in formula (4.5), pg. 84, Lemma 4.2
      *    Ernst Hairer, et al., Geometric Numerical Integration,
      *      Structure-Preserving Algorithms for Ordinary Differential Equations, 2nd edition, Springer-Verlag, 2006.
    * See also Iserles05an, pg. 33, formula 2.46
      */
-    static Matrix6 dExpInv_exp(const Vector&  xi);
+    static Matrix6 dExpInv_exp(const Vector6 &xi);
 
     /**
      * wedge for Pose3:
@@ -224,7 +229,7 @@ public:
           0.,-wz,  wy,  vx,
           wz,  0.,-wx,  vy,
           -wy, wx,   0., vz,
-          0.,  0.,  0.,  0.);
+          0.,  0.,  0.,  0.).finished();
     }
 
     /// @}
@@ -239,7 +244,7 @@ public:
      * @return point in world coordinates
      */
     Point3 transform_from(const Point3& p,
-        boost::optional<Matrix&> Dpose=boost::none, boost::optional<Matrix&> Dpoint=boost::none) const;
+        OptionalJacobian<3,6> Dpose=boost::none, OptionalJacobian<3,3> Dpoint=boost::none) const;
 
     /** syntactic sugar for transform_from */
     inline Point3 operator*(const Point3& p) const { return transform_from(p); }
@@ -252,7 +257,8 @@ public:
      * @return point in Pose coordinates
      */
     Point3 transform_to(const Point3& p,
-        boost::optional<Matrix&> Dpose=boost::none, boost::optional<Matrix&> Dpoint=boost::none) const;
+        OptionalJacobian<3,6> Dpose = boost::none,
+        OptionalJacobian<3,3> Dpoint = boost::none) const;
 
     /// @}
     /// @name Standard Interface
@@ -285,8 +291,8 @@ public:
      * @return range (double)
      */
     double range(const Point3& point,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
+        OptionalJacobian<1,6> H1=boost::none,
+        OptionalJacobian<1,3> H2=boost::none) const;
 
     /**
      * Calculate range to another pose
@@ -294,8 +300,8 @@ public:
      * @return range (double)
      */
     double range(const Pose3& pose,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
+        OptionalJacobian<1,6> H1=boost::none,
+        OptionalJacobian<1,6> H2=boost::none) const;
 
     /// @}
     /// @name Advanced Interface
@@ -323,8 +329,6 @@ public:
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("Pose3",
-              boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(R_);
       ar & BOOST_SERIALIZATION_NVP(t_);
     }
@@ -350,5 +354,22 @@ inline Matrix wedge<Pose3>(const Vector& xi) {
  */
 typedef std::pair<Point3, Point3> Point3Pair;
 GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct GTSAM_EXPORT is_group<Pose3> : public boost::true_type{
+};
+
+template<>
+struct GTSAM_EXPORT is_manifold<Pose3> : public boost::true_type{
+};
+
+template<>
+struct GTSAM_EXPORT dimension<Pose3> : public boost::integral_constant<int, 6>{
+};
+
+}
 
 } // namespace gtsam

@@ -17,6 +17,12 @@
 
 #pragma once
 
+#ifdef _MSC_VER
+#pragma message("LieScalar.h is deprecated. Please use double/float instead.")
+#else
+  #warning "LieScalar.h is deprecated. Please use double/float instead."
+#endif
+
 #include <gtsam/dllexport.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
@@ -24,9 +30,11 @@
 namespace gtsam {
 
   /**
-   * LieScalar is a wrapper around double to allow it to be a Lie type
+   * @deprecated: LieScalar, LieVector and LieMatrix are obsolete in GTSAM 4.0 as
+   * we can directly add double, Vector, and Matrix into values now, because of
+   * gtsam::traits.
    */
-  struct GTSAM_EXPORT LieScalar : public DerivedValue<LieScalar> {
+  struct GTSAM_EXPORT LieScalar {
 
     /** default constructor */
     LieScalar() : d_(0.0) {}
@@ -58,7 +66,7 @@ namespace gtsam {
     LieScalar retract(const Vector& v) const { return LieScalar(value() + v(0)); }
 
     /** @return the local coordinates of another object */
-    Vector localCoordinates(const LieScalar& t2) const { return (Vector(1) << (t2.value() - value())); }
+    Vector localCoordinates(const LieScalar& t2) const { return (Vector(1) << (t2.value() - value())).finished(); }
 
     // Group requirements
 
@@ -96,7 +104,7 @@ namespace gtsam {
     static LieScalar Expmap(const Vector& v) { return LieScalar(v(0)); }
 
     /** Logmap around identity - just returns with default cast back */
-    static Vector Logmap(const LieScalar& p) { return (Vector(1) << p.value()); }
+    static Vector Logmap(const LieScalar& p) { return (Vector(1) << p.value()).finished(); }
 
     /// Left-trivialized derivative of the exponential map
     static Matrix dexpL(const Vector& v) {
@@ -111,4 +119,22 @@ namespace gtsam {
   private:
       double d_;
   };
+
+  // Define GTSAM traits
+  namespace traits {
+
+  template<>
+  struct is_group<LieScalar> : public boost::true_type {
+  };
+
+  template<>
+  struct is_manifold<LieScalar> : public boost::true_type {
+  };
+
+  template<>
+  struct dimension<LieScalar> : public boost::integral_constant<int, 1> {
+  };
+
+  }
+
 } // \namespace gtsam

@@ -287,8 +287,8 @@ TEST (testSerializationSLAM, smallExample_nonlinear) {
 /* ************************************************************************* */
 TEST (testSerializationSLAM, factors) {
 
-  LieVector lieVector((Vector(4) << 1.0, 2.0, 3.0, 4.0));
-  LieMatrix lieMatrix((Matrix(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0 ,6.0));
+  LieVector lieVector((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished());
+  LieMatrix lieMatrix((Matrix(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0 ,6.0).finished());
   Point2 point2(1.0, 2.0);
   StereoPoint2 stereoPoint2(1.0, 2.0, 3.0);
   Point3 point3(1.0, 2.0, 3.0);

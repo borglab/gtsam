@@ -17,12 +17,14 @@
 #include <boost/shared_array.hpp>
 #include <boost/timer.hpp>
 
+#include "FindSeparator.h"
+
 extern "C" {
 #include <metis.h>
 #include "metislib.h"
 }
 
-#include "FindSeparator.h"
+
 
 namespace gtsam { namespace partition {
 

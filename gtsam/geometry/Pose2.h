@@ -33,10 +33,9 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose2 : public DerivedValue<Pose2> {
+class GTSAM_EXPORT Pose2 {
 
 public:
-  static const size_t dimension = 3;
 
   /** Pose Concept requirements */
   typedef Rot2 Rotation;
@@ -108,12 +107,12 @@ public:
   inline static Pose2 identity() { return Pose2(); }
 
   /// inverse transformation with derivatives
-  Pose2 inverse(boost::optional<Matrix&> H1=boost::none) const;
+  Pose2 inverse(OptionalJacobian<3, 3> H1=boost::none) const;
 
   /// compose this transformation onto another (first *this and then p2)
   Pose2 compose(const Pose2& p2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+      OptionalJacobian<3, 3> H1 = boost::none,
+      OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /// compose syntactic sugar
   inline Pose2 operator*(const Pose2& p2) const {
@@ -123,26 +122,24 @@ public:
   /**
    * Return relative pose between p1 and p2, in p1 coordinate frame
    */
-  Pose2 between(const Pose2& p2,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
-
+  Pose2 between(const Pose2& p2, OptionalJacobian<3,3> H1 = boost::none,
+      OptionalJacobian<3,3> H = boost::none) const;
 
   /// @}
   /// @name Manifold
   /// @{
 
   /// Dimensionality of tangent space = 3 DOF - used to autodetect sizes
-  inline static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return 3; }
 
   /// Dimensionality of tangent space = 3 DOF
-  inline size_t dim() const { return dimension; }
+  inline size_t dim() const { return 3; }
 
   /// Retraction from R^3 \f$ [T_x,T_y,\theta] \f$ to Pose2 manifold neighborhood around current pose
   Pose2 retract(const Vector& v) const;
 
   /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
-  Vector localCoordinates(const Pose2& p2) const;
+  Vector3 localCoordinates(const Pose2& p2) const;
 
   /// @}
   /// @name Lie Group
@@ -152,14 +149,17 @@ public:
   static Pose2 Expmap(const Vector& xi);
 
   ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
-  static Vector Logmap(const Pose2& p);
+  static Vector3 Logmap(const Pose2& p);
 
   /**
    * Calculate Adjoint map
    * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
-  Matrix AdjointMap() const;
-  Vector Adjoint(const Vector& xi) const;
+  Matrix3 AdjointMap() const;
+  inline Vector Adjoint(const Vector& xi) const {
+    assert(xi.size() == 3);
+    return AdjointMap()*xi;
+  }
 
   /**
    * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
@@ -173,11 +173,12 @@ public:
    *  v (vx,vy) = 2D velocity
    * @return xihat, 3*3 element of Lie algebra that can be exponentiated
    */
-  static inline Matrix wedge(double vx, double vy, double w) {
-    return (Matrix(3,3) <<
-        0.,-w,  vx,
-        w,  0., vy,
-        0., 0.,  0.);
+  static inline Matrix3 wedge(double vx, double vy, double w) {
+    Matrix3 m;
+    m << 0.,-w,  vx,
+         w,  0., vy,
+         0., 0.,  0.;
+    return m;
   }
 
   /// Left-trivialized derivative of the exponential map
@@ -193,13 +194,13 @@ public:
 
   /** Return point coordinates in pose coordinate frame */
   Point2 transform_to(const Point2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<2, 3> H1 = boost::none,
+      OptionalJacobian<2, 2> H2 = boost::none) const;
 
   /** Return point coordinates in global frame */
   Point2 transform_from(const Point2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<2, 3> H1 = boost::none,
+      OptionalJacobian<2, 2> H2 = boost::none) const;
 
   /** syntactic sugar for transform_from */
   inline Point2 operator*(const Point2& point) const { return transform_from(point);}
@@ -230,7 +231,7 @@ public:
   inline const Rot2&   rotation() const { return r_; }
 
   //// return transformation matrix
-  Matrix matrix() const;
+  Matrix3 matrix() const;
 
   /**
    * Calculate bearing to a landmark
@@ -238,17 +239,15 @@ public:
    * @return 2D rotation \f$ \in SO(2) \f$
    */
   Rot2 bearing(const Point2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+               OptionalJacobian<1, 3> H1=boost::none, OptionalJacobian<1, 2> H2=boost::none) const;
 
   /**
    * Calculate bearing to another pose
    * @param point SO(2) location of other pose
    * @return 2D rotation \f$ \in SO(2) \f$
    */
-  Rot2 bearing(const Pose2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+  Rot2 bearing(const Pose2& pose,
+               OptionalJacobian<1, 3> H1=boost::none, OptionalJacobian<1, 3> H2=boost::none) const;
 
   /**
    * Calculate range to a landmark
@@ -256,8 +255,8 @@ public:
    * @return range (double)
    */
   double range(const Point2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<1, 3> H1=boost::none,
+      OptionalJacobian<1, 2> H2=boost::none) const;
 
   /**
    * Calculate range to another pose
@@ -265,8 +264,8 @@ public:
    * @return range (double)
    */
   double range(const Pose2& point,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<1, 3> H1=boost::none,
+      OptionalJacobian<1, 3> H2=boost::none) const;
 
   /// @}
   /// @name Advanced Interface
@@ -286,14 +285,14 @@ public:
    */
   static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(2, 2); }
 
+  /// @}
+
 private:
 
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("Pose2",
-        boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
@@ -312,7 +311,18 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
-/// @}
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct GTSAM_EXPORT is_manifold<Pose2> : public boost::true_type{
+};
+
+template<>
+struct GTSAM_EXPORT dimension<Pose2> : public boost::integral_constant<int, 3>{
+};
+
+}
 
 } // namespace gtsam
 

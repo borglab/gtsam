@@ -44,10 +44,10 @@ TEST( DeltaFactor, all ) {
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<LieVector, Pose2>(
+  H1Expected = numericalDerivative11<Vector, Pose2>(
       boost::bind(&DeltaFactor::evaluateError, &factor, _1, point, boost::none,
           boost::none), pose);
-  H2Expected = numericalDerivative11<LieVector, Point2>(
+  H2Expected = numericalDerivative11<Vector, Point2>(
       boost::bind(&DeltaFactor::evaluateError, &factor, pose, _1, boost::none,
           boost::none), point);
 
@@ -78,16 +78,16 @@ TEST( DeltaFactorBase, all ) {
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected, H3Expected, H4Expected;
-  H1Expected = numericalDerivative11<LieVector, Pose2>(
+  H1Expected = numericalDerivative11<Vector, Pose2>(
       boost::bind(&DeltaFactorBase::evaluateError, &factor, _1, pose, base2,
           point, boost::none, boost::none, boost::none, boost::none), base1);
-  H2Expected = numericalDerivative11<LieVector, Pose2>(
+  H2Expected = numericalDerivative11<Vector, Pose2>(
       boost::bind(&DeltaFactorBase::evaluateError, &factor, base1, _1, base2,
           point, boost::none, boost::none, boost::none, boost::none), pose);
-  H3Expected = numericalDerivative11<LieVector, Pose2>(
+  H3Expected = numericalDerivative11<Vector, Pose2>(
       boost::bind(&DeltaFactorBase::evaluateError, &factor, base1, pose, _1,
           point, boost::none, boost::none, boost::none, boost::none), base2);
-  H4Expected = numericalDerivative11<LieVector, Point2>(
+  H4Expected = numericalDerivative11<Vector, Point2>(
       boost::bind(&DeltaFactorBase::evaluateError, &factor, base1, pose, base2,
           _1, boost::none, boost::none, boost::none, boost::none), point);
 
@@ -119,16 +119,16 @@ TEST( OdometryFactorBase, all ) {
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected, H3Expected, H4Expected;
-  H1Expected = numericalDerivative11<LieVector, Pose2>(
+  H1Expected = numericalDerivative11<Vector, Pose2>(
       boost::bind(&OdometryFactorBase::evaluateError, &factor, _1, pose1, base2,
           pose2, boost::none, boost::none, boost::none, boost::none), base1);
-  H2Expected = numericalDerivative11<LieVector, Pose2>(
+  H2Expected = numericalDerivative11<Vector, Pose2>(
       boost::bind(&OdometryFactorBase::evaluateError, &factor, base1, _1, base2,
           pose2, boost::none, boost::none, boost::none, boost::none), pose1);
-  H3Expected = numericalDerivative11<LieVector, Pose2>(
+  H3Expected = numericalDerivative11<Vector, Pose2>(
       boost::bind(&OdometryFactorBase::evaluateError, &factor, base1, pose1, _1,
           pose2, boost::none, boost::none, boost::none, boost::none), base2);
-  H4Expected = numericalDerivative11<LieVector, Pose2>(
+  H4Expected = numericalDerivative11<Vector, Pose2>(
       boost::bind(&OdometryFactorBase::evaluateError, &factor, base1, pose1,
           base2, _1, boost::none, boost::none, boost::none, boost::none),
       pose2);

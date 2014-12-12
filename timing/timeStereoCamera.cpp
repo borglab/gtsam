@@ -31,7 +31,7 @@ int main()
       1., 0., 0.,
       0.,-1., 0.,
       0., 0.,-1.
-  ),
+  ).finished(),
   Point3(0,0,0.5));
 
   const Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));

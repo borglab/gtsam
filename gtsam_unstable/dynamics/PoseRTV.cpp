@@ -57,18 +57,17 @@ void PoseRTV::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-PoseRTV PoseRTV::Expmap(const Vector& v) {
-  assert(v.size() == 9);
-  Pose3 newPose = Pose3::Expmap(sub(v, 0, 6));
-  Velocity3 newVel = Velocity3::Expmap(sub(v, 6, 9));
+PoseRTV PoseRTV::Expmap(const Vector9& v) {
+  Pose3 newPose = Pose3::Expmap(v.head<6>());
+  Velocity3 newVel = Velocity3::Expmap(v.tail<3>());
   return PoseRTV(newPose, newVel);
 }
 
 /* ************************************************************************* */
-Vector PoseRTV::Logmap(const PoseRTV& p) {
-  Vector Lx = Pose3::Logmap(p.Rt_);
-  Vector Lv = Velocity3::Logmap(p.v_);
-  return concatVectors(2, &Lx, &Lv);
+Vector9 PoseRTV::Logmap(const PoseRTV& p) {
+  Vector6 Lx = Pose3::Logmap(p.Rt_);
+  Vector3 Lv = Velocity3::Logmap(p.v_);
+  return (Vector9() << Lx, Lv).finished();
 }
 
 /* ************************************************************************* */
@@ -84,9 +83,9 @@ PoseRTV PoseRTV::retract(const Vector& v) const {
 Vector PoseRTV::localCoordinates(const PoseRTV& p1) const {
   const Pose3& x0 = pose(), &x1 = p1.pose();
   // First order approximation
-  Vector poseLogmap = x0.localCoordinates(x1);
-  Vector lv = rotation().unrotate(p1.velocity() - v_).vector();
-  return concatVectors(2, &poseLogmap, &lv);
+  Vector6 poseLogmap = x0.localCoordinates(x1);
+  Vector3 lv = rotation().unrotate(p1.velocity() - v_).vector();
+  return (Vector(9) << poseLogmap, lv).finished();
 }
 
 /* ************************************************************************* */
@@ -125,7 +124,7 @@ PoseRTV PoseRTV::planarDynamics(double vel_rate, double heading_rate,
   const Velocity3& v1 = v();
 
   // Update vehicle heading
-  Rot3 r2 = r1.retract((Vector(3) << 0.0, 0.0, heading_rate * dt));
+  Rot3 r2 = r1.retract((Vector(3) << 0.0, 0.0, heading_rate * dt).finished());
   const double yaw2 = r2.ypr()(0);
 
   // Update vehicle position
@@ -149,7 +148,7 @@ PoseRTV PoseRTV::flyingDynamics(
   const Velocity3& v1 = v();
 
   // Update vehicle heading (and normalise yaw)
-  Vector rot_rates = (Vector(3) << 0.0, pitch_rate, heading_rate);
+  Vector rot_rates = (Vector(3) << 0.0, pitch_rate, heading_rate).finished();
   Rot3 r2 = r1.retract(rot_rates*dt);
 
   // Work out dynamics on platform
@@ -163,9 +162,9 @@ PoseRTV PoseRTV::flyingDynamics(
   Rot3 yaw_correction_bn = Rot3::yaw(yaw2);
   Point3 forward(forward_accel, 0.0, 0.0);
   Vector Acc_n =
-      yaw_correction_bn.rotate(forward).vector()   // applies locally forward force in the global frame
-      - drag * (Vector(3) << v1.x(), v1.y(), 0.0)     // drag term dependent on v1
-      + delta(3, 2, loss_lift - lift_control);     // falling due to lift lost from pitch
+      yaw_correction_bn.rotate(forward).vector()              // applies locally forward force in the global frame
+      - drag * (Vector(3) << v1.x(), v1.y(), 0.0).finished()  // drag term dependent on v1
+      + delta(3, 2, loss_lift - lift_control);                // falling due to lift lost from pitch
 
   // Update Vehicle Position and Velocity
   Velocity3 v2 = v1 + Velocity3(Acc_n * dt);
@@ -190,16 +189,16 @@ PoseRTV PoseRTV::generalDynamics(
 }
 
 /* ************************************************************************* */
-Vector PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
+Vector6 PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
   // split out states
   const Rot3      &r1 = R(), &r2 = x2.R();
   const Velocity3 &v1 = v(), &v2 = x2.v();
 
-  Vector imu(6);
+  Vector6 imu;
 
   // acceleration
   Vector accel = v1.localCoordinates(v2) / dt;
-  imu.head(3) = r2.transpose() * (accel - g);
+  imu.head<3>() = r2.transpose() * (accel - g);
 
   // rotation rates
   // just using euler angles based on matlab code
@@ -211,7 +210,7 @@ Vector PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
   // normalize yaw in difference (as per Mitch's code)
   dR(2) = Rot2::fromAngle(dR(2)).theta();
   dR /= dt;
-  imu.tail(3) = Enb * dR;
+  imu.tail<3>() = Enb * dR;
 //  imu.tail(3) = r1.transpose() * dR;
 
   return imu;

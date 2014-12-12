@@ -64,13 +64,13 @@ int main(int argc, char** argv) {
   // Add a prior on the first pose, setting it to the origin
   // A prior factor consists of a mean and a noise model (covariance matrix)
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1));
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   graph.add(PriorFactor<Pose2>(1, priorMean, priorNoise));
 
   // Add odometry factors
   Pose2 odometry(2.0, 0.0, 0.0);
   // For simplicity, we will use the same noise model for each odometry factor
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1));
+  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
   // Create odometry (Between) factors between consecutive poses
   graph.add(BetweenFactor<Pose2>(1, 2, odometry, odometryNoise));
   graph.add(BetweenFactor<Pose2>(2, 3, odometry, odometryNoise));

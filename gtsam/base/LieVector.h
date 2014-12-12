@@ -17,6 +17,12 @@
 
 #pragma once
 
+#ifdef _MSC_VER
+#pragma message("LieVector.h is deprecated. Please use Eigen::Vector instead.")
+#else
+#warning "LieVector.h is deprecated. Please use Eigen::Vector instead."
+#endif
+
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/DerivedValue.h>
@@ -24,9 +30,11 @@
 namespace gtsam {
 
 /**
- * LieVector is a wrapper around vector to allow it to be a Lie type
+ * @deprecated: LieScalar, LieVector and LieMatrix are obsolete in GTSAM 4.0 as
+ * we can directly add double, Vector, and Matrix into values now, because of
+ * gtsam::traits.
  */
-struct LieVector : public Vector, public DerivedValue<LieVector> {
+struct LieVector : public Vector {
 
   /** default constructor - should be unnecessary */
   LieVector() {}
@@ -42,7 +50,7 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
 #endif
 
   /** wrap a double */
-  LieVector(double d) : Vector((Vector(1) << d)) {}
+  LieVector(double d) : Vector((Vector(1) << d).finished()) {}
 
   /** constructor with size and initial data, row order ! */
   GTSAM_EXPORT LieVector(size_t m, const double* const data);
@@ -123,11 +131,22 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("LieVector",
-       boost::serialization::base_object<Value>(*this));
     ar & boost::serialization::make_nvp("Vector",
        boost::serialization::base_object<Vector>(*this));
   }
-
 };
+
+// Define GTSAM traits
+namespace traits {
+
+template<>
+struct is_manifold<LieVector> : public boost::true_type {
+};
+
+template<>
+struct dimension<LieVector> : public Dynamic {
+};
+
+}
+
 } // \namespace gtsam

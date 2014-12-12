@@ -131,6 +131,24 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void Values::insertFixed(Key j, const Vector& v, size_t n) {
+    switch (n) {
+    case 1: insert<Vector1>(j,v); break;
+    case 2: insert<Vector2>(j,v); break;
+    case 3: insert<Vector3>(j,v); break;
+    case 4: insert<Vector4>(j,v); break;
+    case 5: insert<Vector5>(j,v); break;
+    case 6: insert<Vector6>(j,v); break;
+    case 7: insert<Vector7>(j,v); break;
+    case 8: insert<Vector8>(j,v); break;
+    case 9: insert<Vector9>(j,v); break;
+    default:
+      throw runtime_error(
+          "Values::insert fixed size can only handle n in 1..9");
+    }
+  }
+
+  /* ************************************************************************* */
   void Values::insert(const Values& values) {
     for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
       Key key = key_value->key; // Non-const duplicate to deal with non-const insert argument
