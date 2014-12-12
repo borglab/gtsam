@@ -30,30 +30,57 @@
 using namespace std;
 using namespace gtsam;
 
-// Create a noise model for the TOA error
+// typedefs
+typedef Eigen::Matrix<double, 1, 1> Vector1;
+typedef Expression<double> Double_;
+typedef Expression<Point3> Point3_;
+typedef Expression<Event> Event_;
+
+// units
 static const double ms = 1e-3;
 static const double cm = 1e-2;
-typedef Eigen::Matrix<double, 1, 1> Vector1;
+
+// Create a noise model for the TOA error
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1, 0.5 * ms));
+
+// And for height prior
+static SharedNoiseModel heightModel(noiseModel::Isotropic::Sigma(1, 100 * cm));
 
 static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
 static const Point3 microphoneAt0;
 
-// A TOA factor factory
-static MakeBinaryFactor<double, Event, Point3> MakeFactor(&Event::toa, model);
+/**
+ * Factor graph that supports adding Expression Factors directly
+ */
+class ExpressionFactorGraph: public NonlinearFactorGraph {
 
-// A height prior factory
-static SharedNoiseModel heightModel(noiseModel::Isotropic::Sigma(1, 100*cm));
-static MakeUnaryFactor<double, Event> MakePrior(&Event::height, heightModel);
+public:
+
+  /// @name Adding Factors
+  /// @{
+
+  /**
+   * Add an Expression factor directly
+   * Which implements |h(x)-z|^2_R
+   */
+  template<typename T>
+  void addExpressionFactor(const Expression<T>& h, const T& z,
+      const SharedNoiseModel& R) {
+    push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
+  }
+
+  /// @}
+};
 
 //*****************************************************************************
 TEST( TOAFactor, NewWay ) {
   Key key = 12;
-  Expression<Event> eventExpression(key);
-  Expression<Point3> microphoneConstant(microphoneAt0); // constant expression
-  double z = 7;
-  ExpressionFactor<double> factor = MakeFactor(z, eventExpression, microphoneConstant);
+  Event_ eventExpression(key);
+  Point3_ microphoneConstant(microphoneAt0); // constant expression
+  double measurement = 7;
+  Double_ expression(&Event::toa, eventExpression, microphoneConstant);
+  ExpressionFactor<double> factor(model, measurement, expression);
 }
 
 //*****************************************************************************
@@ -67,7 +94,7 @@ TEST( TOAFactor, WholeEnchilada ) {
   microphones.push_back(Point3(0, 0, height));
   microphones.push_back(Point3(403 * cm, 0, height));
   microphones.push_back(Point3(403 * cm, 403 * cm, height));
-  microphones.push_back(Point3(0, 403 * cm, 2*height));
+  microphones.push_back(Point3(0, 403 * cm, 2 * height));
   EXPECT_LONGS_EQUAL(4, microphones.size());
 //  microphones.push_back(Point3(200 * cm, 200 * cm, height));
 
@@ -75,24 +102,25 @@ TEST( TOAFactor, WholeEnchilada ) {
   const double timeOfEvent = 0;
   Event groundTruthEvent(timeOfEvent, 245 * cm, 201.5 * cm, (212 - 45) * cm);
 
-  // Simulate measurements
+  // Simulate simulatedTOA
   size_t K = microphones.size();
-  vector<double> measurements(K);
+  vector<double> simulatedTOA(K);
   for (size_t i = 0; i < K; i++) {
-    measurements[i] = groundTruthEvent.toa(microphones[i]);
+    simulatedTOA[i] = groundTruthEvent.toa(microphones[i]);
     if (verbose) {
       cout << "mic" << i << " = " << microphones[i] << endl;
-      cout << "z" << i << " = " << measurements[i] / ms << endl;
+      cout << "z" << i << " = " << simulatedTOA[i] / ms << endl;
     }
   }
 
   // Now, estimate using non-linear optimization
-  NonlinearFactorGraph graph;
+  ExpressionFactorGraph graph;
   Key key = 12;
-  Expression<Event> eventExpression(key);
+  Event_ eventExpression(key);
   for (size_t i = 0; i < K; i++) {
-    Expression<Point3> microphoneConstant(microphones[i]); // constant expression
-    graph.add(MakeFactor(measurements[i], eventExpression, microphoneConstant));
+    Point3_ microphone_i(microphones[i]); // constant expression
+    Double_ predictTOA(&Event::toa, eventExpression, microphone_i);
+    graph.addExpressionFactor(predictTOA, simulatedTOA[i], model);
   }
 
   /// Print the graph
@@ -129,9 +157,9 @@ TEST( TOAFactor, RealExperiment1 ) {
 
   static const bool verbose = true;
 
-  // Create microphones
+  // Create constant expressions for microphones
   const double height = 0.5;
-  vector<Point3> microphones;
+  vector<Point3_> microphones;
   microphones.push_back(Point3(0, 0, height));
   microphones.push_back(Point3(403 * cm, 0, height));
   microphones.push_back(Point3(403 * cm, 403 * cm, height));
@@ -159,29 +187,33 @@ TEST( TOAFactor, RealExperiment1 ) {
   // Create unknowns and initial estimate
   Event nullEvent(3, 403 / 2 * cm, 403 / 2 * cm, (212 - 45) * cm);
   Values initialEstimate;
-  vector<Expression<Event> > eventExpressions;
+  vector<Event_> unknownEvents;
   for (size_t j = 0; j < 15; j++) {
     initialEstimate.insert(j, nullEvent);
-    eventExpressions.push_back(Expression<Event>(j));
+    unknownEvents.push_back(Event_(j));
   }
 
   // Print
   if (verbose)
     initialEstimate.print("Initial Estimate:\n");
 
-  // Create factor graph and initial estimate
-  NonlinearFactorGraph graph;
+  // Create factor graph with TOA factors
+  ExpressionFactorGraph graph;
   for (size_t i = 0; i < 4; i++) {
-    Expression<Point3> mic_(microphones[i]); // constant expression
-    for (size_t j = 0; j < 15; j++)
-      graph.add(MakeFactor(data[j][i], eventExpressions[j], mic_));
+    for (size_t j = 0; j < 15; j++) {
+      Double_ predictTOA_ij(&Event::toa, unknownEvents[j], microphones[i]);
+      graph.addExpressionFactor(predictTOA_ij, data[j][i], model);
+    }
   }
 
   // Add height priors
-  for (size_t j = 0; j < 15; j++)
-    graph.add(MakePrior((212 - 45) * cm, eventExpressions[j]));
+  const double heightPrior = (212 - 45) * cm;
+  for (size_t j = 0; j < 15; j++) {
+    Double_ height_j(&Event::height, unknownEvents[j]);
+    graph.addExpressionFactor(height_j, heightPrior, heightModel);
+  }
 
-    /// Print the graph
+  /// Print the graph
   if (verbose)
     GTSAM_PRINT(graph);
 
