@@ -82,14 +82,17 @@ Rot3 updatePreintegratedRot(const Rot3& deltaRij_old,
 // Auxiliary functions to test preintegrated Jacobians
 // delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
 /* ************************************************************************* */
+double accNoiseVar = 0.01;
+double omegaNoiseVar = 0.03;
+double intNoiseVar = 0.0001;
 ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias,
     const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs,
     const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0)  ){
-  ImuFactor::PreintegratedMeasurements result(bias, Matrix3::Identity(),
-      Matrix3::Identity(), Matrix3::Identity());
+  ImuFactor::PreintegratedMeasurements result(bias, accNoiseVar * Matrix3::Identity(),
+      omegaNoiseVar *Matrix3::Identity(), intNoiseVar * Matrix3::Identity());
 
   list<Vector3>::const_iterator itAcc = measuredAccs.begin();
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
@@ -613,8 +616,13 @@ TEST( ImuFactor, JacobianPreintegratedCovariancePropagation )
   EXPECT(assert_equal(Gexpected, Gactual));
 
   // Check covariance propagation
+  Matrix9 measurementCovariance;
+  measurementCovariance << intNoiseVar*I_3x3, Z_3x3,             Z_3x3,
+                           Z_3x3,             accNoiseVar*I_3x3, Z_3x3,
+                           Z_3x3,             Z_3x3,             omegaNoiseVar*I_3x3;
+
   Matrix newPreintCovarianceExpected = Factual * oldPreintCovariance * Factual.transpose() +
-      (1/newDeltaT) * Gactual * Gactual.transpose();
+      (1/newDeltaT) * Gactual * measurementCovariance * Gactual.transpose();
 
   Matrix newPreintCovarianceActual = preintegrated.preintMeasCov();
   EXPECT(assert_equal(newPreintCovarianceExpected, newPreintCovarianceActual));
