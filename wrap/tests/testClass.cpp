@@ -217,6 +217,28 @@ TEST( Class, TemplateSubstition ) {
 
 }
 
+TEST(Class, Template) {
+
+
+    using classic::space_p;
+
+    // Create type grammar that will place result in cls
+    Class cls;
+    Template t;
+    ClassGrammar g(cls, t);
+
+    string markup(
+        string("template<T = {Vector, Matrix}>"
+           " virtual class PriorFactor : gtsam::NoiseModelFactor {"
+           "   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel); "
+           "   T prior() const; "
+           "  void serialize() const; "
+           "};" ));
+
+    EXPECT(parse(markup.c_str(), g, space_p).full);
+
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
