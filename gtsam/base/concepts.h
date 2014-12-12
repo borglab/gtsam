@@ -16,6 +16,9 @@
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 
+//FIXME temporary until all conflicts with namespace traits resolved
+#define traits traits_foo
+
 namespace gtsam {
 
 template <typename T> struct traits {};
@@ -35,7 +38,9 @@ struct vector_space_tag: public lie_group_tag {};
 struct multiplicative_group_tag {};
 struct additive_group_tag {};
 
-template<typename Transformation>
+// a fictitious example
+class Transformation;
+template<>
 struct traits<Transformation> {
 
   // Typedefs required by all manifold types.
@@ -113,8 +118,8 @@ struct traits<Transformation> {
 template<typename T>
 BOOST_CONCEPT_REQUIRES(((Testable<traits<T> >)),(bool)) //
 check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
-  traits<T>::TangentVector v0 = traits<T>::Local(a,a);
-  traits<T>::TangentVector v = traits<T>::Local(a,b);
+  typename traits<T>::TangentVector v0 = traits<T>::Local(a,a);
+  typename traits<T>::TangentVector v = traits<T>::Local(a,b);
   T c = traits<T>::Retract(a,v);
   return v0.norm() < tol && traits<T>::Equals(b,c,tol);
 }
@@ -174,7 +179,6 @@ class IsGroup {
 public:
   typedef typename traits<G>::structure_category structure_category_tag;
   typedef typename traits<G>::group_flavor flavor_tag;
-  static const size_t dim = traits<G>::dimension;
   //typedef typename traits<G>::identity::value_type identity_value_type;
 
   BOOST_CONCEPT_USAGE(IsGroup) {
@@ -216,7 +220,7 @@ check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
 
 
 #define GTSAM_ADDITIVE_GROUP(GROUP) \
-    typedef additive_gropu_tag group_flavor; \
+    typedef additive_group_tag group_flavor; \
     static GROUP Compose(const GROUP &g, const GROUP & h) { return g + h;} \
     static GROUP Between(const GROUP &g, const GROUP & h) { return h - g;} \
     static GROUP Inverse(const GROUP &g) { return -g;}
@@ -259,7 +263,7 @@ public:
 private:
   LG g, h;
   TangentVector v;
-  OptionalJacobian Hg, Hh;
+  ChartJacobian Hg, Hh;
 };
 
 

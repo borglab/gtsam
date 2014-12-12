@@ -17,7 +17,6 @@
 
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/Matrix.h>
-#include <Geometry/Quaternion.h>
 
 #define QUATERNION_TEMPLATE typename _Scalar, int _Options
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
@@ -37,7 +36,7 @@ struct traits<QUATERNION_TYPE> {
   typedef Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> TangentVector;
   typedef OptionalJacobian<3, 3> ChartJacobian;
 
-  static Q Compose(const Q &g, const Q & h, ChartJacobian Hg=NULL, ChartJacobian Hh=NULL) {
+  static Q Compose(const Q &g, const Q & h, ChartJacobian Hg=boost::none, ChartJacobian Hh=boost::none) {
     if (Hg) {
       //TODO : check Jacobian consistent with chart ( h.toRotationMatrix().transpose() ? )
       *Hg = h.toRotationMatrix().transpose();
@@ -48,7 +47,7 @@ struct traits<QUATERNION_TYPE> {
     }
     return g * h;
   }
-  static Q Between(const Q &g, const Q & h, ChartJacobian Hg=NULL, ChartJacobian Hh=NULL) {
+  static Q Between(const Q &g, const Q & h, ChartJacobian Hg=boost::none, ChartJacobian Hh=boost::none) {
     Q d = g.inverse() * h;
     if (Hg) {
         //TODO : check Jacobian consistent with chart
@@ -60,7 +59,7 @@ struct traits<QUATERNION_TYPE> {
       }
       return d;
   }
-  static Q Inverse(const Q &g, ChartJacobian H=NULL) {
+  static Q Inverse(const Q &g, ChartJacobian H=boost::none) {
       if (H) {
         //TODO : check Jacobian consistent with chart
         *H = -g.toRotationMatrix();
@@ -70,7 +69,7 @@ struct traits<QUATERNION_TYPE> {
 
   /// Exponential map, simply be converting omega to axis/angle representation
   // TODO: implement Jacobian
-  static Q Expmap(const Eigen::Ref<const TangentVector >& omega, ChartJacobian H=NULL) {
+  static Q Expmap(const Eigen::Ref<const TangentVector >& omega, ChartJacobian H=boost::none) {
     if (omega.isZero())
       return Q::Identity();
     else {
@@ -81,7 +80,7 @@ struct traits<QUATERNION_TYPE> {
 
   /// We use our own Logmap, as there is a slight bug in Eigen
   // TODO: implement Jacobian
-  static TangentVector Logmap(const Q& q, ChartJacobian H=NULL) {
+  static TangentVector Logmap(const Q& q, ChartJacobian H=boost::none) {
     using std::acos;
     using std::sqrt;
     static const double twoPi = 2.0 * M_PI,
@@ -109,7 +108,7 @@ struct traits<QUATERNION_TYPE> {
     }
   }
 
-  static TangentVector Local(const Q& origin, const Q& other, ChartJacobian Horigin=NULL, ChartJacobian Hother=NULL) {
+  static TangentVector Local(const Q& origin, const Q& other, ChartJacobian Horigin=boost::none, ChartJacobian Hother=boost::none) {
     return Logmap(Between(origin,other,Horigin,Hother));
     // TODO: incorporate Jacobian of Logmap
   }

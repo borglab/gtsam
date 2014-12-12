@@ -64,16 +64,14 @@ public:
 
 #define CYCLIC_TEMPLATE size_t N
 #define CYCLIC_TYPE Cyclic<N>
-GTSAM_GROUP_IDENTITY(CYCLIC_TEMPLATE, CYCLIC_TYPE)
-GTSAM_ADDITIVE_GROUP(CYCLIC_TEMPLATE, CYCLIC_TYPE)
 
-/// Define cyclic group to be a model of the Group concept
-namespace traits {
-template<size_t N>
-struct structure_category<Cyclic<N> > {
-  typedef group_tag type;
+/// Define cyclic group traits to be a model of the Group concept
+template <CYCLIC_TEMPLATE>
+struct traits<CYCLIC_TYPE > {
+  typedef group_tag structure_category;
+  GTSAM_ADDITIVE_GROUP(CYCLIC_TYPE);
+  static const CYCLIC_TYPE identity = CYCLIC_TYPE::Identity();
 };
-}
 
 } // \namespace gtsam
 
