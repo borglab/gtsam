@@ -44,54 +44,54 @@ SO3 Rodrigues(const double& theta, const Vector3& axis) {
   return R;
 }
 
-
-namespace lie_group {
-/// simply convert omega to axis/angle representation
-template <>
-SO3 expmap<SO3>(const Eigen::Ref<const Vector3>& omega) {
-  if (omega.isZero())
-    return SO3::Identity();
-  else {
-    double angle = omega.norm();
-    return Rodrigues(angle, omega / angle);
-  }
-}
-
-template <>
-Vector3 logmap<SO3>(const SO3& R) {
-
-  // note switch to base 1
-  const double& R11 = R(0, 0), R12 = R(0, 1), R13 = R(0, 2);
-  const double& R21 = R(1, 0), R22 = R(1, 1), R23 = R(1, 2);
-  const double& R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
-
-  // Get trace(R)
-  double tr = R.trace();
-
-  // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
-  // we do something special
-  if (std::abs(tr + 1.0) < 1e-10) {
-    if (std::abs(R33 + 1.0) > 1e-10)
-      return (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
-    else if (std::abs(R22 + 1.0) > 1e-10)
-      return (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
-    else
-      // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
-      return (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
-  } else {
-    double magnitude;
-    double tr_3 = tr - 3.0; // always negative
-    if (tr_3 < -1e-7) {
-      double theta = acos((tr - 1.0) / 2.0);
-      magnitude = theta / (2.0 * sin(theta));
-    } else {
-      // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
-      // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
-      magnitude = 0.5 - tr_3 * tr_3 / 12.0;
-    }
-    return magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
-  }
-}
-} // end namespace lie_group
+//
+//namespace lie_group {
+///// simply convert omega to axis/angle representation
+//template <>
+//SO3 expmap<SO3>(const Eigen::Ref<const Vector3>& omega) {
+//  if (omega.isZero())
+//    return SO3::Identity();
+//  else {
+//    double angle = omega.norm();
+//    return Rodrigues(angle, omega / angle);
+//  }
+//}
+//
+//template <>
+//Vector3 logmap<SO3>(const SO3& R) {
+//
+//  // note switch to base 1
+//  const double& R11 = R(0, 0), R12 = R(0, 1), R13 = R(0, 2);
+//  const double& R21 = R(1, 0), R22 = R(1, 1), R23 = R(1, 2);
+//  const double& R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
+//
+//  // Get trace(R)
+//  double tr = R.trace();
+//
+//  // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
+//  // we do something special
+//  if (std::abs(tr + 1.0) < 1e-10) {
+//    if (std::abs(R33 + 1.0) > 1e-10)
+//      return (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
+//    else if (std::abs(R22 + 1.0) > 1e-10)
+//      return (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
+//    else
+//      // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
+//      return (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
+//  } else {
+//    double magnitude;
+//    double tr_3 = tr - 3.0; // always negative
+//    if (tr_3 < -1e-7) {
+//      double theta = acos((tr - 1.0) / 2.0);
+//      magnitude = theta / (2.0 * sin(theta));
+//    } else {
+//      // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
+//      // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
+//      magnitude = 0.5 - tr_3 * tr_3 / 12.0;
+//    }
+//    return magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
+//  }
+//}
+//} // end namespace lie_group
 } // end namespace gtsam
 

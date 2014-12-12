@@ -66,6 +66,8 @@ namespace gtsam {
 #endif
 
   public:
+    /// The intrinsic dimension of this manifold.
+    enum { dimension = 3 };
 
     /// @name Constructors and named constructors
     /// @{
@@ -470,20 +472,6 @@ namespace gtsam {
    */
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 
-  // Define GTSAM traits
-  namespace traits {
-
   template<>
-  struct GTSAM_EXPORT is_group<Rot3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT is_manifold<Rot3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT dimension<Rot3> : public boost::integral_constant<int, 3>{
-  };
-
-  }
+  struct traits_x<Rot3> : public internal::LieGroup<Rot3> {};
 }

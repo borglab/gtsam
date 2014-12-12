@@ -169,7 +169,9 @@ struct LieGroup {
     return m.inverse(H);
   }
 
-  static const ManifoldType identity = ManifoldType::Identity();
+  static ManifoldType Identity() {
+    return ManifoldType::identity();
+  }
 
   static TangentVector Logmap(const ManifoldType& m) {
     return ManifoldType::Logmap(m);
