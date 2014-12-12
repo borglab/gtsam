@@ -42,9 +42,6 @@ static const double cm = 1e-2;
 // Create a noise model for the TOA error
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1, 0.5 * ms));
 
-// And for height prior
-static SharedNoiseModel heightModel(noiseModel::Isotropic::Sigma(1, 100 * cm));
-
 static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
 static const Point3 microphoneAt0;
@@ -127,90 +124,6 @@ TEST( TOAFactor, WholeEnchilada ) {
 
   EXPECT(assert_equal(groundTruthEvent, result.at<Event>(key), 1e-6));
 }
-//*****************************************************************************
-/// Test real data
-TEST( TOAFactor, RealExperiment1 ) {
-
-  static const bool verbose = true;
-
-  // Create constant expressions for microphones
-  const double height = 0.5;
-  vector<Point3_> microphones;
-  microphones.push_back(Point3(0, 0, height));
-  microphones.push_back(Point3(403 * cm, 0, height));
-  microphones.push_back(Point3(403 * cm, 403 * cm, height));
-  microphones.push_back(Point3(0, 403 * cm, height));
-  EXPECT_LONGS_EQUAL(4, microphones.size());
-
-  vector<Vector4> data(15);
-  size_t i = 0;
-  data[i++] << 1.2648, 1.2648, 1.2677, 1.2643;
-  data[i++] << 1.7329, 1.7347, 1.7354, 1.7338;
-  data[i++] << 2.2475, 2.2551, 2.2538, 2.2474;
-  data[i++] << 2.6945, 2.696, 2.6958, 2.694;
-  data[i++] << 3.1486, 3.152, 3.1513, 3.1501;
-  data[i++] << 3.6145, 3.611, 3.6076, 3.6067;
-  data[i++] << 4.1003, 4.1004, 4.099, 4.0972;
-  data[i++] << 4.5732, 4.568, 4.5667, 4.5722;
-  data[i++] << 5.0482, 5.0458, 5.0443, 5.0453;
-  data[i++] << 5.5311, 5.5256, 5.5254, 5.5305;
-  data[i++] << 5.9908, 5.9856, 5.9853, 5.9905;
-  data[i++] << 6.4575, 6.4524, 6.4527, 6.4579;
-  data[i++] << 6.8983, 6.8971, 6.8984, 6.9016;
-  data[i++] << 7.3581, 7.3524, 7.3538, 7.3588;
-  data[i++] << 7.8286, 7.8286, 7.8302, 7.8353;
-
-  // Create unknowns and initial estimate
-  Event nullEvent(3, 403 / 2 * cm, 403 / 2 * cm, (212 - 45) * cm);
-  Values initialEstimate;
-  vector<Event_> unknownEvents;
-  for (size_t j = 0; j < 15; j++) {
-    initialEstimate.insert(j, nullEvent);
-    unknownEvents.push_back(Event_(j));
-  }
-
-  // Print
-  if (verbose)
-    initialEstimate.print("Initial Estimate:\n");
-
-  // Create factor graph with TOA factors
-  ExpressionFactorGraph graph;
-  for (size_t i = 0; i < 4; i++) {
-    for (size_t j = 0; j < 15; j++) {
-      Double_ h_ij(&Event::toa, unknownEvents[j], microphones[i]);
-      graph.addExpressionFactor(h_ij, data[j][i], model);
-    }
-  }
-
-  // Add height priors
-  const double heightPrior = (212 - 45) * cm;
-  for (size_t j = 0; j < 15; j++) {
-    Double_ height_j(&Event::height, unknownEvents[j]);
-    graph.addExpressionFactor(height_j, heightPrior, heightModel);
-  }
-
-  /// Print the graph
-  if (verbose)
-    GTSAM_PRINT(graph);
-
-  // Optimize using Levenberg-Marquardt optimization.
-  LevenbergMarquardtParams params;
-  params.setAbsoluteErrorTol(1e-10);
-  if (verbose)
-    params.setVerbosity("ERROR");
-  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, params);
-  Values result = optimizer.optimize();
-  if (verbose)
-    for (size_t j = 0; j < 15; j++) {
-      Event event = result.at<Event>(j);
-      double t = event.time();
-      Point3 p = event.location();
-      cout
-          << boost::format("t(%1%) = %2%;\tlocation(%1%,:) = [%3%, %4%, %5%];")
-              % (j + 1) % t % p.x() % p.y() % p.z() << endl;
-    }
-}
-
 //*****************************************************************************
 int main() {
   TestResult tr;
