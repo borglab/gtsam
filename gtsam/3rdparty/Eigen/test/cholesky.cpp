@@ -68,6 +68,7 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
   Index cols = m.cols();
 
   typedef typename MatrixType::Scalar Scalar;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> SquareMatrixType;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
 
@@ -179,6 +180,57 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     // restore
     if(sign == -1)
       symm = -symm;
+
+    // check matrices coming from linear constraints with Lagrange multipliers
+    if(rows>=3)
+    {
+      SquareMatrixType A = symm;
+      int c = internal::random<int>(0,rows-2);
+      A.bottomRightCorner(c,c).setZero();
+      // Make sure a solution exists:
+      vecX.setRandom();
+      vecB = A * vecX;
+      vecX.setZero();
+      ldltlo.compute(A);
+      VERIFY_IS_APPROX(A, ldltlo.reconstructedMatrix());
+      vecX = ldltlo.solve(vecB);
+      VERIFY_IS_APPROX(A * vecX, vecB);
+    }
+    
+    // check non-full rank matrices
+    if(rows>=3)
+    {
+      int r = internal::random<int>(1,rows-1);
+      Matrix<Scalar,Dynamic,Dynamic> a = Matrix<Scalar,Dynamic,Dynamic>::Random(rows,r);
+      SquareMatrixType A = a * a.adjoint();
+      // Make sure a solution exists:
+      vecX.setRandom();
+      vecB = A * vecX;
+      vecX.setZero();
+      ldltlo.compute(A);
+      VERIFY_IS_APPROX(A, ldltlo.reconstructedMatrix());
+      vecX = ldltlo.solve(vecB);
+      VERIFY_IS_APPROX(A * vecX, vecB);
+    }
+    
+    // check matrices with a wide spectrum
+    if(rows>=3)
+    {
+      RealScalar s = (std::min)(16,std::numeric_limits<RealScalar>::max_exponent10/8);
+      Matrix<Scalar,Dynamic,Dynamic> a = Matrix<Scalar,Dynamic,Dynamic>::Random(rows,rows);
+      Matrix<RealScalar,Dynamic,1> d =  Matrix<RealScalar,Dynamic,1>::Random(rows);
+      for(int k=0; k<rows; ++k)
+        d(k) = d(k)*std::pow(RealScalar(10),internal::random<RealScalar>(-s,s));
+      SquareMatrixType A = a * d.asDiagonal() * a.adjoint();
+      // Make sure a solution exists:
+      vecX.setRandom();
+      vecB = A * vecX;
+      vecX.setZero();
+      ldltlo.compute(A);
+      VERIFY_IS_APPROX(A, ldltlo.reconstructedMatrix());
+      vecX = ldltlo.solve(vecB);
+      VERIFY_IS_APPROX(A * vecX, vecB);
+    }
   }
 
   // update/downdate
