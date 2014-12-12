@@ -22,7 +22,7 @@
 
 namespace gtsam {
 
-typedef Eigen::Matrix<double,1,Eigen::Dynamic> RowVector;
+typedef Eigen::RowVectorXd RowVector;
 
 /**
  * This class defines Linear constraints by inherit Base
