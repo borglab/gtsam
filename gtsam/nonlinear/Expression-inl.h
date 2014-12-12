@@ -251,8 +251,10 @@ public:
   /// Streaming
   GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os,
       const ExpressionNode& node) {
-    os << "Expression of type " << typeid(int).name() << std::endl;
-    if (node.traceSize_>0) os << node.traceSize_ << std::endl;
+    os << "Expression of type " << typeid(T).name();
+    if (node.traceSize_>0) os << ", trace size = " << node.traceSize_;
+    os << "\n";
+    return os;
   }
 
   /// Return keys that play in this expression as a set

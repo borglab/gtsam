@@ -54,7 +54,7 @@ public:
 
   /// Print
   void print(const std::string& s) const {
-    std::cout << s << root_ << std::endl;
+    std::cout << s << *root_ << std::endl;
   }
 
   // Construct a constant expression
