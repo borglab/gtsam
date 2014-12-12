@@ -41,7 +41,7 @@ template<typename T>
 struct dimension;
 }
 template <typename T> struct traits_x {
-  // todo: remove anything in here ASAP.
+  // TODO: remove anything in here ASAP.
   // This is just here during development to avoid compilation
   // errors while implmenting traits for everything.
   enum { dimension = traits::dimension<T>::value };

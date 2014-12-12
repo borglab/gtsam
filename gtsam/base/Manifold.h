@@ -70,7 +70,8 @@ struct is_manifold: public boost::false_type {
 // defaults to dynamic, TODO makes sense ?
 typedef boost::integral_constant<int, Eigen::Dynamic> Dynamic;
 template<typename T>
-struct dimension: public Dynamic {
+//struct dimension: public Dynamic {
+struct dimension : public boost::integral_constant<int, 1> {  // just temporary fix to minimize compiler errors while refactoring
 };
 
 /**
