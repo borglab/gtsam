@@ -42,8 +42,6 @@ public:
 
   protected:
     Vector3 biasHat_; ///< Acceleration and angular rate bias values used during preintegration. Note that we won't be using the accelerometer
-    Matrix3 measurementCovariance_; ///< (Raw measurements uncertainty) Covariance of the vector [measuredOmega] in R^(3X3)
-
     Matrix3 preintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
 
   public:
@@ -59,9 +57,6 @@ public:
     PreintegratedMeasurements(const Vector3& bias,
         const Matrix3& measuredOmegaCovariance);
 
-    const Matrix3& measurementCovariance() const {
-      return measurementCovariance_;
-    }
     Vector3 biasHat() const {
       return biasHat_;
     }
@@ -105,7 +100,6 @@ public:
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
       ar & BOOST_SERIALIZATION_NVP(biasHat_);
-      ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
     }
   };
 

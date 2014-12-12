@@ -35,26 +35,22 @@ ImuFactor::PreintegratedMeasurements::PreintegratedMeasurements(
     const imuBias::ConstantBias& bias, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance, const Matrix3& integrationErrorCovariance,
     const bool use2ndOrderIntegration) :
-        PreintegrationBase(bias, use2ndOrderIntegration)
+            PreintegrationBase(bias,
+            measuredAccCovariance, measuredOmegaCovariance,
+            integrationErrorCovariance, use2ndOrderIntegration)
 {
-  measurementCovariance_.setZero();
-  measurementCovariance_.block<3,3>(0,0) = integrationErrorCovariance;
-  measurementCovariance_.block<3,3>(3,3) = measuredAccCovariance;
-  measurementCovariance_.block<3,3>(6,6) = measuredOmegaCovariance;
   preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
 void ImuFactor::PreintegratedMeasurements::print(const string& s) const {
   PreintegrationBase::print(s);
-  cout << "  measurementCovariance = \n [ " << measurementCovariance_ << " ]" << endl;
   cout << "  preintMeasCov = \n [ " << preintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool ImuFactor::PreintegratedMeasurements::equals(const PreintegratedMeasurements& expected, double tol) const {
-  return equal_with_abs_tol(measurementCovariance_, expected.measurementCovariance_, tol)
-  && equal_with_abs_tol(preintMeasCov_, expected.preintMeasCov_, tol)
+  return equal_with_abs_tol(preintMeasCov_, expected.preintMeasCov_, tol)
   && PreintegrationBase::equals(expected, tol);
 }
 
@@ -94,9 +90,9 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // NOTE 2: the computation of G * (1/deltaT) * measurementCovariance * G.transpose() is done blockwise,
   // as G and measurementCovariance are blockdiagonal matrices
   preintMeasCov_ = F * preintMeasCov_ * F.transpose();
-  preintMeasCov_.block<3,3>(0,0) += measurementCovariance_.block<3,3>(0,0) * deltaT;
-  preintMeasCov_.block<3,3>(3,3) += R_i * measurementCovariance_.block<3,3>(3,3) * R_i.transpose() * deltaT;
-  preintMeasCov_.block<3,3>(6,6) += D_Rincr_integratedOmega * measurementCovariance_.block<3,3>(6,6) * D_Rincr_integratedOmega.transpose() * deltaT;
+  preintMeasCov_.block<3,3>(0,0) += integrationCovariance() * deltaT;
+  preintMeasCov_.block<3,3>(3,3) += R_i * accelerometerCovariance() * R_i.transpose() * deltaT;
+  preintMeasCov_.block<3,3>(6,6) += D_Rincr_integratedOmega * gyroscopeCovariance() * D_Rincr_integratedOmega.transpose() * deltaT;
 
   // F_test and G_test are given as output for testing purposes and are not needed by the factor
   if(F_test){ // This in only for testing

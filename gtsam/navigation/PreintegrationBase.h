@@ -59,6 +59,10 @@ class PreintegrationBase : public PreintegratedRotation {
   Matrix3 delVdelBiasAcc_;   ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
   Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
 
+  Matrix3 accelerometerCovariance_; ///< continuous-time "Covariance" of accelerometer measurements
+  Matrix3 integrationCovariance_;   ///< continuous-time "Covariance" describing integration uncertainty
+  /// (to compensate errors in Euler integration)
+
 public:
 
   /**
@@ -67,11 +71,16 @@ public:
    *  @param use2ndOrderIntegration     Controls the order of integration
    *  (if false: p(t+1) = p(t) + v(t) deltaT ; if true: p(t+1) = p(t) + v(t) deltaT + 0.5 * acc(t) deltaT^2)
    */
-  PreintegrationBase(const imuBias::ConstantBias& bias, const bool use2ndOrderIntegration) :
+  PreintegrationBase(const imuBias::ConstantBias& bias,
+      const Matrix3&  measuredAccCovariance, const Matrix3& measuredOmegaCovariance,
+      const Matrix3&integrationErrorCovariance, const bool use2ndOrderIntegration) :
+        PreintegratedRotation(measuredOmegaCovariance),
     biasHat_(bias), use2ndOrderIntegration_(use2ndOrderIntegration),
     deltaPij_(Vector3::Zero()), deltaVij_(Vector3::Zero()),
     delPdelBiasAcc_(Z_3x3), delPdelBiasOmega_(Z_3x3),
-    delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3) {}
+    delVdelBiasAcc_(Z_3x3), delVdelBiasOmega_(Z_3x3),
+    accelerometerCovariance_(measuredAccCovariance),
+    integrationCovariance_(integrationErrorCovariance) {}
 
   /// methods to access class variables
   const Vector3& deltaPij() const {return deltaPij_;}
@@ -83,9 +92,14 @@ public:
   const Matrix3& delVdelBiasAcc() const { return delVdelBiasAcc_;}
   const Matrix3& delVdelBiasOmega() const { return delVdelBiasOmega_;}
 
+  const Matrix3& accelerometerCovariance() const { return accelerometerCovariance_;}
+  const Matrix3& integrationCovariance() const { return integrationCovariance_;}
+
   /// Needed for testable
   void print(const std::string& s) const {
     PreintegratedRotation::print(s);
+    std::cout << "  accelerometerCovariance [ " << accelerometerCovariance_ << " ]" << std::endl;
+    std::cout << "  integrationCovariance [ " << integrationCovariance_ << " ]" << std::endl;
     std::cout << "  deltaPij [ " << deltaPij_.transpose() << " ]" << std::endl;
     std::cout << "  deltaVij [ " << deltaVij_.transpose() << " ]" << std::endl;
     biasHat_.print("  biasHat");
@@ -100,7 +114,9 @@ public:
     && equal_with_abs_tol(delPdelBiasAcc_, expected.delPdelBiasAcc_, tol)
     && equal_with_abs_tol(delPdelBiasOmega_, expected.delPdelBiasOmega_, tol)
     && equal_with_abs_tol(delVdelBiasAcc_, expected.delVdelBiasAcc_, tol)
-    && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_, tol);
+    && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_, tol)
+    && equal_with_abs_tol(accelerometerCovariance_, expected.accelerometerCovariance_, tol)
+    && equal_with_abs_tol(integrationCovariance_, expected.integrationCovariance_, tol);
   }
 
   /// Re-initialize PreintegratedMeasurements

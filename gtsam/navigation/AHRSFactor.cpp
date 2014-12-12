@@ -29,15 +29,15 @@ namespace gtsam {
 //------------------------------------------------------------------------------
 AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements(
     const Vector3& bias, const Matrix3& measuredOmegaCovariance) :
-    biasHat_(bias) {
-  measurementCovariance_ << measuredOmegaCovariance;
+    PreintegratedRotation(measuredOmegaCovariance), biasHat_(bias)
+{
   preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
 AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements() :
-    biasHat_(Vector3()) {
-  measurementCovariance_.setZero();
+    PreintegratedRotation(I_3x3), biasHat_(Vector3())
+{
   preintMeasCov_.setZero();
 }
 
@@ -45,7 +45,6 @@ AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements() :
 void AHRSFactor::PreintegratedMeasurements::print(const string& s) const {
   PreintegratedRotation::print(s);
   cout << "biasHat [" << biasHat_.transpose() << "]" << endl;
-  cout << " measurementCovariance [" << measurementCovariance_ << " ]" << endl;
   cout << " PreintMeasCov [ " << preintMeasCov_ << " ]" << endl;
 }
 
@@ -53,9 +52,7 @@ void AHRSFactor::PreintegratedMeasurements::print(const string& s) const {
 bool AHRSFactor::PreintegratedMeasurements::equals(
     const PreintegratedMeasurements& other, double tol) const {
   return PreintegratedRotation::equals(other, tol)
-      && equal_with_abs_tol(biasHat_, other.biasHat_, tol)
-      && equal_with_abs_tol(measurementCovariance_,
-          other.measurementCovariance_, tol);
+      && equal_with_abs_tol(biasHat_, other.biasHat_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -96,7 +93,7 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   // first order uncertainty propagation
   // the deltaT allows to pass from continuous time noise to discrete time noise
   preintMeasCov_ = Fr * preintMeasCov_ * Fr.transpose()
-      + measurementCovariance_ * deltaT;
+      + gyroscopeCovariance() * deltaT;
 }
 
 //------------------------------------------------------------------------------

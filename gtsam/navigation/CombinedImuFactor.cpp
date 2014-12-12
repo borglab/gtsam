@@ -36,28 +36,28 @@ CombinedImuFactor::CombinedPreintegratedMeasurements::CombinedPreintegratedMeasu
     const Matrix3& measuredOmegaCovariance, const Matrix3& integrationErrorCovariance,
     const Matrix3& biasAccCovariance, const Matrix3& biasOmegaCovariance,
     const Matrix& biasAccOmegaInit, const bool use2ndOrderIntegration) :
-        PreintegrationBase(bias, use2ndOrderIntegration)
+        PreintegrationBase(bias, measuredAccCovariance, measuredOmegaCovariance,
+        integrationErrorCovariance, use2ndOrderIntegration),
+        biasAccCovariance_(biasAccCovariance), biasOmegaCovariance_(biasOmegaCovariance),
+        biasAccOmegaInit_(biasAccOmegaInit)
 {
-  measurementCovariance_.setZero();
-  measurementCovariance_.block<3,3>(0,0) = integrationErrorCovariance;
-  measurementCovariance_.block<3,3>(3,3) = measuredAccCovariance;
-  measurementCovariance_.block<3,3>(6,6) = measuredOmegaCovariance;
-  measurementCovariance_.block<3,3>(9,9) = biasAccCovariance;
-  measurementCovariance_.block<3,3>(12,12) = biasOmegaCovariance;
-  measurementCovariance_.block<6,6>(15,15) = biasAccOmegaInit;
   preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
 void CombinedImuFactor::CombinedPreintegratedMeasurements::print(const string& s) const{
   PreintegrationBase::print(s);
-  cout << "  measurementCovariance [ " << measurementCovariance_ << " ]" << endl;
+  cout << "  biasAccCovariance [ " << biasAccCovariance_ << " ]" << endl;
+  cout << "  biasOmegaCovariance [ " << biasOmegaCovariance_ << " ]" << endl;
+  cout << "  biasAccOmegaInit [ " << biasAccOmegaInit_ << " ]" << endl;
   cout << "  preintMeasCov [ " << preintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool CombinedImuFactor::CombinedPreintegratedMeasurements::equals(const CombinedPreintegratedMeasurements& expected, double tol) const{
-  return equal_with_abs_tol(measurementCovariance_, expected.measurementCovariance_, tol)
+  return equal_with_abs_tol(biasAccCovariance_, expected.biasAccCovariance_, tol)
+      && equal_with_abs_tol(biasOmegaCovariance_, expected.biasOmegaCovariance_, tol)
+      &&equal_with_abs_tol(biasAccOmegaInit_, expected.biasAccOmegaInit_, tol)
       && equal_with_abs_tol(preintMeasCov_, expected.preintMeasCov_, tol)
       && PreintegrationBase::equals(expected, tol);
 }
@@ -120,17 +120,17 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   Matrix G_measCov_Gt = Matrix::Zero(15,15);
 
   // BLOCK DIAGONAL TERMS
-  G_measCov_Gt.block<3,3>(0,0) = deltaT * measurementCovariance_.block<3,3>(0,0);
+  G_measCov_Gt.block<3,3>(0,0) = deltaT * integrationCovariance();
   G_measCov_Gt.block<3,3>(3,3) = (1/deltaT) * (H_vel_biasacc)  *
-      (measurementCovariance_.block<3,3>(3,3)  +  measurementCovariance_.block<3,3>(15,15) ) *
+      (accelerometerCovariance()  +  biasAccOmegaInit_.block<3,3>(0,0) ) *
       (H_vel_biasacc.transpose());
   G_measCov_Gt.block<3,3>(6,6) = (1/deltaT) *  (H_angles_biasomega) *
-      (measurementCovariance_.block<3,3>(6,6)  +  measurementCovariance_.block<3,3>(18,18) ) *
+      (gyroscopeCovariance()  +  biasAccOmegaInit_.block<3,3>(3,3) ) *
       (H_angles_biasomega.transpose());
-  G_measCov_Gt.block<3,3>(9,9) = (1/deltaT) * measurementCovariance_.block<3,3>(9,9);
-  G_measCov_Gt.block<3,3>(12,12) = (1/deltaT) * measurementCovariance_.block<3,3>(12,12);
+  G_measCov_Gt.block<3,3>(9,9) = (1/deltaT) * biasAccCovariance_;
+  G_measCov_Gt.block<3,3>(12,12) = (1/deltaT) * biasOmegaCovariance_;
   // OFF BLOCK DIAGONAL TERMS
-  Matrix3 block23 = H_vel_biasacc * measurementCovariance_.block<3,3>(18,15) *  H_angles_biasomega.transpose();
+  Matrix3 block23 = H_vel_biasacc * biasAccOmegaInit_.block<3,3>(3,0) *  H_angles_biasomega.transpose();
   G_measCov_Gt.block<3,3>(3,6) = block23;
   G_measCov_Gt.block<3,3>(6,3) = block23.transpose();
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;

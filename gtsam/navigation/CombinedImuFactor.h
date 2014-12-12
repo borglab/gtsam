@@ -82,8 +82,9 @@ public:
 
   protected:
 
-    Eigen::Matrix<double,21,21> measurementCovariance_; ///< (Raw measurements uncertainty) Covariance of the vector
-    ///< [integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
+    Matrix3 biasAccCovariance_;   ///< continuous-time "Covariance" describing accelerometer bias random walk
+    Matrix3 biasOmegaCovariance_; ///< continuous-time "Covariance" describing gyroscope bias random walk
+    Matrix6 biasAccOmegaInit_;    ///< covariance of bias used for pre-integration
 
     Eigen::Matrix<double,15,15> preintMeasCov_; ///< Covariance matrix of the preintegrated measurements
     ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION BiasAcc BiasOmega]
@@ -130,7 +131,6 @@ public:
         boost::optional<Matrix&> F_test = boost::none, boost::optional<Matrix&> G_test = boost::none);
 
     /// methods to access class variables
-    Matrix measurementCovariance() const {return measurementCovariance_;}
     Matrix preintMeasCov() const { return preintMeasCov_;}
 
   private:
@@ -140,7 +140,6 @@ public:
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
-      ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
       ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
     }
   };

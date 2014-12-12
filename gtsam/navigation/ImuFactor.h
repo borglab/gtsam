@@ -75,9 +75,6 @@ public:
 
   protected:
 
-    Eigen::Matrix<double,9,9> measurementCovariance_; ///< (continuous-time uncertainty) "Covariance" of
-    ///< the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
-
     Eigen::Matrix<double,9,9> preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
     ///< (first-order propagation from *measurementCovariance*).
 
@@ -118,7 +115,6 @@ public:
         OptionalJacobian<9, 9> Fout = boost::none, OptionalJacobian<9, 9> Gout = boost::none);
 
     /// methods to access class variables
-    Matrix measurementCovariance() const {return measurementCovariance_;}
     Matrix preintMeasCov() const { return preintMeasCov_;}
 
   private:
@@ -128,7 +124,6 @@ public:
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
-      ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
       ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
     }
   };

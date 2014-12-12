@@ -2417,7 +2417,6 @@ class ImuFactorPreintegratedMeasurements {
   Matrix delVdelBiasOmega() const;
   Matrix delRdelBiasOmega() const;
   Matrix preintMeasCov() const;
-  Matrix measurementCovariance() const;
 
   // Standard Interface
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT);
@@ -2473,7 +2472,6 @@ class CombinedImuFactorPreintegratedMeasurements {
   Matrix delVdelBiasOmega() const;
   Matrix delRdelBiasOmega() const;
   Matrix preintMeasCov() const;
-  Matrix measurementCovariance() const;
 
   // Standard Interface
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT);
@@ -2501,7 +2499,6 @@ class AHRSFactorPreintegratedMeasurements {
   bool equals(const gtsam::AHRSFactorPreintegratedMeasurements& expected, double tol);
 
   // get Data
-  Matrix measurementCovariance() const;
   Matrix deltaRij() const;
   double deltaTij() const;
   Vector biasHat() const;

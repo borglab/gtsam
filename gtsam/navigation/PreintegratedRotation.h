@@ -37,33 +37,39 @@ class PreintegratedRotation {
 
   /// Jacobian of preintegrated rotation w.r.t. angular rate bias
   Matrix3 delRdelBiasOmega_;
+  Matrix3 gyroscopeCovariance_;     ///< continuous-time "Covariance" of gyroscope measurements
 
 public:
 
   /**
    *  Default constructor, initializes the variables in the base class
    */
-  PreintegratedRotation() :
+  PreintegratedRotation(const Matrix3& measuredOmegaCovariance) :
     deltaRij_(Rot3()), deltaTij_(0.0),
-    delRdelBiasOmega_(Z_3x3) {}
+    delRdelBiasOmega_(Z_3x3), gyroscopeCovariance_(measuredOmegaCovariance) {}
 
   /// methods to access class variables
   Matrix3 deltaRij() const {return deltaRij_.matrix();} // expensive
   Vector3 thetaRij(boost::optional<Matrix3&> H = boost::none) const {return Rot3::Logmap(deltaRij_, H);} // super-expensive
   const double& deltaTij() const{return deltaTij_;}
   const Matrix3& delRdelBiasOmega() const{ return delRdelBiasOmega_;}
+  const Matrix3& gyroscopeCovariance() const { return gyroscopeCovariance_;}
 
   /// Needed for testable
   void print(const std::string& s) const {
     std::cout << s << std::endl;
+    std::cout << "deltaTij [" << deltaTij_ << "]" << std::endl;
     deltaRij_.print("  deltaRij ");
+    std::cout << "delRdelBiasOmega ["    << delRdelBiasOmega_ << "]" << std::endl;
+    std::cout << "gyroscopeCovariance [" << gyroscopeCovariance_ << "]" << std::endl;
   }
 
   /// Needed for testable
   bool equals(const PreintegratedRotation& expected, double tol) const {
     return deltaRij_.equals(expected.deltaRij_, tol)
     && fabs(deltaTij_ - expected.deltaTij_) < tol
-    && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_, tol);
+    && equal_with_abs_tol(delRdelBiasOmega_, expected.delRdelBiasOmega_, tol)
+    && equal_with_abs_tol(gyroscopeCovariance_, expected.gyroscopeCovariance_, tol);
   }
 
   /// Re-initialize PreintegratedMeasurements
