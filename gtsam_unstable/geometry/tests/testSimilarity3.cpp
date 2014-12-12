@@ -72,6 +72,8 @@ public:
     Vector3 t(this->topRightCorner<3, 1>());
     double s((*this)(3, 3));
 
+    // Will retracting or localCoordinating R work if R is not a unit rotation?
+    // Also, how do we actually get s out?  Seems like we need to store it somewhere.
     return Similarity3( //
         R.retract(v.head<3>()), // retract rotation using v[0,1,2]
         Point3(t + v.segment < 3 > (3)), // retract translation via v[3,4,5]
@@ -80,7 +82,16 @@ public:
 
   /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
   Vector localCoordinates(const Similarity3& other) const {
-    return Vector7::Zero();
+    Rot3 R(this->topLeftCorner<3,3>());
+    Vector3 t(this->topRightCorner<3,1>());
+    Vector3 o(other.topRightCorner<3,1>());
+    double s((*this)(3,3));
+
+    Vector7 v;
+    v.head<3>() = R.localCoordinates(other.topLeftCorner<3,3>());
+    v.segment<3>(3) = o - t;
+    v[6] = other(3,3) - (*this)(3,3);
+    return v;
   }
 
   /// @}
@@ -119,6 +130,11 @@ TEST(Similarity3, manifold) {
   v(6) = 2;
   Similarity3 sim2;
   EXPECT(sim2.retract(z)==sim2);
+
+  Vector7 vzero = Vector7::Zero();
+  EXPECT(sim2.localCoordinates(sim) == vzero);
+
+  EXPECT(sim2.localCoordinates(sim))
 
   // TODO add unit tests for retract and localCoordinates
 }
