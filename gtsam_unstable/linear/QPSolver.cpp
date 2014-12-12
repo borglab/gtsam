@@ -31,7 +31,10 @@ QPSolver::QPSolver(const QP& qp) : qp_(qp) {
 VectorValues QPSolver::solveWithCurrentWorkingSet(
     const LinearInequalityFactorGraph& workingSet) const {
   GaussianFactorGraph workingGraph = baseGraph_;
-  workingGraph.push_back(workingSet);
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, workingSet) {
+    if (factor->active())
+      workingGraph.push_back(factor);
+  }
   return workingGraph.optimize();
 }
 
@@ -48,30 +51,19 @@ JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
       AtermsInequalities.end());
 
   // Collect the gradients of unconstrained cost factors to the b vector
-  Vector b = zero(delta.at(key).size());
-  if (costVariableIndex_.find(key) != costVariableIndex_.end()) {
-    BOOST_FOREACH(size_t factorIx, costVariableIndex_[key]) {
-      GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);
-      b += factor->gradient(key, delta);
+  if (Aterms.size() > 0) {
+    Vector b = zero(delta.at(key).size());
+    if (costVariableIndex_.find(key) != costVariableIndex_.end()) {
+      BOOST_FOREACH(size_t factorIx, costVariableIndex_[key]) {
+        GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);
+        b += factor->gradient(key, delta);
+      }
     }
+    return boost::make_shared<JacobianFactor>(Aterms, b, noiseModel::Constrained::All(b.rows()));
   }
-
-  return boost::make_shared<JacobianFactor>(Aterms, b, noiseModel::Constrained::All(b.rows()));
-}
-
-//******************************************************************************
-GaussianFactor::shared_ptr QPSolver::createDualPrior(
-    const LinearInequality::shared_ptr& factor) const {
-  Vector sigmas = factor->get_model()->sigmas();
-  size_t n = sigmas.rows();
-  Matrix A = eye(n);
-  for (size_t i = 0; i<n; ++i) {
-    if (sigmas[i] == ACTIVE)
-      A(i,i) = 0;
+  else {
+    return boost::make_shared<JacobianFactor>();
   }
-
-  Vector b = zero(n);
-  return boost::make_shared<JacobianFactor>(factor->dualKey(), A, b);
 }
 
 //******************************************************************************
@@ -80,50 +72,32 @@ GaussianFactorGraph::shared_ptr QPSolver::buildDualGraph(
   GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
   BOOST_FOREACH(Key key, constrainedKeys_) {
     // Each constrained key becomes a factor in the dual graph
-    dualGraph->push_back(createDualFactor(key, workingSet, delta));
-  }
-
-  // Add prior for inactive dual variables
-  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, workingSet) {
-    dualGraph->push_back(createDualPrior(factor));
+    JacobianFactor::shared_ptr dualFactor = createDualFactor(key, workingSet, delta);
+    if (!dualFactor->empty())
+      dualGraph->push_back(dualFactor);
   }
   return dualGraph;
 }
 
 //******************************************************************************
-pair<int, int> QPSolver::identifyLeavingConstraint(
+int QPSolver::identifyLeavingConstraint(
     const LinearInequalityFactorGraph& workingSet,
     const VectorValues& lambdas) const {
-  int worstFactorIx = -1, worstSigmaIx = -1;
+  int worstFactorIx = -1;
   // preset the maxLambda to 0.0: if lambda is <= 0.0, the constraint is either
   // inactive or a good inequality constraint, so we don't care!
   double maxLambda = 0.0;
   for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
     const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
-    Vector lambda = lambdas.at(factor->dualKey());
-    Vector sigmas = factor->get_model()->sigmas();
-    for (size_t j = 0; j < sigmas.size(); ++j)
-      // If it is an active constraint, and lambda is larger than the current max
-      if (sigmas[j] == ACTIVE && lambda[j] > maxLambda) {
+    if (factor->active()) {
+      double lambda = lambdas.at(factor->dualKey())[0];
+      if (lambda > maxLambda) {
         worstFactorIx = factorIx;
-        worstSigmaIx = j;
-        maxLambda = lambda[j];
+        maxLambda = lambda;
       }
+    }
   }
-  return make_pair(worstFactorIx, worstSigmaIx);
-}
-
-//******************************************************************************
-LinearInequalityFactorGraph QPSolver::updateWorkingSet(
-    const LinearInequalityFactorGraph& workingSet, int factorIx, int sigmaIx,
-    double state) const {
-  LinearInequalityFactorGraph newWorkingSet = workingSet;
-  if (factorIx < 0 || sigmaIx < 0)
-    return newWorkingSet;
-  Vector sigmas = newWorkingSet.at(factorIx)->get_model()->sigmas();
-  sigmas[sigmaIx] = state;
-  newWorkingSet.at(factorIx)->setModel(true, sigmas);
-  return newWorkingSet;
+  return worstFactorIx;
 }
 
 //******************************************************************************
@@ -142,45 +116,43 @@ LinearInequalityFactorGraph QPSolver::updateWorkingSet(
  *
  * We want the minimum of all those alphas among all inactive inequality.
  */
-boost::tuple<double, int, int> QPSolver::computeStepSize(
+boost::tuple<double, int> QPSolver::computeStepSize(
     const LinearInequalityFactorGraph& workingSet, const VectorValues& xk,
     const VectorValues& p) const {
   static bool debug = false;
 
   double minAlpha = 1.0;
-  int closestFactorIx = -1, closestSigmaIx = -1;
+  int closestFactorIx = -1;
   for(size_t factorIx = 0; factorIx<workingSet.size(); ++factorIx) {
     const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
-    Vector sigmas = factor->get_model()->sigmas();
-    Vector b = factor->getb();
-    for (size_t s = 0; s < sigmas.size(); ++s) {
-      // If it is an inactive inequality, compute alpha and update min
-      if (sigmas[s] == INACTIVE) {
-        // Compute aj'*p
-        double ajTp = factor->dotProductRow(s, p);
+    double b = factor->getb()[0];
+    // only check inactive factors
+    if (!factor->active()) {
+      // Compute a'*p
+      double aTp = factor->dotProductRow(p);
 
-        // Check if  aj'*p >0. Don't care if it's not.
-        if (ajTp <= 0)
-          continue;
+      // Check if  a'*p >0. Don't care if it's not.
+      if (aTp <= 0)
+        continue;
 
-        // Compute aj'*xk
-        double ajTx = factor->dotProductRow(s, xk);
+      // Compute a'*xk
+      double aTx = factor->dotProductRow(xk);
 
-        // alpha = (bj - aj'*xk) / (aj'*p)
-        double alpha = (b[s] - ajTx) / ajTp;
-        if (debug)
-          cout << "alpha: " << alpha << endl;
+      // alpha = (b - a'*xk) / (a'*p)
+      double alpha = (b - aTx) / aTp;
+      if (debug)
+        cout << "alpha: " << alpha << endl;
 
-        // We want the minimum of all those max alphas
-        if (alpha < minAlpha) {
-          closestFactorIx = factorIx;
-          closestSigmaIx = s;
-          minAlpha = alpha;
-        }
+      // We want the minimum of all those max alphas
+      if (alpha < minAlpha) {
+        closestFactorIx = factorIx;
+        minAlpha = alpha;
       }
     }
+
   }
-  return boost::make_tuple(minAlpha, closestFactorIx, closestSigmaIx);
+
+  return boost::make_tuple(minAlpha, closestFactorIx);
 }
 
 //******************************************************************************
@@ -204,21 +176,18 @@ QPState QPSolver::iterate(const QPState& state) const {
     if (debug)
       duals.print("Duals :");
 
-    int leavingFactor, leavingSigmaIx;
-    boost::tie(leavingFactor, leavingSigmaIx) = //
-        identifyLeavingConstraint(state.workingSet, duals);
+    int leavingFactor = identifyLeavingConstraint(state.workingSet, duals);
     if (debug)
-      cout << "violated active inequality - factorIx, sigmaIx: " << leavingFactor
-          << " " << leavingSigmaIx << endl;
+      cout << "leavingFactor: " << leavingFactor << endl;
 
     // If all inequality constraints are satisfied: We have the solution!!
-    if (leavingFactor < 0 || leavingSigmaIx < 0) {
+    if (leavingFactor < 0) {
       return QPState(newValues, duals, state.workingSet, true);
     }
     else {
       // Inactivate the leaving constraint
-      LinearInequalityFactorGraph newWorkingSet = updateWorkingSet(
-          state.workingSet, leavingFactor, leavingSigmaIx, INACTIVE);
+      LinearInequalityFactorGraph newWorkingSet = state.workingSet;
+      newWorkingSet.at(leavingFactor)->inactivate();
       return QPState(newValues, duals, newWorkingSet, false);
     }
   }
@@ -226,16 +195,18 @@ QPState QPSolver::iterate(const QPState& state) const {
     // If we CAN make some progress
     // Adapt stepsize if some inactive constraints complain about this move
     double alpha;
-    int factorIx, sigmaIx;
+    int factorIx;
     VectorValues p = newValues - state.values;
-    boost::tie(alpha, factorIx, sigmaIx) = //
+    boost::tie(alpha, factorIx) = //
         computeStepSize(state.workingSet, state.values, p);
     if (debug)
-      cout << "alpha, factorIx, sigmaIx: " << alpha << " " << factorIx << " "
-          << sigmaIx << endl;
+      cout << "alpha, factorIx: " << alpha << " " << factorIx << " "
+           << endl;
+
     // also add to the working set the one that complains the most
-    LinearInequalityFactorGraph newWorkingSet = //
-        updateWorkingSet(state.workingSet, factorIx, sigmaIx, ACTIVE);
+    LinearInequalityFactorGraph newWorkingSet = state.workingSet;
+    if (factorIx >= 0)
+      newWorkingSet.at(factorIx)->activate();
 
     // step!
     newValues = state.values + alpha * p;
@@ -251,14 +222,12 @@ LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
   LinearInequalityFactorGraph workingSet;
   BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities){
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-    Vector e = workingFactor->error_vector(initialValues);
-    Vector sigmas = zero(e.rows());
-    for (int i = 0; i < e.rows(); ++i){
-      if (fabs(e[i])>1e-7){
-        sigmas[i] = INACTIVE;
-      }
+    double error = workingFactor->error(initialValues);
+    if (fabs(error)>1e-7){
+      workingFactor->inactivate();
+    } else {
+      workingFactor->activate();
     }
-    workingFactor->setModel(true, sigmas);
     workingSet.push_back(workingFactor);
   }
   return workingSet;
@@ -410,13 +379,12 @@ boost::tuple<LinearEqualityFactorGraph::shared_ptr,
     // Add the slack term to the constraint
     // Unlike Nocedal06book, pg.473, we want ax-z <= b, since we always assume
     // LE constraints ax <= b.
-    size_t dim = factor->rows();
-    terms.push_back(make_pair(slackKey, -eye(dim)));
-    inequalities->push_back(LinearInequality(terms, factor->getb(),
+    terms.push_back(make_pair(slackKey, -eye(1)));
+    inequalities->push_back(LinearInequality(terms, factor->getb()[0],
         factor->dualKey()));
 
     // Add lower bound for this slack key
-    slackLowerBounds.insert(slackKey, zero(dim));
+    slackLowerBounds.insert(slackKey, zero(1));
     // Increase slackKey for the next slack variable
     slackKey++;
   }

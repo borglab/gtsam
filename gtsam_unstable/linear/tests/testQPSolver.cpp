@@ -26,6 +26,8 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
+const Matrix One = ones(1,1);
+
 /* ************************************************************************* */
 // Create test graph according to Forst10book_pg171Ex5
 QP createTestCase() {
@@ -40,12 +42,10 @@ QP createTestCase() {
           2.0 * ones(1, 1), zero(1), 10.0));
 
   // Inequality constraints
-  // Jacobian factors represent Ax-b, hence
-  // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
-  Matrix A1 = (Matrix(4, 1) << 1, -1, 0, 1);
-  Matrix A2 = (Matrix(4, 1) << 1, 0, -1, 0);
-  Vector b = (Vector(4) << 2, 0, 0, 1.5);
-  qp.inequalities.push_back(LinearInequality(X(1), A1, X(2), A2, b, 0));
+  qp.inequalities.push_back(LinearInequality(X(1), ones(1,1), X(2), ones(1,1), 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
+  qp.inequalities.push_back(LinearInequality(X(1), -ones(1,1), 0, 1));                 // -x1     <= 0
+  qp.inequalities.push_back(LinearInequality(X(2), -ones(1,1), 0, 2));                 //    -x2  <= 0
+  qp.inequalities.push_back(LinearInequality(X(1), ones(1,1), 1.5, 3));                // x1      <= 3/2
 
   return qp;
 }
@@ -66,20 +66,20 @@ TEST(QPSolver, constraintsAux) {
   QPSolver solver(qp);
 
   VectorValues lambdas;
-  lambdas.insert(0, (Vector(4) << -0.5, 0.0, 0.3, 0.1));
-  int factorIx, lambdaIx;
-  boost::tie(factorIx, lambdaIx) = solver.identifyLeavingConstraint(
-      qp.inequalities, lambdas);
-  LONGS_EQUAL(0, factorIx);
-  LONGS_EQUAL(2, lambdaIx);
+  lambdas.insert(0, (Vector(1) << -0.5));
+  lambdas.insert(1, (Vector(1) <<  0.0));
+  lambdas.insert(2, (Vector(1) <<  0.3));
+  lambdas.insert(3, (Vector(1) <<  0.1));
+  int factorIx = solver.identifyLeavingConstraint(qp.inequalities, lambdas);
+  LONGS_EQUAL(2, factorIx);
 
   VectorValues lambdas2;
-  lambdas2.insert(0, (Vector(4) << -0.5, 0.0, -0.3, -0.1));
-  int factorIx2, lambdaIx2;
-  boost::tie(factorIx2, lambdaIx2) = solver.identifyLeavingConstraint(
-      qp.inequalities, lambdas2);
+  lambdas2.insert(0, (Vector(1) << -0.5));
+  lambdas2.insert(1, (Vector(1) <<  0.0));
+  lambdas2.insert(2, (Vector(1) << -0.3));
+  lambdas2.insert(3, (Vector(1) << -0.1));
+  int factorIx2 = solver.identifyLeavingConstraint(qp.inequalities, lambdas2);
   LONGS_EQUAL(-1, factorIx2);
-  LONGS_EQUAL(-1, lambdaIx2);
 }
 
 /* ************************************************************************* */
@@ -135,9 +135,10 @@ TEST(QPSolver, indentifyActiveConstraints) {
   LinearInequalityFactorGraph workingSet =
       solver.identifyActiveConstraints(qp.inequalities, currentSolution);
 
-  Vector actualSigmas = workingSet.at(0)->get_model()->sigmas();
-  Vector expectedSigmas = (Vector(4) << INACTIVE, ACTIVE, ACTIVE, INACTIVE);
-  CHECK(assert_equal(expectedSigmas, actualSigmas, 1e-100));
+  CHECK(!workingSet.at(0)->active());   // inactive
+  CHECK(workingSet.at(1)->active());    // active
+  CHECK(workingSet.at(2)->active());    // active
+  CHECK(!workingSet.at(3)->active());   // inactive
 
   VectorValues solution  = solver.solveWithCurrentWorkingSet(workingSet);
   VectorValues expectedSolution;
@@ -159,19 +160,18 @@ TEST(QPSolver, iterate) {
   std::vector<VectorValues> expectedSolutions(4), expectedDuals(4);
   expectedSolutions[0].insert(X(1), (Vector(1) << 0.0));
   expectedSolutions[0].insert(X(2), (Vector(1) << 0.0));
-  expectedDuals[0].insert(0, (Vector(4) << 0, 3, 0, 0));
+  expectedDuals[0].insert(1, (Vector(1) << 3));
+  expectedDuals[0].insert(2, (Vector(1) << 0));
 
   expectedSolutions[1].insert(X(1), (Vector(1) << 1.5));
   expectedSolutions[1].insert(X(2), (Vector(1) << 0.0));
-  expectedDuals[1].insert(0, (Vector(4) << 0, 0, 1.5, 0));
+  expectedDuals[1].insert(3, (Vector(1) << 1.5));
 
   expectedSolutions[2].insert(X(1), (Vector(1) << 1.5));
   expectedSolutions[2].insert(X(2), (Vector(1) << 0.75));
-  expectedDuals[2].insert(0, (Vector(4) << 0, 0, 1.5, 0));
 
   expectedSolutions[3].insert(X(1), (Vector(1) << 1.5));
   expectedSolutions[3].insert(X(2), (Vector(1) << 0.5));
-  expectedDuals[3].insert(0, (Vector(4) << -0.5, 0, 0, 0));
 
   LinearInequalityFactorGraph workingSet =
       solver.identifyActiveConstraints(qp.inequalities, currentSolution);
@@ -223,12 +223,11 @@ QP createTestMatlabQPEx() {
           2.0 * ones(1, 1), 6 * ones(1), 1000.0));
 
   // Inequality constraints
-  // Jacobian factors represent Ax-b, hence
-  // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
-  Matrix A1 = (Matrix(5, 1) << 1, -1, 2, -1, 0);
-  Matrix A2 = (Matrix(5, 1) << 1, 2, 1, 0, -1);
-  Vector b = (Vector(5) << 2, 2, 3, 0, 0);
-  qp.inequalities.push_back(LinearInequality(X(1), A1, X(2), A2, b, 0));
+  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), One, 2, 0));      // x1 + x2 <= 2
+  qp.inequalities.push_back(LinearInequality(X(1), -One, X(2), 2*One, 2, 1));   //-x1 + 2*x2 <=2
+  qp.inequalities.push_back(LinearInequality(X(1), 2*One, X(2), One, 3, 2));    // 2*x1 + x2 <=3
+  qp.inequalities.push_back(LinearInequality(X(1), -One, 0, 3));                // -x1      <= 0
+  qp.inequalities.push_back(LinearInequality(X(2), -One, 0, 4));                //      -x2 <= 0
 
   return qp;
 }
@@ -256,16 +255,11 @@ QP createTestNocedal06bookEx16_4() {
   qp.cost.push_back(JacobianFactor(X(2), ones(1, 1), 2.5 * ones(1)));
 
   // Inequality constraints
-  qp.inequalities.push_back(
-      LinearInequality(X(1), -ones(1, 1), X(2), 2 * ones(1, 1), 2 * ones(1),
-          0));
-  qp.inequalities.push_back(
-      LinearInequality(X(1), ones(1, 1), X(2), 2 * ones(1, 1), 6 * ones(1), 1));
-  qp.inequalities.push_back(
-      LinearInequality(X(1), ones(1, 1), X(2), -2 * ones(1, 1), 2 * ones(1),
-          2));
-  qp.inequalities.push_back(LinearInequality(X(1), -ones(1, 1), zero(1), 3));
-  qp.inequalities.push_back(LinearInequality(X(2), -ones(1, 1), zero(1), 4));
+  qp.inequalities.push_back(LinearInequality(X(1), -One, X(2), 2 * One, 2, 0));
+  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), 2 * One, 6, 1));
+  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), -2 * One, 2, 2));
+  qp.inequalities.push_back(LinearInequality(X(1), -One, 0.0, 3));
+  qp.inequalities.push_back(LinearInequality(X(2), -One, 0.0, 4));
 
   return qp;
 }
@@ -317,16 +311,11 @@ QP modifyNocedal06bookEx16_4() {
   // Inequality constraints
   noiseModel::Constrained::shared_ptr noise =
       noiseModel::Constrained::MixedSigmas((Vector(1) << -1));
-  qp.inequalities.push_back(
-      LinearInequality(X(1), -ones(1, 1), X(2), 2 * ones(1, 1), -1 * ones(1),
-          0));
-  qp.inequalities.push_back(
-      LinearInequality(X(1), ones(1, 1), X(2), 2 * ones(1, 1), 6 * ones(1), 1));
-  qp.inequalities.push_back(
-      LinearInequality(X(1), ones(1, 1), X(2), -2 * ones(1, 1), 2 * ones(1),
-          2));
-  qp.inequalities.push_back(LinearInequality(X(1), -ones(1, 1), zero(1), 3));
-  qp.inequalities.push_back(LinearInequality(X(2), -ones(1, 1), zero(1), 4));
+  qp.inequalities.push_back(LinearInequality(X(1), -One, X(2), 2 * One, -1, 0));
+  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), 2 * One, 6, 1));
+  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), -2 * One, 2, 2));
+  qp.inequalities.push_back(LinearInequality(X(1), -One, 0.0, 3));
+  qp.inequalities.push_back(LinearInequality(X(2), -One, 0.0, 4));
 
   return qp;
 }
@@ -360,18 +349,15 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_findInitialPoint) {
 
   LinearInequalityFactorGraph expectedInequalities;
   expectedInequalities.push_back(
-      LinearInequality(X(1), -ones(1, 1), X(2), 2 * ones(1, 1), X(3),
-          -ones(1, 1), -1 * ones(1), 0));
+      LinearInequality(X(1), -One, X(2), 2 * One, X(3), -One, -1, 0));
   expectedInequalities.push_back(
-      LinearInequality(X(1), ones(1, 1), X(2), 2 * ones(1, 1), X(4),
-          -ones(1, 1), 6 * ones(1), 1));
+      LinearInequality(X(1), One, X(2), 2 * One, X(4), -One, 6, 1));
   expectedInequalities.push_back(
-      LinearInequality(X(1), ones(1, 1), X(2), -2 * ones(1, 1), X(5),
-          -ones(1, 1), 2 * ones(1), 2));
+      LinearInequality(X(1), One, X(2), -2 * One, X(5), -One, 2, 2));
   expectedInequalities.push_back(
-      LinearInequality(X(1), -ones(1, 1), X(6), -ones(1, 1), zero(1), 3));
+      LinearInequality(X(1), -One, X(6), -One, 0, 3));
   expectedInequalities.push_back(
-      LinearInequality(X(2), -ones(1, 1), X(7), -ones(1, 1), zero(1), 4));
+      LinearInequality(X(2), -One, X(7), -One, 0, 4));
   EXPECT(assert_equal(expectedInequalities, *inequalities));
 
   bool isFeasible;
@@ -414,7 +400,7 @@ TEST(QPSolver, failedSubproblem) {
   qp.cost.push_back(JacobianFactor(X(1), eye(2), zero(2)));
   qp.cost.push_back(HessianFactor(X(1), zeros(2, 2), zero(2), 100.0));
   qp.inequalities.push_back(
-      LinearInequality(X(1), (Matrix(1, 2) << -1.0, 0.0), -ones(1), 0));
+      LinearInequality(X(1), (Matrix(1,2) << -1.0, 0.0), -1.0, 0));
 
   VectorValues expected;
   expected.insert(X(1), (Vector(2) << 1.0, 0.0));
