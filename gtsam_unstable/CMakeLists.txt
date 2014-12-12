@@ -37,15 +37,19 @@ unset(lpsolve_INCLUDE_DIRS CACHE)
 include(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/lp_solve_5.5/cmake/Findlpsolve.cmake)
 # If lpsolve_LIBRARY is not found, recompile the library 
 message("lpsolve_LIBRARY: " ${lpsolve_LIBRARY} " ...")
+message("lpsolve_BUILD_PATH" ${lpsolve_BUILD_PATH})
+
 if(NOT lpsolve_LIBRARY)
+	if(APPLE)
+		set(lpsolve_BUILD_SCRIPT sh ccc.osx)
+	elseif(UNIX)
+		set(lpsolve_BUILD_SCRIPT sh ccc)
+	elseif(WIN32)
+		set(lpsolve_BUILD_SCRIPT cvc6.bat)
+	endif()
     message("Building lpsolve. Please wait...")
-    # TODO: customize for other platforms
-    execute_process(COMMAND sh ccc.osx 
-                        WORKING_DIRECTORY ${lpsolve_BUILD_PATH}
-                        OUTPUT_QUIET
-                        ERROR_QUIET)
-    #set(lpsolve_INCLUDE_DIRS ${lpsolve_BUILD_PATH}/../)
-    #set(lpsolve_LIBRARY ${lpsolve_BUILD_PATH}/liblpsolve55.a)
+    execute_process(COMMAND ${lpsolve_BUILD_SCRIPT} 
+                        WORKING_DIRECTORY ${lpsolve_BUILD_PATH})
     include(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/lp_solve_5.5/cmake/Findlpsolve.cmake)
     message("Done!")
 endif()
