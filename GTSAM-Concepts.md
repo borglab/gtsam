@@ -22,28 +22,28 @@ In GTSAM, all properties and operations needed to use a type must be defined thr
 In detail, we ask the following are defined in the traits object:
 
 * values:
-    * `enum { dimension = D};`, an enum that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimenionality is only defined at runtime, by specifying the value -1.
+   * `enum { dimension = D};`, an enum that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimenionality is only defined at runtime, by specifying the value -1.
 * types: 
     * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
-	* `ChartJacobian`, a typedef for `OptionalJacobian<dimension, dimension>`.  
-	* `ManifoldType`, a pointer back to the type.
-	* `structure_category`, a tag type that defines what requirements the type fulfills, and therefore what requirements this traits class must fulfill. It should be defined to be one of the following: 
-		*  `gtsam::traits::manifold_tag` -- Everything in this list is expected
-		* `gtsam::traits::group_tag` -- Everything in this list is expected, plus the functions defined under **Groups** below.
-		* `gtsam::traits::lie_group_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
-		* `gtsam::traits::vector_space_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
+    * `ChartJacobian`, a typedef for `OptionalJacobian<dimension, dimension>`.  
+    * `ManifoldType`, a pointer back to the type.
+    * `structure_category`, a tag type that defines what requirements the type fulfills, and therefore what requirements this traits class must fulfill. It should be defined to be one of the following: 
+        * `gtsam::traits::manifold_tag` -- Everything in this list is expected
+        * `gtsam::traits::group_tag` -- Everything in this list is expected, plus the functions defined under **Groups** below.
+        * `gtsam::traits::lie_group_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
+        * `gtsam::traits::vector_space_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
 * valid expressions:
     * `size_t dim = traits<T>::getDimension(p);` static function should be defined. This is mostly useful if the size is not known at compile time.
     * `v = traits<T>::Local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*, where *p* and *q* are elements of the manifold and the result, *v* is an element of the vector space.
-	* `v = traits<T>::Local(p,q, Hp, Hq)`.
+        * `v = traits<T>::Local(p,q, Hp, Hq)`.
     * `p = traits<T>::Retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*, where *p* is an element of the manifold and the result, *v* is an element of the vector space.
     * `p = traits<T>::Retract(p,v, Hp, Hv)`.
 
 In the functions above, the `H` arguments stand for optional Jacobians. When provided, it is assumed
 that the function will return the derivatives of the chart (and inverse) with respect to its arguments.
 * invariants
-	* `Retract(p, Local(p,q)) == q`
-	* `Local(p, Retract(p, v)) == v`
+    * `Retract(p, Local(p,q)) == q`
+    * `Local(p, Retract(p, v)) == v`
 
 For many differential manifolds, an obvious mapping is the `exponential map`, 
 which  associates straight lines in the tangent space with geodesics on the manifold 
@@ -61,17 +61,17 @@ A [group](http://en.wikipedia.org/wiki/Group_(mathematics)) should be well known
     * `q = traits<M>::Inverse(p)`, where *p* and*q* are elements of the manifold. 
     * `r = traits<M>::Between(p,q)`, where *p*, *q*, and *r* are elements of the manifold. 
 * static members:
-	* `traits<M>::Identity`, a static const member that represents the group's identity element.
+    * `traits<M>::Identity`, a static const member that represents the group's identity element.
 * invariants:
     * `Compose(p,Inverse(p)) == Identity`
     * `Compose(p,Between(p,q)) == q`
     * `Between(p,q) == Compose(Inverse(p),q)`
 The `gtsam::group::traits` namespace defines the following:
 * values:
-	* `traits<M>::Identity` -- The identity element for this group stored as a static const.
-	* `traits<M>::group_flavor` -- the flavor of this group's `compose()` operator, either:
-		*  `gtsam::traits::group_multiplicative_tag` for multiplicative operator syntax ,or 
-		* `gtsam::traits::group_additive_tag` for additive operator syntax.
+    * `traits<M>::Identity` -- The identity element for this group stored as a static const.
+    * `traits<M>::group_flavor` -- the flavor of this group's `compose()` operator, either:
+         *  `gtsam::traits::group_multiplicative_tag` for multiplicative operator syntax ,or 
+         * `gtsam::traits::group_additive_tag` for additive operator syntax.
 
 We do *not* at this time support more than one composition operator per type. Although mathematically possible, it is hardly ever needed, and the machinery to support it would be burdensome and counter-intuitive. 
 
@@ -125,12 +125,14 @@ In addition, a Lie group has a Lie algebra, which affords two extra valid expres
 
 Note that in the Lie group case, the usual valid expressions for Retract and Local can be generated automatically, e.g.
 
+```
     T Retract(p,v,Hp,Hv) {
       T q = Exp(v,Hqv);
       T r = Compose(p,q,Hrp,Hrq);
       Hv = Hrq * Hqv; // chain rule
       return r;
     }
+```
 
 Lie Group Action
 ----------------
@@ -212,10 +214,10 @@ An example of implementing a Manifold type is here:
 #!c++
     // GTSAM type
     class Rot2 {
-	  typedef Vector2 TangentVector; // internal typedef, not required
+          typedef Vector2 TangentVector; // internal typedef, not required
       class Chart : gtsam::Chart<Rot2,Chart>{
-	    static TangentVector local(const Rot2& R1, const Rot2& R2);
-	    static Rot2 retract(const Rot2& R, const TangentVector& v);
+            static TangentVector local(const Rot2& R1, const Rot2& R2);
+            static Rot2 retract(const Rot2& R, const TangentVector& v);
       }
       Rot2 operator*(const Rot2&) const;
       Rot2 transpose() const;
@@ -359,16 +361,16 @@ Providing the Vector space concept is easier:
       Point2 operator-() const;
       // Still needs to be defined, unless Point2 *is* Vector2
       class Chart {
-	    static Vector2 local(const Point2& p, const Point2& q) const;
-	    static Rot2 retract(const Point2& p, const Point2& v) const;
+            static Vector2 local(const Point2& p, const Point2& q) const;
+            static Rot2 retract(const Point2& p, const Point2& v) const;
       }
     }
 ```
 
  The following macro, called inside the gtsam namespace,
  
-	DEFINE_VECTOR_SPACE_TRAITS(Point2)
-	
+        DEFINE_VECTOR_SPACE_TRAITS(Point2)
+        
  should automatically define 
  
 ```
