@@ -288,8 +288,11 @@ namespace gtsam {
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;
 
-    /* ************************************************************************* */
+    /// A'*b for Jacobian (raw memory version)
     virtual void gradientAtZero(double* d) const;
+
+    /// Compute the gradient wrt a key at any values
+    Vector gradient(Key key, const VectorValues& x) const;
 
     /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactor whiten() const;

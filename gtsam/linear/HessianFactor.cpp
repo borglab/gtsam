@@ -591,7 +591,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const double* x,
 
 
 /* ************************************************************************* */
-VectorValues HessianFactor::gradientAtZero(const boost::optional<const VectorValues&> negDuals) const {
+VectorValues HessianFactor::gradientAtZero() const {
   VectorValues g;
   size_t n = size();
   for (size_t j = 0; j < n; ++j)

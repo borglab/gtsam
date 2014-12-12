@@ -66,18 +66,18 @@ TEST(QPSolver, constraintsAux) {
   QPSolver solver(qp);
 
   VectorValues lambdas;
-  lambdas.insert(0, (Vector(1) << -0.5));
-  lambdas.insert(1, (Vector(1) <<  0.0));
-  lambdas.insert(2, (Vector(1) <<  0.3));
-  lambdas.insert(3, (Vector(1) <<  0.1));
+  lambdas.insert(0, (Vector(1) << -0.5).finished());
+  lambdas.insert(1, (Vector(1) <<  0.0).finished());
+  lambdas.insert(2, (Vector(1) <<  0.3).finished());
+  lambdas.insert(3, (Vector(1) <<  0.1).finished());
   int factorIx = solver.identifyLeavingConstraint(qp.inequalities, lambdas);
   LONGS_EQUAL(2, factorIx);
 
   VectorValues lambdas2;
-  lambdas2.insert(0, (Vector(1) << -0.5));
-  lambdas2.insert(1, (Vector(1) <<  0.0));
-  lambdas2.insert(2, (Vector(1) << -0.3));
-  lambdas2.insert(3, (Vector(1) << -0.1));
+  lambdas2.insert(0, (Vector(1) << -0.5).finished());
+  lambdas2.insert(1, (Vector(1) <<  0.0).finished());
+  lambdas2.insert(2, (Vector(1) << -0.3).finished());
+  lambdas2.insert(3, (Vector(1) << -0.1).finished());
   int factorIx2 = solver.identifyLeavingConstraint(qp.inequalities, lambdas2);
   LONGS_EQUAL(-1, factorIx2);
 }
@@ -97,9 +97,9 @@ QP createEqualityConstrainedTest() {
 
   // Equality constraints
   // x1 + x2 = 1 --> x1 + x2 -1 = 0, hence we negate the b vector
-  Matrix A1 = (Matrix(1, 1) << 1);
-  Matrix A2 = (Matrix(1, 1) << 1);
-  Vector b = -(Vector(1) << 1);
+  Matrix A1 = (Matrix(1, 1) << 1).finished();
+  Matrix A2 = (Matrix(1, 1) << 1).finished();
+  Vector b = -(Vector(1) << 1).finished();
   qp.equalities.push_back(LinearEquality(X(1), A1, X(2), A2, b, 0));
 
   return qp;
@@ -119,7 +119,7 @@ TEST(QPSolver, dual) {
       qp.inequalities, initialValues);
   VectorValues dual = dualGraph->optimize();
   VectorValues expectedDual;
-  expectedDual.insert(0, (Vector(1) << 2.0));
+  expectedDual.insert(0, (Vector(1) << 2.0).finished());
   CHECK(assert_equal(expectedDual, dual, 1e-10));
 }
 
@@ -142,8 +142,8 @@ TEST(QPSolver, indentifyActiveConstraints) {
 
   VectorValues solution  = solver.solveWithCurrentWorkingSet(workingSet);
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1) << 0.0));
-  expectedSolution.insert(X(2), (Vector(1) << 0.0));
+  expectedSolution.insert(X(1), (Vector(1) << 0.0).finished());
+  expectedSolution.insert(X(2), (Vector(1) << 0.0).finished());
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
 
 }
@@ -158,20 +158,20 @@ TEST(QPSolver, iterate) {
   currentSolution.insert(X(2), zero(1));
 
   std::vector<VectorValues> expectedSolutions(4), expectedDuals(4);
-  expectedSolutions[0].insert(X(1), (Vector(1) << 0.0));
-  expectedSolutions[0].insert(X(2), (Vector(1) << 0.0));
-  expectedDuals[0].insert(1, (Vector(1) << 3));
-  expectedDuals[0].insert(2, (Vector(1) << 0));
+  expectedSolutions[0].insert(X(1), (Vector(1) << 0.0).finished());
+  expectedSolutions[0].insert(X(2), (Vector(1) << 0.0).finished());
+  expectedDuals[0].insert(1, (Vector(1) << 3).finished());
+  expectedDuals[0].insert(2, (Vector(1) << 0).finished());
 
-  expectedSolutions[1].insert(X(1), (Vector(1) << 1.5));
-  expectedSolutions[1].insert(X(2), (Vector(1) << 0.0));
-  expectedDuals[1].insert(3, (Vector(1) << 1.5));
+  expectedSolutions[1].insert(X(1), (Vector(1) << 1.5).finished());
+  expectedSolutions[1].insert(X(2), (Vector(1) << 0.0).finished());
+  expectedDuals[1].insert(3, (Vector(1) << 1.5).finished());
 
-  expectedSolutions[2].insert(X(1), (Vector(1) << 1.5));
-  expectedSolutions[2].insert(X(2), (Vector(1) << 0.75));
+  expectedSolutions[2].insert(X(1), (Vector(1) << 1.5).finished());
+  expectedSolutions[2].insert(X(2), (Vector(1) << 0.75).finished());
 
-  expectedSolutions[3].insert(X(1), (Vector(1) << 1.5));
-  expectedSolutions[3].insert(X(2), (Vector(1) << 0.5));
+  expectedSolutions[3].insert(X(1), (Vector(1) << 1.5).finished());
+  expectedSolutions[3].insert(X(2), (Vector(1) << 0.5).finished());
 
   LinearInequalityFactorGraph workingSet =
       solver.identifyActiveConstraints(qp.inequalities, currentSolution);
@@ -204,8 +204,8 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1) << 1.5));
-  expectedSolution.insert(X(2), (Vector(1) << 0.5));
+  expectedSolution.insert(X(1), (Vector(1) << 1.5).finished());
+  expectedSolution.insert(X(2), (Vector(1) << 0.5).finished());
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
 }
 
@@ -241,8 +241,8 @@ TEST(QPSolver, optimizeMatlabEx) {
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1) << 2.0 / 3.0));
-  expectedSolution.insert(X(2), (Vector(1) << 4.0 / 3.0));
+  expectedSolution.insert(X(1), (Vector(1) << 2.0 / 3.0).finished());
+  expectedSolution.insert(X(2), (Vector(1) << 4.0 / 3.0).finished());
   CHECK(assert_equal(expectedSolution, solution, 1e-7));
 }
 
@@ -268,14 +268,14 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
   QP qp = createTestNocedal06bookEx16_4();
   QPSolver solver(qp);
   VectorValues initialValues;
-  initialValues.insert(X(1), (Vector(1) << 2.0));
+  initialValues.insert(X(1), (Vector(1) << 2.0).finished());
   initialValues.insert(X(2), zero(1));
 
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1) << 1.4));
-  expectedSolution.insert(X(2), (Vector(1) << 1.7));
+  expectedSolution.insert(X(1), (Vector(1) << 1.4).finished());
+  expectedSolution.insert(X(2), (Vector(1) << 1.7).finished());
   CHECK(assert_equal(expectedSolution, solution, 1e-7));
 }
 
@@ -310,7 +310,7 @@ QP modifyNocedal06bookEx16_4() {
 
   // Inequality constraints
   noiseModel::Constrained::shared_ptr noise =
-      noiseModel::Constrained::MixedSigmas((Vector(1) << -1));
+      noiseModel::Constrained::MixedSigmas((Vector(1) << -1).finished());
   qp.inequalities.push_back(LinearInequality(X(1), -One, X(2), 2 * One, -1, 0));
   qp.inequalities.push_back(LinearInequality(X(1), One, X(2), 2 * One, 6, 1));
   qp.inequalities.push_back(LinearInequality(X(1), One, X(2), -2 * One, 2, 2));
@@ -376,12 +376,12 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4_2) {
   QP qp = createTestNocedal06bookEx16_4();
   QPSolver solver(qp);
   VectorValues initialValues;
-  initialValues.insert(X(1), (Vector(1) << 0.0));
-  initialValues.insert(X(2), (Vector(1) << 100.0));
+  initialValues.insert(X(1), (Vector(1) << 0.0).finished());
+  initialValues.insert(X(2), (Vector(1) << 100.0).finished());
 
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1) << 1.4));
-  expectedSolution.insert(X(2), (Vector(1) << 1.7));
+  expectedSolution.insert(X(1), (Vector(1) << 1.4).finished());
+  expectedSolution.insert(X(2), (Vector(1) << 1.7).finished());
 
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
@@ -400,10 +400,10 @@ TEST(QPSolver, failedSubproblem) {
   qp.cost.push_back(JacobianFactor(X(1), eye(2), zero(2)));
   qp.cost.push_back(HessianFactor(X(1), zeros(2, 2), zero(2), 100.0));
   qp.inequalities.push_back(
-      LinearInequality(X(1), (Matrix(1,2) << -1.0, 0.0), -1.0, 0));
+      LinearInequality(X(1), (Matrix(1,2) << -1.0, 0.0).finished(), -1.0, 0));
 
   VectorValues expected;
-  expected.insert(X(1), (Vector(2) << 1.0, 0.0));
+  expected.insert(X(1), (Vector(2) << 1.0, 0.0).finished());
 
   QPSolver solver(qp);
   VectorValues solution;

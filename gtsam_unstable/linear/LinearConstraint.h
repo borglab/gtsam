@@ -59,29 +59,6 @@ public:
           noiseModel::Constrained::All(b.rows())) {
   }
 
-  /** Construct four-ary factor */
-  LinearConstraint(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, const Vector& b) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, b,
-          noiseModel::Constrained::All(b.rows())) {
-  }
-
-  /** Construct five-ary factor */
-  LinearConstraint(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, Key i5, const Matrix& A5,
-      const Vector& b) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, b,
-          noiseModel::Constrained::All(b.rows())) {
-  }
-
-  /** Construct six-ary factor */
-  LinearConstraint(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, Key i5, const Matrix& A5,
-      Key i6, const Matrix& A6, const Vector& b) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, i6, A6, b,
-          noiseModel::Constrained::All(b.rows())) {
-  }
-
   /** Construct an n-ary factor
    * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
    *         collection of keys and matrices making up the factor. */

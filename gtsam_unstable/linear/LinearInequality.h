@@ -52,44 +52,21 @@ public:
 
   /** Construct unary factor */
   LinearInequality(Key i1, const RowVector& A1, double b, Key dualKey) :
-      Base(i1, A1, (Vector(1) << b), noiseModel::Constrained::All(1)), dualKey_(
+      Base(i1, A1, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
           dualKey) {
   }
 
   /** Construct binary factor */
   LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, double b,
       Key dualKey) :
-      Base(i1, A1, i2, A2, (Vector(1) << b), noiseModel::Constrained::All(1)), dualKey_(
+      Base(i1, A1, i2, A2, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
           dualKey) {
   }
 
   /** Construct ternary factor */
   LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
       const RowVector& A3, double b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, (Vector(1) << b),
-          noiseModel::Constrained::All(1)), dualKey_(dualKey) {
-  }
-
-  /** Construct four-ary factor */
-  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
-      const RowVector& A3, Key i4, const RowVector& A4, double b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, (Vector(1) << b),
-          noiseModel::Constrained::All(1)), dualKey_(dualKey) {
-  }
-
-  /** Construct five-ary factor */
-  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
-      const RowVector& A3, Key i4, const RowVector& A4, Key i5, const RowVector& A5,
-      double b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, (Vector(1) << b),
-          noiseModel::Constrained::All(1)), dualKey_(dualKey) {
-  }
-
-  /** Construct six-ary factor */
-  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
-      const RowVector& A3, Key i4, const RowVector& A4, Key i5, const RowVector& A5,
-      Key i6, const RowVector& A6, double b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, i6, A6, (Vector(1) << b),
+      Base(i1, A1, i2, A2, i3, A3, (Vector(1) << b).finished(),
           noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
 
@@ -98,7 +75,7 @@ public:
    *         collection of keys and matrices making up the factor. */
   template<typename TERMS>
   LinearInequality(const TERMS& terms, double b, Key dualKey) :
-      Base(terms, (Vector(1) << b), noiseModel::Constrained::All(1)), dualKey_(
+      Base(terms, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
           dualKey) {
   }
 

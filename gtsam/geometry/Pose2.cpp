@@ -34,6 +34,7 @@ INSTANTIATE_LIE(Pose2);
 GTSAM_CONCEPT_POSE_INST(Pose2);
 
 static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
+static const Matrix3 I3 = eye(3);
 
 /* ************************************************************************* */
 Matrix3 Pose2::matrix() const {
@@ -160,7 +161,7 @@ Matrix3 Pose2::dexpInvL(const Vector3& v) {
   // TODO: Duplicated code with Pose3. Maybe unify them at higher Lie level?
   // Bernoulli numbers, from Wikipedia
   static const Vector B = (Vector(9) << 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
-      0.0, 1.0 / 42.0, 0.0, -1.0 / 30);
+      0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
   static const int N = 5; // order of approximation
   Matrix res = I3;
   Matrix3 ad_i = I3;

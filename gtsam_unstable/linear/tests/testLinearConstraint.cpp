@@ -39,7 +39,7 @@ namespace {
       (make_pair(15, 3*Matrix3::Identity()));
 
     // RHS and sigmas
-    const Vector b = (Vector(3) << 1., 2., 3.);
+    const Vector b = (Vector(3) << 1., 2., 3.).finished();
     const SharedDiagonal noise = noiseModel::Constrained::All(3);
   }
 }
@@ -96,8 +96,8 @@ TEST(LinearConstraint, Hessian_conversion) {
         1.57,        2.695,         -1.1,        -2.35,
        2.695,      11.3125,        -0.65,      -10.225,
         -1.1,        -0.65,            1,          0.5,
-       -2.35,      -10.225,          0.5,         9.25),
-      (Vector(4) << -7.885, -28.5175, 2.75, 25.675),
+       -2.35,      -10.225,          0.5,         9.25).finished(),
+      (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
       73.1725);
 
   try {
@@ -187,22 +187,22 @@ TEST(LinearConstraint, matrices)
 TEST(LinearConstraint, operators )
 {
   Matrix I = eye(2);
-  Vector b = (Vector(2) << 0.2,-0.1);
+  Vector b = (Vector(2) << 0.2,-0.1).finished();
   LinearConstraint lf(1, -I, 2, I, b);
 
   VectorValues c;
-  c.insert(1, (Vector(2) << 10.,20.));
-  c.insert(2, (Vector(2) << 30.,60.));
+  c.insert(1, (Vector(2) << 10.,20.).finished());
+  c.insert(2, (Vector(2) << 30.,60.).finished());
 
   // test A*x
-  Vector expectedE = (Vector(2) << 20.,40.);
+  Vector expectedE = (Vector(2) << 20.,40.).finished();
   Vector actualE = lf * c;
   EXPECT(assert_equal(expectedE, actualE));
 
   // test A^e
   VectorValues expectedX;
-  expectedX.insert(1, (Vector(2) << -20.,-40.));
-  expectedX.insert(2, (Vector(2) << 20., 40.));
+  expectedX.insert(1, (Vector(2) << -20.,-40.).finished());
+  expectedX.insert(2, (Vector(2) << 20., 40.).finished());
   VectorValues actualX = VectorValues::Zero(expectedX);
   lf.transposeMultiplyAdd(1.0, actualE, actualX);
   EXPECT(assert_equal(expectedX, actualX));
@@ -210,8 +210,8 @@ TEST(LinearConstraint, operators )
   // test gradient at zero
   Matrix A; Vector b2; boost::tie(A,b2) = lf.jacobian();
   VectorValues expectedG;
-  expectedG.insert(1, (Vector(2) << -1,-1));
-  expectedG.insert(2, (Vector(2) <<  1, 1));
+  expectedG.insert(1, (Vector(2) << -1,-1).finished());
+  expectedG.insert(2, (Vector(2) <<  1, 1).finished());
   VectorValues actualG = lf.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
 }

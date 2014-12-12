@@ -29,17 +29,15 @@ namespace gtsam {
 /* ************************************************************************* */
 template<typename TERMS>
 JacobianFactor::JacobianFactor(const TERMS&terms, const Vector &b,
-    const SharedDiagonal& model, const boost::optional<Key>& dualKey) :
-    dualKey_(dualKey) {
+    const SharedDiagonal& model) {
   fillTerms(terms, b, model);
 }
 
 /* ************************************************************************* */
 template<typename KEYS>
 JacobianFactor::JacobianFactor(const KEYS& keys,
-    const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& model,
-    const boost::optional<Key>& dualKey) :
-    Base(keys), Ab_(augmentedMatrix), dualKey_(dualKey) {
+    const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& model) :
+    Base(keys), Ab_(augmentedMatrix) {
   // Check noise model dimension
   if (model && (DenseIndex) model->dim() != augmentedMatrix.rows())
     throw InvalidNoiseModel(augmentedMatrix.rows(), model->dim());

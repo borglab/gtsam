@@ -166,7 +166,7 @@ static SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
 static SharedDiagonal constraintModel = noiseModel::Constrained::All(2);
 
 static const Key _l1_=0, _x1_=1, _x2_=2;
-static const Key _x_=0, _y_=1, _z_=2, _d_=3, _e_=4;
+static const Key _x_=0, _y_=1, _z_=2;
 } // \namespace impl
 
 
@@ -423,7 +423,7 @@ inline GaussianFactorGraph createSimpleConstraintGraph() {
   Matrix Ay1 = eye(2) * -1;
   Vector b2 = Vector2(0.0, 0.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
-      constraintModel, _d_));
+      constraintModel));
 
   // construct the graph
   GaussianFactorGraph fg;
@@ -469,7 +469,7 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
   Matrix Ay1 = eye(2) * 10;
   Vector b2 = Vector2(1.0, 2.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
-      constraintModel, _d_));
+      constraintModel));
 
   // construct the graph
   GaussianFactorGraph fg;
@@ -513,7 +513,7 @@ inline GaussianFactorGraph createMultiConstraintGraph() {
   b1(0) = 1.0;
   b1(1) = 2.0;
   JacobianFactor::shared_ptr lc1(new JacobianFactor(_x_, A11, _y_, A12, b1,
-      constraintModel, _d_));
+      constraintModel));
 
   // constraint 2
   Matrix A21(2, 2);
@@ -532,7 +532,7 @@ inline GaussianFactorGraph createMultiConstraintGraph() {
   b2(0) = 3.0;
   b2(1) = 4.0;
   JacobianFactor::shared_ptr lc2(new JacobianFactor(_x_, A21, _z_, A22, b2,
-      constraintModel, _e_));
+      constraintModel));
 
   // construct the graph
   GaussianFactorGraph fg;

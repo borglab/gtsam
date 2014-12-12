@@ -262,11 +262,10 @@ namespace gtsam {
     /**
      * Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b
      * \right\Vert^2 \f$, centered around zero. The gradient is \f$ A^T(Ax-b) \f$.
-     * @param duals[optional] Values of dual variables to scale constrained gradients, \lambda*\nabla c(x)
      * @param [output] g A VectorValues to store the gradient, which must be preallocated,
      *        see allocateVectorValues
      * @return The gradient as a VectorValues */
-    virtual VectorValues gradientAtZero(const boost::optional<const VectorValues&> duals = boost::none) const;
+    virtual VectorValues gradientAtZero() const;
 
     /** Optimize along the gradient direction, with a closed-form computation to perform the line
      *  search.  The gradient is computed about \f$ \delta x=0 \f$.
@@ -327,19 +326,6 @@ namespace gtsam {
      * @return a pair of <unconstrained, constrained> graphs
      */
     boost::tuple<GaussianFactorGraph, GaussianFactorGraph, GaussianFactorGraph> splitConstraints() const;
-
-    /**
-     * Build a dual graph to estimate dual variables associated with constrained factors
-     */
-    GaussianFactorGraph::shared_ptr buildDualGraph(
-        const KeySet& constrainedVariables, const VariableIndex& variableIndex,
-        const VectorValues& delta) const;
-
-    /**
-     * Create a dual factor from a constrained key
-     */
-    JacobianFactor::shared_ptr createDualFactor(Key key,
-      const VariableIndex& variableIndex, const VectorValues& delta) const;
 
   private:
     /** Serialization function */

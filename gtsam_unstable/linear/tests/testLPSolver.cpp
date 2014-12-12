@@ -21,16 +21,25 @@ TEST(LPSolver, oneD) {
   objCoeffs.insert(Y(1), repeat(1, -5.0));
   objCoeffs.insert(X(2), repeat(1, -4.0));
   objCoeffs.insert(X(3), repeat(1, -6.0));
-  LinearInequality inequality(
-      Y(1), (Matrix(3,1)<< 1,3,3),
-      X(2), (Matrix(3,1)<< -1,2,2),
-      X(3), (Matrix(3,1)<< 1,4,0), (Vector(3)<<20,42,30), 0);
+  LinearInequality inequality1(
+      Y(1), (Matrix(1,1)<< 1).finished(),
+      X(2), (Matrix(1,1)<< -1).finished(),
+      X(3), (Matrix(1,1)<< 1).finished(), 20, 0);
+  LinearInequality inequality2(
+      Y(1), (Matrix(1,1)<< 3).finished(),
+      X(2), (Matrix(1,1)<< 2).finished(),
+      X(3), (Matrix(1,1)<< 4).finished(), 42, 1);
+  LinearInequality inequality3(
+      Y(1), (Matrix(1,1)<< 3).finished(),
+      X(2), (Matrix(1,1)<< 2).finished(), 30, 2);
   VectorValues lowerBounds;
   lowerBounds.insert(Y(1), zero(1));
   lowerBounds.insert(X(2), zero(1));
   lowerBounds.insert(X(3), zero(1));
   LinearInequalityFactorGraph::shared_ptr inequalities(new LinearInequalityFactorGraph);
-  inequalities->push_back(inequality);
+  inequalities->push_back(inequality1);
+  inequalities->push_back(inequality2);
+  inequalities->push_back(inequality3);
   LinearEqualityFactorGraph::shared_ptr equalities(new LinearEqualityFactorGraph);
 
   LPSolver solver(objCoeffs, equalities, inequalities, lowerBounds);
@@ -64,14 +73,20 @@ TEST(LPSolver, oneD) {
 
 TEST(LPSolver, threeD) {
   VectorValues objCoeffs;
-  objCoeffs.insert(X(1), (Vector(3)<<-5.0, -4.0, -6.0));
-  LinearInequality inequality(
-      X(1), (Matrix(3,3)<< 1,-1,1,3,2,4,3,2,0), (Vector(3)<<20,42,30), 0);
+  objCoeffs.insert(X(1), (Vector(3)<<-5.0, -4.0, -6.0).finished());
+  LinearInequality inequality1(
+      X(1), (Matrix(1,3)<< 1,-1,1).finished(), 20, 0);
+  LinearInequality inequality2(
+      X(1), (Matrix(1,3)<< 3,2,4).finished(), 42, 1);
+  LinearInequality inequality3(
+      X(1), (Matrix(1,3)<< 3,2,0).finished(), 30, 2);
   VectorValues lowerBounds;
   lowerBounds.insert(X(1), zeros(3,1));
 
   LinearInequalityFactorGraph::shared_ptr inequalities(new LinearInequalityFactorGraph);
-  inequalities->push_back(inequality);
+  inequalities->push_back(inequality1);
+  inequalities->push_back(inequality2);
+  inequalities->push_back(inequality3);
   LinearEqualityFactorGraph::shared_ptr equalities(new LinearEqualityFactorGraph);
 
   LPSolver solver(objCoeffs, equalities, inequalities, lowerBounds);
@@ -95,7 +110,7 @@ TEST(LPSolver, threeD) {
 
   VectorValues solution = solver.solve();
   VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(3)<<0.0, 15, 3));
+  expectedSolution.insert(X(1), (Vector(3)<<0.0, 15, 3).finished());
   EXPECT(assert_equal(expectedSolution, solution));
 }
 
