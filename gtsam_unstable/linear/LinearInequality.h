@@ -22,6 +22,8 @@
 
 namespace gtsam {
 
+typedef Eigen::Matrix<double,1,Eigen::Dynamic> RowVector;
+
 /**
  * This class defines Linear constraints by inherit Base
  * with the special Constrained noise model
@@ -49,44 +51,44 @@ public:
   }
 
   /** Construct unary factor */
-  LinearInequality(Key i1, const Matrix& A1, double b, Key dualKey) :
+  LinearInequality(Key i1, const RowVector& A1, double b, Key dualKey) :
       Base(i1, A1, (Vector(1) << b), noiseModel::Constrained::All(1)), dualKey_(
           dualKey) {
   }
 
   /** Construct binary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, double b,
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, double b,
       Key dualKey) :
       Base(i1, A1, i2, A2, (Vector(1) << b), noiseModel::Constrained::All(1)), dualKey_(
           dualKey) {
   }
 
   /** Construct ternary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, double b, Key dualKey) :
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
+      const RowVector& A3, double b, Key dualKey) :
       Base(i1, A1, i2, A2, i3, A3, (Vector(1) << b),
           noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
 
   /** Construct four-ary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, double b, Key dualKey) :
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
+      const RowVector& A3, Key i4, const RowVector& A4, double b, Key dualKey) :
       Base(i1, A1, i2, A2, i3, A3, i4, A4, (Vector(1) << b),
           noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
 
   /** Construct five-ary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, Key i5, const Matrix& A5,
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
+      const RowVector& A3, Key i4, const RowVector& A4, Key i5, const RowVector& A5,
       double b, Key dualKey) :
       Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, (Vector(1) << b),
           noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
 
   /** Construct six-ary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, Key i5, const Matrix& A5,
-      Key i6, const Matrix& A6, double b, Key dualKey) :
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
+      const RowVector& A3, Key i4, const RowVector& A4, Key i5, const RowVector& A5,
+      Key i6, const RowVector& A6, double b, Key dualKey) :
       Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, i6, A6, (Vector(1) << b),
           noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
