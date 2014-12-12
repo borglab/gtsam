@@ -17,10 +17,9 @@
  *  @date December 2014
  */
 
+#include <gtsam_unstable/nonlinear/ExpressionFactorGraph.h>
 #include <gtsam_unstable/geometry/Event.h>
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -49,31 +48,6 @@ static SharedNoiseModel heightModel(noiseModel::Isotropic::Sigma(1, 100 * cm));
 static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
 static const Point3 microphoneAt0;
-
-/**
- * Factor graph that supports adding Expression Factors directly
- */
-class ExpressionFactorGraph: public NonlinearFactorGraph {
-
-public:
-
-  /// @name Adding Factors
-  /// @{
-
-  /**
-   * Directly add ExpressionFactor that implements |h(x)-z|^2_R
-   * @param h expression that implements measurement function
-   * @param z measurement
-   * @param R model
-   */
-  template<typename T>
-  void addExpressionFactor(const Expression<T>& h, const T& z,
-      const SharedNoiseModel& R) {
-    push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
-  }
-
-  /// @}
-};
 
 //*****************************************************************************
 TEST( TOAFactor, NewWay ) {
