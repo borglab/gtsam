@@ -14,9 +14,9 @@
  * @brief  Unit tests for Similarity3 class
  */
 
-#include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/base/Manifold.h>
 
 namespace gtsam {
 
@@ -28,6 +28,16 @@ class Similarity3: private Matrix4 {
   /// Construct from Eigen types
   Similarity3(const Matrix3& R, const Vector3& t, double s) {
     *this << s * R, t, 0, 0, 0, 1;
+  }
+
+  /// Return the translation
+  const Eigen::Block<const Matrix4, 3, 1> t() const {
+    return this->topRightCorner<3, 1>();
+  }
+
+  /// Return the rotation matrix
+  const Eigen::Block<const Matrix4, 3, 3> R() const {
+    return this->topLeftCorner<3, 3>();
   }
 
 public:
@@ -44,7 +54,7 @@ public:
 
   /// Construct from GTSAM types
   Similarity3(const Rot3& R, const Point3& t, double s) {
-    *this << s * R.matrix(), t.vector(), 0, 0, 0, 1;
+    *this << R.matrix(), t.vector(), 0, 0, 0, 1.0/s;
   }
 
   bool operator==(const Similarity3& other) const {
@@ -64,33 +74,40 @@ public:
     return 7;
   }
 
-  /// Update Similarity transform via 7-dim vector in tangent space
-  Similarity3 retract(const Vector& v) const {
+  /// Return the rotation matrix
+  Rot3 rotation() const {
+    return R().eval();
+  }
 
-    // Get rotation - translation - scale from 4*4
-    Rot3 R(this->topLeftCorner<3, 3>());
-    Vector3 t(this->topRightCorner<3, 1>());
-    double s((*this)(3, 3));
+  /// Return the translation
+  Point3 translation() const {
+    Vector3 t = this->t();
+    return Point3::Expmap(t);
+  }
+
+  /// Return the scale
+  double scale() const {
+    return 1.0 / (*this)(3, 3);
+  }
+
+  /// Update Similarity transform via 7-dim vector in tangent space
+  Similarity3 retract(const Vector7& v) const {
 
     // Will retracting or localCoordinating R work if R is not a unit rotation?
     // Also, how do we actually get s out?  Seems like we need to store it somewhere.
     return Similarity3( //
-        R.retract(v.head<3>()), // retract rotation using v[0,1,2]
-        Point3(t + v.segment < 3 > (3)), // retract translation via v[3,4,5]
-        s + v[6]); // finally, update scale using v[6]
+        rotation().retract(v.head<3>()), // retract rotation using v[0,1,2]
+        translation().retract(v.segment<3>(3)),
+        scale() + v[6]); // finally, update scale using v[6]
   }
 
   /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
-  Vector localCoordinates(const Similarity3& other) const {
-    Rot3 R(this->topLeftCorner<3,3>());
-    Vector3 t(this->topRightCorner<3,1>());
-    Vector3 o(other.topRightCorner<3,1>());
-    double s((*this)(3,3));
+  Vector7 localCoordinates(const Similarity3& other) const {
 
     Vector7 v;
-    v.head<3>() = R.localCoordinates(other.topLeftCorner<3,3>());
-    v.segment<3>(3) = o - t;
-    v[6] = other(3,3) - (*this)(3,3);
+    v.head<3>() = rotation().localCoordinates(other.rotation());
+    v.segment<3>(3) = translation().localCoordinates(other.translation());
+    v[6] = other.scale() - scale();
     return v;
   }
 
@@ -109,33 +126,51 @@ public:
 };
 }
 
+#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 using namespace std;
 
 //******************************************************************************
-TEST(Similarity3, constructors) {
+TEST(Similarity3, Constructors) {
   Similarity3 test;
 }
 
 //******************************************************************************
-TEST(Similarity3, manifold) {
+TEST(Similarity3, Getters) {
+  Similarity3 test;
+  EXPECT(assert_equal(Rot3(), test.rotation()));
+  EXPECT(assert_equal(Point3(), test.translation()));
+  EXPECT_DOUBLES_EQUAL(1.0, test.scale(), 1e-9);
+}
+
+//******************************************************************************
+TEST(Similarity3, Getters2) {
+  Similarity3 test(Rot3::ypr(1, 2, 3), Point3(4, 5, 6), 7);
+  EXPECT(assert_equal(Rot3::ypr(1, 2, 3), test.rotation()));
+  EXPECT(assert_equal(Point3(4, 5, 6), test.translation()));
+  EXPECT_DOUBLES_EQUAL(7.0, test.scale(), 1e-9);
+}
+
+//******************************************************************************
+TEST(Similarity3, Manifold) {
   EXPECT_LONGS_EQUAL(7, Similarity3::Dim());
-  Vector7 z = Vector7::Zero();
+  Vector z = Vector7::Zero();
   Similarity3 sim;
-  EXPECT(sim.retract(z)==sim);
+  EXPECT(sim.retract(z) == sim);
 
   Vector7 v = Vector7::Zero();
   v(6) = 2;
   Similarity3 sim2;
-  EXPECT(sim2.retract(z)==sim2);
+  EXPECT(sim2.retract(z) == sim2);
 
-  EXPECT(sim2.localCoordinates(sim) == zero);
+  EXPECT(assert_equal(z, sim2.localCoordinates(sim)));
 
-  Similarity3 sim3 = Similarity3(Matrix3::Identity(), {1,1,1}, 1);
-  Vector7 v3 = {0,0,0,1,1,1,0};
-  EXPECT(sim2.localCoordinates(sim3)==v3);
+  Similarity3 sim3 = Similarity3(Rot3(), Point3(1, 1, 1), 1);
+  Vector v3(7);
+  v3 << 0, 0, 0, 1, 1, 1, 0;
+  EXPECT(assert_equal(v3, sim2.localCoordinates(sim3)));
 
   // TODO add unit tests for retract and localCoordinates
 }
