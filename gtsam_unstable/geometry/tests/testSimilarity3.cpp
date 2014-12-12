@@ -54,7 +54,7 @@ public:
 
   /// Construct from GTSAM types
   Similarity3(const Rot3& R, const Point3& t, double s) {
-    *this << R.matrix(), t.vector(), 0, 0, 0, 1.0/s;
+    *this << R.matrix(), t.vector(), 0, 0, 0, 1.0 / s;
   }
 
   bool operator==(const Similarity3& other) const {
@@ -97,8 +97,7 @@ public:
     // Also, how do we actually get s out?  Seems like we need to store it somewhere.
     return Similarity3( //
         rotation().retract(v.head<3>()), // retract rotation using v[0,1,2]
-        translation().retract(v.segment<3>(3)),
-        scale() + v[6]); // finally, update scale using v[6]
+        translation().retract(v.segment<3>(3)), scale() + v[6]); // finally, update scale using v[6]
   }
 
   /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
@@ -171,6 +170,11 @@ TEST(Similarity3, Manifold) {
   Vector v3(7);
   v3 << 0, 0, 0, 1, 1, 1, 0;
   EXPECT(assert_equal(v3, sim2.localCoordinates(sim3)));
+
+  Similarity3 other = Similarity3(Rot3::ypr(1, 2, 3), Point3(4, 5, 6), 7);
+//  Similarity3 other = Similarity3(Rot3(),Point3(4,5,6),1);
+
+  EXPECT(sim.retract(sim.localCoordinates(other)) == other);
 
   // TODO add unit tests for retract and localCoordinates
 }
