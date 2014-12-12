@@ -120,6 +120,9 @@ public:
   /// dual key
   Key dualKey() const { return dualKey_; }
 
+  /// for active set method: equality constraints are always active
+  bool active() const { return true; }
+
   /** Special error_vector for constraints (A*x-b) */
   Vector error_vector(const VectorValues& c) const {
     return unweighted_error(c);
