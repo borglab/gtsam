@@ -106,6 +106,24 @@ TEST(JacobianFactor, constructors_and_accessors)
     EXPECT(noise == actual.get_model());
   }
   {
+    // Test three-term constructor with std::map
+    JacobianFactor expected(
+      boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, noise);
+    map<Key,Matrix> mapTerms;
+    // note order of insertion plays no role: order will be determined by keys
+    mapTerms.insert(terms[2]);
+    mapTerms.insert(terms[1]);
+    mapTerms.insert(terms[0]);
+    JacobianFactor actual(mapTerms, b, noise);
+    EXPECT(assert_equal(expected, actual));
+    LONGS_EQUAL((long)terms[2].first, (long)actual.keys().back());
+    EXPECT(assert_equal(terms[2].second, actual.getA(actual.end() - 1)));
+    EXPECT(assert_equal(b, expected.getb()));
+    EXPECT(assert_equal(b, actual.getb()));
+    EXPECT(noise == expected.get_model());
+    EXPECT(noise == actual.get_model());
+  }
+  {
     // VerticalBlockMatrix constructor
     JacobianFactor expected(
       boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, noise);
@@ -576,7 +594,7 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   Matrix m(1,2);
   Matrix Aempty = m.topRows(0);
   Vector bempty = m.block(0,0,0,1);
-  JacobianFactor expectedLF(2, Aempty, bempty, noiseModel::Diagonal::Sigmas(Vector()));
+  JacobianFactor expectedLF(2, Aempty, bempty, noiseModel::Constrained::All(0));
   EXPECT(assert_equal(expectedLF, *actual.second));
 
   // verify CG

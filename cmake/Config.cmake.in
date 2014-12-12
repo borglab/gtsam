@@ -6,7 +6,7 @@
 get_filename_component(OUR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 if(EXISTS "${OUR_CMAKE_DIR}/CMakeCache.txt")
   # In build tree
-  set(@PACKAGE_NAME@_INCLUDE_DIR @CMAKE_SOURCE_DIR@ @CMAKE_BINARY_DIR@ CACHE PATH "@PACKAGE_NAME@ include directory")
+  set(@PACKAGE_NAME@_INCLUDE_DIR @CMAKE_SOURCE_DIR@ CACHE PATH "@PACKAGE_NAME@ include directory")
 else()
   # Find installed library
   set(@PACKAGE_NAME@_INCLUDE_DIR "${OUR_CMAKE_DIR}/@CONF_REL_INCLUDE_DIR@" CACHE PATH "@PACKAGE_NAME@ include directory")

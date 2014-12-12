@@ -67,15 +67,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues VectorValues::One(const VectorValues& other)
-  {
-    VectorValues result;
-    BOOST_FOREACH(const KeyValuePair& v, other)
-      result.values_.insert(make_pair(v.first, Vector::Ones(v.second.size())));
-    return result;
-  }
-
-  /* ************************************************************************* */
   void VectorValues::update(const VectorValues& values)
   {
     iterator hint = begin();
@@ -312,22 +303,6 @@ namespace gtsam {
     // The result.end() hint here should result in constant-time inserts
     for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
       result.values_.insert(result.end(), make_pair(j1->first, j1->second - j2->second));
-
-    return result;
-  }
-
-  /* ************************************************************************* */
-  VectorValues VectorValues::operator*(const VectorValues& c) const
-  {
-    if(this->size() != c.size())
-      throw invalid_argument("VectorValues::operator* called with different vector sizes");
-    assert_throw(hasSameStructure(c),
-      invalid_argument("VectorValues::operator* called with different vector sizes"));
-
-    VectorValues result;
-    // The result.end() hint here should result in constant-time inserts
-    for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
-      result.values_.insert(result.end(), make_pair(j1->first, j1->second * j2->second));
 
     return result;
   }

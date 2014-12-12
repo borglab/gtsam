@@ -185,45 +185,45 @@ TEST ( Partition, findSeparator2 )
 // x25 x26             x27 x28
 TEST ( Partition, findSeparator3_with_reduced_camera )
 {
-	GenericGraph3D graph;
-	for (int j=1; j<=8; j++)
-		graph.push_back(boost::make_shared<GenericFactor3D>(25, j));
-	for (int j=1; j<=16; j++)
-		graph.push_back(boost::make_shared<GenericFactor3D>(26, j));
-	for (int j=9; j<=24; j++)
-		graph.push_back(boost::make_shared<GenericFactor3D>(27, j));
-	for (int j=17; j<=24; j++)
-		graph.push_back(boost::make_shared<GenericFactor3D>(28, j));
+  GenericGraph3D graph;
+  for (int j=1; j<=8; j++)
+    graph.push_back(boost::make_shared<GenericFactor3D>(25, j));
+  for (int j=1; j<=16; j++)
+    graph.push_back(boost::make_shared<GenericFactor3D>(26, j));
+  for (int j=9; j<=24; j++)
+    graph.push_back(boost::make_shared<GenericFactor3D>(27, j));
+  for (int j=17; j<=24; j++)
+    graph.push_back(boost::make_shared<GenericFactor3D>(28, j));
 
-	std::vector<size_t> keys;
-	for(int i=1; i<=28; i++)
-		keys.push_back(i);
+  std::vector<size_t> keys;
+  for(int i=1; i<=28; i++)
+    keys.push_back(i);
 
-	vector<Symbol> int2symbol;
-	int2symbol.push_back(Symbol('x',0)); // dummy
-	for(int i=1; i<=24; i++)
-		int2symbol.push_back(Symbol('l',i));
-	int2symbol.push_back(Symbol('x',25));
-	int2symbol.push_back(Symbol('x',26));
-	int2symbol.push_back(Symbol('x',27));
-	int2symbol.push_back(Symbol('x',28));
+  vector<Symbol> int2symbol;
+  int2symbol.push_back(Symbol('x',0)); // dummy
+  for(int i=1; i<=24; i++)
+    int2symbol.push_back(Symbol('l',i));
+  int2symbol.push_back(Symbol('x',25));
+  int2symbol.push_back(Symbol('x',26));
+  int2symbol.push_back(Symbol('x',27));
+  int2symbol.push_back(Symbol('x',28));
 
-	WorkSpace workspace(29);
-	bool reduceGraph = true;
-	int numIsland = findSeparator(graph, keys, 3, workspace, false, int2symbol, reduceGraph, 0, 0);
-	LONGS_EQUAL(2, numIsland);
+  WorkSpace workspace(29);
+  bool reduceGraph = true;
+  int numIsland = findSeparator(graph, keys, 3, workspace, false, int2symbol, reduceGraph, 0, 0);
+  LONGS_EQUAL(2, numIsland);
 
-	partition::PartitionTable& partitionTable = workspace.partitionTable;
-	for (int j=1; j<=8; j++)
-		LONGS_EQUAL(1, partitionTable[j]);
-	for (int j=9; j<=16; j++)
-		LONGS_EQUAL(0, partitionTable[j]);
-	for (int j=17; j<=24; j++)
-		LONGS_EQUAL(2, partitionTable[j]);
-	LONGS_EQUAL(1, partitionTable[25]);
-	LONGS_EQUAL(1, partitionTable[26]);
-	LONGS_EQUAL(2, partitionTable[27]);
-	LONGS_EQUAL(2, partitionTable[28]);
+  partition::PartitionTable& partitionTable = workspace.partitionTable;
+  for (int j=1; j<=8; j++)
+    LONGS_EQUAL(1, partitionTable[j]);
+  for (int j=9; j<=16; j++)
+    LONGS_EQUAL(0, partitionTable[j]);
+  for (int j=17; j<=24; j++)
+    LONGS_EQUAL(2, partitionTable[j]);
+  LONGS_EQUAL(1, partitionTable[25]);
+  LONGS_EQUAL(1, partitionTable[26]);
+  LONGS_EQUAL(2, partitionTable[27]);
+  LONGS_EQUAL(2, partitionTable[28]);
 }
 
 /* ************************************************************************* */

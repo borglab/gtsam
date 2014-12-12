@@ -300,7 +300,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-VectorValues GaussianFactorGraph::gradientAtZero() const {
+  VectorValues GaussianFactorGraph::gradientAtZero() const {
     // Zero-out the gradient
     VectorValues g;
     BOOST_FOREACH(const sharedFactor& factor, *this) {

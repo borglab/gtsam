@@ -650,7 +650,6 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
   HessianFactor::shared_ptr jointFactor;
   try {
     jointFactor = boost::make_shared<HessianFactor>(factors, Scatter(factors, keys));
-//    jointFactor->print("jointFactor: ");
   } catch(std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateCholesky was called with a request to eliminate variables that are not\n"
@@ -666,7 +665,6 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
     // Erase the eliminated keys in the remaining factor
     jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + numberOfKeysToEliminate);
   } catch(CholeskyFailed&) {
-//    std::cout << "Problematic Hessian: " << jointFactor->information() << std::endl;
     throw IndeterminantLinearSystemException(keys.front());
   }
 

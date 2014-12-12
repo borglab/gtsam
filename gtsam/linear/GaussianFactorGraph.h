@@ -262,6 +262,7 @@ namespace gtsam {
     /**
      * Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b
      * \right\Vert^2 \f$, centered around zero. The gradient is \f$ A^T(Ax-b) \f$.
+     * @param fg The Jacobian factor graph $(A,b)$
      * @param [output] g A VectorValues to store the gradient, which must be preallocated,
      *        see allocateVectorValues
      * @return The gradient as a VectorValues */
@@ -320,12 +321,6 @@ namespace gtsam {
     void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
     /// @}
-
-    /**
-     * Split constraints and unconstrained factors into two different graphs
-     * @return a pair of <unconstrained, constrained> graphs
-     */
-    boost::tuple<GaussianFactorGraph, GaussianFactorGraph, GaussianFactorGraph> splitConstraints() const;
 
   private:
     /** Serialization function */

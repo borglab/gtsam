@@ -281,17 +281,12 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
   size_t m = weights.size();
   static const double inf = std::numeric_limits<double>::infinity();
 
-  // Check once for zero entries of a.
+  // Check once for zero entries of a. TODO: really needed ?
   vector<bool> isZero;
-  for (size_t i = 0; i < m; ++i) {
-    isZero.push_back(fabs(a[i]) < 1e-9);
-    // If there is a valid (a[i]!=0) inequality constraint (weight<0),
-    // ignore it by also setting isZero flag
-    if (!isZero[i] && (weights[i]<0)) isZero[i] = true;
-  }
+  for (size_t i = 0; i < m; ++i) isZero.push_back(fabs(a[i]) < 1e-9);
 
+  // If there is a valid (a!=0) constraint (sigma==0) return the first one
   for (size_t i = 0; i < m; ++i) {
-    // If there is a valid (a!=0) constraint (sigma==0) return the first one
     if (weights[i] == inf && !isZero[i]) {
       // Basically, instead of doing a normal QR step with the weighted
       // pseudoinverse, we enforce the constraint by turning

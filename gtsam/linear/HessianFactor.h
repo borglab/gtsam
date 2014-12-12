@@ -384,10 +384,7 @@ namespace gtsam {
 
     void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
 
-    /**
-     * eta for Hessian
-     * Ignore duals parameters. It's only valid for constraints, which need to be a JacobianFactor
-     */
+    /// eta for Hessian
     VectorValues gradientAtZero() const;
 
     virtual void gradientAtZero(double* d) const;
