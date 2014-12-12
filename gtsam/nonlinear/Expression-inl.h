@@ -21,6 +21,7 @@
 
 #include <gtsam_unstable/nonlinear/CallRecord.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/base/concepts.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/OptionalJacobian.h>
@@ -143,7 +144,7 @@ void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
  */
 template<class T>
 class ExecutionTrace {
-  static const int Dim = traits::dimension<T>::value;
+  static const int Dim = traits_x<T>::dimension;
   enum {
     Constant, Leaf, Function
   } kind;
@@ -624,7 +625,7 @@ struct FunctionalNode {
     /// Provide convenience access to Record storage and implement
     /// the virtual function based interface of CallRecord using the CallRecordImplementor
     struct Record: public internal::CallRecordImplementor<Record,
-        traits::dimension<T>::value>, public Base::Record {
+        traits_x<T>::dimension>, public Base::Record {
       using Base::Record::print;
       using Base::Record::startReverseAD4;
       using Base::Record::reverseAD4;

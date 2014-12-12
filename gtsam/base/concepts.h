@@ -18,7 +18,7 @@
 
 namespace gtsam {
 
-template <typename T> struct traits_x {};
+
 
 /**
  * @name Algebraic Structure Tags
@@ -34,6 +34,19 @@ struct vector_space_tag: public lie_group_tag {};
 // Group operator syntax flavors
 struct multiplicative_group_tag {};
 struct additive_group_tag {};
+
+// TODO: Remove
+namespace traits {
+template<typename T>
+struct dimension;
+}
+template <typename T> struct traits_x {
+  // todo: remove anything in here ASAP.
+  // This is just here during development to avoid compilation
+  // errors while implmenting traits for everything.
+  enum { dimension = traits::dimension<T>::value };
+  typedef manifold_tag structure_category;
+};
 
 
 namespace internal {
