@@ -15,9 +15,6 @@
 
 namespace gtsam {
 
-static const double ACTIVE = 0.0;
-static const double INACTIVE = std::numeric_limits<double>::infinity();
-
 /// This struct holds the state of QPSolver at each iteration
 struct QPState {
   VectorValues values;
@@ -73,6 +70,7 @@ public:
     if (variableIndex.find(key) != variableIndex.end()) {
       BOOST_FOREACH(size_t factorIx, variableIndex[key]){
         typename FACTOR::shared_ptr factor = graph.at(factorIx);
+        if (!factor->active()) continue;
         Matrix Ai = factor->getA(factor->find(key)).transpose();
         Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
       }
@@ -84,15 +82,6 @@ public:
   JacobianFactor::shared_ptr createDualFactor(Key key,
       const LinearInequalityFactorGraph& workingSet,
       const VectorValues& delta) const;
-
-  /**
-   * Create dummy prior for inactive dual variables
-   * TODO: This might be inefficient but I don't know how to avoid
-   * the Indeterminant exception due to no information for the duals
-   * on inactive components of the constraints.
-   */
-  GaussianFactor::shared_ptr createDualPrior(
-      const LinearInequality::shared_ptr& factor) const;
 
   /**
    * Build the dual graph to solve for the Lagrange multipliers.
@@ -161,16 +150,9 @@ public:
    * And we want to remove the worst one with the largest lambda from the active set.
    *
    */
-  std::pair<int, int> identifyLeavingConstraint(
+  int identifyLeavingConstraint(
       const LinearInequalityFactorGraph& workingSet,
       const VectorValues& lambdas) const;
-
-  /**
-   * Inactivate or activate an inequality constraint
-   */
-  LinearInequalityFactorGraph updateWorkingSet(
-      const LinearInequalityFactorGraph& workingSet, int factorIx, int sigmaIx,
-      double state) const;
 
   /**
    * Compute step size alpha for the new solution x' = xk + alpha*p, where alpha \in [0,1]
@@ -180,7 +162,7 @@ public:
    *            This constraint will be added to the working set and become active
    *            in the next iteration
    */
-  boost::tuple<double, int, int> computeStepSize(
+  boost::tuple<double, int> computeStepSize(
       const LinearInequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p) const;
 

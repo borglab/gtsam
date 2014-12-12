@@ -22,6 +22,8 @@
 
 namespace gtsam {
 
+typedef Eigen::RowVectorXd RowVector;
+
 /**
  * This class defines Linear constraints by inherit Base
  * with the special Constrained noise model
@@ -34,6 +36,7 @@ public:
 
 private:
   Key dualKey_;
+  bool active_;
 
 public:
   /** default constructor for I/O */
@@ -48,53 +51,55 @@ public:
   }
 
   /** Construct unary factor */
-  LinearInequality(Key i1, const Matrix& A1, const Vector& b, Key dualKey) :
-      Base(i1, A1, b, noiseModel::Constrained::All(b.rows())), dualKey_(dualKey) {
+  LinearInequality(Key i1, const RowVector& A1, double b, Key dualKey) :
+      Base(i1, A1, (Vector(1) << b), noiseModel::Constrained::All(1)), dualKey_(
+          dualKey) {
   }
 
   /** Construct binary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2,
-      const Vector& b, Key dualKey) :
-      Base(i1, A1, i2, A2, b, noiseModel::Constrained::All(b.rows())), dualKey_(
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, double b,
+      Key dualKey) :
+      Base(i1, A1, i2, A2, (Vector(1) << b), noiseModel::Constrained::All(1)), dualKey_(
           dualKey) {
   }
 
   /** Construct ternary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, const Vector& b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, b, noiseModel::Constrained::All(b.rows())), dualKey_(
-          dualKey) {
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
+      const RowVector& A3, double b, Key dualKey) :
+      Base(i1, A1, i2, A2, i3, A3, (Vector(1) << b),
+          noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
 
   /** Construct four-ary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, const Vector& b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, b,
-          noiseModel::Constrained::All(b.rows())), dualKey_(dualKey) {
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
+      const RowVector& A3, Key i4, const RowVector& A4, double b, Key dualKey) :
+      Base(i1, A1, i2, A2, i3, A3, i4, A4, (Vector(1) << b),
+          noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
 
   /** Construct five-ary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, Key i5, const Matrix& A5,
-      const Vector& b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, b,
-          noiseModel::Constrained::All(b.rows())), dualKey_(dualKey) {
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
+      const RowVector& A3, Key i4, const RowVector& A4, Key i5, const RowVector& A5,
+      double b, Key dualKey) :
+      Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, (Vector(1) << b),
+          noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
 
   /** Construct six-ary factor */
-  LinearInequality(Key i1, const Matrix& A1, Key i2, const Matrix& A2, Key i3,
-      const Matrix& A3, Key i4, const Matrix& A4, Key i5, const Matrix& A5,
-      Key i6, const Matrix& A6, const Vector& b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, i6, A6, b,
-          noiseModel::Constrained::All(b.rows())), dualKey_(dualKey) {
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
+      const RowVector& A3, Key i4, const RowVector& A4, Key i5, const RowVector& A5,
+      Key i6, const RowVector& A6, double b, Key dualKey) :
+      Base(i1, A1, i2, A2, i3, A3, i4, A4, i5, A5, i6, A6, (Vector(1) << b),
+          noiseModel::Constrained::All(1)), dualKey_(dualKey) {
   }
 
   /** Construct an n-ary factor
    * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
    *         collection of keys and matrices making up the factor. */
   template<typename TERMS>
-  LinearInequality(const TERMS& terms, const Vector& b, Key dualKey) :
-      Base(terms, b, noiseModel::Constrained::All(b.rows())), dualKey_(dualKey) {
+  LinearInequality(const TERMS& terms, double b, Key dualKey) :
+      Base(terms, (Vector(1) << b), noiseModel::Constrained::All(1)), dualKey_(
+          dualKey) {
   }
 
   /** Virtual destructor */
@@ -121,28 +126,34 @@ public:
   /// dual key
   Key dualKey() const { return dualKey_; }
 
+  /// return true if this constraint is active
+  bool active() const { return active_; }
+
+  /// Make this inequality constraint active
+  void activate() { active_ = true; }
+
+  /// Make this inequality constraint inactive
+  void inactivate() { active_ = false; }
+
   /** Special error_vector for constraints (A*x-b) */
   Vector error_vector(const VectorValues& c) const {
     return unweighted_error(c);
   }
 
-  /** Special error for constraints.
-   * I think it should be zero, as this function is meant for objective cost.
-   * But the name "error" can be misleading.
-   * TODO: confirm with Frank!! */
+  /** Special error for single-valued inequality constraints. */
   virtual double error(const VectorValues& c) const {
-    return 0.0;
+    return error_vector(c)[0];
   }
 
   /** dot product of row s with the corresponding vector in p */
-  double dotProductRow(size_t s, const VectorValues& p) const {
-    double ajTp = 0.0;
+  double dotProductRow(const VectorValues& p) const {
+    double aTp = 0.0;
     for (const_iterator xj = begin(); xj != end(); ++xj) {
       Vector pj = p.at(*xj);
-      Vector aj = getA(xj).row(s);
-      ajTp += aj.dot(pj);
+      Vector aj = getA(xj).transpose();
+      aTp += aj.dot(pj);
     }
-    return ajTp;
+    return aTp;
   }
 
 };
