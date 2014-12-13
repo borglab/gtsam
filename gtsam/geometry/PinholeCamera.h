@@ -36,10 +36,11 @@ private:
   Calibration K_;
 
   // Get dimensions of calibration type and This at compile time
-  static const int DimK = traits::dimension<Calibration>::value, //
+  static const int DimK = traits_x<Calibration>::dimension, //
       DimC = 6 + DimK;
 
 public:
+  enum { dimension = DimC };
 
   /// @name Standard Constructors
   /// @{
@@ -485,26 +486,7 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
-template<typename Calibration>
-struct GTSAM_EXPORT is_manifold<PinholeCamera<Calibration> > : public boost::true_type {
-};
-
-template<typename Calibration>
-struct GTSAM_EXPORT dimension<PinholeCamera<Calibration> > : public boost::integral_constant<
-    int, dimension<Pose3>::value + dimension<Calibration>::value> {
-};
-
-template<typename Calibration>
-struct GTSAM_EXPORT zero<PinholeCamera<Calibration> > {
-  static PinholeCamera<Calibration> value() {
-    return PinholeCamera<Calibration>(zero<Pose3>::value(),
-        zero<Calibration>::value());
-  }
-};
-
-}
+template<>
+struct traits_x<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
 } // \ gtsam

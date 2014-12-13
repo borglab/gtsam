@@ -153,6 +153,6 @@ private:
 };
 
 template<>
-struct traits_x<StereoCamera> : public internal::LieGroup<StereoCamera> {};
+struct traits_x<StereoCamera> : public internal::Manifold<StereoCamera> {};
 
 }

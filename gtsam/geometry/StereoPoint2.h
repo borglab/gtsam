@@ -175,5 +175,5 @@ namespace gtsam {
   };
 
   template<>
-  struct traits_x<StereoPoint2> : public internal::LieGroup<StereoPoint2> {};
+  struct traits_x<StereoPoint2> : public internal::Manifold<StereoPoint2> {};
 }
