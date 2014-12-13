@@ -43,6 +43,7 @@ namespace gtsam {
     double x_, y_, z_;  
     
   public:
+    enum { dimension = 3 };
 
     /// @name Standard Constructors
     /// @{
@@ -248,20 +249,6 @@ namespace gtsam {
   /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
-  // Define GTSAM traits
-  namespace traits {
-
   template<>
-  struct GTSAM_EXPORT is_group<Point3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT is_manifold<Point3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT dimension<Point3> : public boost::integral_constant<int, 3>{
-  };
-
-  }
+  struct traits_x<Point3> : public internal::LieGroup<Point3> {};
 }

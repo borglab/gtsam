@@ -44,6 +44,8 @@ private:
 
 public:
 
+  enum { dimension = 6 };
+
   /// @name Standard Constructors
   /// @{
 
@@ -150,22 +152,7 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<StereoCamera> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<StereoCamera> : public boost::integral_constant<int, 6>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<StereoCamera> {
-  static StereoCamera value() { return StereoCamera();}
-};
-
-}
+struct traits_x<StereoCamera> : public internal::LieGroup<StereoCamera> {};
 
 }

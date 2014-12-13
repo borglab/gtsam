@@ -241,20 +241,7 @@ namespace gtsam {
 
   };
 
-  // Define GTSAM traits
-  namespace traits {
-
   template<>
-  struct GTSAM_EXPORT is_group<Rot2> : public boost::true_type{
-  };
+  struct traits_x<Rot2> : public internal::LieGroup<Rot2> {};
 
-  template<>
-  struct GTSAM_EXPORT is_manifold<Rot2> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT dimension<Rot2> : public boost::integral_constant<int, 1>{
-  };
-
-  }
 } // gtsam

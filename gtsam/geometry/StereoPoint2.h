@@ -174,20 +174,6 @@ namespace gtsam {
 
   };
 
-  // Define GTSAM traits
-  namespace traits {
-
   template<>
-  struct is_group<StereoPoint2> : public boost::true_type {
-  };
-
-  template<>
-  struct is_manifold<StereoPoint2> : public boost::true_type {
-  };
-
-  template<>
-  struct dimension<StereoPoint2> : public boost::integral_constant<int, 3> {
-  };
-
-  }
+  struct traits_x<StereoPoint2> : public internal::LieGroup<StereoPoint2> {};
 }

@@ -28,9 +28,9 @@ namespace gtsam {
 template<typename F, typename T, typename A1, typename A2>
 class AdaptAutoDiff {
 
-  static const int N = traits::dimension<T>::value;
-  static const int M1 = traits::dimension<A1>::value;
-  static const int M2 = traits::dimension<A2>::value;
+  static const int N = traits:_x<T>:dimension;
+  static const int M1 = traits_x<A1>::dimension;
+  static const int M2 = traits_x<A2>::dimension;
 
   typedef Eigen::Matrix<double, N, M1, Eigen::RowMajor> RowMajor1;
   typedef Eigen::Matrix<double, N, M2, Eigen::RowMajor> RowMajor2;

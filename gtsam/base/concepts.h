@@ -206,6 +206,36 @@ struct LieGroup {
 
 }  // namespace internal
 
+template<typename ManifoldType>
+struct Canonical {
+  BOOST_STATIC_ASSERT_MSG(
+      (boost::is_base_of<group_tag, typename traits_x<ManifoldType>::structure_category_tag>::value),
+      "This type's trait does not assert it is a group (or derived)");
+  typedef traits_x<ManifoldType> Traits;
+  typedef typename Traits::TangentVector TangentVector;
+  enum { dimension = Traits::dimension };
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
+  static TangentVector Local(const ManifoldType& other) {
+    return Traits::Local(Traits::Identity(), other);
+  }
+
+  static ManifoldType Retract(const TangentVector& v) {
+    return Traits::Retract(Traits::Identity(), v);
+  }
+
+  static TangentVector Local(const ManifoldType& other,
+                             ChartJacobian Hother) {
+    return Traits::Local(Traits::Identity(), other, boost::none, Hother);
+  }
+
+  static ManifoldType Retract(const ManifoldType& origin,
+                              const TangentVector& v,
+                              ChartJacobian Horigin,
+                              ChartJacobian Hv) {
+    return Traits::Retract(Traits::Identity(), v, boost::none, Hv);
+  }
+};
 
 /// Check invariants for Manifold type
 template<typename T>

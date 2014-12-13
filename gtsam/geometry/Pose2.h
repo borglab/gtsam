@@ -47,6 +47,8 @@ private:
 
 public:
 
+  enum { dimension = 3 };
+
   /// @name Standard Constructors
   /// @{
 
@@ -298,18 +300,8 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<Pose2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Pose2> : public boost::integral_constant<int, 3>{
-};
-
-}
+struct traits_x<Pose2> : public internal::LieGroup<Pose2> {};
 
 } // namespace gtsam
 

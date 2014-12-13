@@ -39,7 +39,7 @@ private:
   double x_, y_;
 
 public:
-
+  enum { dimension = 3 };
   /// @name Standard Constructors
   /// @{
 
@@ -245,22 +245,8 @@ private:
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_group<Point2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT is_manifold<Point2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Point2> : public boost::integral_constant<int, 2>{
-};
-
-}
+struct traits_x<Point2> : public internal::LieGroup<Point2> {};
 
 }
 

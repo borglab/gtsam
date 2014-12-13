@@ -44,6 +44,8 @@ private:
 
 public:
 
+  enum { dimension = 6 };
+
   /// @name Standard Constructors
   /// @{
 
@@ -199,23 +201,8 @@ private:
   /// @}
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_group<CalibratedCamera> : public boost::true_type {
-};
-
-template<>
-struct GTSAM_EXPORT is_manifold<CalibratedCamera> : public boost::true_type {
-};
-
-template<>
-struct GTSAM_EXPORT dimension<CalibratedCamera> : public boost::integral_constant<
-    int, 6> {
-};
-
-}
+struct traits_x<CalibratedCamera> : public internal::LieGroup<CalibratedCamera> {};
 
 }
 
