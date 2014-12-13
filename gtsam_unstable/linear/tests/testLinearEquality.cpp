@@ -10,12 +10,12 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   testLinearConstraint.cpp
- *  @brief  Unit tests for LinearConstraint
+ *  @file   testLinearEquality.cpp
+ *  @brief  Unit tests for LinearEquality
  *  @author thduynguyen
  **/
 
-#include <gtsam_unstable/linear/LinearConstraint.h>
+#include <gtsam_unstable/linear/LinearEquality.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/VectorValues.h>
@@ -28,7 +28,7 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
-GTSAM_CONCEPT_TESTABLE_INST(LinearConstraint)
+GTSAM_CONCEPT_TESTABLE_INST(LinearEquality)
 
 namespace {
   namespace simple {
@@ -45,16 +45,16 @@ namespace {
 }
 
 /* ************************************************************************* */
-TEST(LinearConstraint, constructors_and_accessors)
+TEST(LinearEquality, constructors_and_accessors)
 {
   using namespace simple;
 
   // Test for using different numbers of terms
   {
     // One term constructor
-    LinearConstraint expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 1), b);
-    LinearConstraint actual(terms[0].first, terms[0].second, b);
+    LinearEquality expected(
+      boost::make_iterator_range(terms.begin(), terms.begin() + 1), b, 0);
+    LinearEquality actual(terms[0].first, terms[0].second, b, 0);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[0].first, (long)actual.keys().back());
     EXPECT(assert_equal(terms[0].second, actual.getA(actual.end() - 1)));
@@ -64,10 +64,10 @@ TEST(LinearConstraint, constructors_and_accessors)
   }
   {
     // Two term constructor
-    LinearConstraint expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 2), b);
-    LinearConstraint actual(terms[0].first, terms[0].second,
-      terms[1].first, terms[1].second, b);
+    LinearEquality expected(
+      boost::make_iterator_range(terms.begin(), terms.begin() + 2), b, 0);
+    LinearEquality actual(terms[0].first, terms[0].second,
+      terms[1].first, terms[1].second, b, 0);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[1].first, (long)actual.keys().back());
     EXPECT(assert_equal(terms[1].second, actual.getA(actual.end() - 1)));
@@ -77,10 +77,10 @@ TEST(LinearConstraint, constructors_and_accessors)
   }
   {
     // Three term constructor
-    LinearConstraint expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 3), b);
-    LinearConstraint actual(terms[0].first, terms[0].second,
-      terms[1].first, terms[1].second, terms[2].first, terms[2].second, b);
+    LinearEquality expected(
+      boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, 0);
+    LinearEquality actual(terms[0].first, terms[0].second,
+      terms[1].first, terms[1].second, terms[2].first, terms[2].second, b, 0);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[2].first, (long)actual.keys().back());
     EXPECT(assert_equal(terms[2].second, actual.getA(actual.end() - 1)));
@@ -91,7 +91,7 @@ TEST(LinearConstraint, constructors_and_accessors)
 }
 
 /* ************************************************************************* */
-TEST(LinearConstraint, Hessian_conversion) {
+TEST(LinearEquality, Hessian_conversion) {
   HessianFactor hessian(0, (Matrix(4,4) <<
         1.57,        2.695,         -1.1,        -2.35,
        2.695,      11.3125,        -0.65,      -10.225,
@@ -101,7 +101,7 @@ TEST(LinearConstraint, Hessian_conversion) {
       73.1725);
 
   try {
-    LinearConstraint actual(hessian);
+    LinearEquality actual(hessian);
     EXPECT(false);
   }
   catch (const std::runtime_error& exception) {
@@ -110,9 +110,9 @@ TEST(LinearConstraint, Hessian_conversion) {
 }
 
 /* ************************************************************************* */
-TEST(LinearConstraint, error)
+TEST(LinearEquality, error)
 {
-  LinearConstraint factor(simple::terms, simple::b);
+  LinearEquality factor(simple::terms, simple::b, 0);
 
   VectorValues values;
   values.insert(5, Vector::Constant(3, 1.0));
@@ -134,10 +134,10 @@ TEST(LinearConstraint, error)
 }
 
 /* ************************************************************************* */
-TEST(LinearConstraint, matrices_NULL)
+TEST(LinearEquality, matrices_NULL)
 {
   // Make sure everything works with NULL noise model
-  LinearConstraint factor(simple::terms, simple::b);
+  LinearEquality factor(simple::terms, simple::b, 0);
 
   Matrix AExpected(3, 9);
   AExpected << simple::terms[0].second, simple::terms[1].second, simple::terms[2].second;
@@ -157,10 +157,10 @@ TEST(LinearConstraint, matrices_NULL)
 }
 
 /* ************************************************************************* */
-TEST(LinearConstraint, matrices)
+TEST(LinearEquality, matrices)
 {
   // And now witgh a non-unit noise model
-  LinearConstraint factor(simple::terms, simple::b);
+  LinearEquality factor(simple::terms, simple::b, 0);
 
   Matrix jacobianExpected(3, 9);
   jacobianExpected << simple::terms[0].second, simple::terms[1].second, simple::terms[2].second;
@@ -184,11 +184,11 @@ TEST(LinearConstraint, matrices)
 }
 
 /* ************************************************************************* */
-TEST(LinearConstraint, operators )
+TEST(LinearEquality, operators )
 {
   Matrix I = eye(2);
   Vector b = (Vector(2) << 0.2,-0.1).finished();
-  LinearConstraint lf(1, -I, 2, I, b);
+  LinearEquality lf(1, -I, 2, I, b, 0);
 
   VectorValues c;
   c.insert(1, (Vector(2) << 10.,20.).finished());
@@ -210,25 +210,25 @@ TEST(LinearConstraint, operators )
   // test gradient at zero
   Matrix A; Vector b2; boost::tie(A,b2) = lf.jacobian();
   VectorValues expectedG;
-  expectedG.insert(1, (Vector(2) << -1,-1).finished());
-  expectedG.insert(2, (Vector(2) <<  1, 1).finished());
+  expectedG.insert(1, (Vector(2) <<  0.2, -0.1).finished());
+  expectedG.insert(2, (Vector(2) << -0.2,  0.1).finished());
   VectorValues actualG = lf.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
 }
 
 /* ************************************************************************* */
-TEST(LinearConstraint, default_error )
+TEST(LinearEquality, default_error )
 {
-  LinearConstraint f;
+  LinearEquality f;
   double actual = f.error(VectorValues());
   DOUBLES_EQUAL(0.0, actual, 1e-15);
 }
 
 //* ************************************************************************* */
-TEST(LinearConstraint, empty )
+TEST(LinearEquality, empty )
 {
   // create an empty factor
-  LinearConstraint f;
+  LinearEquality f;
   EXPECT(f.empty());
 }
 
