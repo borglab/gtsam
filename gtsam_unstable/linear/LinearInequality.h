@@ -91,7 +91,10 @@ public:
   /** print */
   virtual void print(const std::string& s = "", const KeyFormatter& formatter =
       DefaultKeyFormatter) const {
-    Base::print(s, formatter);
+    if (active())
+      Base::print(s + "  Active", formatter);
+    else
+      Base::print(s + "  Inactive", formatter);
   }
 
   /** Clone this LinearInequality */
