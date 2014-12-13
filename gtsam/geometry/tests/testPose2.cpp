@@ -32,7 +32,7 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
-#define SLOW_BUT_CORRECT_EXPMAP
+//#define SLOW_BUT_CORRECT_EXPMAP
 
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
 GTSAM_CONCEPT_LIE_INST(Pose2)
