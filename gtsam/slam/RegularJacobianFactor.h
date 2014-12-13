@@ -143,19 +143,30 @@ public:
 
   /** Raw memory access version of gradientAtZero */
   virtual void gradientAtZero(double* d) const {
-    // Get vector b not weighted
-    Vector b = getb();
-    Vector b_sigma = model_ ? (model_->whiten(b)*model_->whiten(b)) : b;
 
-    // Just iterate over all A matrices
+    // Initialize d as a zero vector
     for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
       DMap(d + D * j) = DVector::Zero();
+    }
+
+    // Get vector b not weighted
+    Vector b = getb();
+
+    // Whitening b
+    if (model_) {
+      b = model_->whiten(b);
+      b = model_->whiten(b);
+    }
+
+    // Just iterate over all A matrices
+    for (size_t pos = 0; pos < size(); ++pos) {
+      Key j = keys_[pos];
       DVector dj;
       // gradient -= A'*b/sigma^2
       // Computing with each column
       for (size_t k = 0; k < D; ++k){
-        Vector column_k = Ab_(j).col(k);
-        dj(k) = -1.0*dot(b_sigma,column_k);
+        Vector column_k = Ab_(pos).col(k);
+        dj(k) = -1.0*dot(b, column_k);
       }
       DMap(d + D * j) += dj;
     }
