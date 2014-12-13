@@ -679,7 +679,7 @@ void MyTemplatePoint2_templatedMethod_55(int nargout, mxArray *out[], int nargin
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("templatedMethodMatrix",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
-  Matrix& t = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  Matrix& t = unwrap< Matrix >(in[1]);
   out[0] = wrap< Matrix >(obj->templatedMethod<Matrix>(t));
 }
 
