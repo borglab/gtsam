@@ -180,6 +180,10 @@ namespace gtsam {
     template<typename ValueType>
     const ValueType& at(Key j) const;
 
+    /// Special version for small fixed size vectors, for matlab/python
+    /// throws truntime error if n<1 || n>9
+    Vector atFixed(Key j, size_t n);
+
     /** Retrieve a variable by key \c j.  This version returns a reference
      * to the base Value class, and needs to be casted before use.
      * @param j Retrieve the value associated with this key
