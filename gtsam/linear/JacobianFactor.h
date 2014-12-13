@@ -230,7 +230,9 @@ namespace gtsam {
     virtual bool empty() const { return size() == 0 /*|| rows() == 0*/; }
 
     /** is noise model constrained ? */
-    bool isConstrained() const { return model_->isConstrained(); }
+    bool isConstrained() const {
+      return model_ && model_->isConstrained();
+    }
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
