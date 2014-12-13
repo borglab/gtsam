@@ -73,6 +73,7 @@ public:
   }
 
   /// Constructor that will resize a dynamic matrix (unless already correct)
+
   OptionalJacobian(Eigen::MatrixXd& dynamic) :
       map_(NULL) {
     dynamic.resize(Rows, Cols); // no malloc if correct size
@@ -110,6 +111,9 @@ public:
   /// TODO: operator->()
   Eigen::Map<Fixed>* operator->(){ return &map_; }
 };
+
+template<>
+class OptionalJacobian<-1, -1> {};
 
 } // namespace gtsam
 

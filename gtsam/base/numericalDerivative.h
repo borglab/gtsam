@@ -71,7 +71,7 @@ Vector numericalGradient(boost::function<double(const X&)> h, const X& x,
 
   BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X>::value,
       "Template argument X must be a manifold type.");
-  static const int N = traits::dimension<X>::value;
+  static const int N = traits_x<X>::dimension;
   BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
   typedef DefaultChart<X> ChartX;
   typedef typename ChartX::vector TangentX;
@@ -118,7 +118,7 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
 
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
-  static const int N = traits::dimension<X>::value;
+  static const int N = traits_x<X>::dimension;
   BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
   typedef DefaultChart<X> ChartX;
   typedef typename ChartX::vector TangentX;

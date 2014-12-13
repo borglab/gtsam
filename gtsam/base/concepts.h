@@ -38,7 +38,7 @@ struct additive_group_tag {};
 // TODO: Remove
 namespace traits {
 template<typename T>
-struct dimension;
+struct dimension{};
 }
 template <typename T> struct traits_x {
   // TODO: remove anything in here ASAP.

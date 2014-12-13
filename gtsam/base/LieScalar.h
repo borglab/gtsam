@@ -17,7 +17,8 @@
 
 #pragma once
 
-#warning "LieScalar.h is deprecated. Please use double/float instead."
+// TODO(ASL) reenable
+//#warning "LieScalar.h is deprecated. Please use double/float instead."
 #include <gtsam/dllexport.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>

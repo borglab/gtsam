@@ -475,3 +475,4 @@ namespace gtsam {
   template<>
   struct traits_x<Rot3> : public internal::LieGroup<Rot3> {};
 }
+

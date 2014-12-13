@@ -173,7 +173,7 @@ private:
     assert(H.size()==keys.size());
 
     // Pre-allocate and zero VerticalBlockMatrix
-    static const int Dim = traits::dimension<T>::value;
+    static const int Dim = traits_x<T>::dimension;
     VerticalBlockMatrix Ab(dims, Dim);
     Ab.matrix().setZero();
     JacobianMap jacobianMap(keys, Ab);
@@ -223,7 +223,7 @@ private:
 template<class T>
 struct apply_compose {
   typedef T result_type;
-  static const int Dim = traits::dimension<T>::value;
+  static const int Dim = traits_x<T>::dimension;
   T operator()(const T& x, const T& y, OptionalJacobian<Dim, Dim> H1 =
       boost::none, OptionalJacobian<Dim, Dim> H2 = boost::none) const {
     return x.compose(y, H1, H2);

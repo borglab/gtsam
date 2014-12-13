@@ -50,7 +50,7 @@ TEST(Quaternion , Local) {
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
   QuaternionJacobian H1,H2;
   Vector3 expected(0, 0, 0.1);
-  Vector3 actual = traits<Q>::Local(q1, q2, H1, H2);
+  Vector3 actual = traits_x<Q>::Local(q1, q2, H1, H2);
   EXPECT(assert_equal((Vector)expected,actual));
 }
 
@@ -61,7 +61,7 @@ TEST(Quaternion , Retract) {
   Q expected(Eigen::AngleAxisd(0.1, z_axis));
   Vector3 v(0, 0, 0.1);
   QuaternionJacobian Hq,Hv;
-  Q actual = traits<Q>::Retract(q, v, Hq, Hv);
+  Q actual = traits_x<Q>::Retract(q, v, Hq, Hv);
   EXPECT(actual.isApprox(expected));
 }
 

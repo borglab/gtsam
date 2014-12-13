@@ -111,13 +111,26 @@ struct traits_x<QUATERNION_TYPE> {
     }
   }
 
-  static TangentVector Local(const Q& origin, const Q& other, ChartJacobian Horigin=boost::none, ChartJacobian Hother=boost::none) {
+  static TangentVector Local(const Q& origin, const Q& other, ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
     return Logmap(Between(origin,other,Horigin,Hother));
     // TODO: incorporate Jacobian of Logmap
   }
-  static Q Retract(const Q& origin, const TangentVector& v, ChartJacobian Horigin, ChartJacobian Hv) {
+  static Q Retract(const Q& origin, const TangentVector& v, ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
     return Compose(origin, Expmap(v), Horigin, Hv);
     // TODO : incorporate Jacobian of Expmap
+  }
+
+  static void Print(const Q& q, const std::string& str = "") {
+    if(str.size() == 0) {
+      std::cout << "Eigen::Quaternion: ";
+    } else {
+      std::cout << str << " ";
+    }
+    std::cout << q.vec().transpose() << std::endl;
+  }
+
+  static bool Equals(const Q& q1, const Q& q2, double tol = 1e-8) {
+    return Between(q1,q2).vec().array().abs().maxCoeff() < tol;
   }
 };
 

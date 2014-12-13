@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/concepts.h>
 #include <gtsam/base/Matrix.h>
 #include <boost/static_assert.hpp>
 #include <boost/type_traits.hpp>
@@ -69,10 +70,10 @@ struct is_manifold: public boost::false_type {
 // dimension, can return Eigen::Dynamic (-1) if not known at compile time
 // defaults to dynamic, TODO makes sense ?
 typedef boost::integral_constant<int, Eigen::Dynamic> Dynamic;
-template<typename T>
+//template<typename T>
 //struct dimension: public Dynamic {
-struct dimension : public boost::integral_constant<int, 1> {  // just temporary fix to minimize compiler errors while refactoring
-};
+//struct dimension : public boost::integral_constant<int, 1> {  // just temporary fix to minimize compiler errors while refactoring
+//};
 
 /**
  * zero<T>::value is intended to be the origin of a canonical coordinate system
@@ -147,7 +148,7 @@ template<typename T>
 struct DefaultChart {
   //BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
   typedef T type;
-  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
+  typedef Eigen::Matrix<double, traits_x<T>::dimension, 1> vector;
 
   static vector local(const T& origin, const T& other) {
     return origin.localCoordinates(other);

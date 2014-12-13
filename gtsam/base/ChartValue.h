@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <gtsam/base/concepts.h>
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/Manifold.h>
 #include <boost/make_shared.hpp>
@@ -209,11 +210,11 @@ const Chart& Value::getChart() const {
 template<typename T>
 ChartValue<T> convertToChartValue(const T& value,
     boost::optional<
-        Eigen::Matrix<double, traits::dimension<T>::value,
-            traits::dimension<T>::value>&> H = boost::none) {
+        Eigen::Matrix<double, traits_x<T>::dimension,
+            traits_x<T>::dimension>&> H = boost::none) {
   if (H) {
-    *H = Eigen::Matrix<double, traits::dimension<T>::value,
-        traits::dimension<T>::value>::Identity();
+    *H = Eigen::Matrix<double, traits_x<T>::dimension,
+        traits_x<T>::dimension>::Identity();
   }
   return ChartValue<T>(value);
 }
