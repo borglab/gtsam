@@ -43,8 +43,9 @@ namespace gtsam {
     VALUE measured_; /** The measurement */
 
     /** concept check by type */
-    GTSAM_CONCEPT_LIE_TYPE(T)
-    GTSAM_CONCEPT_TESTABLE_TYPE(T)
+    // TODO(ASL) Reenable
+    //GTSAM_CONCEPT_LIE_TYPE(T)
+    //GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
   public:
 
@@ -74,14 +75,14 @@ namespace gtsam {
       std::cout << s << "BetweenFactor("
           << keyFormatter(this->key1()) << ","
           << keyFormatter(this->key2()) << ")\n";
-      traits::print<T>()(measured_, "  measured: ");
+      traits_x<T>::Print(measured_, "  measured: ");
       this->noiseModel_->print("  noise model: ");
     }
 
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e =  dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && traits::equals<T>()(this->measured_, e->measured_, tol);
+      return e != NULL && Base::equals(*e, tol) && traits_x<T>::Equals(this->measured_, e->measured_, tol);
     }
 
     /** implement functions needed to derive from Factor */
@@ -90,10 +91,13 @@ namespace gtsam {
     Vector evaluateError(const T& p1, const T& p2,
         boost::optional<Matrix&> H1 = boost::none,boost::optional<Matrix&> H2 =
             boost::none) const {
-      T hx = p1.between(p2, H1, H2); // h(x)
-      DefaultChart<T> chart;
+      T hx = traits_x<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
-      return chart.local(measured_, hx);
+      OptionalJacobian<traits_x<T>::dimension, traits_x<T>::dimension> Hlocal;
+      Vector rval = traits_x<T>::Local(measured_, hx, boost::none, Hlocal);
+      (*H1) = ((*Hlocal) * (*H1)).eval();
+      (*H2) = ((*Hlocal) * (*H2)).eval();
+      return rval;
     }
 
     /** return the measured */
@@ -131,7 +135,7 @@ namespace gtsam {
     /** Syntactic sugar for constrained version */
     BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :
       BetweenFactor<VALUE>(key1, key2, measured,
-                           noiseModel::Constrained::All(DefaultChart<VALUE>::getDimension(measured), fabs(mu)))
+                           noiseModel::Constrained::All(traits_x<VALUE>::GetDimension(measured), fabs(mu)))
     {}
 
   private:

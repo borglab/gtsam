@@ -63,10 +63,10 @@ struct Manifold {
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   // For Testable
-  void Print(const ManifoldType& m) {
-    m.print();
+  static void Print(const ManifoldType& m, const std::string& str = "") {
+    m.print(str);
   }
-  bool Equals(const ManifoldType& m1,
+  static bool Equals(const ManifoldType& m1,
               const ManifoldType& m2,
               double tol = 1e-8) {
     return m1.equals(m2, tol);
@@ -113,10 +113,10 @@ struct LieGroup {
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   // For Testable
-  void Print(const ManifoldType& m) {
+  static void Print(const ManifoldType& m, const std::string& str = "") {
     m.print();
   }
-  bool Equals(const ManifoldType& m1,
+  static bool Equals(const ManifoldType& m1,
               const ManifoldType& m2,
               double tol = 1e-8) {
     return m1.equals(m2, tol);

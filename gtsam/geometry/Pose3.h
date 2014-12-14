@@ -53,7 +53,7 @@ private:
 
 public:
 
-  enum { dimension = 3 };
+  enum { dimension = 6 };
 
   /// @name Standard Constructors
   /// @{

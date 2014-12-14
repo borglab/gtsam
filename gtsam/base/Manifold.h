@@ -357,6 +357,8 @@
 //
 //} // \ namespace gtsam
 //
+
+// TODO(ASL) Remove these and fix the compiler errors.
 ///**
 // * Macros for using the ManifoldConcept
 // *  - An instantiation for use inside unit tests

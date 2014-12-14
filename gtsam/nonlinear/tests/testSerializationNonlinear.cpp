@@ -76,7 +76,7 @@ TEST (Serialization, TemplatedValues) {
   std::cout << __LINE__ << std::endl;
   EXPECT(equalsObj(pt3));
   std::cout << __LINE__ << std::endl;
-  ChartValue<Point3> chv1(pt3);
+  GenericValue<Point3> chv1(pt3);
   std::cout << __LINE__ << std::endl;
   EXPECT(equalsObj(chv1));
   std::cout << __LINE__ << std::endl;
