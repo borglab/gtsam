@@ -31,6 +31,8 @@ namespace gtsam {
  */
 struct LieVector : public Vector {
 
+  enum { dimension = Eigen::Dynamic };
+
   /** default constructor - should be unnecessary */
   LieVector() {}
 
@@ -131,17 +133,8 @@ private:
   }
 };
 
-// Define GTSAM traits
-namespace traits {
 
 template<>
-struct is_manifold<LieVector> : public boost::true_type {
-};
-
-template<>
-struct dimension<LieVector> : public Dynamic {
-};
-
-}
+struct traits_x<LieVector> : public internal::LieGroup<LieVector> {};
 
 } // \namespace gtsam

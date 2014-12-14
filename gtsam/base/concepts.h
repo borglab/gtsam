@@ -231,7 +231,7 @@ struct ScalarTraits {
 
   // For Testable
   static void Print(Scalar m, const std::string& str = "") {
-    m.print();
+    gtsam::print(m,str);
   }
   static bool Equals(Scalar m1,
       Scalar m2,
@@ -252,7 +252,7 @@ struct ScalarTraits {
   static TangentVector Local(Scalar origin,
       Scalar other,
       ChartJacobian Horigin,
-      ChartJacobian Hother) {
+      ChartJacobian Hother = boost::none) {
     if(Horigin) {
       (*Horigin)[0] = -1.0;
     }
@@ -265,7 +265,7 @@ struct ScalarTraits {
   static Scalar Retract(Scalar origin,
       const TangentVector& v,
       ChartJacobian Horigin,
-      ChartJacobian Hv) {
+      ChartJacobian Hv = boost::none) {
     if(Horigin) {
       (*Horigin)[0] = 1.0;
     }
@@ -295,7 +295,7 @@ struct ScalarTraits {
   static Scalar Compose(Scalar m1,
       Scalar m2,
       ChartJacobian H1,
-      ChartJacobian H2) {
+      ChartJacobian H2 = boost::none) {
     if(H1) {
       (*H1)[0] = 1.0;
     }
@@ -308,7 +308,7 @@ struct ScalarTraits {
   static Scalar Between(Scalar m1,
       Scalar m2,
       ChartJacobian H1,
-      ChartJacobian H2) {
+      ChartJacobian H2 = boost::none) {
     if(H1) {
       (*H1)[0] = -1.0;
     }
@@ -360,7 +360,7 @@ struct traits_x<double> : public internal::ScalarTraits<double> {};
 template<>
 struct traits_x<float> : public internal::ScalarTraits<float> {};
 
-
+// traits for any double Eigen matrix
 template<int M, int N, int Options, int MaxRows, int MaxCols>
 struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
   // Typedefs required by all manifold types.
@@ -369,6 +369,13 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
   typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> ManifoldType;
+
+  static int GetDimension(const ManifoldType& m){ return m.rows()*m.cols(); }
+
+  static Eigen::Matrix<double, dimension, dimension> Eye(const ManifoldType& m) {
+    int dim = GetDimension(m);
+    return Eigen::Matrix<double, dimension, dimension>::Identity(dim,dim);
+  }
 
   // For Testable
   static void Print(const ManifoldType& m, const std::string& str = "") {
@@ -380,88 +387,74 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
     return equal_with_abs_tol(m1, m2, 1e-9);
   }
 
-//  static TangentVector Local(const ManifoldType& origin,
-//                             const ManifoldType& other) {
-//    TangentVector result(GetDimension(origin));
-//    Eigen::Map<Eigen::Matrix<double, M, N, Eigen::RowMajor> >(
-//      &result(0), origin.rows(), origin.cols()) = other - origin;
-//    return result;
-//  }
-//
-//  static ManifoldType Retract(const ManifoldType& origin,
-//                              const TangentVector& v) {
-//    return origin.retract(v);
-//  }
-//
-//  static TangentVector Local(const ManifoldType& origin,
-//                             const ManifoldType& other,
-//                             ChartJacobian Horigin,
-//                             ChartJacobian Hother) {
-//    return origin.localCoordinates(other, Horigin, Hother);
-//  }
-//
-//  static ManifoldType Retract(const ManifoldType& origin,
-//                              const TangentVector& v,
-//                              ChartJacobian Horigin,
-//                              ChartJacobian Hv) {
-//    return origin.retract(v, Horigin, Hv);
-//  }
-//
-//  static int GetDimension(const ManifoldType& m){ return m.dim(); }
-//
-//  // For Group. Only implemented for groups
-//  static ManifoldType Compose(const ManifoldType& m1,
-//                              const ManifoldType& m2) {
-//    return m1.compose(m2);
-//  }
-//
-//  static ManifoldType Between(const ManifoldType& m1,
-//                              const ManifoldType& m2) {
-//    return m1.between(m2);
-//  }
-//
-//  static ManifoldType Inverse(const ManifoldType& m) {
-//    return m.inverse();
-//  }
-//
-//  static ManifoldType Compose(const ManifoldType& m1,
-//                              const ManifoldType& m2,
-//                              ChartJacobian H1,
-//                              ChartJacobian H2) {
-//    return m1.compose(m2, H1, H2);
-//  }
-//
-//  static ManifoldType Between(const ManifoldType& m1,
-//                              const ManifoldType& m2,
-//                              ChartJacobian H1,
-//                              ChartJacobian H2) {
-//    return m1.between(m2, H1, H2);
-//  }
-//
-//  static ManifoldType Inverse(const ManifoldType& m,
-//                              ChartJacobian H) {
-//    return m.inverse(H);
-//  }
-//
-//  static ManifoldType Identity() {
-//    return ManifoldType::identity();
-//  }
-//
-//  static TangentVector Logmap(const ManifoldType& m) {
-//    return ManifoldType::Logmap(m);
-//  }
-//
-//  static ManifoldType Expmap(const TangentVector& v) {
-//    return ManifoldType::Expmap(v);
-//  }
-//
-//  static TangentVector Logmap(const ManifoldType& m, ChartJacobian Hm) {
-//    return ManifoldType::Logmap(m, Hm);
-//  }
-//
-//  static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv) {
-//    return ManifoldType::Expmap(v, Hv);
-//  }
+  static TangentVector Local(const ManifoldType& origin,
+                             const ManifoldType& other,
+                             ChartJacobian Horigin = boost::none,
+                             ChartJacobian Hother = boost::none) {
+   if (Horigin) *Horigin = -Eye(origin);
+   if (Hother) *Hother = Eye(origin);
+   TangentVector result(GetDimension(origin));
+   Eigen::Map<Eigen::Matrix<double, M, N> >(
+    result.data(), origin.rows(), origin.cols()) = other - origin;
+   return result;
+  }
+
+  static ManifoldType Retract(const ManifoldType& origin,
+                              const TangentVector& v,
+                              ChartJacobian Horigin = boost::none,
+                              ChartJacobian Hv = boost::none) {
+    if (Horigin) *Horigin = Eye(origin);
+    if (Hv) *Hv = Eye(origin);
+    return origin +
+        Eigen::Map<Eigen::Matrix<double, M, N> >(v.data(), origin.rows(), origin.cols());
+  }
+
+  static ManifoldType Compose(const ManifoldType& m1,
+                              const ManifoldType& m2,
+                              ChartJacobian H1 = boost::none,
+                              ChartJacobian H2 = boost::none) {
+    if (H1) *H1 = Eye(m1);
+    if (H2) *H2 = Eye(m1);
+
+    return m1+m2;
+  }
+
+  static ManifoldType Between(const ManifoldType& m1,
+                              const ManifoldType& m2,
+                              ChartJacobian H1 = boost::none,
+                              ChartJacobian H2 = boost::none) {
+    if (H1) *H1 = -Eye(m1);
+    if (H2) *H2 = Eye(m1);
+
+    return m2-m1;
+  }
+
+  static ManifoldType Inverse(const ManifoldType& m,
+                              ChartJacobian H = boost::none) {
+    if (H) *H = -Eye(m);
+    return -m;
+  }
+
+  static ManifoldType Identity() {
+    //FIXME: this won't work for dynamic matrices, but where to get the size???
+    return ManifoldType::Zero();
+  }
+
+  static TangentVector Logmap(const ManifoldType& m, ChartJacobian Hm = boost::none) {
+    if (Hm) *Hm = Eye(m);
+    TangentVector result(GetDimension(m));
+    Eigen::Map<Eigen::Matrix<double, M, N> >(
+      result.data(), m.rows(), m.cols()) = m;
+    return result;
+  }
+
+  //FIXME: this also does not work for dynamic matrices
+  static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
+    ManifoldType m; m.setZero();
+    if (Hv) *Hv = Eye(m);
+    return m +
+        Eigen::Map<Eigen::Matrix<double, M, N> >(v.data(), m.rows(), m.cols());
+  }
 
 };
 

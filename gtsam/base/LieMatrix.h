@@ -71,7 +71,7 @@ struct LieMatrix : public Matrix {
   /// @name Standard Interface
   /// @{
 
-  /** get the underlying vector */
+  /** get the underlying matrix */
   inline Matrix matrix() const {
     return static_cast<Matrix>(*this);
   }
