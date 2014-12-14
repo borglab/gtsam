@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <gtsam/base/concepts.h>
 #include <gtsam/base/Vector.h>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -568,4 +569,5 @@ namespace boost {
   } // namespace serialization
 } // namespace boost
 
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix);
+

@@ -36,6 +36,7 @@ struct LieMatrix : public Matrix {
 
   /// @name Constructors
   /// @{
+  enum { dimension = Eigen::Dynamic };
 
   /** default constructor - should be unnecessary */
   LieMatrix() {}
@@ -176,17 +177,8 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
 
 template<>
-struct is_manifold<LieMatrix> : public boost::true_type {
-};
-
-template<>
-struct dimension<LieMatrix> : public Dynamic {
-};
-
-}
+struct traits_x<LieMatrix> : public internal::LieGroup<LieMatrix> {};
 
 } // \namespace gtsam

@@ -183,11 +183,12 @@ TEST(Expression, AutoDiff3) {
   Matrix E2 = numericalDerivative22<Point2, Camera, Point3>(Adaptor(), P, X);
 
   // Get derivatives with AutoDiff, not gives RowMajor results!
-  Matrix29 H1;
-  Matrix23 H2;
+  OptionalJacobian<2,9> H1;
+  OptionalJacobian<2,3> H2;
   Point2 actual2 = snavely(P, X, H1, H2);
   EXPECT(assert_equal(expected,actual2,1e-9));
-  EXPECT(assert_equal(E1,H1,1e-8));
+  EXPECT(assert_equal(E1,*H1,1e-8));
+  EXPECT(assert_equal(E2,*H2,1e-8));
 }
 
 /* ************************************************************************* */

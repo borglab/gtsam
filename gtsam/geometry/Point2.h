@@ -39,7 +39,7 @@ private:
   double x_, y_;
 
 public:
-  enum { dimension = 3 };
+  enum { dimension = 2 };
   /// @name Standard Constructors
   /// @{
 

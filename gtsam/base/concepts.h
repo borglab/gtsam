@@ -361,6 +361,110 @@ template<>
 struct traits_x<float> : public internal::ScalarTraits<float> {};
 
 
+template<int M, int N, int Options, int MaxRows, int MaxCols>
+struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
+  // Typedefs required by all manifold types.
+  typedef vector_space_tag structure_category;
+  enum { dimension = (M == Eigen::Dynamic ? Eigen::Dynamic : (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)) };
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+  typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> ManifoldType;
+
+  // For Testable
+  static void Print(const ManifoldType& m, const std::string& str = "") {
+    gtsam::print(m, str);
+  }
+  static bool Equals(const ManifoldType& m1,
+              const ManifoldType& m2,
+              double tol = 1e-8) {
+    return equal_with_abs_tol(m1, m2, 1e-9);
+  }
+
+//  static TangentVector Local(const ManifoldType& origin,
+//                             const ManifoldType& other) {
+//    TangentVector result(GetDimension(origin));
+//    Eigen::Map<Eigen::Matrix<double, M, N, Eigen::RowMajor> >(
+//      &result(0), origin.rows(), origin.cols()) = other - origin;
+//    return result;
+//  }
+//
+//  static ManifoldType Retract(const ManifoldType& origin,
+//                              const TangentVector& v) {
+//    return origin.retract(v);
+//  }
+//
+//  static TangentVector Local(const ManifoldType& origin,
+//                             const ManifoldType& other,
+//                             ChartJacobian Horigin,
+//                             ChartJacobian Hother) {
+//    return origin.localCoordinates(other, Horigin, Hother);
+//  }
+//
+//  static ManifoldType Retract(const ManifoldType& origin,
+//                              const TangentVector& v,
+//                              ChartJacobian Horigin,
+//                              ChartJacobian Hv) {
+//    return origin.retract(v, Horigin, Hv);
+//  }
+//
+//  static int GetDimension(const ManifoldType& m){ return m.dim(); }
+//
+//  // For Group. Only implemented for groups
+//  static ManifoldType Compose(const ManifoldType& m1,
+//                              const ManifoldType& m2) {
+//    return m1.compose(m2);
+//  }
+//
+//  static ManifoldType Between(const ManifoldType& m1,
+//                              const ManifoldType& m2) {
+//    return m1.between(m2);
+//  }
+//
+//  static ManifoldType Inverse(const ManifoldType& m) {
+//    return m.inverse();
+//  }
+//
+//  static ManifoldType Compose(const ManifoldType& m1,
+//                              const ManifoldType& m2,
+//                              ChartJacobian H1,
+//                              ChartJacobian H2) {
+//    return m1.compose(m2, H1, H2);
+//  }
+//
+//  static ManifoldType Between(const ManifoldType& m1,
+//                              const ManifoldType& m2,
+//                              ChartJacobian H1,
+//                              ChartJacobian H2) {
+//    return m1.between(m2, H1, H2);
+//  }
+//
+//  static ManifoldType Inverse(const ManifoldType& m,
+//                              ChartJacobian H) {
+//    return m.inverse(H);
+//  }
+//
+//  static ManifoldType Identity() {
+//    return ManifoldType::identity();
+//  }
+//
+//  static TangentVector Logmap(const ManifoldType& m) {
+//    return ManifoldType::Logmap(m);
+//  }
+//
+//  static ManifoldType Expmap(const TangentVector& v) {
+//    return ManifoldType::Expmap(v);
+//  }
+//
+//  static TangentVector Logmap(const ManifoldType& m, ChartJacobian Hm) {
+//    return ManifoldType::Logmap(m, Hm);
+//  }
+//
+//  static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv) {
+//    return ManifoldType::Expmap(v, Hv);
+//  }
+
+};
+
 template<typename ManifoldType>
 struct Canonical {
   BOOST_STATIC_ASSERT_MSG(
