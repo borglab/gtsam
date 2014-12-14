@@ -139,7 +139,7 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
     dx(j) = delta;
     TangentY dy1 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
     dx(j) = -delta;
-    TangentY dy2 = TraitsY::local(hx, h(TraitsX::Retract(x, dx)));
+    TangentY dy2 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
     dx(j) = 0;
     H.col(j) << (dy1 - dy2) * factor;
   }

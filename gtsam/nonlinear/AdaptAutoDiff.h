@@ -28,7 +28,7 @@ namespace gtsam {
 template<typename F, typename T, typename A1, typename A2>
 class AdaptAutoDiff {
 
-  static const int N = traits:_x<T>:dimension;
+  static const int N = traits_x<T>::dimension;
   static const int M1 = traits_x<A1>::dimension;
   static const int M2 = traits_x<A2>::dimension;
 
@@ -39,9 +39,9 @@ class AdaptAutoDiff {
   typedef Canonical<A1> Canonical1;
   typedef Canonical<A2> Canonical2;
 
-  typedef typename CanonicalT::vector VectorT;
-  typedef typename Canonical1::vector Vector1;
-  typedef typename Canonical2::vector Vector2;
+  typedef typename CanonicalT::TangentVector VectorT;
+  typedef typename Canonical1::TangentVector Vector1;
+  typedef typename Canonical2::TangentVector Vector2;
 
   // Instantiate function and charts
   CanonicalT chartT;

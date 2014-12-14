@@ -26,6 +26,8 @@ protected:
   Velocity3 v_;
 
 public:
+  enum { dimension = 9 };
+
   // constructors - with partial versions
   PoseRTV() {}
   PoseRTV(const Point3& pt, const Rot3& rot, const Velocity3& vel)
@@ -183,23 +185,8 @@ private:
   }
 };
 
-// Define GTSAM traits
-namespace traits {
 
 template<>
-struct is_manifold<PoseRTV> : public boost::true_type {
-};
+struct traits_x<PoseRTV> : public internal::LieGroup<PoseRTV> {};
 
-template<>
-struct dimension<PoseRTV> : public boost::integral_constant<int, 9> {
-};
-
-template<>
-struct zero<PoseRTV> {
-  static PoseRTV value() {
-    return PoseRTV();
-  }
-};
-
-}
 } // \namespace gtsam

@@ -120,7 +120,7 @@ struct Manifold {
 template<typename ManifoldType>
 struct LieGroup {
   // Typedefs required by all manifold types.
-  typedef manifold_tag structure_category;
+  typedef lie_group_tag structure_category;
   enum { dimension = ManifoldType::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
@@ -217,13 +217,155 @@ struct LieGroup {
 
 };
 
+/// A helper that implements the traits interface for GTSAM lie groups.
+/// To use this for your gtsam type, define:
+/// template<> struct traits<Type> : public ScalarTraits<Type> { };
+template<typename Scalar>
+struct ScalarTraits {
+  // Typedefs required by all manifold types.
+  typedef vector_space_tag structure_category;
+  typedef additive_group_tag group_flavor;
+  enum { dimension = 1 };
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
+  // For Testable
+  static void Print(Scalar m, const std::string& str = "") {
+    m.print();
+  }
+  static bool Equals(Scalar m1,
+      Scalar m2,
+      double tol = 1e-8) {
+    return fabs(m1 - m2) < tol;
+  }
+
+  static TangentVector Local(Scalar origin,
+      Scalar other) {
+    return TangentVector(other - origin);
+  }
+
+  static Scalar Retract(Scalar origin,
+      const TangentVector& v) {
+    return origin + v[0];
+  }
+
+  static TangentVector Local(Scalar origin,
+      Scalar other,
+      ChartJacobian Horigin,
+      ChartJacobian Hother) {
+    if(Horigin) {
+      (*Horigin)[0] = -1.0;
+    }
+    if(Hother) {
+      (*Hother)[0] = 1.0;
+    }
+    return Local(origin, other);
+  }
+
+  static Scalar Retract(Scalar origin,
+      const TangentVector& v,
+      ChartJacobian Horigin,
+      ChartJacobian Hv) {
+    if(Horigin) {
+      (*Horigin)[0] = 1.0;
+    }
+    if(Hv) {
+      (*Hv)[0] = 1.0;
+    }
+    return Retract(origin, v);
+  }
+
+  static int GetDimension(Scalar m){ return 1; }
+
+  // For Group. Only implemented for groups
+  static Scalar Compose(Scalar m1,
+      Scalar m2) {
+    return m1 + m2;
+  }
+
+  static Scalar Between(Scalar m1,
+      Scalar m2) {
+    return m2 - m1;
+  }
+
+  static Scalar Inverse(Scalar m) {
+    return -m;
+  }
+
+  static Scalar Compose(Scalar m1,
+      Scalar m2,
+      ChartJacobian H1,
+      ChartJacobian H2) {
+    if(H1) {
+      (*H1)[0] = 1.0;
+    }
+    if(H2) {
+      (*H2)[0] = 1.0;
+    }
+    return Compose(m1, m2);
+  }
+
+  static Scalar Between(Scalar m1,
+      Scalar m2,
+      ChartJacobian H1,
+      ChartJacobian H2) {
+    if(H1) {
+      (*H1)[0] = -1.0;
+    }
+    if(H2) {
+      (*H2)[0] = 1.0;
+    }
+    return Between(m1, m2);
+  }
+
+  static Scalar Inverse(Scalar m, ChartJacobian H) {
+    if(H) {
+      (*H)[0] = -1;
+    }
+    return Inverse(m);
+  }
+
+  static Scalar Identity() {
+    return 0;
+  }
+
+  static TangentVector Logmap(Scalar m) {
+    return TangentVector(m);
+  }
+
+  static Scalar Expmap(const TangentVector& v) {
+    return v[0];
+  }
+
+  static TangentVector Logmap(Scalar m, ChartJacobian Hm) {
+    if(Hm) {
+      (*Hm)[0] = 1.0;
+    }
+    return Scalar::Logmap(m);
+  }
+
+  static Scalar Expmap(const TangentVector& v, ChartJacobian Hv) {
+    if(Hv) {
+      (*Hv)[0] = 1.0;
+    }
+    return Scalar::Expmap(v);
+  }
+
+};
+
 }  // namespace internal
+
+template<>
+struct traits_x<double> : public internal::ScalarTraits<double> {};
+template<>
+struct traits_x<float> : public internal::ScalarTraits<float> {};
+
 
 template<typename ManifoldType>
 struct Canonical {
   BOOST_STATIC_ASSERT_MSG(
-      (boost::is_base_of<group_tag, typename traits_x<ManifoldType>::structure_category_tag>::value),
-      "This type's trait does not assert it is a group (or derived)");
+      (boost::is_base_of<manifold_tag, typename traits_x<ManifoldType>::structure_category>::value),
+      "This type's trait does not assert it is a manifold (or derived)");
   typedef traits_x<ManifoldType> Traits;
   typedef typename Traits::TangentVector TangentVector;
   enum { dimension = Traits::dimension };

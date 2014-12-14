@@ -24,26 +24,27 @@
 #include <boost/type_traits.hpp>
 #include <string>
 //
-//namespace gtsam {
-//
-///**
-// * A manifold defines a space in which there is a notion of a linear tangent space
-// * that can be centered around a given point on the manifold.  These nonlinear
-// * spaces may have such properties as wrapping around (as is the case with rotations),
-// * which might make linear operations on parameters not return a viable element of
-// * the manifold.
-// *
-// * We perform optimization by computing a linear delta in the tangent space of the
-// * current estimate, and then apply this change using a retraction operation, which
-// * maps the change in tangent space back to the manifold itself.
-// *
-// * There may be multiple possible retractions for a given manifold, which can be chosen
-// * between depending on the computational complexity.  The important criteria for
-// * the creation for the retract and localCoordinates functions is that they be
-// * inverse operations. The new notion of a Chart guarantees that.
-// *
-// */
-//
+namespace gtsam {
+
+/**
+ * A manifold defines a space in which there is a notion of a linear tangent space
+ * that can be centered around a given point on the manifold.  These nonlinear
+ * spaces may have such properties as wrapping around (as is the case with rotations),
+ * which might make linear operations on parameters not return a viable element of
+ * the manifold.
+ *
+ * We perform optimization by computing a linear delta in the tangent space of the
+ * current estimate, and then apply this change using a retraction operation, which
+ * maps the change in tangent space back to the manifold itself.
+ *
+ * There may be multiple possible retractions for a given manifold, which can be chosen
+ * between depending on the computational complexity.  The important criteria for
+ * the creation for the retract and localCoordinates functions is that they be
+ * inverse operations. The new notion of a Chart guarantees that.
+ *
+ */
+
+
 //// Traits, same style as Boost.TypeTraits
 //// All meta-functions below ever only declare a single type
 //// or a type/value/value_type
@@ -355,7 +356,7 @@
 //  }
 //};
 //
-//} // \ namespace gtsam
+} // \ namespace gtsam
 //
 
 // TODO(ASL) Remove these and fix the compiler errors.

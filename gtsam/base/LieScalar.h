@@ -32,6 +32,8 @@ namespace gtsam {
    */
   struct GTSAM_EXPORT LieScalar {
 
+    enum { dimension = 1 };
+
     /** default constructor */
     LieScalar() : d_(0.0) {}
 
@@ -116,21 +118,8 @@ namespace gtsam {
       double d_;
   };
 
-  // Define GTSAM traits
-  namespace traits {
 
   template<>
-  struct is_group<LieScalar> : public boost::true_type {
-  };
-
-  template<>
-  struct is_manifold<LieScalar> : public boost::true_type {
-  };
-
-  template<>
-  struct dimension<LieScalar> : public boost::integral_constant<int, 1> {
-  };
-
-  }
+  struct traits_x<LieScalar> : public internal::LieGroup<LieScalar> {};
 
 } // \namespace gtsam
