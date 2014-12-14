@@ -69,15 +69,13 @@ Vector numericalGradient(boost::function<double(const X&)> h, const X& x,
     double delta = 1e-5) {
   double factor = 1.0 / (2.0 * delta);
 
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X>::value,
+  BOOST_STATIC_ASSERT_MSG(
+      (boost::is_base_of<manifold_tag, typename traits_x<X>::structure_category_tag>::value),
       "Template argument X must be a manifold type.");
   static const int N = traits_x<X>::dimension;
   BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
-  typedef DefaultChart<X> ChartX;
-  typedef typename ChartX::vector TangentX;
 
-  // get chart at x
-  ChartX chartX;
+  typedef typename traits_x<X>::TangentVector TangentX;
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
   TangentX d;
@@ -86,9 +84,9 @@ Vector numericalGradient(boost::function<double(const X&)> h, const X& x,
   Vector g = zero(N); // Can be fixed size
   for (int j = 0; j < N; j++) {
     d(j) = delta;
-    double hxplus = h(chartX.retract(x, d));
+    double hxplus = h(traits_x<X>::Retract(x, d));
     d(j) = -delta;
-    double hxmin = h(chartX.retract(x, d));
+    double hxmin = h(traits_x<X>::Retract(x, d));
     d(j) = 0;
     g(j) = (hxplus - hxmin) * factor;
   }
@@ -113,26 +111,22 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
 
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  typedef DefaultChart<Y> ChartY;
-  typedef typename ChartY::vector TangentY;
+  typedef traits_x<Y> TraitsY;
+  typedef typename TraitsY::TangentVector TangentY;
 
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
   static const int N = traits_x<X>::dimension;
   BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
-  typedef DefaultChart<X> ChartX;
-  typedef typename ChartX::vector TangentX;
+  typedef traits_x<X> TraitsX;
+  typedef typename TraitsX::TangentVector TangentX;
 
   // get value at x, and corresponding chart
   Y hx = h(x);
-  ChartY chartY;
 
   // Bit of a hack for now to find number of rows
-  TangentY zeroY = chartY.local(hx, hx);
+  TangentY zeroY = TraitsY::Local(hx, hx);
   size_t m = zeroY.size();
-
-  // get chart at x
-  ChartX chartX;
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
   TangentX dx;
@@ -143,9 +137,9 @@ Matrix numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
   double factor = 1.0 / (2.0 * delta);
   for (int j = 0; j < N; j++) {
     dx(j) = delta;
-    TangentY dy1 = chartY.local(hx, h(chartX.retract(x, dx)));
+    TangentY dy1 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
     dx(j) = -delta;
-    TangentY dy2 = chartY.local(hx, h(chartX.retract(x, dx)));
+    TangentY dy2 = TraitsY::local(hx, h(TraitsX::Retract(x, dx)));
     dx(j) = 0;
     H.col(j) << (dy1 - dy2) * factor;
   }
@@ -170,9 +164,9 @@ Matrix numericalDerivative11(Y (*h)(const X&), const X& x,
 template<class Y, class X1, class X2>
 Matrix numericalDerivative21(const boost::function<Y(const X1&, const X2&)>& h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<Y>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X1>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X1>(boost::bind(h, _1, x2), x1, delta);
 }
@@ -223,9 +217,9 @@ template<class Y, class X1, class X2, class X3>
 Matrix numericalDerivative31(
     boost::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<Y>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X1>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X1>(boost::bind(h, _1, x2, x3), x1, delta);
 }
@@ -251,9 +245,9 @@ template<class Y, class X1, class X2, class X3>
 Matrix numericalDerivative32(
     boost::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<Y>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X2>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X2>::structure_category>::value),
       "Template argument X2 must be a manifold type.");
   return numericalDerivative11<Y, X2>(boost::bind(h, x1, _1, x3), x2, delta);
 }
@@ -279,9 +273,9 @@ template<class Y, class X1, class X2, class X3>
 Matrix numericalDerivative33(
     boost::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<Y>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X3>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X3>::structure_category>::value),
       "Template argument X3 must be a manifold type.");
   return numericalDerivative11<Y, X3>(boost::bind(h, x1, x2, _1), x3, delta);
 }
@@ -304,7 +298,7 @@ inline Matrix numericalDerivative33(Y (*h)(const X1&, const X2&, const X3&),
 template<class X>
 inline Matrix numericalHessian(boost::function<double(const X&)> f, const X& x,
     double delta = 1e-5) {
-  BOOST_STATIC_ASSERT_MSG(traits::is_manifold<X>::value,
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
   typedef boost::function<double(const X&)> F;
   typedef boost::function<Vector(F, const X&, double)> G;
