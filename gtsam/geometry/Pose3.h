@@ -154,10 +154,16 @@ public:
   Pose3 retract(const Vector& d, Pose3::CoordinatesMode mode =
       POSE3_DEFAULT_COORDINATES_MODE) const;
 
-      /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
-      Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode =POSE3_DEFAULT_COORDINATES_MODE) const;
+  /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
+  Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode =POSE3_DEFAULT_COORDINATES_MODE) const;
 
-    /// @}
+  /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
+  Vector6 localCoordinates(const Pose3& T2,
+      OptionalJacobian<6,6> Horigin, OptionalJacobian<6,6> Hother) const {
+    CONCEPT_NOT_IMPLEMENTED;
+  }
+
+  /// @}
     /// @name Lie Group
     /// @{
 

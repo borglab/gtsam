@@ -110,6 +110,11 @@ Vector Pose2::localCoordinates(const Pose2& p2) const {
 #endif
 }
 
+/// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
+Vector Pose2::localCoordinates(const Pose2& p2, OptionalJacobian<3,3> Hthis, OptionalJacobian<3,3> Hother) const {
+  CONCEPT_NOT_IMPLEMENTED;
+}
+
 /* ************************************************************************* */
 // Calculate Adjoint map
 // Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)

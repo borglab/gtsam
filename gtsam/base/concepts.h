@@ -16,6 +16,19 @@
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 
+// This is a helper to ease the transition to the new traits defined in this file.
+// Uncomment this if you want all methods that are tagged as not implemented
+// to cause compilation errors.
+// #define COMPILE_ERROR_NOT_IMPLEMENTED
+
+#ifdef COMPILE_ERROR_NOT_IMPLEMENTED
+#define CONCEPT_NOT_IMPLEMENTED BOOST_STATIC_ASSERT_MSG(boost::false_type, \
+"This method is required by the new concepts framework but has not been implemented yet.");
+#else
+#define CONCEPT_NOT_IMPLEMENTED \
+  throw std::runtime_error("This method is required by the new concepts framework but has not been implemented yet.");
+#endif
+
 namespace gtsam {
 
 

@@ -213,26 +213,10 @@ namespace imuBias {
     /// @}
 
   }; // ConstantBias class
-
-
-} // namespace ImuBias
-
-// Define GTSAM traits
-namespace traits {
+} // namespace imuBias
 
 template<>
-struct is_group<imuBias::ConstantBias> : public boost::true_type {
-};
-
-template<>
-struct is_manifold<imuBias::ConstantBias> : public boost::true_type {
-};
-
-template<>
-struct dimension<imuBias::ConstantBias> : public boost::integral_constant<int, 6> {
-};
-
-}
+struct traits_x<imuBias::ConstantBias> : public internal::LieGroup<imuBias::ConstantBias> {};
 
 } // namespace gtsam
 

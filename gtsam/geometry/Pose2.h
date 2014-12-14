@@ -143,6 +143,9 @@ public:
   /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
   Vector localCoordinates(const Pose2& p2) const;
 
+  /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
+  Vector localCoordinates(const Pose2& p2, OptionalJacobian<3,3> Hthis, OptionalJacobian<3,3> Hother) const;
+
   /// @}
   /// @name Lie Group
   /// @{
