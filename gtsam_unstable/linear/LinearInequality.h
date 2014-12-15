@@ -41,7 +41,7 @@ private:
 public:
   /** default constructor for I/O */
   LinearInequality() :
-      Base() {
+      Base(), active_(true) {
   }
 
   /** Conversion from HessianFactor (does Cholesky to obtain Jacobian matrix) */
@@ -53,21 +53,21 @@ public:
   /** Construct unary factor */
   LinearInequality(Key i1, const RowVector& A1, double b, Key dualKey) :
       Base(i1, A1, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
-          dualKey) {
+          dualKey), active_(true) {
   }
 
   /** Construct binary factor */
   LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, double b,
       Key dualKey) :
       Base(i1, A1, i2, A2, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
-          dualKey) {
+          dualKey), active_(true) {
   }
 
   /** Construct ternary factor */
   LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
       const RowVector& A3, double b, Key dualKey) :
       Base(i1, A1, i2, A2, i3, A3, (Vector(1) << b).finished(),
-          noiseModel::Constrained::All(1)), dualKey_(dualKey) {
+          noiseModel::Constrained::All(1)), dualKey_(dualKey), active_(true) {
   }
 
   /** Construct an n-ary factor
@@ -76,7 +76,7 @@ public:
   template<typename TERMS>
   LinearInequality(const TERMS& terms, double b, Key dualKey) :
       Base(terms, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
-          dualKey) {
+          dualKey), active_(true) {
   }
 
   /** Virtual destructor */
