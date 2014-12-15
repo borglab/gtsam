@@ -107,6 +107,8 @@ protected:
   T value_; ///< The wrapped value
 
 public:
+  // Only needed for serialization.
+  GenericValue(){}
 
   /// Construct from value
   GenericValue(const T& value) :
@@ -244,7 +246,7 @@ public:
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & boost::serialization::make_nvp("GenericValue",
-              boost::serialization::base_object<GenericValue<T> >(*this));
+              boost::serialization::base_object<Value>(*this));
       ar & boost::serialization::make_nvp("value", value_);
     }
 

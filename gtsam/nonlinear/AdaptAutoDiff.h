@@ -43,10 +43,6 @@ class AdaptAutoDiff {
   typedef typename Canonical1::TangentVector Vector1;
   typedef typename Canonical2::TangentVector Vector2;
 
-  // Instantiate function and charts
-  CanonicalT chartT;
-  Canonical1 chart1;
-  Canonical2 chart2;
   F f;
 
 public:
@@ -57,8 +53,8 @@ public:
     using ceres::internal::AutoDiff;
 
     // Make arguments
-    Vector1 v1 = chart1.local(a1);
-    Vector2 v2 = chart2.local(a2);
+    Vector1 v1 = Canonical1::Local(a1);
+    Vector2 v2 = Canonical2::Local(a2);
 
     bool success;
     VectorT result;
@@ -84,7 +80,7 @@ public:
     if (!success)
       throw std::runtime_error(
           "AdaptAutoDiff: function call resulted in failure");
-    return chartT.retract(result);
+    return CanonicalT::Retract(result);
   }
 
 };

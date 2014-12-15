@@ -62,15 +62,6 @@ public:
   Vector localCoordinates(const TestValue&) const { return Vector(); }
 };
 
-namespace gtsam {
-namespace traits {
-template <>
-struct is_manifold<TestValue> : public boost::true_type {};
-template <>
-struct dimension<TestValue> : public boost::integral_constant<int, 0> {};
-}
-}
-
 /* ************************************************************************* */
 TEST( Values, equals1 )
 {
@@ -170,9 +161,9 @@ TEST(Values, basic_functions)
   Values values;
   const Values& values_c = values;
   values.insert(2, Vector3());
-  values.insert(4, Vector(3));
+  values.insert(4, Vector3());
   values.insert(6, Matrix23());
-  values.insert(8, Matrix(2,3));
+  values.insert(8, Matrix23());
 
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);

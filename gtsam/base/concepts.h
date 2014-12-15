@@ -363,11 +363,14 @@ struct traits_x<float> : public internal::ScalarTraits<float> {};
 // traits for any double Eigen matrix
 template<int M, int N, int Options, int MaxRows, int MaxCols>
 struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
-  BOOST_STATIC_ASSERT_MSG(M != Eigen::Dynamic && N != Eigen::Dynamic,
-      "This traits class only supports fixed-size matrices.");
+  BOOST_STATIC_ASSERT_MSG(
+      M != Eigen::Dynamic && N != Eigen::Dynamic,
+      "These traits are only valid on fixed-size types.");
+
   // Typedefs required by all manifold types.
   typedef vector_space_tag structure_category;
-  enum { dimension = M * N };
+  enum { dimension = (M == Eigen::Dynamic ? Eigen::Dynamic :
+              (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)) };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
   typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> ManifoldType;
@@ -462,7 +465,7 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
 template<typename ManifoldType>
 struct Canonical {
   BOOST_STATIC_ASSERT_MSG(
-      (boost::is_base_of<manifold_tag, typename traits_x<ManifoldType>::structure_category>::value),
+      (boost::is_base_of<group_tag, typename traits_x<ManifoldType>::structure_category>::value),
       "This type's trait does not assert it is a manifold (or derived)");
   typedef traits_x<ManifoldType> Traits;
   typedef typename Traits::TangentVector TangentVector;
