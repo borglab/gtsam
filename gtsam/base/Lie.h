@@ -147,11 +147,7 @@ T expm(const Vector& x, int K=7) {
  * the gtsam namespace to be more easily enforced as testable
  */
 #define GTSAM_CONCEPT_LIE_INST(T) \
-    template class gtsam::ManifoldConcept<T>; \
-    template class gtsam::GroupConcept<T>; \
-    template class gtsam::LieConcept<T>;
+    template class gtsam::IsLieGroup<T>;
 
 #define GTSAM_CONCEPT_LIE_TYPE(T) \
-    typedef gtsam::ManifoldConcept<T> _gtsam_ManifoldConcept_##T; \
-    typedef gtsam::GroupConcept<T> _gtsam_GroupConcept_##T; \
-    typedef gtsam::LieConcept<T> _gtsam_LieConcept_##T;
+    typedef gtsam::IsLieGroup<T> _gtsam_LieConcept_##T;
