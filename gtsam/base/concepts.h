@@ -363,9 +363,11 @@ struct traits_x<float> : public internal::ScalarTraits<float> {};
 // traits for any double Eigen matrix
 template<int M, int N, int Options, int MaxRows, int MaxCols>
 struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
+  BOOST_STATIC_ASSERT_MSG(M != Eigen::Dynamic && N != Eigen::Dynamic,
+      "This traits class only supports fixed-size matrices.");
   // Typedefs required by all manifold types.
   typedef vector_space_tag structure_category;
-  enum { dimension = (M == Eigen::Dynamic ? Eigen::Dynamic : (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)) };
+  enum { dimension = M * N };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
   typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> ManifoldType;
@@ -405,8 +407,7 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
                               ChartJacobian Hv = boost::none) {
     if (Horigin) *Horigin = Eye(origin);
     if (Hv) *Hv = Eye(origin);
-    return origin +
-        Eigen::Map<Eigen::Matrix<double, M, N> >(v.data(), origin.rows(), origin.cols());
+    return origin + Eigen::Map<const Eigen::Matrix<double, M, N> >(v.data(), origin.rows(), origin.cols());
   }
 
   static ManifoldType Compose(const ManifoldType& m1,
@@ -444,7 +445,7 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
     if (Hm) *Hm = Eye(m);
     TangentVector result(GetDimension(m));
     Eigen::Map<Eigen::Matrix<double, M, N> >(
-      result.data(), m.rows(), m.cols()) = m;
+      result.data()) = m;
     return result;
   }
 
@@ -453,7 +454,7 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
     ManifoldType m; m.setZero();
     if (Hv) *Hv = Eye(m);
     return m +
-        Eigen::Map<Eigen::Matrix<double, M, N> >(v.data(), m.rows(), m.cols());
+        Eigen::Map<Eigen::Matrix<double, M, N> >(v.data());
   }
 
 };

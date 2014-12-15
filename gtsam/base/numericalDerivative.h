@@ -70,7 +70,7 @@ Vector numericalGradient(boost::function<double(const X&)> h, const X& x,
   double factor = 1.0 / (2.0 * delta);
 
   BOOST_STATIC_ASSERT_MSG(
-      (boost::is_base_of<manifold_tag, typename traits_x<X>::structure_category_tag>::value),
+      (boost::is_base_of<manifold_tag, typename traits_x<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
   static const int N = traits_x<X>::dimension;
   BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
@@ -300,10 +300,11 @@ inline Matrix numericalHessian(boost::function<double(const X&)> f, const X& x,
     double delta = 1e-5) {
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
+  typedef Eigen::Matrix<double, traits_x<X>::dimension, 1> VectorD;
   typedef boost::function<double(const X&)> F;
-  typedef boost::function<Vector(F, const X&, double)> G;
+  typedef boost::function<VectorD(F, const X&, double)> G;
   G ng = static_cast<G>(numericalGradient<X> );
-  return numericalDerivative11<Vector, X>(boost::bind(ng, f, _1, delta), x,
+  return numericalDerivative11<VectorD, X>(boost::bind(ng, f, _1, delta), x,
       delta);
 }
 
