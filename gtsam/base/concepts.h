@@ -117,10 +117,12 @@ struct Manifold {
 /// A helper that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Type> : public LieGroup<Type> { };
-template<typename ManifoldType>
+template<typename ManifoldType,typename _group_flavor = additive_group_tag>
 struct LieGroup {
   // Typedefs required by all manifold types.
   typedef lie_group_tag structure_category;
+  typedef _group_flavor group_flavor;
+
   enum { dimension = ManifoldType::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;

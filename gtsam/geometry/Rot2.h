@@ -242,6 +242,6 @@ namespace gtsam {
   };
 
   template<>
-  struct traits_x<Rot2> : public internal::LieGroup<Rot2> {};
+  struct traits_x<Rot2> : public internal::LieGroup<Rot2, multiplicative_group_tag> {};
 
 } // gtsam
