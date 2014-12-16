@@ -35,5 +35,6 @@ void LieVector::print(const std::string& name) const {
   gtsam::print(vector(), name);
 }
 
-GTSAM_CONCEPT_LIE_INST(LieVector)
+// Does not compile because LieVector is not fixed size.
+// GTSAM_CONCEPT_LIE_INST(LieVector)
 } // \namespace gtsam

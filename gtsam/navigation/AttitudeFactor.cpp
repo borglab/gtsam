@@ -24,13 +24,14 @@ namespace gtsam {
 
 //***************************************************************************
 Vector AttitudeFactor::attitudeError(const Rot3& nRb,
-    boost::optional<Matrix&> H) const {
+    OptionalJacobian<2, 3> H) const {
   if (H) {
-    Matrix D_nRef_R, D_e_nRef;
+    Matrix23 D_nRef_R;
+    Matrix22 D_e_nRef;
     Unit3 nRef = nRb.rotate(bRef_, D_nRef_R);
     Vector e = nZ_.error(nRef, D_e_nRef);
-    H->resize(2, 3);
-    H->block < 2, 3 > (0, 0) = D_e_nRef * D_nRef_R;
+
+    (*H) = D_e_nRef * D_nRef_R;
     return e;
   } else {
     Unit3 nRef = nRb * bRef_;

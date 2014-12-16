@@ -132,6 +132,10 @@ namespace gtsam {
     /// Returns inverse retraction
     inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
 
+    /// Returns inverse retraction
+    inline Vector3 localCoordinates(const Point3& q, OptionalJacobian<3,3> Horigin, OptionalJacobian<3,3> Ha) const {
+      CONCEPT_NOT_IMPLEMENTED; return (q -*this).vector();
+    }
     /// @}
     /// @name Lie Group
     /// @{

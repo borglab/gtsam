@@ -134,19 +134,19 @@ TEST(AHRSFactor, Error) {
   // Create factor
   AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis, false);
 
-  Vector errorActual = factor.evaluateError(x1, x2, bias);
+  Vector3 errorActual = factor.evaluateError(x1, x2, bias);
 
   // Expected error
-  Vector errorExpected(3);
+  Vector3 errorExpected(3);
   errorExpected << 0, 0, 0;
   EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
 
   // Expected Jacobians
-  Matrix H1e = numericalDerivative11<Vector, Rot3>(
+  Matrix H1e = numericalDerivative11<Vector3, Rot3>(
       boost::bind(&callEvaluateError, factor, _1, x2, bias), x1);
-  Matrix H2e = numericalDerivative11<Vector, Rot3>(
+  Matrix H2e = numericalDerivative11<Vector3, Rot3>(
       boost::bind(&callEvaluateError, factor, x1, _1, bias), x2);
-  Matrix H3e = numericalDerivative11<Vector, Vector3>(
+  Matrix H3e = numericalDerivative11<Vector3, Vector3>(
       boost::bind(&callEvaluateError, factor, x1, x2, _1), bias);
 
   // Check rotation Jacobians
