@@ -90,8 +90,8 @@ struct LieVector : public Vector {
   // as the other geometry objects (Point3, Rot3, etc.) have this problem
   /** compose with another object */
   LieVector compose(const LieVector& p,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none) const {
+      OptionalJacobian<-1,-1> H1 = boost::none,
+      OptionalJacobian<-1,-1> H2 = boost::none) const {
     if(H1) *H1 = eye(dim());
     if(H2) *H2 = eye(p.dim());
 
@@ -100,15 +100,15 @@ struct LieVector : public Vector {
 
   /** between operation */
   LieVector between(const LieVector& l2,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none) const {
+      OptionalJacobian<-1,-1> H1 = boost::none,
+      OptionalJacobian<-1,-1> H2 = boost::none) const {
     if(H1) *H1 = -eye(dim());
     if(H2) *H2 = eye(l2.dim());
     return LieVector(l2.vector() - vector());
   }
 
   /** invert the object and yield a new one */
-  LieVector inverse(boost::optional<gtsam::Matrix&> H=boost::none) const {
+  LieVector inverse(OptionalJacobian<-1,-1> H=boost::none) const {
     if(H) *H = -eye(dim());
 
     return LieVector(-1.0 * vector());
@@ -117,10 +117,16 @@ struct LieVector : public Vector {
   // Lie functions
 
   /** Expmap around identity */
-  static LieVector Expmap(const Vector& v) { return LieVector(v); }
+  static LieVector Expmap(const Vector& v, OptionalJacobian<-1,-1> H = boost::none) {
+    if (H) { CONCEPT_NOT_IMPLEMENTED; }
+    return LieVector(v);
+  }
 
   /** Logmap around identity - just returns with default cast back */
-  static Vector Logmap(const LieVector& p) { return p; }
+  static Vector Logmap(const LieVector& p, OptionalJacobian<-1,-1> H = boost::none) {
+    if (H) { CONCEPT_NOT_IMPLEMENTED; }
+    return p;
+  }
 
 private:
 

@@ -229,6 +229,7 @@ struct ScalarTraits {
   // Typedefs required by all manifold types.
   typedef vector_space_tag structure_category;
   typedef additive_group_tag group_flavor;
+  typedef Scalar ManifoldType;
   enum { dimension = 1 };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;

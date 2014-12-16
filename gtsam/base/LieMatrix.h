@@ -44,6 +44,9 @@ struct LieMatrix : public Matrix {
   /** initialize from a normal matrix */
   LieMatrix(const Matrix& v) : Matrix(v) {}
 
+  template <class M>
+  LieMatrix(const M& v) : Matrix(v) {}
+
 // Currently TMP constructor causes ICE on MSVS 2013
 #if (_MSC_VER < 1800)
   /** initialize from a fixed size normal vector */
@@ -94,7 +97,10 @@ struct LieMatrix : public Matrix {
       Eigen::Map<const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
       &v(0), this->rows(), this->cols()));
   }
-
+  inline LieMatrix retract(const Vector& v, OptionalJacobian<-1,-1> Horigin, OptionalJacobian<-1,-1> Hv) const {
+    CONCEPT_NOT_IMPLEMENTED;
+    return retract(v);
+  }
   /** @return the local coordinates of another object.  The elements of the
    * tangent space vector correspond to the matrix entries arranged in
    * *row-major* order. */
@@ -103,6 +109,10 @@ struct LieMatrix : public Matrix {
     Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
       &result(0), this->rows(), this->cols()) = t2 - *this;
     return result;
+  }
+  Vector localCoordinates(const LieMatrix& ts, OptionalJacobian<-1,-1> Horigin, OptionalJacobian<-1,-1> Hother) const {
+    CONCEPT_NOT_IMPLEMENTED;
+    return localCoordinates(ts);
   }
 
   /// @}
@@ -121,8 +131,8 @@ struct LieMatrix : public Matrix {
   // as the other geometry objects (Point3, Rot3, etc.) have this problem
   /** compose with another object */
   inline LieMatrix compose(const LieMatrix& p,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none) const {
+      OptionalJacobian<-1,-1> H1 = boost::none,
+      OptionalJacobian<-1,-1> H2 = boost::none) const {
     if(H1) *H1 = eye(dim());
     if(H2) *H2 = eye(p.dim());
 
@@ -131,15 +141,15 @@ struct LieMatrix : public Matrix {
 
   /** between operation */
   inline LieMatrix between(const LieMatrix& l2,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none) const {
+      OptionalJacobian<-1,-1> H1 = boost::none,
+      OptionalJacobian<-1,-1> H2 = boost::none) const {
     if(H1) *H1 = -eye(dim());
     if(H2) *H2 = eye(l2.dim());
     return LieMatrix(l2 - *this);
   }
 
   /** invert the object and yield a new one */
-  inline LieMatrix inverse(boost::optional<gtsam::Matrix&> H=boost::none) const {
+  inline LieMatrix inverse(OptionalJacobian<-1,-1> H = boost::none) const {
     if(H) *H = -eye(dim());
 
     return LieMatrix(-(*this));
@@ -150,12 +160,13 @@ struct LieMatrix : public Matrix {
   /// @{
 
   /** Expmap around identity */
-  static inline LieMatrix Expmap(const Vector& v) {
+  static inline LieMatrix Expmap(const Vector& v, OptionalJacobian<-1,-1> H = boost::none) {
     throw std::runtime_error("LieMatrix::Expmap(): Don't use this function");
     return LieMatrix(v); }
 
   /** Logmap around identity */
-  static inline Vector Logmap(const LieMatrix& p) {
+  static inline Vector Logmap(const LieMatrix& p, OptionalJacobian<-1,-1> H = boost::none) {
+    if (H) { CONCEPT_NOT_IMPLEMENTED; }
     Vector result(p.size());
     Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >(
         result.data(), p.rows(), p.cols()) = p;
