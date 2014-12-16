@@ -280,120 +280,6 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
 }
 
 /* ************************************************************************* */
-/* Create test graph as in Nocedal06book, Ex 16.4, pg. 475
- with the first constraint (16.49b) is replaced by
- x1 - 2 x2 - 1 >=0
- so that the trivial initial point (0,0) is infeasible
- ====
- H = [2 0; 0 2];
- f = [-2; -5];
- A =[-1 2;
- 1 2
- 1 -2];
- b = [-1; 6; 2];
- lb = zeros(2,1);
-
- opts = optimoptions('quadprog','Algorithm','active-set','Display','off');
-
- [x,fval,exitflag,output,lambda] = ...
- quadprog(H,f,A,b,[],[],lb,[],[],opts);
- ====
- x =
- 2.0000
- 0.5000
- */
-QP modifyNocedal06bookEx16_4() {
-  QP qp;
-
-  qp.cost.push_back(JacobianFactor(X(1), ones(1, 1), ones(1)));
-  qp.cost.push_back(JacobianFactor(X(2), ones(1, 1), 2.5 * ones(1)));
-
-  // Inequality constraints
-  noiseModel::Constrained::shared_ptr noise =
-      noiseModel::Constrained::MixedSigmas((Vector(1) << -1).finished());
-  qp.inequalities.push_back(LinearInequality(X(1), -One, X(2), 2 * One, -1, 0));
-  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), 2 * One, 6, 1));
-  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), -2 * One, 2, 2));
-  qp.inequalities.push_back(LinearInequality(X(1), -One, 0.0, 3));
-  qp.inequalities.push_back(LinearInequality(X(2), -One, 0.0, 4));
-
-  return qp;
-}
-
-TEST(QPSolver, optimizeNocedal06bookEx16_4_findInitialPoint) {
-  QP qp = modifyNocedal06bookEx16_4();
-  QPSolver solver(qp);
-  VectorValues initialsLP;
-  Key firstSlackKey, lastSlackKey;
-  boost::tie(initialsLP, firstSlackKey, lastSlackKey) = solver.initialValuesLP();
-  EXPECT(assert_equal(zero(1), initialsLP.at(X(1))));
-  EXPECT(assert_equal(zero(1), initialsLP.at(X(2))));
-  LONGS_EQUAL(X(2) + 1, firstSlackKey);
-  EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey)));
-  EXPECT(assert_equal(ones(1) * 6.0, initialsLP.at(firstSlackKey + 1)));
-  EXPECT(assert_equal(ones(1) * 2.0, initialsLP.at(firstSlackKey + 2)));
-  EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey + 3)));
-  EXPECT(assert_equal(zero(1), initialsLP.at(firstSlackKey + 4)));
-
-  VectorValues objCoeffs = solver.objectiveCoeffsLP(firstSlackKey);
-  for (size_t i = 0; i < 5; ++i)
-    EXPECT(assert_equal(ones(1), objCoeffs.at(firstSlackKey + i)));
-
-  LinearEqualityFactorGraph::shared_ptr equalities;
-  LinearInequalityFactorGraph::shared_ptr inequalities;
-  VectorValues lowerBounds;
-  boost::tie(equalities, inequalities, lowerBounds) = solver.constraintsLP(
-      firstSlackKey);
-  for (size_t i = 0; i < 5; ++i)
-    EXPECT(assert_equal(zero(1), lowerBounds.at(firstSlackKey + i)));
-
-  LinearInequalityFactorGraph expectedInequalities;
-  expectedInequalities.push_back(
-      LinearInequality(X(1), -One, X(2), 2 * One, X(3), -One, -1, 0));
-  expectedInequalities.push_back(
-      LinearInequality(X(1), One, X(2), 2 * One, X(4), -One, 6, 1));
-  expectedInequalities.push_back(
-      LinearInequality(X(1), One, X(2), -2 * One, X(5), -One, 2, 2));
-  expectedInequalities.push_back(
-      LinearInequality(X(1), -One, X(6), -One, 0, 3));
-  expectedInequalities.push_back(
-      LinearInequality(X(2), -One, X(7), -One, 0, 4));
-  EXPECT(assert_equal(expectedInequalities, *inequalities));
-
-  bool isFeasible;
-  VectorValues initialValues;
-  boost::tie(isFeasible, initialValues) = solver.findFeasibleInitialValues();
-  EXPECT(assert_equal(1.0 * ones(1), initialValues.at(X(1))));
-  EXPECT(assert_equal(0.0 * ones(1), initialValues.at(X(2))));
-
-  VectorValues solution;
-  boost::tie(solution, boost::tuples::ignore) = solver.optimize();
-  EXPECT(assert_equal(2.0 * ones(1), solution.at(X(1))));
-  EXPECT(assert_equal(0.5 * ones(1), solution.at(X(2))));
-}
-
-TEST(QPSolver, optimizeNocedal06bookEx16_4_2) {
-  QP qp = createTestNocedal06bookEx16_4();
-  QPSolver solver(qp);
-  VectorValues initialValues;
-  initialValues.insert(X(1), (Vector(1) << 0.0).finished());
-  initialValues.insert(X(2), (Vector(1) << 100.0).finished());
-
-  VectorValues expectedSolution;
-  expectedSolution.insert(X(1), (Vector(1) << 1.4).finished());
-  expectedSolution.insert(X(2), (Vector(1) << 1.7).finished());
-
-  VectorValues solution;
-  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
-  // THIS should fail because of the bad infeasible initial point!!
-//  CHECK(assert_equal(expectedSolution, solution, 1e-7));
-
-  VectorValues solution2;
-  boost::tie(solution2, boost::tuples::ignore) = solver.optimize();
-  CHECK(assert_equal(expectedSolution, solution2, 1e-7));
-}
-
-/* ************************************************************************* */
 
 TEST(QPSolver, failedSubproblem) {
   QP qp;
@@ -405,9 +291,12 @@ TEST(QPSolver, failedSubproblem) {
   VectorValues expected;
   expected.insert(X(1), (Vector(2) << 1.0, 0.0).finished());
 
+  VectorValues initialValues;
+  initialValues.insert(X(1),  (Vector(2) << 10.0, 100.0).finished());
+
   QPSolver solver(qp);
   VectorValues solution;
-  boost::tie(solution, boost::tuples::ignore) = solver.optimize();
+  boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
 //  graph.print("Graph: ");
 //  solution.print("Solution: ");
   CHECK(assert_equal(expected, solution, 1e-7));
