@@ -67,9 +67,10 @@ namespace internal {
 /// A helper that implements the traits interface for GTSAM manifolds.
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Type> : public Manifold<Type> { };
-template<typename ManifoldType>
+template<typename _ManifoldType>
 struct Manifold {
   // Typedefs required by all manifold types.
+  typedef _ManifoldType ManifoldType;
   typedef manifold_tag structure_category;
   enum { dimension = ManifoldType::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
@@ -117,9 +118,10 @@ struct Manifold {
 /// A helper that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Type> : public LieGroup<Type> { };
-template<typename ManifoldType,typename _group_flavor = additive_group_tag>
+template<typename _ManifoldType,typename _group_flavor = additive_group_tag>
 struct LieGroup {
   // Typedefs required by all manifold types.
+  typedef _ManifoldType ManifoldType;
   typedef lie_group_tag structure_category;
   typedef _group_flavor group_flavor;
 

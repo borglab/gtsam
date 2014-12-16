@@ -112,8 +112,11 @@ public:
   Eigen::Map<Fixed>* operator->(){ return &map_; }
 };
 
-template<>
-class OptionalJacobian<-1, -1> {};
+// these make sure that no dynamic sized matrices are compiled.
+template<int Cols>
+class OptionalJacobian<-1, Cols> {};
+template<int Rows>
+class OptionalJacobian<Rows, -1> {};
 
 } // namespace gtsam
 
