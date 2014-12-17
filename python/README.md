@@ -1,3 +1,6 @@
+Python Wrapper and Packaging
+============================
+
 This directory contains the basic setup script and directory structure for the gtsam python module.
 During the build of gtsam, when GTSAM_BUILD_PYTHON is enabled, the following instructions will run.
 * Wrap parses gtsam.h and constructs a cpp file called ${moduleName}_python.cpp
