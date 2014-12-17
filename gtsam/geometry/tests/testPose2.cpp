@@ -32,7 +32,7 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
-// #define SLOW_BUT_CORRECT_EXPMAP
+//#define SLOW_BUT_CORRECT_EXPMAP
 
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
 GTSAM_CONCEPT_LIE_INST(Pose2)
@@ -143,7 +143,7 @@ TEST(Pose2, expmap0d) {
 // test case for screw motion in the plane
 namespace screw {
   double w=0.3;
-  Vector xi = (Vector(3) << 0.0, w, w);
+  Vector xi = (Vector(3) << 0.0, w, w).finished();
   Rot2 expectedR = Rot2::fromAngle(w);
   Point2 expectedT(-0.0446635, 0.29552);
   Pose2 expected(expectedR, expectedT);
@@ -190,6 +190,28 @@ TEST(Pose2, logmap_full) {
   Vector expected = Vector3(0.00986473, -0.0150896, 0.018);
   Vector actual = logmap_default<Pose2>(pose0, pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+Vector w = (Vector(3) << 0.1, 0.27, -0.2).finished();
+
+// Left trivialization Derivative of exp(w) over w: How exp(w) changes when w changes?
+// We find y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
+// => y = log (exp(-w) * exp(w+dw))
+Vector3 testDexpL(const Vector& dw) {
+  Vector3 y = Pose2::Logmap(Pose2::Expmap(-w) * Pose2::Expmap(w + dw));
+  return y;
+}
+
+TEST( Pose2, dexpL) {
+  Matrix actualDexpL = Pose2::dexpL(w);
+  Matrix expectedDexpL = numericalDerivative11<Vector, Vector3>(
+      boost::function<Vector(const Vector&)>(
+          boost::bind(testDexpL, _1)), Vector(zero(3)), 1e-2);
+  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
+
+  Matrix actualDexpInvL = Pose2::dexpInvL(w);
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
 }
 
 /* ************************************************************************* */

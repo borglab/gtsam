@@ -575,7 +575,14 @@ VectorValues JacobianFactor::gradientAtZero() const {
 
 /* ************************************************************************* */
 void JacobianFactor::gradientAtZero(double* d) const {
-  //throw std::runtime_error("gradientAtZero not implemented for Jacobian factor");
+  throw std::runtime_error("Raw memory version of gradientAtZero not implemented for Jacobian factor");
+}
+
+/* ************************************************************************* */
+Vector JacobianFactor::gradient(Key key, const VectorValues& x) const {
+  // TODO: optimize it for JacobianFactor without converting to a HessianFactor
+  HessianFactor hessian(*this);
+  return hessian.gradient(key, x);
 }
 
 /* ************************************************************************* */

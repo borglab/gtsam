@@ -156,6 +156,28 @@ TEST( Rot2, relativeBearing )
 }
 
 /* ************************************************************************* */
+Vector w = (Vector(1) << 0.27).finished();
+
+// Left trivialization Derivative of exp(w) over w: How exp(w) changes when w changes?
+// We find y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
+// => y = log (exp(-w) * exp(w+dw))
+Vector1 testDexpL(const Vector& dw) {
+  Vector1 y = Rot2::Logmap(Rot2::Expmap(-w) * Rot2::Expmap(w + dw));
+  return y;
+}
+
+TEST( Rot2, dexpL) {
+  Matrix actualDexpL = Rot2::dexpL(w);
+  Matrix expectedDexpL = numericalDerivative11<Vector, Vector1>(
+      boost::function<Vector(const Vector&)>(
+          boost::bind(testDexpL, _1)), Vector(zero(1)), 1e-2);
+  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
+
+  Matrix actualDexpInvL = Rot2::dexpInvL(w);
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

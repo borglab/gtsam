@@ -124,6 +124,62 @@ Matrix3 Pose2::AdjointMap() const {
 }
 
 /* ************************************************************************* */
+Matrix3 Pose2::adjointMap(const Vector& v) {
+  // See Chirikjian12book2, vol.2, pg. 36
+  Matrix3 ad = zeros(3,3);
+  ad(0,1) = -v[2];
+  ad(1,0) = v[2];
+  ad(0,2) = v[1];
+  ad(1,2) = -v[0];
+  return ad;
+}
+
+/* ************************************************************************* */
+Matrix3 Pose2::dexpL(const Vector3& v) {
+  // See Iserles05an, pg. 33.
+  // TODO: Duplicated code. Maybe unify them at higher Lie level?
+  static const int N = 10; // order of approximation
+  Matrix3 res = I_3x3;
+  Matrix3 ad_i = I_3x3;
+  Matrix3 ad = adjointMap(v);
+  double fac = 1.0;
+  for (int i = 1; i < N; ++i) {
+    ad_i = ad * ad_i;
+    fac = fac * (i+1);
+    // Since this is the left-trivialized version, we flip the signs of the odd terms
+    if (i%2 != 0)
+      res = res - 1.0 / fac * ad_i;
+    else
+      res = res + 1.0 / fac * ad_i;
+  }
+  return res;
+}
+
+/* ************************************************************************* */
+Matrix3 Pose2::dexpInvL(const Vector3& v) {
+  // TODO: Duplicated code with Pose3. Maybe unify them at higher Lie level?
+  // Bernoulli numbers, from Wikipedia
+  static const Vector B = (Vector(9) << 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
+      0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
+  static const int N = 5; // order of approximation
+  Matrix3 res = I_3x3;
+  Matrix3 ad_i = I_3x3;
+  Matrix3 ad = adjointMap(v);
+  double fac = 1.0;
+  for (int i = 1; i < N; ++i) {
+    ad_i = ad * ad_i;
+    fac = fac * i;
+    // Since this is the left-trivialized version, we flip the signs of the odd terms
+    // Note that all Bernoulli odd numbers are 0, except 1.
+    if (i==1)
+      res = res - B(i) / fac * ad_i;
+    else
+      res = res + B(i) / fac * ad_i;
+  }
+  return res;
+}
+
+/* ************************************************************************* */
 Pose2 Pose2::inverse(OptionalJacobian<3,3> H1) const {
   if (H1) *H1 = -AdjointMap();
   return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));

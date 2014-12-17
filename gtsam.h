@@ -1224,6 +1224,7 @@ class VectorValues {
 
 #include <gtsam/linear/GaussianFactor.h>
 virtual class GaussianFactor {
+  gtsam::KeyVector keys() const;
   void print(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   double error(const gtsam::VectorValues& c) const;
@@ -1647,6 +1648,7 @@ class NonlinearFactorGraph {
   void push_back(gtsam::NonlinearFactor* factor);
   void add(gtsam::NonlinearFactor* factor);
   bool exists(size_t idx) const;
+  gtsam::KeySet keys() const;
 
   // NonlinearFactorGraph
   double error(const gtsam::Values& values) const;

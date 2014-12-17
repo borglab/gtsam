@@ -80,6 +80,12 @@ protected:
     testGroup##testName##Instance; \
   void testGroup##testName##Test::run (TestResult& result_)
 
+/**
+ * Use this to disable unwanted tests without commenting them out.
+ */
+#define TEST_DISABLED(testGroup, testName)\
+    void testGroup##testName##Test(TestResult& result_, const std::string& name_)
+
 /*
  * Convention for tests:
  *  - "EXPECT" is a test that will not end execution of the series of tests
