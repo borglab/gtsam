@@ -34,7 +34,6 @@ INSTANTIATE_LIE(Pose2);
 GTSAM_CONCEPT_POSE_INST(Pose2);
 
 static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
-static const Matrix3 I3 = eye(3);
 
 /* ************************************************************************* */
 Matrix3 Pose2::matrix() const {
@@ -140,8 +139,8 @@ Matrix3 Pose2::dexpL(const Vector3& v) {
   // See Iserles05an, pg. 33.
   // TODO: Duplicated code. Maybe unify them at higher Lie level?
   static const int N = 10; // order of approximation
-  Matrix res = I3;
-  Matrix3 ad_i = I3;
+  Matrix3 res = I_3x3;
+  Matrix3 ad_i = I_3x3;
   Matrix3 ad = adjointMap(v);
   double fac = 1.0;
   for (int i = 1; i < N; ++i) {
@@ -163,8 +162,8 @@ Matrix3 Pose2::dexpInvL(const Vector3& v) {
   static const Vector B = (Vector(9) << 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
       0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
   static const int N = 5; // order of approximation
-  Matrix res = I3;
-  Matrix3 ad_i = I3;
+  Matrix3 res = I_3x3;
+  Matrix3 ad_i = I_3x3;
   Matrix3 ad = adjointMap(v);
   double fac = 1.0;
   for (int i = 1; i < N; ++i) {
