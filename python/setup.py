@@ -11,5 +11,5 @@ setup(name='GTSAM',
       author_email='Andrew.Melim@gatech.edu',
       url='http://www.python.org/sigs/distutils-sig/',
       packages=['gtsam'],
-      package_data={'gtsam' : ['libgtsam.so']},
+      package_data={'gtsam' : ['libgtsam_python.so']},
      )
