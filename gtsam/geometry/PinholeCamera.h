@@ -409,7 +409,7 @@ public:
       *Dcamera << Dcamera_, Eigen::Matrix<double, 1, DimK>::Zero();
     }
     if (Dother) {
-      Dother->resize(1, 6+traits::dimension<CalibrationB>::value);
+      Dother->resize(1, 6+CalibrationB::dimension);
       Dother->setZero();
       Dother->block(0, 0, 1, 6) = Dother_;
     }
