@@ -39,6 +39,9 @@ struct LieVector : public Vector {
   /** initialize from a normal vector */
   LieVector(const Vector& v) : Vector(v) {}
   
+  template <class V>
+  LieVector(const V& v) : Vector(v) {}
+
 // Currently TMP constructor causes ICE on MSVS 2013
 #if (_MSC_VER < 1800)
   /** initialize from a fixed size normal vector */

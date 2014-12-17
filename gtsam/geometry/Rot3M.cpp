@@ -158,7 +158,7 @@ Matrix3 Rot3::transpose() const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::inverse(boost::optional<Matrix3 &> H1) const {
+Rot3 Rot3::inverse(OptionalJacobian<3,3> H1) const {
   if (H1) *H1 = -rot_;
   return Rot3(Matrix3(transpose()));
 }

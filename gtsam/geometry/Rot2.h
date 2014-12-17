@@ -111,7 +111,8 @@ namespace gtsam {
     inline static Rot2 identity() {  return Rot2(); }
 
     /** The inverse rotation - negative angle */
-    Rot2 inverse() const {
+    Rot2 inverse(OptionalJacobian<1,1> H = boost::none) const {
+      if (H) *H = -I_1x1;
       return Rot2(c_, -s_);
     }
 

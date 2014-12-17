@@ -35,6 +35,7 @@ class SO3: public Matrix3 {
 protected:
 
 public:
+  enum { dimension=3 };
 
   /// Constructor from Eigen Matrix
   template<typename Derived>
@@ -47,6 +48,9 @@ public:
       Matrix3(angleAxis) {
   }
 };
+
+template<>
+struct traits_x<SO3> : public internal::LieGroup<SO3, multiplicative_group_tag> {};
 
 
 } // end namespace gtsam

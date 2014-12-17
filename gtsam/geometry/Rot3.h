@@ -213,7 +213,7 @@ namespace gtsam {
     }
 
     /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
-    Rot3 inverse(boost::optional<Matrix3&> H1=boost::none) const;
+    Rot3 inverse(OptionalJacobian<3,3> H1=boost::none) const;
 
     /// Compose two rotations i.e., R= (*this) * R2
     Rot3 compose(const Rot3& R2, OptionalJacobian<3, 3> H1 = boost::none,

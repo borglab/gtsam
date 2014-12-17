@@ -683,14 +683,14 @@ Vector testDerivExpmapInv(const Vector6& dxi) {
 TEST( Pose3, dExpInv_TLN) {
   Matrix res = Pose3::dExpInv_exp(xi);
 
-  Matrix numericalDerivExpmapInv = numericalDerivative11<Vector, Vector6>(
+  Matrix numericalDerivExpmapInv = numericalDerivative11<Vector6, Vector6>(
       testDerivExpmapInv, Vector6::Zero(), 1e-5);
 
   EXPECT(assert_equal(numericalDerivExpmapInv,res,3e-1));
 }
 
 /* ************************************************************************* */
-Vector testDerivAdjoint(const Vector6& xi, const Vector6& v) {
+Vector6 testDerivAdjoint(const Vector6& xi, const Vector6& v) {
   return Pose3::adjointMap(xi) * v;
 }
 
@@ -700,7 +700,7 @@ TEST( Pose3, adjoint) {
   Matrix actualH;
   Vector actual = Pose3::adjoint(screw::xi, screw::xi, actualH);
 
-  Matrix numericalH = numericalDerivative21<Vector, Vector6, Vector6>(
+  Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
       testDerivAdjoint, screw::xi, screw::xi, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-5));
@@ -708,7 +708,7 @@ TEST( Pose3, adjoint) {
 }
 
 /* ************************************************************************* */
-Vector testDerivAdjointTranspose(const Vector6& xi, const Vector6& v) {
+Vector6 testDerivAdjointTranspose(const Vector6& xi, const Vector6& v) {
   return Pose3::adjointMap(xi).transpose() * v;
 }
 
@@ -720,7 +720,7 @@ TEST( Pose3, adjointTranspose) {
   Matrix actualH;
   Vector actual = Pose3::adjointTranspose(xi, v, actualH);
 
-  Matrix numericalH = numericalDerivative21<Vector, Vector6, Vector6>(
+  Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
       testDerivAdjointTranspose, xi, v, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-15));

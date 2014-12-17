@@ -23,6 +23,7 @@ using namespace gtsam;
 
 typedef OptionalJacobian<3,3> SO3Jacobian;
 
+#if 0
 //******************************************************************************
 TEST(SO3 , Concept) {
   BOOST_CONCEPT_ASSERT((IsGroup<SO3 >));
@@ -47,10 +48,9 @@ TEST(SO3 , Local) {
   Vector3 z_axis(0, 0, 1);
   SO3 q1(Eigen::AngleAxisd(0, z_axis));
   SO3 q2(Eigen::AngleAxisd(0.1, z_axis));
-  typedef manifold::traits::DefaultChart<SO3>::type Chart;
   SO3Jacobian H1,H2;
   Vector3 expected(0, 0, 0.1);
-  Vector3 actual = Chart::Local(q1, q2, H1, H2);
+  Vector3 actual = traits_x<SO3>::Local(q1, q2, H1, H2);
   EXPECT(assert_equal((Vector)expected,actual));
 }
 
@@ -59,22 +59,26 @@ TEST(SO3 , Retract) {
   Vector3 z_axis(0, 0, 1);
   SO3 q(Eigen::AngleAxisd(0, z_axis));
   SO3 expected(Eigen::AngleAxisd(0.1, z_axis));
-  typedef manifold::traits::DefaultChart<SO3>::type Chart;
   Vector3 v(0, 0, 0.1);
-  SO3 actual = Chart::Retract(q, v);
+  SO3 actual = traits_x<SO3>::Retract(q, v);
   EXPECT(actual.isApprox(expected));
 }
 
+#endif
+
 //******************************************************************************
 TEST(SO3 , Compose) {
+  EXPECT(false);
 }
 
 //******************************************************************************
 TEST(SO3 , Between) {
+  EXPECT(false);
 }
 
 //******************************************************************************
 TEST(SO3 , Inverse) {
+  EXPECT(false);
 }
 
 //******************************************************************************

@@ -22,7 +22,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
-#include <gtsam/base/chartTesting.h>
+//#include <gtsam/base/chartTesting.h>
 
 #include <boost/math/constants/constants.hpp>
 
@@ -43,7 +43,6 @@ TEST( Rot3, chart)
 {
   Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1).finished();
   Rot3 rot3(R);
-  CHECK_CHART_CONCEPT(rot3);
 }
 
 /* ************************************************************************* */
@@ -148,10 +147,10 @@ TEST( Rot3, retract)
   Vector v = zero(3);
   CHECK(assert_equal(R, R.retract(v)));
 
-  // test Canonical coordinates
-  Canonical<Rot3> chart;
-  Vector v2 = chart.local(R);
-  CHECK(assert_equal(R, chart.retract(v2)));
+//  // test Canonical coordinates
+//  Canonical<Rot3> chart;
+//  Vector v2 = chart.local(R);
+//  CHECK(assert_equal(R, chart.retract(v2)));
 }
 
 /* ************************************************************************* */
