@@ -87,7 +87,10 @@ namespace gtsam {
     }
 
     /// "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3()
-    inline Point3 inverse() const { return Point3(-x_, -y_, -z_); }
+    inline Point3 inverse(OptionalJacobian<3,3> H=boost::none) const {
+      if (H) *H = -I_3x3;
+      return Point3(-x_, -y_, -z_);
+    }
 
     /// syntactic sugar for inverse, i.e., -p == inverse(p)
     Point3 operator - () const { return Point3(-x_,-y_,-z_);}
@@ -128,6 +131,10 @@ namespace gtsam {
 
     /// Updates a with tangent space delta
     inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
+    inline Point3 retract(const Vector& v, OptionalJacobian<3,3> Horigin, OptionalJacobian<3,3> Hv) const {
+      CONCEPT_NOT_IMPLEMENTED;
+      return Point3(*this + v);
+    }
 
     /// Returns inverse retraction
     inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
@@ -141,10 +148,16 @@ namespace gtsam {
     /// @{
 
     /** Exponential map at identity - just create a Point3 from x,y,z */
-    static inline Point3 Expmap(const Vector& v) { return Point3(v); }
+    static inline Point3 Expmap(const Vector& v, OptionalJacobian<3,3> H=boost::none) {
+      if (H) *H = I_3x3;
+      return Point3(v);
+    }
 
     /** Log map at identity - return the x,y,z of this point */
-    static inline Vector3 Logmap(const Point3& dp) { return Vector3(dp.x(), dp.y(), dp.z()); }
+    static inline Vector3 Logmap(const Point3& dp, OptionalJacobian<3,3> H=boost::none) {
+      if (H) *H = I_3x3;
+      return Vector3(dp.x(), dp.y(), dp.z());
+    }
 
     /// Left-trivialized derivative of the exponential map
     static Matrix3 dexpL(const Vector& v) {

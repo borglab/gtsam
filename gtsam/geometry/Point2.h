@@ -33,7 +33,6 @@ namespace gtsam {
  * \nosubgrouping
  */
 class GTSAM_EXPORT Point2 {
-
 private:
 
   double x_, y_;
@@ -118,7 +117,10 @@ public:
   }
 
   /// "Inverse" - negates each coordinate such that compose(p,inverse(p)) == identity()
-  inline Point2 inverse() const { return Point2(-x_, -y_); }
+  inline Point2 inverse(OptionalJacobian<2,2> H=boost::none) const {
+    if (H) *H = -I_2x2;
+    return Point2(-x_, -y_);
+  }
 
   /// syntactic sugar for inverse, i.e., -p == inverse(p)
   inline Point2 operator- () const {return Point2(-x_,-y_);}
@@ -159,9 +161,17 @@ public:
 
   /// Updates a with tangent space delta
   inline Point2 retract(const Vector& v) const { return *this + Point2(v); }
+  inline Point2 retract(const Vector& v, OptionalJacobian<2,2> H1, OptionalJacobian<2,2> H2) const {
+    CONCEPT_NOT_IMPLEMENTED;
+    return *this + Point2(v);
+  }
 
   /// Local coordinates of manifold neighborhood around current value
   inline Vector localCoordinates(const Point2& t2) const { return Logmap(between(t2)); }
+  inline Vector localCoordinates(const Point2& t2, OptionalJacobian<2,2> H1, OptionalJacobian<2,2> H2) const {
+    CONCEPT_NOT_IMPLEMENTED;
+    return Logmap(between(t2));
+  }
 
   /// @}
   /// @name Lie Group
@@ -169,9 +179,17 @@ public:
 
   /// Exponential map around identity - just create a Point2 from a vector
   static inline Point2 Expmap(const Vector& v) { return Point2(v); }
+  static Point2 Expmap(const Vector& v, OptionalJacobian<2,2> H) {
+    CONCEPT_NOT_IMPLEMENTED;
+  }
 
   /// Log map around identity - just return the Point2 as a vector
   static inline Vector Logmap(const Point2& dp) { return (Vector(2) << dp.x(), dp.y()).finished(); }
+  static Vector Logmap(const Point2& dp, OptionalJacobian<2,2> H) {
+    CONCEPT_NOT_IMPLEMENTED;
+    return (Vector(2) << dp.x(), dp.y()).finished();
+  }
+
 
   /// @}
   /// @name Vector Space
