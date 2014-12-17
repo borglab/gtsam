@@ -546,8 +546,8 @@ public:
     v = traits_x<M>::Local(p,q);
     q = traits_x<M>::Retract(p,v);
     // and the versions with Jacobians.
-    v = traits_x<M>::Local(p,q,Hp,Hq);
-    q = traits_x<M>::Retract(p,v,Hp,Hv);
+    //v = traits_x<M>::Local(p,q,Hp,Hq);
+    //q = traits_x<M>::Retract(p,v,Hp,Hv);
 
     traits_x<M>::Print(p);
     traits_x<M>::Print(p, "p");
@@ -653,8 +653,8 @@ public:
     g = traits_x<LG>::Expmap(v);
     v = traits_x<LG>::Logmap(g);
     // log and exp map with Jacobians
-    g = traits_x<LG>::Expmap(v, Hg);
-    v = traits_x<LG>::Logmap(g, Hg);
+    //g = traits_x<LG>::Expmap(v, Hg);
+    //v = traits_x<LG>::Logmap(g, Hg);
   }
 private:
   LG g, h;
