@@ -389,7 +389,7 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
 
   // For Testable
   static void Print(const ManifoldType& m, const std::string& str = "") {
-    gtsam::print(m, str);
+    gtsam::print(Eigen::MatrixXd(m), str);
   }
   static bool Equals(const ManifoldType& m1,
               const ManifoldType& m2,

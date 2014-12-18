@@ -190,7 +190,8 @@ public:
 
   /// return canonical coordinate
   VectorK6 localCoordinates(const PinholeCamera& T2) const {
-    VectorK6 d; // TODO: why does d.head<6>() not compile??
+    VectorK6 d;
+    // TODO: why does d.head<6>() not compile??
     d.head(6) = pose().localCoordinates(T2.pose());
     d.tail(DimK) = calibration().localCoordinates(T2.calibration());
     return d;
