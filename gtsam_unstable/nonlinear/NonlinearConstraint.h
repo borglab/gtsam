@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -50,6 +51,9 @@ protected:
 
   typedef NoiseModelFactor1<VALUE> Base;
   typedef NonlinearConstraint1<VALUE> This;
+
+private:
+  static const int X1Dim = traits::dimension<VALUE>::value;
 
 public:
 
@@ -104,7 +108,7 @@ public:
     }
 
     return boost::make_shared<HessianFactor>(Base::key(), lG11sum,
-        zero(x1.dim()), 100.0);
+        zero(X1Dim), 100.0);
   }
 
   /** evaluate Hessians for lambda factors */
@@ -119,11 +123,11 @@ public:
 
     if (debug) {
       gtsam::print(G11all, "G11all: ");
-      std::cout << "x1dim: " << x1.dim() << std::endl;
+      std::cout << "x1dim: " << X1Dim << std::endl;
     }
 
     for (size_t i = 0; i < Base::get_noiseModel()->dim(); ++i) {
-      G11.push_back(G11all.block(i * x1.dim(), 0, x1.dim(), x1.dim()));
+      G11.push_back(G11all.block(i * X1Dim, 0, X1Dim, X1Dim));
       if (debug)
         gtsam::print(G11[i], "G11: ");
     }
@@ -166,6 +170,10 @@ protected:
 
   typedef NoiseModelFactor2<VALUE1, VALUE2> Base;
   typedef NonlinearConstraint2<VALUE1, VALUE2> This;
+
+private:
+  static const int X1Dim = traits::dimension<VALUE1>::value;
+  static const int X2Dim = traits::dimension<VALUE2>::value;
 
 public:
 
@@ -228,7 +236,7 @@ public:
     }
 
     return boost::make_shared<HessianFactor>(Base::keys_[0], Base::keys_[1],
-        lG11sum, lG12sum, zero(x1.dim()), lG22sum, zero(x2.dim()), 0.0);
+        lG11sum, lG12sum, zero(X1Dim), lG22sum, zero(X2Dim), 0.0);
   }
 
   /** evaluate Hessians for lambda factors */
@@ -250,20 +258,20 @@ public:
       gtsam::print(G11all, "G11all: ");
       gtsam::print(G12all, "G12all: ");
       gtsam::print(G22all, "G22all: ");
-      std::cout << "x1dim: " << x1.dim() << std::endl;
-      std::cout << "x2dim: " << x2.dim() << std::endl;
+      std::cout << "x1dim: " << traits::dimension<VALUE1>::value << std::endl;
+      std::cout << "x2dim: " << traits::dimension<VALUE2>::value << std::endl;
     }
 
     for (size_t i = 0; i < Base::get_noiseModel()->dim(); ++i) {
-      G11.push_back(G11all.block(i * x1.dim(), 0, x1.dim(), x1.dim()));
+      G11.push_back(G11all.block(i * X1Dim, 0, X1Dim, X1Dim));
       if (debug)
         gtsam::print(G11[i], "G11: ");
 
-      G12.push_back(G12all.block(i * x1.dim(), 0, x1.dim(), x2.dim()));
+      G12.push_back(G12all.block(i * X1Dim, 0, X1Dim, X2Dim));
       if (debug)
         gtsam::print(G12[i], "G12: ");
 
-      G22.push_back(G22all.block(i * x2.dim(), 0, x2.dim(), x2.dim()));
+      G22.push_back(G22all.block(i * X2Dim, 0, X2Dim, X2Dim));
       if (debug)
         gtsam::print(G22[i], "G22: ");
     }
@@ -316,6 +324,11 @@ protected:
 
   typedef NoiseModelFactor3<VALUE1, VALUE2, VALUE3> Base;
   typedef NonlinearConstraint3<VALUE1, VALUE2, VALUE3> This;
+
+private:
+  static const int X1Dim = traits::dimension<VALUE1>::value;
+  static const int X2Dim = traits::dimension<VALUE2>::value;
+  static const int X3Dim = traits::dimension<VALUE3>::value;
 
 public:
 
@@ -387,8 +400,8 @@ public:
 
     return boost::shared_ptr<HessianFactor>(
         new HessianFactor(Base::keys_[0], Base::keys_[1], Base::keys_[2],
-            lG11sum, lG12sum, lG13sum, zero(x1.dim()), lG22sum, lG23sum,
-            zero(x2.dim()), lG33sum, zero(x3.dim()), 0.0));
+            lG11sum, lG12sum, lG13sum, zero(X1Dim), lG22sum, lG23sum,
+            zero(X2Dim), lG33sum, zero(X3Dim), 0.0));
   }
 
   /**
@@ -470,33 +483,33 @@ public:
       gtsam::print(G22all, "G22all: ");
       gtsam::print(G23all, "G23all: ");
       gtsam::print(G33all, "G33all: ");
-      std::cout << "x1dim: " << x1.dim() << std::endl;
-      std::cout << "x2dim: " << x2.dim() << std::endl;
-      std::cout << "x3dim: " << x3.dim() << std::endl;
+      std::cout << "x1dim: " << X1Dim << std::endl;
+      std::cout << "x2dim: " << X2Dim << std::endl;
+      std::cout << "x3dim: " << X3Dim << std::endl;
     }
 
     for (size_t i = 0; i < Base::get_noiseModel()->dim(); ++i) {
-      G11.push_back(G11all.block(i * x1.dim(), 0, x1.dim(), x1.dim()));
+      G11.push_back(G11all.block(i * X1Dim, 0, X1Dim, X1Dim));
       if (debug)
         gtsam::print(G11[i], "G11: ");
 
-      G12.push_back(G12all.block(i * x1.dim(), 0, x1.dim(), x2.dim()));
+      G12.push_back(G12all.block(i * X1Dim, 0, X1Dim, X2Dim));
       if (debug)
         gtsam::print(G12[i], "G12: ");
 
-      G13.push_back(G13all.block(i * x1.dim(), 0, x1.dim(), x3.dim()));
+      G13.push_back(G13all.block(i * X1Dim, 0, X1Dim, X3Dim));
       if (debug)
         gtsam::print(G13[i], "G13: ");
 
-      G22.push_back(G22all.block(i * x2.dim(), 0, x2.dim(), x2.dim()));
+      G22.push_back(G22all.block(i * X2Dim, 0, X2Dim, X2Dim));
       if (debug)
         gtsam::print(G22[i], "G22: ");
 
-      G23.push_back(G23all.block(i * x2.dim(), 0, x2.dim(), x3.dim()));
+      G23.push_back(G23all.block(i * X2Dim, 0, X2Dim, X3Dim));
       if (debug)
         gtsam::print(G23[i], "G23: ");
 
-      G33.push_back(G33all.block(i * x3.dim(), 0, x3.dim(), x3.dim()));
+      G33.push_back(G33all.block(i * X3Dim, 0, X3Dim, X3Dim));
       if (debug)
         gtsam::print(G33[i], "G33: ");
     }
