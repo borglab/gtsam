@@ -34,6 +34,7 @@ namespace gtsam {
 typedef Eigen::VectorXd Vector;
 
 // Commonly used fixed size vectors
+typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
 typedef Eigen::Matrix<double, 4, 1> Vector4;
