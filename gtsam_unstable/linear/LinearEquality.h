@@ -41,6 +41,16 @@ public:
       Base() {
   }
 
+  /**
+   * Construct from a constrained noisemodel JacobianFactor with a dual key.
+   */
+  explicit LinearEquality(const JacobianFactor& jf, Key dualKey) : Base(jf), dualKey_(dualKey){
+    if (!jf.isConstrained()) {
+      throw std::runtime_error("Cannot convert an unconstrained JacobianFactor to LinearEquality");
+    }
+  }
+
+
   /** Conversion from HessianFactor (does Cholesky to obtain Jacobian matrix) */
   explicit LinearEquality(const HessianFactor& hf) {
     throw std::runtime_error("Cannot convert HessianFactor to LinearEquality");
