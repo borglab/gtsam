@@ -111,7 +111,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   //       Z_3x3,    Z_3x3,            Z_3x3,             Z_3x3,            I_3x3;
   F.setZero();
   F.block<9,9>(0,0)  = F_9x9;
-  F.block<6,6>(9,9)  = eye(9);
+  F.block<6,6>(9,9)  = eye(6);
   F.block<3,3>(3,9)  = H_vel_biasacc;
   F.block<3,3>(6,12) = H_angles_biasomega;
 
@@ -119,7 +119,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   // Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
   Matrix G_measCov_Gt = Matrix::Zero(15,15);
 
-  // BLOCK DIAGONAL TERMS
+//   BLOCK DIAGONAL TERMS
   G_measCov_Gt.block<3,3>(0,0) = deltaT * integrationCovariance();
   G_measCov_Gt.block<3,3>(3,3) = (1/deltaT) * (H_vel_biasacc)  *
       (accelerometerCovariance()  +  biasAccOmegaInit_.block<3,3>(0,0) ) *
@@ -219,37 +219,37 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
       H1->resize(15,6);
       H1->block<9,6>(0,0) = H1_pvR;
       // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
-      H1->block<6,6>(0,9) = Matrix::Zero(6,6);
+      H1->block<6,6>(9,0) = Matrix::Zero(6,6);
     }
     if(H2) {
       H2->resize(15,3);
       H2->block<9,3>(0,0) = H2_pvR;
       // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-      H2->block<6,3>(0,9) = Matrix::Zero(6,3);
+      H2->block<6,3>(9,0) = Matrix::Zero(6,3);
     }
     if(H3) {
       H3->resize(15,6);
       H3->block<9,6>(0,0) = H3_pvR;
       // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
-      H3->block<6,6>(0,9) = Matrix::Zero(6,6);
+      H3->block<6,6>(9,0) = Matrix::Zero(6,6);
     }
     if(H4) {
       H4->resize(15,3);
       H4->block<9,3>(0,0) = H4_pvR;
       // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-      H4->block<6,3>(0,9) = Matrix::Zero(6,3);
+      H4->block<6,3>(9,0) = Matrix::Zero(6,3);
     }
     if(H5) {
       H5->resize(15,6);
       H5->block<9,6>(0,0) = H5_pvR;
       // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
-      H5->block<6,6>(0,9) = Hbias_i;
+      H5->block<6,6>(9,0) = Hbias_i;
     }
     if(H6) {
       H6->resize(15,6);
-      H6->block<9,6>(0,0) = Matrix::Zero(6,6);
+      H6->block<9,6>(0,0) = Matrix::Zero(9,6);
       // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
-      H6->block<6,6>(0,9) = Hbias_j;
+      H6->block<6,6>(9,0) = Hbias_j;
     }
     Vector r(15); r << r_pvR, fbias; // vector of size 15
     return r;
