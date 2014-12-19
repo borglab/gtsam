@@ -136,47 +136,51 @@ Matrix3 Pose2::adjointMap(const Vector& v) {
 
 /* ************************************************************************* */
 Matrix3 Pose2::dexpL(const Vector3& v) {
-  // See Iserles05an, pg. 33.
-  // TODO: Duplicated code. Maybe unify them at higher Lie level?
-  static const int N = 10; // order of approximation
-  Matrix3 res = I_3x3;
-  Matrix3 ad_i = I_3x3;
-  Matrix3 ad = adjointMap(v);
-  double fac = 1.0;
-  for (int i = 1; i < N; ++i) {
-    ad_i = ad * ad_i;
-    fac = fac * (i+1);
-    // Since this is the left-trivialized version, we flip the signs of the odd terms
-    if (i%2 != 0)
-      res = res - 1.0 / fac * ad_i;
-    else
-      res = res + 1.0 / fac * ad_i;
+  double alpha = v[2];
+  if (fabs(alpha) > 1e-5) {
+    // Chirikjian11book2, pg. 36
+    /* !!!Warning!!! Compare Iserles05an, formula 2.42 and Chirikjian11book2 pg.26
+     * Iserles' right-trivialization dexpR is actually the left Jacobian J_l in Chirikjian's notation
+     * In fact, Iserles 2.42 can be written as:
+     *    \dot{g} g^{-1} = dexpR_{q}\dot{q}
+     * where q = A, and g = exp(A)
+     * and the LHS is in the definition of J_l in Chirikjian11book2, pg. 26.
+     * Hence, to compute dexpL, we have to use the formula of J_r Chirikjian11book2, pg.36
+     */
+    double sZalpha = sin(alpha)/alpha, c_1Zalpha = (cos(alpha)-1)/alpha;
+    double v1Zalpha = v[0]/alpha, v2Zalpha = v[1]/alpha;
+    return (Matrix(3,3) <<
+        sZalpha, -c_1Zalpha, v1Zalpha + v2Zalpha*c_1Zalpha - v1Zalpha*sZalpha,
+        c_1Zalpha, sZalpha, -v1Zalpha*c_1Zalpha + v2Zalpha - v2Zalpha*sZalpha,
+        0, 0, 1).finished();
   }
-  return res;
+  else {
+    // Thanks to Krunal: Apply L'Hospital rule to several times to
+    // compute the limits when alpha -> 0
+    return (Matrix(3,3) << 1,0,-0.5*v[1],
+        0,1, 0.5*v[0],
+        0,0, 1).finished();
+  }
 }
 
 /* ************************************************************************* */
 Matrix3 Pose2::dexpInvL(const Vector3& v) {
-  // TODO: Duplicated code with Pose3. Maybe unify them at higher Lie level?
-  // Bernoulli numbers, from Wikipedia
-  static const Vector B = (Vector(9) << 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
-      0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
-  static const int N = 5; // order of approximation
-  Matrix3 res = I_3x3;
-  Matrix3 ad_i = I_3x3;
-  Matrix3 ad = adjointMap(v);
-  double fac = 1.0;
-  for (int i = 1; i < N; ++i) {
-    ad_i = ad * ad_i;
-    fac = fac * i;
-    // Since this is the left-trivialized version, we flip the signs of the odd terms
-    // Note that all Bernoulli odd numbers are 0, except 1.
-    if (i==1)
-      res = res - B(i) / fac * ad_i;
-    else
-      res = res + B(i) / fac * ad_i;
+  double alpha = v[2];
+  if (fabs(alpha) > 1e-5) {
+    double alphaInv = 1/alpha;
+    double halfCotHalfAlpha = 0.5*sin(alpha)/(1-cos(alpha));
+    double v1 = v[0], v2 = v[1];
+
+    return (Matrix(3,3) <<
+        alpha*halfCotHalfAlpha, -0.5*alpha, v1*alphaInv - v1*halfCotHalfAlpha + 0.5*v2,
+        0.5*alpha, alpha*halfCotHalfAlpha,  v2*alphaInv - 0.5*v1 - v2*halfCotHalfAlpha,
+        0, 0, 1).finished();
   }
-  return res;
+  else {
+    return (Matrix(3,3) << 1,0, 0.5*v[1],
+        0,1, -0.5*v[0],
+        0,0, 1).finished();
+  }
 }
 
 /* ************************************************************************* */
