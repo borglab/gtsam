@@ -1,7 +1,7 @@
   // comments!
 
 class VectorNotEigen;
-class ns::OtherClass;
+virtual class ns::OtherClass;
 
 namespace gtsam {
 

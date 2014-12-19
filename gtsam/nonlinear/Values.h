@@ -184,6 +184,9 @@ namespace gtsam {
     /// throws truntime error if n<1 || n>9
     Vector atFixed(Key j, size_t n);
 
+    /// version for double
+    double atDouble(size_t key) const { return at<double>(key);}
+
     /** Retrieve a variable by key \c j.  This version returns a reference
      * to the base Value class, and needs to be casted before use.
      * @param j Retrieve the value associated with this key
@@ -265,6 +268,9 @@ namespace gtsam {
     /// Special version for small fixed size vectors, for matlab/python
     /// throws truntime error if n<1 || n>9
     void insertFixed(Key j, const Vector& v, size_t n);
+
+    /// version for double
+    void insertDouble(Key j, double c) { insert<double>(j,c); }
 
     /// overloaded insert version that also specifies a chart
     template <typename ValueType, typename Chart>
