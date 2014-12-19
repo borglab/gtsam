@@ -91,13 +91,14 @@ struct SQPSimpleState {
   Values values;
   VectorValues duals;
   bool converged;
+  size_t iterations;
 
   /// Default constructor
-  SQPSimpleState() : values(), duals(), converged(false) {}
+  SQPSimpleState() : values(), duals(), converged(false), iterations(0) {}
 
   /// Constructor with an initialValues
   SQPSimpleState(const Values& initialValues) :
-      values(initialValues), duals(VectorValues()), converged(false) {
+      values(initialValues), duals(VectorValues()), converged(false), iterations(0) {
   }
 };
 
@@ -117,6 +118,7 @@ public:
   /// Check if \nabla f(x) - \lambda * \nabla c(x) == 0
   bool isDualFeasible(const VectorValues& delta) const {
     return delta.vector().lpNorm<Eigen::Infinity>() < errorTol;
+//    return false;
   }
 
   /// Check if c(x) == 0
@@ -134,6 +136,8 @@ public:
    * Single iteration of SQP
    */
   SQPSimpleState iterate(const SQPSimpleState& state) const {
+    static const bool debug = true;
+
     // construct the qp subproblem
     QP qp;
     qp.cost = *nlp_.cost.linearize(state.values);
@@ -143,18 +147,42 @@ public:
     qp.equalities.add(*nlp_.linearEqualities.linearize(state.values));
     qp.equalities.add(*nlp_.nonlinearEqualities.linearize(state.values));
 
+    if (debug)
+      qp.print("QP subproblem:");
+
     // solve the QP subproblem
     VectorValues delta, duals;
     QPSolver qpSolver(qp);
     boost::tie(delta, duals) = qpSolver.optimize();
+
+    if (debug)
+      delta.print("delta = ");
+
+    if (debug)
+      duals.print("duals = ");
 
     // update new state
     SQPSimpleState newState;
     newState.values = state.values.retract(delta);
     newState.duals = duals;
     newState.converged = checkConvergence(newState, delta);
+    newState.iterations = state.iterations + 1;
 
     return newState;
+  }
+
+  VectorValues initializeDuals() const {
+    VectorValues duals;
+    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, nlp_.linearEqualities) {
+      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+      duals.insert(constraint->dualKey(), zero(factor->dim()));
+    }
+
+    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, nlp_.nonlinearEqualities) {
+      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+      duals.insert(constraint->dualKey(), zero(factor->dim()));
+    }
+    return duals;
   }
 
   /**
@@ -162,11 +190,13 @@ public:
    */
   std::pair<Values, VectorValues> optimize(const Values& initialValues) const {
     SQPSimpleState state(initialValues);
-    while (!state.converged) {
+    state.duals = initializeDuals();
+
+    while (!state.converged && state.iterations < 100) {
       state = iterate(state);
     }
 
-    return std::make_pair(initialValues, VectorValues());
+    return std::make_pair(state.values, state.duals);
   }
 
 
@@ -177,17 +207,38 @@ using namespace std;
 using namespace gtsam::symbol_shorthand;
 using namespace gtsam;
 const double tol = 1e-10;
+
 //******************************************************************************
-TEST(testSQPSimple, Problem2) {
+// x + y - 1 = 0
+class ConstraintProblem1 : public NonlinearConstraint2<double, double> {
+  typedef NonlinearConstraint2<double, double> Base;
+
+public:
+  ConstraintProblem1(Key xK, Key yK, Key dualKey) : Base(xK, yK, dualKey, 1) {}
+
+  // x + y - 1
+  Vector evaluateError(const double& x, const double& y,
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+          boost::none) const {
+    if (H1) *H1 = eye(1);
+    if (H2) *H2 = eye(1);
+    return (Vector(1) << x + y - 1.0).finished();
+  }
+};
+
+TEST_DISABLED(testSQPSimple, QPProblem) {
+  const Key dualKey = 0;
+
   // Simple quadratic cost: x1^2 + x2^2
   // Note the Hessian encodes:
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence here we have G11 = 2, G12 = 0, G22 = 2, g1 = 0, g2 = 0, f = 0
-  HessianFactor hf(X(1), X(2), 2.0 * ones(1,1), zero(1), zero(1),
+  HessianFactor hf(X(1), Y(1), 2.0 * ones(1,1), zero(1), zero(1),
                     2*ones(1,1), zero(1) , 0);
 
   LinearEqualityFactorGraph equalities;
-  equalities.push_back(LinearEquality(X(1), ones(1), X(2), ones(1), -1*ones(1), 0)); // x + y - 1 = 0
+  LinearEquality linearConstraint(X(1), ones(1), Y(1), ones(1), 1*ones(1), dualKey); // x + y - 1 = 0
+  equalities.push_back(linearConstraint);
 
   // Compare against QP
   QP qp;
@@ -199,20 +250,110 @@ TEST(testSQPSimple, Problem2) {
   // create initial values for optimization
   VectorValues initialVectorValues;
   initialVectorValues.insert(X(1), zero(1));
-  initialVectorValues.insert(X(2), zero(1));
+  initialVectorValues.insert(Y(1), ones(1));
   VectorValues expectedSolution = qpSolver.optimize(initialVectorValues).first;
-  cout<<"expectedSolution.at(X(1))[0]: "<<expectedSolution.at(X(1))[0]<<endl;
-  cout<<"expectedSolution.at(X(2))[0]: "<<expectedSolution.at(X(2))[0]<<endl;
 
   //Instantiate NLP
   NLP nlp;
-  nlp.cost.add(); // wrap it using linearcontainerfactor
-  nlp.linearEqualities // for constraint it has to inherit from
-  // write an evaluate error and return jacobian
+  nlp.cost.add(LinearContainerFactor(hf)); // wrap it using linearcontainerfactor
+  nlp.linearEqualities.add(ConstraintProblem1(X(1), Y(1), dualKey));
+
+  Values initialValues;
+  initialValues.insert(X(1), 0.0);
+  initialValues.insert(Y(1), 0.0);
 
   // Instantiate SQP
   SQPSimple sqpSimple(nlp);
+  Values actualValues = sqpSimple.optimize(initialValues).first;
+
+  DOUBLES_EQUAL(expectedSolution.at(X(1))[0], actualValues.at<double>(X(1)), 1e-100);
+  DOUBLES_EQUAL(expectedSolution.at(Y(1))[0], actualValues.at<double>(Y(1)), 1e-100);
+
 }
+
+//******************************************************************************
+class CircleConstraint : public NonlinearConstraint2<double, double> {
+  typedef NonlinearConstraint2<double, double> Base;
+public:
+  CircleConstraint(Key xK, Key yK, Key dualKey) : Base(xK, yK, dualKey, 1) {}
+
+  Vector evaluateError(const double& x, const double& y,
+    boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+        boost::none) const {
+    if (H1) *H1 = (Matrix(1,1) << 2*(x-1)).finished();
+    if (H2) *H2 = (Matrix(1,1) << 2*y).finished();
+    return (Vector(1) << (x-1)*(x-1) + y*y - 0.25).finished();
+  }
+
+  void evaluateHessians(const double& x, const double& y,
+        std::vector<Matrix>& G11, std::vector<Matrix>& G12,
+        std::vector<Matrix>& G22) const {
+    G11.push_back((Matrix(1,1) << 2).finished());
+    G12.push_back((Matrix(1,1) << 0).finished());
+    G22.push_back((Matrix(1,1) << 2).finished());
+  }
+
+};
+
+TEST_UNSAFE(testSQPSimple, quadraticCostNonlinearConstraint) {
+  const Key dualKey = 0;
+
+  //Instantiate NLP
+  NLP nlp;
+
+  // Simple quadratic cost: x1^2 + x2^2
+  // Note the Hessian encodes:
+  //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
+  // Hence here we have G11 = 2, G12 = 0, G22 = 2, g1 = 0, g2 = 0, f = 0
+  Values linPoint;
+  linPoint.insert<Vector1>(X(1), zero(1));
+  linPoint.insert<Vector1>(Y(1), zero(1));
+  HessianFactor hf(X(1), Y(1), 2.0 * ones(1,1), zero(1), zero(1),
+                    2*ones(1,1), zero(1) , 0);
+  nlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
+  nlp.nonlinearEqualities.add(CircleConstraint(X(1), Y(1), dualKey));
+
+  Values initialValues;
+  initialValues.insert<double>(X(1), 0.0);
+  initialValues.insert<double>(Y(1), 2.0);
+
+  Values expectedSolution;
+  expectedSolution.insert<double>(X(1), 0.5);
+  expectedSolution.insert<double>(Y(1), 0.0);
+
+  // Instantiate SQP
+  SQPSimple sqpSimple(nlp);
+  Values actualSolution = sqpSimple.optimize(initialValues).first;
+
+  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
+  actualSolution.print("actualSolution: ");
+}
+
+//******************************************************************************
+//
+//TEST_UNSAFE(testSQPSimple, poseOnALine) {
+//  const Key dualKey = 0;
+//
+//  //Instantiate NLP
+//  NLP nlp;
+//  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(), noiseModel::Unit::Create(6))); // wrap it using linearcontainerfactor
+//  nlp.nonlinearEqualities.add(CircleConstraint(X(1), Y(1), dualKey));
+//
+//  Values initialValues;
+//  initialValues.insert<double>(X(1), 0.0);
+//  initialValues.insert<double>(Y(1), 0.0);
+//
+//  Values expectedSolution;
+//  expectedSolution.insert<double>(X(1), 0.5);
+//  expectedSolution.insert<double>(Y(1), 0.0);
+//
+//  // Instantiate SQP
+//  SQPSimple sqpSimple(nlp);
+//  Values actualSolution = sqpSimple.optimize(initialValues).first;
+//
+//  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
+//  actualSolution.print("actualSolution: ");
+//}
 
 //******************************************************************************
 int main() {
@@ -220,56 +361,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 //******************************************************************************
-
-//TEST(testSQPSimple, Problem1 ) {
-//
-//  // build a quadratic Objective function x1^2 - x1*x2 + x2^2 - 3*x1 + 5
-//  // Note the Hessian encodes:
-//  //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
-//  // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 10
-//  HessianFactor lf(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
-//      2.0 * ones(1, 1), zero(1), 10.0);
-//
-//  // build linear inequalities
-//  LinearInequalityFactorGraph inequalities;
-//  inequalities.push_back(
-//      LinearInequality(X(1), ones(1, 1), X(2), ones(1, 1), 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
-//  inequalities.push_back(LinearInequality(X(1), -ones(1, 1), 0, 1)); // -x1     <= 0
-//  inequalities.push_back(LinearInequality(X(2), -ones(1, 1), 0, 2)); //    -x2  <= 0
-//  inequalities.push_back(LinearInequality(X(1), ones(1, 1), 1.5, 3)); // x1      <= 3/2
-//
-//  // Compare against a QP
-//  QP qp;
-//  qp.cost.add(lf);
-//  qp.inequalities = inequalities;
-//
-//  // instantiate QPsolver
-//  QPSolver qpSolver(qp);
-//  // create initial values for optimization
-//  VectorValues initialVectorValues;
-//  initialVectorValues.insert(X(1), zero(1));
-//  initialVectorValues.insert(X(2), zero(1));
-//  VectorValues expectedSolution = qpSolver.optimize(initialVectorValues).first;
-//
-//
-//  NonlinearEqualityFactorGraph linearEqualities;
-//  NonlinearEqualityFactorGraph nonlinearEqualities;
-//  nonlinearEqualities.push_back(NonlinearEquality(X(1), ones(1, 1), X(2), ones(1, 1), 2, 0)));
-//
-//  NLP nlp;
-//  nlp.cost.add(lf);
-//  nlp.linearEqualities.push_back(NonlinearEqualityFactorGraph());
-//  // instantiate QPsolver
-//  SQPSimple sqpSolver(nlp);
-//  // create initial values for optimization
-//  Values initialValues;
-//  initialValues.insert(X(1), zero(1));
-//  initialValues.insert(X(2), zero(1));
-//
-//  std::pair<Vector, VectorValues>  actualSolution = sqpSolver.optimize(initialValues);
-//
-//  DOUBLES_EQUAL(expectedSolution.at(X(1))[0], actualSolution.at<double>(X(1)),
-//      tol);
-//  DOUBLES_EQUAL(expectedSolution.at(X(2))[0], actualSolution.at<double>(X(2)),
-//      tol);
-//}
