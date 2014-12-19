@@ -206,7 +206,9 @@ TEST(testSQPSimple, Problem2) {
 
   //Instantiate NLP
   NLP nlp;
-  nlp.cost.add();
+  nlp.cost.add(); // wrap it using linearcontainerfactor
+  nlp.linearEqualities // for constraint it has to inherit from
+  // write an evaluate error and return jacobian
 
   // Instantiate SQP
   SQPSimple sqpSimple(nlp);
