@@ -203,6 +203,10 @@ public:
 };
 }
 
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/numericalDerivative.h>
+
 using namespace std;
 using namespace gtsam::symbol_shorthand;
 using namespace gtsam;
@@ -226,7 +230,7 @@ public:
   }
 };
 
-TEST_DISABLED(testSQPSimple, QPProblem) {
+TEST(testSQPSimple, QPProblem) {
   const Key dualKey = 0;
 
   // Simple quadratic cost: x1^2 + x2^2
@@ -255,7 +259,10 @@ TEST_DISABLED(testSQPSimple, QPProblem) {
 
   //Instantiate NLP
   NLP nlp;
-  nlp.cost.add(LinearContainerFactor(hf)); // wrap it using linearcontainerfactor
+  Values linPoint;
+  linPoint.insert<Vector1>(X(1), zero(1));
+  linPoint.insert<Vector1>(Y(1), zero(1));
+  nlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
   nlp.linearEqualities.add(ConstraintProblem1(X(1), Y(1), dualKey));
 
   Values initialValues;
@@ -301,7 +308,7 @@ TEST_UNSAFE(testSQPSimple, quadraticCostNonlinearConstraint) {
   //Instantiate NLP
   NLP nlp;
 
-  // Simple quadratic cost: x1^2 + x2^2
+  // Simple quadratic cost: x1^2 + x2^2 +1000
   // Note the Hessian encodes:
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence here we have G11 = 2, G12 = 0, G22 = 2, g1 = 0, g2 = 0, f = 0
@@ -309,13 +316,13 @@ TEST_UNSAFE(testSQPSimple, quadraticCostNonlinearConstraint) {
   linPoint.insert<Vector1>(X(1), zero(1));
   linPoint.insert<Vector1>(Y(1), zero(1));
   HessianFactor hf(X(1), Y(1), 2.0 * ones(1,1), zero(1), zero(1),
-                    2*ones(1,1), zero(1) , 0);
+                    2*ones(1,1), zero(1) , 1000);
   nlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
   nlp.nonlinearEqualities.add(CircleConstraint(X(1), Y(1), dualKey));
 
   Values initialValues;
-  initialValues.insert<double>(X(1), 0.0);
-  initialValues.insert<double>(Y(1), 2.0);
+  initialValues.insert<double>(X(1), 4.0);
+  initialValues.insert<double>(Y(1), 10.0);
 
   Values expectedSolution;
   expectedSolution.insert<double>(X(1), 0.5);
@@ -330,30 +337,48 @@ TEST_UNSAFE(testSQPSimple, quadraticCostNonlinearConstraint) {
 }
 
 //******************************************************************************
-//
-//TEST_UNSAFE(testSQPSimple, poseOnALine) {
-//  const Key dualKey = 0;
-//
-//  //Instantiate NLP
-//  NLP nlp;
-//  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(), noiseModel::Unit::Create(6))); // wrap it using linearcontainerfactor
-//  nlp.nonlinearEqualities.add(CircleConstraint(X(1), Y(1), dualKey));
-//
-//  Values initialValues;
-//  initialValues.insert<double>(X(1), 0.0);
-//  initialValues.insert<double>(Y(1), 0.0);
-//
-//  Values expectedSolution;
-//  expectedSolution.insert<double>(X(1), 0.5);
-//  expectedSolution.insert<double>(Y(1), 0.0);
-//
-//  // Instantiate SQP
-//  SQPSimple sqpSimple(nlp);
-//  Values actualSolution = sqpSimple.optimize(initialValues).first;
-//
-//  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
-//  actualSolution.print("actualSolution: ");
-//}
+class LineConstraintX : public NonlinearConstraint1<Pose3> {
+  typedef NonlinearConstraint1<Pose3> Base;
+public:
+  LineConstraintX(Key key, Key dualKey) : Base(key, dualKey, 1) {
+  }
+
+  double computeError(const Pose3& pose) const {
+    return pose.x();
+  }
+
+  Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = (Matrix(1,6) << zeros(1,3), pose.rotation().matrix().row(0)).finished();
+    return (Vector(1) << pose.x()).finished();
+  }
+};
+TEST_UNSAFE(testSQPSimple, poseOnALine) {
+  const Key dualKey = 0;
+
+
+  //Instantiate NLP
+  NLP nlp;
+  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0, 0)), noiseModel::Unit::Create(6)));
+  LineConstraintX constraint(X(1), dualKey);
+  nlp.nonlinearEqualities.add(constraint);
+
+  Values initialValues;
+  initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(1,0,0)));
+
+  Values expectedSolution;
+  expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3()));
+
+  // Instantiate SQP
+  SQPSimple sqpSimple(nlp);
+  Values actualSolution = sqpSimple.optimize(initialValues).first;
+
+  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
+  actualSolution.print("actualSolution: ");
+  Pose3 pose(Rot3::ypr(0.1, 0.2, 0.3), Point3());
+  Matrix hessian = numericalHessian<Pose3>(boost::bind(&LineConstraintX::computeError, constraint, _1), pose, 1e-2);
+  cout << "hessian: \n" << hessian << endl;
+}
 
 //******************************************************************************
 int main() {
