@@ -107,7 +107,7 @@ protected:
   /// shorthand for this class
   typedef SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, D> This;
 
-  typedef traits::dimension<gtsam::StereoPoint2> ZDim_t;    ///< Dimension trait of measurement type
+  enum {ZDim = traits_x<gtsam::StereoPoint2>::dimension};    ///< Dimension trait of measurement type
 
 public:
 
@@ -482,7 +482,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, point_, lambda);
     else
-      return boost::make_shared< JacobianFactorSVD<D, ZDim_t::value> >(this->keys_);
+      return boost::make_shared< JacobianFactorSVD<D, ZDim> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate
