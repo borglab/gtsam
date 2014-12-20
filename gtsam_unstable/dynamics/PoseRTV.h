@@ -80,8 +80,8 @@ public:
    *    - v(3-5): Point3
    *    - v(6-8): Translational velocity
    */
-  PoseRTV retract(const Vector& v) const;
-  Vector localCoordinates(const PoseRTV& p) const;
+  PoseRTV retract(const Vector& v, OptionalJacobian<dimension, dimension> Horigin=boost::none, OptionalJacobian<dimension, dimension> Hv=boost::none) const;
+  Vector localCoordinates(const PoseRTV& p, OptionalJacobian<dimension, dimension> Horigin=boost::none,OptionalJacobian<dimension, dimension> Hp=boost::none) const;
 
   // Lie
   /**
@@ -94,24 +94,25 @@ public:
   static PoseRTV identity() { return PoseRTV(); }
 
   /** Derivatives calculated numerically */
-  PoseRTV inverse(boost::optional<Matrix&> H1=boost::none) const;
+  PoseRTV inverse(OptionalJacobian<dimension,dimension> H1=boost::none) const;
 
   /** Derivatives calculated numerically */
   PoseRTV compose(const PoseRTV& p,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<dimension,dimension> H1=boost::none,
+      OptionalJacobian<dimension,dimension> H2=boost::none) const;
 
+  PoseRTV operator*(const PoseRTV& p) { return compose(p); }
 
   /** Derivatives calculated numerically */
   PoseRTV between(const PoseRTV& p,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+                  OptionalJacobian<dimension,dimension> H1=boost::none,
+                  OptionalJacobian<dimension,dimension> H2=boost::none) const;
 
   // measurement functions
   /** Derivatives calculated numerically */
   double range(const PoseRTV& other,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+               OptionalJacobian<1,dimension> H1=boost::none,
+               OptionalJacobian<1,dimension> H2=boost::none) const;
 
   // IMU-specific
 
@@ -158,8 +159,8 @@ public:
    * Note: the transform jacobian convention is flipped
    */
   PoseRTV transformed_from(const Pose3& trans,
-      boost::optional<Matrix&> Dglobal=boost::none,
-      boost::optional<Matrix&> Dtrans=boost::none) const;
+                           OptionalJacobian<dimension,dimension> Dglobal=boost::none,
+                           OptionalJacobian<dimension,traits_x<Pose3>::dimension> Dtrans=boost::none) const;
 
   // Utility functions
 
@@ -187,6 +188,6 @@ private:
 
 
 template<>
-struct traits_x<PoseRTV> : public internal::LieGroup<PoseRTV> {};
+struct traits_x<PoseRTV> : public internal::LieGroup<PoseRTV, multiplicative_group_tag> {};
 
 } // \namespace gtsam

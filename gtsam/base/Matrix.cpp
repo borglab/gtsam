@@ -239,11 +239,6 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
 }
 
 /* ************************************************************************* */
-void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j) {
-  fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
-}
-
-/* ************************************************************************* */
 Matrix diag(const std::vector<Matrix>& Hs) {
   size_t rows = 0, cols = 0;
   for (size_t i = 0; i<Hs.size(); ++i) {
