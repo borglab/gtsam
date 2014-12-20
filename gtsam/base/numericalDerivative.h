@@ -201,8 +201,8 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative21(Y (*h)(cons
 template<class Y, class X1, class X2>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative22(boost::function<Y(const X1&, const X2&)> h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
-  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X1>::structure_category>::value),
-       "Template argument X1 must be a manifold type.");
+//  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X1>::structure_category>::value),
+//       "Template argument X1 must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits_x<X2>::structure_category>::value),
        "Template argument X2 must be a manifold type.");
   return numericalDerivative11<Y, X2>(boost::bind(h, x1, _1), x2, delta);

@@ -73,6 +73,12 @@ namespace gtsam {
   inline void print(const T& object, const std::string& s = "") {
     object.print(s);
   }
+  inline void print(float v, const std::string& s = "") {
+    printf("%s%f\n",s.c_str(),v);
+  }
+  inline void print(double v, const std::string& s = "") {
+    printf("%s%lf\n",s.c_str(),v);
+  }
 
   /** Call equal on the object */
   template<class T>

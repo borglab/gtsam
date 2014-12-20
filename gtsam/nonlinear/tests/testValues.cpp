@@ -55,12 +55,26 @@ int TestValueData::DestructorCount = 0;
 class TestValue {
   TestValueData data_;
 public:
+  enum {dimension = 0};
   void print(const std::string& str = "") const {}
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
   size_t dim() const { return 0; }
-  TestValue retract(const Vector&) const { return TestValue(); }
-  Vector localCoordinates(const TestValue&) const { return Vector(); }
+  TestValue retract(const Vector&,
+                    OptionalJacobian<dimension,dimension> H1=boost::none,
+                    OptionalJacobian<dimension,dimension> H2=boost::none) const {
+    return TestValue();
+  }
+  Vector localCoordinates(const TestValue&,
+                          OptionalJacobian<dimension,dimension> H1=boost::none,
+                          OptionalJacobian<dimension,dimension> H2=boost::none) const {
+    return Vector();
+  }
 };
+
+namespace gtsam {
+template <> struct traits_x<TestValue> : public internal::Manifold<TestValue> {};
+}
+
 
 /* ************************************************************************* */
 TEST( Values, equals1 )

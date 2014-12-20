@@ -197,6 +197,11 @@ public:
     return d;
   }
 
+  /// for Canonical
+  static PinholeCamera identity() {
+    return PinholeCamera(); // assumes that the default constructor is valid
+  }
+
   /// @}
   /// @name Transformations and measurement functions
   /// @{

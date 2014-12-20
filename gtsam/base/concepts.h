@@ -368,9 +368,9 @@ struct traits_x<float> : public internal::ScalarTraits<float> {};
 // traits for any double Eigen matrix
 template<int M, int N, int Options, int MaxRows, int MaxCols>
 struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
-  BOOST_STATIC_ASSERT_MSG(
-      M != Eigen::Dynamic && N != Eigen::Dynamic,
-      "These traits are only valid on fixed-size types.");
+//  BOOST_STATIC_ASSERT_MSG(
+//      M != Eigen::Dynamic && N != Eigen::Dynamic,
+//      "These traits are only valid on fixed-size types.");
 
   // Typedefs required by all manifold types.
   typedef vector_space_tag structure_category;

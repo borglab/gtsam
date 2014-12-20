@@ -93,7 +93,8 @@ namespace gtsam {
             boost::none) const {
       T hx = traits_x<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
-      OptionalJacobian<traits_x<T>::dimension, traits_x<T>::dimension> Hlocal;
+      typename traits_x<T>::ChartJacobian Hlocal;
+      //OptionalJacobian<traits_x<T>::dimension, traits_x<T>::dimension> Hlocal;
       Vector rval = traits_x<T>::Local(measured_, hx, boost::none, Hlocal);
       (*H1) = ((*Hlocal) * (*H1)).eval();
       (*H2) = ((*Hlocal) * (*H2)).eval();

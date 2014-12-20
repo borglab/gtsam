@@ -276,7 +276,15 @@ namespace gtsam {
 
     /// Returns local retract coordinates \f$ [R_x,R_y,R_z] \f$ in neighborhood around current rotation
     Vector3 localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
-
+    Vector3 localCoordinates(const Rot3& t2, OptionalJacobian<3,3> Horigin, OptionalJacobian<3,3> H2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const {
+      if (Horigin) {
+        CONCEPT_NOT_IMPLEMENTED;
+      }
+      if (H2) {
+        CONCEPT_NOT_IMPLEMENTED;
+      }
+      return localCoordinates(t2,mode);
+    }
     /// @}
     /// @name Lie Group
     /// @{

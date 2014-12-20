@@ -104,7 +104,7 @@ protected:
   /// shorthand for this class
   typedef SmartProjectionFactor<POSE, CALIBRATION, D> This;
 
-  static const int ZDim = traits::dimension<Point2>::value;    ///< Measurement dimension
+  static const int ZDim = traits_x<Point2>::dimension;    ///< Measurement dimension
 
 public:
 

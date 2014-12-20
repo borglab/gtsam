@@ -139,7 +139,7 @@ TEST(AHRSFactor, Error) {
   // Expected error
   Vector3 errorExpected(3);
   errorExpected << 0, 0, 0;
-  EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
+  EXPECT(assert_equal(Vector(errorExpected), Vector(errorActual), 1e-6));
 
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Vector3, Rot3>(
