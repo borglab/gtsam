@@ -30,7 +30,7 @@ public:
       i_(i) {
     assert(i<N);
   }
-  // Idenity element
+  /// Idenity element
   static Cyclic Identity() {
     return Cyclic(0);
   }
@@ -54,25 +54,22 @@ public:
   void print(const std::string& s = "") const {
     std::cout << s << i_ << std::endl;
   }
-
   /// equals with an tolerance, prints out message if unequal
   bool equals(const Cyclic& other, double tol = 1e-9) const {
     return other.i_ == i_;
   }
-
 };
 
-#define CYCLIC_TEMPLATE size_t N
-#define CYCLIC_TYPE Cyclic<N>
-
 /// Define cyclic group traits to be a model of the Group concept
-template <CYCLIC_TEMPLATE>
-struct traits_x<CYCLIC_TYPE > {
+template<size_t N>
+struct traits_x<Cyclic<N> > {
   typedef group_tag structure_category;
-  GTSAM_ADDITIVE_GROUP(CYCLIC_TYPE);
-  static CYCLIC_TYPE Identity() { return CYCLIC_TYPE::Identity(); }
-  static bool Equals(const CYCLIC_TYPE& a, const CYCLIC_TYPE& b, double tol=1e-9) { return a.equals(b,tol); }
-  static void Print(const CYCLIC_TYPE& c, const std::string &s="") { c.print(s); }
+  GTSAM_ADDITIVE_GROUP(Cyclic<N>)
+  static Cyclic<N> Identity() { return Cyclic<N>::Identity();}
+  static bool Equals(const Cyclic<N>& a, const Cyclic<N>& b, double tol = 1e-9) {
+    return a.equals(b, tol);
+  }
+  static void Print(const Cyclic<N>& c, const std::string &s = "") {c.print(s);}
 };
 
 } // \namespace gtsam
