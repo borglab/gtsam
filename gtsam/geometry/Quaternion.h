@@ -31,7 +31,27 @@ struct traits_x<QUATERNION_TYPE> {
   typedef lie_group_tag structure_category;
   typedef multiplicative_group_tag group_flavor;
 
-  /// @name Basic Manifold traits
+  /// @name Group traits
+  /// @{
+  static Q Identity() {
+    return Q::Identity();
+  }
+
+  static Q Compose(const Q &g, const Q & h) {
+    return g * h;
+  }
+
+  static Q Between(const Q &g, const Q & h) {
+    Q d = g.inverse() * h;
+    return d;
+  }
+
+  static Q Inverse(const Q &g) {
+    return g.inverse();
+  }
+
+  /// @}
+  /// @name Basic manifold traits
   /// @{
   enum {
     dimension = 3
@@ -42,12 +62,8 @@ struct traits_x<QUATERNION_TYPE> {
   /// @}
   /// @name Lie group traits
   /// @{
-  static Q Identity() {
-    return Q::Identity();
-  }
-
-  static Q Compose(const Q &g, const Q & h, ChartJacobian Hg = boost::none,
-      ChartJacobian Hh = boost::none) {
+  static Q Compose(const Q &g, const Q & h, ChartJacobian Hg, ChartJacobian Hh =
+      boost::none) {
     if (Hg)
       *Hg = h.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart ( h.toRotationMatrix().transpose() ? )
     if (Hh)
@@ -55,8 +71,8 @@ struct traits_x<QUATERNION_TYPE> {
     return g * h;
   }
 
-  static Q Between(const Q &g, const Q & h, ChartJacobian Hg = boost::none,
-      ChartJacobian Hh = boost::none) {
+  static Q Between(const Q &g, const Q & h, ChartJacobian Hg, ChartJacobian Hh =
+      boost::none) {
     Q d = g.inverse() * h;
     if (Hg)
       *Hg = -d.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart
@@ -65,7 +81,7 @@ struct traits_x<QUATERNION_TYPE> {
     return d;
   }
 
-  static Q Inverse(const Q &g, ChartJacobian H = boost::none) {
+  static Q Inverse(const Q &g, ChartJacobian H) {
     if (H)
       *H = -g.toRotationMatrix(); // TODO : check Jacobian consistent with chart
     return g.inverse();

@@ -16,6 +16,7 @@
  **/
 
 #include <gtsam/geometry/Quaternion.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -40,7 +41,7 @@ TEST(Quaternion , Constructor) {
 TEST(Quaternion , Invariants) {
   Q q1(Eigen::AngleAxisd(1, Vector3(0, 0, 1)));
   Q q2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
-  check_group_invariants(q1,q2);
+  check_group_invariants(q1, q2);
 }
 
 //******************************************************************************
@@ -48,7 +49,7 @@ TEST(Quaternion , Local) {
   Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0, z_axis));
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
-  QuaternionJacobian H1,H2;
+  QuaternionJacobian H1, H2;
   Vector3 expected(0, 0, 0.1);
   Vector3 actual = traits_x<Q>::Local(q1, q2, H1, H2);
   EXPECT(assert_equal((Vector)expected,actual));
@@ -60,24 +61,59 @@ TEST(Quaternion , Retract) {
   Q q(Eigen::AngleAxisd(0, z_axis));
   Q expected(Eigen::AngleAxisd(0.1, z_axis));
   Vector3 v(0, 0, 0.1);
-  QuaternionJacobian Hq,Hv;
+  QuaternionJacobian Hq, Hv;
   Q actual = traits_x<Q>::Retract(q, v, Hq, Hv);
   EXPECT(actual.isApprox(expected));
 }
 
 //******************************************************************************
 TEST(Quaternion , Compose) {
-  EXPECT(false);
+  Vector3 z_axis(0, 0, 1);
+  Q q1(Eigen::AngleAxisd(0.2, z_axis));
+  Q q2(Eigen::AngleAxisd(0.1, z_axis));
+
+  Q expected = q1 * q2;
+  Matrix actualH1, actualH2;
+  Q actual = traits_x<Q>::Compose(q1, q2, actualH1, actualH2);
+  EXPECT(traits_x<Q>::Equals(expected,actual));
+
+  Matrix numericalH1 = numericalDerivative21(traits_x<Q>::Compose, q1, q2);
+  EXPECT(assert_equal(numericalH1,actualH1));
+
+  Matrix numericalH2 = numericalDerivative22(traits_x<Q>::Compose, q1, q2);
+  EXPECT(assert_equal(numericalH2,actualH2));
 }
 
 //******************************************************************************
 TEST(Quaternion , Between) {
-  EXPECT(false);
+  Vector3 z_axis(0, 0, 1);
+  Q q1(Eigen::AngleAxisd(0.2, z_axis));
+  Q q2(Eigen::AngleAxisd(0.1, z_axis));
+
+  Q expected = q1.inverse() * q2;
+  Matrix actualH1, actualH2;
+  Q actual = traits_x<Q>::Between(q1, q2, actualH1, actualH2);
+  EXPECT(traits_x<Q>::Equals(expected,actual));
+
+  Matrix numericalH1 = numericalDerivative21(traits_x<Q>::Between, q1, q2);
+  EXPECT(assert_equal(numericalH1,actualH1));
+
+  Matrix numericalH2 = numericalDerivative22(traits_x<Q>::Between, q1, q2);
+  EXPECT(assert_equal(numericalH2,actualH2));
 }
 
 //******************************************************************************
 TEST(Quaternion , Inverse) {
-  EXPECT(false);
+  Vector3 z_axis(0, 0, 1);
+  Q q1(Eigen::AngleAxisd(0.1, z_axis));
+  Q expected(Eigen::AngleAxisd(-0.1, z_axis));
+
+  Matrix actualH;
+  Q actual = traits_x<Q>::Inverse(q1, actualH);
+  EXPECT(traits_x<Q>::Equals(expected,actual));
+
+  Matrix numericalH = numericalDerivative11(traits_x<Q>::Inverse, q1);
+  EXPECT(assert_equal(numericalH,actualH));
 }
 
 //******************************************************************************
