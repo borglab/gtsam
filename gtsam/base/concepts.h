@@ -243,7 +243,9 @@ struct ScalarTraits {
   }
 
   static TangentVector Local(Scalar origin, Scalar other) {
-    return TangentVector(other - origin);
+    TangentVector result;
+    result(0) = other - origin;
+    return result;
   }
 
   static Scalar Retract(Scalar origin, const TangentVector& v) {
@@ -254,7 +256,7 @@ struct ScalarTraits {
       ChartJacobian Hother = boost::none) {
     if (Horigin) (*Horigin)[0] = -1.0;
     if (Hother) (*Hother)[0] = 1.0;
-    return TangentVector(other - origin);
+    return Local(origin,other);
   }
 
   static Scalar Retract(Scalar origin, const TangentVector& v,
@@ -291,12 +293,12 @@ struct ScalarTraits {
   }
 
   static Scalar Identity() { return 0; }
-  static TangentVector Logmap(Scalar m) {return TangentVector(m);}
+  static TangentVector Logmap(Scalar m) {return Local(0,m);}
   static Scalar Expmap(const TangentVector& v) { return v[0];}
 
   static TangentVector Logmap(Scalar m, ChartJacobian Hm) {
     if (Hm) (*Hm)[0] = 1.0;
-    return TangentVector(m);
+    return Local(0,m);
   }
 
   static Scalar Expmap(const TangentVector& v, ChartJacobian Hv) {
