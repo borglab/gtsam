@@ -108,6 +108,10 @@ TEST( Point2, norm ) {
   EXPECT_DOUBLES_EQUAL(sqrt(2.0), actual, 1e-9);
   expectedH = numericalDerivative11(norm_proxy, x2);
   EXPECT(assert_equal(expectedH,actualH));
+
+  // analytical
+  expectedH = (Matrix(1, 2) << x2.x()/actual, x2.y()/actual).finished();
+  EXPECT(assert_equal(expectedH,actualH));
 }
 
 /* ************************************************************************* */

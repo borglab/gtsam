@@ -53,9 +53,7 @@ public:
   /// @{
 
   /// construct from 2D vector
-  Point2(const Vector& v) {
-    if(v.size() != 2)
-      throw std::invalid_argument("Point2 constructor from Vector requires that the Vector have dimension 2");
+  Point2(const Vector2& v) {
     x_ = v(0);
     y_ = v(1);
   }
@@ -178,30 +176,28 @@ public:
   /// @{
 
   /// Exponential map around identity - just create a Point2 from a vector
-  static inline Point2 Expmap(const Vector& v) { return Point2(v); }
-  static Point2 Expmap(const Vector& v, OptionalJacobian<2,2> H) {
+  static inline Point2 Expmap(const Vector2& v) { return Point2(v); }
+  static Point2 Expmap(const Vector2& v, OptionalJacobian<2,2> H) {
     CONCEPT_NOT_IMPLEMENTED;
   }
 
-  /// Log map around identity - just return the Point2 as a vector
-  static inline Vector Logmap(const Point2& dp) {
-  	return (Vector(2) << dp.x(), dp.y()).finished();
+  /// Logmap around identity
+  static inline Vector2 Logmap(const Point2& dp) {
+    return Vector2(dp.x(), dp.y());
   }
 
-  /// Version with Jacobian
-  static Vector Logmap(const Point2& dp, OptionalJacobian<2,2> H) {
+  static inline Vector2 Logmap(const Point2& dp, OptionalJacobian<2,2> H) {
     CONCEPT_NOT_IMPLEMENTED;
-    return (Vector(2) << dp.x(), dp.y()).finished();
   }
 
   /// Left-trivialized derivative of the exponential map
-  static Matrix dexpL(const Vector2& v) {
-    return eye(2);
+  static Matrix2 dexpL(const Vector2& v) {
+    return I_2x2;
   }
 
   /// Left-trivialized derivative inverse of the exponential map
-  static Matrix dexpInvL(const Vector2& v) {
-    return eye(2);
+  static Matrix2 dexpInvL(const Vector2& v) {
+    return I_2x2;
   }
 
   /// @}
