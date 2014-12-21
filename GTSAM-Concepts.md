@@ -29,32 +29,29 @@ In detail, we ask the following are defined in the traits object:
     * `ManifoldType`, a pointer back to the type.
     * `structure_category`, a tag type that defines what requirements the type fulfills, and therefore what requirements this traits class must fulfill. It should be defined to be one of the following: 
         * `gtsam::traits::manifold_tag` -- Everything in this list is expected
-        * `gtsam::traits::group_tag` -- Everything in this list is expected, plus the functions defined under **Groups** below.
+        * `gtsam::traits::group_tag` -- The functions defined under **Groups** below.
         * `gtsam::traits::lie_group_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
         * `gtsam::traits::vector_space_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
 * valid expressions:
     * `size_t dim = traits<T>::getDimension(p);` static function should be defined. This is mostly useful if the size is not known at compile time.
-    * `v = traits<T>::Local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*, where *p* and *q* are elements of the manifold and the result, *v* is an element of the vector space.
-        * `v = traits<T>::Local(p,q, Hp, Hq)`.
-    * `p = traits<T>::Retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*, where *p* is an element of the manifold and the result, *v* is an element of the vector space.
-    * `p = traits<T>::Retract(p,v, Hp, Hv)`.
-
-In the functions above, the `H` arguments stand for optional Jacobians. When provided, it is assumed
-that the function will return the derivatives of the chart (and inverse) with respect to its arguments.
+    * `v = traits<T>::Local(p,q,Hp,Hq)`, the chart, from manifold to tangent space, think of it as *q (-) p*, where *p* and *q* are elements of the manifold and the result, *v* is an element of the vector space.
+    * `p = traits<T>::Retract(p,v,Hp,Hv)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*, where *p* is an element of the manifold and the result, *v* is an element of the vector space.
 * invariants
     * `Retract(p, Local(p,q)) == q`
     * `Local(p, Retract(p, v)) == v`
+
+In the functions above, the `H` arguments stand for optional Jacobians. When provided, it is assumed that the function will return the derivatives of the chart (and inverse) with respect to its arguments.
 
 For many differential manifolds, an obvious mapping is the `exponential map`, 
 which  associates straight lines in the tangent space with geodesics on the manifold 
 (and it's inverse, the log map). However, there are two cases in which we deviate from this:
 
 * Sometimes, most notably for *SO(3)* and *SE(3)*, the exponential map is unnecessarily expensive for use in optimization. Hence, the `Local` and `Retract` refer to a chart that is much cheaper to evaluate.
-* While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a these functions are defined for every vector space, GTSAM will never invoke them. (IS THIS TRUE?)
+* While vector spaces (see below) are in principle also manifolds, it is overkill to think about charts etc. Really, we should simply think about vector addition and subtraction. Hence, while a these functions are defined for every vector space, GTSAM might never invoke them.
 
 Group
 -----
-A [group](http://en.wikipedia.org/wiki/Group_(mathematics)) should be well known from grade school :-), and provides a type with a composition operation that is closed, associative, has an identity element, and an inverse for each element. The following should be added to the traits class for a group:
+A [group]("http://en.wikipedia.org/wiki/Group_(mathematics)"") should be well known from grade school :-), and provides a type with a composition operation that is closed, associative, has an identity element, and an inverse for each element. The following should be added to the traits class for a group:
 
 * valid expressions:
     * `r = traits<M>::Compose(p,q)`, where *p*, *q*, and *r* are elements of the manifold. 
