@@ -52,7 +52,7 @@ private:
 public:
   enum { dimension = 10 };
 
-    Vector vector() const ;
+    Vector10 vector() const ;
 
   /// @name Standard Constructors
   /// @{
@@ -117,7 +117,7 @@ public:
   Cal3Unified retract(const Vector& d) const ;
 
   /// Given a different calibration, calculate update to obtain it
-  Vector localCoordinates(const Cal3Unified& T2) const ;
+  Vector10 localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
   virtual size_t dim() const { return 10 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)

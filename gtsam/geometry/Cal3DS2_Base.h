@@ -46,8 +46,8 @@ protected:
 
 public:
   Matrix3 K() const ;
-  Eigen::Vector4d k() const { return Eigen::Vector4d(k1_, k2_, p1_, p2_); }
-  Vector vector() const ;
+  Vector4 k() const { return Vector4(k1_, k2_, p1_, p2_); }
+  Vector9 vector() const ;
 
   /// @name Standard Constructors
   /// @{

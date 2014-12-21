@@ -92,14 +92,8 @@ public:
   }
 
   /// Local coordinates of manifold neighborhood around current value
-  inline Vector localCoordinates(const StereoCamera& t2) const {
-    return Vector(leftCamPose_.localCoordinates(t2.leftCamPose_));
-  }
-
-  Pose3 between(const StereoCamera &camera,
-      OptionalJacobian<6,6> H1=boost::none,
-      OptionalJacobian<6,6> H2=boost::none) const {
-    return leftCamPose_.between(camera.pose(), H1, H2);
+  inline Vector6 localCoordinates(const StereoCamera& t2) const {
+    return leftCamPose_.localCoordinates(t2.leftCamPose_);
   }
 
   /// @}

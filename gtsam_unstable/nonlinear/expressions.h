@@ -13,8 +13,7 @@
 namespace gtsam {
 
 // Generics
-
-template<class T>
+template<typename T>
 Expression<T> between(const Expression<T>& t1, const Expression<T>& t2) {
   return Expression<T>(t1, &T::between, t2);
 }

@@ -184,12 +184,25 @@ public:
   }
 
   /// Log map around identity - just return the Point2 as a vector
-  static inline Vector Logmap(const Point2& dp) { return (Vector(2) << dp.x(), dp.y()).finished(); }
+  static inline Vector Logmap(const Point2& dp) {
+  	return (Vector(2) << dp.x(), dp.y()).finished();
+  }
+
+  /// Version with Jacobian
   static Vector Logmap(const Point2& dp, OptionalJacobian<2,2> H) {
     CONCEPT_NOT_IMPLEMENTED;
     return (Vector(2) << dp.x(), dp.y()).finished();
   }
 
+  /// Left-trivialized derivative of the exponential map
+  static Matrix dexpL(const Vector2& v) {
+    return eye(2);
+  }
+
+  /// Left-trivialized derivative inverse of the exponential map
+  static Matrix dexpInvL(const Vector2& v) {
+    return eye(2);
+  }
 
   /// @}
   /// @name Vector Space

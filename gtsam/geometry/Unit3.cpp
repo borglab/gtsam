@@ -164,7 +164,7 @@ Vector2 Unit3::localCoordinates(const Unit3& y) const {
   if (std::abs(dot - 1.0) < 1e-16)
     return Vector2(0, 0);
   else if (std::abs(dot + 1.0) < 1e-16)
-    return (Vector(2) << M_PI, 0).finished();
+    return Vector2(M_PI, 0);
   else {
     // no special case
     double theta = acos(dot);

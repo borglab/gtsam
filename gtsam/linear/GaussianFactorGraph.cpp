@@ -254,6 +254,7 @@ namespace gtsam {
   map<Key,Matrix> GaussianFactorGraph::hessianBlockDiagonal() const {
     map<Key,Matrix> blocks;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if (!factor) continue;
       map<Key,Matrix> BD = factor->hessianBlockDiagonal();
       map<Key,Matrix>::const_iterator it = BD.begin();
       for(;it!=BD.end();it++) {
@@ -303,6 +304,7 @@ namespace gtsam {
     // Zero-out the gradient
     VectorValues g;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if (!factor) continue;
       VectorValues gi = factor->gradientAtZero();
       g.addInPlace_(gi);
     }
@@ -393,15 +395,15 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // x += alpha*A'*e
-void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
-    VectorValues& x) const {
-  // For each factor add the gradient contribution
-  Errors::const_iterator ei = e.begin();
-  BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
-    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-    Ai->transposeMultiplyAdd(alpha, *(ei++), x);
+  void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
+                                                 VectorValues& x) const {
+    // For each factor add the gradient contribution
+    Errors::const_iterator ei = e.begin();
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      Ai->transposeMultiplyAdd(alpha, *(ei++), x);
+    }
   }
-}
 
   ///* ************************************************************************* */
   //void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {

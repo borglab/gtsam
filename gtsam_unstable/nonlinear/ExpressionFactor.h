@@ -32,6 +32,8 @@ namespace gtsam {
 template<class T>
 class ExpressionFactor: public NoiseModelFactor {
 
+protected:
+
   T measurement_; ///< the measurement to be compared with the expression
   Expression<T> expression_; ///< the expression that is AD enabled
   FastVector<int> dims_; ///< dimensions of the Jacobian matrices

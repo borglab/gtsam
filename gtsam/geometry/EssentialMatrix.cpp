@@ -51,9 +51,11 @@ EssentialMatrix EssentialMatrix::retract(const Vector& xi) const {
 }
 
 /* ************************************************************************* */
-Vector EssentialMatrix::localCoordinates(const EssentialMatrix& other) const {
-  return (Vector(5) << aRb_.localCoordinates(other.aRb_), aTb_.localCoordinates(
-      other.aTb_)).finished();
+Vector5 EssentialMatrix::localCoordinates(const EssentialMatrix& other) const {
+  Vector5 v;
+  v << aRb_.localCoordinates(other.aRb_),
+      aTb_.localCoordinates(other.aTb_);
+  return v;
 }
 
 /* ************************************************************************* */

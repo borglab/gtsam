@@ -2,7 +2,8 @@
  * Preconditioner.cpp
  *
  *  Created on: Jun 2, 2014
- *      Author: ydjian
+ *      Author: Yong-Dian Jian
+ *      Author: Sungtae An
  */
 
 #include <gtsam/inference/FactorGraph-inst.h>
@@ -94,7 +95,7 @@ void BlockJacobiPreconditioner::solve(const Vector& y, Vector &x) const {
 
     const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
     Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
-    R.triangularView<Eigen::Upper>().solveInPlace(b);
+    R.triangularView<Eigen::Lower>().solveInPlace(b);
 
     dst += d;
     ptr += sz;
@@ -141,11 +142,9 @@ void BlockJacobiPreconditioner::build(
   }
 
   /* getting the block diagonals over the factors */
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg ) {
-    std::map<Key, Matrix> hessianMap = gf->hessianBlockDiagonal();
-    BOOST_FOREACH ( const Matrix hessian, hessianMap | boost::adaptors::map_values)
-      blocks.push_back(hessian);
-  }
+  std::map<Key, Matrix> hessianMap =gfg.hessianBlockDiagonal();
+  BOOST_FOREACH ( const Matrix hessian, hessianMap | boost::adaptors::map_values)
+    blocks.push_back(hessian);
 
   /* if necessary, allocating the memory for cacheing the factorization results */
   if ( nnz > bufferSize_ ) {
@@ -159,11 +158,12 @@ void BlockJacobiPreconditioner::build(
   double *ptr = buffer_;
   for ( size_t i = 0 ; i < n ; ++i ) {
     /* use eigen to decompose Di */
-    const Matrix R = blocks[i].llt().matrixL().transpose();
+    /* It is same as L = chol(M,'lower') in MATLAB where M is full preconditioner */
+    const Matrix L = blocks[i].llt().matrixL();
 
     /* store the data in the buffer */
     size_t sz = dims_[i]*dims_[i] ;
-    std::copy(R.data(), R.data() + sz, ptr);
+    std::copy(L.data(), L.data() + sz, ptr);
 
     /* advance the pointer */
     ptr += sz;

@@ -181,7 +181,7 @@ namespace gtsam {
      * @param v a vector of incremental roll,pitch,yaw
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Vector& v);
+    static Rot3 rodriguez(const Vector3& v);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -191,7 +191,7 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez((Vector(3) << wx, wy, wz).finished());}
+      { return rodriguez(Vector3(wx, wy, wz));}
 
     /// @}
     /// @name Testable

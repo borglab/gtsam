@@ -48,12 +48,12 @@ optimizer = LevenbergMarquardtOptimizer(graph, initial, params);
 result = optimizer.optimize();
 
 % Check result
-CHECK('error',result.at(100).equals(b1,1e-5))
-CHECK('error',result.at(10).equals(origin,1e-5))
-CHECK('error',result.at(1).equals(Point2(0,1),1e-5))
-CHECK('error',result.at(2).equals(Point2(0,1),1e-5))
-CHECK('error',result.at(20).equals(origin,1e-5))
-CHECK('error',result.at(200).equals(b2,1e-5))
+CHECK('error',result.atPose2(100).equals(b1,1e-5))
+CHECK('error',result.atPose2(10).equals(origin,1e-5))
+CHECK('error',result.atPoint2(1).equals(Point2(0,1),1e-5))
+CHECK('error',result.atPoint2(2).equals(Point2(0,1),1e-5))
+CHECK('error',result.atPose2(20).equals(origin,1e-5))
+CHECK('error',result.atPose2(200).equals(b2,1e-5))
 
 % Check error
 CHECK('error',abs(graph.error(result))<1e-9)

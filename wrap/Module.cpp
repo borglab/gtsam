@@ -156,6 +156,7 @@ void Module::parseMarkup(const std::string& data) {
       >> (*(basic.namespace_p >> str_p("::")) >> basic.className_p)[assign_a(fwDec.name)]
       >> ch_p(';') 
       [push_back_a(forward_declarations, fwDec)] 
+      [assign_a(cls,cls0)] // also clear class to avoid partial parse
       [assign_a(fwDec, fwDec0)]; 
  
   Rule module_content_p = basic.comments_p | include_p | class_p
