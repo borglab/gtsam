@@ -27,8 +27,8 @@ typedef traits_x<Q>::ChartJacobian QuaternionJacobian;
 
 //******************************************************************************
 TEST(Quaternion , Concept) {
-  //BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >));
-  //BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >));
+  BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >));
+  BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >));
   BOOST_CONCEPT_ASSERT((IsLieGroup<Quaternion >));
 }
 
@@ -42,6 +42,7 @@ TEST(Quaternion , Invariants) {
   Q q1(Eigen::AngleAxisd(1, Vector3(0, 0, 1)));
   Q q2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
   check_group_invariants(q1, q2);
+  check_manifold_invariants(q1, q2);
 }
 
 //******************************************************************************
