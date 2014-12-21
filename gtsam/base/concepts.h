@@ -614,20 +614,19 @@ check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
       && traits_x<G>::Equals(traits_x<G>::Compose(a, traits_x<G>::Between(a, b)), b, tol);
 }
 
-
+/// Macro to add group traits, additive flavor
 #define GTSAM_ADDITIVE_GROUP(GROUP) \
     typedef additive_group_tag group_flavor; \
     static GROUP Compose(const GROUP &g, const GROUP & h) { return g + h;} \
     static GROUP Between(const GROUP &g, const GROUP & h) { return h - g;} \
     static GROUP Inverse(const GROUP &g) { return -g;}
 
-
+/// Macro to add group traits, multiplicative flavor
 #define GTSAM_MULTIPLICATIVE_GROUP(GROUP) \
     typedef additive_group_tag group_flavor; \
     static GROUP Compose(const GROUP &g, const GROUP & h) { return g * h;} \
     static GROUP Between(const GROUP &g, const GROUP & h) { return g.inverse() * h;} \
     static GROUP Inverse(const GROUP &g) { return g.inverse();}
-
 
 /**
  * Lie Group Concept
