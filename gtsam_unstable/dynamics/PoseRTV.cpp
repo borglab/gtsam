@@ -5,7 +5,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/Lie-inl.h>
+
 #include <gtsam/geometry/Pose2.h>
 
 #include <gtsam_unstable/dynamics/PoseRTV.h>

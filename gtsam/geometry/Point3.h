@@ -21,12 +21,8 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/OptionalJacobian.h>
-
+#include <gtsam/base/VectorSpace.h>
 #include <boost/serialization/nvp.hpp>
-
 #include <cmath>
 
 namespace gtsam {
@@ -131,18 +127,10 @@ namespace gtsam {
 
     /// Updates a with tangent space delta
     inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
-    inline Point3 retract(const Vector& v, OptionalJacobian<3,3> Horigin, OptionalJacobian<3,3> Hv) const {
-      CONCEPT_NOT_IMPLEMENTED;
-      return Point3(*this + v);
-    }
 
     /// Returns inverse retraction
     inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
 
-    /// Returns inverse retraction
-    inline Vector3 localCoordinates(const Point3& q, OptionalJacobian<3,3> Horigin, OptionalJacobian<3,3> Ha) const {
-      CONCEPT_NOT_IMPLEMENTED; return (q -*this).vector();
-    }
     /// @}
     /// @name Lie Group
     /// @{
@@ -156,6 +144,21 @@ namespace gtsam {
     /** Log map at identity - return the x,y,z of this point */
     static inline Vector3 Logmap(const Point3& dp, OptionalJacobian<3,3> H=boost::none) {
       if (H) *H = I_3x3;
+      return Vector3(dp.x(), dp.y(), dp.z());
+    }
+
+    inline Point3 retract(const Vector& v, OptionalJacobian<3, 3> H1,
+        OptionalJacobian<3, 3> H2 = boost::none) const {
+      if (H1) *H1 = I_3x3;
+      if (H2) *H2 = I_3x3;
+      return *this + Point3(v);
+    }
+
+    inline Vector3 localCoordinates(const Point3& q, OptionalJacobian<3, 3> H1,
+        OptionalJacobian<3, 3> H2 = boost::none) const {
+      if (H1) *H1 = - I_3x3;
+      if (H2) *H2 = I_3x3;
+      Point3 dp = q - *this;
       return Vector3(dp.x(), dp.y(), dp.z());
     }
 

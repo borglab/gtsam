@@ -120,7 +120,7 @@ namespace gtsam {
   OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
     if (H1) *H1 = -(R2.transpose()*matrix());
     if (H2) *H2 = I3;
-    return between_default(*this, R2);
+    return inverse() * R2;
   }
 
   /* ************************************************************************* */

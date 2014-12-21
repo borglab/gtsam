@@ -21,10 +21,7 @@
 
 #include <gtsam_unstable/nonlinear/CallRecord.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/base/concepts.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Manifold.h>
-#include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/Lie.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>

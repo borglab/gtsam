@@ -276,15 +276,7 @@ namespace gtsam {
 
     /// Returns local retract coordinates \f$ [R_x,R_y,R_z] \f$ in neighborhood around current rotation
     Vector3 localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
-    Vector3 localCoordinates(const Rot3& t2, OptionalJacobian<3,3> Horigin, OptionalJacobian<3,3> H2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const {
-      if (Horigin) {
-        CONCEPT_NOT_IMPLEMENTED;
-      }
-      if (H2) {
-        CONCEPT_NOT_IMPLEMENTED;
-      }
-      return localCoordinates(t2,mode);
-    }
+
     /// @}
     /// @name Lie Group
     /// @{
@@ -308,6 +300,14 @@ namespace gtsam {
 
     /// Left-trivialized derivative inverse of the exponential map
     static Matrix3 dexpInvL(const Vector3& v);
+
+  Vector3 localCoordinates(const Rot3& R2, OptionalJacobian<3, 3> Horigin,
+      OptionalJacobian<3, 3> H2, Rot3::CoordinatesMode mode =
+          ROT3_DEFAULT_COORDINATES_MODE) const {
+    if (Horigin || H2)
+      throw std::runtime_error("Rot3::localCoordinates derivatives not implemented");
+    return localCoordinates(R2, mode);
+  }
 
     /**
      * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in

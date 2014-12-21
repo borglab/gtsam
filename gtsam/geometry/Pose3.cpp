@@ -17,7 +17,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/concepts.h>
-#include <gtsam/base/Lie-inl.h>
+
 #include <boost/foreach.hpp>
 #include <iostream>
 #include <cmath>
@@ -25,9 +25,6 @@
 using namespace std;
 
 namespace gtsam {
-
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Pose3);
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3);

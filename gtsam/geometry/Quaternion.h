@@ -15,7 +15,7 @@
  * @author Frank Dellaert
  **/
 
-#include <gtsam/base/concepts.h>
+#include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
 
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>

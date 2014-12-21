@@ -18,12 +18,14 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Matrix.h>
+
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/singleton.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/optional.hpp>
-#include <gtsam/base/Matrix.h>
 #include <cmath>
 
 namespace gtsam {

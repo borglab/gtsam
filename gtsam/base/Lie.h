@@ -24,6 +24,105 @@
 
 namespace gtsam {
 
+/// tag to assert a type is a Lie group
+struct lie_group_tag: public manifold_tag, public group_tag {};
+
+namespace internal {
+
+/// A helper that implements the traits interface for GTSAM lie groups.
+/// To use this for your gtsam type, define:
+/// template<> struct traits<Type> : public LieGroup<Type> { };
+template<typename T>
+struct LieGroup : Testable<T> {
+  typedef lie_group_tag structure_category;
+
+  /// @name Group
+  /// @{
+  typedef multiplicative_group_tag group_flavor;
+  static T Identity() { return T::identity();}
+  static T Compose(const T& m1, const T& m2) { return m1 * m2;}
+  static T Between(const T& m1, const T& m2) { return m1.inverse() * m2;}
+  static T Inverse(const T& m) { return m.inverse();}
+  /// @}
+
+  /// @name Manifold
+  /// @{
+  typedef T ManifoldType;
+  enum { dimension = ManifoldType::dimension };
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+  static int GetDimension(const ManifoldType& m){ return m.dim(); }
+
+  static TangentVector Local(const ManifoldType& origin,
+                             const ManifoldType& other) {
+    return origin.localCoordinates(other);
+  }
+
+  static ManifoldType Retract(const ManifoldType& origin,
+                              const TangentVector& v) {
+    return origin.retract(v);
+  }
+
+  static TangentVector Local(const ManifoldType& origin,
+                             const ManifoldType& other,
+                             ChartJacobian Horigin,
+                             ChartJacobian Hother = boost::none) {
+    return origin.localCoordinates(other, Horigin, Hother);
+  }
+
+  static ManifoldType Retract(const ManifoldType& origin,
+                              const TangentVector& v,
+                              ChartJacobian Horigin,
+                              ChartJacobian Hv = boost::none) {
+    return origin.retract(v, Horigin, Hv);
+  }
+
+  /// @}
+
+  /// @name Lie Group
+  /// @{
+
+  static TangentVector Logmap(const ManifoldType& m) {
+    return ManifoldType::Logmap(m);
+  }
+
+  static ManifoldType Expmap(const TangentVector& v) {
+    return ManifoldType::Expmap(v);
+  }
+
+  static TangentVector Logmap(const ManifoldType& m, ChartJacobian Hm) {
+    return ManifoldType::Logmap(m, Hm);
+  }
+
+  static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv) {
+    return ManifoldType::Expmap(v, Hv);
+  }
+
+  static ManifoldType Compose(const ManifoldType& m1,
+                              const ManifoldType& m2,
+                              ChartJacobian H1,
+                              ChartJacobian H2 = boost::none) {
+    return m1.compose(m2, H1, H2);
+  }
+
+  static ManifoldType Between(const ManifoldType& m1,
+                              const ManifoldType& m2,
+                              ChartJacobian H1,
+                              ChartJacobian H2 = boost::none) {
+    return m1.between(m2, H1, H2);
+  }
+
+  static ManifoldType Inverse(const ManifoldType& m,
+                              ChartJacobian H) {
+    return m.inverse(H);
+  }
+
+  /// @}
+
+};
+
+} // \ namepsace internal
+
 /**
  * These core global functions can be specialized by new Lie types
  * for better performance.
@@ -31,75 +130,53 @@ namespace gtsam {
 
 /** Compute l0 s.t. l2=l1*l0 */
 template<class T>
-inline T between_default(const T& l1, const T& l2) {return l1.inverse().compose(l2);}
+inline T between_default(const T& l1, const T& l2) {
+  return l1.inverse().compose(l2);
+}
 
 /** Log map centered at l0, s.t. exp(l0,log(l0,lp)) = lp */
 template<class T>
-inline Vector logmap_default(const T& l0, const T& lp) {return T::Logmap(l0.between(lp));}
+inline Vector logmap_default(const T& l0, const T& lp) {
+  return T::Logmap(l0.between(lp));
+}
 
 /** Exponential map centered at l0, s.t. exp(t,d) = t*exp(d) */
 template<class T>
-inline T expmap_default(const T& t, const Vector& d) {return t.compose(T::Expmap(d));}
+inline T expmap_default(const T& t, const Vector& d) {
+  return t.compose(T::Expmap(d));
+}
 
 /**
- * Concept check class for Lie group type
- *
- * This concept check provides a specialization on the Manifold type,
- * in which the Manifolds represented require an algebra and group structure.
- * All Lie types must also be a Manifold.
- *
- * The necessary functions to implement for Lie are defined
- * below with additional details as to the interface.  The
- * concept checking function in class Lie will check whether or not
- * the function exists and throw compile-time errors.
- *
- * The exponential map is a specific retraction for Lie groups,
- * which maps the tangent space in canonical coordinates back to
- * the underlying manifold.  Because we can enforce a group structure,
- * a retraction of delta v, with tangent space centered at x1 can be performed
- * as x2 = x1.compose(Expmap(v)).
- *
- * Expmap around identity
- *     static T Expmap(const Vector& v);
- *
- * Logmap around identity
- *     static Vector Logmap(const T& p);
- *
- * Compute l0 s.t. l2=l1*l0, where (*this) is l1
- * A default implementation of between(*this, lp) is available:
- * between_default()
- *     T between(const T& l2) const;
- *
- * By convention, we use capital letters to designate a static function
- *
- * @tparam T is a Lie type, like Point2, Pose3, etc.
+ * Lie Group Concept
  */
-template <class T>
-class LieConcept {
-private:
-  /** concept checking function - implement the functions this demands */
-  static T concept_check(const T& t) {
+template<typename LG>
+class IsLieGroup: public IsGroup<LG>, public IsManifold<LG> {
+public:
+  typedef typename traits_x<LG>::structure_category structure_category_tag;
+  typedef typename traits_x<LG>::ManifoldType ManifoldType;
+  typedef typename traits_x<LG>::TangentVector TangentVector;
+  typedef typename traits_x<LG>::ChartJacobian ChartJacobian;
 
-    /** assignment */
-    T t2 = t;
+  BOOST_CONCEPT_USAGE(IsLieGroup) {
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<lie_group_tag, structure_category_tag>::value),
+        "This type's trait does not assert it is a Lie group (or derived)");
 
-    /**
-     * Returns dimensionality of the tangent space
-     */
-    size_t dim_ret = t.dim();
-
-    /** expmap around identity */
-    T expmap_identity_ret = T::Expmap(gtsam::zero(dim_ret));
-
-    /** Logmap around identity */
-    Vector logmap_identity_ret = T::Logmap(t);
-
-    /** Compute l0 s.t. l2=l1*l0, where (*this) is l1 */
-    T between_ret = expmap_identity_ret.between(t2);
-
-    return between_ret;
+    // group opertations with Jacobians
+    g = traits_x<LG>::Compose(g, h, Hg, Hh);
+    g = traits_x<LG>::Between(g, h, Hg, Hh);
+    g = traits_x<LG>::Inverse(g, Hg);
+    // log and exp map without Jacobians
+    g = traits_x<LG>::Expmap(v);
+    v = traits_x<LG>::Logmap(g);
+    // log and exp map with Jacobians
+    //g = traits_x<LG>::Expmap(v, Hg);
+    //v = traits_x<LG>::Logmap(g, Hg);
   }
-
+private:
+  LG g, h;
+  TangentVector v;
+  ChartJacobian Hg, Hh;
 };
 
 /**
@@ -146,8 +223,5 @@ T expm(const Vector& x, int K=7) {
  * NOTE: intentionally not in the gtsam namespace to allow for classes not in
  * the gtsam namespace to be more easily enforced as testable
  */
-#define GTSAM_CONCEPT_LIE_INST(T) \
-    template class gtsam::IsLieGroup<T>;
-
-#define GTSAM_CONCEPT_LIE_TYPE(T) \
-    typedef gtsam::IsLieGroup<T> _gtsam_LieConcept_##T;
+#define GTSAM_CONCEPT_LIE_INST(T) template class gtsam::IsLieGroup<T>;
+#define GTSAM_CONCEPT_LIE_TYPE(T) typedef gtsam::IsLieGroup<T> _gtsam_IsLieGroup_##T;

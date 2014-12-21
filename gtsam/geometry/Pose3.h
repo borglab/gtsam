@@ -25,9 +25,9 @@
 #define POSE3_DEFAULT_COORDINATES_MODE Pose3::EXPMAP
 #endif
 
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
@@ -157,13 +157,8 @@ public:
   /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
   Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode =POSE3_DEFAULT_COORDINATES_MODE) const;
 
-  /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
-  Vector6 localCoordinates(const Pose3& T2,
-      OptionalJacobian<6,6> Horigin, OptionalJacobian<6,6> Hother) const {
-    CONCEPT_NOT_IMPLEMENTED;
-  }
-
   /// @}
+
     /// @name Lie Group
     /// @{
 
@@ -172,6 +167,14 @@ public:
 
     /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
     static Vector6 Logmap(const Pose3& p);
+
+    /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
+    Vector6 localCoordinates(const Pose3& T2, OptionalJacobian<6,6> Horigin,
+        OptionalJacobian<6,6> Hother = boost::none) const {
+      if (Horigin || Hother)
+        throw std::runtime_error("Pose3::localCoordinates derivatives not implemented");
+      return localCoordinates(T2);
+    }
 
     /**
      * Calculate Adjoint map, transforming a twist in the this pose's (i.e, body) frame to the world spatial frame

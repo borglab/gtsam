@@ -32,7 +32,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 Rot2 Rot2betweenDefault(const Rot2& r1, const Rot2& r2) {
-  return between_default(r1, r2);
+  return r1.inverse() * r2;
 }
 
 /* ************************************************************************* */

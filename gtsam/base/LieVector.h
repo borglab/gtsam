@@ -125,14 +125,18 @@ struct LieVector : public Vector {
   // Lie functions
 
   /** Expmap around identity */
-  static LieVector Expmap(const Vector& v, OptionalJacobian<-1,-1> H = boost::none) {
-    if (H) { CONCEPT_NOT_IMPLEMENTED; }
+  static LieVector Expmap(const Vector& v, OptionalJacobian<-1, -1> H =
+      boost::none) {
+    if (H)
+      throw std::runtime_error("LieVector::Expmap derivative not implemented");
     return LieVector(v);
   }
 
   /** Logmap around identity - just returns with default cast back */
-  static Vector Logmap(const LieVector& p, OptionalJacobian<-1,-1> H = boost::none) {
-    if (H) { CONCEPT_NOT_IMPLEMENTED; }
+  static Vector Logmap(const LieVector& p, OptionalJacobian<-1, -1> H =
+      boost::none) {
+    if (H)
+      throw std::runtime_error("LieVector::Logmap derivative not implemented");
     return p;
   }
 

@@ -15,14 +15,10 @@
  */
 
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 
 namespace gtsam {
-
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Point3);
 
 /* ************************************************************************* */
 bool Point3::equals(const Point3 & q, double tol) const {

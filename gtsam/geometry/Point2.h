@@ -17,11 +17,8 @@
 
 #pragma once
 
+#include <gtsam/base/VectorSpace.h>
 #include <boost/serialization/nvp.hpp>
-
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/OptionalJacobian.h>
-#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
@@ -158,17 +155,14 @@ public:
   inline size_t dim() const { return 2; }
 
   /// Updates a with tangent space delta
-  inline Point2 retract(const Vector& v) const { return *this + Point2(v); }
-  inline Point2 retract(const Vector& v, OptionalJacobian<2,2> H1, OptionalJacobian<2,2> H2) const {
-    CONCEPT_NOT_IMPLEMENTED;
+  inline Point2 retract(const Vector& v) const {
     return *this + Point2(v);
   }
 
   /// Local coordinates of manifold neighborhood around current value
-  inline Vector localCoordinates(const Point2& t2) const { return Logmap(between(t2)); }
-  inline Vector localCoordinates(const Point2& t2, OptionalJacobian<2,2> H1, OptionalJacobian<2,2> H2) const {
-    CONCEPT_NOT_IMPLEMENTED;
-    return Logmap(between(t2));
+  inline Vector localCoordinates(const Point2& t2) const {
+    Point2 dp = t2 - *this;
+    return Vector2(dp.x(), dp.y());
   }
 
   /// @}
@@ -176,18 +170,15 @@ public:
   /// @{
 
   /// Exponential map around identity - just create a Point2 from a vector
-  static inline Point2 Expmap(const Vector2& v) { return Point2(v); }
-  static Point2 Expmap(const Vector2& v, OptionalJacobian<2,2> H) {
-    CONCEPT_NOT_IMPLEMENTED;
+  static Point2 Expmap(const Vector2& v, OptionalJacobian<2, 2> H) {
+    if (H) *H = I_2x2;
+    return Point2(v);
   }
 
   /// Logmap around identity
-  static inline Vector2 Logmap(const Point2& dp) {
+  static inline Vector2 Logmap(const Point2& dp, OptionalJacobian<2, 2> H) {
+    if (H) *H = I_2x2;
     return Vector2(dp.x(), dp.y());
-  }
-
-  static inline Vector2 Logmap(const Point2& dp, OptionalJacobian<2,2> H) {
-    CONCEPT_NOT_IMPLEMENTED;
   }
 
   /// Left-trivialized derivative of the exponential map
@@ -198,6 +189,23 @@ public:
   /// Left-trivialized derivative inverse of the exponential map
   static Matrix2 dexpInvL(const Vector2& v) {
     return I_2x2;
+  }
+
+  /// Updates a with tangent space delta
+  inline Point2 retract(const Vector& v, OptionalJacobian<2, 2> H1,
+      OptionalJacobian<2, 2> H2 = boost::none) const {
+    if (H1) *H1 = I_2x2;
+    if (H2) *H2 = I_2x2;
+    return *this + Point2(v);
+  }
+
+  /// Local coordinates of manifold neighborhood around current value
+  inline Vector localCoordinates(const Point2& t2, OptionalJacobian<2, 2> H1,
+      OptionalJacobian<2, 2> H2 = boost::none) const {
+    if (H1) *H1 = - I_2x2;
+    if (H2) *H2 = I_2x2;
+    Point2 dp = t2 - *this;
+    return Vector2(dp.x(), dp.y());
   }
 
   /// @}

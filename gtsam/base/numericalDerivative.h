@@ -28,12 +28,10 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include <gtsam/base/concepts.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Manifold.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 

@@ -24,8 +24,7 @@
 #endif
 
 #include <gtsam/dllexport.h>
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Lie.h>
+#include <gtsam/base/VectorSpace.h>
 
 namespace gtsam {
 

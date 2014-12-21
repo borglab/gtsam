@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/concepts.h>
+#include <gtsam/base/Lie.h>
 
 #include <cmath>
 

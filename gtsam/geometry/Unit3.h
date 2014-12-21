@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <gtsam/base/concepts.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 #include <boost/random/mersenne_twister.hpp>
@@ -164,13 +164,6 @@ private:
 
 // Define GTSAM traits
 template <> struct traits_x<Unit3> : public internal::Manifold<Unit3> {};
-
-//template<>
-//struct GTSAM_EXPORT zero<Unit3> {
-//  static Unit3 value() {
-//    return Unit3();
-//  }
-//};
 
 } // namespace gtsam
 

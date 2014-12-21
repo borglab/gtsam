@@ -17,14 +17,10 @@
  */
 
 #include <gtsam/geometry/Rot2.h>
-#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 
 namespace gtsam {
-
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Rot2);
 
 /* ************************************************************************* */
 Rot2 Rot2::fromCosSin(double c, double s) {

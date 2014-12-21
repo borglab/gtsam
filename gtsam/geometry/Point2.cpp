@@ -16,16 +16,12 @@
  */
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/base/Lie-inl.h>
 #include <boost/foreach.hpp>
 #include <cmath>
 
 using namespace std;
 
 namespace gtsam {
-
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Point2);
 
 /* ************************************************************************* */
 void Point2::print(const string& s) const {

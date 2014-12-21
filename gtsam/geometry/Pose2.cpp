@@ -16,7 +16,6 @@
 
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/base/Lie-inl.h>
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 #include <cmath>
@@ -26,9 +25,6 @@
 using namespace std;
 
 namespace gtsam {
-
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Pose2);
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose2);
@@ -111,8 +107,12 @@ Vector3 Pose2::localCoordinates(const Pose2& p2) const {
 }
 
 /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
-Vector Pose2::localCoordinates(const Pose2& p2, OptionalJacobian<3,3> Hthis, OptionalJacobian<3,3> Hother) const {
-  CONCEPT_NOT_IMPLEMENTED;
+Vector Pose2::localCoordinates(const Pose2& p2, OptionalJacobian<3, 3> Hthis,
+    OptionalJacobian<3, 3> Hother) const {
+  if (Hthis || Hother)
+    throw std::runtime_error(
+        "Pose2::localCoordinates derivatives not implemented");
+  return localCoordinates(p2);
 }
 
 /* ************************************************************************* */

@@ -74,7 +74,7 @@ struct LieMatrix : public Matrix {
   inline bool equals(const LieMatrix& expected, double tol=1e-5) const {
     return gtsam::equal_with_abs_tol(matrix(), expected.matrix(), tol);
   }
-  
+
   /// @}
   /// @name Standard Interface
   /// @{
@@ -83,7 +83,7 @@ struct LieMatrix : public Matrix {
   inline Matrix matrix() const {
     return static_cast<Matrix>(*this);
   }
-  
+
   /// @}
   /// @name Manifold interface
   /// @{
@@ -102,8 +102,10 @@ struct LieMatrix : public Matrix {
       Eigen::Map<const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
       &v(0), this->rows(), this->cols()));
   }
-  inline LieMatrix retract(const Vector& v, OptionalJacobian<-1,-1> Horigin, OptionalJacobian<-1,-1> Hv) const {
-    CONCEPT_NOT_IMPLEMENTED;
+  inline LieMatrix retract(const Vector& v, OptionalJacobian<-1, -1> Horigin,
+      OptionalJacobian<-1, -1> Hv) const {
+    if (Horigin || Hv)
+      throw std::runtime_error("LieMatrix::retract derivative not implemented");
     return retract(v);
   }
   /** @return the local coordinates of another object.  The elements of the
@@ -115,8 +117,10 @@ struct LieMatrix : public Matrix {
       &result(0), this->rows(), this->cols()) = t2 - *this;
     return result;
   }
-  Vector localCoordinates(const LieMatrix& ts, OptionalJacobian<-1,-1> Horigin, OptionalJacobian<-1,-1> Hother) const {
-    CONCEPT_NOT_IMPLEMENTED;
+  Vector localCoordinates(const LieMatrix& ts, OptionalJacobian<-1, -1> Horigin,
+      OptionalJacobian<-1, -1> Hother) const {
+    if (Horigin || Hother)
+      throw std::runtime_error("LieMatrix::localCoordinates derivative not implemented");
     return localCoordinates(ts);
   }
 
@@ -171,13 +175,13 @@ struct LieMatrix : public Matrix {
 
   /** Logmap around identity */
   static inline Vector Logmap(const LieMatrix& p, OptionalJacobian<-1,-1> H = boost::none) {
-    if (H) { CONCEPT_NOT_IMPLEMENTED; }
+    if (H) throw std::runtime_error("LieMatrix::Logmap derivative not implemented");
     Vector result(p.size());
     Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >(
         result.data(), p.rows(), p.cols()) = p;
     return result;
   }
-  
+
   /// @}
 
 private:
