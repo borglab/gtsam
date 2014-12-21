@@ -18,87 +18,90 @@
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/Matrix.h>
 
-#define QUATERNION_TEMPLATE typename _Scalar, int _Options
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 
 namespace gtsam {
 
-// Define group traits
-template<QUATERNION_TEMPLATE>
+// Define traits
+template<typename _Scalar, int _Options>
 struct traits_x<QUATERNION_TYPE> {
   typedef QUATERNION_TYPE ManifoldType;
   typedef QUATERNION_TYPE Q;
+
   typedef lie_group_tag structure_category;
   typedef multiplicative_group_tag group_flavor;
 
-  enum { dimension = 3 };
-
-  static Q Identity() { return Q::Identity(); }
-
-// Define manifold traits
-  typedef Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> TangentVector;
+  /// @name Basic Manifold traits
+  /// @{
+  enum {
+    dimension = 3
+  };
   typedef OptionalJacobian<3, 3> ChartJacobian;
+  typedef Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> TangentVector;
 
-  static Q Compose(const Q &g, const Q & h, ChartJacobian Hg=boost::none, ChartJacobian Hh=boost::none) {
-    if (Hg) {
-      //TODO : check Jacobian consistent with chart ( h.toRotationMatrix().transpose() ? )
-      *Hg = h.toRotationMatrix().transpose();
-    }
-    if (Hh) {
-      //TODO : check Jacobian consistent with chart ( I(3)? )
-      *Hh = I_3x3;
-    }
+  /// @}
+  /// @name Lie group traits
+  /// @{
+  static Q Identity() {
+    return Q::Identity();
+  }
+
+  static Q Compose(const Q &g, const Q & h, ChartJacobian Hg = boost::none,
+      ChartJacobian Hh = boost::none) {
+    if (Hg)
+      *Hg = h.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart ( h.toRotationMatrix().transpose() ? )
+    if (Hh)
+      *Hh = I_3x3; // TODO : check Jacobian consistent with chart ( I(3)? )
     return g * h;
   }
-  static Q Between(const Q &g, const Q & h, ChartJacobian Hg=boost::none, ChartJacobian Hh=boost::none) {
+
+  static Q Between(const Q &g, const Q & h, ChartJacobian Hg = boost::none,
+      ChartJacobian Hh = boost::none) {
     Q d = g.inverse() * h;
-    if (Hg) {
-        //TODO : check Jacobian consistent with chart
-      *Hg = -d.toRotationMatrix().transpose();
-      }
-      if (Hh) {
-        //TODO : check Jacobian consistent with chart (my guess I(3) )
-        *Hh = I_3x3;
-      }
-      return d;
+    if (Hg)
+      *Hg = -d.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart
+    if (Hh)
+      *Hh = I_3x3; // TODO : check Jacobian consistent with chart (my guess I(3) )
+    return d;
   }
-  static Q Inverse(const Q &g, ChartJacobian H=boost::none) {
-      if (H) {
-        //TODO : check Jacobian consistent with chart
-        *H = -g.toRotationMatrix();
-       }
-       return g.inverse();
+
+  static Q Inverse(const Q &g, ChartJacobian H = boost::none) {
+    if (H)
+      *H = -g.toRotationMatrix(); // TODO : check Jacobian consistent with chart
+    return g.inverse();
   }
 
   /// Exponential map, simply be converting omega to axis/angle representation
-  // TODO: implement Jacobian
-  static Q Expmap(const Eigen::Ref<const TangentVector >& omega, ChartJacobian H=boost::none) {
+  static Q Expmap(const Eigen::Ref<const TangentVector>& omega,
+      ChartJacobian H = boost::none) {
     if (omega.isZero())
       return Q::Identity();
     else {
       _Scalar angle = omega.norm();
       return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
     }
+    if (H)
+      throw std::runtime_error("TODO: implement Jacobian");
   }
 
   /// We use our own Logmap, as there is a slight bug in Eigen
-  // TODO: implement Jacobian
-  static TangentVector Logmap(const Q& q, ChartJacobian H=boost::none) {
+  static TangentVector Logmap(const Q& q, ChartJacobian H = boost::none) {
     using std::acos;
     using std::sqrt;
-    static const double twoPi = 2.0 * M_PI,
+
     // define these compile time constants to avoid std::abs:
-        NearlyOne = 1.0 - 1e-10, NearlyNegativeOne = -1.0 + 1e-10;
+    static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-10,
+        NearlyNegativeOne = -1.0 + 1e-10;
 
     const double qw = q.w();
     if (qw > NearlyOne) {
       // Taylor expansion of (angle / s) at 1
       //return (2 + 2 * (1-qw) / 3) * q.vec();
-      return (8./3. - 2./3. * qw) * q.vec();
+      return (8. / 3. - 2. / 3. * qw) * q.vec();
     } else if (qw < NearlyNegativeOne) {
       // Taylor expansion of (angle / s) at -1
       //return (-2 - 2 * (1 + qw) / 3) * q.vec();
-      return (-8./3 + 2./3 * qw) * q.vec();
+      return (-8. / 3 + 2. / 3 * qw) * q.vec();
     } else {
       // Normal, away from zero case
       double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
@@ -109,29 +112,39 @@ struct traits_x<QUATERNION_TYPE> {
         angle += twoPi;
       return (angle / s) * q.vec();
     }
+
+    if (H)
+      throw std::runtime_error("TODO: implement Jacobian");
   }
 
-  static TangentVector Local(const Q& origin, const Q& other, ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
-    return Logmap(Between(origin,other,Horigin,Hother));
+  /// @}
+  /// @name Manifold traits
+  /// @{
+  static TangentVector Local(const Q& origin, const Q& other,
+      ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
+    return Logmap(Between(origin, other, Horigin, Hother));
     // TODO: incorporate Jacobian of Logmap
   }
-  static Q Retract(const Q& origin, const TangentVector& v, ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
+  static Q Retract(const Q& origin, const TangentVector& v,
+      ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
     return Compose(origin, Expmap(v), Horigin, Hv);
     // TODO : incorporate Jacobian of Expmap
   }
 
+  /// @}
+  /// @name Testable
+  /// @{
   static void Print(const Q& q, const std::string& str = "") {
-    if(str.size() == 0) {
+    if (str.size() == 0)
       std::cout << "Eigen::Quaternion: ";
-    } else {
+    else
       std::cout << str << " ";
-    }
     std::cout << q.vec().transpose() << std::endl;
   }
-
   static bool Equals(const Q& q1, const Q& q2, double tol = 1e-8) {
-    return Between(q1,q2).vec().array().abs().maxCoeff() < tol;
+    return Between(q1, q2).vec().array().abs().maxCoeff() < tol;
   }
+  /// @}
 };
 
 typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
