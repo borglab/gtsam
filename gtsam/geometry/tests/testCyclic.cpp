@@ -66,7 +66,7 @@ TEST(Cyclic, Ivnverse) {
 
 //******************************************************************************
 TEST(Cyclic , Invariants) {
-  G g(2), h(5);
+  G g(2), h(1);
  check_group_invariants(g,h);
 }
 
