@@ -21,9 +21,12 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Value.h>
+
+#include <boost/make_shared.hpp>
+#include <boost/pool/pool_alloc.hpp>
+
 #include <cmath>
 #include <iostream>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
