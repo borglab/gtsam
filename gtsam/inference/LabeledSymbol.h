@@ -130,5 +130,8 @@ inline unsigned char mrsymbolLabel(Key key) { return LabeledSymbol(key).label();
 /** Return the index portion of a symbol key. */
 inline size_t mrsymbolIndex(Key key) { return LabeledSymbol(key).index(); }
 
+/// traits
+template<> struct traits_x<LabeledSymbol> : public Testable<LabeledSymbol> {};
+
 } // \namespace gtsam
 

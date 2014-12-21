@@ -130,4 +130,8 @@ private:
   }
 };
 
+/// traits
+template<class T1, class T2>
+struct traits_x<ReferenceFrameFactor<T1, T2> > : public Testable<ReferenceFrameFactor<T1, T2> > {};
+
 } // \namespace gtsam

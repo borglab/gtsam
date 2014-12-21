@@ -215,4 +215,8 @@ private:
 
 }; // end of class declaration
 
+/// traits
+template<class T1, class T2>
+struct traits_x<SmartProjectionPoseFactor<T1, T2> > : public Testable<SmartProjectionPoseFactor<T1, T2> > {};
+
 } // \ namespace gtsam

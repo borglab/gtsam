@@ -144,6 +144,10 @@ public:
 
 }; // \class NonlinearFactor
 
+/// traits
+template<> struct traits_x<NonlinearFactor> : public Testable<NonlinearFactor> {
+};
+
 /* ************************************************************************* */
 /**
  * A nonlinear sum-of-squares factor with a zero-mean noise model

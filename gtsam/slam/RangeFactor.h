@@ -96,8 +96,11 @@ private:
             boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
   }
-};
-// RangeFactor
+}; // \ RangeFactor
+
+/// traits
+template<class T1, class T2>
+struct traits_x<RangeFactor<T1,T2> > : public Testable<RangeFactor<T1,T2> > {};
 
 /**
  * Binary factor for a range measurement, with a transform applied
@@ -185,7 +188,10 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
-};
-// RangeFactor
+}; // \ RangeFactorWithTransform
 
-}// namespace gtsam
+/// traits
+template<class T1, class T2>
+struct traits_x<RangeFactorWithTransform<T1, T2> > : public Testable<RangeFactorWithTransform<T1, T2> > {};
+
+} // \ namespace gtsam

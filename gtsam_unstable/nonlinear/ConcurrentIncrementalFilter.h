@@ -198,4 +198,9 @@ private:
 /// Typedef for Matlab wrapping
 typedef ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilterResult;
 
-}/// namespace gtsam
+/// traits
+template<>
+struct traits_x<ConcurrentIncrementalFilter> : public Testable<ConcurrentIncrementalFilter> {
+};
+
+} //\ namespace gtsam

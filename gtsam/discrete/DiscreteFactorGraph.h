@@ -144,7 +144,10 @@ public:
 //
 //  /** Apply a reduction, which is a remapping of variable indices. */
 //  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
-};
-// DiscreteFactorGraph
 
-} // namespace gtsam
+}; // \ DiscreteFactorGraph
+
+/// traits
+template<> struct traits_x<DiscreteFactorGraph> : public Testable<DiscreteFactorGraph> {};
+
+} // \ namespace gtsam

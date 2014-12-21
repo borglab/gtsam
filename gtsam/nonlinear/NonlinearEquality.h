@@ -195,6 +195,10 @@ private:
 };
 // \class NonlinearEquality
 
+template<typename VALUE>
+struct traits_x<NonlinearEquality<VALUE> > : Testable<NonlinearEquality<VALUE> > {
+};
+
 /* ************************************************************************* */
 /**
  * Simple unary equality constraint - fixes a value for a variable
@@ -276,6 +280,10 @@ private:
 };
 // \NonlinearEquality1
 
+template<typename VALUE>
+struct traits_x<NonlinearEquality1<VALUE> > : Testable<NonlinearEquality1<VALUE> > {
+};
+
 /* ************************************************************************* */
 /**
  * Simple binary equality constraint - this constraint forces two factors to
@@ -336,6 +344,11 @@ private:
   }
 };
 // \NonlinearEquality2
+
+template<typename VALUE>
+struct traits_x<NonlinearEquality2<VALUE> > : Testable<NonlinearEquality2<VALUE> > {
+};
+
 
 }// namespace gtsam
 

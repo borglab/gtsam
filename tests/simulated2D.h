@@ -18,9 +18,9 @@
 // \callgraph
 #pragma once
 
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/geometry/Point2.h>
 
 // \namespace
 
@@ -270,3 +270,16 @@ namespace simulated2D {
   };
 
 } // namespace simulated2D
+
+/// traits
+namespace gtsam {
+template<class POSE, class LANDMARK>
+struct traits_x<simulated2D::GenericMeasurement<POSE, LANDMARK> > : Testable<
+    simulated2D::GenericMeasurement<POSE, LANDMARK> > {
+};
+
+template<>
+struct traits_x<simulated2D::Values> : public Testable<simulated2D::Values> {
+};
+}
+

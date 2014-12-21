@@ -128,4 +128,9 @@ namespace gtsam {
     Matrix marginalCovariance(Key key) const;
   };
 
-}
+  /// traits
+  template<>
+  struct traits_x<GaussianBayesTree> : public Testable<GaussianBayesTree> {
+  };
+
+} //\ namespace gtsam

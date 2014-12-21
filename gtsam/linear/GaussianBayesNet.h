@@ -171,4 +171,9 @@ namespace gtsam {
     }
   };
 
-} /// namespace gtsam
+  /// traits
+  template<>
+  struct traits_x<GaussianBayesNet> : public Testable<GaussianBayesNet> {
+  };
+
+} //\ namespace gtsam

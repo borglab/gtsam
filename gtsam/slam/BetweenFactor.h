@@ -123,6 +123,10 @@ namespace gtsam {
     }
   }; // \class BetweenFactor
 
+  /// traits
+  template<class VALUE>
+  struct traits_x<BetweenFactor<VALUE> > : public Testable<BetweenFactor<VALUE> > {};
+
   /**
    * Binary between constraint - forces between to a given value
    * This constraint requires the underlying type to a Lie type
@@ -149,5 +153,9 @@ namespace gtsam {
           boost::serialization::base_object<BetweenFactor<VALUE> >(*this));
     }
   }; // \class BetweenConstraint
+
+  /// traits
+  template<class VALUE>
+  struct traits_x<BetweenConstraint<VALUE> > : public Testable<BetweenConstraint<VALUE> > {};
 
 } /// namespace gtsam

@@ -43,5 +43,10 @@ public:
   }
 };
 
-} // namespace gtsam
+/// traits
+template<> struct traits_x<LinearInequalityFactorGraph> : public Testable<
+    LinearInequalityFactorGraph> {
+};
+
+} // \ namespace gtsam
 

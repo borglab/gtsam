@@ -146,4 +146,9 @@ namespace gtsam {
 
   }; // GaussianFactor
   
-} // namespace gtsam
+/// traits
+template<>
+struct traits_x<GaussianFactor> : public Testable<GaussianFactor> {
+};
+
+} // \ namespace gtsam

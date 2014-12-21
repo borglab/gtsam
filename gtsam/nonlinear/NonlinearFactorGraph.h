@@ -161,5 +161,10 @@ namespace gtsam {
     }
   };
 
-} // namespace
+/// traits
+template<>
+struct traits_x<NonlinearFactorGraph> : public Testable<NonlinearFactorGraph> {
+};
+
+} //\ namespace gtsam
 

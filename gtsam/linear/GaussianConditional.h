@@ -141,7 +141,11 @@ namespace gtsam {
     }
   }; // GaussianConditional
 
-} // gtsam
+/// traits
+template<>
+struct traits_x<GaussianConditional> : public Testable<GaussianConditional> {};
+
+} // \ namespace gtsam
 
 #include <gtsam/linear/GaussianConditional-inl.h>
 

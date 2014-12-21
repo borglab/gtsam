@@ -16,13 +16,13 @@
  **/
 #pragma once
 
-#include <ostream>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
+
+#include <ostream>
 
 namespace gtsam {
 
@@ -131,5 +131,10 @@ private:
   }
 
 }; // \class GaussMarkov1stOrderFactor
+
+/// traits
+template<class VALUE> struct traits_x<GaussMarkov1stOrderFactor<VALUE> > :
+    public Testable<GaussMarkov1stOrderFactor<VALUE> > {
+};
 
 } /// namespace gtsam

@@ -168,4 +168,11 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
   };
+
+  /// traits
+  template<class POSE, class LANDMARK, class CALIBRATION>
+  struct traits_x<ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> > :
+      public Testable<ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> > {
+  };
+
 } // \ namespace gtsam

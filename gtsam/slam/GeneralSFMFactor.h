@@ -121,6 +121,11 @@ namespace gtsam {
     }
   };
 
+  template<class CAMERA, class LANDMARK>
+  struct traits_x<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
+      GeneralSFMFactor<CAMERA, LANDMARK> > {
+  };
+
   /**
    * Non-linear factor for a constraint derived from a 2D measurement.
    * Compared to GeneralSFMFactor, it is a ternary-factor because the calibration is isolated from camera..
@@ -214,6 +219,9 @@ namespace gtsam {
     }
   };
 
-
+  template<class CALIBRATION>
+  struct traits_x<GeneralSFMFactor2<CALIBRATION> > : Testable<
+      GeneralSFMFactor2<CALIBRATION> > {
+  };
 
 } //namespace

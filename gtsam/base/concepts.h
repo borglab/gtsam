@@ -48,19 +48,7 @@ struct vector_space_tag: public lie_group_tag {};
 struct multiplicative_group_tag {};
 struct additive_group_tag {};
 
-// TODO: Remove
-namespace traits {
-template<typename T>
-struct dimension{};
-}
-template <typename T> struct traits_x {
-  // TODO: remove anything in here ASAP.
-  // This is just here during development to avoid compilation
-  // errors while implmenting traits for everything.
-  enum { dimension = traits::dimension<T>::value };
-  typedef manifold_tag structure_category;
-};
-
+template <typename T> struct traits_x;
 
 namespace internal {
 
@@ -68,23 +56,13 @@ namespace internal {
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Type> : public Manifold<Type> { };
 template<typename _ManifoldType>
-struct Manifold {
+struct Manifold : Testable<_ManifoldType> {
   // Typedefs required by all manifold types.
   typedef _ManifoldType ManifoldType;
   typedef manifold_tag structure_category;
   enum { dimension = ManifoldType::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
-
-  // For Testable
-  static void Print(const ManifoldType& m, const std::string& str = "") {
-    m.print(str);
-  }
-  static bool Equals(const ManifoldType& m1,
-              const ManifoldType& m2,
-              double tol = 1e-8) {
-    return m1.equals(m2, tol);
-  }
 
   static TangentVector Local(const ManifoldType& origin,
                              const ManifoldType& other) {
@@ -119,7 +97,7 @@ struct Manifold {
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Type> : public LieGroup<Type> { };
 template<typename _ManifoldType,typename _group_flavor = additive_group_tag>
-struct LieGroup {
+struct LieGroup : Testable<_ManifoldType> {
   // Typedefs required by all manifold types.
   typedef _ManifoldType ManifoldType;
   typedef lie_group_tag structure_category;
@@ -128,16 +106,6 @@ struct LieGroup {
   enum { dimension = ManifoldType::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
-
-  // For Testable
-  static void Print(const ManifoldType& m, const std::string& str = "") {
-    m.print();
-  }
-  static bool Equals(const ManifoldType& m1,
-              const ManifoldType& m2,
-              double tol = 1e-8) {
-    return m1.equals(m2, tol);
-  }
 
   static TangentVector Local(const ManifoldType& origin,
                              const ManifoldType& other) {
@@ -341,8 +309,7 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
   static void Print(const ManifoldType& m, const std::string& str = "") {
     gtsam::print(Eigen::MatrixXd(m), str);
   }
-  static bool Equals(const ManifoldType& m1,
-              const ManifoldType& m2,
+  static bool Equals(const ManifoldType& m1, const ManifoldType& m2,
               double tol = 1e-8) {
     return equal_with_abs_tol(m1, m2, 1e-9);
   }
@@ -374,7 +341,6 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
                               ChartJacobian H2 = boost::none) {
     if (H1) *H1 = Eye(m1);
     if (H2) *H2 = Eye(m1);
-
     return m1+m2;
   }
 
@@ -384,7 +350,6 @@ struct traits_x< Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
                               ChartJacobian H2 = boost::none) {
     if (H1) *H1 = -Eye(m1);
     if (H2) *H2 = Eye(m1);
-
     return m2-m1;
   }
 
@@ -450,7 +415,7 @@ struct Canonical {
 
 /// Check invariants for Manifold type
 template<typename T>
-BOOST_CONCEPT_REQUIRES(((Testable<traits_x<T> >)),(bool)) //
+BOOST_CONCEPT_REQUIRES(((Testable<T>)),(bool)) //
 check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
   typename traits_x<T>::TangentVector v0 = traits_x<T>::Local(a,a);
   typename traits_x<T>::TangentVector v = traits_x<T>::Local(a,b);
@@ -498,11 +463,6 @@ public:
     // and the versions with Jacobians.
     //v = traits_x<M>::Local(p,q,Hp,Hq);
     //q = traits_x<M>::Retract(p,v,Hp,Hv);
-
-    traits_x<M>::Print(p);
-    traits_x<M>::Print(p, "p");
-    b = traits_x<M>::Equals(p,q);
-    b = traits_x<M>::Equals(p,q,1e-9);
   }
 private:
   ManifoldType p,q;
@@ -531,11 +491,6 @@ public:
     e = traits_x<G>::Inverse(g);
     operator_usage(flavor);
     // todo: how do we test the act concept? or do we even need to?
-
-    traits_x<G>::Print(g);
-    traits_x<G>::Print(g, "g");
-    b = traits_x<G>::Equals(g,h);
-    b = traits_x<G>::Equals(g,h,1e-9);
   }
 
 private:

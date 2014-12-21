@@ -215,4 +215,10 @@ private:
 
 }; // end of class declaration
 
+/// traits
+template<class POSE, class LANDMARK, class CALIBRATION>
+struct traits_x<SmartStereoProjectionPoseFactor<POSE, LANDMARK, CALIBRATION> > :
+    public Testable<SmartStereoProjectionPoseFactor<POSE, LANDMARK, CALIBRATION> > {
+};
+
 } // \ namespace gtsam

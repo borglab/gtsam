@@ -70,4 +70,9 @@ namespace gtsam {
     }
   };
 
-}
+/// traits
+template<> struct traits_x<SymbolicBayesTreeClique> : public Testable<SymbolicBayesTreeClique> {};
+template<> struct traits_x<SymbolicBayesTree> : public Testable<SymbolicBayesTree> {};
+
+} //\ namespace gtsam
+

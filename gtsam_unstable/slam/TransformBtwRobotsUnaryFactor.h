@@ -16,13 +16,13 @@
  **/
 #pragma once
 
-#include <ostream>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Lie.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
+
+#include <ostream>
 
 namespace gtsam {
 
@@ -223,5 +223,11 @@ namespace gtsam {
       //ar & BOOST_SERIALIZATION_NVP(measured_);
     }
   }; // \class TransformBtwRobotsUnaryFactor
+
+  /// traits
+  template<class VALUE>
+  struct traits_x<TransformBtwRobotsUnaryFactor<VALUE> > :
+      public Testable<TransformBtwRobotsUnaryFactor<VALUE> > {
+  };
 
 } /// namespace gtsam

@@ -381,4 +381,9 @@ namespace gtsam {
     }
   }; // VectorValues definition
 
+  /// traits
+  template<>
+  struct traits_x<VectorValues> : public Testable<VectorValues> {
+  };
+
 } // \namespace gtsam

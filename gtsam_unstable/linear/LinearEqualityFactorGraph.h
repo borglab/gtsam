@@ -28,5 +28,10 @@ public:
   typedef boost::shared_ptr<LinearEqualityFactorGraph> shared_ptr;
 };
 
-} // namespace gtsam
+/// traits
+template<> struct traits_x<LinearEqualityFactorGraph> : public Testable<
+    LinearEqualityFactorGraph> {
+};
+
+} // \ namespace gtsam
 
