@@ -394,6 +394,29 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  boost::tuple<GaussianFactorGraph, GaussianFactorGraph, GaussianFactorGraph> GaussianFactorGraph::splitConstraints() const {
+    typedef HessianFactor H;
+    typedef JacobianFactor J;
+
+    GaussianFactorGraph hessians, jacobians, constraints;
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, *this) {
+      H::shared_ptr hessian(boost::dynamic_pointer_cast<H>(factor));
+      if (hessian)
+        hessians.push_back(factor);
+      else {
+        J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
+        if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
+          constraints.push_back(jacobian);
+        }
+        else {
+          jacobians.push_back(factor);
+        }
+      }
+    }
+    return boost::make_tuple(hessians, jacobians, constraints);
+  }
+  
+  /* ************************************************************************* */
   // x += alpha*A'*e
   void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
                                                  VectorValues& x) const {
