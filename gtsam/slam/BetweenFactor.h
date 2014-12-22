@@ -31,6 +31,10 @@ namespace gtsam {
   template<class VALUE>
   class BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
 
+    // Check that VALUE type is a testable Lie group
+    BOOST_CONCEPT_ASSERT((IsTestable<VALUE>));
+    BOOST_CONCEPT_ASSERT((IsLieGroup<VALUE>));
+
   public:
 
     typedef VALUE T;
@@ -41,11 +45,6 @@ namespace gtsam {
     typedef NoiseModelFactor2<VALUE, VALUE> Base;
 
     VALUE measured_; /** The measurement */
-
-    /** concept check by type */
-    // TODO(ASL) Reenable
-    //GTSAM_CONCEPT_LIE_TYPE(T)
-    //GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
   public:
 
