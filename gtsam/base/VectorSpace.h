@@ -20,11 +20,9 @@ template<typename T> struct traits_x;
 
 namespace internal {
 
-/// A helper that implements the traits interface for GTSAM lie groups.
-/// To use this for your gtsam type, define:
-/// template<> struct traits<Type> : public VectorSpace<Type> { };
-template<typename V>
-struct VectorSpace: Testable<V> {
+/// VectorSpace Implementation for Fixed sizes
+template<typename V, int N>
+struct VectorSpaceImpl: Testable<V> {
 
   typedef vector_space_tag structure_category;
 
@@ -39,15 +37,89 @@ struct VectorSpace: Testable<V> {
 
   /// @name Manifold
   /// @{
-  enum {
-    dimension = V::dimension
-  };
+  enum { dimension = N };
+  typedef V ManifoldType;
+  typedef Eigen::Matrix<double, N, 1> TangentVector;
+  typedef OptionalJacobian<N, N> ChartJacobian;
+  static int GetDimension(const V& m) { return N;}
+
+  typedef Eigen::Matrix<double, N, N> Jacobian;
+
+  static TangentVector Local(const V& origin, const V& other,
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+    if (H1) *H1 = - Jacobian::Identity();
+    if (H2) *H2 = Jacobian::Identity();
+    V v = other-origin;
+    return v.vector();
+  }
+
+  static V Retract(const V& origin, const TangentVector& v,
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+    if (H1) *H1 = Jacobian::Identity();
+    if (H2) *H2 = Jacobian::Identity();
+    return origin + V(v);
+  }
+
+  /// @}
+
+  /// @name Lie Group
+  /// @{
+
+  static TangentVector Logmap(const V& m, ChartJacobian Hm = boost::none) {
+    if (Hm) *Hm = Jacobian::Identity();
+    return m.vector();
+  }
+
+  static V Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
+    if (Hv)  *Hv = Jacobian::Identity();
+    return V(v);
+  }
+
+  static V Compose(const V& v1, const V& v2, ChartJacobian H1,
+      ChartJacobian H2) {
+    if (H1) *H1 = Jacobian::Identity();
+    if (H2) *H2 = Jacobian::Identity();
+    return v1 + v2;
+  }
+
+  static V Between(const V& v1, const V& v2, ChartJacobian H1,
+      ChartJacobian H2) {
+    if (H1) *H1 = - Jacobian::Identity();
+    if (H2) *H2 =   Jacobian::Identity();
+    return v2 - v1;
+  }
+
+  static V Inverse(const V& v, ChartJacobian H) {
+    if (H) *H = - Jacobian::Identity();
+    return -v;
+  }
+
+  /// @}
+};
+
+/// VectorSpace implementation for dynamic types. TODO get rid of copy/paste
+template<typename V>
+struct VectorSpaceImpl<V,Eigen::Dynamic>: Testable<V> {
+
+  typedef vector_space_tag structure_category;
+
+  /// @name Group
+  /// @{
+  typedef additive_group_tag group_flavor;
+  static V Identity() { return V::identity();}
+  static V Compose(const V& v1, const V& v2) { return v1+v2;}
+  static V Between(const V& v1, const V& v2) { return v2-v1;}
+  static V Inverse(const V& m) { return -m;}
+  /// @}
+
+  /// @name Manifold
+  /// @{
+  enum { dimension = V::dimension};
   typedef V ManifoldType;
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
   static int GetDimension(const V& m) { return m.dim();}
 
-  // TODO make more efficient in case of fied size
   static Eigen::Matrix<double, dimension, dimension> Eye(const V& m) {
     int dim = GetDimension(m);
     return Eigen::Matrix<double, dimension, dimension>::Identity(dim, dim);
@@ -107,6 +179,12 @@ struct VectorSpace: Testable<V> {
 
   /// @}
 };
+
+/// A helper that implements the traits interface for GTSAM lie groups.
+/// To use this for your gtsam type, define:
+/// template<> struct traits<Type> : public VectorSpace<Type> { };
+template<typename V>
+struct VectorSpace: VectorSpaceImpl<V, V::dimension> {};
 
 /// A helper that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:
