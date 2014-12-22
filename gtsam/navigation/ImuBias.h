@@ -136,73 +136,26 @@ namespace imuBias {
     }
 
     /// @}
-    /// @name Manifold
-    /// @{
-
-    /// dimension of the variable - used to autodetect sizes
-    inline static size_t Dim() { return dimension; }
-
-    /// return dimensionality of tangent space
-    inline size_t dim() const { return dimension; }
-
-    /** Update the bias with a tangent space update */
-    inline ConstantBias retract(const Vector& v) const { return ConstantBias(biasAcc_ + v.head(3), biasGyro_ + v.tail(3)); }
-
-    /** @return the local coordinates of another object */
-    inline Vector localCoordinates(const ConstantBias& b) const { return b.vector() - vector(); }
-
-    /// @}
     /// @name Group
     /// @{
 
     /** identity for group operation */
     static ConstantBias identity() { return ConstantBias(); }
 
-    /** invert the object and yield a new one */
+    /** inverse */
     inline ConstantBias operator-() const {
       return ConstantBias(-biasAcc_, -biasGyro_);
     }
 
-    /** invert the object and yield a new one */
-    inline ConstantBias inverse(boost::optional<Matrix&> H=boost::none) const {
-      if(H) *H = -gtsam::Matrix::Identity(6,6);
-      return - (*this);
-    }
-
+    /** addition */
     ConstantBias operator+(const ConstantBias& b) const {
       return ConstantBias(biasAcc_ + b.biasAcc_, biasGyro_ + b.biasGyro_);
     }
 
-    ConstantBias compose(const ConstantBias& b,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if(H1) *H1 = gtsam::Matrix::Identity(6,6);
-      if(H2) *H2 = gtsam::Matrix::Identity(6,6);
-      return *this + b;
-    }
-
+    /** subtraction */
     ConstantBias operator-(const ConstantBias& b) const {
       return ConstantBias(b.biasAcc_ - biasAcc_, b.biasGyro_ - biasGyro_);
     }
-
-    /** between operation */
-    ConstantBias between(const ConstantBias& b,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if(H1) *H1 = -gtsam::Matrix::Identity(6,6);
-      if(H2) *H2 = gtsam::Matrix::Identity(6,6);
-      return b - *this;
-    }
-
-    /// @}
-    /// @name Lie Group
-    /// @{
-
-    /** Expmap around identity */
-    static inline ConstantBias Expmap(const Vector& v) { return ConstantBias(v.head(3), v.tail(3)); }
-
-    /** Logmap around identity - just returns with default cast back */
-    static inline Vector Logmap(const ConstantBias& b) { return b.vector(); }
 
     /// @}
 
