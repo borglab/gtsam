@@ -18,9 +18,6 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Pose3.h>
 
 /*
@@ -54,6 +51,10 @@ namespace imuBias {
 
     ConstantBias(const Vector3& biasAcc, const Vector3& biasGyro):
       biasAcc_(biasAcc), biasGyro_(biasGyro) {
+    }
+
+    ConstantBias(const Vector6& v):
+      biasAcc_(v.head<3>()), biasGyro_(v.tail<3>()) {
     }
 
     /** return the accelerometer and gyro biases in a single vector */
@@ -158,10 +159,18 @@ namespace imuBias {
     static ConstantBias identity() { return ConstantBias(); }
 
     /** invert the object and yield a new one */
+    inline ConstantBias operator-() const {
+      return ConstantBias(-biasAcc_, -biasGyro_);
+    }
+
+    /** invert the object and yield a new one */
     inline ConstantBias inverse(boost::optional<Matrix&> H=boost::none) const {
       if(H) *H = -gtsam::Matrix::Identity(6,6);
+      return - (*this);
+    }
 
-      return ConstantBias(-biasAcc_, -biasGyro_);
+    ConstantBias operator+(const ConstantBias& b) const {
+      return ConstantBias(biasAcc_ + b.biasAcc_, biasGyro_ + b.biasGyro_);
     }
 
     ConstantBias compose(const ConstantBias& b,
@@ -169,8 +178,11 @@ namespace imuBias {
         boost::optional<Matrix&> H2=boost::none) const {
       if(H1) *H1 = gtsam::Matrix::Identity(6,6);
       if(H2) *H2 = gtsam::Matrix::Identity(6,6);
+      return *this + b;
+    }
 
-      return ConstantBias(biasAcc_ + b.biasAcc_, biasGyro_ + b.biasGyro_);
+    ConstantBias operator-(const ConstantBias& b) const {
+      return ConstantBias(b.biasAcc_ - biasAcc_, b.biasGyro_ - biasGyro_);
     }
 
     /** between operation */
@@ -179,8 +191,7 @@ namespace imuBias {
         boost::optional<Matrix&> H2=boost::none) const {
       if(H1) *H1 = -gtsam::Matrix::Identity(6,6);
       if(H2) *H2 = gtsam::Matrix::Identity(6,6);
-
-      return ConstantBias(b.biasAcc_ - biasAcc_, b.biasGyro_ - biasGyro_);
+      return b - *this;
     }
 
     /// @}
@@ -216,7 +227,9 @@ namespace imuBias {
 } // namespace imuBias
 
 template<>
-struct traits_x<imuBias::ConstantBias> : public internal::LieGroup<imuBias::ConstantBias> {};
+struct traits_x<imuBias::ConstantBias> : public internal::VectorSpace<
+    imuBias::ConstantBias> {
+};
 
 } // namespace gtsam
 

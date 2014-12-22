@@ -31,7 +31,7 @@ GTSAM_CONCEPT_LIE_INST(Point2)
 TEST(Double , Concept) {
   BOOST_CONCEPT_ASSERT((IsGroup<double>));
   BOOST_CONCEPT_ASSERT((IsManifold<double>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<double>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<double>));
 }
 
 //******************************************************************************
@@ -45,7 +45,7 @@ TEST(Double , Invariants) {
 TEST(Point2 , Concept) {
   BOOST_CONCEPT_ASSERT((IsGroup<Point2>));
   BOOST_CONCEPT_ASSERT((IsManifold<Point2>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Point2>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point2>));
 }
 
 //******************************************************************************

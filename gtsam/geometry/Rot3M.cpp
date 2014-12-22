@@ -117,7 +117,7 @@ Rot3 Rot3::RzRyRx(double x, double y, double z) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Vector& w, double theta) {
+Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
   // get components of axis \omega
   double wx = w(0), wy=w(1), wz=w(2);
   double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;

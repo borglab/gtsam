@@ -170,13 +170,15 @@ public:
   /// @{
 
   /// Exponential map around identity - just create a Point2 from a vector
-  static Point2 Expmap(const Vector2& v, OptionalJacobian<2, 2> H) {
+  static Point2 Expmap(const Vector2& v,
+      OptionalJacobian<2, 2> H = boost::none) {
     if (H) *H = I_2x2;
     return Point2(v);
   }
 
   /// Logmap around identity
-  static inline Vector2 Logmap(const Point2& dp, OptionalJacobian<2, 2> H) {
+  static inline Vector2 Logmap(const Point2& dp,
+      OptionalJacobian<2, 2> H = boost::none) {
     if (H) *H = I_2x2;
     return Vector2(dp.x(), dp.y());
   }
@@ -281,7 +283,7 @@ private:
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
 
 template<>
-struct traits_x<Point2> : public internal::LieGroup<Point2> {};
+struct traits_x<Point2> : public internal::VectorSpace<Point2> {};
 
 }
 

@@ -23,9 +23,7 @@
 #warning "LieVector.h is deprecated. Please use Eigen::Vector instead."
 #endif
 
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/DerivedValue.h>
+#include <gtsam/base/VectorSpace.h>
 
 namespace gtsam {
 
@@ -82,7 +80,7 @@ struct LieVector : public Vector {
   LieVector retract(const Vector& v) const { return LieVector(vector() + v); }
 
   /** @return the local coordinates of another object */
-  Vector localCoordinates(const LieVector& t2) const { return LieVector(t2 - vector()); }
+  Vector localCoordinates(const LieVector& t2) const { return t2 - *this; }
 
   // Group requirements
 
@@ -153,6 +151,6 @@ private:
 
 
 template<>
-struct traits_x<LieVector> : public internal::LieGroup<LieVector> {};
+struct traits_x<LieVector> : public internal::VectorSpace<LieVector> {};
 
 } // \namespace gtsam

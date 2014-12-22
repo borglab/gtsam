@@ -47,10 +47,15 @@ public:
   SO3(const Eigen::AngleAxisd& angleAxis) :
       Matrix3(angleAxis) {
   }
+
+  static SO3 identity() {
+    return I_3x3;
+  }
+
 };
 
 template<>
-struct traits_x<SO3> : public internal::LieGroup<SO3, multiplicative_group_tag> {};
+struct traits_x<SO3> : public internal::LieGroup<SO3> {};
 
 
 } // end namespace gtsam

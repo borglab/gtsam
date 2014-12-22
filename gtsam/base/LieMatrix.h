@@ -25,9 +25,7 @@
 #warning "LieMatrix.h is deprecated. Please use Eigen::Matrix instead."
 #endif
 
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/Matrix.h>
+#include <gtsam/base/VectorSpace.h>
 #include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
@@ -89,34 +87,42 @@ struct LieMatrix : public Matrix {
   /// @{
 
   /** Returns dimensionality of the tangent space */
-  inline size_t dim() const { return this->size(); }
+  inline size_t dim() const { return size(); }
+
+  typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> RowMajor;
+  typedef const RowMajor ConstRowMajor;
+
+  inline Vector vector() const {
+    Vector result(size());
+    Eigen::Map<RowMajor>(&result(0), rows(), cols()) = *this;
+    return result;
+  }
 
   /** Update the LieMatrix with a tangent space update.  The elements of the
    * tangent space vector correspond to the matrix entries arranged in
    * *row-major* order. */
   inline LieMatrix retract(const Vector& v) const {
-    if(v.size() != this->size())
+    if(v.size() != size())
       throw std::invalid_argument("LieMatrix::retract called with Vector of incorrect size");
-
-    return LieMatrix(*this +
-      Eigen::Map<const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
-      &v(0), this->rows(), this->cols()));
+    return LieMatrix(*this + Eigen::Map<ConstRowMajor>(&v(0), rows(), cols()));
   }
+
   inline LieMatrix retract(const Vector& v, OptionalJacobian<-1, -1> Horigin,
       OptionalJacobian<-1, -1> Hv) const {
     if (Horigin || Hv)
       throw std::runtime_error("LieMatrix::retract derivative not implemented");
     return retract(v);
   }
+
   /** @return the local coordinates of another object.  The elements of the
    * tangent space vector correspond to the matrix entries arranged in
    * *row-major* order. */
   inline Vector localCoordinates(const LieMatrix& t2) const {
-    Vector result(this->size());
-    Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
-      &result(0), this->rows(), this->cols()) = t2 - *this;
+    Vector result(size());
+    Eigen::Map<RowMajor>(&result(0), rows(), cols()) = t2 - *this;
     return result;
   }
+
   Vector localCoordinates(const LieMatrix& ts, OptionalJacobian<-1, -1> Horigin,
       OptionalJacobian<-1, -1> Hother) const {
     if (Horigin || Hother)
@@ -199,6 +205,6 @@ private:
 
 
 template<>
-struct traits_x<LieMatrix> : public internal::LieGroup<LieMatrix> {};
+struct traits_x<LieMatrix> : public internal::VectorSpace<LieMatrix> {};
 
 } // \namespace gtsam

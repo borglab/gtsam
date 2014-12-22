@@ -55,9 +55,7 @@ namespace gtsam {
     /// @{
 
     /// Construct from 3-element vector
-    Point3(const Vector& v) {
-      if(v.size() != 3)
-        throw std::invalid_argument("Point3 constructor from Vector requires that the Vector have dimension 3");
+    Point3(const Vector3& v) {
       x_ = v(0);
       y_ = v(1);
       z_ = v(2);
@@ -126,7 +124,7 @@ namespace gtsam {
     inline size_t dim() const { return 3; }
 
     /// Updates a with tangent space delta
-    inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
+    inline Point3 retract(const Vector& v) const { return *this + Point3(v); }
 
     /// Returns inverse retraction
     inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
@@ -270,5 +268,5 @@ namespace gtsam {
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
   template<>
-  struct traits_x<Point3> : public internal::LieGroup<Point3> {};
+  struct traits_x<Point3> : public internal::VectorSpace<Point3> {};
 }

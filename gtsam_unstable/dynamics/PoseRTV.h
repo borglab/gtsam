@@ -83,7 +83,7 @@ public:
   PoseRTV retract(const Vector& v, OptionalJacobian<dimension, dimension> Horigin=boost::none, OptionalJacobian<dimension, dimension> Hv=boost::none) const;
   Vector localCoordinates(const PoseRTV& p, OptionalJacobian<dimension, dimension> Horigin=boost::none,OptionalJacobian<dimension, dimension> Hp=boost::none) const;
 
-  // Lie
+  // Lie TODO IS this a Lie group or just a Manifold????
   /**
    * expmap/logmap are poor approximations that assume independence of components
    * Currently implemented using the poor retract/unretract approximations
@@ -101,7 +101,7 @@ public:
       OptionalJacobian<dimension,dimension> H1=boost::none,
       OptionalJacobian<dimension,dimension> H2=boost::none) const;
 
-  PoseRTV operator*(const PoseRTV& p) { return compose(p); }
+  PoseRTV operator*(const PoseRTV& p) const { return compose(p); }
 
   /** Derivatives calculated numerically */
   PoseRTV between(const PoseRTV& p,
@@ -188,6 +188,6 @@ private:
 
 
 template<>
-struct traits_x<PoseRTV> : public internal::LieGroup<PoseRTV, multiplicative_group_tag> {};
+struct traits_x<PoseRTV> : public internal::LieGroup<PoseRTV> {};
 
 } // \namespace gtsam

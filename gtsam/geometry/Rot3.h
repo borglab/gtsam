@@ -158,7 +158,7 @@ namespace gtsam {
      * @param   theta rotation angle
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Vector& w, double theta);
+    static Rot3 rodriguez(const Vector3& w, double theta);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -481,6 +481,6 @@ namespace gtsam {
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 
   template<>
-  struct traits_x<Rot3> : public internal::LieGroup<Rot3, multiplicative_group_tag> {};
+  struct traits_x<Rot3> : public internal::LieGroup<Rot3> {};
 }
 

@@ -135,7 +135,7 @@ namespace gtsam {
 
   /// A helper that implements the traits interface for GTSAM types.
   /// To use this for your gtsam type, define:
-  /// template<> struct traits<Type> : public LieGroup<Type> { };
+  /// template<> struct traits<Type> : public Testable<Type> { };
   template<typename T>
   struct Testable {
     static void Print(const T& m, const std::string& str = "") {

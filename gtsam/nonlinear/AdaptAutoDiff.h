@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/3rdparty/ceres/autodiff.h>
-#include <gtsam/base/Manifold.h>
+#include <gtsam/base/concepts.h>
 #include <gtsam/base/OptionalJacobian.h>
 
 namespace gtsam {
