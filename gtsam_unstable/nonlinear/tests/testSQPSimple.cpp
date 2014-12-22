@@ -24,111 +24,13 @@
 #include <gtsam_unstable/linear/QPSolver.h>
 #include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequality.h>
+#include <gtsam_unstable/nonlinear/LinearEqualityManifoldFactorGraph.h>
+#include <gtsam_unstable/nonlinear/NonlinearEqualityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/NonlinearInequalityFactorGraph.h>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
 namespace gtsam {
-
-class LinearEqualityManifoldFactorGraph: public FactorGraph<NonlinearFactor> {
-public:
-  /// default constructor
-  LinearEqualityManifoldFactorGraph() {
-  }
-
-  /// linearize to a LinearEqualityFactorGraph
-  LinearEqualityFactorGraph::shared_ptr linearize(
-      const Values& linearizationPoint) const {
-    LinearEqualityFactorGraph::shared_ptr linearGraph(
-        new LinearEqualityFactorGraph());
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
-          factor->linearize(linearizationPoint));
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-      linearGraph->add(LinearEquality(*jacobian, constraint->dualKey()));
-    }
-    return linearGraph;
-  }
-
-  /**
-   * Return true if the max absolute error all factors is less than a tolerance
-   */
-  bool checkFeasibility(const Values& values, double tol) const {
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      NoiseModelFactor::shared_ptr noiseModelFactor = boost::dynamic_pointer_cast<NoiseModelFactor>(
-          factor);
-      Vector error = noiseModelFactor->unwhitenedError(values);
-      if (error.lpNorm<Eigen::Infinity>() > tol) {
-        return false;
-      }
-    }
-    return true;
-  }
-};
-
-class NonlinearEqualityFactorGraph: public LinearEqualityManifoldFactorGraph {
-public:
-  /// default constructor
-  NonlinearEqualityFactorGraph() {
-  }
-
-  GaussianFactorGraph::shared_ptr multipliedHessians(const Values& values, const VectorValues& duals) const {
-    GaussianFactorGraph::shared_ptr constrainedHessians(new GaussianFactorGraph());
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-      constrainedHessians->push_back(constraint->multipliedHessian(values, duals));
-    }
-    return constrainedHessians;
-  }
-};
-
-class NonlinearInequalityFactorGraph : public FactorGraph<NonlinearFactor> {
-
-public:
-  /// default constructor
-  NonlinearInequalityFactorGraph() {
-  }
-
-  /// linearize to a LinearEqualityFactorGraph
-  LinearInequalityFactorGraph::shared_ptr linearize(
-      const Values& linearizationPoint) const {
-    LinearInequalityFactorGraph::shared_ptr linearGraph(
-        new LinearInequalityFactorGraph());
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
-          factor->linearize(linearizationPoint));
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-      linearGraph->add(LinearInequality(*jacobian, constraint->dualKey()));
-    }
-    return linearGraph;
-  }
-
-  /**
-   * Return true if the all errors are <= 0.0
-   */
-  bool checkFeasibilityAndComplimentary(const Values& values, const VectorValues& duals, double tol) const {
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      NoiseModelFactor::shared_ptr noiseModelFactor = boost::dynamic_pointer_cast<NoiseModelFactor>(
-          factor);
-      Vector error = noiseModelFactor->unwhitenedError(values);
-
-      // Primal feasibility condition: all constraints need to be <= 0.0
-      if (error[0] > tol) {
-        return false;
-      }
-
-      // Complimentary condition: errors of active constraints need to be 0.0
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(
-          factor);
-      Key dualKey = constraint->dualKey();
-      if (!duals.exists(dualKey)) continue;  // if dualKey doesn't exist, it is an inactive constraint!
-      if (fabs(error[0]) > tol) // for active constraint, the error should be 0.0
-        return false;
-
-    }
-    return true;
-  }
-
-};
 
 struct NLP {
   NonlinearFactorGraph cost;
