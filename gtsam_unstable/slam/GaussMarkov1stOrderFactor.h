@@ -91,8 +91,8 @@ public:
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const {
 
-    Vector v1( VALUE::Logmap(p1) );
-    Vector v2( VALUE::Logmap(p2) );
+    Vector v1( traits_x<VALUE>::Logmap(p1) );
+    Vector v2( traits_x<VALUE>::Logmap(p2) );
 
     Vector alpha(tau_.size());
     Vector alpha_v1(tau_.size());

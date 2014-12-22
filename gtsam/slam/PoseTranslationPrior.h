@@ -62,7 +62,8 @@ public:
   Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
     const Translation& newTrans = pose.translation();
     const Rotation& R = pose.rotation();
-    const size_t tDim = newTrans.dim(), xDim = pose.dim();
+    const int tDim = traits_x<Translation>::GetDimension(newTrans);
+    const int xDim = traits_x<Pose>::GetDimension(pose);
     if (H) {
       *H = gtsam::zeros(tDim, xDim);
       std::pair<size_t, size_t> transInterval = POSE::translationInterval();
