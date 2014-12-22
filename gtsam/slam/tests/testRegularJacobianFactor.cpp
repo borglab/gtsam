@@ -38,6 +38,17 @@ namespace {
     const Vector b = (Vector(3) << 1., 2., 3.);
     const SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5,0.5,0.5));
   }
+
+  namespace simple2 {
+    // Terms
+    const vector<pair<Key, Matrix> > terms2 = list_of<pair<Key,Matrix> >
+      (make_pair(0, 2*Matrix3::Identity()))
+      (make_pair(1, 4*Matrix3::Identity()))
+      (make_pair(2, 6*Matrix3::Identity()));
+
+    // RHS
+    const Vector b2 = (Vector(3) << 2., 4., 6.);
+  }
 }
 
 /* ************************************************************************* */
@@ -99,7 +110,7 @@ TEST(RegularJacobianFactor, hessianDiagonal)
   VectorValues expectedHessianDiagonal = factor.hessianDiagonal();
 
   // we compare against the Raw memory access implementation of hessianDiagonal
-  double actualValue[9];
+  double actualValue[9]={0};
   regularFactor.hessianDiagonal(actualValue);
   VectorValues actualHessianDiagonalRaw = double2vv(actualValue,nrKeys,fixedDim);
   EXPECT(assert_equal(expectedHessianDiagonal, actualHessianDiagonalRaw));
@@ -119,10 +130,43 @@ TEST(RegularJacobian, gradientAtZero)
   //EXPECT(assert_equal(expectedGradientAtZero, regularFactor.gradientAtZero()));
 
   // we compare against the Raw memory access implementation of gradientAtZero
-  double actualValue[9];
+  double actualValue[9]={0};
   regularFactor.gradientAtZero(actualValue);
   VectorValues actualGradientAtZeroRaw = double2vv(actualValue,nrKeys,fixedDim);
   EXPECT(assert_equal(expectedGradientAtZero, actualGradientAtZeroRaw));
+}
+
+/* ************************************************************************* */
+TEST(RegularJacobian, gradientAtZero_multiFactors)
+{
+  using namespace simple;
+  JacobianFactor factor(terms[0].first, terms[0].second,
+          terms[1].first, terms[1].second, terms[2].first, terms[2].second, b, noise);
+  RegularJacobianFactor<fixedDim> regularFactor(terms, b, noise);
+
+  // we compute gradient at zero from the standard Jacobian
+  VectorValues expectedGradientAtZero = factor.gradientAtZero();
+
+  // we compare against the Raw memory access implementation of gradientAtZero
+  double actualValue[9]={0};
+  regularFactor.gradientAtZero(actualValue);
+  VectorValues actualGradientAtZeroRaw = double2vv(actualValue,nrKeys,fixedDim);
+  EXPECT(assert_equal(expectedGradientAtZero, actualGradientAtZeroRaw));
+
+  // One more factor
+  using namespace simple2;
+  JacobianFactor factor2(terms2[0].first, terms2[0].second,
+          terms2[1].first, terms2[1].second, terms2[2].first, terms2[2].second, b2, noise);
+  RegularJacobianFactor<fixedDim> regularFactor2(terms2, b2, noise);
+
+  // we accumulate computed gradient at zero from the standard Jacobian
+  VectorValues expectedGradientAtZero2 = expectedGradientAtZero.add(factor2.gradientAtZero());
+
+  // we compare against the Raw memory access implementation of gradientAtZero
+  regularFactor2.gradientAtZero(actualValue);
+  VectorValues actualGradientAtZeroRaw2 = double2vv(actualValue,nrKeys,fixedDim);
+  EXPECT(assert_equal(expectedGradientAtZero2, actualGradientAtZeroRaw2));
+
 }
 
 /* ************************************************************************* */
