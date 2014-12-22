@@ -109,13 +109,13 @@ public:
   /// identity
   inline static Point2 identity() {return Point2();}
 
-  /// syntactic sugar for inverse, i.e., -p == inverse(p)
+  /// inverse
   inline Point2 operator- () const {return Point2(-x_,-y_);}
 
-  /// syntactic sugar for adding two points, i.e., p+q == compose(p,q)
+  /// add
   inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
 
-  /// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
+  /// subtract
   inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
 
   /// @}
