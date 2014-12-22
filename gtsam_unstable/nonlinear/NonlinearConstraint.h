@@ -70,7 +70,7 @@ public:
    * @param constraintDim number of dimensions of the constraint error function
    */
   NonlinearConstraint1(Key key, Key dualKey, size_t constraintDim = 1) :
-      Base(noiseModel::Constrained::All(constraintDim), key), NonlinearConstraint(dualKey) {
+    Base(noiseModel::Constrained::All(constraintDim), key), NonlinearConstraint(dualKey) {
   }
 
   virtual ~NonlinearConstraint1() {
@@ -108,8 +108,12 @@ public:
       lG11sum += -lambda[i] * G11[i];
     }
 
-    return boost::make_shared<HessianFactor>(Base::key(), lG11sum,
-        zero(X1Dim), 100.0);
+
+    std::cout << "lG11sum:  " << lG11sum << std::endl;
+    HessianFactor::shared_ptr hf(new HessianFactor(Base::key(), lG11sum,
+        zero(X1Dim), 100.0));
+    hf->print("HessianFactor: ");
+    return hf;
   }
 
   /** evaluate Hessians for lambda factors */
@@ -149,8 +153,8 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
 };
 // \class NonlinearConstraint1
@@ -191,7 +195,7 @@ public:
    * @param constraintDim number of dimensions of the constraint error function
    */
   NonlinearConstraint2(Key j1, Key j2, Key dualKey, size_t constraintDim = 1) :
-      Base(noiseModel::Constrained::All(constraintDim), j1, j2), NonlinearConstraint(dualKey) {
+    Base(noiseModel::Constrained::All(constraintDim), j1, j2), NonlinearConstraint(dualKey) {
   }
 
   virtual ~NonlinearConstraint2() {
@@ -229,7 +233,7 @@ public:
     // Combine the Lagrange-multiplier part into this constraint factor
     Matrix lG11sum = zeros(G11[0].rows(), G11[0].cols()), lG12sum = zeros(
         G12[0].rows(), G12[0].cols()), lG22sum = zeros(G22[0].rows(),
-        G22[0].cols());
+            G22[0].cols());
     for (size_t i = 0; i < lambda.rows(); ++i) {
       lG11sum += -lambda[i] * G11[i];
       lG12sum += -lambda[i] * G12[i];
@@ -249,7 +253,7 @@ public:
 
     boost::function<Vector(const X1&, const X2&)> vecH1(
         boost::bind(&This::vectorizeH1t, this, _1, _2)), vecH2(
-        boost::bind(&This::vectorizeH2t, this, _1, _2));
+            boost::bind(&This::vectorizeH2t, this, _1, _2));
 
     Matrix G11all = numericalDerivative21(vecH1, x1, x2, 1e-5);
     Matrix G12all = numericalDerivative22(vecH1, x1, x2, 1e-5);
@@ -302,8 +306,8 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
 };
 // \class NonlinearConstraint2
@@ -346,7 +350,7 @@ public:
    * @param constraintDim number of dimensions of the constraint error function
    */
   NonlinearConstraint3(Key j1, Key j2, Key j3, Key dualKey, size_t constraintDim = 1) :
-      Base(noiseModel::Constrained::All(constraintDim), j1, j2, j3), NonlinearConstraint(dualKey) {
+    Base(noiseModel::Constrained::All(constraintDim), j1, j2, j3), NonlinearConstraint(dualKey) {
   }
 
   virtual ~NonlinearConstraint3() {
@@ -387,9 +391,9 @@ public:
     // Combine the Lagrange-multiplier part into this constraint factor
     Matrix lG11sum = zeros(G11[0].rows(), G11[0].cols()), lG12sum = zeros(
         G12[0].rows(), G12[0].cols()), lG13sum = zeros(G13[0].rows(),
-        G13[0].cols()), lG22sum = zeros(G22[0].rows(), G22[0].cols()), lG23sum =
-        zeros(G23[0].rows(), G23[0].cols()), lG33sum = zeros(G33[0].rows(),
-        G33[0].cols());
+            G13[0].cols()), lG22sum = zeros(G22[0].rows(), G22[0].cols()), lG23sum =
+                zeros(G23[0].rows(), G23[0].cols()), lG33sum = zeros(G33[0].rows(),
+                    G33[0].cols());
     for (size_t i = 0; i < lambda.rows(); ++i) {
       lG11sum += -lambda[i] * G11[i];
       lG12sum += -lambda[i] * G12[i];
@@ -467,8 +471,8 @@ public:
 
     boost::function<Vector(const X1&, const X2&, const X3&)> vecH1(
         boost::bind(&This::vectorizeH1t, this, _1, _2, _3)), vecH2(
-        boost::bind(&This::vectorizeH2t, this, _1, _2, _3)), vecH3(
-        boost::bind(&This::vectorizeH3t, this, _1, _2, _3));
+            boost::bind(&This::vectorizeH2t, this, _1, _2, _3)), vecH3(
+                boost::bind(&This::vectorizeH3t, this, _1, _2, _3));
 
     Matrix G11all = numericalDerivative31(vecH1, x1, x2, x3, 1e-5);
     Matrix G12all = numericalDerivative32(vecH1, x1, x2, x3, 1e-5);
@@ -549,8 +553,8 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar
-        & boost::serialization::make_nvp("NoiseModelFactor",
-            boost::serialization::base_object<Base>(*this));
+    & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
   }
 };
 // \class NonlinearConstraint3

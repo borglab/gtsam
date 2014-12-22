@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam_unstable/linear/QPSolver.h>
 #include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearInequality.h>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
@@ -102,47 +103,31 @@ public:
   }
 
   /**
-   * Return true if the error is <= 0.0
+   * Return true if the all errors are <= 0.0
    */
-  bool checkFeasibility(const Values& values, double tol) const {
+  bool checkFeasibilityAndComplimentary(const Values& values, const VectorValues& duals, double tol) const {
     BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
       NoiseModelFactor::shared_ptr noiseModelFactor = boost::dynamic_pointer_cast<NoiseModelFactor>(
           factor);
       Vector error = noiseModelFactor->unwhitenedError(values);
-      // TODO: Do we need to check if it's active or not?
+
+      // Primal feasibility condition: all constraints need to be <= 0.0
       if (error[0] > tol) {
         return false;
       }
-    }
-    return true;
-  }
 
-  /**
-   * Return true if the max absolute error all factors is less than a tolerance
-   */
-  bool checkDualFeasibility(const VectorValues& duals, double tol) const {
-    BOOST_FOREACH(const Vector& dual, duals){
-      if (dual[0] < 0.0) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Return true if the max absolute error all factors is less than a tolerance
-   */
-  bool checkComplimentaryCondition(const Values& values, const VectorValues& duals, double tol) const {
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      NoiseModelFactor::shared_ptr noiseModelFactor = boost::dynamic_pointer_cast<NoiseModelFactor>(
+      // Complimentary condition: errors of active constraints need to be 0.0
+      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(
           factor);
-      Vector error = noiseModelFactor->unwhitenedError(values);
-      if (error[0] > 0.0) {
+      Key dualKey = constraint->dualKey();
+      if (!duals.exists(dualKey)) continue;  // if dualKey doesn't exist, it is an inactive constraint!
+      if (fabs(error[0]) > tol) // for active constraint, the error should be 0.0
         return false;
-      }
+
     }
     return true;
   }
+
 };
 
 struct NLP {
@@ -181,22 +166,49 @@ public:
   }
 
   /// Check if \nabla f(x) - \lambda * \nabla c(x) == 0
-  bool isDualFeasible(const VectorValues& delta) const {
-    return delta.vector().lpNorm<Eigen::Infinity>() < errorTol
-        && nlp_.linearInequalities.checkDualFeasibility(errorTol);
-//    return false;
+  bool isStationary(const VectorValues& delta) const {
+    return delta.vector().lpNorm<Eigen::Infinity>() < errorTol;
   }
 
-  /// Check if c(x) == 0
+  /// Check if c_E(x) == 0
   bool isPrimalFeasible(const SQPSimpleState& state) const {
     return nlp_.linearEqualities.checkFeasibility(state.values, errorTol)
-        && nlp_.nonlinearEqualities.checkFeasibility(state.values, errorTol)
-        && nlp_.linearInequalities.checkFeasibility(state.values, errorTol);
+        && nlp_.nonlinearEqualities.checkFeasibility(state.values, errorTol);
+  }
+
+  /**
+   * Dual variables of inequality constraints need to be >=0
+   * For active inequalities, the dual needs to be > 0
+   * For inactive inequalities, they need to be == 0. However, we don't compute
+   * dual variables for inactive constraints in the qp subproblem, so we don't care.
+   */
+  bool isDualFeasible(const VectorValues& duals) const {
+    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, nlp_.linearInequalities) {
+      NonlinearConstraint::shared_ptr inequality = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+      Key dualKey = inequality->dualKey();
+      if (!duals.exists(dualKey)) continue; // should be inactive constraint!
+      double dual = duals.at(dualKey)[0];   // because we only support single-valued inequalities
+      if (dual < 0.0)
+        return false;
+    }
+    return true;
+  }
+
+  /**
+   * Check complimentary slackness condition:
+   * For all inequality constraints,
+   *        dual * constraintError(primals) == 0.
+   * If the constraint is active, we need to check constraintError(primals) == 0, and ignore the dual
+   * If it is inactive, the dual should be 0, regardless of the error. However, we don't compute
+   * dual variables for inactive constraints in the QP subproblem, so we don't care.
+   */
+  bool isComplementary(const SQPSimpleState& state) const {
+    return nlp_.linearInequalities.checkFeasibilityAndComplimentary(state.values, state.duals, errorTol);
   }
 
   /// Check convergence
   bool checkConvergence(const SQPSimpleState& state, const VectorValues& delta) const {
-    return isPrimalFeasible(state) & isDualFeasible(delta);
+    return isStationary(delta) && isPrimalFeasible(state) && isDualFeasible(state.duals) && isComplementary(state);
   }
 
   /**
@@ -275,7 +287,6 @@ public:
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam_unstable/nonlinear/NonlinearInequality.h>
 
 using namespace std;
 using namespace gtsam::symbol_shorthand;
@@ -403,7 +414,6 @@ TEST_UNSAFE(testSQPSimple, quadraticCostNonlinearConstraint) {
   Values actualSolution = sqpSimple.optimize(initialValues).first;
 
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
-  actualSolution.print("actualSolution: ");
 }
 
 //******************************************************************************
@@ -415,6 +425,13 @@ public:
 
   double computeError(const Pose3& pose) const {
     return pose.x();
+  }
+
+  void evaluateHessians(const Pose3& pose, std::vector<Matrix>& G11) const {
+    Matrix G11all = Z_6x6;
+    Vector rT1 = pose.rotation().matrix().row(0);
+    G11all.block<3,3>(3,0) = skewSymmetric(rT1);
+    G11.push_back(G11all);
   }
 
   Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H = boost::none) const {
@@ -445,54 +462,164 @@ TEST(testSQPSimple, poseOnALine) {
   Values actualSolution = sqpSimple.optimize(initialValues).first;
 
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
-  actualSolution.print("actualSolution: ");
   Pose3 pose(Rot3::ypr(0.1, 0.2, 0.3), Point3());
   Matrix hessian = numericalHessian<Pose3>(boost::bind(&LineConstraintX::computeError, constraint, _1), pose, 1e-2);
-  cout << "hessian: \n" << hessian << endl;
+}
+
+//******************************************************************************
+/// x + y - 1 <= 0
+class InequalityProblem1 : public NonlinearInequality2<double, double> {
+  typedef NonlinearInequality2<double, double> Base;
+public:
+  InequalityProblem1(Key xK, Key yK, Key dualKey) : Base(xK, yK, dualKey) {}
+
+  double computeError(const double& x, const double& y,
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+          boost::none) const {
+    if (H1) *H1 = eye(1);
+    if (H2) *H2 = eye(1);
+    return x + y - 1.0;
+  }
+};
+
+TEST(testSQPSimple, inequalityConstraint) {
+  const Key dualKey = 0;
+
+  // Simple quadratic cost: x^2 + y^2
+  // Note the Hessian encodes:
+  //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
+  // Hence here we have G11 = 2, G12 = 0, G22 = 2, g1 = 0, g2 = 0, f = 0
+  HessianFactor hf(X(1), Y(1), 2.0 * ones(1,1), zero(1), zero(1),
+                    2*ones(1,1), zero(1) , 0);
+
+  LinearInequalityFactorGraph inequalities;
+  LinearInequality linearConstraint(X(1), ones(1), Y(1), ones(1), 1.0, dualKey); // x + y - 1 <= 0
+  inequalities.push_back(linearConstraint);
+
+  // Compare against QP
+  QP qp;
+  qp.cost.add(hf);
+  qp.inequalities = inequalities;
+
+  // instantiate QPsolver
+  QPSolver qpSolver(qp);
+  // create initial values for optimization
+  VectorValues initialVectorValues;
+  initialVectorValues.insert(X(1), zero(1));
+  initialVectorValues.insert(Y(1), zero(1));
+  VectorValues expectedSolution = qpSolver.optimize(initialVectorValues).first;
+
+  //Instantiate NLP
+  NLP nlp;
+  Values linPoint;
+  linPoint.insert<Vector1>(X(1), zero(1));
+  linPoint.insert<Vector1>(Y(1), zero(1));
+  nlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
+  nlp.linearInequalities.add(InequalityProblem1(X(1), Y(1), dualKey));
+
+  Values initialValues;
+  initialValues.insert(X(1), 1.0);
+  initialValues.insert(Y(1), -10.0);
+
+  // Instantiate SQP
+  SQPSimple sqpSimple(nlp);
+  Values actualValues = sqpSimple.optimize(initialValues).first;
+
+  DOUBLES_EQUAL(expectedSolution.at(X(1))[0], actualValues.at<double>(X(1)), 1e-10);
+  DOUBLES_EQUAL(expectedSolution.at(Y(1))[0], actualValues.at<double>(Y(1)), 1e-10);
 }
 
 
 //******************************************************************************
+const size_t X_AXIS = 0;
+const size_t Y_AXIS = 1;
+const size_t Z_AXIS = 2;
+
 /**
- * Inequality boundary constraint
- *      x <= bound
+ * Inequality boundary constraint on one axis (x, y or z)
+ *      axis <= bound
  */
-class UpperBoundX : public NonlinearInequality1<Pose3> {
+class AxisUpperBound : public NonlinearInequality1<Pose3> {
   typedef NonlinearInequality1<Pose3> Base;
+  size_t axis_;
   double bound_;
+
 public:
-  UpperBoundX(Key key, double bound, Key dualKey) : Base(key, dualKey, 1), bound_(bound) {
+  AxisUpperBound(Key key, size_t axis, double bound, Key dualKey) : Base(key, dualKey), axis_(axis), bound_(bound) {
   }
 
   double computeError(const Pose3& pose, boost::optional<Matrix&> H = boost::none) const {
     if (H)
-      *H = (Matrix(1,6) << zeros(1,3), pose.rotation().matrix().row(0)).finished();
-    return pose.x() - bound_;
+      *H = (Matrix(1,6) << zeros(1,3), pose.rotation().matrix().row(axis_)).finished();
+    return pose.translation().vector()[axis_] - bound_;
   }
 };
 
-TEST(testSQPSimple, poseOnALine) {
-  const Key dualKey = 0;
+/**
+ * Inequality boundary constraint on one axis (x, y or z)
+ *      bound <= axis
+ */
+class AxisLowerBound : public NonlinearInequality1<Pose3> {
+  typedef NonlinearInequality1<Pose3> Base;
+  size_t axis_;
+  double bound_;
 
+public:
+  AxisLowerBound(Key key, size_t axis, double bound, Key dualKey) : Base(key, dualKey), axis_(axis), bound_(bound) {
+  }
+
+  double computeError(const Pose3& pose, boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = (Matrix(1,6) << zeros(1,3), -pose.rotation().matrix().row(axis_)).finished();
+    return -pose.translation().vector()[axis_] + bound_;
+  }
+};
+
+TEST(testSQPSimple, poseWithABoundary) {
+  const Key dualKey = 0;
 
   //Instantiate NLP
   NLP nlp;
-  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(-1, 0, 0)), noiseModel::Unit::Create(6)));
-  UpperBoundX constraint(X(1), 0, dualKey);
-  nlp.nonlinearInequalities.add(constraint);
+  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0, 0)), noiseModel::Unit::Create(6)));
+  AxisUpperBound constraint(X(1), X_AXIS, 0, dualKey);
+  nlp.linearInequalities.add(constraint);
 
   Values initialValues;
-  initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(-1,0,0)));
+  initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(1, 0, 0)));
 
   Values expectedSolution;
-  expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3()));
+  expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(0, 0, 0)));
 
   // Instantiate SQP
   SQPSimple sqpSimple(nlp);
   Values actualSolution = sqpSimple.optimize(initialValues).first;
 
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
-  actualSolution.print("actualSolution: ");
+}
+
+TEST(testSQPSimple, poseWithinA2DBox) {
+  const Key dualKey = 0;
+
+  //Instantiate NLP
+  NLP nlp;
+  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(10, 0.5, 0)), noiseModel::Unit::Create(6)));
+  nlp.linearInequalities.add(AxisLowerBound(X(1), X_AXIS, -1, dualKey));
+  nlp.linearInequalities.add(AxisUpperBound(X(1), X_AXIS, 1, dualKey));
+  nlp.linearInequalities.add(AxisLowerBound(X(1), Y_AXIS, -1, dualKey));
+  nlp.linearInequalities.add(AxisUpperBound(X(1), Y_AXIS, 1, dualKey));
+
+  Values initialValues;
+  initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(1, 0, 0)));
+
+  Values expectedSolution;
+  expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0.5, 0)));
+
+  // Instantiate SQP
+  SQPSimple sqpSimple(nlp);
+  Values actualSolution = sqpSimple.optimize(initialValues).first;
+
+  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
+  //TODO: remove printing, refactoring,
 }
 
 //******************************************************************************
