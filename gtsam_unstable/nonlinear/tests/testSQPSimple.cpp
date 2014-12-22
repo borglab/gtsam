@@ -80,11 +80,76 @@ public:
   }
 };
 
+class NonlinearInequalityFactorGraph : public FactorGraph<NonlinearFactor> {
+
+public:
+  /// default constructor
+  NonlinearInequalityFactorGraph() {
+  }
+
+  /// linearize to a LinearEqualityFactorGraph
+  LinearInequalityFactorGraph::shared_ptr linearize(
+      const Values& linearizationPoint) const {
+    LinearInequalityFactorGraph::shared_ptr linearGraph(
+        new LinearInequalityFactorGraph());
+    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
+      JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
+          factor->linearize(linearizationPoint));
+      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+      linearGraph->add(LinearInequality(*jacobian, constraint->dualKey()));
+    }
+    return linearGraph;
+  }
+
+  /**
+   * Return true if the error is <= 0.0
+   */
+  bool checkFeasibility(const Values& values, double tol) const {
+    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
+      NoiseModelFactor::shared_ptr noiseModelFactor = boost::dynamic_pointer_cast<NoiseModelFactor>(
+          factor);
+      Vector error = noiseModelFactor->unwhitenedError(values);
+      // TODO: Do we need to check if it's active or not?
+      if (error[0] > tol) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Return true if the max absolute error all factors is less than a tolerance
+   */
+  bool checkDualFeasibility(const VectorValues& duals, double tol) const {
+    BOOST_FOREACH(const Vector& dual, duals){
+      if (dual[0] < 0.0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Return true if the max absolute error all factors is less than a tolerance
+   */
+  bool checkComplimentaryCondition(const Values& values, const VectorValues& duals, double tol) const {
+    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
+      NoiseModelFactor::shared_ptr noiseModelFactor = boost::dynamic_pointer_cast<NoiseModelFactor>(
+          factor);
+      Vector error = noiseModelFactor->unwhitenedError(values);
+      if (error[0] > 0.0) {
+        return false;
+      }
+    }
+    return true;
+  }
+};
 
 struct NLP {
   NonlinearFactorGraph cost;
   NonlinearEqualityFactorGraph linearEqualities;
   NonlinearEqualityFactorGraph nonlinearEqualities;
+  NonlinearInequalityFactorGraph linearInequalities;
 };
 
 struct SQPSimpleState {
@@ -117,14 +182,16 @@ public:
 
   /// Check if \nabla f(x) - \lambda * \nabla c(x) == 0
   bool isDualFeasible(const VectorValues& delta) const {
-    return delta.vector().lpNorm<Eigen::Infinity>() < errorTol;
+    return delta.vector().lpNorm<Eigen::Infinity>() < errorTol
+        && nlp_.linearInequalities.checkDualFeasibility(errorTol);
 //    return false;
   }
 
   /// Check if c(x) == 0
   bool isPrimalFeasible(const SQPSimpleState& state) const {
     return nlp_.linearEqualities.checkFeasibility(state.values, errorTol)
-        && nlp_.nonlinearEqualities.checkFeasibility(state.values, errorTol);
+        && nlp_.nonlinearEqualities.checkFeasibility(state.values, errorTol)
+        && nlp_.linearInequalities.checkFeasibility(state.values, errorTol);
   }
 
   /// Check convergence
@@ -146,6 +213,8 @@ public:
 
     qp.equalities.add(*nlp_.linearEqualities.linearize(state.values));
     qp.equalities.add(*nlp_.nonlinearEqualities.linearize(state.values));
+
+    qp.inequalities.add(*nlp_.linearInequalities.linearize(state.values));
 
     if (debug)
       qp.print("QP subproblem:");
@@ -206,6 +275,7 @@ public:
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam_unstable/nonlinear/NonlinearInequality.h>
 
 using namespace std;
 using namespace gtsam::symbol_shorthand;
@@ -353,7 +423,8 @@ public:
     return (Vector(1) << pose.x()).finished();
   }
 };
-TEST_UNSAFE(testSQPSimple, poseOnALine) {
+
+TEST(testSQPSimple, poseOnALine) {
   const Key dualKey = 0;
 
 
@@ -378,6 +449,50 @@ TEST_UNSAFE(testSQPSimple, poseOnALine) {
   Pose3 pose(Rot3::ypr(0.1, 0.2, 0.3), Point3());
   Matrix hessian = numericalHessian<Pose3>(boost::bind(&LineConstraintX::computeError, constraint, _1), pose, 1e-2);
   cout << "hessian: \n" << hessian << endl;
+}
+
+
+//******************************************************************************
+/**
+ * Inequality boundary constraint
+ *      x <= bound
+ */
+class UpperBoundX : public NonlinearInequality1<Pose3> {
+  typedef NonlinearInequality1<Pose3> Base;
+  double bound_;
+public:
+  UpperBoundX(Key key, double bound, Key dualKey) : Base(key, dualKey, 1), bound_(bound) {
+  }
+
+  double computeError(const Pose3& pose, boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = (Matrix(1,6) << zeros(1,3), pose.rotation().matrix().row(0)).finished();
+    return pose.x() - bound_;
+  }
+};
+
+TEST(testSQPSimple, poseOnALine) {
+  const Key dualKey = 0;
+
+
+  //Instantiate NLP
+  NLP nlp;
+  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(-1, 0, 0)), noiseModel::Unit::Create(6)));
+  UpperBoundX constraint(X(1), 0, dualKey);
+  nlp.nonlinearInequalities.add(constraint);
+
+  Values initialValues;
+  initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(-1,0,0)));
+
+  Values expectedSolution;
+  expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3()));
+
+  // Instantiate SQP
+  SQPSimple sqpSimple(nlp);
+  Values actualSolution = sqpSimple.optimize(initialValues).first;
+
+  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
+  actualSolution.print("actualSolution: ");
 }
 
 //******************************************************************************
