@@ -215,7 +215,7 @@ public:
    * Single iteration of SQP
    */
   SQPSimpleState iterate(const SQPSimpleState& state) const {
-    static const bool debug = true;
+    static const bool debug = false;
 
     // construct the qp subproblem
     QP qp;

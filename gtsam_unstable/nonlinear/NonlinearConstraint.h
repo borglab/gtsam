@@ -108,11 +108,8 @@ public:
       lG11sum += -lambda[i] * G11[i];
     }
 
-
-    std::cout << "lG11sum:  " << lG11sum << std::endl;
     HessianFactor::shared_ptr hf(new HessianFactor(Base::key(), lG11sum,
         zero(X1Dim), 100.0));
-    hf->print("HessianFactor: ");
     return hf;
   }
 
