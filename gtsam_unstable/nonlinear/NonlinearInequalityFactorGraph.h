@@ -6,6 +6,7 @@
 
 #pragma once
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam_unstable/linear/LinearInequalityFactorGraph.h>
 
 namespace gtsam {
 class NonlinearInequalityFactorGraph : public FactorGraph<NonlinearFactor> {
