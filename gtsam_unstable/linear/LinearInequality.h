@@ -44,10 +44,21 @@ public:
       Base(), active_(true) {
   }
 
-  /** Conversion from HessianFactor (does Cholesky to obtain Jacobian matrix) */
+  /** Conversion from HessianFactor */
   explicit LinearInequality(const HessianFactor& hf) {
     throw std::runtime_error(
         "Cannot convert HessianFactor to LinearInequality");
+  }
+
+  /** Conversion from JacobianFactor */
+  explicit LinearInequality(const JacobianFactor& jf) : Base(jf), dualKey_(dualKey), active_(true) {
+    if (!jf.isConstrained()) {
+      throw std::runtime_error("Cannot convert an unconstrained JacobianFactor to LinearEquality");
+    }
+
+    if (jf.get_model()->dim() != 1) {
+      throw std::runtime_error("Only support single-valued inequality factor!");
+    }
   }
 
   /** Construct unary factor */
