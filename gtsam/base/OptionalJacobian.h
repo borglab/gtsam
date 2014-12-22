@@ -39,17 +39,17 @@ class OptionalJacobian {
 
 public:
 
-  /// Fixed size type
-  typedef Eigen::Matrix<double, Rows, Cols> Fixed;
+  /// ::Fixed size type
+  typedef Eigen::Matrix<double, Rows, Cols> Matrix;
 
 private:
 
-  Eigen::Map<Fixed> map_; /// View on constructor argument, if given
+  Eigen::Map<Matrix> map_; /// View on constructor argument, if given
 
   // Trick from http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
   // uses "placement new" to make map_ usurp the memory of the fixed size matrix
   void usurp(double* data, int rows, int cols) {
-    new (&map_) Eigen::Map<Fixed>(data, rows, cols);
+    new (&map_) Eigen::Map<Matrix>(data, rows, cols);
   }
 
 public:
@@ -60,13 +60,13 @@ public:
   }
 
   /// Constructor that will usurp data of a fixed-size matrix
-  OptionalJacobian(Fixed& fixed) :
+  OptionalJacobian(Matrix& fixed) :
       map_(NULL) {
     usurp(fixed.data(), fixed.rows(), fixed.cols());
   }
 
   /// Constructor that will usurp data of a fixed-size matrix, pointer version
-  OptionalJacobian(Fixed* fixedPtr) :
+  OptionalJacobian(Matrix* fixedPtr) :
       map_(NULL) {
     if (fixedPtr)
       usurp(fixedPtr->data(), fixedPtr->rows(), fixedPtr->cols());
@@ -104,12 +104,12 @@ public:
   }
 
   /// De-reference, like boost optional
-  Eigen::Map<Fixed>& operator*() {
+  Eigen::Map<Matrix>& operator*() {
     return map_;
   }
 
   /// TODO: operator->()
-  Eigen::Map<Fixed>* operator->(){ return &map_; }
+  Eigen::Map<Matrix>* operator->(){ return &map_; }
 };
 
 // The pure dynamic specialization of this is needed to support
