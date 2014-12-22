@@ -107,7 +107,7 @@ protected:
   /// shorthand for this class
   typedef SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, D> This;
 
-  enum {ZDim = traits_x<gtsam::StereoPoint2>::dimension};    ///< Dimension trait of measurement type
+  enum {ZDim = 3};    ///< Dimension trait of measurement type
 
 public:
 
