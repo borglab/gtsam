@@ -8,6 +8,8 @@
 
 #pragma once
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam_unstable/linear/LinearEqualityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 
 
 namespace gtsam {
