@@ -38,6 +38,13 @@ static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
 static double error = 1e-9, epsilon = 0.001;
 
+//******************************************************************************
+TEST(Rot3 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<Rot3 >));
+  BOOST_CONCEPT_ASSERT((IsManifold<Rot3 >));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3 >));
+}
+
 /* ************************************************************************* */
 TEST( Rot3, chart)
 {
@@ -599,6 +606,45 @@ TEST( Rot3, slerp)
   EXPECT(assert_equal(R3, R1.slerp(0.5,R2)));
   // Make sure other can be *this
   EXPECT(assert_equal(R1, R1.slerp(0.5,R1)));
+}
+
+//******************************************************************************
+TEST(Rot3 , Traits) {
+  Rot3 R1(Rot3::rodriguez(Vector3(0, 0, 1), 1));
+  Rot3 R2(Rot3::rodriguez(Vector3(0, 1, 0), 2));
+  check_group_invariants(R1, R2);
+  check_manifold_invariants(R1, R2);
+
+  Rot3 expected, actual;
+  Matrix actualH1, actualH2;
+  Matrix numericalH1, numericalH2;
+
+  expected = R1 * R2;
+  actual = traits_x<Rot3>::Compose(R1, R2, actualH1, actualH2);
+  EXPECT(assert_equal(expected,actual));
+
+  numericalH1 = numericalDerivative21(traits_x<Rot3>::Compose, R1, R2);
+  EXPECT(assert_equal(numericalH1,actualH1));
+
+  numericalH2 = numericalDerivative22(traits_x<Rot3>::Compose, R1, R2);
+  EXPECT(assert_equal(numericalH2,actualH2));
+
+  expected = R1.inverse() * R2;
+  actual = traits_x<Rot3>::Between(R1, R2, actualH1, actualH2);
+  EXPECT(assert_equal(expected,actual));
+
+  numericalH1 = numericalDerivative21(traits_x<Rot3>::Between, R1, R2);
+  EXPECT(assert_equal(numericalH1,actualH1));
+
+  numericalH2 = numericalDerivative22(traits_x<Rot3>::Between, R1, R2);
+  EXPECT(assert_equal(numericalH2,actualH2));
+
+  expected = R1.inverse();
+  actual = traits_x<Rot3>::Inverse(R1, actualH1);
+  EXPECT(assert_equal(expected,actual));
+
+  numericalH1 = numericalDerivative11(traits_x<Rot3>::Inverse, R1);
+  EXPECT(assert_equal(numericalH1,actualH1));
 }
 
 /* ************************************************************************* */
