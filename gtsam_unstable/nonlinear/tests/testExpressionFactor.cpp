@@ -148,6 +148,7 @@ TEST(ExpressionFactor, Wide) {
   values.insert(2, Point3(0, 0, 1));
   Point3_ point(2);
   Vector9 measured;
+  measured.setZero();
   Expression<Vector9> expression(wide,point);
   SharedNoiseModel model = noiseModel::Unit::Create(9);
 
