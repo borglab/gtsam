@@ -41,7 +41,7 @@ struct LieMatrix : public Matrix {
   /// @{
   enum { dimension = Eigen::Dynamic };
 
-  /** default constructor - should be unnecessary */
+  /** default constructor - only for serialize */
   LieMatrix() {}
 
   /** initialize from a normal matrix */
@@ -83,111 +83,26 @@ struct LieMatrix : public Matrix {
   }
 
   /// @}
-  /// @name Manifold interface
+  /// @name VectorSpace requirements
   /// @{
 
   /** Returns dimensionality of the tangent space */
   inline size_t dim() const { return size(); }
 
-  typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> RowMajor;
-  typedef const RowMajor ConstRowMajor;
-
+  /** Convert to vector, is done row-wise - TODO why? */
   inline Vector vector() const {
     Vector result(size());
+    typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
+        Eigen::RowMajor> RowMajor;
     Eigen::Map<RowMajor>(&result(0), rows(), cols()) = *this;
     return result;
   }
-
-  /** Update the LieMatrix with a tangent space update.  The elements of the
-   * tangent space vector correspond to the matrix entries arranged in
-   * *row-major* order. */
-  inline LieMatrix retract(const Vector& v) const {
-    if(v.size() != size())
-      throw std::invalid_argument("LieMatrix::retract called with Vector of incorrect size");
-    return LieMatrix(*this + Eigen::Map<ConstRowMajor>(&v(0), rows(), cols()));
-  }
-
-  inline LieMatrix retract(const Vector& v, OptionalJacobian<-1, -1> Horigin,
-      OptionalJacobian<-1, -1> Hv) const {
-    if (Horigin || Hv)
-      throw std::runtime_error("LieMatrix::retract derivative not implemented");
-    return retract(v);
-  }
-
-  /** @return the local coordinates of another object.  The elements of the
-   * tangent space vector correspond to the matrix entries arranged in
-   * *row-major* order. */
-  inline Vector localCoordinates(const LieMatrix& t2) const {
-    Vector result(size());
-    Eigen::Map<RowMajor>(&result(0), rows(), cols()) = t2 - *this;
-    return result;
-  }
-
-  Vector localCoordinates(const LieMatrix& ts, OptionalJacobian<-1, -1> Horigin,
-      OptionalJacobian<-1, -1> Hother) const {
-    if (Horigin || Hother)
-      throw std::runtime_error("LieMatrix::localCoordinates derivative not implemented");
-    return localCoordinates(ts);
-  }
-
-  /// @}
-  /// @name Group interface
-  /// @{
 
   /** identity - NOTE: no known size at compile time - so zero length */
   inline static LieMatrix identity() {
     throw std::runtime_error("LieMatrix::identity(): Don't use this function");
     return LieMatrix();
   }
-
-  // Note: Manually specifying the 'gtsam' namespace for the optional Matrix arguments
-  // This is a work-around for linux g++ 4.6.1 that incorrectly selects the Eigen::Matrix class
-  // instead of the gtsam::Matrix class. This is related to deriving this class from an Eigen Vector
-  // as the other geometry objects (Point3, Rot3, etc.) have this problem
-  /** compose with another object */
-  inline LieMatrix compose(const LieMatrix& p,
-      OptionalJacobian<-1,-1> H1 = boost::none,
-      OptionalJacobian<-1,-1> H2 = boost::none) const {
-    if(H1) *H1 = eye(dim());
-    if(H2) *H2 = eye(p.dim());
-
-    return LieMatrix(*this + p);
-  }
-
-  /** between operation */
-  inline LieMatrix between(const LieMatrix& l2,
-      OptionalJacobian<-1,-1> H1 = boost::none,
-      OptionalJacobian<-1,-1> H2 = boost::none) const {
-    if(H1) *H1 = -eye(dim());
-    if(H2) *H2 = eye(l2.dim());
-    return LieMatrix(l2 - *this);
-  }
-
-  /** invert the object and yield a new one */
-  inline LieMatrix inverse(OptionalJacobian<-1,-1> H = boost::none) const {
-    if(H) *H = -eye(dim());
-
-    return LieMatrix(-(*this));
-  }
-
-  /// @}
-  /// @name Lie group interface
-  /// @{
-
-  /** Expmap around identity */
-  static inline LieMatrix Expmap(const Vector& v, OptionalJacobian<-1,-1> H = boost::none) {
-    throw std::runtime_error("LieMatrix::Expmap(): Don't use this function");
-    return LieMatrix(v); }
-
-  /** Logmap around identity */
-  static inline Vector Logmap(const LieMatrix& p, OptionalJacobian<-1,-1> H = boost::none) {
-    if (H) throw std::runtime_error("LieMatrix::Logmap derivative not implemented");
-    Vector result(p.size());
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >(
-        result.data(), p.rows(), p.cols()) = p;
-    return result;
-  }
-
   /// @}
 
 private:
@@ -205,6 +120,18 @@ private:
 
 
 template<>
-struct traits_x<LieMatrix> : public internal::VectorSpace<LieMatrix> {};
+struct traits_x<LieMatrix> : public internal::VectorSpace<LieMatrix> {
+
+  // Override Retract, as the default version does not know how to initialize
+  static LieMatrix Retract(const LieMatrix& origin, const TangentVector& v,
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+    if (H1) *H1 = Eye(origin);
+    if (H2) *H2 = Eye(origin);
+    typedef const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
+        Eigen::RowMajor> RowMajor;
+    return origin + Eigen::Map<RowMajor>(&v(0), origin.rows(), origin.cols());
+  }
+
+};
 
 } // \namespace gtsam
