@@ -93,8 +93,9 @@ public:
    */
   NonlinearEquality(Key j, const T& feasible,
       bool (*_compare)(const T&, const T&) = compare<T>) :
-      Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(
-          feasible), allow_error_(false), error_gain_(0.0), compare_(_compare) {
+      Base(noiseModel::Constrained::All(traits_x<T>::GetDimension(feasible)),
+          j), feasible_(feasible), allow_error_(false), error_gain_(0.0), //
+      compare_(_compare) {
   }
 
   /**

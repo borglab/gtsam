@@ -59,14 +59,14 @@ void PoseRTV::print(const string& s) const {
 /* ************************************************************************* */
 PoseRTV PoseRTV::Expmap(const Vector9& v) {
   Pose3 newPose = Pose3::Expmap(v.head<6>());
-  Velocity3 newVel = Velocity3::Expmap(v.tail<3>());
+  Velocity3 newVel = Velocity3(v.tail<3>());
   return PoseRTV(newPose, newVel);
 }
 
 /* ************************************************************************* */
 Vector9 PoseRTV::Logmap(const PoseRTV& p) {
   Vector6 Lx = Pose3::Logmap(p.Rt_);
-  Vector3 Lv = Velocity3::Logmap(p.v_);
+  Vector3 Lv = p.v_.vector();
   return (Vector9() << Lx, Lv).finished();
 }
 
@@ -108,7 +108,7 @@ Vector PoseRTV::localCoordinates(const PoseRTV& p1,
 PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
 PoseRTV PoseRTV::inverse(OptionalJacobian<dimension,dimension> H1) const {
   if (H1) *H1 = numericalDerivative11<PoseRTV,PoseRTV>(inverse_, *this, 1e-5);
-  return PoseRTV(Rt_.inverse(), v_.inverse());
+  return PoseRTV(Rt_.inverse(), - v_);
 }
 
 /* ************************************************************************* */
@@ -118,7 +118,7 @@ PoseRTV PoseRTV::compose(const PoseRTV& p,
     OptionalJacobian<dimension,dimension> H2) const {
   if (H1) *H1 = numericalDerivative21(compose_, *this, p, 1e-5);
   if (H2) *H2 = numericalDerivative22(compose_, *this, p, 1e-5);
-  return PoseRTV(Rt_.compose(p.Rt_), v_.compose(p.v_));
+  return PoseRTV(Rt_.compose(p.Rt_), v_+p.v_);
 }
 
 /* ************************************************************************* */
@@ -196,7 +196,7 @@ PoseRTV PoseRTV::generalDynamics(
   Rot3 r2 = rotation().retract(gyro * dt);
 
   //  Integrate Velocity Equations
-  Velocity3 v2 = v_.compose(Velocity3(dt * (r2.matrix() * accel + g)));
+  Velocity3 v2 = v_ + (Velocity3(dt * (r2.matrix() * accel + g)));
 
   //  Integrate Position Equations
   Point3 t2 = translationIntegration(r2, v2, dt);
@@ -213,15 +213,15 @@ Vector6 PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
   Vector6 imu;
 
   // acceleration
-  Vector accel = v1.localCoordinates(v2) / dt;
+  Vector3 accel = (v2-v1).vector() / dt;
   imu.head<3>() = r2.transpose() * (accel - g);
 
   // rotation rates
   // just using euler angles based on matlab code
   // FIXME: this is silly - we shouldn't use differences in Euler angles
   Matrix Enb = RRTMnb(r1);
-  Vector euler1 = r1.xyz(), euler2 = r2.xyz();
-  Vector dR = euler2 - euler1;
+  Vector3 euler1 = r1.xyz(), euler2 = r2.xyz();
+  Vector3 dR = euler2 - euler1;
 
   // normalize yaw in difference (as per Mitch's code)
   dR(2) = Rot2::fromAngle(dR(2)).theta();

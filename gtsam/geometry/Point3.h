@@ -76,99 +76,16 @@ namespace gtsam {
     /// @{
 
     /// identity for group operation
-    inline static Point3 identity() {
-      return Point3();
-    }
+    inline static Point3 identity() { return Point3();}
 
-    /// "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3()
-    inline Point3 inverse(OptionalJacobian<3,3> H=boost::none) const {
-      if (H) *H = -I_3x3;
-      return Point3(-x_, -y_, -z_);
-    }
-
-    /// syntactic sugar for inverse, i.e., -p == inverse(p)
+    /// inverse
     Point3 operator - () const { return Point3(-x_,-y_,-z_);}
 
-    /// "Compose" - just adds coordinates of two points
-    inline Point3 compose(const Point3& p2,
-        OptionalJacobian<3,3> H1=boost::none,
-        OptionalJacobian<3,3> H2=boost::none) const {
-      if (H1) *H1 << I_3x3;
-      if (H2) *H2 << I_3x3;
-      return *this + p2;
-    }
-
-    ///syntactic sugar for adding two points, i.e., p+q == compose(p,q)
+    /// add
     Point3 operator + (const Point3& q) const;
 
-    /** Between using the default implementation */
-    inline Point3 between(const Point3& p2,
-        OptionalJacobian<3,3> H1=boost::none,
-        OptionalJacobian<3,3> H2=boost::none) const {
-      if(H1) *H1 = -I_3x3;
-      if(H2) *H2 = I_3x3;
-      return p2 - *this;
-    }
-
-    /// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
+    /// subtract
     Point3 operator - (const Point3& q) const;
-
-    /// @}
-    /// @name Manifold
-    /// @{
-
-    /// dimension of the variable - used to autodetect sizes
-    inline static size_t Dim() { return 3; }
-
-    /// return dimensionality of tangent space, DOF = 3
-    inline size_t dim() const { return 3; }
-
-    /// Updates a with tangent space delta
-    inline Point3 retract(const Vector& v) const { return *this + Point3(v); }
-
-    /// Returns inverse retraction
-    inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
-
-    /// @}
-    /// @name Lie Group
-    /// @{
-
-    /** Exponential map at identity - just create a Point3 from x,y,z */
-    static inline Point3 Expmap(const Vector& v, OptionalJacobian<3,3> H=boost::none) {
-      if (H) *H = I_3x3;
-      return Point3(v);
-    }
-
-    /** Log map at identity - return the x,y,z of this point */
-    static inline Vector3 Logmap(const Point3& dp, OptionalJacobian<3,3> H=boost::none) {
-      if (H) *H = I_3x3;
-      return Vector3(dp.x(), dp.y(), dp.z());
-    }
-
-    inline Point3 retract(const Vector& v, OptionalJacobian<3, 3> H1,
-        OptionalJacobian<3, 3> H2 = boost::none) const {
-      if (H1) *H1 = I_3x3;
-      if (H2) *H2 = I_3x3;
-      return *this + Point3(v);
-    }
-
-    inline Vector3 localCoordinates(const Point3& q, OptionalJacobian<3, 3> H1,
-        OptionalJacobian<3, 3> H2 = boost::none) const {
-      if (H1) *H1 = - I_3x3;
-      if (H2) *H2 = I_3x3;
-      Point3 dp = q - *this;
-      return Vector3(dp.x(), dp.y(), dp.z());
-    }
-
-    /// Left-trivialized derivative of the exponential map
-    static Matrix3 dexpL(const Vector& v) {
-      return I_3x3;
-    }
-
-    /// Left-trivialized derivative inverse of the exponential map
-    static Matrix3 dexpInvL(const Vector& v) {
-      return I_3x3;
-    }
 
     /// @}
     /// @name Vector Space

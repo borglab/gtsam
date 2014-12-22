@@ -151,11 +151,11 @@ Pose3 Agrawal06iros(const Vector& xi) {
   Vector v = xi.tail(3);
   double t = norm_2(w);
   if (t < 1e-5)
-    return Pose3(Rot3(), Point3::Expmap(v));
+    return Pose3(Rot3(), Point3(v));
   else {
     Matrix W = skewSymmetric(w/t);
     Matrix A = eye(3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
-    return Pose3(Rot3::Expmap (w), Point3::Expmap(A * v));
+    return Pose3(Rot3::Expmap (w), Point3(A * v));
   }
 }
 
