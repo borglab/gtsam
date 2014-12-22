@@ -141,13 +141,10 @@ public:
     }
   }
 
-  /** Raw memory access version of gradientAtZero */
+  /** Raw memory access version of gradientAtZero
+   * TODO: currently assumes all variables of the same size D (templated) and keys arranged from 0 to n
+   */
   virtual void gradientAtZero(double* d) const {
-
-    // Initialize d as a zero vector
-    for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
-      DMap(d + D * j) = DVector::Zero();
-    }
 
     // Get vector b not weighted
     Vector b = getb();
@@ -159,13 +156,12 @@ public:
     }
 
     // Just iterate over all A matrices
-    for (size_t pos = 0; pos < size(); ++pos) {
-      Key j = keys_[pos];
+    for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
       DVector dj;
       // gradient -= A'*b/sigma^2
       // Computing with each column
       for (size_t k = 0; k < D; ++k){
-        Vector column_k = Ab_(pos).col(k);
+        Vector column_k = Ab_(j).col(k);
         dj(k) = -1.0*dot(b, column_k);
       }
       DMap(d + D * j) += dj;
