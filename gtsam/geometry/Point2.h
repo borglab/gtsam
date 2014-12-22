@@ -107,108 +107,16 @@ public:
   /// @{
 
   /// identity
-  inline static Point2 identity() {
-    return Point2();
-  }
-
-  /// "Inverse" - negates each coordinate such that compose(p,inverse(p)) == identity()
-  inline Point2 inverse(OptionalJacobian<2,2> H=boost::none) const {
-    if (H) *H = -I_2x2;
-    return Point2(-x_, -y_);
-  }
+  inline static Point2 identity() {return Point2();}
 
   /// syntactic sugar for inverse, i.e., -p == inverse(p)
   inline Point2 operator- () const {return Point2(-x_,-y_);}
 
-  /// "Compose", just adds the coordinates of two points. With optional derivatives
-  inline Point2 compose(const Point2& q,
-      OptionalJacobian<2,2> H1=boost::none,
-      OptionalJacobian<2,2> H2=boost::none) const {
-    if(H1) *H1 = I_2x2;
-    if(H2) *H2 = I_2x2;
-    return *this + q;
-  }
-
   /// syntactic sugar for adding two points, i.e., p+q == compose(p,q)
   inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
 
-  /// "Between", subtracts point coordinates. between(p,q) == compose(inverse(p),q)
-  inline Point2 between(const Point2& q,
-      OptionalJacobian<2,2> H1=boost::none,
-      OptionalJacobian<2,2> H2=boost::none) const {
-    if(H1) *H1 = -I_2x2;
-    if(H2) *H2 = I_2x2;
-    return q - (*this);
-  }
-
   /// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
   inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
-
-  /// @}
-  /// @name Manifold
-  /// @{
-
-  /// dimension of the variable - used to autodetect sizes
-  inline static size_t Dim() { return 2; }
-
-  /// Dimensionality of tangent space = 2 DOF
-  inline size_t dim() const { return 2; }
-
-  /// Updates a with tangent space delta
-  inline Point2 retract(const Vector& v) const {
-    return *this + Point2(v);
-  }
-
-  /// Local coordinates of manifold neighborhood around current value
-  inline Vector localCoordinates(const Point2& t2) const {
-    Point2 dp = t2 - *this;
-    return Vector2(dp.x(), dp.y());
-  }
-
-  /// @}
-  /// @name Lie Group
-  /// @{
-
-  /// Exponential map around identity - just create a Point2 from a vector
-  static Point2 Expmap(const Vector2& v,
-      OptionalJacobian<2, 2> H = boost::none) {
-    if (H) *H = I_2x2;
-    return Point2(v);
-  }
-
-  /// Logmap around identity
-  static inline Vector2 Logmap(const Point2& dp,
-      OptionalJacobian<2, 2> H = boost::none) {
-    if (H) *H = I_2x2;
-    return Vector2(dp.x(), dp.y());
-  }
-
-  /// Left-trivialized derivative of the exponential map
-  static Matrix2 dexpL(const Vector2& v) {
-    return I_2x2;
-  }
-
-  /// Left-trivialized derivative inverse of the exponential map
-  static Matrix2 dexpInvL(const Vector2& v) {
-    return I_2x2;
-  }
-
-  /// Updates a with tangent space delta
-  inline Point2 retract(const Vector& v, OptionalJacobian<2, 2> H1,
-      OptionalJacobian<2, 2> H2 = boost::none) const {
-    if (H1) *H1 = I_2x2;
-    if (H2) *H2 = I_2x2;
-    return *this + Point2(v);
-  }
-
-  /// Local coordinates of manifold neighborhood around current value
-  inline Vector localCoordinates(const Point2& t2, OptionalJacobian<2, 2> H1,
-      OptionalJacobian<2, 2> H2 = boost::none) const {
-    if (H1) *H1 = - I_2x2;
-    if (H2) *H2 = I_2x2;
-    Point2 dp = t2 - *this;
-    return Vector2(dp.x(), dp.y());
-  }
 
   /// @}
   /// @name Vector Space
@@ -285,5 +193,5 @@ inline Point2 operator*(double s, const Point2& p) {return p*s;}
 template<>
 struct traits_x<Point2> : public internal::VectorSpace<Point2> {};
 
-}
+} // \ namespace gtsam
 
