@@ -88,22 +88,18 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const T& p1, const T& p2,
-        boost::optional<Matrix&> H1 = boost::none,boost::optional<Matrix&> H2 =
-            boost::none) const {
+  Vector evaluateError(const T& p1, const T& p2, boost::optional<Matrix&> H1 =
+      boost::none, boost::optional<Matrix&> H2 = boost::none) const {
       T hx = traits_x<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
-#ifdef BETWEENFACTOR_ASSUME_SMALL
-      return traits_x<T>::Local(measured_, hx);
-#else
-      return traits_x<T>::Local(measured_, hx);
-      static const int N = traits_x<T>::dimension;
-      Eigen::Matrix<double,N,N> Hlocal;
-    Vector rval = traits_x<T>::Local(measured_, hx, boost::none,
-        (H1 || H2) ? &Hlocal : 0);
+#ifdef SLOW_BUT_CORRECT_BETWEENFACTOR
+      typename traits_x<T>::ChartJacobian::Fixed Hlocal;
+      Vector rval = traits_x<T>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
       if (H1) *H1 = Hlocal * (*H1);
       if (H1) *H2 = Hlocal * (*H2);
       return rval;
+#else
+      return traits_x<T>::Local(measured_, hx);
 #endif
     }
 
