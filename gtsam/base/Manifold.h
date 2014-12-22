@@ -127,7 +127,9 @@ check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
  */
 template<typename M>
 class IsManifold {
+
 public:
+
   typedef typename traits_x<M>::structure_category structure_category_tag;
   static const size_t dim = traits_x<M>::dimension;
   typedef typename traits_x<M>::ManifoldType ManifoldType;
@@ -141,17 +143,28 @@ public:
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
 
     // make sure Chart methods are defined
-    v = traits_x<M>::Local(p,q);
-    q = traits_x<M>::Retract(p,v);
+    v = traits_x<M>::Local(p, q);
+    q = traits_x<M>::Retract(p, v);
     // and the versions with Jacobians.
     //v = traits_x<M>::Local(p,q,Hp,Hq);
     //q = traits_x<M>::Retract(p,v,Hp,Hv);
   }
+
 private:
-  ManifoldType p,q;
-  ChartJacobian Hp,Hq,Hv;
+
+  ManifoldType p, q;
+  ChartJacobian Hp, Hq, Hv;
   TangentVector v;
   bool b;
+};
+
+/// Give fixed size dimension of a type, fails at compile time if dynamic
+template<typename M>
+struct FixedDimension {
+  typedef const int value_type;
+  static const int value = traits_x<M>::dimension;
+  BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
+      "FixedDimension instantiated for dymanically-sized type.");
 };
 
 } // \ namespace gtsam
