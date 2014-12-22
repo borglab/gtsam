@@ -58,10 +58,8 @@ struct LieVector : public Vector {
   /** constructor with size and initial data, row order ! */
   GTSAM_EXPORT LieVector(size_t m, const double* const data);
 
-  /** get the underlying vector */
-  Vector vector() const {
-    return static_cast<Vector>(*this);
-  }
+  /// @name Testable
+  /// @{
 
   /** print @param name optional string naming the object */
   GTSAM_EXPORT void print(const std::string& name="") const;
@@ -71,18 +69,17 @@ struct LieVector : public Vector {
     return gtsam::equal(vector(), expected.vector(), tol);
   }
 
-  // Manifold requirements
+  /// @}
+  /// @name VectorSpace requirements
+  /// @{
+
+  /** get the underlying vector */
+  Vector vector() const {
+    return static_cast<Vector>(*this);
+  }
 
   /** Returns dimensionality of the tangent space */
   size_t dim() const { return this->size(); }
-
-  /** Update the LieVector with a tangent space update */
-  LieVector retract(const Vector& v) const { return LieVector(vector() + v); }
-
-  /** @return the local coordinates of another object */
-  Vector localCoordinates(const LieVector& t2) const { return t2 - *this; }
-
-  // Group requirements
 
   /** identity - NOTE: no known size at compile time - so zero length */
   static LieVector identity() {
@@ -90,53 +87,7 @@ struct LieVector : public Vector {
     return LieVector();
   }
 
-  // Note: Manually specifying the 'gtsam' namespace for the optional Matrix arguments
-  // This is a work-around for linux g++ 4.6.1 that incorrectly selects the Eigen::Matrix class
-  // instead of the gtsam::Matrix class. This is related to deriving this class from an Eigen Vector
-  // as the other geometry objects (Point3, Rot3, etc.) have this problem
-  /** compose with another object */
-  LieVector compose(const LieVector& p,
-      OptionalJacobian<-1,-1> H1 = boost::none,
-      OptionalJacobian<-1,-1> H2 = boost::none) const {
-    if(H1) *H1 = eye(dim());
-    if(H2) *H2 = eye(p.dim());
-
-    return LieVector(vector() + p);
-  }
-
-  /** between operation */
-  LieVector between(const LieVector& l2,
-      OptionalJacobian<-1,-1> H1 = boost::none,
-      OptionalJacobian<-1,-1> H2 = boost::none) const {
-    if(H1) *H1 = -eye(dim());
-    if(H2) *H2 = eye(l2.dim());
-    return LieVector(l2.vector() - vector());
-  }
-
-  /** invert the object and yield a new one */
-  LieVector inverse(OptionalJacobian<-1,-1> H=boost::none) const {
-    if(H) *H = -eye(dim());
-
-    return LieVector(-1.0 * vector());
-  }
-
-  // Lie functions
-
-  /** Expmap around identity */
-  static LieVector Expmap(const Vector& v, OptionalJacobian<-1, -1> H =
-      boost::none) {
-    if (H)
-      throw std::runtime_error("LieVector::Expmap derivative not implemented");
-    return LieVector(v);
-  }
-
-  /** Logmap around identity - just returns with default cast back */
-  static Vector Logmap(const LieVector& p, OptionalJacobian<-1, -1> H =
-      boost::none) {
-    if (H)
-      throw std::runtime_error("LieVector::Logmap derivative not implemented");
-    return p;
-  }
+  /// @}
 
 private:
 
