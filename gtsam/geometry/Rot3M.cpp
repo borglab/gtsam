@@ -184,7 +184,9 @@ Point3 Rot3::rotate(const Point3& p,
 
 /* ************************************************************************* */
 // Log map at identity - return the canonical coordinates of this rotation
-Vector3 Rot3::Logmap(const Rot3& R) {
+Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3, 3> H) {
+
+  if (H) CONCEPT_NOT_IMPLEMENTED;
 
   static const double PI = boost::math::constants::pi<double>();
 

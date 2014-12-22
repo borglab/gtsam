@@ -60,6 +60,64 @@ Rot2& Rot2::normalize() {
 }
 
 /* ************************************************************************* */
+Rot2 Rot2::compose(const Rot2& R, OptionalJacobian<1, 1> H1,
+    OptionalJacobian<1, 1> H2) const {
+  if (H1)
+    *H1 = I_1x1;
+  if (H2)
+    *H2 = I_1x1;
+  return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
+}
+
+/* ************************************************************************* */
+Rot2 Rot2::between(const Rot2& R, OptionalJacobian<1, 1> H1,
+    OptionalJacobian<1, 1> H2) const {
+  if (H1)
+    *H1 = -I_1x1;
+  if (H2)
+    *H2 = I_1x1;
+  return fromCosSin(c_ * R.c_ + s_ * R.s_, -s_ * R.c_ + c_ * R.s_);
+}
+
+/* ************************************************************************* */
+Rot2 Rot2::retract(const Vector& v, OptionalJacobian<1, 1> H1,
+    OptionalJacobian<1, 1> H2) const {
+  if (H1)
+    *H1 = I_1x1;
+  if (H2)
+    *H2 = I_1x1;
+  return *this * Expmap(v);
+}
+
+/* ************************************************************************* */
+Vector1 Rot2::localCoordinates(const Rot2& t2, OptionalJacobian<1, 1> H1,
+    OptionalJacobian<1, 1> H2) const {
+  if (H1)
+    *H1 = -I_1x1;
+  if (H2)
+    *H2 = I_1x1;
+  return Logmap(between(t2));
+}
+
+/* ************************************************************************* */
+Rot2 Rot2::Expmap(const Vector& v, OptionalJacobian<1, 1> H) {
+  if (H)
+    *H = I_1x1;
+  if (zero(v))
+    return (Rot2());
+  else
+    return Rot2::fromAngle(v(0));
+}
+
+/* ************************************************************************* */
+Vector1 Rot2::Logmap(const Rot2& r, OptionalJacobian<1, 1> H) {
+  if (H)
+    *H = I_1x1;
+  Vector1 v;
+  v << r.theta();
+  return v;
+}
+/* ************************************************************************* */
 Matrix2 Rot2::matrix() const {
   Matrix2 rvalue_;
   rvalue_ <<  c_, -s_, s_, c_;

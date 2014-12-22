@@ -116,25 +116,17 @@ namespace gtsam {
     }
 
     /** Compose - make a new rotation by adding angles */
-    inline Rot2 compose(const Rot2& R, OptionalJacobian<1,1> H1 =
-        boost::none, OptionalJacobian<1,1> H2 = boost::none) const {
-      if (H1) *H1 = I_1x1; // set to 1x1 identity matrix
-      if (H2) *H2 = I_1x1; // set to 1x1 identity matrix
-      return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
-    }
-
-    /** Compose - make a new rotation by adding angles */
     Rot2 operator*(const Rot2& R) const {
       return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
     }
 
+    /** Compose - make a new rotation by adding angles */
+    Rot2 compose(const Rot2& R, OptionalJacobian<1,1> H1 =
+        boost::none, OptionalJacobian<1,1> H2 = boost::none) const;
+
     /** Between using the default implementation */
-    inline Rot2 between(const Rot2& R, OptionalJacobian<1,1> H1 =
-        boost::none, OptionalJacobian<1,1> H2 = boost::none) const {
-      if (H1) *H1 = -I_1x1; // set to 1x1 identity matrix
-      if (H2) *H2 =  I_1x1; // set to 1x1 identity matrix
-      return fromCosSin(c_ * R.c_ + s_ * R.s_, -s_ * R.c_ + c_ * R.s_);
-    }
+    Rot2 between(const Rot2& R, OptionalJacobian<1,1> H1 =
+        boost::none, OptionalJacobian<1,1> H2 = boost::none) const;
 
     /// @}
     /// @name Manifold
@@ -151,29 +143,22 @@ namespace gtsam {
     }
 
     /// Updates a with tangent space delta
-    inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
+    Rot2 retract(const Vector& v, OptionalJacobian<1, 1> H1 = boost::none,
+        OptionalJacobian<1, 1> H2 = boost::none) const;
 
     /// Returns inverse retraction
-    inline Vector1 localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
+    Vector1 localCoordinates(const Rot2& t2, OptionalJacobian<1, 1> H1 =
+        boost::none, OptionalJacobian<1, 1> H2 = boost::none) const;
 
     /// @}
     /// @name Lie Group
     /// @{
 
     ///Exponential map at identity - create a rotation from canonical coordinates
-    static Rot2 Expmap(const Vector& v) {
-      if (zero(v))
-        return (Rot2());
-      else
-        return Rot2::fromAngle(v(0));
-    }
+    static Rot2 Expmap(const Vector& v, OptionalJacobian<1, 1> H = boost::none);
 
     ///Log map at identity - return the canonical coordinates of this rotation
-    static inline Vector1 Logmap(const Rot2& r) {
-      Vector1 v;
-      v << r.theta();
-      return v;
-    }
+    static Vector1 Logmap(const Rot2& r, OptionalJacobian<1, 1> H = boost::none);
 
     /// Left-trivialized derivative of the exponential map
     static Matrix dexpL(const Vector& v) {

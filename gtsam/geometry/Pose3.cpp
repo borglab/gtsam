@@ -17,6 +17,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/concepts.h>
+#include <gtsam/base/concepts.h>
 
 #include <boost/foreach.hpp>
 #include <iostream>
@@ -124,7 +125,8 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
-Pose3 Pose3::Expmap(const Vector& xi) {
+Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
+  if (H) CONCEPT_NOT_IMPLEMENTED;
 
   // get angular velocity omega and translational velocity v from twist xi
   Point3 w(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
@@ -144,7 +146,9 @@ Pose3 Pose3::Expmap(const Vector& xi) {
 }
 
 /* ************************************************************************* */
-Vector6 Pose3::Logmap(const Pose3& p) {
+Vector6 Pose3::Logmap(const Pose3& p, OptionalJacobian<6, 6> H) {
+  if (H) CONCEPT_NOT_IMPLEMENTED;
+
   Vector3 w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
   double t = w.norm();
   if (t < 1e-10) {
@@ -216,6 +220,20 @@ Vector6 Pose3::localCoordinates(const Pose3& T,
     assert(false);
     exit(1);
   }
+}
+
+/* ************************************************************************* */
+Pose3 Pose3::retract(const Vector& d, OptionalJacobian<6, 6> Hthis,
+    OptionalJacobian<6, 6> Hd, Pose3::CoordinatesMode mode) const {
+  if (Hthis || Hd) CONCEPT_NOT_IMPLEMENTED;
+  return retract(d, mode);
+}
+
+/* ************************************************************************* */
+Vector6 Pose3::localCoordinates(const Pose3& T2, OptionalJacobian<6, 6> Horigin,
+    OptionalJacobian<6, 6> Hother, Pose3::CoordinatesMode mode) const {
+  if (Horigin || Hother) CONCEPT_NOT_IMPLEMENTED;
+  return localCoordinates(T2, mode);
 }
 
 /* ************************************************************************* */

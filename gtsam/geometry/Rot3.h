@@ -21,8 +21,10 @@
 
 #pragma once
 
-#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 #include <gtsam/geometry/Quaternion.h>
+#include <gtsam/geometry/Unit3.h>
+#include <gtsam/base/concepts.h>
+#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
@@ -39,11 +41,6 @@
     #endif
   #endif
 #endif
-
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Unit3.h>
 
 namespace gtsam {
 
@@ -285,7 +282,8 @@ namespace gtsam {
      * Exponential map at identity - create a rotation from canonical coordinates
      * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
      */
-    static Rot3 Expmap(const Vector& v)  {
+    static Rot3 Expmap(const Vector& v, OptionalJacobian<3, 3> H = boost::none)  {
+      if (H) CONCEPT_NOT_IMPLEMENTED;
       if(zero(v)) return Rot3();
       else return rodriguez(v);
     }
@@ -293,7 +291,7 @@ namespace gtsam {
     /**
      * Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
-    static Vector3 Logmap(const Rot3& R);
+    static Vector3 Logmap(const Rot3& R, OptionalJacobian<3, 3> H = boost::none);
 
     /// Left-trivialized derivative of the exponential map
     static Matrix3 dexpL(const Vector3& v);
@@ -301,13 +299,13 @@ namespace gtsam {
     /// Left-trivialized derivative inverse of the exponential map
     static Matrix3 dexpInvL(const Vector3& v);
 
-  Vector3 localCoordinates(const Rot3& R2, OptionalJacobian<3, 3> Horigin,
-      OptionalJacobian<3, 3> H2, Rot3::CoordinatesMode mode =
-          ROT3_DEFAULT_COORDINATES_MODE) const {
-    if (Horigin || H2)
-      throw std::runtime_error("Rot3::localCoordinates derivatives not implemented");
-    return localCoordinates(R2, mode);
-  }
+    Rot3 retract(const Vector& omega, OptionalJacobian<3, 3> Hthis,
+        OptionalJacobian<3, 3> Hv = boost::none, Rot3::CoordinatesMode mode =
+            ROT3_DEFAULT_COORDINATES_MODE) const;
+
+    Vector3 localCoordinates(const Rot3& R2, OptionalJacobian<3, 3> Horigin,
+        OptionalJacobian<3, 3> H2 = boost::none, Rot3::CoordinatesMode mode =
+            ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /**
      * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in

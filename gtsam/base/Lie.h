@@ -54,25 +54,15 @@ struct LieGroup : Testable<T> {
   static int GetDimension(const ManifoldType& m){ return m.dim(); }
 
   static TangentVector Local(const ManifoldType& origin,
-                             const ManifoldType& other) {
-    return origin.localCoordinates(other);
-  }
-
-  static ManifoldType Retract(const ManifoldType& origin,
-                              const TangentVector& v) {
-    return origin.retract(v);
-  }
-
-  static TangentVector Local(const ManifoldType& origin,
                              const ManifoldType& other,
-                             ChartJacobian Horigin,
+                             ChartJacobian Horigin = boost::none,
                              ChartJacobian Hother = boost::none) {
     return origin.localCoordinates(other, Horigin, Hother);
   }
 
   static ManifoldType Retract(const ManifoldType& origin,
                               const TangentVector& v,
-                              ChartJacobian Horigin,
+                              ChartJacobian Horigin = boost::none,
                               ChartJacobian Hv = boost::none) {
     return origin.retract(v, Horigin, Hv);
   }
@@ -82,19 +72,11 @@ struct LieGroup : Testable<T> {
   /// @name Lie Group
   /// @{
 
-  static TangentVector Logmap(const ManifoldType& m) {
-    return ManifoldType::Logmap(m);
-  }
-
-  static ManifoldType Expmap(const TangentVector& v) {
-    return ManifoldType::Expmap(v);
-  }
-
-  static TangentVector Logmap(const ManifoldType& m, ChartJacobian Hm) {
+  static TangentVector Logmap(const ManifoldType& m, ChartJacobian Hm = boost::none) {
     return ManifoldType::Logmap(m, Hm);
   }
 
-  static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv) {
+  static ManifoldType Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
     return ManifoldType::Expmap(v, Hv);
   }
 

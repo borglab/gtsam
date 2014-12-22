@@ -155,7 +155,8 @@ public:
       POSE3_DEFAULT_COORDINATES_MODE) const;
 
   /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
-  Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode =POSE3_DEFAULT_COORDINATES_MODE) const;
+  Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode =
+      POSE3_DEFAULT_COORDINATES_MODE) const;
 
   /// @}
 
@@ -163,18 +164,20 @@ public:
     /// @{
 
     /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
-    static Pose3 Expmap(const Vector& xi);
+    static Pose3 Expmap(const Vector& xi, OptionalJacobian<6, 6> H = boost::none);
 
     /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
-    static Vector6 Logmap(const Pose3& p);
+    static Vector6 Logmap(const Pose3& p, OptionalJacobian<6, 6> H = boost::none);
 
     /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
-    Vector6 localCoordinates(const Pose3& T2, OptionalJacobian<6,6> Horigin,
-        OptionalJacobian<6,6> Hother = boost::none) const {
-      if (Horigin || Hother)
-        throw std::runtime_error("Pose3::localCoordinates derivatives not implemented");
-      return localCoordinates(T2);
-    }
+    Pose3 retract(const Vector& d, OptionalJacobian<6, 6> Hthis,
+        OptionalJacobian<6, 6> Hd = boost::none, Pose3::CoordinatesMode mode =
+            POSE3_DEFAULT_COORDINATES_MODE) const;
+
+    /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
+    Vector6 localCoordinates(const Pose3& T2, OptionalJacobian<6, 6> Horigin,
+        OptionalJacobian<6, 6> Hother = boost::none, Pose3::CoordinatesMode mode =
+            POSE3_DEFAULT_COORDINATES_MODE) const;
 
     /**
      * Calculate Adjoint map, transforming a twist in the this pose's (i.e, body) frame to the world spatial frame

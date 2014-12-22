@@ -57,14 +57,16 @@ void PoseRTV::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-PoseRTV PoseRTV::Expmap(const Vector9& v) {
+PoseRTV PoseRTV::Expmap(const Vector9& v, ChartJacobian H) {
+  if (H) CONCEPT_NOT_IMPLEMENTED;
   Pose3 newPose = Pose3::Expmap(v.head<6>());
   Velocity3 newVel = Velocity3(v.tail<3>());
   return PoseRTV(newPose, newVel);
 }
 
 /* ************************************************************************* */
-Vector9 PoseRTV::Logmap(const PoseRTV& p) {
+Vector9 PoseRTV::Logmap(const PoseRTV& p, ChartJacobian H) {
+  if (H) CONCEPT_NOT_IMPLEMENTED;
   Vector6 Lx = Pose3::Logmap(p.Rt_);
   Vector3 Lv = p.v_.vector();
   return (Vector9() << Lx, Lv).finished();
@@ -72,14 +74,9 @@ Vector9 PoseRTV::Logmap(const PoseRTV& p) {
 
 /* ************************************************************************* */
 PoseRTV PoseRTV::retract(const Vector& v,
-                         OptionalJacobian<dimension, dimension> Horigin,
-                         OptionalJacobian<dimension, dimension> Hv) const {
-  if (Horigin) {
-    CONCEPT_NOT_IMPLEMENTED;
-  }
-  if (Hv) {
-    CONCEPT_NOT_IMPLEMENTED;
-  }
+                         ChartJacobian Horigin,
+                         ChartJacobian Hv) const {
+  if (Horigin || Hv) CONCEPT_NOT_IMPLEMENTED;
   assert(v.size() == 9);
   // First order approximation
   Pose3 newPose = Rt_.retract(sub(v, 0, 6));
@@ -89,14 +86,9 @@ PoseRTV PoseRTV::retract(const Vector& v,
 
 /* ************************************************************************* */
 Vector PoseRTV::localCoordinates(const PoseRTV& p1,
-                                 OptionalJacobian<dimension, dimension> Horigin,
-                                 OptionalJacobian<dimension, dimension> Hp) const {
-  if (Horigin) {
-    CONCEPT_NOT_IMPLEMENTED;
-  }
-  if (Hp) {
-    CONCEPT_NOT_IMPLEMENTED;
-  }
+                                 ChartJacobian Horigin,
+                                 ChartJacobian Hp) const {
+  if (Horigin || Hp) CONCEPT_NOT_IMPLEMENTED;
   const Pose3& x0 = pose(), &x1 = p1.pose();
   // First order approximation
   Vector6 poseLogmap = x0.localCoordinates(x1);
@@ -106,16 +98,15 @@ Vector PoseRTV::localCoordinates(const PoseRTV& p1,
 
 /* ************************************************************************* */
 PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
-PoseRTV PoseRTV::inverse(OptionalJacobian<dimension,dimension> H1) const {
+PoseRTV PoseRTV::inverse(ChartJacobian H1) const {
   if (H1) *H1 = numericalDerivative11<PoseRTV,PoseRTV>(inverse_, *this, 1e-5);
   return PoseRTV(Rt_.inverse(), - v_);
 }
 
 /* ************************************************************************* */
 PoseRTV compose_(const PoseRTV& p1, const PoseRTV& p2) { return p1.compose(p2); }
-PoseRTV PoseRTV::compose(const PoseRTV& p,
-    OptionalJacobian<dimension,dimension> H1,
-    OptionalJacobian<dimension,dimension> H2) const {
+PoseRTV PoseRTV::compose(const PoseRTV& p, ChartJacobian H1,
+    ChartJacobian H2) const {
   if (H1) *H1 = numericalDerivative21(compose_, *this, p, 1e-5);
   if (H2) *H2 = numericalDerivative22(compose_, *this, p, 1e-5);
   return PoseRTV(Rt_.compose(p.Rt_), v_+p.v_);
@@ -124,8 +115,8 @@ PoseRTV PoseRTV::compose(const PoseRTV& p,
 /* ************************************************************************* */
 PoseRTV between_(const PoseRTV& p1, const PoseRTV& p2) { return p1.between(p2); }
 PoseRTV PoseRTV::between(const PoseRTV& p,
-    OptionalJacobian<dimension,dimension> H1,
-    OptionalJacobian<dimension,dimension> H2) const {
+    ChartJacobian H1,
+    ChartJacobian H2) const {
   if (H1) *H1 = numericalDerivative21(between_, *this, p, 1e-5);
   if (H2) *H2 = numericalDerivative22(between_, *this, p, 1e-5);
   return inverse().compose(p);
@@ -243,7 +234,7 @@ Point3 PoseRTV::translationIntegration(const Rot3& r2, const Velocity3& v2, doub
 /* ************************************************************************* */
 double range_(const PoseRTV& A, const PoseRTV& B) { return A.range(B); }
 double PoseRTV::range(const PoseRTV& other,
-    OptionalJacobian<1,dimension> H1, OptionalJacobian<1,dimension> H2) const {
+    OptionalJacobian<1,9> H1, OptionalJacobian<1,9> H2) const {
   if (H1) *H1 = numericalDerivative21(range_, *this, other, 1e-5);
   if (H2) *H2 = numericalDerivative22(range_, *this, other, 1e-5);
   return t().distance(other.t());
@@ -254,9 +245,8 @@ PoseRTV transformed_from_(const PoseRTV& global, const Pose3& transform) {
   return global.transformed_from(transform);
 }
 
-PoseRTV PoseRTV::transformed_from(const Pose3& trans,
-    OptionalJacobian<dimension,dimension> Dglobal,
-    OptionalJacobian<dimension,traits_x<Pose3>::dimension> Dtrans) const {
+PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
+    OptionalJacobian<9, 6> Dtrans) const {
   // Note that we rotate the velocity
   Matrix DVr, DTt;
   Velocity3 newvel = trans.rotation().rotate(v_, DVr, DTt);

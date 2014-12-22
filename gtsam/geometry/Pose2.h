@@ -136,23 +136,22 @@ public:
   inline size_t dim() const { return 3; }
 
   /// Retraction from R^3 \f$ [T_x,T_y,\theta] \f$ to Pose2 manifold neighborhood around current pose
-  Pose2 retract(const Vector& v) const;
+  Pose2 retract(const Vector& v, OptionalJacobian<3, 3> Hthis =
+      boost::none, OptionalJacobian<3, 3> Hv = boost::none) const;
 
   /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
-  Vector3 localCoordinates(const Pose2& p2) const;
-
-  /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
-  Vector localCoordinates(const Pose2& p2, OptionalJacobian<3,3> Hthis, OptionalJacobian<3,3> Hother) const;
+  Vector localCoordinates(const Pose2& p2, OptionalJacobian<3, 3> Hthis =
+      boost::none, OptionalJacobian<3, 3> Hother = boost::none) const;
 
   /// @}
   /// @name Lie Group
   /// @{
 
   ///Exponential map at identity - create a rotation from canonical coordinates \f$ [T_x,T_y,\theta] \f$
-  static Pose2 Expmap(const Vector& xi);
+  static Pose2 Expmap(const Vector& xi, OptionalJacobian<3, 3> H = boost::none);
 
   ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
-  static Vector3 Logmap(const Pose2& p);
+  static Vector3 Logmap(const Pose2& p, OptionalJacobian<3, 3> H = boost::none);
 
   /**
    * Calculate Adjoint map

@@ -17,7 +17,10 @@
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/concepts.h>
+
 #include <boost/foreach.hpp>
+
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -56,7 +59,8 @@ bool Pose2::equals(const Pose2& q, double tol) const {
 }
 
 /* ************************************************************************* */
-Pose2 Pose2::Expmap(const Vector& xi) {
+Pose2 Pose2::Expmap(const Vector& xi, OptionalJacobian<3, 3> H) {
+  if (H) CONCEPT_NOT_IMPLEMENTED;
   assert(xi.size() == 3);
   Point2 v(xi(0),xi(1));
   double w = xi(2);
@@ -71,7 +75,8 @@ Pose2 Pose2::Expmap(const Vector& xi) {
 }
 
 /* ************************************************************************* */
-Vector3 Pose2::Logmap(const Pose2& p) {
+Vector3 Pose2::Logmap(const Pose2& p, OptionalJacobian<3, 3> H) {
+  if (H) CONCEPT_NOT_IMPLEMENTED;
   const Rot2& R = p.r();
   const Point2& t = p.t();
   double w = R.theta();
@@ -87,7 +92,9 @@ Vector3 Pose2::Logmap(const Pose2& p) {
 }
 
 /* ************************************************************************* */
-Pose2 Pose2::retract(const Vector& v) const {
+Pose2 Pose2::retract(const Vector& v, OptionalJacobian<3, 3> Hthis,
+    OptionalJacobian<3, 3> Hv) const {
+  if (Hthis || Hv) CONCEPT_NOT_IMPLEMENTED;
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   return compose(Expmap(v));
 #else
@@ -97,22 +104,15 @@ Pose2 Pose2::retract(const Vector& v) const {
 }
 
 /* ************************************************************************* */
-Vector3 Pose2::localCoordinates(const Pose2& p2) const {
+Vector Pose2::localCoordinates(const Pose2& p2, OptionalJacobian<3, 3> Hthis,
+    OptionalJacobian<3, 3> Hother) const {
+  if (Hthis || Hother) CONCEPT_NOT_IMPLEMENTED;
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   return Logmap(between(p2));
 #else
   Pose2 r = between(p2);
   return Vector3(r.x(), r.y(), r.theta());
 #endif
-}
-
-/// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
-Vector Pose2::localCoordinates(const Pose2& p2, OptionalJacobian<3, 3> Hthis,
-    OptionalJacobian<3, 3> Hother) const {
-  if (Hthis || Hother)
-    throw std::runtime_error(
-        "Pose2::localCoordinates derivatives not implemented");
-  return localCoordinates(p2);
 }
 
 /* ************************************************************************* */

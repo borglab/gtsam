@@ -231,7 +231,7 @@ TEST( Rot3, rightJacobianExpMapSO3 )
   Vector3 thetahat; thetahat << 0.1, 0, 0;
 
   Matrix expectedJacobian = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&Rot3::Expmap, _1), thetahat);
+      boost::bind(&Rot3::Expmap, _1, boost::none), thetahat);
   Matrix actualJacobian = Rot3::rightJacobianExpMapSO3(thetahat);
   CHECK(assert_equal(expectedJacobian, actualJacobian));
 }
