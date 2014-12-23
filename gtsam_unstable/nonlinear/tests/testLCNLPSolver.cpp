@@ -299,7 +299,7 @@ TEST(testlcnlpSolver, poseWithinA2DBox) {
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
 }
 
-TEST_DISABLED(testlcnlpSolver, posesInA2DBox) {
+TEST(testlcnlpSolver, posesInA2DBox) {
   const double xLowerBound = -3.0,
       xUpperBound = 5.0,
       yLowerBound = -1.0,
@@ -312,12 +312,12 @@ TEST_DISABLED(testlcnlpSolver, posesInA2DBox) {
 
   // prior on the first pose
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished());
+      (Vector(6) << 0.001, 0.001, 0.001, 0.0001, 0.0001, 0.0001).finished());
   lcnlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(), priorNoise));
 
   // odometry between factor for subsequent poses
   SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << 0.01, 0.01, 0.01, 0.1, 0.1, 0.1).finished());
+      (Vector(6) << 0.001, 0.001, 0.001, 0.1, 0.1, 0.1).finished());
   Pose3 odo12(Rot3::ypr(M_PI/2.0, 0, 0), Point3(10, 0, 0));
   lcnlp.cost.add(BetweenFactor<Pose3>(X(1), X(2), odo12, odoNoise));
 
@@ -343,16 +343,23 @@ TEST_DISABLED(testlcnlpSolver, posesInA2DBox) {
 
   Values expectedSolution;
   expectedSolution.insert(X(1), Pose3());
-  expectedSolution.insert(X(2), Pose3());
-  expectedSolution.insert(X(3), Pose3());
+  expectedSolution.insert(X(2), Pose3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(5, 0, 0)));
+  expectedSolution.insert(X(3), Pose3(Rot3::ypr(M_PI, 0, 0), Point3(5, 2, 2)));
 
   // Instantiate LCNLPSolver
   LCNLPSolver lcnlpSolver(lcnlp);
   Values actualSolution = lcnlpSolver.optimize(initialValues).first;
 
-  actualSolution.print("actual solution: ");
+//  cout << "Rotation angles: " << endl;
+//  for (size_t i = 1; i<=3; i++) {
+//    cout << actualSolution.at<Pose3>(X(i)).rotation().ypr().transpose()*180/M_PI << endl;
+//  }
 
-  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
+//  cout << "Actual Error: " << lcnlp.cost.error(actualSolution) << endl;
+//  cout << "Expected Error: " << lcnlp.cost.error(expectedSolution) << endl;
+//  actualSolution.print("actualSolution: ");
+
+  CHECK(assert_equal(expectedSolution, actualSolution, 1e-5));
 }
 
 //******************************************************************************
