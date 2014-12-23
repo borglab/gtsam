@@ -18,6 +18,8 @@
  */
 
 #include <gtsam_unstable/nonlinear/SQPSimple.h>
+#include <gtsam_unstable/linear/QPSolver.h>
+
 namespace gtsam {
 
 

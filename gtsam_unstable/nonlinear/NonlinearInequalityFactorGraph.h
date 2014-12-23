@@ -18,18 +18,19 @@
  */
 
 #pragma once
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam_unstable/linear/LinearInequalityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 
 namespace gtsam {
 class NonlinearInequalityFactorGraph : public FactorGraph<NonlinearFactor> {
 
 public:
-  /// default constructor
+  /// Default constructor
   NonlinearInequalityFactorGraph() {
   }
 
-  /// linearize to a LinearEqualityFactorGraph
+  /// Linearize to a LinearEqualityFactorGraph
   LinearInequalityFactorGraph::shared_ptr linearize(
       const Values& linearizationPoint) const {
     LinearInequalityFactorGraph::shared_ptr linearGraph(

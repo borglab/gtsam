@@ -18,13 +18,9 @@
  */
 
 #pragma once
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam_unstable/nonlinear/NonlinearEqualityFactorGraph.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequalityFactorGraph.h>
-#include <gtsam_unstable/linear/LinearInequalityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
-#include <gtsam_unstable/linear/QPSolver.h>
 
 namespace gtsam {
 
