@@ -149,6 +149,8 @@ V preconditionedConjugateGradient(const S &system, const V &initial, const Conju
                  << ", alpha = " << alpha
                  << ", beta = " << beta
                  << ", ||r||^2 = " << currentGamma
+//                 << "\nx =\n" << estimate
+//                 << "\nr =\n" << residual
                  << std::endl;
   }
   if (parameters.verbosity() >= ConjugateGradientParameters::COMPLEXITY )

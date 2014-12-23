@@ -253,6 +253,9 @@ public:
       ar & boost::serialization::make_nvp("value", value_);
     }
 
+/// use this macro instead of BOOST_CLASS_EXPORT for GenericValues
+#define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(GenericValue<Type>)
+
 };
 
 // define Value::cast here since now GenericValue has been declared
