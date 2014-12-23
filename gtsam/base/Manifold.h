@@ -98,7 +98,7 @@ struct Manifold : Testable<_ManifoldType> {
 
 /// Check invariants for Manifold type
 template<typename T>
-BOOST_CONCEPT_REQUIRES(((Testable<T>)),(bool)) //
+BOOST_CONCEPT_REQUIRES(((IsTestable<T>)),(bool)) //
 check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
   typename traits_x<T>::TangentVector v0 = traits_x<T>::Local(a,a);
   typename traits_x<T>::TangentVector v = traits_x<T>::Local(a,b);
