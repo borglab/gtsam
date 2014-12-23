@@ -50,6 +50,16 @@ struct LCNLPState {
   LCNLPState(const Values& initialValues) :
       values(initialValues), duals(VectorValues()), converged(false), iterations(0) {
   }
+
+  /// print
+  void print(const std::string& s = "") const {
+    std::cout << s << std::endl;
+    values.print("Values: ");
+    duals.print("Duals: ");
+    if (converged) std::cout << "Converged!" << std::endl;
+    else std::cout << "Not converged" << std::endl;
+    std::cout << "Iterations: " << iterations << std::endl;
+  }
 };
 
 /**
