@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SQPSimple.h
+ * @file    LCNLPSolver.h
  * @author  Duy-Nguyen Ta
  * @author  Krunal Chande
  * @author  Luca Carlone
@@ -24,46 +24,51 @@
 
 namespace gtsam {
 
-struct NLP {
+/**
+ * Nonlinear Programming problem with
+ * only linear constraints, encoded in factor graphs
+ */
+struct LCNLP {
   NonlinearFactorGraph cost;
   NonlinearEqualityFactorGraph linearEqualities;
-  NonlinearEqualityFactorGraph nonlinearEqualities;
   NonlinearInequalityFactorGraph linearInequalities;
 };
 
-struct SQPSimpleState {
+/**
+ * State of LCNLPSolver before/after each iteration
+ */
+struct LCNLPState {
   Values values;
   VectorValues duals;
   bool converged;
   size_t iterations;
 
   /// Default constructor
-  SQPSimpleState() : values(), duals(), converged(false), iterations(0) {}
+  LCNLPState() : values(), duals(), converged(false), iterations(0) {}
 
   /// Constructor with an initialValues
-  SQPSimpleState(const Values& initialValues) :
+  LCNLPState(const Values& initialValues) :
       values(initialValues), duals(VectorValues()), converged(false), iterations(0) {
   }
 };
 
 /**
- * Simple SQP optimizer to solve nonlinear constrained problems.
- * This simple version won't care about nonconvexity, which needs
- * more advanced techniques to solve, e.g., merit function, line search, second-order correction etc.
+ * Simple SQP optimizer to solve nonlinear constrained problems
+ * ONLY linear constraints are supported.
  */
-class SQPSimple {
-  NLP nlp_;
+class LCNLPSolver {
+  LCNLP lcnlp_;
   static const double errorTol = 1e-5;
 public:
-  SQPSimple(const NLP& nlp) :
-      nlp_(nlp) {
+  LCNLPSolver(const LCNLP& lcnlp) :
+      lcnlp_(lcnlp) {
   }
 
   /// Check if \nabla f(x) - \lambda * \nabla c(x) == 0
   bool isStationary(const VectorValues& delta) const;
 
   /// Check if c_E(x) == 0
-  bool isPrimalFeasible(const SQPSimpleState& state) const;
+  bool isPrimalFeasible(const LCNLPState& state) const;
 
   /**
    * Dual variables of inequality constraints need to be >=0
@@ -81,15 +86,15 @@ public:
    * If it is inactive, the dual should be 0, regardless of the error. However, we don't compute
    * dual variables for inactive constraints in the QP subproblem, so we don't care.
    */
-  bool isComplementary(const SQPSimpleState& state) const;
+  bool isComplementary(const LCNLPState& state) const;
 
   /// Check convergence
-  bool checkConvergence(const SQPSimpleState& state, const VectorValues& delta) const;
+  bool checkConvergence(const LCNLPState& state, const VectorValues& delta) const;
 
   /**
    * Single iteration of SQP
    */
-  SQPSimpleState iterate(const SQPSimpleState& state) const;
+  LCNLPState iterate(const LCNLPState& state) const;
 
   VectorValues initializeDuals() const;
   /**

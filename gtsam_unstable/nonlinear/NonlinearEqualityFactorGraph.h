@@ -58,17 +58,17 @@ public:
     return true;
   }
 
-  /**
-   * Additional cost for -lambda*ConstraintHessian for SQP
-   */
-  GaussianFactorGraph::shared_ptr multipliedHessians(const Values& values, const VectorValues& duals) const {
-    GaussianFactorGraph::shared_ptr constrainedHessians(new GaussianFactorGraph());
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-      constrainedHessians->push_back(constraint->multipliedHessian(values, duals));
-    }
-    return constrainedHessians;
-  }
+//  /**
+//   * Additional cost for -lambda*ConstraintHessian for SQP
+//   */
+//  GaussianFactorGraph::shared_ptr multipliedHessians(const Values& values, const VectorValues& duals) const {
+//    GaussianFactorGraph::shared_ptr constrainedHessians(new GaussianFactorGraph());
+//    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
+//      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+//      constrainedHessians->push_back(constraint->multipliedHessian(values, duals));
+//    }
+//    return constrainedHessians;
+//  }
 
 };
 
