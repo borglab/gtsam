@@ -111,7 +111,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   //       Z_3x3,    Z_3x3,            Z_3x3,             Z_3x3,            I_3x3;
   F.setZero();
   F.block<9,9>(0,0)  = F_9x9;
-  F.block<6,6>(9,9)  = eye(6);
+  F.block<6,6>(9,9)  = I_6x6;
   F.block<3,3>(3,9)  = H_vel_biasacc;
   F.block<3,3>(6,12) = H_angles_biasomega;
 
@@ -156,7 +156,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 // CombinedImuFactor methods
 //------------------------------------------------------------------------------
 CombinedImuFactor::CombinedImuFactor() :
-    ImuFactorBase(), _PIM_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Matrix::Zero(6,6)) {}
+    ImuFactorBase(), _PIM_(imuBias::ConstantBias(), Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_6x6) {}
 
 //------------------------------------------------------------------------------
 CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
@@ -219,7 +219,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
       H1->resize(15,6);
       H1->block<9,6>(0,0) = H1_pvR;
       // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
-      H1->block<6,6>(9,0) = Matrix::Zero(6,6);
+      H1->block<6,6>(9,0) = Z_6x6;
     }
     if(H2) {
       H2->resize(15,3);
@@ -231,7 +231,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_
       H3->resize(15,6);
       H3->block<9,6>(0,0) = H3_pvR;
       // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
-      H3->block<6,6>(9,0) = Matrix::Zero(6,6);
+      H3->block<6,6>(9,0) = Z_6x6;
     }
     if(H4) {
       H4->resize(15,3);

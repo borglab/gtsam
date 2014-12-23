@@ -122,7 +122,7 @@ Vector AHRSFactor::PreintegratedMeasurements::DeltaAngles(
 // AHRSFactor methods
 //------------------------------------------------------------------------------
 AHRSFactor::AHRSFactor() :
-    _PIM_(Vector3(), Matrix3::Zero()) {
+    _PIM_(Vector3(), Z_3x3) {
 }
 
 AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
