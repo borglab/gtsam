@@ -26,7 +26,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <gtsam_unstable/linear/QPSolver.h>
-#include <gtsam_unstable/nonlinear/SQPSimple.h>
+#include <gtsam_unstable/nonlinear/LCNLPSolver.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequality.h>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
@@ -54,7 +54,7 @@ public:
   }
 };
 
-TEST(testSQPSimple, QPProblem) {
+TEST(testlcnlpSolver, QPProblem) {
   const Key dualKey = 0;
 
   // Simple quadratic cost: x1^2 + x2^2
@@ -81,83 +81,25 @@ TEST(testSQPSimple, QPProblem) {
   initialVectorValues.insert(Y(1), ones(1));
   VectorValues expectedSolution = qpSolver.optimize(initialVectorValues).first;
 
-  //Instantiate NLP
-  NLP nlp;
+  //Instantiate LCNLP
+  LCNLP lcnlp;
   Values linPoint;
   linPoint.insert<Vector1>(X(1), zero(1));
   linPoint.insert<Vector1>(Y(1), zero(1));
-  nlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
-  nlp.linearEqualities.add(ConstraintProblem1(X(1), Y(1), dualKey));
+  lcnlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
+  lcnlp.linearEqualities.add(ConstraintProblem1(X(1), Y(1), dualKey));
 
   Values initialValues;
   initialValues.insert(X(1), 0.0);
   initialValues.insert(Y(1), 0.0);
 
-  // Instantiate SQP
-  SQPSimple sqpSimple(nlp);
-  Values actualValues = sqpSimple.optimize(initialValues).first;
+  // Instantiate LCNLPSolver
+  LCNLPSolver lcnlpSolver(lcnlp);
+  Values actualValues = lcnlpSolver.optimize(initialValues).first;
 
   DOUBLES_EQUAL(expectedSolution.at(X(1))[0], actualValues.at<double>(X(1)), 1e-100);
   DOUBLES_EQUAL(expectedSolution.at(Y(1))[0], actualValues.at<double>(Y(1)), 1e-100);
 
-}
-
-//******************************************************************************
-class CircleConstraint : public NonlinearConstraint2<double, double> {
-  typedef NonlinearConstraint2<double, double> Base;
-public:
-  CircleConstraint(Key xK, Key yK, Key dualKey) : Base(xK, yK, dualKey, 1) {}
-
-  Vector evaluateError(const double& x, const double& y,
-    boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-        boost::none) const {
-    if (H1) *H1 = (Matrix(1,1) << 2*(x-1)).finished();
-    if (H2) *H2 = (Matrix(1,1) << 2*y).finished();
-    return (Vector(1) << (x-1)*(x-1) + y*y - 0.25).finished();
-  }
-
-  void evaluateHessians(const double& x, const double& y,
-        std::vector<Matrix>& G11, std::vector<Matrix>& G12,
-        std::vector<Matrix>& G22) const {
-    G11.push_back((Matrix(1,1) << 2).finished());
-    G12.push_back((Matrix(1,1) << 0).finished());
-    G22.push_back((Matrix(1,1) << 2).finished());
-  }
-
-};
-
-// Nonlinear constraint not supported currently
-TEST_DISABLED(testSQPSimple, quadraticCostNonlinearConstraint) {
-  const Key dualKey = 0;
-
-  //Instantiate NLP
-  NLP nlp;
-
-  // Simple quadratic cost: x1^2 + x2^2 +1000
-  // Note the Hessian encodes:
-  //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
-  // Hence here we have G11 = 2, G12 = 0, G22 = 2, g1 = 0, g2 = 0, f = 0
-  Values linPoint;
-  linPoint.insert<Vector1>(X(1), zero(1));
-  linPoint.insert<Vector1>(Y(1), zero(1));
-  HessianFactor hf(X(1), Y(1), 2.0 * ones(1,1), zero(1), zero(1),
-                    2*ones(1,1), zero(1) , 1000);
-  nlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
-  nlp.nonlinearEqualities.add(CircleConstraint(X(1), Y(1), dualKey));
-
-  Values initialValues;
-  initialValues.insert<double>(X(1), 4.0);
-  initialValues.insert<double>(Y(1), 10.0);
-
-  Values expectedSolution;
-  expectedSolution.insert<double>(X(1), 0.5);
-  expectedSolution.insert<double>(Y(1), 0.0);
-
-  // Instantiate SQP
-  SQPSimple sqpSimple(nlp);
-  Values actualSolution = sqpSimple.optimize(initialValues).first;
-
-  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
 }
 
 //******************************************************************************
@@ -171,13 +113,6 @@ public:
     return pose.x();
   }
 
-  void evaluateHessians(const Pose3& pose, std::vector<Matrix>& G11) const {
-    Matrix G11all = Z_6x6;
-    Vector rT1 = pose.rotation().matrix().row(0);
-    G11all.block<3,3>(3,0) = skewSymmetric(rT1);
-    G11.push_back(G11all);
-  }
-
   Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H = boost::none) const {
     if (H)
       *H = (Matrix(1,6) << zeros(1,3), pose.rotation().matrix().row(0)).finished();
@@ -185,15 +120,15 @@ public:
   }
 };
 
-TEST(testSQPSimple, poseOnALine) {
+TEST(testlcnlpSolver, poseOnALine) {
   const Key dualKey = 0;
 
 
-  //Instantiate NLP
-  NLP nlp;
-  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0, 0)), noiseModel::Unit::Create(6)));
+  //Instantiate LCNLP
+  LCNLP lcnlp;
+  lcnlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0, 0)), noiseModel::Unit::Create(6)));
   LineConstraintX constraint(X(1), dualKey);
-  nlp.nonlinearEqualities.add(constraint);
+  lcnlp.linearEqualities.add(constraint);
 
   Values initialValues;
   initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(1,0,0)));
@@ -201,9 +136,9 @@ TEST(testSQPSimple, poseOnALine) {
   Values expectedSolution;
   expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3()));
 
-  // Instantiate SQP
-  SQPSimple sqpSimple(nlp);
-  Values actualSolution = sqpSimple.optimize(initialValues).first;
+  // Instantiate LCNLPSolver
+  LCNLPSolver lcnlpSolver(lcnlp);
+  Values actualSolution = lcnlpSolver.optimize(initialValues).first;
 
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
   Pose3 pose(Rot3::ypr(0.1, 0.2, 0.3), Point3());
@@ -226,7 +161,7 @@ public:
   }
 };
 
-TEST(testSQPSimple, inequalityConstraint) {
+TEST(testlcnlpSolver, inequalityConstraint) {
   const Key dualKey = 0;
 
   // Simple quadratic cost: x^2 + y^2
@@ -253,26 +188,25 @@ TEST(testSQPSimple, inequalityConstraint) {
   initialVectorValues.insert(Y(1), zero(1));
   VectorValues expectedSolution = qpSolver.optimize(initialVectorValues).first;
 
-  //Instantiate NLP
-  NLP nlp;
+  //Instantiate LCNLP
+  LCNLP lcnlp;
   Values linPoint;
   linPoint.insert<Vector1>(X(1), zero(1));
   linPoint.insert<Vector1>(Y(1), zero(1));
-  nlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
-  nlp.linearInequalities.add(InequalityProblem1(X(1), Y(1), dualKey));
+  lcnlp.cost.add(LinearContainerFactor(hf, linPoint)); // wrap it using linearcontainerfactor
+  lcnlp.linearInequalities.add(InequalityProblem1(X(1), Y(1), dualKey));
 
   Values initialValues;
   initialValues.insert(X(1), 1.0);
   initialValues.insert(Y(1), -10.0);
 
-  // Instantiate SQP
-  SQPSimple sqpSimple(nlp);
-  Values actualValues = sqpSimple.optimize(initialValues).first;
+  // Instantiate LCNLPSolver
+  LCNLPSolver lcnlpSolver(lcnlp);
+  Values actualValues = lcnlpSolver.optimize(initialValues).first;
 
   DOUBLES_EQUAL(expectedSolution.at(X(1))[0], actualValues.at<double>(X(1)), 1e-10);
   DOUBLES_EQUAL(expectedSolution.at(Y(1))[0], actualValues.at<double>(Y(1)), 1e-10);
 }
-
 
 //******************************************************************************
 const size_t X_AXIS = 0;
@@ -319,14 +253,14 @@ public:
   }
 };
 
-TEST(testSQPSimple, poseWithABoundary) {
+TEST(testlcnlpSolver, poseWithABoundary) {
   const Key dualKey = 0;
 
-  //Instantiate NLP
-  NLP nlp;
-  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0, 0)), noiseModel::Unit::Create(6)));
+  //Instantiate LCNLP
+  LCNLP lcnlp;
+  lcnlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0, 0)), noiseModel::Unit::Create(6)));
   AxisUpperBound constraint(X(1), X_AXIS, 0, dualKey);
-  nlp.linearInequalities.add(constraint);
+  lcnlp.linearInequalities.add(constraint);
 
   Values initialValues;
   initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(1, 0, 0)));
@@ -334,23 +268,23 @@ TEST(testSQPSimple, poseWithABoundary) {
   Values expectedSolution;
   expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(0, 0, 0)));
 
-  // Instantiate SQP
-  SQPSimple sqpSimple(nlp);
-  Values actualSolution = sqpSimple.optimize(initialValues).first;
+  // Instantiate LCNLPSolver
+  LCNLPSolver lcnlpSolver(lcnlp);
+  Values actualSolution = lcnlpSolver.optimize(initialValues).first;
 
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
 }
 
-TEST(testSQPSimple, poseWithinA2DBox) {
+TEST(testlcnlpSolver, poseWithinA2DBox) {
   const Key dualKey = 0;
 
-  //Instantiate NLP
-  NLP nlp;
-  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(10, 0.5, 0)), noiseModel::Unit::Create(6)));
-  nlp.linearInequalities.add(AxisLowerBound(X(1), X_AXIS, -1, dualKey)); // -1 <= x
-  nlp.linearInequalities.add(AxisUpperBound(X(1), X_AXIS, 1, dualKey+1)); //      x <= 1
-  nlp.linearInequalities.add(AxisLowerBound(X(1), Y_AXIS, -1, dualKey+2)); // -1 <= y
-  nlp.linearInequalities.add(AxisUpperBound(X(1), Y_AXIS, 1, dualKey+3));//         y <= 1
+  //Instantiate LCNLP
+  LCNLP lcnlp;
+  lcnlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(10, 0.5, 0)), noiseModel::Unit::Create(6)));
+  lcnlp.linearInequalities.add(AxisLowerBound(X(1), X_AXIS, -1, dualKey)); // -1 <= x
+  lcnlp.linearInequalities.add(AxisUpperBound(X(1), X_AXIS, 1, dualKey+1)); //      x <= 1
+  lcnlp.linearInequalities.add(AxisLowerBound(X(1), Y_AXIS, -1, dualKey+2)); // -1 <= y
+  lcnlp.linearInequalities.add(AxisUpperBound(X(1), Y_AXIS, 1, dualKey+3));//         y <= 1
 
   Values initialValues;
   initialValues.insert(X(1), Pose3(Rot3::ypr(1, -1, 2), Point3(3, -5, 0)));
@@ -358,14 +292,14 @@ TEST(testSQPSimple, poseWithinA2DBox) {
   Values expectedSolution;
   expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0.5, 0)));
 
-  // Instantiate SQP
-  SQPSimple sqpSimple(nlp);
-  Values actualSolution = sqpSimple.optimize(initialValues).first;
+  // Instantiate LCNLPSolver
+  LCNLPSolver lcnlpSolver(lcnlp);
+  Values actualSolution = lcnlpSolver.optimize(initialValues).first;
 
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
 }
 
-TEST_DISABLED(testSQPSimple, posesInA2DBox) {
+TEST_DISABLED(testlcnlpSolver, posesInA2DBox) {
   const double xLowerBound = -3.0,
       xUpperBound = 5.0,
       yLowerBound = -1.0,
@@ -373,32 +307,32 @@ TEST_DISABLED(testSQPSimple, posesInA2DBox) {
       zLowerBound = 0.0,
       zUpperBound = 2.0;
 
-  //Instantiate NLP
-  NLP nlp;
+  //Instantiate LCNLP
+  LCNLP lcnlp;
 
   // prior on the first pose
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished());
-  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(), priorNoise));
+  lcnlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(), priorNoise));
 
   // odometry between factor for subsequent poses
   SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << 0.01, 0.01, 0.01, 0.1, 0.1, 0.1).finished());
   Pose3 odo12(Rot3::ypr(M_PI/2.0, 0, 0), Point3(10, 0, 0));
-  nlp.cost.add(BetweenFactor<Pose3>(X(1), X(2), odo12, odoNoise));
+  lcnlp.cost.add(BetweenFactor<Pose3>(X(1), X(2), odo12, odoNoise));
 
   Pose3 odo23(Rot3::ypr(M_PI/2.0, 0, 0), Point3(2, 0, 2));
-  nlp.cost.add(BetweenFactor<Pose3>(X(2), X(3), odo23, odoNoise));
+  lcnlp.cost.add(BetweenFactor<Pose3>(X(2), X(3), odo23, odoNoise));
 
   // Box constraints
   Key dualKey = 0;
   for (size_t i=1; i<=3; ++i) {
-    nlp.linearInequalities.add(AxisLowerBound(X(i), X_AXIS, xLowerBound, dualKey++));
-    nlp.linearInequalities.add(AxisUpperBound(X(i), X_AXIS, xUpperBound, dualKey++));
-    nlp.linearInequalities.add(AxisLowerBound(X(i), Y_AXIS, yLowerBound, dualKey++));
-    nlp.linearInequalities.add(AxisUpperBound(X(i), Y_AXIS, yUpperBound, dualKey++));
-    nlp.linearInequalities.add(AxisLowerBound(X(i), Z_AXIS, zLowerBound, dualKey++));
-    nlp.linearInequalities.add(AxisUpperBound(X(i), Z_AXIS, zUpperBound, dualKey++));
+    lcnlp.linearInequalities.add(AxisLowerBound(X(i), X_AXIS, xLowerBound, dualKey++));
+    lcnlp.linearInequalities.add(AxisUpperBound(X(i), X_AXIS, xUpperBound, dualKey++));
+    lcnlp.linearInequalities.add(AxisLowerBound(X(i), Y_AXIS, yLowerBound, dualKey++));
+    lcnlp.linearInequalities.add(AxisUpperBound(X(i), Y_AXIS, yUpperBound, dualKey++));
+    lcnlp.linearInequalities.add(AxisLowerBound(X(i), Z_AXIS, zLowerBound, dualKey++));
+    lcnlp.linearInequalities.add(AxisUpperBound(X(i), Z_AXIS, zUpperBound, dualKey++));
   }
 
   Values initialValues;
@@ -412,9 +346,9 @@ TEST_DISABLED(testSQPSimple, posesInA2DBox) {
   expectedSolution.insert(X(2), Pose3());
   expectedSolution.insert(X(3), Pose3());
 
-  // Instantiate SQP
-  SQPSimple sqpSimple(nlp);
-  Values actualSolution = sqpSimple.optimize(initialValues).first;
+  // Instantiate LCNLPSolver
+  LCNLPSolver lcnlpSolver(lcnlp);
+  Values actualSolution = lcnlpSolver.optimize(initialValues).first;
 
   actualSolution.print("actual solution: ");
 

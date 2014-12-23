@@ -320,12 +320,6 @@ namespace gtsam {
     /** In-place version e <- A*x that takes an iterator. */
     void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
-    /**
-     * Split constraints and unconstrained factors into two different graphs
-     * @return a pair of <unconstrained, constrained> graphs
-     */
-    boost::tuple<GaussianFactorGraph, GaussianFactorGraph, GaussianFactorGraph> splitConstraints() const;
-
     /// @}
 
   private:
