@@ -40,8 +40,9 @@ bool LCNLPSolver::isDualFeasible(const VectorValues& duals) const {
     Key dualKey = inequality->dualKey();
     if (!duals.exists(dualKey)) continue; // should be inactive constraint!
     double dual = duals.at(dualKey)[0];   // because we only support single-valued inequalities
-    if (dual < 0.0)
+    if (dual > 0.0) {   // See the explanation in QPSolver::identifyLeavingConstraint, we want dual < 0 ?
       return false;
+    }
   }
   return true;
 }
