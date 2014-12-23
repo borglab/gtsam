@@ -12,8 +12,8 @@
 /**
  * @file    testQPSimple.cpp
  * @brief   Unit tests for testQPSimple
- * @author  Krunal Chande
  * @author  Duy-Nguyen Ta
+ * @author  Krunal Chande
  * @author  Luca Carlone
  * @date    Dec 15, 2014
  */

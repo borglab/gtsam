@@ -1,7 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file	SQPSimple.h
- * @author 	Krunal Chande
- * @date	Dec 22, 2014
+ * @file    SQPSimple.h
+ * @author  Duy-Nguyen Ta
+ * @author  Krunal Chande
+ * @author  Luca Carlone
+ * @date    Dec 15, 2014
  */
 
 #pragma once
@@ -12,8 +25,6 @@
 #include <gtsam_unstable/linear/LinearInequalityFactorGraph.h>
 #include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 #include <gtsam_unstable/linear/QPSolver.h>
-
-
 
 namespace gtsam {
 
@@ -53,15 +64,10 @@ public:
   }
 
   /// Check if \nabla f(x) - \lambda * \nabla c(x) == 0
-  bool isStationary(const VectorValues& delta) const {
-    return delta.vector().lpNorm<Eigen::Infinity>() < errorTol;
-  }
+  bool isStationary(const VectorValues& delta) const;
 
   /// Check if c_E(x) == 0
-  bool isPrimalFeasible(const SQPSimpleState& state) const {
-    return nlp_.linearEqualities.checkFeasibility(state.values, errorTol)
-        && nlp_.nonlinearEqualities.checkFeasibility(state.values, errorTol);
-  }
+  bool isPrimalFeasible(const SQPSimpleState& state) const;
 
   /**
    * Dual variables of inequality constraints need to be >=0
@@ -69,17 +75,7 @@ public:
    * For inactive inequalities, they need to be == 0. However, we don't compute
    * dual variables for inactive constraints in the qp subproblem, so we don't care.
    */
-  bool isDualFeasible(const VectorValues& duals) const {
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, nlp_.linearInequalities) {
-      NonlinearConstraint::shared_ptr inequality = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-      Key dualKey = inequality->dualKey();
-      if (!duals.exists(dualKey)) continue; // should be inactive constraint!
-      double dual = duals.at(dualKey)[0];   // because we only support single-valued inequalities
-      if (dual < 0.0)
-        return false;
-    }
-    return true;
-  }
+  bool isDualFeasible(const VectorValues& duals) const;
 
   /**
    * Check complimentary slackness condition:
@@ -89,84 +85,21 @@ public:
    * If it is inactive, the dual should be 0, regardless of the error. However, we don't compute
    * dual variables for inactive constraints in the QP subproblem, so we don't care.
    */
-  bool isComplementary(const SQPSimpleState& state) const {
-    return nlp_.linearInequalities.checkFeasibilityAndComplimentary(state.values, state.duals, errorTol);
-  }
+  bool isComplementary(const SQPSimpleState& state) const;
 
   /// Check convergence
-  bool checkConvergence(const SQPSimpleState& state, const VectorValues& delta) const {
-    return isStationary(delta) && isPrimalFeasible(state) && isDualFeasible(state.duals) && isComplementary(state);
-  }
+  bool checkConvergence(const SQPSimpleState& state, const VectorValues& delta) const;
 
   /**
    * Single iteration of SQP
    */
-  SQPSimpleState iterate(const SQPSimpleState& state) const {
-    static const bool debug = false;
+  SQPSimpleState iterate(const SQPSimpleState& state) const;
 
-    // construct the qp subproblem
-    QP qp;
-    qp.cost = *nlp_.cost.linearize(state.values);
-    GaussianFactorGraph::shared_ptr multipliedHessians = nlp_.nonlinearEqualities.multipliedHessians(state.values, state.duals);
-    qp.cost.push_back(*multipliedHessians);
-
-    qp.equalities.add(*nlp_.linearEqualities.linearize(state.values));
-    qp.equalities.add(*nlp_.nonlinearEqualities.linearize(state.values));
-
-    qp.inequalities.add(*nlp_.linearInequalities.linearize(state.values));
-
-    if (debug)
-      qp.print("QP subproblem:");
-
-    // solve the QP subproblem
-    VectorValues delta, duals;
-    QPSolver qpSolver(qp);
-    boost::tie(delta, duals) = qpSolver.optimize();
-
-    if (debug)
-      delta.print("delta = ");
-
-    if (debug)
-      duals.print("duals = ");
-
-    // update new state
-    SQPSimpleState newState;
-    newState.values = state.values.retract(delta);
-    newState.duals = duals;
-    newState.converged = checkConvergence(newState, delta);
-    newState.iterations = state.iterations + 1;
-
-    return newState;
-  }
-
-  VectorValues initializeDuals() const {
-    VectorValues duals;
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, nlp_.linearEqualities) {
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-      duals.insert(constraint->dualKey(), zero(factor->dim()));
-    }
-
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, nlp_.nonlinearEqualities) {
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-      duals.insert(constraint->dualKey(), zero(factor->dim()));
-    }
-    return duals;
-  }
-
+  VectorValues initializeDuals() const;
   /**
    * Main optimization function.
    */
-  std::pair<Values, VectorValues> optimize(const Values& initialValues) const {
-    SQPSimpleState state(initialValues);
-    state.duals = initializeDuals();
-
-    while (!state.converged && state.iterations < 100) {
-      state = iterate(state);
-    }
-
-    return std::make_pair(state.values, state.duals);
-  }
-
+  std::pair<Values, VectorValues> optimize(const Values& initialValues) const;
 
 };
 }
