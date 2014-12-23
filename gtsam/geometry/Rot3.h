@@ -307,6 +307,9 @@ namespace gtsam {
         OptionalJacobian<3, 3> H2 = boost::none, Rot3::CoordinatesMode mode =
             ROT3_DEFAULT_COORDINATES_MODE) const;
 
+    /** Calculate Adjoint map */
+    Matrix3 AdjointMap() const { return matrix(); }
+
     /**
      * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.

@@ -154,6 +154,9 @@ namespace gtsam {
     /// @name Lie Group
     /// @{
 
+    /** Calculate Adjoint map */
+    Matrix1 AdjointMap() const { return I_1x1; }
+
     ///Exponential map at identity - create a rotation from canonical coordinates
     static Rot2 Expmap(const Vector& v, OptionalJacobian<1, 1> H = boost::none);
 
