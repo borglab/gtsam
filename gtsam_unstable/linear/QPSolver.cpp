@@ -182,13 +182,13 @@ QPState QPSolver::iterate(const QPState& state) const {
 
     // If all inequality constraints are satisfied: We have the solution!!
     if (leavingFactor < 0) {
-      return QPState(newValues, duals, state.workingSet, true);
+      return QPState(newValues, duals, state.workingSet, true, state.iterations+1);
     }
     else {
       // Inactivate the leaving constraint
       LinearInequalityFactorGraph newWorkingSet = state.workingSet;
       newWorkingSet.at(leavingFactor)->inactivate();
-      return QPState(newValues, duals, newWorkingSet, false);
+      return QPState(newValues, duals, newWorkingSet, false, state.iterations+1);
     }
   }
   else {
@@ -211,22 +211,32 @@ QPState QPSolver::iterate(const QPState& state) const {
     // step!
     newValues = state.values + alpha * p;
 
-    return QPState(newValues, state.duals, newWorkingSet, false);
+    return QPState(newValues, state.duals, newWorkingSet, false, state.iterations+1);
   }
 }
 
 //******************************************************************************
 LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
     const LinearInequalityFactorGraph& inequalities,
-    const VectorValues& initialValues) const {
+    const VectorValues& initialValues, const VectorValues& duals) const {
   LinearInequalityFactorGraph workingSet;
-  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities){
+  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities) {
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-    double error = workingFactor->error(initialValues);
-    if (fabs(error)>1e-7){
-      workingFactor->inactivate();
-    } else {
+    if (duals.exists(workingFactor->dualKey())) {
       workingFactor->activate();
+    }
+    else {
+      if (duals.size() > 0) {
+        workingFactor->inactivate();
+      } else {
+        double error = workingFactor->error(initialValues);
+        if (fabs(error)<1e-7) {
+          workingFactor->activate();
+        }
+        else {
+          workingFactor->inactivate();
+        }
+      }
     }
     workingSet.push_back(workingFactor);
   }
@@ -235,18 +245,18 @@ LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
 
 //******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize(
-    const VectorValues& initialValues) const {
+    const VectorValues& initialValues, const VectorValues& duals) const {
 
   // Initialize workingSet from the feasible initialValues
   LinearInequalityFactorGraph workingSet =
-      identifyActiveConstraints(qp_.inequalities, initialValues);
-  QPState state(initialValues, VectorValues(), workingSet, false);
+      identifyActiveConstraints(qp_.inequalities, initialValues, duals);
+  QPState state(initialValues, duals, workingSet, false, 0);
 
   /// main loop of the solver
   while (!state.converged) {
     state = iterate(state);
   }
-
+  std::cout << "Number of inner iterations: " << state.iterations << std::endl;
   return make_pair(state.values, state.duals);
 }
 
