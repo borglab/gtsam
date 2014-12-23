@@ -360,7 +360,6 @@ TEST(testSQPSimple, poseWithinA2DBox) {
   Values actualSolution = sqpSimple.optimize(initialValues).first;
 
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
-  //TODO: remove printing, refactoring,
 }
 
 //******************************************************************************
