@@ -52,6 +52,14 @@ public:
     return I_3x3;
   }
 
+  void print(const std::string& s) const {
+    std::cout << s << *this << std::endl;
+  }
+
+  bool equals(const SO3 & R, double tol) const {
+    return equal_with_abs_tol(*this, R, tol);
+  }
+
 };
 
 template<>

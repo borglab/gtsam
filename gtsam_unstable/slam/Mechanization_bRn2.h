@@ -82,8 +82,8 @@ public:
   void print(const std::string& s = "") const {
     bRn_.print(s + ".R");
 
-    gtsam::print(x_g_, s + ".x_g");
-    gtsam::print(x_a_, s + ".x_a");
+    std::cout << s + ".x_g" << x_g_ << std::endl;
+    std::cout << s + ".x_a" << x_a_ << std::endl;
   }
 
 };

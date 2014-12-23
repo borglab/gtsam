@@ -19,7 +19,7 @@
  * The concept checking function will check whether or not
  * the function exists in derived class and throw compile-time errors.
  * 
- * print with optional string naming the t
+ * print with optional string naming the object
  *     void print(const std::string& name) const = 0;
  * 
  * equality up to tolerance
@@ -51,7 +51,7 @@ namespace gtsam {
    *
    * See macros for details on using this structure
    * @addtogroup base
-   * @tparam T is the type this constrains to be testable - assumes print() and equals()
+   * @tparam T is the objectype this constrains to be testable - assumes print() and equals()
    */
   template <class T>
   class IsTestable {
@@ -71,11 +71,6 @@ namespace gtsam {
     }
   }; // \ Testable
 
-  /** Call print on the t */
-  template<class T>
-  inline void print(const T& t, const std::string& s = "") {
-    traits_x<T>::Print(t,s);
-  }
   inline void print(float v, const std::string& s = "") {
     printf("%s%f\n",s.c_str(),v);
   }
@@ -83,7 +78,7 @@ namespace gtsam {
     printf("%s%lf\n",s.c_str(),v);
   }
 
-  /** Call equal on the t */
+  /** Call equal on the object */
   template<class T>
   inline bool equal(const T& obj1, const T& obj2, double tol) {
     return traits_x<T>::Equals(obj1,obj2, tol);
@@ -133,11 +128,30 @@ namespace gtsam {
     }
   };
 
+  /// Requirements on type to pass it to Testable template below
+  template<typename T>
+  struct HasTestablePrereqs {
+
+    BOOST_CONCEPT_USAGE(HasTestablePrereqs) {
+      t->print(str);
+      b = t->equals(*s,tol);
+    }
+
+    T *t, *s; // Pointer is to allow abstract classes
+    bool b;
+    double tol;
+    std::string str;
+  };
+
   /// A helper that implements the traits interface for GTSAM types.
   /// To use this for your gtsam type, define:
   /// template<> struct traits<Type> : public Testable<Type> { };
   template<typename T>
   struct Testable {
+
+    // Check that T has the necessary methods
+    BOOST_CONCEPT_ASSERT((HasTestablePrereqs<T>));
+
     static void Print(const T& m, const std::string& str = "") {
       m.print(str);
     }
