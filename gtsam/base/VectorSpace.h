@@ -21,43 +21,40 @@ template<typename T> struct traits_x;
 namespace internal {
 
 /// VectorSpace Implementation for Fixed sizes
-template<typename V, int N>
-struct VectorSpaceImpl: Testable<V> {
+template<class Class, int N>
+struct VectorSpaceImpl {
 
   typedef vector_space_tag structure_category;
 
   /// @name Group
   /// @{
   typedef additive_group_tag group_flavor;
-  static V Identity() { return V::identity();}
-  static V Compose(const V& v1, const V& v2) { return v1+v2;}
-  static V Between(const V& v1, const V& v2) { return v2-v1;}
-  static V Inverse(const V& m) { return -m;}
+  static Class Identity() { return Class::identity();}
+  static Class Compose(const Class& v1, const Class& v2) { return v1+v2;}
+  static Class Between(const Class& v1, const Class& v2) { return v2-v1;}
+  static Class Inverse(const Class& m) { return -m;}
   /// @}
 
   /// @name Manifold
   /// @{
-  enum { dimension = N };
-  typedef V ManifoldType;
   typedef Eigen::Matrix<double, N, 1> TangentVector;
   typedef OptionalJacobian<N, N> ChartJacobian;
-  static int GetDimension(const V& m) { return N;}
-
   typedef Eigen::Matrix<double, N, N> Jacobian;
+  static int GetDimension(const Class&) { return N;}
 
-  static TangentVector Local(const V& origin, const V& other,
+  static TangentVector Local(const Class& origin, const Class& other,
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     if (H1) *H1 = - Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
-    V v = other-origin;
+    Class v = other-origin;
     return v.vector();
   }
 
-  static V Retract(const V& origin, const TangentVector& v,
+  static Class Retract(const Class& origin, const TangentVector& v,
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     if (H1) *H1 = Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
-    return origin + V(v);
+    return origin + Class(v);
   }
 
   /// @}
@@ -65,31 +62,31 @@ struct VectorSpaceImpl: Testable<V> {
   /// @name Lie Group
   /// @{
 
-  static TangentVector Logmap(const V& m, ChartJacobian Hm = boost::none) {
+  static TangentVector Logmap(const Class& m, ChartJacobian Hm = boost::none) {
     if (Hm) *Hm = Jacobian::Identity();
     return m.vector();
   }
 
-  static V Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
+  static Class Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
     if (Hv)  *Hv = Jacobian::Identity();
-    return V(v);
+    return Class(v);
   }
 
-  static V Compose(const V& v1, const V& v2, ChartJacobian H1,
+  static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1,
       ChartJacobian H2) {
     if (H1) *H1 = Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
     return v1 + v2;
   }
 
-  static V Between(const V& v1, const V& v2, ChartJacobian H1,
+  static Class Between(const Class& v1, const Class& v2, ChartJacobian H1,
       ChartJacobian H2) {
     if (H1) *H1 = - Jacobian::Identity();
     if (H2) *H2 =   Jacobian::Identity();
     return v2 - v1;
   }
 
-  static V Inverse(const V& v, ChartJacobian H) {
+  static Class Inverse(const Class& v, ChartJacobian H) {
     if (H) *H = - Jacobian::Identity();
     return -v;
   }
@@ -97,47 +94,43 @@ struct VectorSpaceImpl: Testable<V> {
   /// @}
 };
 
-/// VectorSpace implementation for dynamic types. TODO get rid of copy/paste
-template<typename V>
-struct VectorSpaceImpl<V,Eigen::Dynamic>: Testable<V> {
-
-  typedef vector_space_tag structure_category;
+/// VectorSpace implementation for dynamic types.
+template<class Class>
+struct VectorSpaceImpl<Class,Eigen::Dynamic> {
 
   /// @name Group
   /// @{
   typedef additive_group_tag group_flavor;
-  static V Identity() { return V::identity();}
-  static V Compose(const V& v1, const V& v2) { return v1+v2;}
-  static V Between(const V& v1, const V& v2) { return v2-v1;}
-  static V Inverse(const V& m) { return -m;}
+  static Class Identity() { return Class::identity();}
+  static Class Compose(const Class& v1, const Class& v2) { return v1+v2;}
+  static Class Between(const Class& v1, const Class& v2) { return v2-v1;}
+  static Class Inverse(const Class& m) { return -m;}
   /// @}
 
   /// @name Manifold
   /// @{
-  enum { dimension = V::dimension};
-  typedef V ManifoldType;
-  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
-  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
-  static int GetDimension(const V& m) { return m.dim();}
+  typedef Eigen::VectorXd TangentVector;
+  typedef OptionalJacobian<Eigen::Dynamic,Eigen::Dynamic> ChartJacobian;
+  static int GetDimension(const Class& m) { return m.dim();}
 
-  static Eigen::Matrix<double, dimension, dimension> Eye(const V& m) {
+  static Eigen::MatrixXd Eye(const Class& m) {
     int dim = GetDimension(m);
-    return Eigen::Matrix<double, dimension, dimension>::Identity(dim, dim);
+    return Eigen::MatrixXd::Identity(dim, dim);
   }
 
-  static TangentVector Local(const V& origin, const V& other,
+  static TangentVector Local(const Class& origin, const Class& other,
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     if (H1) *H1 = - Eye(origin);
     if (H2) *H2 = Eye(other);
-    V v = other-origin;
+    Class v = other-origin;
     return v.vector();
   }
 
-  static V Retract(const V& origin, const TangentVector& v,
+  static Class Retract(const Class& origin, const TangentVector& v,
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     if (H1) *H1 = Eye(origin);
     if (H2) *H2 = Eye(origin);
-    return origin + V(v);
+    return origin + Class(v);
   }
 
   /// @}
@@ -145,34 +138,33 @@ struct VectorSpaceImpl<V,Eigen::Dynamic>: Testable<V> {
   /// @name Lie Group
   /// @{
 
-  static TangentVector Logmap(const V& m, ChartJacobian Hm = boost::none) {
+  static TangentVector Logmap(const Class& m, ChartJacobian Hm = boost::none) {
     if (Hm) *Hm = Eye(m);
     return m.vector();
   }
 
-  static V Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
-    if (Hv) {
-      ManifoldType m;
-      *Hv = Eye(m);
-    }
-    return V(v);
+  static Class Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
+    Class result(v);
+    if (Hv)
+      *Hv = Eye(v);
+    return result;
   }
 
-  static V Compose(const V& v1, const V& v2, ChartJacobian H1,
+  static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1,
       ChartJacobian H2) {
     if (H1) *H1 = Eye(v1);
     if (H2) *H2 = Eye(v2);
     return v1 + v2;
   }
 
-  static V Between(const V& v1, const V& v2, ChartJacobian H1,
+  static Class Between(const Class& v1, const Class& v2, ChartJacobian H1,
       ChartJacobian H2) {
     if (H1) *H1 = - Eye(v1);
     if (H2) *H2 =   Eye(v2);
     return v2 - v1;
   }
 
-  static V Inverse(const V& v, ChartJacobian H) {
+  static Class Inverse(const Class& v, ChartJacobian H) {
     if (H) *H = -Eye(v);
     return -v;
   }
@@ -183,8 +175,18 @@ struct VectorSpaceImpl<V,Eigen::Dynamic>: Testable<V> {
 /// A helper that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Type> : public VectorSpace<Type> { };
-template<typename V>
-struct VectorSpace: VectorSpaceImpl<V, V::dimension> {};
+template<class Class>
+struct VectorSpace: Testable<Class>, VectorSpaceImpl<Class, Class::dimension> {
+
+  typedef vector_space_tag structure_category;
+
+  /// @name Manifold
+  /// @{
+  enum { dimension = Class::dimension};
+  typedef Class ManifoldType;
+  /// @}
+
+};
 
 /// A helper that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:
@@ -398,11 +400,11 @@ struct traits_x<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
 };
 
 /// Vector Space concept
-template<typename V>
-class IsVectorSpace: public IsLieGroup<V> {
+template<typename T>
+class IsVectorSpace: public IsLieGroup<T> {
 public:
 
-  typedef typename traits_x<V>::structure_category structure_category_tag;
+  typedef typename traits_x<T>::structure_category structure_category_tag;
 
   BOOST_CONCEPT_USAGE(IsVectorSpace) {
     BOOST_STATIC_ASSERT_MSG(
@@ -414,7 +416,7 @@ public:
   }
 
 private:
-  V p, q, r;
+  T p, q, r;
 };
 
 } // namespace gtsam
