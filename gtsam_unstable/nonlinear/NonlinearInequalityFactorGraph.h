@@ -1,7 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file	NonlinearInequalityFactorGraph.h
- * @author 	Krunal Chande
- * @date	Dec 22, 2014
+ * @file    NonlinearInequalityFactorGraph.h
+ * @author  Duy-Nguyen Ta
+ * @author  Krunal Chande
+ * @author  Luca Carlone
+ * @date    Dec 15, 2014
  */
 
 #pragma once
