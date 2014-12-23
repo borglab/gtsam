@@ -58,7 +58,7 @@ JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
         b += factor->gradient(key, delta);
       }
     }
-    return boost::make_shared<JacobianFactor>(Aterms, b, noiseModel::Constrained::All(b.rows()));
+    return boost::make_shared<JacobianFactor>(Aterms, b);   // compute the least-square approximation of dual variables
   }
   else {
     return boost::make_shared<JacobianFactor>();
@@ -156,7 +156,7 @@ boost::tuple<double, int> QPSolver::computeStepSize(
 
 //******************************************************************************
 QPState QPSolver::iterate(const QPState& state) const {
-  static bool debug = false;
+  static bool debug = true;
 
   // Solve with the current working set
   VectorValues newValues = solveWithCurrentWorkingSet(state.workingSet);
@@ -164,7 +164,7 @@ QPState QPSolver::iterate(const QPState& state) const {
     newValues.print("New solution:");
 
   // If we CAN'T move further
-  if (newValues.equals(state.values, 1e-5)) {
+  if (newValues.equals(state.values, 1e-7)) {
     // Compute lambda from the dual graph
     if (debug)
       cout << "Building dual graph..." << endl;
