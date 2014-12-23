@@ -135,7 +135,7 @@ namespace gtsam {
     /// @{
 
     /** Number of variables stored. */
-    Key size() const { return values_.size(); }
+    size_t size() const { return values_.size(); }
 
     /** Return the dimension of variable \c j. */
     size_t dim(Key j) const { return at(j).rows(); }
