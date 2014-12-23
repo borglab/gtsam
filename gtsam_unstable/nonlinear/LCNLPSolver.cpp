@@ -19,6 +19,7 @@
 
 #include <gtsam_unstable/nonlinear/LCNLPSolver.h>
 #include <gtsam_unstable/linear/QPSolver.h>
+#include <iostream>
 
 namespace gtsam {
 
@@ -75,12 +76,13 @@ std::pair<Values, VectorValues> LCNLPSolver::optimize(const Values& initialValue
   while (!state.converged && state.iterations < 100) {
     state = iterate(state);
   }
+  std::cout << "Number of iterations: " << state.iterations << std::endl;
   return std::make_pair(state.values, state.duals);
 }
 
 /* ************************************************************************* */
 LCNLPState LCNLPSolver::iterate(const LCNLPState& state) const {
-  static const bool debug = false;
+  static const bool debug = true;
 
   // construct the qp subproblem
   QP qp;
@@ -88,19 +90,29 @@ LCNLPState LCNLPSolver::iterate(const LCNLPState& state) const {
   qp.equalities.add(*lcnlp_.linearEqualities.linearize(state.values));
   qp.inequalities.add(*lcnlp_.linearInequalities.linearize(state.values));
 
-  if (debug)
-    qp.print("QP subproblem:");
+//  if (debug)
+//    qp.print("QP subproblem:");
 
   // solve the QP subproblem
   VectorValues delta, duals;
   QPSolver qpSolver(qp);
-  boost::tie(delta, duals) = qpSolver.optimize();
+  if (state.iterations == 0)
+    boost::tie(delta, duals) = qpSolver.optimize();
+  else {
+    VectorValues zeroInitialValues;
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, state.values) {
+      zeroInitialValues.insert(key_value.key, zero(key_value.value.dim()));
+    }
+    boost::tie(delta, duals) = qpSolver.optimize(zeroInitialValues, state.duals);
+  }
 
+  if (debug)
+    state.values.print("state.values: ");
   if (debug)
     delta.print("delta = ");
 
-  if (debug)
-    duals.print("duals = ");
+//  if (debug)
+//    duals.print("duals = ");
 
   // update new state
   LCNLPState newState;
@@ -108,6 +120,9 @@ LCNLPState LCNLPSolver::iterate(const LCNLPState& state) const {
   newState.duals = duals;
   newState.converged = checkConvergence(newState, delta);
   newState.iterations = state.iterations + 1;
+
+  if (debug)
+    newState.print("newState: ");
 
   return newState;
 }
