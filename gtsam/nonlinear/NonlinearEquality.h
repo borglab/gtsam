@@ -115,7 +115,7 @@ public:
   virtual void print(const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << "Constraint: on [" << keyFormatter(this->key()) << "]\n";
-    gtsam::print(feasible_, "Feasible Point:\n");
+    traits_x<VALUE>::Print(feasible_, "Feasible Point:\n");
     std::cout << "Variable Dimension: " << traits_x<T>::GetDimension(feasible_) << std::endl;
   }
 
