@@ -156,7 +156,7 @@ boost::tuple<double, int> QPSolver::computeStepSize(
 
 //******************************************************************************
 QPState QPSolver::iterate(const QPState& state) const {
-  static bool debug = true;
+  static bool debug = false;
 
   // Solve with the current working set
   VectorValues newValues = solveWithCurrentWorkingSet(state.workingSet);
