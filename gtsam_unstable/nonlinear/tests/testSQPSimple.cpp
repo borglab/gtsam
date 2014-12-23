@@ -23,6 +23,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+
 #include <gtsam_unstable/linear/QPSolver.h>
 #include <gtsam_unstable/nonlinear/SQPSimple.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequality.h>
@@ -124,7 +126,8 @@ public:
 
 };
 
-TEST_UNSAFE(testSQPSimple, quadraticCostNonlinearConstraint) {
+// Nonlinear constraint not supported currently
+TEST_DISABLED(testSQPSimple, quadraticCostNonlinearConstraint) {
   const Key dualKey = 0;
 
   //Instantiate NLP
@@ -344,13 +347,13 @@ TEST(testSQPSimple, poseWithinA2DBox) {
   //Instantiate NLP
   NLP nlp;
   nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(10, 0.5, 0)), noiseModel::Unit::Create(6)));
-  nlp.linearInequalities.add(AxisLowerBound(X(1), X_AXIS, -1, dualKey));
-  nlp.linearInequalities.add(AxisUpperBound(X(1), X_AXIS, 1, dualKey));
-  nlp.linearInequalities.add(AxisLowerBound(X(1), Y_AXIS, -1, dualKey));
-  nlp.linearInequalities.add(AxisUpperBound(X(1), Y_AXIS, 1, dualKey));
+  nlp.linearInequalities.add(AxisLowerBound(X(1), X_AXIS, -1, dualKey)); // -1 <= x
+  nlp.linearInequalities.add(AxisUpperBound(X(1), X_AXIS, 1, dualKey+1)); //      x <= 1
+  nlp.linearInequalities.add(AxisLowerBound(X(1), Y_AXIS, -1, dualKey+2)); // -1 <= y
+  nlp.linearInequalities.add(AxisUpperBound(X(1), Y_AXIS, 1, dualKey+3));//         y <= 1
 
   Values initialValues;
-  initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(1, 0, 0)));
+  initialValues.insert(X(1), Pose3(Rot3::ypr(1, -1, 2), Point3(3, -5, 0)));
 
   Values expectedSolution;
   expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0.5, 0)));
@@ -358,6 +361,62 @@ TEST(testSQPSimple, poseWithinA2DBox) {
   // Instantiate SQP
   SQPSimple sqpSimple(nlp);
   Values actualSolution = sqpSimple.optimize(initialValues).first;
+
+  CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
+}
+
+TEST_DISABLED(testSQPSimple, posesInA2DBox) {
+  const double xLowerBound = -3.0,
+      xUpperBound = 5.0,
+      yLowerBound = -1.0,
+      yUpperBound = 2.0,
+      zLowerBound = 0.0,
+      zUpperBound = 2.0;
+
+  //Instantiate NLP
+  NLP nlp;
+
+  // prior on the first pose
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
+      (Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished());
+  nlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(), priorNoise));
+
+  // odometry between factor for subsequent poses
+  SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(
+      (Vector(6) << 0.01, 0.01, 0.01, 0.1, 0.1, 0.1).finished());
+  Pose3 odo12(Rot3::ypr(M_PI/2.0, 0, 0), Point3(10, 0, 0));
+  nlp.cost.add(BetweenFactor<Pose3>(X(1), X(2), odo12, odoNoise));
+
+  Pose3 odo23(Rot3::ypr(M_PI/2.0, 0, 0), Point3(2, 0, 2));
+  nlp.cost.add(BetweenFactor<Pose3>(X(2), X(3), odo23, odoNoise));
+
+  // Box constraints
+  Key dualKey = 0;
+  for (size_t i=1; i<=3; ++i) {
+    nlp.linearInequalities.add(AxisLowerBound(X(i), X_AXIS, xLowerBound, dualKey++));
+    nlp.linearInequalities.add(AxisUpperBound(X(i), X_AXIS, xUpperBound, dualKey++));
+    nlp.linearInequalities.add(AxisLowerBound(X(i), Y_AXIS, yLowerBound, dualKey++));
+    nlp.linearInequalities.add(AxisUpperBound(X(i), Y_AXIS, yUpperBound, dualKey++));
+    nlp.linearInequalities.add(AxisLowerBound(X(i), Z_AXIS, zLowerBound, dualKey++));
+    nlp.linearInequalities.add(AxisUpperBound(X(i), Z_AXIS, zUpperBound, dualKey++));
+  }
+
+  Values initialValues;
+  initialValues.insert(X(1), Pose3(Rot3(), Point3(0, 0, 0)));
+  initialValues.insert(X(2), Pose3(Rot3(), Point3(0, 0, 0)));
+  initialValues.insert(X(3), Pose3(Rot3(), Point3(0, 0, 0)));
+
+
+  Values expectedSolution;
+  expectedSolution.insert(X(1), Pose3());
+  expectedSolution.insert(X(2), Pose3());
+  expectedSolution.insert(X(3), Pose3());
+
+  // Instantiate SQP
+  SQPSimple sqpSimple(nlp);
+  Values actualSolution = sqpSimple.optimize(initialValues).first;
+
+  actualSolution.print("actual solution: ");
 
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
 }
