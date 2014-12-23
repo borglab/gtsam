@@ -54,7 +54,7 @@ public:
   }
 };
 
-TEST(testlcnlpSolver, QPProblem) {
+TEST_DISABLED(testlcnlpSolver, QPProblem) {
   const Key dualKey = 0;
 
   // Simple quadratic cost: x1^2 + x2^2
@@ -120,7 +120,7 @@ public:
   }
 };
 
-TEST(testlcnlpSolver, poseOnALine) {
+TEST_DISABLED(testlcnlpSolver, poseOnALine) {
   const Key dualKey = 0;
 
 
@@ -161,7 +161,7 @@ public:
   }
 };
 
-TEST(testlcnlpSolver, inequalityConstraint) {
+TEST_DISABLED(testlcnlpSolver, inequalityConstraint) {
   const Key dualKey = 0;
 
   // Simple quadratic cost: x^2 + y^2
@@ -253,7 +253,7 @@ public:
   }
 };
 
-TEST(testlcnlpSolver, poseWithABoundary) {
+TEST_DISABLED(testlcnlpSolver, poseWithABoundary) {
   const Key dualKey = 0;
 
   //Instantiate LCNLP
@@ -275,7 +275,7 @@ TEST(testlcnlpSolver, poseWithABoundary) {
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
 }
 
-TEST(testlcnlpSolver, poseWithinA2DBox) {
+TEST_DISABLED(testlcnlpSolver, poseWithinA2DBox) {
   const Key dualKey = 0;
 
   //Instantiate LCNLP
@@ -359,6 +359,9 @@ TEST(testlcnlpSolver, posesInA2DBox) {
 //  cout << "Expected Error: " << lcnlp.cost.error(expectedSolution) << endl;
 //  actualSolution.print("actualSolution: ");
 
+  AxisLowerBound factor(X(1), X_AXIS, xLowerBound, dualKey++);
+  Matrix hessian = numericalHessian<Pose3>(boost::bind(&AxisLowerBound::computeError, factor, _1, boost::none), Pose3(), 1e-3);
+  cout << "Hessian: \n" << hessian << endl;
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-5));
 }
 
