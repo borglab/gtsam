@@ -212,8 +212,7 @@ public:
 
     /// Return run-time dimensionality
     virtual size_t dim() const {
-      // need functional form here since the dimension may be dynamic
-      return traits_x<T>::GetDimension(GenericValue<T>::value());
+      return traits_x<T>::GetDimension(value_);
     }
 
     /// Assignment operator
